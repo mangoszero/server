@@ -31,7 +31,7 @@ file(GLOB_RECURSE SRC_GRP_DATABASE Database/*.cpp Database/*.h)
 
 set(SRC_GRP_LOG
     Log.h
-	Log.cpp
+    Log.cpp
 )
 
 set(SRC_GRP_UTIL
