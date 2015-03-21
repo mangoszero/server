@@ -38,7 +38,7 @@ mangos_source_group(${vmap_LIB_SRCS})
 include_directories(
     ${ACE_INCLUDE_DIRS}
     ${MYSQL_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/dep/include/g3dlite/
+    ${CMAKE_SOURCE_DIR}/dep/g3dlite/
     ${CMAKE_SOURCE_DIR}/src/framework/
     ${CMAKE_SOURCE_DIR}/src/shared/
     ${CMAKE_SOURCE_DIR}/src/game/

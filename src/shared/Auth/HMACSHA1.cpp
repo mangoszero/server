@@ -22,39 +22,40 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Auth/Hmac.h"
+#include "Auth/HMACSHA1.h"
 #include "BigNumber.h"
 
-HmacHash::HmacHash()
+HMACSHA1::HMACSHA1()
 {
     uint8 temp[SEED_KEY_SIZE] = { 0x38, 0xA7, 0x83, 0x15, 0xF8, 0x92, 0x25, 0x30, 0x71, 0x98, 0x67, 0xB1, 0x8C, 0x4, 0xE2, 0xAA };
+
     memcpy(&m_key, &temp, SEED_KEY_SIZE);
     HMAC_CTX_init(&m_ctx);
     HMAC_Init_ex(&m_ctx, &m_key, SEED_KEY_SIZE, EVP_sha1(), NULL);
 }
 
-HmacHash::~HmacHash()
+HMACSHA1::~HMACSHA1()
 {
     memset(&m_key, 0x00, SEED_KEY_SIZE);
     HMAC_CTX_cleanup(&m_ctx);
 }
 
-void HmacHash::UpdateBigNumber(BigNumber* bn)
+void HMACSHA1::UpdateBigNumber(BigNumber* bn)
 {
     UpdateData(bn->AsByteArray(), bn->GetNumBytes());
 }
 
-void HmacHash::UpdateData(const uint8* data, int length)
+void HMACSHA1::UpdateData(const uint8* data, int length)
 {
     HMAC_Update(&m_ctx, data, length);
 }
 
-void HmacHash::Initialize()
+void HMACSHA1::Initialize()
 {
     HMAC_Init_ex(&m_ctx, &m_key, SEED_KEY_SIZE, EVP_sha1(), NULL);
 }
 
-void HmacHash::Finalize()
+void HMACSHA1::Finalize()
 {
     uint32 length = 0;
     HMAC_Final(&m_ctx, m_digest, &length);

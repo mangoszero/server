@@ -22,8 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_H_AUTH_HMAC
-#define MANGOS_H_AUTH_HMAC
+#ifndef _AUTH_HMACSHA1_H
+#define _AUTH_HMACSHA1_H
 
 #include "Common.h"
 #include <openssl/hmac.h>
@@ -37,19 +37,19 @@ class BigNumber;
  * @brief
  *
  */
-class HmacHash
+class HMACSHA1
 {
     public:
         /**
          * @brief
          *
          */
-        HmacHash();
+        HMACSHA1();
         /**
          * @brief
          *
          */
-        ~HmacHash();
+        ~HMACSHA1();
         /**
          * @brief
          *
@@ -78,13 +78,13 @@ class HmacHash
          *
          * @return uint8
          */
-        uint8* GetDigest() { return m_digest; }
+        uint8* GetDigest() { return (uint8*)m_digest; }
         /**
          * @brief
          *
          * @return int
          */
-        int GetLength() { return SHA_DIGEST_LENGTH; }
+        int GetLength() { return SHA_DIGEST_LENGTH; };
     private:
         HMAC_CTX m_ctx; /**< TODO */
         uint8 m_key[SEED_KEY_SIZE]; /**< TODO */

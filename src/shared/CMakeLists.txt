@@ -23,67 +23,21 @@
 
 set(LIBRARY_NAME shared)
 
-set(SRC_GRP_AUTH
-    Auth/AuthCrypt.cpp
-    Auth/AuthCrypt.h
-    Auth/BigNumber.cpp
-    Auth/BigNumber.h
-    Auth/Hmac.cpp
-    Auth/Hmac.h
-    Auth/md5.h
-    Auth/Sha1.cpp
-    Auth/Sha1.h
-)
+file(GLOB_RECURSE SRC_GRP_AUTH Auth/*.cpp Auth/*.h)
 
-set(SRC_GRP_CONFIG
-    Config/Config.cpp
-    Config/Config.h
-)
+file(GLOB_RECURSE SRC_GRP_CONFIG Config/*.cpp Config/*.h)
 
-set(SRC_GRP_DATABASE
-    Database/Database.cpp
-    Database/Database.h
-    Database/DatabaseEnv.h
-    Database/DatabaseImpl.h
-    Database/DatabaseMysql.cpp
-    Database/DatabaseMysql.h
-    Database/DatabasePostgre.cpp
-    Database/DatabasePostgre.h
-    Database/Field.cpp
-    Database/Field.h
-    Database/PGSQLDelayThread.h
-    Database/QueryResult.h
-    Database/QueryResultMysql.cpp
-    Database/QueryResultMysql.h
-    Database/QueryResultPostgre.cpp
-    Database/QueryResultPostgre.h
-    Database/SqlDelayThread.cpp
-    Database/SqlDelayThread.h
-    Database/SqlOperations.cpp
-    Database/SqlOperations.h
-    Database/SqlPreparedStatement.cpp
-    Database/SqlPreparedStatement.h
-    Database/SQLStorage.cpp
-    Database/SQLStorage.h
-    Database/SQLStorageImpl.h
-)
-
-set(SRC_GRP_DATABASE_DBC
-    Database/DBCFileLoader.cpp
-    Database/DBCFileLoader.h
-    Database/DBCStore.h
-)
+file(GLOB_RECURSE SRC_GRP_DATABASE Database/*.cpp Database/*.h)
 
 set(SRC_GRP_LOG
-    Log.cpp
     Log.h
+	Log.cpp
 )
 
 set(SRC_GRP_UTIL
     ByteBuffer.cpp
     ByteBuffer.h
     Errors.h
-    # dep/include/mersennetwister/MersenneTwister.h is part of this group in the VC 2012 file but it is not part of src/shared, so it is omitted here
     ProgressBar.cpp
     ProgressBar.h
     Timer.h
@@ -97,7 +51,6 @@ set(LIBRARY_SRCS
     ${SRC_GRP_AUTH}
     ${SRC_GRP_CONFIG}
     ${SRC_GRP_DATABASE}
-    ${SRC_GRP_DATABASE_DBC}
     ${SRC_GRP_LOG}
     ${SRC_GRP_UTIL}
     Common.cpp
@@ -127,7 +80,9 @@ source_group("Database"
 
 source_group("Database\\DataStores"
   FILES
-    ${SRC_GRP_DATABASE_DBC}
+    Database/DBCFileLoader.cpp
+    Database/DBCFileLoader.h
+    Database/DBCStore.h
 )
 
 source_group("Log"
@@ -159,10 +114,11 @@ endif()
 
 include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${CMAKE_SOURCE_DIR}/dep/include"
+  "${CMAKE_SOURCE_DIR}/dep"
   "${CMAKE_SOURCE_DIR}/src/framework"
   "${CMAKE_BINARY_DIR}"
   "${ACE_INCLUDE_DIR}"
+  "${OPENSSL_INCLUDE_DIR}"
 )
 
 if(POSTGRESQL)
@@ -177,8 +133,12 @@ add_library(${LIBRARY_NAME} STATIC
   ${LIBRARY_SRCS}
 )
 
+#target_link_libraries(${LIBRARY_NAME} ${OPENSSL_LIBRARIES})
+
 if(POSTGRESQL)
   target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})
+else()
+  target_link_libraries(${LIBRARY_NAME} ${MYSQL_LIBRARY})
 endif()
 
 if(NOT ACE_USE_EXTERNAL)

@@ -97,6 +97,8 @@ target_link_libraries(${EXECUTABLE_NAME}
     shared
     framework
     g3dlite
+    ${MYSQL_LIBRARY}
+    ${OPENSSL_LIBRARIES}
 )
 
 add_dependencies(${EXECUTABLE_NAME} game)
@@ -110,20 +112,11 @@ endif()
 if(WIN32)
   target_link_libraries(${EXECUTABLE_NAME}
     zlib
-    optimized ${MYSQL_LIBRARY}
-    optimized ${OPENSSL_LIBRARIES}
-    debug ${MYSQL_DEBUG_LIBRARY}
-    debug ${OPENSSL_DEBUG_LIBRARIES}
   )
-  if(PLATFORM MATCHES X86)
-    target_link_libraries(${EXECUTABLE_NAME})
-  endif()
 endif()
 
 if(UNIX)
   target_link_libraries(${EXECUTABLE_NAME}
-    ${MYSQL_LIBRARY}
-    ${OPENSSL_LIBRARIES}
     ${OPENSSL_EXTRA_LIBRARIES}
     ${ZLIB_LIBRARIES}
   )
@@ -163,16 +156,16 @@ if(WIN32)
   if(MSVC)
    add_custom_command(TARGET ${EXECUTABLE_NAME}
      POST_BUILD
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libmySQL.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
+     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
+     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
+     COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
    )
   elseif(XCODE)
    add_custom_command(TARGET ${EXECUTABLE_NAME}
      POST_BUILD
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libmySQL.dll" "${CMAKE_BINARY_DIR}/bin/"
+     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/"
+     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/"
+     COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
    )
   endif()
 endif()

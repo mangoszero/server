@@ -201,31 +201,20 @@ else()
   include(cmake/ImportACE.cmake)
 endif()
 
-# Win32 delivered packages
-if(WIN32)
-  set(MYSQL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/dep/include/mysql")
-  set(MYSQL_LIBRARY "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libmySQL.lib")
-  set(MYSQL_DEBUG_LIBRARY "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libmySQL.lib")
-  set(OPENSSL_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/dep/include/openssl")
-  set(OPENSSL_LIBRARIES "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.lib")
-  set(OPENSSL_DEBUG_LIBRARIES "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.lib")
-  # zlib is build
+# Required packages to build
+find_package(OpenSSL REQUIRED)
+
+if(POSTGRESQL)
+    find_package(PostgreSQL REQUIRED)
+    if(POSTGRESQL_FOUND)
+      include_directories(${POSTGRESQL_INCLUDE_DIRS})
+    endif(POSTGRESQL_FOUND)
+else()
+    find_package(MySQL REQUIRED)
 endif()
 
 # *nix-specific packages
 if(UNIX)
-  if(POSTGRESQL)
-    find_package(PostgreSQL REQUIRED)
-
-    if(POSTGRESQL_FOUND)
-      include_directories(${POSTGRESQL_INCLUDE_DIRS})
-    endif(POSTGRESQL_FOUND)
-
-  else()
-    find_package(MySQL REQUIRED)
-  endif()
-
-  find_package(OpenSSL REQUIRED)
   find_package(ZLIB REQUIRED)
 endif()
 

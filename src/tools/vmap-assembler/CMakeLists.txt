@@ -30,7 +30,8 @@ add_definitions("-DNO_CORE_FUNCS")
 include_directories(
     "${CMAKE_SOURCE_DIR}/src/shared"
     "${CMAKE_SOURCE_DIR}/src/game/vmap/"
-    "${CMAKE_SOURCE_DIR}/dep/include/g3dlite/"
+    "${CMAKE_SOURCE_DIR}/dep/g3dlite/"
+	"${CMAKE_SOURCE_DIR}/dep/g3dlite/G3D"
     "${CMAKE_SOURCE_DIR}/src/framework/"
     "${ACE_INCLUDE_DIR}"
 )

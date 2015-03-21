@@ -31,7 +31,8 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/Tools"
   "${CMAKE_CURRENT_SOURCE_DIR}/vmap"
   "${CMAKE_CURRENT_SOURCE_DIR}/WorldHandlers"
-  "${CMAKE_SOURCE_DIR}/dep/include/g3dlite"
+  "${CMAKE_SOURCE_DIR}/dep/g3dlite"
+  "${CMAKE_SOURCE_DIR}/dep/zlib"
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour/Include"
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour"
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/"
@@ -41,6 +42,7 @@ include_directories(
   "${CMAKE_BINARY_DIR}"
   "${CMAKE_BINARY_DIR}/src/shared"
   "${MYSQL_INCLUDE_DIR}"
+  "${OPENSSL_INCLUDE_DIR}"
   "${ACE_INCLUDE_DIR}"
 )
 

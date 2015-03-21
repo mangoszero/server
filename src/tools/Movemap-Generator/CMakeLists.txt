@@ -43,12 +43,13 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/src/shared"
     "${CMAKE_SOURCE_DIR}/src/game"
     "${CMAKE_SOURCE_DIR}/src/game/vmap"
-    "${CMAKE_SOURCE_DIR}/dep/include/g3dlite"
+    "${CMAKE_SOURCE_DIR}/dep/g3dlite"
+	"${CMAKE_SOURCE_DIR}/dep/g3dlite/G3D"
     "${CMAKE_SOURCE_DIR}/src/framework"
     "${CMAKE_SOURCE_DIR}/src/game/WorldHandlers"
     "${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour/Include"
     "${CMAKE_SOURCE_DIR}/dep/recastnavigation/Recast/Include"
-    "${CMAKE_SOURCE_DIR}/dep/src/zlib"
+    "${CMAKE_SOURCE_DIR}/dep/zlib"
 )
 
 set(SOURCES

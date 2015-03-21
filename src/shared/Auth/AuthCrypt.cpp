@@ -23,17 +23,16 @@
  */
 
 #include "AuthCrypt.h"
-#include "Hmac.h"
+#include "HMACSHA1.h"
+#include "Log.h"
+#include "BigNumber.h"
+
+const static size_t CRYPTED_SEND_LEN = 4;
+const static size_t CRYPTED_RECV_LEN = 6;
 
 AuthCrypt::AuthCrypt()
 {
     _initialized = false;
-}
-
-void AuthCrypt::Init()
-{
-    _send_i = _send_j = _recv_i = _recv_j = 0;
-    _initialized = true;
 }
 
 void AuthCrypt::DecryptRecv(uint8* data, size_t len)
@@ -72,21 +71,18 @@ void AuthCrypt::EncryptSend(uint8* data, size_t len)
     }
 }
 
+void AuthCrypt::Init()
+{
+    _send_i = _send_j = _recv_i = _recv_j = 0;
+    _initialized = true;
+}
+
 void AuthCrypt::SetKey(uint8* key, size_t len)
 {
     _key.resize(len);
     std::copy(key, key + len, _key.begin());
 }
 
-
 AuthCrypt::~AuthCrypt()
 {
-}
-
-void AuthCrypt::GenerateKey(uint8* key, BigNumber* bn)
-{
-    HmacHash hash;
-    hash.UpdateBigNumber(bn);
-    hash.Finalize();
-    memcpy(key, hash.GetDigest(), SHA_DIGEST_LENGTH);
 }

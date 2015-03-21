@@ -48,21 +48,18 @@ class AuthCrypt
          */
         ~AuthCrypt();
 
-        const static size_t CRYPTED_SEND_LEN = 4; /**< TODO */
-        const static size_t CRYPTED_RECV_LEN = 6; /**< TODO */
-
         /**
-         * @brief
-         *
-         */
+        * @brief
+        *
+        */
         void Init();
 
         /**
-         * @brief
-         *
-         * @param key
-         * @param len
-         */
+        * @brief
+        *
+        * @param key
+        * @param len
+        */
         void SetKey(uint8* key, size_t len);
 
         /**
@@ -86,14 +83,6 @@ class AuthCrypt
          * @return bool
          */
         bool IsInitialized() { return _initialized; }
-
-        /**
-         * @brief
-         *
-         * @param
-         * @param
-         */
-        static void GenerateKey(uint8*, BigNumber*);
 
     private:
         std::vector<uint8> _key; /**< TODO */

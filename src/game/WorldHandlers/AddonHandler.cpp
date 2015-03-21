@@ -22,7 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "zlib/zlib.h"
+#include <zlib.h>
 #include "AddonHandler.h"
 #include "Database/DatabaseEnv.h"
 #include "Opcodes.h"

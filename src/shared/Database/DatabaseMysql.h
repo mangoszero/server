@@ -32,12 +32,10 @@
 #include "Policies/Singleton.h"
 #include <ace/Thread_Mutex.h>
 #include <ace/Guard_T.h>
+#include <mysql.h>
 
 #ifdef WIN32
 #include <winsock2.h>
-#include <mysql/mysql.h>
-#else
-#include <mysql.h>
 #endif
 
 /**

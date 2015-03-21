@@ -26,7 +26,7 @@
 #include "Timer.h"
 
 #include "utf8cpp/utf8.h"
-#include "mersennetwister/MersenneTwister.h"
+#include <mersennetwister/MersenneTwister.h>
 #include <ace/TSS_T.h>
 #include <ace/INET_Addr.h>
 
