@@ -1,0 +1,78 @@
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
+
+/// \addtogroup world
+/// @{
+/// \file
+
+#ifndef MANGOS_H_WEATHER
+#define MANGOS_H_WEATHER
+
+#include "Common.h"
+#include "SharedDefines.h"
+#include "Timer.h"
+
+class Player;
+
+enum WeatherState
+{
+    WEATHER_STATE_FINE              = 0,
+    WEATHER_STATE_LIGHT_RAIN        = 3,
+    WEATHER_STATE_MEDIUM_RAIN       = 4,
+    WEATHER_STATE_HEAVY_RAIN        = 5,
+    WEATHER_STATE_LIGHT_SNOW        = 6,
+    WEATHER_STATE_MEDIUM_SNOW       = 7,
+    WEATHER_STATE_HEAVY_SNOW        = 8,
+    WEATHER_STATE_LIGHT_SANDSTORM   = 22,
+    WEATHER_STATE_MEDIUM_SANDSTORM  = 41,
+    WEATHER_STATE_HEAVY_SANDSTORM   = 42,
+    WEATHER_STATE_THUNDERS          = 86,
+    WEATHER_STATE_BLACKRAIN         = 90
+};
+
+struct WeatherZoneChances;
+
+/// Weather for one zone
+class Weather
+{
+    public:
+        Weather(uint32 zone, WeatherZoneChances const* weatherChances);
+        ~Weather() {};
+        bool ReGenerate();
+        bool UpdateWeather();
+        void SendWeatherUpdateToPlayer(Player* player);
+        static void SendFineWeatherUpdateToPlayer(Player* player);
+        void SetWeather(WeatherType type, float grade);
+        /// For which zone is this weather?
+        uint32 GetZone() { return m_zone; };
+        bool Update(time_t diff);
+    private:
+        uint32 GetSound();
+        uint32 m_zone;
+        WeatherType m_type;
+        float m_grade;
+        ShortIntervalTimer m_timer;
+        WeatherZoneChances const* m_weatherChances;
+};
+#endif

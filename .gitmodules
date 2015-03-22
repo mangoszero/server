@@ -1,0 +1,9 @@
+[submodule "dep"]
+	path = dep
+	url = https://github.com/mangos/mangosDeps
+[submodule "src/realmd"]
+	path = src/realmd
+	url = https://github.com/mangos/realmd
+[submodule "src/modules/Eluna"]
+	path = src/modules/Eluna
+	url = https://github.com/elunaluaengine/eluna

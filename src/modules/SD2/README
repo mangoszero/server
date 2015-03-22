@@ -1,0 +1,40 @@
+== ScriptDev2 README ==
+
+  Copyright (C) 2006 - 2013 ScriptDev2 <https://github.com/scriptdev2>
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+== Welcome to ScriptDev2 ==
+
+ScriptDev2 is a script library, an extention of the scripting capabilities
+that comes with MaNGOS (http://www.getmangos.eu/), written in C++ and is
+compatible with Windows and Linux. SQL needed for database support both
+MySQL and PostgreSQL.
+
+This script library provides unique scripts for NPCs, gameobjects, events
+and other that need unique implementation.
+
+Once ScriptDev2 is compiled it is automatically run by MaNGOS on server
+startup.
+
+For further information on ScriptDev2, please visit our project web site
+at http://www.scriptdev2.com/
+
+Documentation on various development related topics can be found in the
+../doc/ sub directory as well as on the web site.
+
+The required SQL files for creating the database backend are included in
+the ../sql/ sub directory. If you are updating from an older ScriptDev2
+version, make sure to take a look at the SQL files provided in the
+../sql/updates/ sub directory.

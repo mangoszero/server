@@ -1,0 +1,473 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{C69C7C98-6E13-4A3A-BD7C-7BA82BAA1933}</ProjectGUID>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>game</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\_temp\game\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">game</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\_temp\game\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">game</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.lib</TargetExt>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions> /Zm500 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4996;4355;4244;4267</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ForcedIncludeFiles>pchdef.h</ForcedIncludeFiles>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pchdef.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <PreprocessorDefinitions>PREPARED_SLN;ENABLE_ELUNA;ENABLE_SD2;WIN32;_WINDOWS;NDEBUG;HAVE_CONFIG_H;MANGOS;DO_MYSQL;WIN32;_WIN32;USE_STANDARD_MALLOC;DT_POLYREF64;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PREPARED_SLN;ENABLE_ELUNA;ENABLE_SD2;WIN32;_WINDOWS;NDEBUG;HAVE_CONFIG_H;MANGOS;DO_MYSQL;WIN32;_WIN32;USE_STANDARD_MALLOC;DT_POLYREF64;NDEBUG;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions> /Zm500 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;4355;4244;4985;4267</DisableSpecificWarnings>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ForcedIncludeFiles>pchdef.h</ForcedIncludeFiles>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pchdef.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>PREPARED_SLN;ENABLE_ELUNA;ENABLE_SD2;WIN32;_WINDOWS;_DEBUG;HAVE_CONFIG_H;MANGOS;DO_MYSQL;WIN32;_WIN32;USE_STANDARD_MALLOC;DT_POLYREF64;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <MinimalRebuild>false</MinimalRebuild>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>PREPARED_SLN;ENABLE_ELUNA;ENABLE_SD2;WIN32;_WINDOWS;_DEBUG;HAVE_CONFIG_H;MANGOS;DO_MYSQL;WIN32;_WIN32;USE_STANDARD_MALLOC;DT_POLYREF64;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>.\;..\..\dep\include;..\..\src\game;..\..\src\game\AuctionHouseBot;..\..\src\game\BattleGround;..\..\src\game\ChatCommands;..\..\src\game\MotionGenerators;..\..\src\game\Object;..\..\src\game\OutdoorPvP;..\..\src\game\References;..\..\src\game\Server;..\..\src\game\Tools;..\..\src\game\vmap;..\..\src\game\WorldHandlers;..\..\dep\include\g3dlite;..\..\dep\recastnavigation\Detour\Include;..\..\dep\recastnavigation\Detour;..\..\dep\recastnavigation;..\..\src\shared;..\..\src\framework;..\..\src\shared;..\..\dep\include\mysql;..\..\dep\acelite;..\..\src\game;..\..\src\modules\SD2;..\..\dep\lualib;..\..\src\modules\Eluna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <TreatOutputAsContent>false</TreatOutputAsContent>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\game\AuctionHouseBot\AuctionHouseBot.h" />
+    <ClInclude Include="..\..\src\game\BattleGround\BattleGround.h" />
+    <ClInclude Include="..\..\src\game\BattleGround\BattleGroundAB.h" />
+    <ClInclude Include="..\..\src\game\BattleGround\BattleGroundAV.h" />
+    <ClInclude Include="..\..\src\game\BattleGround\BattleGroundMgr.h" />
+    <ClInclude Include="..\..\src\game\BattleGround\BattleGroundWS.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\ConfusedMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\FleeingMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\HomeMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\IdleMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\MotionMaster.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\MovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\PathFinder.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\PointMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\RandomMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\TargetedMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\MotionGenerators\WaypointMovementGenerator.h" />
+    <ClInclude Include="..\..\src\game\movement\MoveSpline.h" />
+    <ClInclude Include="..\..\src\game\movement\MoveSplineFlag.h" />
+    <ClInclude Include="..\..\src\game\movement\MoveSplineInit.h" />
+    <ClInclude Include="..\..\src\game\movement\MoveSplineInitArgs.h" />
+    <ClInclude Include="..\..\src\game\movement\packet_builder.h" />
+    <ClInclude Include="..\..\src\game\movement\spline.h" />
+    <ClInclude Include="..\..\src\game\movement\spline.impl.h" />
+    <ClInclude Include="..\..\src\game\movement\typedefs.h" />
+    <ClInclude Include="..\..\src\game\Object\AggressorAI.h" />
+    <ClInclude Include="..\..\src\game\Object\AuctionHouseMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\Bag.h" />
+    <ClInclude Include="..\..\src\game\Object\Camera.h" />
+    <ClInclude Include="..\..\src\game\Object\Corpse.h" />
+    <ClInclude Include="..\..\src\game\Object\Creature.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureAI.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureAIImpl.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureAIRegistry.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureAISelector.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureEventAI.h" />
+    <ClInclude Include="..\..\src\game\Object\CreatureEventAIMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\DynamicObject.h" />
+    <ClInclude Include="..\..\src\game\Object\Formulas.h" />
+    <ClInclude Include="..\..\src\game\Object\GameObject.h" />
+    <ClInclude Include="..\..\src\game\Object\GMTicketMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\GuardAI.h" />
+    <ClInclude Include="..\..\src\game\Object\Guild.h" />
+    <ClInclude Include="..\..\src\game\Object\Item.h" />
+    <ClInclude Include="..\..\src\game\Object\ItemEnchantmentMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\ItemPrototype.h" />
+    <ClInclude Include="..\..\src\game\Object\LootMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\NullCreatureAI.h" />
+    <ClInclude Include="..\..\src\game\Object\Object.h" />
+    <ClInclude Include="..\..\src\game\Object\ObjectAccessor.h" />
+    <ClInclude Include="..\..\src\game\Object\ObjectGuid.h" />
+    <ClInclude Include="..\..\src\game\Object\ObjectMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\ObjectPosSelector.h" />
+    <ClInclude Include="..\..\src\game\Object\Pet.h" />
+    <ClInclude Include="..\..\src\game\Object\PetAI.h" />
+    <ClInclude Include="..\..\src\game\Object\Player.h" />
+    <ClInclude Include="..\..\src\game\Object\ReactorAI.h" />
+    <ClInclude Include="..\..\src\game\Object\ReputationMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\SocialMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\SpellMgr.h" />
+    <ClInclude Include="..\..\src\game\Object\TemporarySummon.h" />
+    <ClInclude Include="..\..\src\game\Object\Totem.h" />
+    <ClInclude Include="..\..\src\game\Object\TotemAI.h" />
+    <ClInclude Include="..\..\src\game\Object\Unit.h" />
+    <ClInclude Include="..\..\src\game\Object\UnitEvents.h" />
+    <ClInclude Include="..\..\src\game\Object\UpdateFields.h" />
+    <ClInclude Include="..\..\src\game\Object\UpdateMask.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP\OutdoorPvP.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP\OutdoorPvPEP.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP\OutdoorPvPMgr.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP\OutdoorPvPSI.h" />
+    <ClInclude Include="..\..\src\game\References\FollowerReference.h" />
+    <ClInclude Include="..\..\src\game\References\FollowerRefManager.h" />
+    <ClInclude Include="..\..\src\game\References\GroupReference.h" />
+    <ClInclude Include="..\..\src\game\References\GroupRefManager.h" />
+    <ClInclude Include="..\..\src\game\References\HostileRefManager.h" />
+    <ClInclude Include="..\..\src\game\References\MapReference.h" />
+    <ClInclude Include="..\..\src\game\References\MapRefManager.h" />
+    <ClInclude Include="..\..\src\game\References\ThreatManager.h" />
+    <ClInclude Include="..\..\src\game\Server\DBCEnums.h" />
+    <ClInclude Include="..\..\src\game\Server\DBCfmt.h" />
+    <ClInclude Include="..\..\src\game\Server\DBCStores.h" />
+    <ClInclude Include="..\..\src\game\Server\DBCStructure.h" />
+    <ClInclude Include="..\..\src\game\Server\Opcodes.h" />
+    <ClInclude Include="..\..\src\game\Server\SharedDefines.h" />
+    <ClInclude Include="..\..\src\game\Server\SQLStorages.h" />
+    <ClInclude Include="..\..\src\game\Server\WorldSession.h" />
+    <ClInclude Include="..\..\src\game\Server\WorldSocket.h" />
+    <ClInclude Include="..\..\src\game\Server\WorldSocketMgr.h" />
+    <ClInclude Include="..\..\src\game\Tools\CharacterDatabaseCleaner.h" />
+    <ClInclude Include="..\..\src\game\Tools\Language.h" />
+    <ClInclude Include="..\..\src\game\Tools\PlayerDump.h" />
+    <ClInclude Include="..\..\src\game\vmap\BIH.h" />
+    <ClInclude Include="..\..\src\game\vmap\BIHWrap.h" />
+    <ClInclude Include="..\..\src\game\vmap\DynamicTree.h" />
+    <ClInclude Include="..\..\src\game\vmap\GameObjectModel.h" />
+    <ClInclude Include="..\..\src\game\vmap\IVMapManager.h" />
+    <ClInclude Include="..\..\src\game\vmap\MapTree.h" />
+    <ClInclude Include="..\..\src\game\vmap\ModelInstance.h" />
+    <ClInclude Include="..\..\src\game\vmap\RegularGrid.h" />
+    <ClInclude Include="..\..\src\game\vmap\TileAssembler.h" />
+    <ClInclude Include="..\..\src\game\vmap\VMapDefinitions.h" />
+    <ClInclude Include="..\..\src\game\vmap\VMapFactory.h" />
+    <ClInclude Include="..\..\src\game\vmap\VMapManager2.h" />
+    <ClInclude Include="..\..\src\game\vmap\VMapTools.h" />
+    <ClInclude Include="..\..\src\game\vmap\WorldModel.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\AccountMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\AddonHandler.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Cell.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\CellImpl.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Channel.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\ChannelMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Chat.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\CreatureLinkingMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GameEventMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GossipDef.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GridDefines.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GridMap.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GridNotifiers.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GridNotifiersImpl.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GridStates.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Group.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\GuildMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\InstanceData.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\LFGHandler.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\LFGMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Mail.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Map.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MapManager.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MapPersistentStateMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MassMailMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MoveMap.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MoveMapSharedDefines.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\MovementGeneratorImpl.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\NPCHandler.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\ObjectGridLoader.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Path.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\PoolManager.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\QuestDef.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\ScriptMgr.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Spell.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\SpellAuraDefines.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\SpellAuras.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Transports.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\UpdateData.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\WaypointManager.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\Weather.h" />
+    <ClInclude Include="..\..\src\game\WorldHandlers\World.h" />
+    <ClInclude Include="..\..\src\game\pchdef.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\game\AuctionHouseBot\AuctionHouseBot.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGround.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGroundAB.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGroundAV.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGroundHandler.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGroundMgr.cpp" />
+    <ClCompile Include="..\..\src\game\BattleGround\BattleGroundWS.cpp" />
+    <ClCompile Include="..\..\src\game\ChatCommands\debugcmds.cpp" />
+    <ClCompile Include="..\..\src\game\ChatCommands\Level0.cpp" />
+    <ClCompile Include="..\..\src\game\ChatCommands\Level1.cpp" />
+    <ClCompile Include="..\..\src\game\ChatCommands\Level2.cpp" />
+    <ClCompile Include="..\..\src\game\ChatCommands\Level3.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\ConfusedMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\FleeingMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\HomeMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\IdleMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\MotionMaster.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\MovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\PathFinder.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\PointMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\RandomMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\TargetedMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\MotionGenerators\WaypointMovementGenerator.cpp" />
+    <ClCompile Include="..\..\src\game\movement\MoveSpline.cpp" />
+    <ClCompile Include="..\..\src\game\movement\MoveSplineInit.cpp" />
+    <ClCompile Include="..\..\src\game\movement\packet_builder.cpp" />
+    <ClCompile Include="..\..\src\game\movement\spline.cpp" />
+    <ClCompile Include="..\..\src\game\movement\util.cpp" />
+    <ClCompile Include="..\..\src\game\Object\AggressorAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\AuctionHouseMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Bag.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Camera.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Corpse.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Creature.cpp" />
+    <ClCompile Include="..\..\src\game\Object\CreatureAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\CreatureAIRegistry.cpp" />
+    <ClCompile Include="..\..\src\game\Object\CreatureAISelector.cpp" />
+    <ClCompile Include="..\..\src\game\Object\CreatureEventAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\CreatureEventAIMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\DynamicObject.cpp" />
+    <ClCompile Include="..\..\src\game\Object\GameObject.cpp" />
+    <ClCompile Include="..\..\src\game\Object\GMTicketMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\GuardAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Guild.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Item.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ItemEnchantmentMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\LootMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\NullCreatureAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Object.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ObjectAccessor.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ObjectGuid.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ObjectMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ObjectPosSelector.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Pet.cpp" />
+    <ClCompile Include="..\..\src\game\Object\PetAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Player.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ReactorAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\ReputationMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\SocialMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\SpellMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Object\StatSystem.cpp" />
+    <ClCompile Include="..\..\src\game\Object\TemporarySummon.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Totem.cpp" />
+    <ClCompile Include="..\..\src\game\Object\TotemAI.cpp" />
+    <ClCompile Include="..\..\src\game\Object\Unit.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP\OutdoorPvP.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP\OutdoorPvPEP.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP\OutdoorPvPMgr.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP\OutdoorPvPSI.cpp" />
+    <ClCompile Include="..\..\src\game\References\FollowerReference.cpp" />
+    <ClCompile Include="..\..\src\game\References\GroupReference.cpp" />
+    <ClCompile Include="..\..\src\game\References\HostileRefManager.cpp" />
+    <ClCompile Include="..\..\src\game\References\ThreatManager.cpp" />
+    <ClCompile Include="..\..\src\game\Server\DBCStores.cpp" />
+    <ClCompile Include="..\..\src\game\Server\Opcodes.cpp" />
+    <ClCompile Include="..\..\src\game\Server\SQLStorages.cpp" />
+    <ClCompile Include="..\..\src\game\Server\WorldSession.cpp" />
+    <ClCompile Include="..\..\src\game\Server\WorldSocket.cpp" />
+    <ClCompile Include="..\..\src\game\Server\WorldSocketMgr.cpp" />
+    <ClCompile Include="..\..\src\game\Tools\CharacterDatabaseCleaner.cpp" />
+    <ClCompile Include="..\..\src\game\Tools\PlayerDump.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\BIH.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\DynamicTree.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\GameObjectModel.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\MapTree.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\ModelInstance.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\TileAssembler.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\VMapFactory.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\VMapManager2.cpp" />
+    <ClCompile Include="..\..\src\game\vmap\WorldModel.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\AccountMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\AddonHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\AuctionHouseHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Channel.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ChannelHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ChannelMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\CharacterHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Chat.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ChatHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\CombatHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\CreatureLinkingMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\DuelHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GameEventMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GMTicketHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GossipDef.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GridMap.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GridNotifiers.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GridStates.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Group.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GroupHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GuildHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\GuildMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\InstanceData.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ItemHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\LFGHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\LFGMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\LootHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Mail.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MailHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Map.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MapManager.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MapPersistentStateMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MassMailMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MiscHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MoveMap.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\MovementHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\NPCHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ObjectGridLoader.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\PetHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\PetitionsHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\PoolManager.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\QueryHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\QuestDef.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\QuestHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\ScriptMgr.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\SkillHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Spell.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\SpellAuras.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\SpellEffects.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\SpellHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\TaxiHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\TradeHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Transports.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\UnitAuraProcHandler.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\UpdateData.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\WaypointManager.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\Weather.cpp" />
+    <ClCompile Include="..\..\src\game\WorldHandlers\World.cpp" />
+    <ClCompile Include="..\..\src\game\pchdef.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">pchdef.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pchdef.h</PrecompiledHeaderFile>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="LuaEngine.vcxproj">
+      <Project>61BCE72F-B726-48F3-9D02-7FD551F82DF8</Project>
+    </ProjectReference>
+    <ProjectReference Include="ace.vcxproj">
+      <Project>D70895A7-4EA1-48BE-A557-834D4357BAD3</Project>
+    </ProjectReference>
+    <ProjectReference Include="detour.vcxproj">
+      <Project>3FECACB6-BD35-4857-BF55-A56B5E6C6D77</Project>
+    </ProjectReference>
+    <ProjectReference Include="lualib.vcxproj">
+      <Project>0AC3742A-F311-428C-8EF1-8D6B8627A8A2</Project>
+    </ProjectReference>
+    <ProjectReference Include="mangosscript.vcxproj">
+      <Project>DA729B06-9097-4DA6-A86C-E97BC843B7C2</Project>
+    </ProjectReference>
+    <ProjectReference Include="shared.vcxproj">
+      <Project>594C9AA1-A759-4DEB-A6E4-F079A5DFBA31</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

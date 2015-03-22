@@ -1,0 +1,89 @@
+/*! \mainpage
+ *
+ * \section intro_sec Introduction and links
+ * This is the source documentation for the \b %MaNGOS (Massive Network Game %Object Server) project.\n
+ * %MaNGOS is an object-oriented Massively Multiplayer Online Role-Playing Game Server (MMORPGS).\n
+ * The project documentation can be found on the <A HREF="http://github.com/mangoswiki/wiki">%MaNGOS wiki</A>.
+ * The project bug tracker can be found on the <A HREF="http://getmangos.eu">%MaNGOS website</A>.
+ *
+ * \section begin Where to begin?
+ * If you are interested in understanding the source code of this project you can begin
+ * - <A HREF="http://getmangos.eu/wiki/">On the wiki</A> to get an overview of the different modules of the server
+ * - <A HREF="./modules.html">In this source doumentation</A>, starting at the module hierarchy
+ *
+ * \section conventions Naming/Coding conventions
+ * When using a singleton to access something a define along the following lines is often used:
+ * \code{.cpp}
+ * #define sAuctionBot MaNGOS::Singleton<AuctionHouseBot>::Instance()
+ * \endcode
+ * Notice the small s prepending the variable name, this is important and is used often throughout
+ * the source. When using a pointer is it often prepended with a small p, ie:
+ * \code{.cpp}
+ * OneClass* pOneClass = NULL;
+ * \endcode
+ * 
+ * Member variables in a class are prepended with m_VarName, functions are name with CamelCase but with
+ * a capital first letter. Indentation is done as follows:
+ * \code{.cpp}
+ * class MyNiceClass
+ * {
+ *     public:
+ *         MyNiceClass();
+ *         virtual ~MyNiceClass();
+ *
+ *         void Function();
+ *     private:
+ *         uint32 m_CoolStuff;
+ *         AnotherClass* m_pOtherClass;
+ * };
+ *
+ * MyNiceClass::MyNiceClass()
+ * {}
+ * 
+ * void MyNiceClass::Function()
+ * {
+ *     if(m_CoolStuff == 10)
+ *         exit(EXIT_SUCCESS);
+ *     else
+ *     {
+ *         std::cout << "Cool stuff" << std::endl;
+ *     }
+ * }
+ * \endcode
+ *
+ * When working with iterators and loops in general always use the prefix ++ or -- operator as it's
+ * faster, ie:
+ * \code{.cpp}
+ * for (std::list<std::string>::const_iterator it = list.begin(); it != list.end(); ++it);
+ * \endcode
+ *
+ * 
+ * \todo Move the naming conventions to their own file when it's finished
+ * \todo Add more examples of how the code should look, there was an example in the Wiki before
+ */
+
+/*! \defgroup realmd Realm Daemon
+ */
+
+/*! \defgroup mangos Mangos Deamon
+ */
+
+/*! \defgroup mangosd Daemon starter
+    \ingroup mangos
+ */
+
+/*! \defgroup u2w User Connections
+    \ingroup mangos
+ */
+
+/*! \defgroup world The World
+    \ingroup mangos
+ */
+
+/*! \defgroup auctionhouse The Auction House
+    \ingroup mangos
+ */
+
+/*! \defgroup auctionbot The Auction House Bot
+    \ingroup auctionhouse
+ */

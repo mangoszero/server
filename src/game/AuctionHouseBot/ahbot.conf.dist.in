@@ -1,0 +1,258 @@
+################################################################################
+# Auction house bot configuration                                              #
+################################################################################
+
+[AhbotConf]
+ConfVersion=2010102201
+
+################################################################################
+# AUCTION HOUSE BOT SETTINGS
+#
+#    AuctionHouseBot.Seller.Enabled
+#        Enable or disable sales functionality
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.DEBUG.Seller
+#        Enable or disable sales debug mode
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.Alliance.Items.Amount.Ratio
+#        Enable or disable sales on Alliance auction houses
+#    Default 100 (Enabled with 100% of items)
+#
+#    AuctionHouseBot.Horde.Items.Amount.Ratio
+#        Enable or disable sales on Horde auction houses
+#    Default 100 (Enabled with 100% of items)
+#
+#    AuctionHouseBot.Neutral.Items.Amount.Ratio
+#        Enable or disable sales on neutral auction houses
+#    Default 100 (Enabled with 100% of items)
+#
+#    AuctionHouseBot.MinTime
+#        Minimum time for new auctions
+#    Default 1 (Hour)
+#
+#    AuctionHouseBot.MaxTime
+#        Maximum time for new auctions
+#    Default 72 (Hours)
+#
+#    AuctionHouseBot.Items.Vendor
+#        Offer items sold by vendors as auctions
+#    Default 0
+#
+#    AuctionHouseBot.Items.Loot
+#        Offer lootable/fishable items as auctions
+#    Default 1
+#
+#    AuctionHouseBot.Items.Misc
+#        Offer miscellaneous items as auctions (not recommended)
+#    Default 0
+#
+#    AuctionHouseBot.Bind.*
+#        Indicates which bonding types can be put up for auction
+#            No     - Items that don't bind            Default 1 (Allowed)
+#            Pickup - Items that bind on pickup        Default 0 (Not Allowed)
+#            Equip  - Items that bind on equip         Default 1 (Allowed)
+#            Use    - Items that bind on use           Default 1 (Allowed)
+#            Quest  - Quest Items                      Default 0 (Not Allowed)
+#
+#    AuctionHouseBot.LockBox.Enabled
+#        Enable or disable sales of lock boxes
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.ItemsPerCycle.Boost
+#        Uses to define how many auctions to add per cycle in an uninitialized
+#        auction table.
+#    Default 75
+#
+#    AuctionHouseBot.ItemsPerCycle.Normal
+#        Uses to define how many auctions to add per cycle in an initialized
+#        auction table.
+#    Default 20
+#
+#    AuctionHouseBot.BuyPrice.Seller
+#        Enable or disable the use of BuyPrice or SellPrice to determine bid
+#        pricing
+#    Default 1 (use SellPrice)
+#
+#    AuctionHouseBot.Alliance.Price.Ratio
+#        Defines the price ratio for auctions on the Alliance auction houses
+#    Default 200
+#
+#    AuctionHouseBot.Horde.Price.Ratio
+#        Defines the price ratio for auctions on the Horde auction houses
+#    Default 200
+#
+#    AuctionHouseBot.Neutral.Price.Ratio
+#        Defines the price ratio for auctions on the neutral auction houses
+#    Default 200
+#
+#    AuctionHouseBot.Items.ItemLevel.*
+#        Enable or disable listing items below/above this item level
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.Items.ReqLevel.*
+#        Enable or disable listing items below/above this required level
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.Items.ReqSkill.*
+#        Enable or disable listing items below/above this skill level
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.Items.Amount.*
+#        Defines the amount of auctions to be created for each item quality
+#        Values will be adjusted using faction specific settings (if specified)
+#    Default 0, 500, 750, 500, 250, 0, 0
+#            (gray, white, green, blue, purple, orange, yellow)
+#
+#    AuctionHouseBot.Class.*
+#        Defines which item classes can be put up for auction. See pre-defined
+#        classes in ItemClass.dbc.
+#        These value are preference values, maximum is 10, minimum is 0.
+#    Default 6,4,8,8,1,2,0,6,1,1,1,5
+#
+#
+# ITEM FINE TUNING
+#    The following are useful for limiting what character levels can benefit
+#    from the auction house.
+#
+#    AuctionHouseBot.Class.Misc.Mount.ReqLevel.*
+#        Enable or disable listing mounts below/above this required level
+#    Default 0
+#
+#    AuctionHouseBot.Class.Misc.Mount.ReqSkill.*
+#        Enable or disable listing mounts below/above this skill level
+#    Default 0
+#
+#    AuctionHouseBot.Class.TradeGood.ItemLevel.*
+#        Enable or disable listing trade good items below/above this item level
+#    Default 0
+#
+#    AuctionHouseBot.Class.Container.ItemLevel.*
+#        Enable or disable listing containers below/above this item level
+#    Default 0
+#
+#    AuctionHouseBot.forceIncludeItems
+#        Allows to include items which would normally be ignored by filter
+#        settings.
+#        List of ids with delimiter ','
+#    Default ""
+#
+#    AuctionHouseBot.forceExcludeItems
+#        Allows to exclude items which would normally be included by filter
+#        settings.
+#        List of ids with delimiter ','
+#    Default ""
+#
+################################################################################
+AuctionHouseBot.Seller.Enabled = 0
+AuctionHouseBot.DEBUG.Seller   = 0
+
+AuctionHouseBot.Alliance.Items.Amount.Ratio = 100
+AuctionHouseBot.Horde.Items.Amount.Ratio    = 100
+AuctionHouseBot.Neutral.Items.Amount.Ratio  = 100
+
+AuctionHouseBot.MinTime = 1
+AuctionHouseBot.MaxTime = 72
+
+AuctionHouseBot.Items.Vendor    = 0
+AuctionHouseBot.Items.Loot      = 1
+AuctionHouseBot.Items.Misc      = 0
+AuctionHouseBot.Bind.No         = 1
+AuctionHouseBot.Bind.Pickup     = 0
+AuctionHouseBot.Bind.Equip      = 1
+AuctionHouseBot.Bind.Use        = 1
+AuctionHouseBot.Bind.Quest      = 0
+AuctionHouseBot.LockBox.Enabled = 0
+
+AuctionHouseBot.ItemsPerCycle.Boost  = 75
+AuctionHouseBot.ItemsPerCycle.Normal = 20
+AuctionHouseBot.BuyPrice.Seller      = 1
+AuctionHouseBot.Alliance.Price.Ratio = 200
+AuctionHouseBot.Horde.Price.Ratio    = 200
+AuctionHouseBot.Neutral.Price.Ratio  = 200
+
+AuctionHouseBot.Items.ItemLevel.Min = 0
+AuctionHouseBot.Items.ItemLevel.Max = 0
+AuctionHouseBot.Items.ReqLevel.Min  = 0
+AuctionHouseBot.Items.ReqLevel.Max  = 0
+AuctionHouseBot.Items.ReqSkill.Min  = 0
+AuctionHouseBot.Items.ReqSkill.Max  = 0
+
+AuctionHouseBot.Items.Amount.Grey   = 0
+AuctionHouseBot.Items.Amount.White  = 2000
+AuctionHouseBot.Items.Amount.Green  = 2500
+AuctionHouseBot.Items.Amount.Blue   = 1500
+AuctionHouseBot.Items.Amount.Purple = 1000
+AuctionHouseBot.Items.Amount.Orange = 0
+AuctionHouseBot.Items.Amount.Yellow = 0
+
+AuctionHouseBot.Class.Consumable = 6
+AuctionHouseBot.Class.Container  = 4
+AuctionHouseBot.Class.Weapon     = 8
+AuctionHouseBot.Class.Armor      = 8
+AuctionHouseBot.Class.Reagent    = 1
+AuctionHouseBot.Class.Projectile = 2
+AuctionHouseBot.Class.TradeGood  = 10
+AuctionHouseBot.Class.Recipe     = 6
+AuctionHouseBot.Class.Quiver     = 1
+AuctionHouseBot.Class.Quest      = 1
+AuctionHouseBot.Class.Key        = 1
+AuctionHouseBot.Class.Misc       = 5
+
+AuctionHouseBot.Class.Misc.Mount.ReqLevel.Min = 0
+AuctionHouseBot.Class.Misc.Mount.ReqLevel.Max = 0
+AuctionHouseBot.Class.Misc.Mount.ReqSkill.Min = 0
+AuctionHouseBot.Class.Misc.Mount.ReqSkill.Max = 0
+AuctionHouseBot.Class.TradeGood.ItemLevel.Min = 0
+AuctionHouseBot.Class.TradeGood.ItemLevel.Max = 0
+AuctionHouseBot.Class.Container.ItemLevel.Min = 0
+AuctionHouseBot.Class.Container.ItemLevel.Max = 0
+
+AuctionHouseBot.forceIncludeItems = ""
+AuctionHouseBot.forceExcludeItems = ""
+
+################################################################################
+# Buyer configuration
+#
+#    AuctionHouseBot.Buyer.Enabled
+#        Enable or disable buyer mode
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.DEBUG.Buyer
+#        Enable or disable buyer debug mode
+#    Default 0 (Disabled)
+#
+#    AuctionHouseBot.Buyer.FACTION.Enabled
+#        Enable or disable buyer mode for a specific faction
+#
+#    AuctionHouseBot.Buyer.BuyPrice
+#        Enable or disable the use of BuyPrice or SellPrice to determine bid
+#        pricing
+#    Default 0 (use SellPrice)
+#
+#    AuctionHouseBot.Buyer.Recheck.Interval
+#        This specifies the time interval (in minute) between evaluations of
+#        identical items.
+#        The lower the value is, the higher the chance for an item to be bought
+#    Default 20 (20min.)
+#
+#    AuctionHouseBot.Buyer.FACTION.Chance.Ratio
+#       Determines the chance for buying an item.
+#    Default 3 (literally 1 chance by 3)
+#
+################################################################################
+AuctionHouseBot.Buyer.Enabled = 0
+AuctionHouseBot.DEBUG.Buyer   = 0
+
+AuctionHouseBot.Buyer.Alliance.Enabled = 1
+AuctionHouseBot.Buyer.Horde.Enabled    = 1
+AuctionHouseBot.Buyer.Neutral.Enabled  = 1
+
+AuctionHouseBot.Buyer.BuyPrice = 0
+
+AuctionHouseBot.Buyer.Recheck.Interval = 20
+
+AuctionHouseBot.Buyer.Alliance.Chance.Ratio = 3
+AuctionHouseBot.Buyer.Horde.Chance.Ratio    = 3
+AuctionHouseBot.Buyer.Neutral.Chance.Ratio  = 3

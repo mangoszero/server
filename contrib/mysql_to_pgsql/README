@@ -1,0 +1,47 @@
+MySQL to PostgreSQL converter
+=============================
+*mangos* supports both MySQL and PostgreSQL as database backends. As we
+provide the database structure and content only in MySQL format, this helper
+application will allow you to export your database from a local MySQL server
+to a local PostgreSQL server.
+
+Requirements
+------------
+For the converter you will need both [MySQL][10] and [PostgreSQL][11] installed
+on your system, including development headers.
+
+Compilation
+-----------
+To build the converter you will need [CMake][20], a C/C++ compiler of your
+choice ([Visual Studio Express for Windows Desktop][21], [GCC][22], and
+[Clang][23] have been tested).
+
+Compilation - Linux
+-------------------
+Build the command-line utility by executing:
+
+    $ rm -rf _build && mkdir -p _build && cd _build
+    $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
+    $ make
+
+Compilation - Windows
+---------------------
+Build the command-line utility by opening this directory with the CMake-GUI.
+Select a matching Visual Studio generator, and create project files.
+
+Once done, open the generated project files in Visual Studio and build the
+converter.
+
+Usage
+-----
+Execute the generated `mysql2pgsql` application to convert the *mangos* databases
+from MySQL to PostgreSQL.
+
+
+[10]: http://www.mysql.com/ "MySQL"
+[11]: http://www.postgresql.org/ "PostgreSQL"
+
+[20]: http://www.cmake.org/ "CMake · Cross Platform Make"
+[21]: http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-for-windows-desktop "Visual Studio Express for Windows Desktop"
+[22]: http://gcc.gnu.org/ "GCC"
+[23]: http://clang.llvm.org/ "Clang"
