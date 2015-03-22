@@ -340,7 +340,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     SendAuctionCommandResult(AH, AUCTION_STARTED, AUCTION_OK);
 
 #ifdef ENABLE_ELUNA
-    sEluna->OnAdd(auctionHouseEntry, pl, it, bid, buyout, etime);
+    sEluna->OnAdd(auctionHouse, AH);
 #endif /* ENABLE_ELUNA */
 }
 
@@ -493,7 +493,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     sAuctionMgr.RemoveAItem(auction->itemGuidLow);
     auctionHouse->RemoveAuction(auction->Id);
 #ifdef ENABLE_ELUNA
-    sEluna->OnRemove(auctionHouseEntry, pl, pItem);
+    sEluna->OnRemove(auctionHouse, auction);
 #endif /* ENABLE_ELUNA */
     delete auction;
 }
