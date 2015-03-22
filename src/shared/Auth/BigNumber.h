@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_AUTH_BIGNUMBER
 #define MANGOS_H_AUTH_BIGNUMBER
 
-#include "Common.h"
+#include "Common/Common.h"
 
 struct bignum_st;
 

@@ -23,7 +23,7 @@
  */
 
 #include "ByteBuffer.h"
-#include "Log.h"
+#include "Log/Log.h"
 
 void ByteBufferException::PrintPosError() const
 {

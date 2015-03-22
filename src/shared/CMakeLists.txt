@@ -24,91 +24,62 @@
 set(LIBRARY_NAME shared)
 
 file(GLOB_RECURSE SRC_GRP_AUTH Auth/*.cpp Auth/*.h)
+source_group("Auth" FILES ${SRC_GRP_AUTH})
+
+file(GLOB_RECURSE SRC_GRP_COMMON Common/*.cpp Common/*.h)
+source_group("Common" FILES ${SRC_GRP_COMMON})
 
 file(GLOB_RECURSE SRC_GRP_CONFIG Config/*.cpp Config/*.h)
+source_group("Config" FILES ${SRC_GRP_CONFIG})
 
 file(GLOB_RECURSE SRC_GRP_DATABASE Database/*.cpp Database/*.h)
+source_group("Database" FILES ${SRC_GRP_DATABASE})
 
-set(SRC_GRP_LOG
-    Log.h
-    Log.cpp
-)
+file(GLOB_RECURSE SRC_GRP_DATASTORE DataStores/*.cpp DataStores/*.h)
+source_group("DataStores" FILES ${SRC_GRP_DATASTORE})
 
-set(SRC_GRP_UTIL
-    ByteBuffer.cpp
-    ByteBuffer.h
-    Errors.h
-    ProgressBar.cpp
-    ProgressBar.h
-    Timer.h
-    Util.cpp
-    Util.h
-    WorldPacket.h
-)
+file(GLOB_RECURSE SRC_GRP_LOCKQ LockedQueue/*.cpp LockedQueue/*.h)
+source_group("LockedQueue" FILES ${SRC_GRP_LOCKQ})
 
+file(GLOB_RECURSE SRC_GRP_LOG Log/*.cpp Log/*.h)
+source_group("Log" FILES ${SRC_GRP_LOG})
+
+file(GLOB_RECURSE SRC_GRP_THREAD Threading/*.cpp Threading/*.h)
+source_group("Threading" FILES ${SRC_GRP_THREAD})
+
+file(GLOB_RECURSE SRC_GRP_UTIL Utilities/*.cpp Utilities/*.h)
+source_group("Utilities" FILES ${SRC_GRP_UTIL})
+
+# Windows specific files
+file(GLOB_RECURSE SRC_GRP_WIN Win/*.cpp Win/*.h)
+
+# Linux specific files
+file(GLOB_RECURSE SRC_GRP_LINUX Linux/*.cpp Linux/*.h)
 
 set(LIBRARY_SRCS
     ${SRC_GRP_AUTH}
     ${SRC_GRP_CONFIG}
+    ${SRC_GRP_COMMON}
     ${SRC_GRP_DATABASE}
+	${SRC_GRP_DATASTORE}
+    ${SRC_GRP_LOCKEDQ}
     ${SRC_GRP_LOG}
+    ${SRC_GRP_THREAD}
     ${SRC_GRP_UTIL}
-    Common.cpp
-    Common.h
-    LockedQueue.h
     revision_nr.h
     revision_sql.h
-    Threading.cpp
-    Threading.h
-)
-
-
-source_group("Auth"
-  FILES
-    ${SRC_GRP_AUTH}
-)
-
-source_group("Config"
-  FILES
-    ${SRC_GRP_CONFIG}
-)
-
-source_group("Database"
-  FILES
-    ${SRC_GRP_DATABASE}
-)
-
-source_group("Database\\DataStores"
-  FILES
-    Database/DBCFileLoader.cpp
-    Database/DBCFileLoader.h
-    Database/DBCStore.h
-)
-
-source_group("Log"
-  FILES
-    ${SRC_GRP_LOG}
-)
-
-source_group("Util"
-  FILES
-    ${SRC_GRP_UTIL}
 )
 
 # OS specific files
 if(WIN32)
   set(LIBRARY_SRCS
       ${LIBRARY_SRCS}
-      WheatyExceptionReport.cpp
-      WheatyExceptionReport.h
-      ServiceWin32.cpp
-      ServiceWin32.h
+      ${SRC_GRP_WIN}
      )
 else()
   set(LIBRARY_SRCS
       ${LIBRARY_SRCS}
-      PosixDaemon.cpp
-      PosixDaemon.h
+      ${SRC_GRP_LINUX}
      )
 endif()
 
@@ -132,8 +103,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/SystemConfig.h.in" "${CMAKE_CURRENT_
 add_library(${LIBRARY_NAME} STATIC
   ${LIBRARY_SRCS}
 )
-
-#target_link_libraries(${LIBRARY_NAME} ${OPENSSL_LIBRARIES})
 
 if(POSTGRESQL)
   target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})

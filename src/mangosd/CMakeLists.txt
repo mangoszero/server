@@ -46,6 +46,13 @@ endif()
 
 include_directories(
     "${CMAKE_SOURCE_DIR}/src/shared"
+    "${CMAKE_SOURCE_DIR}/src/shared/Common"
+    "${CMAKE_SOURCE_DIR}/src/shared/Threading"
+    "${CMAKE_SOURCE_DIR}/src/shared/Utilities"
+    "${CMAKE_SOURCE_DIR}/src/shared/Log"
+    "${CMAKE_SOURCE_DIR}/src/shared/DataStores"
+    "${CMAKE_SOURCE_DIR}/src/shared/Win"
+    "${CMAKE_SOURCE_DIR}/src/shared/Linux"
     "${CMAKE_SOURCE_DIR}/src/framework"
     "${CMAKE_SOURCE_DIR}/src/game/AuctionHouseBot"
     "${CMAKE_SOURCE_DIR}/src/game/BattleGround"

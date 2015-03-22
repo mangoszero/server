@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_UTIL
 #define MANGOS_H_UTIL
 
-#include "Common.h"
+#include "Common/Common.h"
 
 #include <string>
 #include <vector>

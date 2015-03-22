@@ -25,7 +25,7 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include "Threading.h"
+#include "Threading/Threading.h"
 #include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
 #include <ace/Recursive_Thread_Mutex.h>

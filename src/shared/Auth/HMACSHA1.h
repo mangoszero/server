@@ -25,7 +25,7 @@
 #ifndef _AUTH_HMACSHA1_H
 #define _AUTH_HMACSHA1_H
 
-#include "Common.h"
+#include "Common/Common.h"
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 

@@ -25,8 +25,8 @@
 #ifndef QUERYRESULT_H
 #define QUERYRESULT_H
 
-#include "Common.h"
-#include "Errors.h"
+#include "Common/Common.h"
+#include "Utilities/Errors.h"
 #include "Field.h"
 
 /**

@@ -26,8 +26,8 @@
 #define MANGOS_H_SQLDELAYTHREAD
 
 #include <ace/Thread_Mutex.h>
-#include "LockedQueue.h"
-#include "Threading.h"
+#include "LockedQueue/LockedQueue.h"
+#include "Threading/Threading.h"
 
 class Database;
 class SqlOperation;

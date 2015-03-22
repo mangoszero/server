@@ -25,7 +25,7 @@
 #ifndef MANGOS_TIMER_H
 #define MANGOS_TIMER_H
 
-#include "Common.h"
+#include "Common/Common.h"
 #include <ace/OS_NS_sys_time.h>
 
 /**

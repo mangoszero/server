@@ -24,8 +24,8 @@
 
 #ifdef WIN32
 
-#include "Common.h"
-#include "Log.h"
+#include "Common/Common.h"
+#include "Log/Log.h"
 #include <cstring>
 #include <windows.h>
 #include <winsvc.h>

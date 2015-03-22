@@ -36,8 +36,8 @@
 #include "dbcfile.h"
 #include "mpq_libmpq.h"
 
-#include "loadlib/adt.h"
-#include "loadlib/wdt.h"
+#include <adt.h>
+#include <wdt.h>
 #include <fcntl.h>
 
 #ifndef WIN32

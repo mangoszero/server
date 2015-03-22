@@ -25,10 +25,10 @@
 #ifndef MANGOS_H_SQLOPERATIONS
 #define MANGOS_H_SQLOPERATIONS
 
-#include "Common.h"
+#include "Common/Common.h"
 
 #include <ace/Thread_Mutex.h>
-#include "LockedQueue.h"
+#include "LockedQueue/LockedQueue.h"
 #include <queue>
 #include "Utilities/Callback.h"
 

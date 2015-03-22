@@ -25,9 +25,9 @@
 #ifndef SQLSTORAGE_H
 #define SQLSTORAGE_H
 
-#include "Common.h"
+#include "Common/Common.h"
 #include "Database/DatabaseEnv.h"
-#include "DBCFileLoader.h"
+#include "DataStores/DBCFileLoader.h"
 
 /**
  * @brief

@@ -25,8 +25,9 @@
 #ifndef MANGOS_H_BYTEBUFFER
 #define MANGOS_H_BYTEBUFFER
 
-#include "Common.h"
+#include "Common/Common.h"
 #include "Utilities/ByteConverter.h"
+#include "Utilities/Errors.h"
 
 /**
  * @brief

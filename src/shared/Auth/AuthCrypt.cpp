@@ -24,7 +24,7 @@
 
 #include "AuthCrypt.h"
 #include "HMACSHA1.h"
-#include "Log.h"
+#include "Log/Log.h"
 #include "BigNumber.h"
 
 const static size_t CRYPTED_SEND_LEN = 4;

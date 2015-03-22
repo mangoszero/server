@@ -22,13 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
+#include "Common/Common.h"
 #include "Log.h"
 #include "Policies/Singleton.h"
 #include "Config/Config.h"
-#include "Util.h"
-#include "ByteBuffer.h"
-#include "ProgressBar.h"
+#include "Utilities/Util.h"
+#include "Utilities/ByteBuffer.h"
+#include "Utilities/ProgressBar.h"
 
 #include <stdarg.h>
 #include <fstream>

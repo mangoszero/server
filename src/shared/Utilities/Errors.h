@@ -25,7 +25,7 @@
 #ifndef MANGOSSERVER_ERRORS_H
 #define MANGOSSERVER_ERRORS_H
 
-#include "Common.h"
+#include "Common/Common.h"
 
 #define HAVE_ACE_STACK_TRACE_H 1
 

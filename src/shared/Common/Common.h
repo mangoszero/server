@@ -90,8 +90,8 @@
 #include <algorithm>
 
 #include "Errors.h"
-#include "LockedQueue.h"
-#include "Threading.h"
+#include "LockedQueue/LockedQueue.h"
+#include "Threading/Threading.h"
 
 #include <ace/Basic_Types.h>
 #include <ace/Guard_T.h>

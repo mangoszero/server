@@ -27,7 +27,7 @@
 #if !defined(QUERYRESULTMYSQL_H)
 #define QUERYRESULTMYSQL_H
 
-#include "Common.h"
+#include "Common/Common.h"
 
 #ifdef WIN32
 #include <winsock2.h>

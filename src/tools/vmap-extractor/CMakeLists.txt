@@ -25,20 +25,22 @@ if(WIN32)
   set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} vmap-extractor.rc)
 endif()
 
-include_directories("${CMAKE_SOURCE_DIR}/dep/libmpq/")
+include_directories(
+  "${CMAKE_SOURCE_DIR}/dep/libmpq"
+  "${CMAKE_SOURCE_DIR}/dep/loadlib"
+)
 
 add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS}
     adtfile.cpp
     dbcfile.cpp
     gameobject_extract.cpp
     model.cpp
-    mpq_libmpq.cpp
     vmapexport.cpp
     wdtfile.cpp
     wmo.cpp
 )
 
-target_link_libraries(${EXECUTABLE_NAME} libmpq bzip2 zlib)
+target_link_libraries(${EXECUTABLE_NAME} libmpq loadlib bzip2 zlib)
 
 #Output the compiled exes to build/bin/$(Configuration)/tools directory on windows by default
 if(WIN32)

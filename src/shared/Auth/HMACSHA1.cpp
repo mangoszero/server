@@ -24,6 +24,7 @@
 
 #include "Auth/HMACSHA1.h"
 #include "BigNumber.h"
+#include "Utilities/Errors.h"
 
 HMACSHA1::HMACSHA1()
 {

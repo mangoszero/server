@@ -25,7 +25,7 @@
 #ifndef _AUTH_SHA1_H
 #define _AUTH_SHA1_H
 
-#include "Common.h"
+#include "Common/Common.h"
 #include <openssl/sha.h>
 #include <openssl/crypto.h>
 
