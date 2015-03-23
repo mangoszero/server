@@ -28,6 +28,7 @@
 
 #include "Common.h"
 #include "DBCStructure.h"
+#include "SystemConfig.h"
 
 class Player;
 class Creature;

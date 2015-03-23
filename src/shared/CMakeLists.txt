@@ -53,7 +53,7 @@ source_group("Utilities" FILES ${SRC_GRP_UTIL})
 set(LIBRARY_SRCS
     ${SRC_GRP_AUTH}
     ${SRC_GRP_COMMON}
-	${SRC_GRP_CONFIG}
+    ${SRC_GRP_CONFIG}
     ${SRC_GRP_DATABASE}
     ${SRC_GRP_DATASTORE}
     ${SRC_GRP_LOCKQ}

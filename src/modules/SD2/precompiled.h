@@ -26,7 +26,7 @@
 #ifndef SC_PRECOMPILED_H
 #define SC_PRECOMPILED_H
 
-#include "../ScriptDevMgr.h"
+#include "system/ScriptDevMgr.h"
 #include "Object.h"
 #include "Unit.h"
 #include "Creature.h"
