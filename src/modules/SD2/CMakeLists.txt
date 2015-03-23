@@ -22,12 +22,13 @@
 
 include(MacroMangosSourceGroup)
 
-set(mangosscript_PCH_H "${CMAKE_CURRENT_SOURCE_DIR}/include/precompiled.h")
+set(mangosscript_PCH_H "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.h")
 if(PCH)
-  set(mangosscript_PCH_CPP "${CMAKE_CURRENT_SOURCE_DIR}/include/precompiled.cpp")
+  set(mangosscript_PCH_CPP "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.cpp")
 endif()
 
 include_directories(
+  "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/base"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_SOURCE_DIR}/src/shared"
@@ -58,32 +59,27 @@ set(sources
   sd2_revision_sql.h
   ScriptDevMgr.cpp
   ScriptDevMgr.h
-  base/escort_ai.cpp
-  base/escort_ai.h
-  base/follower_ai.cpp
-  base/follower_ai.h
-  base/guard_ai.cpp
-  base/guard_ai.h
-  base/pet_ai.cpp
-  base/pet_ai.h
 
   ${mangosscript_PCH_H}
   ${mangosscript_PCH_CPP}
-  include/sc_creature.cpp
-  include/sc_creature.h
-  include/sc_grid_searchers.cpp
-  include/sc_grid_searchers.h
-  include/sc_instance.cpp
-  include/sc_instance.h
-  include/sc_gossip.h
-
-  system/ScriptLoader.cpp
-  system/ScriptLoader.h
-  system/system.cpp
-  system/system.h
 )
 
 set(mangosscript_LIB_SRCS ${sources})
+
+#Include Files
+file(GLOB sources_include include/*.cpp include/*.h)
+  LIST(APPEND mangosscript_LIB_SRCS ${sources_include})
+  source_group("Include Files" FILES ${sources_include})
+
+#System Files
+file(GLOB sources_system system/*.cpp system/*.h)
+  LIST(APPEND mangosscript_LIB_SRCS ${sources_system})
+  source_group("System Files" FILES ${sources_system})
+
+#Base Files
+file(GLOB sources_base base/*.cpp base/*.h)
+  LIST(APPEND mangosscript_LIB_SRCS ${sources_base})
+  source_group("Base Files" FILES ${sources_base})
 
 #Battleground Scripts
 file(GLOB sources_battlegrounds scripts/battlegrounds/*.cpp scripts/battlegrounds/*.h)
@@ -226,7 +222,6 @@ file(GLOB sources_raid_k_taq scripts/kalimdor/temple_of_ahnqiraj/*.cpp scripts/k
   source_group("Kalimdor Scripts\\Raids\\Temple of AQ" FILES ${sources_raid_k_taq})
 
 add_library(mangosscript STATIC
-  ${mangosscript_PCH_CPP}
   ${mangosscript_LIB_SRCS}
 )
 
