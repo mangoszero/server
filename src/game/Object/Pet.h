@@ -183,19 +183,21 @@ class  Pet : public Creature
         uint32 GetPetAutoSpellOnPos(uint8 pos) const override
         {
             if (pos >= m_autospells.size())
-        { return 0; }
-    else
-        { return m_autospells[pos]; }
+                { return 0; }
+            else
+                { return m_autospells[pos]; }
         }
 
-        bool CanSwim() const override
+        bool CanSwim() const
         {
             Unit const* owner = GetOwner();
             if (owner)
-        { return owner->GetTypeId() == TYPEID_PLAYER ? true : ((Creature const*)owner)->CanSwim(); }
-        else
-            { return Creature::CanSwim(); }
+                { return owner->GetTypeId() == TYPEID_PLAYER ? true : ((Creature const*)owner)->CanSwim(); }
+            else
+                { return Creature::CanSwim(); }
         }
+
+        bool CanFly() const { return false; } // pet are not able to fly. TODO: check if this is right
 
         void RegenerateAll(uint32 update_diff) override;    // overwrite Creature::RegenerateAll
         void LooseHappiness();
