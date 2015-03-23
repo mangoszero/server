@@ -50,22 +50,14 @@ include_directories(
 )
 
 #AH Bot group
-file(GLOB SRC_FILES_AHBOT AuctionHouseBot/*.cpp AuctionHouseBot/*.h)
-    set(SRC_GRP_AHBOT
-        ${SRC_FILES_AHBOT}
-    )
-
+file(GLOB SRC_GRP_AHBOT AuctionHouseBot/*.cpp AuctionHouseBot/*.h)
 source_group("AhBot"
   FILES
     ${SRC_GRP_AHBOT}
 )
 
 #Battlegrounds group
-file(GLOB SRC_FILES_BATTLEGROUND BattleGround/*.cpp BattleGround/*.h)
-    set(SRC_GRP_BATTLEGROUND
-        ${SRC_FILES_BATTLEGROUND}
-    )
-	
+file(GLOB SRC_GRP_BATTLEGROUND BattleGround/*.cpp BattleGround/*.h)
 source_group("BattleGround"
   FILES
     ${SRC_GRP_BATTLEGROUND}
@@ -73,110 +65,70 @@ source_group("BattleGround"
 
 
 #Chat Commands group
-file(GLOB SRC_FILES_CHAT_COMMANDS ChatCommands/*.cpp ChatCommands/*.h)
-    set(SRC_GRP_CHAT_COMMANDS
-        ${SRC_FILES_CHAT_COMMANDS}
-    )
-
+file(GLOB SRC_GRP_CHAT_COMMANDS ChatCommands/*.cpp ChatCommands/*.h)
 source_group("Chat Commands"
   FILES
     ${SRC_GRP_CHAT_COMMANDS}
 )
 
 #Motion Generator group
-file(GLOB SRC_FILES_MOTION_GEN MotionGenerators/*.cpp MotionGenerators/*.h)
-    set(SRC_GRP_MOTION_GEN
-        ${SRC_FILES_MOTION_GEN}
-    )
-
+file(GLOB SRC_GRP_MOTION_GEN MotionGenerators/*.cpp MotionGenerators/*.h)
 source_group("Motion generators"
   FILES
     ${SRC_GRP_MOTION_GEN}
 )
 
 #Movement group
-file(GLOB SRC_FILES_MOVEMENT movement/*.cpp movement/*.h)
-    set(SRC_GRP_MOVEMENT
-        ${SRC_FILES_MOVEMENT}
-    )
-
+file(GLOB SRC_GRP_MOVEMENT movement/*.cpp movement/*.h)
 source_group("Movement"
   FILES
     ${SRC_GRP_MOVEMENT}
 )
 
 #Object group
-file(GLOB SRC_FILES_OBJECT Object/*.cpp Object/*.h)
-    set(SRC_GRP_OBJECT
-        ${SRC_FILES_OBJECT}
-    )
-
+file(GLOB SRC_GRP_OBJECT Object/*.cpp Object/*.h)
 source_group("Object"
   FILES
     ${SRC_GRP_OBJECT}
 )	
 
 #Outdoors PvP group
-file(GLOB SRC_FILES_OUTDOOR_PVP OutdoorPvP/*.cpp OutdoorPvP/*.h)
-    set(SRC_GRP_OUTDOOR_PVP
-        ${SRC_FILES_OUTDOOR_PVP}
-    )
-	
+file(GLOB SRC_GRP_OUTDOOR_PVP OutdoorPvP/*.cpp OutdoorPvP/*.h)
 source_group("Outdoor PvP"
   FILES
     ${SRC_GRP_OUTDOOR_PVP}
 )
 
 #References group
-file(GLOB SRC_FILES_REFERENCES References/*.cpp References/*.h)
-    set(SRC_GRP_REFERENCES
-        ${SRC_FILES_REFERENCES}
-    )
-	
+file(GLOB SRC_GRP_REFERENCES References/*.cpp References/*.h)
 source_group("References"
   FILES
     ${SRC_GRP_REFERENCES}
 )
 
 #Server group
-file(GLOB SRC_FILES_SERVER Server/*.cpp Server/*.h)
-    set(SRC_GRP_SERVER
-        ${SRC_FILES_SERVER}
-    )
-	
+file(GLOB SRC_GRP_SERVER Server/*.cpp Server/*.h)
 source_group("Server"
   FILES
     ${SRC_GRP_SERVER}
 )
 	
 #Tools group
-file(GLOB SRC_FILES_TOOL Tools/*.cpp Tools/*.h)
-    set(SRC_GRP_TOOL
-        ${SRC_FILES_TOOL}
-    )
-
+file(GLOB SRC_GRP_TOOL Tools/*.cpp Tools/*.h)
 source_group("Tool"
   FILES
     ${SRC_GRP_TOOL}
 )
 
 #VMap group
-file(GLOB SRC_FILES_VMAPS vmap/*.cpp vmap/*.h)
-    set(SRC_GRP_VMAPS
-        ${SRC_FILES_VMAPS}
-    )
-
+file(GLOB SRC_GRP_VMAPS vmap/*.cpp vmap/*.h)
 source_group("vmaps"
   FILES
     ${SRC_GRP_VMAPS}
 )
 	
 #World and Handlers group
-file(GLOB SRC_FILES_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
-    set(SRC_GRP_WORLD_HANDLERS
-        ${SRC_FILES_WORLD_HANDLERS}
-    )
-
+file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
 source_group("World/Handlers"
   FILES
     ${SRC_GRP_WORLD_HANDLERS}
