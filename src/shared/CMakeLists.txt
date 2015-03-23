@@ -50,16 +50,10 @@ source_group("Threading" FILES ${SRC_GRP_THREAD})
 file(GLOB_RECURSE SRC_GRP_UTIL Utilities/*.cpp Utilities/*.h)
 source_group("Utilities" FILES ${SRC_GRP_UTIL})
 
-# Windows specific files
-file(GLOB_RECURSE SRC_GRP_WIN Win/*.cpp Win/*.h)
-
-# Linux specific files
-file(GLOB_RECURSE SRC_GRP_LINUX Linux/*.cpp Linux/*.h)
-
 set(LIBRARY_SRCS
     ${SRC_GRP_AUTH}
-    ${SRC_GRP_CONFIG}
     ${SRC_GRP_COMMON}
+	${SRC_GRP_CONFIG}
     ${SRC_GRP_DATABASE}
     ${SRC_GRP_DATASTORE}
     ${SRC_GRP_LOCKQ}
@@ -72,44 +66,40 @@ set(LIBRARY_SRCS
 
 # OS specific files
 if(WIN32)
-  set(LIBRARY_SRCS
-      ${LIBRARY_SRCS}
-      ${SRC_GRP_WIN}
-     )
+    file(GLOB_RECURSE SRC_GRP_WIN Win/*.cpp Win/*.h)
+    LIST(APPEND LIBRARY_SRCS ${SRC_GRP_WIN})
 else()
-  set(LIBRARY_SRCS
-      ${LIBRARY_SRCS}
-      ${SRC_GRP_LINUX}
-     )
+    file(GLOB_RECURSE SRC_GRP_LINUX Linux/*.cpp Linux/*.h)
+    LIST(APPEND LIBRARY_SRCS ${SRC_GRP_LINUX})
 endif()
 
 include_directories(
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${CMAKE_SOURCE_DIR}/dep"
-  "${CMAKE_SOURCE_DIR}/src/framework"
-  "${CMAKE_BINARY_DIR}"
-  "${ACE_INCLUDE_DIR}"
-  "${OPENSSL_INCLUDE_DIR}"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/dep
+    ${CMAKE_SOURCE_DIR}/src/framework
+    ${CMAKE_BINARY_DIR}
+    ${ACE_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 if(POSTGRESQL)
-  include_directories("${PostgreSQL_INCLUDE_DIRS}")
+    include_directories(${PostgreSQL_INCLUDE_DIRS})
 else()
-  include_directories("${MYSQL_INCLUDE_DIR}")
+    include_directories(${MYSQL_INCLUDE_DIR})
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/SystemConfig.h.in" "${CMAKE_CURRENT_BINARY_DIR}/SystemConfig.h")
 
 add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
+    ${LIBRARY_SRCS}
 )
 
 if(POSTGRESQL)
-  target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})
+    target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})
 else()
-  target_link_libraries(${LIBRARY_NAME} ${MYSQL_LIBRARY})
+    target_link_libraries(${LIBRARY_NAME} ${MYSQL_LIBRARY})
 endif()
 
 if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ace)
+    add_dependencies(${LIBRARY_NAME} ace)
 endif()
