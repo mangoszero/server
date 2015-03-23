@@ -251,7 +251,7 @@ void Object::DestroyForPlayer(Player* target) const
 
 void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 {
-    uint32 moveFlags = MOVEFLAG_MOVE_STOP;
+    uint32 moveFlags = MOVEFLAG_NONE;
 
     *data << uint8(updateFlags);                            // update flags
 
@@ -259,12 +259,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     {
         if (m_objectTypeId == TYPEID_PLAYER && ((Player*)this)->GetTransport())
         {
-            moveFlags |= MOVEFLAG_TAXI;
-        }
-        float x, y, z;
-        if (m_objectTypeId == TYPEID_UNIT && ((Unit*)this)->GetMotionMaster()->GetDestination(x, y, z))
-        {
-            moveFlags |= MOVEFLAG_WALK_MODE | MOVEFLAG_MOVE_FORWARD | MOVEFLAG_SPLINE_ENABLED;
+            moveFlags |= MOVEFLAG_ONTRANSPORT;
         }
 
         *data << uint32(moveFlags);                         // movement flags
@@ -295,10 +290,10 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         }
         else
         {
-            *data << ((WorldObject*)this)->GetPositionX();
-            *data << ((WorldObject*)this)->GetPositionY();
-            *data << ((WorldObject*)this)->GetPositionZ();
-            *data << ((WorldObject*)this)->GetOrientation();
+            *data << float(((WorldObject*)this)->GetPositionX());
+            *data << float(((WorldObject*)this)->GetPositionY());
+            *data << float(((WorldObject*)this)->GetPositionZ());
+            *data << float(((WorldObject*)this)->GetOrientation());
         }
     }
 

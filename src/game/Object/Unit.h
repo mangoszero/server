@@ -577,65 +577,40 @@ enum NPCFlags
  */
 enum MovementFlags
 {
-    // Byte 1 (Resets on Movement Key Press)
-    MOVEFLAG_MOVE_STOP              = 0x00000000,           /// verified
-    MOVEFLAG_MOVE_FORWARD           = 0x00000001,           /// verified
-    MOVEFLAG_MOVE_BACKWARD          = 0x00000002,           /// verified
-    MOVEFLAG_STRAFE_LEFT            = 0x00000004,           /// verified
-    MOVEFLAG_STRAFE_RIGHT           = 0x00000008,           /// verified
-    MOVEFLAG_TURN_LEFT              = 0x00000010,           /// verified
-    MOVEFLAG_TURN_RIGHT             = 0x00000020,           /// verified
-    MOVEFLAG_PITCH_UP               = 0x00000040,           /// not confirmed
-    MOVEFLAG_PITCH_DOWN             = 0x00000080,           /// not confirmed
+    MOVEFLAG_NONE = 0x00000000,
+    MOVEFLAG_FORWARD = 0x00000001,
+    MOVEFLAG_BACKWARD = 0x00000002,
+    MOVEFLAG_STRAFE_LEFT = 0x00000004,
+    MOVEFLAG_STRAFE_RIGHT = 0x00000008,
+    MOVEFLAG_TURN_LEFT = 0x00000010,
+    MOVEFLAG_TURN_RIGHT = 0x00000020,
+    MOVEFLAG_PITCH_UP = 0x00000040,
+    MOVEFLAG_PITCH_DOWN = 0x00000080,
+    MOVEFLAG_WALK_MODE = 0x00000100,               // Walking
 
-    // Byte 2 (Resets on Situation Change)
-    MOVEFLAG_WALK_MODE              = 0x00000100,           /// verified
-    MOVEFLAG_TAXI                   = 0x02000000,           /// verified
+    MOVEFLAG_LEVITATING = 0x00000400,
+    MOVEFLAG_ROOT = 0x00000800,               // [-ZERO] is it really need and correct value
+    MOVEFLAG_FALLING = 0x00002000,
+    MOVEFLAG_FALLINGFAR = 0x00004000,
+    MOVEFLAG_SWIMMING = 0x00200000,               // appears with fly flag also
+    MOVEFLAG_ASCENDING = 0x00400000,               // [-ZERO] is it really need and correct value
+    MOVEFLAG_CAN_FLY = 0x00800000,               // [-ZERO] is it really need and correct value
+    MOVEFLAG_FLYING = 0x01000000,               // [-ZERO] is it really need and correct value
 
-    MOVEFLAG_NO_COLLISION           = 0x00000400,           /// not confirmed
-    MOVEFLAG_FLYING                 = 0x00000800,           ///< [-ZERO] is it really need and correct value
-    MOVEFLAG_REDIRECTED             = 0x00001000,           /// not confirmed
-    MOVEFLAG_FALLING                = 0x00002000,           /// not confirmed
-    MOVEFLAG_FALLING_FAR            = 0x00004000,           /// not confirmed
-    MOVEFLAG_FREE_FALLING           = 0x00008000,           /// not confirmed
-
-    // Byte 3 (Set by server. TB = Third Byte. Completely unconfirmed.)
-    MOVEFLAG_TB_PENDING_STOP        = 0x00010000,           /// (MOVEFLAG_PENDING_STOP)
-    MOVEFLAG_TB_PENDING_UNSTRAFE    = 0x00020000,           /// (MOVEFLAG_PENDING_UNSTRAFE)
-    MOVEFLAG_TB_PENDING_FALL        = 0x00040000,           /// (MOVEFLAG_PENDING_FALL)
-    MOVEFLAG_TB_PENDING_FORWARD     = 0x00080000,           /// (MOVEFLAG_PENDING_FORWARD)
-    MOVEFLAG_TB_PENDING_BACKWARD    = 0x00100000,           /// (MOVEFLAG_PENDING_BACKWARD)
-    MOVEFLAG_SWIMMING               = 0x00200000,           /// verified
-    MOVEFLAG_SPLINE_ENABLED         = 0x00400000,           /// (half confirmed)(MOVEFLAG_PENDING_STR_RGHT)
-    MOVEFLAG_TB_MOVED               = 0x00800000,           /// (half confirmed) gets called when landing (MOVEFLAG_MOVED)
-
-    // Byte 4 (Script Based Flags. Never reset, only turned on or off.)
-    MOVEFLAG_AIR_SUSPENSION         = 0x01000000,           /// allows suspension of body in air
-    MOVEFLAG_SPLINE_MOVER           = 0x04000000,           /// used for flight paths
-    MOVEFLAG_IMMOBILIZED            = 0x08000000,           /// used for flight paths
-    MOVEFLAG_WATER_WALK             = 0x10000000,           /// prevent unit from falling through water
-    MOVEFLAG_FEATHER_FALL           = 0x20000000,           /// does not negate fall damage
-    MOVEFLAG_LEVITATE               = 0x40000000,           /// levitate body in the air
-    MOVEFLAG_LOCAL                  = 0x80000000,           /// This flag defaults to on. (Assumption)
-
-    // Masks
-    MOVEFLAG_MOVING_MASK            = 0x03,
-    MOVEFLAG_STRAFING_MASK          = 0x0C,
-    MOVEFLAG_TURNING_MASK           = 0x30,
-    MOVEFLAG_FALLING_MASK           = 0x6000,
-    MOVEFLAG_MOTION_MASK            = 0xE00F,
-    MOVEFLAG_PENDING_MASK           = 0x7F0000,             /// Forwards
-    MOVEFLAG_PENDING_STRAFE_MASK    = 0x600000,             /// Backwards
-    MOVEFLAG_PENDING_MOVE_MASK      = 0x180000,             /// Strafing
-    MOVEFLAG_FULL_FALLING_MASK      = 0xE000                /// Falling
+    MOVEFLAG_ONTRANSPORT = 0x02000000,               // Used for flying on some creatures
+    MOVEFLAG_SPLINE_ELEVATION = 0x04000000,               // used for flight paths
+    MOVEFLAG_SPLINE_ENABLED = 0x08000000,               // used for flight paths
+    MOVEFLAG_WATERWALKING = 0x10000000,               // prevent unit from falling through water
+    MOVEFLAG_SAFE_FALL = 0x20000000,               // active rogue safe fall spell (passive)
+    MOVEFLAG_HOVER = 0x40000000
 };
 
 // flags that use in movement check for example at spell casting
 MovementFlags const movementFlagsMask = MovementFlags(
-        MOVEFLAG_MOVE_FORWARD | MOVEFLAG_MOVE_BACKWARD  | MOVEFLAG_STRAFE_LEFT | MOVEFLAG_STRAFE_RIGHT |
-        MOVEFLAG_PITCH_UP     | MOVEFLAG_PITCH_DOWN     |
-        MOVEFLAG_FALLING      | MOVEFLAG_FALLING_FAR    | MOVEFLAG_SPLINE_MOVER
-                                        );
+    MOVEFLAG_FORWARD | MOVEFLAG_BACKWARD | MOVEFLAG_STRAFE_LEFT | MOVEFLAG_STRAFE_RIGHT |
+    MOVEFLAG_PITCH_UP | MOVEFLAG_PITCH_DOWN | MOVEFLAG_ROOT |
+    MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR | MOVEFLAG_SPLINE_ELEVATION
+    );
 
 MovementFlags const movementOrTurningFlagsMask = MovementFlags(
             movementFlagsMask | MOVEFLAG_TURN_LEFT | MOVEFLAG_TURN_RIGHT
@@ -644,7 +619,7 @@ MovementFlags const movementOrTurningFlagsMask = MovementFlags(
 class MovementInfo
 {
     public:
-        MovementInfo() : moveFlags(MOVEFLAG_MOVE_STOP), time(0),
+        MovementInfo() : moveFlags(MOVEFLAG_NONE), time(0),
             t_time(0), s_pitch(0.0f), fallTime(0), u_unk1(0.0f) {}
 
         // Read/Write methods
@@ -711,9 +686,6 @@ class MovementInfo
         JumpInfo jump;
         // spline
         float    u_unk1;
-        // unknown
-        uint8 unk13;
-        uint32 unklast; // something to do with collision?
 };
 
 inline ByteBuffer& operator<< (ByteBuffer& buf, MovementInfo const& mi)
@@ -2892,7 +2864,7 @@ class  Unit : public WorldObject
          * otherwise
          * \see MovementInfo::HasMovementFlag
          */
-        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_LEVITATE); }
+        bool IsLevitating() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_LEVITATING); }
         /**
          * Checks if this \ref Unit has the movement flag \ref MovementFlags::MOVEFLAG_WALK_MODE
          * @return true if the \ref Unit is walking, ie: it has the flag MOVEFLAG_WALK_MODE, false
@@ -2906,7 +2878,7 @@ class  Unit : public WorldObject
          * MOVEFLAG_ROOT, false otherwise
          * \see MovementInfo::HasMovementFlag
          */
-        bool IsRooted() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_IMMOBILIZED); }
+        bool IsRooted() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_ROOT); }
         /**
          * Roots or unroots this \ref Unit depending on the enabled parameter.
          * @param enabled whether we should root (true) or unroot (false) this \ref Unit

@@ -2658,17 +2658,17 @@ void Creature::SetWalk(bool enable, bool asDefault)
 void Creature::SetLevitate(bool enable)
 {
     if (enable)
-        { m_movementInfo.AddMovementFlag(MOVEFLAG_LEVITATE); }
+        { m_movementInfo.AddMovementFlag(MOVEFLAG_HOVER); }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_LEVITATE); }
+        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_HOVER); }
 }
 
 void Creature::SetRoot(bool enable)
 {
     if (enable)
-        { m_movementInfo.AddMovementFlag(MOVEFLAG_IMMOBILIZED); }
+        { m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT); }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_IMMOBILIZED); }
+        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT); }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_ROOT : SMSG_SPLINE_MOVE_UNROOT, 9);
     data << GetPackGUID();
@@ -2678,9 +2678,13 @@ void Creature::SetRoot(bool enable)
 void Creature::SetWaterWalk(bool enable)
 {
     if (enable)
-        { m_movementInfo.AddMovementFlag(MOVEFLAG_WATER_WALK); }
+    {
+        m_movementInfo.AddMovementFlag(MOVEFLAG_WATERWALKING);
+    }
     else
-        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_WATER_WALK); }
+    {
+        m_movementInfo.RemoveMovementFlag(MOVEFLAG_WATERWALKING);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_WATER_WALK : SMSG_SPLINE_MOVE_LAND_WALK, 9);
     data << GetPackGUID();

@@ -1549,7 +1549,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             { DuelComplete(DUEL_FLED); }
 
     // reset movement flags at teleport, because player will continue move with these flags after teleport
-    m_movementInfo.SetMovementFlags(MOVEFLAG_MOVE_STOP);
+    m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
     DisableSpline();
 
     if ((GetMapId() == mapid) && (!m_transport))            // TODO the !m_transport might have unexpected effects when teleporting from transport to other place on same map
@@ -18938,7 +18938,7 @@ void Player::HandleFall(MovementInfo const& movementInfo)
 
     // Players with low fall distance, Feather Fall or physical immunity (charges used) are ignored
     // 14.57 can be calculated by resolving damageperc formula below to 0
-    if (z_diff >= 14.57f && !IsDead() && !isGameMaster() && !HasMovementFlag(MOVEFLAG_TAXI) &&
+    if (z_diff >= 14.57f && !IsDead() && !isGameMaster() && !HasMovementFlag(MOVEFLAG_ONTRANSPORT) &&
         !HasAuraType(SPELL_AURA_HOVER) && !HasAuraType(SPELL_AURA_FEATHER_FALL) &&
         !IsImmunedToDamage(SPELL_SCHOOL_MASK_NORMAL))
     {

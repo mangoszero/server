@@ -33,7 +33,7 @@ namespace Movement
     {
         if (moveFlags & MOVEFLAG_SWIMMING)
         {
-            if (moveFlags & MOVEFLAG_MOVE_BACKWARD /*&& speed_obj.swim >= speed_obj.swim_back*/)
+            if (moveFlags & MOVEFLAG_BACKWARD /*&& speed_obj.swim >= speed_obj.swim_back*/)
                 { return MOVE_SWIM_BACK; }
             else
                 { return MOVE_SWIM; }
@@ -43,7 +43,7 @@ namespace Movement
             // if ( speed_obj.run > speed_obj.walk )
             return MOVE_WALK;
         }
-        else if (moveFlags & MOVEFLAG_MOVE_BACKWARD /*&& speed_obj.run >= speed_obj.run_back*/)
+        else if (moveFlags & MOVEFLAG_BACKWARD /*&& speed_obj.run >= speed_obj.run_back*/)
             { return MOVE_RUN_BACK; }
 
         return MOVE_RUN;
@@ -73,8 +73,7 @@ namespace Movement
         else
             { moveFlags |= MOVEFLAG_WALK_MODE; }
 
-        moveFlags |= (MOVEFLAG_MOVE_FORWARD);
-        moveFlags |= (MOVEFLAG_SPLINE_ENABLED);
+        moveFlags |= (MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD);
 
         if (args.velocity == 0.f)
             { args.velocity = unit.GetSpeed(SelectSpeedType(moveFlags)); }
@@ -125,7 +124,7 @@ namespace Movement
         args.path[0] = real_position;
 
         args.flags = MoveSplineFlag::Done;
-        unit.m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_MOVE_FORWARD | MOVEFLAG_SPLINE_ENABLED));
+        unit.m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_FORWARD | MOVEFLAG_SPLINE_ENABLED));
         move_spline.Initialize(args);
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
@@ -148,7 +147,7 @@ namespace Movement
     {
         // mix existing state into new
         args.flags.runmode = !unit.m_movementInfo.HasMovementFlag(MOVEFLAG_WALK_MODE);
-        args.flags.flying = unit.m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_FLYING | MOVEFLAG_LEVITATE));
+        args.flags.flying = unit.m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING | MOVEFLAG_LEVITATING));
     }
 
     void MoveSplineInit::SetFacing(const Unit* target)

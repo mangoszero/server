@@ -95,7 +95,7 @@ void MovementInfo::Read(ByteBuffer& data)
     data >> pos.x >> pos.y >> pos.z >> pos.o;
 
 
-    if (HasMovementFlag(MOVEFLAG_TAXI))
+    if (HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         data >> t_guid;
         data >> t_pos.x;
@@ -110,7 +110,7 @@ void MovementInfo::Read(ByteBuffer& data)
     }
 
     /* This is never sent when we're on a taxi */
-    if (!HasMovementFlag(MOVEFLAG_TAXI))
+    if (!HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         data >> fallTime;
     }
@@ -123,7 +123,7 @@ void MovementInfo::Read(ByteBuffer& data)
         data >> jump.xyspeed;
     }
 
-    if (HasMovementFlag(MOVEFLAG_SPLINE_MOVER))
+    if (HasMovementFlag(MOVEFLAG_SPLINE_ELEVATION))
     {
         data >> u_unk1;                                     // unknown
     }
@@ -135,7 +135,7 @@ void MovementInfo::Write(ByteBuffer& data) const
     data << moveFlags << time;
     data << pos.x << pos.y << pos.z << pos.o;
 
-    if (HasMovementFlag(MOVEFLAG_TAXI))
+    if (HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         data << t_guid;
         data << t_pos.x;
@@ -150,7 +150,7 @@ void MovementInfo::Write(ByteBuffer& data) const
     }
 
     /* This is never sent when we're on a taxi */
-    if (!HasMovementFlag(MOVEFLAG_TAXI))
+    if (!HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         data << fallTime;
     }
@@ -163,7 +163,7 @@ void MovementInfo::Write(ByteBuffer& data) const
         data << jump.xyspeed;
     }
 
-    if (HasMovementFlag(MOVEFLAG_SPLINE_MOVER))
+    if (HasMovementFlag(MOVEFLAG_SPLINE_ELEVATION))
     {
         data << u_unk1;                                     // unknown
     }
@@ -8652,7 +8652,7 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid, uint32 /*spellID*/)
         if (GetTypeId() != TYPEID_PLAYER)
             { StopMoving(); }
         else
-            { ((Player*)this)->m_movementInfo.SetMovementFlags(MOVEFLAG_MOVE_STOP); }
+            { ((Player*)this)->m_movementInfo.SetMovementFlags(MOVEFLAG_NONE); }
 
 
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_29);
@@ -9305,6 +9305,6 @@ void Unit::UpdateSplineMovement(uint32 t_diff)
 
 void Unit::DisableSpline()
 {
-    m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_IMMOBILIZED | MOVEFLAG_MOVE_FORWARD));
+    m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD));
     movespline->_Interrupt();
 }

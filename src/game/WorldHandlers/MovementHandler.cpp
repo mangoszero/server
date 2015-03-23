@@ -592,7 +592,7 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
     if (!MaNGOS::IsValidMapCoord(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o))
         { return false; }
 
-    if (movementInfo.HasMovementFlag(MOVEFLAG_TAXI))
+    if (movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         // transports size limited
         // (also received at zeppelin/lift leave by some reason with t_* as absolute in continent coordinates, can be safely skipped)
@@ -617,7 +617,7 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 
     if (Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL)
     {
-        if (movementInfo.HasMovementFlag(MOVEFLAG_TAXI))
+        if (movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
         {
             if (!plMover->m_transport)
             {
