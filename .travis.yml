@@ -7,6 +7,11 @@ sudo: false
 git:
   depth: 1
 
+# only run travis on the master branch
+branches:
+  only:
+    - release20
+    - develop21
 # send notifications to stack as well as email
 notifications:
   slack: getmangos:yRgNBSgRQVh8WdfGEbT08Hit
@@ -31,6 +36,10 @@ addons:
       - clang
 
 before_install:
+# Get Eluna
+ - git submodule init
+ - git submodule update
+ 
   - bash .travis.sh
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CC" = "gcc" ] ; then export CC=gcc-4.8 CXX=g++-4.8 ; fi
 
