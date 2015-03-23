@@ -313,6 +313,7 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     {
         LearnPetPassives();
         CastPetAuras(current);
+        CastOwnerTalentAuras();
     }
 
     Powers powerType = GetPowerType();
@@ -538,6 +539,7 @@ void Pet::SetDeathState(DeathState s)                       // overwrite virtual
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
         CastPetAuras(true);
     }
+    CastOwnerTalentAuras();
 }
 
 void Pet::Update(uint32 update_diff, uint32 diff)
@@ -1989,6 +1991,16 @@ void Pet::CastPetAuras(bool current)
         else
             { CastPetAura(pa); }
     }
+}
+
+void Pet::CastOwnerTalentAuras()
+{
+    if (!GetOwner() || GetOwner()->GetTypeId() != TYPEID_PLAYER)
+        { return; }
+
+    Player* pOwner = static_cast<Player*>(GetOwner());
+
+    // Add below code handling spells cast by pet when owner/player has aura from talent
 }
 
 void Pet::CastPetAura(PetAura const* aura)
