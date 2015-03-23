@@ -22,8 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
-#include "Log.h"
+#include "Common/Common.h"
+#include "Log/Log.h"
 
 /**
  * @brief
