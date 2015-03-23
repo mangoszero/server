@@ -111,6 +111,12 @@ enum ScriptCommand                                          // resSource, resTar
                                                             // datalong = AIEventType
                                                             // datalong2 = radius
     SCRIPT_COMMAND_TURN_TO                  = 36,           // resSource = Unit, resTarget = Unit/none
+    SCRIPT_COMMAND_MOVE_DYNAMIC             = 37,           // resSource = Creature, resTarget Worldobject.
+                                                            // datalong = 0: Move resSource towards resTarget
+                                                            // datalong != 0: Move resSource to a random point between datalong2..datalong around resTarget.
+                                                            //      orientation != 0: Obtain a random point around resTarget in direction of orientation
+                                                            // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a random point around resTarget in direction of resTarget->GetOrientation + orientation
+                                                            // for resTarget == resSource and orientation == 0 this will mean resSource moving forward
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -339,17 +345,23 @@ struct ScriptInfo
             uint32 radius;                                  // datalong2
         } sendAIEvent;
 
-        struct
-        {
-            uint32 data[2];
-        } raw;
-
         struct                                              // SCRIPT_COMMAND_TURN_TO (36)
         {
             uint32 targetId;                                // datalong
             uint32 empty1;                                  // datalong2
         } turnTo;
 
+        struct                                              // SCRIPT_COMMAND_MOVE_DYNAMIC (37)
+        {
+            uint32 maxDist;                                 // datalong
+            uint32 minDist;                                 // datalong2
+        } moveDynamic;
+
+
+        struct
+        {
+            uint32 data[2];
+        } raw;
     };
 
     // Buddy system (entry can be npc or go entry, depending on command)
@@ -406,6 +418,8 @@ struct ScriptInfo
             case SCRIPT_COMMAND_MOUNT_TO_ENTRY_OR_MODEL:
             case SCRIPT_COMMAND_TERMINATE_SCRIPT:
             case SCRIPT_COMMAND_TERMINATE_COND:
+            case SCRIPT_COMMAND_TURN_TO:
+            case SCRIPT_COMMAND_MOVE_DYNAMIC:
                 return true;
             default:
                 return false;
@@ -465,6 +479,7 @@ class ScriptAction
         bool LogIfNotCreature(WorldObject* pWorldObject);
         bool LogIfNotUnit(WorldObject* pWorldObject);
         bool LogIfNotGameObject(WorldObject* pWorldObject);
+        bool LogIfNotPlayer(WorldObject* pWorldObject);
         Player* GetPlayerTargetOrSourceAndLog(WorldObject* pSource, WorldObject* pTarget);
 };
 

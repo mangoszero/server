@@ -87,6 +87,10 @@ uint8 GetSpellStartDBScriptPriority(SpellEntry const* spellinfo, SpellEffectInde
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_SPELL && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
         { return 5; }
 
+    // NonExisting trigger missile spells can also start DB-Spell-Scripts
+    if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_MISSILE && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
+        { return 4; }
+
     // Can not start script
     return 0;
 }
@@ -678,6 +682,15 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                 }
                 break;
             }
+            case SCRIPT_COMMAND_MOVE_DYNAMIC:               // 37
+            {
+                if (tmp.moveDynamic.maxDist < tmp.moveDynamic.minDist)
+                {
+                    sLog.outErrorDb("Table `%s` has invalid min-dist (datalong2 = %u) less than max-dist (datalon = %u) in SCRIPT_COMMAND_MOVE_DYNAMIC for script id %u", tablename, tmp.moveDynamic.minDist, tmp.moveDynamic.maxDist, tmp.id);
+                    continue;
+                }
+                break;
+            }
             default:
             {
                 sLog.outErrorDb("Table `%s` unknown command %u, skipping.", tablename, tmp.command);
@@ -1065,6 +1078,15 @@ bool ScriptAction::LogIfNotGameObject(WorldObject* pWorldObject)
     }
     return false;
 }
+bool ScriptAction::LogIfNotPlayer(WorldObject* pWorldObject)
+{
+    if (!pWorldObject || pWorldObject->GetTypeId() != TYPEID_PLAYER)
+    {
+        sLog.outErrorDb(" DB-SCRIPTS: Process table `%s` id %u, command %u call for non-player, skipping.", m_table, m_script->id, m_script->command);
+        return true;
+    }
+    return false;
+}
 
 /// Helper to get a player if possible (target preferred)
 Player* ScriptAction::GetPlayerTargetOrSourceAndLog(WorldObject* pSource, WorldObject* pTarget)
@@ -1442,12 +1464,12 @@ bool ScriptAction::HandleScriptStep()
 
             // Select Spell
             uint32 spell = m_script->castSpell.spellId;
-            uint32 i = 0;
-            while (i < MAX_TEXT_ID && m_script->textId[i])  // Count which dataint fields are filled
-                ++i;
-            if (i > 0)
-                if (uint32 rnd = urand(0, i))               // Random selection resulted in one of the dataint fields
-                    spell = m_script->textId[rnd - 1];
+            uint32 filledCount = 0;
+            while (filledCount < MAX_TEXT_ID && m_script->textId[filledCount])  // Count which dataint fields are filled
+                ++filledCount;
+            if (filledCount > 0)
+                if (uint32 randomField = urand(0, filledCount))               // Random selection resulted in one of the dataint fields
+                    spell = m_script->textId[randomField - 1];
 
             // TODO: when GO cast implemented, code below must be updated accordingly to also allow GO spell cast
             if (pSource && pSource->GetTypeId() == TYPEID_GAMEOBJECT)
@@ -1822,6 +1844,39 @@ bool ScriptAction::HandleScriptStep()
                 { break; }
 
             ((Unit*)pSource)->SetFacingTo(pSource->GetAngle(pTarget));
+            break;
+        }
+        case SCRIPT_COMMAND_MOVE_DYNAMIC:                   // 37
+        {
+            if (LogIfNotCreature(pSource))
+                return false;
+            if (LogIfNotUnit(pTarget))
+                return false;
+
+            float x, y, z;
+            if (m_script->moveDynamic.maxDist == 0)         // Move to pTarget
+            {
+                if (pTarget == pSource)
+                {
+                    sLog.outErrorDb(" DB-SCRIPTS: Process table `%s` id %u, _MOVE_DYNAMIC called with maxDist == 0, but resultingSource == resultingTarget (== %s)", m_table, m_script->id, pSource->GetGuidStr().c_str());
+                    break;
+                }
+                pTarget->GetContactPoint(pSource, x, y, z);
+            }
+            else                                            // Calculate position
+            {
+                float orientation;
+                if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
+                    orientation = pSource->GetOrientation() + m_script->o + 2 * M_PI_F;
+                else
+                    orientation = m_script->o;
+
+                pSource->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), m_script->moveDynamic.maxDist, x, y, z,
+                                        m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
+                z = std::max(z, pTarget->GetPositionZ());
+                pSource->UpdateAllowedPositionZ(x, y, z);
+            }
+            ((Creature*)pSource)->GetMotionMaster()->MovePoint(1, x, y, z);
             break;
         }
         default:

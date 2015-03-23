@@ -168,6 +168,13 @@ ID | Name                                   | Parameters
 34 | SCRIPT_COMMAND_TERMINATE_COND          | `datalong` = condition_id, `datalong2` = fail-quest (if provided this quest will be failed for a player), `!(data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)`: terminate when condition is true, `data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL`:  terminate when condition is false
 35 | SCRIPT_COMMAND_SEND_AI_EVENT_AROUND    | resultingSource = Creature, resultingTarget = Unit, datalong = AIEventType - limited only to EventAI supported events, datalong2 = radius
 36 | SCRIPT_COMMAND_TURN_TO                 | resultingSource = Creature, resultingTarget = Unit/none.
+37 | SCRIPT_COMMAND_MOVE_DYNAMIC            | Move resultingSource to a random point around resultingTarget or to resultingTarget
+                                            | * resultingSource = Creature, resultingTarget Worldobject.
+                                            | * datalong = 0:  Move resultingSource towards resultingTarget
+                                            | * datalong != 0: Move resultingSource to a random point between datalong2..datalong around resultingTarget.
+                                            |   orientation != 0: Obtain a random point around resultingTarget in direction of orientation
+                                            | * data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a point in direction of resTarget->GetOrientation + orientation
+                                            |   for resTarget == resSource and orientation == 0 this will mean resSource moving forward
 
 TemporaryFactionFlags
 ---------------------
