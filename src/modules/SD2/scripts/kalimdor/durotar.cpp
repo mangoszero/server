@@ -38,7 +38,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 /*######
 ## npc_lazy_peon

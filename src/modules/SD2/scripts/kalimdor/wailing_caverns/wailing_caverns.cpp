@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "wailing_caverns.h"
 #include "escort_ai.h"
 

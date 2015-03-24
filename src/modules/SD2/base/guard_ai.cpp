@@ -30,7 +30,7 @@ SDComment:
 SDCategory: Guards
 EndScriptData */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "guard_ai.h"
 
 // This script is for use within every single guard to save coding time

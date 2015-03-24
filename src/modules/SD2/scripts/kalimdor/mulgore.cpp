@@ -37,7 +37,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 void AddSC_mulgore()
 {

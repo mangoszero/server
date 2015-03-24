@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "world_map_scripts.h"
 
 /* *********************************************************

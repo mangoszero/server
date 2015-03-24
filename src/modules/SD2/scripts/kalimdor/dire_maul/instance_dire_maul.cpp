@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "dire_maul.h"
 
 instance_dire_maul::instance_dire_maul(Map* pMap) : ScriptedInstance(pMap),

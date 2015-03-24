@@ -33,8 +33,7 @@
 #include "AccountMgr.h"
 #include "ScriptMgr.h"
 #include "SystemConfig.h"
-//#include "revision.h"
-#include "revision_nr.h"
+#include "revision.h"
 #include "Util.h"
 
 bool ChatHandler::HandleHelpCommand(char* args)

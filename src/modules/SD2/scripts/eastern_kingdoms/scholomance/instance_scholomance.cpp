@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "scholomance.h"
 
 instance_scholomance::instance_scholomance(Map* pMap) : ScriptedInstance(pMap),

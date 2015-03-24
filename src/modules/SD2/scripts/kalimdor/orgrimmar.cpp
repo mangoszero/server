@@ -39,7 +39,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 /*######
 ## npc_shenthul

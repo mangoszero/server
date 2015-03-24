@@ -23,9 +23,9 @@
 include(MacroMangosSourceGroup)
 
 #Add PCH Files
-set(mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.h")
+set(mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h")
 if(PCH)
-    LIST(APPEND mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.cpp")
+    LIST(APPEND mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp")
 endif()
 
 include_directories(
@@ -41,7 +41,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/game/References
     ${CMAKE_SOURCE_DIR}/src/game/MotionGenerators
     ${CMAKE_SOURCE_DIR}/src/game/vmap
-    ${CMAKE_SOURCE_DIR}/dep/include
     ${CMAKE_SOURCE_DIR}/src/shared
     ${CMAKE_SOURCE_DIR}/src/shared/Utilities
     ${CMAKE_SOURCE_DIR}/src/shared/Log

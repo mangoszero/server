@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "molten_core.h"
 #include "TemporarySummon.h"
 

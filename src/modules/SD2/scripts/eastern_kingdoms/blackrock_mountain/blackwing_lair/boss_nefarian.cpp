@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "blackwing_lair.h"
 #include "TemporarySummon.h"
 

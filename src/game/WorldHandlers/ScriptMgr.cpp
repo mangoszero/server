@@ -48,7 +48,7 @@
 
 #include <cstring> /* std::strcmp */
 
-#include "revision_nr.h"
+#include "revision.h"
 
 ScriptMapMapName sQuestEndScripts;
 ScriptMapMapName sQuestStartScripts;

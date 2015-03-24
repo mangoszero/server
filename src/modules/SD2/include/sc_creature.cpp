@@ -23,7 +23,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "Item.h"
 #include "Spell.h"
 #include "WorldPacket.h"

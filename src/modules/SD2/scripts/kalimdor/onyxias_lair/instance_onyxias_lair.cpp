@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "onyxias_lair.h"
 
 instance_onyxias_lair::instance_onyxias_lair(Map* pMap) : ScriptedInstance(pMap)

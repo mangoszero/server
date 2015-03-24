@@ -60,8 +60,7 @@ set(LIBRARY_SRCS
     ${SRC_GRP_LOG}
     ${SRC_GRP_THREAD}
     ${SRC_GRP_UTIL}
-    revision_nr.h
-    revision_sql.h
+    revision.h
 )
 
 # OS specific files

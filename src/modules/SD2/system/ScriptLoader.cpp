@@ -23,7 +23,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 // eastern kingdoms
 void AddSC_blackrock_depths();                       // blackrock_depths

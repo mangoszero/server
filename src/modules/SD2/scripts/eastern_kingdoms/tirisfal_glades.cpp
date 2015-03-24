@@ -40,7 +40,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 /*######
 ## go_mausoleum_door

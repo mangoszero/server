@@ -50,7 +50,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "guard_ai.h"
 
 CreatureAI* GetAI_guard_bluffwatcher(Creature* pCreature)

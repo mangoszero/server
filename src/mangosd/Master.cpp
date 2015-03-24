@@ -42,15 +42,15 @@
 #include "SystemConfig.h"
 #include "Config/Config.h"
 #include "Database/DatabaseEnv.h"
-#include "CliRunnable.h"
-#include "RASocket.h"
+#include "Comm/CliRunnable.h"
+#include "RA/RASocket.h"
 #include "Util.h"
-#include "revision_sql.h"
+#include "revision.h"
 #include "MassMailMgr.h"
 #include "DBCStores.h"
 #include "ScriptMgr.h"
 #ifdef ENABLE_SOAP
-#include "MaNGOSsoap.h"
+#include "SOAP/MaNGOSsoap.h"
 #endif
 
 #include <ace/OS_NS_signal.h>

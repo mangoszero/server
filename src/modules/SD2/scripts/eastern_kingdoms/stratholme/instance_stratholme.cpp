@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "stratholme.h"
 
 instance_stratholme::instance_stratholme(Map* pMap) : ScriptedInstance(pMap),

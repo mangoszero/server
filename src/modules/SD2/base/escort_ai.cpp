@@ -30,9 +30,9 @@ SDComment:
 SDCategory: Npc
 EndScriptData */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "escort_ai.h"
-#include "../system/system.h"
+#include "system/system.h"
 
 const float MAX_PLAYER_DISTANCE = 66.0f;
 

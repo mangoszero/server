@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "gnomeregan.h"
 
 instance_gnomeregan::instance_gnomeregan(Map* pMap) : ScriptedInstance(pMap)

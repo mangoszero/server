@@ -43,7 +43,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 /*######
 ## boss_emerald_dragon -- Superclass for the four dragons

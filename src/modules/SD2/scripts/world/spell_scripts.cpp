@@ -42,7 +42,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 
 /**
  * When you make a spell effect:

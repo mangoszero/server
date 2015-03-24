@@ -42,7 +42,7 @@
  * EndContentData
  */
 
-#include "precompiled.h"
+#include "pchdef.h"
 #include "follower_ai.h"
 #include "escort_ai.h"
 #include "ObjectMgr.h"

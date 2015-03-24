@@ -16,27 +16,28 @@
 
 set(EXECUTABLE_NAME mangosd)
 
+#Command Line
+file(GLOB_RECURSE SRC_GRP_COMM Comm/*.cpp Comm/*.h)
+source_group("Command Line" FILES ${SRC_GRP_COMM})
+
+#Remote Access
+file(GLOB_RECURSE SRC_GRP_RA RA/*.cpp RA/*.h)
+source_group("Remote Access" FILES ${SRC_GRP_RA})
+
 set(EXECUTABLE_SRCS
-    CliRunnable.cpp
-    CliRunnable.h
+    ${SRC_GRP_COMM}
+    ${SRC_GRP_RA}
     Main.cpp
     Master.cpp
     Master.h
-    RASocket.cpp
-    RASocket.h
     WorldRunnable.cpp
     WorldRunnable.h
 )
 
 if(SOAP)
-    LIST(APPEND EXECUTABLE_SRCS
-        MaNGOSsoap.cpp
-        MaNGOSsoap.h
-        soapC.cpp
-        soapH.h
-        soapServer.cpp
-        soapStub.h
-    )
+    file(GLOB_RECURSE SRC_GRP_SOAP SOAP/*.cpp SOAP/*.h)
+    source_group("SOAP" FILES ${SRC_GRP_SOAP})
+    LIST(APPEND EXECUTABLE_SRCS ${SRC_GRP_SOAP})
 endif()
 
 if(WIN32)
@@ -45,28 +46,28 @@ if(WIN32)
 endif()
 
 include_directories(
-    "${CMAKE_SOURCE_DIR}/src/shared"
-    "${CMAKE_SOURCE_DIR}/src/shared/Common"
-    "${CMAKE_SOURCE_DIR}/src/shared/Threading"
-    "${CMAKE_SOURCE_DIR}/src/shared/Utilities"
-    "${CMAKE_SOURCE_DIR}/src/shared/Log"
-    "${CMAKE_SOURCE_DIR}/src/shared/DataStores"
-    "${CMAKE_SOURCE_DIR}/src/shared/Win"
-    "${CMAKE_SOURCE_DIR}/src/shared/Linux"
-    "${CMAKE_SOURCE_DIR}/src/framework"
-    "${CMAKE_SOURCE_DIR}/src/game/AuctionHouseBot"
-    "${CMAKE_SOURCE_DIR}/src/game/BattleGround"
-    "${CMAKE_SOURCE_DIR}/src/game/Server"
-    "${CMAKE_SOURCE_DIR}/src/game/WorldHandlers"
-    "${CMAKE_SOURCE_DIR}/src/game/Object"
-    "${CMAKE_SOURCE_DIR}/src/game/Tools"
-    "${CMAKE_SOURCE_DIR}/src/game/References"
-    "${CMAKE_SOURCE_DIR}/src/game/MotionGenerators"
-    "${CMAKE_SOURCE_DIR}/src/game/vmap"
-    "${CMAKE_BINARY_DIR}"
-    "${CMAKE_BINARY_DIR}/src/shared"
-    "${ACE_INCLUDE_DIR}"
-    "${OPENSSL_INCLUDE_DIR}"
+    ${CMAKE_SOURCE_DIR}/src/shared
+    ${CMAKE_SOURCE_DIR}/src/shared/Common
+    ${CMAKE_SOURCE_DIR}/src/shared/Threading
+    ${CMAKE_SOURCE_DIR}/src/shared/Utilities
+    ${CMAKE_SOURCE_DIR}/src/shared/Log
+    ${CMAKE_SOURCE_DIR}/src/shared/DataStores
+    ${CMAKE_SOURCE_DIR}/src/shared/Win
+    ${CMAKE_SOURCE_DIR}/src/shared/Linux
+    ${CMAKE_SOURCE_DIR}/src/framework
+    ${CMAKE_SOURCE_DIR}/src/game/AuctionHouseBot
+    ${CMAKE_SOURCE_DIR}/src/game/BattleGround
+    ${CMAKE_SOURCE_DIR}/src/game/Server
+    ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
+    ${CMAKE_SOURCE_DIR}/src/game/Object
+    ${CMAKE_SOURCE_DIR}/src/game/Tools
+    ${CMAKE_SOURCE_DIR}/src/game/References
+    ${CMAKE_SOURCE_DIR}/src/game/MotionGenerators
+    ${CMAKE_SOURCE_DIR}/src/game/vmap
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/shared
+    ${ACE_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 if(SCRIPT_LIB_ELUNA)
@@ -79,24 +80,16 @@ if(SCRIPT_LIB_SD2)
 endif()
 
 if(SOAP)
-    include_directories("${CMAKE_SOURCE_DIR}/dep/include/gsoap")
+    include_directories(${CMAKE_SOURCE_DIR}/dep/gsoap)
 endif()
 
-if(POSTGRESQL)
-  include_directories("${PGSQL_INCLUDE_DIR}")
-else()
-  include_directories("${MYSQL_INCLUDE_DIR}")
-endif()
-
-add_executable(${EXECUTABLE_NAME}
-  ${EXECUTABLE_SRCS}
-)
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS})
 
 if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${EXECUTABLE_NAME} ace)
-  target_link_libraries(${EXECUTABLE_NAME} ace)
+    add_dependencies(${EXECUTABLE_NAME} ace)
+    target_link_libraries(${EXECUTABLE_NAME} ace)
 else()
-  target_link_libraries(${EXECUTABLE_NAME} ACE)
+    target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
@@ -104,75 +97,72 @@ target_link_libraries(${EXECUTABLE_NAME}
     shared
     framework
     g3dlite
-    ${MYSQL_LIBRARY}
     ${OPENSSL_LIBRARIES}
 )
+
+if(POSTGRESQL)
+    include_directories(${PostgreSQL_INCLUDE_DIR})
+    target_link_libraries(${EXECUTABLE_NAME} ${PostgreSQL_LIBRARIES})
+else()
+    include_directories(${MYSQL_INCLUDE_DIR})
+    target_link_libraries(${EXECUTABLE_NAME} ${MYSQL_LIBRARY})
+endif()
 
 add_dependencies(${EXECUTABLE_NAME} game)
 
 if(SOAP)
-    target_link_libraries(${EXECUTABLE_NAME}
-        gsoap
-    )
+    target_link_libraries(${EXECUTABLE_NAME} gsoap)
 endif()
 
 if(WIN32)
-  target_link_libraries(${EXECUTABLE_NAME}
-    zlib
-  )
+    target_link_libraries(${EXECUTABLE_NAME} zlib)
 endif()
 
 if(UNIX)
-  target_link_libraries(${EXECUTABLE_NAME}
-    ${OPENSSL_EXTRA_LIBRARIES}
-    ${ZLIB_LIBRARIES}
-  )
+    target_link_libraries(${EXECUTABLE_NAME}
+        ${OPENSSL_EXTRA_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+    )
 endif()
 
 set(EXECUTABLE_LINK_FLAGS "")
 
 if(UNIX)
-  if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    set(EXECUTABLE_LINK_FLAGS "-Wl,--no-as-needed -pthread -lrt ${EXECUTABLE_LINK_FLAGS} -rdynamic")
-  elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    set(EXECUTABLE_LINK_FLAGS "-Wl,--no-as-needed -ldl -pthread -lrt ${EXECUTABLE_LINK_FLAGS} -rdynamic")
-  endif()
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,--no-as-needed -pthread -lrt ${EXECUTABLE_LINK_FLAGS} -rdynamic")
+    elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,--no-as-needed -ldl -pthread -lrt ${EXECUTABLE_LINK_FLAGS} -rdynamic")
+    endif()
 endif()
 
 if(APPLE)
-  set(EXECUTABLE_LINK_FLAGS "-framework Carbon ${EXECUTABLE_LINK_FLAGS}")
+    set(EXECUTABLE_LINK_FLAGS "-framework Carbon ${EXECUTABLE_LINK_FLAGS}")
 endif()
 
-set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS
-  "${EXECUTABLE_LINK_FLAGS}"
-)
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS "${EXECUTABLE_LINK_FLAGS}")
 
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION "${BIN_DIR}")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/mangosd.conf.dist.in" "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist" DESTINATION "${CONF_INSTALL_DIR}")
 
 if(WIN32 AND MSVC)
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}" CONFIGURATIONS Debug)
-  add_custom_command(TARGET ${EXECUTABLE_NAME}
-    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist" "${CONF_COPY_DIR}"
-  )
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}" CONFIGURATIONS Debug)
+    add_custom_command(TARGET ${EXECUTABLE_NAME}
+        POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist" "${CONF_COPY_DIR}"
+    )
 endif()
 
 #Copy dlls to build dir
 if(WIN32)
-  if(MSVC)
-   add_custom_command(TARGET ${EXECUTABLE_NAME}
-     POST_BUILD
-     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-   )
-  elseif(XCODE)
-   add_custom_command(TARGET ${EXECUTABLE_NAME}
-     POST_BUILD
-     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/libeay32.dll" "${CMAKE_BINARY_DIR}/bin/"
-     #COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}/ssleay32.dll" "${CMAKE_BINARY_DIR}/bin/"
-     COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
-   )
-  endif()
+    if(MSVC)
+        add_custom_command(TARGET ${EXECUTABLE_NAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
+        )
+    elseif(XCODE)
+        add_custom_command(TARGET ${EXECUTABLE_NAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_INCLUDE_DIR}/../lib/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
+        )
+    endif()
 endif()
