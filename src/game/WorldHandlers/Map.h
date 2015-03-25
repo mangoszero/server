@@ -292,6 +292,11 @@ class  Map : public GridRefManager<NGridType>
          */
         void SetWeather(uint32 zoneId, WeatherType type, float grade, bool permanently);
 
+        // Random on map generation
+        bool GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, float radius);
+        bool GetReachableRandomPointOnGround(float& x, float& y, float& z, float radius);
+        bool GetRandomPointInTheAir(float& x, float& y, float& z, float radius);
+        bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
     private:
         void LoadMapAndVMap(int gx, int gy);
