@@ -33,7 +33,7 @@
 
 #ifndef MANGOS_VERSION
 #if PLATFORM == PLATFORM_WINDOWS
-# define MANGOS_VERSION(REVD,REVT,REVN,REVH) "0.20.0" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
+# define MANGOS_VERSION(REVD,REVT,REVN,REVH) "0.21.0" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
 #else
 # define MANGOS_VERSION(REVD,REVT,REVN,REVH) "@VERSION@" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
 #endif
