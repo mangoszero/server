@@ -34,7 +34,7 @@
 
 class ObjectWorldLoader;
 
-class  ObjectGridLoader
+class ObjectGridLoader
 {
         friend class ObjectWorldLoader;
 
@@ -61,7 +61,7 @@ class  ObjectGridLoader
         uint32 i_corpses;
 };
 
-class  ObjectGridUnloader
+class ObjectGridUnloader
 {
     public:
         ObjectGridUnloader(NGridType& grid) : i_grid(grid) {}
@@ -85,7 +85,7 @@ class  ObjectGridUnloader
         NGridType& i_grid;
 };
 
-class  ObjectGridStoper
+class ObjectGridStoper
 {
     public:
         ObjectGridStoper(NGridType& grid) : i_grid(grid) {}

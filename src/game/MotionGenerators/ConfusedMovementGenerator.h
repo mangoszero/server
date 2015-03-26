@@ -28,7 +28,7 @@
 #include "MovementGenerator.h"
 
 template<class T>
-class  ConfusedMovementGenerator
+class ConfusedMovementGenerator
     : public MovementGeneratorMedium< T, ConfusedMovementGenerator<T> >
 {
     public:

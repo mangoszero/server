@@ -42,7 +42,7 @@
  * @brief MySQL prepared statement class
  *
  */
-class  MySqlPreparedStatement : public SqlPreparedStatement
+class MySqlPreparedStatement : public SqlPreparedStatement
 {
     public:
         /**
@@ -116,7 +116,7 @@ class  MySqlPreparedStatement : public SqlPreparedStatement
  * @brief
  *
  */
-class  MySQLConnection : public SqlConnection
+class MySQLConnection : public SqlConnection
 {
     public:
         /**
@@ -226,7 +226,7 @@ class  MySQLConnection : public SqlConnection
  * @brief
  *
  */
-class  DatabaseMysql : public Database
+class DatabaseMysql : public Database
 {
         friend class MaNGOS::OperatorNew<DatabaseMysql>;
 

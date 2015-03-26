@@ -30,7 +30,7 @@
 
 class Unit;
 
-class  ReactorAI : public CreatureAI
+class ReactorAI : public CreatureAI
 {
     public:
 

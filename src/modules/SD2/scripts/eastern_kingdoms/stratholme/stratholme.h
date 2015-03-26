@@ -68,7 +68,7 @@ enum
     NPC_NEMAS_THE_ARBITER       = 17912,
     NPC_AELMAR_THE_VANQUISHER   = 17913,
     NPC_VICAR_HYERONIMUS        = 17914,
-    NPC_PALADIN_QUEST_CREDIT	= 17915,
+    NPC_PALADIN_QUEST_CREDIT    = 17915,
     NPC_THE_UNFORGIVEN          = 10516,
     NPC_VENGEFUL_PHANTOM        = 10387,                    // Adds for The Unforgiven
 

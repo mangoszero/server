@@ -86,7 +86,7 @@ struct PackedGuidReader
     ObjectGuid* m_guidPtr;
 };
 
-class  ObjectGuid
+class ObjectGuid
 {
     public:                                                 // constructors
         ObjectGuid() : m_guid(0) {}

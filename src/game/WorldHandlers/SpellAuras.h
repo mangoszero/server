@@ -90,7 +90,7 @@ struct ReapplyAffectedPassiveAurasHelper;
  * It also takes care of the stacks left of the spell, has a \ref DiminishingGroup to get diminishing
  * returns to work correctly, applies the \ref Modifier of the different \ref Aura s and such.
  */
-class  SpellAuraHolder
+class SpellAuraHolder
 {
     public:
         SpellAuraHolder(SpellEntry const* spellproto, Unit* target, WorldObject* caster, Item* castItem);
@@ -256,7 +256,7 @@ typedef void(Aura::*pAuraHandler)(bool Apply, bool Real);
 //      each setting object update field code line moved under if(Real) check is significant mangos speedup, and less server->client data sends
 //      each packet sending code moved under if(Real) check is _large_ mangos speedup, and lot less server->client data sends
 
-class  Aura
+class Aura
 {
         friend struct ReapplyAffectedPassiveAurasHelper;
         friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
@@ -508,7 +508,7 @@ class  Aura
         void ReapplyAffectedPassiveAuras(Unit* target);
 };
 
-class  AreaAura : public Aura
+class AreaAura : public Aura
 {
     public:
         AreaAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster = NULL, Item* castItem = NULL, uint32 originalRankSpellId = 0);
@@ -521,7 +521,7 @@ class  AreaAura : public Aura
         uint32       m_originalRankSpellId;
 };
 
-class  PersistentAreaAura : public Aura
+class PersistentAreaAura : public Aura
 {
     public:
         PersistentAreaAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster = NULL, Item* castItem = NULL);
@@ -530,7 +530,7 @@ class  PersistentAreaAura : public Aura
         void Update(uint32 diff) override;
 };
 
-class  SingleEnemyTargetAura : public Aura
+class SingleEnemyTargetAura : public Aura
 {
         friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
 

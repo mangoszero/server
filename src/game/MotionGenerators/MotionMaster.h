@@ -68,7 +68,7 @@ enum MMCleanFlag
     MMCF_RESET  = 2                                         // Flag if need top()->Reset()
 };
 
-class  MotionMaster : private std::stack<MovementGenerator*>
+class MotionMaster : private std::stack<MovementGenerator*>
 {
     private:
         typedef std::stack<MovementGenerator*> Impl;

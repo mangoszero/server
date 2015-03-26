@@ -101,7 +101,7 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     std::string str = secsToTimeString(sWorld.GetUptime());
 
     char const* full;
-	full = REVISION_NR;
+    full = REVISION_NR;
     SendSysMessage(full);
 
     if (sScriptMgr.IsScriptLibraryLoaded())

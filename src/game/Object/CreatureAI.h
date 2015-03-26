@@ -97,7 +97,7 @@ enum AIEventType
     AI_EVENT_CUSTOM_F           = 1005,
 };
 
-class  CreatureAI
+class CreatureAI
 {
     public:
         explicit CreatureAI(Creature* creature) :

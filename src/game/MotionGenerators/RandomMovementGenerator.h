@@ -31,7 +31,7 @@
 #define MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK 30
 
 template<class T>
-class  RandomMovementGenerator
+class RandomMovementGenerator
     : public MovementGeneratorMedium< T, RandomMovementGenerator<T> >
 {
     public:

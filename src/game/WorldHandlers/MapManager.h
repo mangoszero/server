@@ -54,7 +54,7 @@ struct MapID
     uint32 nInstanceId;
 };
 
-class  MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
+class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
 {
         friend class MaNGOS::OperatorNew<MapManager>;
 

@@ -34,7 +34,7 @@
 #include "CellImpl.h"
 #include "BattleGround/BattleGround.h"
 
-class  ObjectGridRespawnMover
+class ObjectGridRespawnMover
 {
     public:
         ObjectGridRespawnMover() {}

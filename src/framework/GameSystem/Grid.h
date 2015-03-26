@@ -49,7 +49,7 @@ class ACTIVE_OBJECT,
  * this is implementation specific to the loader class.  From the
  * Grid's perspective, the loader meets its API requirement is suffice.
  */
-class  Grid
+class Grid
 {
         // allows the GridLoader to access its internals
         template<class A, class T, class O> friend class GridLoader;

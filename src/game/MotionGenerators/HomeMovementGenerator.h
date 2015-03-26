@@ -30,10 +30,10 @@
 class Creature;
 
 template < class T >
-class  HomeMovementGenerator;
+class HomeMovementGenerator;
 
 template <>
-class  HomeMovementGenerator<Creature>
+class HomeMovementGenerator<Creature>
     : public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
 {
     public:

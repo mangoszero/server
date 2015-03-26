@@ -7576,12 +7576,12 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             {
                 sLog.outErrorDb("Creature in range condition (entry %u, type %u) has an invalid value in value2. (Range %u must be greater than 0), skipping.", entry, condition, value2);
                 return false;
-			}
-			break;
+            }
+            break;
         }
         case CONDITION_GAMEOBJECT_IN_RANGE:
         {
-			if (!sGOStorage.LookupEntry<GameObjectInfo>(value1))
+            if (!sGOStorage.LookupEntry<GameObjectInfo>(value1))
             {
                 sLog.outErrorDb("Game object in range condition (entry %u, type %u) has an invalid value in value1 (gameobject). (Game object %u does not exist in the database), skipping.", entry, condition, value1);
                 return false;
@@ -7590,8 +7590,8 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             {
                 sLog.outErrorDb("Game object in range condition (entry %u, type %u) has an invalid value in value2 (range). (Range %u must be greater than 0), skipping.", entry, condition, value2);
                 return false;
-			}
-			break;
+            }
+            break;
         }
         case CONDITION_NONE:
             break;
@@ -7911,7 +7911,7 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
         trainerSpell.reqLevel      = fields[5].GetUInt32();
 
         trainerSpell.isProvidedReqLevel = trainerSpell.reqLevel > 0;
-		
+        
         if (trainerSpell.reqLevel)
         {
             if (trainerSpell.reqLevel == spellinfo->spellLevel)

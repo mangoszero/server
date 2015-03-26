@@ -369,7 +369,7 @@ template<class OBJECT_TYPES>
  * objects of different types.
  *
  */
-class  TypeMapContainer
+class TypeMapContainer
 {
     public:
 

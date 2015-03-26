@@ -103,7 +103,7 @@ template<class VISITOR, class TYPE_CONTAINER>
  * @brief
  *
  */
-class  TypeContainerVisitor
+class TypeContainerVisitor
 {
     public:
 

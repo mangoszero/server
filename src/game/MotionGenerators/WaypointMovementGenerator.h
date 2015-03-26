@@ -42,7 +42,7 @@
 #define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)// 3 Minutes
 
 template<class T, class P>
-class  PathMovementBase
+class PathMovementBase
 {
     public:
         PathMovementBase() : i_currentNode(0) {}
@@ -63,10 +63,10 @@ class  PathMovementBase
  */
 
 template<class T>
-class  WaypointMovementGenerator;
+class WaypointMovementGenerator;
 
 template<>
-class  WaypointMovementGenerator<Creature>
+class WaypointMovementGenerator<Creature>
     : public MovementGeneratorMedium< Creature, WaypointMovementGenerator<Creature> >,
       public PathMovementBase<Creature, WaypointPath const*>
 {
@@ -111,7 +111,7 @@ class  WaypointMovementGenerator<Creature>
 /** FlightPathMovementGenerator generates movement of the player for the paths
  * and hence generates ground and activities for the player.
  */
-class  FlightPathMovementGenerator
+class FlightPathMovementGenerator
     : public MovementGeneratorMedium< Player, FlightPathMovementGenerator >,
       public PathMovementBase<Player, TaxiPathNodeList const*>
 {

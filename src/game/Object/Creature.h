@@ -488,7 +488,7 @@ enum TemporaryFactionFlags                                  // Used at real fact
     TEMPFACTION_ALL,
 };
 
-class  Creature : public Unit
+class Creature : public Unit
 {
         CreatureAI* i_AI;
 

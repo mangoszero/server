@@ -29,7 +29,7 @@
 #include "ObjectGuid.h"
 
 template<class T>
-class  FleeingMovementGenerator
+class FleeingMovementGenerator
     : public MovementGeneratorMedium< T, FleeingMovementGenerator<T> >
 {
     public:
@@ -51,7 +51,7 @@ class  FleeingMovementGenerator
         TimeTracker i_nextCheckTime;
 };
 
-class  TimedFleeingMovementGenerator
+class TimedFleeingMovementGenerator
     : public FleeingMovementGenerator<Creature>
 {
     public:

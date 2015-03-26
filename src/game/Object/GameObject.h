@@ -545,7 +545,7 @@ struct GameObjectDisplayInfoEntry;
 
 #define GO_ANIMPROGRESS_DEFAULT 100                         // in 3.x 0xFF
 
-class  GameObject : public WorldObject
+class GameObject : public WorldObject
 {
     public:
         explicit GameObject();

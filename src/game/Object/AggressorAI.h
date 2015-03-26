@@ -31,7 +31,7 @@
 
 class Creature;
 
-class  AggressorAI : public CreatureAI
+class AggressorAI : public CreatureAI
 {
         enum AggressorState
         {

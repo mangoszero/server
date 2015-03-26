@@ -33,7 +33,7 @@
  * @brief
  *
  */
-class  QueryResult
+class QueryResult
 {
     public:
         /**
@@ -102,7 +102,7 @@ typedef std::vector<std::string> QueryFieldNames;
  * @brief
  *
  */
-class  QueryNamedResult
+class QueryNamedResult
 {
     public:
         /**

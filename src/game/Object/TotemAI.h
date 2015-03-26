@@ -32,7 +32,7 @@
 class Creature;
 class Totem;
 
-class  TotemAI : public CreatureAI
+class TotemAI : public CreatureAI
 {
     public:
 

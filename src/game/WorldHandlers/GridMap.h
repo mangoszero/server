@@ -193,7 +193,7 @@ class GridMap
 };
 
 template<typename Countable>
-class  Referencable
+class Referencable
 {
     public:
         Referencable() { m_count = 0; }
@@ -219,7 +219,7 @@ typedef ACE_Atomic_Op<ACE_Thread_Mutex, long> AtomicLong;
 #define DEFAULT_WATER_SEARCH      50.0f                     // default search distance to case detection water level
 
 // class for sharing and managin GridMap objects
-class  TerrainInfo : public Referencable<AtomicLong>
+class TerrainInfo : public Referencable<AtomicLong>
 {
     public:
         TerrainInfo(uint32 mapid);

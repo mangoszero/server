@@ -34,7 +34,7 @@ template<class OBJECT>
  * @brief
  *
  */
-class  GridReference : public Reference<GridRefManager<OBJECT>, OBJECT>
+class GridReference : public Reference<GridRefManager<OBJECT>, OBJECT>
 {
     protected:
 

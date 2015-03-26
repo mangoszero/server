@@ -28,7 +28,7 @@
 #include "MovementGenerator.h"
 
 template<class T>
-class  PointMovementGenerator
+class PointMovementGenerator
     : public MovementGeneratorMedium< T, PointMovementGenerator<T> >
 {
     public:
@@ -52,7 +52,7 @@ class  PointMovementGenerator
         bool m_generatePath;
 };
 
-class  AssistanceMovementGenerator
+class AssistanceMovementGenerator
     : public PointMovementGenerator<Creature>
 {
     public:
@@ -79,7 +79,7 @@ class EffectMovementGenerator : public MovementGenerator
         uint32 m_Id;
 };
 
-class  FlyOrLandMovementGenerator : public PointMovementGenerator<Creature>
+class FlyOrLandMovementGenerator : public PointMovementGenerator<Creature>
 {
     public:
         FlyOrLandMovementGenerator(uint32 _id, float _x, float _y, float _z, bool liftOff) :

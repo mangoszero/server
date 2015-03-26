@@ -49,7 +49,7 @@ enum InstanceConditionIDs                                   // Suggested values 
     INSTANCE_CONDITION_ID_TEAM_ALLIANCE     = 469,
 };
 
-class  InstanceData
+class InstanceData
 {
     public:
 

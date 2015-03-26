@@ -125,7 +125,7 @@ class WorldUpdateCounter
         uint32 m_tmStart;
 };
 
-class  Object
+class Object
 {
     public:
         virtual ~Object();
@@ -454,7 +454,7 @@ class  Object
 
 struct WorldObjectChangeAccumulator;
 
-class  WorldObject : public Object
+class WorldObject : public Object
 {
         friend struct WorldObjectChangeAccumulator;
 

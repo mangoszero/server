@@ -143,7 +143,7 @@ uint32 N,
  * @brief
  *
  */
-class  NGrid
+class NGrid
 {
     public:
 

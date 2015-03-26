@@ -331,11 +331,11 @@ struct npc_injured_patientAI : public ScriptedAI
                         pDocAI->PatientSaved(m_creature, pPlayer, m_pCoord);
                     }
                 }
-            }		
-			
+            }        
+            
             // quick boost to health to prevent death before next tick can occur
             m_creature->SetHealth(uint32(m_creature->GetMaxHealth()*0.20));
-			
+            
             // make not selectable
             m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             // regen health

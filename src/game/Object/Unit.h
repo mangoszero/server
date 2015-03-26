@@ -1091,7 +1091,7 @@ enum PowerDefaults
 
 struct SpellProcEventEntry;                                 // used only privately
 
-class  Unit : public WorldObject
+class Unit : public WorldObject
 {
     public:
         typedef std::set<Unit*> AttackerSet;

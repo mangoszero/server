@@ -45,7 +45,7 @@ class ACTIVE_OBJECT,
  * loader and unloader. GridLoader manages the grid (both local and remote).
  *
  */
-class  GridLoader
+class GridLoader
 {
     public:
 

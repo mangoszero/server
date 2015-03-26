@@ -35,7 +35,7 @@ class ACE_Configuration_Heap;
  * @brief
  *
  */
-class  Config
+class Config
 {
     public:
         /**

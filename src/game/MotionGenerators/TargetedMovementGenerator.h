@@ -30,7 +30,7 @@
 
 class PathFinder;
 
-class  TargetedMovementGeneratorBase
+class TargetedMovementGeneratorBase
 {
     public:
         TargetedMovementGeneratorBase(Unit& target) { i_target.link(&target, this); }
@@ -40,7 +40,7 @@ class  TargetedMovementGeneratorBase
 };
 
 template<class T, typename D>
-class  TargetedMovementGeneratorMedium
+class TargetedMovementGeneratorMedium
     : public MovementGeneratorMedium< T, D >, public TargetedMovementGeneratorBase
 {
     protected:
@@ -78,7 +78,7 @@ class  TargetedMovementGeneratorMedium
 };
 
 template<class T>
-class  ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >
+class ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >
 {
     public:
         ChaseMovementGenerator(Unit& target, float offset, float angle)
@@ -103,7 +103,7 @@ class  ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseM
 };
 
 template<class T>
-class  FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >
+class FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >
 {
     public:
         FollowMovementGenerator(Unit& target)

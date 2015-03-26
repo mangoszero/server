@@ -31,7 +31,7 @@
  * @brief
  *
  */
-class  BarGoLink
+class BarGoLink
 {
     public:
         /**

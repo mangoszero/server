@@ -31,7 +31,7 @@
 
 class Creature;
 
-class  GuardAI : public CreatureAI
+class GuardAI : public CreatureAI
 {
         enum GuardState
         {

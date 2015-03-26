@@ -27,7 +27,7 @@
 
 #include "CreatureAI.h"
 
-class  NullCreatureAI : public CreatureAI
+class NullCreatureAI : public CreatureAI
 {
     public:
 

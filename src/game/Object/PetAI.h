@@ -32,7 +32,7 @@
 class Creature;
 class Spell;
 
-class  PetAI : public CreatureAI
+class PetAI : public CreatureAI
 {
     public:
 

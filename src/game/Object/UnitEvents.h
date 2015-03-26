@@ -67,7 +67,7 @@ enum UnitThreatEventType
 
 //==============================================================
 
-class  UnitBaseEvent
+class UnitBaseEvent
 {
     private:
         uint32 iType;
@@ -81,7 +81,7 @@ class  UnitBaseEvent
 
 //==============================================================
 
-class  ThreatRefStatusChangeEvent : public UnitBaseEvent
+class ThreatRefStatusChangeEvent : public UnitBaseEvent
 {
     private:
         HostileReference* iHostileReference;
@@ -118,7 +118,7 @@ class  ThreatRefStatusChangeEvent : public UnitBaseEvent
 
 //==============================================================
 
-class  ThreatManagerEvent : public ThreatRefStatusChangeEvent
+class ThreatManagerEvent : public ThreatRefStatusChangeEvent
 {
     private:
         ThreatContainer* iThreatContainer;
