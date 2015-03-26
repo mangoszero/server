@@ -2111,6 +2111,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 }
                 case SPELLFAMILY_WARRIOR:
                 {
+                    // Defensive State Dummy and Shield Block
+                    if (spellInfo_1->Id == 5302 && spellInfo_2->Id == 2565)
+                        { return false; }
+
                     // Scroll of Protection and Defensive Stance (multi-family check)
                     if (spellInfo_1->SpellIconID == 276 && spellInfo_2->Id == 71)
                         { return false; }
