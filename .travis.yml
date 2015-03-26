@@ -13,11 +13,6 @@ branches:
 # build with both gcc and clang to ensure compatibility
 compiler:
   - gcc
-
-before_install:
-# Get Eluna
- - git submodule init
- - git submodule update
  
 script:
   - test -d _build || mkdir _build
