@@ -1363,7 +1363,7 @@ class  Player : public Unit
         bool CanShareQuest(uint32 quest_id) const;
 
         void SendQuestCompleteEvent(uint32 quest_id);
-        void SendQuestReward(Quest const* pQuest, uint32 XP, Object* questGiver);
+        void SendQuestReward(Quest const* pQuest, uint32 XP);
         void SendQuestFailed(uint32 quest_id);
         void SendQuestTimerFailed(uint32 quest_id);
         void SendCanTakeQuestResponse(uint32 msg) const;

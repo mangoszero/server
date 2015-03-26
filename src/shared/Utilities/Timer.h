@@ -101,7 +101,7 @@ class WorldTimer
          * @param savetime
          * @return uint32
          */
-        static uint32 getMSTime_internal(bool savetime = false);
+        static uint32 getMSTime_internal();
 
         static  uint32 m_iTime; /**< TODO */
         static  uint32 m_iPrevTime; /**< TODO */

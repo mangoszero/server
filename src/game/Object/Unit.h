@@ -2745,7 +2745,6 @@ class  Unit : public WorldObject
          * that are needed instead of giving them through \ref CalcDamageInfo
          * @param HitInfo hit information as in the \ref CalcDamageInfo::HitInfo
          * @param target the target of the attack
-         * @param SwingType the swingtype, need to know what this is
          * @param damageSchoolMask the damageschoolmask as the one from:
          * \ref CalcDamageInfo::damageSchoolMask
          * @param Damage the damage that was done
@@ -2755,7 +2754,7 @@ class  Unit : public WorldObject
          * @param BlockedAmount how much of the damage that was blocked
          * \todo What's the swingtype for?
          */
-        void SendAttackStateUpdate(uint32 HitInfo, Unit* target, uint8 SwingType, SpellSchoolMask damageSchoolMask, uint32 Damage, uint32 AbsorbDamage, uint32 Resist, VictimState TargetState, uint32 BlockedAmount);
+        void SendAttackStateUpdate(uint32 HitInfo, Unit* target, SpellSchoolMask damageSchoolMask, uint32 Damage, uint32 AbsorbDamage, uint32 Resist, VictimState TargetState, uint32 BlockedAmount);
         /**
          * Used to send a update to the combat log for all \ref Player/\ref Unit s in the vicinity.
          * @param log Info about who/what did damage to who and how etc, data needed for the packet
@@ -3249,7 +3248,7 @@ class  Unit : public WorldObject
          * @param casterGuid \ref ObjectGuid of the caster
          * @param mode reason for removal
          */
-        void RemoveAurasByCasterSpell(uint32 spellId, ObjectGuid casterGuid, AuraRemoveMode mode = AURA_REMOVE_BY_DEFAULT);
+        void RemoveAurasByCasterSpell(uint32 spellId, ObjectGuid casterGuid);
         /** 
          * Removes all \ref Aura s caused by a certain spell because it was canceled.
          * @param spellId id of the \ref Spell causing the \ref Aura s you would like to remove
@@ -3619,7 +3618,7 @@ class  Unit : public WorldObject
 
         void SetFeared(bool apply, ObjectGuid casterGuid = ObjectGuid(), uint32 spellID = 0, uint32 time = 0);
         void SetConfused(bool apply, ObjectGuid casterGuid = ObjectGuid(), uint32 spellID = 0);
-        void SetFeignDeath(bool apply, ObjectGuid casterGuid = ObjectGuid(), uint32 spellID = 0);
+        void SetFeignDeath(bool apply, ObjectGuid casterGuid = ObjectGuid());
 
         void AddComboPointHolder(uint32 lowguid) { m_ComboPointHolders.insert(lowguid); }
         void RemoveComboPointHolder(uint32 lowguid) { m_ComboPointHolders.erase(lowguid); }

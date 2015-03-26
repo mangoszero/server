@@ -47,7 +47,7 @@ uint32 WorldTimer::tick()
     m_iPrevTime = m_iTime;
 
     // get the new one and don't forget to persist current system time in m_SystemTickTime
-    m_iTime = WorldTimer::getMSTime_internal(true);
+    m_iTime = WorldTimer::getMSTime_internal();
 
     // return tick diff
     return getMSTimeDiff(m_iPrevTime, m_iTime);
@@ -58,7 +58,7 @@ uint32 WorldTimer::getMSTime()
     return getMSTime_internal();
 }
 
-uint32 WorldTimer::getMSTime_internal(bool /*savetime*/ /*= false*/)
+uint32 WorldTimer::getMSTime_internal()
 {
     // get current time
     const ACE_Time_Value currTime = ACE_OS::gettimeofday();
