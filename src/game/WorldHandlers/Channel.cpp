@@ -106,6 +106,7 @@ void Channel::Join(Player* player, const char* password)
 
     MakeYouJoined(&data);
     SendToOne(&data, guid);
+
     JoinNotify(guid);
 
     // if no owner first logged will become
@@ -151,7 +152,7 @@ void Channel::Leave(Player* player, bool send)
         SendToAll(&data);
     }
 
-        LeaveNotify(guid);
+    LeaveNotify(guid);
 
     if (changeowner)
     {
@@ -612,7 +613,7 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
         lang = LANG_UNIVERSAL;
     WorldPacket data;
-    ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, text, Language(lang), player->GetChatTag(), guid, player->GetName(), ObjectGuid(), "", m_name.c_str());
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, text, Language(lang), player->GetChatTag(), guid, player->GetName(), ObjectGuid(), "", m_name.c_str(), player->GetHonorRankInfo().rank);
     SendToAll(&data, !m_players[guid].IsModerator() ? guid : ObjectGuid());
 }
 
