@@ -68,7 +68,7 @@ class  WaypointMovementGenerator;
 template<>
 class  WaypointMovementGenerator<Creature>
     : public MovementGeneratorMedium< Creature, WaypointMovementGenerator<Creature> >,
-  public PathMovementBase<Creature, WaypointPath const*>
+      public PathMovementBase<Creature, WaypointPath const*>
 {
     public:
         WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0) {}
@@ -78,21 +78,21 @@ class  WaypointMovementGenerator<Creature>
         void Finalize(Creature&);
         void Reset(Creature& u);
         bool Update(Creature& u, const uint32& diff);
-
-        void MovementInform(Creature&);
+        void InitializeWaypointPath(Creature& u, int32 id, WaypointPathOrigin wpSource, uint32 initialDelay, uint32 overwriteEntry);
 
         MovementGeneratorType GetMovementGeneratorType() const { return WAYPOINT_MOTION_TYPE; }
 
-        // now path movement implmementation
-        void LoadPath(Creature& c);
-
         bool GetResetPosition(Creature&, float& /*x*/, float& /*y*/, float& /*z*/, float& /*o*/) const;
+        uint32 getLastReachedWaypoint() const { return m_lastReachedWaypoint; }
+        void GetPathInformation(int32& pathId, WaypointPathOrigin& wpOrigin) const { pathId = m_pathId; wpOrigin = m_PathOrigin; }
+        void GetPathInformation(std::ostringstream& oss) const;
 
         void AddToWaypointPauseTime(int32 waitTimeDiff);
-
-        uint32 getLastReachedWaypoint() const { return m_lastReachedWaypoint; }
+        bool SetNextWaypoint(uint32 pointId);
 
     private:
+        void LoadPath(Creature& c, int32 id, WaypointPathOrigin wpOrigin, uint32 overwriteEntry);
+
         void Stop(int32 time) { i_nextMoveTime.Reset(time); }
         bool Stopped(Creature& u);
         bool CanMove(int32 diff, Creature& u);
@@ -100,11 +100,12 @@ class  WaypointMovementGenerator<Creature>
         void OnArrived(Creature&);
         void StartMove(Creature&);
 
-        void StartMoveNow(Creature& creature);
-
         ShortTimeTracker i_nextMoveTime;
         bool m_isArrivalDone;
         uint32 m_lastReachedWaypoint;
+
+        int32 m_pathId;
+        WaypointPathOrigin m_PathOrigin;
 };
 
 /** FlightPathMovementGenerator generates movement of the player for the paths
@@ -112,7 +113,7 @@ class  WaypointMovementGenerator<Creature>
  */
 class  FlightPathMovementGenerator
     : public MovementGeneratorMedium< Player, FlightPathMovementGenerator >,
-  public PathMovementBase<Player, TaxiPathNodeList const*>
+      public PathMovementBase<Player, TaxiPathNodeList const*>
 {
     public:
         explicit FlightPathMovementGenerator(TaxiPathNodeList const& pathnodes, uint32 startNode = 0)
