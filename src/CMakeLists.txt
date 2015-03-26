@@ -35,7 +35,7 @@ if(WIN32)
 endif()
 
 #-----------------------------------------------------------------------------
-# Build the mangos-zero framework library
+# Build the mangos framework library
 add_subdirectory(framework)
 
 #-----------------------------------------------------------------------------
