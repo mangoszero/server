@@ -175,6 +175,11 @@ ID | Name                                   | Parameters
                                             |   orientation != 0: Obtain a random point around resultingTarget in direction of orientation
                                             | * data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a point in direction of resTarget->GetOrientation + orientation
                                             |   for resTarget == resSource and orientation == 0 this will mean resSource moving forward
+38 | SCRIPT_COMMAND_SEND_MAIL               | Send a mail from resSource  to resTarget
+                                            | * resultingSource = Creature OR NULL, resTarget must be Player
+                                            | * datalong = mailTemplateId
+                                            | * datalong2: AlternativeSenderEntry. Use as sender-Entry of the sent mail
+                                            | * dataint1: Delay (>= 0) in Seconds
 
 TemporaryFactionFlags
 ---------------------
