@@ -39,7 +39,7 @@
  * - what happens if raid fail, can they start the event as soon after as they want?
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "naxxramas.h"
 
 enum

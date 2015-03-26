@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "onyxias_lair.h"
 
 enum

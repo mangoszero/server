@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "zulfarrak.h"
 
 instance_zulfarrak::instance_zulfarrak(Map* pMap) : ScriptedInstance(pMap),

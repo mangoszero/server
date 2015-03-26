@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "deadmines.h"
 
 instance_deadmines::instance_deadmines(Map* pMap) : ScriptedInstance(pMap),

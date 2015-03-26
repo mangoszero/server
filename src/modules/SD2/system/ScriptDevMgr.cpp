@@ -23,7 +23,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "Config/Config.h"
 #include "Database/DatabaseEnv.h"
 #include "DBCStores.h"

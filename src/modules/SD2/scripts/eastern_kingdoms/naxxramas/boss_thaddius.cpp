@@ -41,7 +41,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "naxxramas.h"
 
 enum

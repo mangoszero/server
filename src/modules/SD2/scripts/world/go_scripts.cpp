@@ -39,7 +39,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 /*######
 ## go_barov_journal

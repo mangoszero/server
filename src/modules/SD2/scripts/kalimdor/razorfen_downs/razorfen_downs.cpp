@@ -38,7 +38,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "razorfen_downs.h"
 #include "escort_ai.h"
 

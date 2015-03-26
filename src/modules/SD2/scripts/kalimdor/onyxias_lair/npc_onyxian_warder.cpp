@@ -9,7 +9,7 @@ SDComment:
 SDCategory: Onyxia's Lair
 EndScriptData */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 enum
 {

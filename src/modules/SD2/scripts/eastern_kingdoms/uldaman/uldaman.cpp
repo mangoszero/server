@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "uldaman.h"
 
 void AddSC_uldaman()

@@ -38,7 +38,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 /*######
 ## mob_yenniku

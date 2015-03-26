@@ -43,7 +43,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "sunken_temple.h"
 
 enum

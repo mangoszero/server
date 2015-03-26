@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "deadmines.h"
 
 bool GOUse_go_defias_cannon(Player* /*pPlayer*/, GameObject* pGo)

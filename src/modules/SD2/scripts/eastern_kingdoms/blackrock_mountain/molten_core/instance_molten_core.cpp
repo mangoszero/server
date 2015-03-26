@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "molten_core.h"
 
 static sSpawnLocation m_aBosspawnLocs[MAX_MAJORDOMO_ADDS] =

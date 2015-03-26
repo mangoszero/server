@@ -30,7 +30,7 @@ SDComment: This AI is under development
 SDCategory: Npc
 EndScriptData */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "follower_ai.h"
 
 const float MAX_PLAYER_DISTANCE = 100.0f;

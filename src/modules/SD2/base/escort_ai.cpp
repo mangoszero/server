@@ -30,7 +30,7 @@ SDComment:
 SDCategory: Npc
 EndScriptData */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "escort_ai.h"
 #include "system/system.h"
 

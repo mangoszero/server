@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "temple_of_ahnqiraj.h"
 
 static const DialogueEntry aIntroDialogue[] =

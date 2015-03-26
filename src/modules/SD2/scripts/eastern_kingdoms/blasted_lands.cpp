@@ -38,7 +38,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 /*######
 ## npc_fallen_hero_of_horde

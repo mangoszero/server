@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "shadowfang_keep.h"
 
 instance_shadowfang_keep::instance_shadowfang_keep(Map* pMap) : ScriptedInstance(pMap)

@@ -44,7 +44,7 @@
  *                       and to hack the targeting to be "on the ground" - Hence the prefered way as it is now!
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "naxxramas.h"
 
 enum

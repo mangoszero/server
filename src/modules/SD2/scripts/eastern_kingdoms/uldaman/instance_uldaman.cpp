@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "uldaman.h"
 
 instance_uldaman::instance_uldaman(Map* pMap) : ScriptedInstance(pMap),

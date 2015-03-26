@@ -37,7 +37,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 void AddSC_item_scripts()
 {

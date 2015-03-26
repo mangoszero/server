@@ -39,7 +39,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "gnomeregan.h"
 #include "escort_ai.h"
 #include "follower_ai.h"

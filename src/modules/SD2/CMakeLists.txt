@@ -23,9 +23,9 @@
 include(MacroMangosSourceGroup)
 
 #Add PCH Files
-set(mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h")
+set(mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.h")
 if(PCH)
-    LIST(APPEND mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp")
+    LIST(APPEND mangosscript_PCH "${CMAKE_CURRENT_SOURCE_DIR}/precompiled.cpp")
 endif()
 
 include_directories(

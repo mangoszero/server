@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "sunken_temple.h"
 
 instance_sunken_temple::instance_sunken_temple(Map* pMap) : ScriptedInstance(pMap),

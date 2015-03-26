@@ -32,7 +32,7 @@
  * EndScriptData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 #define GENERIC_CREATURE_COOLDOWN   5000
 

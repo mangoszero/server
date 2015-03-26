@@ -40,7 +40,7 @@
  * Spell 26527: Enrages
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "naxxramas.h"
 
 enum

@@ -23,7 +23,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 
 /**
    Function that uses a door or a button

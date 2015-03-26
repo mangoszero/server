@@ -41,7 +41,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "world_map_scripts.h"
 
 static uint32 TriggerOrphanSpell[6][3] =

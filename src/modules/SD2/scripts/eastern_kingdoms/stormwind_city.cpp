@@ -42,7 +42,7 @@
  * EndContentData
  */
 
-#include "pchdef.h"
+#include "precompiled.h"
 #include "scripts/world/world_map_scripts.h"
 #include "escort_ai.h"
 
