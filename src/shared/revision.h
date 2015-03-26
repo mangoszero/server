@@ -26,6 +26,6 @@
 #define MANGOS_H_REVISION
 #define REVISION_NR "21000"
 #define REVISION_DB_CHARACTERS "required_20005_01_characters_pvpstats"
-#define REVISION_DB_MANGOS "required_21000_01_Release21_initial"
+#define REVISION_DB_MANGOS "required_21000_02_Waypoint_update"
 #define REVISION_DB_REALMD "required_20140607_Realm_Resync"
 #endif // __REVISION_H__
