@@ -10,6 +10,11 @@ branches:
     - release20
     - develop21
 
+# build on both Linux and OSX
+os:
+  - linux
+  - osx
+
 # build with both gcc and clang to ensure compatibility
 compiler:
   - gcc
