@@ -16,7 +16,7 @@ branches:
 notifications:
   slack: getmangos:yRgNBSgRQVh8WdfGEbT08Hit
 
-# build on both Linux and OSX (finally)
+# build on both Linux and OSX
 os:
   - linux
   - osx
