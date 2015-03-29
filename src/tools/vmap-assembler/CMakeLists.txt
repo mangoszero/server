@@ -16,9 +16,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required(VERSION 2.8)
 
-project (MANGOS_VMAP_ASSEMB_IO)
+project(MANGOS_VMAP_ASSEMB_IO)
 
 set(EXECUTABLE_NAME "vmap-assembler")
 
@@ -37,36 +37,46 @@ include_directories(
 )
 
 if(WIN32)
-  # add resource file to windows build
-  set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} vmap-assembler.rc)
+    # add resource file to windows build
+    set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} vmap-assembler.rc)
 endif()
 
 add_executable(${EXECUTABLE_NAME} vmap_assembler.cpp ${EXECUTABLE_SRCS})
 
 if(NOT ACE_USE_EXTERNAL)
-  target_link_libraries(${EXECUTABLE_NAME} ace)
+    target_link_libraries(${EXECUTABLE_NAME} ace)
 else()
-  target_link_libraries(${EXECUTABLE_NAME} ACE)
+    target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME} vmap g3dlite zlib)
 
+set(EXECUTABLE_LINK_FLAGS "")
+
+if(UNIX)
+    if(CMAKE_C_COMPILER MATCHES "clang" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+        set(EXECUTABLE_LINK_FLAGS "-pthread${EXECUTABLE_LINK_FLAGS}")
+    endif()
+endif()
+
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS "${EXECUTABLE_LINK_FLAGS}")
+
 #Output the compiled exes to build/bin/$(Configuration)/tools directory on windows by default
 if(WIN32)
-  if ( MSVC )
-    set_target_properties(${EXECUTABLE_NAME} PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/Release/tools
-      RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin/Debug/tools
-    )
-  elseif ( MINGW )
-    set_target_properties(${EXECUTABLE_NAME} PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/tools
-      RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin/tools
-    )
-  endif()
+    if ( MSVC )
+        set_target_properties(${EXECUTABLE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/Release/tools
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin/Debug/tools
+        )
+    elseif ( MINGW )
+        set_target_properties(${EXECUTABLE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/tools
+            RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin/tools
+        )
+    endif()
 endif()
 
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION "${BIN_DIR}/${TOOLS_DIR}")
 if(WIN32 AND MSVC)
-  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}/${TOOLS_DIR}" CONFIGURATIONS Debug)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}/${TOOLS_DIR}" CONFIGURATIONS Debug)
 endif()
