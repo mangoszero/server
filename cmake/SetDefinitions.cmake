@@ -89,12 +89,12 @@ if(WIN32)
 elseif(UNIX)
     set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/bin)
     set(LIBS_DIR ${CMAKE_INSTALL_PREFIX}/lib)
-    if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-        if (NOT NOJEM)
-            set(JEMALLOC_LIBRARY "jemalloc")
-            message(STATUS "UNIX: Using jemalloc")
-        endif()
-    endif()
+    
+    # For Unix systems set the rpath so that libraries are found
+    set(CMAKE_INSTALL_RPATH "${LIBS_DIR}")
+    set(CMAKE_INSTALL_NAME_DIR "${LIBS_DIR}")
+    # Run out of build tree
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
     
     # Add uninstall script and target
     configure_file(
@@ -108,7 +108,6 @@ elseif(UNIX)
     )
     
     if(CMAKE_C_COMPILER MATCHES "gcc" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 
         if(PLATFORM EQUAL 32)
