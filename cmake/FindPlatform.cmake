@@ -1,23 +1,21 @@
-# Already set, so only add definition
-# IF(PLATFORM)
-#   IF(PLATFORM MATCHES X64 AND WIN32)
-#     ADD_DEFINITIONS("-D_WIN64")
-#   ENDIF()
-# ELSE()
-  # default to x86 platform.  We'll check for X64 in a bit
-  SET(PLATFORM X86)
+if(CMAKE_SIZEOF_VOID_P MATCHES 8)
+    set(PLATFORM 64)
+    MESSAGE(STATUS "Detected 64-bit platform")
+else()
+    set(PLATFORM 32)
+    MESSAGE(STATUS "Detected 32-bit platform")
+endif()
 
-  # This definition is necessary to work around a bug with Intellisense described
-  # here: http://tinyurl.com/2cb428.  Syntax highlighting is important for proper
-  # debugger functionality.
+if(PLATFORM MATCHES X86) # 32-bit
+    set(DEP_ARCH win32)
+else() # 64-bit
+    set(DEP_ARCH x64)
+endif()
 
-  IF(CMAKE_SIZEOF_VOID_P MATCHES 8)
-      MESSAGE(STATUS "Detected 64-bit platform.")
-      IF(WIN32)
-        ADD_DEFINITIONS("-D_WIN64")
-      ENDIF()
-      SET(PLATFORM X64)
-  ELSE()
-      MESSAGE(STATUS "Detected 32-bit platform.")
-  ENDIF()
-# ENDIF()
+if(XCODE)
+  if(PLATFORM MATCHES X86)
+    set(CMAKE_OSX_ARCHITECTURES i386)
+  else()
+    set(CMAKE_OSX_ARCHITECTURES x86_64)
+  endif()
+endif()
