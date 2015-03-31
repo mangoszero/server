@@ -63,6 +63,7 @@ enum
     NPC_DREAM_FOG                   = 15224,
 };
 
+//common AI part
 struct boss_emerald_dragonAI : public ScriptedAI
 {
     boss_emerald_dragonAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
@@ -184,73 +185,78 @@ enum
     SPELL_PUTRID_MUSHROOM       = 24904,                    // Summons a mushroom on killing a player
 };
 
-struct boss_emerissAI : public boss_emerald_dragonAI
+struct boss_emeriss : public CreatureScript
 {
-    boss_emerissAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { Reset(); }
+    boss_emeriss() : CreatureScript("boss_emeriss") {}
 
-    uint32 m_uiVolatileInfectionTimer;
-
-    void Reset() override
+    struct boss_emerissAI : public boss_emerald_dragonAI
     {
-        boss_emerald_dragonAI::Reset();
+        boss_emerissAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { }
 
-        m_uiVolatileInfectionTimer = 12000;
-    }
+        uint32 m_uiVolatileInfectionTimer;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_EMERISS_AGGRO, m_creature);
-    }
-
-    void KilledUnit(Unit* pVictim) override
-    {
-        // summon a mushroom on the spot the player dies
-        if (pVictim->GetTypeId() == TYPEID_PLAYER)
+        void Reset() override
         {
-            pVictim->CastSpell(pVictim, SPELL_PUTRID_MUSHROOM, true, NULL, NULL, m_creature->GetObjectGuid());
+            boss_emerald_dragonAI::Reset();
+
+            m_uiVolatileInfectionTimer = 12000;
         }
 
-        boss_emerald_dragonAI::KilledUnit(pVictim);
-    }
-
-    // Corruption of Earth at 75%, 50% and 25%
-    bool DoSpecialDragonAbility()
-    {
-        if (DoCastSpellIfCan(m_creature, SPELL_CORRUPTION_OF_EARTH) == CAST_OK)
+        void Aggro(Unit* /*pWho*/) override
         {
-            DoScriptText(SAY_CAST_CORRUPTION, m_creature);
+            DoScriptText(SAY_EMERISS_AGGRO, m_creature);
+        }
 
-            // Successfull cast
+        void KilledUnit(Unit* pVictim) override
+        {
+            // summon a mushroom on the spot the player dies
+            if (pVictim->GetTypeId() == TYPEID_PLAYER)
+            {
+                pVictim->CastSpell(pVictim, SPELL_PUTRID_MUSHROOM, true, NULL, NULL, m_creature->GetObjectGuid());
+            }
+
+            boss_emerald_dragonAI::KilledUnit(pVictim);
+        }
+
+        // Corruption of Earth at 75%, 50% and 25%
+        bool DoSpecialDragonAbility()
+        {
+            if (DoCastSpellIfCan(m_creature, SPELL_CORRUPTION_OF_EARTH) == CAST_OK)
+            {
+                DoScriptText(SAY_CAST_CORRUPTION, m_creature);
+
+                // Successfull cast
+                return true;
+            }
+
+            return false;
+        }
+
+        bool UpdateDragonAI(const uint32 uiDiff)
+        {
+            // Volatile Infection Timer
+            if (m_uiVolatileInfectionTimer < uiDiff)
+            {
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+                if (pTarget && DoCastSpellIfCan(pTarget, SPELL_VOLATILE_INFECTION) == CAST_OK)
+                {
+                    m_uiVolatileInfectionTimer = urand(7000, 12000);
+                }
+            }
+            else
+            {
+                m_uiVolatileInfectionTimer -= uiDiff;
+            }
+
             return true;
         }
+    };
 
-        return false;
-    }
-
-    bool UpdateDragonAI(const uint32 uiDiff)
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        // Volatile Infection Timer
-        if (m_uiVolatileInfectionTimer < uiDiff)
-        {
-            Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-            if (pTarget && DoCastSpellIfCan(pTarget, SPELL_VOLATILE_INFECTION) == CAST_OK)
-            {
-                m_uiVolatileInfectionTimer = urand(7000, 12000);
-            }
-        }
-        else
-        {
-            m_uiVolatileInfectionTimer -= uiDiff;
-        }
-
-        return true;
+        return new boss_emerissAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_boss_emeriss(Creature* pCreature)
-{
-    return new boss_emerissAI(pCreature);
-}
 
 /*######
 ## boss_lethon
@@ -271,94 +277,106 @@ enum
     SPELL_SPIRIT_SHAPE_VISUAL   = 24809,
 };
 
-struct boss_lethonAI : public boss_emerald_dragonAI
+struct boss_lethon : public CreatureScript
 {
-    boss_lethonAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) {}
+    boss_lethon() : CreatureScript("boss_lethon") {}
 
-    void Aggro(Unit* /*pWho*/) override
+    struct boss_lethonAI : public boss_emerald_dragonAI
     {
-        DoScriptText(SAY_LETHON_AGGRO, m_creature);
-        // Shadow bolt wirl is a periodic aura which triggers a set of shadowbolts every 2 secs; may need some core tunning
-        DoCastSpellIfCan(m_creature, SPELL_SHADOW_BOLT_WIRL, CAST_TRIGGERED);
-    }
+        boss_lethonAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) {}
 
-    // Summon a spirit which moves toward the boss and heals him for each player hit by the spell; used at 75%, 50% and 25%
-    bool DoSpecialDragonAbility()
-    {
-        if (DoCastSpellIfCan(m_creature, SPELL_DRAW_SPIRIT) == CAST_OK)
+        void Aggro(Unit* /*pWho*/) override
         {
-            DoScriptText(SAY_DRAW_SPIRIT, m_creature);
-            return true;
+            DoScriptText(SAY_LETHON_AGGRO, m_creature);
+            // Shadow bolt wirl is a periodic aura which triggers a set of shadowbolts every 2 secs; may need some core tunning
+            DoCastSpellIfCan(m_creature, SPELL_SHADOW_BOLT_WIRL, CAST_TRIGGERED);
         }
 
-        return false;
-    }
-
-    // Need this code here, as SPELL_DRAW_SPIRIT has no Script- or Dummyeffect
-    void SpellHitTarget(Unit* pTarget, const SpellEntry* pSpell) override
-    {
-        // Summon a shade for each player hit
-        if (pTarget->GetTypeId() == TYPEID_PLAYER && pSpell->Id == SPELL_DRAW_SPIRIT)
+        // Summon a spirit which moves toward the boss and heals him for each player hit by the spell; used at 75%, 50% and 25%
+        bool DoSpecialDragonAbility()
         {
-            // Summon this way, to be able to cast the shade visual spell with player as original caster
-            // This might not be supported currently by core, but this spell's visual should be dependend on the player
-            // Also possible that this was no problem due to the special way these NPCs had been summoned in classic times
-            if (Creature* pSummoned = pTarget->SummonCreature(NPC_SPIRIT_SHADE, 0.0f, 0.0f, 0.0f, pTarget->GetOrientation(), TEMPSUMMON_DEAD_DESPAWN, 0))
+            if (DoCastSpellIfCan(m_creature, SPELL_DRAW_SPIRIT) == CAST_OK)
             {
-                pSummoned->CastSpell(pSummoned, SPELL_SPIRIT_SHAPE_VISUAL, true, NULL, NULL, pTarget->GetObjectGuid());
+                DoScriptText(SAY_DRAW_SPIRIT, m_creature);
+                return true;
+            }
+
+            return false;
+        }
+
+        // Need this code here, as SPELL_DRAW_SPIRIT has no Script- or Dummyeffect
+        void SpellHitTarget(Unit* pTarget, const SpellEntry* pSpell) override
+        {
+            // Summon a shade for each player hit
+            if (pTarget->GetTypeId() == TYPEID_PLAYER && pSpell->Id == SPELL_DRAW_SPIRIT)
+            {
+                // Summon this way, to be able to cast the shade visual spell with player as original caster
+                // This might not be supported currently by core, but this spell's visual should be dependend on the player
+                // Also possible that this was no problem due to the special way these NPCs had been summoned in classic times
+                if (Creature* pSummoned = pTarget->SummonCreature(NPC_SPIRIT_SHADE, 0.0f, 0.0f, 0.0f, pTarget->GetOrientation(), TEMPSUMMON_DEAD_DESPAWN, 0))
+                {
+                    pSummoned->CastSpell(pSummoned, SPELL_SPIRIT_SHAPE_VISUAL, true, NULL, NULL, pTarget->GetObjectGuid());
+                }
             }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        // Move the shade to lethon
-        if (pSummoned->GetEntry() == NPC_SPIRIT_SHADE)
+        void JustSummoned(Creature* pSummoned) override
         {
-            pSummoned->GetMotionMaster()->MoveFollow(m_creature, 0.0f, 0.0f);
+            // Move the shade to lethon
+            if (pSummoned->GetEntry() == NPC_SPIRIT_SHADE)
+            {
+                pSummoned->GetMotionMaster()->MoveFollow(m_creature, 0.0f, 0.0f);
+            }
+            else
+            {
+                boss_emerald_dragonAI::JustSummoned(pSummoned);
+            }
         }
-        else
-            { boss_emerald_dragonAI::JustSummoned(pSummoned); }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_lethonAI(pCreature);
     }
 };
 
-struct npc_spirit_shadeAI : public ScriptedAI
+struct npc_spirit_shade : public CreatureScript
 {
-    npc_spirit_shadeAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_spirit_shade() : CreatureScript("npc_spirit_shade") {}
 
-    bool m_bHasHealed;
-
-    void Reset() override
+    struct npc_spirit_shadeAI : public ScriptedAI
     {
-        m_bHasHealed = false;
-    }
+        npc_spirit_shadeAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        if (!m_bHasHealed && pWho->GetEntry() == NPC_LETHON && pWho->IsWithinDistInMap(m_creature, 3.0f))
+        bool m_bHasHealed;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(pWho, SPELL_DARK_OFFERING) == CAST_OK)
+            m_bHasHealed = false;
+        }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            if (!m_bHasHealed && pWho->GetEntry() == NPC_LETHON && pWho->IsWithinDistInMap(m_creature, 3.0f))
             {
-                m_bHasHealed = true;
-                m_creature->ForcedDespawn(1000);
+                if (DoCastSpellIfCan(pWho, SPELL_DARK_OFFERING) == CAST_OK)
+                {
+                    m_bHasHealed = true;
+                    m_creature->ForcedDespawn(1000);
+                }
             }
         }
+
+        void AttackStart(Unit* /*pWho*/) override { }
+
+        void UpdateAI(const uint32 /*uiDiff*/) override { }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_spirit_shadeAI(pCreature);
     }
-
-    void AttackStart(Unit* /*pWho*/) override { }
-
-    void UpdateAI(const uint32 /*uiDiff*/) override { }
 };
-
-CreatureAI* GetAI_boss_lethon(Creature* pCreature)
-{
-    return new boss_lethonAI(pCreature);
-}
-
-CreatureAI* GetAI_npc_spirit_shade(Creature* pCreature)
-{
-    return new npc_spirit_shadeAI(pCreature);
-}
 
 /*######
 ## boss_taerar
@@ -382,134 +400,139 @@ enum
     SPELL_POSIONBREATH      = 20667
 };
 
-struct boss_taerarAI : public boss_emerald_dragonAI
+struct boss_taerar : public CreatureScript
 {
-    boss_taerarAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { Reset(); }
+    boss_taerar() : CreatureScript("boss_taerar") {}
 
-    uint32 m_uiArcaneBlastTimer;
-    uint32 m_uiBellowingRoarTimer;
-    uint32 m_uiShadesTimeoutTimer;
-    uint8 m_uiShadesDead;
-
-    void Reset() override
+    struct boss_taerarAI : public boss_emerald_dragonAI
     {
-        boss_emerald_dragonAI::Reset();
+        boss_taerarAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { }
 
-        m_uiArcaneBlastTimer = 12000;
-        m_uiBellowingRoarTimer = 30000;
-        m_uiShadesTimeoutTimer = 0;                         // The time that Taerar is banished
-        m_uiShadesDead = 0;
+        uint32 m_uiArcaneBlastTimer;
+        uint32 m_uiBellowingRoarTimer;
+        uint32 m_uiShadesTimeoutTimer;
+        uint8 m_uiShadesDead;
 
-        // Remove Unselectable if needed
-        if (m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
+        void Reset() override
         {
-            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        }
-    }
+            boss_emerald_dragonAI::Reset();
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_TAERAR_AGGRO, m_creature);
-    }
+            m_uiArcaneBlastTimer = 12000;
+            m_uiBellowingRoarTimer = 30000;
+            m_uiShadesTimeoutTimer = 0;                         // The time that Taerar is banished
+            m_uiShadesDead = 0;
 
-    // Summon 3 Shades at 75%, 50% and 25% and Banish Self
-    bool DoSpecialDragonAbility()
-    {
-        if (DoCastSpellIfCan(m_creature, SPELL_SELF_STUN) == CAST_OK)
-        {
-            // Summon the shades at boss position
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_1, CAST_TRIGGERED);
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_2, CAST_TRIGGERED);
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_3, CAST_TRIGGERED);
-
-            // Make boss not selectable when banished
-            m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-
-            DoScriptText(SAY_SUMMONSHADE, m_creature);
-            m_uiShadesTimeoutTimer = 60000;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_SHADE_OF_TAERAR)
-        {
-            ++m_uiShadesDead;
-
-            // If all shades are dead then unbanish the boss
-            if (m_uiShadesDead == 3)
+            // Remove Unselectable if needed
+            if (m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
             {
-                DoUnbanishBoss();
+                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             }
         }
-    }
 
-    void DoUnbanishBoss()
-    {
-        m_creature->RemoveAurasDueToSpell(SPELL_SELF_STUN);
-        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-
-        m_uiShadesTimeoutTimer = 0;
-        m_uiShadesDead = 0;
-    }
-
-    bool UpdateDragonAI(const uint32 uiDiff)
-    {
-        // Timer to unbanish the boss
-        if (m_uiShadesTimeoutTimer)
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (m_uiShadesTimeoutTimer <= uiDiff)
+            DoScriptText(SAY_TAERAR_AGGRO, m_creature);
+        }
+
+        // Summon 3 Shades at 75%, 50% and 25% and Banish Self
+        bool DoSpecialDragonAbility()
+        {
+            if (DoCastSpellIfCan(m_creature, SPELL_SELF_STUN) == CAST_OK)
             {
-                DoUnbanishBoss();
-            }
-            else
-            {
-                m_uiShadesTimeoutTimer -= uiDiff;
+                // Summon the shades at boss position
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_1, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_2, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_SHADE_3, CAST_TRIGGERED);
+
+                // Make boss not selectable when banished
+                m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+                DoScriptText(SAY_SUMMONSHADE, m_creature);
+                m_uiShadesTimeoutTimer = 60000;
+
+                return true;
             }
 
-            // Prevent further spells or timer handling while banished
             return false;
         }
 
-        // Arcane Blast Timer
-        if (m_uiArcaneBlastTimer < uiDiff)
+        void SummonedCreatureJustDied(Creature* pSummoned) override
         {
-            Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-            if (pTarget && DoCastSpellIfCan(pTarget, SPELL_ARCANE_BLAST) == CAST_OK)
+            if (pSummoned->GetEntry() == NPC_SHADE_OF_TAERAR)
             {
-                m_uiArcaneBlastTimer = urand(7000, 12000);
+                ++m_uiShadesDead;
+
+                // If all shades are dead then unbanish the boss
+                if (m_uiShadesDead == 3)
+                {
+                    DoUnbanishBoss();
+                }
             }
         }
-        else
+
+        void DoUnbanishBoss()
         {
-            m_uiArcaneBlastTimer -= uiDiff;
+            m_creature->RemoveAurasDueToSpell(SPELL_SELF_STUN);
+            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+            m_uiShadesTimeoutTimer = 0;
+            m_uiShadesDead = 0;
         }
 
-        // Bellowing Roar Timer
-        if (m_uiBellowingRoarTimer < uiDiff)
+        bool UpdateDragonAI(const uint32 uiDiff)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_BELLOWING_ROAR) == CAST_OK)
+            // Timer to unbanish the boss
+            if (m_uiShadesTimeoutTimer)
             {
-                m_uiBellowingRoarTimer = urand(20000, 30000);
-            }
-        }
-        else
-        {
-            m_uiBellowingRoarTimer -= uiDiff;
-        }
+                if (m_uiShadesTimeoutTimer <= uiDiff)
+                {
+                    DoUnbanishBoss();
+                }
+                else
+                {
+                    m_uiShadesTimeoutTimer -= uiDiff;
+                }
 
-        return true;
+                // Prevent further spells or timer handling while banished
+                return false;
+            }
+
+            // Arcane Blast Timer
+            if (m_uiArcaneBlastTimer < uiDiff)
+            {
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+                if (pTarget && DoCastSpellIfCan(pTarget, SPELL_ARCANE_BLAST) == CAST_OK)
+                {
+                    m_uiArcaneBlastTimer = urand(7000, 12000);
+                }
+            }
+            else
+            {
+                m_uiArcaneBlastTimer -= uiDiff;
+            }
+
+            // Bellowing Roar Timer
+            if (m_uiBellowingRoarTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_BELLOWING_ROAR) == CAST_OK)
+                {
+                    m_uiBellowingRoarTimer = urand(20000, 30000);
+                }
+            }
+            else
+            {
+                m_uiBellowingRoarTimer -= uiDiff;
+            }
+
+            return true;
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_taerarAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_boss_taerar(Creature* pCreature)
-{
-    return new boss_taerarAI(pCreature);
-}
 
 /*######
 ## boss_ysondre
@@ -528,88 +551,103 @@ enum
 };
 
 // Ysondre script
-struct boss_ysondreAI : public boss_emerald_dragonAI
+struct boss_ysondre : public CreatureScript
 {
-    boss_ysondreAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { Reset(); }
+    boss_ysondre() : CreatureScript("boss_ysondre") {}
 
-    uint32 m_uiLightningWaveTimer;
-
-    void Reset() override
+    struct boss_ysondreAI : public boss_emerald_dragonAI
     {
-        boss_emerald_dragonAI::Reset();
+        boss_ysondreAI(Creature* pCreature) : boss_emerald_dragonAI(pCreature) { }
 
-        m_uiLightningWaveTimer = 12000;
-    }
+        uint32 m_uiLightningWaveTimer;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_YSONDRE_AGGRO, m_creature);
-    }
-
-    // Summon Druids - TODO FIXME (spell not understood)
-    bool DoSpecialDragonAbility()
-    {
-        DoScriptText(SAY_SUMMON_DRUIDS, m_creature);
-
-        for (int i = 0; i < 10; ++i)
+        void Reset() override
         {
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_DRUIDS, CAST_TRIGGERED);
+            boss_emerald_dragonAI::Reset();
+
+            m_uiLightningWaveTimer = 12000;
         }
 
-        return true;
-    }
-
-    bool UpdateDragonAI(const uint32 uiDiff)
-    {
-        // Lightning Wave Timer
-        if (m_uiLightningWaveTimer < uiDiff)
+        void Aggro(Unit* /*pWho*/) override
         {
-            Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-            if (pTarget && DoCastSpellIfCan(pTarget, SPELL_LIGHTNING_WAVE) == CAST_OK)
+            DoScriptText(SAY_YSONDRE_AGGRO, m_creature);
+        }
+
+        // Summon Druids - TODO FIXME (spell not understood)
+        bool DoSpecialDragonAbility()
+        {
+            DoScriptText(SAY_SUMMON_DRUIDS, m_creature);
+
+            for (int i = 0; i < 10; ++i)
             {
-                m_uiLightningWaveTimer = urand(7000, 12000);
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_DRUIDS, CAST_TRIGGERED);
             }
-        }
-        else
-        {
-            m_uiLightningWaveTimer -= uiDiff;
+
+            return true;
         }
 
-        return true;
+        bool UpdateDragonAI(const uint32 uiDiff)
+        {
+            // Lightning Wave Timer
+            if (m_uiLightningWaveTimer < uiDiff)
+            {
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+                if (pTarget && DoCastSpellIfCan(pTarget, SPELL_LIGHTNING_WAVE) == CAST_OK)
+                {
+                    m_uiLightningWaveTimer = urand(7000, 12000);
+                }
+            }
+            else
+            {
+                m_uiLightningWaveTimer -= uiDiff;
+            }
+
+            return true;
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_ysondreAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_ysondre(Creature* pCreature)
-{
-    return new boss_ysondreAI(pCreature);
-}
-
 void AddSC_bosses_emerald_dragons()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_emeriss();
+    s->RegisterSelf();
+    s = new boss_lethon();
+    s->RegisterSelf();
+    s = new npc_spirit_shade();
+    s->RegisterSelf();
+    s = new boss_taerar();
+    s->RegisterSelf();
+    s = new boss_ysondre();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_emeriss";
-    pNewScript->GetAI = &GetAI_boss_emeriss;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_emeriss";
+    //pNewScript->GetAI = &GetAI_boss_emeriss;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_lethon";
-    pNewScript->GetAI = &GetAI_boss_lethon;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_lethon";
+    //pNewScript->GetAI = &GetAI_boss_lethon;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_spirit_shade";
-    pNewScript->GetAI = &GetAI_npc_spirit_shade;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_spirit_shade";
+    //pNewScript->GetAI = &GetAI_npc_spirit_shade;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_taerar";
-    pNewScript->GetAI = &GetAI_boss_taerar;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_taerar";
+    //pNewScript->GetAI = &GetAI_boss_taerar;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_ysondre";
-    pNewScript->GetAI = &GetAI_boss_ysondre;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_ysondre";
+    //pNewScript->GetAI = &GetAI_boss_ysondre;
+    //pNewScript->RegisterSelf();
 }

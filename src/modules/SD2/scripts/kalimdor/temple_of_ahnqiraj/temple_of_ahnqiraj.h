@@ -29,6 +29,7 @@
 enum
 {
     MAX_ENCOUNTER               = 9,
+    TYPE_SIGNAL                 = MAX_ENCOUNTER,
 
     TYPE_SKERAM                 = 0,
     TYPE_BUG_TRIO               = 1,
@@ -86,40 +87,6 @@ enum
     SPELL_WHISPERINGS_CTHUN_3   = 26198,
     SPELL_WHISPERINGS_CTHUN_4   = 26258,
     SPELL_WHISPERINGS_CTHUN_5   = 26259,
-};
-
-class instance_temple_of_ahnqiraj : public ScriptedInstance
-{
-    public:
-        instance_temple_of_ahnqiraj(Map* pMap);
-
-        void Initialize() override;
-
-        bool IsEncounterInProgress() const override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        void DoHandleTempleAreaTrigger(uint32 uiTriggerId);
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void Update(uint32 uiDiff) override;
-
-    private:
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint8 m_uiBugTrioDeathCount;
-        uint32 m_uiCthunWhisperTimer;
-
-        bool m_bIsEmperorsIntroDone;
-
-        DialogueHelper m_dialogueHelper;
 };
 
 #endif

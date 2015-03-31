@@ -44,104 +44,119 @@ enum
     SPELL_SUMMON_ILLUSION_3     = 24729,
 };
 
-struct boss_hazzarahAI : public ScriptedAI
+struct boss_hazzara : public CreatureScript
 {
-    boss_hazzarahAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    boss_hazzara() : CreatureScript("boss_hazzarah") {}
 
-    uint32 m_uiManaBurnTimer;
-    uint32 m_uiSleepTimer;
-    uint32 m_uiEarthShockTimer;
-    uint32 m_uiIllusionsTimer;
-
-    void Reset() override
+    struct boss_hazzarahAI : public ScriptedAI
     {
-        m_uiManaBurnTimer   = urand(4000, 10000);
-        m_uiSleepTimer      = urand(10000, 18000);
-        m_uiEarthShockTimer = urand(7000, 14000);
-        m_uiIllusionsTimer  = urand(10000, 18000);
-    }
+        boss_hazzarahAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+        uint32 m_uiManaBurnTimer;
+        uint32 m_uiSleepTimer;
+        uint32 m_uiEarthShockTimer;
+        uint32 m_uiIllusionsTimer;
+
+        void Reset() override
         {
-            pSummoned->AI()->AttackStart(pTarget);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_uiManaBurnTimer = urand(4000, 10000);
+            m_uiSleepTimer = urand(10000, 18000);
+            m_uiEarthShockTimer = urand(7000, 14000);
+            m_uiIllusionsTimer = urand(10000, 18000);
         }
 
-        // ManaBurn_Timer
-        if (m_uiManaBurnTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_CHAIN_BURN, SELECT_FLAG_POWER_MANA))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_CHAIN_BURN) == CAST_OK)
-                {
-                    m_uiManaBurnTimer = urand(8000, 16000);
-                }
-            }
-        }
-        else
-            { m_uiManaBurnTimer -= uiDiff; }
-
-        // Sleep_Timer
-        if (m_uiSleepTimer < uiDiff)
+        void JustSummoned(Creature* pSummoned) override
         {
             if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_SLEEP) == CAST_OK)
+                pSummoned->AI()->AttackStart(pTarget);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // ManaBurn_Timer
+            if (m_uiManaBurnTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_CHAIN_BURN, SELECT_FLAG_POWER_MANA))
                 {
-                    m_uiSleepTimer = urand(12000, 20000);
+                    if (DoCastSpellIfCan(pTarget, SPELL_CHAIN_BURN) == CAST_OK)
+                    {
+                        m_uiManaBurnTimer = urand(8000, 16000);
+                    }
                 }
             }
-        }
-        else
-            { m_uiSleepTimer -= uiDiff; }
-
-        // Earthshock
-        if (m_uiEarthShockTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_EARTH_SHOCK) == CAST_OK)
+            else
             {
-                m_uiEarthShockTimer = urand(9000, 16000);
+                m_uiManaBurnTimer -= uiDiff;
             }
+
+            // Sleep_Timer
+            if (m_uiSleepTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_SLEEP) == CAST_OK)
+                    {
+                        m_uiSleepTimer = urand(12000, 20000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiSleepTimer -= uiDiff;
+            }
+
+            // Earthshock
+            if (m_uiEarthShockTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_EARTH_SHOCK) == CAST_OK)
+                {
+                    m_uiEarthShockTimer = urand(9000, 16000);
+                }
+            }
+            else
+            {
+                m_uiEarthShockTimer -= uiDiff;
+            }
+
+            // Illusions_Timer
+            if (m_uiIllusionsTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_1, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_2, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_3, CAST_TRIGGERED);
+
+                m_uiIllusionsTimer = urand(15000, 25000);
+            }
+            else
+            {
+                m_uiIllusionsTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiEarthShockTimer -= uiDiff; }
+    };
 
-        // Illusions_Timer
-        if (m_uiIllusionsTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_1, CAST_TRIGGERED);
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_2, CAST_TRIGGERED);
-            DoCastSpellIfCan(m_creature, SPELL_SUMMON_ILLUSION_3, CAST_TRIGGERED);
-
-            m_uiIllusionsTimer = urand(15000, 25000);
-        }
-        else
-            { m_uiIllusionsTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_hazzarahAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_hazzarah(Creature* pCreature)
-{
-    return new boss_hazzarahAI(pCreature);
-}
-
 void AddSC_boss_hazzarah()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_hazzara();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_hazzarah";
-    pNewScript->GetAI = &GetAI_boss_hazzarah;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_hazzarah";
+    //pNewScript->GetAI = &GetAI_boss_hazzarah;
+    //pNewScript->RegisterSelf();
 }

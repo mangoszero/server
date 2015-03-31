@@ -56,69 +56,76 @@ enum
     SPELL_WAITING_TO_RESURRECT      = 2584                  // players who cancel this aura don't want a resurrection
 };
 
-struct npc_spirit_guideAI : public ScriptedAI
+struct npc_spirit_guide : public CreatureScript
 {
-    npc_spirit_guideAI(Creature* pCreature) : ScriptedAI(pCreature)
+    npc_spirit_guide() : CreatureScript("npc_spirit_guide") {}
+
+    bool OnGossipHello(Player* pPlayer, Creature* /*pCreature*/) override
     {
-        pCreature->SetActiveObjectState(true);
-        Reset();
+        pPlayer->CastSpell(pPlayer, SPELL_WAITING_TO_RESURRECT, true);
+        return true;
     }
 
-    void Reset() override {}
-
-    void UpdateAI(const uint32 /*uiDiff*/) override
+    struct npc_spirit_guideAI : public ScriptedAI
     {
-        // auto cast the whole time this spell
-        if (!m_creature->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        npc_spirit_guideAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_creature->CastSpell(m_creature, SPELL_SPIRIT_HEAL_CHANNEL, false);
-        }
-    }
-
-    void CorpseRemoved(uint32&) override
-    {
-        // TODO: would be better to cast a dummy spell
-        Map* pMap = m_creature->GetMap();
-
-        if (!pMap || !pMap->IsBattleGround())
-        {
-            return;
+            pCreature->SetActiveObjectState(true);
+            Reset();
         }
 
-        Map::PlayerList const& PlayerList = pMap->GetPlayers();
+        void Reset() override {}
 
-        for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
+        void UpdateAI(const uint32 /*uiDiff*/) override
         {
-            Player* pPlayer = itr->getSource();
-            if (!pPlayer || !pPlayer->IsWithinDistInMap(m_creature, 20.0f) || !pPlayer->HasAura(SPELL_WAITING_TO_RESURRECT))
+            // auto cast the whole time this spell
+            if (!m_creature->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
             {
-                continue;
+                m_creature->CastSpell(m_creature, SPELL_SPIRIT_HEAL_CHANNEL, false);
+            }
+        }
+
+        void CorpseRemoved(uint32&) override
+        {
+            // TODO: would be better to cast a dummy spell
+            Map* pMap = m_creature->GetMap();
+
+            if (!pMap || !pMap->IsBattleGround())
+            {
+                return;
             }
 
-            // repop player again - now this node won't be counted and another node is searched
-            pPlayer->RepopAtGraveyard();
+            Map::PlayerList const& PlayerList = pMap->GetPlayers();
+
+            for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end(); ++itr)
+            {
+                Player* pPlayer = itr->getSource();
+                if (!pPlayer || !pPlayer->IsWithinDistInMap(m_creature, 20.0f) || !pPlayer->HasAura(SPELL_WAITING_TO_RESURRECT))
+                {
+                    continue;
+                }
+
+                // repop player again - now this node won't be counted and another node is searched
+                pPlayer->RepopAtGraveyard();
+            }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_spirit_guideAI(pCreature);
     }
 };
 
-bool GossipHello_npc_spirit_guide(Player* pPlayer, Creature* /*pCreature*/)
-{
-    pPlayer->CastSpell(pPlayer, SPELL_WAITING_TO_RESURRECT, true);
-    return true;
-}
-
-CreatureAI* GetAI_npc_spirit_guide(Creature* pCreature)
-{
-    return new npc_spirit_guideAI(pCreature);
-}
-
 void AddSC_battleground()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new npc_spirit_guide();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_spirit_guide";
-    pNewScript->GetAI = &GetAI_npc_spirit_guide;
-    pNewScript->pGossipHello = &GossipHello_npc_spirit_guide;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_spirit_guide";
+    //pNewScript->GetAI = &GetAI_npc_spirit_guide;
+    //pNewScript->pGossipHello = &GossipHello_npc_spirit_guide;
+    //pNewScript->RegisterSelf();
 }

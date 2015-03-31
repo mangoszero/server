@@ -60,23 +60,26 @@ enum
     EQUIP_ID_RIFLE      = 2511
 };
 
-struct npc_daphne_stilwellAI : public npc_escortAI
+struct npc_daphne_stilwell : public CreatureScript
 {
-    npc_daphne_stilwellAI(Creature* pCreature) : npc_escortAI(pCreature)
-    {
-        m_uiWPHolder = 0;
-        Reset();
-    }
+    npc_daphne_stilwell() : CreatureScript("npc_daphne_stilwell") {}
 
-    uint32 m_uiWPHolder;
-    uint32 m_uiShootTimer;
-
-    void Reset() override
+    struct npc_daphne_stilwellAI : public npc_escortAI
     {
-        if (HasEscortState(STATE_ESCORT_ESCORTING))
+        npc_daphne_stilwellAI(Creature* pCreature) : npc_escortAI(pCreature)
         {
-            switch (m_uiWPHolder)
+            m_uiWPHolder = 0;
+        }
+
+        uint32 m_uiWPHolder;
+        uint32 m_uiShootTimer;
+
+        void Reset() override
+        {
+            if (HasEscortState(STATE_ESCORT_ESCORTING))
             {
+                switch (m_uiWPHolder)
+                {
                 case 7:
                     DoScriptText(SAY_DS_DOWN_1, m_creature);
                     break;
@@ -86,20 +89,22 @@ struct npc_daphne_stilwellAI : public npc_escortAI
                 case 9:
                     DoScriptText(SAY_DS_DOWN_3, m_creature);
                     break;
+                }
             }
+            else
+            {
+                m_uiWPHolder = 0;
+            }
+
+            m_uiShootTimer = 0;
         }
-        else
-            { m_uiWPHolder = 0; }
 
-        m_uiShootTimer = 0;
-    }
-
-    void WaypointReached(uint32 uiPointId) override
-    {
-        m_uiWPHolder = uiPointId;
-
-        switch (uiPointId)
+        void WaypointReached(uint32 uiPointId) override
         {
+            m_uiWPHolder = uiPointId;
+
+            switch (uiPointId)
+            {
             case 4:
                 SetEquipmentSlots(false, EQUIP_NO_CHANGE, EQUIP_NO_CHANGE, EQUIP_ID_RIFLE);
                 m_creature->SetSheath(SHEATH_STATE_RANGED);
@@ -142,73 +147,76 @@ struct npc_daphne_stilwellAI : public npc_escortAI
                     pPlayer->GroupEventHappens(QUEST_TOME_VALOR, m_creature);
                 }
                 break;
-        }
-    }
-
-    void AttackStart(Unit* pWho) override
-    {
-        if (!pWho)
-        {
-            return;
-        }
-
-        if (m_creature->Attack(pWho, false))
-        {
-            m_creature->AddThreat(pWho);
-            m_creature->SetInCombatWith(pWho);
-            pWho->SetInCombatWith(m_creature);
-
-            m_creature->GetMotionMaster()->MoveChase(pWho, 30.0f);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        pSummoned->AI()->AttackStart(m_creature);
-    }
-
-    void UpdateEscortAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        if (m_uiShootTimer < uiDiff)
-        {
-            m_uiShootTimer = 1000;
-
-            if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
-            {
-                DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHOOT);
             }
         }
-        else
-            { m_uiShootTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+        void AttackStart(Unit* pWho) override
+        {
+            if (!pWho)
+            {
+                return;
+            }
+
+            if (m_creature->Attack(pWho, false))
+            {
+                m_creature->AddThreat(pWho);
+                m_creature->SetInCombatWith(pWho);
+                pWho->SetInCombatWith(m_creature);
+
+                m_creature->GetMotionMaster()->MoveChase(pWho, 30.0f);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            pSummoned->AI()->AttackStart(m_creature);
+        }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiShootTimer < uiDiff)
+            {
+                m_uiShootTimer = 1000;
+
+                if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+                {
+                    DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHOOT);
+                }
+            }
+            else
+            {
+                m_uiShootTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_TOME_VALOR)
+        {
+            DoScriptText(SAY_DS_START, pCreature);
+
+            if (npc_daphne_stilwellAI* pEscortAI = dynamic_cast<npc_daphne_stilwellAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(true, pPlayer, pQuest);
+            }
+        }
+
+        return true;
+    }
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_daphne_stilwellAI(pCreature);
     }
 };
-
-bool QuestAccept_npc_daphne_stilwell(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_TOME_VALOR)
-    {
-        DoScriptText(SAY_DS_START, pCreature);
-
-        if (npc_daphne_stilwellAI* pEscortAI = dynamic_cast<npc_daphne_stilwellAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(true, pPlayer, pQuest);
-        }
-    }
-
-    return true;
-}
-
-CreatureAI* GetAI_npc_daphne_stilwell(Creature* pCreature)
-{
-    return new npc_daphne_stilwellAI(pCreature);
-}
 
 /*######
 ## npc_defias_traitor
@@ -225,14 +233,18 @@ enum
     QUEST_DEFIAS_BROTHERHOOD = 155
 };
 
-struct npc_defias_traitorAI : public npc_escortAI
+struct npc_defias_traitor : public CreatureScript
 {
-    npc_defias_traitorAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_defias_traitor() : CreatureScript("npc_defias_traitor") {}
 
-    void WaypointReached(uint32 uiPointId) override
+    struct npc_defias_traitorAI : public npc_escortAI
     {
-        switch (uiPointId)
+        npc_defias_traitorAI(Creature* pCreature) : npc_escortAI(pCreature) { }
+
+        void WaypointReached(uint32 uiPointId) override
         {
+            switch (uiPointId)
+            {
             case 35:
                 SetRun(false);
                 break;
@@ -249,50 +261,55 @@ struct npc_defias_traitorAI : public npc_escortAI
                     pPlayer->GroupEventHappens(QUEST_DEFIAS_BROTHERHOOD, m_creature);
                 }
                 break;
+            }
         }
-    }
 
-    void Aggro(Unit* pWho) override
-    {
-        DoScriptText(urand(0, 1) ? SAY_AGGRO_1 : SAY_AGGRO_2, m_creature, pWho);
-    }
-
-    void Reset() override { }
-};
-
-bool QuestAccept_npc_defias_traitor(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_DEFIAS_BROTHERHOOD)
-    {
-        DoScriptText(SAY_START, pCreature, pPlayer);
-
-        if (npc_defias_traitorAI* pEscortAI = dynamic_cast<npc_defias_traitorAI*>(pCreature->AI()))
+        void Aggro(Unit* pWho) override
         {
-            pEscortAI->Start(true, pPlayer, pQuest);
+            DoScriptText(urand(0, 1) ? SAY_AGGRO_1 : SAY_AGGRO_2, m_creature, pWho);
         }
+
+        void Reset() override { }
+    };
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_DEFIAS_BROTHERHOOD)
+        {
+            DoScriptText(SAY_START, pCreature, pPlayer);
+
+            if (npc_defias_traitorAI* pEscortAI = dynamic_cast<npc_defias_traitorAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(true, pPlayer, pQuest);
+            }
+        }
+
+        return true;
     }
 
-    return true;
-}
-
-CreatureAI* GetAI_npc_defias_traitor(Creature* pCreature)
-{
-    return new npc_defias_traitorAI(pCreature);
-}
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_defias_traitorAI(pCreature);
+    }
+};
 
 void AddSC_westfall()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_daphne_stilwell();
+    s->RegisterSelf();
+    s = new npc_defias_traitor();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_daphne_stilwell";
-    pNewScript->GetAI = &GetAI_npc_daphne_stilwell;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_daphne_stilwell;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_daphne_stilwell";
+    //pNewScript->GetAI = &GetAI_npc_daphne_stilwell;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_daphne_stilwell;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_defias_traitor";
-    pNewScript->GetAI = &GetAI_npc_defias_traitor;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_defias_traitor;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_defias_traitor";
+    //pNewScript->GetAI = &GetAI_npc_defias_traitor;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_defias_traitor;
+    //pNewScript->RegisterSelf();
 }

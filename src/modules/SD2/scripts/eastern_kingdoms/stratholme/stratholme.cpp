@@ -49,110 +49,125 @@
 ## go_service_gate
 ######*/
 
-bool GOUse_go_service_gate(Player* /*pPlayer*/, GameObject* pGo)
+struct go_service_gate : public GameObjectScript
 {
-    ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+    go_service_gate() : GameObjectScript("go_service_gate") {}
 
-    if (!pInstance)
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo) override
     {
+        ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+
+        if (!pInstance)
+        {
+            return false;
+        }
+
+        if (pInstance->GetData(TYPE_BARTHILAS_RUN) != NOT_STARTED)
+        {
+            return false;
+        }
+
+        // if the service gate is used make Barthilas flee
+        pInstance->SetData(TYPE_BARTHILAS_RUN, IN_PROGRESS);
         return false;
     }
-
-    if (pInstance->GetData(TYPE_BARTHILAS_RUN) != NOT_STARTED)
-    {
-        return false;
-    }
-
-    // if the service gate is used make Barthilas flee
-    pInstance->SetData(TYPE_BARTHILAS_RUN, IN_PROGRESS);
-    return false;
-}
+};
 
 /*######
 ## go_gauntlet_gate (this is the _first_ of the gauntlet gates, two exist)
 ######*/
 
-bool GOUse_go_gauntlet_gate(Player* pPlayer, GameObject* pGo)
+struct go_gauntlet_gate : public GameObjectScript
 {
-    ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+    go_gauntlet_gate() : GameObjectScript("go_gauntlet_gate") {}
 
-    if (!pInstance)
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
     {
-        return false;
-    }
+        ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
 
-    if (pInstance->GetData(TYPE_BARON_RUN) != NOT_STARTED)
-    {
-        return false;
-    }
-
-    if (Group* pGroup = pPlayer->GetGroup())
-    {
-        for (GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
+        if (!pInstance)
         {
-            Player* pGroupie = itr->getSource();
-            if (!pGroupie)
-            {
-                continue;
-            }
+            return false;
+        }
 
-            if (!pGroupie->HasAura(SPELL_BARON_ULTIMATUM))
+        if (pInstance->GetData(TYPE_BARON_RUN) != NOT_STARTED)
+        {
+            return false;
+        }
+
+        if (Group* pGroup = pPlayer->GetGroup())
+        {
+            for (GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
             {
-                pGroupie->CastSpell(pGroupie, SPELL_BARON_ULTIMATUM, true);
+                Player* pGroupie = itr->getSource();
+                if (!pGroupie)
+                {
+                    continue;
+                }
+
+                if (!pGroupie->HasAura(SPELL_BARON_ULTIMATUM))
+                {
+                    pGroupie->CastSpell(pGroupie, SPELL_BARON_ULTIMATUM, true);
+                }
             }
         }
-    }
-    else
-    {
-        if (!pPlayer->HasAura(SPELL_BARON_ULTIMATUM))
+        else
         {
-            pPlayer->CastSpell(pPlayer, SPELL_BARON_ULTIMATUM, true);
+            if (!pPlayer->HasAura(SPELL_BARON_ULTIMATUM))
+            {
+                pPlayer->CastSpell(pPlayer, SPELL_BARON_ULTIMATUM, true);
+            }
         }
-    }
 
-    pInstance->SetData(TYPE_BARON_RUN, IN_PROGRESS);
-    return false;
-}
+        pInstance->SetData(TYPE_BARON_RUN, IN_PROGRESS);
+        return false;
+    }
+};
 
 /*######
 ## go_stratholme_postbox
 ######*/
 
-bool GOUse_go_stratholme_postbox(Player* pPlayer, GameObject* pGo)
+struct go_stratholme_postbox : public GameObjectScript
 {
-    ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+    go_stratholme_postbox() : GameObjectScript("go_stratholme_postbox") {}
 
-    if (!pInstance)
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
     {
+        ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
+
+        if (!pInstance)
+        {
+            return false;
+        }
+
+        if (pInstance->GetData(TYPE_POSTMASTER) == DONE)
+        {
+            return false;
+        }
+
+        // When the data is Special, spawn the postmaster
+        if (pInstance->GetData(TYPE_POSTMASTER) == SPECIAL)
+        {
+            pPlayer->CastSpell(pPlayer, SPELL_SUMMON_POSTMASTER, true);
+            pInstance->SetData(TYPE_POSTMASTER, DONE);
+        }
+        else
+        {
+            pInstance->SetData(TYPE_POSTMASTER, IN_PROGRESS);
+        }
+
+        // Summon 3 postmen for each postbox
+        float fX, fY, fZ;
+        for (uint8 i = 0; i < 3; ++i)
+        {
+            pPlayer->GetRandomPoint(pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 3.0f, fX, fY, fZ);
+            pPlayer->SummonCreature(NPC_UNDEAD_POSTMAN, fX, fY, fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0);
+        }
+
         return false;
     }
-
-    if (pInstance->GetData(TYPE_POSTMASTER) == DONE)
-    {
-        return false;
-    }
-
-    // When the data is Special, spawn the postmaster
-    if (pInstance->GetData(TYPE_POSTMASTER) == SPECIAL)
-    {
-        pPlayer->CastSpell(pPlayer, SPELL_SUMMON_POSTMASTER, true);
-        pInstance->SetData(TYPE_POSTMASTER, DONE);
-    }
-    else
-    {
-        pInstance->SetData(TYPE_POSTMASTER, IN_PROGRESS);
-    }
-
-    // Summon 3 postmen for each postbox
-    float fX, fY, fZ;
-    for (uint8 i = 0; i < 3; ++i)
-    {
-        pPlayer->GetRandomPoint(pPlayer->GetPositionX(), pPlayer->GetPositionY(), pPlayer->GetPositionZ(), 3.0f, fX, fY, fZ);
-        pPlayer->SummonCreature(NPC_UNDEAD_POSTMAN, fX, fY, fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0);
-    }
-
-    return false;
-}
+};
 
 /*######
 ## mob_restless_soul
@@ -175,42 +190,46 @@ enum
     NPC_FREED_SOUL         = 11136,
 };
 
-// TODO - likely entirely not needed workaround
-struct mob_restless_soulAI : public ScriptedAI
+struct mob_restless_soul : public CreatureScript
 {
-    mob_restless_soulAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    mob_restless_soul() : CreatureScript("mob_restless_soul") {}
 
-    ObjectGuid m_taggerGuid;
-    uint32 m_uiDieTimer;
-    bool m_bIsTagged;
-
-    void Reset() override
+    // TODO - likely entirely not needed workaround
+    struct mob_restless_soulAI : public ScriptedAI
     {
-        m_taggerGuid.Clear();
-        m_uiDieTimer = 5000;
-        m_bIsTagged = false;
-    }
+        mob_restless_soulAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
-    {
-        if (pCaster->GetTypeId() == TYPEID_PLAYER)
+        ObjectGuid m_taggerGuid;
+        uint32 m_uiDieTimer;
+        bool m_bIsTagged;
+
+        void Reset() override
         {
-            if (!m_bIsTagged && pSpell->Id == SPELL_EGAN_BLASTER && ((Player*)pCaster)->GetQuestStatus(QUEST_RESTLESS_SOUL) == QUEST_STATUS_INCOMPLETE)
+            m_taggerGuid.Clear();
+            m_uiDieTimer = 5000;
+            m_bIsTagged = false;
+        }
+
+        void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
+        {
+            if (pCaster->GetTypeId() == TYPEID_PLAYER)
             {
-                m_bIsTagged = true;
-                m_taggerGuid = pCaster->GetObjectGuid();
+                if (!m_bIsTagged && pSpell->Id == SPELL_EGAN_BLASTER && ((Player*)pCaster)->GetQuestStatus(QUEST_RESTLESS_SOUL) == QUEST_STATUS_INCOMPLETE)
+                {
+                    m_bIsTagged = true;
+                    m_taggerGuid = pCaster->GetObjectGuid();
+                }
             }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_FREED_SOUL)
+        void JustSummoned(Creature* pSummoned) override
         {
-            pSummoned->CastSpell(pSummoned, SPELL_SOUL_FREED, false);
-
-            switch (urand(0, 3))
+            if (pSummoned->GetEntry() == NPC_FREED_SOUL)
             {
+                pSummoned->CastSpell(pSummoned, SPELL_SOUL_FREED, false);
+
+                switch (urand(0, 3))
+                {
                 case 0:
                     DoScriptText(SAY_ZAPPED0, pSummoned);
                     break;
@@ -223,41 +242,42 @@ struct mob_restless_soulAI : public ScriptedAI
                 case 3:
                     DoScriptText(SAY_ZAPPED3, pSummoned);
                     break;
-            }
-        }
-    }
-
-    void JustDied(Unit* /*Killer*/) override
-    {
-        if (m_bIsTagged)
-        {
-            m_creature->SummonCreature(NPC_FREED_SOUL, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN, 300000);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_bIsTagged)
-        {
-            if (m_uiDieTimer < uiDiff)
-            {
-                if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_taggerGuid))
-                {
-                    pPlayer->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
                 }
             }
-            else
+        }
+
+        void JustDied(Unit* /*Killer*/) override
+        {
+            if (m_bIsTagged)
             {
-                m_uiDieTimer -= uiDiff;
+                m_creature->SummonCreature(NPC_FREED_SOUL, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN, 300000);
             }
         }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_bIsTagged)
+            {
+                if (m_uiDieTimer < uiDiff)
+                {
+                    if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_taggerGuid))
+                    {
+                        pPlayer->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                    }
+                }
+                else
+                {
+                    m_uiDieTimer -= uiDiff;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new mob_restless_soulAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_mob_restless_soul(Creature* pCreature)
-{
-    return new mob_restless_soulAI(pCreature);
-}
 
 /*######
 ## mobs_spectral_ghostly_citizen
@@ -269,72 +289,76 @@ enum
     SPELL_SLAP              = 6754
 };
 
-struct mobs_spectral_ghostly_citizenAI : public ScriptedAI
+struct mobs_spectral_ghostly_citizen : public CreatureScript
 {
-    mobs_spectral_ghostly_citizenAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    mobs_spectral_ghostly_citizen() : CreatureScript("mobs_spectral_ghostly_citizen") {}
 
-    uint32 m_uiDieTimer;
-    bool m_bIsTagged;
-
-    void Reset() override
+    struct mobs_spectral_ghostly_citizenAI : public ScriptedAI
     {
-        m_uiDieTimer = 5000;
-        m_bIsTagged = false;
-    }
+        mobs_spectral_ghostly_citizenAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void SpellHit(Unit* /*pCaster*/, const SpellEntry* pSpell) override
-    {
-        if (!m_bIsTagged && pSpell->Id == SPELL_EGAN_BLASTER)
+        uint32 m_uiDieTimer;
+        bool m_bIsTagged;
+
+        void Reset() override
         {
-            m_bIsTagged = true;
+            m_uiDieTimer = 5000;
+            m_bIsTagged = false;
         }
-    }
 
-    void JustDied(Unit* /*Killer*/) override
-    {
-        if (m_bIsTagged)
+        void SpellHit(Unit* /*pCaster*/, const SpellEntry* pSpell) override
         {
-            for (uint32 i = 0; i < 4; ++i)
+            if (!m_bIsTagged && pSpell->Id == SPELL_EGAN_BLASTER)
             {
-                float x, y, z;
-                m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 20.0f, x, y, z);
+                m_bIsTagged = true;
+            }
+        }
 
-                // 100%, 50%, 33%, 25% chance to spawn
-                uint32 j = urand(0, i);
-                if (j == 0)
+        void JustDied(Unit* /*Killer*/) override
+        {
+            if (m_bIsTagged)
+            {
+                for (uint32 i = 0; i < 4; ++i)
                 {
-                    m_creature->SummonCreature(NPC_RESTLESS_SOUL, x, y, z, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                    float x, y, z;
+                    m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 20.0f, x, y, z);
+
+                    // 100%, 50%, 33%, 25% chance to spawn
+                    uint32 j = urand(0, i);
+                    if (j == 0)
+                    {
+                        m_creature->SummonCreature(NPC_RESTLESS_SOUL, x, y, z, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                    }
                 }
             }
         }
-    }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_bIsTagged)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (m_uiDieTimer < uiDiff)
+            if (m_bIsTagged)
             {
-                m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                if (m_uiDieTimer < uiDiff)
+                {
+                    m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                }
+                else
+                {
+                    m_uiDieTimer -= uiDiff;
+                }
             }
-            else
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                m_uiDieTimer -= uiDiff;
+                return;
             }
+
+            DoMeleeAttackIfReady();
         }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void ReceiveEmote(Player* pPlayer, uint32 uiEmote) override
         {
-            return;
-        }
-
-        DoMeleeAttackIfReady();
-    }
-
-    void ReceiveEmote(Player* pPlayer, uint32 uiEmote) override
-    {
-        switch (uiEmote)
-        {
+            switch (uiEmote)
+            {
             case TEXTEMOTE_DANCE:
                 EnterEvadeMode();
                 break;
@@ -357,41 +381,53 @@ struct mobs_spectral_ghostly_citizenAI : public ScriptedAI
             case TEXTEMOTE_KISS:
                 m_creature->HandleEmote(EMOTE_ONESHOT_FLEX);
                 break;
+            }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new mobs_spectral_ghostly_citizenAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_mobs_spectral_ghostly_citizen(Creature* pCreature)
-{
-    return new mobs_spectral_ghostly_citizenAI(pCreature);
-}
-
 void AddSC_stratholme()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new go_service_gate();
+    s->RegisterSelf();
+    s = new go_gauntlet_gate();
+    s->RegisterSelf();
+    s = new go_stratholme_postbox();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_service_gate";
-    pNewScript->pGOUse = &GOUse_go_service_gate;
-    pNewScript->RegisterSelf();
+    s = new mob_restless_soul();
+    s->RegisterSelf();
+    s = new mobs_spectral_ghostly_citizen();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_gauntlet_gate";
-    pNewScript->pGOUse = &GOUse_go_gauntlet_gate;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_service_gate";
+    //pNewScript->pGOUse = &GOUse_go_service_gate;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_stratholme_postbox";
-    pNewScript->pGOUse = &GOUse_go_stratholme_postbox;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_gauntlet_gate";
+    //pNewScript->pGOUse = &GOUse_go_gauntlet_gate;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_restless_soul";
-    pNewScript->GetAI = &GetAI_mob_restless_soul;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_stratholme_postbox";
+    //pNewScript->pGOUse = &GOUse_go_stratholme_postbox;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mobs_spectral_ghostly_citizen";
-    pNewScript->GetAI = &GetAI_mobs_spectral_ghostly_citizen;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_restless_soul";
+    //pNewScript->GetAI = &GetAI_mob_restless_soul;
+    //pNewScript->RegisterSelf();
+
+    //pNewScript = new Script;
+    //pNewScript->Name = "mobs_spectral_ghostly_citizen";
+    //pNewScript->GetAI = &GetAI_mobs_spectral_ghostly_citizen;
+    //pNewScript->RegisterSelf();
 }

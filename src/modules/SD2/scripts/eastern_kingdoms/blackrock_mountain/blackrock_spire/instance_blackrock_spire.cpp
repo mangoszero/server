@@ -96,687 +96,752 @@ static const DialogueEntry aStadiumDialogue[] =
 
 static const float rookeryEventSpawnPos[3] = {43.7685f, -259.82f, 91.6483f};
 
-instance_blackrock_spire::instance_blackrock_spire(Map* pMap) : ScriptedInstance(pMap), DialogueHelper(aStadiumDialogue),
-    m_uiFlamewreathEventTimer(0),
-    m_uiFlamewreathWaveCount(0),
-    m_uiStadiumEventTimer(0),
-    m_uiStadiumWaves(0),
-    m_uiStadiumMobsAlive(0)
+struct is_blackrock_spire : public InstanceScript
 {
-    Initialize();
-}
+    is_blackrock_spire() : InstanceScript("instance_blackrock_spire") {}
 
-void instance_blackrock_spire::Initialize()
-{
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-    memset(&m_aRoomRuneGuid, 0, sizeof(m_aRoomRuneGuid));
-    InitializeDialogueHelper(this);
-}
-
-void instance_blackrock_spire::OnObjectCreate(GameObject* pGo)
-{
-    switch (pGo->GetEntry())
+    class instance_blackrock_spire : public ScriptedInstance, private DialogueHelper
     {
-        case GO_EMBERSEER_IN:
-            if (GetData(TYPE_ROOM_EVENT) == DONE)
+    public:
+        instance_blackrock_spire(Map* pMap) : ScriptedInstance(pMap), DialogueHelper(aStadiumDialogue),
+            m_uiFlamewreathEventTimer(0),
+            m_uiFlamewreathWaveCount(0),
+            m_uiStadiumEventTimer(0),
+            m_uiStadiumWaves(0),
+            m_uiStadiumMobsAlive(0)
+        {
+            Initialize();
+        }
+
+        ~instance_blackrock_spire() {}
+
+        void Initialize() override
+        {
+            memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+            memset(&m_aRoomRuneGuid, 0, sizeof(m_aRoomRuneGuid));
+            InitializeDialogueHelper(this);
+        }
+
+        void OnObjectCreate(GameObject* pGo) override
+        {
+            switch (pGo->GetEntry())
             {
-                pGo->SetGoState(GO_STATE_ACTIVE);
+            case GO_EMBERSEER_IN:
+                if (GetData(TYPE_ROOM_EVENT) == DONE)
+                {
+                    pGo->SetGoState(GO_STATE_ACTIVE);
+                }
+                break;
+            case GO_DOORS:
+                break;
+            case GO_EMBERSEER_OUT:
+                if (GetData(TYPE_EMBERSEER) == DONE)
+                {
+                    pGo->SetGoState(GO_STATE_ACTIVE);
+                }
+                break;
+            case GO_FATHER_FLAME:
+            case GO_GYTH_ENTRY_DOOR:
+            case GO_GYTH_COMBAT_DOOR:
+            case GO_DRAKKISATH_DOOR_1:
+            case GO_DRAKKISATH_DOOR_2:
+                break;
+            case GO_GYTH_EXIT_DOOR:
+                if (GetData(TYPE_STADIUM) == DONE)
+                {
+                    pGo->SetGoState(GO_STATE_ACTIVE);
+                }
+                break;
+
+            case GO_ROOM_1_RUNE:
+                m_aRoomRuneGuid[0] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_2_RUNE:
+                m_aRoomRuneGuid[1] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_3_RUNE:
+                m_aRoomRuneGuid[2] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_4_RUNE:
+                m_aRoomRuneGuid[3] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_5_RUNE:
+                m_aRoomRuneGuid[4] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_6_RUNE:
+                m_aRoomRuneGuid[5] = pGo->GetObjectGuid();
+                return;
+            case GO_ROOM_7_RUNE:
+                m_aRoomRuneGuid[6] = pGo->GetObjectGuid();
+                return;
+
+            case GO_EMBERSEER_RUNE_1:
+            case GO_EMBERSEER_RUNE_2:
+            case GO_EMBERSEER_RUNE_3:
+            case GO_EMBERSEER_RUNE_4:
+            case GO_EMBERSEER_RUNE_5:
+            case GO_EMBERSEER_RUNE_6:
+            case GO_EMBERSEER_RUNE_7:
+                m_lEmberseerRunesGUIDList.push_back(pGo->GetObjectGuid());
+                return;
+
+            default:
+                return;
             }
-            break;
-        case GO_DOORS:
-            break;
-        case GO_EMBERSEER_OUT:
-            if (GetData(TYPE_EMBERSEER) == DONE)
+            m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+        }
+
+        void OnCreatureCreate(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
             {
-                pGo->SetGoState(GO_STATE_ACTIVE);
-            }
-            break;
-        case GO_FATHER_FLAME:
-        case GO_GYTH_ENTRY_DOOR:
-        case GO_GYTH_COMBAT_DOOR:
-        case GO_DRAKKISATH_DOOR_1:
-        case GO_DRAKKISATH_DOOR_2:
-            break;
-        case GO_GYTH_EXIT_DOOR:
-            if (GetData(TYPE_STADIUM) == DONE)
-            {
-                pGo->SetGoState(GO_STATE_ACTIVE);
-            }
-            break;
+            case NPC_PYROGUARD_EMBERSEER:
+            case NPC_SOLAKAR_FLAMEWREATH:
+            case NPC_LORD_VICTOR_NEFARIUS:
+            case NPC_GYTH:
+            case NPC_REND_BLACKHAND:
+            case NPC_SCARSHIELD_INFILTRATOR:
+                m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+                break;
 
-        case GO_ROOM_1_RUNE:
-            m_aRoomRuneGuid[0] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_2_RUNE:
-            m_aRoomRuneGuid[1] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_3_RUNE:
-            m_aRoomRuneGuid[2] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_4_RUNE:
-            m_aRoomRuneGuid[3] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_5_RUNE:
-            m_aRoomRuneGuid[4] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_6_RUNE:
-            m_aRoomRuneGuid[5] = pGo->GetObjectGuid();
-            return;
-        case GO_ROOM_7_RUNE:
-            m_aRoomRuneGuid[6] = pGo->GetObjectGuid();
-            return;
-
-        case GO_EMBERSEER_RUNE_1:
-        case GO_EMBERSEER_RUNE_2:
-        case GO_EMBERSEER_RUNE_3:
-        case GO_EMBERSEER_RUNE_4:
-        case GO_EMBERSEER_RUNE_5:
-        case GO_EMBERSEER_RUNE_6:
-        case GO_EMBERSEER_RUNE_7:
-            m_lEmberseerRunesGUIDList.push_back(pGo->GetObjectGuid());
-            return;
-
-        default:
-            return;
-    }
-    m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
-}
-
-void instance_blackrock_spire::OnCreatureCreate(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-        case NPC_PYROGUARD_EMBERSEER:
-        case NPC_SOLAKAR_FLAMEWREATH:
-        case NPC_LORD_VICTOR_NEFARIUS:
-        case NPC_GYTH:
-        case NPC_REND_BLACKHAND:
-        case NPC_SCARSHIELD_INFILTRATOR:
-            m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
-            break;
-
-        case NPC_BLACKHAND_SUMMONER:
-        case NPC_BLACKHAND_VETERAN:
-            m_lRoomEventMobGUIDList.push_back(pCreature->GetObjectGuid());
-            break;
-        case NPC_BLACKHAND_INCARCERATOR:
-            m_lIncarceratorGUIDList.push_back(pCreature->GetObjectGuid());
-            break;
-    }
-}
-
-void instance_blackrock_spire::SetData(uint32 uiType, uint32 uiData)
-{
-    switch (uiType)
-    {
-        case TYPE_ROOM_EVENT:
-            if (uiData == DONE)
-            {
-                DoUseDoorOrButton(GO_EMBERSEER_IN);
-            }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_EMBERSEER:
-            // Don't set the same data twice
-            if (m_auiEncounter[uiType] == uiData)
-            {
+            case NPC_BLACKHAND_SUMMONER:
+            case NPC_BLACKHAND_VETERAN:
+                m_lRoomEventMobGUIDList.push_back(pCreature->GetObjectGuid());
+                break;
+            case NPC_BLACKHAND_INCARCERATOR:
+                m_lIncarceratorGUIDList.push_back(pCreature->GetObjectGuid());
                 break;
             }
-            // Combat door
-            DoUseDoorOrButton(GO_DOORS);
-            // Respawn all incarcerators and reset the runes on FAIL
-            if (uiData == FAIL)
+        }
+
+        void OnCreatureDeath(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
             {
+            case NPC_BLACKHAND_SUMMONER:
+            case NPC_BLACKHAND_VETERAN:
+                // Handle Runes
+                if (m_auiEncounter[TYPE_ROOM_EVENT] == IN_PROGRESS)
+                {
+                    uint8 uiNotEmptyRoomsCount = 0;
+                    for (uint8 i = 0; i < MAX_ROOMS; ++i)
+                    {
+                        if (m_aRoomRuneGuid[i])                 // This check is used, to ensure which runes still need processing
+                        {
+                            m_alRoomEventMobGUIDSorted[i].remove(pCreature->GetObjectGuid());
+                            if (m_alRoomEventMobGUIDSorted[i].empty())
+                            {
+                                DoUseDoorOrButton(m_aRoomRuneGuid[i]);
+                                m_aRoomRuneGuid[i].Clear();
+                            }
+                            else
+                            {
+                                ++uiNotEmptyRoomsCount;    // found an not empty room
+                            }
+                        }
+                    }
+                    if (!uiNotEmptyRoomsCount)
+                    {
+                        SetData(TYPE_ROOM_EVENT, DONE);
+                    }
+                }
+                break;
+            case NPC_SOLAKAR_FLAMEWREATH:
+                SetData(TYPE_FLAMEWREATH, DONE);
+                break;
+            case NPC_DRAKKISATH:
+                SetData(TYPE_DRAKKISATH, DONE);
+                DoUseDoorOrButton(GO_DRAKKISATH_DOOR_1);
+                DoUseDoorOrButton(GO_DRAKKISATH_DOOR_2);
+                break;
+            case NPC_CHROMATIC_WHELP:
+            case NPC_CHROMATIC_DRAGON:
+            case NPC_BLACKHAND_HANDLER:
+                // check if it's summoned - some npcs with the same entry are already spawned in the instance
+                if (!pCreature->IsTemporarySummon())
+                {
+                    break;
+                }
+                --m_uiStadiumMobsAlive;
+                if (m_uiStadiumMobsAlive == 0)
+                {
+                    DoSendNextStadiumWave();
+                }
+                break;
+            case NPC_GYTH:
+            case NPC_REND_BLACKHAND:
+                --m_uiStadiumMobsAlive;
+                if (m_uiStadiumMobsAlive == 0)
+                {
+                    StartNextDialogueText(SAY_NEFARIUS_VICTORY);
+                }
+                break;
+            }
+        }
+
+        void OnCreatureEvade(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+                // Emberseer should evade if the incarcerators evade
+            case NPC_BLACKHAND_INCARCERATOR:
+                if (Creature* pEmberseer = GetSingleCreatureFromStorage(NPC_PYROGUARD_EMBERSEER))
+                {
+                    pEmberseer->AI()->EnterEvadeMode();
+                }
+                break;
+            case NPC_SOLAKAR_FLAMEWREATH:
+            case NPC_ROOKERY_GUARDIAN:
+            case NPC_ROOKERY_HATCHER:
+                SetData(TYPE_FLAMEWREATH, FAIL);
+                break;
+            case NPC_CHROMATIC_WHELP:
+            case NPC_CHROMATIC_DRAGON:
+            case NPC_BLACKHAND_HANDLER:
+            case NPC_GYTH:
+            case NPC_REND_BLACKHAND:
+                // check if it's summoned - some npcs with the same entry are already spawned in the instance
+                if (!pCreature->IsTemporarySummon())
+                {
+                    break;
+                }
+                SetData(TYPE_STADIUM, FAIL);
+                pCreature->ForcedDespawn();
+                break;
+            }
+        }
+
+        void OnCreatureEnterCombat(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+                // Once one of the Incarcerators gets Aggro, the door should close
+            case NPC_BLACKHAND_INCARCERATOR:
+                SetData(TYPE_EMBERSEER, IN_PROGRESS);
+                break;
+            }
+        }
+
+        void SetData(uint32 uiType, uint32 uiData) override
+        {
+            switch (uiType)
+            {
+            case TYPE_ROOM_EVENT:
+                if (uiData == DONE)
+                {
+                    DoUseDoorOrButton(GO_EMBERSEER_IN);
+                }
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_EMBERSEER:
+                // Don't set the same data twice
+                if (m_auiEncounter[uiType] == uiData)
+                {
+                    break;
+                }
+                // Combat door
+                DoUseDoorOrButton(GO_DOORS);
+                // Respawn all incarcerators and reset the runes on FAIL
+                if (uiData == FAIL)
+                {
+                    for (GuidList::const_iterator itr = m_lIncarceratorGUIDList.begin(); itr != m_lIncarceratorGUIDList.end(); ++itr)
+                    {
+                        if (Creature* pIncarcerator = instance->GetCreature(*itr))
+                        {
+                            if (!pIncarcerator->IsAlive())
+                            {
+                                pIncarcerator->Respawn();
+                            }
+                            pIncarcerator->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
+                        }
+                    }
+
+                    DoUseEmberseerRunes(true);
+                }
+                else if (uiData == DONE)
+                {
+                    DoUseEmberseerRunes();
+                    DoUseDoorOrButton(GO_EMBERSEER_OUT);
+                }
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_FLAMEWREATH:
+                if (uiData == FAIL)
+                {
+                    m_uiFlamewreathEventTimer = 0;
+                    m_uiFlamewreathWaveCount = 0;
+                }
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_STADIUM:
+                // Don't set the same data twice
+                if (m_auiEncounter[uiType] == uiData)
+                {
+                    break;
+                }
+                // Combat door
+                DoUseDoorOrButton(GO_GYTH_ENTRY_DOOR);
+                // Start event
+                if (uiData == IN_PROGRESS)
+                {
+                    StartNextDialogueText(SAY_NEFARIUS_INTRO_1);
+                }
+                else if (uiData == DONE)
+                {
+                    DoUseDoorOrButton(GO_GYTH_EXIT_DOOR);
+                }
+                else if (uiData == FAIL)
+                {
+                    // Despawn Nefarius and Rend on fail (the others are despawned OnCreatureEvade())
+                    if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+                    {
+                        pNefarius->ForcedDespawn();
+                    }
+                    if (Creature* pRend = GetSingleCreatureFromStorage(NPC_REND_BLACKHAND))
+                    {
+                        pRend->ForcedDespawn();
+                    }
+                    if (Creature* pGyth = GetSingleCreatureFromStorage(NPC_GYTH))
+                    {
+                        pGyth->ForcedDespawn();
+                    }
+
+                    m_uiStadiumEventTimer = 0;
+                    m_uiStadiumMobsAlive = 0;
+                    m_uiStadiumWaves = 0;
+                }
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_DRAKKISATH:
+            case TYPE_VALTHALAK:
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case MAX_ENCOUNTER:
+                switch (uiData)
+                {
+                case DO_ACTIVATE_RUNES:
+                    DoUseEmberseerRunes();
+                    break;
+                case DO_SORT_MOBS:
+                    DoSortRoomEventMobs();
+                    break;
+                case DO_EMBERSEER_EVENT:
+                    DoProcessEmberseerEvent();
+                    break;
+                case DO_FLAMEWREATH_EVENT:
+                    StartflamewreathEventIfCan();
+                    break;
+                }
+                return;
+            }
+
+            if (uiData == DONE)
+            {
+                OUT_SAVE_INST_DATA;
+
+                std::ostringstream saveStream;
+                saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5];
+
+                m_strInstData = saveStream.str();
+
+                SaveToDB();
+                OUT_SAVE_INST_DATA_COMPLETE;
+            }
+        }
+
+        uint32 GetData(uint32 uiType) const override
+        {
+            if (uiType < MAX_ENCOUNTER)
+            {
+                return m_auiEncounter[uiType];
+            }
+
+            return 0;
+        }
+
+        void SetData64(uint32 type, uint64 guid) override
+        {
+            if (type == NPC_PYROGUARD_EMBERSEER)
+            {
+                Creature *ember = instance->GetCreature(ObjectGuid(guid));
+
                 for (GuidList::const_iterator itr = m_lIncarceratorGUIDList.begin(); itr != m_lIncarceratorGUIDList.end(); ++itr)
                 {
                     if (Creature* pIncarcerator = instance->GetCreature(*itr))
                     {
-                        if (!pIncarcerator->IsAlive())
-                        {
-                            pIncarcerator->Respawn();
-                        }
-                        pIncarcerator->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
+                        pIncarcerator->CastSpell(ember, SPELL_ENCAGE_EMBERSEER, false);
                     }
                 }
+            }
+        }
 
-                DoUseEmberseerRunes(true);
-            }
-            else if (uiData == DONE)
+        const char* Save() const override { return m_strInstData.c_str(); }
+        void Load(const char* chrIn) override
+        {
+            if (!chrIn)
             {
-                DoUseEmberseerRunes();
-                DoUseDoorOrButton(GO_EMBERSEER_OUT);
+                OUT_LOAD_INST_DATA_FAIL;
+                return;
             }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_FLAMEWREATH:
-            if (uiData == FAIL)
+
+            OUT_LOAD_INST_DATA(chrIn);
+
+            std::istringstream loadStream(chrIn);
+            loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3] >> m_auiEncounter[4] >> m_auiEncounter[5];
+
+            for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
             {
-                m_uiFlamewreathEventTimer = 0;
-                m_uiFlamewreathWaveCount = 0;
-            }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_STADIUM:
-            // Don't set the same data twice
-            if (m_auiEncounter[uiType] == uiData)
-            {
-                break;
-            }
-            // Combat door
-            DoUseDoorOrButton(GO_GYTH_ENTRY_DOOR);
-            // Start event
-            if (uiData == IN_PROGRESS)
-            {
-                StartNextDialogueText(SAY_NEFARIUS_INTRO_1);
-            }
-            else if (uiData == DONE)
-            {
-                DoUseDoorOrButton(GO_GYTH_EXIT_DOOR);
-            }
-            else if (uiData == FAIL)
-            {
-                // Despawn Nefarius and Rend on fail (the others are despawned OnCreatureEvade())
-                if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+                if (m_auiEncounter[i] == IN_PROGRESS)
                 {
-                    pNefarius->ForcedDespawn();
+                    m_auiEncounter[i] = NOT_STARTED;
                 }
+            }
+
+            OUT_LOAD_INST_DATA_COMPLETE;
+        }
+
+        void Update(uint32 uiDiff) override
+        {
+            DialogueUpdate(uiDiff);
+
+            if (m_uiStadiumEventTimer)
+            {
+                if (m_uiStadiumEventTimer <= uiDiff)
+                {
+                    DoSendNextStadiumWave();
+                }
+                else
+                {
+                    m_uiStadiumEventTimer -= uiDiff;
+                }
+            }
+
+            if (m_uiFlamewreathEventTimer)
+            {
+                if (m_uiFlamewreathEventTimer <= uiDiff)
+                {
+                    DoSendNextFlamewreathWave();
+                }
+                else
+                {
+                    m_uiFlamewreathEventTimer -= uiDiff;
+                }
+            }
+        }
+
+        void JustDidDialogueStep(int32 iEntry) override
+        {
+            switch (iEntry)
+            {
+            case NPC_BLACKHAND_HANDLER:
+                m_uiStadiumEventTimer = 1000;
+                // Move the two near the balcony
                 if (Creature* pRend = GetSingleCreatureFromStorage(NPC_REND_BLACKHAND))
                 {
-                    pRend->ForcedDespawn();
+                    pRend->SetFacingTo(aStadiumLocs[5].m_fO);
                 }
-                if (Creature* pGyth = GetSingleCreatureFromStorage(NPC_GYTH))
+                if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
                 {
-                    pGyth->ForcedDespawn();
+                    pNefarius->GetMotionMaster()->MovePoint(0, aStadiumLocs[5].m_fX, aStadiumLocs[5].m_fY, aStadiumLocs[5].m_fZ);
                 }
-
-                m_uiStadiumEventTimer = 0;
-                m_uiStadiumMobsAlive = 0;
-                m_uiStadiumWaves = 0;
-            }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_DRAKKISATH:
-        case TYPE_VALTHALAK:
-            m_auiEncounter[uiType] = uiData;
-            break;
-    }
-
-    if (uiData == DONE)
-    {
-        OUT_SAVE_INST_DATA;
-
-        std::ostringstream saveStream;
-        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5];
-
-        m_strInstData = saveStream.str();
-
-        SaveToDB();
-        OUT_SAVE_INST_DATA_COMPLETE;
-    }
-}
-
-void instance_blackrock_spire::Load(const char* chrIn)
-{
-    if (!chrIn)
-    {
-        OUT_LOAD_INST_DATA_FAIL;
-        return;
-    }
-
-    OUT_LOAD_INST_DATA(chrIn);
-
-    std::istringstream loadStream(chrIn);
-    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3] >> m_auiEncounter[4] >> m_auiEncounter[5];
-
-    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-    {
-        if (m_auiEncounter[i] == IN_PROGRESS)
-        {
-            m_auiEncounter[i] = NOT_STARTED;
-        }
-    }
-
-    OUT_LOAD_INST_DATA_COMPLETE;
-}
-
-uint32 instance_blackrock_spire::GetData(uint32 uiType) const
-{
-    if (uiType < MAX_ENCOUNTER)
-    {
-        return m_auiEncounter[uiType];
-    }
-
-    return 0;
-}
-
-void instance_blackrock_spire::DoSortRoomEventMobs()
-{
-    if (GetData(TYPE_ROOM_EVENT) != NOT_STARTED)
-    {
-        return;
-    }
-
-    for (uint8 i = 0; i < MAX_ROOMS; ++i)
-    {
-        if (GameObject* pRune = instance->GetGameObject(m_aRoomRuneGuid[i]))
-        {
-            for (GuidList::const_iterator itr = m_lRoomEventMobGUIDList.begin(); itr != m_lRoomEventMobGUIDList.end(); ++itr)
-            {
-                Creature* pCreature = instance->GetCreature(*itr);
-                if (pCreature && pCreature->IsAlive() && pCreature->GetDistance(pRune) < 10.0f)
+                break;
+            case SAY_NEFARIUS_WARCHIEF:
+                // Prepare for Gyth - note: Nefarius should be moving around the balcony
+                if (Creature* pRend = GetSingleCreatureFromStorage(NPC_REND_BLACKHAND))
                 {
-                    m_alRoomEventMobGUIDSorted[i].push_back(*itr);
+                    pRend->ForcedDespawn(5000);
+                    pRend->SetWalk(false);
+                    pRend->GetMotionMaster()->MovePoint(0, aStadiumLocs[6].m_fX, aStadiumLocs[6].m_fY, aStadiumLocs[6].m_fZ);
                 }
+                m_uiStadiumEventTimer = 30000;
+                break;
+            case SAY_NEFARIUS_VICTORY:
+                SetData(TYPE_STADIUM, DONE);
+                break;
+            case NPC_REND_BLACKHAND:
+                // Despawn Nefarius
+                if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+                {
+                    pNefarius->ForcedDespawn(5000);
+                    pNefarius->GetMotionMaster()->MovePoint(0, aStadiumLocs[6].m_fX, aStadiumLocs[6].m_fY, aStadiumLocs[6].m_fZ);
+                }
+                break;
             }
         }
-    }
 
-    SetData(TYPE_ROOM_EVENT, IN_PROGRESS);
-}
-
-void instance_blackrock_spire::OnCreatureDeath(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-        case NPC_BLACKHAND_SUMMONER:
-        case NPC_BLACKHAND_VETERAN:
-            // Handle Runes
-            if (m_auiEncounter[TYPE_ROOM_EVENT] == IN_PROGRESS)
+    private:
+        void DoSendNextStadiumWave()
+        {
+            if (m_uiStadiumWaves < MAX_STADIUM_WAVES)
             {
-                uint8 uiNotEmptyRoomsCount = 0;
-                for (uint8 i = 0; i < MAX_ROOMS; ++i)
+                // Send current wave mobs
+                if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
                 {
-                    if (m_aRoomRuneGuid[i])                 // This check is used, to ensure which runes still need processing
+                    float fX, fY, fZ;
+                    for (uint8 i = 0; i < MAX_STADIUM_MOBS_PER_WAVE; ++i)
                     {
-                        m_alRoomEventMobGUIDSorted[i].remove(pCreature->GetObjectGuid());
-                        if (m_alRoomEventMobGUIDSorted[i].empty())
+                        if (aStadiumEventNpcs[m_uiStadiumWaves][i] == 0)
                         {
-                            DoUseDoorOrButton(m_aRoomRuneGuid[i]);
-                            m_aRoomRuneGuid[i].Clear();
+                            continue;
                         }
-                        else
+
+                        pNefarius->GetRandomPoint(aStadiumLocs[0].m_fX, aStadiumLocs[0].m_fY, aStadiumLocs[0].m_fZ, 7.0f, fX, fY, fZ);
+                        fX = std::min(aStadiumLocs[0].m_fX, fX);    // Halfcircle - suits better the rectangular form
+                        if (Creature* pTemp = pNefarius->SummonCreature(aStadiumEventNpcs[m_uiStadiumWaves][i], fX, fY, fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
                         {
-                            ++uiNotEmptyRoomsCount;    // found an not empty room
+                            // Get some point in the center of the stadium
+                            pTemp->GetRandomPoint(aStadiumLocs[2].m_fX, aStadiumLocs[2].m_fY, aStadiumLocs[2].m_fZ, 5.0f, fX, fY, fZ);
+                            fX = std::min(aStadiumLocs[2].m_fX, fX);// Halfcircle - suits better the rectangular form
+
+                            pTemp->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
+                            ++m_uiStadiumMobsAlive;
                         }
                     }
                 }
-                if (!uiNotEmptyRoomsCount)
+
+                DoUseDoorOrButton(GO_GYTH_COMBAT_DOOR);
+            }
+            // All waves are cleared - start Gyth intro
+            else if (m_uiStadiumWaves == MAX_STADIUM_WAVES)
+            {
+                StartNextDialogueText(SAY_NEFARIUS_LOSE_4);
+            }
+            else
+            {
+                // Send Gyth
+                if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
                 {
-                    SetData(TYPE_ROOM_EVENT, DONE);
+                    if (Creature* pTemp = pNefarius->SummonCreature(NPC_GYTH, aStadiumLocs[1].m_fX, aStadiumLocs[1].m_fY, aStadiumLocs[1].m_fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
+                    {
+                        pTemp->GetMotionMaster()->MovePoint(0, aStadiumLocs[2].m_fX, aStadiumLocs[2].m_fY, aStadiumLocs[2].m_fZ);
+                    }
+                }
+
+                // Set this to 2, because Rend will be summoned later during the fight
+                m_uiStadiumMobsAlive = 2;
+
+                DoUseDoorOrButton(GO_GYTH_COMBAT_DOOR);
+            }
+
+            ++m_uiStadiumWaves;
+
+            // Stop the timer when all the waves have been sent
+            if (m_uiStadiumWaves >= MAX_STADIUM_WAVES)
+            {
+                m_uiStadiumEventTimer = 0;
+            }
+            else
+            {
+                m_uiStadiumEventTimer = 60000;
+            }
+        }
+
+        void DoSendNextFlamewreathWave()
+        {
+            GameObject* pSummoner = GetSingleGameObjectFromStorage(GO_FATHER_FLAME);
+            if (!pSummoner)
+            {
+                return;
+            }
+
+            // TODO - The npcs would move nicer if they had DB waypoints, so i suggest to change their default movement to DB waypoints, and random movement when they reached their goal
+
+            if (m_uiFlamewreathWaveCount < 6)                       // Send two adds (6 waves, then boss)
+            {
+                Creature* pSummoned = NULL;
+                for (uint8 i = 0; i < 2; ++i)
+                {
+                    float fX, fY, fZ;
+                    pSummoner->GetRandomPoint(rookeryEventSpawnPos[0], rookeryEventSpawnPos[1], rookeryEventSpawnPos[2], 2.5f, fX, fY, fZ);
+                    // Summon Rookery Hatchers in first wave, else random
+                    pSummoned = pSummoner->SummonCreature(urand(0, 1) && m_uiFlamewreathWaveCount ? NPC_ROOKERY_GUARDIAN : NPC_ROOKERY_HATCHER, fX, fY, fZ, 0.0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 300000);
+                    if (pSummoned)
+                    {
+                        pSummoner->GetContactPoint(pSummoned, fX, fY, fZ);
+                        pSummoned->GetMotionMaster()->MovePoint(1, fX, fY, pSummoner->GetPositionZ());
+                    }
+                }
+                if (pSummoned && m_uiFlamewreathWaveCount == 0)
+                {
+                    DoScriptText(SAY_ROOKERY_EVENT_START, pSummoned);
+                }
+
+                if (m_uiFlamewreathWaveCount < 4)
+                {
+                    m_uiFlamewreathEventTimer = 30000;
+                }
+                else if (m_uiFlamewreathWaveCount < 6)
+                {
+                    m_uiFlamewreathEventTimer = 40000;
+                }
+                else
+                {
+                    m_uiFlamewreathEventTimer = 10000;
+                }
+
+                ++m_uiFlamewreathWaveCount;
+            }
+            else                                                    // Send Flamewreath
+            {
+                if (Creature* pSolakar = pSummoner->SummonCreature(NPC_SOLAKAR_FLAMEWREATH, rookeryEventSpawnPos[0], rookeryEventSpawnPos[1], rookeryEventSpawnPos[2], 0.0f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, HOUR * IN_MILLISECONDS))
+                {
+                    pSolakar->GetMotionMaster()->MovePoint(1, pSummoner->GetPositionX(), pSummoner->GetPositionY(), pSummoner->GetPositionZ());
+                }
+                SetData(TYPE_FLAMEWREATH, SPECIAL);
+                m_uiFlamewreathEventTimer = 0;
+            }
+        }
+
+        void DoUseEmberseerRunes(bool bReset = false)
+        {
+            if (m_lEmberseerRunesGUIDList.empty())
+            {
+                return;
+            }
+
+            for (GuidList::const_iterator itr = m_lEmberseerRunesGUIDList.begin(); itr != m_lEmberseerRunesGUIDList.end(); ++itr)
+            {
+                if (bReset)
+                {
+                    if (GameObject* pRune = instance->GetGameObject(*itr))
+                    {
+                        pRune->ResetDoorOrButton();
+                    }
+                }
+                else
+                {
+                    DoUseDoorOrButton(*itr);
                 }
             }
-            break;
-        case NPC_SOLAKAR_FLAMEWREATH:
-            SetData(TYPE_FLAMEWREATH, DONE);
-            break;
-        case NPC_DRAKKISATH:
-            SetData(TYPE_DRAKKISATH, DONE);
-            DoUseDoorOrButton(GO_DRAKKISATH_DOOR_1);
-            DoUseDoorOrButton(GO_DRAKKISATH_DOOR_2);
-            break;
-        case NPC_CHROMATIC_WHELP:
-        case NPC_CHROMATIC_DRAGON:
-        case NPC_BLACKHAND_HANDLER:
-            // check if it's summoned - some npcs with the same entry are already spawned in the instance
-            if (!pCreature->IsTemporarySummon())
-            {
-                break;
-            }
-            --m_uiStadiumMobsAlive;
-            if (m_uiStadiumMobsAlive == 0)
-            {
-                DoSendNextStadiumWave();
-            }
-            break;
-        case NPC_GYTH:
-        case NPC_REND_BLACKHAND:
-            --m_uiStadiumMobsAlive;
-            if (m_uiStadiumMobsAlive == 0)
-            {
-                StartNextDialogueText(SAY_NEFARIUS_VICTORY);
-            }
-            break;
-    }
-}
+        }
 
-void instance_blackrock_spire::OnCreatureEvade(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-            // Emberseer should evade if the incarcerators evade
-        case NPC_BLACKHAND_INCARCERATOR:
+        void DoProcessEmberseerEvent()
+        {
+            if (GetData(TYPE_EMBERSEER) == DONE || GetData(TYPE_EMBERSEER) == IN_PROGRESS)
+            {
+                return;
+            }
+
+            if (m_lIncarceratorGUIDList.empty())
+            {
+                script_error_log("Npc %u couldn't be found. Please check your DB content!", NPC_BLACKHAND_INCARCERATOR);
+                return;
+            }
+
+            // start to grow
             if (Creature* pEmberseer = GetSingleCreatureFromStorage(NPC_PYROGUARD_EMBERSEER))
             {
-                pEmberseer->AI()->EnterEvadeMode();
-            }
-            break;
-        case NPC_SOLAKAR_FLAMEWREATH:
-        case NPC_ROOKERY_GUARDIAN:
-        case NPC_ROOKERY_HATCHER:
-            SetData(TYPE_FLAMEWREATH, FAIL);
-            break;
-        case NPC_CHROMATIC_WHELP:
-        case NPC_CHROMATIC_DRAGON:
-        case NPC_BLACKHAND_HANDLER:
-        case NPC_GYTH:
-        case NPC_REND_BLACKHAND:
-            // check if it's summoned - some npcs with the same entry are already spawned in the instance
-            if (!pCreature->IsTemporarySummon())
-            {
-                break;
-            }
-            SetData(TYPE_STADIUM, FAIL);
-            pCreature->ForcedDespawn();
-            break;
-    }
-}
-
-void instance_blackrock_spire::OnCreatureEnterCombat(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-            // Once one of the Incarcerators gets Aggro, the door should close
-        case NPC_BLACKHAND_INCARCERATOR:
-            SetData(TYPE_EMBERSEER, IN_PROGRESS);
-            break;
-    }
-}
-
-void instance_blackrock_spire::DoProcessEmberseerEvent()
-{
-    if (GetData(TYPE_EMBERSEER) == DONE || GetData(TYPE_EMBERSEER) == IN_PROGRESS)
-    {
-        return;
-    }
-
-    if (m_lIncarceratorGUIDList.empty())
-    {
-        script_error_log("Npc %u couldn't be found. Please check your DB content!", NPC_BLACKHAND_INCARCERATOR);
-        return;
-    }
-
-    // start to grow
-    if (Creature* pEmberseer = GetSingleCreatureFromStorage(NPC_PYROGUARD_EMBERSEER))
-    {
-        // If already casting, return
-        if (pEmberseer->HasAura(SPELL_EMBERSEER_GROWING))
-        {
-            return;
-        }
-
-        DoScriptText(EMOTE_BEGIN, pEmberseer);
-        pEmberseer->CastSpell(pEmberseer, SPELL_EMBERSEER_GROWING, true);
-    }
-
-    // remove the incarcerators flags and stop casting
-    for (GuidList::const_iterator itr = m_lIncarceratorGUIDList.begin(); itr != m_lIncarceratorGUIDList.end(); ++itr)
-    {
-        if (Creature* pCreature = instance->GetCreature(*itr))
-        {
-            if (pCreature->IsAlive())
-            {
-                pCreature->InterruptNonMeleeSpells(false);
-                pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
-            }
-        }
-    }
-}
-
-void instance_blackrock_spire::DoUseEmberseerRunes(bool bReset)
-{
-    if (m_lEmberseerRunesGUIDList.empty())
-    {
-        return;
-    }
-
-    for (GuidList::const_iterator itr = m_lEmberseerRunesGUIDList.begin(); itr != m_lEmberseerRunesGUIDList.end(); ++itr)
-    {
-        if (bReset)
-        {
-            if (GameObject* pRune = instance->GetGameObject(*itr))
-            {
-                pRune->ResetDoorOrButton();
-            }
-        }
-        else
-        {
-            DoUseDoorOrButton(*itr);
-        }
-    }
-}
-
-void instance_blackrock_spire::JustDidDialogueStep(int32 iEntry)
-{
-    switch (iEntry)
-    {
-        case NPC_BLACKHAND_HANDLER:
-            m_uiStadiumEventTimer = 1000;
-            // Move the two near the balcony
-            if (Creature* pRend = GetSingleCreatureFromStorage(NPC_REND_BLACKHAND))
-            {
-                pRend->SetFacingTo(aStadiumLocs[5].m_fO);
-            }
-            if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
-            {
-                pNefarius->GetMotionMaster()->MovePoint(0, aStadiumLocs[5].m_fX, aStadiumLocs[5].m_fY, aStadiumLocs[5].m_fZ);
-            }
-            break;
-        case SAY_NEFARIUS_WARCHIEF:
-            // Prepare for Gyth - note: Nefarius should be moving around the balcony
-            if (Creature* pRend = GetSingleCreatureFromStorage(NPC_REND_BLACKHAND))
-            {
-                pRend->ForcedDespawn(5000);
-                pRend->SetWalk(false);
-                pRend->GetMotionMaster()->MovePoint(0, aStadiumLocs[6].m_fX, aStadiumLocs[6].m_fY, aStadiumLocs[6].m_fZ);
-            }
-            m_uiStadiumEventTimer = 30000;
-            break;
-        case SAY_NEFARIUS_VICTORY:
-            SetData(TYPE_STADIUM, DONE);
-            break;
-        case NPC_REND_BLACKHAND:
-            // Despawn Nefarius
-            if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
-            {
-                pNefarius->ForcedDespawn(5000);
-                pNefarius->GetMotionMaster()->MovePoint(0, aStadiumLocs[6].m_fX, aStadiumLocs[6].m_fY, aStadiumLocs[6].m_fZ);
-            }
-            break;
-    }
-}
-
-void instance_blackrock_spire::DoSendNextStadiumWave()
-{
-    if (m_uiStadiumWaves < MAX_STADIUM_WAVES)
-    {
-        // Send current wave mobs
-        if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
-        {
-            float fX, fY, fZ;
-            for (uint8 i = 0; i < MAX_STADIUM_MOBS_PER_WAVE; ++i)
-            {
-                if (aStadiumEventNpcs[m_uiStadiumWaves][i] == 0)
+                // If already casting, return
+                if (pEmberseer->HasAura(SPELL_EMBERSEER_GROWING))
                 {
-                    continue;
+                    return;
                 }
 
-                pNefarius->GetRandomPoint(aStadiumLocs[0].m_fX, aStadiumLocs[0].m_fY, aStadiumLocs[0].m_fZ, 7.0f, fX, fY, fZ);
-                fX = std::min(aStadiumLocs[0].m_fX, fX);    // Halfcircle - suits better the rectangular form
-                if (Creature* pTemp = pNefarius->SummonCreature(aStadiumEventNpcs[m_uiStadiumWaves][i], fX, fY, fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
-                {
-                    // Get some point in the center of the stadium
-                    pTemp->GetRandomPoint(aStadiumLocs[2].m_fX, aStadiumLocs[2].m_fY, aStadiumLocs[2].m_fZ, 5.0f, fX, fY, fZ);
-                    fX = std::min(aStadiumLocs[2].m_fX, fX);// Halfcircle - suits better the rectangular form
+                DoScriptText(EMOTE_BEGIN, pEmberseer);
+                pEmberseer->CastSpell(pEmberseer, SPELL_EMBERSEER_GROWING, true);
+            }
 
-                    pTemp->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
-                    ++m_uiStadiumMobsAlive;
+            // remove the incarcerators flags and stop casting
+            for (GuidList::const_iterator itr = m_lIncarceratorGUIDList.begin(); itr != m_lIncarceratorGUIDList.end(); ++itr)
+            {
+                if (Creature* pCreature = instance->GetCreature(*itr))
+                {
+                    if (pCreature->IsAlive())
+                    {
+                        pCreature->InterruptNonMeleeSpells(false);
+                        pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
+                    }
                 }
             }
         }
 
-        DoUseDoorOrButton(GO_GYTH_COMBAT_DOOR);
-    }
-    // All waves are cleared - start Gyth intro
-    else if (m_uiStadiumWaves == MAX_STADIUM_WAVES)
-    {
-        StartNextDialogueText(SAY_NEFARIUS_LOSE_4);
-    }
-    else
-    {
-        // Send Gyth
-        if (Creature* pNefarius = GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+        void DoSortRoomEventMobs()
         {
-            if (Creature* pTemp = pNefarius->SummonCreature(NPC_GYTH, aStadiumLocs[1].m_fX, aStadiumLocs[1].m_fY, aStadiumLocs[1].m_fZ, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
+            if (GetData(TYPE_ROOM_EVENT) != NOT_STARTED)
             {
-                pTemp->GetMotionMaster()->MovePoint(0, aStadiumLocs[2].m_fX, aStadiumLocs[2].m_fY, aStadiumLocs[2].m_fZ);
+                return;
             }
-        }
 
-        // Set this to 2, because Rend will be summoned later during the fight
-        m_uiStadiumMobsAlive = 2;
-
-        DoUseDoorOrButton(GO_GYTH_COMBAT_DOOR);
-    }
-
-    ++m_uiStadiumWaves;
-
-    // Stop the timer when all the waves have been sent
-    if (m_uiStadiumWaves >= MAX_STADIUM_WAVES)
-    {
-        m_uiStadiumEventTimer = 0;
-    }
-    else
-    {
-        m_uiStadiumEventTimer = 60000;
-    }
-}
-
-void instance_blackrock_spire::DoSendNextFlamewreathWave()
-{
-    GameObject* pSummoner = GetSingleGameObjectFromStorage(GO_FATHER_FLAME);
-    if (!pSummoner)
-    {
-        return;
-    }
-
-    // TODO - The npcs would move nicer if they had DB waypoints, so i suggest to change their default movement to DB waypoints, and random movement when they reached their goal
-
-    if (m_uiFlamewreathWaveCount < 6)                       // Send two adds (6 waves, then boss)
-    {
-        Creature* pSummoned = NULL;
-        for (uint8 i = 0; i < 2; ++i)
-        {
-            float fX, fY, fZ;
-            pSummoner->GetRandomPoint(rookeryEventSpawnPos[0], rookeryEventSpawnPos[1], rookeryEventSpawnPos[2], 2.5f, fX, fY, fZ);
-            // Summon Rookery Hatchers in first wave, else random
-            pSummoned = pSummoner->SummonCreature(urand(0, 1) && m_uiFlamewreathWaveCount ? NPC_ROOKERY_GUARDIAN : NPC_ROOKERY_HATCHER, fX, fY, fZ, 0.0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 300000);
-            if (pSummoned)
+            for (uint8 i = 0; i < MAX_ROOMS; ++i)
             {
-                pSummoner->GetContactPoint(pSummoned, fX, fY, fZ);
-                pSummoned->GetMotionMaster()->MovePoint(1, fX, fY, pSummoner->GetPositionZ());
+                if (GameObject* pRune = instance->GetGameObject(m_aRoomRuneGuid[i]))
+                {
+                    for (GuidList::const_iterator itr = m_lRoomEventMobGUIDList.begin(); itr != m_lRoomEventMobGUIDList.end(); ++itr)
+                    {
+                        Creature* pCreature = instance->GetCreature(*itr);
+                        if (pCreature && pCreature->IsAlive() && pCreature->GetDistance(pRune) < 10.0f)
+                        {
+                            m_alRoomEventMobGUIDSorted[i].push_back(*itr);
+                        }
+                    }
+                }
             }
-        }
-        if (pSummoned && m_uiFlamewreathWaveCount == 0)
-        {
-            DoScriptText(SAY_ROOKERY_EVENT_START, pSummoned);
+
+            SetData(TYPE_ROOM_EVENT, IN_PROGRESS);
         }
 
-        if (m_uiFlamewreathWaveCount < 4)
+        void StartflamewreathEventIfCan()
         {
-            m_uiFlamewreathEventTimer = 30000;
-        }
-        else if (m_uiFlamewreathWaveCount < 6)
-        {
-            m_uiFlamewreathEventTimer = 40000;
-        }
-        else
-        {
-            m_uiFlamewreathEventTimer = 10000;
+            // Already done or currently in progress - or endboss done
+            if (m_auiEncounter[TYPE_FLAMEWREATH] == DONE || m_auiEncounter[TYPE_FLAMEWREATH] == IN_PROGRESS || m_auiEncounter[TYPE_DRAKKISATH] == DONE)
+            {
+                return;
+            }
+
+            // Boss still around
+            if (GetSingleCreatureFromStorage(NPC_SOLAKAR_FLAMEWREATH, true))
+            {
+                return;
+            }
+
+            // Start summoning of mobs
+            m_uiFlamewreathEventTimer = 1;
+            m_uiFlamewreathWaveCount = 0;
         }
 
-        ++m_uiFlamewreathWaveCount;
-    }
-    else                                                    // Send Flamewreath
+        uint32 m_auiEncounter[MAX_ENCOUNTER];
+        std::string m_strInstData;
+
+        uint32 m_uiFlamewreathEventTimer;
+        uint32 m_uiFlamewreathWaveCount;
+        uint32 m_uiStadiumEventTimer;
+        uint8 m_uiStadiumWaves;
+        uint8 m_uiStadiumMobsAlive;
+
+        ObjectGuid m_aRoomRuneGuid[MAX_ROOMS];
+        GuidList m_alRoomEventMobGUIDSorted[MAX_ROOMS];
+        GuidList m_lRoomEventMobGUIDList;
+        GuidList m_lIncarceratorGUIDList;
+        GuidList m_lEmberseerRunesGUIDList;
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
     {
-        if (Creature* pSolakar = pSummoner->SummonCreature(NPC_SOLAKAR_FLAMEWREATH, rookeryEventSpawnPos[0], rookeryEventSpawnPos[1], rookeryEventSpawnPos[2], 0.0f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, HOUR * IN_MILLISECONDS))
-        {
-            pSolakar->GetMotionMaster()->MovePoint(1, pSummoner->GetPositionX(), pSummoner->GetPositionY(), pSummoner->GetPositionZ());
-        }
-        SetData(TYPE_FLAMEWREATH, SPECIAL);
-        m_uiFlamewreathEventTimer = 0;
+        return new instance_blackrock_spire(pMap);
     }
-}
+};
 
-void instance_blackrock_spire::Update(uint32 uiDiff)
+struct at_blackrock_spire : public AreaTriggerScript
 {
-    DialogueUpdate(uiDiff);
+    at_blackrock_spire() : AreaTriggerScript("at_blackrock_spire") {}
 
-    if (m_uiStadiumEventTimer)
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* pAt) override
     {
-        if (m_uiStadiumEventTimer <= uiDiff)
+        if (!pPlayer->IsAlive() || pPlayer->isGameMaster())
         {
-            DoSendNextStadiumWave();
+            return false;
         }
-        else
+
+        switch (pAt->id)
         {
-            m_uiStadiumEventTimer -= uiDiff;
-        }
-    }
-
-    if (m_uiFlamewreathEventTimer)
-    {
-        if (m_uiFlamewreathEventTimer <= uiDiff)
-        {
-            DoSendNextFlamewreathWave();
-        }
-        else
-        {
-            m_uiFlamewreathEventTimer -= uiDiff;
-        }
-    }
-}
-
-void instance_blackrock_spire::StartflamewreathEventIfCan()
-{
-    // Already done or currently in progress - or endboss done
-    if (m_auiEncounter[TYPE_FLAMEWREATH] == DONE || m_auiEncounter[TYPE_FLAMEWREATH] == IN_PROGRESS || m_auiEncounter[TYPE_DRAKKISATH] == DONE)
-    {
-        return;
-    }
-
-    // Boss still around
-    if (GetSingleCreatureFromStorage(NPC_SOLAKAR_FLAMEWREATH, true))
-    {
-        return;
-    }
-
-    // Start summoning of mobs
-    m_uiFlamewreathEventTimer = 1;
-    m_uiFlamewreathWaveCount = 0;
-}
-
-InstanceData* GetInstanceData_instance_blackrock_spire(Map* pMap)
-{
-    return new instance_blackrock_spire(pMap);
-}
-
-bool AreaTrigger_at_blackrock_spire(Player* pPlayer, AreaTriggerEntry const* pAt)
-{
-    if (!pPlayer->IsAlive() || pPlayer->isGameMaster())
-    {
-        return false;
-    }
-
-    switch (pAt->id)
-    {
         case AREATRIGGER_ENTER_UBRS:
-            if (instance_blackrock_spire* pInstance = (instance_blackrock_spire*) pPlayer->GetInstanceData())
+            if (InstanceData* pInstance = pPlayer->GetInstanceData())
             {
-                pInstance->DoSortRoomEventMobs();
+                pInstance->SetData(MAX_ENCOUNTER, DO_SORT_MOBS);
             }
             break;
         case AREATRIGGER_STADIUM:
-            if (instance_blackrock_spire* pInstance = (instance_blackrock_spire*) pPlayer->GetInstanceData())
+            if (InstanceData* pInstance = pPlayer->GetInstanceData())
             {
                 if (pInstance->GetData(TYPE_STADIUM) == IN_PROGRESS || pInstance->GetData(TYPE_STADIUM) == DONE)
                 {
@@ -797,54 +862,73 @@ bool AreaTrigger_at_blackrock_spire(Player* pPlayer, AreaTriggerEntry const* pAt
                 pInstance->SetData(TYPE_STADIUM, IN_PROGRESS);
             }
             break;
-    }
-    return false;
-}
-
-bool ProcessEventId_event_spell_altar_emberseer(uint32 /*uiEventId*/, Object* pSource, Object* /*pTarget*/, bool bIsStart)
-{
-    if (bIsStart && pSource->GetTypeId() == TYPEID_PLAYER)
-    {
-        if (instance_blackrock_spire* pInstance = (instance_blackrock_spire*)((Player*)pSource)->GetInstanceData())
-        {
-            pInstance->DoProcessEmberseerEvent();
-            return true;
         }
+        return false;
     }
-    return false;
-}
+};
 
-bool GOUse_go_father_flame(Player* /*pPlayer*/, GameObject* pGo)
+struct event_spell_altar_emberseer : public MapEventScript
 {
-    if (instance_blackrock_spire* pInstance = (instance_blackrock_spire*)pGo->GetInstanceData())
-    {
-        pInstance->StartflamewreathEventIfCan();
-    }
+    event_spell_altar_emberseer() : MapEventScript("event_spell_altar_emberseer") {}
 
-    return true;
-}
+    bool OnReceived(uint32 /*uiEventId*/, Object* pSource, Object* /*pTarget*/, bool bIsStart) override
+    {
+        if (bIsStart && pSource->GetTypeId() == TYPEID_PLAYER)
+        {
+            if (InstanceData* pInstance = ((Unit*)pSource)->GetInstanceData())
+            {
+                pInstance->SetData(MAX_ENCOUNTER, DO_EMBERSEER_EVENT);
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+struct go_father_flame : public GameObjectScript
+{
+    go_father_flame() : GameObjectScript("go_father_flame") {}
+
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo) override
+    {
+        if (InstanceData* pInstance = pGo->GetInstanceData())
+        {
+            pInstance->SetData(MAX_ENCOUNTER, DO_FLAMEWREATH_EVENT);
+        }
+
+        return true;
+    }
+};
 
 void AddSC_instance_blackrock_spire()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new is_blackrock_spire();
+    s->RegisterSelf();
+    s = new at_blackrock_spire();
+    s->RegisterSelf();
+    s = new event_spell_altar_emberseer();
+    s->RegisterSelf();
+    s = new go_father_flame();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "instance_blackrock_spire";
-    pNewScript->GetInstanceData = &GetInstanceData_instance_blackrock_spire;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "instance_blackrock_spire";
+    //pNewScript->GetInstanceData = &GetInstanceData_instance_blackrock_spire;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_blackrock_spire";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_blackrock_spire;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_blackrock_spire";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_blackrock_spire;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "event_spell_altar_emberseer";
-    pNewScript->pProcessEventId = &ProcessEventId_event_spell_altar_emberseer;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "event_spell_altar_emberseer";
+    //pNewScript->pProcessEventId = &ProcessEventId_event_spell_altar_emberseer;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_father_flame";
-    pNewScript->pGOUse = &GOUse_go_father_flame;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_father_flame";
+    //pNewScript->pGOUse = &GOUse_go_father_flame;
+    //pNewScript->RegisterSelf();
 }

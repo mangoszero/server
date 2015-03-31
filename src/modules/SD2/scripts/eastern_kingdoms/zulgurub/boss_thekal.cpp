@@ -157,148 +157,151 @@ struct boss_thekalBaseAI : public ScriptedAI
     }
 };
 
-struct boss_thekalAI : public boss_thekalBaseAI
+struct boss_thekal : public CreatureScript
 {
-    boss_thekalAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
+    boss_thekal() : CreatureScript("boss_thekal") {}
+
+    struct boss_thekalAI : public boss_thekalBaseAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiMortalCleaveTimer;
-    uint32 m_uiSilenceTimer;
-    uint32 m_uiFrenzyTimer;
-    uint32 m_uiForcePunchTimer;
-    uint32 m_uiChargeTimer;
-    uint32 m_uiEnrageTimer;
-    uint32 m_uiSummonTigersTimer;
-    uint32 m_uiResurrectTimer;
-
-    bool m_bEnraged;
-
-    void Reset() override
-    {
-        m_uiMortalCleaveTimer   = 4000;
-        m_uiSilenceTimer        = 9000;
-        m_uiFrenzyTimer         = 30000;
-        m_uiForcePunchTimer     = 4000;
-        m_uiChargeTimer         = 12000;
-        m_uiEnrageTimer         = 32000;
-        m_uiSummonTigersTimer   = 25000;
-        m_uiResurrectTimer      = 10000;
-        m_uiPhase               = PHASE_NORMAL;
-
-        m_bEnraged              = false;
-
-        // remove fake death
-        Revive(true);
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        DoScriptText(SAY_DEATH, m_creature);
-
-        if (!m_pInstance)
+        boss_thekalAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        m_pInstance->SetData(TYPE_THEKAL, DONE);
+        ScriptedInstance* m_pInstance;
 
-        // remove the two adds
-        if (Creature* pZath = m_pInstance->GetSingleCreatureFromStorage(NPC_ZATH))
-        {
-            pZath->ForcedDespawn();
-        }
-        if (Creature* pLorkhan = m_pInstance->GetSingleCreatureFromStorage(NPC_LORKHAN))
-        {
-            pLorkhan->ForcedDespawn();
-        }
-    }
+        uint32 m_uiMortalCleaveTimer;
+        uint32 m_uiSilenceTimer;
+        uint32 m_uiFrenzyTimer;
+        uint32 m_uiForcePunchTimer;
+        uint32 m_uiChargeTimer;
+        uint32 m_uiEnrageTimer;
+        uint32 m_uiSummonTigersTimer;
+        uint32 m_uiResurrectTimer;
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_THEKAL, FAIL);
-        }
-    }
+        bool m_bEnraged;
 
-    // Only call in context where m_pInstance is valid
-    bool CanPreventAddsResurrect()
-    {
-        // If any add is alive, return false
-        if (m_pInstance->GetData(TYPE_ZATH) != SPECIAL || m_pInstance->GetData(TYPE_LORKHAN) != SPECIAL)
+        void Reset() override
         {
-            return false;
+            m_uiMortalCleaveTimer = 4000;
+            m_uiSilenceTimer = 9000;
+            m_uiFrenzyTimer = 30000;
+            m_uiForcePunchTimer = 4000;
+            m_uiChargeTimer = 12000;
+            m_uiEnrageTimer = 32000;
+            m_uiSummonTigersTimer = 25000;
+            m_uiResurrectTimer = 10000;
+            m_uiPhase = PHASE_NORMAL;
+
+            m_bEnraged = false;
+
+            // remove fake death
+            Revive(true);
         }
 
-        // Else Prevent them Resurrecting
-        if (Creature* pLorkhan = m_pInstance->GetSingleCreatureFromStorage(NPC_LORKHAN))
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pLorkhan->AI()))
+            DoScriptText(SAY_AGGRO, m_creature);
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            DoScriptText(SAY_DEATH, m_creature);
+
+            if (!m_pInstance)
             {
-                pFakerAI->PreventRevive();
+                return;
             }
-        }
-        if (Creature* pZath = m_pInstance->GetSingleCreatureFromStorage(NPC_ZATH))
-        {
-            if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pZath->AI()))
+
+            m_pInstance->SetData(TYPE_THEKAL, DONE);
+
+            // remove the two adds
+            if (Creature* pZath = m_pInstance->GetSingleCreatureFromStorage(NPC_ZATH))
             {
-                pFakerAI->PreventRevive();
+                pZath->ForcedDespawn();
+            }
+            if (Creature* pLorkhan = m_pInstance->GetSingleCreatureFromStorage(NPC_LORKHAN))
+            {
+                pLorkhan->ForcedDespawn();
             }
         }
 
-        return true;
-    }
-
-    void OnFakeingDeath()
-    {
-        m_uiResurrectTimer = 10000;
-
-        if (m_pInstance)
+        void JustReachedHome() override
         {
-            m_pInstance->SetData(TYPE_THEKAL, SPECIAL);
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_THEKAL, FAIL);
+            }
+        }
 
-            // If both Adds are already dead, don't wait 10 seconds
+        // Only call in context where m_pInstance is valid
+        bool CanPreventAddsResurrect()
+        {
+            // If any add is alive, return false
+            if (m_pInstance->GetData(TYPE_ZATH) != SPECIAL || m_pInstance->GetData(TYPE_LORKHAN) != SPECIAL)
+            {
+                return false;
+            }
+
+            // Else Prevent them Resurrecting
+            if (Creature* pLorkhan = m_pInstance->GetSingleCreatureFromStorage(NPC_LORKHAN))
+            {
+                if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pLorkhan->AI()))
+                {
+                    pFakerAI->PreventRevive();
+                }
+            }
+            if (Creature* pZath = m_pInstance->GetSingleCreatureFromStorage(NPC_ZATH))
+            {
+                if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pZath->AI()))
+                {
+                    pFakerAI->PreventRevive();
+                }
+            }
+
+            return true;
+        }
+
+        void OnFakeingDeath()
+        {
+            m_uiResurrectTimer = 10000;
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_THEKAL, SPECIAL);
+
+                // If both Adds are already dead, don't wait 10 seconds
+                if (CanPreventAddsResurrect())
+                {
+                    m_uiResurrectTimer = 1000;
+                }
+            }
+        }
+
+        void OnRevive()
+        {
+            if (!m_pInstance)
+            {
+                return;
+            }
+
+            // Both Adds are 'dead' enter tiger phase
             if (CanPreventAddsResurrect())
             {
-                m_uiResurrectTimer = 1000;
+                DoCastSpellIfCan(m_creature, SPELL_TIGER_FORM, CAST_TRIGGERED);
+                m_uiPhase = PHASE_TIGER;
             }
         }
-    }
 
-    void OnRevive()
-    {
-        if (!m_pInstance)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            return;
-        }
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
 
-        // Both Adds are 'dead' enter tiger phase
-        if (CanPreventAddsResurrect())
-        {
-            DoCastSpellIfCan(m_creature, SPELL_TIGER_FORM, CAST_TRIGGERED);
-            m_uiPhase = PHASE_TIGER;
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        switch (m_uiPhase)
-        {
+            switch (m_uiPhase)
+            {
             case PHASE_FAKE_DEATH:
                 if (m_uiResurrectTimer < uiDiff)
                 {
@@ -413,9 +416,15 @@ struct boss_thekalAI : public boss_thekalBaseAI
                 }
 
                 break;
-        }
+            }
 
-        DoMeleeAttackIfReady();
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_thekalAI(pCreature);
     }
 };
 
@@ -423,65 +432,68 @@ struct boss_thekalAI : public boss_thekalBaseAI
 ## mob_zealot_lorkhan
 ######*/
 
-struct mob_zealot_lorkhanAI : public boss_thekalBaseAI
+struct mob_zealot_lorkhan : public CreatureScript
 {
-    mob_zealot_lorkhanAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
+    mob_zealot_lorkhan() : CreatureScript("mob_zealot_lorkhan") {}
+
+    struct mob_zealot_lorkhanAI : public boss_thekalBaseAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiShieldTimer;
-    uint32 m_uiBloodLustTimer;
-    uint32 m_uiGreaterHealTimer;
-    uint32 m_uiDisarmTimer;
-    uint32 m_uiResurrectTimer;
-
-    void Reset() override
-    {
-        m_uiShieldTimer         = 1000;
-        m_uiBloodLustTimer      = 16000;
-        m_uiGreaterHealTimer    = 32000;
-        m_uiDisarmTimer         = 6000;
-        m_uiPhase               = PHASE_NORMAL;
-
-        if (m_pInstance)
+        mob_zealot_lorkhanAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_LORKHAN, NOT_STARTED);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        Revive(true);
-    }
+        ScriptedInstance* m_pInstance;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        uint32 m_uiShieldTimer;
+        uint32 m_uiBloodLustTimer;
+        uint32 m_uiGreaterHealTimer;
+        uint32 m_uiDisarmTimer;
+        uint32 m_uiResurrectTimer;
+
+        void Reset() override
         {
-            m_pInstance->SetData(TYPE_LORKHAN, IN_PROGRESS);
-        }
-    }
+            m_uiShieldTimer = 1000;
+            m_uiBloodLustTimer = 16000;
+            m_uiGreaterHealTimer = 32000;
+            m_uiDisarmTimer = 6000;
+            m_uiPhase = PHASE_NORMAL;
 
-    void OnFakeingDeath()
-    {
-        m_uiResurrectTimer = 10000;
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LORKHAN, NOT_STARTED);
+            }
 
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_LORKHAN, SPECIAL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            Revive(true);
         }
 
-        switch (m_uiPhase)
+        void Aggro(Unit* /*pWho*/) override
         {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LORKHAN, IN_PROGRESS);
+            }
+        }
+
+        void OnFakeingDeath()
+        {
+            m_uiResurrectTimer = 10000;
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LORKHAN, SPECIAL);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            switch (m_uiPhase)
+            {
             case PHASE_FAKE_DEATH:
                 if (m_uiResurrectTimer < uiDiff)
                 {
@@ -546,18 +558,18 @@ struct mob_zealot_lorkhanAI : public boss_thekalBaseAI
 
                         switch (urand(0, 1))
                         {
-                            case 0:
-                                if (pThekal && m_creature->IsWithinDistInMap(pThekal, 3 * ATTACK_DISTANCE))
-                                {
-                                    DoCastSpellIfCan(pThekal, SPELL_GREATER_HEAL);
-                                }
-                                break;
-                            case 1:
-                                if (pZath && m_creature->IsWithinDistInMap(pZath, 3 * ATTACK_DISTANCE))
-                                {
-                                    DoCastSpellIfCan(pZath, SPELL_GREATER_HEAL);
-                                }
-                                break;
+                        case 0:
+                            if (pThekal && m_creature->IsWithinDistInMap(pThekal, 3 * ATTACK_DISTANCE))
+                            {
+                                DoCastSpellIfCan(pThekal, SPELL_GREATER_HEAL);
+                            }
+                            break;
+                        case 1:
+                            if (pZath && m_creature->IsWithinDistInMap(pZath, 3 * ATTACK_DISTANCE))
+                            {
+                                DoCastSpellIfCan(pZath, SPELL_GREATER_HEAL);
+                            }
+                            break;
                         }
                     }
 
@@ -582,77 +594,85 @@ struct mob_zealot_lorkhanAI : public boss_thekalBaseAI
                 }
 
                 break;
-        }
+            }
 
-        DoMeleeAttackIfReady();
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new mob_zealot_lorkhanAI(pCreature);
     }
 };
 
 /*######
 ## npc_zealot_zath
 ######*/
-
-struct mob_zealot_zathAI : public boss_thekalBaseAI
+struct mob_zealot_zath : public CreatureScript
 {
-    mob_zealot_zathAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
+    mob_zealot_zath() : CreatureScript("mob_zealot_zath") {}
+
+    struct mob_zealot_zathAI : public boss_thekalBaseAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiSweepingStrikesTimer;
-    uint32 m_uiSinisterStrikeTimer;
-    uint32 m_uiGougeTimer;
-    uint32 m_uiKickTimer;
-    uint32 m_uiBlindTimer;
-    uint32 m_uiResurrectTimer;
-
-    void Reset() override
-    {
-        m_uiSweepingStrikesTimer    = 13000;
-        m_uiSinisterStrikeTimer     = 8000;
-        m_uiGougeTimer              = 25000;
-        m_uiKickTimer               = 18000;
-        m_uiBlindTimer              = 5000;
-        m_uiPhase                   = PHASE_NORMAL;
-
-        if (m_pInstance)
+        mob_zealot_zathAI(Creature* pCreature) : boss_thekalBaseAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_ZATH, NOT_STARTED);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        Revive(true);
-    }
+        ScriptedInstance* m_pInstance;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        uint32 m_uiSweepingStrikesTimer;
+        uint32 m_uiSinisterStrikeTimer;
+        uint32 m_uiGougeTimer;
+        uint32 m_uiKickTimer;
+        uint32 m_uiBlindTimer;
+        uint32 m_uiResurrectTimer;
+
+        void Reset() override
         {
-            m_pInstance->SetData(TYPE_ZATH, IN_PROGRESS);
-        }
-    }
+            m_uiSweepingStrikesTimer = 13000;
+            m_uiSinisterStrikeTimer = 8000;
+            m_uiGougeTimer = 25000;
+            m_uiKickTimer = 18000;
+            m_uiBlindTimer = 5000;
+            m_uiPhase = PHASE_NORMAL;
 
-    void OnFakeingDeath()
-    {
-        m_uiResurrectTimer = 10000;
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_ZATH, NOT_STARTED);
+            }
 
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_ZATH, SPECIAL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            Revive(true);
         }
 
-        switch (m_uiPhase)
+        void Aggro(Unit* /*pWho*/) override
         {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_ZATH, IN_PROGRESS);
+            }
+        }
+
+        void OnFakeingDeath()
+        {
+            m_uiResurrectTimer = 10000;
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_ZATH, SPECIAL);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            switch (m_uiPhase)
+            {
             case PHASE_FAKE_DEATH:
                 if (m_uiResurrectTimer < uiDiff)
                 {
@@ -750,63 +770,67 @@ struct mob_zealot_zathAI : public boss_thekalBaseAI
                 }
 
                 break;
+            }
+
+            DoMeleeAttackIfReady();
         }
+    };
 
-        DoMeleeAttackIfReady();
-    }
-};
-
-bool EffectDummyCreature_thekal_resurrection(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    // always check spellid and effectindex
-    if (uiSpellId == SPELL_RESURRECT && uiEffIndex == EFFECT_INDEX_0)
-    {
-        if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pCreatureTarget->AI()))
-        {
-            pFakerAI->Revive();
-        }
-
-        // always return true when we are handling this spell and effect
-        return true;
-    }
-
-    return false;
-}
-
-CreatureAI* GetAI_boss_thekal(Creature* pCreature)
-{
-    return new boss_thekalAI(pCreature);
-}
-
-CreatureAI* GetAI_mob_zealot_lorkhan(Creature* pCreature)
-{
-    return new mob_zealot_lorkhanAI(pCreature);
-}
-
-CreatureAI* GetAI_mob_zealot_zath(Creature* pCreature)
+CreatureAI* GetAI(Creature* pCreature) override
 {
     return new mob_zealot_zathAI(pCreature);
 }
+};
+
+struct spell_thekal_resurrection : public SpellScript
+{
+    spell_thekal_resurrection() : SpellScript("spell_thekal_resurrection") {}
+
+    bool EffectDummyCreature_thekal_resurrection(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
+    {
+        // always check spellid and effectindex
+        if (uiSpellId == SPELL_RESURRECT && uiEffIndex == EFFECT_INDEX_0)
+        {
+            if (boss_thekalBaseAI* pFakerAI = dynamic_cast<boss_thekalBaseAI*>(pCreatureTarget->AI()))
+            {
+                pFakerAI->Revive();
+            }
+
+            // always return true when we are handling this spell and effect
+            return true;
+        }
+
+        return false;
+    }
+};
 
 void AddSC_boss_thekal()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_thekal();
+    s->RegisterSelf();
+    s = new mob_zealot_lorkhan();
+    s->RegisterSelf();
+    s = new mob_zealot_zath();
+    s->RegisterSelf();
+    s = new spell_thekal_resurrection();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_thekal";
-    pNewScript->GetAI = &GetAI_boss_thekal;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_thekal";
+    //pNewScript->GetAI = &GetAI_boss_thekal;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_zealot_lorkhan";
-    pNewScript->GetAI = &GetAI_mob_zealot_lorkhan;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_zealot_lorkhan";
+    //pNewScript->GetAI = &GetAI_mob_zealot_lorkhan;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_zealot_zath";
-    pNewScript->GetAI = &GetAI_mob_zealot_zath;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_zealot_zath";
+    //pNewScript->GetAI = &GetAI_mob_zealot_zath;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_thekal_resurrection;
+    //pNewScript->RegisterSelf();
 }

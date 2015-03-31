@@ -45,127 +45,139 @@ enum
     SPELL_ARMAGEDDON            = 20478
 };
 
-struct boss_baron_geddonAI : public ScriptedAI
+struct boss_baron_geddon : public CreatureScript
 {
-    boss_baron_geddonAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_baron_geddon() : CreatureScript("boss_baron_geddon") {}
+
+    struct boss_baron_geddonAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    bool m_bIsArmageddon;
-    uint32 m_uiInfernoTimer;
-    uint32 m_uiIgniteManaTimer;
-    uint32 m_uiLivingBombTimer;
-
-    void Reset() override
-    {
-        m_bIsArmageddon = false;
-        m_uiInfernoTimer = 45000;
-        m_uiIgniteManaTimer = 30000;
-        m_uiLivingBombTimer = 35000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_baron_geddonAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_GEDDON, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_GEDDON, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_GEDDON, NOT_STARTED);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        if (m_bIsArmageddon)                                // Do nothing untill armageddon triggers
+        ScriptedInstance* m_pInstance;
+
+        bool m_bIsArmageddon;
+        uint32 m_uiInfernoTimer;
+        uint32 m_uiIgniteManaTimer;
+        uint32 m_uiLivingBombTimer;
+
+        void Reset() override
         {
-            return;
+            m_bIsArmageddon = false;
+            m_uiInfernoTimer = 45000;
+            m_uiIgniteManaTimer = 30000;
+            m_uiLivingBombTimer = 35000;
         }
 
-        // If we are <2% hp cast Armageddom
-        if (m_creature->GetHealthPercent() <= 2.0f && !m_bIsArmageddon)
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_ARMAGEDDON, CAST_INTERRUPT_PREVIOUS) == CAST_OK)
+            if (m_pInstance)
             {
-                DoScriptText(EMOTE_SERVICE, m_creature);
-                m_bIsArmageddon = true;
+                m_pInstance->SetData(TYPE_GEDDON, IN_PROGRESS);
+            }
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_GEDDON, DONE);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_GEDDON, NOT_STARTED);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
                 return;
             }
-        }
 
-        // Inferno_Timer
-        if (m_uiInfernoTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_INFERNO) == CAST_OK)
+            if (m_bIsArmageddon)                                // Do nothing untill armageddon triggers
             {
-                m_uiInfernoTimer = 45000;
+                return;
             }
-        }
-        else
-            { m_uiInfernoTimer -= uiDiff; }
 
-        // Ignite Mana Timer
-        if (m_uiIgniteManaTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_IGNITE_MANA) == CAST_OK)
+            // If we are <2% hp cast Armageddom
+            if (m_creature->GetHealthPercent() <= 2.0f && !m_bIsArmageddon)
             {
-                m_uiIgniteManaTimer = 30000;
-            }
-        }
-        else
-            { m_uiIgniteManaTimer -= uiDiff; }
-
-        // Living Bomb Timer
-        if (m_uiLivingBombTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_LIVING_BOMB) == CAST_OK)
+                if (DoCastSpellIfCan(m_creature, SPELL_ARMAGEDDON, CAST_INTERRUPT_PREVIOUS) == CAST_OK)
                 {
-                    m_uiLivingBombTimer = 35000;
+                    DoScriptText(EMOTE_SERVICE, m_creature);
+                    m_bIsArmageddon = true;
+                    return;
                 }
             }
-        }
-        else
-            { m_uiLivingBombTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+            // Inferno_Timer
+            if (m_uiInfernoTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_INFERNO) == CAST_OK)
+                {
+                    m_uiInfernoTimer = 45000;
+                }
+            }
+            else
+            {
+                m_uiInfernoTimer -= uiDiff;
+            }
+
+            // Ignite Mana Timer
+            if (m_uiIgniteManaTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_IGNITE_MANA) == CAST_OK)
+                {
+                    m_uiIgniteManaTimer = 30000;
+                }
+            }
+            else
+            {
+                m_uiIgniteManaTimer -= uiDiff;
+            }
+
+            // Living Bomb Timer
+            if (m_uiLivingBombTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_LIVING_BOMB) == CAST_OK)
+                    {
+                        m_uiLivingBombTimer = 35000;
+                    }
+                }
+            }
+            else
+            {
+                m_uiLivingBombTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_baron_geddonAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_baron_geddon(Creature* pCreature)
-{
-    return new boss_baron_geddonAI(pCreature);
-}
-
 void AddSC_boss_baron_geddon()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_baron_geddon();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_baron_geddon";
-    pNewScript->GetAI = &GetAI_boss_baron_geddon;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_baron_geddon";
+    //pNewScript->GetAI = &GetAI_boss_baron_geddon;
+    //pNewScript->RegisterSelf();
 }

@@ -54,7 +54,7 @@ enum
 
     SPELL_MEMBRANE_VISCIDUS     = 25994,                    // damage reduction spell
     // SPELL_VISCIDUS_WEAKNESS   = 25926,                   // aura which procs at damage - should trigger the slow spells
-    // SPELL_VISCIDUS_SHRINKS    = 25893,                   // removed from DBC
+    // SPELL_VISCIDUS_SHRINKS    = 25893,                   // removed from DBC TODO check this "synced mess"
     // SPELL_VISCIDUS_SHRINKS_2  = 27934,                   // removed from DBC
     // SPELL_VISCIDUS_GROWS      = 25897,                   // removed from DBC
     // SPELL_SUMMON_GLOBS        = 25885,                   // summons npc 15667 using spells from 25865 to 25884; All spells have target coords - removed from DBC
@@ -64,95 +64,105 @@ enum
     NPC_GLOB_OF_VISCIDUS        = 15667
 };
 
-struct boss_viscidusAI : public ScriptedAI
+struct boss_viscidus : public CreatureScript
 {
-    boss_viscidusAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_viscidus() : CreatureScript("boss_viscidus") {}
+
+    struct boss_viscidusAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiPoisonShockTimer;
-    uint32 m_uiPoisonBoltVolleyTimer;
-
-    void Reset() override
-    {
-        m_uiPoisonShockTimer      = urand(7000, 12000);
-        m_uiPoisonBoltVolleyTimer = urand(10000, 15000);
-
-        DoCastSpellIfCan(m_creature, SPELL_MEMBRANE_VISCIDUS);
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoCastSpellIfCan(m_creature, SPELL_TOXIN);
-
-        if (m_pInstance)
+        boss_viscidusAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_VISCIDUS, IN_PROGRESS);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_VISCIDUS, FAIL);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_VISCIDUS, DONE);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        if (m_uiPoisonShockTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiPoisonShockTimer;
+        uint32 m_uiPoisonBoltVolleyTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_POISON_SHOCK) == CAST_OK)
+            m_uiPoisonShockTimer = urand(7000, 12000);
+            m_uiPoisonBoltVolleyTimer = urand(10000, 15000);
+
+            DoCastSpellIfCan(m_creature, SPELL_MEMBRANE_VISCIDUS);
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            DoCastSpellIfCan(m_creature, SPELL_TOXIN);
+
+            if (m_pInstance)
             {
-                m_uiPoisonShockTimer = urand(7000, 12000);
+                m_pInstance->SetData(TYPE_VISCIDUS, IN_PROGRESS);
             }
         }
-        else
-            { m_uiPoisonShockTimer -= uiDiff; }
 
-        if (m_uiPoisonBoltVolleyTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_POISONBOLT_VOLLEY) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiPoisonBoltVolleyTimer = urand(10000, 15000);
+                m_pInstance->SetData(TYPE_VISCIDUS, FAIL);
             }
         }
-        else
-            { m_uiPoisonBoltVolleyTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_VISCIDUS, DONE);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiPoisonShockTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_POISON_SHOCK) == CAST_OK)
+                {
+                    m_uiPoisonShockTimer = urand(7000, 12000);
+                }
+            }
+            else
+            {
+                m_uiPoisonShockTimer -= uiDiff;
+            }
+
+            if (m_uiPoisonBoltVolleyTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_POISONBOLT_VOLLEY) == CAST_OK)
+                {
+                    m_uiPoisonBoltVolleyTimer = urand(10000, 15000);
+                }
+            }
+            else
+            {
+                m_uiPoisonBoltVolleyTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_viscidusAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_viscidus(Creature* pCreature)
-{
-    return new boss_viscidusAI(pCreature);
-}
-
 void AddSC_boss_viscidus()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_viscidus();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_viscidus";
-    pNewScript->GetAI = &GetAI_boss_viscidus;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_viscidus";
+    //pNewScript->GetAI = &GetAI_boss_viscidus;
+    //pNewScript->RegisterSelf();
 }

@@ -52,297 +52,322 @@ enum
     NPC_ZULIAN_PROWLER          = 15101
 };
 
-struct boss_arlokkAI : public ScriptedAI
+struct boss_arlokk : public CreatureScript
 {
-    boss_arlokkAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_arlokk() : CreatureScript("boss_arlokk") {}
+
+    struct boss_arlokkAI : public ScriptedAI
     {
-        m_pInstance = (instance_zulgurub*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_zulgurub* m_pInstance;
-
-    uint32 m_uiShadowWordPainTimer;
-    uint32 m_uiGougeTimer;
-    uint32 m_uiMarkTimer;
-    uint32 m_uiRavageTimer;
-    uint32 m_uiTrashTimer;
-    uint32 m_uiWhirlwindTimer;
-    uint32 m_uiVanishTimer;
-    uint32 m_uiVisibleTimer;
-    uint32 m_uiTransformTimer;
-    uint32 m_uiSummonTimer;
-
-    bool m_bIsPhaseTwo;
-
-    void Reset() override
-    {
-        m_uiShadowWordPainTimer = 8000;
-        m_uiGougeTimer      = 14000;
-        m_uiMarkTimer       = 5000;
-        m_uiRavageTimer     = 12000;
-        m_uiTrashTimer      = 20000;
-        m_uiWhirlwindTimer  = 15000;
-        m_uiTransformTimer  = 30000;
-        m_uiVanishTimer     = 5000;
-        m_uiVisibleTimer    = 0;
-        m_uiSummonTimer     = 5000;
-
-        m_bIsPhaseTwo = false;
-
-        // Restore visibility
-        if (m_creature->GetVisibility() != VISIBILITY_ON)
+        boss_arlokkAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_creature->SetVisibility(VISIBILITY_ON);
-        }
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_ARLOKK, FAIL);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // we should be summoned, so despawn
-        m_creature->ForcedDespawn();
-    }
+        ScriptedInstance* m_pInstance;
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        DoScriptText(SAY_DEATH, m_creature);
-        // Restore visibility in case of killed by dots
-        if (m_creature->GetVisibility() != VISIBILITY_ON)
+        uint32 m_uiShadowWordPainTimer;
+        uint32 m_uiGougeTimer;
+        uint32 m_uiMarkTimer;
+        uint32 m_uiRavageTimer;
+        uint32 m_uiTrashTimer;
+        uint32 m_uiWhirlwindTimer;
+        uint32 m_uiVanishTimer;
+        uint32 m_uiVisibleTimer;
+        uint32 m_uiTransformTimer;
+        uint32 m_uiSummonTimer;
+
+        bool m_bIsPhaseTwo;
+
+        void Reset() override
         {
-            m_creature->SetVisibility(VISIBILITY_ON);
+            m_uiShadowWordPainTimer = 8000;
+            m_uiGougeTimer = 14000;
+            m_uiMarkTimer = 5000;
+            m_uiRavageTimer = 12000;
+            m_uiTrashTimer = 20000;
+            m_uiWhirlwindTimer = 15000;
+            m_uiTransformTimer = 30000;
+            m_uiVanishTimer = 5000;
+            m_uiVisibleTimer = 0;
+            m_uiSummonTimer = 5000;
+
+            m_bIsPhaseTwo = false;
+
+            // Restore visibility
+            if (m_creature->GetVisibility() != VISIBILITY_ON)
+            {
+                m_creature->SetVisibility(VISIBILITY_ON);
+            }
         }
 
-        if (m_pInstance)
+        void Aggro(Unit* /*pWho*/) override
         {
-            m_pInstance->SetData(TYPE_ARLOKK, DONE);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        // Just attack a random target. The Marked player will attract them automatically
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-        {
-            pSummoned->AI()->AttackStart(pTarget);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            DoScriptText(SAY_AGGRO, m_creature);
         }
 
-        // Summon panters every 5 seconds
-        if (m_uiSummonTimer < uiDiff)
+        void JustReachedHome() override
         {
             if (m_pInstance)
             {
-                if (Creature* pTrigger = m_pInstance->SelectRandomPantherTrigger(true))
-                {
-                    m_creature->SummonCreature(NPC_ZULIAN_PROWLER, pTrigger->GetPositionX(), pTrigger->GetPositionY(), pTrigger->GetPositionZ(), 0, TEMPSUMMON_TIMED_OOC_DESPAWN, 30000);
-                }
-                if (Creature* pTrigger = m_pInstance->SelectRandomPantherTrigger(false))
-                {
-                    m_creature->SummonCreature(NPC_ZULIAN_PROWLER, pTrigger->GetPositionX(), pTrigger->GetPositionY(), pTrigger->GetPositionZ(), 0, TEMPSUMMON_TIMED_OOC_DESPAWN, 30000);
-                }
+                m_pInstance->SetData(TYPE_ARLOKK, FAIL);
             }
 
-            m_uiSummonTimer = 5000;
+            // we should be summoned, so despawn
+            m_creature->ForcedDespawn();
         }
-        else
-            { m_uiSummonTimer -= uiDiff; }
 
-        if (m_uiVisibleTimer)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (m_uiVisibleTimer <= uiDiff)
+            DoScriptText(SAY_DEATH, m_creature);
+            // Restore visibility in case of killed by dots
+            if (m_creature->GetVisibility() != VISIBILITY_ON)
             {
-                // Restore visibility
                 m_creature->SetVisibility(VISIBILITY_ON);
-
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    AttackStart(pTarget);
-                }
-
-                m_uiVisibleTimer = 0;
             }
-            else
+
+            if (m_pInstance)
             {
-                m_uiVisibleTimer -= uiDiff;
+                m_pInstance->SetData(TYPE_ARLOKK, DONE);
             }
-
-            // Do nothing while vanished
-            return;
         }
 
-        // Troll phase
-        if (!m_bIsPhaseTwo)
+        void JustSummoned(Creature* pSummoned) override
         {
-            if (m_uiShadowWordPainTimer < uiDiff)
+            // Just attack a random target. The Marked player will attract them automatically
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
             {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_WORD_PAIN) == CAST_OK)
-                    {
-                        m_uiShadowWordPainTimer = 15000;
-                    }
-                }
-            }
-            else
-            {
-                m_uiShadowWordPainTimer -= uiDiff;
-            }
-
-            if (m_uiMarkTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_MARK_ARLOKK, SELECT_FLAG_PLAYER))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_MARK_ARLOKK) == CAST_OK)
-                    {
-                        DoScriptText(SAY_FEAST_PANTHER, m_creature, pTarget);
-                        m_uiMarkTimer = 30000;
-                    }
-                }
-            }
-            else
-            {
-                m_uiMarkTimer -= uiDiff;
-            }
-
-            if (m_uiGougeTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_GOUGE) == CAST_OK)
-                {
-                    if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
-                    {
-                        m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -80);
-                    }
-
-                    m_uiGougeTimer = urand(17000, 27000);
-                }
-            }
-            else
-            {
-                m_uiGougeTimer -= uiDiff;
-            }
-
-            // Transform to Panther
-            if (m_uiTransformTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_PANTHER_TRANSFORM) == CAST_OK)
-                {
-                    m_uiTransformTimer = 80000;
-                    m_bIsPhaseTwo = true;
-                }
-            }
-            else
-            {
-                m_uiTransformTimer -= uiDiff;
+                pSummoned->AI()->AttackStart(pTarget);
             }
         }
-        // Panther phase
-        else
+
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (m_uiRavageTimer < uiDiff)
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_RAVAGE) == CAST_OK)
+                return;
+            }
+
+            // Summon panters every 5 seconds
+            if (m_uiSummonTimer < uiDiff)
+            {
+                if (m_pInstance)
                 {
-                    m_uiRavageTimer = urand(10000, 15000);
+                    if (Creature* pTrigger = m_pInstance->instance->GetCreature(ObjectGuid(m_pInstance->GetData64(TYPE_SIGNAL_2))))
+                    {
+                        m_creature->SummonCreature(NPC_ZULIAN_PROWLER, pTrigger->GetPositionX(), pTrigger->GetPositionY(), pTrigger->GetPositionZ(), 0, TEMPSUMMON_TIMED_OOC_DESPAWN, 30000);
+                    }
+                    if (Creature* pTrigger = m_pInstance->instance->GetCreature(ObjectGuid(m_pInstance->GetData64(TYPE_SIGNAL_3))))
+                    {
+                        m_creature->SummonCreature(NPC_ZULIAN_PROWLER, pTrigger->GetPositionX(), pTrigger->GetPositionY(), pTrigger->GetPositionZ(), 0, TEMPSUMMON_TIMED_OOC_DESPAWN, 30000);
+                    }
+                }
+
+                m_uiSummonTimer = 5000;
+            }
+            else
+            {
+                m_uiSummonTimer -= uiDiff;
+            }
+
+            if (m_uiVisibleTimer)
+            {
+                if (m_uiVisibleTimer <= uiDiff)
+                {
+                    // Restore visibility
+                    m_creature->SetVisibility(VISIBILITY_ON);
+
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    {
+                        AttackStart(pTarget);
+                    }
+
+                    m_uiVisibleTimer = 0;
+                }
+                else
+                {
+                    m_uiVisibleTimer -= uiDiff;
+                }
+
+                // Do nothing while vanished
+                return;
+            }
+
+            // Troll phase
+            if (!m_bIsPhaseTwo)
+            {
+                if (m_uiShadowWordPainTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_WORD_PAIN) == CAST_OK)
+                        {
+                            m_uiShadowWordPainTimer = 15000;
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiShadowWordPainTimer -= uiDiff;
+                }
+
+                if (m_uiMarkTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_MARK_ARLOKK, SELECT_FLAG_PLAYER))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_MARK_ARLOKK) == CAST_OK)
+                        {
+                            DoScriptText(SAY_FEAST_PANTHER, m_creature, pTarget);
+                            m_uiMarkTimer = 30000;
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiMarkTimer -= uiDiff;
+                }
+
+                if (m_uiGougeTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_GOUGE) == CAST_OK)
+                    {
+                        if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
+                        {
+                            m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -80);
+                        }
+
+                        m_uiGougeTimer = urand(17000, 27000);
+                    }
+                }
+                else
+                {
+                    m_uiGougeTimer -= uiDiff;
+                }
+
+                // Transform to Panther
+                if (m_uiTransformTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_PANTHER_TRANSFORM) == CAST_OK)
+                    {
+                        m_uiTransformTimer = 80000;
+                        m_bIsPhaseTwo = true;
+                    }
+                }
+                else
+                {
+                    m_uiTransformTimer -= uiDiff;
                 }
             }
+            // Panther phase
             else
-                { m_uiRavageTimer -= uiDiff; }
-
-            if (m_uiTrashTimer < uiDiff)
             {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                if (m_uiRavageTimer < uiDiff)
                 {
-                    m_uiTrashTimer = urand(13000, 15000);
+                    if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_RAVAGE) == CAST_OK)
+                    {
+                        m_uiRavageTimer = urand(10000, 15000);
+                    }
+                }
+                else
+                {
+                    m_uiRavageTimer -= uiDiff;
+                }
+
+                if (m_uiTrashTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                    {
+                        m_uiTrashTimer = urand(13000, 15000);
+                    }
+                }
+                else
+                {
+                    m_uiTrashTimer -= uiDiff;
+                }
+
+                if (m_uiWhirlwindTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_WHIRLWIND) == CAST_OK)
+                    {
+                        m_uiWhirlwindTimer = 15000;
+                    }
+                }
+                else
+                {
+                    m_uiWhirlwindTimer -= uiDiff;
+                }
+
+                if (m_uiVanishTimer < uiDiff)
+                {
+                    // Note: this is a workaround because we do not know the real vanish spell
+                    m_creature->SetVisibility(VISIBILITY_OFF);
+                    DoResetThreat();
+
+                    m_uiVanishTimer = 85000;
+                    m_uiVisibleTimer = 45000;
+                }
+                else
+                {
+                    m_uiVanishTimer -= uiDiff;
+                }
+
+                // Transform back
+                if (m_uiTransformTimer < uiDiff)
+                {
+                    m_creature->RemoveAurasDueToSpell(SPELL_PANTHER_TRANSFORM);
+                    m_uiTransformTimer = 30000;
+                    m_bIsPhaseTwo = false;
+                }
+                else
+                {
+                    m_uiTransformTimer -= uiDiff;
                 }
             }
-            else
-                { m_uiTrashTimer -= uiDiff; }
 
-            if (m_uiWhirlwindTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_WHIRLWIND) == CAST_OK)
-                {
-                    m_uiWhirlwindTimer = 15000;
-                }
-            }
-            else
-                { m_uiWhirlwindTimer -= uiDiff; }
-
-            if (m_uiVanishTimer < uiDiff)
-            {
-                // Note: this is a workaround because we do not know the real vanish spell
-                m_creature->SetVisibility(VISIBILITY_OFF);
-                DoResetThreat();
-
-                m_uiVanishTimer = 85000;
-                m_uiVisibleTimer = 45000;
-            }
-            else
-                { m_uiVanishTimer -= uiDiff; }
-
-            // Transform back
-            if (m_uiTransformTimer < uiDiff)
-            {
-                m_creature->RemoveAurasDueToSpell(SPELL_PANTHER_TRANSFORM);
-                m_uiTransformTimer = 30000;
-                m_bIsPhaseTwo = false;
-            }
-            else
-                { m_uiTransformTimer -= uiDiff; }
+            DoMeleeAttackIfReady();
         }
+    };
 
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_arlokkAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_arlokk(Creature* pCreature)
+struct go_gong_of_bethekk : public GameObjectScript
 {
-    return new boss_arlokkAI(pCreature);
-}
+    go_gong_of_bethekk() : GameObjectScript("go_gong_of_bethekk") {}
 
-bool GOUse_go_gong_of_bethekk(Player* /*pPlayer*/, GameObject* pGo)
-{
-    if (ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData())
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo) override
     {
-        if (pInstance->GetData(TYPE_ARLOKK) == DONE || pInstance->GetData(TYPE_ARLOKK) == IN_PROGRESS)
+        if (ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData())
         {
-            return true;
+            if (pInstance->GetData(TYPE_ARLOKK) == DONE || pInstance->GetData(TYPE_ARLOKK) == IN_PROGRESS)
+            {
+                return true;
+            }
+
+            pInstance->SetData(TYPE_ARLOKK, IN_PROGRESS);
         }
 
-        pInstance->SetData(TYPE_ARLOKK, IN_PROGRESS);
+        return false;
     }
-
-    return false;
-}
+};
 
 void AddSC_boss_arlokk()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_arlokk();
+    s->RegisterSelf();
+    s = new go_gong_of_bethekk();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_arlokk";
-    pNewScript->GetAI = &GetAI_boss_arlokk;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_arlokk";
+    //pNewScript->GetAI = &GetAI_boss_arlokk;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_gong_of_bethekk";
-    pNewScript->pGOUse = &GOUse_go_gong_of_bethekk;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_gong_of_bethekk";
+    //pNewScript->pGOUse = &GOUse_go_gong_of_bethekk;
+    //pNewScript->RegisterSelf();
 }

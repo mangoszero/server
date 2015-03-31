@@ -52,43 +52,47 @@ enum
     PHASE_ENERGIZING         = 1
 };
 
-struct boss_moamAI : public ScriptedAI
+struct boss_moam : public CreatureScript
 {
-    boss_moamAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_moam() : CreatureScript("boss_moam") {}
 
-    uint8 m_uiPhase;
-
-    uint32 m_uiTrampleTimer;
-    uint32 m_uiManaDrainTimer;
-    uint32 m_uiCheckoutManaTimer;
-    uint32 m_uiSummonManaFiendsTimer;
-
-    void Reset() override
+    struct boss_moamAI : public ScriptedAI
     {
-        m_uiTrampleTimer            = 9000;
-        m_uiManaDrainTimer          = 3000;
-        m_uiSummonManaFiendsTimer   = 90000;
-        m_uiCheckoutManaTimer       = 1500;
-        m_uiPhase                   = PHASE_ATTACKING;
-        m_creature->SetPower(POWER_MANA, 0);
-        m_creature->SetMaxPower(POWER_MANA, 0);
-    }
+        boss_moamAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(EMOTE_AGGRO, m_creature);
-        m_creature->SetMaxPower(POWER_MANA, m_creature->GetCreatureInfo()->MaxLevelMana);
-    }
+        uint8 m_uiPhase;
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        uint32 m_uiTrampleTimer;
+        uint32 m_uiManaDrainTimer;
+        uint32 m_uiCheckoutManaTimer;
+        uint32 m_uiSummonManaFiendsTimer;
+
+        void Reset() override
         {
-            return;
+            m_uiTrampleTimer = 9000;
+            m_uiManaDrainTimer = 3000;
+            m_uiSummonManaFiendsTimer = 90000;
+            m_uiCheckoutManaTimer = 1500;
+            m_uiPhase = PHASE_ATTACKING;
+            m_creature->SetPower(POWER_MANA, 0);
+            m_creature->SetMaxPower(POWER_MANA, 0);
         }
 
-        switch (m_uiPhase)
+        void Aggro(Unit* /*pWho*/) override
         {
+            DoScriptText(EMOTE_AGGRO, m_creature);
+            m_creature->SetMaxPower(POWER_MANA, m_creature->GetCreatureInfo()->MaxLevelMana);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            switch (m_uiPhase)
+            {
             case PHASE_ATTACKING:
                 if (m_uiCheckoutManaTimer <= uiDiff)
                 {
@@ -163,21 +167,24 @@ struct boss_moamAI : public ScriptedAI
                     m_uiCheckoutManaTimer -= uiDiff;
                 }
                 break;
+            }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_moamAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_moam(Creature* pCreature)
-{
-    return new boss_moamAI(pCreature);
-}
-
 void AddSC_boss_moam()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_moam();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_moam";
-    pNewScript->GetAI = &GetAI_boss_moam;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_moam";
+    //pNewScript->GetAI = &GetAI_boss_moam;
+    //pNewScript->RegisterSelf();
 }

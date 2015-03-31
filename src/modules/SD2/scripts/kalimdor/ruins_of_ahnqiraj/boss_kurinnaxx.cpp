@@ -46,135 +46,150 @@ enum
     GO_SAND_TRAP            = 180647,
 };
 
-struct boss_kurinnaxxAI : public ScriptedAI
+struct boss_kurinnaxx : public CreatureScript
 {
-    boss_kurinnaxxAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_kurinnaxx() : CreatureScript("boss_kurinnaxx") {}
 
-    uint32 m_uiMortalWoundTimer;
-    uint32 m_uiSandTrapTimer;
-    uint32 m_uiTrashTimer;
-    uint32 m_uiWideSlashTimer;
-    uint32 m_uiTrapTriggerTimer;
-    bool m_bEnraged;
-
-    ObjectGuid m_sandtrapGuid;
-
-    void Reset() override
+    struct boss_kurinnaxxAI : public ScriptedAI
     {
-        m_bEnraged = false;
+        boss_kurinnaxxAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_uiMortalWoundTimer = urand(8000, 10000);
-        m_uiSandTrapTimer    = urand(5000, 10000);
-        m_uiTrashTimer       = urand(1000, 5000);
-        m_uiWideSlashTimer   = urand(10000, 15000);
-        m_uiTrapTriggerTimer = 0;
-    }
+        uint32 m_uiMortalWoundTimer;
+        uint32 m_uiSandTrapTimer;
+        uint32 m_uiTrashTimer;
+        uint32 m_uiWideSlashTimer;
+        uint32 m_uiTrapTriggerTimer;
+        bool m_bEnraged;
 
-    void JustSummoned(GameObject* pGo) override
-    {
-        if (pGo->GetEntry() == GO_SAND_TRAP)
+        ObjectGuid m_sandtrapGuid;
+
+        void Reset() override
         {
-            m_uiTrapTriggerTimer = 3000;
-            m_sandtrapGuid = pGo->GetObjectGuid();
-        }
-    }
+            m_bEnraged = false;
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_uiMortalWoundTimer = urand(8000, 10000);
+            m_uiSandTrapTimer = urand(5000, 10000);
+            m_uiTrashTimer = urand(1000, 5000);
+            m_uiWideSlashTimer = urand(10000, 15000);
+            m_uiTrapTriggerTimer = 0;
         }
 
-        // If we are belowe 30% HP cast enrage
-        if (!m_bEnraged && m_creature->GetHealthPercent() <= 30.0f)
+        void JustSummoned(GameObject* pGo) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_ENRAGE) == CAST_OK)
+            if (pGo->GetEntry() == GO_SAND_TRAP)
             {
-                m_bEnraged = true;
+                m_uiTrapTriggerTimer = 3000;
+                m_sandtrapGuid = pGo->GetObjectGuid();
             }
         }
 
-        // Mortal Wound
-        if (m_uiMortalWoundTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_WOUND) == CAST_OK)
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                m_uiMortalWoundTimer = urand(8000, 10000);
-            }
-        }
-        else
-            { m_uiMortalWoundTimer -= uiDiff; }
-
-        // Sand Trap
-        if (m_uiSandTrapTimer < uiDiff)
-        {
-            Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
-            if (!pTarget)
-            {
-                pTarget = m_creature->getVictim();
+                return;
             }
 
-            pTarget->CastSpell(pTarget, SPELL_SANDTRAP, true, NULL, NULL, m_creature->GetObjectGuid());
-            m_uiSandTrapTimer = urand(10000, 15000);
-        }
-        else
-            { m_uiSandTrapTimer -= uiDiff; }
-
-        // Trigger the sand trap in 3 secs after spawn
-        if (m_uiTrapTriggerTimer)
-        {
-            if (m_uiTrapTriggerTimer <= uiDiff)
+            // If we are belowe 30% HP cast enrage
+            if (!m_bEnraged && m_creature->GetHealthPercent() <= 30.0f)
             {
-                if (GameObject* pTrap = m_creature->GetMap()->GetGameObject(m_sandtrapGuid))
+                if (DoCastSpellIfCan(m_creature, SPELL_ENRAGE) == CAST_OK)
                 {
-                    pTrap->Use(m_creature);
+                    m_bEnraged = true;
                 }
-                m_uiTrapTriggerTimer = 0;
+            }
+
+            // Mortal Wound
+            if (m_uiMortalWoundTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_WOUND) == CAST_OK)
+                {
+                    m_uiMortalWoundTimer = urand(8000, 10000);
+                }
             }
             else
             {
-                m_uiTrapTriggerTimer -= uiDiff;
+                m_uiMortalWoundTimer -= uiDiff;
             }
-        }
 
-        // Wide Slash
-        if (m_uiWideSlashTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WIDE_SLASH) == CAST_OK)
+            // Sand Trap
+            if (m_uiSandTrapTimer < uiDiff)
             {
-                m_uiWideSlashTimer = urand(12000, 15000);
-            }
-        }
-        else
-            { m_uiWideSlashTimer -= uiDiff; }
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
+                if (!pTarget)
+                {
+                    pTarget = m_creature->getVictim();
+                }
 
-        // Trash
-        if (m_uiTrashTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                pTarget->CastSpell(pTarget, SPELL_SANDTRAP, true, NULL, NULL, m_creature->GetObjectGuid());
+                m_uiSandTrapTimer = urand(10000, 15000);
+            }
+            else
             {
-                m_uiTrashTimer = urand(12000, 17000);
+                m_uiSandTrapTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiTrashTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+            // Trigger the sand trap in 3 secs after spawn
+            if (m_uiTrapTriggerTimer)
+            {
+                if (m_uiTrapTriggerTimer <= uiDiff)
+                {
+                    if (GameObject* pTrap = m_creature->GetMap()->GetGameObject(m_sandtrapGuid))
+                    {
+                        pTrap->Use(m_creature);
+                    }
+                    m_uiTrapTriggerTimer = 0;
+                }
+                else
+                {
+                    m_uiTrapTriggerTimer -= uiDiff;
+                }
+            }
+
+            // Wide Slash
+            if (m_uiWideSlashTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WIDE_SLASH) == CAST_OK)
+                {
+                    m_uiWideSlashTimer = urand(12000, 15000);
+                }
+            }
+            else
+            {
+                m_uiWideSlashTimer -= uiDiff;
+            }
+
+            // Trash
+            if (m_uiTrashTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                {
+                    m_uiTrashTimer = urand(12000, 17000);
+                }
+            }
+            else
+            {
+                m_uiTrashTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_kurinnaxxAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_kurinnaxx(Creature* pCreature)
-{
-    return new boss_kurinnaxxAI(pCreature);
-}
-
 void AddSC_boss_kurinnaxx()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_kurinnaxx();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_kurinnaxx";
-    pNewScript->GetAI = &GetAI_boss_kurinnaxx;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_kurinnaxx";
+    //pNewScript->GetAI = &GetAI_boss_kurinnaxx;
+    //pNewScript->RegisterSelf();
 }

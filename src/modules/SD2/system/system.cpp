@@ -28,6 +28,7 @@
 #include "ProgressBar.h"
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
+#include "SystemConfig.h"
 
 DatabaseType SD2Database;
 std::string  strSD2Version;
@@ -135,7 +136,7 @@ void SystemMgr::LoadScriptWaypoints()
                 continue;
             }
 
-            if (!pCInfo->ScriptID)
+            if (!sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, pTemp.uiCreatureEntry))
             {
                 error_db_log("SD2: DB table script_waypoint has waypoint for creature entry %u, but creature does not have ScriptName defined and then useless.", pTemp.uiCreatureEntry);
             }

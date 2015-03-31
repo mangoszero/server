@@ -58,155 +58,167 @@ enum
 static const uint32 aSummonWormSpells[3] = {SPELL_SUMMON_WORM_1, SPELL_SUMMON_WORM_2, SPELL_SUMMON_WORM_3};
 static const uint32 aEntangleSpells[3] = {SPELL_ENTANGLE_1, SPELL_ENTANGLE_2, SPELL_ENTANGLE_3};
 
-struct boss_fankrissAI : public ScriptedAI
+struct boss_fankriss : public CreatureScript
 {
-    boss_fankrissAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_fankriss() : CreatureScript("boss_fankriss") {}
+
+    struct boss_fankrissAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiMortalWoundTimer;
-    uint32 m_uiSummonWormTimer;
-    uint32 m_uiEntangleTimer;
-    uint32 m_uiEntangleSummonTimer;
-
-    ObjectGuid m_EntangleTargetGuid;
-
-    void Reset() override
-    {
-        m_uiMortalWoundTimer = urand(10000, 15000);
-        m_uiSummonWormTimer  = urand(30000, 50000);
-        m_uiEntangleTimer    = urand(25000, 40000);
-        m_uiEntangleSummonTimer = 0;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_fankrissAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_FANKRISS, IN_PROGRESS);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
-    }
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiMortalWoundTimer;
+        uint32 m_uiSummonWormTimer;
+        uint32 m_uiEntangleTimer;
+        uint32 m_uiEntangleSummonTimer;
+
+        ObjectGuid m_EntangleTargetGuid;
+
+        void Reset() override
         {
-            m_pInstance->SetData(TYPE_FANKRISS, FAIL);
+            m_uiMortalWoundTimer = urand(10000, 15000);
+            m_uiSummonWormTimer = urand(30000, 50000);
+            m_uiEntangleTimer = urand(25000, 40000);
+            m_uiEntangleSummonTimer = 0;
         }
-    }
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
+        void Aggro(Unit* /*pWho*/) override
         {
-            m_pInstance->SetData(TYPE_FANKRISS, DONE);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_SPAWN_FANKRISS)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (m_pInstance)
             {
-                pSummoned->AI()->AttackStart(pTarget);
+                m_pInstance->SetData(TYPE_FANKRISS, IN_PROGRESS);
             }
         }
-        else if (pSummoned->GetEntry() == NPC_VEKNISS_HATCHLING)
+
+        void JustReachedHome() override
         {
-            if (Player* pTarget = m_creature->GetMap()->GetPlayer(m_EntangleTargetGuid))
+            if (m_pInstance)
             {
-                pSummoned->AI()->AttackStart(pTarget);
+                m_pInstance->SetData(TYPE_FANKRISS, FAIL);
             }
         }
-    }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void JustDied(Unit* /*pKiller*/) override
         {
-            return;
-        }
-
-        if (m_uiMortalWoundTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_WOUND) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiMortalWoundTimer = urand(7000, 14000);
+                m_pInstance->SetData(TYPE_FANKRISS, DONE);
             }
         }
-        else
-            { m_uiMortalWoundTimer -= uiDiff; }
 
-        if (m_uiSummonWormTimer < uiDiff)
+        void JustSummoned(Creature* pSummoned) override
         {
-            uint8 uiSpawnIndex = urand(0, 2);
-            if (DoCastSpellIfCan(m_creature, aSummonWormSpells[uiSpawnIndex]) == CAST_OK)
+            if (pSummoned->GetEntry() == NPC_SPAWN_FANKRISS)
             {
-                m_uiSummonWormTimer = urand(15000, 40000);
-            }
-        }
-        else
-            { m_uiSummonWormTimer -= uiDiff; }
-
-        // Teleporting Random Target to one of the three tunnels and spawn 4 hatchlings near the gamer.
-        if (m_uiEntangleTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
-            {
-                uint8 uiEntangleIndex = urand(0, 2);
-                if (DoCastSpellIfCan(pTarget, aEntangleSpells[uiEntangleIndex]) == CAST_OK)
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 {
-                    m_EntangleTargetGuid = pTarget->GetObjectGuid();
-                    m_uiEntangleSummonTimer = 1000;
-                    m_uiEntangleTimer = urand(40000, 70000);
+                    pSummoned->AI()->AttackStart(pTarget);
                 }
             }
-        }
-        else
-            { m_uiEntangleTimer -= uiDiff; }
-
-        // Summon 4 Hatchlings around the target
-        if (m_uiEntangleSummonTimer)
-        {
-            if (m_uiEntangleSummonTimer <= uiDiff)
+            else if (pSummoned->GetEntry() == NPC_VEKNISS_HATCHLING)
             {
                 if (Player* pTarget = m_creature->GetMap()->GetPlayer(m_EntangleTargetGuid))
                 {
-                    float fX, fY, fZ;
-                    for (uint8 i = 0; i < 4; ++i)
-                    {
-                        m_creature->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 3.0f, fX, fY, fZ);
-                        m_creature->SummonCreature(NPC_VEKNISS_HATCHLING, fX, fY, fZ, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 10000);
-                    }
-                    m_uiEntangleSummonTimer = 0;
+                    pSummoned->AI()->AttackStart(pTarget);
+                }
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiMortalWoundTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_WOUND) == CAST_OK)
+                {
+                    m_uiMortalWoundTimer = urand(7000, 14000);
                 }
             }
             else
             {
-                m_uiEntangleSummonTimer -= uiDiff;
+                m_uiMortalWoundTimer -= uiDiff;
             }
-        }
 
-        DoMeleeAttackIfReady();
+            if (m_uiSummonWormTimer < uiDiff)
+            {
+                uint8 uiSpawnIndex = urand(0, 2);
+                if (DoCastSpellIfCan(m_creature, aSummonWormSpells[uiSpawnIndex]) == CAST_OK)
+                {
+                    m_uiSummonWormTimer = urand(15000, 40000);
+                }
+            }
+            else
+            {
+                m_uiSummonWormTimer -= uiDiff;
+            }
+
+            // Teleporting Random Target to one of the three tunnels and spawn 4 hatchlings near the gamer.
+            if (m_uiEntangleTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
+                {
+                    uint8 uiEntangleIndex = urand(0, 2);
+                    if (DoCastSpellIfCan(pTarget, aEntangleSpells[uiEntangleIndex]) == CAST_OK)
+                    {
+                        m_EntangleTargetGuid = pTarget->GetObjectGuid();
+                        m_uiEntangleSummonTimer = 1000;
+                        m_uiEntangleTimer = urand(40000, 70000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiEntangleTimer -= uiDiff;
+            }
+
+            // Summon 4 Hatchlings around the target
+            if (m_uiEntangleSummonTimer)
+            {
+                if (m_uiEntangleSummonTimer <= uiDiff)
+                {
+                    if (Player* pTarget = m_creature->GetMap()->GetPlayer(m_EntangleTargetGuid))
+                    {
+                        float fX, fY, fZ;
+                        for (uint8 i = 0; i < 4; ++i)
+                        {
+                            m_creature->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 3.0f, fX, fY, fZ);
+                            m_creature->SummonCreature(NPC_VEKNISS_HATCHLING, fX, fY, fZ, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 10000);
+                        }
+                        m_uiEntangleSummonTimer = 0;
+                    }
+                }
+                else
+                {
+                    m_uiEntangleSummonTimer -= uiDiff;
+                }
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_fankrissAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_fankriss(Creature* pCreature)
-{
-    return new boss_fankrissAI(pCreature);
-}
-
 void AddSC_boss_fankriss()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_fankriss();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_fankriss";
-    pNewScript->GetAI = &GetAI_boss_fankriss;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_fankriss";
+    //pNewScript->GetAI = &GetAI_boss_fankriss;
+    //pNewScript->RegisterSelf();
 }

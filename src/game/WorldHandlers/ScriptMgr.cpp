@@ -1918,25 +1918,28 @@ bool ScriptAction::HandleScriptStep()
 // /////////////////////////////////////////////////////////
 //              Scripting Library Hooks
 // /////////////////////////////////////////////////////////
-
-void ScriptMgr::LoadAreaTriggerScripts()
+void ScriptMgr::LoadScriptBinding()
 {
-    m_AreaTriggerScripts.clear();                           // need for reload case
-    QueryResult* result = WorldDatabase.Query("SELECT entry, ScriptName FROM scripted_areatrigger");
+#ifdef ENABLE_SD2
+    for (int i = 0; i < SCRIPTED_MAX_TYPE; ++i)
+        m_scriptBind[i].clear();
 
+    QueryResult* result = WorldDatabase.PQuery("SELECT type, bind, ScriptName, data FROM script_binding");
     uint32 count = 0;
 
     if (!result)
     {
         BarGoLink bar(1);
         bar.step();
-        sLog.outString(">> Loaded %u scripted areatrigger", count);
+        sLog.outString(">> Loaded no script binding.");
         sLog.outString();
         return;
     }
 
-    BarGoLink bar(result->GetRowCount());
+    std::set<uint32> eventIds;                              // Store possible event ids, for checking
+    CollectPossibleEventIds(eventIds);
 
+    BarGoLink bar(result->GetRowCount());
     do
     {
         ++count;
@@ -1944,89 +1947,113 @@ void ScriptMgr::LoadAreaTriggerScripts()
 
         Field* fields = result->Fetch();
 
-        uint32 triggerId       = fields[0].GetUInt32();
-        const char* scriptName = fields[1].GetString();
+        uint8 type = fields[0].GetUInt8();
+        int32 id = fields[1].GetInt32();
+        const char* scriptName = fields[2].GetString();
+        uint8 data = fields[3].GetUInt8();
 
-        if (!sAreaTriggerStore.LookupEntry(triggerId))
+        if (type >= SCRIPTED_MAX_TYPE)
         {
-            sLog.outErrorDb("Table `scripted_areatrigger` has area trigger (ID: %u) not listed in `AreaTrigger.dbc`.", triggerId);
+            sLog.outErrorScriptLib("script_binding table contains a script for non-existent type %u (bind %d), ignoring.", type, id);
+            continue;
+        }
+        uint32 scriptId = GetScriptId(scriptName);
+        if (!scriptId)  //this should never happen! the script names are initialized from the same table
+        {
+            sLog.outErrorScriptLib("something is very bad with your script_binding table!");
             continue;
         }
 
-        m_AreaTriggerScripts[triggerId] = GetScriptId(scriptName);
+        // checking if the scripted object actually exists
+        bool exists = false;
+        switch (type)
+        {
+        case SCRIPTED_UNIT:
+            exists = id > 0 ? bool(sCreatureStorage.LookupEntry<CreatureInfo>(uint32(id))) : bool(sObjectMgr.GetCreatureData(uint32(-id)));
+            break;
+        case SCRIPTED_GAMEOBJECT:
+            exists = id > 0 ? bool(sGOStorage.LookupEntry<GameObjectInfo>(uint32(id))) : bool(sObjectMgr.GetGOData(uint32(-id)));
+            break;
+        case SCRIPTED_ITEM:
+            exists = bool(sItemStorage.LookupEntry<ItemPrototype>(uint32(id)));
+            break;
+        case SCRIPTED_AREATRIGGER:
+            exists = bool(sAreaTriggerStore.LookupEntry(uint32(id)));
+            break;
+        case SCRIPTED_SPELL:
+        case SCRIPTED_AURASPELL:
+            exists = bool(sSpellStore.LookupEntry(uint32(id)));
+            break;
+        case SCRIPTED_MAPEVENT:
+            exists = eventIds.count(uint32(id));
+            break;
+        case SCRIPTED_MAP:
+            exists = bool(sMapStore.LookupEntry(uint32(id)));
+            break;
+        case SCRIPTED_PVP_ZONE: // for now, no check on special zones
+            exists = bool(sAreaStore.LookupEntry(uint32(id)));
+            break;
+        case SCRIPTED_BATTLEGROUND:
+            if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
+                exists = mapEntry->IsBattleGround();
+            break;
+        case SCRIPTED_INSTANCE:
+            if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
+                exists = mapEntry->IsDungeon();
+            break;
+        case SCRIPTED_CONDITION:
+            exists = sConditionStorage.LookupEntry<PlayerCondition>(uint32(id));
+            break;
+        case SCRIPTED_ACHIEVEMENT:
+            break;
+        }
+
+        if (!exists)
+        {
+            sLog.outErrorScriptLib("script type %u (%s) is bound to non-existing entry %d, ignoring.", type, scriptName, id);
+            continue;
+        }
+
+        if (type == SCRIPTED_SPELL || type == SCRIPTED_AURASPELL)
+            id |= uint32(data) << 24;   //incorporate spell effect number into the key
+
+        m_scriptBind[type][id] = scriptId;
     }
     while (result->NextRow());
 
     delete result;
+    sLog.outString("Of the total %u script bindings, loaded succesfully:", count);
+    for (uint8 i = 0; i < SCRIPTED_MAX_TYPE; ++i)
+    {
+        if (m_scriptBind[i].size()) //ignore missing script types to shorten the log
+        {
+            sLog.outString(".. type %u: %u binds", i, m_scriptBind[i].size());
+            count -= m_scriptBind[i].size();
+        }
+    }
+    sLog.outString("Thus, %u script binds are found bad.", count);
 
-    sLog.outString(">> Loaded %u areatrigger scripts", count);
     sLog.outString();
-
+#endif /* ENABLE_SD2 */
+    return;
 }
 
-void ScriptMgr::LoadEventIdScripts()
+bool ScriptMgr::ReloadScriptBinding()
 {
-    m_EventIdScripts.clear();                           // need for reload case
-    QueryResult* result = WorldDatabase.Query("SELECT id, ScriptName FROM scripted_event");
-
-    uint32 count = 0;
-
-    if (!result)
-    {
-        BarGoLink bar(1);
-        bar.step();
-        sLog.outString(">> Loaded %u scripted event id", count);
-        sLog.outString();
-        return;
-    }
-
-    BarGoLink bar(result->GetRowCount());
-
-    std::set<uint32> eventIds;                              // Store possible event ids
-    CollectPossibleEventIds(eventIds);
-
-    do
-    {
-        ++count;
-        bar.step();
-
-        Field* fields = result->Fetch();
-
-        uint32 eventId          = fields[0].GetUInt32();
-        const char* scriptName  = fields[1].GetString();
-
-        std::set<uint32>::const_iterator itr = eventIds.find(eventId);
-        if (itr == eventIds.end())
-            sLog.outErrorDb("Table `scripted_event` has id %u not referring to any gameobject_template type 10 data2 field, type 3 data6 field, type 13 data 2 field, type 29 or any spell effect %u or path taxi node data",
-                            eventId, SPELL_EFFECT_SEND_EVENT);
-
-        m_EventIdScripts[eventId] = GetScriptId(scriptName);
-    }
-    while (result->NextRow());
-
-    delete result;
-
-    sLog.outString(">> Loaded %u scripted event id", count);
-    sLog.outString();
+#ifdef _DEBUG
+    m_bindMutex.acquire_write();
+    LoadScriptBinding();
+    m_bindMutex.release();
+    return true;
+#else
+    return false;
+#endif /* _DEBUG */
 }
 
 void ScriptMgr::LoadScriptNames()
 {
     m_scriptNames.push_back("");
-    QueryResult* result = WorldDatabase.Query(
-                              "SELECT DISTINCT(ScriptName) FROM creature_template WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM gameobject_template WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM item_template WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM scripted_areatrigger WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM scripted_event WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM instance_template WHERE ScriptName <> '' "
-                              "UNION "
-                              "SELECT DISTINCT(ScriptName) FROM world_template WHERE ScriptName <> ''");
+    QueryResult* result = WorldDatabase.Query("SELECT DISTINCT(ScriptName) FROM script_binding");
 
     if (!result)
     {
@@ -2051,7 +2078,7 @@ void ScriptMgr::LoadScriptNames()
 
     std::sort(m_scriptNames.begin(), m_scriptNames.end());
 
-    sLog.outString(">> Loaded %d Script Names", count);
+    sLog.outString(">> Loaded %d unique Script Names", count);
     sLog.outString();
 }
 
@@ -2071,22 +2098,24 @@ uint32 ScriptMgr::GetScriptId(const char* name) const
     return uint32(itr - m_scriptNames.begin());
 }
 
-uint32 ScriptMgr::GetAreaTriggerScriptId(uint32 triggerId) const
+uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
 {
-    AreaTriggerScriptMap::const_iterator itr = m_AreaTriggerScripts.find(triggerId);
-    if (itr != m_AreaTriggerScripts.end())
-        { return itr->second; }
-
-    return 0;
-}
-
-uint32 ScriptMgr::GetEventIdScriptId(uint32 eventId) const
-{
-    EventIdScriptMap::const_iterator itr = m_EventIdScripts.find(eventId);
-    if (itr != m_EventIdScripts.end())
-        { return itr->second; }
-
-    return 0;
+#ifdef _DEBUG
+    m_bindMutex.acquire_read();
+#endif /* _DEBUG */
+    uint32 id = 0;
+    if (entity < SCRIPTED_MAX_TYPE)
+    {
+        EntryToScriptIdMap::iterator it = m_scriptBind[entity].find(entry);
+        if (it != m_scriptBind[entity].end())
+            id = it->second;
+    }
+    else
+        sLog.outErrorScriptLib("asking a script for non-existing entity type %u!", entity);
+#ifdef _DEBUG
+    m_bindMutex.release();
+#endif /* _DEBUG */
+    return id;
 }
 
 char const* ScriptMgr::GetScriptLibraryVersion() const
@@ -2540,17 +2569,6 @@ bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool
         { execParam = Map::SCRIPT_EXEC_PARAM_UNIQUE_BY_TARGET; }
 
     return map->ScriptsStart(sEventScripts, id, source, target, execParam);
-}
-
-// Wrappers
-uint32 GetAreaTriggerScriptId(uint32 triggerId)
-{
-    return sScriptMgr.GetAreaTriggerScriptId(triggerId);
-}
-
-uint32 GetEventIdScriptId(uint32 eventId)
-{
-    return sScriptMgr.GetEventIdScriptId(eventId);
 }
 
 uint32 GetScriptId(const char* name)

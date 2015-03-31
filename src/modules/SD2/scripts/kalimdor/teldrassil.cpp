@@ -54,77 +54,85 @@ enum
     FACTION_DARNASSUS       = 79
 };
 
-struct npc_mistAI : public FollowerAI
+struct npc_mist : public CreatureScript
 {
-    npc_mistAI(Creature* pCreature) : FollowerAI(pCreature) { Reset(); }
+    npc_mist() : CreatureScript("npc_mist") {}
 
-    void Reset() override { }
-
-    void MoveInLineOfSight(Unit* pWho) override
+    struct npc_mistAI : public FollowerAI
     {
-        FollowerAI::MoveInLineOfSight(pWho);
+        npc_mistAI(Creature* pCreature) : FollowerAI(pCreature) { }
 
-        if (!m_creature->getVictim() && !HasFollowState(STATE_FOLLOW_COMPLETE) && pWho->GetEntry() == NPC_ARYNIA)
+        void Reset() override { }
+
+        void MoveInLineOfSight(Unit* pWho) override
         {
-            if (m_creature->IsWithinDistInMap(pWho, 10.0f))
-            {
-                DoScriptText(SAY_AT_HOME, pWho);
-                DoComplete();
-            }
-        }
-    }
+            FollowerAI::MoveInLineOfSight(pWho);
 
-    void DoComplete()
-    {
-        DoScriptText(EMOTE_AT_HOME, m_creature);
-
-        if (Player* pPlayer = GetLeaderForFollower())
-        {
-            if (pPlayer->GetQuestStatus(QUEST_MIST) == QUEST_STATUS_INCOMPLETE)
+            if (!m_creature->getVictim() && !HasFollowState(STATE_FOLLOW_COMPLETE) && pWho->GetEntry() == NPC_ARYNIA)
             {
-                pPlayer->GroupEventHappens(QUEST_MIST, m_creature);
+                if (m_creature->IsWithinDistInMap(pWho, 10.0f))
+                {
+                    DoScriptText(SAY_AT_HOME, pWho);
+                    DoComplete();
+                }
             }
         }
 
-        // The follow is over (and for later development, run off to the woods before really end)
-        SetFollowComplete();
-    }
+        void DoComplete()
+        {
+            DoScriptText(EMOTE_AT_HOME, m_creature);
 
-    // call not needed here, no known abilities
-    /*void UpdateFollowerAI(const uint32 uiDiff) override
-    {
+            if (Player* pPlayer = GetLeaderForFollower())
+            {
+                if (pPlayer->GetQuestStatus(QUEST_MIST) == QUEST_STATUS_INCOMPLETE)
+                {
+                    pPlayer->GroupEventHappens(QUEST_MIST, m_creature);
+                }
+            }
+
+            // The follow is over (and for later development, run off to the woods before really end)
+            SetFollowComplete();
+        }
+
+        // call not needed here, no known abilities
+        /*void UpdateFollowerAI(const uint32 uiDiff) override
+        {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
+        return;
 
         DoMeleeAttackIfReady();
-    }*/
-};
+        }*/
+    };
 
-CreatureAI* GetAI_npc_mist(Creature* pCreature)
-{
-    return new npc_mistAI(pCreature);
-}
-
-bool QuestAccept_npc_mist(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_MIST)
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        if (npc_mistAI* pMistAI = dynamic_cast<npc_mistAI*>(pCreature->AI()))
-        {
-            pMistAI->StartFollow(pPlayer, FACTION_DARNASSUS, pQuest);
-        }
+        return new npc_mistAI(pCreature);
     }
 
-    return true;
-}
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_MIST)
+        {
+            if (npc_mistAI* pMistAI = dynamic_cast<npc_mistAI*>(pCreature->AI()))
+            {
+                pMistAI->StartFollow(pPlayer, FACTION_DARNASSUS, pQuest);
+            }
+            return true;
+        }
+
+        return false;
+    }
+};
 
 void AddSC_teldrassil()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_mist();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_mist";
-    pNewScript->GetAI = &GetAI_npc_mist;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_mist;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_mist";
+    //pNewScript->GetAI = &GetAI_npc_mist;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_mist;
+    //pNewScript->RegisterSelf();
 }

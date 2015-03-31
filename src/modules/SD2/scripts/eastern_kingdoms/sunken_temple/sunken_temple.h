@@ -29,6 +29,7 @@
 enum
 {
     MAX_ENCOUNTER         = 5,
+    TYPE_SIGNAL = MAX_ENCOUNTER,
     MAX_STATUES           = 6,
     MAX_FLAMES            = 4,
 
@@ -121,50 +122,6 @@ static const SummonLocations aHakkariDoorLocations[2] =
 {
     { -420.629f, 276.682f, -90.827f},
     { -512.015f, 276.134f, -90.827f}
-};
-
-class instance_sunken_temple : public ScriptedInstance
-{
-    public:
-        instance_sunken_temple(Map* pMap);
-        ~instance_sunken_temple() {}
-
-        void Initialize() override;
-
-        void OnObjectCreate(GameObject* pGo) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        void Update(uint32 uiDiff) override;
-
-        bool ProcessStatueEvent(uint32 uiEventId);
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    protected:
-        void DoSpawnAtalarionIfCan();
-        void DoUpdateFlamesFlags(bool bRestore);
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint8 m_uiProtectorsRemaining;                      // Jammalan door handling
-        uint8 m_uiStatueCounter;                            // Atalarion Statue Event
-        uint8 m_uiFlameCounter;                             // Avatar of Hakkar Event
-        uint32 m_uiAvatarSummonTimer;
-        uint32 m_uiSupressorTimer;
-        bool m_bIsFirstHakkarWave;
-        bool m_bCanSummonBloodkeeper;
-
-        GuidList m_luiFlameGUIDs;
-        GuidList m_luiBigLightGUIDs;
-        GuidVector m_vuiCircleGUIDs;
 };
 
 #endif

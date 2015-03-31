@@ -35,6 +35,7 @@ enum
     TYPE_GRUBBIS                = 1,
     TYPE_THERMAPLUGG            = 2,
     TYPE_EXPLOSIVE_CHARGE       = 3,
+    TYPE_DO_BOMB_OFF            = 4,
 
     DATA_EXPLOSIVE_CHARGE_1     = 1,
     DATA_EXPLOSIVE_CHARGE_2     = 2,
@@ -42,7 +43,8 @@ enum
     DATA_EXPLOSIVE_CHARGE_4     = 4,
     DATA_EXPLOSIVE_CHARGE_USE   = 5,
 
-    NPC_BLASTMASTER_SHORTFUSE   = 7998,
+    NPC_MEKGINEER_THERMAPLUGG = 7800,
+    NPC_BLASTMASTER_SHORTFUSE = 7998,
 
     GO_RED_ROCKET               = 103820,
     GO_CAVE_IN_NORTH            = 146085,
@@ -70,39 +72,6 @@ struct sBombFace
     ObjectGuid m_gnomeFaceGuid;
     bool m_bActivated;
     uint32 m_uiBombTimer;
-};
-
-class instance_gnomeregan : public ScriptedInstance
-{
-    public:
-        instance_gnomeregan(Map* pMap);
-        ~instance_gnomeregan() {}
-
-        void Initialize() override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        sBombFace* GetBombFaces();
-        void DoActivateBombFace(uint8 uiIndex);
-        void DoDeactivateBombFace(uint8 uiIndex);
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    protected:
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        sBombFace m_asBombFaces[MAX_GNOME_FACES];
-        ObjectGuid m_aExplosiveSortedGuids[2][MAX_EXPLOSIVES_PER_SIDE];
-
-        GuidList m_luiExplosiveChargeGUIDs;
-        GuidList m_luiSpawnedExplosiveChargeGUIDs;
-        GuidList m_lRedRocketGUIDs;
 };
 
 #endif

@@ -46,119 +46,132 @@ enum
     SPELL_ARCANE_BUBBLE         = 9438,
 };
 
-struct boss_arcanist_doanAI : public ScriptedAI
+struct boss_arcanist_doan : public CreatureScript
 {
-    boss_arcanist_doanAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_arcanist_doan() : CreatureScript("boss_arcanist_doan") {}
 
-    uint32 m_uiPolymorphTimer;
-    uint32 m_uiSilenceTimer;
-    uint32 m_uiArcaneExplosionTimer;
-    uint32 m_uiDetonationTimer;
-    bool bShielded;
-
-    void Reset() override
+    struct boss_arcanist_doanAI : public ScriptedAI
     {
-        m_uiPolymorphTimer       = 15000;
-        m_uiSilenceTimer         = 7500;
-        m_uiArcaneExplosionTimer = urand(1000, 3000);
-        m_uiDetonationTimer      = 0;
-        bShielded                = false;
-    }
+        boss_arcanist_doanAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-    }
+        uint32 m_uiPolymorphTimer;
+        uint32 m_uiSilenceTimer;
+        uint32 m_uiArcaneExplosionTimer;
+        uint32 m_uiDetonationTimer;
+        bool bShielded;
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void Reset() override
         {
-            return;
+            m_uiPolymorphTimer = 15000;
+            m_uiSilenceTimer = 7500;
+            m_uiArcaneExplosionTimer = urand(1000, 3000);
+            m_uiDetonationTimer = 0;
+            bShielded = false;
         }
 
-        if (m_uiDetonationTimer)
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (m_uiDetonationTimer <= uiDiff)
+            DoScriptText(SAY_AGGRO, m_creature);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                if (DoCastSpellIfCan(m_creature, SPELL_DETONATION) == CAST_OK)
+                return;
+            }
+
+            if (m_uiDetonationTimer)
+            {
+                if (m_uiDetonationTimer <= uiDiff)
                 {
-                    DoScriptText(SAY_SPECIALAE, m_creature);
-                    m_uiDetonationTimer = 0;
+                    if (DoCastSpellIfCan(m_creature, SPELL_DETONATION) == CAST_OK)
+                    {
+                        DoScriptText(SAY_SPECIALAE, m_creature);
+                        m_uiDetonationTimer = 0;
+                    }
+                }
+                else
+                {
+                    m_uiDetonationTimer -= uiDiff;
+                }
+            }
+
+            // Do not attack while having the bubble active
+            if (m_creature->HasAura(SPELL_ARCANE_BUBBLE))
+            {
+                return;
+            }
+
+            // If we are <50% hp cast Arcane Bubble
+            if (!bShielded && m_creature->GetHealthPercent() <= 50.0f)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_BUBBLE) == CAST_OK)
+                {
+                    m_uiDetonationTimer = 1000;
+                    bShielded = true;
+                }
+            }
+
+            if (m_uiPolymorphTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_POLYMORPH) == CAST_OK)
+                    {
+                        m_uiPolymorphTimer = 20000;
+                    }
                 }
             }
             else
             {
-                m_uiDetonationTimer -= uiDiff;
+                m_uiPolymorphTimer -= uiDiff;
             }
-        }
 
-        // Do not attack while having the bubble active
-        if (m_creature->HasAura(SPELL_ARCANE_BUBBLE))
-        {
-            return;
-        }
-
-        // If we are <50% hp cast Arcane Bubble
-        if (!bShielded && m_creature->GetHealthPercent() <= 50.0f)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_BUBBLE) == CAST_OK)
+            // Silence_Timer
+            if (m_uiSilenceTimer < uiDiff)
             {
-                m_uiDetonationTimer = 1000;
-                bShielded = true;
-            }
-        }
-
-        if (m_uiPolymorphTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_POLYMORPH) == CAST_OK)
+                if (DoCastSpellIfCan(m_creature, SPELL_SILENCE) == CAST_OK)
                 {
-                    m_uiPolymorphTimer = 20000;
+                    m_uiSilenceTimer = urand(15000, 22000);
                 }
             }
-        }
-        else
-            { m_uiPolymorphTimer -= uiDiff; }
-
-        // Silence_Timer
-        if (m_uiSilenceTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_SILENCE) == CAST_OK)
+            else
             {
-                m_uiSilenceTimer = urand(15000, 22000);
+                m_uiSilenceTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiSilenceTimer -= uiDiff; }
 
-        // ArcaneExplosion_Timer
-        if (m_uiArcaneExplosionTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_EXPLOSION) == CAST_OK)
+            // ArcaneExplosion_Timer
+            if (m_uiArcaneExplosionTimer < uiDiff)
             {
-                m_uiArcaneExplosionTimer = urand(2500, 8500);
+                if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_EXPLOSION) == CAST_OK)
+                {
+                    m_uiArcaneExplosionTimer = urand(2500, 8500);
+                }
             }
-        }
-        else
-            { m_uiArcaneExplosionTimer -= uiDiff; }
+            else
+            {
+                m_uiArcaneExplosionTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_arcanist_doanAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_arcanist_doan(Creature* pCreature)
-{
-    return new boss_arcanist_doanAI(pCreature);
-}
-
 void AddSC_boss_arcanist_doan()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_arcanist_doan();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_arcanist_doan";
-    pNewScript->GetAI = &GetAI_boss_arcanist_doan;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_arcanist_doan";
+    //pNewScript->GetAI = &GetAI_boss_arcanist_doan;
+    //pNewScript->RegisterSelf();
 }

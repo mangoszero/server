@@ -29,6 +29,7 @@
 enum
 {
     MAX_ENCOUNTER           = 10,
+    TYPE_SIGNAL             = MAX_ENCOUNTER,
     MAX_EVENTS              = 6,
 
     TYPE_KIRTONOS           = 0,
@@ -98,39 +99,5 @@ struct GandlingEventData
 static const uint32 aGandlingEvents[MAX_EVENTS] = {EVENT_ID_POLKELT, EVENT_ID_THEOLEN, EVENT_ID_MALICIA, EVENT_ID_ILLUCIA, EVENT_ID_BAROV, EVENT_ID_RAVENIAN};
 
 typedef std::map<uint32, GandlingEventData> GandlingEventMap;
-
-class instance_scholomance : public ScriptedInstance
-{
-    public:
-        instance_scholomance(Map* pMap);
-        ~instance_scholomance() {}
-
-        void Initialize() override;
-
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-        void OnPlayerEnter(Player* pPlayer) override;
-
-        void HandlePortalEvent(uint32 uiEventId, uint32 uiData);
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    private:
-        void DoSpawnGandlingIfCan(bool bByPlayerEnter);
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint32 m_uiGandlingEvent;
-        GandlingEventMap m_mGandlingData;
-};
 
 #endif

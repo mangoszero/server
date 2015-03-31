@@ -45,101 +45,109 @@ enum eEmperor
     SPELL_AVATAROFFLAME         = 15636
 };
 
-struct boss_emperor_dagran_thaurissanAI : public ScriptedAI
+struct boss_emperor_dagran_thaurissan : public CreatureScript
 {
-    boss_emperor_dagran_thaurissanAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_emperor_dagran_thaurissan() : CreatureScript("boss_emperor_dagran_thaurissan") {}
+
+    struct boss_emperor_dagran_thaurissanAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiHandOfThaurissan_Timer;
-    uint32 m_uiAvatarOfFlame_Timer;
-    // uint32 m_uiCounter;
-
-    void Reset() override
-    {
-        m_uiHandOfThaurissan_Timer = 4000;
-        m_uiAvatarOfFlame_Timer = 25000;
-        // m_uiCounter = 0;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-        m_creature->CallForHelp(VISIBLE_RANGE);
-    }
-
-    void JustDied(Unit* /*pVictim*/) override
-    {
-        if (!m_pInstance)
+        boss_emperor_dagran_thaurissanAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        if (Creature* pPrincess = m_pInstance->GetSingleCreatureFromStorage(NPC_PRINCESS))
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiHandOfThaurissan_Timer;
+        uint32 m_uiAvatarOfFlame_Timer;
+        // uint32 m_uiCounter;
+
+        void Reset() override
         {
-            if (pPrincess->IsAlive())
-            {
-                pPrincess->SetFactionTemporary(FACTION_NEUTRAL, TEMPFACTION_NONE);
-                pPrincess->AI()->EnterEvadeMode();
-            }
-        }
-    }
-
-    void KilledUnit(Unit* /*pVictim*/) override
-    {
-        DoScriptText(SAY_SLAY, m_creature);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        if (m_uiHandOfThaurissan_Timer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                DoCastSpellIfCan(pTarget, SPELL_HANDOFTHAURISSAN);
-            }
-
-            // 3 Hands of Thaurissan will be casted
-            // if (m_uiCounter < 3)
-            //{
-            //    m_uiHandOfThaurissan_Timer = 1000;
-            //    ++m_uiCounter;
-            //}
-            // else
-            //{
-            m_uiHandOfThaurissan_Timer = 5000;
+            m_uiHandOfThaurissan_Timer = 4000;
+            m_uiAvatarOfFlame_Timer = 25000;
             // m_uiCounter = 0;
-            //}
         }
-        else
-            { m_uiHandOfThaurissan_Timer -= uiDiff; }
 
-        // AvatarOfFlame_Timer
-        if (m_uiAvatarOfFlame_Timer < uiDiff)
+        void Aggro(Unit* /*pWho*/) override
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_AVATAROFFLAME);
-            m_uiAvatarOfFlame_Timer = 18000;
+            DoScriptText(SAY_AGGRO, m_creature);
+            m_creature->CallForHelp(VISIBLE_RANGE);
         }
-        else
-            { m_uiAvatarOfFlame_Timer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+        void JustDied(Unit* /*pVictim*/) override
+        {
+            if (!m_pInstance)
+            {
+                return;
+            }
+
+            if (Creature* pPrincess = m_pInstance->GetSingleCreatureFromStorage(NPC_PRINCESS))
+            {
+                if (pPrincess->IsAlive())
+                {
+                    pPrincess->SetFactionTemporary(FACTION_NEUTRAL, TEMPFACTION_NONE);
+                    pPrincess->AI()->EnterEvadeMode();
+                }
+            }
+        }
+
+        void KilledUnit(Unit* /*pVictim*/) override
+        {
+            DoScriptText(SAY_SLAY, m_creature);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiHandOfThaurissan_Timer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    DoCastSpellIfCan(pTarget, SPELL_HANDOFTHAURISSAN);
+                }
+
+                // 3 Hands of Thaurissan will be casted
+                // if (m_uiCounter < 3)
+                //{
+                //    m_uiHandOfThaurissan_Timer = 1000;
+                //    ++m_uiCounter;
+                //}
+                // else
+                //{
+                m_uiHandOfThaurissan_Timer = 5000;
+                // m_uiCounter = 0;
+                //}
+            }
+            else
+            {
+                m_uiHandOfThaurissan_Timer -= uiDiff;
+            }
+
+            // AvatarOfFlame_Timer
+            if (m_uiAvatarOfFlame_Timer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_AVATAROFFLAME);
+                m_uiAvatarOfFlame_Timer = 18000;
+            }
+            else
+            {
+                m_uiAvatarOfFlame_Timer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_emperor_dagran_thaurissanAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_boss_emperor_dagran_thaurissan(Creature* pCreature)
-{
-    return new boss_emperor_dagran_thaurissanAI(pCreature);
-}
 
 /*######
 ## boss_moira_bronzebeard
@@ -157,127 +165,143 @@ enum ePrincess
     SPELL_OPEN_PORTAL           = 13912
 };
 
-struct boss_moira_bronzebeardAI : public ScriptedAI
+struct boss_moira_bronzebeard : public CreatureScript
 {
-    boss_moira_bronzebeardAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_moira_bronzebeard() : CreatureScript("boss_moira_bronzebeard") {}
+
+    struct boss_moira_bronzebeardAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiHeal_Timer;
-    uint32 m_uiMindBlast_Timer;
-    uint32 m_uiShadowWordPain_Timer;
-    uint32 m_uiSmite_Timer;
-
-    void Reset() override
-    {
-        m_uiHeal_Timer = 12000;                             // These times are probably wrong
-        m_uiMindBlast_Timer = 16000;
-        m_uiShadowWordPain_Timer = 2000;
-        m_uiSmite_Timer = 8000;
-    }
-
-    void AttackStart(Unit* pWho) override
-    {
-        if (m_creature->Attack(pWho, false))
+        boss_moira_bronzebeardAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_creature->AddThreat(pWho);
-            m_creature->SetInCombatWith(pWho);
-            pWho->SetInCombatWith(m_creature);
-
-            m_creature->GetMotionMaster()->MoveChase(pWho, 25.0f);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
-    }
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiHeal_Timer;
+        uint32 m_uiMindBlast_Timer;
+        uint32 m_uiShadowWordPain_Timer;
+        uint32 m_uiSmite_Timer;
+
+        void Reset() override
         {
-            if (Creature* pEmperor = m_pInstance->GetSingleCreatureFromStorage(NPC_EMPEROR))
+            m_uiHeal_Timer = 12000;                             // These times are probably wrong
+            m_uiMindBlast_Timer = 16000;
+            m_uiShadowWordPain_Timer = 2000;
+            m_uiSmite_Timer = 8000;
+        }
+
+        void AttackStart(Unit* pWho) override
+        {
+            if (m_creature->Attack(pWho, false))
             {
-                // if evade, then check if he is alive. If not, start make portal
-                if (!pEmperor->IsAlive())
+                m_creature->AddThreat(pWho);
+                m_creature->SetInCombatWith(pWho);
+                pWho->SetInCombatWith(m_creature);
+
+                m_creature->GetMotionMaster()->MoveChase(pWho, 25.0f);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                if (Creature* pEmperor = m_pInstance->GetSingleCreatureFromStorage(NPC_EMPEROR))
                 {
-                    m_creature->CastSpell(m_creature, SPELL_OPEN_PORTAL, false);
+                    // if evade, then check if he is alive. If not, start make portal
+                    if (!pEmperor->IsAlive())
+                    {
+                        m_creature->CastSpell(m_creature, SPELL_OPEN_PORTAL, false);
+                    }
                 }
             }
         }
-    }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void UpdateAI(const uint32 uiDiff) override
         {
-            return;
-        }
-
-        // MindBlast_Timer
-        if (m_uiMindBlast_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_MINDBLAST);
-            m_uiMindBlast_Timer = 14000;
-        }
-        else
-            { m_uiMindBlast_Timer -= uiDiff; }
-
-        // ShadowWordPain_Timer
-        if (m_uiShadowWordPain_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHADOWWORDPAIN);
-            m_uiShadowWordPain_Timer = 18000;
-        }
-        else
-            { m_uiShadowWordPain_Timer -= uiDiff; }
-
-        // Smite_Timer
-        if (m_uiSmite_Timer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_SMITE);
-            m_uiSmite_Timer = 10000;
-        }
-        else
-            { m_uiSmite_Timer -= uiDiff; }
-
-        // Heal_Timer
-        if (m_uiHeal_Timer < uiDiff)
-        {
-            if (Creature* pEmperor = m_pInstance->GetSingleCreatureFromStorage(NPC_EMPEROR))
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                if (pEmperor->IsAlive() && pEmperor->GetHealthPercent() != 100.0f)
-                {
-                    DoCastSpellIfCan(pEmperor, SPELL_HEAL);
-                }
+                return;
             }
 
-            m_uiHeal_Timer = 10000;
-        }
-        else
-            { m_uiHeal_Timer -= uiDiff; }
+            // MindBlast_Timer
+            if (m_uiMindBlast_Timer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_MINDBLAST);
+                m_uiMindBlast_Timer = 14000;
+            }
+            else
+            {
+                m_uiMindBlast_Timer -= uiDiff;
+            }
 
-        // No meele?
+            // ShadowWordPain_Timer
+            if (m_uiShadowWordPain_Timer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHADOWWORDPAIN);
+                m_uiShadowWordPain_Timer = 18000;
+            }
+            else
+            {
+                m_uiShadowWordPain_Timer -= uiDiff;
+            }
+
+            // Smite_Timer
+            if (m_uiSmite_Timer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_SMITE);
+                m_uiSmite_Timer = 10000;
+            }
+            else
+            {
+                m_uiSmite_Timer -= uiDiff;
+            }
+
+            // Heal_Timer
+            if (m_uiHeal_Timer < uiDiff)
+            {
+                if (Creature* pEmperor = m_pInstance->GetSingleCreatureFromStorage(NPC_EMPEROR))
+                {
+                    if (pEmperor->IsAlive() && pEmperor->GetHealthPercent() != 100.0f)
+                    {
+                        DoCastSpellIfCan(pEmperor, SPELL_HEAL);
+                    }
+                }
+
+                m_uiHeal_Timer = 10000;
+            }
+            else
+            {
+                m_uiHeal_Timer -= uiDiff;
+            }
+
+            // No meele?
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_moira_bronzebeardAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_moira_bronzebeard(Creature* pCreature)
-{
-    return new boss_moira_bronzebeardAI(pCreature);
-}
-
 void AddSC_boss_draganthaurissan()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_emperor_dagran_thaurissan();
+    s->RegisterSelf();
+    s = new boss_moira_bronzebeard();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_emperor_dagran_thaurissan";
-    pNewScript->GetAI = &GetAI_boss_emperor_dagran_thaurissan;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_emperor_dagran_thaurissan";
+    //pNewScript->GetAI = &GetAI_boss_emperor_dagran_thaurissan;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_moira_bronzebeard";
-    pNewScript->GetAI = &GetAI_boss_moira_bronzebeard;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_moira_bronzebeard";
+    //pNewScript->GetAI = &GetAI_boss_moira_bronzebeard;
+    //pNewScript->RegisterSelf();
 }

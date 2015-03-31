@@ -50,8 +50,6 @@ struct ScriptPointMove
     uint32 uiWaitTime;
 };
 
-#define pSystemMgr SystemMgr::Instance()
-
 class SystemMgr
 {
     public:
@@ -86,5 +84,7 @@ class SystemMgr
     protected:
         PointMoveMap    m_mPointMoveMap;                    // coordinates for waypoints
 };
+
+#define pSystemMgr SystemMgr::Instance()
 
 #endif

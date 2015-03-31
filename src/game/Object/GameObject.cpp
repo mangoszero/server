@@ -2199,3 +2199,8 @@ void GameObject::TickCapturePoint()
     if (eventId)
         { StartEvents_Event(GetMap(), eventId, this, this, true, *capturingPlayers.begin()); }
 }
+
+uint32 GameObject::GetScriptId()
+{
+    return sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) ? sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) : sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, GetEntry());
+}

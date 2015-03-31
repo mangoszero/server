@@ -68,7 +68,7 @@ enum
     NPC_NEMAS_THE_ARBITER       = 17912,
     NPC_AELMAR_THE_VANQUISHER   = 17913,
     NPC_VICAR_HYERONIMUS        = 17914,
-    NPC_PALADIN_QUEST_CREDIT    = 17915,
+    NPC_PALADIN_QUEST_CREDIT	= 17915,
     NPC_THE_UNFORGIVEN          = 10516,
     NPC_VENGEFUL_PHANTOM        = 10387,                    // Adds for The Unforgiven
 
@@ -102,91 +102,6 @@ enum
     SAY_ANNOUNCE_RAMSTEIN       = -1329013,
     SAY_UNDEAD_DEFEAT           = -1329014,
     SAY_EPILOGUE                = -1329015,
-};
-
-struct EventLocation
-{
-    float m_fX, m_fY, m_fZ, m_fO;
-};
-
-static const EventLocation aStratholmeLocation[] =
-{
-    {3725.577f, -3599.484f, 142.367f},                      // Barthilas door run
-    {4068.284f, -3535.678f, 122.771f, 2.50f},               // Barthilas tele
-    {4032.643f, -3378.546f, 119.752f, 4.74f},               // Ramstein summon loc
-    {4032.843f, -3390.246f, 119.732f},                      // Ramstein move loc
-    {3969.357f, -3391.871f, 119.116f, 5.91f},               // Skeletons summon loc
-    {4033.044f, -3431.031f, 119.055f},                      // Skeletons move loc
-    {4032.602f, -3378.506f, 119.752f, 4.74f},               // Guards summon loc
-    {4042.575f, -3337.929f, 115.059f},                      // Ysida move loc
-    {3713.681f, -3427.814f, 131.198f, 6.2f}                 // The Unforgiven spawn area
-};
-
-static const EventLocation aTimmyLocation[] =
-{
-    {3696.851f, -3152.736f, 127.661f, 4.024f},              // Timmy spawn loc
-    {3668.603f, -3183.314f, 126.215f}                       // Courtyard mobs sort point
-};
-
-struct ZigguratStore
-{
-    ObjectGuid m_doorGuid;
-    ObjectGuid m_crystalGuid;
-    GuidList m_lZigguratAcolyteGuid;
-};
-
-class instance_stratholme : public ScriptedInstance
-{
-    public:
-        instance_stratholme(Map* pMap);
-        ~instance_stratholme() {}
-
-        void Initialize() override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void Update(uint32 uiDiff) override;
-
-    protected:
-        bool StartSlaugtherSquare();
-        void DoSortZiggurats();
-        void ThazudinAcolyteJustDied(Creature* pCreature);
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint32 m_uiBaronRunTimer;
-        uint32 m_uiBarthilasRunTimer;
-        uint32 m_uiMindlessSummonTimer;
-        uint32 m_uiSlaugtherSquareTimer;
-
-        uint32 m_uiYellCounter;
-        uint32 m_uiMindlessCount;
-        uint8 m_uiPostboxesUsed;
-        uint8 m_uiSilverHandKilled;
-
-        ZigguratStore m_zigguratStorage[MAX_ZIGGURATS];
-
-        std::set<uint32> m_suiCrimsonLowGuids;
-        GuidList m_luiCrystalGUIDs;
-        GuidSet m_sAbomnationGUID;
-        GuidList m_luiAcolyteGUIDs;
-        GuidList m_luiUndeadGUIDs;
-        GuidList m_luiGuardGUIDs;
-
-        // this ensures that the code that deals with the initial spawning of The Unforgiven and its adds (Vengful Phantoms) is only run once
-        bool m_bTheUnforgivenSpawnHasTriggered;
 };
 
 #endif

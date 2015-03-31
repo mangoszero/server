@@ -64,14 +64,18 @@ enum
     QUEST_RESCUE_OOX22FE    = 2767
 };
 
-struct npc_oox22feAI : public npc_escortAI
+struct npc_oox22fe : public CreatureScript
 {
-    npc_oox22feAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_oox22fe() : CreatureScript("npc_oox22fe") {}
 
-    void WaypointReached(uint32 i) override
+    struct npc_oox22feAI : public npc_escortAI
     {
-        switch (i)
+        npc_oox22feAI(Creature* pCreature) : npc_escortAI(pCreature) { }
+
+        void WaypointReached(uint32 i) override
         {
+            switch (i)
+            {
                 // First Ambush(3 Yetis)
             case 11:
                 DoScriptText(SAY_OOX_AMBUSH, m_creature);
@@ -90,9 +94,9 @@ struct npc_oox22feAI : public npc_escortAI
             case 30:
                 DoScriptText(SAY_OOX_AMBUSH, m_creature);
                 m_creature->SummonCreature(NPC_WOODPAW_REAVER, -4425.14f, 2075.87f, 47.77f, 3.77f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
-                m_creature->SummonCreature(NPC_WOODPAW_BRUTE , -4426.68f, 2077.98f, 47.57f, 3.77f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
+                m_creature->SummonCreature(NPC_WOODPAW_BRUTE, -4426.68f, 2077.98f, 47.57f, 3.77f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
                 m_creature->SummonCreature(NPC_WOODPAW_MYSTIC, -4428.33f, 2080.24f, 47.43f, 3.87f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
-                m_creature->SummonCreature(NPC_WOODPAW_ALPHA , -4430.04f, 2075.54f, 46.83f, 3.81f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
+                m_creature->SummonCreature(NPC_WOODPAW_ALPHA, -4430.04f, 2075.54f, 46.83f, 3.81f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 10000);
                 break;
             case 37:
                 DoScriptText(SAY_OOX_END, m_creature);
@@ -102,86 +106,85 @@ struct npc_oox22feAI : public npc_escortAI
                     pPlayer->GroupEventHappens(QUEST_RESCUE_OOX22FE, m_creature);
                 }
                 break;
+            }
         }
-    }
 
-    void Reset() override
-    {
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
+        void Reset() override
         {
-            m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+            }
         }
-    }
 
-    void Aggro(Unit* /*who*/) override
-    {
-        // For an small probability the npc says something when he get aggro
-        switch (urand(0, 9))
+        void Aggro(Unit* /*who*/) override
         {
+            // For an small probability the npc says something when he get aggro
+            switch (urand(0, 9))
+            {
             case 0:
                 DoScriptText(SAY_OOX_AGGRO1, m_creature);
                 break;
             case 1:
                 DoScriptText(SAY_OOX_AGGRO2, m_creature);
                 break;
+            }
         }
+
+        void JustSummoned(Creature* summoned) override
+        {
+            summoned->AI()->AttackStart(m_creature);
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_oox22feAI(pCreature);
     }
 
-    void JustSummoned(Creature* summoned) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        summoned->AI()->AttackStart(m_creature);
+        if (pQuest->GetQuestId() == QUEST_RESCUE_OOX22FE)
+        {
+            DoScriptText(SAY_OOX_START, pCreature);
+            // change that the npc is not lying dead on the ground
+            pCreature->SetStandState(UNIT_STAND_STATE_STAND);
+
+            if (pPlayer->GetTeam() == ALLIANCE)
+            {
+                pCreature->SetFactionTemporary(FACTION_ESCORT_A_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+            }
+
+            if (pPlayer->GetTeam() == HORDE)
+            {
+                pCreature->SetFactionTemporary(FACTION_ESCORT_H_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+            }
+
+            if (npc_oox22feAI* pEscortAI = dynamic_cast<npc_oox22feAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(false, pPlayer, pQuest);
+            }
+            return true;
+        }
+        return false;
     }
 };
-
-CreatureAI* GetAI_npc_oox22fe(Creature* pCreature)
-{
-    return new npc_oox22feAI(pCreature);
-}
-
-bool QuestAccept_npc_oox22fe(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_RESCUE_OOX22FE)
-    {
-        DoScriptText(SAY_OOX_START, pCreature);
-        // change that the npc is not lying dead on the ground
-        pCreature->SetStandState(UNIT_STAND_STATE_STAND);
-
-        if (pPlayer->GetTeam() == ALLIANCE)
-        {
-            pCreature->SetFactionTemporary(FACTION_ESCORT_A_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-        }
-
-        if (pPlayer->GetTeam() == HORDE)
-        {
-            pCreature->SetFactionTemporary(FACTION_ESCORT_H_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-        }
-
-        if (npc_oox22feAI* pEscortAI = dynamic_cast<npc_oox22feAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(false, pPlayer, pQuest);
-        }
-    }
-    return true;
-}
 
 /*######
 ## go_gordunni_trap
 ######*/
 
-bool GOUse_go_gordunni_trap(Player* pPlayer, GameObject* pGo)
+struct go_gordunni_trap : public GameObjectScript
 {
-    switch (urand(0, 1))
+    go_gordunni_trap() : GameObjectScript("go_gordunni_trap") {}
+
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
     {
-    case 0:
-        pPlayer->CastSpell(pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ(), 19394, false);
-        break;
-    case 1:
-        pPlayer->CastSpell(pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ(), 11756, false);
-        break;
+        pPlayer->CastSpell(pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ(), urand(0, 1) ? 19394 : 11756, false);
+        pGo->SetLootState(GO_JUST_DEACTIVATED);
+        return true;
     }
-    pGo->SetLootState(GO_JUST_DEACTIVATED);
-    return true;
-}
+};
 
 /*######
 ## npc_shay_leafrunner
@@ -206,143 +209,152 @@ enum
     QUEST_ID_WANDERING_SHAY             = 2845,
 };
 
-struct npc_shay_leafrunnerAI : public FollowerAI
+struct npc_shay_leafrunner : public CreatureScript
 {
-    npc_shay_leafrunnerAI(Creature* pCreature) : FollowerAI(pCreature)
+    npc_shay_leafrunner() : CreatureScript("npc_shay_leafrunner") {}
+
+    struct npc_shay_leafrunnerAI : public FollowerAI
     {
-        m_uiWanderTimer = 0;
-        Reset();
-    }
-
-    uint32 m_uiWanderTimer;
-    bool m_bIsRecalled;
-    bool m_bIsComplete;
-
-    void Reset() override
-    {
-        m_bIsRecalled = false;
-        m_bIsComplete = false;
-    }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        FollowerAI::MoveInLineOfSight(pWho);
-
-        if (!m_bIsComplete && pWho->GetEntry() == NPC_ROCKBITER && m_creature->IsWithinDistInMap(pWho, 20.0f))
+        npc_shay_leafrunnerAI(Creature* pCreature) : FollowerAI(pCreature)
         {
-            Player* pPlayer = GetLeaderForFollower();
-            if (!pPlayer)
-                return;
-
-            DoScriptText(SAY_EVENT_COMPLETE_1, m_creature);
-            DoScriptText(SAY_EVENT_COMPLETE_2, pWho);
-
-            // complete quest
-            pPlayer->GroupEventHappens(QUEST_ID_WANDERING_SHAY, m_creature);
-            SetFollowComplete(true);
-            m_creature->ForcedDespawn(30000);
-            m_bIsComplete = true;
-            m_uiWanderTimer = 0;
-
-            // move to Rockbiter
-            float fX, fY, fZ;
-            pWho->GetContactPoint(m_creature, fX, fY, fZ, INTERACTION_DISTANCE);
-            m_creature->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
+            m_uiWanderTimer = 0;    //TODO check this
         }
-        else if (m_bIsRecalled && pWho->GetTypeId() == TYPEID_PLAYER && pWho->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
-        {
-            m_uiWanderTimer = 60000;
-            m_bIsRecalled = false;
 
-            switch (urand(0, 2))
+        uint32 m_uiWanderTimer;
+        bool m_bIsRecalled;
+        bool m_bIsComplete;
+
+        void Reset() override
+        {
+            m_bIsRecalled = false;
+            m_bIsComplete = false;
+        }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            FollowerAI::MoveInLineOfSight(pWho);
+
+            if (!m_bIsComplete && pWho->GetEntry() == NPC_ROCKBITER && m_creature->IsWithinDistInMap(pWho, 20.0f))
             {
+                Player* pPlayer = GetLeaderForFollower();
+                if (!pPlayer)
+                    return;
+
+                DoScriptText(SAY_EVENT_COMPLETE_1, m_creature);
+                DoScriptText(SAY_EVENT_COMPLETE_2, pWho);
+
+                // complete quest
+                pPlayer->GroupEventHappens(QUEST_ID_WANDERING_SHAY, m_creature);
+                SetFollowComplete(true);
+                m_creature->ForcedDespawn(30000);
+                m_bIsComplete = true;
+                m_uiWanderTimer = 0;
+
+                // move to Rockbiter
+                float fX, fY, fZ;
+                pWho->GetContactPoint(m_creature, fX, fY, fZ, INTERACTION_DISTANCE);
+                m_creature->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
+            }
+            else if (m_bIsRecalled && pWho->GetTypeId() == TYPEID_PLAYER && pWho->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
+            {
+                m_uiWanderTimer = 60000;
+                m_bIsRecalled = false;
+
+                switch (urand(0, 2))
+                {
                 case 0: DoScriptText(SAY_WANDER_DONE_1, m_creature); break;
                 case 1: DoScriptText(SAY_WANDER_DONE_2, m_creature); break;
                 case 2: DoScriptText(SAY_WANDER_DONE_3, m_creature); break;
+                }
             }
         }
-    }
 
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        // start following
-        if (eventType == AI_EVENT_START_EVENT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
         {
-            StartFollow((Player*)pInvoker, 0, GetQuestTemplateStore(uiMiscValue));
-            m_uiWanderTimer = 30000;
-        }
-        else if (eventType == AI_EVENT_CUSTOM_A)
-        {
-            // resume following
-            m_bIsRecalled = true;
-            SetFollowPaused(false);
-        }
-    }
-
-    void UpdateFollowerAI(const uint32 uiDiff)
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            if (m_uiWanderTimer)
+            // start following
+            if (eventType == AI_EVENT_START_EVENT && pInvoker->GetTypeId() == TYPEID_PLAYER)
             {
-                if (m_uiWanderTimer <= uiDiff)
-                {
-                    // set follow paused and wander in a random point
-                    SetFollowPaused(true);
-                    DoScriptText(EMOTE_WANDER, m_creature);
-                    m_uiWanderTimer = 0;
+                StartFollow((Player*)pInvoker, 0, GetQuestTemplateStore(uiMiscValue));
+                m_uiWanderTimer = 30000;
+            }
+            else if (eventType == AI_EVENT_CUSTOM_A)
+            {
+                // resume following
+                m_bIsRecalled = true;
+                SetFollowPaused(false);
+            }
+        }
 
-                    switch (urand(0, 3))
+        void UpdateFollowerAI(const uint32 uiDiff)
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                if (m_uiWanderTimer)
+                {
+                    if (m_uiWanderTimer <= uiDiff)
                     {
+                        // set follow paused and wander in a random point
+                        SetFollowPaused(true);
+                        DoScriptText(EMOTE_WANDER, m_creature);
+                        m_uiWanderTimer = 0;
+
+                        switch (urand(0, 3))
+                        {
                         case 0: DoScriptText(SAY_WANDER_1, m_creature); break;
                         case 1: DoScriptText(SAY_WANDER_2, m_creature); break;
                         case 2: DoScriptText(SAY_WANDER_3, m_creature); break;
                         case 3: DoScriptText(SAY_WANDER_4, m_creature); break;
-                    }
+                        }
 
-                    float fX, fY, fZ;
-                    m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, frand(25.0f, 40.0f), frand(0, 2 * M_PI_F));
-                    m_creature->GetMotionMaster()->MoveRandomAroundPoint(fX, fY, fZ, 20.0f);
+                        float fX, fY, fZ;
+                        m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, frand(25.0f, 40.0f), frand(0, 2 * M_PI_F));
+                        m_creature->GetMotionMaster()->MoveRandomAroundPoint(fX, fY, fZ, 20.0f);
+                    }
+                    else
+                        m_uiWanderTimer -= uiDiff;
                 }
-                else
-                    m_uiWanderTimer -= uiDiff;
+
+                return;
             }
 
-            return;
+            DoMeleeAttackIfReady();
         }
+    };
 
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_shay_leafrunnerAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_ID_WANDERING_SHAY)
+        {
+            DoScriptText(SAY_ESCORT_START, pCreature);
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_EVENT, pPlayer, pCreature, pQuest->GetQuestId());
+        }
+        return true;
     }
 };
 
-CreatureAI* GetAI_npc_shay_leafrunner(Creature* pCreature)
+struct spell_npc_shay_leafrunner : public SpellScript
 {
-    return new npc_shay_leafrunnerAI(pCreature);
-}
+    spell_npc_shay_leafrunner() : SpellScript("spell_npc_shay_leafrunner") {}
 
-bool QuestAccept_npc_shay_leafrunner(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_ID_WANDERING_SHAY)
+    bool EffectDummy(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pCreatureTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        DoScriptText(SAY_ESCORT_START, pCreature);
-        pCreature->AI()->SendAIEvent(AI_EVENT_START_EVENT, pPlayer, pCreature, pQuest->GetQuestId());
-    }
-    return true;
-}
+        if (uiSpellId == SPELL_SHAYS_BELL && uiEffIndex == EFFECT_INDEX_0)
+        {
+            if (pCaster->GetTypeId() != TYPEID_PLAYER)
+                return true;
 
-bool EffectDummyCreature_npc_shay_leafrunner(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    if (uiSpellId == SPELL_SHAYS_BELL && uiEffIndex == EFFECT_INDEX_0)
-    {
-        if (pCaster->GetTypeId() != TYPEID_PLAYER)
+            pCreatureTarget->ToCreature()->AI()->SendAIEvent(AI_EVENT_CUSTOM_A, pCaster, pCreatureTarget->ToCreature());
             return true;
+        }
 
-        pCreatureTarget->AI()->SendAIEvent(AI_EVENT_CUSTOM_A, pCaster, pCreatureTarget);
-        return true;
+        return false;
     }
-
-    return false;
-}
+};
 
 /*######
 ## AddSC
@@ -350,23 +362,31 @@ bool EffectDummyCreature_npc_shay_leafrunner(Unit* pCaster, uint32 uiSpellId, Sp
 
 void AddSC_feralas()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_oox22fe();
+    s->RegisterSelf();
+    s = new go_gordunni_trap();
+    s->RegisterSelf();
+    s = new npc_shay_leafrunner();
+    s->RegisterSelf();
+    s = new spell_npc_shay_leafrunner();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_oox22fe";
-    pNewScript->GetAI = &GetAI_npc_oox22fe;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_oox22fe;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_oox22fe";
+    //pNewScript->GetAI = &GetAI_npc_oox22fe;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_oox22fe;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_gordunni_trap";
-    pNewScript->pGOUse = &GOUse_go_gordunni_trap;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_gordunni_trap";
+    //pNewScript->pGOUse = &GOUse_go_gordunni_trap;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_shay_leafrunner";
-    pNewScript->GetAI = &GetAI_npc_shay_leafrunner;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_shay_leafrunner;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_npc_shay_leafrunner;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_shay_leafrunner";
+    //pNewScript->GetAI = &GetAI_npc_shay_leafrunner;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_shay_leafrunner;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_npc_shay_leafrunner;
+    //pNewScript->RegisterSelf();
 }

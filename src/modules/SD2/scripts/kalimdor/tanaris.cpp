@@ -65,92 +65,101 @@ enum
     FACTION_ELEMENTAL       = 91,
 };
 
-struct mob_aquementasAI : public ScriptedAI
+struct mob_aquementas : public CreatureScript
 {
-    mob_aquementasAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    mob_aquementas() : CreatureScript("mob_aquementas") {}
 
-    uint32 m_uiSwitchFactionTimer;
-    uint32 m_uiFrostShockTimer;
-    uint32 m_uiAquaJetTimer;
-
-    void Reset() override
+    struct mob_aquementasAI : public ScriptedAI
     {
-        m_uiSwitchFactionTimer  = 10000;
-        m_uiAquaJetTimer        = 5000;
-        m_uiFrostShockTimer     = 1000;
+        mob_aquementasAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_creature->setFaction(FACTION_FRIENDLY);           // TODO: Either do this way, or might require a DB change
-    }
+        uint32 m_uiSwitchFactionTimer;
+        uint32 m_uiFrostShockTimer;
+        uint32 m_uiAquaJetTimer;
 
-    void SendItem(Player* pReceiver)
-    {
-        if (pReceiver->HasItemCount(ITEM_BOOK_AQUOR, 1) &&
-            pReceiver->HasItemCount(ITEM_SILVERY_CLAWS, 11) &&
-            pReceiver->HasItemCount(ITEM_IRONTREE_HEART, 1) &&
-            !pReceiver->HasItemCount(ITEM_SILVER_TOTEM, 1))
+        void Reset() override
         {
-            if (Item* pItem = pReceiver->StoreNewItemInInventorySlot(ITEM_SILVER_TOTEM, 1))
+            m_uiSwitchFactionTimer = 10000;
+            m_uiAquaJetTimer = 5000;
+            m_uiFrostShockTimer = 1000;
+
+            m_creature->setFaction(FACTION_FRIENDLY);           // TODO: Either do this way, or might require a DB change
+        }
+
+        void SendItem(Player* pReceiver)
+        {
+            if (pReceiver->HasItemCount(ITEM_BOOK_AQUOR, 1) &&
+                pReceiver->HasItemCount(ITEM_SILVERY_CLAWS, 11) &&
+                pReceiver->HasItemCount(ITEM_IRONTREE_HEART, 1) &&
+                !pReceiver->HasItemCount(ITEM_SILVER_TOTEM, 1))
             {
-                pReceiver->SendNewItem(pItem, 1, true, false);
+                if (Item* pItem = pReceiver->StoreNewItemInInventorySlot(ITEM_SILVER_TOTEM, 1))
+                {
+                    pReceiver->SendNewItem(pItem, 1, true, false);
+                }
             }
         }
-    }
 
-    void Aggro(Unit* pWho) override
-    {
-        DoScriptText(AGGRO_YELL_AQUE, m_creature, pWho);
-
-        Player* pInvokedPlayer = pWho->GetCharmerOrOwnerPlayerOrPlayerItself();
-        if (pInvokedPlayer)
+        void Aggro(Unit* pWho) override
         {
-            SendItem(pInvokedPlayer);
-        }
-    }
+            DoScriptText(AGGRO_YELL_AQUE, m_creature, pWho);
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiSwitchFactionTimer)
-        {
-            if (m_uiSwitchFactionTimer <= uiDiff)
+            Player* pInvokedPlayer = pWho->GetCharmerOrOwnerPlayerOrPlayerItself();
+            if (pInvokedPlayer)
             {
-                m_creature->setFaction(FACTION_ELEMENTAL);
-                m_uiSwitchFactionTimer = 0;
+                SendItem(pInvokedPlayer);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiSwitchFactionTimer)
+            {
+                if (m_uiSwitchFactionTimer <= uiDiff)
+                {
+                    m_creature->setFaction(FACTION_ELEMENTAL);
+                    m_uiSwitchFactionTimer = 0;
+                }
+                else
+                {
+                    m_uiSwitchFactionTimer -= uiDiff;
+                }
+            }
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiFrostShockTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_FROST_SHOCK);
+                m_uiFrostShockTimer = 15000;
             }
             else
             {
-                m_uiSwitchFactionTimer -= uiDiff;
+                m_uiFrostShockTimer -= uiDiff;
             }
-        }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
+            if (m_uiAquaJetTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_AQUA_JET);
+                m_uiAquaJetTimer = 15000;
+            }
+            else
+            {
+                m_uiAquaJetTimer -= uiDiff;
+            }
 
-        if (m_uiFrostShockTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_FROST_SHOCK);
-            m_uiFrostShockTimer = 15000;
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiFrostShockTimer -= uiDiff; }
+    };
 
-        if (m_uiAquaJetTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_AQUA_JET);
-            m_uiAquaJetTimer = 15000;
-        }
-        else
-            { m_uiAquaJetTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new mob_aquementasAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_mob_aquementas(Creature* pCreature)
-{
-    return new mob_aquementasAI(pCreature);
-}
 
 /*######
 ## npc_oox17tn
@@ -172,21 +181,25 @@ enum
     NPC_SHADOW_MAGE         = 5617
 };
 
-struct npc_oox17tnAI : public npc_escortAI
+struct npc_oox17tn : public CreatureScript
 {
-    npc_oox17tnAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_oox17tn() : CreatureScript("npc_oox17tn") {}
 
-    void WaypointReached(uint32 i) override
+    struct npc_oox17tnAI : public npc_escortAI
     {
-        Player* pPlayer = GetPlayerForEscort();
+        npc_oox17tnAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-        if (!pPlayer)
+        void WaypointReached(uint32 i) override
         {
-            return;
-        }
+            Player* pPlayer = GetPlayerForEscort();
 
-        switch (i)
-        {
+            if (!pPlayer)
+            {
+                return;
+            }
+
+            switch (i)
+            {
                 // 1. Ambush: 3 scorpions
             case 22:
                 DoScriptText(SAY_OOX_AMBUSH, m_creature);
@@ -212,66 +225,67 @@ struct npc_oox17tnAI : public npc_escortAI
                 // Award quest credit
                 pPlayer->GroupEventHappens(QUEST_RESCUE_OOX_17TN, m_creature);
                 break;
+            }
         }
-    }
 
-    void Reset() override { }
+        void Reset() override { }
 
-    void Aggro(Unit* /*who*/) override
-    {
-        // For an small probability he say something when it aggros
-        switch (urand(0, 9))
+        void Aggro(Unit* /*who*/) override
         {
+            // For an small probability he say something when it aggros
+            switch (urand(0, 9))
+            {
             case 0:
                 DoScriptText(SAY_OOX_AGGRO1, m_creature);
                 break;
             case 1:
                 DoScriptText(SAY_OOX_AGGRO2, m_creature);
                 break;
+            }
         }
+
+        void JustSummoned(Creature* summoned) override
+        {
+            summoned->AI()->AttackStart(m_creature);
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_oox17tnAI(pCreature);
     }
 
-    void JustSummoned(Creature* summoned) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        summoned->AI()->AttackStart(m_creature);
+        if (pQuest->GetQuestId() == QUEST_RESCUE_OOX_17TN)
+        {
+            DoScriptText(SAY_OOX_START, pCreature);
+
+            pCreature->SetStandState(UNIT_STAND_STATE_STAND);
+
+            if (pPlayer->GetTeam() == ALLIANCE)
+            {
+                pCreature->SetFactionTemporary(FACTION_ESCORT_A_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+            }
+
+            if (pPlayer->GetTeam() == HORDE)
+            {
+                pCreature->SetFactionTemporary(FACTION_ESCORT_H_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+            }
+
+            if (npc_oox17tnAI* pEscortAI = dynamic_cast<npc_oox17tnAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(false, pPlayer, pQuest);
+            }
+        }
+        return true;
     }
 };
-
-CreatureAI* GetAI_npc_oox17tn(Creature* pCreature)
-{
-    return new npc_oox17tnAI(pCreature);
-}
-
-bool QuestAccept_npc_oox17tn(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_RESCUE_OOX_17TN)
-    {
-        DoScriptText(SAY_OOX_START, pCreature);
-
-        pCreature->SetStandState(UNIT_STAND_STATE_STAND);
-
-        if (pPlayer->GetTeam() == ALLIANCE)
-        {
-            pCreature->SetFactionTemporary(FACTION_ESCORT_A_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-        }
-
-        if (pPlayer->GetTeam() == HORDE)
-        {
-            pCreature->SetFactionTemporary(FACTION_ESCORT_H_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-        }
-
-        if (npc_oox17tnAI* pEscortAI = dynamic_cast<npc_oox17tnAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(false, pPlayer, pQuest);
-        }
-    }
-    return true;
-}
 
 /*######
 ## npc_stone_watcher_of_norgannon
 ######*/
-
+//TODO localise
 #define GOSSIP_ITEM_NORGANNON_1     "What function do you serve?"
 #define GOSSIP_ITEM_NORGANNON_2     "What are the Plates of Uldum?"
 #define GOSSIP_ITEM_NORGANNON_3     "Where are the Plates of Uldum?"
@@ -279,54 +293,59 @@ bool QuestAccept_npc_oox17tn(Player* pPlayer, Creature* pCreature, const Quest* 
 #define GOSSIP_ITEM_NORGANNON_5     "So, what's inside Uldum?"
 #define GOSSIP_ITEM_NORGANNON_6     "I will return when i have the Plates of Uldum."
 
-bool GossipHello_npc_stone_watcher_of_norgannon(Player* pPlayer, Creature* pCreature)
+struct npc_stone_watcher_of_norgannon : public CreatureScript
 {
-    if (pCreature->IsQuestGiver())
+    npc_stone_watcher_of_norgannon() : CreatureScript("npc_stone_watcher_of_norgannon") {}
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        if (pCreature->IsQuestGiver())
+        {
+            pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        }
+
+        if (pPlayer->GetQuestStatus(2954) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
+        }
+
+        pPlayer->SEND_GOSSIP_MENU(1674, pCreature->GetObjectGuid());
+
+        return true;
     }
 
-    if (pPlayer->GetQuestStatus(2954) == QUEST_STATUS_INCOMPLETE)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
-    }
-
-    pPlayer->SEND_GOSSIP_MENU(1674, pCreature->GetObjectGuid());
-
-    return true;
-}
-
-bool GossipSelect_npc_stone_watcher_of_norgannon(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    switch (uiAction)
-    {
+        switch (uiAction)
+        {
         case GOSSIP_ACTION_INFO_DEF:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
             pPlayer->SEND_GOSSIP_MENU(1675, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+1:
+        case GOSSIP_ACTION_INFO_DEF + 1:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
             pPlayer->SEND_GOSSIP_MENU(1676, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+2:
+        case GOSSIP_ACTION_INFO_DEF + 2:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_4, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
             pPlayer->SEND_GOSSIP_MENU(1677, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+3:
+        case GOSSIP_ACTION_INFO_DEF + 3:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_5, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4);
             pPlayer->SEND_GOSSIP_MENU(1678, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+4:
+        case GOSSIP_ACTION_INFO_DEF + 4:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NORGANNON_6, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5);
             pPlayer->SEND_GOSSIP_MENU(1679, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+5:
+        case GOSSIP_ACTION_INFO_DEF + 5:
             pPlayer->CLOSE_GOSSIP_MENU();
             pPlayer->AreaExploredOrEventHappens(2954);
             break;
+        }
+        return true;
     }
-    return true;
-}
+};
 
 /*####
 # npc_tooga
@@ -351,82 +370,86 @@ enum
 
 const float m_afToWaterLoc[] = { -7032.664551f, -4906.199219f, -1.606446f};
 
-struct npc_toogaAI : public FollowerAI
+struct npc_tooga : public CreatureScript
 {
-    npc_toogaAI(Creature* pCreature) : FollowerAI(pCreature) { Reset(); }
+    npc_tooga() : CreatureScript("npc_tooga") {}
 
-    uint32 m_uiCheckSpeechTimer;
-    uint32 m_uiPostEventTimer;
-    uint32 m_uiPhasePostEvent;
-
-    Unit* pTorta;
-
-    void Reset() override
+    struct npc_toogaAI : public FollowerAI
     {
-        m_uiCheckSpeechTimer = 2500;
-        m_uiPostEventTimer = 1000;
-        m_uiPhasePostEvent = 0;
+        npc_toogaAI(Creature* pCreature) : FollowerAI(pCreature) { }
 
-        pTorta = NULL;
-    }
+        uint32 m_uiCheckSpeechTimer;
+        uint32 m_uiPostEventTimer;
+        uint32 m_uiPhasePostEvent;
 
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        FollowerAI::MoveInLineOfSight(pWho);
+        Unit* pTorta;
 
-        if (!m_creature->getVictim() && !HasFollowState(STATE_FOLLOW_COMPLETE | STATE_FOLLOW_POSTEVENT) && pWho->GetEntry() == NPC_TORTA)
+        void Reset() override
         {
-            if (m_creature->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
-            {
-                if (Player* pPlayer = GetLeaderForFollower())
-                {
-                    if (pPlayer->GetQuestStatus(QUEST_TOOGA) == QUEST_STATUS_INCOMPLETE)
-                    {
-                        pPlayer->GroupEventHappens(QUEST_TOOGA, m_creature);
-                    }
-                }
+            m_uiCheckSpeechTimer = 2500;
+            m_uiPostEventTimer = 1000;
+            m_uiPhasePostEvent = 0;
 
-                pTorta = pWho;
-                SetFollowComplete(true);
+            pTorta = NULL;
+        }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            FollowerAI::MoveInLineOfSight(pWho);
+
+            if (!m_creature->getVictim() && !HasFollowState(STATE_FOLLOW_COMPLETE | STATE_FOLLOW_POSTEVENT) && pWho->GetEntry() == NPC_TORTA)
+            {
+                if (m_creature->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
+                {
+                    if (Player* pPlayer = GetLeaderForFollower())
+                    {
+                        if (pPlayer->GetQuestStatus(QUEST_TOOGA) == QUEST_STATUS_INCOMPLETE)
+                        {
+                            pPlayer->GroupEventHappens(QUEST_TOOGA, m_creature);
+                        }
+                    }
+
+                    pTorta = pWho;
+                    SetFollowComplete(true);
+                }
             }
         }
-    }
 
-    void MovementInform(uint32 uiMotionType, uint32 uiPointId) override
-    {
-        FollowerAI::MovementInform(uiMotionType, uiPointId);
-
-        if (uiMotionType != POINT_MOTION_TYPE)
+        void MovementInform(uint32 uiMotionType, uint32 uiPointId) override
         {
-            return;
-        }
+            FollowerAI::MovementInform(uiMotionType, uiPointId);
 
-        if (uiPointId == POINT_ID_TO_WATER)
-        {
-            SetFollowComplete();
-        }
-    }
-
-    void UpdateFollowerAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            // we are doing the post-event, or...
-            if (HasFollowState(STATE_FOLLOW_POSTEVENT))
+            if (uiMotionType != POINT_MOTION_TYPE)
             {
-                if (m_uiPostEventTimer < uiDiff)
+                return;
+            }
+
+            if (uiPointId == POINT_ID_TO_WATER)
+            {
+                SetFollowComplete();
+            }
+        }
+
+        void UpdateFollowerAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                // we are doing the post-event, or...
+                if (HasFollowState(STATE_FOLLOW_POSTEVENT))
                 {
-                    m_uiPostEventTimer = 5000;
-
-                    if (!pTorta || !pTorta->IsAlive())
+                    if (m_uiPostEventTimer < uiDiff)
                     {
-                        // something happened, so just complete
-                        SetFollowComplete();
-                        return;
-                    }
+                        m_uiPostEventTimer = 5000;
 
-                    switch (m_uiPhasePostEvent)
-                    {
+                        if (!pTorta || !pTorta->IsAlive())
+                        {
+                            // something happened, so just complete
+                            SetFollowComplete();
+                            return;
+                        }
+
+                        switch (m_uiPhasePostEvent)
+                        {
                         case 1:
                             DoScriptText(SAY_TOOG_POST_1, m_creature);
                             break;
@@ -446,62 +469,64 @@ struct npc_toogaAI : public FollowerAI
                             DoScriptText(SAY_TORT_POST_6, pTorta);
                             m_creature->GetMotionMaster()->MovePoint(POINT_ID_TO_WATER, m_afToWaterLoc[0], m_afToWaterLoc[1], m_afToWaterLoc[2]);
                             break;
+                        }
+
+                        ++m_uiPhasePostEvent;
                     }
-
-                    ++m_uiPhasePostEvent;
-                }
-                else
-                {
-                    m_uiPostEventTimer -= uiDiff;
-                }
-            }
-            //...we are doing regular speech check
-            else if (HasFollowState(STATE_FOLLOW_INPROGRESS))
-            {
-                if (m_uiCheckSpeechTimer < uiDiff)
-                {
-                    m_uiCheckSpeechTimer = 5000;
-
-                    switch (urand(0, 50))
+                    else
                     {
+                        m_uiPostEventTimer -= uiDiff;
+                    }
+                }
+                //...we are doing regular speech check
+                else if (HasFollowState(STATE_FOLLOW_INPROGRESS))
+                {
+                    if (m_uiCheckSpeechTimer < uiDiff)
+                    {
+                        m_uiCheckSpeechTimer = 5000;
+
+                        switch (urand(0, 50))
+                        {
                         case 10:
                             DoScriptText(SAY_TOOG_THIRST, m_creature);
                             break;
                         case 25:
                             DoScriptText(SAY_TOOG_WORRIED, m_creature);
                             break;
+                        }
+                    }
+                    else
+                    {
+                        m_uiCheckSpeechTimer -= uiDiff;
                     }
                 }
-                else
-                {
-                    m_uiCheckSpeechTimer -= uiDiff;
-                }
+
+                return;
             }
 
-            return;
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_toogaAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_TOOGA)
+        {
+            if (npc_toogaAI* pToogaAI = dynamic_cast<npc_toogaAI*>(pCreature->AI()))
+            {
+                pToogaAI->StartFollow(pPlayer, FACTION_ESCORT_N_FRIEND_PASSIVE, pQuest);
+                return true;
+            }
         }
 
-        DoMeleeAttackIfReady();
+        return false;
     }
 };
-
-CreatureAI* GetAI_npc_tooga(Creature* pCreature)
-{
-    return new npc_toogaAI(pCreature);
-}
-
-bool QuestAccept_npc_tooga(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_TOOGA)
-    {
-        if (npc_toogaAI* pToogaAI = dynamic_cast<npc_toogaAI*>(pCreature->AI()))
-        {
-            pToogaAI->StartFollow(pPlayer, FACTION_ESCORT_N_FRIEND_PASSIVE, pQuest);
-        }
-    }
-
-    return true;
-}
 
 /*######
 ## go_inconspicuous_landmark
@@ -517,29 +542,38 @@ enum
     SPAWN_DURATION = 300000 // pirates will exist in world for 3 minutes
 };
 
-bool GOUse_go_pirate_treasure(Player* /*pPlayer*/, GameObject* pGo)
+struct go_pirate_treasure : public GameObjectScript
 {
-    // despawn chest
-    pGo->SetSpawnedByDefault(false);
-    pGo->SetRespawnTime(10); 
-    
-    return true;
-}
+    go_pirate_treasure() : GameObjectScript("go_pirate_treasure") {}
 
-void SpawnPirates(Player* pPlayer, int iTotalPirates)
-{
-    Creature * pCreature;
-    for (int i = 0; i<iTotalPirates; i++)
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo)
     {
-        float fPlayerX = pPlayer->GetPositionX();
-        float fPlayerY = pPlayer->GetPositionY();
-        float fPlayerZ = pPlayer->GetPositionZ();
-        // Pirate's spawn location
-        float fX = fPlayerX + rand() % 30 + 8;
-        float fY = fPlayerY + rand() % 30 + 8;
-        // spawn 4 or 5 sailor boys
-        switch (rand() % 3)
-        {    
+        // despawn chest
+        pGo->SetSpawnedByDefault(false);
+        pGo->SetRespawnTime(10);
+
+        return true;
+    }
+};
+
+struct go_inconspicuous_landmark : public GameObjectScript
+{
+    go_inconspicuous_landmark() : GameObjectScript("go_inconspicuous_landmark") {}
+
+    void SpawnPirates(Player* pPlayer, int iTotalPirates)
+    {
+        Creature * pCreature;
+        for (int i = 0; i < iTotalPirates; i++)
+        {
+            float fPlayerX = pPlayer->GetPositionX();
+            float fPlayerY = pPlayer->GetPositionY();
+            float fPlayerZ = pPlayer->GetPositionZ();
+            // Pirate's spawn location
+            float fX = fPlayerX + rand() % 30 + 8;
+            float fY = fPlayerY + rand() % 30 + 8;
+            // spawn 4 or 5 sailor boys
+            switch (rand() % 3)
+            {
             case 0: // spawn treasure hunting pirate
                 pCreature = pPlayer->SummonCreature(NPC_TREASURE_HUNTING_PIRATE, fX, fY, fPlayerZ, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, SPAWN_DURATION);
                 break;
@@ -549,57 +583,70 @@ void SpawnPirates(Player* pPlayer, int iTotalPirates)
             default: // spawn treasure hunting buccaneer
                 pCreature = pPlayer->SummonCreature(NPC_TREASURE_HUNTING_BUCCANEER, fX, fY, fPlayerZ, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, SPAWN_DURATION);
                 break;
+            }
+            pCreature->SetWalk(false, true); // run, fat boy, RUN!!!!
+            pCreature->GetMotionMaster()->MovePoint(0, fPlayerX, fPlayerY, fPlayerZ);
         }
-        pCreature->SetWalk(false, true); // run, fat boy, RUN!!!!
-        pCreature->GetMotionMaster()->MovePoint(0, fPlayerX, fPlayerY, fPlayerZ);
     }
-}
 
-bool GOUse_go_inconspicuous_landmark(Player* pPlayer, GameObject* pGo)
-{
-    // spawn 4 or 5 sailor boys
-    int iTotalPirates = rand() % 2 + 4;
-    SpawnPirates(pPlayer, iTotalPirates);
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
+    {
+        // spawn 4 or 5 sailor boys
+        int iTotalPirates = rand() % 2 + 4;
+        SpawnPirates(pPlayer, iTotalPirates);
 
-    // spawn chest
-    pGo->SummonGameObject(GO_PIRATE_TREASURE, -10117.715f, -4051.644f, 5.407f, 0.0f, 60);
-    return true;
-}
+        // spawn chest
+        pGo->SummonGameObject(GO_PIRATE_TREASURE, -10117.715f, -4051.644f, 5.407f, 0.0f, 60);
+        return true;
+    }
+};
 
 void AddSC_tanaris()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new go_pirate_treasure();
+    s->RegisterSelf();
+    s = new go_inconspicuous_landmark();
+    s->RegisterSelf();
+    s = new mob_aquementas();
+    s->RegisterSelf();
+    s = new npc_oox17tn();
+    s->RegisterSelf();
+    s = new npc_stone_watcher_of_norgannon();
+    s->RegisterSelf();
+    s = new npc_tooga();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_pirate_treasure";
-    pNewScript->pGOUse = &GOUse_go_pirate_treasure;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_pirate_treasure";
+    //pNewScript->pGOUse = &GOUse_go_pirate_treasure;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_inconspicuous_landmark";
-    pNewScript->pGOUse = &GOUse_go_inconspicuous_landmark;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_inconspicuous_landmark";
+    //pNewScript->pGOUse = &GOUse_go_inconspicuous_landmark;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_aquementas";
-    pNewScript->GetAI = &GetAI_mob_aquementas;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_aquementas";
+    //pNewScript->GetAI = &GetAI_mob_aquementas;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_oox17tn";
-    pNewScript->GetAI = &GetAI_npc_oox17tn;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_oox17tn;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_oox17tn";
+    //pNewScript->GetAI = &GetAI_npc_oox17tn;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_oox17tn;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_stone_watcher_of_norgannon";
-    pNewScript->pGossipHello =  &GossipHello_npc_stone_watcher_of_norgannon;
-    pNewScript->pGossipSelect = &GossipSelect_npc_stone_watcher_of_norgannon;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_stone_watcher_of_norgannon";
+    //pNewScript->pGossipHello =  &GossipHello_npc_stone_watcher_of_norgannon;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_stone_watcher_of_norgannon;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_tooga";
-    pNewScript->GetAI = &GetAI_npc_tooga;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_tooga;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_tooga";
+    //pNewScript->GetAI = &GetAI_npc_tooga;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_tooga;
+    //pNewScript->RegisterSelf();
 }

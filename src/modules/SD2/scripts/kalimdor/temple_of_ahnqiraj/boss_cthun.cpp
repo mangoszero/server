@@ -110,76 +110,79 @@ enum CThunPhase
 ## boss_eye_of_cthun
 ######*/
 
-struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
+struct boss_eye_of_cthun : public CreatureScript
 {
-    boss_eye_of_cthunAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+    boss_eye_of_cthun() : CreatureScript("boss_eye_of_cthun") {}
+
+    struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    CThunPhase m_Phase;
-
-    uint32 m_uiClawTentacleTimer;
-    uint32 m_uiEyeTentacleTimer;
-    uint32 m_uiBeamTimer;
-    uint32 m_uiDarkGlareTimer;
-    uint32 m_uiDarkGlareEndTimer;
-
-    GuidList m_lEyeTentaclesList;
-
-    void Reset() override
-    {
-        m_Phase                 = PHASE_EYE_NORMAL;
-
-        m_uiDarkGlareTimer      = 45000;
-        m_uiDarkGlareEndTimer   = 40000;
-        m_uiClawTentacleTimer   = urand(10000, 15000);
-        m_uiBeamTimer           = 0;
-        m_uiEyeTentacleTimer    = 45000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_eye_of_cthunAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_CTHUN, IN_PROGRESS);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
-    }
 
-    void JustDied(Unit* pKiller) override
-    {
-        // Allow the body to begin the transition
-        if (m_pInstance)
+        ScriptedInstance* m_pInstance;
+
+        CThunPhase m_Phase;
+
+        uint32 m_uiClawTentacleTimer;
+        uint32 m_uiEyeTentacleTimer;
+        uint32 m_uiBeamTimer;
+        uint32 m_uiDarkGlareTimer;
+        uint32 m_uiDarkGlareEndTimer;
+
+        GuidList m_lEyeTentaclesList;
+
+        void Reset() override
         {
-            if (Creature* pCthun = m_pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
+            m_Phase = PHASE_EYE_NORMAL;
+
+            m_uiDarkGlareTimer = 45000;
+            m_uiDarkGlareEndTimer = 40000;
+            m_uiClawTentacleTimer = urand(10000, 15000);
+            m_uiBeamTimer = 0;
+            m_uiEyeTentacleTimer = 45000;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
             {
-                pCthun->AI()->AttackStart(pKiller);
-            }
-            else
-            {
-                script_error_log("C'thun could not be found. Please check your database!");
+                m_pInstance->SetData(TYPE_CTHUN, IN_PROGRESS);
             }
         }
-    }
 
-    void JustReachedHome() override
-    {
-        // Despawn Eye tentacles on evade
-        DoDespawnEyeTentacles();
-
-        if (m_pInstance)
+        void JustDied(Unit* pKiller) override
         {
-            m_pInstance->SetData(TYPE_CTHUN, FAIL);
+            // Allow the body to begin the transition
+            if (m_pInstance)
+            {
+                if (Creature* pCthun = m_pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
+                {
+                    pCthun->AI()->AttackStart(pKiller);
+                }
+                else
+                {
+                    script_error_log("C'thun could not be found. Please check your database!");
+                }
+            }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        void JustReachedHome() override
         {
+            // Despawn Eye tentacles on evade
+            DoDespawnEyeTentacles();
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_CTHUN, FAIL);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_EYE_TENTACLE:
                 m_lEyeTentaclesList.push_back(pSummoned->GetObjectGuid());
                 // no break;
@@ -191,88 +194,88 @@ struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
 
                 pSummoned->SummonCreature(NPC_TENTACLE_PORTAL, pSummoned->GetPositionX(), pSummoned->GetPositionY(), pSummoned->GetPositionZ(), 0, TEMPSUMMON_CORPSE_DESPAWN, 0);
                 break;
-        }
-    }
-
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        // Despawn the tentacle portal - this applies to all the summoned tentacles
-        if (Creature* pPortal = GetClosestCreatureWithEntry(pSummoned, NPC_TENTACLE_PORTAL, 5.0f))
-        {
-            pPortal->ForcedDespawn();
-        }
-    }
-
-    void SummonedCreatureDespawn(Creature* pSummoned) override
-    {
-        // Used only after evade
-        if (SelectHostileTarget())
-        {
-            return;
-        }
-
-        // Despawn the tentacle portal - this applies to all the summoned tentacles for evade case (which is handled by creature linking)
-        if (Creature* pPortal = GetClosestCreatureWithEntry(pSummoned, NPC_TENTACLE_PORTAL, 5.0f))
-        {
-            pPortal->ForcedDespawn();
-        }
-    }
-
-    // Wrapper to kill the eye tentacles before summoning new ones
-    void DoDespawnEyeTentacles()
-    {
-        for (GuidList::const_iterator itr = m_lEyeTentaclesList.begin(); itr != m_lEyeTentaclesList.end(); ++itr)
-        {
-            if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
-            {
-                pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
             }
         }
 
-        m_lEyeTentaclesList.clear();
-    }
-
-    // Custom threat management
-    bool SelectHostileTarget()
-    {
-        Unit* pTarget = NULL;
-        Unit* pOldTarget = m_creature->getVictim();
-
-        if (!m_creature->GetThreatManager().isThreatListEmpty())
+        void SummonedCreatureJustDied(Creature* pSummoned) override
         {
-            pTarget = m_creature->GetThreatManager().getHostileTarget();
+            // Despawn the tentacle portal - this applies to all the summoned tentacles
+            if (Creature* pPortal = GetClosestCreatureWithEntry(pSummoned, NPC_TENTACLE_PORTAL, 5.0f))
+            {
+                pPortal->ForcedDespawn();
+            }
         }
 
-        if (pTarget)
+        void SummonedCreatureDespawn(Creature* pSummoned) override
         {
-            if (pOldTarget != pTarget && m_Phase == PHASE_EYE_NORMAL)
+            // Used only after evade
+            if (SelectHostileTarget())
             {
-                AttackStart(pTarget);
+                return;
             }
 
-            // Set victim to old target (if not while Dark Glare)
-            if (pOldTarget && pOldTarget->IsAlive() && m_Phase == PHASE_EYE_NORMAL)
+            // Despawn the tentacle portal - this applies to all the summoned tentacles for evade case (which is handled by creature linking)
+            if (Creature* pPortal = GetClosestCreatureWithEntry(pSummoned, NPC_TENTACLE_PORTAL, 5.0f))
             {
-                m_creature->SetTargetGuid(pOldTarget->GetObjectGuid());
-                m_creature->SetInFront(pOldTarget);
+                pPortal->ForcedDespawn();
+            }
+        }
+
+        // Wrapper to kill the eye tentacles before summoning new ones
+        void DoDespawnEyeTentacles()
+        {
+            for (GuidList::const_iterator itr = m_lEyeTentaclesList.begin(); itr != m_lEyeTentaclesList.end(); ++itr)
+            {
+                if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
+                {
+                    pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
+                }
             }
 
-            return true;
+            m_lEyeTentaclesList.clear();
         }
 
-        // Will call EnterEvadeMode if fit
-        return m_creature->SelectHostileTarget();
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!SelectHostileTarget())
+        // Custom threat management
+        bool SelectHostileTarget()
         {
-            return;
+            Unit* pTarget = NULL;
+            Unit* pOldTarget = m_creature->getVictim();
+
+            if (!m_creature->GetThreatManager().isThreatListEmpty())
+            {
+                pTarget = m_creature->GetThreatManager().getHostileTarget();
+            }
+
+            if (pTarget)
+            {
+                if (pOldTarget != pTarget && m_Phase == PHASE_EYE_NORMAL)
+                {
+                    AttackStart(pTarget);
+                }
+
+                // Set victim to old target (if not while Dark Glare)
+                if (pOldTarget && pOldTarget->IsAlive() && m_Phase == PHASE_EYE_NORMAL)
+                {
+                    m_creature->SetTargetGuid(pOldTarget->GetObjectGuid());
+                    m_creature->SetInFront(pOldTarget);
+                }
+
+                return true;
+            }
+
+            // Will call EnterEvadeMode if fit
+            return m_creature->SelectHostileTarget();
         }
 
-        switch (m_Phase)
+        void UpdateAI(const uint32 uiDiff) override
         {
+            if (!SelectHostileTarget())
+            {
+                return;
+            }
+
+            switch (m_Phase)
+            {
             case PHASE_EYE_NORMAL:
 
                 if (m_uiBeamTimer < uiDiff)
@@ -301,8 +304,8 @@ struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
                         m_creature->SetFacingToObject(m_creature->getVictim());
 
                         // Switch to Dark Glare phase
-                        m_uiDarkGlareTimer    = 45000;
-                        m_Phase               = PHASE_EYE_DARK_GLARE;
+                        m_uiDarkGlareTimer = 45000;
+                        m_Phase = PHASE_EYE_DARK_GLARE;
                     }
                 }
                 else
@@ -321,8 +324,8 @@ struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
 
                     // Switch to Eye Beam
                     m_uiDarkGlareEndTimer = 40000;
-                    m_uiBeamTimer         = 1000;
-                    m_Phase               = PHASE_EYE_NORMAL;
+                    m_uiBeamTimer = 1000;
+                    m_Phase = PHASE_EYE_NORMAL;
                 }
                 else
                 {
@@ -330,37 +333,47 @@ struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
                 }
 
                 break;
-        }
-
-        if (m_uiClawTentacleTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                // Spawn claw tentacle on the random target on both phases
-                m_creature->SummonCreature(NPC_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-                m_uiClawTentacleTimer = urand(7000, 13000);
-            }
-        }
-        else
-            { m_uiClawTentacleTimer -= uiDiff; }
-
-        if (m_uiEyeTentacleTimer <= uiDiff)
-        {
-            // Despawn the eye tentacles if necessary
-            DoDespawnEyeTentacles();
-
-            // Spawn 8 Eye Tentacles
-            float fX, fY, fZ;
-            for (uint8 i = 0; i < MAX_EYE_TENTACLES; ++i)
-            {
-                m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, 30.0f, M_PI_F / 4 * i);
-                m_creature->SummonCreature(NPC_EYE_TENTACLE, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
             }
 
-            m_uiEyeTentacleTimer = 45000;
+            if (m_uiClawTentacleTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    // Spawn claw tentacle on the random target on both phases
+                    m_creature->SummonCreature(NPC_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                    m_uiClawTentacleTimer = urand(7000, 13000);
+                }
+            }
+            else
+            {
+                m_uiClawTentacleTimer -= uiDiff;
+            }
+
+            if (m_uiEyeTentacleTimer <= uiDiff)
+            {
+                // Despawn the eye tentacles if necessary
+                DoDespawnEyeTentacles();
+
+                // Spawn 8 Eye Tentacles
+                float fX, fY, fZ;
+                for (uint8 i = 0; i < MAX_EYE_TENTACLES; ++i)
+                {
+                    m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, 30.0f, M_PI_F / 4 * i);
+                    m_creature->SummonCreature(NPC_EYE_TENTACLE, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                }
+
+                m_uiEyeTentacleTimer = 45000;
+            }
+            else
+            {
+                m_uiEyeTentacleTimer -= uiDiff;
+            }
         }
-        else
-            { m_uiEyeTentacleTimer -= uiDiff; }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_eye_of_cthunAI(pCreature);
     }
 };
 
@@ -368,119 +381,124 @@ struct boss_eye_of_cthunAI : public Scripted_NoMovementAI
 ## boss_cthun
 ######*/
 
-struct boss_cthunAI : public Scripted_NoMovementAI
+struct boss_cthun : public CreatureScript
 {
-    boss_cthunAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+    boss_cthun() : CreatureScript("boss_cthun") {}
+
+    struct boss_cthunAI : public Scripted_NoMovementAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        // Set active in order to be used during the instance progress
-        m_creature->SetActiveObjectState(true);
-        Reset();
-    }
+        boss_cthunAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+        {
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+            // Set active in order to be used during the instance progress
+            m_creature->SetActiveObjectState(true);
+        }
 
-    ScriptedInstance* m_pInstance;
+        ScriptedInstance* m_pInstance;
 
-    CThunPhase m_Phase;
+        CThunPhase m_Phase;
 
-    // Global variables
-    uint32 m_uiPhaseTimer;
-    uint8 m_uiFleshTentaclesKilled;
-    uint32 m_uiEyeTentacleTimer;
-    uint32 m_uiGiantClawTentacleTimer;
-    uint32 m_uiGiantEyeTentacleTimer;
-    uint32 m_uiDigestiveAcidTimer;
-
-    // Body Phase
-    uint32 m_uiMouthTentacleTimer;
-    uint32 m_uiStomachEnterTimer;
-
-    GuidList m_lEyeTentaclesList;
-    GuidList m_lPlayersInStomachList;
-
-    ObjectGuid m_stomachEnterTargetGuid;
-
-    void Reset() override
-    {
-        // Phase information
-        m_Phase                     = PHASE_TRANSITION;
-
-        m_uiPhaseTimer              = 5000;
-        m_uiFleshTentaclesKilled    = 0;
-        m_uiEyeTentacleTimer        = 35000;
-        m_uiGiantClawTentacleTimer  = 20000;
-        m_uiGiantEyeTentacleTimer   = 50000;
-        m_uiDigestiveAcidTimer      = 4000;
+        // Global variables
+        uint32 m_uiPhaseTimer;
+        uint8 m_uiFleshTentaclesKilled;
+        uint32 m_uiEyeTentacleTimer;
+        uint32 m_uiGiantClawTentacleTimer;
+        uint32 m_uiGiantEyeTentacleTimer;
+        uint32 m_uiDigestiveAcidTimer;
 
         // Body Phase
-        m_uiMouthTentacleTimer      = 15000;
-        m_uiStomachEnterTimer       = 0;
+        uint32 m_uiMouthTentacleTimer;
+        uint32 m_uiStomachEnterTimer;
 
-        // Clear players in stomach
-        m_lPlayersInStomachList.clear();
+        GuidList m_lEyeTentaclesList;
+        GuidList m_lPlayersInStomachList;
 
-        // Reset flags
-        m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-    }
+        ObjectGuid m_stomachEnterTargetGuid;
 
-    void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
-    {
-        // Ignore damage reduction when vulnerable
-        if (m_Phase == PHASE_CTHUN_WEAKENED)
+        void Reset() override
         {
-            return;
+            // Phase information
+            m_Phase = PHASE_TRANSITION;
+
+            m_uiPhaseTimer = 5000;
+            m_uiFleshTentaclesKilled = 0;
+            m_uiEyeTentacleTimer = 35000;
+            m_uiGiantClawTentacleTimer = 20000;
+            m_uiGiantEyeTentacleTimer = 50000;
+            m_uiDigestiveAcidTimer = 4000;
+
+            // Body Phase
+            m_uiMouthTentacleTimer = 15000;
+            m_uiStomachEnterTimer = 0;
+
+            // Clear players in stomach
+            m_lPlayersInStomachList.clear();
+
+            // Reset flags
+            m_creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         }
 
-        // Not weakened so reduce damage by 99% - workaround for missing spell 26156
-        if (uiDamage / 99 > 0)
+        void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
         {
-            uiDamage /= 99;
-        }
-        else
-            { uiDamage = 1; }
-
-        // Prevent death in non-weakened state
-        if (uiDamage >= m_creature->GetHealth())
-        {
-            uiDamage = 0;
-        }
-    }
-
-    void EnterEvadeMode() override
-    {
-        // Kill any player from the stomach on evade - this is because C'thun can not be soloed.
-        for (GuidList::const_iterator itr = m_lPlayersInStomachList.begin(); itr != m_lPlayersInStomachList.end(); ++itr)
-        {
-            if (Player* pPlayer = m_creature->GetMap()->GetPlayer(*itr))
+            // Ignore damage reduction when vulnerable
+            if (m_Phase == PHASE_CTHUN_WEAKENED)
             {
-                pPlayer->CastSpell(pPlayer, SPELL_PORT_OUT_STOMACH_EFFECT, true);
+                return;
+            }
+
+            // Not weakened so reduce damage by 99% - workaround for missing spell 26156
+            if (uiDamage / 99 > 0)
+            {
+                uiDamage /= 99;
+            }
+            else
+            {
+                uiDamage = 1;
+            }
+
+            // Prevent death in non-weakened state
+            if (uiDamage >= m_creature->GetHealth())
+            {
+                uiDamage = 0;
             }
         }
 
-        Scripted_NoMovementAI::EnterEvadeMode();
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
+        void EnterEvadeMode() override
         {
-            m_pInstance->SetData(TYPE_CTHUN, FAIL);
+            // Kill any player from the stomach on evade - this is because C'thun can not be soloed.
+            for (GuidList::const_iterator itr = m_lPlayersInStomachList.begin(); itr != m_lPlayersInStomachList.end(); ++itr)
+            {
+                if (Player* pPlayer = m_creature->GetMap()->GetPlayer(*itr))
+                {
+                    pPlayer->CastSpell(pPlayer, SPELL_PORT_OUT_STOMACH_EFFECT, true);
+                }
+            }
+
+            Scripted_NoMovementAI::EnterEvadeMode();
         }
-    }
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        m_creature->SetActiveObjectState(false);
-
-        if (m_pInstance)
+        void JustReachedHome() override
         {
-            m_pInstance->SetData(TYPE_CTHUN, DONE);
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_CTHUN, FAIL);
+            }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        void JustDied(Unit* /*pKiller*/) override
         {
+            m_creature->SetActiveObjectState(false);
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_CTHUN, DONE);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_EYE_TENTACLE:
                 if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 {
@@ -499,13 +517,13 @@ struct boss_cthunAI : public Scripted_NoMovementAI
 
                 pSummoned->SummonCreature(NPC_GIANT_TENTACLE_PORTAL, pSummoned->GetPositionX(), pSummoned->GetPositionY(), pSummoned->GetPositionZ(), 0, TEMPSUMMON_CORPSE_DESPAWN, 0);
                 break;
+            }
         }
-    }
 
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        void SummonedCreatureJustDied(Creature* pSummoned) override
         {
+            switch (pSummoned->GetEntry())
+            {
                 // Handle portal despawn on tentacle kill
             case NPC_EYE_TENTACLE:
                 if (Creature* pPortal = GetClosestCreatureWithEntry(pSummoned, NPC_TENTACLE_PORTAL, 5.0f))
@@ -529,89 +547,97 @@ struct boss_cthunAI : public Scripted_NoMovementAI
                     {
                         DoScriptText(EMOTE_WEAKENED, m_creature);
                         m_uiPhaseTimer = 45000;
-                        m_Phase        = PHASE_CTHUN_WEAKENED;
+                        m_Phase = PHASE_CTHUN_WEAKENED;
                     }
                 }
                 break;
-        }
-    }
-
-    // Wrapper to handle the Flesh Tentacles spawn
-    void DoSpawnFleshTentacles()
-    {
-        m_uiFleshTentaclesKilled = 0;
-
-        // Spawn 2 flesh tentacles
-        for (uint8 i = 0; i < MAX_FLESH_TENTACLES; ++i)
-        {
-            m_creature->SummonCreature(NPC_FLESH_TENTACLE, afCthunLocations[i][0], afCthunLocations[i][1], afCthunLocations[i][2], afCthunLocations[i][3], TEMPSUMMON_DEAD_DESPAWN, 0);
-        }
-    }
-
-    // Wrapper to kill the eye tentacles before summoning new ones
-    void DoDespawnEyeTentacles()
-    {
-        for (GuidList::const_iterator itr = m_lEyeTentaclesList.begin(); itr != m_lEyeTentaclesList.end(); ++itr)
-        {
-            if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
-            {
-                pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
             }
         }
 
-        m_lEyeTentaclesList.clear();
-    }
-
-    // Wrapper to remove a stored player from the stomach
-    void DoRemovePlayerFromStomach(Player* pPlayer)
-    {
-        if (pPlayer)
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* pInvoker, uint32 /*uiMiscValue*/) override
         {
-            m_lPlayersInStomachList.remove(pPlayer->GetObjectGuid());
-        }
-    }
-
-    // Custom threat management
-    bool SelectHostileTarget()
-    {
-        Unit* pTarget = NULL;
-        Unit* pOldTarget = m_creature->getVictim();
-
-        if (!m_creature->GetThreatManager().isThreatListEmpty())
-        {
-            pTarget = m_creature->GetThreatManager().getHostileTarget();
-        }
-
-        if (pTarget)
-        {
-            if (pOldTarget != pTarget)
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature)
             {
-                AttackStart(pTarget);
+                DoRemovePlayerFromStomach(pInvoker->ToPlayer());
+            }
+        }
+
+        // Wrapper to handle the Flesh Tentacles spawn
+        void DoSpawnFleshTentacles()
+        {
+            m_uiFleshTentaclesKilled = 0;
+
+            // Spawn 2 flesh tentacles
+            for (uint8 i = 0; i < MAX_FLESH_TENTACLES; ++i)
+            {
+                m_creature->SummonCreature(NPC_FLESH_TENTACLE, afCthunLocations[i][0], afCthunLocations[i][1], afCthunLocations[i][2], afCthunLocations[i][3], TEMPSUMMON_DEAD_DESPAWN, 0);
+            }
+        }
+
+        // Wrapper to kill the eye tentacles before summoning new ones
+        void DoDespawnEyeTentacles()
+        {
+            for (GuidList::const_iterator itr = m_lEyeTentaclesList.begin(); itr != m_lEyeTentaclesList.end(); ++itr)
+            {
+                if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
+                {
+                    pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
+                }
             }
 
-            // Set victim to old target
-            if (pOldTarget && pOldTarget->IsAlive())
+            m_lEyeTentaclesList.clear();
+        }
+
+        // Wrapper to remove a stored player from the stomach
+        void DoRemovePlayerFromStomach(Player* pPlayer)
+        {
+            if (pPlayer)
             {
-                m_creature->SetTargetGuid(pOldTarget->GetObjectGuid());
-                m_creature->SetInFront(pOldTarget);
+                m_lPlayersInStomachList.remove(pPlayer->GetObjectGuid());
+            }
+        }
+
+        // Custom threat management
+        bool SelectHostileTarget()
+        {
+            Unit* pTarget = NULL;
+            Unit* pOldTarget = m_creature->getVictim();
+
+            if (!m_creature->GetThreatManager().isThreatListEmpty())
+            {
+                pTarget = m_creature->GetThreatManager().getHostileTarget();
             }
 
-            return true;
+            if (pTarget)
+            {
+                if (pOldTarget != pTarget)
+                {
+                    AttackStart(pTarget);
+                }
+
+                // Set victim to old target
+                if (pOldTarget && pOldTarget->IsAlive())
+                {
+                    m_creature->SetTargetGuid(pOldTarget->GetObjectGuid());
+                    m_creature->SetInFront(pOldTarget);
+                }
+
+                return true;
+            }
+
+            // Will call EnterEvadeMode if fit
+            return m_creature->SelectHostileTarget();
         }
 
-        // Will call EnterEvadeMode if fit
-        return m_creature->SelectHostileTarget();
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!SelectHostileTarget())
+        void UpdateAI(const uint32 uiDiff) override
         {
-            return;
-        }
+            if (!SelectHostileTarget())
+            {
+                return;
+            }
 
-        switch (m_Phase)
-        {
+            switch (m_Phase)
+            {
             case PHASE_TRANSITION:
 
                 if (m_uiPhaseTimer < uiDiff)
@@ -625,7 +651,7 @@ struct boss_cthunAI : public Scripted_NoMovementAI
                         m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                         DoSpawnFleshTentacles();
 
-                        m_Phase        = PHASE_CTHUN;
+                        m_Phase = PHASE_CTHUN;
                         m_uiPhaseTimer = 0;
                     }
                 }
@@ -646,7 +672,7 @@ struct boss_cthunAI : public Scripted_NoMovementAI
                         pTarget->CastSpell(pTarget, SPELL_MOUTH_TENTACLE, true, NULL, NULL, m_creature->GetObjectGuid());
                         m_stomachEnterTargetGuid = pTarget->GetObjectGuid();
 
-                        m_uiStomachEnterTimer  = 3800;
+                        m_uiStomachEnterTimer = 3800;
                         m_uiMouthTentacleTimer = urand(13000, 15000);
                     }
                 }
@@ -685,7 +711,7 @@ struct boss_cthunAI : public Scripted_NoMovementAI
                     DoSpawnFleshTentacles();
 
                     m_uiPhaseTimer = 0;
-                    m_Phase        = PHASE_CTHUN;
+                    m_Phase = PHASE_CTHUN;
                 }
                 else
                 {
@@ -693,66 +719,80 @@ struct boss_cthunAI : public Scripted_NoMovementAI
                 }
 
                 break;
-        }
-
-        if (m_uiGiantClawTentacleTimer < uiDiff)
-        {
-            // Summon 1 Giant Claw Tentacle every 60 seconds
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_IN_LOS))
-            {
-                m_creature->SummonCreature(NPC_GIANT_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
             }
 
-            m_uiGiantClawTentacleTimer = 60000;
-        }
-        else
-            { m_uiGiantClawTentacleTimer -= uiDiff; }
-
-        if (m_uiGiantEyeTentacleTimer < uiDiff)
-        {
-            // Summon 1 Giant Eye Tentacle every 60 seconds
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_IN_LOS))
+            if (m_uiGiantClawTentacleTimer < uiDiff)
             {
-                m_creature->SummonCreature(NPC_GIANT_EYE_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-            }
-
-            m_uiGiantEyeTentacleTimer = 60000;
-        }
-        else
-            { m_uiGiantEyeTentacleTimer -= uiDiff; }
-
-        if (m_uiEyeTentacleTimer < uiDiff)
-        {
-            DoDespawnEyeTentacles();
-
-            // Spawn 8 Eye Tentacles every 30 seconds
-            float fX, fY, fZ;
-            for (uint8 i = 0; i < MAX_EYE_TENTACLES; ++i)
-            {
-                m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, 30.0f, M_PI_F / 4 * i);
-                m_creature->SummonCreature(NPC_EYE_TENTACLE, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-            }
-
-            m_uiEyeTentacleTimer = 30000;
-        }
-        else
-            { m_uiEyeTentacleTimer -= uiDiff; }
-
-        // Note: this should be applied by the teleport spell
-        if (m_uiDigestiveAcidTimer < uiDiff)
-        {
-            // Iterate the Stomach players list and apply the Digesti acid debuff on them every 4 sec
-            for (GuidList::const_iterator itr = m_lPlayersInStomachList.begin(); itr != m_lPlayersInStomachList.end(); ++itr)
-            {
-                if (Player* pPlayer = m_creature->GetMap()->GetPlayer(*itr))
+                // Summon 1 Giant Claw Tentacle every 60 seconds
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_IN_LOS))
                 {
-                    pPlayer->CastSpell(pPlayer, SPELL_DIGESTIVE_ACID, true, NULL, NULL, m_creature->GetObjectGuid());
+                    m_creature->SummonCreature(NPC_GIANT_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
                 }
+
+                m_uiGiantClawTentacleTimer = 60000;
             }
-            m_uiDigestiveAcidTimer = 4000;
+            else
+            {
+                m_uiGiantClawTentacleTimer -= uiDiff;
+            }
+
+            if (m_uiGiantEyeTentacleTimer < uiDiff)
+            {
+                // Summon 1 Giant Eye Tentacle every 60 seconds
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_IN_LOS))
+                {
+                    m_creature->SummonCreature(NPC_GIANT_EYE_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                }
+
+                m_uiGiantEyeTentacleTimer = 60000;
+            }
+            else
+            {
+                m_uiGiantEyeTentacleTimer -= uiDiff;
+            }
+
+            if (m_uiEyeTentacleTimer < uiDiff)
+            {
+                DoDespawnEyeTentacles();
+
+                // Spawn 8 Eye Tentacles every 30 seconds
+                float fX, fY, fZ;
+                for (uint8 i = 0; i < MAX_EYE_TENTACLES; ++i)
+                {
+                    m_creature->GetNearPoint(m_creature, fX, fY, fZ, 0, 30.0f, M_PI_F / 4 * i);
+                    m_creature->SummonCreature(NPC_EYE_TENTACLE, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                }
+
+                m_uiEyeTentacleTimer = 30000;
+            }
+            else
+            {
+                m_uiEyeTentacleTimer -= uiDiff;
+            }
+
+            // Note: this should be applied by the teleport spell
+            if (m_uiDigestiveAcidTimer < uiDiff)
+            {
+                // Iterate the Stomach players list and apply the Digesti acid debuff on them every 4 sec
+                for (GuidList::const_iterator itr = m_lPlayersInStomachList.begin(); itr != m_lPlayersInStomachList.end(); ++itr)
+                {
+                    if (Player* pPlayer = m_creature->GetMap()->GetPlayer(*itr))
+                    {
+                        pPlayer->CastSpell(pPlayer, SPELL_DIGESTIVE_ACID, true, NULL, NULL, m_creature->GetObjectGuid());
+                    }
+                }
+                m_uiDigestiveAcidTimer = 4000;
+            }
+            else
+            {
+                m_uiDigestiveAcidTimer -= uiDiff;
+            }
         }
-        else
-            { m_uiDigestiveAcidTimer -= uiDiff; }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_cthunAI(pCreature);
     }
 };
 
@@ -760,83 +800,98 @@ struct boss_cthunAI : public Scripted_NoMovementAI
 ## npc_giant_claw_tentacle
 ######*/
 
-struct npc_giant_claw_tentacleAI : public Scripted_NoMovementAI
+struct npc_giant_claw_tentacle : public CreatureScript
 {
-    npc_giant_claw_tentacleAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+    npc_giant_claw_tentacle() : CreatureScript("npc_giant_claw_tentacle") {}
+
+    struct npc_giant_claw_tentacleAI : public Scripted_NoMovementAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiThrashTimer;
-    uint32 m_uiHamstringTimer;
-    uint32 m_uiDistCheckTimer;
-
-    void Reset() override
-    {
-        m_uiHamstringTimer  = 2000;
-        m_uiThrashTimer     = 5000;
-        m_uiDistCheckTimer  = 5000;
-
-        DoCastSpellIfCan(m_creature, SPELL_GIANT_GROUND_RUPTURE);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Check if we have a target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        npc_giant_claw_tentacleAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        if (m_uiDistCheckTimer < uiDiff)
-        {
-            // If there is nobody in range, spawn a new tentacle at a new target location
-            if (!m_creature->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, uint32(0), SELECT_FLAG_IN_MELEE_RANGE) && m_pInstance)
-            {
-                if (Creature* pCthun = m_pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
-                {
-                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_NOT_IN_MELEE_RANGE))
-                    {
-                        pCthun->SummonCreature(NPC_GIANT_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+        ScriptedInstance* m_pInstance;
 
-                        // Self kill when a new tentacle is spawned
-                        m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
-                        return;
+        uint32 m_uiThrashTimer;
+        uint32 m_uiHamstringTimer;
+        uint32 m_uiDistCheckTimer;
+
+        void Reset() override
+        {
+            m_uiHamstringTimer = 2000;
+            m_uiThrashTimer = 5000;
+            m_uiDistCheckTimer = 5000;
+
+            DoCastSpellIfCan(m_creature, SPELL_GIANT_GROUND_RUPTURE);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            // Check if we have a target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiDistCheckTimer < uiDiff)
+            {
+                // If there is nobody in range, spawn a new tentacle at a new target location
+                if (!m_creature->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 0, uint32(0), SELECT_FLAG_IN_MELEE_RANGE) && m_pInstance)
+                {
+                    if (Creature* pCthun = m_pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
+                    {
+                        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_NOT_IN_MELEE_RANGE))
+                        {
+                            pCthun->SummonCreature(NPC_GIANT_CLAW_TENTACLE, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+
+                            // Self kill when a new tentacle is spawned
+                            m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
+                            return;
+                        }
                     }
+                }
+                else
+                {
+                    m_uiDistCheckTimer = 5000;
                 }
             }
             else
             {
-                m_uiDistCheckTimer = 5000;
+                m_uiDistCheckTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiDistCheckTimer -= uiDiff; }
 
-        if (m_uiThrashTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_THRASH) == CAST_OK)
+            if (m_uiThrashTimer < uiDiff)
             {
-                m_uiThrashTimer = 10000;
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_THRASH) == CAST_OK)
+                {
+                    m_uiThrashTimer = 10000;
+                }
             }
-        }
-        else
-            { m_uiThrashTimer -= uiDiff; }
-
-        if (m_uiHamstringTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_HAMSTRING) == CAST_OK)
+            else
             {
-                m_uiHamstringTimer = 10000;
+                m_uiThrashTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiHamstringTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+            if (m_uiHamstringTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_HAMSTRING) == CAST_OK)
+                {
+                    m_uiHamstringTimer = 10000;
+                }
+            }
+            else
+            {
+                m_uiHamstringTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_giant_claw_tentacleAI(pCreature);
     }
 };
 
@@ -844,83 +899,81 @@ struct npc_giant_claw_tentacleAI : public Scripted_NoMovementAI
 ## at_stomach_cthun
 ######*/
 
-bool AreaTrigger_at_stomach_cthun(Player* pPlayer, AreaTriggerEntry const* pAt)
+struct at_stomach_cthun : public AreaTriggerScript
 {
-    if (pAt->id == AREATRIGGER_STOMACH_1)
+    at_stomach_cthun() : AreaTriggerScript("at_stomach_cthun") {}
+
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* pAt) override
     {
-        if (pPlayer->isGameMaster() || !pPlayer->IsAlive())
+        if (pAt->id == AREATRIGGER_STOMACH_1)
         {
-            return false;
-        }
-
-        // Summon the exit trigger which should push the player outside the stomach - not used because missing eject spells
-        // if (!GetClosestCreatureWithEntry(pPlayer, NPC_EXIT_TRIGGER, 10.0f))
-        //    pPlayer->CastSpell(pPlayer, SPELL_EXIT_STOMACH, true);
-
-        // Note: because of the missing spell id 26224, we will use basic jump movement
-        // Disabled because of the missing jump effect
-        // pPlayer->GetMotionMaster()->MoveJump(afCthunLocations[3][0], afCthunLocations[3][1], afCthunLocations[3][2], pPlayer->GetSpeed(MOVE_RUN)*5, 0);
-
-        // Note: this should actually be handled by at_stomach_2!
-        if (ScriptedInstance* pInstance = (ScriptedInstance*)pPlayer->GetInstanceData())
-        {
-            if (Creature* pCthun = pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
+            if (pPlayer->isGameMaster() || !pPlayer->IsAlive())
             {
-                // Remove player from the Stomach
-                if (boss_cthunAI* pBossAI = dynamic_cast<boss_cthunAI*>(pCthun->AI()))
+                return false;
+            }
+
+            // Summon the exit trigger which should push the player outside the stomach - not used because missing eject spells
+            // if (!GetClosestCreatureWithEntry(pPlayer, NPC_EXIT_TRIGGER, 10.0f))
+            //    pPlayer->CastSpell(pPlayer, SPELL_EXIT_STOMACH, true);
+
+            // Note: because of the missing spell id 26224, we will use basic jump movement
+            // Disabled because of the missing jump effect
+            // pPlayer->GetMotionMaster()->MoveJump(afCthunLocations[3][0], afCthunLocations[3][1], afCthunLocations[3][2], pPlayer->GetSpeed(MOVE_RUN)*5, 0);
+
+            // Note: this should actually be handled by at_stomach_2!
+            if (ScriptedInstance* pInstance = (ScriptedInstance*)pPlayer->GetInstanceData())
+            {
+                if (Creature* pCthun = pInstance->GetSingleCreatureFromStorage(NPC_CTHUN))
                 {
-                    pBossAI->DoRemovePlayerFromStomach(pPlayer);
+                    // Remove player from the Stomach
+                    if (CreatureAI* pBossAI = pCthun->AI())
+                    {
+                        pBossAI->SendAIEvent(AI_EVENT_CUSTOM_A, pPlayer, pCthun);
+                    }
+
+                    // Teleport back to C'thun and remove the Digestive Acid
+                    pPlayer->RemoveAurasDueToSpell(SPELL_DIGESTIVE_ACID);
+                    pPlayer->NearTeleportTo(pCthun->GetPositionX(), pCthun->GetPositionY(), pCthun->GetPositionZ() + 15.0f, frand(0, 2 * M_PI_F));
+
+                    // Note: the real knockback spell id should be 26230
+                    pPlayer->CastSpell(pPlayer, SPELL_EXIT_STOMACH_KNOCKBACK, true, NULL, NULL, pCthun->GetObjectGuid());
                 }
-
-                // Teleport back to C'thun and remove the Digestive Acid
-                pPlayer->RemoveAurasDueToSpell(SPELL_DIGESTIVE_ACID);
-                pPlayer->NearTeleportTo(pCthun->GetPositionX(), pCthun->GetPositionY(), pCthun->GetPositionZ() + 15.0f, frand(0, 2 * M_PI_F));
-
-                // Note: the real knockback spell id should be 26230
-                pPlayer->CastSpell(pPlayer, SPELL_EXIT_STOMACH_KNOCKBACK, true, NULL, NULL, pCthun->GetObjectGuid());
             }
         }
+
+        return false;
     }
-
-    return false;
-}
-
-CreatureAI* GetAI_boss_eye_of_cthun(Creature* pCreature)
-{
-    return new boss_eye_of_cthunAI(pCreature);
-}
-
-CreatureAI* GetAI_boss_cthun(Creature* pCreature)
-{
-    return new boss_cthunAI(pCreature);
-}
-
-CreatureAI* GetAI_npc_giant_claw_tentacle(Creature* pCreature)
-{
-    return new npc_giant_claw_tentacleAI(pCreature);
-}
+};
 
 void AddSC_boss_cthun()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_eye_of_cthun();
+    s->RegisterSelf();
+    s = new boss_cthun();
+    s->RegisterSelf();
+    s = new npc_giant_claw_tentacle();
+    s->RegisterSelf();
+    s = new at_stomach_cthun();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_eye_of_cthun";
-    pNewScript->GetAI = &GetAI_boss_eye_of_cthun;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_eye_of_cthun";
+    //pNewScript->GetAI = &GetAI_boss_eye_of_cthun;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_cthun";
-    pNewScript->GetAI = &GetAI_boss_cthun;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_cthun";
+    //pNewScript->GetAI = &GetAI_boss_cthun;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_giant_claw_tentacle";
-    pNewScript->GetAI = &GetAI_npc_giant_claw_tentacle;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_giant_claw_tentacle";
+    //pNewScript->GetAI = &GetAI_npc_giant_claw_tentacle;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_stomach_cthun";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_stomach_cthun;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_stomach_cthun";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_stomach_cthun;
+    //pNewScript->RegisterSelf();
 }

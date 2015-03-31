@@ -35,60 +35,78 @@
 #include "precompiled.h"
 #include "onyxias_lair.h"
 
-instance_onyxias_lair::instance_onyxias_lair(Map* pMap) : ScriptedInstance(pMap)
+struct is_onyxias_lair : public InstanceScript
 {
-    Initialize();
-}
+    is_onyxias_lair() : InstanceScript("instance_onyxias_lair") {}
 
-void instance_onyxias_lair::Initialize()
-{
-    m_uiEncounter = NOT_STARTED;
-    m_tPhaseTwoStart = time(NULL);
-}
-
-bool instance_onyxias_lair::IsEncounterInProgress() const
-{
-    return m_uiEncounter == IN_PROGRESS || m_uiEncounter >= DATA_LIFTOFF;
-}
-
-void instance_onyxias_lair::OnCreatureCreate(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
+    class instance_onyxias_lair : public ScriptedInstance
     {
-        case NPC_ONYXIA_TRIGGER:
-            m_mNpcEntryGuidStore[NPC_ONYXIA_TRIGGER] = pCreature->GetObjectGuid();
-            break;
-    }
-}
+    public:
+        instance_onyxias_lair(Map* pMap) : ScriptedInstance(pMap)
+        {
+            Initialize();
+        }
 
-void instance_onyxias_lair::SetData(uint32 uiType, uint32 uiData)
-{
-    if (uiType != TYPE_ONYXIA)
+        ~instance_onyxias_lair() {}
+
+        void Initialize() override
+        {
+            m_uiEncounter = NOT_STARTED;
+            m_tPhaseTwoStart = time(NULL);
+        }
+
+        bool IsEncounterInProgress() const override
+        {
+            return m_uiEncounter == IN_PROGRESS || m_uiEncounter >= DATA_LIFTOFF;
+        }
+
+        void OnCreatureCreate(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+            case NPC_ONYXIA_TRIGGER:
+                m_mNpcEntryGuidStore[NPC_ONYXIA_TRIGGER] = pCreature->GetObjectGuid();
+                break;
+            }
+        }
+
+        void SetData(uint32 uiType, uint32 uiData) override
+        {
+            if (uiType != TYPE_ONYXIA)
+            {
+                return;
+            }
+
+            m_uiEncounter = uiData;
+
+            if (uiData == DATA_LIFTOFF)
+            {
+                m_tPhaseTwoStart = time(NULL);
+            }
+
+            // Currently no reason to save anything
+        }
+
+    protected:
+        uint32 m_uiEncounter;
+
+        time_t m_tPhaseTwoStart;
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
     {
-        return;
+        return new instance_onyxias_lair(pMap);
     }
-
-    m_uiEncounter = uiData;
-
-    if (uiData == DATA_LIFTOFF)
-    {
-        m_tPhaseTwoStart = time(NULL);
-    }
-
-    // Currently no reason to save anything
-}
-
-InstanceData* GetInstanceData_instance_onyxias_lair(Map* pMap)
-{
-    return new instance_onyxias_lair(pMap);
-}
+};
 
 void AddSC_instance_onyxias_lair()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new is_onyxias_lair();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "instance_onyxias_lair";
-    pNewScript->GetInstanceData = &GetInstanceData_instance_onyxias_lair;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "instance_onyxias_lair";
+    //pNewScript->GetInstanceData = &GetInstanceData_instance_onyxias_lair;
+    //pNewScript->RegisterSelf();
 }

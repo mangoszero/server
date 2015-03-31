@@ -72,134 +72,143 @@ enum
 
 static const uint32 aPossibleBreaths[MAX_BREATHS] = {SPELL_INCINERATE, SPELL_TIME_LAPSE, SPELL_CORROSIVE_ACID, SPELL_IGNITE_FLESH, SPELL_FROST_BURN};
 
-struct boss_chromaggusAI : public ScriptedAI
+struct boss_chromaggus : public CreatureScript
 {
-    boss_chromaggusAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_chromaggus() : CreatureScript("boss_chromaggus") {}
+
+    struct boss_chromaggusAI : public ScriptedAI
     {
-        // Select the 2 different breaths that we are going to use until despawned
-        // 5 possiblities for the first breath, 4 for the second, 20 total possiblites
-
-        // select two different numbers between 0..MAX_BREATHS-1
-        uint8 uiPos1 = urand(0, MAX_BREATHS - 1);
-        uint8 uiPos2 = (uiPos1 + urand(1, MAX_BREATHS - 1)) % MAX_BREATHS;
-
-        m_uiBreathOneSpell = aPossibleBreaths[uiPos1];
-        m_uiBreathTwoSpell = aPossibleBreaths[uiPos2];
-
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiBreathOneSpell;
-    uint32 m_uiBreathTwoSpell;
-    uint32 m_uiCurrentVulnerabilitySpell;
-
-    uint32 m_uiShimmerTimer;
-    uint32 m_uiBreathOneTimer;
-    uint32 m_uiBreathTwoTimer;
-    uint32 m_uiAfflictionTimer;
-    uint32 m_uiFrenzyTimer;
-    bool m_bEnraged;
-
-    void Reset() override
-    {
-        m_uiCurrentVulnerabilitySpell = 0;                  // We use this to store our last vulnerability spell so we can remove it later
-
-        m_uiShimmerTimer    = 0;                            // Time till we change vurlnerabilites
-        m_uiBreathOneTimer  = 30000;                        // First breath is 30 seconds
-        m_uiBreathTwoTimer  = 60000;                        // Second is 1 minute so that we can alternate
-        m_uiAfflictionTimer = 10000;                        // This is special - 5 seconds means that we cast this on 1 pPlayer every 5 sconds
-        m_uiFrenzyTimer     = 15000;
-
-        m_bEnraged          = false;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_chromaggusAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_CHROMAGGUS, IN_PROGRESS);
-        }
-    }
+            // Select the 2 different breaths that we are going to use until despawned
+            // 5 possiblities for the first breath, 4 for the second, 20 total possiblites
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_CHROMAGGUS, DONE);
-        }
-    }
+            // select two different numbers between 0..MAX_BREATHS-1
+            uint8 uiPos1 = urand(0, MAX_BREATHS - 1);
+            uint8 uiPos2 = (uiPos1 + urand(1, MAX_BREATHS - 1)) % MAX_BREATHS;
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_CHROMAGGUS, FAIL);
-        }
-    }
+            m_uiBreathOneSpell = aPossibleBreaths[uiPos1];
+            m_uiBreathTwoSpell = aPossibleBreaths[uiPos2];
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Shimmer Timer Timer
-        if (m_uiShimmerTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiBreathOneSpell;
+        uint32 m_uiBreathTwoSpell;
+        uint32 m_uiCurrentVulnerabilitySpell;
+
+        uint32 m_uiShimmerTimer;
+        uint32 m_uiBreathOneTimer;
+        uint32 m_uiBreathTwoTimer;
+        uint32 m_uiAfflictionTimer;
+        uint32 m_uiFrenzyTimer;
+        bool m_bEnraged;
+
+        void Reset() override
         {
-            // Remove old vulnerability spell
-            if (m_uiCurrentVulnerabilitySpell)
+            m_uiCurrentVulnerabilitySpell = 0;                  // We use this to store our last vulnerability spell so we can remove it later
+
+            m_uiShimmerTimer = 0;                            // Time till we change vurlnerabilites
+            m_uiBreathOneTimer = 30000;                        // First breath is 30 seconds
+            m_uiBreathTwoTimer = 60000;                        // Second is 1 minute so that we can alternate
+            m_uiAfflictionTimer = 10000;                        // This is special - 5 seconds means that we cast this on 1 pPlayer every 5 sconds
+            m_uiFrenzyTimer = 15000;
+
+            m_bEnraged = false;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
             {
-                m_creature->RemoveAurasDueToSpell(m_uiCurrentVulnerabilitySpell);
-            }
-
-            // Cast new random vurlnabilty on self
-            uint32 aSpellId[] = {SPELL_FIRE_VULNERABILITY, SPELL_FROST_VULNERABILITY, SPELL_SHADOW_VULNERABILITY, SPELL_NATURE_VULNERABILITY, SPELL_ARCANE_VULNERABILITY};
-            uint32 uiSpell = aSpellId[urand(0, 4)];
-
-            if (DoCastSpellIfCan(m_creature, uiSpell) == CAST_OK)
-            {
-                m_uiCurrentVulnerabilitySpell = uiSpell;
-
-                DoScriptText(EMOTE_SHIMMER, m_creature);
-                m_uiShimmerTimer = 45000;
+                m_pInstance->SetData(TYPE_CHROMAGGUS, IN_PROGRESS);
             }
         }
-        else
-            { m_uiShimmerTimer -= uiDiff; }
 
-        // Breath One Timer
-        if (m_uiBreathOneTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature, m_uiBreathOneSpell) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiBreathOneTimer = 60000;
+                m_pInstance->SetData(TYPE_CHROMAGGUS, DONE);
             }
         }
-        else
-            { m_uiBreathOneTimer -= uiDiff; }
 
-        // Breath Two Timer
-        if (m_uiBreathTwoTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (DoCastSpellIfCan(m_creature, m_uiBreathTwoSpell) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiBreathTwoTimer = 60000;
+                m_pInstance->SetData(TYPE_CHROMAGGUS, FAIL);
             }
         }
-        else
-            { m_uiBreathTwoTimer -= uiDiff; }
 
-        // Affliction Timer
-        if (m_uiAfflictionTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            uint32 m_uiSpellAfflict = 0;
-
-            switch (urand(0, 4))
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
+                return;
+            }
+
+            // Shimmer Timer Timer
+            if (m_uiShimmerTimer < uiDiff)
+            {
+                // Remove old vulnerability spell
+                if (m_uiCurrentVulnerabilitySpell)
+                {
+                    m_creature->RemoveAurasDueToSpell(m_uiCurrentVulnerabilitySpell);
+                }
+
+                // Cast new random vurlnabilty on self
+                uint32 aSpellId[] = { SPELL_FIRE_VULNERABILITY, SPELL_FROST_VULNERABILITY, SPELL_SHADOW_VULNERABILITY, SPELL_NATURE_VULNERABILITY, SPELL_ARCANE_VULNERABILITY };
+                uint32 uiSpell = aSpellId[urand(0, 4)];
+
+                if (DoCastSpellIfCan(m_creature, uiSpell) == CAST_OK)
+                {
+                    m_uiCurrentVulnerabilitySpell = uiSpell;
+
+                    DoScriptText(EMOTE_SHIMMER, m_creature);
+                    m_uiShimmerTimer = 45000;
+                }
+            }
+            else
+            {
+                m_uiShimmerTimer -= uiDiff;
+            }
+
+            // Breath One Timer
+            if (m_uiBreathOneTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, m_uiBreathOneSpell) == CAST_OK)
+                {
+                    m_uiBreathOneTimer = 60000;
+                }
+            }
+            else
+            {
+                m_uiBreathOneTimer -= uiDiff;
+            }
+
+            // Breath Two Timer
+            if (m_uiBreathTwoTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, m_uiBreathTwoSpell) == CAST_OK)
+                {
+                    m_uiBreathTwoTimer = 60000;
+                }
+            }
+            else
+            {
+                m_uiBreathTwoTimer -= uiDiff;
+            }
+
+            // Affliction Timer
+            if (m_uiAfflictionTimer < uiDiff)
+            {
+                uint32 m_uiSpellAfflict = 0;
+
+                switch (urand(0, 4))
+                {
                 case 0:
                     m_uiSpellAfflict = SPELL_BROODAF_BLUE;
                     break;
@@ -215,81 +224,88 @@ struct boss_chromaggusAI : public ScriptedAI
                 case 4:
                     m_uiSpellAfflict = SPELL_BROODAF_GREEN;
                     break;
-            }
+                }
 
-            GuidVector vGuids;
-            m_creature->FillGuidsListFromThreatList(vGuids);
-            for (GuidVector::const_iterator i = vGuids.begin(); i != vGuids.end(); ++i)
-            {
-                Unit* pUnit = m_creature->GetMap()->GetUnit(*i);
-
-                if (pUnit)
+                GuidVector vGuids;
+                m_creature->FillGuidsListFromThreatList(vGuids);
+                for (GuidVector::const_iterator i = vGuids.begin(); i != vGuids.end(); ++i)
                 {
-                    // Cast affliction
-                    DoCastSpellIfCan(pUnit, m_uiSpellAfflict, CAST_TRIGGERED);
+                    Unit* pUnit = m_creature->GetMap()->GetUnit(*i);
 
-                    // Chromatic mutation if target is effected by all afflictions
-                    if (pUnit->HasAura(SPELL_BROODAF_BLUE, EFFECT_INDEX_0)
-                        && pUnit->HasAura(SPELL_BROODAF_BLACK, EFFECT_INDEX_0)
-                        && pUnit->HasAura(SPELL_BROODAF_RED, EFFECT_INDEX_0)
-                        && pUnit->HasAura(SPELL_BROODAF_BRONZE, EFFECT_INDEX_0)
-                        && pUnit->HasAura(SPELL_BROODAF_GREEN, EFFECT_INDEX_0))
+                    if (pUnit)
                     {
-                        // target->RemoveAllAuras();
-                        // DoCastSpellIfCan(target,SPELL_CHROMATIC_MUT_1);
+                        // Cast affliction
+                        DoCastSpellIfCan(pUnit, m_uiSpellAfflict, CAST_TRIGGERED);
 
-                        // Chromatic mutation is causing issues
-                        // Assuming it is caused by a lack of core support for Charm
-                        // So instead we instant kill our target
-
-                        // WORKAROUND
-                        if (pUnit->GetTypeId() == TYPEID_PLAYER)
+                        // Chromatic mutation if target is effected by all afflictions
+                        if (pUnit->HasAura(SPELL_BROODAF_BLUE, EFFECT_INDEX_0)
+                            && pUnit->HasAura(SPELL_BROODAF_BLACK, EFFECT_INDEX_0)
+                            && pUnit->HasAura(SPELL_BROODAF_RED, EFFECT_INDEX_0)
+                            && pUnit->HasAura(SPELL_BROODAF_BRONZE, EFFECT_INDEX_0)
+                            && pUnit->HasAura(SPELL_BROODAF_GREEN, EFFECT_INDEX_0))
                         {
-                            m_creature->CastSpell(pUnit, 5, false);
+                            // target->RemoveAllAuras();
+                            // DoCastSpellIfCan(target,SPELL_CHROMATIC_MUT_1);
+
+                            // Chromatic mutation is causing issues
+                            // Assuming it is caused by a lack of core support for Charm
+                            // So instead we instant kill our target
+
+                            // WORKAROUND
+                            if (pUnit->GetTypeId() == TYPEID_PLAYER)
+                            {
+                                m_creature->CastSpell(pUnit, 5, false);
+                            }
                         }
                     }
                 }
+
+                m_uiAfflictionTimer = 10000;
             }
-
-            m_uiAfflictionTimer = 10000;
-        }
-        else
-            { m_uiAfflictionTimer -= uiDiff; }
-
-        // Frenzy Timer
-        if (m_uiFrenzyTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+            else
             {
-                DoScriptText(EMOTE_GENERIC_FRENZY_KILL, m_creature);
-                m_uiFrenzyTimer = urand(10000, 15000);
+                m_uiAfflictionTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiFrenzyTimer -= uiDiff; }
 
-        // Enrage if not already enraged and below 20%
-        if (!m_bEnraged && m_creature->GetHealthPercent() < 20.0f)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_ENRAGE);
-            m_bEnraged = true;
-        }
+            // Frenzy Timer
+            if (m_uiFrenzyTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+                {
+                    DoScriptText(EMOTE_GENERIC_FRENZY_KILL, m_creature);
+                    m_uiFrenzyTimer = urand(10000, 15000);
+                }
+            }
+            else
+            {
+                m_uiFrenzyTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // Enrage if not already enraged and below 20%
+            if (!m_bEnraged && m_creature->GetHealthPercent() < 20.0f)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_ENRAGE);
+                m_bEnraged = true;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_chromaggusAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_chromaggus(Creature* pCreature)
-{
-    return new boss_chromaggusAI(pCreature);
-}
-
 void AddSC_boss_chromaggus()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_chromaggus();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_chromaggus";
-    pNewScript->GetAI = &GetAI_boss_chromaggus;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_chromaggus";
+    //pNewScript->GetAI = &GetAI_boss_chromaggus;
+    //pNewScript->RegisterSelf();
 }

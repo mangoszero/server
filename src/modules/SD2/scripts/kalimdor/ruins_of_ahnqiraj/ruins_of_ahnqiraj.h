@@ -30,6 +30,7 @@ enum
 {
     MAX_ENCOUNTER               = 6,
     MAX_HELPERS                 = 5,
+    TYPE_SIGNAL                 = MAX_ENCOUNTER,
 
     TYPE_KURINNAXX              = 0,
     TYPE_RAJAXX                 = 1,
@@ -80,16 +81,6 @@ struct SpawnLocation
     float m_fX, m_fY, m_fZ, m_fO;
 };
 
-// Spawn coords for Andorov and his team
-static const SpawnLocation aAndorovSpawnLocs[MAX_HELPERS] =
-{
-    {NPC_GENERAL_ANDOROV, -8660.4f,  1510.29f, 32.449f,  2.2184f},
-    {NPC_KALDOREI_ELITE,  -8655.84f, 1509.78f, 32.462f,  2.33341f},
-    {NPC_KALDOREI_ELITE,  -8657.39f, 1506.28f, 32.418f,  2.33346f},
-    {NPC_KALDOREI_ELITE,  -8660.96f, 1504.9f,  32.1567f, 2.33306f},
-    {NPC_KALDOREI_ELITE,  -8664.45f, 1506.44f, 32.0944f, 2.33302f}
-};
-
 // Movement locations for Andorov
 static const SpawnLocation aAndorovMoveLocs[] =
 {
@@ -100,63 +91,4 @@ static const SpawnLocation aAndorovMoveLocs[] =
     {0, -8940.45f, 1550.69f, 21.616f},
 };
 
-struct SortingParameters
-{
-    uint32 m_uiEntry;
-    int32 m_uiYellEntry;
-    float m_fSearchDist;
-};
-
-static const SortingParameters aArmySortingParameters[MAX_ARMY_WAVES] =
-{
-    {NPC_CAPTAIN_QEEZ,   0,         20.0f},
-    {NPC_CAPTAIN_TUUBID, 0,         22.0f},
-    {NPC_CAPTAIN_DRENN,  SAY_WAVE3, 22.0f},
-    {NPC_CAPTAIN_XURREM, SAY_WAVE4, 22.0f},
-    {NPC_MAJOR_YEGGETH,  SAY_WAVE5, 20.0f},
-    {NPC_MAJOR_PAKKON,   SAY_WAVE6, 21.0f},
-    {NPC_COLONEL_ZERRAN, SAY_WAVE7, 17.0f},
-};
-
-class instance_ruins_of_ahnqiraj : public ScriptedInstance
-{
-    public:
-        instance_ruins_of_ahnqiraj(Map* pMap);
-        ~instance_ruins_of_ahnqiraj() {}
-
-        void Initialize() override;
-
-        // bool IsEncounterInProgress() const override;              // not active in AQ20
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnPlayerEnter(Player* pPlayer) override;
-
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        void GetKaldoreiGuidList(GuidList& lList) { lList = m_lKaldoreiGuidList; }
-
-        void Update(uint32 uiDiff) override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    private:
-        void DoSapwnAndorovIfCan();
-        void DoSortArmyWaves();
-        void DoSendNextArmyWave();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        GuidList m_lKaldoreiGuidList;
-        GuidSet m_sArmyWavesGuids[MAX_ARMY_WAVES];
-
-        uint32 m_uiArmyDelayTimer;
-        uint8 m_uiCurrentArmyWave;
-};
 #endif

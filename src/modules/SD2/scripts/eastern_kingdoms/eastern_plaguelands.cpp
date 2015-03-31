@@ -88,38 +88,42 @@ static const float aPeasantMoveLoc[3] = {3335.0f, -2994.04f, 161.14f};
 
 static const int32 aPeasantSpawnYells[3] = {SAY_PEASANT_APPEAR_1, SAY_PEASANT_APPEAR_2, SAY_PEASANT_APPEAR_3};
 
-struct npc_eris_havenfireAI : public ScriptedAI
+struct npc_eris_havenfire : public CreatureScript
 {
-    npc_eris_havenfireAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_eris_havenfire() : CreatureScript("npc_eris_havenfire") {}
 
-    uint32 m_uiEventTimer;
-    uint32 m_uiSadEndTimer;
-    uint8 m_uiPhase;
-    uint8 m_uiCurrentWave;
-    uint8 m_uiKillCounter;
-    uint8 m_uiSaveCounter;
-
-    ObjectGuid m_playerGuid;
-    GuidList m_lSummonedGuidList;
-
-    void Reset() override
+    struct npc_eris_havenfireAI : public ScriptedAI
     {
-        m_uiEventTimer      = 0;
-        m_uiSadEndTimer     = 0;
-        m_uiPhase           = 0;
-        m_uiCurrentWave     = 0;
-        m_uiKillCounter     = 0;
-        m_uiSaveCounter     = 0;
+        npc_eris_havenfireAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_playerGuid.Clear();
-        m_lSummonedGuidList.clear();
-        m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-    }
+        uint32 m_uiEventTimer;
+        uint32 m_uiSadEndTimer;
+        uint8 m_uiPhase;
+        uint8 m_uiCurrentWave;
+        uint8 m_uiKillCounter;
+        uint8 m_uiSaveCounter;
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        ObjectGuid m_playerGuid;
+        GuidList m_lSummonedGuidList;
+
+        void Reset() override
         {
+            m_uiEventTimer = 0;
+            m_uiSadEndTimer = 0;
+            m_uiPhase = 0;
+            m_uiCurrentWave = 0;
+            m_uiKillCounter = 0;
+            m_uiSaveCounter = 0;
+
+            m_playerGuid.Clear();
+            m_lSummonedGuidList.clear();
+            m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_INJURED_PEASANT:
             case NPC_PLAGUED_PEASANT:
                 float fX, fY, fZ;
@@ -137,163 +141,163 @@ struct npc_eris_havenfireAI : public ScriptedAI
             case NPC_SCOURGE_ARCHER:
                 // ToDo: make these ones attack the peasants
                 break;
-        }
-
-        m_lSummonedGuidList.push_back(pSummoned->GetObjectGuid());
-    }
-
-    void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
-    {
-        if (uiMotionType != POINT_MOTION_TYPE || !uiPointId)
-        {
-            return;
-        }
-
-        if (uiPointId)
-        {
-            ++m_uiSaveCounter;
-            pSummoned->GetMotionMaster()->Clear();
-
-            pSummoned->RemoveAllAuras();
-            pSummoned->CastSpell(pSummoned, SPELL_ENTER_THE_LIGHT_DND, false);
-            pSummoned->ForcedDespawn(10000);
-
-            // Event ended
-            if (m_uiSaveCounter >= 50 && m_uiCurrentWave == 5)
-            {
-                DoBalanceEventEnd();
             }
-            // Phase ended
-            else if (m_uiSaveCounter + m_uiKillCounter == m_uiCurrentWave * MAX_PEASANTS)
-            {
-                DoHandlePhaseEnd();
-            }
+
+            m_lSummonedGuidList.push_back(pSummoned->GetObjectGuid());
         }
-    }
 
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_INJURED_PEASANT || pSummoned->GetEntry() == NPC_PLAGUED_PEASANT)
+        void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
         {
-            ++m_uiKillCounter;
-
-            // If more than 15 peasants have died, then fail the quest
-            if (m_uiKillCounter == MAX_PEASANTS)
+            if (uiMotionType != POINT_MOTION_TYPE || !uiPointId)
             {
-                if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
+                return;
+            }
+
+            if (uiPointId)
+            {
+                ++m_uiSaveCounter;
+                pSummoned->GetMotionMaster()->Clear();
+
+                pSummoned->RemoveAllAuras();
+                pSummoned->CastSpell(pSummoned, SPELL_ENTER_THE_LIGHT_DND, false);
+                pSummoned->ForcedDespawn(10000);
+
+                // Event ended
+                if (m_uiSaveCounter >= 50 && m_uiCurrentWave == 5)
                 {
-                    pPlayer->FailQuest(QUEST_BALANCE_OF_LIGHT_AND_SHADOW);
+                    DoBalanceEventEnd();
                 }
-
-                DoScriptText(SAY_EVENT_FAIL_1, m_creature);
-                m_uiSadEndTimer = 4000;
-            }
-            else if (m_uiSaveCounter + m_uiKillCounter == m_uiCurrentWave * MAX_PEASANTS)
-            {
-                DoHandlePhaseEnd();
+                // Phase ended
+                else if (m_uiSaveCounter + m_uiKillCounter == m_uiCurrentWave * MAX_PEASANTS)
+                {
+                    DoHandlePhaseEnd();
+                }
             }
         }
-    }
 
-    void DoSummonWave(uint32 uiSummonId = 0)
-    {
-        float fX, fY, fZ;
-
-        if (!uiSummonId)
+        void SummonedCreatureJustDied(Creature* pSummoned) override
         {
-            for (uint8 i = 0; i < MAX_PEASANTS; ++i)
+            if (pSummoned->GetEntry() == NPC_INJURED_PEASANT || pSummoned->GetEntry() == NPC_PLAGUED_PEASANT)
             {
-                uint32 uiSummonEntry = roll_chance_i(70) ? NPC_INJURED_PEASANT : NPC_PLAGUED_PEASANT;
-                m_creature->GetRandomPoint(aPeasantSpawnLoc[0], aPeasantSpawnLoc[1], aPeasantSpawnLoc[2], 10.0f, fX, fY, fZ);
-                if (Creature* pTemp = m_creature->SummonCreature(uiSummonEntry, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0))
+                ++m_uiKillCounter;
+
+                // If more than 15 peasants have died, then fail the quest
+                if (m_uiKillCounter == MAX_PEASANTS)
                 {
-                    // Only the first mob needs to yell
-                    if (!i)
+                    if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
                     {
-                        DoScriptText(aPeasantSpawnYells[urand(0, 2)], pTemp);
+                        pPlayer->FailQuest(QUEST_BALANCE_OF_LIGHT_AND_SHADOW);
+                    }
+
+                    DoScriptText(SAY_EVENT_FAIL_1, m_creature);
+                    m_uiSadEndTimer = 4000;
+                }
+                else if (m_uiSaveCounter + m_uiKillCounter == m_uiCurrentWave * MAX_PEASANTS)
+                {
+                    DoHandlePhaseEnd();
+                }
+            }
+        }
+
+        void DoSummonWave(uint32 uiSummonId = 0)
+        {
+            float fX, fY, fZ;
+
+            if (!uiSummonId)
+            {
+                for (uint8 i = 0; i < MAX_PEASANTS; ++i)
+                {
+                    uint32 uiSummonEntry = roll_chance_i(70) ? NPC_INJURED_PEASANT : NPC_PLAGUED_PEASANT;
+                    m_creature->GetRandomPoint(aPeasantSpawnLoc[0], aPeasantSpawnLoc[1], aPeasantSpawnLoc[2], 10.0f, fX, fY, fZ);
+                    if (Creature* pTemp = m_creature->SummonCreature(uiSummonEntry, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0))
+                    {
+                        // Only the first mob needs to yell
+                        if (!i)
+                        {
+                            DoScriptText(aPeasantSpawnYells[urand(0, 2)], pTemp);
+                        }
                     }
                 }
+
+                ++m_uiCurrentWave;
             }
-
-            ++m_uiCurrentWave;
-        }
-        else if (uiSummonId == NPC_SCOURGE_FOOTSOLDIER)
-        {
-            uint8 uiRand = urand(2, 3);
-            for (uint8 i = 0; i < uiRand; ++i)
+            else if (uiSummonId == NPC_SCOURGE_FOOTSOLDIER)
             {
-                m_creature->GetRandomPoint(aPeasantSpawnLoc[0], aPeasantSpawnLoc[1], aPeasantSpawnLoc[2], 15.0f, fX, fY, fZ);
-                m_creature->SummonCreature(NPC_SCOURGE_FOOTSOLDIER, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-            }
-        }
-        else if (uiSummonId == NPC_SCOURGE_ARCHER)
-        {
-            for (uint8 i = 0; i < MAX_ARCHERS; ++i)
-            {
-                m_creature->SummonCreature(NPC_SCOURGE_ARCHER, aArcherSpawn[i][0], aArcherSpawn[i][1], aArcherSpawn[i][2], aArcherSpawn[i][3], TEMPSUMMON_DEAD_DESPAWN, 0);
-            }
-        }
-    }
-
-    void DoHandlePhaseEnd()
-    {
-        if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
-        {
-            pPlayer->CastSpell(pPlayer, SPELL_BLESSING_OF_NORDRASSIL, true);
-        }
-
-        DoScriptText(SAY_PHASE_HEAL, m_creature);
-
-        // Send next wave
-        if (m_uiCurrentWave < 5)
-        {
-            DoSummonWave();
-        }
-    }
-
-    void DoStartBalanceEvent(Player* pPlayer)
-    {
-        m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-        m_playerGuid = pPlayer->GetObjectGuid();
-        m_uiEventTimer = 5000;
-    }
-
-    void DoBalanceEventEnd()
-    {
-        if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
-        {
-            pPlayer->AreaExploredOrEventHappens(QUEST_BALANCE_OF_LIGHT_AND_SHADOW);
-        }
-
-        DoScriptText(SAY_EVENT_END, m_creature);
-        DoDespawnSummons(true);
-        EnterEvadeMode();
-    }
-
-    void DoDespawnSummons(bool bIsEventEnd = false)
-    {
-        for (GuidList::const_iterator itr = m_lSummonedGuidList.begin(); itr != m_lSummonedGuidList.end(); ++itr)
-        {
-            if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
-            {
-                if (bIsEventEnd && (pTemp->GetEntry() == NPC_INJURED_PEASANT || pTemp->GetEntry() == NPC_PLAGUED_PEASANT))
+                uint8 uiRand = urand(2, 3);
+                for (uint8 i = 0; i < uiRand; ++i)
                 {
-                    continue;
+                    m_creature->GetRandomPoint(aPeasantSpawnLoc[0], aPeasantSpawnLoc[1], aPeasantSpawnLoc[2], 15.0f, fX, fY, fZ);
+                    m_creature->SummonCreature(NPC_SCOURGE_FOOTSOLDIER, fX, fY, fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
                 }
-
-                pTemp->ForcedDespawn();
+            }
+            else if (uiSummonId == NPC_SCOURGE_ARCHER)
+            {
+                for (uint8 i = 0; i < MAX_ARCHERS; ++i)
+                {
+                    m_creature->SummonCreature(NPC_SCOURGE_ARCHER, aArcherSpawn[i][0], aArcherSpawn[i][1], aArcherSpawn[i][2], aArcherSpawn[i][3], TEMPSUMMON_DEAD_DESPAWN, 0);
+                }
             }
         }
-    }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiEventTimer)
+        void DoHandlePhaseEnd()
         {
-            if (m_uiEventTimer <= uiDiff)
+            if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
             {
-                switch (m_uiPhase)
+                pPlayer->CastSpell(pPlayer, SPELL_BLESSING_OF_NORDRASSIL, true);
+            }
+
+            DoScriptText(SAY_PHASE_HEAL, m_creature);
+
+            // Send next wave
+            if (m_uiCurrentWave < 5)
+            {
+                DoSummonWave();
+            }
+        }
+
+        void DoStartBalanceEvent(Player* pPlayer)
+        {
+            m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
+            m_playerGuid = pPlayer->GetObjectGuid();
+            m_uiEventTimer = 5000;
+        }
+
+        void DoBalanceEventEnd()
+        {
+            if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
+            {
+                pPlayer->AreaExploredOrEventHappens(QUEST_BALANCE_OF_LIGHT_AND_SHADOW);
+            }
+
+            DoScriptText(SAY_EVENT_END, m_creature);
+            DoDespawnSummons(true);
+            EnterEvadeMode();
+        }
+
+        void DoDespawnSummons(bool bIsEventEnd = false)
+        {
+            for (GuidList::const_iterator itr = m_lSummonedGuidList.begin(); itr != m_lSummonedGuidList.end(); ++itr)
+            {
+                if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
                 {
+                    if (bIsEventEnd && (pTemp->GetEntry() == NPC_INJURED_PEASANT || pTemp->GetEntry() == NPC_PLAGUED_PEASANT))
+                    {
+                        continue;
+                    }
+
+                    pTemp->ForcedDespawn();
+                }
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiEventTimer)
+            {
+                if (m_uiEventTimer <= uiDiff)
+                {
+                    switch (m_uiPhase)
+                    {
                     case 0:
                         DoSummonWave(NPC_SCOURGE_ARCHER);
                         m_uiEventTimer = 5000;
@@ -307,58 +311,62 @@ struct npc_eris_havenfireAI : public ScriptedAI
                         DoSummonWave(NPC_SCOURGE_FOOTSOLDIER);
                         m_uiEventTimer = urand(5000, 30000);
                         break;
+                    }
+                    ++m_uiPhase;
                 }
-                ++m_uiPhase;
+                else
+                {
+                    m_uiEventTimer -= uiDiff;
+                }
             }
-            else
+
+            // Handle event end in case of fail
+            if (m_uiSadEndTimer)
             {
-                m_uiEventTimer -= uiDiff;
+                if (m_uiSadEndTimer <= uiDiff)
+                {
+                    DoScriptText(SAY_EVENT_FAIL_2, m_creature);
+                    m_creature->ForcedDespawn(5000);
+                    DoDespawnSummons();
+                    m_uiSadEndTimer = 0;
+                }
+                else
+                {
+                    m_uiSadEndTimer -= uiDiff;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_eris_havenfireAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_BALANCE_OF_LIGHT_AND_SHADOW)
+        {
+            if (npc_eris_havenfireAI* pErisAI = dynamic_cast<npc_eris_havenfireAI*>(pCreature->AI()))
+            {
+                pErisAI->DoStartBalanceEvent(pPlayer);
+                return true;
             }
         }
 
-        // Handle event end in case of fail
-        if (m_uiSadEndTimer)
-        {
-            if (m_uiSadEndTimer <= uiDiff)
-            {
-                DoScriptText(SAY_EVENT_FAIL_2, m_creature);
-                m_creature->ForcedDespawn(5000);
-                DoDespawnSummons();
-                m_uiSadEndTimer = 0;
-            }
-            else
-            {
-                m_uiSadEndTimer -= uiDiff;
-            }
-        }
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_eris_havenfire(Creature* pCreature)
-{
-    return new npc_eris_havenfireAI(pCreature);
-}
-
-bool QuestAccept_npc_eris_havenfire(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_BALANCE_OF_LIGHT_AND_SHADOW)
-    {
-        if (npc_eris_havenfireAI* pErisAI = dynamic_cast<npc_eris_havenfireAI*>(pCreature->AI()))
-        {
-            pErisAI->DoStartBalanceEvent(pPlayer);
-        }
-    }
-
-    return true;
-}
-
 void AddSC_eastern_plaguelands()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_eris_havenfire();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_eris_havenfire";
-    pNewScript->GetAI = &GetAI_npc_eris_havenfire;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_eris_havenfire;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_eris_havenfire";
+    //pNewScript->GetAI = &GetAI_npc_eris_havenfire;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_eris_havenfire;
+    //pNewScript->RegisterSelf();
 }

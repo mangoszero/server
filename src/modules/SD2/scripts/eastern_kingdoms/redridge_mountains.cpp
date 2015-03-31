@@ -59,32 +59,36 @@ enum
     SAY_CORPORAL_KEESHAN_5  = -1000565,
 };
 
-struct npc_corporal_keeshan_escortAI : public npc_escortAI
+struct npc_corporal_keeshan_escort : public CreatureScript
 {
-    npc_corporal_keeshan_escortAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_corporal_keeshan_escort() : CreatureScript("npc_corporal_keeshan") {}
 
-    uint32 m_uiMockingBlowTimer;
-    uint32 m_uiShieldBashTimer;
-
-    void Reset() override
+    struct npc_corporal_keeshan_escortAI : public npc_escortAI
     {
-        m_uiMockingBlowTimer = 5000;
-        m_uiShieldBashTimer  = 8000;
-    }
+        npc_corporal_keeshan_escortAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+        uint32 m_uiMockingBlowTimer;
+        uint32 m_uiShieldBashTimer;
+
+        void Reset() override
         {
-            DoScriptText(SAY_CORPORAL_KEESHAN_1, m_creature);
-            Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
+            m_uiMockingBlowTimer = 5000;
+            m_uiShieldBashTimer = 8000;
         }
-    }
 
-    void WaypointStart(uint32 uiWP) override
-    {
-        switch (uiWP)
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
         {
+            if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+            {
+                DoScriptText(SAY_CORPORAL_KEESHAN_1, m_creature);
+                Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
+            }
+        }
+
+        void WaypointStart(uint32 uiWP) override
+        {
+            switch (uiWP)
+            {
             case 27:                                        // break outside
                 DoScriptText(SAY_CORPORAL_KEESHAN_3, m_creature);
                 m_creature->SetStandState(UNIT_STAND_STATE_STAND);
@@ -92,13 +96,13 @@ struct npc_corporal_keeshan_escortAI : public npc_escortAI
             case 54:                                        // say goodbye
                 DoScriptText(SAY_CORPORAL_KEESHAN_5, m_creature);
                 break;
+            }
         }
-    }
 
-    void WaypointReached(uint32 uiWP) override
-    {
-        switch (uiWP)
+        void WaypointReached(uint32 uiWP) override
         {
+            switch (uiWP)
+            {
             case 26:                                        // break outside
                 m_creature->SetStandState(UNIT_STAND_STATE_SIT);
                 DoScriptText(SAY_CORPORAL_KEESHAN_2, m_creature);
@@ -110,59 +114,67 @@ struct npc_corporal_keeshan_escortAI : public npc_escortAI
                     pPlayer->GroupEventHappens(QUEST_MISSING_IN_ACTION, m_creature);
                 }
                 break;
+            }
         }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            // Combat check
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiMockingBlowTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_MOCKING_BLOW);
+                m_uiMockingBlowTimer = 5000;
+            }
+            else
+            {
+                m_uiMockingBlowTimer -= uiDiff;
+            }
+
+            if (m_uiShieldBashTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHIELD_BASH);
+                m_uiShieldBashTimer = 8000;
+            }
+            else
+            {
+                m_uiShieldBashTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_corporal_keeshan_escortAI(pCreature);
     }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        // Combat check
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        if (pQuest->GetQuestId() == QUEST_MISSING_IN_ACTION)
         {
-            return;
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
+            return true;
         }
 
-        if (m_uiMockingBlowTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_MOCKING_BLOW);
-            m_uiMockingBlowTimer = 5000;
-        }
-        else
-            { m_uiMockingBlowTimer -= uiDiff; }
-
-        if (m_uiShieldBashTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHIELD_BASH);
-            m_uiShieldBashTimer = 8000;
-        }
-        else
-            { m_uiShieldBashTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_corporal_keeshan(Creature* pCreature)
-{
-    return new npc_corporal_keeshan_escortAI(pCreature);
-}
-
-bool QuestAccept_npc_corporal_keeshan(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_MISSING_IN_ACTION)
-    {
-        pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
-    }
-
-    return true;
-}
-
 void AddSC_redridge_mountains()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_corporal_keeshan_escort();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_corporal_keeshan";
-    pNewScript->GetAI = &GetAI_npc_corporal_keeshan;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_corporal_keeshan;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_corporal_keeshan";
+    //pNewScript->GetAI = &GetAI_npc_corporal_keeshan;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_corporal_keeshan;
+    //pNewScript->RegisterSelf();
 }

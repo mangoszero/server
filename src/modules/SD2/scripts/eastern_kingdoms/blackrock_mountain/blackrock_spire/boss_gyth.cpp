@@ -49,119 +49,131 @@ enum
     SPELL_KNOCK_AWAY        = 10101,
 };
 
-struct boss_gythAI : public ScriptedAI
+struct boss_gyth : public CreatureScript
 {
-    boss_gythAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_gyth() : CreatureScript("boss_gyth") {}
+
+    struct boss_gythAI : public ScriptedAI
     {
-        m_pInstance = (instance_blackrock_spire*) pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_blackrock_spire* m_pInstance;
-
-    uint32 uiCorrosiveAcidTimer;
-    uint32 uiFreezeTimer;
-    uint32 uiFlamebreathTimer;
-
-    bool m_bSummonedRend;
-    bool m_bHasChromaticChaos;
-
-    void Reset() override
-    {
-        uiCorrosiveAcidTimer = 8000;
-        uiFreezeTimer        = 11000;
-        uiFlamebreathTimer   = 4000;
-        m_bSummonedRend      = false;
-        m_bHasChromaticChaos = false;
-
-        DoCastSpellIfCan(m_creature, SPELL_REND_MOUNTS);
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        DoScriptText(EMOTE_KNOCKED_OFF, pSummoned);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        boss_gythAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Chromatic Chaos at 50%
-        if (!m_bHasChromaticChaos && m_creature->GetHealthPercent() < 50.0f)
+        ScriptedInstance* m_pInstance;
+
+        uint32 uiCorrosiveAcidTimer;
+        uint32 uiFreezeTimer;
+        uint32 uiFlamebreathTimer;
+
+        bool m_bSummonedRend;
+        bool m_bHasChromaticChaos;
+
+        void Reset() override
         {
-            if (m_pInstance)
+            uiCorrosiveAcidTimer = 8000;
+            uiFreezeTimer = 11000;
+            uiFlamebreathTimer = 4000;
+            m_bSummonedRend = false;
+            m_bHasChromaticChaos = false;
+
+            DoCastSpellIfCan(m_creature, SPELL_REND_MOUNTS);
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            DoScriptText(EMOTE_KNOCKED_OFF, pSummoned);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                if (Creature* pNefarius = m_pInstance->GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+                return;
+            }
+
+            // Chromatic Chaos at 50%
+            if (!m_bHasChromaticChaos && m_creature->GetHealthPercent() < 50.0f)
+            {
+                if (m_pInstance)
                 {
-                    pNefarius->CastSpell(m_creature, SPELL_CHROMATIC_CHAOS, true);
-                    DoScriptText(SAY_NEFARIUS_BUFF_GYTH, pNefarius);
-                    m_bHasChromaticChaos = true;
+                    if (Creature* pNefarius = m_pInstance->GetSingleCreatureFromStorage(NPC_LORD_VICTOR_NEFARIUS))
+                    {
+                        pNefarius->CastSpell(m_creature, SPELL_CHROMATIC_CHAOS, true);
+                        DoScriptText(SAY_NEFARIUS_BUFF_GYTH, pNefarius);
+                        m_bHasChromaticChaos = true;
+                    }
                 }
             }
-        }
 
-        // CorrosiveAcid_Timer
-        if (uiCorrosiveAcidTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_CORROSIVE_ACID) == CAST_OK)
+            // CorrosiveAcid_Timer
+            if (uiCorrosiveAcidTimer < uiDiff)
             {
-                uiCorrosiveAcidTimer = 7000;
+                if (DoCastSpellIfCan(m_creature, SPELL_CORROSIVE_ACID) == CAST_OK)
+                {
+                    uiCorrosiveAcidTimer = 7000;
+                }
             }
-        }
-        else
-            { uiCorrosiveAcidTimer -= uiDiff; }
-
-        // Freeze_Timer
-        if (uiFreezeTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FREEZE) == CAST_OK)
+            else
             {
-                uiFreezeTimer = 16000;
+                uiCorrosiveAcidTimer -= uiDiff;
             }
-        }
-        else
-            { uiFreezeTimer -= uiDiff; }
 
-        // Flamebreath_Timer
-        if (uiFlamebreathTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FLAME_BREATH) == CAST_OK)
+            // Freeze_Timer
+            if (uiFreezeTimer < uiDiff)
             {
-                uiFlamebreathTimer = 10500;
+                if (DoCastSpellIfCan(m_creature, SPELL_FREEZE) == CAST_OK)
+                {
+                    uiFreezeTimer = 16000;
+                }
             }
-        }
-        else
-            { uiFlamebreathTimer -= uiDiff; }
-
-        // Summon Rend
-        if (!m_bSummonedRend && m_creature->GetHealthPercent() < 11.0f)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_REND) == CAST_OK)
+            else
             {
-                m_creature->RemoveAurasDueToSpell(SPELL_REND_MOUNTS);
-                m_bSummonedRend = true;
+                uiFreezeTimer -= uiDiff;
             }
-        }
 
-        DoMeleeAttackIfReady();
+            // Flamebreath_Timer
+            if (uiFlamebreathTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FLAME_BREATH) == CAST_OK)
+                {
+                    uiFlamebreathTimer = 10500;
+                }
+            }
+            else
+            {
+                uiFlamebreathTimer -= uiDiff;
+            }
+
+            // Summon Rend
+            if (!m_bSummonedRend && m_creature->GetHealthPercent() < 11.0f)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_REND) == CAST_OK)
+                {
+                    m_creature->RemoveAurasDueToSpell(SPELL_REND_MOUNTS);
+                    m_bSummonedRend = true;
+                }
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_gythAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_gyth(Creature* pCreature)
-{
-    return new boss_gythAI(pCreature);
-}
-
 void AddSC_boss_gyth()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_gyth();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_gyth";
-    pNewScript->GetAI = &GetAI_boss_gyth;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_gyth";
+    //pNewScript->GetAI = &GetAI_boss_gyth;
+    //pNewScript->RegisterSelf();
 }

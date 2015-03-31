@@ -59,26 +59,31 @@ enum
     EMOTE_PROGRESS_8        = -1000272,
     SAY_PROGRESS_9          = -1000273,
 
-    QUEST_SUNKEN_TREASURE   = 665,    ENTRY_VENGEFUL_SURGE    = 2776
+    QUEST_SUNKEN_TREASURE   = 665,
+    ENTRY_VENGEFUL_SURGE    = 2776
 };
 
-struct npc_professor_phizzlethorpeAI : public npc_escortAI
+struct npc_professor_phizzlethorpe : public CreatureScript
 {
-    npc_professor_phizzlethorpeAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_professor_phizzlethorpe() : CreatureScript("npc_professor_phizzlethorpe") {}
 
-    void Reset() override { }
-
-    void WaypointReached(uint32 uiPointId) override
+    struct npc_professor_phizzlethorpeAI : public npc_escortAI
     {
-        Player* pPlayer = GetPlayerForEscort();
+        npc_professor_phizzlethorpeAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-        if (!pPlayer)
-        {
-            return;
-        }
+        void Reset() override { }
 
-        switch (uiPointId)
+        void WaypointReached(uint32 uiPointId) override
         {
+            Player* pPlayer = GetPlayerForEscort();
+
+            if (!pPlayer)
+            {
+                return;
+            }
+
+            switch (uiPointId)
+            {
             case 4:
                 DoScriptText(SAY_PROGRESS_2, m_creature, pPlayer);
                 break;
@@ -107,39 +112,40 @@ struct npc_professor_phizzlethorpeAI : public npc_escortAI
                 DoScriptText(SAY_PROGRESS_9, m_creature, pPlayer);
                 pPlayer->GroupEventHappens(QUEST_SUNKEN_TREASURE, m_creature);
                 break;
+            }
         }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            DoScriptText(SAY_AGGRO, m_creature);
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            pSummoned->AI()->AttackStart(m_creature);
+        }
+    };
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_SUNKEN_TREASURE)
+        {
+            pCreature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+            DoScriptText(SAY_PROGRESS_1, pCreature, pPlayer);
+
+            if (npc_professor_phizzlethorpeAI* pEscortAI = dynamic_cast<npc_professor_phizzlethorpeAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(false, pPlayer, pQuest, true);
+            }
+        }
+        return true;
     }
 
-    void Aggro(Unit* /*pWho*/) override
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        DoScriptText(SAY_AGGRO, m_creature);
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        pSummoned->AI()->AttackStart(m_creature);
+        return new npc_professor_phizzlethorpeAI(pCreature);
     }
 };
-
-bool QuestAccept_npc_professor_phizzlethorpe(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_SUNKEN_TREASURE)
-    {
-        pCreature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-        DoScriptText(SAY_PROGRESS_1, pCreature, pPlayer);
-
-        if (npc_professor_phizzlethorpeAI* pEscortAI = dynamic_cast<npc_professor_phizzlethorpeAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(false, pPlayer, pQuest, true);
-        }
-    }
-    return true;
-}
-
-CreatureAI* GetAI_npc_professor_phizzlethorpe(Creature* pCreature)
-{
-    return new npc_professor_phizzlethorpeAI(pCreature);
-}
 
 /*######
 ## npc_kinelory
@@ -167,23 +173,27 @@ enum
     QUEST_HINTS_NEW_PLAGUE  = 660
 };
 
-struct npc_kineloryAI : public npc_escortAI
+struct npc_kinelory : public CreatureScript
 {
-    npc_kineloryAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_kinelory() : CreatureScript("npc_kinelory") {}
 
-    uint32 m_uiBearFormTimer;
-    uint32 m_uiHealTimer;
-
-    void Reset() override
+    struct npc_kineloryAI : public npc_escortAI
     {
-        m_uiBearFormTimer = urand(5000, 7000);
-        m_uiHealTimer     = urand(2000, 5000);
-    }
+        npc_kineloryAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        uint32 m_uiBearFormTimer;
+        uint32 m_uiHealTimer;
+
+        void Reset() override
         {
+            m_uiBearFormTimer = urand(5000, 7000);
+            m_uiHealTimer = urand(2000, 5000);
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            switch (uiPointId)
+            {
             case 9:
                 DoScriptText(SAY_REACH_BOTTOM, m_creature);
                 break;
@@ -197,7 +207,9 @@ struct npc_kineloryAI : public npc_escortAI
             case 18:
                 DoScriptText(SAY_ESCAPE, m_creature);
                 if (Player* pPlayer = GetPlayerForEscort())
-                    { m_creature->SetFacingToObject(pPlayer); }
+                {
+                    m_creature->SetFacingToObject(pPlayer);
+                }
                 SetRun();
                 break;
             case 33:
@@ -210,82 +222,106 @@ struct npc_kineloryAI : public npc_escortAI
                 break;
             case 34:
                 if (Player* pPlayer = GetPlayerForEscort())
-                    { pPlayer->GroupEventHappens(QUEST_HINTS_NEW_PLAGUE, m_creature); }
+                {
+                    pPlayer->GroupEventHappens(QUEST_HINTS_NEW_PLAGUE, m_creature);
+                }
                 break;
-        }
-    }
-
-    void Aggro(Unit* pWho) override
-    {
-        if (pWho->GetEntry() == NPC_JORELL)
-            { DoScriptText(SAY_AGGRO_JORELL, pWho, m_creature); }
-        else if (roll_chance_i(10))
-            { DoScriptText(SAY_AGGRO_KINELORY, m_creature); }
-    }
-
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
-        {
-            DoScriptText(SAY_START, m_creature);
-            Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue), true);
-        }
-    }
-
-    void UpdateEscortAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            { return; }
-
-        if (m_uiBearFormTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_BEAR_FORM) == CAST_OK)
-                { m_uiBearFormTimer = urand(25000, 30000); }
-        }
-        else
-            { m_uiBearFormTimer -= uiDiff; }
-
-        if (m_uiHealTimer < uiDiff)
-        {
-            if (Unit* pTarget = DoSelectLowestHpFriendly(40.0f))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_REJUVENATION) == CAST_OK)
-                    { m_uiHealTimer = urand(15000, 25000); }
             }
         }
-        else
-            { m_uiHealTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+        void Aggro(Unit* pWho) override
+        {
+            if (pWho->GetEntry() == NPC_JORELL)
+            {
+                DoScriptText(SAY_AGGRO_JORELL, pWho, m_creature);
+            }
+            else if (roll_chance_i(10))
+            {
+                DoScriptText(SAY_AGGRO_KINELORY, m_creature);
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
+        {
+            if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+            {
+                DoScriptText(SAY_START, m_creature);
+                Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue), true);
+            }
+        }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiBearFormTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_BEAR_FORM) == CAST_OK)
+                {
+                    m_uiBearFormTimer = urand(25000, 30000);
+                }
+            }
+            else
+            {
+                m_uiBearFormTimer -= uiDiff;
+            }
+
+            if (m_uiHealTimer < uiDiff)
+            {
+                if (Unit* pTarget = DoSelectLowestHpFriendly(40.0f))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_REJUVENATION) == CAST_OK)
+                    {
+                        m_uiHealTimer = urand(15000, 25000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiHealTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_kineloryAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_HINTS_NEW_PLAGUE)
+        {
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
+            return true;
+        }
+
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_kinelory(Creature* pCreature)
-{
-    return new npc_kineloryAI(pCreature);
-}
-
-bool QuestAccept_npc_kinelory(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_HINTS_NEW_PLAGUE)
-        { pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId()); }
-
-    return true;
-}
-
 void AddSC_arathi_highlands()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_professor_phizzlethorpe();
+    s->RegisterSelf();
+    s = new npc_kinelory();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_professor_phizzlethorpe";
-    pNewScript->GetAI = &GetAI_npc_professor_phizzlethorpe;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_professor_phizzlethorpe;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_professor_phizzlethorpe";
+    //pNewScript->GetAI = &GetAI_npc_professor_phizzlethorpe;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_professor_phizzlethorpe;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_kinelory";
-    pNewScript->GetAI = &GetAI_npc_kinelory;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_kinelory;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_kinelory";
+    //pNewScript->GetAI = &GetAI_npc_kinelory;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_kinelory;
+    //pNewScript->RegisterSelf();
 }

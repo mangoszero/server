@@ -47,7 +47,32 @@ class SpellCastTargets;
 class Unit;
 class WorldObject;
 
-enum ScriptCommand                                          // resSource, resTarget are the resulting Source/ Target after buddy search is done
+enum ScriptedObjectType
+{
+    SCRIPTED_UNIT           = 0,    //CreatureScript
+    SCRIPTED_GAMEOBJECT     = 1,    //GameObjectScript
+    SCRIPTED_ITEM           = 2,    //ItemScript
+    SCRIPTED_AREATRIGGER    = 3,    //AreaTriggerScript
+    SCRIPTED_SPELL          = 4,    //SpellScript
+    SCRIPTED_AURASPELL      = 5,    //AuraScript
+    SCRIPTED_MAPEVENT       = 6,    //MapEventScript
+    SCRIPTED_MAP            = 7,    //ZoneScript
+    SCRIPTED_BATTLEGROUND   = 8,    //BattleGroundScript
+    SCRIPTED_PVP_ZONE       = 9,    //OutdoorPvPScript
+    SCRIPTED_INSTANCE       = 10,   //InstanceScript
+    SCRIPTED_CONDITION      = 11,   //ConditionScript
+    SCRIPTED_ACHIEVEMENT    = 12,   //AchievementScript
+    SCRIPTED_MAX_TYPE
+};
+
+enum ScriptImplementation
+{
+    SCRIPT_FROM_DATABASE    = 0,
+    SCRIPT_FROM_CORE        = 1,
+    SCRIPT_FROM_ELUNA       = 2,
+};
+
+enum DBScriptCommand                                        // resSource, resTarget are the resulting Source/ Target after buddy search is done
 {
     SCRIPT_COMMAND_TALK                     = 0,            // resSource = WorldObject, resTarget = Unit/none
                                                             // dataint = text entry from db_script_string -table. dataint2-4 optional for random selected texts.
@@ -520,6 +545,8 @@ class ScriptMgr
         ScriptMgr();
         ~ScriptMgr();
 
+        std::string GenerateNameToId(ScriptedObjectType sot, uint32 id);
+
         void LoadGameObjectScripts();
         void LoadGameObjectTemplateScripts();
         void LoadQuestEndScripts();
@@ -533,11 +560,12 @@ class ScriptMgr
         void LoadDbScriptStrings();
 
         void LoadScriptNames();
+        void LoadScriptBinding();
         void LoadAreaTriggerScripts();
         void LoadEventIdScripts();
+        void LoadSpellIdScripts();
 
-        uint32 GetAreaTriggerScriptId(uint32 triggerId) const;
-        uint32 GetEventIdScriptId(uint32 eventId) const;
+        bool ReloadScriptBinding();
 
         const char* GetScriptName(uint32 id) const
         {
@@ -548,6 +576,7 @@ class ScriptMgr
         {
             return m_scriptNames.size();
         }
+        uint32 GetBoundScriptId(ScriptedObjectType entity, int32 entry);
 
         ScriptLoadResult LoadScriptLibrary(const char* libName);
         void UnloadScriptLibrary();
@@ -609,14 +638,16 @@ class ScriptMgr
         void CheckScriptTexts(ScriptMapMapName const& scripts, std::set<int32>& ids);
 
         typedef std::vector<std::string> ScriptNameMap;
-        typedef UNORDERED_MAP<uint32, uint32> AreaTriggerScriptMap;
-        typedef UNORDERED_MAP<uint32, uint32> EventIdScriptMap;
+        typedef UNORDERED_MAP<int32, uint32> EntryToScriptIdMap;
 
-        AreaTriggerScriptMap    m_AreaTriggerScripts;
-        EventIdScriptMap        m_EventIdScripts;
+        EntryToScriptIdMap      m_scriptBind[SCRIPTED_MAX_TYPE];
 
         ScriptNameMap           m_scriptNames;
 
+#ifdef _DEBUG
+        // mutex allowing to reload the script binding table
+        ACE_RW_Thread_Mutex m_bindMutex;
+#endif /* _DEBUG */
         // atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
 };
@@ -626,8 +657,6 @@ bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool
 
 #define sScriptMgr MaNGOS::Singleton<ScriptMgr>::Instance()
 
-uint32 GetAreaTriggerScriptId(uint32 triggerId);
-uint32 GetEventIdScriptId(uint32 eventId);
 uint32 GetScriptId(const char* name);
 char const* GetScriptName(uint32 id);
 uint32 GetScriptIdsCount();

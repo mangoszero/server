@@ -79,6 +79,16 @@ enum
 
     TYPE_SAPPHIRON              = 13,
     TYPE_KELTHUZAD              = 14,
+    TYPE_SIGNAL_1               = MAX_ENCOUNTER,
+    TYPE_SIGNAL_2               = MAX_ENCOUNTER + 1,
+    TYPE_SIGNAL_3               = MAX_ENCOUNTER + 2,
+    TYPE_SIGNAL_4               = MAX_ENCOUNTER + 3,
+    TYPE_SIGNAL_5               = MAX_ENCOUNTER + 4,
+    TYPE_SIGNAL_6               = MAX_ENCOUNTER + 5,
+    TYPE_SIGNAL_7               = MAX_ENCOUNTER + 6,
+    TYPE_SIGNAL_8               = MAX_ENCOUNTER + 7,
+    TYPE_SIGNAL_9               = MAX_ENCOUNTER + 8,
+    TYPE_SIGNAL_10              = MAX_ENCOUNTER + 9,
 
     MAX_HEIGAN_TRAP_AREAS       = 4,
 
@@ -185,76 +195,19 @@ enum
     AREATRIGGER_GOTHIK          = 4116,
     AREATRIGGER_THADDIUS_DOOR   = 4113,
     AREATRIGGER_FROSTWYRM_TELE  = 4156,
-};
 
-struct GothTrigger
-{
-    bool bIsRightSide;
-    bool bIsAnchorHigh;
-};
+    //Gothik dummy spells, implemented in InstanceScript actually
+    SPELL_A_TO_ANCHOR_1 = 27892,
+    SPELL_B_TO_ANCHOR_1 = 27928,
+    SPELL_C_TO_ANCHOR_1 = 27935,
 
-static const float aSapphPositions[4] = {3521.48f, -5234.87f, 137.626f, 4.53329f};
+    SPELL_A_TO_ANCHOR_2 = 27893,
+    SPELL_B_TO_ANCHOR_2 = 27929,
+    SPELL_C_TO_ANCHOR_2 = 27936,
 
-class instance_naxxramas : public ScriptedInstance
-{
-    public:
-        instance_naxxramas(Map* pMap);
-        ~instance_naxxramas() {}
-
-        void Initialize() override;
-
-        bool IsEncounterInProgress() const override;
-
-        void OnPlayerEnter(Player* pPlayer) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void Update(uint32 uiDiff) override;
-
-        // Heigan
-        void DoTriggerHeiganTraps(Creature* pHeigan, uint32 uiAreaIndex);
-
-        // goth
-        void SetGothTriggers();
-        Creature* GetClosestAnchorForGoth(Creature* pSource, bool bRightSide);
-        void GetGothSummonPointCreatures(std::list<Creature*>& lList, bool bRightSide);
-        bool IsInRightSideGothArea(Unit* pUnit);
-
-        // thaddius
-        void GetThadTeslaCreatures(GuidList& lList) { lList = m_lThadTeslaCoilList; };
-
-        // kel
-        void SetChamberCenterCoords(float fX, float fY, float fZ);
-        void GetChamberCenterCoords(float& fX, float& fY, float& fZ) { fX = m_fChamberCenterX; fY = m_fChamberCenterY; fZ = m_fChamberCenterZ; }
-        void DoTaunt();
-
-    protected:
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        GuidList m_lThadTeslaCoilList;
-        GuidList m_lGothTriggerList;
-
-        UNORDERED_MAP<ObjectGuid, GothTrigger> m_mGothTriggerMap;
-        GuidList m_alHeiganTrapGuids[MAX_HEIGAN_TRAP_AREAS];
-
-        float m_fChamberCenterX;
-        float m_fChamberCenterY;
-        float m_fChamberCenterZ;
-
-        uint32 m_uiSapphSpawnTimer;
-        uint32 m_uiTauntTimer;
-        uint8 m_uiHorseMenKilled;
-
-        DialogueHelper m_dialogueHelper;
+    SPELL_A_TO_SKULL = 27915,
+    SPELL_B_TO_SKULL = 27931,
+    SPELL_C_TO_SKULL = 27937,
 };
 
 #endif

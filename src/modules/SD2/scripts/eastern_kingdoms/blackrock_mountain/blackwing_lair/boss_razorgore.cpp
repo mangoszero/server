@@ -52,203 +52,220 @@ enum
     SPELL_CONFLAGRATION         = 23023,
 };
 
-struct boss_razorgoreAI : public ScriptedAI
+struct boss_razorgore : public CreatureScript
 {
-    boss_razorgoreAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_razorgore() : CreatureScript("boss_razorgore") {}
+
+    struct boss_razorgoreAI : public ScriptedAI
     {
-        m_pInstance = (instance_blackwing_lair*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_blackwing_lair* m_pInstance;
-
-    uint32 m_uiIntroVisualTimer;
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiWarStompTimer;
-    uint32 m_uiFireballVolleyTimer;
-    uint32 m_uiConflagrationTimer;
-
-    bool m_bEggsExploded;
-
-    void Reset() override
-    {
-        m_uiIntroVisualTimer    = 5000;
-        m_bEggsExploded         = false;
-
-        m_uiCleaveTimer         = urand(4000, 8000);
-        m_uiWarStompTimer       = 30000;
-        m_uiConflagrationTimer  = urand(10000, 15000);
-        m_uiFireballVolleyTimer = urand(15000, 20000);
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
+        boss_razorgoreAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            // Don't set instance data unless all eggs are destroyed
-            if (m_pInstance->GetData(TYPE_RAZORGORE) != SPECIAL)
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+            Reset();
+        }
+
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiIntroVisualTimer;
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiWarStompTimer;
+        uint32 m_uiFireballVolleyTimer;
+        uint32 m_uiConflagrationTimer;
+
+        bool m_bEggsExploded;
+
+        void Reset() override
+        {
+            m_uiIntroVisualTimer = 5000;
+            m_bEggsExploded = false;
+
+            m_uiCleaveTimer = urand(4000, 8000);
+            m_uiWarStompTimer = 30000;
+            m_uiConflagrationTimer = urand(10000, 15000);
+            m_uiFireballVolleyTimer = urand(15000, 20000);
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                // Don't set instance data unless all eggs are destroyed
+                if (m_pInstance->GetData(TYPE_RAZORGORE) != SPECIAL)
+                {
+                    return;
+                }
+
+                m_pInstance->SetData(TYPE_RAZORGORE, DONE);
+            }
+
+            DoScriptText(SAY_DEATH, m_creature);
+        }
+
+        void DamageTaken(Unit* /*pDoneBy*/, uint32& uiDamage) override
+        {
+            if (uiDamage < m_creature->GetHealth())
             {
                 return;
             }
 
-            m_pInstance->SetData(TYPE_RAZORGORE, DONE);
-        }
-
-        DoScriptText(SAY_DEATH, m_creature);
-    }
-
-    void DamageTaken(Unit* /*pDoneBy*/, uint32& uiDamage) override
-    {
-        if (uiDamage < m_creature->GetHealth())
-        {
-            return;
-        }
-
-        if (!m_pInstance)
-        {
-            return;
-        }
-
-        // Don't allow any accident
-        if (m_bEggsExploded)
-        {
-            uiDamage = 0;
-            return;
-        }
-
-        // Boss explodes everything and resets - this happens if not all eggs are destroyed
-        if (m_pInstance->GetData(TYPE_RAZORGORE) == IN_PROGRESS)
-        {
-            uiDamage = 0;
-            m_bEggsExploded = true;
-            m_pInstance->SetData(TYPE_RAZORGORE, FAIL);
-            DoCastSpellIfCan(m_creature, SPELL_EXPLODE_ORB, CAST_TRIGGERED);
-            m_creature->ForcedDespawn();
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_RAZORGORE, FAIL);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        // Defenders should attack the players and the boss
-        pSummoned->SetInCombatWithZone();
-        pSummoned->AI()->AttackStart(m_creature);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            // Set visual only on OOC timer
-            if (m_uiIntroVisualTimer)
+            if (!m_pInstance)
             {
-                if (m_uiIntroVisualTimer <= uiDiff)
+                return;
+            }
+
+            // Don't allow any accident
+            if (m_bEggsExploded)
+            {
+                uiDamage = 0;
+                return;
+            }
+
+            // Boss explodes everything and resets - this happens if not all eggs are destroyed
+            if (m_pInstance->GetData(TYPE_RAZORGORE) == IN_PROGRESS)
+            {
+                uiDamage = 0;
+                m_bEggsExploded = true;
+                m_pInstance->SetData(TYPE_RAZORGORE, FAIL);
+                DoCastSpellIfCan(m_creature, SPELL_EXPLODE_ORB, CAST_TRIGGERED);
+                m_creature->ForcedDespawn();
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_RAZORGORE, FAIL);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            // Defenders should attack the players and the boss
+            pSummoned->SetInCombatWithZone();
+            pSummoned->AI()->AttackStart(m_creature);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                // Set visual only on OOC timer
+                if (m_uiIntroVisualTimer)
                 {
-                    if (!m_pInstance)
+                    if (m_uiIntroVisualTimer <= uiDiff)
                     {
-                        script_error_log("Instance Blackwing Lair: ERROR Failed to load instance data for this instace.");
-                        return;
-                    }
+                        if (!m_pInstance)
+                        {
+                            script_error_log("Instance Blackwing Lair: ERROR Failed to load instance data for this instace.");
+                            return;
+                        }
 
-                    if (Creature* pOrbTrigger = m_pInstance->GetSingleCreatureFromStorage(NPC_BLACKWING_ORB_TRIGGER))
-                    {
-                        pOrbTrigger->CastSpell(m_creature, SPELL_POSSESS, false);
+                        if (Creature* pOrbTrigger = m_pInstance->GetSingleCreatureFromStorage(NPC_BLACKWING_ORB_TRIGGER))
+                        {
+                            pOrbTrigger->CastSpell(m_creature, SPELL_POSSESS, false);
+                        }
+                        m_uiIntroVisualTimer = 0;
                     }
-                    m_uiIntroVisualTimer = 0;
+                    else
+                    {
+                        m_uiIntroVisualTimer -= uiDiff;
+                    }
                 }
-                else
+
+                return;
+            }
+
+            // Cleave
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
                 {
-                    m_uiIntroVisualTimer -= uiDiff;
+                    m_uiCleaveTimer = urand(4000, 8000);
                 }
             }
-
-            return;
-        }
-
-        // Cleave
-        if (m_uiCleaveTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+            else
             {
-                m_uiCleaveTimer = urand(4000, 8000);
+                m_uiCleaveTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
 
-        // War Stomp
-        if (m_uiWarStompTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_WARSTOMP) == CAST_OK)
+            // War Stomp
+            if (m_uiWarStompTimer < uiDiff)
             {
-                m_uiWarStompTimer = 30000;
+                if (DoCastSpellIfCan(m_creature, SPELL_WARSTOMP) == CAST_OK)
+                {
+                    m_uiWarStompTimer = 30000;
+                }
             }
-        }
-        else
-            { m_uiWarStompTimer -= uiDiff; }
-
-        // Fireball Volley
-        if (m_uiFireballVolleyTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FIREBALL_VOLLEY) == CAST_OK)
+            else
             {
-                m_uiFireballVolleyTimer = urand(15000, 20000);
+                m_uiWarStompTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiFireballVolleyTimer -= uiDiff; }
 
-        // Conflagration
-        if (m_uiConflagrationTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_CONFLAGRATION) == CAST_OK)
+            // Fireball Volley
+            if (m_uiFireballVolleyTimer < uiDiff)
             {
-                m_uiConflagrationTimer = urand(15000, 25000);
+                if (DoCastSpellIfCan(m_creature, SPELL_FIREBALL_VOLLEY) == CAST_OK)
+                {
+                    m_uiFireballVolleyTimer = urand(15000, 20000);
+                }
             }
+            else
+            {
+                m_uiFireballVolleyTimer -= uiDiff;
+            }
+
+            // Conflagration
+            if (m_uiConflagrationTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_CONFLAGRATION) == CAST_OK)
+                {
+                    m_uiConflagrationTimer = urand(15000, 25000);
+                }
+            }
+            else
+            {
+                m_uiConflagrationTimer -= uiDiff;
+            }
+
+            /* This is obsolete code, not working anymore, keep as reference, should be handled in core though
+            * // Aura Check. If the gamer is affected by confliguration we attack a random gamer.
+            * if (m_creature->getVictim()->HasAura(SPELL_CONFLAGRATION, EFFECT_INDEX_0))
+            * {
+            *     if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+            *         m_creature->TauntApply(pTarget);
+            * }
+            */
+
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiConflagrationTimer -= uiDiff; }
+    };
 
-        /* This is obsolete code, not working anymore, keep as reference, should be handled in core though
-        * // Aura Check. If the gamer is affected by confliguration we attack a random gamer.
-        * if (m_creature->getVictim()->HasAura(SPELL_CONFLAGRATION, EFFECT_INDEX_0))
-        * {
-        *     if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-        *         m_creature->TauntApply(pTarget);
-        * }
-        */
-
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_razorgoreAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_razorgore(Creature* pCreature)
+struct spell_go_black_dragon_egg : public SpellScript
 {
-    return new boss_razorgoreAI(pCreature);
-}
+    spell_go_black_dragon_egg() : SpellScript("spell_go_black_dragon_egg") {}
 
-bool EffectDummyGameObj_go_black_dragon_egg(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, GameObject* pGOTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    if (uiSpellId == SPELL_DESTROY_EGG && uiEffIndex == EFFECT_INDEX_1)
+    bool EffectDummy(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pGOTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        if (!pGOTarget->isSpawned())
+        if (uiSpellId == SPELL_DESTROY_EGG && uiEffIndex == EFFECT_INDEX_1)
         {
-            return true;
-        }
-
-        if (ScriptedInstance* pInstance = (ScriptedInstance*)pGOTarget->GetInstanceData())
-        {
-            if (urand(0, 1))
+            if (!pGOTarget->ToGameObject()->isSpawned())
             {
-                switch (urand(0, 2))
+                return true;
+            }
+
+            if (ScriptedInstance* pInstance = (ScriptedInstance*)pGOTarget->ToGameObject()->GetInstanceData())
+            {
+                if (urand(0, 1))
                 {
+                    switch (urand(0, 2))
+                    {
                     case 0:
                         DoScriptText(SAY_EGGS_BROKEN_1, pCaster);
                         break;
@@ -258,30 +275,35 @@ bool EffectDummyGameObj_go_black_dragon_egg(Unit* pCaster, uint32 uiSpellId, Spe
                     case 2:
                         DoScriptText(SAY_EGGS_BROKEN_3, pCaster);
                         break;
+                    }
                 }
+
+                // Store the eggs which are destroyed, in order to count them for the second phase
+                pInstance->SetData64(DATA_DRAGON_EGG, pGOTarget->GetObjectGuid());
             }
 
-            // Store the eggs which are destroyed, in order to count them for the second phase
-            pInstance->SetData64(DATA_DRAGON_EGG, pGOTarget->GetObjectGuid());
+            return true;
         }
 
-        return true;
+        return false;
     }
-
-    return false;
-}
+};
 
 void AddSC_boss_razorgore()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_razorgore();
+    s->RegisterSelf();
+    s = new spell_go_black_dragon_egg();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_razorgore";
-    pNewScript->GetAI = &GetAI_boss_razorgore;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_razorgore";
+    //pNewScript->GetAI = &GetAI_boss_razorgore;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_black_dragon_egg";
-    pNewScript->pEffectDummyGO = &EffectDummyGameObj_go_black_dragon_egg;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_black_dragon_egg";
+    //pNewScript->pEffectDummyGO = &EffectDummyGameObj_go_black_dragon_egg;
+    //pNewScript->RegisterSelf();
 }

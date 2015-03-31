@@ -42,22 +42,4 @@ enum
     SAY_TRIGGER_VORREL              = -1189015,
 };
 
-class instance_scarlet_monastery : public ScriptedInstance
-{
-    public:
-        instance_scarlet_monastery(Map* pMap);
-
-        void Initialize() override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnCreatureDeath(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiData) const override;
-
-    private:
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-};
-
 #endif

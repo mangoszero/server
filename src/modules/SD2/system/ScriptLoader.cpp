@@ -251,13 +251,15 @@ void AddEasternKingdomsScripts()
 
 // kalimdor
 void AddSC_instance_blackfathom_deeps();             // blackfathom_deeps
+void AddSC_blackfathom_deeps();
 void AddSC_dire_maul();                              // dire_maul
 void AddSC_instance_dire_maul();
 void AddSC_boss_noxxion();                           // maraudon
 void AddSC_boss_onyxia();                            // onyxias_lair
 void AddSC_instance_onyxias_lair();
 void AddSC_npc_onyxian_warder();
-void AddSC_razorfen_downs();                         // razorfen_downs
+void AddSC_instance_razorfen_downs();                // razorfen_downs
+void AddSC_razorfen_downs();
 void AddSC_instance_razorfen_kraul();                // razorfen_kraul
 void AddSC_razorfen_kraul();
 void AddSC_boss_ayamiss();                           // ruins_of_ahnqiraj
@@ -309,13 +311,15 @@ void AddSC_winterspring();
 void AddKalimdorScripts()
 {
     AddSC_instance_blackfathom_deeps();                     // blackfathom deeps
+    AddSC_blackfathom_deeps();
     AddSC_dire_maul();                                      // dire_maul
     AddSC_instance_dire_maul();
     AddSC_boss_noxxion();                                   // maraudon
     AddSC_boss_onyxia();                                    // onyxias_lair
     AddSC_instance_onyxias_lair();
     AddSC_npc_onyxian_warder();
-    AddSC_razorfen_downs();                                 // razorfen_downs
+    AddSC_instance_razorfen_downs();                        // razorfen_downs
+    AddSC_razorfen_downs();
     AddSC_instance_razorfen_kraul();                        // razorfen_kraul
     AddSC_razorfen_kraul();
     AddSC_boss_ayamiss();                                   // ruins_of_ahnqiraj

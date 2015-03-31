@@ -47,26 +47,4 @@ enum
     QUEST_FORTUNE_AWAITS    = 7944,
 };
 
-class instance_wailing_caverns : public ScriptedInstance
-{
-    public:
-        instance_wailing_caverns(Map* pMap);
-        ~instance_wailing_caverns() {}
-
-        void Initialize() override;
-
-        void OnPlayerEnter(Player* pPlayer) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    protected:
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-};
 #endif

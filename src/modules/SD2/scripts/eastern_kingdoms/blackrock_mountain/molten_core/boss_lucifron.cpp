@@ -42,109 +42,122 @@ enum
     SPELL_SHADOWSHOCK       = 19460
 };
 
-struct boss_lucifronAI : public ScriptedAI
+struct boss_lucifron : public CreatureScript
 {
-    boss_lucifronAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_lucifron() : CreatureScript("boss_lucifron") {}
+
+    struct boss_lucifronAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiImpendingDoomTimer;
-    uint32 m_uiLucifronCurseTimer;
-    uint32 m_uiShadowShockTimer;
-
-    void Reset() override
-    {
-        m_uiImpendingDoomTimer = 10000;
-        m_uiLucifronCurseTimer = 20000;
-        m_uiShadowShockTimer   = 6000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_lucifronAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_LUCIFRON, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_LUCIFRON, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_LUCIFRON, FAIL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+            Reset();
         }
 
-        // Impending doom timer
-        if (m_uiImpendingDoomTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiImpendingDoomTimer;
+        uint32 m_uiLucifronCurseTimer;
+        uint32 m_uiShadowShockTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_IMPENDINGDOOM) == CAST_OK)
+            m_uiImpendingDoomTimer = 10000;
+            m_uiLucifronCurseTimer = 20000;
+            m_uiShadowShockTimer = 6000;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
             {
-                m_uiImpendingDoomTimer = 20000;
+                m_pInstance->SetData(TYPE_LUCIFRON, IN_PROGRESS);
             }
         }
-        else
-            { m_uiImpendingDoomTimer -= uiDiff; }
 
-        // Lucifron's curse timer
-        if (m_uiLucifronCurseTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_LUCIFRONCURSE) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiLucifronCurseTimer = 20000;
+                m_pInstance->SetData(TYPE_LUCIFRON, DONE);
             }
         }
-        else
-            { m_uiLucifronCurseTimer -= uiDiff; }
 
-        // Shadowshock
-        if (m_uiShadowShockTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (m_pInstance)
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_SHADOWSHOCK) == CAST_OK)
+                m_pInstance->SetData(TYPE_LUCIFRON, FAIL);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Impending doom timer
+            if (m_uiImpendingDoomTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_IMPENDINGDOOM) == CAST_OK)
                 {
-                    m_uiShadowShockTimer = 6000;
+                    m_uiImpendingDoomTimer = 20000;
                 }
             }
-        }
-        else
-            { m_uiShadowShockTimer -= uiDiff; }
+            else
+            {
+                m_uiImpendingDoomTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // Lucifron's curse timer
+            if (m_uiLucifronCurseTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_LUCIFRONCURSE) == CAST_OK)
+                {
+                    m_uiLucifronCurseTimer = 20000;
+                }
+            }
+            else
+            {
+                m_uiLucifronCurseTimer -= uiDiff;
+            }
+
+            // Shadowshock
+            if (m_uiShadowShockTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOWSHOCK) == CAST_OK)
+                    {
+                        m_uiShadowShockTimer = 6000;
+                    }
+                }
+            }
+            else
+            {
+                m_uiShadowShockTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_lucifronAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_lucifron(Creature* pCreature)
-{
-    return new boss_lucifronAI(pCreature);
-}
-
 void AddSC_boss_lucifron()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_lucifron();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_lucifron";
-    pNewScript->GetAI = &GetAI_boss_lucifron;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_lucifron";
+    //pNewScript->GetAI = &GetAI_boss_lucifron;
+    //pNewScript->RegisterSelf();
 }

@@ -61,71 +61,81 @@ enum
     PHASE_TRANSFORM         = 2,
 };
 
-struct boss_buruAI : public ScriptedAI
+struct boss_buru : public CreatureScript
 {
-    boss_buruAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    boss_buru() : CreatureScript("boss_buru") {}
 
-    uint8 m_uiPhase;
-    uint32 m_uiDismemberTimer;
-    uint32 m_uiCreepingPlagueTimer;
-    uint32 m_uiGatheringSpeedTimer;
-    uint32 m_uiFullSpeedTimer;
-
-    void Reset() override
+    struct boss_buruAI : public ScriptedAI
     {
-        m_uiDismemberTimer      = 5000;
-        m_uiGatheringSpeedTimer = 9000;
-        m_uiCreepingPlagueTimer = 0;
-        m_uiFullSpeedTimer      = 60000;
-        m_uiPhase               = PHASE_EGG;
-    }
+        boss_buruAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void Aggro(Unit* pWho) override
-    {
-        DoScriptText(EMOTE_TARGET, m_creature, pWho);
-        DoCastSpellIfCan(m_creature, SPELL_THORNS);
-        m_creature->FixateTarget(pWho);
-    }
+        uint8 m_uiPhase;
+        uint32 m_uiDismemberTimer;
+        uint32 m_uiCreepingPlagueTimer;
+        uint32 m_uiGatheringSpeedTimer;
+        uint32 m_uiFullSpeedTimer;
 
-    void KilledUnit(Unit* pVictim) override
-    {
-        // Attack a new random target when a player is killed
-        if (pVictim->GetTypeId() == TYPEID_PLAYER)
+        void Reset() override
         {
-            DoAttackNewTarget();
-        }
-    }
-
-    // Wrapper to attack a new target and remove the speed gathering buff
-    void DoAttackNewTarget()
-    {
-        if (m_uiPhase == PHASE_TRANSFORM)
-        {
-            return;
+            m_uiDismemberTimer = 5000;
+            m_uiGatheringSpeedTimer = 9000;
+            m_uiCreepingPlagueTimer = 0;
+            m_uiFullSpeedTimer = 60000;
+            m_uiPhase = PHASE_EGG;
         }
 
-        m_creature->RemoveAurasDueToSpell(SPELL_FULL_SPEED);
-        m_creature->RemoveAurasDueToSpell(SPELL_GATHERING_SPEED);
-
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
+        void Aggro(Unit* pWho) override
         {
-            m_creature->FixateTarget(pTarget);
-            DoScriptText(EMOTE_TARGET, m_creature, pTarget);
+            DoScriptText(EMOTE_TARGET, m_creature, pWho);
+            DoCastSpellIfCan(m_creature, SPELL_THORNS);
+            m_creature->FixateTarget(pWho);
         }
 
-        m_uiFullSpeedTimer      = 60000;
-        m_uiGatheringSpeedTimer = 9000;
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void KilledUnit(Unit* pVictim) override
         {
-            return;
+            // Attack a new random target when a player is killed
+            if (pVictim->GetTypeId() == TYPEID_PLAYER)
+            {
+                DoAttackNewTarget();
+            }
         }
 
-        switch (m_uiPhase)
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* /*pInvoker*/, uint32 /*uiMiscValue*/) override
         {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender->GetEntry() == NPC_BURU_EGG)
+                DoAttackNewTarget();
+        }
+
+        // Wrapper to attack a new target and remove the speed gathering buff
+        void DoAttackNewTarget()
+        {
+            if (m_uiPhase == PHASE_TRANSFORM)
+            {
+                return;
+            }
+
+            m_creature->RemoveAurasDueToSpell(SPELL_FULL_SPEED);
+            m_creature->RemoveAurasDueToSpell(SPELL_GATHERING_SPEED);
+
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, uint32(0), SELECT_FLAG_PLAYER))
+            {
+                m_creature->FixateTarget(pTarget);
+                DoScriptText(EMOTE_TARGET, m_creature, pTarget);
+            }
+
+            m_uiFullSpeedTimer = 60000;
+            m_uiGatheringSpeedTimer = 9000;
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            switch (m_uiPhase)
+            {
             case PHASE_EGG:
 
                 if (m_uiDismemberTimer < uiDiff)
@@ -195,91 +205,97 @@ struct boss_buruAI : public ScriptedAI
                 }
 
                 break;
-        }
+            }
 
-        DoMeleeAttackIfReady();
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_buruAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_buru(Creature* pCreature)
+struct npc_buru_egg : public CreatureScript
 {
-    return new boss_buruAI(pCreature);
-}
+    npc_buru_egg() : CreatureScript("npc_buru_egg") {}
 
-struct npc_buru_eggAI : public Scripted_NoMovementAI
-{
-    npc_buru_eggAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
+    struct npc_buru_eggAI : public Scripted_NoMovementAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    void Reset() override
-    { }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        // The purpose of this is unk for the moment
-        if (pSummoned->GetEntry() == NPC_BURU_EGG_TRIGGER)
+        npc_buru_eggAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature)
         {
-            pSummoned->CastSpell(pSummoned, SPELL_BURU_EGG_TRIGGER, true);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
-        // The Hatchling should attack a random target
-        else if (pSummoned->GetEntry() == NPC_HATCHLING)
+
+        ScriptedInstance* m_pInstance;
+
+        void Reset() override
+        { }
+
+        void JustSummoned(Creature* pSummoned) override
         {
-            if (m_pInstance)
+            // The purpose of this is unk for the moment
+            if (pSummoned->GetEntry() == NPC_BURU_EGG_TRIGGER)
             {
-                if (Creature* pBuru = m_pInstance->GetSingleCreatureFromStorage(NPC_BURU))
+                pSummoned->CastSpell(pSummoned, SPELL_BURU_EGG_TRIGGER, true);
+            }
+            // The Hatchling should attack a random target
+            else if (pSummoned->GetEntry() == NPC_HATCHLING)
+            {
+                if (m_pInstance)
                 {
-                    if (Unit* pTarget = pBuru->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    if (Creature* pBuru = m_pInstance->GetSingleCreatureFromStorage(NPC_BURU))
                     {
-                        pSummoned->AI()->AttackStart(pTarget);
+                        if (Unit* pTarget = pBuru->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                        {
+                            pSummoned->AI()->AttackStart(pTarget);
+                        }
                     }
                 }
             }
         }
-    }
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        // Explode and Summon hatchling
-        DoCastSpellIfCan(m_creature, SPELL_EXPLODE, CAST_TRIGGERED);
-        DoCastSpellIfCan(m_creature, SPELL_SUMMON_HATCHLING, CAST_TRIGGERED, m_creature->GetObjectGuid());
-
-        // Reset Buru's target - this might have been done by spell, but currently this is unk to us
-        if (m_pInstance)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (Creature* pBuru = m_pInstance->GetSingleCreatureFromStorage(NPC_BURU))
+            // Explode and Summon hatchling
+            DoCastSpellIfCan(m_creature, SPELL_EXPLODE, CAST_TRIGGERED);
+            DoCastSpellIfCan(m_creature, SPELL_SUMMON_HATCHLING, CAST_TRIGGERED, m_creature->GetObjectGuid());
+
+            // Reset Buru's target - this might have been done by spell, but currently this is unk to us
+            if (m_pInstance)
             {
-                if (boss_buruAI* pBuruAI = dynamic_cast<boss_buruAI*>(pBuru->AI()))
+                if (Creature* pBuru = m_pInstance->GetSingleCreatureFromStorage(NPC_BURU))
                 {
-                    pBuruAI->DoAttackNewTarget();
+                    SendAIEvent(AI_EVENT_CUSTOM_A, m_creature, pBuru);
                 }
             }
         }
+
+        void UpdateAI(const uint32 /*uiDiff*/) override { }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_buru_eggAI(pCreature);
     }
-
-    void UpdateAI(const uint32 /*uiDiff*/) override { }
 };
-
-CreatureAI* GetAI_npc_buru_egg(Creature* pCreature)
-{
-    return new npc_buru_eggAI(pCreature);
-}
 
 void AddSC_boss_buru()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_buru();
+    s->RegisterSelf();
+    s = new npc_buru_egg();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_buru";
-    pNewScript->GetAI = &GetAI_boss_buru;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_buru";
+    //pNewScript->GetAI = &GetAI_boss_buru;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_buru_egg";
-    pNewScript->GetAI = &GetAI_npc_buru_egg;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_buru_egg";
+    //pNewScript->GetAI = &GetAI_npc_buru_egg;
+    //pNewScript->RegisterSelf();
 }

@@ -156,74 +156,77 @@ static EventLocations aWingThicketLocations[] =
     {5514.40f, -4921.16f, 845.49f}              // 7 left priestess second move loc
 };
 
-struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
+struct npc_ranshalla : public CreatureScript
 {
-    npc_ranshallaAI(Creature* pCreature) : npc_escortAI(pCreature),
+    npc_ranshalla() : CreatureScript("npc_ranshalla") {}
+
+    struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
+    {
+        npc_ranshallaAI(Creature* pCreature) : npc_escortAI(pCreature),
         DialogueHelper(aIntroDialogue)
-    {
-        Reset();
-    }
-
-    uint32 m_uiDelayTimer;
-
-    ObjectGuid m_firstPriestessGuid;
-    ObjectGuid m_secondPriestessGuid;
-    ObjectGuid m_guardEluneGuid;
-    ObjectGuid m_voiceEluneGuid;
-    ObjectGuid m_altarGuid;
-
-    void Reset() override
-    {
-        m_uiDelayTimer = 0;
-    }
-
-    // Called when the player activates the torch / altar
-    void DoContinueEscort(bool bIsAltarWaypoint = false)
-    {
-        if (bIsAltarWaypoint)
         {
-            DoScriptText(SAY_RANSHALLA_ALTAR_1, m_creature);
         }
-        else
+
+        uint32 m_uiDelayTimer;
+
+        ObjectGuid m_firstPriestessGuid;
+        ObjectGuid m_secondPriestessGuid;
+        ObjectGuid m_guardEluneGuid;
+        ObjectGuid m_voiceEluneGuid;
+        ObjectGuid m_altarGuid;
+
+        void Reset() override
         {
-            switch (urand(0, 1))
+            m_uiDelayTimer = 0;
+        }
+
+        // Called when the player activates the torch / altar
+        void DoContinueEscort(bool bIsAltarWaypoint = false)
+        {
+            if (bIsAltarWaypoint)
             {
+                DoScriptText(SAY_RANSHALLA_ALTAR_1, m_creature);
+            }
+            else
+            {
+                switch (urand(0, 1))
+                {
                 case 0:
                     DoScriptText(SAY_AFTER_TORCH_1, m_creature);
                     break;
                 case 1:
                     DoScriptText(SAY_AFTER_TORCH_2, m_creature);
                     break;
+                }
             }
+
+            m_uiDelayTimer = 2000;
         }
 
-        m_uiDelayTimer = 2000;
-    }
-
-    // Called when Ranshalla starts to channel on a torch / altar
-    void DoChannelTorchSpell(bool bIsAltarWaypoint = false)
-    {
-        // Check if we are using the fire or the altar and remove the no_interact flag
-        if (bIsAltarWaypoint)
+        // Called when Ranshalla starts to channel on a torch / altar
+        void DoChannelTorchSpell(bool bIsAltarWaypoint = false)
         {
-            if (GameObject* pGo = GetClosestGameObjectWithEntry(m_creature, GO_ELUNE_ALTAR, 10.0f))
+            // Check if we are using the fire or the altar and remove the no_interact flag
+            if (bIsAltarWaypoint)
             {
-                pGo->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
-                m_creature->SetFacingToObject(pGo);
-                m_altarGuid = pGo->GetObjectGuid();
+                if (GameObject* pGo = GetClosestGameObjectWithEntry(m_creature, GO_ELUNE_ALTAR, 10.0f))
+                {
+                    pGo->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+                    m_creature->SetFacingToObject(pGo);
+                    m_altarGuid = pGo->GetObjectGuid();
+                }
             }
-        }
-        else
-        {
-            if (GameObject* pGo = GetClosestGameObjectWithEntry(m_creature, GO_ELUNE_FIRE, 10.0f))
+            else
             {
-                pGo->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+                if (GameObject* pGo = GetClosestGameObjectWithEntry(m_creature, GO_ELUNE_FIRE, 10.0f))
+                {
+                    pGo->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+                }
             }
-        }
 
-        // Yell and set escort to pause
-        switch (urand(0, 2))
-        {
+            // Yell and set escort to pause
+            switch (urand(0, 2))
+            {
             case 0:
                 DoScriptText(SAY_REACH_TORCH_1, m_creature);
                 break;
@@ -233,44 +236,44 @@ struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
             case 2:
                 DoScriptText(SAY_REACH_TORCH_3, m_creature);
                 break;
+            }
+
+            DoScriptText(EMOTE_CHANT_SPELL, m_creature);
+            DoCastSpellIfCan(m_creature, SPELL_LIGHT_TORCH);
+            SetEscortPaused(true);
         }
 
-        DoScriptText(EMOTE_CHANT_SPELL, m_creature);
-        DoCastSpellIfCan(m_creature, SPELL_LIGHT_TORCH);
-        SetEscortPaused(true);
-    }
-
-    void DoSummonPriestess()
-    {
-        // Summon 2 Elune priestess and make each of them move to a different spot
-        if (Creature* pPriestess = m_creature->SummonCreature(NPC_PRIESTESS_ELUNE, aWingThicketLocations[0].m_fX, aWingThicketLocations[0].m_fY, aWingThicketLocations[0].m_fZ, aWingThicketLocations[0].m_fO, TEMPSUMMON_CORPSE_DESPAWN, 0))
+        void DoSummonPriestess()
         {
-            pPriestess->GetMotionMaster()->MovePoint(0, aWingThicketLocations[3].m_fX, aWingThicketLocations[3].m_fY, aWingThicketLocations[3].m_fZ);
-            m_firstPriestessGuid = pPriestess->GetObjectGuid();
-        }
-        if (Creature* pPriestess = m_creature->SummonCreature(NPC_PRIESTESS_ELUNE, aWingThicketLocations[1].m_fX, aWingThicketLocations[1].m_fY, aWingThicketLocations[1].m_fZ, aWingThicketLocations[1].m_fO, TEMPSUMMON_CORPSE_DESPAWN, 0))
-        {
-            // Left priestess should have a distinct move point because she is the one who starts the dialogue at point reach
-            pPriestess->GetMotionMaster()->MovePoint(1, aWingThicketLocations[4].m_fX, aWingThicketLocations[4].m_fY, aWingThicketLocations[4].m_fZ);
-            m_secondPriestessGuid = pPriestess->GetObjectGuid();
-        }
-    }
-
-    void SummonedMovementInform(Creature* pSummoned, uint32 uiType, uint32 uiPointId) override
-    {
-        if (uiType != POINT_MOTION_TYPE || pSummoned->GetEntry() != NPC_PRIESTESS_ELUNE || uiPointId != 1)
-        {
-            return;
+            // Summon 2 Elune priestess and make each of them move to a different spot
+            if (Creature* pPriestess = m_creature->SummonCreature(NPC_PRIESTESS_ELUNE, aWingThicketLocations[0].m_fX, aWingThicketLocations[0].m_fY, aWingThicketLocations[0].m_fZ, aWingThicketLocations[0].m_fO, TEMPSUMMON_CORPSE_DESPAWN, 0))
+            {
+                pPriestess->GetMotionMaster()->MovePoint(0, aWingThicketLocations[3].m_fX, aWingThicketLocations[3].m_fY, aWingThicketLocations[3].m_fZ);
+                m_firstPriestessGuid = pPriestess->GetObjectGuid();
+            }
+            if (Creature* pPriestess = m_creature->SummonCreature(NPC_PRIESTESS_ELUNE, aWingThicketLocations[1].m_fX, aWingThicketLocations[1].m_fY, aWingThicketLocations[1].m_fZ, aWingThicketLocations[1].m_fO, TEMPSUMMON_CORPSE_DESPAWN, 0))
+            {
+                // Left priestess should have a distinct move point because she is the one who starts the dialogue at point reach
+                pPriestess->GetMotionMaster()->MovePoint(1, aWingThicketLocations[4].m_fX, aWingThicketLocations[4].m_fY, aWingThicketLocations[4].m_fZ);
+                m_secondPriestessGuid = pPriestess->GetObjectGuid();
+            }
         }
 
-        // Start the dialogue when the priestess reach the altar (they should both reach the point in the same time)
-        StartNextDialogueText(SAY_PRIESTESS_ALTAR_3);
-    }
-
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        void SummonedMovementInform(Creature* pSummoned, uint32 uiType, uint32 uiPointId) override
         {
+            if (uiType != POINT_MOTION_TYPE || pSummoned->GetEntry() != NPC_PRIESTESS_ELUNE || uiPointId != 1)
+            {
+                return;
+            }
+
+            // Start the dialogue when the priestess reach the altar (they should both reach the point in the same time)
+            StartNextDialogueText(SAY_PRIESTESS_ALTAR_3);
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            switch (uiPointId)
+            {
             case 3:
                 DoScriptText(SAY_ENTER_OWL_THICKET, m_creature);
                 break;
@@ -287,25 +290,25 @@ struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
                 break;
             case 41:
             {
-                // Search for all nearest lights and respawn them
-                std::list<GameObject*> m_lEluneLights;
-                GetGameObjectListWithEntryInGrid(m_lEluneLights, m_creature, GO_ELUNE_LIGHT, 20.0f);
-                for (std::list<GameObject*>::const_iterator itr = m_lEluneLights.begin(); itr != m_lEluneLights.end(); ++itr)
-                {
-                    if ((*itr)->isSpawned())
-                    {
-                        continue;
-                    }
+                       // Search for all nearest lights and respawn them
+                       std::list<GameObject*> m_lEluneLights;
+                       GetGameObjectListWithEntryInGrid(m_lEluneLights, m_creature, GO_ELUNE_LIGHT, 20.0f);
+                       for (std::list<GameObject*>::const_iterator itr = m_lEluneLights.begin(); itr != m_lEluneLights.end(); ++itr)
+                       {
+                           if ((*itr)->isSpawned())
+                           {
+                               continue;
+                           }
 
-                    (*itr)->SetRespawnTime(115);
-                    (*itr)->Refresh();
-                }
+                           (*itr)->SetRespawnTime(115);
+                           (*itr)->Refresh();
+                       }
 
-                if (GameObject* pAltar = m_creature->GetMap()->GetGameObject(m_altarGuid))
-                {
-                    m_creature->SetFacingToObject(pAltar);
-                }
-                break;
+                       if (GameObject* pAltar = m_creature->GetMap()->GetGameObject(m_altarGuid))
+                       {
+                           m_creature->SetFacingToObject(pAltar);
+                       }
+                       break;
             }
             case 42:
                 // Summon the 2 priestess
@@ -321,13 +324,13 @@ struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
                     m_creature->SetFacingToObject(pAltar);
                 }
                 break;
+            }
         }
-    }
 
-    void JustDidDialogueStep(int32 iEntry) override
-    {
-        switch (iEntry)
+        void JustDidDialogueStep(int32 iEntry) override
         {
+            switch (iEntry)
+            {
             case NPC_RANSHALLA:
                 // Start the altar channeling
                 DoChannelTorchSpell(true);
@@ -423,13 +426,13 @@ struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
                     pPlayer->GroupEventHappens(QUEST_GUARDIANS_ALTAR, m_creature);
                 }
                 break;
+            }
         }
-    }
 
-    Creature* GetSpeakerByEntry(uint32 uiEntry) override
-    {
-        switch (uiEntry)
+        Creature* GetSpeakerByEntry(uint32 uiEntry) override
         {
+            switch (uiEntry)
+            {
             case NPC_RANSHALLA:
                 return m_creature;
             case NPC_VOICE_ELUNE:
@@ -441,92 +444,108 @@ struct npc_ranshallaAI : public npc_escortAI, private DialogueHelper
 
             default:
                 return NULL;
+            }
         }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* /*pInvoker*/, uint32 uiMiscValue) override
+        {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature)
+                DoContinueEscort(bool(uiMiscValue));
+        }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            DialogueUpdate(uiDiff);
+
+            if (m_uiDelayTimer)
+            {
+                if (m_uiDelayTimer <= uiDiff)
+                {
+                    m_creature->InterruptNonMeleeSpells(false);
+                    SetEscortPaused(false);
+                    m_uiDelayTimer = 0;
+                }
+                else
+                {
+                    m_uiDelayTimer -= uiDiff;
+                }
+            }
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_ranshallaAI(pCreature);
     }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        DialogueUpdate(uiDiff);
-
-        if (m_uiDelayTimer)
+        if (pQuest->GetQuestId() == QUEST_GUARDIANS_ALTAR)
         {
-            if (m_uiDelayTimer <= uiDiff)
+            DoScriptText(SAY_QUEST_START, pCreature);
+            pCreature->SetFactionTemporary(FACTION_ESCORT_A_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+
+            if (npc_ranshallaAI* pEscortAI = dynamic_cast<npc_ranshallaAI*>(pCreature->AI()))
             {
-                m_creature->InterruptNonMeleeSpells(false);
-                SetEscortPaused(false);
-                m_uiDelayTimer = 0;
+                pEscortAI->Start(false, pPlayer, pQuest, true);
             }
-            else
-            {
-                m_uiDelayTimer -= uiDiff;
-            }
+
+            return true;
         }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        DoMeleeAttackIfReady();
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_ranshalla(Creature* pCreature)
+struct go_elune_fire : public GameObjectScript
 {
-    return new npc_ranshallaAI(pCreature);
-}
+    go_elune_fire() : GameObjectScript("go_elune_fire") {}
 
-bool QuestAccept_npc_ranshalla(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_GUARDIANS_ALTAR)
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo) override
     {
-        DoScriptText(SAY_QUEST_START, pCreature);
-        pCreature->SetFactionTemporary(FACTION_ESCORT_A_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+        // Check if we are using the torches or the altar
+        bool bIsAltar = false;
 
-        if (npc_ranshallaAI* pEscortAI = dynamic_cast<npc_ranshallaAI*>(pCreature->AI()))
+        if (pGo->GetEntry() == GO_ELUNE_ALTAR)
         {
-            pEscortAI->Start(false, pPlayer, pQuest, true);
+            bIsAltar = true;
         }
 
-        return true;
-    }
-
-    return false;
-}
-
-bool GOUse_go_elune_fire(Player* /*pPlayer*/, GameObject* pGo)
-{
-    // Check if we are using the torches or the altar
-    bool bIsAltar = false;
-
-    if (pGo->GetEntry() == GO_ELUNE_ALTAR)
-    {
-        bIsAltar = true;
-    }
-
-    if (Creature* pRanshalla = GetClosestCreatureWithEntry(pGo, NPC_RANSHALLA, 10.0f))
-    {
-        if (npc_ranshallaAI* pEscortAI = dynamic_cast<npc_ranshallaAI*>(pRanshalla->AI()))
+        if (Creature* pRanshalla = GetClosestCreatureWithEntry(pGo, NPC_RANSHALLA, 10.0f))
         {
-            pEscortAI->DoContinueEscort(bIsAltar);
+            if (CreatureAI* pEscortAI = pRanshalla->AI())
+            {
+                pEscortAI->SendAIEvent(AI_EVENT_CUSTOM_A, NULL, pRanshalla, uint32(bIsAltar)); //->DoContinueEscort(bIsAltar);
+            }
         }
-    }
 
-    return false;
-}
+        return false;
+    }
+};
 
 void AddSC_winterspring()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_ranshalla();
+    s->RegisterSelf();
+    s = new go_elune_fire();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_ranshalla";
-    pNewScript->GetAI = &GetAI_npc_ranshalla;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_ranshalla;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_ranshalla";
+    //pNewScript->GetAI = &GetAI_npc_ranshalla;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_ranshalla;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_elune_fire";
-    pNewScript->pGOUse = &GOUse_go_elune_fire;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_elune_fire";
+    //pNewScript->pGOUse = &GOUse_go_elune_fire;
+    //pNewScript->RegisterSelf();
 }

@@ -53,61 +53,64 @@ enum
     SPELL_HOPELESS           = 29125
 };
 
-struct boss_razuviousAI : public ScriptedAI
+struct boss_razuvious : public CreatureScript
 {
-    boss_razuviousAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_razuvious() : CreatureScript("boss_razuvious") {}
+
+    struct boss_razuviousAI : public ScriptedAI
     {
-        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_naxxramas* m_pInstance;
-
-    uint32 m_uiUnbalancingStrikeTimer;
-    uint32 m_uiDisruptingShoutTimer;
-    uint32 m_uiCommandSoundTimer;
-
-    void Reset() override
-    {
-        m_uiUnbalancingStrikeTimer = 30000;                 // 30 seconds
-        m_uiDisruptingShoutTimer   = 15000;                 // 15 seconds
-        m_uiCommandSoundTimer      = 40000;                 // 40 seconds
-    }
-
-    void KilledUnit(Unit* /*Victim*/) override
-    {
-        if (urand(0, 3))
+        boss_razuviousAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        switch (urand(0, 1))
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiUnbalancingStrikeTimer;
+        uint32 m_uiDisruptingShoutTimer;
+        uint32 m_uiCommandSoundTimer;
+
+        void Reset() override
         {
+            m_uiUnbalancingStrikeTimer = 30000;                 // 30 seconds
+            m_uiDisruptingShoutTimer = 15000;                 // 15 seconds
+            m_uiCommandSoundTimer = 40000;                 // 40 seconds
+        }
+
+        void KilledUnit(Unit* /*Victim*/) override
+        {
+            if (urand(0, 3))
+            {
+                return;
+            }
+
+            switch (urand(0, 1))
+            {
             case 0:
                 DoScriptText(SAY_SLAY1, m_creature);
                 break;
             case 1:
                 DoScriptText(SAY_SLAY2, m_creature);
                 break;
+            }
         }
-    }
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        DoScriptText(SAY_DEATH, m_creature);
-
-        DoCastSpellIfCan(m_creature, SPELL_HOPELESS, CAST_TRIGGERED);
-
-        if (m_pInstance)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            m_pInstance->SetData(TYPE_RAZUVIOUS, DONE);
+            DoScriptText(SAY_DEATH, m_creature);
+
+            DoCastSpellIfCan(m_creature, SPELL_HOPELESS, CAST_TRIGGERED);
+
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_RAZUVIOUS, DONE);
+            }
         }
-    }
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        switch (urand(0, 2))
+        void Aggro(Unit* /*pWho*/) override
         {
+            switch (urand(0, 2))
+            {
             case 0:
                 DoScriptText(SAY_AGGRO1, m_creature);
                 break;
@@ -117,56 +120,60 @@ struct boss_razuviousAI : public ScriptedAI
             case 2:
                 DoScriptText(SAY_AGGRO3, m_creature);
                 break;
-        }
+            }
 
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_RAZUVIOUS, IN_PROGRESS);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_RAZUVIOUS, FAIL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // Unbalancing Strike
-        if (m_uiUnbalancingStrikeTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_UNBALANCING_STRIKE) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiUnbalancingStrikeTimer = 30000;
+                m_pInstance->SetData(TYPE_RAZUVIOUS, IN_PROGRESS);
             }
         }
-        else
-            { m_uiUnbalancingStrikeTimer -= uiDiff; }
 
-        // Disrupting Shout
-        if (m_uiDisruptingShoutTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_DISRUPTING_SHOUT) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiDisruptingShoutTimer = 25000;
+                m_pInstance->SetData(TYPE_RAZUVIOUS, FAIL);
             }
         }
-        else
-            { m_uiDisruptingShoutTimer -= uiDiff; }
 
-        // Random say
-        if (m_uiCommandSoundTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            switch (urand(0, 3))
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
+                return;
+            }
+
+            // Unbalancing Strike
+            if (m_uiUnbalancingStrikeTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_UNBALANCING_STRIKE) == CAST_OK)
+                {
+                    m_uiUnbalancingStrikeTimer = 30000;
+                }
+            }
+            else
+            {
+                m_uiUnbalancingStrikeTimer -= uiDiff;
+            }
+
+            // Disrupting Shout
+            if (m_uiDisruptingShoutTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_DISRUPTING_SHOUT) == CAST_OK)
+                {
+                    m_uiDisruptingShoutTimer = 25000;
+                }
+            }
+            else
+            {
+                m_uiDisruptingShoutTimer -= uiDiff;
+            }
+
+            // Random say
+            if (m_uiCommandSoundTimer < uiDiff)
+            {
+                switch (urand(0, 3))
+                {
                 case 0:
                     DoScriptText(SAY_COMMAND1, m_creature);
                     break;
@@ -179,28 +186,33 @@ struct boss_razuviousAI : public ScriptedAI
                 case 3:
                     DoScriptText(SAY_COMMAND4, m_creature);
                     break;
+                }
+
+                m_uiCommandSoundTimer = 40000;
+            }
+            else
+            {
+                m_uiCommandSoundTimer -= uiDiff;
             }
 
-            m_uiCommandSoundTimer = 40000;
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiCommandSoundTimer -= uiDiff; }
+    };
 
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_razuviousAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_razuvious(Creature* pCreature)
-{
-    return new boss_razuviousAI(pCreature);
-}
-
 void AddSC_boss_razuvious()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_razuvious();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_razuvious";
-    pNewScript->GetAI = &GetAI_boss_razuvious;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_razuvious";
+    //pNewScript->GetAI = &GetAI_boss_razuvious;
+    //pNewScript->RegisterSelf();
 }

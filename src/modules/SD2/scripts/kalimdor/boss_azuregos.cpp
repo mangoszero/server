@@ -31,7 +31,7 @@
  * SDCategory:  Azshara
  * EndScriptData
  */
-
+//TODO join this with the corresponding zone
 #include "precompiled.h"
 
 enum
@@ -49,145 +49,164 @@ enum
     SPELL_ENRAGE                = 23537,
 };
 
-struct boss_azuregosAI : public ScriptedAI
+struct boss_azuregos : public CreatureScript
 {
-    boss_azuregosAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_azuregos() : CreatureScript("boss_azuregos") {}
 
-    uint32 m_uiManaStormTimer;
-    uint32 m_uiChillTimer;
-    uint32 m_uiBreathTimer;
-    uint32 m_uiTeleportTimer;
-    uint32 m_uiReflectTimer;
-    uint32 m_uiCleaveTimer;
-    bool m_bEnraged;
-
-    void Reset() override
+    struct boss_azuregosAI : public ScriptedAI
     {
-        m_uiManaStormTimer  = urand(5000, 17000);
-        m_uiChillTimer      = urand(10000, 30000);
-        m_uiBreathTimer     = urand(2000, 8000);
-        m_uiTeleportTimer   = 30000;
-        m_uiReflectTimer    = urand(15000, 30000);
-        m_uiCleaveTimer     = 7000;
-        m_bEnraged          = false;
-    }
+        boss_azuregosAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void KilledUnit(Unit* pVictim) override
-    {
-        // Mark killed players with Mark of Frost
-        if (pVictim->GetTypeId() == TYPEID_PLAYER)
+        uint32 m_uiManaStormTimer;
+        uint32 m_uiChillTimer;
+        uint32 m_uiBreathTimer;
+        uint32 m_uiTeleportTimer;
+        uint32 m_uiReflectTimer;
+        uint32 m_uiCleaveTimer;
+        bool m_bEnraged;
+
+        void Reset() override
         {
-            pVictim->CastSpell(pVictim, SPELL_MARK_OF_FROST_PLAYER, true, NULL, NULL, m_creature->GetObjectGuid());
-        }
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        // Boss aura which triggers the stun effect on dead players who resurrect
-        DoCastSpellIfCan(m_creature, SPELL_MARK_OF_FROST_AURA);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_uiManaStormTimer = urand(5000, 17000);
+            m_uiChillTimer = urand(10000, 30000);
+            m_uiBreathTimer = urand(2000, 8000);
+            m_uiTeleportTimer = 30000;
+            m_uiReflectTimer = urand(15000, 30000);
+            m_uiCleaveTimer = 7000;
+            m_bEnraged = false;
         }
 
-        if (m_uiTeleportTimer < uiDiff)
+        void KilledUnit(Unit* pVictim) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_VACUUM) == CAST_OK)
+            // Mark killed players with Mark of Frost
+            if (pVictim->GetTypeId() == TYPEID_PLAYER)
             {
-                DoScriptText(SAY_TELEPORT, m_creature);
-                m_uiTeleportTimer = 30000;
+                pVictim->CastSpell(pVictim, SPELL_MARK_OF_FROST_PLAYER, true, NULL, NULL, m_creature->GetObjectGuid());
             }
         }
-        else
-            { m_uiTeleportTimer -= uiDiff; }
 
-        // Chill Timer
-        if (m_uiChillTimer < uiDiff)
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_CHILL) == CAST_OK)
-            {
-                m_uiChillTimer = urand(13000, 25000);
-            }
+            // Boss aura which triggers the stun effect on dead players who resurrect
+            DoCastSpellIfCan(m_creature, SPELL_MARK_OF_FROST_AURA);
         }
-        else
-            { m_uiChillTimer -= uiDiff; }
 
-        // Breath Timer
-        if (m_uiBreathTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_FROST_BREATH) == CAST_OK)
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                m_uiBreathTimer = urand(10000, 15000);
+                return;
             }
-        }
-        else
-            { m_uiBreathTimer -= uiDiff; }
 
-        // Mana Storm Timer
-        if (m_uiManaStormTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (m_uiTeleportTimer < uiDiff)
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_MANA_STORM) == CAST_OK)
+                if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_VACUUM) == CAST_OK)
                 {
-                    m_uiManaStormTimer = urand(7500, 12500);
+                    DoScriptText(SAY_TELEPORT, m_creature);
+                    m_uiTeleportTimer = 30000;
                 }
             }
-        }
-        else
-            { m_uiManaStormTimer -= uiDiff; }
-
-        // Reflect Timer
-        if (m_uiReflectTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_REFLECT) == CAST_OK)
+            else
             {
-                m_uiReflectTimer = urand(20000, 35000);
+                m_uiTeleportTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiReflectTimer -= uiDiff; }
 
-        // Cleave Timer
-        if (m_uiCleaveTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+            // Chill Timer
+            if (m_uiChillTimer < uiDiff)
             {
-                m_uiCleaveTimer = 7000;
+                if (DoCastSpellIfCan(m_creature, SPELL_CHILL) == CAST_OK)
+                {
+                    m_uiChillTimer = urand(13000, 25000);
+                }
             }
-        }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
-
-        // EnrageTimer
-        if (!m_bEnraged && m_creature->GetHealthPercent() < 26.0f)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_ENRAGE) == CAST_OK)
+            else
             {
-                m_bEnraged = true;
+                m_uiChillTimer -= uiDiff;
             }
-        }
 
-        DoMeleeAttackIfReady();
+            // Breath Timer
+            if (m_uiBreathTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FROST_BREATH) == CAST_OK)
+                {
+                    m_uiBreathTimer = urand(10000, 15000);
+                }
+            }
+            else
+            {
+                m_uiBreathTimer -= uiDiff;
+            }
+
+            // Mana Storm Timer
+            if (m_uiManaStormTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_MANA_STORM) == CAST_OK)
+                    {
+                        m_uiManaStormTimer = urand(7500, 12500);
+                    }
+                }
+            }
+            else
+            {
+                m_uiManaStormTimer -= uiDiff;
+            }
+
+            // Reflect Timer
+            if (m_uiReflectTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_REFLECT) == CAST_OK)
+                {
+                    m_uiReflectTimer = urand(20000, 35000);
+                }
+            }
+            else
+            {
+                m_uiReflectTimer -= uiDiff;
+            }
+
+            // Cleave Timer
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+                {
+                    m_uiCleaveTimer = 7000;
+                }
+            }
+            else
+            {
+                m_uiCleaveTimer -= uiDiff;
+            }
+
+            // EnrageTimer
+            if (!m_bEnraged && m_creature->GetHealthPercent() < 26.0f)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_ENRAGE) == CAST_OK)
+                {
+                    m_bEnraged = true;
+                }
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_azuregosAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_azuregos(Creature* pCreature)
-{
-    return new boss_azuregosAI(pCreature);
-}
-
 void AddSC_boss_azuregos()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_azuregos();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_azuregos";
-    pNewScript->GetAI = &GetAI_boss_azuregos;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_azuregos";
+    //pNewScript->GetAI = &GetAI_boss_azuregos;
+    //pNewScript->RegisterSelf();
 }

@@ -42,116 +42,128 @@ enum
     SPELL_GEHENNAS_CURSE        = 19716
 };
 
-struct boss_gehennasAI : public ScriptedAI
+struct boss_gehennas : public CreatureScript
 {
-    boss_gehennasAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_gehennas() : CreatureScript("boss_gehennas") {}
+
+    struct boss_gehennasAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiShadowBoltTimer;
-    uint32 m_uiRainOfFireTimer;
-    uint32 m_uiGehennasCurseTimer;
-
-    void Reset() override
-    {
-        m_uiShadowBoltTimer = 6000;
-        m_uiRainOfFireTimer = 10000;
-        m_uiGehennasCurseTimer = 12000;
-    }
-
-    void Aggro(Unit* /*pwho*/) override
-    {
-        if (m_pInstance)
+        boss_gehennasAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_GEHENNAS, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_GEHENNAS, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_GEHENNAS, FAIL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // ShadowBolt Timer
-        if (m_uiShadowBoltTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiShadowBoltTimer;
+        uint32 m_uiRainOfFireTimer;
+        uint32 m_uiGehennasCurseTimer;
+
+        void Reset() override
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+            m_uiShadowBoltTimer = 6000;
+            m_uiRainOfFireTimer = 10000;
+            m_uiGehennasCurseTimer = 12000;
+        }
+
+        void Aggro(Unit* /*pwho*/) override
+        {
+            if (m_pInstance)
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_BOLT) == CAST_OK)
+                m_pInstance->SetData(TYPE_GEHENNAS, IN_PROGRESS);
+            }
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_GEHENNAS, DONE);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_GEHENNAS, FAIL);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // ShadowBolt Timer
+            if (m_uiShadowBoltTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_BOLT) == CAST_OK)
+                    {
+                        m_uiShadowBoltTimer = 7000;
+                    }
+                }
+                else                                            // In case someone attempts soloing, we don't need to scan for targets every tick
                 {
                     m_uiShadowBoltTimer = 7000;
                 }
             }
-            else                                            // In case someone attempts soloing, we don't need to scan for targets every tick
+            else
             {
-                m_uiShadowBoltTimer = 7000;
+                m_uiShadowBoltTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiShadowBoltTimer -= uiDiff; }
 
-        // Rain of Fire Timer
-        if (m_uiRainOfFireTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            // Rain of Fire Timer
+            if (m_uiRainOfFireTimer < uiDiff)
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_RAIN_OF_FIRE) == CAST_OK)
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
                 {
-                    m_uiRainOfFireTimer = urand(4000, 12000);
+                    if (DoCastSpellIfCan(pTarget, SPELL_RAIN_OF_FIRE) == CAST_OK)
+                    {
+                        m_uiRainOfFireTimer = urand(4000, 12000);
+                    }
                 }
             }
-        }
-        else
-            { m_uiRainOfFireTimer -= uiDiff; }
-
-        // GehennasCurse Timer
-        if (m_uiGehennasCurseTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_GEHENNAS_CURSE) == CAST_OK)
+            else
             {
-                m_uiGehennasCurseTimer = 30000;
+                m_uiRainOfFireTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiGehennasCurseTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+            // GehennasCurse Timer
+            if (m_uiGehennasCurseTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_GEHENNAS_CURSE) == CAST_OK)
+                {
+                    m_uiGehennasCurseTimer = 30000;
+                }
+            }
+            else
+            {
+                m_uiGehennasCurseTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_gehennasAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_gehennas(Creature* pCreature)
-{
-    return new boss_gehennasAI(pCreature);
-}
-
 void AddSC_boss_gehennas()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_gehennas();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_gehennas";
-    pNewScript->GetAI = &GetAI_boss_gehennas;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_gehennas";
+    //pNewScript->GetAI = &GetAI_boss_gehennas;
+    //pNewScript->RegisterSelf();
 }
