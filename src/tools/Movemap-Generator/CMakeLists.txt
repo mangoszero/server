@@ -68,6 +68,10 @@ else()
   target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
+if(UNIX)
+  target_link_libraries(${EXECUTABLE_NAME} rt)
+endif()
+
 target_link_libraries(${EXECUTABLE_NAME} g3dlite vmap detour recast zlib shared)
 
 #Output the compiled exes to build/bin/$(Configuration)/tools directory on windows by default
