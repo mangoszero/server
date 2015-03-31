@@ -1891,7 +1891,7 @@ void World::ServerMaintenanceStart()
         if (itr->second->GetPlayer() && itr->second->GetPlayer()->IsInWorld())
             { itr->second->GetPlayer()->SaveToDB(); }
 
-    CharacterDatabase.PExecute("UPDATE saved_variables SET NextMaintenanceDate = '"UI64FMTD"'", uint64(m_NextMaintenanceDate));
+    CharacterDatabase.PExecute("UPDATE saved_variables SET NextMaintenanceDate = '" UI64FMTD "'", uint64(m_NextMaintenanceDate));
 }
 
 void World::InitServerMaintenanceCheck()
@@ -1902,7 +1902,7 @@ void World::InitServerMaintenanceCheck()
         DEBUG_LOG("Maintenance date not found in SavedVariables, reseting it now.");
         uint32 mDate = GetDateLastMaintenanceDay();
         m_NextMaintenanceDate = mDate == GetDateToday() ?  mDate : mDate + 7;
-        CharacterDatabase.PExecute("INSERT INTO saved_variables (NextMaintenanceDate) VALUES ('"UI64FMTD"')", uint64(m_NextMaintenanceDate));
+        CharacterDatabase.PExecute("INSERT INTO saved_variables (NextMaintenanceDate) VALUES ('" UI64FMTD "')", uint64(m_NextMaintenanceDate));
     }
     else
     {
