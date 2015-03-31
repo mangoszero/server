@@ -213,6 +213,7 @@ class SpellAuraHolder
         ~SpellAuraHolder();
     private:
         void UpdateAuraApplication();                       // called at charges or stack changes
+        bool HeartbeatResist(uint32 diff);
 
         SpellEntry const* m_spellProto;
 
@@ -237,6 +238,7 @@ class SpellAuraHolder
         bool m_isPassive: 1;
         bool m_isDeathPersist: 1;
         bool m_isRemovedOnShapeLost: 1;
+        bool m_isHeartbeatSubject: 1;
         bool m_deleted: 1;
 
         uint32 m_in_use;                                    // > 0 while in SpellAuraHolder::ApplyModifiers call/SpellAuraHolder::Update/etc

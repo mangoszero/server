@@ -346,28 +346,16 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
         { return; }
 
     bool IsActivateToQuest = false;
-    bool IsPerCasterAuraState = false;
+    //bool IsPerCasterAuraState = false;
 
-    if (updatetype == UPDATETYPE_CREATE_OBJECT || updatetype == UPDATETYPE_CREATE_OBJECT2)
+    // this is called for UPDATETYPE_CREATE_OBJECT, UPDATETYPE_CREATE_OBJECT2, UPDATETYPE_VALUES only
+    if (isType(TYPEMASK_GAMEOBJECT) && !((GameObject*)this)->IsTransport())
     {
-        if (isType(TYPEMASK_GAMEOBJECT) && !((GameObject*)this)->IsTransport())
-        {
-            if (((GameObject*)this)->ActivateToQuest(target) || target->isGameMaster())
-                { IsActivateToQuest = true; }
+        IsActivateToQuest = ((GameObject*)this)->ActivateToQuest(target) || target->isGameMaster();
 
-            updateMask->SetBit(GAMEOBJECT_DYN_FLAGS);
-        }
-    }
-    else                                                    // case UPDATETYPE_VALUES
-    {
-        if (isType(TYPEMASK_GAMEOBJECT) && !((GameObject*)this)->IsTransport())
-        {
-            if (((GameObject*)this)->ActivateToQuest(target) || target->isGameMaster())
-                { IsActivateToQuest = true; }
-
-            updateMask->SetBit(GAMEOBJECT_DYN_FLAGS);
+        updateMask->SetBit(GAMEOBJECT_DYN_FLAGS);
+        if (updatetype == UPDATETYPE_VALUES)
             updateMask->SetBit(GAMEOBJECT_ANIMPROGRESS);
-        }
     }
 
     MANGOS_ASSERT(updateMask && updateMask->GetCount() == m_valuesCount);
@@ -375,138 +363,150 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
     *data << (uint8)updateMask->GetBlockCount();
     data->append(updateMask->GetMask(), updateMask->GetLength());
 
+    // checking the new bit extraction mechanic
+//#ifdef _DEBUG
+    uint16 ix = 0;
+    for (uint16 i = 0; i < m_valuesCount; i++)
+    {
+        if (updateMask->GetBit(i))
+        {
+            ix = updateMask->GetNextSetIndex(ix);
+            if (i != ix)
+                sLog.outError("ERROR BuildValuesUpdate: new index %u, should be %u for object type %u entry %u", ix, i, GetTypeId(), GetEntry());
+            ++ix;
+        }
+    }
+//#endif
+
     // 2 specialized loops for speed optimization in non-unit case
     if (isType(TYPEMASK_UNIT))                              // unit (creature/player) case
     {
-        for (uint16 index = 0; index < m_valuesCount; ++index)
+        uint16 index = 0;
+        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
         {
-            if (updateMask->GetBit(index))
+            if (index == UNIT_NPC_FLAGS)
             {
-                if (index == UNIT_NPC_FLAGS)
+                uint32 appendValue = m_uint32Values[index];
+
+                if (GetTypeId() == TYPEID_UNIT)
                 {
-                    uint32 appendValue = m_uint32Values[index];
-
-                    if (GetTypeId() == TYPEID_UNIT)
+                    if (appendValue & UNIT_NPC_FLAG_TRAINER)
                     {
-                        if (appendValue & UNIT_NPC_FLAG_TRAINER)
-                        {
-                            if (!((Creature*)this)->IsTrainerOf(target, false))
-                                { appendValue &= ~UNIT_NPC_FLAG_TRAINER; }
-                        }
-
-                        if (appendValue & UNIT_NPC_FLAG_STABLEMASTER)
-                        {
-                            if (target->getClass() != CLASS_HUNTER)
-                                { appendValue &= ~UNIT_NPC_FLAG_STABLEMASTER; }
-                        }
+                        if (!((Creature*)this)->IsTrainerOf(target, false))
+                            { appendValue &= ~UNIT_NPC_FLAG_TRAINER; }
                     }
 
-                    *data << uint32(appendValue);
-                }
-                // FIXME: Some values at server stored in float format but must be sent to client in uint32 format
-                else if (index >= UNIT_FIELD_BASEATTACKTIME && index <= UNIT_FIELD_RANGEDATTACKTIME)
-                {
-                    // convert from float to uint32 and send
-                    *data << uint32(m_floatValues[index] < 0 ? 0 : m_floatValues[index]);
-                }
-
-                // there are some float values which may be negative or can't get negative due to other checks
-                else if ((index >= PLAYER_FIELD_NEGSTAT0    && index <= PLAYER_FIELD_NEGSTAT4) ||
-                         (index >= PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE + 6)) ||
-                         (index >= PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE + 6)) ||
-                         (index >= PLAYER_FIELD_POSSTAT0    && index <= PLAYER_FIELD_POSSTAT4))
-                {
-                    *data << uint32(m_floatValues[index]);
-                }
-
-                // Gamemasters should be always able to select units - remove not selectable flag
-                else if (index == UNIT_FIELD_FLAGS && target->isGameMaster())
-                {
-                    *data << (m_uint32Values[index] & ~UNIT_FLAG_NOT_SELECTABLE);
-                }
-                /* Hide loot animation for players that aren't permitted to loot the corpse */
-                else if (index == UNIT_DYNAMIC_FLAGS && GetTypeId() == TYPEID_UNIT)
-                {
-                    uint32 send_value = m_uint32Values[index];
-
-                    /* Initiate pointer to creature so we can check loot */
-                    if (Creature* my_creature = (Creature*)this)
-                        /* If the creature is NOT fully looted */
-                        if (!my_creature->loot.isLooted())
-                            /* If the lootable flag is NOT set */
-                            if (!(send_value & UNIT_DYNFLAG_LOOTABLE))
-                            {
-                                /* Update it on the creature */
-                                my_creature->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-                                /* Update it in the packet */
-                                send_value = send_value | UNIT_DYNFLAG_LOOTABLE;
-                            }
-
-                    /* If we're not allowed to loot the target, destroy the lootable flag */
-                    if (!target->isAllowedToLoot((Creature*)this))
-                        if (send_value & UNIT_DYNFLAG_LOOTABLE)
-                            { send_value = send_value & ~UNIT_DYNFLAG_LOOTABLE; }
-
-                    /* If we are allowed to loot it and mob is tapped by us, destroy the tapped flag */
-                    bool is_tapped = target->IsTappedByMeOrMyGroup((Creature*)this);
-
-                    /* If the creature has tapped flag but is tapped by us, remove the flag */
-                    if (send_value & UNIT_DYNFLAG_TAPPED && is_tapped)
-                        { send_value = send_value & ~UNIT_DYNFLAG_TAPPED; }
-
-                    *data << send_value;
-                }
-                else
-                {
-                    // send in current format (float as float, uint32 as uint32)
-                    *data << m_uint32Values[index];
-                }
-            }
-        }
-    }
-    else if (isType(TYPEMASK_GAMEOBJECT))                   // gameobject case
-    {
-        for (uint16 index = 0; index < m_valuesCount; ++index)
-        {
-            if (updateMask->GetBit(index))
-            {
-                // send in current format (float as float, uint32 as uint32)
-                if (index == GAMEOBJECT_DYN_FLAGS)
-                {
-                    if (IsActivateToQuest)
+                    if (appendValue & UNIT_NPC_FLAG_STABLEMASTER)
                     {
-                        switch (((GameObject*)this)->GetGoType())
-                        {
-                            case GAMEOBJECT_TYPE_QUESTGIVER:
-                            case GAMEOBJECT_TYPE_CHEST:
-                            case GAMEOBJECT_TYPE_GENERIC:
-                            case GAMEOBJECT_TYPE_SPELL_FOCUS:
-                            case GAMEOBJECT_TYPE_GOOBER:
-                                *data << uint16(GO_DYNFLAG_LO_ACTIVATE);
-                                *data << uint16(0);
-                                break;
-                            default:
-                                *data << uint32(0);         // unknown, not happen.
-                                break;
-                        }
+                        if (target->getClass() != CLASS_HUNTER)
+                            { appendValue &= ~UNIT_NPC_FLAG_STABLEMASTER; }
                     }
-                    else
-                        { *data << uint32(0); }                 // disable quest object
                 }
-                else
-                    { *data << m_uint32Values[index]; }         // other cases
+
+                *data << uint32(appendValue);
             }
-        }
-    }
-    else                                                    // other objects case (no special index checks)
-    {
-        for (uint16 index = 0; index < m_valuesCount; ++index)
-        {
-            if (updateMask->GetBit(index))
+            // FIXME: Some values at server stored in float format but must be sent to client in uint32 format
+            else if (index >= UNIT_FIELD_BASEATTACKTIME && index <= UNIT_FIELD_RANGEDATTACKTIME)
+            {
+                // convert from float to uint32 and send
+                *data << uint32(m_floatValues[index] < 0 ? 0 : m_floatValues[index]);
+            }
+
+            // there are some float values which may be negative or can't get negative due to other checks
+            else if ((index >= PLAYER_FIELD_NEGSTAT0    && index <= PLAYER_FIELD_NEGSTAT4) ||
+                        (index >= PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE + 6)) ||
+                        (index >= PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE + 6)) ||
+                        (index >= PLAYER_FIELD_POSSTAT0    && index <= PLAYER_FIELD_POSSTAT4))
+            {
+                *data << uint32(m_floatValues[index]);
+            }
+
+            // Gamemasters should be always able to select units - remove not selectable flag
+            else if (index == UNIT_FIELD_FLAGS && target->isGameMaster())
+            {
+                *data << (m_uint32Values[index] & ~UNIT_FLAG_NOT_SELECTABLE);
+            }
+            /* Hide loot animation for players that aren't permitted to loot the corpse */
+            else if (index == UNIT_DYNAMIC_FLAGS && GetTypeId() == TYPEID_UNIT)
+            {
+                uint32 send_value = m_uint32Values[index];
+
+                /* Initiate pointer to creature so we can check loot */
+                if (Creature* my_creature = (Creature*)this)
+                    /* If the creature is NOT fully looted */
+                    if (!my_creature->loot.isLooted())
+                        /* If the lootable flag is NOT set */
+                        if (!(send_value & UNIT_DYNFLAG_LOOTABLE))
+                        {
+                            /* Update it on the creature */
+                            my_creature->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                            /* Update it in the packet */
+                            send_value = send_value | UNIT_DYNFLAG_LOOTABLE;
+                        }
+
+                /* If we're not allowed to loot the target, destroy the lootable flag */
+                if (!target->isAllowedToLoot((Creature*)this))
+                    if (send_value & UNIT_DYNFLAG_LOOTABLE)
+                        { send_value = send_value & ~UNIT_DYNFLAG_LOOTABLE; }
+
+                /* If we are allowed to loot it and mob is tapped by us, destroy the tapped flag */
+                bool is_tapped = target->IsTappedByMeOrMyGroup((Creature*)this);
+
+                /* If the creature has tapped flag but is tapped by us, remove the flag */
+                if (send_value & UNIT_DYNFLAG_TAPPED && is_tapped)
+                    { send_value = send_value & ~UNIT_DYNFLAG_TAPPED; }
+
+                *data << send_value;
+            }
+            else
             {
                 // send in current format (float as float, uint32 as uint32)
                 *data << m_uint32Values[index];
             }
+            ++index;
+        }
+    }
+    else if (isType(TYPEMASK_GAMEOBJECT))                   // gameobject case
+    {
+        uint16 index = 0;
+        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
+        {
+            // send in current format (float as float, uint32 as uint32)
+            if (index == GAMEOBJECT_DYN_FLAGS)
+            {
+                if (IsActivateToQuest)
+                {
+                    switch (((GameObject*)this)->GetGoType())
+                    {
+                        case GAMEOBJECT_TYPE_QUESTGIVER:
+                        case GAMEOBJECT_TYPE_CHEST:
+                        case GAMEOBJECT_TYPE_GENERIC:
+                        case GAMEOBJECT_TYPE_SPELL_FOCUS:
+                        case GAMEOBJECT_TYPE_GOOBER:
+                            *data << uint16(GO_DYNFLAG_LO_ACTIVATE);
+                            *data << uint16(0);
+                            break;
+                        default:
+                            *data << uint32(0);         // unknown, not happen.
+                            break;
+                    }
+                }
+                else
+                    { *data << uint32(0); }                 // disable quest object
+            }
+            else
+                { *data << m_uint32Values[index]; }         // other cases
+            ++index;
+        }
+    }
+    else                                                    // other objects case (no special index checks)
+    {
+        uint16 index = 0;
+        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
+        {
+            // send in current format (float as float, uint32 as uint32)
+            *data << m_uint32Values[index];
+            ++index;
         }
     }
 }

@@ -27,6 +27,9 @@
 
 #include "UpdateFields.h"
 #include "Errors.h"
+#ifdef WIN32
+#include <intrin.h>
+#endif
 
 class UpdateMask
 {
@@ -52,6 +55,20 @@ class UpdateMask
         bool GetBit(uint32 index) const
         {
             return (((uint8*)mUpdateMask)[ index >> 3 ] & (1 << (index & 0x7))) != 0;
+        }
+
+        uint32 GetNextSetIndex(uint32 start) const
+        {
+            uint32 index = start;
+            while (index <= mCount)
+            {
+                uint32 offset = ctz(mUpdateMask[index >> 5] >> (index & 0x1F));
+                if (offset < (32 - (index & 0x1F)))
+                    return index + offset;
+                else
+                    index += (32 - (index & 0x1F));
+            }
+            return mCount;
         }
 
         uint32 GetBlockCount() const { return mBlocks; }
@@ -124,5 +141,18 @@ class UpdateMask
         uint32 mCount;
         uint32 mBlocks;
         uint32* mUpdateMask;
+
+#ifdef WIN32
+        static uint32 __inline __builtin_ctz(uint32 x)
+        {
+            unsigned long r = 0;
+            _BitScanForward(&r, x);
+            return r;
+        }
+#endif
+        static inline uint32 ctz(const uint32 x)
+        {
+            return x ? __builtin_ctz(x) : 32;
+        }
 };
 #endif

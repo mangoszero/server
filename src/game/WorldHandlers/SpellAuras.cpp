@@ -4861,6 +4861,13 @@ void Aura::HandleInterruptRegen(bool apply, bool Real)
     GetTarget()->SetInDummyCombatState(apply);
 }
 
+// NOTE this may be moved to the header file, but no need because it is used locally
+#define HEARTBEAT_AURA_MECHANIC_MASK ( \
+    (1 << (MECHANIC_CHARM - 1)) | (1 << (MECHANIC_BANISH - 1)) | (1 << (MECHANIC_DISORIENTED - 1)) | \
+    (1 << (MECHANIC_POLYMORPH - 1)) | (1 << (MECHANIC_HORROR - 1)) | (1 << (MECHANIC_FEAR - 1)) | \
+    (1 << (MECHANIC_SLEEP - 1)) | (1 << (MECHANIC_SAPPED - 1)) | (1 << (MECHANIC_FREEZE - 1)) | \
+    (1 << (MECHANIC_ROOT - 1)) | (1 << (MECHANIC_STUN - 1)) | (1 << (MECHANIC_KNOCKOUT - 1)))
+
 SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, WorldObject* caster, Item* castItem) :
     m_spellProto(spellproto),
     m_target(target), m_castItemGuid(castItem ? castItem->GetObjectGuid() : ObjectGuid()),
@@ -4916,6 +4923,9 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
             m_stackAmount = m_spellProto->StackAmount;
             break;
     }
+
+    m_isHeartbeatSubject = (GetSpellMechanicMask(m_spellProto, (1 << MAX_EFFECT_INDEX) - 1) & HEARTBEAT_AURA_MECHANIC_MASK)
+        && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
         { m_auras[i] = NULL; }
@@ -5436,6 +5446,18 @@ void SpellAuraHolder::Update(uint32 diff)
         if (Aura* aura = m_auras[i])
             { aura->UpdateAura(diff); }
 
+    if (m_isHeartbeatSubject && m_duration)
+    {
+        if (HeartbeatResist(diff)) //m_duration, GetCaster()->ToPlayer(), GetTarget()->ToPlayer() all available within AuraHolder instance
+        {
+            if (diff >= 1 * IN_MILLISECONDS || urand(1, 1 * IN_MILLISECONDS) < diff)
+            {
+                sLog.outError("Heartbeat: spell %u max timed %u, elapsed %u, chance to resist %f", m_spellProto->Id, m_maxDuration, m_maxDuration - m_duration, pow((m_maxDuration - m_duration + diff) / 15.0f, 2) / (IN_MILLISECONDS*IN_MILLISECONDS));
+                m_duration = 1; //equivalent to remove by expire
+            }
+        }
+    }
+
     // Channeled aura required check distance from caster
     if (IsChanneledSpell(m_spellProto) && GetCasterGuid() != m_target->GetObjectGuid())
     {
@@ -5614,6 +5636,14 @@ void SpellAuraHolder::UpdateAuraDuration()
 
     if (caster && caster->GetTypeId() == TYPEID_PLAYER && caster != m_target)
         { SendAuraDurationForCaster((Player*)caster); }
+}
+
+bool SpellAuraHolder::HeartbeatResist(uint32 diff)
+{
+    // m_maxDuration - m_duration : Elapsed aura time in ms
+    // 15 sec is an empirical constant
+    // TODO use target resistances! the simplest formula from valkyrie-wow is used now
+    return (urand(0, IN_MILLISECONDS*IN_MILLISECONDS) < pow((m_maxDuration - m_duration + diff) / 15.0f, 2));
 }
 
 void SpellAuraHolder::SendAuraDurationForCaster(Player* caster)
