@@ -131,6 +131,10 @@ BindIP                       = "0.0.0.0"
 #        Map update interval (in milliseconds)
 #        Default: 100
 #
+#    MapUpdateThreads
+#        Number of map update threads to run
+#        Default: 2
+#
 #    ChangeWeatherInterval
 #        Weather update interval (in milliseconds)
 #        Default: 600000 (10 min)
@@ -220,6 +224,7 @@ GridUnload                        = 1
 LoadAllGridsOnMaps                = ""
 GridCleanUpDelay                  = 300000
 MapUpdateInterval                 = 100
+MapUpdateThreads                  = 2
 ChangeWeatherInterval             = 600000
 PlayerSave.Interval               = 900000
 PlayerSave.Stats.MinLevel         = 0

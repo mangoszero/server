@@ -23,6 +23,7 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot"
   "${CMAKE_CURRENT_SOURCE_DIR}/BattleGround"
   "${CMAKE_CURRENT_SOURCE_DIR}/ChatCommands"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Maps"
   "${CMAKE_CURRENT_SOURCE_DIR}/MotionGenerators"
   "${CMAKE_CURRENT_SOURCE_DIR}/Object"
   "${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP"
@@ -39,9 +40,11 @@ include_directories(
   "${CMAKE_SOURCE_DIR}/dep/include"
   "${CMAKE_SOURCE_DIR}/src/shared"
   "${CMAKE_SOURCE_DIR}/src/shared/Common"
+  "${CMAKE_SOURCE_DIR}/src/shared/Database"
+  "${CMAKE_SOURCE_DIR}/src/shared/DataStores"
   "${CMAKE_SOURCE_DIR}/src/shared/Utilities"
   "${CMAKE_SOURCE_DIR}/src/shared/Log"
-  "${CMAKE_SOURCE_DIR}/src/shared/DataStores"
+  "${CMAKE_SOURCE_DIR}/src/shared/Threading"
   "${CMAKE_SOURCE_DIR}/src/framework"
   "${CMAKE_BINARY_DIR}/src/shared"
   "${MYSQL_INCLUDE_DIR}"
@@ -69,6 +72,13 @@ file(GLOB SRC_GRP_CHAT_COMMANDS ChatCommands/*.cpp ChatCommands/*.h)
 source_group("Chat Commands"
   FILES
     ${SRC_GRP_CHAT_COMMANDS}
+)
+
+#Map Threading group
+file(GLOB SRC_GRP_MAP_THREAD Maps/*.cpp Maps/*.h)
+source_group("Map Threading"
+  FILES
+    ${SRC_GRP_MAP_THREAD}
 )
 
 #Motion Generator group
@@ -138,6 +148,7 @@ set(LIBRARY_SRCS
     ${SRC_GRP_AHBOT}
     ${SRC_GRP_BATTLEGROUND}
     ${SRC_GRP_CHAT_COMMANDS}
+    ${SRC_GRP_MAP_THREAD}
     ${SRC_GRP_MOTION_GEN}
     ${SRC_GRP_MOVEMENT}
     ${SRC_GRP_OBJECT}
