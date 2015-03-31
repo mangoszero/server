@@ -83,7 +83,7 @@ class BIHWrap
             void operator()(const Vector3& p, uint32 Idx)
             {
                 if (Idx >= objects_size) 
-                    { return false; }
+                    { return; }
 
                 if (const T* obj = objects[Idx])
                     { cb(p, *obj); }
