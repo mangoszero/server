@@ -24,21 +24,21 @@
 
 #include "SQLStorages.h"
 
-const char CreatureInfosrcfmt[] = "issiiiiiifiiiiliiiiiffiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiss";
-const char CreatureInfodstfmt[] = "issiiiiiifiiiiliiiiiffiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisi";
+const char CreatureInfosrcfmt[] = "issiiiiiifiiiiliiiiiffiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
+const char CreatureInfodstfmt[] = "issiiiiiifiiiiliiiiiffiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
 const char CreatureDataAddonInfofmt[] = "iiibbiis";
 const char CreatureModelfmt[] = "iffbii";
 const char CreatureInfoAddonInfofmt[] = "iiibbiis";
 const char EquipmentInfofmt[] = "iiii";
 const char EquipmentInfoItemfmt[] = "iiiiiii";
 const char EquipmentInfoRawfmt[] = "iiiiiiiiii";
-const char GameObjectInfosrcfmt[] = "iiisiifiiiiiiiiiiiiiiiiiiiiiiiiiis";
-const char GameObjectInfodstfmt[] = "iiisiifiiiiiiiiiiiiiiiiiiiiiiiiiii";
-const char ItemPrototypesrcfmt[] = "iiisiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiffiffiffiffiffiiiiiiiiiifiiifiiiiiifiiiiiifiiiiiifiiiiiifiiiisiiiiiiiiiiiiiisiiiiii";
-const char ItemPrototypedstfmt[] = "iiisiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiffiffiffiffiffiiiiiiiiiifiiifiiiiiifiiiiiifiiiiiifiiiiiifiiiisiiiiiiiiiiiiiiiiiiiii";
+const char GameObjectInfosrcfmt[] = "iiisiifiiiiiiiiiiiiiiiiiiiiiiiiii";
+const char GameObjectInfodstfmt[] = "iiisiifiiiiiiiiiiiiiiiiiiiiiiiiii";
+const char ItemPrototypesrcfmt[] = "iiisiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiffiffiffiffiffiiiiiiiiiifiiifiiiiiifiiiiiifiiiiiifiiiiiifiiiisiiiiiiiiiiiiiiiiiiii";
+const char ItemPrototypedstfmt[] = "iiisiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiffiffiffiffiffiiiiiiiiiifiiifiiiiiifiiiiiifiiiiiifiiiiiifiiiisiiiiiiiiiiiiiiiiiiii";
 const char PageTextfmt[] = "isi";
-const char InstanceTemplatesrcfmt[] = "iiiiiiiffs";
-const char InstanceTemplatedstfmt[] = "iiiiiiiffi";
+const char InstanceTemplatesrcfmt[] = "iiiiiiiff";
+const char InstanceTemplatedstfmt[] = "iiiiiiiff";
 const char WorldTemplatesrcfmt[] = "is";
 const char WorldTemplatedstfmt[] = "ii";
 const char ConditionsSrcFmt[] = "iiii";

@@ -35,60 +35,71 @@
 #include "precompiled.h"
 #include "world_map_scripts.h"
 
+// for non-instantiable maps, ZoneScript provides excessive mechanic, but nevertheless
+
 /* *********************************************************
  *                  EASTERN KINGDOMS
  */
-struct world_map_eastern_kingdoms : public ScriptedMap
+struct map_eastern_kingdoms : public ZoneScript
 {
-    world_map_eastern_kingdoms(Map* pMap) : ScriptedMap(pMap) {}
+    map_eastern_kingdoms() : ZoneScript("world_map_eastern_kingdoms") {}
 
-    void OnCreatureCreate(Creature* pCreature)
+    struct world_map_eastern_kingdoms : public ScriptedMap
     {
-        switch (pCreature->GetEntry())
+        world_map_eastern_kingdoms(Map* pMap) : ScriptedMap(pMap) {}
+
+        void OnCreatureCreate(Creature* pCreature)
         {
+            switch (pCreature->GetEntry())
+            {
             case NPC_JONATHAN:
             case NPC_WRYNN:
             case NPC_BOLVAR:
             case NPC_PRESTOR:
             case NPC_WINDSOR:
                 m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+            }
         }
+
+        void SetData(uint32 /*uiType*/, uint32 /*uiData*/) {}
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
+    {
+        return new world_map_eastern_kingdoms(pMap);
     }
-
-    void SetData(uint32 /*uiType*/, uint32 /*uiData*/) {}
 };
-
-InstanceData* GetInstanceData_world_map_eastern_kingdoms(Map* pMap)
-{
-    return new world_map_eastern_kingdoms(pMap);
-}
 
 /* *********************************************************
  *                     KALIMDOR
  */
-struct world_map_kalimdor : public ScriptedMap
+struct map_kalimdor : public ZoneScript
 {
-    world_map_kalimdor(Map* pMap) : ScriptedMap(pMap) { Initialize(); }
+    map_kalimdor() : ZoneScript("world_map_kalimdor") {}
 
-    uint8 m_uiMurkdeepAdds_KilledAddCount;
-
-    void Initialize()
+    struct world_map_kalimdor : public ScriptedMap
     {
-        m_uiMurkdeepAdds_KilledAddCount = 0;
-    }
+        world_map_kalimdor(Map* pMap) : ScriptedMap(pMap) { Initialize(); }
 
-    void OnCreatureCreate(Creature* pCreature)
-    {
-        if (pCreature->GetEntry() == NPC_MURKDEEP)
+        uint8 m_uiMurkdeepAdds_KilledAddCount;
+
+        void Initialize()
         {
-            m_mNpcEntryGuidStore[NPC_MURKDEEP] = pCreature->GetObjectGuid();
+            m_uiMurkdeepAdds_KilledAddCount = 0;
         }
-    }
 
-    void OnCreatureDeath(Creature* pCreature)
-    {
-        switch (pCreature->GetEntry())
+        void OnCreatureCreate(Creature* pCreature)
         {
+            if (pCreature->GetEntry() == NPC_MURKDEEP)
+            {
+                m_mNpcEntryGuidStore[NPC_MURKDEEP] = pCreature->GetObjectGuid();
+            }
+        }
+
+        void OnCreatureDeath(Creature* pCreature)
+        {
+            switch (pCreature->GetEntry())
+            {
             case NPC_GREYMIST_COASTRUNNNER:
                 if (pCreature->IsTemporarySummon())         // Only count the ones summoned for Murkdeep quest
                 {
@@ -139,28 +150,33 @@ struct world_map_kalimdor : public ScriptedMap
                     }
                 }
                 break;
+            }
         }
+
+        void SetData(uint32 /*uiType*/, uint32 /*uiData*/) {}
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
+    {
+        return new world_map_kalimdor(pMap);
     }
-
-    void SetData(uint32 /*uiType*/, uint32 /*uiData*/) {}
 };
-
-InstanceData* GetInstanceData_world_map_kalimdor(Map* pMap)
-{
-    return new world_map_kalimdor(pMap);
-}
 
 void AddSC_world_map_scripts()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new map_eastern_kingdoms();
+    s->RegisterSelf();
+    s = new map_kalimdor();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_eastern_kingdoms";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_eastern_kingdoms;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "world_map_eastern_kingdoms";
+    //pNewScript->GetInstanceData = &GetInstanceData_world_map_eastern_kingdoms;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "world_map_kalimdor";
-    pNewScript->GetInstanceData = &GetInstanceData_world_map_kalimdor;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "world_map_kalimdor";
+    //pNewScript->GetInstanceData = &GetInstanceData_world_map_kalimdor;
+    //pNewScript->RegisterSelf();
 }

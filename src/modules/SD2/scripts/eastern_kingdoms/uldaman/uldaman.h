@@ -33,6 +33,7 @@ enum
     TYPE_ALTAR_EVENT            = 1,
     TYPE_ARCHAEDAS              = 2,
     DATA_EVENT_STARTER          = 3,
+    TYPE_SIGNAL                 = 4,
 
     GO_TEMPLE_DOOR_UPPER        = 124367,
     GO_TEMPLE_DOOR_LOWER        = 141869,
@@ -51,49 +52,6 @@ enum
 
     EVENT_ID_ALTAR_KEEPER       = 2228,                     // spell 11568
     EVENT_ID_ALTAR_ARCHAEDAS    = 2268                      // spell 10340
-};
-
-class instance_uldaman : public ScriptedInstance
-{
-    public:
-        instance_uldaman(Map* pMap);
-        ~instance_uldaman() {}
-
-        void Initialize() override;
-
-        void OnObjectCreate(GameObject* pGo) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-
-        void OnCreatureDeath(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature) override;
-
-        void Update(uint32 uiDiff) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        void SetData64(uint32 uiData, uint64 uiGuid) override;
-        uint32 GetData(uint32 uiType) const override;
-        uint64 GetData64(uint32 uiData) const override;
-
-        void StartEvent(uint32 uiEventId, Player* pPlayer);
-
-        Creature* GetClosestDwarfNotInCombat(Creature* pSearcher);
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-    protected:
-        void DoResetKeeperEvent();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        ObjectGuid m_playerGuid;
-
-        uint32 m_uiKeeperCooldown;
-        uint32 m_uiStoneKeepersFallen;
-
-        GuidList m_lWardens;
-        GuidList m_lKeepers;
 };
 
 #endif

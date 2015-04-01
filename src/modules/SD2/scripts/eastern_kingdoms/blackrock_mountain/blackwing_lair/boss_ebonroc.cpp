@@ -43,117 +43,133 @@ enum
     SPELL_THRASH                = 3391
 };
 
-struct boss_ebonrocAI : public ScriptedAI
+struct boss_ebonroc : public CreatureScript
 {
-    boss_ebonrocAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_ebonroc() : CreatureScript("boss_ebonroc") {}
+
+    struct boss_ebonrocAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiShadowFlameTimer;
-    uint32 m_uiWingBuffetTimer;
-    uint32 m_uiShadowOfEbonrocTimer;
-    uint32 m_uiTrashTimer;
-
-    void Reset() override
-    {
-        m_uiShadowFlameTimer        = 15000;                // These times are probably wrong
-        m_uiWingBuffetTimer         = 30000;
-        m_uiShadowOfEbonrocTimer    = 45000;
-        m_uiTrashTimer              = 25000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_ebonrocAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_EBONROC, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_EBONROC, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_EBONROC, FAIL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Shadow Flame Timer
-        if (m_uiShadowFlameTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiShadowFlameTimer;
+        uint32 m_uiWingBuffetTimer;
+        uint32 m_uiShadowOfEbonrocTimer;
+        uint32 m_uiTrashTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_FLAME) == CAST_OK)
+            m_uiShadowFlameTimer = 15000;                // These times are probably wrong
+            m_uiWingBuffetTimer = 30000;
+            m_uiShadowOfEbonrocTimer = 45000;
+            m_uiTrashTimer = 25000;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
             {
-                m_uiShadowFlameTimer = urand(12000, 15000);
+                m_pInstance->SetData(TYPE_EBONROC, IN_PROGRESS);
             }
         }
-        else
-            { m_uiShadowFlameTimer -= uiDiff; }
 
-        // Wing Buffet Timer
-        if (m_uiWingBuffetTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiWingBuffetTimer = 25000;
+                m_pInstance->SetData(TYPE_EBONROC, DONE);
             }
         }
-        else
-            { m_uiWingBuffetTimer -= uiDiff; }
 
-        // Shadow of Ebonroc Timer
-        if (m_uiShadowOfEbonrocTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHADOW_OF_EBONROC) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiShadowOfEbonrocTimer = urand(25000, 35000);
+                m_pInstance->SetData(TYPE_EBONROC, FAIL);
             }
         }
-        else
-            { m_uiShadowOfEbonrocTimer -= uiDiff; }
 
-        // Thrash Timer
-        if (m_uiTrashTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_THRASH) == CAST_OK)
-                { m_uiTrashTimer = 20000; }
-        }
-        else
-            { m_uiTrashTimer -= uiDiff; }
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
 
-        DoMeleeAttackIfReady();
+            // Shadow Flame Timer
+            if (m_uiShadowFlameTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_FLAME) == CAST_OK)
+                {
+                    m_uiShadowFlameTimer = urand(12000, 15000);
+                }
+            }
+            else
+            {
+                m_uiShadowFlameTimer -= uiDiff;
+            }
+
+            // Wing Buffet Timer
+            if (m_uiWingBuffetTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET) == CAST_OK)
+                {
+                    m_uiWingBuffetTimer = 25000;
+                }
+            }
+            else
+            {
+                m_uiWingBuffetTimer -= uiDiff;
+            }
+
+            // Shadow of Ebonroc Timer
+            if (m_uiShadowOfEbonrocTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_SHADOW_OF_EBONROC) == CAST_OK)
+                {
+                    m_uiShadowOfEbonrocTimer = urand(25000, 35000);
+                }
+            }
+            else
+            {
+                m_uiShadowOfEbonrocTimer -= uiDiff;
+            }
+
+            // Thrash Timer
+            if (m_uiTrashTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_THRASH) == CAST_OK)
+                {
+                    m_uiTrashTimer = 20000;
+                }
+            }
+            else
+            {
+                m_uiTrashTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_ebonrocAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_ebonroc(Creature* pCreature)
-{
-    return new boss_ebonrocAI(pCreature);
-}
-
 void AddSC_boss_ebonroc()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_ebonroc();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_ebonroc";
-    pNewScript->GetAI = &GetAI_boss_ebonroc;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_ebonroc";
+    //pNewScript->GetAI = &GetAI_boss_ebonroc;
+    //pNewScript->RegisterSelf();
 }

@@ -29,6 +29,7 @@
 enum
 {
     MAX_ENCOUNTER           = 7,
+    TYPE_SIGNAL             = MAX_ENCOUNTER + 1,
     MAX_RELIC_DOORS         = 12,
     MAX_DWARFS              = 7,
 
@@ -138,48 +139,5 @@ static const float aVaultPositions[4] = {821.905f, -338.382f, -50.134f, 3.78736f
 
 // Tomb of the Seven dwarfs
 static const uint32 aTombDwarfes[MAX_DWARFS] = {NPC_ANGERREL, NPC_SEETHREL, NPC_DOPEREL, NPC_GLOOMREL, NPC_VILEREL, NPC_HATEREL, NPC_DOOMREL};
-
-class instance_blackrock_depths : public ScriptedInstance
-{
-    public:
-        instance_blackrock_depths(Map* pMap);
-        ~instance_blackrock_depths() {}
-
-        void Initialize() override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureDeath(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void Update(uint32 uiDiff) override;
-
-        // Arena Event
-        void SetArenaCenterCoords(float fX, float fY, float fZ) { m_fArenaCenterX = fX; m_fArenaCenterY = fY; m_fArenaCenterZ = fZ; }
-        void GetArenaCenterCoords(float& fX, float& fY, float& fZ) { fX = m_fArenaCenterX; fY = m_fArenaCenterY; fZ = m_fArenaCenterZ; }
-
-    private:
-        void DoCallNextDwarf();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint32 m_uiBarAleCount;
-        uint8 m_uiCofferDoorsOpened;
-
-        uint8 m_uiDwarfRound;
-        uint32 m_uiDwarfFightTimer;
-
-        float m_fArenaCenterX, m_fArenaCenterY, m_fArenaCenterZ;
-
-        GuidSet m_sVaultNpcGuids;
-};
 
 #endif

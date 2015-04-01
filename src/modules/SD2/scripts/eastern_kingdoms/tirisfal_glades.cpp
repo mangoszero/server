@@ -55,39 +55,49 @@ enum
     GO_DOOR         = 176594
 };
 
-bool GOUse_go_mausoleum_door(Player* pPlayer, GameObject* /*pGo*/)
+struct go_mausoleum_door : public GameObjectScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_ULAG) != QUEST_STATUS_INCOMPLETE)
+    go_mausoleum_door() : GameObjectScript("go_mausoleum_door") {}
+
+    bool OnUse(Player* pPlayer, GameObject* /*pGo*/) override
     {
+        if (pPlayer->GetQuestStatus(QUEST_ULAG) != QUEST_STATUS_INCOMPLETE)
+        {
+            return false;
+        }
+
+        if (GameObject* pTrigger = GetClosestGameObjectWithEntry(pPlayer, GO_TRIGGER, 30.0f))
+        {
+            pTrigger->SetGoState(GO_STATE_READY);
+            pPlayer->SummonCreature(NPC_ULAG, 2390.26f, 336.47f, 40.01f, 2.26f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 300000);
+            return false;
+        }
+
         return false;
     }
+};
 
-    if (GameObject* pTrigger = GetClosestGameObjectWithEntry(pPlayer, GO_TRIGGER, 30.0f))
-    {
-        pTrigger->SetGoState(GO_STATE_READY);
-        pPlayer->SummonCreature(NPC_ULAG, 2390.26f, 336.47f, 40.01f, 2.26f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 300000);
-        return false;
-    }
-
-    return false;
-}
-
-bool GOUse_go_mausoleum_trigger(Player* pPlayer, GameObject* pGo)
+struct go_mausoleum_trigger : public GameObjectScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_ULAG) != QUEST_STATUS_INCOMPLETE)
+    go_mausoleum_trigger() : GameObjectScript("go_mausoleum_trigger") {}
+
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
     {
+        if (pPlayer->GetQuestStatus(QUEST_ULAG) != QUEST_STATUS_INCOMPLETE)
+        {
+            return false;
+        }
+
+        if (GameObject* pDoor = GetClosestGameObjectWithEntry(pPlayer, GO_DOOR, 30.0f))
+        {
+            pGo->SetGoState(GO_STATE_ACTIVE);
+            pDoor->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_INTERACT_COND);
+            return true;
+        }
+
         return false;
     }
-
-    if (GameObject* pDoor = GetClosestGameObjectWithEntry(pPlayer, GO_DOOR, 30.0f))
-    {
-        pGo->SetGoState(GO_STATE_ACTIVE);
-        pDoor->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_INTERACT_COND);
-        return true;
-    }
-
-    return false;
-}
+};
 
 /*######
 ## npc_calvin_montague
@@ -101,67 +111,70 @@ enum
     FACTION_HOSTILE     = 168
 };
 
-struct npc_calvin_montagueAI : public ScriptedAI
+struct npc_calvin_montague : public CreatureScript
 {
-    npc_calvin_montagueAI(Creature* pCreature) : ScriptedAI(pCreature)
-    {
-        Reset();
-    }
+    npc_calvin_montague() : CreatureScript("npc_calvin_montague") {}
 
-    uint32 m_uiPhase;
-    uint32 m_uiPhaseTimer;
-    ObjectGuid m_playerGuid;
-
-    void Reset() override
+    struct npc_calvin_montagueAI : public ScriptedAI
     {
-        m_uiPhase = 0;
-        m_uiPhaseTimer = 5000;
-        m_playerGuid.Clear();
-    }
-
-    void AttackedBy(Unit* pAttacker) override
-    {
-        if (m_creature->getVictim() || m_creature->IsFriendlyTo(pAttacker))
+        npc_calvin_montagueAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            return;
         }
 
-        AttackStart(pAttacker);
-    }
+        uint32 m_uiPhase;
+        uint32 m_uiPhaseTimer;
+        ObjectGuid m_playerGuid;
 
-    void DamageTaken(Unit* pDoneBy, uint32& uiDamage) override
-    {
-        if (uiDamage > m_creature->GetHealth() || ((m_creature->GetHealth() - uiDamage) * 100 / m_creature->GetMaxHealth() < 15))
+        void Reset() override
         {
-            uiDamage = 0;
-
-            m_creature->CombatStop(true);
-
-            m_uiPhase = 1;
-
-            if (pDoneBy->GetTypeId() == TYPEID_PLAYER)
-            {
-                m_playerGuid = pDoneBy->GetObjectGuid();
-            }
+            m_uiPhase = 0;
+            m_uiPhaseTimer = 5000;
+            m_playerGuid.Clear();
         }
-    }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiPhase)
+        void AttackedBy(Unit* pAttacker) override
         {
-            if (m_uiPhaseTimer < uiDiff)
+            if (m_creature->getVictim() || m_creature->IsFriendlyTo(pAttacker))
             {
-                m_uiPhaseTimer = 7500;
-            }
-            else
-            {
-                m_uiPhaseTimer -= uiDiff;
                 return;
             }
 
-            switch (m_uiPhase)
+            AttackStart(pAttacker);
+        }
+
+        void DamageTaken(Unit* pDoneBy, uint32& uiDamage) override
+        {
+            if (uiDamage > m_creature->GetHealth() || ((m_creature->GetHealth() - uiDamage) * 100 / m_creature->GetMaxHealth() < 15))
             {
+                uiDamage = 0;
+
+                m_creature->CombatStop(true);
+
+                m_uiPhase = 1;
+
+                if (pDoneBy->GetTypeId() == TYPEID_PLAYER)
+                {
+                    m_playerGuid = pDoneBy->GetObjectGuid();
+                }
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiPhase)
+            {
+                if (m_uiPhaseTimer < uiDiff)
+                {
+                    m_uiPhaseTimer = 7500;
+                }
+                else
+                {
+                    m_uiPhaseTimer -= uiDiff;
+                    return;
+                }
+
+                switch (m_uiPhase)
+                {
                 case 1:
                     DoScriptText(SAY_COMPLETE, m_creature);
                     ++m_uiPhase;
@@ -179,52 +192,60 @@ struct npc_calvin_montagueAI : public ScriptedAI
                     m_creature->SetStandState(UNIT_STAND_STATE_STAND); //otherwise he is sitting until server restart
                     EnterEvadeMode();
                     break;
+                }
+
+                return;
             }
 
-            return;
-        }
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_calvin_montagueAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_590)
         {
-            return;
+            pCreature->SetFactionTemporary(FACTION_HOSTILE, TEMPFACTION_RESTORE_COMBAT_STOP | TEMPFACTION_RESTORE_RESPAWN);
+            pCreature->AI()->AttackStart(pPlayer);
+            return true;
         }
-
-        DoMeleeAttackIfReady();
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_calvin_montague(Creature* pCreature)
-{
-    return new npc_calvin_montagueAI(pCreature);
-}
-
-bool QuestAccept_npc_calvin_montague(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_590)
-    {
-        pCreature->SetFactionTemporary(FACTION_HOSTILE, TEMPFACTION_RESTORE_COMBAT_STOP | TEMPFACTION_RESTORE_RESPAWN);
-        pCreature->AI()->AttackStart(pPlayer);
-    }
-    return true;
-}
-
 void AddSC_tirisfal_glades()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new go_mausoleum_door();
+    s->RegisterSelf();
+    s = new go_mausoleum_trigger();
+    s->RegisterSelf();
+    s = new npc_calvin_montague();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_mausoleum_door";
-    pNewScript->pGOUse = &GOUse_go_mausoleum_door;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_mausoleum_door";
+    //pNewScript->pGOUse = &GOUse_go_mausoleum_door;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_mausoleum_trigger";
-    pNewScript->pGOUse = &GOUse_go_mausoleum_trigger;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_mausoleum_trigger";
+    //pNewScript->pGOUse = &GOUse_go_mausoleum_trigger;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_calvin_montague";
-    pNewScript->GetAI = &GetAI_npc_calvin_montague;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_calvin_montague;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_calvin_montague";
+    //pNewScript->GetAI = &GetAI_npc_calvin_montague;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_calvin_montague;
+    //pNewScript->RegisterSelf();
 }

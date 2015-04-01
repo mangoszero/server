@@ -54,19 +54,24 @@ static uint32 TriggerOrphanSpell[6][3] =
     {3552, 14305, 65054}                                    // Spooky Lighthouse
 };
 
-bool AreaTrigger_at_childrens_week_spot(Player* pPlayer, AreaTriggerEntry const* pAt)
+struct at_childrens_week_spot : public AreaTriggerScript
 {
-    for (uint8 i = 0; i < 6; ++i)
+    at_childrens_week_spot() : AreaTriggerScript("at_childrens_week_spot") {}
+
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* pAt) override
     {
-        if (pAt->id == TriggerOrphanSpell[i][0] &&
-            pPlayer->GetMiniPet() && pPlayer->GetMiniPet()->GetEntry() == TriggerOrphanSpell[i][1])
+        for (uint8 i = 0; i < 6; ++i)
         {
-            pPlayer->CastSpell(pPlayer, TriggerOrphanSpell[i][2], true);
-            return true;
+            if (pAt->id == TriggerOrphanSpell[i][0] &&
+                pPlayer->GetMiniPet() && pPlayer->GetMiniPet()->GetEntry() == TriggerOrphanSpell[i][1])
+            {
+                pPlayer->CastSpell(pPlayer, TriggerOrphanSpell[i][2], true);
+                return true;
+            }
         }
+        return false;
     }
-    return false;
-}
+};
 
 /*######
 ## at_ravenholdt
@@ -78,15 +83,20 @@ enum
     NPC_RAVENHOLDT          = 13936
 };
 
-bool AreaTrigger_at_ravenholdt(Player* pPlayer, AreaTriggerEntry const* /*pAt*/)
+struct at_ravenholdt : public AreaTriggerScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_MANOR_RAVENHOLDT) == QUEST_STATUS_INCOMPLETE)
-    {
-        pPlayer->KilledMonsterCredit(NPC_RAVENHOLDT);
-    }
+    at_ravenholdt() : AreaTriggerScript("at_ravenholdt") {}
 
-    return false;
-}
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* /*pAt*/) override
+    {
+        if (pPlayer->GetQuestStatus(QUEST_MANOR_RAVENHOLDT) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->KilledMonsterCredit(NPC_RAVENHOLDT);
+        }
+
+        return false;
+    }
+};
 
 /*######
 ## at_scent_larkorwi
@@ -98,86 +108,104 @@ enum
     NPC_LARKORWI_MATE           = 9683
 };
 
-bool AreaTrigger_at_scent_larkorwi(Player* pPlayer, AreaTriggerEntry const* pAt)
+struct at_scent_larkorwi : public AreaTriggerScript
 {
-    if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_SCENT_OF_LARKORWI) == QUEST_STATUS_INCOMPLETE)
-    {
-        if (!GetClosestCreatureWithEntry(pPlayer, NPC_LARKORWI_MATE, 25.0f, false, false))
-        {
-            pPlayer->SummonCreature(NPC_LARKORWI_MATE, pAt->x, pAt->y, pAt->z, 3.3f, TEMPSUMMON_TIMED_OOC_DESPAWN, 2 * MINUTE * IN_MILLISECONDS);
-        }
-    }
+    at_scent_larkorwi() : AreaTriggerScript("at_scent_larkorwi") {}
 
-    return false;
-}
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* pAt) override
+    {
+        if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_SCENT_OF_LARKORWI) == QUEST_STATUS_INCOMPLETE)
+        {
+            if (!GetClosestCreatureWithEntry(pPlayer, NPC_LARKORWI_MATE, 25.0f, false, false))
+            {
+                pPlayer->SummonCreature(NPC_LARKORWI_MATE, pAt->x, pAt->y, pAt->z, 3.3f, TEMPSUMMON_TIMED_OOC_DESPAWN, 2 * MINUTE * IN_MILLISECONDS);
+            }
+        }
+
+        return false;
+    }
+};
 
 /*######
 ## at_murkdeep
 ######*/
 
-bool AreaTrigger_at_murkdeep(Player* pPlayer, AreaTriggerEntry const* /*pAt*/)
+struct at_murkdeep : public AreaTriggerScript
 {
-    // Handle Murkdeep event start
-    // The area trigger summons 3 Greymist Coastrunners; The rest of the event is handled by world map scripts
-    if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_WANTED_MURKDEEP) == QUEST_STATUS_INCOMPLETE)
+    at_murkdeep() : AreaTriggerScript("at_murkdeep") {}
+
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* /*pAt*/) override
     {
-        ScriptedMap* pScriptedMap = (ScriptedMap*)pPlayer->GetInstanceData();
-        if (!pScriptedMap)
+        // Handle Murkdeep event start
+        // The area trigger summons 3 Greymist Coastrunners; The rest of the event is handled by world map scripts
+        if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_WANTED_MURKDEEP) == QUEST_STATUS_INCOMPLETE)
         {
-            return false;
-        }
-
-        // If Murkdeep is already spawned, skip the rest
-        if (pScriptedMap->GetSingleCreatureFromStorage(NPC_MURKDEEP, true))
-        {
-            return true;
-        }
-
-        // Check if there are already coastrunners (dead or alive) around the area
-        if (GetClosestCreatureWithEntry(pPlayer, NPC_GREYMIST_COASTRUNNNER, 60.0f, false, false))
-        {
-            return true;
-        }
-
-        float fX, fY, fZ;
-        for (uint8 i = 0; i < 3; ++i)
-        {
-            // Spawn locations are defined in World Maps Scripts.h
-            pPlayer->GetRandomPoint(aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][0], aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][1], aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][2], 5.0f, fX, fY, fZ);
-
-            if (Creature* pTemp = pPlayer->SummonCreature(NPC_GREYMIST_COASTRUNNNER, fX, fY, fZ, aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][3], TEMPSUMMON_DEAD_DESPAWN, 0))
+            ScriptedMap* pScriptedMap = (ScriptedMap*)pPlayer->GetInstanceData();
+            if (!pScriptedMap)
             {
-                pTemp->SetWalk(false);
-                pTemp->GetRandomPoint(aSpawnLocations[POS_IDX_MURKDEEP_MOVE][0], aSpawnLocations[POS_IDX_MURKDEEP_MOVE][1], aSpawnLocations[POS_IDX_MURKDEEP_MOVE][2], 5.0f, fX, fY, fZ);
-                pTemp->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
+                return false;
+            }
+
+            // If Murkdeep is already spawned, skip the rest
+            if (pScriptedMap->GetSingleCreatureFromStorage(NPC_MURKDEEP, true))
+            {
+                return true;
+            }
+
+            // Check if there are already coastrunners (dead or alive) around the area
+            if (GetClosestCreatureWithEntry(pPlayer, NPC_GREYMIST_COASTRUNNNER, 60.0f, false, false))
+            {
+                return true;
+            }
+
+            float fX, fY, fZ;
+            for (uint8 i = 0; i < 3; ++i)
+            {
+                // Spawn locations are defined in World Maps Scripts.h
+                pPlayer->GetRandomPoint(aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][0], aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][1], aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][2], 5.0f, fX, fY, fZ);
+
+                if (Creature* pTemp = pPlayer->SummonCreature(NPC_GREYMIST_COASTRUNNNER, fX, fY, fZ, aSpawnLocations[POS_IDX_MURKDEEP_SPAWN][3], TEMPSUMMON_DEAD_DESPAWN, 0))
+                {
+                    pTemp->SetWalk(false);
+                    pTemp->GetRandomPoint(aSpawnLocations[POS_IDX_MURKDEEP_MOVE][0], aSpawnLocations[POS_IDX_MURKDEEP_MOVE][1], aSpawnLocations[POS_IDX_MURKDEEP_MOVE][2], 5.0f, fX, fY, fZ);
+                    pTemp->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
+                }
             }
         }
-    }
 
-    return false;
-}
+        return false;
+    }
+};
 
 void AddSC_areatrigger_scripts()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new at_childrens_week_spot();
+    s->RegisterSelf();
+    s = new at_ravenholdt();
+    s->RegisterSelf();
+    s = new at_scent_larkorwi();
+    s->RegisterSelf();
+    s = new at_murkdeep();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_childrens_week_spot";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_childrens_week_spot;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_childrens_week_spot";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_childrens_week_spot;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_ravenholdt";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_ravenholdt;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_ravenholdt";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_ravenholdt;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_scent_larkorwi";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_scent_larkorwi;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_scent_larkorwi";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_scent_larkorwi;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_murkdeep";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_murkdeep;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_murkdeep";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_murkdeep;
+    //pNewScript->RegisterSelf();
 }

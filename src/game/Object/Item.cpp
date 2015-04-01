@@ -1102,3 +1102,8 @@ void Item::SetLootState(ItemLootUpdateState state)
     if (m_lootState != ITEM_LOOT_NONE && m_lootState != ITEM_LOOT_UNCHANGED && m_lootState != ITEM_LOOT_TEMPORARY)
         { SetState(ITEM_CHANGED); }
 }
+
+uint32 Item::GetScriptId() const
+{
+    return sScriptMgr.GetBoundScriptId(SCRIPTED_ITEM, GetEntry());
+}

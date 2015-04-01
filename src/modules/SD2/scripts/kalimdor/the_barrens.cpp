@@ -57,27 +57,32 @@ enum
     QUEST_LOST_IN_BATTLE    = 4921
 };
 
-bool GossipHello_npc_beaten_corpse(Player* pPlayer, Creature* pCreature)
+struct npc_beaten_corpse : public CreatureScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_INCOMPLETE ||
-        pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_COMPLETE)
+    npc_beaten_corpse() : CreatureScript("npc_beaten_corpse") {}
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Examine corpse in detail...", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+        if (pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_INCOMPLETE ||
+            pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_COMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Examine corpse in detail...", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+        }
+
+        pPlayer->SEND_GOSSIP_MENU(3557, pCreature->GetObjectGuid());
+        return true;
     }
 
-    pPlayer->SEND_GOSSIP_MENU(3557, pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_npc_beaten_corpse(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        pPlayer->SEND_GOSSIP_MENU(3558, pCreature->GetObjectGuid());
-        pPlayer->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
+        if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+        {
+            pPlayer->SEND_GOSSIP_MENU(3558, pCreature->GetObjectGuid());
+            pPlayer->TalkedToCreature(pCreature->GetEntry(), pCreature->GetObjectGuid());
+        }
+        return true;
     }
-    return true;
-}
+};
 
 /*######
 # npc_gilthares
@@ -101,23 +106,27 @@ enum
     AREA_MERCHANT_COAST         = 391
 };
 
-struct npc_giltharesAI : public npc_escortAI
+struct npc_gilthares : public CreatureScript
 {
-    npc_giltharesAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_gilthares() : CreatureScript("npc_gilthares") {}
 
-    void Reset() override { }
-
-    void WaypointReached(uint32 uiPointId) override
+    struct npc_giltharesAI : public npc_escortAI
     {
-        Player* pPlayer = GetPlayerForEscort();
+        npc_giltharesAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-        if (!pPlayer)
-        {
-            return;
-        }
+        void Reset() override { }
 
-        switch (uiPointId)
+        void WaypointReached(uint32 uiPointId) override
         {
+            Player* pPlayer = GetPlayerForEscort();
+
+            if (!pPlayer)
+            {
+                return;
+            }
+
+            switch (uiPointId)
+            {
             case 16:
                 DoScriptText(SAY_GIL_AT_LAST, m_creature, pPlayer);
                 break;
@@ -137,23 +146,23 @@ struct npc_giltharesAI : public npc_escortAI
                 DoScriptText(SAY_GIL_FREED, m_creature, pPlayer);
                 pPlayer->GroupEventHappens(QUEST_FREE_FROM_HOLD, m_creature);
                 break;
-        }
-    }
-
-    void Aggro(Unit* pWho) override
-    {
-        // not always use
-        if (urand(0, 3))
-        {
-            return;
+            }
         }
 
-        // only aggro text if not player and only in this area
-        if (pWho->GetTypeId() != TYPEID_PLAYER && m_creature->GetAreaId() == AREA_MERCHANT_COAST)
+        void Aggro(Unit* pWho) override
         {
-            // appears to be pretty much random (possible only if escorter not in combat with pWho yet?)
-            switch (urand(0, 3))
+            // not always use
+            if (urand(0, 3))
             {
+                return;
+            }
+
+            // only aggro text if not player and only in this area
+            if (pWho->GetTypeId() != TYPEID_PLAYER && m_creature->GetAreaId() == AREA_MERCHANT_COAST)
+            {
+                // appears to be pretty much random (possible only if escorter not in combat with pWho yet?)
+                switch (urand(0, 3))
+                {
                 case 0:
                     DoScriptText(SAY_GIL_AGGRO_1, m_creature, pWho);
                     break;
@@ -166,32 +175,33 @@ struct npc_giltharesAI : public npc_escortAI
                 case 3:
                     DoScriptText(SAY_GIL_AGGRO_4, m_creature, pWho);
                     break;
+                }
             }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_giltharesAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_FREE_FROM_HOLD)
+        {
+            pCreature->SetFactionTemporary(FACTION_ESCORT_H_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
+            pCreature->SetStandState(UNIT_STAND_STATE_STAND);
+
+            DoScriptText(SAY_GIL_START, pCreature, pPlayer);
+
+            if (npc_giltharesAI* pEscortAI = dynamic_cast<npc_giltharesAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(false, pPlayer, pQuest);
+            }
+        }
+        return true;
     }
 };
-
-CreatureAI* GetAI_npc_gilthares(Creature* pCreature)
-{
-    return new npc_giltharesAI(pCreature);
-}
-
-bool QuestAccept_npc_gilthares(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_FREE_FROM_HOLD)
-    {
-        pCreature->SetFactionTemporary(FACTION_ESCORT_H_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
-        pCreature->SetStandState(UNIT_STAND_STATE_STAND);
-
-        DoScriptText(SAY_GIL_START, pCreature, pPlayer);
-
-        if (npc_giltharesAI* pEscortAI = dynamic_cast<npc_giltharesAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(false, pPlayer, pQuest);
-        }
-    }
-    return true;
-}
 
 /*######
 ## npc_taskmaster_fizzule
@@ -204,89 +214,96 @@ enum
     SPELL_FOLLY         = 10137,
 };
 
-struct npc_taskmaster_fizzuleAI : public ScriptedAI
+struct npc_taskmaster_fizzule : public CreatureScript
 {
-    npc_taskmaster_fizzuleAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_taskmaster_fizzule() : CreatureScript("npc_taskmaster_fizzule") {}
 
-    uint32 m_uiResetTimer;
-    uint8 m_uiFlareCount;
-
-    void Reset() override
+    struct npc_taskmaster_fizzuleAI : public ScriptedAI
     {
-        m_uiResetTimer = 0;
-        m_uiFlareCount = 0;
-    }
+        npc_taskmaster_fizzuleAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void EnterEvadeMode() override
-    {
-        if (m_uiResetTimer)
+        uint32 m_uiResetTimer;
+        uint8 m_uiFlareCount;
+
+        void Reset() override
         {
-            m_creature->RemoveAllAurasOnEvade();
-            m_creature->DeleteThreatList();
-            m_creature->CombatStop(true);
-            m_creature->LoadCreatureAddon(true);
-
-            m_creature->SetLootRecipient(NULL);
-
-            m_creature->SetFactionTemporary(FACTION_FRIENDLY_F, TEMPFACTION_RESTORE_REACH_HOME);
-            m_creature->HandleEmote(EMOTE_ONESHOT_SALUTE);
+            m_uiResetTimer = 0;
+            m_uiFlareCount = 0;
         }
-        else
-            { ScriptedAI::EnterEvadeMode(); }
-    }
 
-    void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
-    {
-        if (pCaster->GetTypeId() == TYPEID_PLAYER && (pSpell->Id == SPELL_FLARE || pSpell->Id == SPELL_FOLLY))
+        void EnterEvadeMode() override
         {
-            ++m_uiFlareCount;
-
-            if (m_uiFlareCount >= 2 && m_creature->getFaction() != FACTION_FRIENDLY_F)
+            if (m_uiResetTimer)
             {
-                m_uiResetTimer = 120000;
-            }
-        }
-    }
+                m_creature->RemoveAllAurasOnEvade();
+                m_creature->DeleteThreatList();
+                m_creature->CombatStop(true);
+                m_creature->LoadCreatureAddon(true);
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiResetTimer)
-        {
-            if (m_uiResetTimer <= uiDiff)
-            {
-                m_uiResetTimer = 0;
-                EnterEvadeMode();
+                m_creature->SetLootRecipient(NULL);
+
+                m_creature->SetFactionTemporary(FACTION_FRIENDLY_F, TEMPFACTION_RESTORE_REACH_HOME);
+                m_creature->HandleEmote(EMOTE_ONESHOT_SALUTE);
             }
             else
             {
-                m_uiResetTimer -= uiDiff;
+                ScriptedAI::EnterEvadeMode();
             }
         }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
         {
-            return;
-        }
-
-        DoMeleeAttackIfReady();
-    }
-
-    void ReceiveEmote(Player* /*pPlayer*/, uint32 uiTextEmote) override
-    {
-        if (uiTextEmote == TEXTEMOTE_SALUTE)
-        {
-            if (m_uiFlareCount >= 2 && m_creature->getFaction() != FACTION_FRIENDLY_F)
+            if (pCaster->GetTypeId() == TYPEID_PLAYER && (pSpell->Id == SPELL_FLARE || pSpell->Id == SPELL_FOLLY))
             {
-                EnterEvadeMode();
+                ++m_uiFlareCount;
+
+                if (m_uiFlareCount >= 2 && m_creature->getFaction() != FACTION_FRIENDLY_F)
+                {
+                    m_uiResetTimer = 120000;
+                }
             }
         }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiResetTimer)
+            {
+                if (m_uiResetTimer <= uiDiff)
+                {
+                    m_uiResetTimer = 0;
+                    EnterEvadeMode();
+                }
+                else
+                {
+                    m_uiResetTimer -= uiDiff;
+                }
+            }
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+
+        void ReceiveEmote(Player* /*pPlayer*/, uint32 uiTextEmote) override
+        {
+            if (uiTextEmote == TEXTEMOTE_SALUTE)
+            {
+                if (m_uiFlareCount >= 2 && m_creature->getFaction() != FACTION_FRIENDLY_F)
+                {
+                    EnterEvadeMode();
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_taskmaster_fizzuleAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_npc_taskmaster_fizzule(Creature* pCreature)
-{
-    return new npc_taskmaster_fizzuleAI(pCreature);
-}
 
 /*#####
 ## npc_twiggy_flathead
@@ -325,135 +342,145 @@ static const float aAffrayChallengerLoc[8][4] =
     { -1682.31f, -4329.68f, 2.78f, 0.0f},           // Big Will move loc
 };
 
-struct npc_twiggy_flatheadAI : public ScriptedAI
+struct npc_twiggy_flathead : public CreatureScript
 {
-    npc_twiggy_flatheadAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_twiggy_flathead() : CreatureScript("npc_twiggy_flathead") {}
 
-    bool m_bIsEventInProgress;
-
-    uint32 m_uiEventTimer;
-    uint32 m_uiChallengerCount;
-    uint8 m_uiStep;
-
-    ObjectGuid m_playerGuid;
-    ObjectGuid m_bigWillGuid;
-    GuidVector m_vAffrayChallengerGuidsVector;
-
-    void Reset() override
+    struct npc_twiggy_flatheadAI : public ScriptedAI
     {
-        m_bIsEventInProgress = false;
+        npc_twiggy_flatheadAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_uiEventTimer = 1000;
-        m_uiChallengerCount = 0;
-        m_uiStep = 0;
+        bool m_bIsEventInProgress;
 
-        m_playerGuid.Clear();
-        m_bigWillGuid.Clear();
-        m_vAffrayChallengerGuidsVector.clear();
-    }
+        uint32 m_uiEventTimer;
+        uint32 m_uiChallengerCount;
+        uint8 m_uiStep;
 
-    bool CanStartEvent(Player* pPlayer)
-    {
-        if (!m_bIsEventInProgress)
+        ObjectGuid m_playerGuid;
+        ObjectGuid m_bigWillGuid;
+        GuidVector m_vAffrayChallengerGuidsVector;
+
+        void Reset() override
         {
-            DoScriptText(SAY_TWIGGY_BEGIN, m_creature, pPlayer);
-            m_playerGuid = pPlayer->GetObjectGuid();
-            m_bIsEventInProgress = true;
+            m_bIsEventInProgress = false;
 
-            return true;
+            m_uiEventTimer = 1000;
+            m_uiChallengerCount = 0;
+            m_uiStep = 0;
+
+            m_playerGuid.Clear();
+            m_bigWillGuid.Clear();
+            m_vAffrayChallengerGuidsVector.clear();
         }
 
-        debug_log("SD2: npc_twiggy_flathead event already in progress, need to wait.");
-        return false;
-    }
-
-    void SetChallengers()
-    {
-        m_vAffrayChallengerGuidsVector.reserve(MAX_CHALLENGERS);
-
-        for (uint8 i = 0; i < MAX_CHALLENGERS; ++i)
+        bool CanStartEvent(Player* pPlayer)
         {
-            m_creature->SummonCreature(NPC_AFFRAY_CHALLENGER, aAffrayChallengerLoc[i][0], aAffrayChallengerLoc[i][1], aAffrayChallengerLoc[i][2], aAffrayChallengerLoc[i][3], TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 600000);
-        }
-    }
-
-    void SetChallengerReady(Creature* pChallenger)
-    {
-        pChallenger->setFaction(FACTION_HOSTILE_CHALLENGER);
-        pChallenger->HandleEmote(EMOTE_ONESHOT_ROAR);
-        ++m_uiChallengerCount;
-
-        if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
-        {
-            pChallenger->AI()->AttackStart(pPlayer);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_BIG_WILL)
-        {
-            m_bigWillGuid = pSummoned->GetObjectGuid();
-            pSummoned->setFaction(FACTION_FRIENDLY);
-            pSummoned->SetWalk(false);
-            pSummoned->GetMotionMaster()->MovePoint(1, aAffrayChallengerLoc[7][0], aAffrayChallengerLoc[7][1], aAffrayChallengerLoc[7][2]);
-        }
-        else
-        {
-            pSummoned->setFaction(FACTION_FRIENDLY);
-            pSummoned->HandleEmote(EMOTE_ONESHOT_ROAR);
-            m_vAffrayChallengerGuidsVector.push_back(pSummoned->GetObjectGuid());
-        }
-    }
-
-    void SummonedMovementInform(Creature* pSummoned, uint32 uiMoveType, uint32 uiPointId) override
-    {
-        if (uiMoveType != POINT_MOTION_TYPE || !uiPointId || pSummoned->GetEntry() != NPC_BIG_WILL)
-        {
-            return;
-        }
-
-        pSummoned->setFaction(FACTION_HOSTILE_WILL);
-
-        if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
-        {
-            DoScriptText(SAY_BIG_WILL_READY, pSummoned, pPlayer);
-            pSummoned->SetFacingToObject(pPlayer);
-        }
-    }
-
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_BIG_WILL)
-        {
-            DoScriptText(SAY_TWIGGY_OVER, m_creature);
-            EnterEvadeMode();
-        }
-        else
-        {
-            DoScriptText(SAY_TWIGGY_DOWN, m_creature);
-            m_uiEventTimer = 15000;
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_bIsEventInProgress)
-        {
-            return;
-        }
-
-        if (m_uiEventTimer < uiDiff)
-        {
-            Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid);
-
-            if (!pPlayer || !pPlayer->IsAlive())
+            if (!m_bIsEventInProgress)
             {
-                EnterEvadeMode();
+                DoScriptText(SAY_TWIGGY_BEGIN, m_creature, pPlayer);
+                m_playerGuid = pPlayer->GetObjectGuid();
+                m_bIsEventInProgress = true;
+
+                return true;
             }
 
-            switch (m_uiStep)
+            debug_log("SD2: npc_twiggy_flathead event already in progress, need to wait.");
+            return false;
+        }
+
+        void SetChallengers()
+        {
+            m_vAffrayChallengerGuidsVector.reserve(MAX_CHALLENGERS);
+
+            for (uint8 i = 0; i < MAX_CHALLENGERS; ++i)
             {
+                m_creature->SummonCreature(NPC_AFFRAY_CHALLENGER, aAffrayChallengerLoc[i][0], aAffrayChallengerLoc[i][1], aAffrayChallengerLoc[i][2], aAffrayChallengerLoc[i][3], TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 600000);
+            }
+        }
+
+        void SetChallengerReady(Creature* pChallenger)
+        {
+            pChallenger->setFaction(FACTION_HOSTILE_CHALLENGER);
+            pChallenger->HandleEmote(EMOTE_ONESHOT_ROAR);
+            ++m_uiChallengerCount;
+
+            if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
+            {
+                pChallenger->AI()->AttackStart(pPlayer);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_BIG_WILL)
+            {
+                m_bigWillGuid = pSummoned->GetObjectGuid();
+                pSummoned->setFaction(FACTION_FRIENDLY);
+                pSummoned->SetWalk(false);
+                pSummoned->GetMotionMaster()->MovePoint(1, aAffrayChallengerLoc[7][0], aAffrayChallengerLoc[7][1], aAffrayChallengerLoc[7][2]);
+            }
+            else
+            {
+                pSummoned->setFaction(FACTION_FRIENDLY);
+                pSummoned->HandleEmote(EMOTE_ONESHOT_ROAR);
+                m_vAffrayChallengerGuidsVector.push_back(pSummoned->GetObjectGuid());
+            }
+        }
+
+        void SummonedMovementInform(Creature* pSummoned, uint32 uiMoveType, uint32 uiPointId) override
+        {
+            if (uiMoveType != POINT_MOTION_TYPE || !uiPointId || pSummoned->GetEntry() != NPC_BIG_WILL)
+            {
+                return;
+            }
+
+            pSummoned->setFaction(FACTION_HOSTILE_WILL);
+
+            if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
+            {
+                DoScriptText(SAY_BIG_WILL_READY, pSummoned, pPlayer);
+                pSummoned->SetFacingToObject(pPlayer);
+            }
+        }
+
+        void SummonedCreatureJustDied(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_BIG_WILL)
+            {
+                DoScriptText(SAY_TWIGGY_OVER, m_creature);
+                EnterEvadeMode();
+            }
+            else
+            {
+                DoScriptText(SAY_TWIGGY_DOWN, m_creature);
+                m_uiEventTimer = 15000;
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* pInvoker, uint32 /*uiMiscValue*/) override
+        {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature && pInvoker->GetTypeId() == TYPEID_PLAYER)
+                CanStartEvent(pInvoker->ToPlayer());
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_bIsEventInProgress)
+            {
+                return;
+            }
+
+            if (m_uiEventTimer < uiDiff)
+            {
+                Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid);
+
+                if (!pPlayer || !pPlayer->IsAlive())
+                {
+                    EnterEvadeMode();
+                }
+
+                switch (m_uiStep)
+                {
                 case 0:
                     SetChallengers();
                     m_uiEventTimer = 5000;
@@ -488,40 +515,49 @@ struct npc_twiggy_flatheadAI : public ScriptedAI
                 default:
                     m_uiEventTimer = 5000;
                     break;
+                }
+            }
+            else
+            {
+                m_uiEventTimer -= uiDiff;
             }
         }
-        else
-            { m_uiEventTimer -= uiDiff; }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_twiggy_flatheadAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_npc_twiggy_flathead(Creature* pCreature)
+struct at_twiggy_flathead : public AreaTriggerScript
 {
-    return new npc_twiggy_flatheadAI(pCreature);
-}
+    at_twiggy_flathead() : AreaTriggerScript("at_twiggy_flathead") {}
 
-bool AreaTrigger_at_twiggy_flathead(Player* pPlayer, AreaTriggerEntry const* /*pAt*/)
-{
-    if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_AFFRAY) == QUEST_STATUS_INCOMPLETE)
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* /*pAt*/) override
     {
-        Creature* pCreature = GetClosestCreatureWithEntry(pPlayer, NPC_TWIGGY, 30.0f);
-        if (!pCreature)
+        if (pPlayer->IsAlive() && !pPlayer->isGameMaster() && pPlayer->GetQuestStatus(QUEST_AFFRAY) == QUEST_STATUS_INCOMPLETE)
         {
+            Creature* pCreature = GetClosestCreatureWithEntry(pPlayer, NPC_TWIGGY, 30.0f);
+            if (!pCreature)
+            {
+                return true;
+            }
+
+            if (CreatureAI* pTwiggyAI = pCreature->AI())    //TODO how the data transfer unit->object (GO, AT) may be implemented? CreatureAI::GetData()? or &miscValue in SendAIEvent?
+            {
+                pTwiggyAI->SendAIEvent(AI_EVENT_CUSTOM_A, pPlayer, pCreature);  //TODO check the state here and return true/false (other possible AT uses are blocked now!)
+                //if (pTwiggyAI->CanStartEvent(pPlayer))
+                //{
+                //    return false;    // ok to let mangos process further
+                //}
+            }
+
             return true;
         }
-
-        if (npc_twiggy_flatheadAI* pTwiggyAI = dynamic_cast<npc_twiggy_flatheadAI*>(pCreature->AI()))
-        {
-            if (pTwiggyAI->CanStartEvent(pPlayer))
-            {
-                return false;    // ok to let mangos process further
-            }
-        }
-
         return true;
     }
-    return true;
-}
+};
 
 /*#####
 ## npc_wizzlecranks_shredder
@@ -544,39 +580,42 @@ enum
     NPC_MERCENARY       = 3282
 };
 
-struct npc_wizzlecranks_shredderAI : public npc_escortAI
+struct npc_wizzlecranks_shredder : public CreatureScript
 {
-    npc_wizzlecranks_shredderAI(Creature* pCreature) : npc_escortAI(pCreature)
-    {
-        m_bIsPostEvent = false;
-        m_uiPostEventTimer = 1000;
-        m_uiPostEventCount = 0;
-        Reset();
-    }
+    npc_wizzlecranks_shredder() : CreatureScript("npc_wizzlecranks_shredder") {}
 
-    bool m_bIsPostEvent;
-    uint32 m_uiPostEventTimer;
-    uint32 m_uiPostEventCount;
-
-    void Reset() override
+    struct npc_wizzlecranks_shredderAI : public npc_escortAI
     {
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
+        npc_wizzlecranks_shredderAI(Creature* pCreature) : npc_escortAI(pCreature)
         {
-            if (m_creature->getStandState() == UNIT_STAND_STATE_DEAD)
-            {
-                m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-            }
-
-            m_bIsPostEvent = false;
+            m_bIsPostEvent = false; //TODO check this
             m_uiPostEventTimer = 1000;
             m_uiPostEventCount = 0;
         }
-    }
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        bool m_bIsPostEvent;
+        uint32 m_uiPostEventTimer;
+        uint32 m_uiPostEventCount;
+
+        void Reset() override
         {
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                if (m_creature->getStandState() == UNIT_STAND_STATE_DEAD)
+                {
+                    m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                }
+
+                m_bIsPostEvent = false;
+                m_uiPostEventTimer = 1000;
+                m_uiPostEventCount = 0;
+            }
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            switch (uiPointId)
+            {
             case 0:
                 if (Player* pPlayer = GetPlayerForEscort())
                 {
@@ -596,13 +635,13 @@ struct npc_wizzlecranks_shredderAI : public npc_escortAI
             case 24:
                 m_bIsPostEvent = true;
                 break;
+            }
         }
-    }
 
-    void WaypointStart(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        void WaypointStart(uint32 uiPointId) override
         {
+            switch (uiPointId)
+            {
             case 9:
                 if (Player* pPlayer = GetPlayerForEscort())
                 {
@@ -616,32 +655,32 @@ struct npc_wizzlecranks_shredderAI : public npc_escortAI
                 }
                 SetRun();
                 break;
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_PILOT_WIZZ)
-        {
-            m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+            }
         }
 
-        if (pSummoned->GetEntry() == NPC_MERCENARY)
+        void JustSummoned(Creature* pSummoned) override
         {
-            pSummoned->AI()->AttackStart(m_creature);
-        }
-    }
-
-    void UpdateEscortAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            if (m_bIsPostEvent)
+            if (pSummoned->GetEntry() == NPC_PILOT_WIZZ)
             {
-                if (m_uiPostEventTimer < uiDiff)
+                m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+            }
+
+            if (pSummoned->GetEntry() == NPC_MERCENARY)
+            {
+                pSummoned->AI()->AttackStart(m_creature);
+            }
+        }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                if (m_bIsPostEvent)
                 {
-                    switch (m_uiPostEventCount)
+                    if (m_uiPostEventTimer < uiDiff)
                     {
+                        switch (m_uiPostEventCount)
+                        {
                         case 0:
                             DoScriptText(SAY_PROGRESS_2, m_creature);
                             break;
@@ -658,43 +697,44 @@ struct npc_wizzlecranks_shredderAI : public npc_escortAI
                                 m_creature->SummonCreature(NPC_PILOT_WIZZ, 0.0f, 0.0f, 0.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN, 180000);
                             }
                             break;
-                    }
+                        }
 
-                    ++m_uiPostEventCount;
-                    m_uiPostEventTimer = 5000;
+                        ++m_uiPostEventCount;
+                        m_uiPostEventTimer = 5000;
+                    }
+                    else
+                    {
+                        m_uiPostEventTimer -= uiDiff;
+                    }
                 }
-                else
-                {
-                    m_uiPostEventTimer -= uiDiff;
-                }
+
+                return;
             }
 
-            return;
+            DoMeleeAttackIfReady();
         }
+    };
 
-        DoMeleeAttackIfReady();
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_ESCAPE)
+        {
+            DoScriptText(SAY_START, pCreature);
+            pCreature->SetFactionTemporary(FACTION_RATCHET, TEMPFACTION_RESTORE_RESPAWN);
+
+            if (npc_wizzlecranks_shredderAI* pEscortAI = dynamic_cast<npc_wizzlecranks_shredderAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(true, pPlayer, pQuest);
+            }
+        }
+        return true;
+    }
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_wizzlecranks_shredderAI(pCreature);
     }
 };
-
-bool QuestAccept_npc_wizzlecranks_shredder(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_ESCAPE)
-    {
-        DoScriptText(SAY_START, pCreature);
-        pCreature->SetFactionTemporary(FACTION_RATCHET, TEMPFACTION_RESTORE_RESPAWN);
-
-        if (npc_wizzlecranks_shredderAI* pEscortAI = dynamic_cast<npc_wizzlecranks_shredderAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(true, pPlayer, pQuest);
-        }
-    }
-    return true;
-}
-
-CreatureAI* GetAI_npc_wizzlecranks_shredder(Creature* pCreature)
-{
-    return new npc_wizzlecranks_shredderAI(pCreature);
-}
 
 /*#####
 ## npc_regthar_deathgate
@@ -763,376 +803,381 @@ SpawnPoint SpawnPointsKolkar[] =
     { -197.50f, -1929.31f, 94.03f, 3.51f}
 };
 
-struct npc_regthar_deathgateAI : public ScriptedAI
+struct npc_regthar_deathgate : public CreatureScript
 {
-    npc_regthar_deathgateAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    npc_regthar_deathgate() : CreatureScript("npc_regthar_deathgate") {}
 
-    std::list<Creature*> lCreatureList;
-    std::list<uint32> lSpawnList;
-    std::list<Creature*>::iterator itr;
-
-    std::list<Creature*> lCreatureListHorde;
-    std::list<uint32> lSpawnListHorde;
-    std::list<Creature*>::iterator itrh;
-
-    void Reset()
+    struct npc_regthar_deathgateAI : public ScriptedAI
     {
-    }
+        npc_regthar_deathgateAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
+        std::list<Creature*> lCreatureList;
+        std::list<uint32> lSpawnList;
+        std::list<Creature*>::iterator itr;
 
-void JustRespawned()
-{
-    FinishEvent();
-    Reset();
-}
+        std::list<Creature*> lCreatureListHorde;
+        std::list<uint32> lSpawnListHorde;
+        std::list<Creature*>::iterator itrh;
 
-    uint64 m_uiPlayerGUID;
-    uint64 m_uiEventTimer;
-    uint32 m_uiSummonCountInvader;
-    uint32 m_uiSummonCountStormseer;
-    uint32 m_uiSummonCountHorde;
-    uint32 m_uiWaitSummonTimer;
-    uint32 m_uiWaitSummonTimerHorde;
-    uint32 m_uiSpawnPosition;
-    uint32 m_uiKillCount;
-    uint32 m_uiCreatureCount;
-    uint32 m_uiPhaseCount;
-    bool   m_bEventStarted;
-
-    void StartEvent(uint64 uiPlayerGUID)
-    {
-        m_uiPlayerGUID           = uiPlayerGUID;
-        m_bEventStarted          = true;
-        m_uiEventTimer           = 1200000;
-        m_uiSummonCountInvader   = 0;
-        m_uiSummonCountStormseer = 0;
-        m_uiSummonCountHorde     = 0;
-        m_uiWaitSummonTimer      = 0;
-        m_uiWaitSummonTimerHorde = 0;
-        m_uiSpawnPosition        = 0;
-        m_uiKillCount            = 0;
-        m_uiCreatureCount        = 0;
-        m_uiPhaseCount           = 1;
-        lCreatureList.clear();
-        lSpawnList.clear();
-        lCreatureListHorde.clear();
-        lSpawnListHorde.clear();
-    }
-
-    void FinishEvent()
-    {
-        m_uiPlayerGUID = 0;
-        m_bEventStarted = false;
-        m_uiKillCount   = 0;
-    }
-
-    void JustSummoned(Creature* pSummoned)
-    {
-        if (pSummoned->GetEntry() == NPC_HORDE_DEFENDER) //replace died creature from list with new spawned one
+        void Reset()
         {
-            if (m_uiPhaseCount == 2)
-            {
-                itrh = lCreatureListHorde.begin();
-                advance (itrh,lSpawnListHorde.front());
-                *itrh = pSummoned;
-                lSpawnListHorde.pop_front(); //Drop spawned creature from spawn list
-            }
-
-            if (m_uiPhaseCount == 1)
-            {
-                lCreatureListHorde.push_back(pSummoned);
-            }
         }
 
-        if (pSummoned->GetEntry() == NPC_HORDE_AXE_THROWER) //replace died creature from list with new spawned one
+
+        void JustRespawned()
         {
-            if (m_uiPhaseCount == 2)
-            {
-                itrh = lCreatureListHorde.begin();
-                advance (itrh,lSpawnListHorde.front());
-                *itrh = pSummoned;
-                lSpawnListHorde.pop_front(); //Drop spawned creature from spawn list
-            }
-
-            if (m_uiPhaseCount == 1)
-            {
-                lCreatureListHorde.push_back(pSummoned);
-            }
-        }
-
-        if (pSummoned->GetEntry() == NPC_KOLKAR_INVADER) //replace died creature from list with new spawned one
-        {
-            if (m_uiPhaseCount == 2)
-            {
-                itr = lCreatureList.begin();
-                advance (itr,lSpawnList.front());
-                *itr = pSummoned;
-                lSpawnList.pop_front(); //Drop spawned creature from spawn list
-            }
-
-            if (m_uiPhaseCount == 1)
-            {
-                lCreatureList.push_back(pSummoned);
-            }
-        }
-
-        if (pSummoned->GetEntry() == NPC_KOLKAR_STORMSEER) //Insert each spawn into list until 10 spawned
-        {
-            if (m_uiPhaseCount == 2)
-            {
-                itr = lCreatureList.begin();
-                advance (itr,lSpawnList.front());
-                *itr = pSummoned;
-                lSpawnList.pop_front(); //Drop spawned creature from spawn list
-            }
-
-            if (m_uiPhaseCount == 1)
-            {
-                lCreatureList.push_back(pSummoned);
-            }
-        }
-    }
-
-    void SummonedCreatureJustDied(Creature* pKilled)
-    {
-        if (pKilled->GetEntry() == NPC_HORDE_DEFENDER) //find spawnpoint of died creature spawnpoint = position in creature list
-        {
-            --m_uiSummonCountHorde;
-            m_uiWaitSummonTimerHorde = 12000;
-        
-            m_uiSpawnPosition = 0;
-            for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh, ++m_uiSpawnPosition)
-            {
-                if ((*itrh) == pKilled)
-                {
-                    lSpawnListHorde.push_back(m_uiSpawnPosition);  //put spawnpoint in list
-                    (*itrh) = NULL;
-                }
-            }
-            if (m_uiWaitSummonTimerHorde < 1000)
-                m_uiWaitSummonTimerHorde = 1000;
-            
-            if (urand(0,1))
-                DoScriptText(SAY_DEFENDER, m_creature);
-        }
-
-        if (pKilled->GetEntry() == NPC_HORDE_AXE_THROWER) //find spawnpoint of died creature spawnpoint = position in creature list
-        {
-            --m_uiSummonCountHorde;
-            m_uiSpawnPosition = 0;
-            for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh, ++m_uiSpawnPosition)
-            {
-                if ((*itrh) == pKilled)
-                {
-                    lSpawnListHorde.push_back(m_uiSpawnPosition);  //put spawnpoint in list
-                    (*itrh) = NULL;
-                }
-            }
-            if (m_uiWaitSummonTimerHorde < 1000)
-                m_uiWaitSummonTimerHorde = 1000;
-            
-            if (urand(0,1))
-                DoScriptText(SAY_DEFENDER, m_creature);
-        }
-
-        if (pKilled->GetEntry() == NPC_WARLORD_KROMZAR)
-        {
-            DoScriptText(YELL_RETREAT, m_creature);
-            m_uiPhaseCount = 4;
-        }
-
-        if (pKilled->GetEntry() == NPC_KOLKAR_INVADER) //find spawnpoint of died creature, spawnpoint = position in creature list
-        {
-            --m_uiSummonCountInvader;
-            ++m_uiKillCount;
-            m_uiWaitSummonTimer = 10000;
-            
-            m_uiSpawnPosition = 0;
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr, ++m_uiSpawnPosition)
-            {
-                if ((*itr) == pKilled)
-                {
-                    lSpawnList.push_back(m_uiSpawnPosition);  //put spawnpoint in list
-                    (*itr) = NULL;
-                }
-            }
-        }
-
-        if (pKilled->GetEntry() == NPC_KOLKAR_STORMSEER) //find spawnpoint of died creature, spawnpoint = position in creature list
-        {
-            --m_uiSummonCountStormseer;
-            ++m_uiKillCount;
-            m_uiWaitSummonTimer = 10000;
-
-            m_uiSpawnPosition = 0;
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr, ++m_uiSpawnPosition)
-            {
-                if ((*itr) == pKilled)
-                {
-                    lSpawnList.push_back(m_uiSpawnPosition);  //put spawnpoint in list
-                    (*itr) = NULL;
-                }
-            }
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff)
-    {
-        if (m_uiPhaseCount <= 2 && m_uiEventTimer < uiDiff)
-            m_uiPhaseCount = 4;
-
-        if (m_uiPhaseCount == 4)
-        {
-            for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh)
-            {
-                if ((*itrh)!= NULL)
-                {
-                    (*itrh)->ForcedDespawn();
-                }
-            }
-                m_uiPhaseCount = 5;
-        }
-
-        if (m_uiPhaseCount == 5)
-        {
-            for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
-            {
-                if ((*itr) != NULL)
-                {
-                    (*itr)->ForcedDespawn();
-                }
-            }
-            m_uiPhaseCount = 6;
             FinishEvent();
+            Reset();
         }
-        if (m_uiPhaseCount == 2 && m_uiKillCount >= 20)
+
+        uint64 m_uiPlayerGUID;
+        uint64 m_uiEventTimer;
+        uint32 m_uiSummonCountInvader;
+        uint32 m_uiSummonCountStormseer;
+        uint32 m_uiSummonCountHorde;
+        uint32 m_uiWaitSummonTimer;
+        uint32 m_uiWaitSummonTimerHorde;
+        uint32 m_uiSpawnPosition;
+        uint32 m_uiKillCount;
+        uint32 m_uiCreatureCount;
+        uint32 m_uiPhaseCount;
+        bool   m_bEventStarted;
+
+        void StartEvent(uint64 uiPlayerGUID)
+        {
+            m_uiPlayerGUID = uiPlayerGUID;
+            m_bEventStarted = true;
+            m_uiEventTimer = 1200000;
+            m_uiSummonCountInvader = 0;
+            m_uiSummonCountStormseer = 0;
+            m_uiSummonCountHorde = 0;
+            m_uiWaitSummonTimer = 0;
+            m_uiWaitSummonTimerHorde = 0;
+            m_uiSpawnPosition = 0;
+            m_uiKillCount = 0;
+            m_uiCreatureCount = 0;
+            m_uiPhaseCount = 1;
+            lCreatureList.clear();
+            lSpawnList.clear();
+            lCreatureListHorde.clear();
+            lSpawnListHorde.clear();
+        }
+
+        void FinishEvent()
+        {
+            m_uiPlayerGUID = 0;
+            m_bEventStarted = false;
+            m_uiKillCount = 0;
+        }
+
+        void JustSummoned(Creature* pSummoned)
+        {
+            if (pSummoned->GetEntry() == NPC_HORDE_DEFENDER) //replace died creature from list with new spawned one
+            {
+                if (m_uiPhaseCount == 2)
+                {
+                    itrh = lCreatureListHorde.begin();
+                    advance(itrh, lSpawnListHorde.front());
+                    *itrh = pSummoned;
+                    lSpawnListHorde.pop_front(); //Drop spawned creature from spawn list
+                }
+
+                if (m_uiPhaseCount == 1)
+                {
+                    lCreatureListHorde.push_back(pSummoned);
+                }
+            }
+
+            if (pSummoned->GetEntry() == NPC_HORDE_AXE_THROWER) //replace died creature from list with new spawned one
+            {
+                if (m_uiPhaseCount == 2)
+                {
+                    itrh = lCreatureListHorde.begin();
+                    advance(itrh, lSpawnListHorde.front());
+                    *itrh = pSummoned;
+                    lSpawnListHorde.pop_front(); //Drop spawned creature from spawn list
+                }
+
+                if (m_uiPhaseCount == 1)
+                {
+                    lCreatureListHorde.push_back(pSummoned);
+                }
+            }
+
+            if (pSummoned->GetEntry() == NPC_KOLKAR_INVADER) //replace died creature from list with new spawned one
+            {
+                if (m_uiPhaseCount == 2)
+                {
+                    itr = lCreatureList.begin();
+                    advance(itr, lSpawnList.front());
+                    *itr = pSummoned;
+                    lSpawnList.pop_front(); //Drop spawned creature from spawn list
+                }
+
+                if (m_uiPhaseCount == 1)
+                {
+                    lCreatureList.push_back(pSummoned);
+                }
+            }
+
+            if (pSummoned->GetEntry() == NPC_KOLKAR_STORMSEER) //Insert each spawn into list until 10 spawned
+            {
+                if (m_uiPhaseCount == 2)
+                {
+                    itr = lCreatureList.begin();
+                    advance(itr, lSpawnList.front());
+                    *itr = pSummoned;
+                    lSpawnList.pop_front(); //Drop spawned creature from spawn list
+                }
+
+                if (m_uiPhaseCount == 1)
+                {
+                    lCreatureList.push_back(pSummoned);
+                }
+            }
+        }
+
+        void SummonedCreatureJustDied(Creature* pKilled)
+        {
+            if (pKilled->GetEntry() == NPC_HORDE_DEFENDER) //find spawnpoint of died creature spawnpoint = position in creature list
+            {
+                --m_uiSummonCountHorde;
+                m_uiWaitSummonTimerHorde = 12000;
+
+                m_uiSpawnPosition = 0;
+                for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh, ++m_uiSpawnPosition)
+                {
+                    if ((*itrh) == pKilled)
+                    {
+                        lSpawnListHorde.push_back(m_uiSpawnPosition);  //put spawnpoint in list
+                        (*itrh) = NULL;
+                    }
+                }
+                if (m_uiWaitSummonTimerHorde < 1000)
+                    m_uiWaitSummonTimerHorde = 1000;
+
+                if (urand(0, 1))
+                    DoScriptText(SAY_DEFENDER, m_creature);
+            }
+
+            if (pKilled->GetEntry() == NPC_HORDE_AXE_THROWER) //find spawnpoint of died creature spawnpoint = position in creature list
+            {
+                --m_uiSummonCountHorde;
+                m_uiSpawnPosition = 0;
+                for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh, ++m_uiSpawnPosition)
+                {
+                    if ((*itrh) == pKilled)
+                    {
+                        lSpawnListHorde.push_back(m_uiSpawnPosition);  //put spawnpoint in list
+                        (*itrh) = NULL;
+                    }
+                }
+                if (m_uiWaitSummonTimerHorde < 1000)
+                    m_uiWaitSummonTimerHorde = 1000;
+
+                if (urand(0, 1))
+                    DoScriptText(SAY_DEFENDER, m_creature);
+            }
+
+            if (pKilled->GetEntry() == NPC_WARLORD_KROMZAR)
+            {
+                DoScriptText(YELL_RETREAT, m_creature);
+                m_uiPhaseCount = 4;
+            }
+
+            if (pKilled->GetEntry() == NPC_KOLKAR_INVADER) //find spawnpoint of died creature, spawnpoint = position in creature list
+            {
+                --m_uiSummonCountInvader;
+                ++m_uiKillCount;
+                m_uiWaitSummonTimer = 10000;
+
+                m_uiSpawnPosition = 0;
+                for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr, ++m_uiSpawnPosition)
+                {
+                    if ((*itr) == pKilled)
+                    {
+                        lSpawnList.push_back(m_uiSpawnPosition);  //put spawnpoint in list
+                        (*itr) = NULL;
+                    }
+                }
+            }
+
+            if (pKilled->GetEntry() == NPC_KOLKAR_STORMSEER) //find spawnpoint of died creature, spawnpoint = position in creature list
+            {
+                --m_uiSummonCountStormseer;
+                ++m_uiKillCount;
+                m_uiWaitSummonTimer = 10000;
+
+                m_uiSpawnPosition = 0;
+                for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr, ++m_uiSpawnPosition)
+                {
+                    if ((*itr) == pKilled)
+                    {
+                        lSpawnList.push_back(m_uiSpawnPosition);  //put spawnpoint in list
+                        (*itr) = NULL;
+                    }
+                }
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff)
+        {
+            if (m_uiPhaseCount <= 2 && m_uiEventTimer < uiDiff)
+                m_uiPhaseCount = 4;
+
+            if (m_uiPhaseCount == 4)
+            {
+                for (std::list<Creature*>::iterator itrh = lCreatureListHorde.begin(); itrh != lCreatureListHorde.end(); ++itrh)
+                {
+                    if ((*itrh) != NULL)
+                    {
+                        (*itrh)->ForcedDespawn();
+                    }
+                }
+                m_uiPhaseCount = 5;
+            }
+
+            if (m_uiPhaseCount == 5)
+            {
+                for (std::list<Creature*>::iterator itr = lCreatureList.begin(); itr != lCreatureList.end(); ++itr)
+                {
+                    if ((*itr) != NULL)
+                    {
+                        (*itr)->ForcedDespawn();
+                    }
+                }
+                m_uiPhaseCount = 6;
+                FinishEvent();
+            }
+            if (m_uiPhaseCount == 2 && m_uiKillCount >= 20)
             {
                 m_uiPhaseCount = 3;
-                m_creature->SummonCreature(NPC_KOLKAR_INVADER,  SpawnPointsKromzar[0].fX, SpawnPointsKromzar[0].fY, SpawnPointsKromzar[0].fZ, SpawnPointsKromzar[0].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                m_creature->SummonCreature(NPC_WARLORD_KROMZAR,  SpawnPointsKromzar[1].fX, SpawnPointsKromzar[1].fY, SpawnPointsKromzar[1].fZ, SpawnPointsKromzar[1].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                m_creature->SummonCreature(NPC_KOLKAR_STORMSEER,  SpawnPointsKromzar[2].fX, SpawnPointsKromzar[2].fY, SpawnPointsKromzar[2].fZ, SpawnPointsKromzar[2].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                m_creature->SummonCreature(NPC_KOLKAR_INVADER, SpawnPointsKromzar[0].fX, SpawnPointsKromzar[0].fY, SpawnPointsKromzar[0].fZ, SpawnPointsKromzar[0].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                m_creature->SummonCreature(NPC_WARLORD_KROMZAR, SpawnPointsKromzar[1].fX, SpawnPointsKromzar[1].fY, SpawnPointsKromzar[1].fZ, SpawnPointsKromzar[1].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                m_creature->SummonCreature(NPC_KOLKAR_STORMSEER, SpawnPointsKromzar[2].fX, SpawnPointsKromzar[2].fY, SpawnPointsKromzar[2].fZ, SpawnPointsKromzar[2].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
             }
 
-        if (m_uiPhaseCount <= 2 && m_uiWaitSummonTimerHorde < uiDiff && m_uiSummonCountHorde < 7)
-        {
-            if (m_uiPhaseCount == 2)
-                switch (urand(0, 1))
+            if (m_uiPhaseCount <= 2 && m_uiWaitSummonTimerHorde < uiDiff && m_uiSummonCountHorde < 7)
+            {
+                if (m_uiPhaseCount == 2)
+                    switch (urand(0, 1))
                 {
                     case 0:
-                        m_creature->SummonCreature(NPC_HORDE_DEFENDER,  SpawnPointsHorde[lSpawnListHorde.front()].fX, SpawnPointsHorde[lSpawnListHorde.front()].fY, SpawnPointsHorde[lSpawnListHorde.front()].fZ, SpawnPointsHorde[lSpawnListHorde.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_creature->SummonCreature(NPC_HORDE_DEFENDER, SpawnPointsHorde[lSpawnListHorde.front()].fX, SpawnPointsHorde[lSpawnListHorde.front()].fY, SpawnPointsHorde[lSpawnListHorde.front()].fZ, SpawnPointsHorde[lSpawnListHorde.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
                         ++m_uiSummonCountHorde;
                         if (m_uiSummonCountHorde <= 4)
                             m_uiWaitSummonTimerHorde = 1000;
-                        else                        
-                        m_uiWaitSummonTimerHorde = 12000;
+                        else
+                            m_uiWaitSummonTimerHorde = 12000;
                         break;
                     case 1:
-                        m_creature->SummonCreature(NPC_HORDE_AXE_THROWER,  SpawnPointsHorde[lSpawnListHorde.front()].fX, SpawnPointsHorde[lSpawnListHorde.front()].fY, SpawnPointsHorde[lSpawnListHorde.front()].fZ, SpawnPointsHorde[lSpawnListHorde.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_creature->SummonCreature(NPC_HORDE_AXE_THROWER, SpawnPointsHorde[lSpawnListHorde.front()].fX, SpawnPointsHorde[lSpawnListHorde.front()].fY, SpawnPointsHorde[lSpawnListHorde.front()].fZ, SpawnPointsHorde[lSpawnListHorde.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
                         ++m_uiSummonCountHorde;
                         if (m_uiSummonCountHorde <= 4)
                             m_uiWaitSummonTimerHorde = 1000;
-                        else                        
-                        m_uiWaitSummonTimerHorde = 12000;
+                        else
+                            m_uiWaitSummonTimerHorde = 12000;
                         break;
                 }
 
-            if (m_uiPhaseCount == 1)
-                switch (urand(0, 1))
+                if (m_uiPhaseCount == 1)
+                    switch (urand(0, 1))
                 {
                     case 0:
-                        m_creature->SummonCreature(NPC_HORDE_DEFENDER,  SpawnPointsHorde[m_uiSummonCountHorde].fX, SpawnPointsHorde[m_uiSummonCountHorde].fY, SpawnPointsHorde[m_uiSummonCountHorde].fZ, SpawnPointsHorde[m_uiSummonCountHorde].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_creature->SummonCreature(NPC_HORDE_DEFENDER, SpawnPointsHorde[m_uiSummonCountHorde].fX, SpawnPointsHorde[m_uiSummonCountHorde].fY, SpawnPointsHorde[m_uiSummonCountHorde].fZ, SpawnPointsHorde[m_uiSummonCountHorde].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
                         ++m_uiSummonCountHorde;
                         break;
                     case 1:
-                        m_creature->SummonCreature(NPC_HORDE_AXE_THROWER,  SpawnPointsHorde[m_uiSummonCountHorde].fX, SpawnPointsHorde[m_uiSummonCountHorde].fY, SpawnPointsHorde[m_uiSummonCountHorde].fZ, SpawnPointsHorde[m_uiSummonCountHorde].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_creature->SummonCreature(NPC_HORDE_AXE_THROWER, SpawnPointsHorde[m_uiSummonCountHorde].fX, SpawnPointsHorde[m_uiSummonCountHorde].fY, SpawnPointsHorde[m_uiSummonCountHorde].fZ, SpawnPointsHorde[m_uiSummonCountHorde].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
                         ++m_uiSummonCountHorde;
                         break;
                 }
-        }
+            }
 
-        if (m_uiPhaseCount <= 2 && m_uiWaitSummonTimer < uiDiff && (m_uiSummonCountInvader + m_uiSummonCountStormseer) < 15)
-        {
-
-            if (m_uiSummonCountInvader < 8)
+            if (m_uiPhaseCount <= 2 && m_uiWaitSummonTimer < uiDiff && (m_uiSummonCountInvader + m_uiSummonCountStormseer) < 15)
             {
-                ++m_uiSummonCountInvader;
 
-                if (m_uiPhaseCount == 2)
+                if (m_uiSummonCountInvader < 8)
                 {
-                    m_creature->SummonCreature(NPC_KOLKAR_INVADER,  SpawnPointsKolkar[lSpawnList.front()].fX, SpawnPointsKolkar[lSpawnList.front()].fY, SpawnPointsKolkar[lSpawnList.front()].fZ, SpawnPointsKolkar[lSpawnList.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                    m_uiWaitSummonTimer = 10000;
+                    ++m_uiSummonCountInvader;
+
+                    if (m_uiPhaseCount == 2)
+                    {
+                        m_creature->SummonCreature(NPC_KOLKAR_INVADER, SpawnPointsKolkar[lSpawnList.front()].fX, SpawnPointsKolkar[lSpawnList.front()].fY, SpawnPointsKolkar[lSpawnList.front()].fZ, SpawnPointsKolkar[lSpawnList.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_uiWaitSummonTimer = 10000;
+                    }
+
+                    if (m_uiPhaseCount == 1)
+                    {
+                        m_creature->SummonCreature(NPC_KOLKAR_INVADER, SpawnPointsKolkar[m_uiCreatureCount].fX, SpawnPointsKolkar[m_uiCreatureCount].fY, SpawnPointsKolkar[m_uiCreatureCount].fZ, SpawnPointsKolkar[m_uiCreatureCount].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        ++m_uiCreatureCount;
+                    }
                 }
 
-                if (m_uiPhaseCount == 1)
+                if (m_uiSummonCountStormseer < 7)
                 {
-                    m_creature->SummonCreature(NPC_KOLKAR_INVADER,  SpawnPointsKolkar[m_uiCreatureCount].fX, SpawnPointsKolkar[m_uiCreatureCount].fY, SpawnPointsKolkar[m_uiCreatureCount].fZ, SpawnPointsKolkar[m_uiCreatureCount].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                    ++m_uiCreatureCount;
+                    ++m_uiSummonCountStormseer;
+                    if (m_uiPhaseCount == 2)
+                    {
+                        m_creature->SummonCreature(NPC_KOLKAR_STORMSEER, SpawnPointsKolkar[lSpawnList.front()].fX, SpawnPointsKolkar[lSpawnList.front()].fY, SpawnPointsKolkar[lSpawnList.front()].fZ, SpawnPointsKolkar[lSpawnList.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        m_uiWaitSummonTimer = 10000;
+                    }
+
+                    if (m_uiPhaseCount == 1)
+                    {
+                        m_creature->SummonCreature(NPC_KOLKAR_STORMSEER, SpawnPointsKolkar[m_uiCreatureCount].fX, SpawnPointsKolkar[m_uiCreatureCount].fY, SpawnPointsKolkar[m_uiCreatureCount].fZ, SpawnPointsKolkar[m_uiCreatureCount].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
+                        ++m_uiCreatureCount;
+                    }
+                }
+
+                if (m_uiPhaseCount == 1 && m_uiCreatureCount == 15) //set initial spawn done when 15 enemys spawned
+                {
+                    m_uiPhaseCount = 2;
                 }
             }
 
-            if (m_uiSummonCountStormseer < 7)
+            else
             {
-                ++m_uiSummonCountStormseer;
-                if (m_uiPhaseCount == 2)
-                {
-                    m_creature->SummonCreature(NPC_KOLKAR_STORMSEER,  SpawnPointsKolkar[lSpawnList.front()].fX, SpawnPointsKolkar[lSpawnList.front()].fY, SpawnPointsKolkar[lSpawnList.front()].fZ, SpawnPointsKolkar[lSpawnList.front()].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                    m_uiWaitSummonTimer = 10000;
-                }
-
-                if (m_uiPhaseCount == 1)
-                {
-                    m_creature->SummonCreature(NPC_KOLKAR_STORMSEER,  SpawnPointsKolkar[m_uiCreatureCount].fX, SpawnPointsKolkar[m_uiCreatureCount].fY, SpawnPointsKolkar[m_uiCreatureCount].fZ, SpawnPointsKolkar[m_uiCreatureCount].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 40000);
-                    ++m_uiCreatureCount;
-                }
-            }
-
-            if (m_uiPhaseCount == 1 && m_uiCreatureCount == 15) //set initial spawn done when 15 enemys spawned
-            {
-                m_uiPhaseCount = 2;
+                m_uiWaitSummonTimer -= uiDiff;
+                m_uiWaitSummonTimerHorde -= uiDiff;
+                m_uiEventTimer -= uiDiff;
             }
         }
+    };
 
-        else
-        {
-            m_uiWaitSummonTimer -= uiDiff;
-            m_uiWaitSummonTimerHorde -= uiDiff;
-            m_uiEventTimer -= uiDiff;
-        }
-    }        
-};
-
-CreatureAI* GetAI_npc_regthar_deathgate(Creature* pCreature)
-{
-    return new npc_regthar_deathgateAI(pCreature);
-}
-
-bool GossipHello_npc_regthar_deathgate(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->IsQuestGiver())
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid()); 
-
-    if (pPlayer->GetQuestStatus(QUEST_COUNTERATTACK) == QUEST_STATUS_INCOMPLETE)
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Where is warlord Krom´zar?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-        pPlayer->SEND_GOSSIP_MENU(2533, pCreature->GetObjectGuid());
+        return new npc_regthar_deathgateAI(pCreature);
+    }
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
+    {
+        if (pCreature->IsQuestGiver())
+            pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+
+        if (pPlayer->GetQuestStatus(QUEST_COUNTERATTACK) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Where is warlord Krom'zar?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+            pPlayer->SEND_GOSSIP_MENU(2533, pCreature->GetObjectGuid());
+            return true;
+        }
+        else
+            pPlayer->SEND_GOSSIP_MENU(2533, pCreature->GetObjectGuid());
         return true;
     }
-    else
-        pPlayer->SEND_GOSSIP_MENU(2533, pCreature->GetObjectGuid());
-    return true;
-}
 
-bool GossipSelect_npc_regthar_deathgate(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        DoScriptText(SAY_START_REGTHAR, pCreature, pPlayer);
-        pPlayer->CLOSE_GOSSIP_MENU();
-        if (npc_regthar_deathgateAI* pRegtharAI = dynamic_cast<npc_regthar_deathgateAI*>(pCreature->AI()))
-            pRegtharAI->StartEvent(pPlayer->GetObjectGuid());
+        if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+        {
+            DoScriptText(SAY_START_REGTHAR, pCreature, pPlayer);
+            pPlayer->CLOSE_GOSSIP_MENU();
+            if (npc_regthar_deathgateAI* pRegtharAI = dynamic_cast<npc_regthar_deathgateAI*>(pCreature->AI()))
+                pRegtharAI->StartEvent(pPlayer->GetObjectGuid().GetRawValue());
+        }
+        return true;
     }
-    return true;
-}
+};
 
 /*#####
 ## npc_horde_defender
@@ -1145,28 +1190,32 @@ enum
     SAY_AGGRO_3        = -1000897,
 };
 
-struct npc_horde_defenderAI : public ScriptedAI
+struct horde_defender : public CreatureScript
 {
-    npc_horde_defenderAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    horde_defender() : CreatureScript("npc_horde_defender") {}
 
-    void Reset()
+    struct npc_horde_defenderAI : public ScriptedAI
     {
-    }
+        npc_horde_defenderAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
         uint64 i_victimGuid;
         bool m_bCreatureFound;
 
-    void EnterEvadeMode() override
-    {
-        m_creature->RemoveAllAurasOnEvade();
-        m_creature->DeleteThreatList();
-        m_creature->SetLootRecipient(NULL);
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        switch (urand(0, 2))
+        void Reset()
         {
+        }
+
+        void EnterEvadeMode() override
+        {
+            m_creature->RemoveAllAurasOnEvade();
+            m_creature->DeleteThreatList();
+            m_creature->SetLootRecipient(NULL);
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            switch (urand(0, 2))
+            {
             case 0:
                 DoScriptText(SAY_AGGRO_1, m_creature);
                 break;
@@ -1176,98 +1225,115 @@ struct npc_horde_defenderAI : public ScriptedAI
             case 2:
                 DoScriptText(SAY_AGGRO_3, m_creature);
                 break;
+            }
         }
-    }
 
-    void MoveInLineOfSight(Unit* u) override
-    {
-        if (m_creature->CanInitiateAttack() && u->IsTargetableForAttack() &&
-            m_creature->IsHostileTo(u) && u->isInAccessablePlaceFor(m_creature))
+        void MoveInLineOfSight(Unit* u) override
         {
-            float attackRadius = 38.0f;
-            if (m_creature->IsWithinDistInMap(u, attackRadius) && m_creature->IsWithinLOSInMap(u))
+            if (m_creature->CanInitiateAttack() && u->IsTargetableForAttack() &&
+                m_creature->IsHostileTo(u) && u->isInAccessablePlaceFor(m_creature))
             {
-                if (!m_creature->getVictim())
+                float attackRadius = 38.0f;
+                if (m_creature->IsWithinDistInMap(u, attackRadius) && m_creature->IsWithinLOSInMap(u))
                 {
-                    AttackStart(u);
+                    if (!m_creature->getVictim())
+                    {
+                        AttackStart(u);
 
+                    }
                 }
             }
         }
-    }
 
-    void UpdateAI(const uint32 /*uiDiff*/)
-    {
-    if (!m_creature->getVictim())
-    {
-        Creature* pCreature = GetClosestCreatureWithEntry(m_creature, NPC_KOLKAR_INVADER, 38.0f);
-        if (!pCreature && m_bCreatureFound)
+        void UpdateAI(const uint32 /*uiDiff*/)
         {
-            m_creature->GetMotionMaster()->MoveTargetedHome();
-            m_bCreatureFound = false;
+            if (!m_creature->getVictim())
+            {
+                Creature* pCreature = GetClosestCreatureWithEntry(m_creature, NPC_KOLKAR_INVADER, 38.0f);
+                if (!pCreature && m_bCreatureFound)
+                {
+                    m_creature->GetMotionMaster()->MoveTargetedHome();
+                    m_bCreatureFound = false;
+                }
+                if (pCreature)
+                {
+                    AttackStart(pCreature);
+                    m_bCreatureFound = true;
+                }
+            }
+            DoMeleeAttackIfReady();
         }
-        if (pCreature)
-        {
-        AttackStart(pCreature);
-        m_bCreatureFound = true;
-        }
-    }
-    DoMeleeAttackIfReady();
-    }
 
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_horde_defenderAI(pCreature);
+    }
 };
-
-CreatureAI* GetAI_npc_horde_defender(Creature* pCreature)
-{
-    return new npc_horde_defenderAI(pCreature);
-}
 
 void AddSC_the_barrens()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_beaten_corpse();
+    s->RegisterSelf();
+    s = new npc_gilthares();
+    s->RegisterSelf();
+    s = new npc_taskmaster_fizzule();
+    s->RegisterSelf();
+    s = new npc_twiggy_flathead();
+    s->RegisterSelf();
+    s = new at_twiggy_flathead();
+    s->RegisterSelf();
+    s = new npc_wizzlecranks_shredder();
+    s->RegisterSelf();
+    s = new npc_regthar_deathgate();
+    s->RegisterSelf();
+    s = new horde_defender();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_beaten_corpse";
-    pNewScript->pGossipHello = &GossipHello_npc_beaten_corpse;
-    pNewScript->pGossipSelect = &GossipSelect_npc_beaten_corpse;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_beaten_corpse";
+    //pNewScript->pGossipHello = &GossipHello_npc_beaten_corpse;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_beaten_corpse;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_gilthares";
-    pNewScript->GetAI = &GetAI_npc_gilthares;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_gilthares;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_gilthares";
+    //pNewScript->GetAI = &GetAI_npc_gilthares;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_gilthares;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_taskmaster_fizzule";
-    pNewScript->GetAI = &GetAI_npc_taskmaster_fizzule;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_taskmaster_fizzule";
+    //pNewScript->GetAI = &GetAI_npc_taskmaster_fizzule;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_twiggy_flathead";
-    pNewScript->GetAI = &GetAI_npc_twiggy_flathead;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_twiggy_flathead";
+    //pNewScript->GetAI = &GetAI_npc_twiggy_flathead;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_twiggy_flathead";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_twiggy_flathead;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_twiggy_flathead";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_twiggy_flathead;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_wizzlecranks_shredder";
-    pNewScript->GetAI = &GetAI_npc_wizzlecranks_shredder;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_wizzlecranks_shredder;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_wizzlecranks_shredder";
+    //pNewScript->GetAI = &GetAI_npc_wizzlecranks_shredder;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_wizzlecranks_shredder;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_regthar_deathgate";
-    pNewScript->pGossipHello = &GossipHello_npc_regthar_deathgate;
-    pNewScript->pGossipSelect = &GossipSelect_npc_regthar_deathgate;
-    pNewScript->GetAI = &GetAI_npc_regthar_deathgate;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_regthar_deathgate";
+    //pNewScript->pGossipHello = &GossipHello_npc_regthar_deathgate;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_regthar_deathgate;
+    //pNewScript->GetAI = &GetAI_npc_regthar_deathgate;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_horde_defender";
-    pNewScript->GetAI = &GetAI_npc_horde_defender;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_horde_defender";
+    //pNewScript->GetAI = &GetAI_npc_horde_defender;
+    //pNewScript->RegisterSelf();
 }

@@ -145,7 +145,7 @@ struct CreatureInfo
     uint32  EquipmentTemplateId;
     uint32  civilian;
     char const* AIName;
-    uint32  ScriptID;
+    //uint32  ScriptID;
 
     // helpers
     static HighGuid GetHighGuid()

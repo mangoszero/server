@@ -141,63 +141,65 @@ static const sSummonInformation asSummonInfo[MAX_SUMMON_POSITIONS] =
     {7, NPC_CHOMPER, -473.1326f, -103.0901f, -146.1155f, 2.042035f}
 };
 
-struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
+struct npc_blastmaster_emi_shortfuse : public CreatureScript
 {
-    npc_blastmaster_emi_shortfuseAI(Creature* pCreature) : npc_escortAI(pCreature)
+    npc_blastmaster_emi_shortfuse() : CreatureScript("npc_blastmaster_emi_shortfuse") {}
+
+    struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
     {
-        m_pInstance = (instance_gnomeregan*)pCreature->GetInstanceData();
-        // Remove Gossip-Menu in reload case for DONE enounter
-        if (m_pInstance && m_pInstance->GetData(TYPE_GRUBBIS) == DONE)
+        npc_blastmaster_emi_shortfuseAI(Creature* pCreature) : npc_escortAI(pCreature)
         {
-            pCreature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
-        }
-        Reset();
-    }
-
-    instance_gnomeregan* m_pInstance;
-
-    uint8 m_uiPhase;
-    uint32 m_uiPhaseTimer;
-    ObjectGuid m_playerGuid;
-    bool m_bDidAggroText, m_bSouthernCaveInOpened, m_bNorthernCaveInOpened;
-    GuidList m_luiSummonedMobGUIDs;
-
-    void Reset() override
-    {
-        m_bDidAggroText = false;                            // Used for 'defend' text, is triggered when the npc is attacked
-
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
-        {
-            m_uiPhase = 0;
-            m_uiPhaseTimer = 0;
-            m_bSouthernCaveInOpened = m_bNorthernCaveInOpened = false;
-            m_luiSummonedMobGUIDs.clear();
-        }
-    }
-
-    void DoSummonPack(uint8 uiIndex)
-    {
-        for (uint8 i = 0; i < MAX_SUMMON_POSITIONS; ++i)
-        {
-            // This requires order of the array
-            if (asSummonInfo[i].uiPosition > uiIndex)
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+            // Remove Gossip-Menu in reload case for DONE enounter
+            if (m_pInstance && m_pInstance->GetData(TYPE_GRUBBIS) == DONE)
             {
-                break;
-            }
-            if (asSummonInfo[i].uiPosition == uiIndex)
-            {
-                m_creature->SummonCreature(asSummonInfo[i].uiEntry, asSummonInfo[i].fX, asSummonInfo[i].fY, asSummonInfo[i].fZ, asSummonInfo[i].fO, TEMPSUMMON_DEAD_DESPAWN, 0);
+                pCreature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
             }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        ScriptedInstance* m_pInstance;
+
+        uint8 m_uiPhase;
+        uint32 m_uiPhaseTimer;
+        ObjectGuid m_playerGuid;
+        bool m_bDidAggroText, m_bSouthernCaveInOpened, m_bNorthernCaveInOpened;
+        GuidList m_luiSummonedMobGUIDs;
+
+        void Reset() override
         {
+            m_bDidAggroText = false;                            // Used for 'defend' text, is triggered when the npc is attacked
+
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                m_uiPhase = 0;
+                m_uiPhaseTimer = 0;
+                m_bSouthernCaveInOpened = m_bNorthernCaveInOpened = false;
+                m_luiSummonedMobGUIDs.clear();
+            }
+        }
+
+        void DoSummonPack(uint8 uiIndex)
+        {
+            for (uint8 i = 0; i < MAX_SUMMON_POSITIONS; ++i)
+            {
+                // This requires order of the array
+                if (asSummonInfo[i].uiPosition > uiIndex)
+                {
+                    break;
+                }
+                if (asSummonInfo[i].uiPosition == uiIndex)
+                {
+                    m_creature->SummonCreature(asSummonInfo[i].uiEntry, asSummonInfo[i].fX, asSummonInfo[i].fY, asSummonInfo[i].fZ, asSummonInfo[i].fO, TEMPSUMMON_DEAD_DESPAWN, 0);
+                }
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_CAVERNDEEP_BURROWER:
             case NPC_CAVERNDEEP_AMBUSHER:
-            {
                 if (GameObject* pDoor = m_pInstance->GetSingleGameObjectFromStorage(m_uiPhase > 20 ? GO_CAVE_IN_NORTH : GO_CAVE_IN_SOUTH))
                 {
                     float fX, fY, fZ;
@@ -205,116 +207,115 @@ struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
                     pSummoned->GetMotionMaster()->MovePoint(1, fX, fY, fZ);
                 }
                 break;
-            }
             case NPC_GRUBBIS:
                 // Movement of Grubbis and Add to be handled by DB waypoints
                 DoScriptText(SAY_GRUBBIS_SPAWN, pSummoned);
                 break;
-        }
-        m_luiSummonedMobGUIDs.push_back(pSummoned->GetObjectGuid());
-    }
-
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_GRUBBIS)
-        {
-            if (m_pInstance)
-            {
-                m_pInstance->SetData(TYPE_GRUBBIS, DONE);
             }
+            m_luiSummonedMobGUIDs.push_back(pSummoned->GetObjectGuid());
+        }
+
+        void SummonedCreatureJustDied(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_GRUBBIS)
+            {
+                if (m_pInstance)
+                {
+                    m_pInstance->SetData(TYPE_GRUBBIS, DONE);
+                }
+                m_uiPhaseTimer = 1000;
+            }
+            m_luiSummonedMobGUIDs.remove(pSummoned->GetObjectGuid());
+        }
+
+        bool IsPreparingExplosiveCharge()
+        {
+            return m_uiPhase == 11 || m_uiPhase == 13 || m_uiPhase == 26 || m_uiPhase == 28;
+        }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            // In case we are preparing the explosive charges, we won't start attacking mobs
+            if (IsPreparingExplosiveCharge())
+            {
+                return;
+            }
+
+            npc_escortAI::MoveInLineOfSight(pWho);
+        }
+
+        void AttackStart(Unit* pWho) override
+        {
+            // In case we are preparing the explosive charges, we won't start attacking mobs
+            if (IsPreparingExplosiveCharge())
+            {
+                return;
+            }
+
+            npc_escortAI::AttackStart(pWho);
+        }
+
+        void AttackedBy(Unit* pAttacker) override
+        {
+            // Possibility for Aggro-Text only once per combat
+            if (m_bDidAggroText)
+            {
+                return;
+            }
+
+            m_bDidAggroText = true;
+
+            if (!urand(0, 2))
+            {
+                DoScriptText(urand(0, 1) ? SAY_AGGRO_1 : SAY_AGGRO_2, m_creature, pAttacker);
+            }
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (!m_pInstance)
+            {
+                return;
+            }
+
+            m_pInstance->SetData(TYPE_GRUBBIS, FAIL);
+
+            if (m_bSouthernCaveInOpened)                        // close southern cave-in door
+            {
+                m_pInstance->DoUseDoorOrButton(GO_CAVE_IN_SOUTH);
+            }
+            if (m_bNorthernCaveInOpened)                        // close northern cave-in door
+            {
+                m_pInstance->DoUseDoorOrButton(GO_CAVE_IN_NORTH);
+            }
+
+            for (GuidList::const_iterator itr = m_luiSummonedMobGUIDs.begin(); itr != m_luiSummonedMobGUIDs.end(); ++itr)
+            {
+                if (Creature* pSummoned = m_creature->GetMap()->GetCreature(*itr))
+                {
+                    pSummoned->ForcedDespawn();
+                }
+            }
+        }
+
+        void StartEvent(Player* pPlayer)
+        {
+            if (!m_pInstance)
+            {
+                return;
+            }
+
+            m_pInstance->SetData(TYPE_GRUBBIS, IN_PROGRESS);
+
+            m_uiPhase = 1;
             m_uiPhaseTimer = 1000;
-        }
-        m_luiSummonedMobGUIDs.remove(pSummoned->GetObjectGuid());
-    }
-
-    bool IsPreparingExplosiveCharge()
-    {
-        return m_uiPhase == 11 || m_uiPhase == 13 || m_uiPhase == 26 || m_uiPhase == 28;
-    }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        // In case we are preparing the explosive charges, we won't start attacking mobs
-        if (IsPreparingExplosiveCharge())
-        {
-            return;
+            m_playerGuid = pPlayer->GetObjectGuid();
         }
 
-        npc_escortAI::MoveInLineOfSight(pWho);
-    }
-
-    void AttackStart(Unit* pWho) override
-    {
-        // In case we are preparing the explosive charges, we won't start attacking mobs
-        if (IsPreparingExplosiveCharge())
+        void WaypointStart(uint32 uiPointId) override
         {
-            return;
-        }
-
-        npc_escortAI::AttackStart(pWho);
-    }
-
-    void AttackedBy(Unit* pAttacker) override
-    {
-        // Possibility for Aggro-Text only once per combat
-        if (m_bDidAggroText)
-        {
-            return;
-        }
-
-        m_bDidAggroText = true;
-
-        if (!urand(0, 2))
-        {
-            DoScriptText(urand(0, 1) ? SAY_AGGRO_1 : SAY_AGGRO_2, m_creature, pAttacker);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (!m_pInstance)
-        {
-            return;
-        }
-
-        m_pInstance->SetData(TYPE_GRUBBIS, FAIL);
-
-        if (m_bSouthernCaveInOpened)                        // close southern cave-in door
-        {
-            m_pInstance->DoUseDoorOrButton(GO_CAVE_IN_SOUTH);
-        }
-        if (m_bNorthernCaveInOpened)                        // close northern cave-in door
-        {
-            m_pInstance->DoUseDoorOrButton(GO_CAVE_IN_NORTH);
-        }
-
-        for (GuidList::const_iterator itr = m_luiSummonedMobGUIDs.begin(); itr != m_luiSummonedMobGUIDs.end(); ++itr)
-        {
-            if (Creature* pSummoned = m_creature->GetMap()->GetCreature(*itr))
+            switch (uiPointId)
             {
-                pSummoned->ForcedDespawn();
-            }
-        }
-    }
-
-    void StartEvent(Player* pPlayer)
-    {
-        if (!m_pInstance)
-        {
-            return;
-        }
-
-        m_pInstance->SetData(TYPE_GRUBBIS, IN_PROGRESS);
-
-        m_uiPhase = 1;
-        m_uiPhaseTimer = 1000;
-        m_playerGuid = pPlayer->GetObjectGuid();
-    }
-
-    void WaypointStart(uint32 uiPointId) override
-    {
-        switch (uiPointId)
-        {
             case 10:
                 // Open Southern Cave-In
                 if (m_pInstance && !m_bSouthernCaveInOpened)
@@ -335,13 +336,13 @@ struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
                 }
                 m_bNorthernCaveInOpened = true;
                 break;
+            }
         }
-    }
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        void WaypointReached(uint32 uiPointId) override
         {
+            switch (uiPointId)
+            {
             case 4:
                 m_uiPhaseTimer = 1000;
                 break;
@@ -380,18 +381,18 @@ struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
                 m_uiPhaseTimer = 2000;
                 SetEscortPaused(true);                      // And keep paused from now on!
                 break;
+            }
         }
-    }
 
-    void UpdateEscortAI(uint32 const uiDiff) override
-    {
-        // the phases are handled OOC (keeps them in sync with the waypoints)
-        if (m_uiPhaseTimer && !m_creature->getVictim())
+        void UpdateEscortAI(uint32 const uiDiff) override
         {
-            if (m_uiPhaseTimer <= uiDiff)
+            // the phases are handled OOC (keeps them in sync with the waypoints)
+            if (m_uiPhaseTimer && !m_creature->getVictim())
             {
-                switch (m_uiPhase)
+                if (m_uiPhaseTimer <= uiDiff)
                 {
+                    switch (m_uiPhase)
+                    {
                     case 1:
                         DoScriptText(SAY_START, m_creature);
                         m_creature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
@@ -640,61 +641,62 @@ struct npc_blastmaster_emi_shortfuseAI : public npc_escortAI
                         DoScriptText(SAY_FINISH_2, m_creature);
                         m_uiPhaseTimer = 0;
                         break;
+                    }
+                    ++m_uiPhase;
                 }
-                ++m_uiPhase;
+                else
+                {
+                    m_uiPhaseTimer -= uiDiff;
+                }
             }
-            else
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                m_uiPhaseTimer -= uiDiff;
+                return;
             }
+
+            DoMeleeAttackIfReady();
         }
+    };
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        DoMeleeAttackIfReady();
-    }
-};
-
-CreatureAI* GetAI_npc_blastmaster_emi_shortfuse(Creature* pCreature)
-{
-    return new npc_blastmaster_emi_shortfuseAI(pCreature);
-}
-
-bool GossipHello_npc_blastmaster_emi_shortfuse(Player* pPlayer, Creature* pCreature)
-{
-    if (instance_gnomeregan* pInstance = (instance_gnomeregan*)pCreature->GetInstanceData())
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        if (pInstance->GetData(TYPE_GRUBBIS) == NOT_STARTED || pInstance->GetData(TYPE_GRUBBIS) == FAIL)
-        {
-            pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_START, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-            pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-        }
+        return new npc_blastmaster_emi_shortfuseAI(pCreature);
     }
-    return true;
-}
 
-bool GossipSelect_npc_blastmaster_emi_shortfuse(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        if (instance_gnomeregan* pInstance = (instance_gnomeregan*)pCreature->GetInstanceData())
+        if (InstanceData* pInstance = pCreature->GetInstanceData())
         {
             if (pInstance->GetData(TYPE_GRUBBIS) == NOT_STARTED || pInstance->GetData(TYPE_GRUBBIS) == FAIL)
             {
-                if (npc_blastmaster_emi_shortfuseAI* pEmiAI = dynamic_cast<npc_blastmaster_emi_shortfuseAI*>(pCreature->AI()))
+                pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_START, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+                pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
+            }
+        }
+        return true;
+    }
+
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
+    {
+        if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
+        {
+            if (InstanceData* pInstance = pCreature->GetInstanceData())
+            {
+                if (pInstance->GetData(TYPE_GRUBBIS) == NOT_STARTED || pInstance->GetData(TYPE_GRUBBIS) == FAIL)
                 {
-                    pEmiAI->StartEvent(pPlayer);
+                    if (npc_blastmaster_emi_shortfuseAI* pEmiAI = dynamic_cast<npc_blastmaster_emi_shortfuseAI*>(pCreature->AI()))
+                    {
+                        pEmiAI->StartEvent(pPlayer);
+                    }
                 }
             }
         }
-    }
-    pPlayer->CLOSE_GOSSIP_MENU();
+        pPlayer->CLOSE_GOSSIP_MENU();
 
-    return true;
-}
+        return true;
+    }
+};
 
 /*######
 ## npc_kernobee
@@ -713,79 +715,97 @@ static const float aKernobeePositions[2][3] =
     { -297.32f, -7.32f, -152.85f}                           // Walk out of the door
 };
 
-struct npc_kernobeeAI : public FollowerAI
+struct npc_kernobee : public CreatureScript
 {
-    npc_kernobeeAI(Creature* pCreature) : FollowerAI(pCreature)
+    npc_kernobee() : CreatureScript("npc_kernobee") {}
+
+    struct npc_kernobeeAI : public FollowerAI
     {
-        m_uiCheckEndposTimer = 10000;
-        Reset();
-    }
-
-    uint32 m_uiCheckEndposTimer;
-
-    void Reset() override {}
-
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        if (eventType == AI_EVENT_START_EVENT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+        npc_kernobeeAI(Creature* pCreature) : FollowerAI(pCreature)
         {
-            // No idea why he has UNIT_STAND_STATE_DEAD in UDB ..
-            m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-            StartFollow((Player*)pInvoker, 0, GetQuestTemplateStore(uiMiscValue));
         }
-    }
 
-    void UpdateFollowerAI(const uint32 uiDiff)
-    {
-        FollowerAI::UpdateFollowerAI(uiDiff);               // Do combat handling
+        uint32 m_uiCheckEndposTimer;
 
-        if (m_creature->IsInCombat() || !HasFollowState(STATE_FOLLOW_INPROGRESS) || HasFollowState(STATE_FOLLOW_COMPLETE))
-            { return; }
-
-        if (m_uiCheckEndposTimer < uiDiff)
+        void Reset() override
         {
-            m_uiCheckEndposTimer = 500;
-            if (m_creature->IsWithinDist3d(aKernobeePositions[0][0], aKernobeePositions[0][1], aKernobeePositions[0][2], 2 * INTERACTION_DISTANCE))
+            m_uiCheckEndposTimer = 10000;
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
+        {
+            if (eventType == AI_EVENT_START_EVENT && pInvoker->GetTypeId() == TYPEID_PLAYER)
             {
-                SetFollowComplete(true);
-                if (Player* pPlayer = GetLeaderForFollower())
-                    { pPlayer->GroupEventHappens(QUEST_A_FINE_MESS, m_creature); }
-                m_creature->GetMotionMaster()->MovePoint(1, aKernobeePositions[1][0], aKernobeePositions[1][1], aKernobeePositions[1][2], false);
-                m_creature->ForcedDespawn(2000);
+                // No idea why he has UNIT_STAND_STATE_DEAD in UDB ..
+                m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                StartFollow((Player*)pInvoker, 0, GetQuestTemplateStore(uiMiscValue));
             }
         }
-        else
-            { m_uiCheckEndposTimer -= uiDiff; }
+
+        void UpdateFollowerAI(const uint32 uiDiff)
+        {
+            FollowerAI::UpdateFollowerAI(uiDiff);               // Do combat handling
+
+            if (m_creature->IsInCombat() || !HasFollowState(STATE_FOLLOW_INPROGRESS) || HasFollowState(STATE_FOLLOW_COMPLETE))
+            {
+                return;
+            }
+
+            if (m_uiCheckEndposTimer < uiDiff)
+            {
+                m_uiCheckEndposTimer = 500;
+                if (m_creature->IsWithinDist3d(aKernobeePositions[0][0], aKernobeePositions[0][1], aKernobeePositions[0][2], 2 * INTERACTION_DISTANCE))
+                {
+                    SetFollowComplete(true);
+                    if (Player* pPlayer = GetLeaderForFollower())
+                    {
+                        pPlayer->GroupEventHappens(QUEST_A_FINE_MESS, m_creature);
+                    }
+                    m_creature->GetMotionMaster()->MovePoint(1, aKernobeePositions[1][0], aKernobeePositions[1][1], aKernobeePositions[1][2], false);
+                    m_creature->ForcedDespawn(2000);
+                }
+            }
+            else
+            {
+                m_uiCheckEndposTimer -= uiDiff;
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_kernobeeAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_A_FINE_MESS)
+        {
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_EVENT, pPlayer, pCreature, pQuest->GetQuestId());
+        }
+
+        return true;
     }
 };
 
-CreatureAI* GetAI_npc_kernobee(Creature* pCreature)
-{
-    return new npc_kernobeeAI(pCreature);
-}
-
-bool QuestAccept_npc_kernobee(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_A_FINE_MESS)
-        { pCreature->AI()->SendAIEvent(AI_EVENT_START_EVENT, pPlayer, pCreature, pQuest->GetQuestId()); }
-
-    return true;
-}
-
 void AddSC_gnomeregan()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new npc_blastmaster_emi_shortfuse();
+    s->RegisterSelf();
+    s = new npc_kernobee();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_blastmaster_emi_shortfuse";
-    pNewScript->GetAI = &GetAI_npc_blastmaster_emi_shortfuse;
-    pNewScript->pGossipHello = &GossipHello_npc_blastmaster_emi_shortfuse;
-    pNewScript->pGossipSelect = &GossipSelect_npc_blastmaster_emi_shortfuse;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_blastmaster_emi_shortfuse";
+    //pNewScript->GetAI = &GetAI_npc_blastmaster_emi_shortfuse;
+    //pNewScript->pGossipHello = &GossipHello_npc_blastmaster_emi_shortfuse;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_blastmaster_emi_shortfuse;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_kernobee";
-    pNewScript->GetAI = &GetAI_npc_kernobee;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_kernobee;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_kernobee";
+    //pNewScript->GetAI = &GetAI_npc_kernobee;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_kernobee;
+    //pNewScript->RegisterSelf();
 }

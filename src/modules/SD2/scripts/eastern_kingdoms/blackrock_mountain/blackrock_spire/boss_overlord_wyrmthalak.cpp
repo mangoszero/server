@@ -51,107 +51,122 @@ const float afLocations[2][4] =
     { -49.875881f, -511.896942f, 88.195160f, 4.613114f}
 };
 
-struct boss_overlordwyrmthalakAI : public ScriptedAI
+struct boss_overlordwyrmthalak : public CreatureScript
 {
-    boss_overlordwyrmthalakAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_overlordwyrmthalak() : CreatureScript("boss_overlord_wyrmthalak") {}
 
-    uint32 m_uiBlastWaveTimer;
-    uint32 m_uiShoutTimer;
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiKnockawayTimer;
-    bool m_bSummoned;
-
-    void Reset() override
+    struct boss_overlordwyrmthalakAI : public ScriptedAI
     {
-        m_uiBlastWaveTimer = 20000;
-        m_uiShoutTimer     = 2000;
-        m_uiCleaveTimer    = 6000;
-        m_uiKnockawayTimer = 12000;
-        m_bSummoned = false;
-    }
+        boss_overlordwyrmthalakAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() != NPC_SPIRESTONE_WARLORD && pSummoned->GetEntry() != NPC_SMOLDERTHORN_BERSERKER)
-        {
-            return;
-        }
+        uint32 m_uiBlastWaveTimer;
+        uint32 m_uiShoutTimer;
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiKnockawayTimer;
+        bool m_bSummoned;
 
-        if (m_creature->getVictim())
+        void Reset() override
         {
-            Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-            pSummoned->AI()->AttackStart(pTarget ? pTarget : m_creature->getVictim());
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // BlastWave
-        if (m_uiBlastWaveTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_BLASTWAVE);
             m_uiBlastWaveTimer = 20000;
+            m_uiShoutTimer = 2000;
+            m_uiCleaveTimer = 6000;
+            m_uiKnockawayTimer = 12000;
+            m_bSummoned = false;
         }
-        else
-            { m_uiBlastWaveTimer -= uiDiff; }
 
-        // Shout
-        if (m_uiShoutTimer < uiDiff)
+        void JustSummoned(Creature* pSummoned) override
         {
-            DoCastSpellIfCan(m_creature, SPELL_SHOUT);
-            m_uiShoutTimer = 10000;
-        }
-        else
-            { m_uiShoutTimer -= uiDiff; }
+            if (pSummoned->GetEntry() != NPC_SPIRESTONE_WARLORD && pSummoned->GetEntry() != NPC_SMOLDERTHORN_BERSERKER)
+            {
+                return;
+            }
 
-        // Cleave
-        if (m_uiCleaveTimer < uiDiff)
+            if (m_creature->getVictim())
+            {
+                Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+                pSummoned->AI()->AttackStart(pTarget ? pTarget : m_creature->getVictim());
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
-            m_uiCleaveTimer = 7000;
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // BlastWave
+            if (m_uiBlastWaveTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_BLASTWAVE);
+                m_uiBlastWaveTimer = 20000;
+            }
+            else
+            {
+                m_uiBlastWaveTimer -= uiDiff;
+            }
+
+            // Shout
+            if (m_uiShoutTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_SHOUT);
+                m_uiShoutTimer = 10000;
+            }
+            else
+            {
+                m_uiShoutTimer -= uiDiff;
+            }
+
+            // Cleave
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
+                m_uiCleaveTimer = 7000;
+            }
+            else
+            {
+                m_uiCleaveTimer -= uiDiff;
+            }
+
+            // Knockaway
+            if (m_uiKnockawayTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_KNOCKAWAY);
+                m_uiKnockawayTimer = 14000;
+            }
+            else
+            {
+                m_uiKnockawayTimer -= uiDiff;
+            }
+
+            // Summon two Beserks
+            if (!m_bSummoned && m_creature->GetHealthPercent() < 51.0f)
+            {
+                m_creature->SummonCreature(NPC_SPIRESTONE_WARLORD, afLocations[0][0], afLocations[0][1], afLocations[0][2], afLocations[0][3], TEMPSUMMON_TIMED_DESPAWN, 300000);
+                m_creature->SummonCreature(NPC_SMOLDERTHORN_BERSERKER, afLocations[1][0], afLocations[1][1], afLocations[1][2], afLocations[1][3], TEMPSUMMON_TIMED_DESPAWN, 300000);
+
+                m_bSummoned = true;
+            }
+
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
+    };
 
-        // Knockaway
-        if (m_uiKnockawayTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_KNOCKAWAY);
-            m_uiKnockawayTimer = 14000;
-        }
-        else
-            { m_uiKnockawayTimer -= uiDiff; }
-
-        // Summon two Beserks
-        if (!m_bSummoned && m_creature->GetHealthPercent() < 51.0f)
-        {
-            m_creature->SummonCreature(NPC_SPIRESTONE_WARLORD, afLocations[0][0], afLocations[0][1], afLocations[0][2], afLocations[0][3], TEMPSUMMON_TIMED_DESPAWN, 300000);
-            m_creature->SummonCreature(NPC_SMOLDERTHORN_BERSERKER, afLocations[1][0], afLocations[1][1], afLocations[1][2], afLocations[1][3], TEMPSUMMON_TIMED_DESPAWN, 300000);
-
-            m_bSummoned = true;
-        }
-
-        DoMeleeAttackIfReady();
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_overlordwyrmthalakAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_overlordwyrmthalak(Creature* pCreature)
-{
-    return new boss_overlordwyrmthalakAI(pCreature);
-}
-
 void AddSC_boss_overlordwyrmthalak()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_overlordwyrmthalak();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_overlord_wyrmthalak";
-    pNewScript->GetAI = &GetAI_boss_overlordwyrmthalak;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_overlord_wyrmthalak";
+    //pNewScript->GetAI = &GetAI_boss_overlordwyrmthalak;
+    //pNewScript->RegisterSelf();
 }

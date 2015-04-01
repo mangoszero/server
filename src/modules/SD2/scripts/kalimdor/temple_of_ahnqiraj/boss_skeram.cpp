@@ -56,52 +56,48 @@ enum
     SPELL_SUMMON_IMAGES         = 747,
 };
 
-struct boss_skeramAI : public ScriptedAI
+struct boss_skeram : public CreatureScript
 {
-    boss_skeramAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_skeram() : CreatureScript("boss_skeram") {}
+
+    struct boss_skeramAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-
-        // Check this for images, because the Initialize spell hits the target only after aggro
-        if (m_creature->IsTemporarySummon())
+        boss_skeramAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_bIsImage = true;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+
+            // Check this for images, because the Initialize spell hits the target only after aggro
+            m_bIsImage = m_creature->IsTemporarySummon();
         }
-        else
+
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiArcaneExplosionTimer;
+        uint32 m_uiFullFillmentTimer;
+        uint32 m_uiBlinkTimer;
+
+        float m_fHpCheck;
+
+        bool m_bIsImage;
+
+        void Reset() override
         {
-            m_bIsImage = false;
+            m_uiArcaneExplosionTimer = urand(6000, 12000);
+            m_uiFullFillmentTimer = 15000;
+            m_uiBlinkTimer = urand(30000, 45000);
+
+            m_fHpCheck = 75.0f;
+
+            if (m_creature->GetVisibility() != VISIBILITY_ON)
+            {
+                m_creature->SetVisibility(VISIBILITY_ON);
+            }
         }
-    }
 
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiArcaneExplosionTimer;
-    uint32 m_uiFullFillmentTimer;
-    uint32 m_uiBlinkTimer;
-
-    float m_fHpCheck;
-
-    bool m_bIsImage;
-
-    void Reset() override
-    {
-        m_uiArcaneExplosionTimer = urand(6000, 12000);
-        m_uiFullFillmentTimer    = 15000;
-        m_uiBlinkTimer           = urand(30000, 45000);
-
-        m_fHpCheck               = 75.0f;
-
-        if (m_creature->GetVisibility() != VISIBILITY_ON)
+        void KilledUnit(Unit* /*pVictim*/) override
         {
-            m_creature->SetVisibility(VISIBILITY_ON);
-        }
-    }
-
-    void KilledUnit(Unit* /*pVictim*/) override
-    {
-        switch (urand(0, 2))
-        {
+            switch (urand(0, 2))
+            {
             case 0:
                 DoScriptText(SAY_SLAY1, m_creature);
                 break;
@@ -111,34 +107,36 @@ struct boss_skeramAI : public ScriptedAI
             case 2:
                 DoScriptText(SAY_SLAY3, m_creature);
                 break;
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (!m_bIsImage)
-        {
-            DoScriptText(SAY_DEATH, m_creature);
-
-            if (m_pInstance)
-            {
-                m_pInstance->SetData(TYPE_SKERAM, DONE);
             }
         }
-        // Else despawn to avoid looting
-        else
-            { m_creature->ForcedDespawn(); }
-    }
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_bIsImage)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            return;
+            if (!m_bIsImage)
+            {
+                DoScriptText(SAY_DEATH, m_creature);
+
+                if (m_pInstance)
+                {
+                    m_pInstance->SetData(TYPE_SKERAM, DONE);
+                }
+            }
+            // Else despawn to avoid looting
+            else
+            {
+                m_creature->ForcedDespawn();
+            }
         }
 
-        switch (urand(0, 2))
+        void Aggro(Unit* /*pWho*/) override
         {
+            if (m_bIsImage)
+            {
+                return;
+            }
+
+            switch (urand(0, 2))
+            {
             case 0:
                 DoScriptText(SAY_AGGRO1, m_creature);
                 break;
@@ -148,110 +146,122 @@ struct boss_skeramAI : public ScriptedAI
             case 2:
                 DoScriptText(SAY_AGGRO3, m_creature);
                 break;
-        }
-
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_SKERAM, IN_PROGRESS);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_SKERAM, FAIL);
-        }
-
-        if (m_bIsImage)
-        {
-            m_creature->ForcedDespawn();
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-        {
-            pSummoned->AI()->AttackStart(pTarget);
-        }
-
-        DoCastSpellIfCan(pSummoned, SPELL_INITIALIZE_IMAGE, CAST_TRIGGERED);
-    }
-
-    // Wrapper to handle the image version initialize
-    void DoInitializeImage()
-    {
-        if (!m_pInstance)
-        {
-            return;
-        }
-
-        // Initialize the health of the clone
-        if (Creature* pProphet = m_pInstance->GetSingleCreatureFromStorage(NPC_SKERAM))
-        {
-            float fHealthPct = pProphet->GetHealthPercent();
-            float fMaxHealthPct = 0;
-
-            // The max health depends on the split phase. It's percent * original boss health
-            if (fHealthPct < 25.0f)
-            {
-                fMaxHealthPct = 0.50f;
             }
-            else if (fHealthPct < 50.0f)
+
+            if (m_pInstance)
             {
-                fMaxHealthPct = 0.20f;
+                m_pInstance->SetData(TYPE_SKERAM, IN_PROGRESS);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_SKERAM, FAIL);
+            }
+
+            if (m_bIsImage)
+            {
+                m_creature->ForcedDespawn();
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            {
+                pSummoned->AI()->AttackStart(pTarget);
+            }
+
+            DoCastSpellIfCan(pSummoned, SPELL_INITIALIZE_IMAGE, CAST_TRIGGERED);
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* /*pInvoker*/, uint32 /*uiMiscValue*/) override
+        {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature)
+            {
+                DoInitializeImage();
+            }
+        }
+
+        // Wrapper to handle the image version initialize
+        void DoInitializeImage()
+        {
+            if (!m_pInstance)
+            {
+                return;
+            }
+
+            // Initialize the health of the clone
+            if (Creature* pProphet = m_pInstance->GetSingleCreatureFromStorage(NPC_SKERAM))
+            {
+                float fHealthPct = pProphet->GetHealthPercent();
+                float fMaxHealthPct = 0;
+
+                // The max health depends on the split phase. It's percent * original boss health
+                if (fHealthPct < 25.0f)
+                {
+                    fMaxHealthPct = 0.50f;
+                }
+                else if (fHealthPct < 50.0f)
+                {
+                    fMaxHealthPct = 0.20f;
+                }
+                else
+                {
+                    fMaxHealthPct = 0.10f;
+                }
+
+                // Set the same health percent as the original boss
+                m_creature->SetMaxHealth(m_creature->GetMaxHealth()*fMaxHealthPct);
+                m_creature->SetHealthPercent(fHealthPct);
+                m_creature->SetCorpseDelay(0);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // ArcaneExplosion_Timer
+            if (m_uiArcaneExplosionTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_EXPLOSION) == CAST_OK)
+                {
+                    m_uiArcaneExplosionTimer = urand(8000, 18000);
+                }
             }
             else
             {
-                fMaxHealthPct = 0.10f;
+                m_uiArcaneExplosionTimer -= uiDiff;
             }
 
-            // Set the same health percent as the original boss
-            m_creature->SetMaxHealth(m_creature->GetMaxHealth()*fMaxHealthPct);
-            m_creature->SetHealthPercent(fHealthPct);
-            m_creature->SetCorpseDelay(0);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // ArcaneExplosion_Timer
-        if (m_uiArcaneExplosionTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_ARCANE_EXPLOSION) == CAST_OK)
+            // True Fullfilment
+            if (m_uiFullFillmentTimer < uiDiff)
             {
-                m_uiArcaneExplosionTimer = urand(8000, 18000);
-            }
-        }
-        else
-            { m_uiArcaneExplosionTimer -= uiDiff; }
-
-        // True Fullfilment
-        if (m_uiFullFillmentTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_TRUE_FULFILLMENT) == CAST_OK)
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
                 {
-                    m_uiFullFillmentTimer = urand(20000, 30000);
+                    if (DoCastSpellIfCan(pTarget, SPELL_TRUE_FULFILLMENT) == CAST_OK)
+                    {
+                        m_uiFullFillmentTimer = urand(20000, 30000);
+                    }
                 }
             }
-        }
-        else
-            { m_uiFullFillmentTimer -= uiDiff; }
-
-        // Blink_Timer
-        if (m_uiBlinkTimer < uiDiff)
-        {
-            switch (urand(0, 2))
+            else
             {
+                m_uiFullFillmentTimer -= uiDiff;
+            }
+
+            // Blink_Timer
+            if (m_uiBlinkTimer < uiDiff)
+            {
+                switch (urand(0, 2))
+                {
                 case 0:
                     DoCastSpellIfCan(m_creature, SPELL_TELEPORT_1);
                     break;
@@ -261,88 +271,100 @@ struct boss_skeramAI : public ScriptedAI
                 case 2:
                     DoCastSpellIfCan(m_creature, SPELL_TELEPORT_3);
                     break;
-            }
+                }
 
-            DoResetThreat();
-            if (m_creature->GetVisibility() != VISIBILITY_ON)
-            {
-                m_creature->SetVisibility(VISIBILITY_ON);
-            }
-
-            m_uiBlinkTimer = urand(10000, 30000);
-        }
-        else
-            { m_uiBlinkTimer -= uiDiff; }
-
-        // Summon images at 75%, 50% and 25%
-        if (!m_bIsImage && m_creature->GetHealthPercent() < m_fHpCheck)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_IMAGES) == CAST_OK)
-            {
-                DoScriptText(SAY_SPLIT, m_creature);
-                m_fHpCheck -= 25.0f;
-                // Teleport shortly after the images are summoned and set invisible to clear the selection (Workaround alert!!!)
-                m_creature->SetVisibility(VISIBILITY_OFF);
-                m_uiBlinkTimer = 2000;
-            }
-        }
-
-        // If we are within range melee the target
-        if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
-        {
-            DoMeleeAttackIfReady();
-        }
-        else
-        {
-            if (!m_creature->IsNonMeleeSpellCasted(false))
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                DoResetThreat();
+                if (m_creature->GetVisibility() != VISIBILITY_ON)
                 {
-                    DoCastSpellIfCan(pTarget, SPELL_EARTH_SHOCK);
+                    m_creature->SetVisibility(VISIBILITY_ON);
+                }
+
+                m_uiBlinkTimer = urand(10000, 30000);
+            }
+            else
+            {
+                m_uiBlinkTimer -= uiDiff;
+            }
+
+            // Summon images at 75%, 50% and 25%
+            if (!m_bIsImage && m_creature->GetHealthPercent() < m_fHpCheck)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_IMAGES) == CAST_OK)
+                {
+                    DoScriptText(SAY_SPLIT, m_creature);
+                    m_fHpCheck -= 25.0f;
+                    // Teleport shortly after the images are summoned and set invisible to clear the selection (Workaround alert!!!)
+                    m_creature->SetVisibility(VISIBILITY_OFF);
+                    m_uiBlinkTimer = 2000;
+                }
+            }
+
+            // If we are within range melee the target
+            if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+            {
+                DoMeleeAttackIfReady();
+            }
+            else
+            {
+                if (!m_creature->IsNonMeleeSpellCasted(false))
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    {
+                        DoCastSpellIfCan(pTarget, SPELL_EARTH_SHOCK);
+                    }
                 }
             }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_skeramAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_skeram(Creature* pCreature)
+struct spell_npc_prophet_skeram : public SpellScript
 {
-    return new boss_skeramAI(pCreature);
-}
+    spell_npc_prophet_skeram() : SpellScript("spell_npc_prophet_skeram") {}
 
-bool EffectDummyCreature_prophet_skeram(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    // always check spellid and effectindex
-    if (uiSpellId == SPELL_INITIALIZE_IMAGE && uiEffIndex == EFFECT_INDEX_0)
+    bool EffectDummy(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pCreatureTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        // check for target == caster first
-        if (instance_temple_of_ahnqiraj* pInstance = (instance_temple_of_ahnqiraj*)pCreatureTarget->GetInstanceData())
+        // always check spellid and effectindex
+        if (uiSpellId == SPELL_INITIALIZE_IMAGE && uiEffIndex == EFFECT_INDEX_0)
         {
-            if (Creature* pProphet = pInstance->GetSingleCreatureFromStorage(NPC_SKERAM))
+            // check for target == caster first
+            if (ScriptedInstance* pInstance = (ScriptedInstance*)pCreatureTarget->ToCreature()->GetInstanceData())
             {
-                if (pProphet == pCreatureTarget)
+                if (Creature* pProphet = pInstance->GetSingleCreatureFromStorage(NPC_SKERAM))
                 {
-                    return false;
+                    if (pProphet == pCreatureTarget)
+                    {
+                        return false;
+                    }
                 }
+            }
+
+            if (CreatureAI* pSkeramAI = pCreatureTarget->ToCreature()->AI())
+            {
+                pSkeramAI->SendAIEvent(AI_EVENT_CUSTOM_A, pCreatureTarget->ToCreature(), pCreatureTarget->ToCreature());
             }
         }
 
-        if (boss_skeramAI* pSkeramAI = dynamic_cast<boss_skeramAI*>(pCreatureTarget->AI()))
-        {
-            pSkeramAI->DoInitializeImage();
-        }
+        return false;
     }
-
-    return false;
-}
+};
 
 void AddSC_boss_skeram()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_skeram();
+    s->RegisterSelf();
+    s = new spell_npc_prophet_skeram();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_skeram";
-    pNewScript->GetAI = &GetAI_boss_skeram;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_prophet_skeram;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_skeram";
+    //pNewScript->GetAI = &GetAI_boss_skeram;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_prophet_skeram;
+    //pNewScript->RegisterSelf();
 }

@@ -44,116 +44,129 @@ enum
     NPC_ANVILRAGE_MEDIC         = 8894,
 };
 
-struct boss_general_angerforgeAI : public ScriptedAI
+struct boss_general_angerforge : public CreatureScript
 {
-    boss_general_angerforgeAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    boss_general_angerforge() : CreatureScript("boss_general_angerforge") {}
 
-    uint32 m_uiMightyBlowTimer;
-    uint32 m_uiHamStringTimer;
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiAddsTimer;
-    bool m_bSummonedMedics;
-
-    void Reset() override
+    struct boss_general_angerforgeAI : public ScriptedAI
     {
-        m_uiMightyBlowTimer = 8000;
-        m_uiHamStringTimer = 12000;
-        m_uiCleaveTimer = 16000;
-        m_uiAddsTimer = 0;
-        m_bSummonedMedics = false;
-    }
+        boss_general_angerforgeAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void SummonAdd(uint32 uiEntry)
-    {
-        float fX, fY, fZ;
-        m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 20.0f, fX, fY, fZ);
-        m_creature->SummonCreature(uiEntry, fX, fY, fZ, 0.0f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
-    }
+        uint32 m_uiMightyBlowTimer;
+        uint32 m_uiHamStringTimer;
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiAddsTimer;
+        bool m_bSummonedMedics;
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+        void Reset() override
         {
-            pSummoned->AI()->AttackStart(pTarget);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_uiMightyBlowTimer = 8000;
+            m_uiHamStringTimer = 12000;
+            m_uiCleaveTimer = 16000;
+            m_uiAddsTimer = 0;
+            m_bSummonedMedics = false;
         }
 
-        // MightyBlow_Timer
-        if (m_uiMightyBlowTimer < uiDiff)
+        void SummonAdd(uint32 uiEntry)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_MIGHTYBLOW);
-            m_uiMightyBlowTimer = 18000;
+            float fX, fY, fZ;
+            m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 20.0f, fX, fY, fZ);
+            m_creature->SummonCreature(uiEntry, fX, fY, fZ, 0.0f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
         }
-        else
-            { m_uiMightyBlowTimer -= uiDiff; }
 
-        // HamString_Timer
-        if (m_uiHamStringTimer < uiDiff)
+        void JustSummoned(Creature* pSummoned) override
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_HAMSTRING);
-            m_uiHamStringTimer = 15000;
-        }
-        else
-            { m_uiHamStringTimer -= uiDiff; }
-
-        // Cleave_Timer
-        if (m_uiCleaveTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
-            m_uiCleaveTimer = 9000;
-        }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
-
-        // Adds_Timer
-        if (m_creature->GetHealthPercent() < 21.0f)
-        {
-            if (m_uiAddsTimer < uiDiff)
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
             {
-                // summon 3 Adds every 25s
-                SummonAdd(NPC_ANVILRAGE_RESERVIST);
-                SummonAdd(NPC_ANVILRAGE_RESERVIST);
-                SummonAdd(NPC_ANVILRAGE_RESERVIST);
+                pSummoned->AI()->AttackStart(pTarget);
+            }
+        }
 
-                m_uiAddsTimer = 25000;
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // MightyBlow_Timer
+            if (m_uiMightyBlowTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_MIGHTYBLOW);
+                m_uiMightyBlowTimer = 18000;
             }
             else
             {
-                m_uiAddsTimer -= uiDiff;
+                m_uiMightyBlowTimer -= uiDiff;
             }
-        }
 
-        // Summon Medics
-        if (!m_bSummonedMedics && m_creature->GetHealthPercent() < 21.0f)
-        {
-            SummonAdd(NPC_ANVILRAGE_MEDIC);
-            SummonAdd(NPC_ANVILRAGE_MEDIC);
-            m_bSummonedMedics = true;
-        }
+            // HamString_Timer
+            if (m_uiHamStringTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_HAMSTRING);
+                m_uiHamStringTimer = 15000;
+            }
+            else
+            {
+                m_uiHamStringTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // Cleave_Timer
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
+                m_uiCleaveTimer = 9000;
+            }
+            else
+            {
+                m_uiCleaveTimer -= uiDiff;
+            }
+
+            // Adds_Timer
+            if (m_creature->GetHealthPercent() < 21.0f)
+            {
+                if (m_uiAddsTimer < uiDiff)
+                {
+                    // summon 3 Adds every 25s
+                    SummonAdd(NPC_ANVILRAGE_RESERVIST);
+                    SummonAdd(NPC_ANVILRAGE_RESERVIST);
+                    SummonAdd(NPC_ANVILRAGE_RESERVIST);
+
+                    m_uiAddsTimer = 25000;
+                }
+                else
+                {
+                    m_uiAddsTimer -= uiDiff;
+                }
+            }
+
+            // Summon Medics
+            if (!m_bSummonedMedics && m_creature->GetHealthPercent() < 21.0f)
+            {
+                SummonAdd(NPC_ANVILRAGE_MEDIC);
+                SummonAdd(NPC_ANVILRAGE_MEDIC);
+                m_bSummonedMedics = true;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_general_angerforgeAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_general_angerforge(Creature* pCreature)
-{
-    return new boss_general_angerforgeAI(pCreature);
-}
-
 void AddSC_boss_general_angerforge()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_general_angerforge();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_general_angerforge";
-    pNewScript->GetAI = &GetAI_boss_general_angerforge;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_general_angerforge";
+    //pNewScript->GetAI = &GetAI_boss_general_angerforge;
+    //pNewScript->RegisterSelf();
 }

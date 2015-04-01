@@ -53,154 +53,171 @@ enum
     NPC_SCARLET_TRAINEE    = 6575
 };
 
-struct boss_herodAI : public ScriptedAI
+struct boss_herod : public CreatureScript
 {
-    boss_herodAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_herod() : CreatureScript("boss_herod") {}
 
-    bool m_bEnrage;
-    bool m_bTraineeSay;
-
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiWhirlwindTimer;
-
-    void Reset() override
+    struct boss_herodAI : public ScriptedAI
     {
-        m_bTraineeSay = false;
-        m_bEnrage     = false;
+        boss_herodAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_uiCleaveTimer    = 7500;
-        m_uiWhirlwindTimer = 14500;
-    }
+        bool m_bEnrage;
+        bool m_bTraineeSay;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoScriptText(SAY_AGGRO, m_creature);
-        DoCastSpellIfCan(m_creature, SPELL_RUSHINGCHARGE);
-    }
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiWhirlwindTimer;
 
-    void SummonedCreature(Creature* pSummoned)
-    {
-        // make first Scarlet Trainee say text
-        if (pSummoned->GetEntry() == NPC_SCARLET_TRAINEE && !m_bTraineeSay)
+        void Reset() override
         {
-            DoScriptText(SAY_TRAINEE_SPAWN, pSummoned);
-            m_bTraineeSay = true;
-        }
-    }
+            m_bTraineeSay = false;
+            m_bEnrage = false;
 
-    void KilledUnit(Unit* /*pVictim*/) override
-    {
-        DoScriptText(SAY_KILL, m_creature);
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        for (uint8 i = 0; i < 20; ++i)
-        {
-            m_creature->SummonCreature(NPC_SCARLET_TRAINEE, 1939.18f, -431.58f, 17.09f, 6.22f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 600000);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_uiCleaveTimer = 7500;
+            m_uiWhirlwindTimer = 14500;
         }
 
-        // If we are < 30% hp enrage
-        if (!m_bEnrage && m_creature->GetHealthPercent() <= 30.0f && !m_creature->IsNonMeleeSpellCasted(false))
+        void Aggro(Unit* /*pWho*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+            DoScriptText(SAY_AGGRO, m_creature);
+            DoCastSpellIfCan(m_creature, SPELL_RUSHINGCHARGE);
+        }
+
+        void SummonedCreature(Creature* pSummoned)
+        {
+            // make first Scarlet Trainee say text
+            if (pSummoned->GetEntry() == NPC_SCARLET_TRAINEE && !m_bTraineeSay)
             {
-                DoScriptText(EMOTE_GENERIC_ENRAGED, m_creature);
-                DoScriptText(SAY_ENRAGE, m_creature);
-                m_bEnrage = true;
+                DoScriptText(SAY_TRAINEE_SPAWN, pSummoned);
+                m_bTraineeSay = true;
             }
         }
 
-        // Cleave
-        if (m_uiCleaveTimer < uiDiff)
+        void KilledUnit(Unit* /*pVictim*/) override
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
-            m_uiCleaveTimer = urand(7500, 17500);
+            DoScriptText(SAY_KILL, m_creature);
         }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
 
-        if (m_uiWhirlwindTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WHIRLWIND) == CAST_OK)
+            for (uint8 i = 0; i < 20; ++i)
             {
-                DoScriptText(SAY_WHIRLWIND, m_creature);
-                m_uiWhirlwindTimer = urand(15000, 25000);
+                m_creature->SummonCreature(NPC_SCARLET_TRAINEE, 1939.18f, -431.58f, 17.09f, 6.22f, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 600000);
             }
         }
-        else
-            { m_uiWhirlwindTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
-    }
-};
-
-CreatureAI* GetAI_boss_herod(Creature* pCreature)
-{
-    return new boss_herodAI(pCreature);
-}
-
-struct mob_scarlet_traineeAI : public npc_escortAI
-{
-    mob_scarlet_traineeAI(Creature* pCreature) : npc_escortAI(pCreature)
-    {
-        m_uiStartTimer = urand(1000, 6000);
-        Reset();
-    }
-
-    uint32 m_uiStartTimer;
-
-    void Reset() override { }
-    void WaypointReached(uint32 /*uiPointId*/) override {}
-
-    void UpdateEscortAI(const uint32 uiDiff) override
-    {
-        if (m_uiStartTimer)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (m_uiStartTimer <= uiDiff)
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                Start(true);
-                m_uiStartTimer = 0;
+                return;
+            }
+
+            // If we are < 30% hp enrage
+            if (!m_bEnrage && m_creature->GetHealthPercent() <= 30.0f && !m_creature->IsNonMeleeSpellCasted(false))
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+                {
+                    DoScriptText(EMOTE_GENERIC_ENRAGED, m_creature);
+                    DoScriptText(SAY_ENRAGE, m_creature);
+                    m_bEnrage = true;
+                }
+            }
+
+            // Cleave
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
+                m_uiCleaveTimer = urand(7500, 17500);
             }
             else
             {
-                m_uiStartTimer -= uiDiff;
+                m_uiCleaveTimer -= uiDiff;
             }
-        }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
+            if (m_uiWhirlwindTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WHIRLWIND) == CAST_OK)
+                {
+                    DoScriptText(SAY_WHIRLWIND, m_creature);
+                    m_uiWhirlwindTimer = urand(15000, 25000);
+                }
+            }
+            else
+            {
+                m_uiWhirlwindTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_herodAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_mob_scarlet_trainee(Creature* pCreature)
+struct mob_scarlet_trainee : public CreatureScript
 {
-    return new mob_scarlet_traineeAI(pCreature);
-}
+    mob_scarlet_trainee() : CreatureScript("mob_scarlet_trainee") {}
+
+    struct mob_scarlet_traineeAI : public npc_escortAI
+    {
+        mob_scarlet_traineeAI(Creature* pCreature) : npc_escortAI(pCreature)
+        {
+        }
+
+        uint32 m_uiStartTimer;
+
+        void Reset() override { m_uiStartTimer = urand(1000, 6000);  }
+
+        void WaypointReached(uint32 /*uiPointId*/) override {}
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (m_uiStartTimer)
+            {
+                if (m_uiStartTimer <= uiDiff)
+                {
+                    Start(true);
+                    m_uiStartTimer = 0;
+                }
+                else
+                {
+                    m_uiStartTimer -= uiDiff;
+                }
+            }
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new mob_scarlet_traineeAI(pCreature);
+    }
+};
 
 void AddSC_boss_herod()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_herod();
+    s->RegisterSelf();
+    s = new mob_scarlet_trainee();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_herod";
-    pNewScript->GetAI = &GetAI_boss_herod;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_herod";
+    //pNewScript->GetAI = &GetAI_boss_herod;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mob_scarlet_trainee";
-    pNewScript->GetAI = &GetAI_mob_scarlet_trainee;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mob_scarlet_trainee";
+    //pNewScript->GetAI = &GetAI_mob_scarlet_trainee;
+    //pNewScript->RegisterSelf();
 }

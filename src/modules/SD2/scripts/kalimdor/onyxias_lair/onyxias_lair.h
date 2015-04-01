@@ -37,24 +37,4 @@ enum
     NPC_ONYXIA_TRIGGER          = 12758,
 };
 
-class instance_onyxias_lair : public ScriptedInstance
-{
-    public:
-        instance_onyxias_lair(Map* pMap);
-        ~instance_onyxias_lair() {}
-
-        void Initialize() override;
-
-        bool IsEncounterInProgress() const override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-
-    protected:
-        uint32 m_uiEncounter;
-
-        time_t m_tPhaseTwoStart;
-};
-
 #endif

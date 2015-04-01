@@ -46,112 +46,124 @@ enum
     SPELL_LAVABOMB_ALT          = 19428
 };
 
-struct boss_magmadarAI : public ScriptedAI
+struct boss_magmadar : public CreatureScript
 {
-    boss_magmadarAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_magmadar() : CreatureScript("boss_magmadar") {}
+
+    struct boss_magmadarAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiFrenzyTimer;
-    uint32 m_uiPanicTimer;
-    uint32 m_uiLavabombTimer;
-
-    void Reset() override
-    {
-        m_uiFrenzyTimer = 30000;
-        m_uiPanicTimer = 7000;
-        m_uiLavabombTimer = 12000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoCastSpellIfCan(m_creature, SPELL_MAGMASPIT, true);
-
-        if (m_pInstance)
+        boss_magmadarAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_MAGMADAR, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_MAGMADAR, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_MAGMADAR, NOT_STARTED);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Frenzy_Timer
-        if (m_uiFrenzyTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiFrenzyTimer;
+        uint32 m_uiPanicTimer;
+        uint32 m_uiLavabombTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
+            m_uiFrenzyTimer = 30000;
+            m_uiPanicTimer = 7000;
+            m_uiLavabombTimer = 12000;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            DoCastSpellIfCan(m_creature, SPELL_MAGMASPIT, true);
+
+            if (m_pInstance)
             {
-                DoScriptText(EMOTE_GENERIC_FRENZY_KILL, m_creature);
-                m_uiFrenzyTimer = 15000;
+                m_pInstance->SetData(TYPE_MAGMADAR, IN_PROGRESS);
             }
         }
-        else
-            { m_uiFrenzyTimer -= uiDiff; }
 
-        // Panic_Timer
-        if (m_uiPanicTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_PANIC) == CAST_OK)
+            if (m_pInstance)
             {
-                m_uiPanicTimer = 30000;
+                m_pInstance->SetData(TYPE_MAGMADAR, DONE);
             }
         }
-        else
-            { m_uiPanicTimer -= uiDiff; }
 
-        // Lavabomb_Timer
-        if (m_uiLavabombTimer < uiDiff)
+        void JustReachedHome() override
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (m_pInstance)
             {
-                if (DoCastSpellIfCan(pTarget, SPELL_LAVABOMB) == CAST_OK)
+                m_pInstance->SetData(TYPE_MAGMADAR, NOT_STARTED);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Frenzy_Timer
+            if (m_uiFrenzyTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FRENZY) == CAST_OK)
                 {
-                    m_uiLavabombTimer = 12000;
+                    DoScriptText(EMOTE_GENERIC_FRENZY_KILL, m_creature);
+                    m_uiFrenzyTimer = 15000;
                 }
             }
-        }
-        else
-            { m_uiLavabombTimer -= uiDiff; }
+            else
+            {
+                m_uiFrenzyTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // Panic_Timer
+            if (m_uiPanicTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_PANIC) == CAST_OK)
+                {
+                    m_uiPanicTimer = 30000;
+                }
+            }
+            else
+            {
+                m_uiPanicTimer -= uiDiff;
+            }
+
+            // Lavabomb_Timer
+            if (m_uiLavabombTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_LAVABOMB) == CAST_OK)
+                    {
+                        m_uiLavabombTimer = 12000;
+                    }
+                }
+            }
+            else
+            {
+                m_uiLavabombTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_magmadarAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_magmadar(Creature* pCreature)
-{
-    return new boss_magmadarAI(pCreature);
-}
-
 void AddSC_boss_magmadar()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_magmadar();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_magmadar";
-    pNewScript->GetAI = &GetAI_boss_magmadar;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_magmadar";
+    //pNewScript->GetAI = &GetAI_boss_magmadar;
+    //pNewScript->RegisterSelf();
 }

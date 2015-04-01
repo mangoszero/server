@@ -51,14 +51,19 @@ enum
     SPELL_LEARN_FELCLOTH_BAG  = 26095
 };
 
-bool GOUse_go_barov_journal(Player* pPlayer, GameObject* /*pGo*/)
+struct go_barov_journal : public GameObjectScript
 {
-    if (pPlayer->HasSkill(SKILL_TAILORING) && pPlayer->GetBaseSkillValue(SKILL_TAILORING) >= 280 && !pPlayer->HasSpell(SPELL_TAILOR_FELCLOTH_BAG))
+    go_barov_journal() : GameObjectScript("go_barov_journal") {}
+
+    bool OnUse(Player* pPlayer, GameObject* /*pGo*/) override
     {
-        pPlayer->CastSpell(pPlayer, SPELL_LEARN_FELCLOTH_BAG, false);
+        if (pPlayer->HasSkill(SKILL_TAILORING) && pPlayer->GetBaseSkillValue(SKILL_TAILORING) >= 280 && !pPlayer->HasSpell(SPELL_TAILOR_FELCLOTH_BAG))
+        {
+            pPlayer->CastSpell(pPlayer, SPELL_LEARN_FELCLOTH_BAG, false);
+        }
+        return true;
     }
-    return true;
-}
+};
 
 /*######
 ## go_andorhal_tower
@@ -78,13 +83,17 @@ enum
     GO_ANDORHAL_TOWER_4                      = 176097
 };
 
-bool GOUse_go_andorhal_tower(Player* pPlayer, GameObject* pGo)
+struct go_andorhal_tower : public GameObjectScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_ALL_ALONG_THE_WATCHTOWERS_ALLIANCE) == QUEST_STATUS_INCOMPLETE || pPlayer->GetQuestStatus(QUEST_ALL_ALONG_THE_WATCHTOWERS_HORDE) == QUEST_STATUS_INCOMPLETE)
+    go_andorhal_tower() : GameObjectScript("go_andorhal_tower") {}
+
+    bool OnUse(Player* pPlayer, GameObject* pGo) override
     {
-        uint32 uiKillCredit = 0;
-        switch (pGo->GetEntry())
+        if (pPlayer->GetQuestStatus(QUEST_ALL_ALONG_THE_WATCHTOWERS_ALLIANCE) == QUEST_STATUS_INCOMPLETE || pPlayer->GetQuestStatus(QUEST_ALL_ALONG_THE_WATCHTOWERS_HORDE) == QUEST_STATUS_INCOMPLETE)
         {
+            uint32 uiKillCredit = 0;
+            switch (pGo->GetEntry())
+            {
             case GO_ANDORHAL_TOWER_1:
                 uiKillCredit = NPC_ANDORHAL_TOWER_1;
                 break;
@@ -97,14 +106,15 @@ bool GOUse_go_andorhal_tower(Player* pPlayer, GameObject* pGo)
             case GO_ANDORHAL_TOWER_4:
                 uiKillCredit = NPC_ANDORHAL_TOWER_4;
                 break;
+            }
+            if (uiKillCredit)
+            {
+                pPlayer->KilledMonsterCredit(uiKillCredit);
+            }
         }
-        if (uiKillCredit)
-        {
-            pPlayer->KilledMonsterCredit(uiKillCredit);
-        }
+        return true;
     }
-    return true;
-}
+};
 
 enum 
 {
@@ -112,32 +122,43 @@ enum
     QUEST_SPIDER_GOD = 2936
 };
 
-bool GossipHelloGO_table_theka(Player* pPlayer, GameObject* pGo) 
+struct go_table_theka : public GameObjectScript
 {
-    if (pPlayer->GetQuestStatus(QUEST_SPIDER_GOD) == QUEST_STATUS_INCOMPLETE)
-        pPlayer->AreaExploredOrEventHappens(QUEST_SPIDER_GOD);
+    go_table_theka() : GameObjectScript("go_table_theka") {}
 
-    pPlayer->SEND_GOSSIP_MENU(GOSSIP_TABLE_THEKA, pGo->GetObjectGuid());
+    bool OnGossipHello(Player* pPlayer, GameObject* pGo) override
+    {
+        if (pPlayer->GetQuestStatus(QUEST_SPIDER_GOD) == QUEST_STATUS_INCOMPLETE)
+            pPlayer->AreaExploredOrEventHappens(QUEST_SPIDER_GOD);
 
-    return true;
-}
+        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TABLE_THEKA, pGo->GetObjectGuid());
+
+        return true;
+    }
+};
 
 void AddSC_go_scripts()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new go_barov_journal();
+    s->RegisterSelf();
+    s = new go_andorhal_tower();
+    s->RegisterSelf();
+    s = new go_table_theka();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_barov_journal";
-    pNewScript->pGOUse =          &GOUse_go_barov_journal;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_barov_journal";
+    //pNewScript->pGOUse =          &GOUse_go_barov_journal;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_andorhal_tower";
-    pNewScript->pGOUse =          &GOUse_go_andorhal_tower;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_andorhal_tower";
+    //pNewScript->pGOUse =          &GOUse_go_andorhal_tower;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_table_theka";
-    pNewScript->pGossipHelloGO =  &GossipHelloGO_table_theka;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_table_theka";
+    //pNewScript->pGossipHelloGO =  &GossipHelloGO_table_theka;
+    //pNewScript->RegisterSelf();
 }

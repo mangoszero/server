@@ -46,116 +46,121 @@
 ## npc_ragged_john
 ######*/
 
-struct npc_ragged_johnAI : public ScriptedAI
+struct npc_ragged_john : public CreatureScript
 {
-    npc_ragged_johnAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_ragged_john() : CreatureScript("npc_ragged_john") {}
 
-    void Reset() override {}
-
-    void MoveInLineOfSight(Unit* who) override
+    struct npc_ragged_johnAI : public ScriptedAI
     {
-        if (who->HasAura(16468, EFFECT_INDEX_0))
+        npc_ragged_johnAI(Creature* pCreature) : ScriptedAI(pCreature) { }
+
+        void Reset() override {}
+
+        void MoveInLineOfSight(Unit* who) override
         {
-            if (who->GetTypeId() == TYPEID_PLAYER && m_creature->IsWithinDistInMap(who, 15) && who->isInAccessablePlaceFor(m_creature))
+            if (who->HasAura(16468, EFFECT_INDEX_0))
             {
-                DoCastSpellIfCan(who, 16472);
-                ((Player*)who)->AreaExploredOrEventHappens(4866);
+                if (who->GetTypeId() == TYPEID_PLAYER && m_creature->IsWithinDistInMap(who, 15) && who->isInAccessablePlaceFor(m_creature))
+                {
+                    DoCastSpellIfCan(who, 16472);
+                    ((Player*)who)->AreaExploredOrEventHappens(4866);
+                }
+            }
+
+            if (!m_creature->getVictim() && who->IsTargetableForAttack() && (m_creature->IsHostileTo(who)) && who->isInAccessablePlaceFor(m_creature))
+            {
+                if (!m_creature->CanFly() && m_creature->GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE)
+                {
+                    return;
+                }
+
+                float attackRadius = m_creature->GetAttackDistance(who);
+                if (m_creature->IsWithinDistInMap(who, attackRadius) && m_creature->IsWithinLOSInMap(who))
+                {
+                    who->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+                    AttackStart(who);
+                }
             }
         }
+    };
 
-        if (!m_creature->getVictim() && who->IsTargetableForAttack() && (m_creature->IsHostileTo(who)) && who->isInAccessablePlaceFor(m_creature))
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_ragged_johnAI(pCreature);
+    }
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override   //TODO localisation setup
+    {
+        if (pCreature->IsQuestGiver())
         {
-            if (!m_creature->CanFly() && m_creature->GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE)
-            {
-                return;
-            }
-
-            float attackRadius = m_creature->GetAttackDistance(who);
-            if (m_creature->IsWithinDistInMap(who, attackRadius) && m_creature->IsWithinLOSInMap(who))
-            {
-                who->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
-                AttackStart(who);
-            }
+            pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
         }
-    }
-};
 
-CreatureAI* GetAI_npc_ragged_john(Creature* pCreature)
-{
-    return new npc_ragged_johnAI(pCreature);
-}
+        if (pPlayer->GetQuestStatus(4224) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Official business, John. I need some information about Marshal Windsor. Tell me about he last time you saw him.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
+        }
 
-bool GossipHello_npc_ragged_john(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->IsQuestGiver())
-    {
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        pPlayer->SEND_GOSSIP_MENU(2713, pCreature->GetObjectGuid());
+        return true;
     }
 
-    if (pPlayer->GetQuestStatus(4224) == QUEST_STATUS_INCOMPLETE)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Official business, John. I need some information about Marshal Windsor. Tell me about he last time you saw him.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
-    }
-
-    pPlayer->SEND_GOSSIP_MENU(2713, pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_npc_ragged_john(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    switch (uiAction)
-    {
+        switch (uiAction)
+        {
         case GOSSIP_ACTION_INFO_DEF:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "So what did you do?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
             pPlayer->SEND_GOSSIP_MENU(2714, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+1:
+        case GOSSIP_ACTION_INFO_DEF + 1:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Start making sense, dwarf. I don't want to have anything to do with your cracker, your pappy, or any sort of 'discreditin'.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
             pPlayer->SEND_GOSSIP_MENU(2715, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+2:
+        case GOSSIP_ACTION_INFO_DEF + 2:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Ironfoe?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
             pPlayer->SEND_GOSSIP_MENU(2716, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+3:
+        case GOSSIP_ACTION_INFO_DEF + 3:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Interesting... continue, John.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4);
             pPlayer->SEND_GOSSIP_MENU(2717, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+4:
+        case GOSSIP_ACTION_INFO_DEF + 4:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "So that's how Windsor died...", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5);
             pPlayer->SEND_GOSSIP_MENU(2718, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+5:
+        case GOSSIP_ACTION_INFO_DEF + 5:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "So how did he die?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
             pPlayer->SEND_GOSSIP_MENU(2719, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+6:
+        case GOSSIP_ACTION_INFO_DEF + 6:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Ok, so where the hell is he? Wait a minute! Are you drunk?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 7);
             pPlayer->SEND_GOSSIP_MENU(2720, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+7:
+        case GOSSIP_ACTION_INFO_DEF + 7:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "WHY is he in Blackrock Depths?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
             pPlayer->SEND_GOSSIP_MENU(2721, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+8:
+        case GOSSIP_ACTION_INFO_DEF + 8:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "300? So the Dark Irons killed him and dragged him into the Depths?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 9);
             pPlayer->SEND_GOSSIP_MENU(2722, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+9:
+        case GOSSIP_ACTION_INFO_DEF + 9:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Ahh... Ironfoe.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 10);
             pPlayer->SEND_GOSSIP_MENU(2723, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+10:
+        case GOSSIP_ACTION_INFO_DEF + 10:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Thanks, Ragged John. Your story was very uplifting and informative.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 11);
             pPlayer->SEND_GOSSIP_MENU(2725, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+11:
+        case GOSSIP_ACTION_INFO_DEF + 11:
             pPlayer->CLOSE_GOSSIP_MENU();
             pPlayer->AreaExploredOrEventHappens(4224);
             break;
+        }
+        return true;
     }
-    return true;
-}
+};
 
 /*######
 ## npc_grark_lorkrub
@@ -212,58 +217,61 @@ static const DialogueEntry aOutroDialogue[] =
     {0, 0, 0},
 };
 
-struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
+struct npc_grark_lorkrub : public CreatureScript
 {
-    npc_grark_lorkrubAI(Creature* pCreature) : npc_escortAI(pCreature),
+    npc_grark_lorkrub() : CreatureScript("npc_grark_lorkrub") {}
+
+    struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
+    {
+        npc_grark_lorkrubAI(Creature* pCreature) : npc_escortAI(pCreature),
         DialogueHelper(aOutroDialogue)
-    {
-        Reset();
-    }
-
-    ObjectGuid m_nuzarkGuid;
-    ObjectGuid m_lexlortGuid;
-
-    GuidList m_lSearscaleGuidList;
-
-    uint8 m_uiKilledCreatures;
-    bool m_bIsFirstSearScale;
-
-    void Reset() override
-    {
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
         {
-            m_uiKilledCreatures = 0;
-            m_bIsFirstSearScale = true;
-
-            m_lSearscaleGuidList.clear();
-
-            m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        }
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
-        {
-            DoScriptText(SAY_AGGRO, m_creature);
-        }
-    }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        // No combat during escort
-        if (HasEscortState(STATE_ESCORT_ESCORTING))
-        {
-            return;
         }
 
-        npc_escortAI::MoveInLineOfSight(pWho);
-    }
+        ObjectGuid m_nuzarkGuid;
+        ObjectGuid m_lexlortGuid;
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        GuidList m_lSearscaleGuidList;
+
+        uint8 m_uiKilledCreatures;
+        bool m_bIsFirstSearScale;
+
+        void Reset() override
         {
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                m_uiKilledCreatures = 0;
+                m_bIsFirstSearScale = true;
+
+                m_lSearscaleGuidList.clear();
+
+                m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            }
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                DoScriptText(SAY_AGGRO, m_creature);
+            }
+        }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            // No combat during escort
+            if (HasEscortState(STATE_ESCORT_ESCORTING))
+            {
+                return;
+            }
+
+            npc_escortAI::MoveInLineOfSight(pWho);
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            switch (uiPointId)
+            {
             case 1:
                 DoScriptText(SAY_START, m_creature);
                 break;
@@ -276,16 +284,16 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
 
                 m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER, -7844.3f, -1521.6f, 139.2f, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
                 m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER, -7860.4f, -1507.8f, 141.0f, 6.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
-                m_creature->SummonCreature(NPC_BLACKROCK_RAIDER,   -7845.6f, -1508.1f, 138.8f, 6.1f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
-                m_creature->SummonCreature(NPC_BLACKROCK_RAIDER,   -7859.8f, -1521.8f, 139.2f, 6.2f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
+                m_creature->SummonCreature(NPC_BLACKROCK_RAIDER, -7845.6f, -1508.1f, 138.8f, 6.1f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
+                m_creature->SummonCreature(NPC_BLACKROCK_RAIDER, -7859.8f, -1521.8f, 139.2f, 6.2f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
                 break;
             case 24:
                 DoScriptText(SAY_SEC_AMBUSH_START, m_creature);
                 SetEscortPaused(true);
 
-                m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER,     -8035.3f, -1222.2f, 135.5f, 5.1f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
+                m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER, -8035.3f, -1222.2f, 135.5f, 5.1f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
                 m_creature->SummonCreature(NPC_FLAMESCALE_DRAGONSPAWN, -8037.5f, -1216.9f, 135.8f, 5.1f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
-                m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER,     -8009.5f, -1222.1f, 139.2f, 3.9f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
+                m_creature->SummonCreature(NPC_BLACKROCK_AMBUSHER, -8009.5f, -1222.1f, 139.2f, 3.9f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
                 m_creature->SummonCreature(NPC_FLAMESCALE_DRAGONSPAWN, -8007.1f, -1219.4f, 140.1f, 3.9f, TEMPSUMMON_TIMED_OOC_DESPAWN, 20000);
                 break;
             case 28:
@@ -295,24 +303,24 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
                 break;
             case 30:
             {
-                SetEscortPaused(true);
-                DoScriptText(SAY_THIRD_AMBUSH_START, m_creature);
+                       SetEscortPaused(true);
+                       DoScriptText(SAY_THIRD_AMBUSH_START, m_creature);
 
-                Player* pPlayer = GetPlayerForEscort();
-                if (!pPlayer)
-                {
-                    return;
-                }
+                       Player* pPlayer = GetPlayerForEscort();
+                       if (!pPlayer)
+                       {
+                           return;
+                       }
 
-                // Set all the dragons in combat
-                for (GuidList::const_iterator itr = m_lSearscaleGuidList.begin(); itr != m_lSearscaleGuidList.end(); ++itr)
-                {
-                    if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
-                    {
-                        pTemp->AI()->AttackStart(pPlayer);
-                    }
-                }
-                break;
+                       // Set all the dragons in combat
+                       for (GuidList::const_iterator itr = m_lSearscaleGuidList.begin(); itr != m_lSearscaleGuidList.end(); ++itr)
+                       {
+                           if (Creature* pTemp = m_creature->GetMap()->GetCreature(*itr))
+                           {
+                               pTemp->AI()->AttackStart(pPlayer);
+                           }
+                       }
+                       break;
             }
             case 36:
                 DoScriptText(EMOTE_LAUGH, m_creature);
@@ -322,15 +330,15 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
                 SetEscortPaused(true);
 
                 m_creature->SummonCreature(NPC_HIGH_EXECUTIONER_NUZARK, -7532.3f, -1029.4f, 258.0f, 2.7f, TEMPSUMMON_TIMED_DESPAWN, 40000);
-                m_creature->SummonCreature(NPC_SHADOW_OF_LEXLORT,       -7532.8f, -1032.9f, 258.2f, 2.5f, TEMPSUMMON_TIMED_DESPAWN, 40000);
+                m_creature->SummonCreature(NPC_SHADOW_OF_LEXLORT, -7532.8f, -1032.9f, 258.2f, 2.5f, TEMPSUMMON_TIMED_DESPAWN, 40000);
                 break;
+            }
         }
-    }
 
-    void JustDidDialogueStep(int32 iEntry) override
-    {
-        switch (iEntry)
+        void JustDidDialogueStep(int32 iEntry) override
         {
+            switch (iEntry)
+            {
             case SAY_LEXLORT_1:
                 m_creature->SetStandState(UNIT_STAND_STATE_KNEEL);
                 break;
@@ -364,15 +372,15 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
                 // Kill self
                 m_creature->DealDamage(m_creature, m_creature->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NONE, NULL, false);
                 break;
+            }
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        void JustSummoned(Creature* pSummoned) override
         {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_HIGH_EXECUTIONER_NUZARK:
-                m_nuzarkGuid  = pSummoned->GetObjectGuid();
+                m_nuzarkGuid = pSummoned->GetObjectGuid();
                 break;
             case NPC_SHADOW_OF_LEXLORT:
                 m_lexlortGuid = pSummoned->GetObjectGuid();
@@ -396,15 +404,15 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
                     pSummoned->AI()->AttackStart(pPlayer);
                 }
                 break;
+            }
         }
-    }
 
-    void SummonedCreatureJustDied(Creature* /*pSummoned*/) override
-    {
-        ++m_uiKilledCreatures;
-
-        switch (m_uiKilledCreatures)
+        void SummonedCreatureJustDied(Creature* /*pSummoned*/) override
         {
+            ++m_uiKilledCreatures;
+
+            switch (m_uiKilledCreatures)
+            {
             case 4:
                 DoScriptText(SAY_FIRST_AMBUSH_END, m_creature);
                 SetEscortPaused(false);
@@ -417,13 +425,13 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
                 DoScriptText(SAY_THIRD_AMBUSH_END, m_creature);
                 SetEscortPaused(false);
                 break;
+            }
         }
-    }
 
-    Creature* GetSpeakerByEntry(uint32 uiEntry) override
-    {
-        switch (uiEntry)
+        Creature* GetSpeakerByEntry(uint32 uiEntry) override
         {
+            switch (uiEntry)
+            {
             case NPC_GRARK_LORKRUB:
                 return m_creature;
             case NPC_HIGH_EXECUTIONER_NUZARK:
@@ -433,80 +441,92 @@ struct npc_grark_lorkrubAI : public npc_escortAI, private DialogueHelper
 
             default:
                 return NULL;
+            }
         }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            DialogueUpdate(uiDiff);
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_grark_lorkrubAI(pCreature);
     }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        DialogueUpdate(uiDiff);
-
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        if (pQuest->GetQuestId() == QUEST_ID_PRECARIOUS_PREDICAMENT)
         {
-            return;
+            if (npc_grark_lorkrubAI* pEscortAI = dynamic_cast<npc_grark_lorkrubAI*>(pCreature->AI()))
+            {
+                pEscortAI->Start(false, pPlayer, pQuest);
+            }
+
+            return true;
         }
 
-        DoMeleeAttackIfReady();
+        return false;
     }
 };
 
-CreatureAI* GetAI_npc_grark_lorkrub(Creature* pCreature)
+struct spell_capture_grark : public SpellScript
 {
-    return new npc_grark_lorkrubAI(pCreature);
-}
+    spell_capture_grark() : SpellScript("spell_capture_grark") {}
 
-bool QuestAccept_npc_grark_lorkrub(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_ID_PRECARIOUS_PREDICAMENT)
+    bool EffectDummy(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pCreatureTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        if (npc_grark_lorkrubAI* pEscortAI = dynamic_cast<npc_grark_lorkrubAI*>(pCreature->AI()))
+        // always check spellid and effectindex
+        if (uiSpellId == SPELL_CAPTURE_GRARK && uiEffIndex == EFFECT_INDEX_0)
         {
-            pEscortAI->Start(false, pPlayer, pQuest);
+            // Note: this implementation needs additional research! There is a lot of guesswork involved in this!
+            if (pCreatureTarget->ToCreature()->GetHealthPercent() > 25.0f)
+            {
+                return false;
+            }
+
+            // The faction is guesswork - needs more research
+            DoScriptText(EMOTE_SUBMIT, pCreatureTarget->ToCreature());
+            pCreatureTarget->ToCreature()->SetFactionTemporary(FACTION_FRIENDLY, TEMPFACTION_RESTORE_RESPAWN);
+            pCreatureTarget->ToCreature()->AI()->EnterEvadeMode();
+
+            // always return true when we are handling this spell and effect
+            return true;
         }
 
-        return true;
+        return false;
     }
-
-    return false;
-}
-
-bool EffectDummyCreature_spell_capture_grark(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    // always check spellid and effectindex
-    if (uiSpellId == SPELL_CAPTURE_GRARK && uiEffIndex == EFFECT_INDEX_0)
-    {
-        // Note: this implementation needs additional research! There is a lot of guesswork involved in this!
-        if (pCreatureTarget->GetHealthPercent() > 25.0f)
-        {
-            return false;
-        }
-
-        // The faction is guesswork - needs more research
-        DoScriptText(EMOTE_SUBMIT, pCreatureTarget);
-        pCreatureTarget->SetFactionTemporary(FACTION_FRIENDLY, TEMPFACTION_RESTORE_RESPAWN);
-        pCreatureTarget->AI()->EnterEvadeMode();
-
-        // always return true when we are handling this spell and effect
-        return true;
-    }
-
-    return false;
-}
+};
 
 void AddSC_burning_steppes()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_ragged_john();
+    s->RegisterSelf();
+    s = new npc_grark_lorkrub();
+    s->RegisterSelf();
+    s = new spell_capture_grark();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_ragged_john";
-    pNewScript->GetAI = &GetAI_npc_ragged_john;
-    pNewScript->pGossipHello =  &GossipHello_npc_ragged_john;
-    pNewScript->pGossipSelect = &GossipSelect_npc_ragged_john;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_ragged_john";
+    //pNewScript->GetAI = &GetAI_npc_ragged_john;
+    //pNewScript->pGossipHello =  &GossipHello_npc_ragged_john;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_ragged_john;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_grark_lorkrub";
-    pNewScript->GetAI = &GetAI_npc_grark_lorkrub;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_grark_lorkrub;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_spell_capture_grark;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_grark_lorkrub";
+    //pNewScript->GetAI = &GetAI_npc_grark_lorkrub;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_grark_lorkrub;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_spell_capture_grark;
+    //pNewScript->RegisterSelf();
 }

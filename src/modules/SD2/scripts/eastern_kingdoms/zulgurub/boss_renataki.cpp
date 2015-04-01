@@ -42,114 +42,127 @@ enum
     SPELL_TRASH             = 3391
 };
 
-struct boss_renatakiAI : public ScriptedAI
+struct boss_renataki : public CreatureScript
 {
-    boss_renatakiAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    boss_renataki() : CreatureScript("boss_renataki") {}
 
-    uint32 m_uiVanishTimer;
-    uint32 m_uiAmbushTimer;
-    uint32 m_uiGougeTimer;
-    uint32 m_uiThousandBladesTimer;
-
-    void Reset() override
+    struct boss_renatakiAI : public ScriptedAI
     {
-        m_uiVanishTimer         = urand(25000, 30000);
-        m_uiAmbushTimer         = 0;
-        m_uiGougeTimer          = urand(15000, 25000);
-        m_uiThousandBladesTimer = urand(4000, 8000);
-    }
+        boss_renatakiAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void EnterEvadeMode() override
-    {
-        // If is vanished, don't evade
-        if (m_uiAmbushTimer)
+        uint32 m_uiVanishTimer;
+        uint32 m_uiAmbushTimer;
+        uint32 m_uiGougeTimer;
+        uint32 m_uiThousandBladesTimer;
+
+        void Reset() override
         {
-            return;
+            m_uiVanishTimer = urand(25000, 30000);
+            m_uiAmbushTimer = 0;
+            m_uiGougeTimer = urand(15000, 25000);
+            m_uiThousandBladesTimer = urand(4000, 8000);
         }
 
-        ScriptedAI::EnterEvadeMode();
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        void EnterEvadeMode() override
         {
-            return;
-        }
-
-        // Note: because the Vanish spell adds invisibility effect on the target, the timers won't be decreased during the vanish phase
-        if (m_uiAmbushTimer)
-        {
-            if (m_uiAmbushTimer <= uiDiff)
+            // If is vanished, don't evade
+            if (m_uiAmbushTimer)
             {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                return;
+            }
+
+            ScriptedAI::EnterEvadeMode();
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Note: because the Vanish spell adds invisibility effect on the target, the timers won't be decreased during the vanish phase
+            if (m_uiAmbushTimer)
+            {
+                if (m_uiAmbushTimer <= uiDiff)
                 {
-                    m_uiAmbushTimer = 0;
+                    if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_TRASH) == CAST_OK)
+                    {
+                        m_uiAmbushTimer = 0;
+                    }
+                }
+                else
+                {
+                    m_uiAmbushTimer -= uiDiff;
+                }
+
+                // don't do anything else while vanished
+                return;
+            }
+
+            // Invisible_Timer
+            if (m_uiVanishTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_VANISH) == CAST_OK)
+                {
+                    m_uiVanishTimer = urand(25000, 40000);
+                    m_uiAmbushTimer = 2000;
                 }
             }
             else
             {
-                m_uiAmbushTimer -= uiDiff;
+                m_uiVanishTimer -= uiDiff;
             }
 
-            // don't do anything else while vanished
-            return;
-        }
-
-        // Invisible_Timer
-        if (m_uiVanishTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_VANISH) == CAST_OK)
+            // Resetting some aggro so he attacks other gamers
+            if (m_uiGougeTimer < uiDiff)
             {
-                m_uiVanishTimer = urand(25000, 40000);
-                m_uiAmbushTimer = 2000;
-            }
-        }
-        else
-            { m_uiVanishTimer -= uiDiff; }
-
-        // Resetting some aggro so he attacks other gamers
-        if (m_uiGougeTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_GOUGE) == CAST_OK)
-            {
-                if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
+                if (DoCastSpellIfCan(m_creature, SPELL_GOUGE) == CAST_OK)
                 {
-                    m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -50);
+                    if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
+                    {
+                        m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -50);
+                    }
+
+                    m_uiGougeTimer = urand(7000, 20000);
                 }
-
-                m_uiGougeTimer = urand(7000, 20000);
             }
-        }
-        else
-            { m_uiGougeTimer -= uiDiff; }
-
-        // Thausand Blades
-        if (m_uiThousandBladesTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_THOUSAND_BLADES) == CAST_OK)
+            else
             {
-                m_uiThousandBladesTimer = urand(7000, 12000);
+                m_uiGougeTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiThousandBladesTimer -= uiDiff; }
 
-        DoMeleeAttackIfReady();
+            // Thausand Blades
+            if (m_uiThousandBladesTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_THOUSAND_BLADES) == CAST_OK)
+                {
+                    m_uiThousandBladesTimer = urand(7000, 12000);
+                }
+            }
+            else
+            {
+                m_uiThousandBladesTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_renatakiAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_renataki(Creature* pCreature)
-{
-    return new boss_renatakiAI(pCreature);
-}
-
 void AddSC_boss_renataki()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_renataki();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_renataki";
-    pNewScript->GetAI = &GetAI_boss_renataki;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_renataki";
+    //pNewScript->GetAI = &GetAI_boss_renataki;
+    //pNewScript->RegisterSelf();
 }

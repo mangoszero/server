@@ -65,125 +65,140 @@ enum
 
 #define GOSSIP_ITEM_RELEASE     "I want to release the corrupted saber to Winna."
 
-struct npc_kittenAI : public FollowerAI
+struct npc_kitten : public CreatureScript
 {
-    npc_kittenAI(Creature* pCreature) : FollowerAI(pCreature)
+    npc_kitten() : CreatureScript("npc_kitten") {}
+
+    struct npc_kittenAI : public FollowerAI
     {
-        if (pCreature->GetOwner() && pCreature->GetOwner()->GetTypeId() == TYPEID_PLAYER)
+        npc_kittenAI(Creature* pCreature) : FollowerAI(pCreature)
         {
-            StartFollow((Player*)pCreature->GetOwner());
-            SetFollowPaused(true);
-            DoScriptText(EMOTE_SAB_JUMP, m_creature);
-
-            pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-
-            // find a decent way to move to center of moonwell
-        }
-
-        m_uiMoonwellCooldown = 7500;
-        Reset();
-    }
-
-    uint32 m_uiMoonwellCooldown;
-
-    void Reset() override { }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        // should not have npcflag by default, so set when expected
-        if (!m_creature->getVictim() && !m_creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP) && HasFollowState(STATE_FOLLOW_INPROGRESS) && pWho->GetEntry() == NPC_WINNA)
-        {
-            if (m_creature->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
+            if (pCreature->GetOwner() && pCreature->GetOwner()->GetTypeId() == TYPEID_PLAYER)
             {
-                m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-            }
-        }
-    }
+                StartFollow((Player*)pCreature->GetOwner());
+                SetFollowPaused(true);
+                DoScriptText(EMOTE_SAB_JUMP, m_creature);
 
-    void UpdateFollowerAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            if (HasFollowState(STATE_FOLLOW_PAUSED))
-            {
-                if (m_uiMoonwellCooldown < uiDiff)
-                {
-                    m_creature->CastSpell(m_creature, SPELL_CORRUPT_SABER_VISUAL, false);
-                    SetFollowPaused(false);
-                }
-                else
-                {
-                    m_uiMoonwellCooldown -= uiDiff;
-                }
+                pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+
+                // find a decent way to move to center of moonwell
             }
 
-            return;
+            m_uiMoonwellCooldown = 7500;
         }
 
-        DoMeleeAttackIfReady();
+        uint32 m_uiMoonwellCooldown;
+
+        void Reset() override { }
+
+        void MoveInLineOfSight(Unit* pWho) override
+        {
+            // should not have npcflag by default, so set when expected
+            if (!m_creature->getVictim() && !m_creature->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP) && HasFollowState(STATE_FOLLOW_INPROGRESS) && pWho->GetEntry() == NPC_WINNA)
+            {
+                if (m_creature->IsWithinDistInMap(pWho, INTERACTION_DISTANCE))
+                {
+                    m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                }
+            }
+        }
+
+        void UpdateFollowerAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                if (HasFollowState(STATE_FOLLOW_PAUSED))
+                {
+                    if (m_uiMoonwellCooldown < uiDiff)
+                    {
+                        m_creature->CastSpell(m_creature, SPELL_CORRUPT_SABER_VISUAL, false);
+                        SetFollowPaused(false);
+                    }
+                    else
+                    {
+                        m_uiMoonwellCooldown -= uiDiff;
+                    }
+                }
+
+                return;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_kittenAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_npc_kitten(Creature* pCreature)
+struct spell_npc_kitten : public SpellScript
 {
-    return new npc_kittenAI(pCreature);
-}
+    spell_npc_kitten() : SpellScript("spell_npc_kitten") {}
 
-bool EffectDummyCreature_npc_kitten(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    // always check spellid and effectindex
-    if (uiSpellId == SPELL_CORRUPT_SABER_VISUAL && uiEffIndex == EFFECT_INDEX_0)
+    bool EffectDummy(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        // Not nice way, however using UpdateEntry will not be correct.
-        if (const CreatureInfo* pTemp = GetCreatureTemplateStore(NPC_CORRUPT_SABER))
+        // always check spellid and effectindex
+        if (uiSpellId == SPELL_CORRUPT_SABER_VISUAL && uiEffIndex == EFFECT_INDEX_0)
         {
-            pCreatureTarget->SetEntry(pTemp->Entry);
-            pCreatureTarget->SetDisplayId(Creature::ChooseDisplayId(pTemp));
-            pCreatureTarget->SetName(pTemp->Name);
-            pCreatureTarget->SetFloatValue(OBJECT_FIELD_SCALE_X, pTemp->Scale);
+            Creature *pCreatureTarget = pTarget->ToCreature();
+            // Not nice way, however using UpdateEntry will not be correct.
+            if (const CreatureInfo* pTemp = GetCreatureTemplateStore(NPC_CORRUPT_SABER))
+            {
+                pCreatureTarget->SetEntry(pTemp->Entry);
+                pCreatureTarget->SetDisplayId(Creature::ChooseDisplayId(pTemp));
+                pCreatureTarget->SetName(pTemp->Name);
+                pCreatureTarget->SetFloatValue(OBJECT_FIELD_SCALE_X, pTemp->Scale);
+            }
+
+            if (Unit* pOwner = pCreatureTarget->GetOwner())
+            {
+                DoScriptText(EMOTE_SAB_FOLLOW, pCreatureTarget, pOwner);
+            }
+
+            // always return true when we are handling this spell and effect
+            return true;
+        }
+        return false;
+    }
+};
+
+struct npc_corrupt_saber : public CreatureScript
+{
+    npc_corrupt_saber() : CreatureScript("npc_corrupt_saber") {}
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
+    {
+        if (pPlayer->GetQuestStatus(QUEST_CORRUPT_SABER) == QUEST_STATUS_INCOMPLETE)
+        {
+            if (GetClosestCreatureWithEntry(pCreature, NPC_WINNA, INTERACTION_DISTANCE))
+            {
+                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_RELEASE, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);    //TODO localisation
+            }
         }
 
-        if (Unit* pOwner = pCreatureTarget->GetOwner())
-        {
-            DoScriptText(EMOTE_SAB_FOLLOW, pCreatureTarget, pOwner);
-        }
-
-        // always return true when we are handling this spell and effect
+        pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
         return true;
     }
-    return false;
-}
 
-bool GossipHello_npc_corrupt_saber(Player* pPlayer, Creature* pCreature)
-{
-    if (pPlayer->GetQuestStatus(QUEST_CORRUPT_SABER) == QUEST_STATUS_INCOMPLETE)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        if (GetClosestCreatureWithEntry(pCreature, NPC_WINNA, INTERACTION_DISTANCE))
+        if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
         {
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_RELEASE, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-        }
-    }
+            pPlayer->CLOSE_GOSSIP_MENU();
 
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-    return true;
-}
+            if (FollowerAI* pKittenAI = (FollowerAI*)(pCreature->AI()))
+            {
+                pKittenAI->SetFollowComplete();
+            }
 
-bool GossipSelect_npc_corrupt_saber(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
-    {
-        pPlayer->CLOSE_GOSSIP_MENU();
-
-        if (npc_kittenAI* pKittenAI = dynamic_cast<npc_kittenAI*>(pCreature->AI()))
-        {
-            pKittenAI->SetFollowComplete();
+            pPlayer->AreaExploredOrEventHappens(QUEST_CORRUPT_SABER);
         }
 
-        pPlayer->AreaExploredOrEventHappens(QUEST_CORRUPT_SABER);
+        return true;
     }
-
-    return true;
-}
+};
 
 /*######
 ## npc_niby_the_almighty (summons el pollo grande)
@@ -204,38 +219,42 @@ enum
     SAY_NIBY_3         = -1000570
 };
 
-struct npc_niby_the_almightyAI : public ScriptedAI
+struct npc_niby_the_almighty : public CreatureScript
 {
-    npc_niby_the_almightyAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    npc_niby_the_almighty() : CreatureScript("npc_niby_the_almighty") {}
 
-    uint32 m_uiSummonTimer;
-    uint8  m_uiSpeech;
-
-    bool m_bEventStarted;
-
-    void Reset() override
+    struct npc_niby_the_almightyAI : public ScriptedAI
     {
-        m_uiSummonTimer = 500;
-        m_uiSpeech = 0;
+        npc_niby_the_almightyAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-        m_bEventStarted = false;
-    }
+        uint32 m_uiSummonTimer;
+        uint8  m_uiSpeech;
 
-    void StartEvent()
-    {
-        Reset();
-        m_bEventStarted = true;
-        m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-    }
+        bool m_bEventStarted;
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_bEventStarted)
+        void Reset() override
         {
-            if (m_uiSummonTimer <= uiDiff)
+            m_uiSummonTimer = 500;
+            m_uiSpeech = 0;
+
+            m_bEventStarted = false;
+        }
+
+        void StartEvent()
+        {
+            Reset();
+            m_bEventStarted = true;
+            m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_bEventStarted)
             {
-                switch (m_uiSpeech)
+                if (m_uiSummonTimer <= uiDiff)
                 {
+                    switch (m_uiSpeech)
+                    {
                     case 1:
                         m_creature->GetMotionMaster()->Clear();
                         m_creature->GetMotionMaster()->MovePoint(0, 5407.19f, -753.00f, 350.82f);
@@ -274,33 +293,35 @@ struct npc_niby_the_almightyAI : public ScriptedAI
                         m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
                         m_bEventStarted = false;
                         break;
+                    }
+                    ++m_uiSpeech;
                 }
-                ++m_uiSpeech;
-            }
-            else
-            {
-                m_uiSummonTimer -= uiDiff;
+                else
+                {
+                    m_uiSummonTimer -= uiDiff;
+                }
             }
         }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_niby_the_almightyAI(pCreature);
+    }
+
+    bool OnQuestRewarded(Player* /*pPlayer*/, Creature* pCreature, Quest const* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_KROSHIUS)
+        {
+            if (npc_niby_the_almightyAI* pNibyAI = dynamic_cast<npc_niby_the_almightyAI*>(pCreature->AI()))
+            {
+                pNibyAI->StartEvent();
+                return true;
+            }
+        }
+        return false;
     }
 };
-
-CreatureAI* GetAI_npc_niby_the_almighty(Creature* pCreature)
-{
-    return new npc_niby_the_almightyAI(pCreature);
-}
-
-bool QuestRewarded_npc_niby_the_almighty(Player* /*pPlayer*/, Creature* pCreature, Quest const* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_KROSHIUS)
-    {
-        if (npc_niby_the_almightyAI* pNibyAI = dynamic_cast<npc_niby_the_almightyAI*>(pCreature->AI()))
-        {
-            pNibyAI->StartEvent();
-        }
-    }
-    return true;
-}
 
 /*######
 ## npc_kroshius
@@ -315,63 +336,72 @@ enum
     FACTION_HOSTILE         = 16,
 };
 
-struct npc_kroshiusAI : public ScriptedAI
+struct npc_kroshius : public CreatureScript
 {
-    npc_kroshiusAI(Creature* pCreature) : ScriptedAI(pCreature)
+    npc_kroshius() : CreatureScript("npc_kroshius") {}
+
+    struct npc_kroshiusAI : public ScriptedAI
     {
-        m_uiPhase = 0;
-        Reset();
-    }
-
-    ObjectGuid m_playerGuid;
-    uint32 m_uiKnockBackTimer;
-    uint32 m_uiPhaseTimer;
-
-    uint8 m_uiPhase;
-
-    void Reset() override
-    {
-        m_uiKnockBackTimer = urand(5000, 8000);
-        m_playerGuid.Clear();
-
-        if (!m_uiPhase)
+        npc_kroshiusAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
-        }
-    }
-
-    void DoRevive(Player* pSource)
-    {
-        if (m_uiPhase)
-        {
-            return;
+            m_uiPhase = 0;  //TODO check this
         }
 
-        m_uiPhase = 1;
-        m_uiPhaseTimer = 2500;
-        m_playerGuid = pSource->GetObjectGuid();
+        ObjectGuid m_playerGuid;
+        uint32 m_uiKnockBackTimer;
+        uint32 m_uiPhaseTimer;
 
-        // TODO: A visual Flame Circle around the mob still missing
-    }
+        uint8 m_uiPhase;
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        m_uiPhase = 0;
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_uiPhase)
+        void Reset() override
         {
-            return;
-        }
+            m_uiKnockBackTimer = urand(5000, 8000);
+            m_playerGuid.Clear();
 
-        if (m_uiPhase < 4)
-        {
-            if (m_uiPhaseTimer < uiDiff)
+            if (!m_uiPhase)
             {
-                switch (m_uiPhase)
+                m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
+            }
+        }
+
+        void DoRevive(Player* pSource)
+        {
+            if (m_uiPhase)
+            {
+                return;
+            }
+
+            m_uiPhase = 1;
+            m_uiPhaseTimer = 2500;
+            m_playerGuid = pSource->GetObjectGuid();
+
+            // TODO: A visual Flame Circle around the mob still missing
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            m_uiPhase = 0;
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* pInvoker, uint32 /*uiMiscValue*/) override
+        {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature && pInvoker->GetTypeId() == TYPEID_PLAYER)
+                DoRevive(pInvoker->ToPlayer());
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_uiPhase)
+            {
+                return;
+            }
+
+            if (m_uiPhase < 4)
+            {
+                if (m_uiPhaseTimer < uiDiff)
                 {
+                    switch (m_uiPhase)
+                    {
                     case 1:                                 // Revived
                         m_creature->SetStandState(UNIT_STAND_STATE_STAND);
                         m_uiPhaseTimer = 1000;
@@ -381,7 +411,7 @@ struct npc_kroshiusAI : public ScriptedAI
                         m_uiPhaseTimer = 3500;
                         break;
                     case 3:                                 // Attack
-                        m_creature->SetFactionTemporary(FACTION_HOSTILE, TEMPFACTION_RESTORE_COMBAT_STOP | TEMPFACTION_RESTORE_RESPAWN |  TEMPFACTION_TOGGLE_OOC_NOT_ATTACK | TEMPFACTION_TOGGLE_PASSIVE);
+                        m_creature->SetFactionTemporary(FACTION_HOSTILE, TEMPFACTION_RESTORE_COMBAT_STOP | TEMPFACTION_RESTORE_RESPAWN | TEMPFACTION_TOGGLE_OOC_NOT_ATTACK | TEMPFACTION_TOGGLE_PASSIVE);
                         if (Player* pPlayer = m_creature->GetMap()->GetPlayer(m_playerGuid))
                         {
                             if (m_creature->IsWithinDistInMap(pPlayer, 30.0f))
@@ -390,58 +420,66 @@ struct npc_kroshiusAI : public ScriptedAI
                             }
                         }
                         break;
+                    }
+                    ++m_uiPhase;
                 }
-                ++m_uiPhase;
+                else
+                {
+                    m_uiPhaseTimer -= uiDiff;
+                }
             }
             else
             {
-                m_uiPhaseTimer -= uiDiff;
+                if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+                {
+                    return;
+                }
+
+                if (m_uiKnockBackTimer < uiDiff)
+                {
+                    DoCastSpellIfCan(m_creature->getVictim(), SPELL_KNOCKBACK);
+                    m_uiKnockBackTimer = urand(9000, 12000);
+                }
+                else
+                {
+                    m_uiKnockBackTimer -= uiDiff;
+                }
+
+                DoMeleeAttackIfReady();
             }
         }
-        else
-        {
-            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            {
-                return;
-            }
+    };
 
-            if (m_uiKnockBackTimer < uiDiff)
-            {
-                DoCastSpellIfCan(m_creature->getVictim(), SPELL_KNOCKBACK);
-                m_uiKnockBackTimer = urand(9000, 12000);
-            }
-            else
-                { m_uiKnockBackTimer -= uiDiff; }
-
-            DoMeleeAttackIfReady();
-        }
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_kroshiusAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_npc_kroshius(Creature* pCreature)
+struct event_npc_kroshius : public MapEventScript
 {
-    return new npc_kroshiusAI(pCreature);
-}
+    event_npc_kroshius() : MapEventScript("event_npc_kroshius") {}
 
-bool ProcessEventId_npc_kroshius(uint32 uiEventId, Object* pSource, Object* /*pTarget*/, bool /*bIsStart*/)
-{
-    if (uiEventId == EVENT_KROSHIUS_REVIVE)
+    bool ProcessEventId_npc_kroshius(uint32 uiEventId, Object* pSource, Object* /*pTarget*/, bool /*bIsStart*/)
     {
-        if (pSource->GetTypeId() == TYPEID_PLAYER)
+        if (uiEventId == EVENT_KROSHIUS_REVIVE)
         {
-            if (Creature* pKroshius = GetClosestCreatureWithEntry((Player*)pSource, NPC_KROSHIUS, 20.0f))
+            if (pSource->GetTypeId() == TYPEID_PLAYER)
             {
-                if (npc_kroshiusAI* pKroshiusAI = dynamic_cast<npc_kroshiusAI*>(pKroshius->AI()))
+                if (Creature* pKroshius = GetClosestCreatureWithEntry((Player*)pSource, NPC_KROSHIUS, 20.0f))
                 {
-                    pKroshiusAI->DoRevive((Player*)pSource);
+                    if (CreatureAI* pKroshiusAI = pKroshius->AI())
+                    {
+                        pKroshiusAI->SendAIEvent(AI_EVENT_CUSTOM_A, (Player*)pSource, pKroshius); //->DoRevive((Player*)pSource);
+                    }
                 }
             }
-        }
 
-        return true;
+            return true;
+        }
+        return false;
     }
-    return false;
-}
+};
 
 /*####
 # npc_captured_arkonarin
@@ -472,62 +510,66 @@ enum
     GO_ARKONARIN_CAGE               = 176306,
 };
 
-struct npc_captured_arkonarinAI : public npc_escortAI
+struct npc_captured_arkonarin : public CreatureScript
 {
-    npc_captured_arkonarinAI(Creature* pCreature) : npc_escortAI(pCreature) { Reset(); }
+    npc_captured_arkonarin() : CreatureScript("npc_captured_arkonarin") {}
 
-    ObjectGuid m_treyGuid;
-
-    bool m_bCanAttack;
-
-    uint32 m_uiMortalStrikeTimer;
-    uint32 m_uiCleaveTimer;
-
-    void Reset() override
+    struct npc_captured_arkonarinAI : public npc_escortAI
     {
-        if (!HasEscortState(STATE_ESCORT_ESCORTING))
-            m_bCanAttack = false;
+        npc_captured_arkonarinAI(Creature* pCreature) : npc_escortAI(pCreature) { }
 
-        m_uiMortalStrikeTimer = urand(5000, 7000);
-        m_uiCleaveTimer = urand(1000, 4000);
-    }
+        ObjectGuid m_treyGuid;
 
-    void Aggro(Unit* pWho) override
-    {
-        if (pWho->GetEntry() == NPC_SPIRT_TREY)
-            DoScriptText(SAY_TREY_ATTACK, m_creature);
-        else if (roll_chance_i(25))
-            DoScriptText(SAY_AGGRO, m_creature, pWho);
-    }
+        bool m_bCanAttack;
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_JAEDENAR_LEGIONNAIRE)
-            pSummoned->AI()->AttackStart(m_creature);
-        else if (pSummoned->GetEntry() == NPC_SPIRT_TREY)
+        uint32 m_uiMortalStrikeTimer;
+        uint32 m_uiCleaveTimer;
+
+        void Reset() override
         {
-            DoScriptText(SAY_TREY_BETRAYER, pSummoned);
-            m_treyGuid = pSummoned->GetObjectGuid();
+            if (!HasEscortState(STATE_ESCORT_ESCORTING))
+                m_bCanAttack = false;
+
+            m_uiMortalStrikeTimer = urand(5000, 7000);
+            m_uiCleaveTimer = urand(1000, 4000);
         }
-    }
 
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+        void Aggro(Unit* pWho) override
         {
-            m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-            m_creature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
-            Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
-
-            if (GameObject* pCage = GetClosestGameObjectWithEntry(m_creature, GO_ARKONARIN_CAGE, 5.0f))
-                pCage->Use(m_creature);
+            if (pWho->GetEntry() == NPC_SPIRT_TREY)
+                DoScriptText(SAY_TREY_ATTACK, m_creature);
+            else if (roll_chance_i(25))
+                DoScriptText(SAY_AGGRO, m_creature, pWho);
         }
-    }
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        switch (uiPointId)
+        void JustSummoned(Creature* pSummoned) override
         {
+            if (pSummoned->GetEntry() == NPC_JAEDENAR_LEGIONNAIRE)
+                pSummoned->AI()->AttackStart(m_creature);
+            else if (pSummoned->GetEntry() == NPC_SPIRT_TREY)
+            {
+                DoScriptText(SAY_TREY_BETRAYER, pSummoned);
+                m_treyGuid = pSummoned->GetObjectGuid();
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
+        {
+            if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+            {
+                m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                m_creature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
+                Start(false, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
+
+                if (GameObject* pCage = GetClosestGameObjectWithEntry(m_creature, GO_ARKONARIN_CAGE, 5.0f))
+                    pCage->Use(m_creature);
+            }
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            switch (uiPointId)
+            {
             case 0:
                 if (Player* pPlayer = GetPlayerForEscort())
                     DoScriptText(SAY_ESCORT_START, m_creature, pPlayer);
@@ -586,49 +628,50 @@ struct npc_captured_arkonarinAI : public npc_escortAI
                     pPlayer->GroupEventHappens(QUEST_ID_RESCUE_JAEDENAR, m_creature);
                 SetRun();
                 break;
+            }
         }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+                return;
+
+            if (m_bCanAttack)
+            {
+                if (m_uiMortalStrikeTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_STRIKE) == CAST_OK)
+                        m_uiMortalStrikeTimer = urand(7000, 10000);
+                }
+                else
+                    m_uiMortalStrikeTimer -= uiDiff;
+
+                if (m_uiCleaveTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+                        m_uiCleaveTimer = urand(3000, 6000);
+                }
+                else
+                    m_uiCleaveTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_captured_arkonarinAI(pCreature);
     }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
+        if (pQuest->GetQuestId() == QUEST_ID_RESCUE_JAEDENAR)
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
 
-        if (m_bCanAttack)
-        {
-            if (m_uiMortalStrikeTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_MORTAL_STRIKE) == CAST_OK)
-                    m_uiMortalStrikeTimer = urand(7000, 10000);
-            }
-            else
-                m_uiMortalStrikeTimer -= uiDiff;
-
-            if (m_uiCleaveTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
-                    m_uiCleaveTimer = urand(3000, 6000);
-            }
-            else
-                m_uiCleaveTimer -= uiDiff;
-        }
-
-        DoMeleeAttackIfReady();
+        return true;
     }
 };
-
-CreatureAI* GetAI_npc_captured_arkonarin(Creature* pCreature)
-{
-    return new npc_captured_arkonarinAI(pCreature);
-}
-
-bool QuestAccept_npc_captured_arkonarin(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_ID_RESCUE_JAEDENAR)
-        pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
-
-    return true;
-}
 
 /*####
 # npc_arei
@@ -666,47 +709,50 @@ static const DialogueEntry aEpilogDialogue[] =
     {0, 0, 0},
 };
 
-struct npc_areiAI : public npc_escortAI, private DialogueHelper
+struct npc_arei : public CreatureScript
 {
-    npc_areiAI(Creature* pCreature) : npc_escortAI(pCreature),
+    npc_arei() : CreatureScript("npc_arei") {}
+
+    struct npc_areiAI : public npc_escortAI, private DialogueHelper
+    {
+        npc_areiAI(Creature* pCreature) : npc_escortAI(pCreature),
         DialogueHelper(aEpilogDialogue)
-    {
-        m_bAggroIrontree = false;
-        m_bAggroHorror = false;
-        Reset();
-    }
-
-    uint32 m_uiWitherStrikeTimer;
-
-    bool m_bAggroIrontree;
-    bool m_bAggroHorror;
-
-    GuidList m_lSummonsGuids;
-
-    void Reset() override
-    {
-        m_uiWitherStrikeTimer = urand(1000, 4000);
-    }
-
-    void Aggro(Unit* pWho) override
-    {
-        if ((pWho->GetEntry() == NPC_IRONTREE_WANDERER || pWho->GetEntry() == NPC_IRONTREE_STOMPER) && !m_bAggroIrontree)
         {
-            DoScriptText(SAY_ATTACK_IRONTREE, m_creature);
-            m_bAggroIrontree = true;
+            m_bAggroIrontree = false;   //TODO check this
+            m_bAggroHorror = false;
         }
-        else if (pWho->GetEntry() == NPC_TOXIC_HORROR && ! m_bAggroHorror)
-        {
-            if (Player* pPlayer = GetPlayerForEscort())
-                DoScriptText(SAY_ATTACK_TOXIC_HORROR, m_creature, pPlayer);
-            m_bAggroHorror = true;
-        }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        switch (pSummoned->GetEntry())
+        uint32 m_uiWitherStrikeTimer;
+
+        bool m_bAggroIrontree;
+        bool m_bAggroHorror;
+
+        GuidList m_lSummonsGuids;
+
+        void Reset() override
         {
+            m_uiWitherStrikeTimer = urand(1000, 4000);
+        }
+
+        void Aggro(Unit* pWho) override
+        {
+            if ((pWho->GetEntry() == NPC_IRONTREE_WANDERER || pWho->GetEntry() == NPC_IRONTREE_STOMPER) && !m_bAggroIrontree)
+            {
+                DoScriptText(SAY_ATTACK_IRONTREE, m_creature);
+                m_bAggroIrontree = true;
+            }
+            else if (pWho->GetEntry() == NPC_TOXIC_HORROR && !m_bAggroHorror)
+            {
+                if (Player* pPlayer = GetPlayerForEscort())
+                    DoScriptText(SAY_ATTACK_TOXIC_HORROR, m_creature, pPlayer);
+                m_bAggroHorror = true;
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            switch (pSummoned->GetEntry())
+            {
             case NPC_IRONTREE_STOMPER:
                 DoScriptText(SAY_EXIT_WOODS, m_creature, pSummoned);
                 // no break;
@@ -714,55 +760,55 @@ struct npc_areiAI : public npc_escortAI, private DialogueHelper
                 pSummoned->AI()->AttackStart(m_creature);
                 m_lSummonsGuids.push_back(pSummoned->GetObjectGuid());
                 break;
+            }
         }
-    }
 
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_IRONTREE_STOMPER || pSummoned->GetEntry() == NPC_IRONTREE_WANDERER)
+        void SummonedCreatureJustDied(Creature* pSummoned) override
         {
-            m_lSummonsGuids.remove(pSummoned->GetObjectGuid());
+            if (pSummoned->GetEntry() == NPC_IRONTREE_STOMPER || pSummoned->GetEntry() == NPC_IRONTREE_WANDERER)
+            {
+                m_lSummonsGuids.remove(pSummoned->GetObjectGuid());
 
-            if (m_lSummonsGuids.empty())
-                StartNextDialogueText(SAY_CLEAR_PATH);
+                if (m_lSummonsGuids.empty())
+                    StartNextDialogueText(SAY_CLEAR_PATH);
+            }
         }
-    }
 
-    void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
-    {
-        if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+        void ReceiveAIEvent(AIEventType eventType, Creature* /*pSender*/, Unit* pInvoker, uint32 uiMiscValue) override
         {
-            DoScriptText(SAY_AREI_ESCORT_START, m_creature, pInvoker);
+            if (eventType == AI_EVENT_START_ESCORT && pInvoker->GetTypeId() == TYPEID_PLAYER)
+            {
+                DoScriptText(SAY_AREI_ESCORT_START, m_creature, pInvoker);
 
-            m_creature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
-            Start(true, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
+                m_creature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_PASSIVE, TEMPFACTION_RESTORE_RESPAWN);
+                Start(true, (Player*)pInvoker, GetQuestTemplateStore(uiMiscValue));
+            }
         }
-    }
 
-    void WaypointReached(uint32 uiPointId) override
-    {
-        if (uiPointId == 36)
+        void WaypointReached(uint32 uiPointId) override
         {
-            SetEscortPaused(true);
+            if (uiPointId == 36)
+            {
+                SetEscortPaused(true);
 
-            m_creature->SummonCreature(NPC_IRONTREE_STOMPER, 6573.321f, -1195.213f, 442.489f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
-            m_creature->SummonCreature(NPC_IRONTREE_WANDERER, 6573.240f, -1213.475f, 443.643f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
-            m_creature->SummonCreature(NPC_IRONTREE_WANDERER, 6583.354f, -1209.811f, 444.769f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
+                m_creature->SummonCreature(NPC_IRONTREE_STOMPER, 6573.321f, -1195.213f, 442.489f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
+                m_creature->SummonCreature(NPC_IRONTREE_WANDERER, 6573.240f, -1213.475f, 443.643f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
+                m_creature->SummonCreature(NPC_IRONTREE_WANDERER, 6583.354f, -1209.811f, 444.769f, 0, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
+            }
         }
-    }
 
-    Creature* GetSpeakerByEntry(uint32 uiEntry) override
-    {
-        if (uiEntry == NPC_AREI)
-            return m_creature;
-
-        return NULL;
-    }
-
-    void JustDidDialogueStep(int32 iEntry) override
-    {
-        switch (iEntry)
+        Creature* GetSpeakerByEntry(uint32 uiEntry) override
         {
+            if (uiEntry == NPC_AREI)
+                return m_creature;
+
+            return NULL;
+        }
+
+        void JustDidDialogueStep(int32 iEntry) override
+        {
+            switch (iEntry)
+            {
             case SPELL_WITHER_STRIKE:
                 if (Player* pPlayer = GetPlayerForEscort())
                     DoScriptText(SAY_ASHENVALE, m_creature, pPlayer);
@@ -780,40 +826,41 @@ struct npc_areiAI : public npc_escortAI, private DialogueHelper
                     m_creature->ForcedDespawn(10000);
                 }
                 break;
+            }
         }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            DialogueUpdate(uiDiff);
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+                return;
+
+            if (m_uiWitherStrikeTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WITHER_STRIKE) == CAST_OK)
+                    m_uiWitherStrikeTimer = urand(3000, 6000);
+            }
+            else
+                m_uiWitherStrikeTimer -= uiDiff;
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_areiAI(pCreature);
     }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
     {
-        DialogueUpdate(uiDiff);
+        if (pQuest->GetQuestId() == QUEST_ID_ANCIENT_SPIRIT)
+            pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-            return;
-
-        if (m_uiWitherStrikeTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_WITHER_STRIKE) == CAST_OK)
-                m_uiWitherStrikeTimer = urand(3000, 6000);
-        }
-        else
-            m_uiWitherStrikeTimer -= uiDiff;
-
-        DoMeleeAttackIfReady();
+        return true;
     }
 };
-
-CreatureAI* GetAI_npc_arei(Creature* pCreature)
-{
-    return new npc_areiAI(pCreature);
-}
-
-bool QuestAccept_npc_arei(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_ID_ANCIENT_SPIRIT)
-        pCreature->AI()->SendAIEvent(AI_EVENT_START_ESCORT, pPlayer, pCreature, pQuest->GetQuestId());
-
-    return true;
-}
 
 /*######
 ## go_corrupted_plant
@@ -846,152 +893,182 @@ static const uint32 aCorruptedWindblossomQuestId[] =
 static const uint32 aCorruptedWhipperRootQuestId[] =
 { 4117, 4443, 4444, 4445, 4446, 4461 };                              // Corrupted Whipper Root
 
-uint32 locateQuestId(uint32 uQuestToSearchFor, uint32 uQuestId)
+struct go_corrupted_plant : public GameObjectScript
 {
-    int index = 0;
-    if (uQuestToSearchFor == QUEST_CORRUPTED_SONGFLOWER)
+    go_corrupted_plant() : GameObjectScript("go_corrupted_plant") {}
+
+    uint32 locateQuestId(uint32 uQuestToSearchFor, uint32 uQuestId) //TODO try to do anything with this
     {
-        // check Cleansed Songflower Quest IDs
-        for (index = 0; index < 9; index++)
+        int index = 0;
+        if (uQuestToSearchFor == QUEST_CORRUPTED_SONGFLOWER)
         {
-            if (uQuestId == aCorruptedSongflowerQuestId[index])
-                return QUEST_CORRUPTED_SONGFLOWER;
+            // check Cleansed Songflower Quest IDs
+            for (index = 0; index < 9; index++)
+            {
+                if (uQuestId == aCorruptedSongflowerQuestId[index])
+                    return QUEST_CORRUPTED_SONGFLOWER;
+            }
         }
-    }
-    else if (uQuestToSearchFor == QUEST_CORRUPTED_NIGHT_DRAGON)
-    {
-        // check Cleansed Night Dragon Quest IDs
-        for (int index = 0; index < 4; index++)
+        else if (uQuestToSearchFor == QUEST_CORRUPTED_NIGHT_DRAGON)
         {
-            if (uQuestId == aCorruptedNightDragonQuestId[index])
-                return QUEST_CORRUPTED_NIGHT_DRAGON;
+            // check Cleansed Night Dragon Quest IDs
+            for (int index = 0; index < 4; index++)
+            {
+                if (uQuestId == aCorruptedNightDragonQuestId[index])
+                    return QUEST_CORRUPTED_NIGHT_DRAGON;
+            }
         }
-    }
-    else if (uQuestToSearchFor == QUEST_CORRUPTED_WINDBLOSSOM)
-    {
-        // check Cleansed Windblossom Quest IDs
-        for (int index = 0; index < 10; index++)
+        else if (uQuestToSearchFor == QUEST_CORRUPTED_WINDBLOSSOM)
         {
-            if (uQuestId == aCorruptedWindblossomQuestId[index])
-                return QUEST_CORRUPTED_WINDBLOSSOM;
+            // check Cleansed Windblossom Quest IDs
+            for (int index = 0; index < 10; index++)
+            {
+                if (uQuestId == aCorruptedWindblossomQuestId[index])
+                    return QUEST_CORRUPTED_WINDBLOSSOM;
+            }
         }
-    }
-    else if (uQuestToSearchFor == QUEST_CORRUPTED_WHIPPER_ROOT)
-    {
-        // check Cleansed Whipper Root Quest IDs
-        for (int index = 0; index < 6; index++)
+        else if (uQuestToSearchFor == QUEST_CORRUPTED_WHIPPER_ROOT)
         {
-            if (uQuestId == aCorruptedWhipperRootQuestId[index])
-                return QUEST_CORRUPTED_WHIPPER_ROOT;
+            // check Cleansed Whipper Root Quest IDs
+            for (int index = 0; index < 6; index++)
+            {
+                if (uQuestId == aCorruptedWhipperRootQuestId[index])
+                    return QUEST_CORRUPTED_WHIPPER_ROOT;
+            }
         }
+
+        return FAILED_TO_LOCATE_QUEST; // quest ID not located
     }
 
-    return FAILED_TO_LOCATE_QUEST; // quest ID not located
-}
-
-void DespawnCorruptedPlant(GameObject* pGo)
-{
-    pGo->SetSpawnedByDefault(false);
-    pGo->SetRespawnTime(1);
-}
-
-bool QuestRewarded_go_corrupted_plant(Player* pPlayer, GameObject* pGo, const Quest* pQuest)
-{
-    // acquire plant's coordinates
-    float fX, fY, fZ;
-    pGo->GetPosition(fX, fY, fZ);
-
-    uint32 uQuestId = pQuest->GetQuestId();
-
-    if (locateQuestId(QUEST_CORRUPTED_SONGFLOWER, uQuestId) == QUEST_CORRUPTED_SONGFLOWER)
+    void DespawnCorruptedPlant(GameObject* pGo)
     {
-        // despawn corrupted plant
-        DespawnCorruptedPlant(pGo);
-        // spawn cleansed plant
-        pPlayer->SummonGameObject(GO_CLEANSED_SONGFLOWER, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
+        pGo->SetSpawnedByDefault(false);
+        pGo->SetRespawnTime(1);
     }
-    else if (locateQuestId(QUEST_CORRUPTED_NIGHT_DRAGON, uQuestId) == QUEST_CORRUPTED_NIGHT_DRAGON)
-    {
-        // despawn corrupted plant
-        DespawnCorruptedPlant(pGo);
-        // spawn cleansed plant
-        pPlayer->SummonGameObject(GO_CLEANSED_NIGHT_DRAGON, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
-    }
-    else if (locateQuestId(QUEST_CORRUPTED_WINDBLOSSOM, uQuestId) == QUEST_CORRUPTED_WINDBLOSSOM)
-    {
-        // despawn corrupted plant
-        DespawnCorruptedPlant(pGo);
-        // spawn cleansed plant
-        pPlayer->SummonGameObject(GO_CLEANSED_WINDBLOSSOM, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
-    }
-    else if (locateQuestId(QUEST_CORRUPTED_WHIPPER_ROOT, uQuestId) == QUEST_CORRUPTED_WHIPPER_ROOT)
-    {
-        // despawn corrupted plant
-        DespawnCorruptedPlant(pGo);
-        // spawn cleansed plant
-        pPlayer->SummonGameObject(GO_CLEANSED_WHIPPER_ROOT, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
-    }
-    else
-        return false;
 
-    return true;
-}
+    bool OnQuestRewarded(Player* pPlayer, GameObject* pGo, const Quest* pQuest) override
+    {
+        // acquire plant's coordinates
+        float fX, fY, fZ;
+        pGo->GetPosition(fX, fY, fZ);
+
+        uint32 uQuestId = pQuest->GetQuestId();
+
+        if (locateQuestId(QUEST_CORRUPTED_SONGFLOWER, uQuestId) == QUEST_CORRUPTED_SONGFLOWER)
+        {
+            // despawn corrupted plant
+            DespawnCorruptedPlant(pGo);
+            // spawn cleansed plant
+            pPlayer->SummonGameObject(GO_CLEANSED_SONGFLOWER, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
+        }
+        else if (locateQuestId(QUEST_CORRUPTED_NIGHT_DRAGON, uQuestId) == QUEST_CORRUPTED_NIGHT_DRAGON)
+        {
+            // despawn corrupted plant
+            DespawnCorruptedPlant(pGo);
+            // spawn cleansed plant
+            pPlayer->SummonGameObject(GO_CLEANSED_NIGHT_DRAGON, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
+        }
+        else if (locateQuestId(QUEST_CORRUPTED_WINDBLOSSOM, uQuestId) == QUEST_CORRUPTED_WINDBLOSSOM)
+        {
+            // despawn corrupted plant
+            DespawnCorruptedPlant(pGo);
+            // spawn cleansed plant
+            pPlayer->SummonGameObject(GO_CLEANSED_WINDBLOSSOM, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
+        }
+        else if (locateQuestId(QUEST_CORRUPTED_WHIPPER_ROOT, uQuestId) == QUEST_CORRUPTED_WHIPPER_ROOT)
+        {
+            // despawn corrupted plant
+            DespawnCorruptedPlant(pGo);
+            // spawn cleansed plant
+            pPlayer->SummonGameObject(GO_CLEANSED_WHIPPER_ROOT, fX, fY, fZ, 0.0f, PLANT_SPAWN_DURATION);
+        }
+        else
+            return false;
+
+        return true;
+    }
+};
 
 // This is only used for the Corrupted Songflower quest; actually for when interacting with the cleansed songflower
-bool GOUse_go_cleansed_plant(Player* pPlayer, GameObject* /*pGo*/)
+struct go_cleansed_plant : public GameObjectScript
 {
-    // cast spell on player
-    pPlayer->CastSpell(pPlayer, SPELL_SONGFLOWER_SERENADE, true);
+    go_cleansed_plant() : GameObjectScript("go_cleansed_plant") {}
 
-    return true;
-}
+    bool OnUse(Player* pPlayer, GameObject* /*pGo*/) override
+    {
+        // cast spell on player
+        pPlayer->CastSpell(pPlayer, SPELL_SONGFLOWER_SERENADE, true);
+
+        return true;
+    }
+};
 
 void AddSC_felwood()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_kitten();
+    s->RegisterSelf();
+    s = new npc_corrupt_saber();
+    s->RegisterSelf();
+    s = new go_corrupted_plant();
+    s->RegisterSelf();
+    s = new go_cleansed_plant();
+    s->RegisterSelf();
+    s = new npc_niby_the_almighty();
+    s->RegisterSelf();
+    s = new npc_kroshius();
+    s->RegisterSelf();
+    s = new event_npc_kroshius();
+    s->RegisterSelf();
+    s = new npc_captured_arkonarin();
+    s->RegisterSelf();
+    s = new npc_arei();
+    s->RegisterSelf();
+    s = new spell_npc_kitten();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_kitten";
-    pNewScript->GetAI = &GetAI_npc_kitten;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_kitten";
+    //pNewScript->GetAI = &GetAI_npc_kitten;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_corrupt_saber";
-    pNewScript->pGossipHello =  &GossipHello_npc_corrupt_saber;
-    pNewScript->pGossipSelect = &GossipSelect_npc_corrupt_saber;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_corrupt_saber";
+    //pNewScript->pGossipHello =  &GossipHello_npc_corrupt_saber;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_corrupt_saber;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_corrupted_plant";
-    pNewScript->pQuestRewardedGO = &QuestRewarded_go_corrupted_plant;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_corrupted_plant";
+    //pNewScript->pQuestRewardedGO = &QuestRewarded_go_corrupted_plant;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_cleansed_plant";
-    pNewScript->pGOUse = &GOUse_go_cleansed_plant;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_cleansed_plant";
+    //pNewScript->pGOUse = &GOUse_go_cleansed_plant;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_niby_the_almighty";
-    pNewScript->GetAI = &GetAI_npc_niby_the_almighty;
-    pNewScript->pQuestRewardedNPC = &QuestRewarded_npc_niby_the_almighty;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_niby_the_almighty";
+    //pNewScript->GetAI = &GetAI_npc_niby_the_almighty;
+    //pNewScript->pQuestRewardedNPC = &QuestRewarded_npc_niby_the_almighty;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_kroshius";
-    pNewScript->GetAI = &GetAI_npc_kroshius;
-    pNewScript->pProcessEventId = &ProcessEventId_npc_kroshius;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_kroshius";
+    //pNewScript->GetAI = &GetAI_npc_kroshius;
+    //pNewScript->pProcessEventId = &ProcessEventId_npc_kroshius;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_captured_arkonarin";
-    pNewScript->GetAI = &GetAI_npc_captured_arkonarin;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_captured_arkonarin;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_captured_arkonarin";
+    //pNewScript->GetAI = &GetAI_npc_captured_arkonarin;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_captured_arkonarin;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_arei";
-    pNewScript->GetAI = &GetAI_npc_arei;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_arei;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_arei";
+    //pNewScript->GetAI = &GetAI_npc_arei;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_arei;
+    //pNewScript->RegisterSelf();
 }

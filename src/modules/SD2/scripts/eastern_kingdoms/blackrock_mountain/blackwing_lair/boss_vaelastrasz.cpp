@@ -67,136 +67,147 @@ enum
     AREATRIGGER_VAEL_INTRO      = 3626,
 };
 
-struct boss_vaelastraszAI : public ScriptedAI
+struct boss_vaelastrasz : public CreatureScript
 {
-    boss_vaelastraszAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_vaelastrasz() : CreatureScript("boss_vaelastrasz") {}
+
+    struct boss_vaelastraszAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-
-        // Set stand state to dead before the intro event
-        m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    ObjectGuid m_nefariusGuid;
-    uint32 m_uiIntroTimer;
-    uint8 m_uiIntroPhase;
-
-    ObjectGuid m_playerGuid;
-    uint32 m_uiSpeechTimer;
-    uint8 m_uiSpeechNum;
-
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiFlameBreathTimer;
-    uint32 m_uiFireNovaTimer;
-    uint32 m_uiBurningAdrenalineCasterTimer;
-    uint32 m_uiBurningAdrenalineTankTimer;
-    uint32 m_uiTailSweepTimer;
-    bool m_bHasYelled;
-
-    void Reset() override
-    {
-        m_playerGuid.Clear();
-
-        m_uiIntroTimer                   = 0;
-        m_uiIntroPhase                   = 0;
-        m_uiSpeechTimer                  = 0;
-        m_uiSpeechNum                    = 0;
-        m_uiCleaveTimer                  = 8000;            // These times are probably wrong
-        m_uiFlameBreathTimer             = 11000;
-        m_uiBurningAdrenalineCasterTimer = 15000;
-        m_uiBurningAdrenalineTankTimer   = 45000;
-        m_uiFireNovaTimer                = 5000;
-        m_uiTailSweepTimer               = 20000;
-        m_bHasYelled = false;
-
-        // Creature should have only 1/3 of hp
-        m_creature->SetHealth(uint32(m_creature->GetMaxHealth()*.3));
-    }
-
-    void BeginIntro()
-    {
-        // Start Intro delayed
-        m_uiIntroTimer = 1000;
-
-        if (m_pInstance)
+        boss_vaelastraszAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_VAELASTRASZ, SPECIAL);
-        }
-    }
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
 
-    void BeginSpeech(Player* pTarget)
-    {
-        // Stand up and begin speach
-        m_playerGuid = pTarget->GetObjectGuid();
-
-        // 10 seconds
-        DoScriptText(SAY_LINE_1, m_creature);
-
-        // Make boss stand
-        m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-
-        m_uiSpeechTimer = 10000;
-        m_uiSpeechNum = 0;
-    }
-
-    void KilledUnit(Unit* pVictim) override
-    {
-        if (urand(0, 4))
-        {
-            return;
+            // Set stand state to dead before the intro event
+            m_creature->SetStandState(UNIT_STAND_STATE_DEAD);
         }
 
-        DoScriptText(SAY_KILLTARGET, m_creature, pVictim);
-    }
+        ScriptedInstance* m_pInstance;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        ObjectGuid m_nefariusGuid;
+        uint32 m_uiIntroTimer;
+        uint8 m_uiIntroPhase;
+
+        ObjectGuid m_playerGuid;
+        uint32 m_uiSpeechTimer;
+        uint8 m_uiSpeechNum;
+
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiFlameBreathTimer;
+        uint32 m_uiFireNovaTimer;
+        uint32 m_uiBurningAdrenalineCasterTimer;
+        uint32 m_uiBurningAdrenalineTankTimer;
+        uint32 m_uiTailSweepTimer;
+        bool m_bHasYelled;
+
+        void Reset() override
         {
-            m_pInstance->SetData(TYPE_VAELASTRASZ, IN_PROGRESS);
+            m_playerGuid.Clear();
+
+            m_uiIntroTimer = 0;
+            m_uiIntroPhase = 0;
+            m_uiSpeechTimer = 0;
+            m_uiSpeechNum = 0;
+            m_uiCleaveTimer = 8000;            // These times are probably wrong
+            m_uiFlameBreathTimer = 11000;
+            m_uiBurningAdrenalineCasterTimer = 15000;
+            m_uiBurningAdrenalineTankTimer = 45000;
+            m_uiFireNovaTimer = 5000;
+            m_uiTailSweepTimer = 20000;
+            m_bHasYelled = false;
+
+            // Creature should have only 1/3 of hp
+            m_creature->SetHealth(uint32(m_creature->GetMaxHealth()*0.3f));
         }
 
-        // Buff players on aggro
-        DoCastSpellIfCan(m_creature, SPELL_ESSENCE_OF_THE_RED);
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
+        void BeginIntro()
         {
-            m_pInstance->SetData(TYPE_VAELASTRASZ, DONE);
-        }
-    }
+            // Start Intro delayed
+            m_uiIntroTimer = 1000;
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_VAELASTRASZ, FAIL);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_LORD_VICTOR_NEFARIUS)
-        {
-            // Set not selectable, so players won't interact with it
-            pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            m_nefariusGuid = pSummoned->GetObjectGuid();
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiIntroTimer)
-        {
-            if (m_uiIntroTimer <= uiDiff)
+            if (m_pInstance)
             {
-                switch (m_uiIntroPhase)
+                m_pInstance->SetData(TYPE_VAELASTRASZ, SPECIAL);
+            }
+        }
+
+        void BeginSpeech(Player* pTarget)
+        {
+            // Stand up and begin speach
+            m_playerGuid = pTarget->GetObjectGuid();
+
+            // 10 seconds
+            DoScriptText(SAY_LINE_1, m_creature);
+
+            // Make boss stand
+            m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+
+            m_uiSpeechTimer = 10000;
+            m_uiSpeechNum = 0;
+        }
+
+        void KilledUnit(Unit* pVictim) override
+        {
+            if (urand(0, 4))
+            {
+                return;
+            }
+
+            DoScriptText(SAY_KILLTARGET, m_creature, pVictim);
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_VAELASTRASZ, IN_PROGRESS);
+            }
+
+            // Buff players on aggro
+            DoCastSpellIfCan(m_creature, SPELL_ESSENCE_OF_THE_RED);
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_VAELASTRASZ, DONE);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_VAELASTRASZ, FAIL);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_LORD_VICTOR_NEFARIUS)
+            {
+                // Set not selectable, so players won't interact with it
+                pSummoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                m_nefariusGuid = pSummoned->GetObjectGuid();
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* pInvoker, uint32 /*uiMiscValue*/) override
+        {
+            if (eventType == AI_EVENT_START_EVENT && pSender == m_creature && pInvoker->GetTypeId() == TYPEID_PLAYER)
+            {
+                BeginIntro();
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiIntroTimer)
+            {
+                if (m_uiIntroTimer <= uiDiff)
                 {
+                    switch (m_uiIntroPhase)
+                    {
                     case 0:
                         m_creature->SummonCreature(NPC_LORD_VICTOR_NEFARIUS, aNefariusSpawnLoc[0], aNefariusSpawnLoc[1], aNefariusSpawnLoc[2], aNefariusSpawnLoc[3], TEMPSUMMON_TIMED_DESPAWN, 25000);
                         m_uiIntroTimer = 1000;
@@ -220,22 +231,22 @@ struct boss_vaelastraszAI : public ScriptedAI
                         m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
                         m_uiIntroTimer = 0;
                         break;
+                    }
+                    ++m_uiIntroPhase;
                 }
-                ++m_uiIntroPhase;
-            }
-            else
-            {
-                m_uiIntroTimer -= uiDiff;
-            }
-        }
-
-        // Speech
-        if (m_uiSpeechTimer)
-        {
-            if (m_uiSpeechTimer <= uiDiff)
-            {
-                switch (m_uiSpeechNum)
+                else
                 {
+                    m_uiIntroTimer -= uiDiff;
+                }
+            }
+
+            // Speech
+            if (m_uiSpeechTimer)
+            {
+                if (m_uiSpeechTimer <= uiDiff)
+                {
+                    switch (m_uiSpeechNum)
+                    {
                     case 0:
                         // 16 seconds till next line
                         DoScriptText(SAY_LINE_2, m_creature);
@@ -260,103 +271,115 @@ struct boss_vaelastraszAI : public ScriptedAI
                         }
                         m_uiSpeechTimer = 0;
                         break;
+                    }
+                }
+                else
+                {
+                    m_uiSpeechTimer -= uiDiff;
+                }
+            }
+
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Yell if hp lower than 15%
+            if (m_creature->GetHealthPercent() < 15.0f && !m_bHasYelled)
+            {
+                DoScriptText(SAY_HALFLIFE, m_creature);
+                m_bHasYelled = true;
+            }
+
+            // Cleave Timer
+            if (m_uiCleaveTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+                {
+                    m_uiCleaveTimer = 15000;
                 }
             }
             else
             {
-                m_uiSpeechTimer -= uiDiff;
+                m_uiCleaveTimer -= uiDiff;
             }
-        }
 
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // Yell if hp lower than 15%
-        if (m_creature->GetHealthPercent() < 15.0f && !m_bHasYelled)
-        {
-            DoScriptText(SAY_HALFLIFE, m_creature);
-            m_bHasYelled = true;
-        }
-
-        // Cleave Timer
-        if (m_uiCleaveTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE) == CAST_OK)
+            // Flame Breath Timer
+            if (m_uiFlameBreathTimer < uiDiff)
             {
-                m_uiCleaveTimer = 15000;
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_FLAME_BREATH) == CAST_OK)
+                {
+                    m_uiFlameBreathTimer = urand(4000, 8000);
+                }
             }
-        }
-        else
-            { m_uiCleaveTimer -= uiDiff; }
-
-        // Flame Breath Timer
-        if (m_uiFlameBreathTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_FLAME_BREATH) == CAST_OK)
+            else
             {
-                m_uiFlameBreathTimer = urand(4000, 8000);
+                m_uiFlameBreathTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiFlameBreathTimer -= uiDiff; }
 
-        // Burning Adrenaline Caster Timer
-        if (m_uiBurningAdrenalineCasterTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_BURNING_ADRENALINE, SELECT_FLAG_PLAYER | SELECT_FLAG_POWER_MANA))
+            // Burning Adrenaline Caster Timer
+            if (m_uiBurningAdrenalineCasterTimer < uiDiff)
             {
-                pTarget->CastSpell(pTarget, SPELL_BURNING_ADRENALINE, true, NULL, NULL, m_creature->GetObjectGuid());
-                m_uiBurningAdrenalineCasterTimer = 15000;
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_BURNING_ADRENALINE, SELECT_FLAG_PLAYER | SELECT_FLAG_POWER_MANA))
+                {
+                    pTarget->CastSpell(pTarget, SPELL_BURNING_ADRENALINE, true, NULL, NULL, m_creature->GetObjectGuid());
+                    m_uiBurningAdrenalineCasterTimer = 15000;
+                }
             }
-        }
-        else
-            { m_uiBurningAdrenalineCasterTimer -= uiDiff; }
-
-        // Burning Adrenaline Tank Timer
-        if (m_uiBurningAdrenalineTankTimer < uiDiff)
-        {
-            // have the victim cast the spell on himself otherwise the third effect aura will be applied
-            // to Vael instead of the player
-            m_creature->getVictim()->CastSpell(m_creature->getVictim(), SPELL_BURNING_ADRENALINE, true, NULL, NULL, m_creature->GetObjectGuid());
-
-            m_uiBurningAdrenalineTankTimer = 45000;
-        }
-        else
-            { m_uiBurningAdrenalineTankTimer -= uiDiff; }
-
-        // Fire Nova Timer
-        if (m_uiFireNovaTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FIRE_NOVA) == CAST_OK)
+            else
             {
-                m_uiFireNovaTimer = 5000;
+                m_uiBurningAdrenalineCasterTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiFireNovaTimer -= uiDiff; }
 
-        // Tail Sweep Timer
-        if (m_uiTailSweepTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_TAIL_SWEEP) == CAST_OK)
+            // Burning Adrenaline Tank Timer
+            if (m_uiBurningAdrenalineTankTimer < uiDiff)
             {
-                m_uiTailSweepTimer = 20000;
+                // have the victim cast the spell on himself otherwise the third effect aura will be applied
+                // to Vael instead of the player
+                m_creature->getVictim()->CastSpell(m_creature->getVictim(), SPELL_BURNING_ADRENALINE, true, NULL, NULL, m_creature->GetObjectGuid());
+
+                m_uiBurningAdrenalineTankTimer = 45000;
             }
+            else
+            {
+                m_uiBurningAdrenalineTankTimer -= uiDiff;
+            }
+
+            // Fire Nova Timer
+            if (m_uiFireNovaTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FIRE_NOVA) == CAST_OK)
+                {
+                    m_uiFireNovaTimer = 5000;
+                }
+            }
+            else
+            {
+                m_uiFireNovaTimer -= uiDiff;
+            }
+
+            // Tail Sweep Timer
+            if (m_uiTailSweepTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_TAIL_SWEEP) == CAST_OK)
+                {
+                    m_uiTailSweepTimer = 20000;
+                }
+            }
+            else
+            {
+                m_uiTailSweepTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
         }
-        else
-            { m_uiTailSweepTimer -= uiDiff; }
+    };
 
-        DoMeleeAttackIfReady();
-    }
-};
-
-bool GossipSelect_boss_vaelastrasz(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    switch (uiAction)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        switch (uiAction)
+        {
         case GOSSIP_ACTION_INFO_DEF + 1:
             pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_VAEL_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
             pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_VAEL_2, pCreature->GetObjectGuid());
@@ -368,70 +391,80 @@ bool GossipSelect_boss_vaelastrasz(Player* pPlayer, Creature* pCreature, uint32 
                 pVaelAI->BeginSpeech(pPlayer);
             }
             break;
-    }
-
-    return true;
-}
-
-bool GossipHello_boss_vaelastrasz(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->IsQuestGiver())
-    {
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
-    }
-
-    pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_VAEL_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-    pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_VAEL_1, pCreature->GetObjectGuid());
-
-    return true;
-}
-
-CreatureAI* GetAI_boss_vaelastrasz(Creature* pCreature)
-{
-    return new boss_vaelastraszAI(pCreature);
-}
-
-bool AreaTrigger_at_vaelastrasz(Player* pPlayer, AreaTriggerEntry const* pAt)
-{
-    if (pAt->id == AREATRIGGER_VAEL_INTRO)
-    {
-        if (pPlayer->isGameMaster() || pPlayer->IsDead())
-        {
-            return false;
         }
 
-        if (instance_blackwing_lair* pInstance = (instance_blackwing_lair*)pPlayer->GetInstanceData())
+        return true;
+    }
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
+    {
+        if (pCreature->IsQuestGiver())
         {
-            // Handle intro event
-            if (pInstance->GetData(TYPE_VAELASTRASZ) == NOT_STARTED)
+            pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        }
+
+        pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_VAEL_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_VAEL_1, pCreature->GetObjectGuid());
+
+        return true;
+    }
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_vaelastraszAI(pCreature);
+    }
+};
+
+struct at_vaelastrasz : public AreaTriggerScript
+{
+    at_vaelastrasz() : AreaTriggerScript("at_vaelastrasz") {}
+
+    bool OnTrigger(Player* pPlayer, AreaTriggerEntry const* pAt) override
+    {
+        if (pAt->id == AREATRIGGER_VAEL_INTRO)
+        {
+            if (pPlayer->isGameMaster() || pPlayer->IsDead())
             {
-                if (Creature* pVaelastrasz = pInstance->GetSingleCreatureFromStorage(NPC_VAELASTRASZ))
-                    if (boss_vaelastraszAI* pVaelAI = dynamic_cast<boss_vaelastraszAI*>(pVaelastrasz->AI()))
-                    {
-                        pVaelAI->BeginIntro();
-                    }
+                return false;
             }
 
-            // ToDo: make goblins flee
-        }
-    }
+            if (ScriptedInstance* pInstance = (ScriptedInstance*)pPlayer->GetInstanceData())
+            {
+                // Handle intro event
+                if (pInstance->GetData(TYPE_VAELASTRASZ) == NOT_STARTED)
+                {
+                    if (Creature* pVaelastrasz = pInstance->GetSingleCreatureFromStorage(NPC_VAELASTRASZ))
+                        if (CreatureAI* pVaelAI = pVaelastrasz->AI())
+                        {
+                            pVaelAI->SendAIEvent(AI_EVENT_START_EVENT, pPlayer, pVaelastrasz);
+                        }
+                }
 
-    return false;
-}
+                // ToDo: make goblins flee
+            }
+        }
+
+        return false;
+    }
+};
 
 void AddSC_boss_vaelastrasz()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_vaelastrasz();
+    s->RegisterSelf();
+    s = new at_vaelastrasz();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_vaelastrasz";
-    pNewScript->GetAI = &GetAI_boss_vaelastrasz;
-    pNewScript->pGossipHello = &GossipHello_boss_vaelastrasz;
-    pNewScript->pGossipSelect = &GossipSelect_boss_vaelastrasz;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_vaelastrasz";
+    //pNewScript->GetAI = &GetAI_boss_vaelastrasz;
+    //pNewScript->pGossipHello = &GossipHello_boss_vaelastrasz;
+    //pNewScript->pGossipSelect = &GossipSelect_boss_vaelastrasz;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "at_vaelastrasz";
-    pNewScript->pAreaTrigger = &AreaTrigger_at_vaelastrasz;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "at_vaelastrasz";
+    //pNewScript->pAreaTrigger = &AreaTrigger_at_vaelastrasz;
+    //pNewScript->RegisterSelf();
 }

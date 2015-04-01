@@ -82,46 +82,4 @@ enum
 // Coords used to spawn Nefarius at the throne
 static const float aNefariusSpawnLoc[4] = { -7466.16f, -1040.80f, 412.053f, 2.14675f};
 
-static const uint32 aRazorgoreSpawns[MAX_EGGS_DEFENDERS] = {NPC_BLACKWING_LEGIONNAIRE, NPC_BLACKWING_MAGE, NPC_DRAGONSPAWN, NPC_DRAGONSPAWN};
-
-class instance_blackwing_lair : public ScriptedInstance
-{
-    public:
-        instance_blackwing_lair(Map* pMap);
-        ~instance_blackwing_lair() {}
-
-        void Initialize() override;
-        bool IsEncounterInProgress() const override;
-
-        void OnCreatureCreate(Creature* pCreature) override;
-        void OnObjectCreate(GameObject* pGo) override;
-
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-        void OnCreatureDeath(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        void SetData64(uint32 uiData, uint64 uiGuid) override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void Update(uint32 uiDiff) override;
-
-    protected:
-        std::string m_strInstData;
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-
-        uint32 m_uiResetTimer;
-        uint32 m_uiDefenseTimer;
-
-        GuidList m_lTechnicianGuids;
-        GuidList m_lDragonEggsGuids;
-        GuidList m_lDrakonidBonesGuids;
-        GuidList m_lDefendersGuids;
-        GuidList m_lUsedEggsGuids;
-        GuidVector m_vGeneratorGuids;
-};
-
 #endif

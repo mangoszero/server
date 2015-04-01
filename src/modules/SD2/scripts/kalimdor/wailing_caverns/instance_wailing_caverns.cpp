@@ -35,145 +35,163 @@
 #include "precompiled.h"
 #include "wailing_caverns.h"
 
-instance_wailing_caverns::instance_wailing_caverns(Map* pMap) : ScriptedInstance(pMap)
+struct is_wailing_caverns : public InstanceScript
 {
-    Initialize();
-}
+    is_wailing_caverns() : InstanceScript("instance_wailing_caverns") {}
 
-void instance_wailing_caverns::Initialize()
-{
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-}
-
-void instance_wailing_caverns::OnPlayerEnter(Player* pPlayer)
-{
-    // Respawn the Mysterious chest if one of the players who enter the instance has the quest in his log
-    if (pPlayer->GetQuestStatus(QUEST_FORTUNE_AWAITS) == QUEST_STATUS_COMPLETE &&
-        !pPlayer->GetQuestRewardStatus(QUEST_FORTUNE_AWAITS))
+    class instance_wailing_caverns : public ScriptedInstance
     {
-        DoRespawnGameObject(GO_MYSTERIOUS_CHEST, HOUR);
-    }
-}
-
-void instance_wailing_caverns::OnCreatureCreate(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-        case NPC_NARALEX:
-        case NPC_DISCIPLE:
-            m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
-            break;
-    }
-}
-
-void instance_wailing_caverns::OnObjectCreate(GameObject* pGo)
-{
-    if (pGo->GetEntry() == GO_MYSTERIOUS_CHEST)
-    {
-        m_mGoEntryGuidStore[GO_MYSTERIOUS_CHEST] = pGo->GetObjectGuid();
-    }
-}
-
-void instance_wailing_caverns::SetData(uint32 uiType, uint32 uiData)
-{
-    switch (uiType)
-    {
-        case TYPE_ANACONDRA:
-            m_auiEncounter[0] = uiData;
-            break;
-        case TYPE_COBRAHN:
-            m_auiEncounter[1] = uiData;
-            break;
-        case TYPE_PYTHAS:
-            m_auiEncounter[2] = uiData;
-            break;
-        case TYPE_SERPENTIS:
-            m_auiEncounter[3] = uiData;
-            break;
-        case TYPE_DISCIPLE:
-            m_auiEncounter[4] = uiData;
-            break;
-        case TYPE_MUTANUS:
-            m_auiEncounter[5] = uiData;
-            break;
-    }
-
-    // Set to special in order to start the escort event; only if all four bosses are done
-    if (m_auiEncounter[0] == DONE && m_auiEncounter[1] == DONE && m_auiEncounter[2] == DONE && m_auiEncounter[3] == DONE && (m_auiEncounter[4] == NOT_STARTED || m_auiEncounter[4] == FAIL))
-    {
-        // Yell intro text; only the first time
-        if (m_auiEncounter[4] == NOT_STARTED)
+    public:
+        instance_wailing_caverns(Map* pMap) : ScriptedInstance(pMap)
         {
-            if (Creature* pDisciple = GetSingleCreatureFromStorage(NPC_DISCIPLE))
+            Initialize();
+        }
+
+        ~instance_wailing_caverns() {}
+
+        void Initialize() override
+        {
+            memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+        }
+
+        void OnPlayerEnter(Player* pPlayer) override
+        {
+            // Respawn the Mysterious chest if one of the players who enter the instance has the quest in his log
+            if (pPlayer->GetQuestStatus(QUEST_FORTUNE_AWAITS) == QUEST_STATUS_COMPLETE &&
+                !pPlayer->GetQuestRewardStatus(QUEST_FORTUNE_AWAITS))
             {
-                DoScriptText(SAY_INTRO, pDisciple);
+                DoRespawnGameObject(GO_MYSTERIOUS_CHEST, HOUR);
             }
         }
 
-        m_auiEncounter[4] = SPECIAL;
-    }
-
-    if (uiData == DONE)
-    {
-        OUT_SAVE_INST_DATA;
-
-        std::ostringstream saveStream;
-
-        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
-                   << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5];
-
-        m_strInstData = saveStream.str();
-        SaveToDB();
-        OUT_SAVE_INST_DATA_COMPLETE;
-    }
-}
-
-void instance_wailing_caverns::Load(const char* chrIn)
-{
-    if (!chrIn)
-    {
-        OUT_LOAD_INST_DATA_FAIL;
-        return;
-    }
-
-    OUT_LOAD_INST_DATA(chrIn);
-
-    std::istringstream loadStream(chrIn);
-    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2]
-               >> m_auiEncounter[3] >> m_auiEncounter[4] >> m_auiEncounter[5];
-
-    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-    {
-        if (m_auiEncounter[i] == IN_PROGRESS)
+        void OnCreatureCreate(Creature* pCreature) override
         {
-            m_auiEncounter[i] = NOT_STARTED;
+            switch (pCreature->GetEntry())
+            {
+            case NPC_NARALEX:
+            case NPC_DISCIPLE:
+                m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+                break;
+            }
         }
-    }
 
-    OUT_LOAD_INST_DATA_COMPLETE;
-}
+        void OnObjectCreate(GameObject* pGo) override
+        {
+            if (pGo->GetEntry() == GO_MYSTERIOUS_CHEST)
+            {
+                m_mGoEntryGuidStore[GO_MYSTERIOUS_CHEST] = pGo->GetObjectGuid();
+            }
+        }
 
-uint32 instance_wailing_caverns::GetData(uint32 uiType) const
-{
-    if (uiType < MAX_ENCOUNTER)
+        void SetData(uint32 uiType, uint32 uiData) override
+        {
+            switch (uiType)
+            {
+            case TYPE_ANACONDRA:
+                m_auiEncounter[0] = uiData;
+                break;
+            case TYPE_COBRAHN:
+                m_auiEncounter[1] = uiData;
+                break;
+            case TYPE_PYTHAS:
+                m_auiEncounter[2] = uiData;
+                break;
+            case TYPE_SERPENTIS:
+                m_auiEncounter[3] = uiData;
+                break;
+            case TYPE_DISCIPLE:
+                m_auiEncounter[4] = uiData;
+                break;
+            case TYPE_MUTANUS:
+                m_auiEncounter[5] = uiData;
+                break;
+            }
+
+            // Set to special in order to start the escort event; only if all four bosses are done
+            if (m_auiEncounter[0] == DONE && m_auiEncounter[1] == DONE && m_auiEncounter[2] == DONE && m_auiEncounter[3] == DONE && (m_auiEncounter[4] == NOT_STARTED || m_auiEncounter[4] == FAIL))
+            {
+                // Yell intro text; only the first time
+                if (m_auiEncounter[4] == NOT_STARTED)
+                {
+                    if (Creature* pDisciple = GetSingleCreatureFromStorage(NPC_DISCIPLE))
+                    {
+                        DoScriptText(SAY_INTRO, pDisciple);
+                    }
+                }
+
+                m_auiEncounter[4] = SPECIAL;
+            }
+
+            if (uiData == DONE)
+            {
+                OUT_SAVE_INST_DATA;
+
+                std::ostringstream saveStream;
+
+                saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
+                    << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5];
+
+                m_strInstData = saveStream.str();
+                SaveToDB();
+                OUT_SAVE_INST_DATA_COMPLETE;
+            }
+        }
+
+        uint32 GetData(uint32 uiType) const override
+        {
+            if (uiType < MAX_ENCOUNTER)
+            {
+                return m_auiEncounter[uiType];
+            }
+
+            return 0;
+        }
+
+        const char* Save() const override { return m_strInstData.c_str(); }
+        void Load(const char* chrIn) override
+        {
+            if (!chrIn)
+            {
+                OUT_LOAD_INST_DATA_FAIL;
+                return;
+            }
+
+            OUT_LOAD_INST_DATA(chrIn);
+
+            std::istringstream loadStream(chrIn);
+            loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2]
+                >> m_auiEncounter[3] >> m_auiEncounter[4] >> m_auiEncounter[5];
+
+            for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+            {
+                if (m_auiEncounter[i] == IN_PROGRESS)
+                {
+                    m_auiEncounter[i] = NOT_STARTED;
+                }
+            }
+
+            OUT_LOAD_INST_DATA_COMPLETE;
+        }
+
+    protected:
+        uint32 m_auiEncounter[MAX_ENCOUNTER];
+        std::string m_strInstData;
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
     {
-        return m_auiEncounter[uiType];
+        return new instance_wailing_caverns(pMap);
     }
-
-    return 0;
-}
-
-InstanceData* GetInstanceData_instance_wailing_caverns(Map* pMap)
-{
-    return new instance_wailing_caverns(pMap);
-}
+};
 
 void AddSC_instance_wailing_caverns()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new is_wailing_caverns();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "instance_wailing_caverns";
-    pNewScript->GetInstanceData = &GetInstanceData_instance_wailing_caverns;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "instance_wailing_caverns";
+    //pNewScript->GetInstanceData = &GetInstanceData_instance_wailing_caverns;
+    //pNewScript->RegisterSelf();
 }

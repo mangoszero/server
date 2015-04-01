@@ -452,6 +452,7 @@ class ChatHandler
         bool HandleReloadReservedNameCommand(char* args);
         bool HandleReloadReputationRewardRateCommand(char* args);
         bool HandleReloadReputationSpilloverTemplateCommand(char* args);
+        bool HandleReloadScriptBindingCommand(char* args);
         bool HandleReloadSkillFishingBaseLevelCommand(char* args);
         bool HandleReloadSpellAffectCommand(char* args);
         bool HandleReloadSpellAreaCommand(char* args);

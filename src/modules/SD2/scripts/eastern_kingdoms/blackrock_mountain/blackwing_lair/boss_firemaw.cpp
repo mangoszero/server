@@ -43,121 +43,138 @@ enum
     SPELL_THRASH                = 3391
 };
 
-struct boss_firemawAI : public ScriptedAI
+struct boss_firemaw : public CreatureScript
 {
-    boss_firemawAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_firemaw() : CreatureScript("boss_firemaw") {}
+
+    struct boss_firemawAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiShadowFlameTimer;
-    uint32 m_uiWingBuffetTimer;
-    uint32 m_uiFlameBuffetTimer;
-    uint32 m_uiTrashTimer;
-
-    void Reset() override
-    {
-        m_uiShadowFlameTimer = 30000;                       // These times are probably wrong
-        m_uiWingBuffetTimer  = 24000;
-        m_uiFlameBuffetTimer = 5000;
-        m_uiTrashTimer       = 25000;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_firemawAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_FIREMAW, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_FIREMAW, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_FIREMAW, FAIL);
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Shadow Flame Timer
-        if (m_uiShadowFlameTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiShadowFlameTimer;
+        uint32 m_uiWingBuffetTimer;
+        uint32 m_uiFlameBuffetTimer;
+        uint32 m_uiTrashTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_FLAME) == CAST_OK)
+            m_uiShadowFlameTimer = 30000;                       // These times are probably wrong
+            m_uiWingBuffetTimer = 24000;
+            m_uiFlameBuffetTimer = 5000;
+            m_uiTrashTimer = 25000;
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
             {
-                m_uiShadowFlameTimer = urand(15000, 18000);
+                m_pInstance->SetData(TYPE_FIREMAW, IN_PROGRESS);
             }
         }
-        else
-            { m_uiShadowFlameTimer -= uiDiff; }
 
-        // Wing Buffet Timer
-        if (m_uiWingBuffetTimer < uiDiff)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET) == CAST_OK)
+            if (m_pInstance)
             {
-                if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
+                m_pInstance->SetData(TYPE_FIREMAW, DONE);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_FIREMAW, FAIL);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Shadow Flame Timer
+            if (m_uiShadowFlameTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_FLAME) == CAST_OK)
                 {
-                    m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -75);
+                    m_uiShadowFlameTimer = urand(15000, 18000);
                 }
-
-                m_uiWingBuffetTimer = 25000;
             }
-        }
-        else
-            { m_uiWingBuffetTimer -= uiDiff; }
-
-        // Flame Buffet Timer
-        if (m_uiFlameBuffetTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_FLAME_BUFFET) == CAST_OK)
+            else
             {
-                m_uiFlameBuffetTimer = 5000;
+                m_uiShadowFlameTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiFlameBuffetTimer -= uiDiff; }
 
-        // Thrash Timer
-        if (m_uiTrashTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_THRASH) == CAST_OK)
-                { m_uiTrashTimer = 20000; }
-        }
-        else
-            { m_uiTrashTimer -= uiDiff; }
+            // Wing Buffet Timer
+            if (m_uiWingBuffetTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_WING_BUFFET) == CAST_OK)
+                {
+                    if (m_creature->GetThreatManager().getThreat(m_creature->getVictim()))
+                    {
+                        m_creature->GetThreatManager().modifyThreatPercent(m_creature->getVictim(), -75);
+                    }
 
-        DoMeleeAttackIfReady();
+                    m_uiWingBuffetTimer = 25000;
+                }
+            }
+            else
+            {
+                m_uiWingBuffetTimer -= uiDiff;
+            }
+
+            // Flame Buffet Timer
+            if (m_uiFlameBuffetTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_FLAME_BUFFET) == CAST_OK)
+                {
+                    m_uiFlameBuffetTimer = 5000;
+                }
+            }
+            else
+            {
+                m_uiFlameBuffetTimer -= uiDiff;
+            }
+
+            // Thrash Timer
+            if (m_uiTrashTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_THRASH) == CAST_OK)
+                {
+                    m_uiTrashTimer = 20000;
+                }
+            }
+            else
+            {
+                m_uiTrashTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_firemawAI(pCreature);
     }
 };
-CreatureAI* GetAI_boss_firemaw(Creature* pCreature)
-{
-    return new boss_firemawAI(pCreature);
-}
 
 void AddSC_boss_firemaw()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_firemaw();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_firemaw";
-    pNewScript->GetAI = &GetAI_boss_firemaw;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_firemaw";
+    //pNewScript->GetAI = &GetAI_boss_firemaw;
+    //pNewScript->RegisterSelf();
 }

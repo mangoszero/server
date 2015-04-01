@@ -79,109 +79,112 @@ enum Phases
     PHASE_LANDING       = 5,
 };
 
-struct boss_sapphironAI : public ScriptedAI
+struct boss_sapphiron : public CreatureScript
 {
-    boss_sapphironAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_sapphiron() : CreatureScript("boss_sapphiron") {}
+
+    struct boss_sapphironAI : public ScriptedAI
     {
-        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_naxxramas* m_pInstance;
-
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiTailSweepTimer;
-    uint32 m_uiIceboltTimer;
-    uint32 m_uiFrostBreathTimer;
-    uint32 m_uiLifeDrainTimer;
-    uint32 m_uiBlizzardTimer;
-    uint32 m_uiFlyTimer;
-    uint32 m_uiBerserkTimer;
-    uint32 m_uiLandTimer;
-
-    uint32 m_uiIceboltCount;
-    Phases m_Phase;
-
-    void Reset() override
-    {
-        m_uiCleaveTimer = 5000;
-        m_uiTailSweepTimer = 12000;
-        m_uiFrostBreathTimer = 7000;
-        m_uiLifeDrainTimer = 11000;
-        m_uiBlizzardTimer = 15000;                          // "Once the encounter starts,based on your version of Naxx, this will be used x2 for normal and x6 on HC"
-        m_uiFlyTimer = 46000;
-        m_uiIceboltTimer = 5000;
-        m_uiLandTimer = 0;
-        m_uiBerserkTimer = 15 * MINUTE * IN_MILLISECONDS;
-        m_Phase = PHASE_GROUND;
-        m_uiIceboltCount = 0;
-
-        SetCombatMovement(true);
-        m_creature->SetLevitate(false);
-        // m_creature->ApplySpellMod(SPELL_FROST_AURA, SPELLMOD_DURATION, -1);
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoCastSpellIfCan(m_creature, SPELL_FROST_AURA);
-
-        if (m_pInstance)
+        boss_sapphironAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_SAPPHIRON, IN_PROGRESS);
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
-    }
 
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiCleaveTimer;
+        uint32 m_uiTailSweepTimer;
+        uint32 m_uiIceboltTimer;
+        uint32 m_uiFrostBreathTimer;
+        uint32 m_uiLifeDrainTimer;
+        uint32 m_uiBlizzardTimer;
+        uint32 m_uiFlyTimer;
+        uint32 m_uiBerserkTimer;
+        uint32 m_uiLandTimer;
+
+        uint32 m_uiIceboltCount;
+        Phases m_Phase;
+
+        void Reset() override
         {
-            m_pInstance->SetData(TYPE_SAPPHIRON, DONE);
+            m_uiCleaveTimer = 5000;
+            m_uiTailSweepTimer = 12000;
+            m_uiFrostBreathTimer = 7000;
+            m_uiLifeDrainTimer = 11000;
+            m_uiBlizzardTimer = 15000;                          // "Once the encounter starts,based on your version of Naxx, this will be used x2 for normal and x6 on HC"
+            m_uiFlyTimer = 46000;
+            m_uiIceboltTimer = 5000;
+            m_uiLandTimer = 0;
+            m_uiBerserkTimer = 15 * MINUTE * IN_MILLISECONDS;
+            m_Phase = PHASE_GROUND;
+            m_uiIceboltCount = 0;
+
+            SetCombatMovement(true);
+            m_creature->SetLevitate(false);
+            // m_creature->ApplySpellMod(SPELL_FROST_AURA, SPELLMOD_DURATION, -1);
         }
-    }
 
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
+        void Aggro(Unit* /*pWho*/) override
         {
-            m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
-        }
-    }
+            DoCastSpellIfCan(m_creature, SPELL_FROST_AURA);
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() == NPC_YOU_KNOW_WHO)
-        {
-            if (Unit* pEnemy = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            if (m_pInstance)
             {
-                pSummoned->AI()->AttackStart(pEnemy);
+                m_pInstance->SetData(TYPE_SAPPHIRON, IN_PROGRESS);
             }
         }
-    }
 
-    void MovementInform(uint32 uiType, uint32 /*uiPointId*/) override
-    {
-        if (uiType == POINT_MOTION_TYPE && m_Phase == PHASE_LIFT_OFF)
+        void JustDied(Unit* /*pKiller*/) override
         {
-            DoScriptText(EMOTE_FLY, m_creature);
-            m_creature->HandleEmote(EMOTE_ONESHOT_LIFTOFF);
-            m_creature->SetLevitate(true);
-            m_Phase = PHASE_AIR_BOLTS;
-
-            m_uiFrostBreathTimer = 5000;
-            m_uiIceboltTimer = 5000;
-            m_uiIceboltCount = 0;
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_SAPPHIRON, DONE);
+            }
         }
 
-        switch (m_Phase)
+        void JustReachedHome() override
         {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_SAPPHIRON, FAIL);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_YOU_KNOW_WHO)
+            {
+                if (Unit* pEnemy = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    pSummoned->AI()->AttackStart(pEnemy);
+                }
+            }
+        }
+
+        void MovementInform(uint32 uiType, uint32 /*uiPointId*/) override
+        {
+            if (uiType == POINT_MOTION_TYPE && m_Phase == PHASE_LIFT_OFF)
+            {
+                DoScriptText(EMOTE_FLY, m_creature);
+                m_creature->HandleEmote(EMOTE_ONESHOT_LIFTOFF);
+                m_creature->SetLevitate(true);
+                m_Phase = PHASE_AIR_BOLTS;
+
+                m_uiFrostBreathTimer = 5000;
+                m_uiIceboltTimer = 5000;
+                m_uiIceboltCount = 0;
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            switch (m_Phase)
+            {
             case PHASE_GROUND:
                 if (m_uiCleaveTimer < uiDiff)
                 {
@@ -328,63 +331,75 @@ struct boss_sapphironAI : public ScriptedAI
                 }
 
                 break;
-        }
+            }
 
-        // Enrage can happen in any phase
-        if (m_uiBerserkTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_BESERK) == CAST_OK)
+            // Enrage can happen in any phase
+            if (m_uiBerserkTimer < uiDiff)
             {
-                DoScriptText(EMOTE_GENERIC_ENRAGED, m_creature);
-                m_uiBerserkTimer = 300000;
+                if (DoCastSpellIfCan(m_creature, SPELL_BESERK) == CAST_OK)
+                {
+                    DoScriptText(EMOTE_GENERIC_ENRAGED, m_creature);
+                    m_uiBerserkTimer = 300000;
+                }
+            }
+            else
+            {
+                m_uiBerserkTimer -= uiDiff;
             }
         }
-        else
-            { m_uiBerserkTimer -= uiDiff; }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_sapphironAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_sapphiron(Creature* pCreature)
+struct go_sapphiron_birth : public GameObjectScript
 {
-    return new boss_sapphironAI(pCreature);
-}
+    go_sapphiron_birth() : GameObjectScript("go_sapphiron_birth") {}
 
-bool GOUse_go_sapphiron_birth(Player* /*pPlayer*/, GameObject* pGo)
-{
-    ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
-
-    if (!pInstance)
+    bool OnUse(Player* /*pPlayer*/, GameObject* pGo) override
     {
-        return true;
-    }
+        ScriptedInstance* pInstance = (ScriptedInstance*)pGo->GetInstanceData();
 
-    if (pInstance->GetData(TYPE_SAPPHIRON) != NOT_STARTED)
-    {
-        return true;
-    }
+        if (!pInstance)
+        {
+            return true;
+        }
 
-    // If already summoned return (safety check)
-    if (pInstance->GetSingleCreatureFromStorage(NPC_SAPPHIRON, true))
-    {
-        return true;
-    }
+        if (pInstance->GetData(TYPE_SAPPHIRON) != NOT_STARTED)
+        {
+            return true;
+        }
 
-    // Set data to special and allow the Go animation to proceed
-    pInstance->SetData(TYPE_SAPPHIRON, SPECIAL);
-    return false;
-}
+        // If already summoned return (safety check)
+        if (pInstance->GetSingleCreatureFromStorage(NPC_SAPPHIRON, true))
+        {
+            return true;
+        }
+
+        // Set data to special and allow the Go animation to proceed
+        pInstance->SetData(TYPE_SAPPHIRON, SPECIAL);
+        return false;
+    }
+};
 
 void AddSC_boss_sapphiron()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_sapphiron();
+    s->RegisterSelf();
+    s = new go_sapphiron_birth();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_sapphiron";
-    pNewScript->GetAI = &GetAI_boss_sapphiron;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_sapphiron";
+    //pNewScript->GetAI = &GetAI_boss_sapphiron;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_sapphiron_birth";
-    pNewScript->pGOUse = &GOUse_go_sapphiron_birth;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_sapphiron_birth";
+    //pNewScript->pGOUse = &GOUse_go_sapphiron_birth;
+    //pNewScript->RegisterSelf();
 }

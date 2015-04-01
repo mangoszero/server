@@ -30,6 +30,10 @@ enum
 {
     MAX_ENCOUNTER               = 6,
     MAX_ROOMS                   = 7,
+    DO_ACTIVATE_RUNES           = 0,
+    DO_SORT_MOBS                = 1,
+    DO_EMBERSEER_EVENT          = 2,
+    DO_FLAMEWREATH_EVENT        = 3,
 
     TYPE_ROOM_EVENT             = 0,
     TYPE_EMBERSEER              = 1,
@@ -84,7 +88,9 @@ enum
     MAX_STADIUM_WAVES           = 7,
     MAX_STADIUM_MOBS_PER_WAVE   = 5,
 
-    FACTION_BLACK_DRAGON        = 103
+    FACTION_BLACK_DRAGON        = 103,
+
+    SPELL_ENCAGE_EMBERSEER      = 15281,    // cast by Blackhand Incarcerator
 };
 
 struct SpawnLocation
@@ -113,58 +119,6 @@ static const uint32 aStadiumEventNpcs[MAX_STADIUM_WAVES][5] =
     {NPC_CHROMATIC_WHELP, NPC_CHROMATIC_WHELP, NPC_CHROMATIC_WHELP, NPC_CHROMATIC_DRAGON, NPC_BLACKHAND_HANDLER},
     {NPC_CHROMATIC_WHELP, NPC_CHROMATIC_WHELP, NPC_CHROMATIC_DRAGON, NPC_CHROMATIC_DRAGON, NPC_BLACKHAND_HANDLER},
     {NPC_CHROMATIC_WHELP, NPC_CHROMATIC_WHELP, NPC_CHROMATIC_DRAGON, NPC_CHROMATIC_DRAGON, NPC_BLACKHAND_HANDLER},
-};
-
-class instance_blackrock_spire : public ScriptedInstance, private DialogueHelper
-{
-    public:
-        instance_blackrock_spire(Map* pMap);
-        ~instance_blackrock_spire() {}
-
-        void Initialize() override;
-
-        void OnObjectCreate(GameObject* pGo) override;
-        void OnCreatureCreate(Creature* pCreature) override;
-
-        void OnCreatureDeath(Creature* pCreature) override;
-        void OnCreatureEvade(Creature* pCreature);
-        void OnCreatureEnterCombat(Creature* pCreature) override;
-
-        void SetData(uint32 uiType, uint32 uiData) override;
-        uint32 GetData(uint32 uiType) const override;
-
-        const char* Save() const override { return m_strInstData.c_str(); }
-        void Load(const char* chrIn) override;
-
-        void DoUseEmberseerRunes(bool bReset = false);
-        void DoProcessEmberseerEvent();
-
-        void DoSortRoomEventMobs();
-        void GetIncarceratorGUIDList(GuidList& lList) { lList = m_lIncarceratorGUIDList; }
-
-        void StartflamewreathEventIfCan();
-
-        void Update(uint32 uiDiff) override;
-
-    private:
-        void JustDidDialogueStep(int32 iEntry) override;
-        void DoSendNextStadiumWave();
-        void DoSendNextFlamewreathWave();
-
-        uint32 m_auiEncounter[MAX_ENCOUNTER];
-        std::string m_strInstData;
-
-        uint32 m_uiFlamewreathEventTimer;
-        uint32 m_uiFlamewreathWaveCount;
-        uint32 m_uiStadiumEventTimer;
-        uint8 m_uiStadiumWaves;
-        uint8 m_uiStadiumMobsAlive;
-
-        ObjectGuid m_aRoomRuneGuid[MAX_ROOMS];
-        GuidList m_alRoomEventMobGUIDSorted[MAX_ROOMS];
-        GuidList m_lRoomEventMobGUIDList;
-        GuidList m_lIncarceratorGUIDList;
-        GuidList m_lEmberseerRunesGUIDList;
 };
 
 #endif

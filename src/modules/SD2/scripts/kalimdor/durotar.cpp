@@ -56,129 +56,149 @@ enum
     GO_LUMBERPILE           = 175784,
 };
 
-struct npc_lazy_peonAI : public ScriptedAI
+struct npc_lazy_peon : public CreatureScript
 {
-    npc_lazy_peonAI(Creature* pCreature) : ScriptedAI(pCreature)
-    {
-        Reset();
-        m_uiStopSleepingTimer = urand(30000, 120000);       // Set on spawn to a potential small timer, to get nice results for initial case
-    }
+    npc_lazy_peon() : CreatureScript("npc_lazy_peon") {}
 
-    uint32 m_uiResetSleepTimer;                             // Time, until the npc stops harvesting lumber
-    uint32 m_uiStopSleepingTimer;                           // Time, until the npcs (re)starts working on its own
-
-    void Reset() override
+    struct npc_lazy_peonAI : public ScriptedAI
     {
-        m_uiResetSleepTimer = 0;
-        m_uiStopSleepingTimer = urand(90000, 120000);       // Sleeping aura has only 2min duration
-    }
-
-    // Can also be self invoked for random working
-    void StartLumbering(Unit* pInvoker)
-    {
-        m_uiStopSleepingTimer = 0;
-        if (GameObject* pLumber = GetClosestGameObjectWithEntry(m_creature, GO_LUMBERPILE, 15.0f))
+        npc_lazy_peonAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_creature->RemoveAurasDueToSpell(SPELL_PEON_SLEEP);
+            m_uiStopSleepingTimer = urand(30000, 120000);       // Set on spawn to a potential small timer, to get nice results for initial case
+        }
 
-            float fX, fY, fZ;
-            m_creature->SetWalk(false);
-            pLumber->GetContactPoint(m_creature, fX, fY, fZ, CONTACT_DISTANCE);
+        uint32 m_uiResetSleepTimer;                             // Time, until the npc stops harvesting lumber
+        uint32 m_uiStopSleepingTimer;                           // Time, until the npcs (re)starts working on its own
 
-            if (pInvoker->GetTypeId() == TYPEID_PLAYER)
+        void Reset() override
+        {
+            m_uiResetSleepTimer = 0;
+            m_uiStopSleepingTimer = urand(90000, 120000);       // Sleeping aura has only 2min duration
+        }
+
+        void ReceiveAIEvent(AIEventType eventType, Creature* pSender, Unit* pInvoker, uint32 /*uiMiscValue*/) override
+        {
+            if (eventType == AI_EVENT_CUSTOM_A && pSender == m_creature)
+                StartLumbering(pInvoker);
+        }
+
+        // Can also be self invoked for random working
+        void StartLumbering(Unit* pInvoker)
+        {
+            m_uiStopSleepingTimer = 0;
+            if (GameObject* pLumber = GetClosestGameObjectWithEntry(m_creature, GO_LUMBERPILE, 15.0f))
             {
-                DoScriptText(SAY_PEON_AWAKE_1, m_creature);
-                ((Player*)pInvoker)->KilledMonsterCredit(m_creature->GetEntry(), m_creature->GetObjectGuid());
-                m_creature->GetMotionMaster()->MovePoint(1, fX, fY, fZ);
+                m_creature->RemoveAurasDueToSpell(SPELL_PEON_SLEEP);
+
+                float fX, fY, fZ;
+                m_creature->SetWalk(false);
+                pLumber->GetContactPoint(m_creature, fX, fY, fZ, CONTACT_DISTANCE);
+
+                if (pInvoker->GetTypeId() == TYPEID_PLAYER)
+                {
+                    DoScriptText(SAY_PEON_AWAKE_1, m_creature);
+                    ((Player*)pInvoker)->KilledMonsterCredit(m_creature->GetEntry(), m_creature->GetObjectGuid());
+                    m_creature->GetMotionMaster()->MovePoint(1, fX, fY, fZ);
+                }
+                else
+                {
+                    m_creature->GetMotionMaster()->MovePoint(2, fX, fY, fZ);
+                }
             }
             else
             {
-                m_creature->GetMotionMaster()->MovePoint(2, fX, fY, fZ);
+                script_error_log("No GameObject of entry %u was found in range or something really bad happened.", GO_LUMBERPILE);
             }
         }
-        else
-        {
-            script_error_log("No GameObject of entry %u was found in range or something really bad happened.", GO_LUMBERPILE);
-        }
-    }
 
-    void MovementInform(uint32 uiMotionType, uint32 uiPointId) override
+        void MovementInform(uint32 uiMotionType, uint32 uiPointId) override
+        {
+            if (uiMotionType != POINT_MOTION_TYPE || !uiPointId)
+            {
+                return;
+            }
+
+            m_creature->HandleEmote(EMOTE_STATE_WORK_CHOPWOOD);
+            // TODO - random bevahior for self-invoked awakening guesswork
+            m_uiResetSleepTimer = uiPointId == 1 ? 80000 : urand(30000, 60000);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (m_uiResetSleepTimer)
+            {
+                if (m_uiResetSleepTimer <= uiDiff)
+                {
+                    DoScriptText(SAY_PEON_AWAKE_2, m_creature);
+                    m_creature->HandleEmote(EMOTE_STATE_NONE);
+                    EnterEvadeMode();
+                    m_uiResetSleepTimer = 0;
+                }
+                else
+                {
+                    m_uiResetSleepTimer -= uiDiff;
+                }
+            }
+
+            if (m_uiStopSleepingTimer)
+            {
+                if (m_uiStopSleepingTimer <= uiDiff)
+                {
+                    StartLumbering(m_creature);
+                }
+                else
+                {
+                    m_uiStopSleepingTimer -= uiDiff;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        if (uiMotionType != POINT_MOTION_TYPE || !uiPointId)
-        {
-            return;
-        }
-
-        m_creature->HandleEmote(EMOTE_STATE_WORK_CHOPWOOD);
-        // TODO - random bevahior for self-invoked awakening guesswork
-        m_uiResetSleepTimer = uiPointId == 1 ? 80000 : urand(30000, 60000);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_uiResetSleepTimer)
-        {
-            if (m_uiResetSleepTimer <= uiDiff)
-            {
-                DoScriptText(SAY_PEON_AWAKE_2, m_creature);
-                m_creature->HandleEmote(EMOTE_STATE_NONE);
-                EnterEvadeMode();
-                m_uiResetSleepTimer = 0;
-            }
-            else
-            {
-                m_uiResetSleepTimer -= uiDiff;
-            }
-        }
-
-        if (m_uiStopSleepingTimer)
-        {
-            if (m_uiStopSleepingTimer <= uiDiff)
-            {
-                StartLumbering(m_creature);
-            }
-            else
-            {
-                m_uiStopSleepingTimer -= uiDiff;
-            }
-        }
+        return new npc_lazy_peonAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_npc_lazy_peon(Creature* pCreature)
+struct spell_lazy_peon_awake : public SpellScript
 {
-    return new npc_lazy_peonAI(pCreature);
-}
+    spell_lazy_peon_awake() : SpellScript("spell_lazy_peon_awake") {}
 
-bool EffectDummyCreature_lazy_peon_awake(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
-{
-    // always check spellid and effectindex
-    if (uiSpellId == SPELL_AWAKEN_PEON && uiEffIndex == EFFECT_INDEX_0)
+    bool EffectDummy(Unit* pCaster, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        if (!pCreatureTarget->HasAura(SPELL_PEON_SLEEP) || pCaster->GetTypeId() != TYPEID_PLAYER || pCreatureTarget->GetEntry() != NPC_SLEEPING_PEON)
+        // always check spellid and effectindex
+        if (uiSpellId == SPELL_AWAKEN_PEON && uiEffIndex == EFFECT_INDEX_0)
         {
+            Creature* pCreatureTarget = pTarget->ToCreature();
+            if (!pCreatureTarget->HasAura(SPELL_PEON_SLEEP) || pCaster->GetTypeId() != TYPEID_PLAYER || pCreatureTarget->GetEntry() != NPC_SLEEPING_PEON)
+            {
+                return true;
+            }
+
+            if (CreatureAI* pPeonAI = pCreatureTarget->AI())
+            {
+                pPeonAI->SendAIEvent(AI_EVENT_CUSTOM_A, pCaster, pCreatureTarget);  //>StartLumbering(pCaster);
+            }
+
+            // always return true when we are handling this spell and effect
             return true;
         }
 
-        if (npc_lazy_peonAI* pPeonAI = dynamic_cast<npc_lazy_peonAI*>(pCreatureTarget->AI()))
-        {
-            pPeonAI->StartLumbering(pCaster);
-        }
-
-        // always return true when we are handling this spell and effect
-        return true;
+        return false;
     }
-
-    return false;
-}
+};
 
 void AddSC_durotar()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_lazy_peon();
+    s->RegisterSelf();
+    s = new spell_lazy_peon_awake();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_lazy_peon";
-    pNewScript->GetAI = &GetAI_npc_lazy_peon;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_lazy_peon_awake;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_lazy_peon";
+    //pNewScript->GetAI = &GetAI_npc_lazy_peon;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_lazy_peon_awake;
+    //pNewScript->RegisterSelf();
 }

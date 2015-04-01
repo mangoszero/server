@@ -43,110 +43,122 @@ enum
     SPELL_SHADOW_PORTAL            = 17950
 };
 
-struct boss_darkmaster_gandlingAI : public ScriptedAI
+struct boss_darkmaster_gandling : public CreatureScript
 {
-    boss_darkmaster_gandlingAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_darkmaster_gandling() : CreatureScript("boss_darkmaster_gandling") {}
+
+    struct boss_darkmaster_gandlingAI : public ScriptedAI
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    ScriptedInstance* m_pInstance;
-
-    uint32 m_uiArcaneMissilesTimer;
-    uint32 m_uiShadowShieldTimer;
-    uint32 m_uiCurseTimer;
-    uint32 m_uiTeleportTimer;
-
-    void Reset() override
-    {
-        m_uiArcaneMissilesTimer = 4500;
-        m_uiShadowShieldTimer = 12000;
-        m_uiCurseTimer = 2000;
-        m_uiTeleportTimer = 16000;
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        boss_darkmaster_gandlingAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        // Arcane Missiles Timer
-        if (m_uiArcaneMissilesTimer < uiDiff)
+        ScriptedInstance* m_pInstance;
+
+        uint32 m_uiArcaneMissilesTimer;
+        uint32 m_uiShadowShieldTimer;
+        uint32 m_uiCurseTimer;
+        uint32 m_uiTeleportTimer;
+
+        void Reset() override
         {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_ARCANE_MISSILES) == CAST_OK)
+            m_uiArcaneMissilesTimer = 4500;
+            m_uiShadowShieldTimer = 12000;
+            m_uiCurseTimer = 2000;
+            m_uiTeleportTimer = 16000;
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                m_uiArcaneMissilesTimer = 8000;
+                return;
             }
-        }
-        else
-            { m_uiArcaneMissilesTimer -= uiDiff; }
 
-        // Shadow Shield Timer
-        if (m_uiShadowShieldTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_SHIELD) == CAST_OK)
+            // Arcane Missiles Timer
+            if (m_uiArcaneMissilesTimer < uiDiff)
             {
-                m_uiShadowShieldTimer = urand(14000, 28000);
-            }
-        }
-        else
-            { m_uiShadowShieldTimer -= uiDiff; }
-
-        // Curse Timer
-        if (m_uiCurseTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CURSE) == CAST_OK)
-            {
-                m_uiCurseTimer = urand(15000, 27000);
-            }
-        }
-        else
-            { m_uiCurseTimer -= uiDiff; }
-
-        // Teleporting Random Target to one of the six pre boss rooms and spawn 3-4 skeletons near the gamer.
-        // We will only telport if gandling has more than 3% of hp so teleported gamers can always loot.
-        if (m_creature->GetHealthPercent() > 3.0f)
-        {
-            if (m_uiTeleportTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_SHADOW_PORTAL, SELECT_FLAG_PLAYER))
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_ARCANE_MISSILES) == CAST_OK)
                 {
-                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_PORTAL) == CAST_OK)
-                    {
-                        // remove threat
-                        if (m_creature->GetThreatManager().getThreat(pTarget))
-                        {
-                            m_creature->GetThreatManager().modifyThreatPercent(pTarget, -100);
-                        }
-
-                        m_uiTeleportTimer = urand(20000, 35000);
-                    }
+                    m_uiArcaneMissilesTimer = 8000;
                 }
             }
             else
             {
-                m_uiTeleportTimer -= uiDiff;
+                m_uiArcaneMissilesTimer -= uiDiff;
             }
-        }
 
-        DoMeleeAttackIfReady();
+            // Shadow Shield Timer
+            if (m_uiShadowShieldTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_SHADOW_SHIELD) == CAST_OK)
+                {
+                    m_uiShadowShieldTimer = urand(14000, 28000);
+                }
+            }
+            else
+            {
+                m_uiShadowShieldTimer -= uiDiff;
+            }
+
+            // Curse Timer
+            if (m_uiCurseTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature->getVictim(), SPELL_CURSE) == CAST_OK)
+                {
+                    m_uiCurseTimer = urand(15000, 27000);
+                }
+            }
+            else
+            {
+                m_uiCurseTimer -= uiDiff;
+            }
+
+            // Teleporting Random Target to one of the six pre boss rooms and spawn 3-4 skeletons near the gamer.
+            // We will only telport if gandling has more than 3% of hp so teleported gamers can always loot.
+            if (m_creature->GetHealthPercent() > 3.0f)
+            {
+                if (m_uiTeleportTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_SHADOW_PORTAL, SELECT_FLAG_PLAYER))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_PORTAL) == CAST_OK)
+                        {
+                            // remove threat
+                            if (m_creature->GetThreatManager().getThreat(pTarget))
+                            {
+                                m_creature->GetThreatManager().modifyThreatPercent(pTarget, -100);
+                            }
+
+                            m_uiTeleportTimer = urand(20000, 35000);
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiTeleportTimer -= uiDiff;
+                }
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_darkmaster_gandlingAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_darkmaster_gandling(Creature* pCreature)
-{
-    return new boss_darkmaster_gandlingAI(pCreature);
-}
-
 void AddSC_boss_darkmaster_gandling()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_darkmaster_gandling();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_darkmaster_gandling";
-    pNewScript->GetAI = &GetAI_boss_darkmaster_gandling;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_darkmaster_gandling";
+    //pNewScript->GetAI = &GetAI_boss_darkmaster_gandling;
+    //pNewScript->RegisterSelf();
 }

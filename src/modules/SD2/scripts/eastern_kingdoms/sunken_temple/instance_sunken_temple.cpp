@@ -35,162 +35,172 @@
 #include "precompiled.h"
 #include "sunken_temple.h"
 
-instance_sunken_temple::instance_sunken_temple(Map* pMap) : ScriptedInstance(pMap),
-    m_uiProtectorsRemaining(0),
-    m_uiStatueCounter(0),
-    m_uiFlameCounter(0),
-    m_uiAvatarSummonTimer(0),
-    m_uiSupressorTimer(0),
-    m_bIsFirstHakkarWave(false),
-    m_bCanSummonBloodkeeper(false)
+struct is_sunken_temple : public InstanceScript
 {
-    Initialize();
-}
+    is_sunken_temple() : InstanceScript("instance_sunken_temple") {}
 
-void instance_sunken_temple::Initialize()
-{
-    memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-}
-
-void instance_sunken_temple::OnObjectCreate(GameObject* pGo)
-{
-    switch (pGo->GetEntry())
+    class instance_sunken_temple : public ScriptedInstance
     {
-        case GO_JAMMALAN_BARRIER:
-            if (m_auiEncounter[TYPE_PROTECTORS] == DONE)
+    public:
+        instance_sunken_temple(Map* pMap) : ScriptedInstance(pMap),
+            m_uiProtectorsRemaining(0),
+            m_uiStatueCounter(0),
+            m_uiFlameCounter(0),
+            m_uiAvatarSummonTimer(0),
+            m_uiSupressorTimer(0),
+            m_bIsFirstHakkarWave(false),
+            m_bCanSummonBloodkeeper(false),
+            m_bStatueEventStatus(false)
+        {
+            Initialize();
+        }
+
+        ~instance_sunken_temple() {}
+
+        void Initialize() override
+        {
+            memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+        }
+
+        void OnObjectCreate(GameObject* pGo) override
+        {
+            switch (pGo->GetEntry())
             {
-                pGo->SetGoState(GO_STATE_ACTIVE);
-            }
-            break;
-        case GO_IDOL_OF_HAKKAR:
-        case GO_HAKKAR_DOOR_1:
-        case GO_HAKKAR_DOOR_2:
-            break;
-
-        case GO_ATALAI_LIGHT_BIG:
-            m_luiBigLightGUIDs.push_back(pGo->GetObjectGuid());
-            return;
-        case GO_EVIL_CIRCLE:
-            m_vuiCircleGUIDs.push_back(pGo->GetObjectGuid());
-            return;
-        case GO_ETERNAL_FLAME_1:
-        case GO_ETERNAL_FLAME_2:
-        case GO_ETERNAL_FLAME_3:
-        case GO_ETERNAL_FLAME_4:
-            m_luiFlameGUIDs.push_back(pGo->GetObjectGuid());
-            return;
-
-        default:
-            return;
-    }
-    m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
-}
-
-void instance_sunken_temple::OnCreatureCreate(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-        case NPC_ZOLO:
-        case NPC_GASHER:
-        case NPC_LORO:
-        case NPC_HUKKU:
-        case NPC_ZULLOR:
-        case NPC_MIJAN:
-            ++m_uiProtectorsRemaining;
-            break;
-        case NPC_JAMMALAN:
-        case NPC_ATALARION:
-        case NPC_SHADE_OF_HAKKAR:
-        case NPC_AVATAR_OF_HAKKAR:
-            m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
-            break;
-    }
-}
-
-void instance_sunken_temple::OnCreatureEvade(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-            // Hakkar Event Mobs: On Wipe set as failed!
-        case NPC_BLOODKEEPER:
-        case NPC_HAKKARI_MINION:
-        case NPC_SUPPRESSOR:
-        case NPC_AVATAR_OF_HAKKAR:
-            SetData(TYPE_AVATAR, FAIL);
-            break;
-    }
-}
-
-void instance_sunken_temple::OnCreatureDeath(Creature* pCreature)
-{
-    switch (pCreature->GetEntry())
-    {
-        case NPC_ATALARION:
-            SetData(TYPE_ATALARION, DONE);
-            break;
-        case NPC_JAMMALAN:
-            SetData(TYPE_JAMMALAN, DONE);
-            break;
-        case NPC_AVATAR_OF_HAKKAR:
-            SetData(TYPE_AVATAR, DONE);
-            break;
-
-        case NPC_SUPPRESSOR:
-            m_bCanSummonBloodkeeper = true;
-            break;
-
-            // Jammalain mini-bosses
-        case NPC_ZOLO:
-        case NPC_GASHER:
-        case NPC_LORO:
-        case NPC_HUKKU:
-        case NPC_ZULLOR:
-        case NPC_MIJAN:
-            SetData(TYPE_PROTECTORS, DONE);
-            break;
-    }
-}
-
-void instance_sunken_temple::SetData(uint32 uiType, uint32 uiData)
-{
-    switch (uiType)
-    {
-        case TYPE_ATALARION:
-            if (uiData == SPECIAL)
-            {
-                DoSpawnAtalarionIfCan();
-            }
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_PROTECTORS:
-            if (uiData == DONE)
-            {
-                --m_uiProtectorsRemaining;
-                if (!m_uiProtectorsRemaining)
+            case GO_JAMMALAN_BARRIER:
+                if (m_auiEncounter[TYPE_PROTECTORS] == DONE)
                 {
-                    m_auiEncounter[uiType] = uiData;
-                    DoUseDoorOrButton(GO_JAMMALAN_BARRIER);
-                    // Intro yell
-                    DoOrSimulateScriptTextForThisInstance(SAY_JAMMALAN_INTRO, NPC_JAMMALAN);
+                    pGo->SetGoState(GO_STATE_ACTIVE);
                 }
+                break;
+            case GO_IDOL_OF_HAKKAR:
+            case GO_HAKKAR_DOOR_1:
+            case GO_HAKKAR_DOOR_2:
+                break;
+
+            case GO_ATALAI_LIGHT_BIG:
+                m_luiBigLightGUIDs.push_back(pGo->GetObjectGuid());
+                return;
+            case GO_EVIL_CIRCLE:
+                m_vuiCircleGUIDs.push_back(pGo->GetObjectGuid());
+                return;
+            case GO_ETERNAL_FLAME_1:
+            case GO_ETERNAL_FLAME_2:
+            case GO_ETERNAL_FLAME_3:
+            case GO_ETERNAL_FLAME_4:
+                m_luiFlameGUIDs.push_back(pGo->GetObjectGuid());
+                return;
+
+            default:
+                return;
             }
-            break;
-        case TYPE_JAMMALAN:
-            m_auiEncounter[uiType] = uiData;
-            break;
-        case TYPE_AVATAR:
-            if (uiData == SPECIAL)
+            m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+        }
+
+        void OnCreatureCreate(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
             {
-                ++m_uiFlameCounter;
+            case NPC_ZOLO:
+            case NPC_GASHER:
+            case NPC_LORO:
+            case NPC_HUKKU:
+            case NPC_ZULLOR:
+            case NPC_MIJAN:
+                ++m_uiProtectorsRemaining;
+                break;
+            case NPC_JAMMALAN:
+            case NPC_ATALARION:
+            case NPC_SHADE_OF_HAKKAR:
+            case NPC_AVATAR_OF_HAKKAR:
+                m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
+                break;
+            }
+        }
 
-                Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
-                if (!pShade)
+        void OnCreatureEvade(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+                // Hakkar Event Mobs: On Wipe set as failed!
+            case NPC_BLOODKEEPER:
+            case NPC_HAKKARI_MINION:
+            case NPC_SUPPRESSOR:
+            case NPC_AVATAR_OF_HAKKAR:
+                SetData(TYPE_AVATAR, FAIL);
+                break;
+            }
+        }
+
+        void OnCreatureDeath(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+            case NPC_ATALARION:
+                SetData(TYPE_ATALARION, DONE);
+                break;
+            case NPC_JAMMALAN:
+                SetData(TYPE_JAMMALAN, DONE);
+                break;
+            case NPC_AVATAR_OF_HAKKAR:
+                SetData(TYPE_AVATAR, DONE);
+                break;
+
+            case NPC_SUPPRESSOR:
+                m_bCanSummonBloodkeeper = true;
+                break;
+
+                // Jammalain mini-bosses
+            case NPC_ZOLO:
+            case NPC_GASHER:
+            case NPC_LORO:
+            case NPC_HUKKU:
+            case NPC_ZULLOR:
+            case NPC_MIJAN:
+                SetData(TYPE_PROTECTORS, DONE);
+                break;
+            }
+        }
+
+        void SetData(uint32 uiType, uint32 uiData) override
+        {
+            switch (uiType)
+            {
+            case TYPE_ATALARION:
+                if (uiData == SPECIAL)
                 {
-                    return;
+                    DoSpawnAtalarionIfCan();
                 }
-
-                switch (m_uiFlameCounter)
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_PROTECTORS:
+                if (uiData == DONE)
                 {
+                    --m_uiProtectorsRemaining;
+                    if (!m_uiProtectorsRemaining)
+                    {
+                        m_auiEncounter[uiType] = uiData;
+                        DoUseDoorOrButton(GO_JAMMALAN_BARRIER);
+                        // Intro yell
+                        DoOrSimulateScriptTextForThisInstance(SAY_JAMMALAN_INTRO, NPC_JAMMALAN);
+                    }
+                }
+                break;
+            case TYPE_JAMMALAN:
+                m_auiEncounter[uiType] = uiData;
+                break;
+            case TYPE_AVATAR:
+                if (uiData == SPECIAL)
+                {
+                    ++m_uiFlameCounter;
+
+                    Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
+                    if (!pShade)
+                    {
+                        return;
+                    }
+
+                    switch (m_uiFlameCounter)
+                    {
                         // Yells on each flame
                         // TODO It might be possible that these yells should be ordered randomly, however this is the seen state
                     case 1:
@@ -209,313 +219,340 @@ void instance_sunken_temple::SetData(uint32 uiType, uint32 uiData)
                         m_uiAvatarSummonTimer = 0;
                         m_uiSupressorTimer = 0;
                         break;
+                    }
+
+                    // Summon the suppressors only after the flames are doused
+                    // Summon timer is confusing random; timers were: 13, 39 and 52 secs;
+                    if (m_uiFlameCounter != MAX_FLAMES)
+                    {
+                        m_uiSupressorTimer = urand(15000, 45000);
+                    }
+
+                    return;
                 }
 
-                // Summon the suppressors only after the flames are doused
-                // Summon timer is confusing random; timers were: 13, 39 and 52 secs;
-                if (m_uiFlameCounter != MAX_FLAMES)
-                {
-                    m_uiSupressorTimer = urand(15000, 45000);
-                }
-
-                return;
-            }
-
-            // Prevent double processing
-            if (m_auiEncounter[uiType] == uiData)
-            {
-                return;
-            }
-
-            if (uiData == IN_PROGRESS)
-            {
-                m_uiSupressorTimer = 0;
-                DoUpdateFlamesFlags(false);
-
-                // Summon timer; use a small delay
-                m_uiAvatarSummonTimer = 3000;
-                m_bIsFirstHakkarWave = true;
-
-                // Summon the shade
-                Player* pPlayer = GetPlayerInMap();
-                if (!pPlayer)
+                // Prevent double processing
+                if (m_auiEncounter[uiType] == uiData)
                 {
                     return;
                 }
 
-                if (Creature* pShade = pPlayer->SummonCreature(NPC_SHADE_OF_HAKKAR, aSunkenTempleLocation[1].m_fX, aSunkenTempleLocation[1].m_fY, aSunkenTempleLocation[1].m_fZ, aSunkenTempleLocation[1].m_fO, TEMPSUMMON_MANUAL_DESPAWN, 0))
+                if (uiData == IN_PROGRESS)
                 {
-                    //m_mNpcEntryGuidStore[NPC_SHADE_OF_HAKKAR] = pShade->GetObjectGuid();
-                    pShade->SetRespawnDelay(DAY);
+                    m_uiSupressorTimer = 0;
+                    DoUpdateFlamesFlags(false);
+
+                    // Summon timer; use a small delay
+                    m_uiAvatarSummonTimer = 3000;
+                    m_bIsFirstHakkarWave = true;
+
+                    // Summon the shade
+                    Player* pPlayer = GetPlayerInMap();
+                    if (!pPlayer)
+                    {
+                        return;
+                    }
+
+                    if (Creature* pShade = pPlayer->SummonCreature(NPC_SHADE_OF_HAKKAR, aSunkenTempleLocation[1].m_fX, aSunkenTempleLocation[1].m_fY, aSunkenTempleLocation[1].m_fZ, aSunkenTempleLocation[1].m_fO, TEMPSUMMON_MANUAL_DESPAWN, 0))
+                    {
+                        //m_mNpcEntryGuidStore[NPC_SHADE_OF_HAKKAR] = pShade->GetObjectGuid();
+                        pShade->SetRespawnDelay(DAY);
+                    }
+
+                    // Respawn circles
+                    for (GuidVector::const_iterator itr = m_vuiCircleGUIDs.begin(); itr != m_vuiCircleGUIDs.end(); ++itr)
+                    {
+                        DoRespawnGameObject(*itr, 30 * MINUTE);
+                    }
+                }
+                else if (uiData == FAIL)
+                {
+                    // In case of wipe during the summoning ritual the shade is despawned
+                    // The trash mobs stay in place, they are not despawned
+
+                    // Despawn the shade and the avatar -- TODO, avatar really?
+                    if (Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR))
+                    {
+                        pShade->ForcedDespawn();
+                        //m_mNpcEntryGuidStore.erase(NPC_SHADE_OF_HAKKAR);
+                    }
+                    else if (Creature *pAvatar = GetSingleCreatureFromStorage(NPC_AVATAR_OF_HAKKAR))
+                    {
+                        pAvatar->ForcedDespawn();
+                        //m_mNpcEntryGuidStore.erase(NPC_AVATAR_OF_HAKKAR);
+                    }
+
+                    // Reset flames
+                    DoUpdateFlamesFlags(true);
                 }
 
-                // Respawn circles
-                for (GuidVector::const_iterator itr = m_vuiCircleGUIDs.begin(); itr != m_vuiCircleGUIDs.end(); ++itr)
-                {
-                    DoRespawnGameObject(*itr, 30 * MINUTE);
-                }
+                // Use combat doors
+                DoUseDoorOrButton(GO_HAKKAR_DOOR_1);
+                DoUseDoorOrButton(GO_HAKKAR_DOOR_2);
+
+                m_auiEncounter[uiType] = uiData;
+
+                break;
+                case TYPE_SIGNAL:
+                    m_bStatueEventStatus = ProcessStatueEvent(uiData);
+                    return;
             }
-            else if (uiData == FAIL)
+
+            if (uiData == DONE)
             {
-                // In case of wipe during the summoning ritual the shade is despawned
-                // The trash mobs stay in place, they are not despawned
+                OUT_SAVE_INST_DATA;
 
-                // Despawn the shade and the avatar -- TODO, avatar really?
-                if (Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR))
-                {
-                    pShade->ForcedDespawn();
-                    //m_mNpcEntryGuidStore.erase(NPC_SHADE_OF_HAKKAR);
-                }
-                else if (Creature *pAvatar = GetSingleCreatureFromStorage(NPC_AVATAR_OF_HAKKAR))
-                {
-                    pAvatar->ForcedDespawn();
-                    //m_mNpcEntryGuidStore.erase(NPC_AVATAR_OF_HAKKAR);
-                }
+                std::ostringstream saveStream;
 
-                // Reset flames
-                DoUpdateFlamesFlags(true);
+                saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
+                    << m_auiEncounter[3] << " " << m_auiEncounter[4];
+
+                m_strInstData = saveStream.str();
+
+                SaveToDB();
+                OUT_SAVE_INST_DATA_COMPLETE;
             }
-
-            // Use combat doors
-            DoUseDoorOrButton(GO_HAKKAR_DOOR_1);
-            DoUseDoorOrButton(GO_HAKKAR_DOOR_2);
-
-            m_auiEncounter[uiType] = uiData;
-
-            break;
-    }
-
-    if (uiData == DONE)
-    {
-        OUT_SAVE_INST_DATA;
-
-        std::ostringstream saveStream;
-
-        saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
-                   << m_auiEncounter[3] << " " << m_auiEncounter[4];
-
-        m_strInstData = saveStream.str();
-
-        SaveToDB();
-        OUT_SAVE_INST_DATA_COMPLETE;
-    }
-}
-
-void instance_sunken_temple::DoSpawnAtalarionIfCan()
-{
-    // Return if already summoned
-    if (GetSingleCreatureFromStorage(NPC_ATALARION))
-    {
-        return;
-    }
-
-    Player* pPlayer = GetPlayerInMap();
-    if (!pPlayer)
-    {
-        return;
-    }
-
-    pPlayer->SummonCreature(NPC_ATALARION, aSunkenTempleLocation[0].m_fX, aSunkenTempleLocation[0].m_fY, aSunkenTempleLocation[0].m_fZ, aSunkenTempleLocation[0].m_fO, TEMPSUMMON_DEAD_DESPAWN, 0);
-
-    // Spawn the idol of Hakkar
-    DoRespawnGameObject(GO_IDOL_OF_HAKKAR, 30 * MINUTE);
-
-    // Spawn the big green lights
-    for (GuidList::const_iterator itr = m_luiBigLightGUIDs.begin(); itr != m_luiBigLightGUIDs.end(); ++itr)
-    {
-        DoRespawnGameObject(*itr, 30 * MINUTE);
-    }
-}
-
-bool instance_sunken_temple::ProcessStatueEvent(uint32 uiEventId)
-{
-    bool bEventStatus = false;
-
-    // Check if the statues are activated correctly
-    // Increase the counter when the correct statue is activated
-    for (uint8 i = 0; i < MAX_STATUES; ++i)
-    {
-        if (uiEventId == m_aAtalaiStatueEvents[i] && m_uiStatueCounter == i)
-        {
-            // Right Statue activated
-            ++m_uiStatueCounter;
-            bEventStatus = true;
-            break;
         }
-    }
 
-    if (!bEventStatus)
-    {
-        return false;
-    }
-
-    // Check if all statues are active
-    if (m_uiStatueCounter == MAX_STATUES)
-    {
-        SetData(TYPE_ATALARION, SPECIAL);
-    }
-
-    return true;
-}
-
-void instance_sunken_temple::DoUpdateFlamesFlags(bool bRestore)
-{
-    for (GuidList::const_iterator itr = m_luiFlameGUIDs.begin(); itr != m_luiFlameGUIDs.end(); ++itr)
-    {
-        DoToggleGameObjectFlags(*itr, GO_FLAG_NO_INTERACT, bRestore);
-    }
-}
-
-void instance_sunken_temple::Load(const char* chrIn)
-{
-    if (!chrIn)
-    {
-        OUT_LOAD_INST_DATA_FAIL;
-        return;
-    }
-
-    OUT_LOAD_INST_DATA(chrIn);
-
-    std::istringstream loadStream(chrIn);
-    loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3] >> m_auiEncounter[4];
-
-    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-    {
-        // Here a bit custom, to have proper mechanics for the statue events
-        if (m_auiEncounter[i] != DONE)
+        uint32 GetData(uint32 uiType) const override
         {
-            m_auiEncounter[i] = NOT_STARTED;
+            if (uiType < MAX_ENCOUNTER)
+            {
+                return m_auiEncounter[uiType];
+            }
+            else if (uiType == TYPE_SIGNAL)
+                return uint32(m_bStatueEventStatus);
+
+            return 0;
         }
-    }
 
-    OUT_LOAD_INST_DATA_COMPLETE;
-}
-
-uint32 instance_sunken_temple::GetData(uint32 uiType) const
-{
-    if (uiType < MAX_ENCOUNTER)
-    {
-        return m_auiEncounter[uiType];
-    }
-
-    return 0;
-}
-
-void instance_sunken_temple::Update(uint32 uiDiff)
-{
-    if (m_auiEncounter[TYPE_AVATAR] != IN_PROGRESS)
-    {
-        return;
-    }
-
-    // Summon random mobs around the circles
-    if (m_uiAvatarSummonTimer)
-    {
-        if (m_uiAvatarSummonTimer <= uiDiff)
+        void Update(uint32 uiDiff) override
         {
-            Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
-            if (!pShade)
+            if (m_auiEncounter[TYPE_AVATAR] != IN_PROGRESS)
             {
                 return;
             }
 
-            // If no summon circles are spawned then return
-            if (m_vuiCircleGUIDs.empty())
+            // Summon random mobs around the circles
+            if (m_uiAvatarSummonTimer)
+            {
+                if (m_uiAvatarSummonTimer <= uiDiff)
+                {
+                    Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
+                    if (!pShade)
+                    {
+                        return;
+                    }
+
+                    // If no summon circles are spawned then return
+                    if (m_vuiCircleGUIDs.empty())
+                    {
+                        return;
+                    }
+
+                    if (m_bIsFirstHakkarWave)                       // First wave summoned
+                    {
+                        // Summon at all circles
+                        for (GuidVector::const_iterator itr = m_vuiCircleGUIDs.begin(); itr != m_vuiCircleGUIDs.end(); ++itr)
+                        {
+                            if (GameObject* pCircle = instance->GetGameObject(*itr))
+                            {
+                                pShade->SummonCreature(NPC_HAKKARI_MINION, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                            }
+                        }
+
+                        // Summon Bloodkeeper at random circle
+                        if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
+                        {
+                            pShade->SummonCreature(NPC_BLOODKEEPER, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                        }
+
+                        m_bCanSummonBloodkeeper = false;
+                        m_bIsFirstHakkarWave = false;
+                        m_uiAvatarSummonTimer = 50000;
+                    }
+                    else                                            // Later wave
+                    {
+                        uint32 uiRoll = urand(0, 99);
+                        uint8 uiMaxSummons = uiRoll < 75 ? 1 : uiRoll < 95 ? 2 : 3;
+
+                        if (m_bCanSummonBloodkeeper && roll_chance_i(30))
+                        {
+                            // Summon a Bloodkeeper
+                            if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
+                            {
+                                pShade->SummonCreature(NPC_BLOODKEEPER, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                            }
+
+                            m_bCanSummonBloodkeeper = false;
+                            --uiMaxSummons;
+                        }
+
+                        for (uint8 i = 0; i < uiMaxSummons; ++i)
+                        {
+                            if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
+                            {
+                                pShade->SummonCreature(NPC_HAKKARI_MINION, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+                            }
+                        }
+                        m_uiAvatarSummonTimer = urand(3000, 15000);
+                    }
+                }
+                else
+                {
+                    m_uiAvatarSummonTimer -= uiDiff;
+                }
+            }
+
+            // Summon nightmare suppressor after flame used
+            if (m_uiSupressorTimer)
+            {
+                if (m_uiSupressorTimer <= uiDiff)
+                {
+                    Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
+                    if (!pShade)
+                    {
+                        // Something went very wrong!
+                        return;
+                    }
+
+                    // Summon npc at random door; movement and script handled in DB
+                    uint8 uiSummonLoc = urand(0, 1);
+                    pShade->SummonCreature(NPC_SUPPRESSOR, aHakkariDoorLocations[uiSummonLoc].m_fX, aHakkariDoorLocations[uiSummonLoc].m_fY, aHakkariDoorLocations[uiSummonLoc].m_fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
+
+                    // This timer is finished now
+                    m_uiSupressorTimer = 0;
+                }
+                else
+                {
+                    m_uiSupressorTimer -= uiDiff;
+                }
+            }
+        }
+
+        const char* Save() const override { return m_strInstData.c_str(); }
+        void Load(const char* chrIn) override
+        {
+            if (!chrIn)
+            {
+                OUT_LOAD_INST_DATA_FAIL;
+                return;
+            }
+
+            OUT_LOAD_INST_DATA(chrIn);
+
+            std::istringstream loadStream(chrIn);
+            loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3] >> m_auiEncounter[4];
+
+            for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+            {
+                // Here a bit custom, to have proper mechanics for the statue events
+                if (m_auiEncounter[i] != DONE)
+                {
+                    m_auiEncounter[i] = NOT_STARTED;
+                }
+            }
+
+            OUT_LOAD_INST_DATA_COMPLETE;
+        }
+
+    private:
+        void DoSpawnAtalarionIfCan()
+        {
+            // Return if already summoned
+            if (GetSingleCreatureFromStorage(NPC_ATALARION))
             {
                 return;
             }
 
-            if (m_bIsFirstHakkarWave)                       // First wave summoned
+            Player* pPlayer = GetPlayerInMap();
+            if (!pPlayer)
             {
-                // Summon at all circles
-                for (GuidVector::const_iterator itr = m_vuiCircleGUIDs.begin(); itr != m_vuiCircleGUIDs.end(); ++itr)
-                {
-                    if (GameObject* pCircle = instance->GetGameObject(*itr))
-                    {
-                        pShade->SummonCreature(NPC_HAKKARI_MINION, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-                    }
-                }
-
-                // Summon Bloodkeeper at random circle
-                if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
-                {
-                    pShade->SummonCreature(NPC_BLOODKEEPER, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-                }
-
-                m_bCanSummonBloodkeeper = false;
-                m_bIsFirstHakkarWave = false;
-                m_uiAvatarSummonTimer = 50000;
+                return;
             }
-            else                                            // Later wave
+
+            pPlayer->SummonCreature(NPC_ATALARION, aSunkenTempleLocation[0].m_fX, aSunkenTempleLocation[0].m_fY, aSunkenTempleLocation[0].m_fZ, aSunkenTempleLocation[0].m_fO, TEMPSUMMON_DEAD_DESPAWN, 0);
+
+            // Spawn the idol of Hakkar
+            DoRespawnGameObject(GO_IDOL_OF_HAKKAR, 30 * MINUTE);
+
+            // Spawn the big green lights
+            for (GuidList::const_iterator itr = m_luiBigLightGUIDs.begin(); itr != m_luiBigLightGUIDs.end(); ++itr)
             {
-                uint32 uiRoll = urand(0, 99);
-                uint8 uiMaxSummons = uiRoll < 75 ? 1 : uiRoll < 95 ? 2 : 3;
-
-                if (m_bCanSummonBloodkeeper && roll_chance_i(30))
-                {
-                    // Summon a Bloodkeeper
-                    if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
-                    {
-                        pShade->SummonCreature(NPC_BLOODKEEPER, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-                    }
-
-                    m_bCanSummonBloodkeeper = false;
-                    --uiMaxSummons;
-                }
-
-                for (uint8 i = 0; i < uiMaxSummons; ++i)
-                {
-                    if (GameObject* pCircle = instance->GetGameObject(m_vuiCircleGUIDs[urand(0, m_vuiCircleGUIDs.size() - 1)]))
-                    {
-                        pShade->SummonCreature(NPC_HAKKARI_MINION, pCircle->GetPositionX(), pCircle->GetPositionY(), pCircle->GetPositionZ(), 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-                    }
-                }
-                m_uiAvatarSummonTimer = urand(3000, 15000);
+                DoRespawnGameObject(*itr, 30 * MINUTE);
             }
         }
-        else
+
+        void DoUpdateFlamesFlags(bool bRestore)
         {
-            m_uiAvatarSummonTimer -= uiDiff;
+            for (GuidList::const_iterator itr = m_luiFlameGUIDs.begin(); itr != m_luiFlameGUIDs.end(); ++itr)
+            {
+                DoToggleGameObjectFlags(*itr, GO_FLAG_NO_INTERACT, bRestore);
+            }
         }
-    }
 
-    // Summon nightmare suppressor after flame used
-    if (m_uiSupressorTimer)
+        bool ProcessStatueEvent(uint32 uiEventId)
+        {
+            bool bEventStatus = false;
+
+            // Check if the statues are activated correctly
+            // Increase the counter when the correct statue is activated
+            for (uint8 i = 0; i < MAX_STATUES; ++i)
+            {
+                if (uiEventId == m_aAtalaiStatueEvents[i] && m_uiStatueCounter == i)
+                {
+                    // Right Statue activated
+                    ++m_uiStatueCounter;
+                    bEventStatus = true;
+                    break;
+                }
+            }
+
+            if (!bEventStatus)
+            {
+                return false;
+            }
+
+            // Check if all statues are active
+            if (m_uiStatueCounter == MAX_STATUES)
+            {
+                SetData(TYPE_ATALARION, SPECIAL);   //TODO check SetData to be really reenterable!
+            }
+
+            return true;
+        }
+
+        uint32 m_auiEncounter[MAX_ENCOUNTER];
+        std::string m_strInstData;
+
+        uint8 m_uiProtectorsRemaining;                      // Jammalan door handling
+        uint8 m_uiStatueCounter;                            // Atalarion Statue Event
+        uint8 m_uiFlameCounter;                             // Avatar of Hakkar Event
+        uint32 m_uiAvatarSummonTimer;
+        uint32 m_uiSupressorTimer;
+        bool m_bIsFirstHakkarWave;
+        bool m_bCanSummonBloodkeeper;
+        bool m_bStatueEventStatus;
+
+        GuidList m_luiFlameGUIDs;
+        GuidList m_luiBigLightGUIDs;
+        GuidVector m_vuiCircleGUIDs;
+    };
+
+    InstanceData* GetInstanceData(Map* pMap) override
     {
-        if (m_uiSupressorTimer <= uiDiff)
-        {
-            Creature* pShade = GetSingleCreatureFromStorage(NPC_SHADE_OF_HAKKAR);
-            if (!pShade)
-            {
-                // Something went very wrong!
-                return;
-            }
-
-            // Summon npc at random door; movement and script handled in DB
-            uint8 uiSummonLoc = urand(0, 1);
-            pShade->SummonCreature(NPC_SUPPRESSOR, aHakkariDoorLocations[uiSummonLoc].m_fX, aHakkariDoorLocations[uiSummonLoc].m_fY, aHakkariDoorLocations[uiSummonLoc].m_fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0);
-
-            // This timer is finished now
-            m_uiSupressorTimer = 0;
-        }
-        else
-        {
-            m_uiSupressorTimer -= uiDiff;
-        }
+        return new instance_sunken_temple(pMap);
     }
-}
-
-InstanceData* GetInstanceData_instance_sunken_temple(Map* pMap)
-{
-    return new instance_sunken_temple(pMap);
-}
+};
 
 void AddSC_instance_sunken_temple()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new is_sunken_temple();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "instance_sunken_temple";
-    pNewScript->GetInstanceData = &GetInstanceData_instance_sunken_temple;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "instance_sunken_temple";
+    //pNewScript->GetInstanceData = &GetInstanceData_instance_sunken_temple;
+    //pNewScript->RegisterSelf();
 }

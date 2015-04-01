@@ -51,159 +51,175 @@ enum
     NPC_SPORE               = 16286
 };
 
-struct boss_loathebAI : public ScriptedAI
+struct boss_loatheb : public CreatureScript
 {
-    boss_loathebAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_loatheb() : CreatureScript("boss_loatheb") {}
+
+    struct boss_loathebAI : public ScriptedAI
     {
-        m_pInstance = (instance_naxxramas*)pCreature->GetInstanceData();
-        Reset();
-    }
-
-    instance_naxxramas* m_pInstance;
-
-    uint32 m_uiPoisonAuraTimer;
-    uint32 m_uiCorruptedMindTimer;
-    uint32 m_uiInevitableDoomTimer;
-    uint32 m_uiRemoveCurseTimer;
-    uint32 m_uiSummonTimer;
-    // uint32 m_uiBerserkTimer;
-    uint8 m_uiCorruptedMindCount;
-
-    void Reset() override
-    {
-        m_uiPoisonAuraTimer = 5000;
-        m_uiCorruptedMindTimer = 4000;
-        m_uiRemoveCurseTimer = 2000;
-        m_uiInevitableDoomTimer = MINUTE * 2 * IN_MILLISECONDS;
-        m_uiSummonTimer = urand(10000, 15000);              // first seen in vid after approx 12s
-        // m_uiBerserkTimer = MINUTE*12*IN_MILLISECONDS;    // not used
-        m_uiCorruptedMindCount = 0;
-    }
-
-    void Aggro(Unit* /*pWho*/) override
-    {
-        if (m_pInstance)
+        boss_loathebAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            m_pInstance->SetData(TYPE_LOATHEB, IN_PROGRESS);
-        }
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_LOATHEB, DONE);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_LOATHEB, NOT_STARTED);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (pSummoned->GetEntry() != NPC_SPORE)
-        {
-            return;
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         }
 
-        if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-        {
-            pSummoned->AddThreat(pTarget);
-        }
-    }
+        ScriptedInstance* m_pInstance;
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        uint32 m_uiPoisonAuraTimer;
+        uint32 m_uiCorruptedMindTimer;
+        uint32 m_uiInevitableDoomTimer;
+        uint32 m_uiRemoveCurseTimer;
+        uint32 m_uiSummonTimer;
+        // uint32 m_uiBerserkTimer;
+        uint8 m_uiCorruptedMindCount;
+
+        void Reset() override
         {
-            return;
+            m_uiPoisonAuraTimer = 5000;
+            m_uiCorruptedMindTimer = 4000;
+            m_uiRemoveCurseTimer = 2000;
+            m_uiInevitableDoomTimer = MINUTE * 2 * IN_MILLISECONDS;
+            m_uiSummonTimer = urand(10000, 15000);              // first seen in vid after approx 12s
+            // m_uiBerserkTimer = MINUTE*12*IN_MILLISECONDS;    // not used
+            m_uiCorruptedMindCount = 0;
         }
 
-        /* Berserk - not used
-        if (m_uiBerserkTimer < uiDiff)
+        void Aggro(Unit* /*pWho*/) override
         {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LOATHEB, IN_PROGRESS);
+            }
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LOATHEB, DONE);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_LOATHEB, NOT_STARTED);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() != NPC_SPORE)
+            {
+                return;
+            }
+
+            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            {
+                pSummoned->AddThreat(pTarget);
+            }
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            /* Berserk - not used
+            if (m_uiBerserkTimer < uiDiff)
+            {
             DoCastSpellIfCan(m_creature, SPELL_BERSERK);
             m_uiBerserkTimer = 300000;
-        }
-        else
+            }
+            else
             m_uiBerserkTimer -= uiDiff;*/
 
-        // Inevitable Doom
-        if (m_uiInevitableDoomTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_INEVITABLE_DOOM) == CAST_OK)
+            // Inevitable Doom
+            if (m_uiInevitableDoomTimer < uiDiff)
             {
-                m_uiInevitableDoomTimer = (m_uiCorruptedMindCount <= 5) ? 30000 : 15000;
+                if (DoCastSpellIfCan(m_creature, SPELL_INEVITABLE_DOOM) == CAST_OK)
+                {
+                    m_uiInevitableDoomTimer = (m_uiCorruptedMindCount <= 5) ? 30000 : 15000;
+                }
             }
-        }
-        else
-            { m_uiInevitableDoomTimer -= uiDiff; }
-
-        // Corrupted Mind
-        if (m_uiCorruptedMindTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_CORRUPTED_MIND) == CAST_OK)
+            else
             {
-                ++m_uiCorruptedMindCount;
-                m_uiCorruptedMindTimer = 60000;
+                m_uiInevitableDoomTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiCorruptedMindTimer -= uiDiff; }
 
-        // Summon
-        if (m_uiSummonTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_SPORE) == CAST_OK)
+            // Corrupted Mind
+            if (m_uiCorruptedMindTimer < uiDiff)
             {
-                m_uiSummonTimer = 13000;
+                if (DoCastSpellIfCan(m_creature, SPELL_CORRUPTED_MIND) == CAST_OK)
+                {
+                    ++m_uiCorruptedMindCount;
+                    m_uiCorruptedMindTimer = 60000;
+                }
             }
-        }
-        else
-            { m_uiSummonTimer -= uiDiff; }
-
-        // Poison Aura
-        if (m_uiPoisonAuraTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_POISON_AURA) == CAST_OK)
+            else
             {
-                m_uiPoisonAuraTimer = 12000;
+                m_uiCorruptedMindTimer -= uiDiff;
             }
-        }
-        else
-            { m_uiPoisonAuraTimer -= uiDiff; }
 
-        // Remove Curse
-        if (m_uiRemoveCurseTimer < uiDiff)
-        {
-            if (DoCastSpellIfCan(m_creature, SPELL_REMOVE_CURSE) == CAST_OK)
+            // Summon
+            if (m_uiSummonTimer < uiDiff)
             {
-                m_uiRemoveCurseTimer = 30000;
+                if (DoCastSpellIfCan(m_creature, SPELL_SUMMON_SPORE) == CAST_OK)
+                {
+                    m_uiSummonTimer = 13000;
+                }
             }
-        }
-        else
-            { m_uiRemoveCurseTimer -= uiDiff; }
+            else
+            {
+                m_uiSummonTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // Poison Aura
+            if (m_uiPoisonAuraTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_POISON_AURA) == CAST_OK)
+                {
+                    m_uiPoisonAuraTimer = 12000;
+                }
+            }
+            else
+            {
+                m_uiPoisonAuraTimer -= uiDiff;
+            }
+
+            // Remove Curse
+            if (m_uiRemoveCurseTimer < uiDiff)
+            {
+                if (DoCastSpellIfCan(m_creature, SPELL_REMOVE_CURSE) == CAST_OK)
+                {
+                    m_uiRemoveCurseTimer = 30000;
+                }
+            }
+            else
+            {
+                m_uiRemoveCurseTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_loathebAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_loatheb(Creature* pCreature)
-{
-    return new boss_loathebAI(pCreature);
-}
-
 void AddSC_boss_loatheb()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_loatheb();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_loatheb";
-    pNewScript->GetAI = &GetAI_boss_loatheb;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_loatheb";
+    //pNewScript->GetAI = &GetAI_boss_loatheb;
+    //pNewScript->RegisterSelf();
 }

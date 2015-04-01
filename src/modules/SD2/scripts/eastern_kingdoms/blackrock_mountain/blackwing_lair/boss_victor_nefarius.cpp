@@ -107,361 +107,341 @@ static const uint32 aPossibleDrake[MAX_DRAKES] = {NPC_BRONZE_DRAKANOID, NPC_BLUE
 
 // Dev note: Lord Victor Nefarius should despawn completely, then ~5 seconds later Nefarian should appear.
 
-struct boss_victor_nefariusAI : public ScriptedAI, private DialogueHelper
+struct boss_victor_nefarius : public CreatureScript
 {
-    boss_victor_nefariusAI(Creature* pCreature) : ScriptedAI(pCreature),
-        DialogueHelper(aIntroDialogue)
+    boss_victor_nefarius() : CreatureScript("boss_victor_nefarius") {}
+
+    struct boss_victor_nefariusAI : public ScriptedAI, private DialogueHelper
     {
-        // Select the 2 different drakes that we are going to use until despawned
-        // 5 possiblities for the first drake, 4 for the second, 20 total possiblites
+        boss_victor_nefariusAI(Creature* pCreature) : ScriptedAI(pCreature),
+        DialogueHelper(aIntroDialogue)
+        {
+            // Select the 2 different drakes that we are going to use until despawned
+            // 5 possiblities for the first drake, 4 for the second, 20 total possiblites
 
-        // select two different numbers between 0..MAX_DRAKES-1
-        uint8 uiPos1 = urand(0, MAX_DRAKES - 1);
-        uint8 uiPos2 = (uiPos1 + urand(1, MAX_DRAKES - 1)) % MAX_DRAKES;
+            // select two different numbers between 0..MAX_DRAKES-1
+            uint8 uiPos1 = urand(0, MAX_DRAKES - 1);
+            uint8 uiPos2 = (uiPos1 + urand(1, MAX_DRAKES - 1)) % MAX_DRAKES;
 
-        m_uiDrakeTypeOne = aPossibleDrake[uiPos1];
-        m_uiDrakeTypeTwo = aPossibleDrake[uiPos2];
+            m_uiDrakeTypeOne = aPossibleDrake[uiPos1];
+            m_uiDrakeTypeTwo = aPossibleDrake[uiPos2];
 
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        InitializeDialogueHelper(m_pInstance);
-        Reset();
-    }
+            m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+            InitializeDialogueHelper(m_pInstance);
+        }
 
-    ScriptedInstance* m_pInstance;
+        ScriptedInstance* m_pInstance;
 
-    uint32 m_uiSpawnedAdds;
-    uint32 m_uiAddSpawnTimer;
-    uint32 m_uiShadowBoltTimer;
-    uint32 m_uiFearTimer;
-    uint32 m_uiDrakeTypeOne;
-    uint32 m_uiDrakeTypeTwo;
-    uint32 m_uiShadowboltVolleyTimer;
-    uint32 m_uiSilenceTimer;
-    uint32 m_uiShadowCommandTimer;
-    uint32 m_uiShadowBlinkTimer;
+        uint32 m_uiSpawnedAdds;
+        uint32 m_uiAddSpawnTimer;
+        uint32 m_uiShadowBoltTimer;
+        uint32 m_uiFearTimer;
+        uint32 m_uiDrakeTypeOne;
+        uint32 m_uiDrakeTypeTwo;
+        uint32 m_uiShadowboltVolleyTimer;
+        uint32 m_uiSilenceTimer;
+        uint32 m_uiShadowCommandTimer;
+        uint32 m_uiShadowBlinkTimer;
 
-    void Reset() override
+        void Reset() override
+        {
+            m_uiSpawnedAdds = 0;
+            m_uiAddSpawnTimer = 10000;
+            m_uiShadowBoltTimer = 3000;
+            m_uiFearTimer = 8000;
+            m_uiShadowboltVolleyTimer = 13000;
+            m_uiSilenceTimer = 23000;
+            m_uiShadowCommandTimer = 30000;
+            m_uiShadowBlinkTimer = 40000;
+
+            // set gossip flag to begin the event
+            m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+
+            // Make visible if needed
+            if (m_creature->GetVisibility() != VISIBILITY_ON)
+            {
+                m_creature->SetVisibility(VISIBILITY_ON);
+            }
+        }
+
+        void Aggro(Unit* /*pWho*/) override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_NEFARIAN, IN_PROGRESS);
+            }
+        }
+
+        void JustReachedHome() override
+        {
+            if (m_pInstance)
+            {
+                m_pInstance->SetData(TYPE_NEFARIAN, FAIL);
+            }
+        }
+
+        void AttackStart(Unit* pWho) override
+        {
+            if (m_creature->Attack(pWho, false))
+            {
+                m_creature->AddThreat(pWho);
+                m_creature->SetInCombatWith(pWho);
+                pWho->SetInCombatWith(m_creature);
+
+                // Only range attack - ToDo: research the distance
+                m_creature->GetMotionMaster()->MoveChase(pWho, 30.0f);
+            }
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            if (pSummoned->GetEntry() == NPC_NEFARIAN)
+            {
+                pSummoned->SetWalk(false);
+
+                // see boss_onyxia (also note the removal of this in boss_nefarian)
+                pSummoned->SetByteValue(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
+                pSummoned->SetLevitate(true);
+
+                // Let Nefarian fly towards combat area
+                pSummoned->GetMotionMaster()->MovePoint(1, aNefarianLocs[3].m_fX, aNefarianLocs[3].m_fY, aNefarianLocs[3].m_fZ);
+                DoScriptText(SAY_NEFARIAN_INTRO, pSummoned);
+            }
+            else
+            {
+                ++m_uiSpawnedAdds;
+
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    pSummoned->AI()->AttackStart(pTarget);
+                }
+            }
+        }
+
+        void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
+        {
+            // If Nefarian has reached combat area, let him attack
+            if (pSummoned->GetEntry() == NPC_NEFARIAN && uiMotionType == POINT_MOTION_TYPE && uiPointId == 1)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    pSummoned->AI()->AttackStart(pTarget);
+                }
+            }
+        }
+
+        void SummonedCreatureJustDied(Creature* pSummoned) override
+        {
+            // Despawn self when Nefarian is killed
+            if (pSummoned->GetEntry() == NPC_NEFARIAN)
+            {
+                m_creature->ForcedDespawn();
+            }
+            else
+            {
+                pSummoned->CastSpell(pSummoned, SPELL_SUMMON_DRAKONID_BONES, true);
+            }
+        }
+
+        void JustDidDialogueStep(int32 iEntry) override
+        {
+            // Start combat after the dialogue is finished
+            if (iEntry == SPELL_SHADOWBLINK)
+            {
+                m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                m_creature->SetFactionTemporary(FACTION_BLACK_DRAGON, TEMPFACTION_RESTORE_REACH_HOME);
+                DoCastSpellIfCan(m_creature, SPELL_NEFARIUS_BARRIER, CAST_TRIGGERED);
+                DoCastSpellIfCan(m_creature, SPELL_SHADOWBLINK_INTRO, CAST_TRIGGERED);
+                m_creature->SetInCombatWithZone();
+            }
+        }
+
+        void DoStartIntro()
+        {
+            StartNextDialogueText(SAY_GAMESBEGIN_1);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            DialogueUpdate(uiDiff);
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Only do this if we haven't spawned nef yet
+            if (m_uiSpawnedAdds < MAX_DRAKE_SUMMONS)
+            {
+                // Shadowbolt Timer
+                if (m_uiShadowBoltTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_SHADOWBOLT) == CAST_OK)
+                        {
+                            m_uiShadowBoltTimer = urand(2000, 4000);
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiShadowBoltTimer -= uiDiff;
+                }
+
+                // Fear Timer
+                if (m_uiFearTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_FEAR) == CAST_OK)
+                        {
+                            m_uiFearTimer = urand(10000, 20000);
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiFearTimer -= uiDiff;
+                }
+
+                // Shadowbolt Volley
+                if (m_uiShadowboltVolleyTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_SHADOWBOLT_VOLLEY) == CAST_OK)
+                    {
+                        m_uiShadowboltVolleyTimer = urand(19000, 28000);
+                    }
+                }
+                else
+                {
+                    m_uiShadowboltVolleyTimer -= uiDiff;
+                }
+
+                // Silence
+                if (m_uiSilenceTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_SILENCE) == CAST_OK)
+                        {
+                            m_uiSilenceTimer = urand(14000, 23000);
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiSilenceTimer -= uiDiff;
+                }
+
+                // Shadow Command
+                if (m_uiShadowCommandTimer < uiDiff)
+                {
+                    if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                    {
+                        if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_COMMAND) == CAST_OK)
+                        {
+                            m_uiShadowCommandTimer = urand(24000, 30000);
+                        }
+                    }
+                }
+                else
+                {
+                    m_uiShadowCommandTimer -= uiDiff;
+                }
+
+                // ShadowBlink
+                if (m_uiShadowBlinkTimer < uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_SHADOWBLINK) == CAST_OK)
+                    {
+                        m_uiShadowBlinkTimer = urand(30000, 40000);
+                    }
+                }
+                else
+                {
+                    m_uiShadowBlinkTimer -= uiDiff;
+                }
+
+                // Add spawning mechanism
+                if (m_uiAddSpawnTimer < uiDiff)
+                {
+                    // Spawn 2 random types of creatures at the 2 locations
+                    uint32 uiCreatureId = 0;
+
+                    // 1 in 3 chance it will be a chromatic
+                    uiCreatureId = urand(0, 2) ? m_uiDrakeTypeOne : uint32(NPC_CHROMATIC_DRAKANOID);
+                    m_creature->SummonCreature(uiCreatureId, aNefarianLocs[0].m_fX, aNefarianLocs[0].m_fY, aNefarianLocs[0].m_fZ, 5.000f, TEMPSUMMON_TIMED_OOC_OR_CORPSE_DESPAWN, 30000);
+
+                    // 1 in 3 chance it will be a chromatic
+                    uiCreatureId = urand(0, 2) ? m_uiDrakeTypeTwo : uint32(NPC_CHROMATIC_DRAKANOID);
+                    m_creature->SummonCreature(uiCreatureId, aNefarianLocs[1].m_fX, aNefarianLocs[1].m_fY, aNefarianLocs[1].m_fZ, 5.000, TEMPSUMMON_TIMED_OOC_OR_CORPSE_DESPAWN, 30000);
+
+                    // Begin phase 2 by spawning Nefarian
+                    if (m_uiSpawnedAdds >= MAX_DRAKE_SUMMONS)
+                    {
+                        // Inturrupt any spell casting
+                        m_creature->InterruptNonMeleeSpells(false);
+
+                        // Make super invis
+                        if (m_creature->GetVisibility() != VISIBILITY_OFF)
+                        {
+                            m_creature->SetVisibility(VISIBILITY_OFF);
+                        }
+
+                        // Spawn Nefarian
+                        // Summon as active, to be able to work proper!
+                        m_creature->SummonCreature(NPC_NEFARIAN, aNefarianLocs[2].m_fX, aNefarianLocs[2].m_fY, aNefarianLocs[2].m_fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0, true);
+                    }
+
+                    m_uiAddSpawnTimer = 4000;
+                }
+                else
+                {
+                    m_uiAddSpawnTimer -= uiDiff;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
     {
         // Check the map id because the same creature entry is involved in other scripted event in other instance
-        if (m_creature->GetMapId() != MAP_ID_BWL)
-        {
-            return;
-        }
-
-        m_uiSpawnedAdds             = 0;
-        m_uiAddSpawnTimer           = 10000;
-        m_uiShadowBoltTimer         = 3000;
-        m_uiFearTimer               = 8000;
-        m_uiShadowboltVolleyTimer   = 13000;
-        m_uiSilenceTimer            = 23000;
-        m_uiShadowCommandTimer      = 30000;
-        m_uiShadowBlinkTimer        = 40000;
-
-        // set gossip flag to begin the event
-        m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-
-        // Make visible if needed
-        if (m_creature->GetVisibility() != VISIBILITY_ON)
-        {
-            m_creature->SetVisibility(VISIBILITY_ON);
-        }
+        return pCreature->GetMapId() == MAP_ID_BWL ? new boss_victor_nefariusAI(pCreature) : NULL;
     }
 
-    void Aggro(Unit* /*pWho*/) override
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        if (m_pInstance)
+        if (pCreature->GetMapId() != MAP_ID_BWL)
         {
-            m_pInstance->SetData(TYPE_NEFARIAN, IN_PROGRESS);
-        }
-    }
-
-    void JustReachedHome() override
-    {
-        if (m_pInstance)
-        {
-            m_pInstance->SetData(TYPE_NEFARIAN, FAIL);
-        }
-    }
-
-    void AttackStart(Unit* pWho) override
-    {
-        if (m_creature->Attack(pWho, false))
-        {
-            m_creature->AddThreat(pWho);
-            m_creature->SetInCombatWith(pWho);
-            pWho->SetInCombatWith(m_creature);
-
-            // Only range attack - ToDo: research the distance
-            m_creature->GetMotionMaster()->MoveChase(pWho, 30.0f);
-        }
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        if (m_creature->GetMapId() != MAP_ID_BWL)
-        {
-            return;
+            return true;
         }
 
-        if (pSummoned->GetEntry() == NPC_NEFARIAN)
-        {
-            pSummoned->SetWalk(false);
-
-            // see boss_onyxia (also note the removal of this in boss_nefarian)
-            pSummoned->SetByteValue(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
-            pSummoned->SetLevitate(true);
-
-            // Let Nefarian fly towards combat area
-            pSummoned->GetMotionMaster()->MovePoint(1, aNefarianLocs[3].m_fX, aNefarianLocs[3].m_fY, aNefarianLocs[3].m_fZ);
-            DoScriptText(SAY_NEFARIAN_INTRO, pSummoned);
-        }
-        else
-        {
-            ++m_uiSpawnedAdds;
-
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                pSummoned->AI()->AttackStart(pTarget);
-            }
-        }
-    }
-
-    void SummonedMovementInform(Creature* pSummoned, uint32 uiMotionType, uint32 uiPointId) override
-    {
-        if (m_creature->GetMapId() != MAP_ID_BWL)
-        {
-            return;
-        }
-
-        // If Nefarian has reached combat area, let him attack
-        if (pSummoned->GetEntry() == NPC_NEFARIAN && uiMotionType == POINT_MOTION_TYPE && uiPointId == 1)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                pSummoned->AI()->AttackStart(pTarget);
-            }
-        }
-    }
-
-    void SummonedCreatureJustDied(Creature* pSummoned) override
-    {
-        if (m_creature->GetMapId() != MAP_ID_BWL)
-        {
-            return;
-        }
-
-        // Despawn self when Nefarian is killed
-        if (pSummoned->GetEntry() == NPC_NEFARIAN)
-        {
-            m_creature->ForcedDespawn();
-        }
-        else
-            { pSummoned->CastSpell(pSummoned, SPELL_SUMMON_DRAKONID_BONES, true); }
-    }
-
-    void JustDidDialogueStep(int32 iEntry) override
-    {
-        // Start combat after the dialogue is finished
-        if (iEntry == SPELL_SHADOWBLINK)
-        {
-            m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-            m_creature->SetFactionTemporary(FACTION_BLACK_DRAGON, TEMPFACTION_RESTORE_REACH_HOME);
-            DoCastSpellIfCan(m_creature, SPELL_NEFARIUS_BARRIER, CAST_TRIGGERED);
-            DoCastSpellIfCan(m_creature, SPELL_SHADOWBLINK_INTRO, CAST_TRIGGERED);
-            m_creature->SetInCombatWithZone();
-        }
-    }
-
-    void DoStartIntro()
-    {
-        StartNextDialogueText(SAY_GAMESBEGIN_1);
-    }
-
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        if (m_creature->GetMapId() != MAP_ID_BWL)
-        {
-            return;
-        }
-
-        DialogueUpdate(uiDiff);
-
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // Only do this if we haven't spawned nef yet
-        if (m_uiSpawnedAdds < MAX_DRAKE_SUMMONS)
-        {
-            // Shadowbolt Timer
-            if (m_uiShadowBoltTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOWBOLT) == CAST_OK)
-                    {
-                        m_uiShadowBoltTimer = urand(2000, 4000);
-                    }
-                }
-            }
-            else
-            {
-                m_uiShadowBoltTimer -= uiDiff;
-            }
-
-            // Fear Timer
-            if (m_uiFearTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_FEAR) == CAST_OK)
-                    {
-                        m_uiFearTimer = urand(10000, 20000);
-                    }
-                }
-            }
-            else
-            {
-                m_uiFearTimer -= uiDiff;
-            }
-
-            // Shadowbolt Volley
-            if (m_uiShadowboltVolleyTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_SHADOWBOLT_VOLLEY) == CAST_OK)
-                {
-                    m_uiShadowboltVolleyTimer = urand(19000, 28000);
-                }
-            }
-            else
-            {
-                m_uiShadowboltVolleyTimer -= uiDiff;
-            }
-
-            // Silence
-            if (m_uiSilenceTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_SILENCE) == CAST_OK)
-                    {
-                        m_uiSilenceTimer = urand(14000, 23000);
-                    }
-                }
-            }
-            else
-            {
-                m_uiSilenceTimer -= uiDiff;
-            }
-
-            // Shadow Command
-            if (m_uiShadowCommandTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_SHADOW_COMMAND) == CAST_OK)
-                    {
-                        m_uiShadowCommandTimer = urand(24000, 30000);
-                    }
-                }
-            }
-            else
-            {
-                m_uiShadowCommandTimer -= uiDiff;
-            }
-
-            // ShadowBlink
-            if (m_uiShadowBlinkTimer < uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_SHADOWBLINK) == CAST_OK)
-                {
-                    m_uiShadowBlinkTimer = urand(30000, 40000);
-                }
-            }
-            else
-            {
-                m_uiShadowBlinkTimer -= uiDiff;
-            }
-
-            // Add spawning mechanism
-            if (m_uiAddSpawnTimer < uiDiff)
-            {
-                // Spawn 2 random types of creatures at the 2 locations
-                uint32 uiCreatureId = 0;
-
-                // 1 in 3 chance it will be a chromatic
-                uiCreatureId = urand(0, 2) ? m_uiDrakeTypeOne : uint32(NPC_CHROMATIC_DRAKANOID);
-                m_creature->SummonCreature(uiCreatureId, aNefarianLocs[0].m_fX, aNefarianLocs[0].m_fY, aNefarianLocs[0].m_fZ, 5.000f, TEMPSUMMON_TIMED_OOC_OR_CORPSE_DESPAWN, 30000);
-
-                // 1 in 3 chance it will be a chromatic
-                uiCreatureId = urand(0, 2) ? m_uiDrakeTypeTwo : uint32(NPC_CHROMATIC_DRAKANOID);
-                m_creature->SummonCreature(uiCreatureId, aNefarianLocs[1].m_fX, aNefarianLocs[1].m_fY, aNefarianLocs[1].m_fZ, 5.000, TEMPSUMMON_TIMED_OOC_OR_CORPSE_DESPAWN, 30000);
-
-                // Begin phase 2 by spawning Nefarian
-                if (m_uiSpawnedAdds >= MAX_DRAKE_SUMMONS)
-                {
-                    // Inturrupt any spell casting
-                    m_creature->InterruptNonMeleeSpells(false);
-
-                    // Make super invis
-                    if (m_creature->GetVisibility() != VISIBILITY_OFF)
-                    {
-                        m_creature->SetVisibility(VISIBILITY_OFF);
-                    }
-
-                    // Spawn Nefarian
-                    // Summon as active, to be able to work proper!
-                    m_creature->SummonCreature(NPC_NEFARIAN, aNefarianLocs[2].m_fX, aNefarianLocs[2].m_fY, aNefarianLocs[2].m_fZ, 0, TEMPSUMMON_DEAD_DESPAWN, 0, true);
-                }
-
-                m_uiAddSpawnTimer = 4000;
-            }
-            else
-            {
-                m_uiAddSpawnTimer -= uiDiff;
-            }
-        }
-    }
-};
-
-CreatureAI* GetAI_boss_victor_nefarius(Creature* pCreature)
-{
-    return new boss_victor_nefariusAI(pCreature);
-}
-
-bool GossipHello_boss_victor_nefarius(Player* pPlayer, Creature* pCreature)
-{
-    if (pCreature->GetMapId() != MAP_ID_BWL)
-    {
+        pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NEFARIUS_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+        pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_NEFARIUS_1, pCreature->GetObjectGuid());
         return true;
     }
 
-    pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NEFARIUS_1 , GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-    pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_NEFARIUS_1, pCreature->GetObjectGuid());
-    return true;
-}
-
-bool GossipSelect_boss_victor_nefarius(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    if (pCreature->GetMapId() != MAP_ID_BWL)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
-        return true;
-    }
+        if (pCreature->GetMapId() != MAP_ID_BWL)
+        {
+            return true;
+        }
 
-    switch (uiAction)
-    {
-        case GOSSIP_ACTION_INFO_DEF+1:
+        switch (uiAction)
+        {
+        case GOSSIP_ACTION_INFO_DEF + 1:
             pCreature->HandleEmote(EMOTE_ONESHOT_TALK);
             pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NEFARIUS_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
             pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_NEFARIUS_2, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+2:
+        case GOSSIP_ACTION_INFO_DEF + 2:
             pCreature->HandleEmote(EMOTE_ONESHOT_TALK);
             pPlayer->ADD_GOSSIP_ITEM_ID(GOSSIP_ICON_CHAT, GOSSIP_ITEM_NEFARIUS_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
             pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXT_NEFARIUS_3, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+3:
+        case GOSSIP_ACTION_INFO_DEF + 3:
             pCreature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
             pPlayer->CLOSE_GOSSIP_MENU();
             // Start the intro event
@@ -470,18 +450,21 @@ bool GossipSelect_boss_victor_nefarius(Player* pPlayer, Creature* pCreature, uin
                 pBossAI->DoStartIntro();
             }
             break;
+        }
+        return true;
     }
-    return true;
-}
+};
 
 void AddSC_boss_victor_nefarius()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new boss_victor_nefarius();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_victor_nefarius";
-    pNewScript->GetAI = &GetAI_boss_victor_nefarius;
-    pNewScript->pGossipHello = &GossipHello_boss_victor_nefarius;
-    pNewScript->pGossipSelect = &GossipSelect_boss_victor_nefarius;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_victor_nefarius";
+    //pNewScript->GetAI = &GetAI_boss_victor_nefarius;
+    //pNewScript->pGossipHello = &GossipHello_boss_victor_nefarius;
+    //pNewScript->pGossipSelect = &GossipSelect_boss_victor_nefarius;
+    //pNewScript->RegisterSelf();
 }

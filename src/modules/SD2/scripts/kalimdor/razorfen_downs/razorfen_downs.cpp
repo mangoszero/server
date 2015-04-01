@@ -35,6 +35,7 @@
 /**
  * ContentData
  * npc_belnistrasz
+ * go_tutenkash_gong
  * EndContentData
  */
 
@@ -73,7 +74,7 @@ enum
     SPELL_FROST_NOVA                = 11831,
     SPELL_IDOL_SHUTDOWN             = 12774,
 
-    // summon spells only exist in 1.x
+    // summon spells only exist in 1.x TODO so maybe [+ZERO]?
     // SPELL_SUMMON_1                  = 12694,             // NPC_WITHERED_BATTLE_BOAR
     // SPELL_SUMMON_2                  = 14802,             // NPC_DEATHS_HEAD_GEOMANCER
     // SPELL_SUMMON_3                  = 14801,             // NPC_WITHERED_QUILGUARD
@@ -86,64 +87,67 @@ static float m_fSpawnerCoord[3][4] =
     {2570.62f, 942.393f, 53.7433f, 0.71558f}
 };
 
-struct npc_belnistraszAI : public npc_escortAI
+struct npc_belnistrasz : public CreatureScript
 {
-    npc_belnistraszAI(Creature* pCreature) : npc_escortAI(pCreature)
+    npc_belnistrasz() : CreatureScript("npc_belnistrasz") {}
+
+    struct npc_belnistraszAI : public npc_escortAI
     {
-        m_uiRitualPhase = 0;
-        m_uiRitualTimer = 1000;
-        m_bAggro = false;
-        Reset();
-    }
-
-    uint8 m_uiRitualPhase;
-    uint32 m_uiRitualTimer;
-    bool m_bAggro;
-
-    uint32 m_uiFireballTimer;
-    uint32 m_uiFrostNovaTimer;
-
-    void Reset() override
-    {
-        m_uiFireballTimer  = 1000;
-        m_uiFrostNovaTimer = 6000;
-    }
-
-    void AttackedBy(Unit* pAttacker) override
-    {
-        if (HasEscortState(STATE_ESCORT_PAUSED))
+        npc_belnistraszAI(Creature* pCreature) : npc_escortAI(pCreature)
         {
-            if (!m_bAggro)
+            m_uiRitualPhase = 0;
+            m_uiRitualTimer = 1000;
+            m_bAggro = false;
+        }
+
+        uint8 m_uiRitualPhase;
+        uint32 m_uiRitualTimer;
+        bool m_bAggro;
+
+        uint32 m_uiFireballTimer;
+        uint32 m_uiFrostNovaTimer;
+
+        void Reset() override
+        {
+            m_uiFireballTimer = 1000;
+            m_uiFrostNovaTimer = 6000;
+        }
+
+        void AttackedBy(Unit* pAttacker) override
+        {
+            if (HasEscortState(STATE_ESCORT_PAUSED))
             {
-                DoScriptText(urand(0, 1) ? SAY_BELNISTRASZ_AGGRO_1 : SAY_BELNISTRASZ_AGGRO_1, m_creature, pAttacker);
-                m_bAggro = true;
+                if (!m_bAggro)
+                {
+                    DoScriptText(urand(0, 1) ? SAY_BELNISTRASZ_AGGRO_1 : SAY_BELNISTRASZ_AGGRO_1, m_creature, pAttacker);
+                    m_bAggro = true;
+                }
+
+                return;
             }
 
-            return;
+            ScriptedAI::AttackedBy(pAttacker);
         }
 
-        ScriptedAI::AttackedBy(pAttacker);
-    }
-
-    void SpawnerSummon(Creature* pSummoner)
-    {
-        if (m_uiRitualPhase > 7)
+        void SpawnerSummon(Creature* pSummoner)
         {
-            pSummoner->SummonCreature(NPC_PLAGUEMAW_THE_ROTTING, pSummoner->GetPositionX(), pSummoner->GetPositionY(), pSummoner->GetPositionZ(), pSummoner->GetOrientation(), TEMPSUMMON_TIMED_OOC_DESPAWN, 60000);
-            return;
-        }
-
-        for (int i = 0; i < 4; ++i)
-        {
-            uint32 uiEntry = 0;
-
-            // ref TARGET_RANDOM_CIRCUMFERENCE_POINT
-            float angle = 2.0f * M_PI_F * rand_norm_f();
-            float fX, fZ, fY;
-            pSummoner->GetClosePoint(fX, fZ, fY, 0.0f, 2.0f, angle);
-
-            switch (i)
+            if (m_uiRitualPhase > 7)
             {
+                pSummoner->SummonCreature(NPC_PLAGUEMAW_THE_ROTTING, pSummoner->GetPositionX(), pSummoner->GetPositionY(), pSummoner->GetPositionZ(), pSummoner->GetOrientation(), TEMPSUMMON_TIMED_OOC_DESPAWN, 60000);
+                return;
+            }
+
+            for (int i = 0; i < 4; ++i)
+            {
+                uint32 uiEntry = 0;
+
+                // ref TARGET_RANDOM_CIRCUMFERENCE_POINT
+                float angle = 2.0f * M_PI_F * rand_norm_f();
+                float fX, fZ, fY;
+                pSummoner->GetClosePoint(fX, fZ, fY, 0.0f, 2.0f, angle);
+
+                switch (i)
+                {
                 case 0:
                 case 1:
                     uiEntry = NPC_WITHERED_BATTLE_BOAR;
@@ -154,39 +158,39 @@ struct npc_belnistraszAI : public npc_escortAI
                 case 3:
                     uiEntry = NPC_DEATHS_HEAD_GEOMANCER;
                     break;
+                }
+
+                pSummoner->SummonCreature(uiEntry, fX, fZ, fY, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 60000);
             }
-
-            pSummoner->SummonCreature(uiEntry, fX, fZ, fY, 0.0f, TEMPSUMMON_TIMED_OOC_DESPAWN, 60000);
         }
-    }
 
-    void JustSummoned(Creature* pSummoned) override
-    {
-        SpawnerSummon(pSummoned);
-    }
-
-    void DoSummonSpawner(int32 iType)
-    {
-        m_creature->SummonCreature(NPC_IDOL_ROOM_SPAWNER, m_fSpawnerCoord[iType][0], m_fSpawnerCoord[iType][1], m_fSpawnerCoord[iType][2], m_fSpawnerCoord[iType][3], TEMPSUMMON_TIMED_DESPAWN, 10000);
-    }
-
-    void WaypointReached(uint32 uiPointId) override
-    {
-        if (uiPointId == 24)
+        void JustSummoned(Creature* pSummoned) override
         {
-            DoScriptText(SAY_BELNISTRASZ_START_RIT, m_creature);
-            SetEscortPaused(true);
+            SpawnerSummon(pSummoned);
         }
-    }
 
-    void UpdateEscortAI(const uint32 uiDiff) override
-    {
-        if (HasEscortState(STATE_ESCORT_PAUSED))
+        void DoSummonSpawner(int32 iType)
         {
-            if (m_uiRitualTimer < uiDiff)
+            m_creature->SummonCreature(NPC_IDOL_ROOM_SPAWNER, m_fSpawnerCoord[iType][0], m_fSpawnerCoord[iType][1], m_fSpawnerCoord[iType][2], m_fSpawnerCoord[iType][3], TEMPSUMMON_TIMED_DESPAWN, 10000);
+        }
+
+        void WaypointReached(uint32 uiPointId) override
+        {
+            if (uiPointId == 24)
             {
-                switch (m_uiRitualPhase)
+                DoScriptText(SAY_BELNISTRASZ_START_RIT, m_creature);
+                SetEscortPaused(true);
+            }
+        }
+
+        void UpdateEscortAI(const uint32 uiDiff) override
+        {
+            if (HasEscortState(STATE_ESCORT_PAUSED))
+            {
+                if (m_uiRitualTimer < uiDiff)
                 {
+                    switch (m_uiRitualPhase)
+                    {
                     case 0:
                         DoCastSpellIfCan(m_creature, SPELL_IDOL_SHUTDOWN);
                         m_uiRitualTimer = 1000;
@@ -229,7 +233,6 @@ struct npc_belnistraszAI : public npc_escortAI
                         m_uiRitualTimer = 3000;
                         break;
                     case 10:
-                    {
                         if (Player* pPlayer = GetPlayerForEscort())
                         {
                             pPlayer->GroupEventHappens(QUEST_EXTINGUISHING_THE_IDOL, m_creature);
@@ -248,243 +251,103 @@ struct npc_belnistraszAI : public npc_escortAI
                         SetEscortPaused(false);
                         break;
                     }
+
+                    ++m_uiRitualPhase;
+                }
+                else
+                {
+                    m_uiRitualTimer -= uiDiff;
                 }
 
-                ++m_uiRitualPhase;
+                return;
+            }
+
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            if (m_uiFireballTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_FIREBALL);
+                m_uiFireballTimer = urand(2000, 3000);
             }
             else
             {
-                m_uiRitualTimer -= uiDiff;
+                m_uiFireballTimer -= uiDiff;
             }
 
-            return;
-        }
+            if (m_uiFrostNovaTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature->getVictim(), SPELL_FROST_NOVA);
+                m_uiFrostNovaTimer = urand(10000, 15000);
+            }
+            else
+            {
+                m_uiFrostNovaTimer -= uiDiff;
+            }
 
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new npc_belnistraszAI(pCreature);
+    }
+
+    bool OnQuestAccept(Player* pPlayer, Creature* pCreature, const Quest* pQuest) override
+    {
+        if (pQuest->GetQuestId() == QUEST_EXTINGUISHING_THE_IDOL)
         {
-            return;
+            if (npc_belnistraszAI* pEscortAI = dynamic_cast<npc_belnistraszAI*>(pCreature->AI()))
+            {
+                pCreature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
+                pEscortAI->Start(true, pPlayer, pQuest);
+                DoScriptText(SAY_BELNISTRASZ_READY, pCreature, pPlayer);
+            }
         }
 
-        if (m_uiFireballTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_FIREBALL);
-            m_uiFireballTimer  = urand(2000, 3000);
-        }
-        else
-            { m_uiFireballTimer -= uiDiff; }
-
-        if (m_uiFrostNovaTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_FROST_NOVA);
-            m_uiFrostNovaTimer = urand(10000, 15000);
-        }
-        else
-            { m_uiFrostNovaTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+        return true;
     }
 };
-
-CreatureAI* GetAI_npc_belnistrasz(Creature* pCreature)
-{
-    return new npc_belnistraszAI(pCreature);
-}
-
-bool QuestAccept_npc_belnistrasz(Player* pPlayer, Creature* pCreature, const Quest* pQuest)
-{
-    if (pQuest->GetQuestId() == QUEST_EXTINGUISHING_THE_IDOL)
-    {
-        if (npc_belnistraszAI* pEscortAI = dynamic_cast<npc_belnistraszAI*>(pCreature->AI()))
-        {
-            pEscortAI->Start(true, pPlayer, pQuest);
-            DoScriptText(SAY_BELNISTRASZ_READY, pCreature, pPlayer);
-            pCreature->SetFactionTemporary(FACTION_ESCORT_N_NEUTRAL_ACTIVE, TEMPFACTION_RESTORE_RESPAWN);
-        }
-    }
-
-    return true;
-}
 
 /*####
 # go_tutenkash_gong
 ####*/
 
-enum
+struct go_tutenkash_gong : public GameObjectScript
 {
-    GO_GONG = 148917,
-    NPC_TOMB_FIEND = 7349,
-    TOTAL_FIENDS = 8,
-    NPC_TOMB_REAVER = 7351,
-    TOTAL_REAVERS = 4,
-    NPC_TUTENKASH = 7355
-};
+    go_tutenkash_gong() : GameObjectScript("go_tutenkash_gong") {}
 
-struct TUTENKASH_CreatureLocation
-{
-    float fX, fY, fZ, fO;
-};
-
-static const TUTENKASH_CreatureLocation aCreatureLocation[] =
-{
-    { 2540.479f, 906.539f, 46.663f, 5.47f },               // Tomb Fiend/Reaver spawn point
-    { 2541.511f, 912.857f, 46.216f, 5.39f },               // Tomb Fiend/Reaver spawn point
-    { 2536.703f, 917.214f, 46.094f, 5.57f },               // Tomb Fiend/Reaver spawn point
-    { 2530.443f, 913.598f, 46.083f, 5.69f },               // Tomb Fiend/Reaver spawn point
-    { 2529.833f, 920.977f, 45.836f, 5.47f },               // Tomb Fiend spawn point
-    { 2524.738f, 915.195f, 46.248f, 5.97f },               // Tomb Fiend spawn point
-    { 2517.829f, 917.746f, 46.073f, 5.83f },               // Tomb Fiend spawn point
-    { 2512.750f, 924.458f, 46.504f, 5.92f }                // Tomb Fiend spawn point
-};
-
-static const TUTENKASH_CreatureLocation aTutenkashLocation[] =
-{
-    { 2493.968f, 790.974f, 39.849f, 5.92f }                // Tuten'kash spawn point
-};
-
-// records which round of creatures we are in (Tomb Fiend, Tomb Raider, Boss)
-int iWaveNumber = 1;
-// use to kick off each wave of creatures and to prevent the event happening more than once whilst in the same instance of the dungeon
-bool bWaveInMotion = false;
-// keeps track of the number of craetures still alive in the wave
-int iTombFiendsAlive = 8;
-int iTombReaversAlive = 4;
-
-// used for summoning multiple numbers of creatures
-void SummonCreatures(Player* pPlayer, int NPC_ID, int iTotalToSpawn)
-{
-    // used for generating a different path for each creature
-    float fXdifference = 0;
-    float fYdifference = 0;
-
-    Creature* pTombCreature = NULL;
-
-    for (int i = 0; i < iTotalToSpawn; i++)
+    bool OnUse(Player* pPlayer, GameObject* /*pGo*/) override
     {
-        pTombCreature = pPlayer->SummonCreature(NPC_ID, aCreatureLocation[i].fX, aCreatureLocation[i].fY, aCreatureLocation[i].fZ, aCreatureLocation[i].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 7200000);
-        pTombCreature->GetMotionMaster()->MovePoint(0, 2547.565f, 904.983f, 46.776f);
-        pTombCreature->GetMotionMaster()->MovePoint(0, 2547.496f, 895.083f, 47.736f);
-        pTombCreature->GetMotionMaster()->MovePoint(0, 2543.796f, 884.629f, 47.764f);
-        // randomise coordinates
-        fXdifference = rand() % 3;
-        fYdifference = rand() % 3;
-        pTombCreature->GetMotionMaster()->MovePoint(0, 2532.118f + fXdifference, 866.656f + fYdifference, 47.678146f);
-        // randomise last coordinates
-        fXdifference = rand() % 5;
-        fYdifference = rand() % 5;
-        pTombCreature->GetMotionMaster()->MovePoint(0, 2522.604f + fXdifference, 858.547f + fYdifference, 47.678673f);
-        pTombCreature->GetMotionMaster()->MoveIdle();
-    }
-}
-
-bool GOUse_go_tutenkash_gong(Player* pPlayer, GameObject* /*pGo*/)
-{
-    // gong will only spawn next wave if current wave has been wiped out
-    if (!bWaveInMotion)
-    {
-        switch (iWaveNumber)
+        if (ScriptedInstance *m_pInstance = (ScriptedInstance*)pPlayer->GetInstanceData())
         {
-        case 1:
-            // spawn Tomb Fiends
-            bWaveInMotion = true;
-            SummonCreatures(pPlayer, NPC_TOMB_FIEND, TOTAL_FIENDS);
-            break;
-        case 2:
-            // spawn Tomb Reavers
-            bWaveInMotion = true;
-            SummonCreatures(pPlayer, NPC_TOMB_REAVER, TOTAL_REAVERS);
-            break;
-        default:
-            // spawn boss (Tuten'kash)
-            bWaveInMotion = true; // last wave,so will never be set back to false, therefore this event cannot happen again
-            Creature* pTutenkash = pPlayer->SummonCreature(NPC_TUTENKASH, aTutenkashLocation[0].fX, aTutenkashLocation[0].fY, aTutenkashLocation[0].fZ, aTutenkashLocation[0].fO, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 7200000);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2488.502686f, 801.684021f, 42.731823f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2485.428955f, 815.734619f, 43.195621f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2486.951904f, 826.718079f, 43.586765f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2496.677002f, 838.880005f, 45.809792f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2501.559814f, 847.080750f, 47.408485f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2506.661377f, 855.430359f, 47.678036f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2514.890869f, 861.339966f, 47.678036f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2526.009033f, 865.386108f, 47.678036f);
-            pTutenkash->GetMotionMaster()->MovePoint(0, 2539.416504f, 874.278931f, 47.711197f);
-            pTutenkash->GetMotionMaster()->MoveIdle();
-            break;
+            m_pInstance->SetData64(TYPE_GONG_USED, pPlayer->GetObjectGuid().GetRawValue());
+            //m_pInstance->SetData(TYPE_GONG_USED, 0);  called from SetData64 now
         }
+
+        return true;
     }
-
-    return true;
-}
-
-
-// handles AI related script for the Tomb Fiends and Tomb Reavers
-// - at present that is solely for the recording of the death of the creatures
-struct npc_tomb_creature : public ScriptedAI
-{
-
-    npc_tomb_creature(Creature* pCreature) : ScriptedAI(pCreature)
-    {
-        Reset();
-    }
-
-    void Reset() override
-    {
-        // leaving this her for future use, just-in-case
-    }
-
-    void JustDied(Unit* /*pKiller*/) override
-    {
-        switch (m_creature->GetEntry())
-        {
-        case NPC_TOMB_FIEND:
-            iTombFiendsAlive--;
-            if (!iTombFiendsAlive)
-            {
-                bWaveInMotion = false;
-                iWaveNumber = 2; // Reaver time
-            }
-            break;
-        case NPC_TOMB_REAVER:
-            iTombReaversAlive--;
-            if (!iTombReaversAlive)
-            {
-                bWaveInMotion = false;
-                iWaveNumber = 3; // boss time!!!
-            }
-            break;
-        }
-        
-    }
-
-    void UpdateAI(const uint32 /*uiDiff*/) override
-    {
-        // leaving this here for future use, just-in-case
-    }
-
 };
-
-
-// This will count down the deaths of the mobs in each wave (Tomb Fiends and Tomb Reavers)
-CreatureAI* GetAI_npc_tomb_creature(Creature* pCreature)
-{
-    return new npc_tomb_creature(pCreature);
-}
 
 void AddSC_razorfen_downs()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new npc_belnistrasz();
+    s->RegisterSelf();
+    s = new go_tutenkash_gong();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "go_tutenkash_gong";
-    pNewScript->pGOUse = &GOUse_go_tutenkash_gong;
-    pNewScript->RegisterSelf();
-    
-    pNewScript = new Script;
-    pNewScript->Name = "npc_tomb_creature"; // repressents both Tomb Fiends and Tomb Reavers
-    pNewScript->GetAI = &GetAI_npc_tomb_creature;
-    pNewScript->RegisterSelf();
-    
-    pNewScript = new Script;
-    pNewScript->Name = "npc_belnistrasz";
-    pNewScript->GetAI = &GetAI_npc_belnistrasz;
-    pNewScript->pQuestAcceptNPC = &QuestAccept_npc_belnistrasz;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "go_tutenkash_gong";
+    //pNewScript->pGOUse = &GOUse_go_tutenkash_gong;
+    //pNewScript->RegisterSelf();
+    //
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_belnistrasz";
+    //pNewScript->GetAI = &GetAI_npc_belnistrasz;
+    //pNewScript->pQuestAcceptNPC = &QuestAccept_npc_belnistrasz;
+    //pNewScript->RegisterSelf();
 }

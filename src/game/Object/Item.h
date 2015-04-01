@@ -339,6 +339,7 @@ class Item : public Object
         bool IsConjuredConsumable() const { return GetProto()->IsConjuredConsumable(); }
         bool IsWeaponVellum() const { return GetProto()->IsWeaponVellum(); }
         bool IsArmorVellum() const { return GetProto()->IsArmorVellum(); }
+        uint32 GetScriptId() const;
 
         void AddToClientUpdateList() override;
         void RemoveFromClientUpdateList() override;

@@ -43,95 +43,112 @@ enum
     NPC_BURNING_SPIRIT          = 9178,
 };
 
-struct boss_ambassador_flamelashAI : public ScriptedAI
+struct boss_ambassador_flamelash : public CreatureScript
 {
-    boss_ambassador_flamelashAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_ambassador_flamelash() : CreatureScript("boss_ambassador_flamelash") {}
 
-    uint32 m_uiSpiritTimer;
-    int Rand;
-    int RandX;
-    int RandY;
-
-    void Reset() override
+    struct boss_ambassador_flamelashAI : public ScriptedAI
     {
-        m_uiSpiritTimer = 12000;
-    }
+        boss_ambassador_flamelashAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
 
-    void SummonSpirits()
-    {
-        float fX, fY, fZ;
-        m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 30.0f, fX, fY, fZ);
-        m_creature->SummonCreature(NPC_BURNING_SPIRIT, fX, fY, fZ, m_creature->GetAngle(fX, fY) + M_PI_F, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
-    }
+        uint32 m_uiSpiritTimer;
+        int Rand;
+        int RandX;
+        int RandY;
 
-    void Aggro(Unit* /*pWho*/) override
-    {
-        DoCastSpellIfCan(m_creature, SPELL_FIREBLAST);
-    }
-
-    void JustSummoned(Creature* pSummoned) override
-    {
-        pSummoned->GetMotionMaster()->MovePoint(1, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ());
-    }
-
-    void SummonedMovementInform(Creature* pSummoned, uint32 /*uiMotionType*/, uint32 uiPointId) override
-    {
-        if (uiPointId != 1)
+        void Reset() override
         {
-            return;
+            m_uiSpiritTimer = 12000;
         }
 
-        pSummoned->CastSpell(m_creature, SPELL_BURNING_SPIRIT, true);
-    }
+        void SummonSpirits()
+        {
+            float fX, fY, fZ;
+            m_creature->GetRandomPoint(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 30.0f, fX, fY, fZ);
+            m_creature->SummonCreature(NPC_BURNING_SPIRIT, fX, fY, fZ, m_creature->GetAngle(fX, fY) + M_PI_F, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, 60000);
+        }
 
-    void UpdateAI(const uint32 uiDiff) override
+        void Aggro(Unit* /*pWho*/) override
+        {
+            DoCastSpellIfCan(m_creature, SPELL_FIREBLAST);
+        }
+
+        void JustSummoned(Creature* pSummoned) override
+        {
+            pSummoned->GetMotionMaster()->MovePoint(1, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ());
+        }
+
+        void SummonedMovementInform(Creature* pSummoned, uint32 /*uiMotionType*/, uint32 uiPointId) override
+        {
+            if (uiPointId != 1)
+            {
+                return;
+            }
+
+            pSummoned->CastSpell(m_creature, SPELL_BURNING_SPIRIT, true);
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // m_uiSpiritTimer
+            if (m_uiSpiritTimer < uiDiff)
+            {
+                SummonSpirits();
+                SummonSpirits();
+                SummonSpirits();
+                SummonSpirits();
+
+                m_uiSpiritTimer = 20000;
+            }
+            else
+            {
+                m_uiSpiritTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // m_uiSpiritTimer
-        if (m_uiSpiritTimer < uiDiff)
-        {
-            SummonSpirits();
-            SummonSpirits();
-            SummonSpirits();
-            SummonSpirits();
-
-            m_uiSpiritTimer = 20000;
-        }
-        else
-            { m_uiSpiritTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+        return new boss_ambassador_flamelashAI(pCreature);
     }
 };
 
-bool EffectDummyCreature_spell_boss_ambassador_flamelash(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Creature* pCreatureTarget, ObjectGuid /*originalCasterGuid*/)
+struct spell_boss_ambassador_flamelash : public SpellScript
 {
-    if (uiSpellId == SPELL_BURNING_SPIRIT && uiEffIndex == EFFECT_INDEX_1)
+    spell_boss_ambassador_flamelash() : SpellScript("spell_boss_ambassador_flamelash") {}
+
+    bool EffectDummy(Unit* /*pCaster*/, uint32 uiSpellId, SpellEffectIndex uiEffIndex, Object* pCreatureTarget, ObjectGuid /*originalCasterGuid*/) override
     {
-        pCreatureTarget->CastSpell(pCreatureTarget, SPELL_BURNING_SPIRIT_BUFF, true);
-        return true;
+        if (uiSpellId == SPELL_BURNING_SPIRIT && uiEffIndex == EFFECT_INDEX_1)
+        {
+            pCreatureTarget->ToCreature()->CastSpell(pCreatureTarget->ToCreature(), SPELL_BURNING_SPIRIT_BUFF, true);
+            return true;
+        }
+
+        return false;
     }
-
-    return false;
-}
-
-CreatureAI* GetAI_boss_ambassador_flamelash(Creature* pCreature)
-{
-    return new boss_ambassador_flamelashAI(pCreature);
-}
+};
 
 void AddSC_boss_ambassador_flamelash()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_ambassador_flamelash();
+    s->RegisterSelf();
+    s = new spell_boss_ambassador_flamelash();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_ambassador_flamelash";
-    pNewScript->GetAI = &GetAI_boss_ambassador_flamelash;
-    pNewScript->pEffectDummyNPC = &EffectDummyCreature_spell_boss_ambassador_flamelash;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_ambassador_flamelash";
+    //pNewScript->GetAI = &GetAI_boss_ambassador_flamelash;
+    //pNewScript->pEffectDummyNPC = &EffectDummyCreature_spell_boss_ambassador_flamelash;
+    //pNewScript->RegisterSelf();
 }

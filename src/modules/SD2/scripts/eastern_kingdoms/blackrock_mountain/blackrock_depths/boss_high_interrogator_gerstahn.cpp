@@ -42,90 +42,105 @@ enum
     SPELL_SHADOWSHIELD          = 12040
 };
 
-struct boss_high_interrogator_gerstahnAI : public ScriptedAI
+struct boss_high_interrogator_gerstahn : public CreatureScript
 {
-    boss_high_interrogator_gerstahnAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_high_interrogator_gerstahn() : CreatureScript("boss_high_interrogator_gerstahn") {}
 
-    uint32 m_uiShadowWordPainTimer;
-    uint32 m_uiManaBurnTimer;
-    uint32 m_uiPsychicScreamTimer;
-    uint32 m_uiShadowShieldTimer;
-
-    void Reset() override
+    struct boss_high_interrogator_gerstahnAI : public ScriptedAI
     {
-        m_uiShadowWordPainTimer = 4000;
-        m_uiManaBurnTimer = 14000;
-        m_uiPsychicScreamTimer = 32000;
-        m_uiShadowShieldTimer = 8000;
-    }
+        boss_high_interrogator_gerstahnAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void UpdateAI(const uint32 uiDiff) override
-    {
-        // Return since we have no target
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+        uint32 m_uiShadowWordPainTimer;
+        uint32 m_uiManaBurnTimer;
+        uint32 m_uiPsychicScreamTimer;
+        uint32 m_uiShadowShieldTimer;
+
+        void Reset() override
         {
-            return;
+            m_uiShadowWordPainTimer = 4000;
+            m_uiManaBurnTimer = 14000;
+            m_uiPsychicScreamTimer = 32000;
+            m_uiShadowShieldTimer = 8000;
         }
 
-        // ShadowWordPain_Timer
-        if (m_uiShadowWordPainTimer < uiDiff)
+        void UpdateAI(const uint32 uiDiff) override
         {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+            // Return since we have no target
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             {
-                DoCastSpellIfCan(pTarget, SPELL_SHADOWWORDPAIN);
+                return;
             }
 
-            m_uiShadowWordPainTimer = 7000;
-        }
-        else
-            { m_uiShadowWordPainTimer -= uiDiff; }
-
-        // ManaBurn_Timer
-        if (m_uiManaBurnTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_MANABURN, SELECT_FLAG_POWER_MANA))
+            // ShadowWordPain_Timer
+            if (m_uiShadowWordPainTimer < uiDiff)
             {
-                DoCastSpellIfCan(pTarget, SPELL_MANABURN);
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    DoCastSpellIfCan(pTarget, SPELL_SHADOWWORDPAIN);
+                }
+
+                m_uiShadowWordPainTimer = 7000;
+            }
+            else
+            {
+                m_uiShadowWordPainTimer -= uiDiff;
             }
 
-            m_uiManaBurnTimer = 10000;
-        }
-        else
-            { m_uiManaBurnTimer -= uiDiff; }
+            // ManaBurn_Timer
+            if (m_uiManaBurnTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_MANABURN, SELECT_FLAG_POWER_MANA))
+                {
+                    DoCastSpellIfCan(pTarget, SPELL_MANABURN);
+                }
 
-        // PsychicScream_Timer
-        if (m_uiPsychicScreamTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_PSYCHICSCREAM);
-            m_uiPsychicScreamTimer = 30000;
-        }
-        else
-            { m_uiPsychicScreamTimer -= uiDiff; }
+                m_uiManaBurnTimer = 10000;
+            }
+            else
+            {
+                m_uiManaBurnTimer -= uiDiff;
+            }
 
-        // ShadowShield_Timer
-        if (m_uiShadowShieldTimer < uiDiff)
-        {
-            DoCastSpellIfCan(m_creature, SPELL_SHADOWSHIELD);
-            m_uiShadowShieldTimer = 25000;
-        }
-        else
-            { m_uiShadowShieldTimer -= uiDiff; }
+            // PsychicScream_Timer
+            if (m_uiPsychicScreamTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_PSYCHICSCREAM);
+                m_uiPsychicScreamTimer = 30000;
+            }
+            else
+            {
+                m_uiPsychicScreamTimer -= uiDiff;
+            }
 
-        DoMeleeAttackIfReady();
+            // ShadowShield_Timer
+            if (m_uiShadowShieldTimer < uiDiff)
+            {
+                DoCastSpellIfCan(m_creature, SPELL_SHADOWSHIELD);
+                m_uiShadowShieldTimer = 25000;
+            }
+            else
+            {
+                m_uiShadowShieldTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
+    {
+        return new boss_high_interrogator_gerstahnAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_high_interrogator_gerstahn(Creature* pCreature)
-{
-    return new boss_high_interrogator_gerstahnAI(pCreature);
-}
-
 void AddSC_boss_high_interrogator_gerstahn()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_high_interrogator_gerstahn();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_high_interrogator_gerstahn";
-    pNewScript->GetAI = &GetAI_boss_high_interrogator_gerstahn;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_high_interrogator_gerstahn";
+    //pNewScript->GetAI = &GetAI_boss_high_interrogator_gerstahn;
+    //pNewScript->RegisterSelf();
 }

@@ -91,57 +91,60 @@ static SpitelashAbilityStruct m_aSpitelashAbility[8] =
     {NPC_SPITELASH_MYRMIDON,    SPELL_STRIKE,       TARGET_TYPE_VICTIM,     3000,  7000}
 };
 
-struct mobs_spitelashesAI : public ScriptedAI
+struct mobs_spitelashes : public CreatureScript
 {
-    mobs_spitelashesAI(Creature* pCreature) : ScriptedAI(pCreature)
+    mobs_spitelashes() : CreatureScript("mobs_spitelashes") {}
+
+    struct mobs_spitelashesAI : public ScriptedAI
     {
-        for (uint8 i = 0; i < countof(m_aSpitelashAbility); ++i)
+        mobs_spitelashesAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
-            if (m_aSpitelashAbility[i].m_uiCreatureEntry == m_creature->GetEntry())
+            for (uint8 i = 0; i < countof(m_aSpitelashAbility); ++i)    //TODO check, to Reset()?
             {
-                m_mSpellTimers[i] = m_aSpitelashAbility[i].m_uiInitialTimer;
+                if (m_aSpitelashAbility[i].m_uiCreatureEntry == m_creature->GetEntry())
+                {
+                    m_mSpellTimers[i] = m_aSpitelashAbility[i].m_uiInitialTimer;
+                }
+            }
+
+        }
+
+        uint32 m_uiMorphTimer;
+
+        UNORDERED_MAP<uint8, uint32> m_mSpellTimers;
+
+        void Reset() override
+        {
+            m_uiMorphTimer = 0;
+
+            for (UNORDERED_MAP<uint8, uint32>::iterator itr = m_mSpellTimers.begin(); itr != m_mSpellTimers.end(); ++itr)
+            {
+                itr->second = m_aSpitelashAbility[itr->first].m_uiInitialTimer;
             }
         }
 
-        Reset();
-    }
-
-    uint32 m_uiMorphTimer;
-
-    UNORDERED_MAP<uint8, uint32> m_mSpellTimers;
-
-    void Reset() override
-    {
-        m_uiMorphTimer = 0;
-
-        for (UNORDERED_MAP<uint8, uint32>::iterator itr = m_mSpellTimers.begin(); itr != m_mSpellTimers.end(); ++itr)
+        void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
         {
-            itr->second = m_aSpitelashAbility[itr->first].m_uiInitialTimer;
-        }
-    }
+            // If already hit by the polymorph return
+            if (m_uiMorphTimer)
+            {
+                return;
+            }
 
-    void SpellHit(Unit* pCaster, const SpellEntry* pSpell) override
-    {
-        // If already hit by the polymorph return
-        if (m_uiMorphTimer)
-        {
-            return;
+            // Creature get polymorphed into a sheep and after 5 secs despawns
+            if (pCaster->GetTypeId() == TYPEID_PLAYER && ((Player*)pCaster)->GetQuestStatus(QUEST_FRAGMENTED_MAGIC) == QUEST_STATUS_INCOMPLETE &&
+                (pSpell->Id == 118 || pSpell->Id == 12824 || pSpell->Id == 12825 || pSpell->Id == 12826))
+            {
+                m_uiMorphTimer = 5000;
+            }
         }
 
-        // Creature get polymorphed into a sheep and after 5 secs despawns
-        if (pCaster->GetTypeId() == TYPEID_PLAYER && ((Player*)pCaster)->GetQuestStatus(QUEST_FRAGMENTED_MAGIC) == QUEST_STATUS_INCOMPLETE &&
-        (pSpell->Id == 118 || pSpell->Id == 12824 || pSpell->Id == 12825 || pSpell->Id == 12826))
+        bool CanUseSpecialAbility(uint32 uiIndex)
         {
-            m_uiMorphTimer = 5000;
-        }
-    }
+            Unit* pTarget = NULL;
 
-    bool CanUseSpecialAbility(uint32 uiIndex)
-    {
-        Unit* pTarget = NULL;
-
-        switch (m_aSpitelashAbility[uiIndex].m_uiTargetType)
-        {
+            switch (m_aSpitelashAbility[uiIndex].m_uiTargetType)
+            {
             case TARGET_TYPE_SELF:
                 pTarget = m_creature;
                 break;
@@ -154,142 +157,152 @@ struct mobs_spitelashesAI : public ScriptedAI
             case TARGET_TYPE_FRIENDLY:
                 pTarget = DoSelectLowestHpFriendly(10.0f);
                 break;
-        }
-
-        if (pTarget)
-        {
-            if (DoCastSpellIfCan(pTarget, m_aSpitelashAbility[uiIndex].m_uiSpellId) == CAST_OK)
-            {
-                return true;
             }
+
+            if (pTarget)
+            {
+                if (DoCastSpellIfCan(pTarget, m_aSpitelashAbility[uiIndex].m_uiSpellId) == CAST_OK)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        return false;
-    }
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
 
-    void UpdateAI(const uint32 uiDiff) override
+            if (m_uiMorphTimer)
+            {
+                if (m_uiMorphTimer <= uiDiff)
+                {
+                    if (DoCastSpellIfCan(m_creature, SPELL_POLYMORPH_BACKFIRE, CAST_TRIGGERED) == CAST_OK)
+                    {
+                        m_uiMorphTimer = 0;
+                        m_creature->ForcedDespawn();
+                    }
+                }
+                else
+                {
+                    m_uiMorphTimer -= uiDiff;
+                }
+            }
+
+            for (UNORDERED_MAP<uint8, uint32>::iterator itr = m_mSpellTimers.begin(); itr != m_mSpellTimers.end(); ++itr)
+            {
+                if (itr->second < uiDiff)
+                {
+                    if (CanUseSpecialAbility(itr->first))
+                    {
+                        itr->second = m_aSpitelashAbility[itr->first].m_uiCooldown;
+                        break;
+                    }
+                }
+                else
+                {
+                    itr->second -= uiDiff;
+                }
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        if (m_uiMorphTimer)
-        {
-            if (m_uiMorphTimer <= uiDiff)
-            {
-                if (DoCastSpellIfCan(m_creature, SPELL_POLYMORPH_BACKFIRE, CAST_TRIGGERED) == CAST_OK)
-                {
-                    m_uiMorphTimer = 0;
-                    m_creature->ForcedDespawn();
-                }
-            }
-            else
-            {
-                m_uiMorphTimer -= uiDiff;
-            }
-        }
-
-        for (UNORDERED_MAP<uint8, uint32>::iterator itr = m_mSpellTimers.begin(); itr != m_mSpellTimers.end(); ++itr)
-        {
-            if (itr->second < uiDiff)
-            {
-                if (CanUseSpecialAbility(itr->first))
-                {
-                    itr->second = m_aSpitelashAbility[itr->first].m_uiCooldown;
-                    break;
-                }
-            }
-            else
-            {
-                itr->second -= uiDiff;
-            }
-        }
-
-        DoMeleeAttackIfReady();
+        return new mobs_spitelashesAI(pCreature);
     }
 };
-
-CreatureAI* GetAI_mobs_spitelashes(Creature* pCreature)
-{
-    return new mobs_spitelashesAI(pCreature);
-}
 
 /*######
 ## npc_loramus_thalipedes
 ######*/
 
-bool GossipHello_npc_loramus_thalipedes(Player* pPlayer, Creature* pCreature)
+struct npc_loramus_thalipedes : public CreatureScript
 {
-    if (pCreature->IsQuestGiver())
+    npc_loramus_thalipedes() : CreatureScript("npc_loramus_thalipedes") {}
+
+    bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        if (pCreature->IsQuestGiver())
+        {
+            pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
+        }
+
+        if (pPlayer->GetQuestStatus(2744) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Can you help me?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+        }
+
+        if (pPlayer->GetQuestStatus(3141) == QUEST_STATUS_INCOMPLETE)
+        {
+            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Tell me your story", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
+        }
+
+        pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
+
+        return true;
     }
 
-    if (pPlayer->GetQuestStatus(2744) == QUEST_STATUS_INCOMPLETE)
+    bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override    //TODO localisation
     {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Can you help me?", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-    }
-
-    if (pPlayer->GetQuestStatus(3141) == QUEST_STATUS_INCOMPLETE)
-    {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Tell me your story", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-    }
-
-    pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetObjectGuid());
-
-    return true;
-}
-
-bool GossipSelect_npc_loramus_thalipedes(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
-{
-    switch (uiAction)
-    {
-        case GOSSIP_ACTION_INFO_DEF+1:
+        switch (uiAction)
+        {
+        case GOSSIP_ACTION_INFO_DEF + 1:
             pPlayer->CLOSE_GOSSIP_MENU();
             pPlayer->AreaExploredOrEventHappens(2744);
             break;
 
-        case GOSSIP_ACTION_INFO_DEF+2:
+        case GOSSIP_ACTION_INFO_DEF + 2:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Please continue", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 21);
             pPlayer->SEND_GOSSIP_MENU(1813, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+21:
+        case GOSSIP_ACTION_INFO_DEF + 21:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "I do not understand", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 22);
             pPlayer->SEND_GOSSIP_MENU(1814, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+22:
+        case GOSSIP_ACTION_INFO_DEF + 22:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Indeed", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 23);
             pPlayer->SEND_GOSSIP_MENU(1815, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+23:
+        case GOSSIP_ACTION_INFO_DEF + 23:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "I will do this with or your help, Loramus", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 24);
             pPlayer->SEND_GOSSIP_MENU(1816, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+24:
+        case GOSSIP_ACTION_INFO_DEF + 24:
             pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Yes", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 25);
             pPlayer->SEND_GOSSIP_MENU(1817, pCreature->GetObjectGuid());
             break;
-        case GOSSIP_ACTION_INFO_DEF+25:
+        case GOSSIP_ACTION_INFO_DEF + 25:
             pPlayer->CLOSE_GOSSIP_MENU();
             pPlayer->AreaExploredOrEventHappens(3141);
             break;
+        }
+        return true;
     }
-    return true;
-}
+};
 
 void AddSC_azshara()
 {
-    Script* pNewScript;
+    Script* s;
+    s = new mobs_spitelashes();
+    s->RegisterSelf();
+    s = new npc_loramus_thalipedes();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "mobs_spitelashes";
-    pNewScript->GetAI = &GetAI_mobs_spitelashes;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "mobs_spitelashes";
+    //pNewScript->GetAI = &GetAI_mobs_spitelashes;
+    //pNewScript->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "npc_loramus_thalipedes";
-    pNewScript->pGossipHello =  &GossipHello_npc_loramus_thalipedes;
-    pNewScript->pGossipSelect = &GossipSelect_npc_loramus_thalipedes;
-    pNewScript->RegisterSelf();
+    //pNewScript = new Script;
+    //pNewScript->Name = "npc_loramus_thalipedes";
+    //pNewScript->pGossipHello =  &GossipHello_npc_loramus_thalipedes;
+    //pNewScript->pGossipSelect = &GossipSelect_npc_loramus_thalipedes;
+    //pNewScript->RegisterSelf();
 }

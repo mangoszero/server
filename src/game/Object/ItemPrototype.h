@@ -458,7 +458,6 @@ struct ItemPrototype
     uint32 Area;                                            // id from AreaTable.dbc
     uint32 Map;                                             // id from Map.dbc
     uint32 BagFamily;                                       // bit mask (1 << id from ItemBagFamily.dbc)
-    uint32 ScriptId;
     uint32 DisenchantID;
     uint32 FoodType;
     uint32 MinMoneyLoot;

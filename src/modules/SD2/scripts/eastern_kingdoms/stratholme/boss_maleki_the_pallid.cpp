@@ -42,101 +42,118 @@ enum
     SPELL_ICE_TOMB      = 16869
 };
 
-struct boss_maleki_the_pallidAI : public ScriptedAI
+struct boss_maleki_the_pallid : public CreatureScript
 {
-    boss_maleki_the_pallidAI(Creature* pCreature) : ScriptedAI(pCreature) { Reset(); }
+    boss_maleki_the_pallid() : CreatureScript("boss_maleki_the_pallid") {}
 
-    uint32 m_uiDrainManaTimer;
-    uint32 m_uiFrostboltTimer;
-    uint32 m_uiIceTombTimer;
-    uint32 m_uiDrainLifeTimer;
-
-    void Reset() override
+    struct boss_maleki_the_pallidAI : public ScriptedAI
     {
-        m_uiDrainManaTimer  = 30000;
-        m_uiFrostboltTimer  = 0;
-        m_uiIceTombTimer    = 15000;
-        m_uiDrainLifeTimer  = 20000;
-    }
+        boss_maleki_the_pallidAI(Creature* pCreature) : ScriptedAI(pCreature) { }
 
-    void UpdateAI(const uint32 uiDiff) override
+        uint32 m_uiDrainManaTimer;
+        uint32 m_uiFrostboltTimer;
+        uint32 m_uiIceTombTimer;
+        uint32 m_uiDrainLifeTimer;
+
+        void Reset() override
+        {
+            m_uiDrainManaTimer = 30000;
+            m_uiFrostboltTimer = 0;
+            m_uiIceTombTimer = 15000;
+            m_uiDrainLifeTimer = 20000;
+        }
+
+        void UpdateAI(const uint32 uiDiff) override
+        {
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            {
+                return;
+            }
+
+            // Frostbolt
+            if (m_uiFrostboltTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_FROSTBOLT) == CAST_OK)
+                    {
+                        m_uiFrostboltTimer = urand(3000, 4000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiFrostboltTimer -= uiDiff;
+            }
+
+            // IceTomb
+            if (m_uiIceTombTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_ICE_TOMB) == CAST_OK)
+                    {
+                        m_uiIceTombTimer = urand(15000, 20000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiIceTombTimer -= uiDiff;
+            }
+
+            // Drain Life
+            if (m_uiDrainLifeTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_DRAIN_LIFE) == CAST_OK)
+                    {
+                        m_uiDrainLifeTimer = urand(15000, 20000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiDrainLifeTimer -= uiDiff;
+            }
+
+            // Drain mana
+            if (m_uiDrainManaTimer < uiDiff)
+            {
+                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_DRAIN_MANA, SELECT_FLAG_POWER_MANA))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_DRAIN_MANA) == CAST_OK)
+                    {
+                        m_uiDrainManaTimer = urand(20000, 30000);
+                    }
+                }
+            }
+            else
+            {
+                m_uiDrainManaTimer -= uiDiff;
+            }
+
+            DoMeleeAttackIfReady();
+        }
+    };
+
+    CreatureAI* GetAI(Creature* pCreature) override
     {
-        if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        {
-            return;
-        }
-
-        // Frostbolt
-        if (m_uiFrostboltTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_FROSTBOLT) == CAST_OK)
-                {
-                    m_uiFrostboltTimer = urand(3000, 4000);
-                }
-            }
-        }
-        else
-            { m_uiFrostboltTimer -= uiDiff; }
-
-        // IceTomb
-        if (m_uiIceTombTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_ICE_TOMB) == CAST_OK)
-                {
-                    m_uiIceTombTimer = urand(15000, 20000);
-                }
-            }
-        }
-        else
-            { m_uiIceTombTimer -= uiDiff; }
-
-        // Drain Life
-        if (m_uiDrainLifeTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_DRAIN_LIFE) == CAST_OK)
-                {
-                    m_uiDrainLifeTimer = urand(15000, 20000);
-                }
-            }
-        }
-        else
-            { m_uiDrainLifeTimer -= uiDiff; }
-
-        // Drain mana
-        if (m_uiDrainManaTimer < uiDiff)
-        {
-            if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_DRAIN_MANA, SELECT_FLAG_POWER_MANA))
-            {
-                if (DoCastSpellIfCan(pTarget, SPELL_DRAIN_MANA) == CAST_OK)
-                {
-                    m_uiDrainManaTimer = urand(20000, 30000);
-                }
-            }
-        }
-        else
-            { m_uiDrainManaTimer -= uiDiff; }
-
-        DoMeleeAttackIfReady();
+        return new boss_maleki_the_pallidAI(pCreature);
     }
 };
 
-CreatureAI* GetAI_boss_maleki_the_pallid(Creature* pCreature)
-{
-    return new boss_maleki_the_pallidAI(pCreature);
-}
-
 void AddSC_boss_maleki_the_pallid()
 {
-    Script* pNewScript;
+    Script *s;
+    s = new boss_maleki_the_pallid();
+    s->RegisterSelf();
 
-    pNewScript = new Script;
-    pNewScript->Name = "boss_maleki_the_pallid";
-    pNewScript->GetAI = &GetAI_boss_maleki_the_pallid;
-    pNewScript->RegisterSelf();
+    //Script* pNewScript;
+
+    //pNewScript = new Script;
+    //pNewScript->Name = "boss_maleki_the_pallid";
+    //pNewScript->GetAI = &GetAI_boss_maleki_the_pallid;
+    //pNewScript->RegisterSelf();
 }
