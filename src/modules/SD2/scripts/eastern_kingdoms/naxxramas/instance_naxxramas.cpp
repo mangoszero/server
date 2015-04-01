@@ -779,7 +779,7 @@ struct is_naxxramas : public InstanceScript
                 }
                 else
                 {
-                    while (gtit != m_mGothTriggerMap.end() || gtit->second.bIsAnchorHigh && !gtit->second.bIsRightSide)
+                    while (gtit != m_mGothTriggerMap.end() && (gtit->second.bIsAnchorHigh || !gtit->second.bIsRightSide))
                         ++(const_cast<instance_naxxramas*>(this))->gtit;
                     if (gtit == m_mGothTriggerMap.end())
                         return 0;
