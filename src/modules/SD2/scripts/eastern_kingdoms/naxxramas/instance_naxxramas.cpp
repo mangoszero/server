@@ -772,16 +772,16 @@ struct is_naxxramas : public InstanceScript
             switch(type)
             {
             case TYPE_SIGNAL_5: //sequential retrieving of required trigger GUIDs; TODO fix the whole Gothik encounter code design
-                if (gtit == m_mGothTriggerMap.cend())
+                if (gtit == m_mGothTriggerMap.end())
                 {
-                    (const_cast<instance_naxxramas*>(this))->gtit = m_mGothTriggerMap.cbegin();
+                    (const_cast<instance_naxxramas*>(this))->gtit = m_mGothTriggerMap.begin();
                     return 0;
                 }
                 else
                 {
-                    while (gtit != m_mGothTriggerMap.cend() || gtit->second.bIsAnchorHigh && !gtit->second.bIsRightSide)
+                    while (gtit != m_mGothTriggerMap.end() || gtit->second.bIsAnchorHigh && !gtit->second.bIsRightSide)
                         ++(const_cast<instance_naxxramas*>(this))->gtit;
-                    if (gtit == m_mGothTriggerMap.cend())
+                    if (gtit == m_mGothTriggerMap.end())
                         return 0;
                     return gtit->first.GetRawValue();
                 }
@@ -1014,7 +1014,7 @@ struct is_naxxramas : public InstanceScript
                     m_mGothTriggerMap[pTrigger->GetObjectGuid()] = pGt;
                 }
             }
-            gtit = m_mGothTriggerMap.cbegin();
+            gtit = m_mGothTriggerMap.begin();
         }
 
         // data
