@@ -1173,7 +1173,7 @@ struct npc_regthar_deathgate : public CreatureScript
             DoScriptText(SAY_START_REGTHAR, pCreature, pPlayer);
             pPlayer->CLOSE_GOSSIP_MENU();
             if (npc_regthar_deathgateAI* pRegtharAI = dynamic_cast<npc_regthar_deathgateAI*>(pCreature->AI()))
-                pRegtharAI->StartEvent(pPlayer->GetObjectGuid());
+                pRegtharAI->StartEvent(pPlayer->GetObjectGuid().GetRawValue());
         }
         return true;
     }

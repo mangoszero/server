@@ -300,7 +300,7 @@ struct boss_heigan : public CreatureScript
                         continue;
                     }
 
-                    m_pInstance->SetData64(TYPE_SIGNAL_8, uint64(m_creature->GetObjectGuid()));
+                    m_pInstance->SetData64(TYPE_SIGNAL_8, m_creature->GetObjectGuid().GetRawValue());
                     m_pInstance->SetData(TYPE_SIGNAL_8, uiArea);
                     //m_pInstance->DoTriggerHeiganTraps(m_creature, uiArea);
                 }

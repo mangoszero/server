@@ -219,7 +219,7 @@ struct npc_general_andorov : public CreatureScript
         void DoInitializeFollowers()
         {
             if (m_pInstance)
-                m_pInstance->SetData64(TYPE_SIGNAL, uint64(m_creature->GetObjectGuid()));   //implemented in the instance script
+                m_pInstance->SetData64(TYPE_SIGNAL, m_creature->GetObjectGuid().GetRawValue());   //implemented in the instance script
         }
 
         // Wrapper to start the event

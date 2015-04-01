@@ -279,7 +279,7 @@ struct spell_go_black_dragon_egg : public SpellScript
                 }
 
                 // Store the eggs which are destroyed, in order to count them for the second phase
-                pInstance->SetData64(DATA_DRAGON_EGG, pGOTarget->GetObjectGuid());
+                pInstance->SetData64(DATA_DRAGON_EGG, pGOTarget->GetObjectGuid().GetRawValue());
             }
 
             return true;

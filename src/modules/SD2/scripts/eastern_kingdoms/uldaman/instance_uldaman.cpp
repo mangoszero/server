@@ -260,7 +260,7 @@ struct is_uldaman : public InstanceScript
             case DATA_EVENT_STARTER:
                 return m_playerGuid.GetRawValue();
             case TYPE_SIGNAL:
-                return GetClosestDwarfNotInCombat() ? GetClosestDwarfNotInCombat()->GetObjectGuid() : 0;
+                return GetClosestDwarfNotInCombat() ? GetClosestDwarfNotInCombat()->GetObjectGuid().GetRawValue() : 0;
             }
             return 0;
         }
@@ -385,7 +385,7 @@ struct event_spell_altar_boss_aggro : public MapEventScript
         {
             if (InstanceData* pInstance = ((Player*)pSource)->GetInstanceData())
             {
-                pInstance->SetData64(DATA_EVENT_STARTER, pSource->GetObjectGuid());
+                pInstance->SetData64(DATA_EVENT_STARTER, pSource->GetObjectGuid().GetRawValue());
                 pInstance->SetData(TYPE_SIGNAL, uiEventId);
                 //pInstance->StartEvent(uiEventId, (Player*)pSource);
                 return true;

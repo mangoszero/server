@@ -378,7 +378,7 @@ struct is_zulfarrak : public InstanceScript
             // Sort the graves
             lGravesInRange.sort(ObjectDistanceOrder(searcher));
 
-            return (*lGravesInRange.begin())->GetObjectGuid();
+            return (*lGravesInRange.begin())->GetObjectGuid().GetRawValue();
         }
 
         uint32 m_auiEncounter[MAX_ENCOUNTER];

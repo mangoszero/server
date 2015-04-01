@@ -322,7 +322,7 @@ struct npc_piznik : public CreatureScript
         {
             if (npc_piznikAI* ppiznikAI = dynamic_cast<npc_piznikAI*>(pCreature->AI()))
             {
-                ppiznikAI->StartEvent(pPlayer->GetObjectGuid());
+                ppiznikAI->StartEvent(pPlayer->GetObjectGuid().GetRawValue());
             }
         }
         return true;

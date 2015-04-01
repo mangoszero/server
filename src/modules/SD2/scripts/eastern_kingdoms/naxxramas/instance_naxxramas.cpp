@@ -783,12 +783,12 @@ struct is_naxxramas : public InstanceScript
                         ++(const_cast<instance_naxxramas*>(this))->gtit;
                     if (gtit == m_mGothTriggerMap.cend())
                         return 0;
-                    return uint64(gtit->first);
+                    return gtit->first.GetRawValue();
                 }
                 break;
             case TYPE_SIGNAL_6: //the same design flaw...
                 if (Creature *anchor = (const_cast<instance_naxxramas*>(this))->GetClosestAnchorForGoth(instance->GetCreature(ObjectGuid(m_tempCreatureGuid)), true))
-                    return uint64(anchor->GetObjectGuid());
+                    return anchor->GetObjectGuid().GetRawValue();
             }
             return 0;
         }

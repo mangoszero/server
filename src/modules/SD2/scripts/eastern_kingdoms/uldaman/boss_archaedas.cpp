@@ -186,7 +186,7 @@ struct boss_archaedas : public CreatureScript
             {
                 if (m_uiAwakeDwarfTimer < uiDiff)
                 {
-                    m_pInstance->SetData64(TYPE_SIGNAL, uint64(m_creature->GetObjectGuid()));
+                    m_pInstance->SetData64(TYPE_SIGNAL, m_creature->GetObjectGuid().GetRawValue());
                     if (Creature* pEarthen = m_pInstance->instance->GetCreature(ObjectGuid(m_pInstance->GetData64(TYPE_SIGNAL))))
                     {
                         if (DoCastSpellIfCan(pEarthen, SPELL_AWAKEN_EARTHEN_DWARF) == CAST_OK)

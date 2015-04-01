@@ -171,7 +171,7 @@ struct boss_gothik : public CreatureScript
             {
                 if (Player* pPlayer = itr->getSource())
                 {
-                    m_pInstance->SetData64(TYPE_SIGNAL_4, uint64(pPlayer->GetObjectGuid()));
+                    m_pInstance->SetData64(TYPE_SIGNAL_4, pPlayer->GetObjectGuid().GetRawValue());
                     if (!m_pInstance->GetData(TYPE_SIGNAL_4) && pPlayer->IsAlive())
                     {
                         return true;
@@ -314,7 +314,7 @@ struct boss_gothik : public CreatureScript
                 return;
             }
 
-            m_pInstance->SetData64(TYPE_SIGNAL_6, uint64(pSummoned->GetObjectGuid()));
+            m_pInstance->SetData64(TYPE_SIGNAL_6, pSummoned->GetObjectGuid().GetRawValue());
             if (Creature* pAnchor = m_pInstance->instance->GetCreature(ObjectGuid(m_pInstance->GetData64(TYPE_SIGNAL_6))))
             {
                 switch (pSummoned->GetEntry())
@@ -443,7 +443,7 @@ struct boss_gothik : public CreatureScript
             case PHASE_TELEPORTING:                         // Phase is only reached if m_pInstance is valid
                 if (m_uiTeleportTimer < uiDiff)
                 {
-                    m_pInstance->SetData64(TYPE_SIGNAL_7, uint64(m_creature->GetObjectGuid()));
+                    m_pInstance->SetData64(TYPE_SIGNAL_7, m_creature->GetObjectGuid().GetRawValue());
                     uint32 uiTeleportSpell = m_pInstance->GetData(TYPE_SIGNAL_7) ? SPELL_TELEPORT_LEFT : SPELL_TELEPORT_RIGHT;
                     if (DoCastSpellIfCan(m_creature, uiTeleportSpell) == CAST_OK)
                     {
@@ -555,7 +555,7 @@ struct spell_anchor : public SpellScript
         {
             return true;
         }
-        pInstance->SetData64(TYPE_SIGNAL_2, pCreatureTarget->GetObjectGuid());
+        pInstance->SetData64(TYPE_SIGNAL_2, pCreatureTarget->GetObjectGuid().GetRawValue());
         pInstance->SetData(TYPE_SIGNAL_2, uiSpellId);
 
 

@@ -141,7 +141,7 @@ struct boss_zumrah : public CreatureScript
                 if (m_uiSpawnZombieTimer <= uiDiff)
                 {
                     // Use a nearby grave to spawn zombies
-                    m_pInstance->SetData64(TYPE_SIGNAL, uint64(m_creature->GetObjectGuid()));
+                    m_pInstance->SetData64(TYPE_SIGNAL, m_creature->GetObjectGuid().GetRawValue());
                     if (GameObject* pGrave = m_pInstance->instance->GetGameObject(ObjectGuid(m_pInstance->GetData64(TYPE_SIGNAL))))
                     {
                         m_creature->CastSpell(pGrave->GetPositionX(), pGrave->GetPositionY(), pGrave->GetPositionZ(), SPELL_SUMMON_ZOMBIES, true, NULL, NULL, pGrave->GetObjectGuid());

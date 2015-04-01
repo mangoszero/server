@@ -483,7 +483,7 @@ struct npc_deathstalker_faerleia : public CreatureScript
 
             if (npc_deathstalker_faerleiaAI* pFaerleiaAI = dynamic_cast<npc_deathstalker_faerleiaAI*>(pCreature->AI()))
             {
-                pFaerleiaAI->StartEvent(pPlayer->GetObjectGuid());
+                pFaerleiaAI->StartEvent(pPlayer->GetObjectGuid().GetRawValue());
                 return true;
             }
         }

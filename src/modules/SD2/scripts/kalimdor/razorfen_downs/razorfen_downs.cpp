@@ -324,7 +324,7 @@ struct go_tutenkash_gong : public GameObjectScript
     {
         if (ScriptedInstance *m_pInstance = (ScriptedInstance*)pPlayer->GetInstanceData())
         {
-            m_pInstance->SetData64(TYPE_GONG_USED, uint64(pPlayer->GetObjectGuid()));
+            m_pInstance->SetData64(TYPE_GONG_USED, pPlayer->GetObjectGuid().GetRawValue());
             //m_pInstance->SetData(TYPE_GONG_USED, 0);  called from SetData64 now
         }
 

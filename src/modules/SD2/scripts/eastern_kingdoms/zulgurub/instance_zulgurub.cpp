@@ -202,7 +202,7 @@ struct is_zulgurub : public InstanceScript
             case TYPE_SIGNAL_2:
             case TYPE_SIGNAL_3:
                 if (Creature *p = (const_cast<instance_zulgurub*>(this))->SelectRandomPantherTrigger(type == TYPE_SIGNAL_2))
-                    return uint64(p->GetObjectGuid());
+                    return p->GetObjectGuid().GetRawValue();
                 break;
             default:
                 break;
