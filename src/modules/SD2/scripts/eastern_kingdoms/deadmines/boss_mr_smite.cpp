@@ -40,7 +40,7 @@ enum
     SAY_PHASE_2                     = -1036002,
     SAY_PHASE_3                     = -1036003,
 
-    // EQUIP_ID_SWORD               = 2179,                 // default equipment, not used in code
+    EQUIP_ID_SWORD                  = 2179,                 // default equipment
     EQUIP_ID_AXE                    = 2183,
     EQUIP_ID_HAMMER                 = 10756,
 
@@ -80,7 +80,7 @@ struct boss_mr_smite : public CreatureScript
             DoCastSpellIfCan(m_creature, SPELL_NIBLE_REFLEXES, CAST_TRIGGERED);
 
             // must assume database has the default equipment set
-            SetEquipmentSlots(true);
+            SetEquipmentSlots(false, EQUIP_ID_SWORD, EQUIP_UNEQUIP);
         }
 
         void AttackedBy(Unit* pAttacker) override
