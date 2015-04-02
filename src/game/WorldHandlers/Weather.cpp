@@ -80,7 +80,7 @@ bool Weather::Update(uint32 diff, Map const* _map)
         {
             ///- Weather will be removed if not updated (no players in zone anymore)
             if (!SendWeatherForPlayersInZone(_map))
-                return false;
+                { return false; }
         }
     }
     return true;

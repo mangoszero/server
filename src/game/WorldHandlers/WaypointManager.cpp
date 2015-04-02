@@ -391,7 +391,7 @@ void WaypointManager::Unload()
     m_pathTemplateMap.clear();
 
     for (WaypointPathMap::iterator itr = m_externalPathTemplateMap.begin(); itr != m_externalPathTemplateMap.end(); ++itr)
-        _clearPath(itr->second);
+        { _clearPath(itr->second); }
     m_externalPathTemplateMap.clear();
 
 }
@@ -506,11 +506,11 @@ void WaypointManager::SetNodePosition(uint32 entry, uint32 dbGuid, uint32 point,
 {
     // Support only normal movement tables
     if (wpOrigin != PATH_FROM_GUID && wpOrigin != PATH_FROM_ENTRY)
-        return;
+        { return; }
 
     WaypointPath* path = GetPathFromOrigin(entry, dbGuid, pathId, wpOrigin);
     if (!path)
-        return;
+        { return; }
 
     char const* const table     = wpOrigin == PATH_FROM_GUID ? "creature_movement" : "creature_movement_template";
     char const* const key_field = wpOrigin == PATH_FROM_GUID ? "id" : "entry";

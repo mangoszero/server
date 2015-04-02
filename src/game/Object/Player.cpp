@@ -1674,12 +1674,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             float final_z = z;
             float final_o = orientation;
 
+            Position const* transportPosition = m_movementInfo.GetTransportPos();
+
             if (m_transport)
             {
-                final_x += m_movementInfo.GetTransportPos()->x;
-                final_y += m_movementInfo.GetTransportPos()->y;
-                final_z += m_movementInfo.GetTransportPos()->z;
-                final_o += m_movementInfo.GetTransportPos()->o;
+                final_x += transportPosition->x;
+                final_y += transportPosition->y;
+                final_z += transportPosition->z;
+                final_o += transportPosition->o;
             }
 
             m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
@@ -1698,10 +1700,10 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 data << uint32(mapid);
                 if (m_transport)
                 {
-                    data << float(m_movementInfo.GetTransportPos()->x);
-                    data << float(m_movementInfo.GetTransportPos()->y);
-                    data << float(m_movementInfo.GetTransportPos()->z);
-                    data << float(m_movementInfo.GetTransportPos()->o);
+                    data << float(transportPosition->x);
+                    data << float(transportPosition->y);
+                    data << float(transportPosition->z);
+                    data << float(transportPosition->o);
                 }
                 else
                 {
@@ -6464,7 +6466,7 @@ void Player::DuelComplete(DuelCompleteType type)
     if (type != DUEL_INTERRUPTED)
     {
         data.Initialize(SMSG_DUEL_WINNER, (1 + 20));          // we guess size
-        data << uint8(type == DUEL_WON ? 0 : 1);              // 0 = just won; 1 = fled
+        data << (uint8)((type == DUEL_WON) ? 0 : 1);          // 0 = just won; 1 = fled
         data << duel->opponent->GetName();
         data << GetName();
         SendMessageToSet(&data, true);
@@ -9714,9 +9716,11 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
 
         ItemPrototype const* itemProto = pItem->GetProto();
         if (itemProto->Bonding == BIND_WHEN_PICKED_UP ||
-                itemProto->Bonding == BIND_QUEST_ITEM ||
-                (itemProto->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
-            { pItem->SetBinding(true); }
+            itemProto->Bonding == BIND_QUEST_ITEM ||
+            (itemProto->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
+        {
+            pItem->SetBinding(true);
+        }
 
         if (bag == INVENTORY_SLOT_BAG_0)
         {
@@ -9759,7 +9763,9 @@ Item* Player::_StoreItem(uint16 pos, Item* pItem, uint32 count, bool clone, bool
         if (itemProto->Bonding == BIND_WHEN_PICKED_UP ||
             itemProto->Bonding == BIND_QUEST_ITEM ||
             (itemProto->Bonding == BIND_WHEN_EQUIPPED && IsBagPos(pos)))
-            { pItem2->SetBinding(true); }
+        {
+            pItem2->SetBinding(true);
+        }
 
         pItem2->SetCount(pItem2->GetCount() + count);
         if (IsInWorld() && update)

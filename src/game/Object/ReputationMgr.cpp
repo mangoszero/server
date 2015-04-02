@@ -142,13 +142,14 @@ void ReputationMgr::SendState(FactionState const* faction)
 
     for (FactionStateList::iterator itr = m_factions.begin(); itr != m_factions.end(); ++itr)
     {
-        if (itr->second.needSend)
+        FactionState &subFaction = itr->second;
+        if (subFaction.needSend)
         {
-            itr->second.needSend = false;
-            if (itr->second.ReputationListID != faction->ReputationListID)
+            subFaction.needSend = false;
+            if (subFaction.ReputationListID != faction->ReputationListID)
             {
-                data << (uint32) itr->second.ReputationListID;
-                data << (uint32) itr->second.Standing;
+                data << uint32(subFaction.ReputationListID);
+                data << uint32(subFaction.Standing);
 
                 ++count;
             }
