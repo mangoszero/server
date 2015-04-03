@@ -264,7 +264,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         float x, y, z;
         if (m_objectTypeId == TYPEID_UNIT && ((Unit*)this)->GetMotionMaster()->GetDestination(x, y, z))
         {
-            moveFlags |= MOVEFLAG_WALK_MODE | MOVEFLAG_MOVE_FORWARD | MOVEFLAG_SPLINE_ENABLED;
+            moveFlags |= MOVEFLAG_WALK_MODE | MOVEFLAG_FORWARD | MOVEFLAG_SPLINE_ENABLED;
         }
 
         *data << uint32(moveFlags);                         // movement flags
