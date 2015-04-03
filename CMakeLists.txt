@@ -47,6 +47,7 @@ option(POSTGRESQL           "Use PostgreSQL instead of MySQL"               OFF)
 option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD2       "Compile with support for ScriptDev2 scripts"   ON)
+option(PLAYERBOTS           "Enable Player Bots"                            OFF)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
 # Hidden option to enable/disable PCH. DEV ONLY!
 set(PCH ON)
@@ -66,6 +67,8 @@ message(
    Scripting engines:
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
     SCRIPT_LIB_SD2          Compile with support for ScriptDev2 scripts
+   Modules:
+    PLAYERBOTS              Enable Player Bots
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. see 'cmake --help' for more details
   For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos"
@@ -165,6 +168,13 @@ if(SCRIPT_LIB_SD2)
     add_definitions(-DENABLE_SD2)
 else()
     message(STATUS "Script engine SD2     : No")
+endif()
+
+if(PLAYERBOTS)
+    message(STATUS "Enable Player Bots    : Yes (default)")
+    add_definitions(-DENABLE_PLAYERBOTS)
+else()
+    message(STATUS "Enable Player Bots    : No")
 endif()
 
 if(BUILD_TOOLS)

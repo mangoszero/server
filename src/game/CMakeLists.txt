@@ -195,6 +195,17 @@ endif()
 
 add_subdirectory(AuctionHouseBot)
 
+if(PLAYERBOTS)
+    include_directories(
+        "${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot"
+        "${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot"
+    )
+    target_link_libraries(${LIBRARY_NAME}
+        Bots
+    )
+    add_dependencies(${LIBRARY_NAME} Bots)
+endif()
+
 if(SCRIPT_LIB_SD2)
     include_directories(
         "${CMAKE_SOURCE_DIR}/src/modules/SD2"

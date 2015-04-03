@@ -772,6 +772,11 @@ ChatCommand* ChatHandler::getCommandTable()
         { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
         { "spell_linked",   SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadSpellLinkedCommand,   "", NULL },
+#ifdef ENABLE_PLAYERBOTS
+        { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
+        { "rndbot",         SEC_CONSOLE,        true,  &ChatHandler::HandlePlayerbotConsoleCommand,    "", NULL },
+        { "ahbot",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleAhBotCommand,               "", NULL },
+#endif
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
