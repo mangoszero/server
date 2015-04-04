@@ -1,4 +1,4 @@
-#include "pchdef.h"
+#include "botpch.h"
 #include "../../playerbot.h"
 #include "WarlockMultipliers.h"
 #include "GenericWarlockNonCombatStrategy.h"

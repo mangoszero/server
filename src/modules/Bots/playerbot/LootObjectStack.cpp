@@ -1,4 +1,4 @@
-#include "../pchdef.h"
+#include "../botpch.h"
 #include "LootObjectStack.h"
 #include "playerbot.h"
 

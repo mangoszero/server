@@ -1,4 +1,4 @@
-#include "../pchdef.h"
+#include "../botpch.h"
 #include "PlayerbotAIConfig.h"
 #include "playerbot.h"
 #include "RandomPlayerbotFactory.h"

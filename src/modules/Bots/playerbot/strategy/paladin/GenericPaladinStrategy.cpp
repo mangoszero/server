@@ -1,4 +1,4 @@
-#include "pchdef.h"
+#include "botpch.h"
 #include "../../playerbot.h"
 #include "GenericPaladinStrategy.h"
 #include "GenericPaladinStrategyActionNodeFactory.h"

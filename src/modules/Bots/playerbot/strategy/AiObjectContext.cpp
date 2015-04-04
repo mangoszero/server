@@ -1,4 +1,4 @@
-#include "../../pchdef.h"
+#include "../../botpch.h"
 #include "../playerbot.h"
 #include "AiObjectContext.h"
 #include "NamedObjectContext.h"

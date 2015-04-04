@@ -1,4 +1,4 @@
-#include "pchdef.h"
+#include "botpch.h"
 #include "../../playerbot.h"
 #include "../actions/GenericActions.h"
 #include "HunterActions.h"

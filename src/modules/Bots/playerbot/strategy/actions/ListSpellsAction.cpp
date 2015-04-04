@@ -1,4 +1,4 @@
-#include "pchdef.h"
+#include "botpch.h"
 #include "../../playerbot.h"
 #include "ListSpellsAction.h"
 #include "../ItemVisitors.h"

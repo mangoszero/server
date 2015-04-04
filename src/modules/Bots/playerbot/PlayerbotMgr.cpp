@@ -1,5 +1,5 @@
 #include "Config/Config.h"
-#include "../pchdef.h"
+#include "../botpch.h"
 #include "playerbot.h"
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotFactory.h"

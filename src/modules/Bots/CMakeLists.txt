@@ -19,9 +19,9 @@
 set(LIBRARY_NAME Bots)
 
 #Add PCH Files
-set(bots_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h")
+set(bots_PCH "${CMAKE_CURRENT_SOURCE_DIR}/botpch.h")
 if(PCH)
-    LIST(APPEND bots_PCH "${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp")
+    LIST(APPEND bots_PCH "${CMAKE_CURRENT_SOURCE_DIR}/botpch.cpp")
 endif()
 
 #Base files
