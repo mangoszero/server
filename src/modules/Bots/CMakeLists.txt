@@ -130,7 +130,6 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/game/WorldHandlers
   ${CMAKE_SOURCE_DIR}/src/shared
   ${CMAKE_SOURCE_DIR}/src/shared/Common
-  ${CMAKE_SOURCE_DIR}/src/shared/Config
   ${CMAKE_SOURCE_DIR}/src/shared/Database
   ${CMAKE_SOURCE_DIR}/src/shared/DataStores
   ${CMAKE_SOURCE_DIR}/src/shared/Log

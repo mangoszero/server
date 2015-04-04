@@ -38,7 +38,7 @@ include_directories(
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour"
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/"
   "${CMAKE_SOURCE_DIR}/dep/include"
-  "${CMAKE_SOURCE_DIR}/src/shared"
+  "${CMAKE_SOURCE_DIR}/src/shared",
   "${CMAKE_SOURCE_DIR}/src/shared/Common"
   "${CMAKE_SOURCE_DIR}/src/shared/Database"
   "${CMAKE_SOURCE_DIR}/src/shared/DataStores"
