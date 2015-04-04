@@ -2,7 +2,7 @@
 #include "ItemBag.h"
 #include "AhBot.h"
 #include "World.h"
-#include "config/Config.h"
+#include "Config.h"
 #include "Chat.h"
 #include "AhBotConfig.h"
 #include "AuctionHouseMgr.h"

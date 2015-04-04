@@ -1,5 +1,5 @@
 #pragma once
-#include "config/Config.h"
+#include "Config.h"
 #include "PricingStrategy.h"
 #include "ItemPrototype.h"
 #include "SharedDefines.h"
