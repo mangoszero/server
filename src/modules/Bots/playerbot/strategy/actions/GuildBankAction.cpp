@@ -1,8 +1,8 @@
 #include "botpch.h"
-#include "../../playerbot.h"
-#include "GuildBankAction.h"
+//#include "../../playerbot.h"
+//#include "GuildBankAction.h"
 
-#include "../values/ItemCountValue.h"
+//#include "../values/ItemCountValue.h"
 
 using namespace std;
 using namespace ai;

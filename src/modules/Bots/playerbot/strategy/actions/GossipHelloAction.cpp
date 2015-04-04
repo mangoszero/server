@@ -45,7 +45,7 @@ bool GossipHelloAction::Execute(Event event)
     ai->TellMasterNoFacing(out.str());
 
     GossipMenu& menu = bot->PlayerTalkClass->GetGossipMenu();
-    int i = 0, loops = 0;
+    unsigned int i = 0, loops = 0;
     set<uint32> alreadyTalked;
     while (i < menu.MenuItemCount() && loops++ < 100)
     {

@@ -802,7 +802,7 @@ void PlayerbotFactory::EnchantItem(Item* item)
     int32 itemLevel = proto->ItemLevel;
 
     vector<uint32> ids;
-    for (int id = 0; id < sSpellStore.GetNumRows(); ++id)
+    for (uint32 id = 0; id < sSpellStore.GetNumRows(); ++id)
     {
         SpellEntry const *entry = sSpellStore.LookupEntry(id);
         if (!entry)

@@ -120,51 +120,39 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     ai->TellMaster("Hello!");
 }
 
-string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
+bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
-        return "bot system is disabled";
+        return false;
 
-    uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(guid);
-    bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(botAccount);
-    bool isMasterAccount = (masterAccountId == botAccount);
+    bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(sObjectMgr.GetPlayerAccountIdByGUID(guid));
 
     if (isRandomAccount && !isRandomBot && !admin)
-    {
-        Player* bot = sObjectMgr.GetPlayer(guid, false);
-        if (bot->GetGuildId() != masterGuildId)
-            return "not in your guild";
-    }
-
-    if (!isRandomAccount && !isMasterAccount && !admin)
-        return "not in your account";
+        return false;
 
     if (cmd == "add" || cmd == "login")
     {
-        if (sObjectMgr.GetPlayer(guid, true))
-            return "player already logged in";
+        if (sObjectMgr.GetPlayer(guid))
+            return false;
 
         AddPlayerBot(guid.GetRawValue(), masterAccountId);
-        return "ok";
+        return true;
     }
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {
-        if (!sObjectMgr.GetPlayer(guid, true))
-            return "player is offline";
-
         if (!GetPlayerBot(guid.GetRawValue()))
-            return "not your bot";
+            return false;
 
         LogoutPlayerBot(guid.GetRawValue());
-        return "ok";
+        return true;
     }
 
     if (admin)
     {
         Player* bot = GetPlayerBot(guid.GetRawValue());
         if (!bot)
-            return "bot not found";
+            return false;
 
         Player* master = bot->GetPlayerbotAI()->GetMaster();
         if (master)
@@ -173,25 +161,25 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admi
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_NORMAL);
                 factory.CleanRandomize();
-                return "ok";
+                return true;
             }
             else if (cmd == "init=green" || cmd == "init=uncommon")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_UNCOMMON);
                 factory.CleanRandomize();
-                return "ok";
+                return true;
             }
             else if (cmd == "init=blue" || cmd == "init=rare")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_RARE);
                 factory.CleanRandomize();
-                return "ok";
+                return true;
             }
             else if (cmd == "init=epic" || cmd == "init=purple")
             {
                 PlayerbotFactory factory(bot, master->getLevel(), ITEM_QUALITY_EPIC);
                 factory.CleanRandomize();
-                return "ok";
+                return true;
             }
         }
 
@@ -199,16 +187,16 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admi
         {
             PlayerbotFactory factory(bot, bot->getLevel());
             factory.Refresh();
-            return "ok";
+            return true;
         }
         else if (cmd == "random")
         {
             sRandomPlayerbotMgr.Randomize(bot);
-            return "ok";
+            return true;
         }
     }
 
-    return "unknown command";
+    return false;
 }
 
 bool ChatHandler::HandlePlayerbotCommand(char* args)
@@ -338,23 +326,17 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         out << cmdStr << ": " << bot << " - ";
 
         ObjectGuid member = sObjectMgr.GetPlayerGuidByName(bot);
-        if (!member)
+        bool result = false;
         if (master && member != master->GetObjectGuid())
         {
-            out << "character not found";
-        }
-        else if (master && member != master->GetObjectGuid())
-        {
-            out << ProcessBotCommand(cmdStr, member,
-                    master->GetSession()->GetSecurity() >= SEC_GAMEMASTER,
-                    master->GetSession()->GetAccountId(),
-                    master->GetGuildId());
+            result = ProcessBotCommand(cmdStr, member, master->GetSession()->GetSecurity() >= SEC_GAMEMASTER, master->GetSession()->GetAccountId());
         }
         else if (!master)
         {
-            out << ProcessBotCommand(cmdStr, member, true, -1, -1);
+            result = ProcessBotCommand(cmdStr, member, true, -1);
         }
 
+        out << (result ? "ok" : "not allowed");
         messages.push_back(out.str());
     }
 

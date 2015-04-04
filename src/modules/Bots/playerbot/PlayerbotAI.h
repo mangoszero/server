@@ -133,7 +133,7 @@ public:
     bool TellMaster(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
     bool TellMasterNoFacing(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
     void SpellInterrupted(uint32 spellid);
-    int32 CalculateGlobalCooldown(uint32 spellid);
+    uint32 CalculateGlobalCooldown(uint32 spellid);
     void InterruptSpell();
     void RemoveAura(string name);
     void RemoveShapeshift();
