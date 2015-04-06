@@ -643,6 +643,8 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
                 }
                 break;
             }
+            default:
+                break;
         }
         playersProcessed.push_back(plrGuid);
     }
@@ -691,6 +693,8 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
                     }
                     break;
                 }
+                default:
+                    break;
             }
 
             playersProcessed.push_back(plrGuid);

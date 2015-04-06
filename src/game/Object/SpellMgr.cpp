@@ -4407,9 +4407,21 @@ DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group)
 
 bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32 newArea) const
 {
+    if (areaId)
+    {
+        // not in expected zone
+        if (newZone != areaId && newArea != areaId)
+        {
+            return false;
+        }
+    }
+
+    if (!player)    //all following checks require valid player
+        return false;
+
     if (conditionId)
     {
-        if (!player || !sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), NULL, CONDITION_FROM_SPELL_AREA))
+        if (!sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), NULL, CONDITION_FROM_SPELL_AREA))
             { return false; }
     }
     else                                                    // This block will be removed
@@ -4417,44 +4429,35 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
         if (gender != GENDER_NONE)
         {
             // not in expected gender
-            if (!player || gender != player->getGender())
+            if (gender != player->getGender())
                 { return false; }
         }
 
         if (raceMask)
         {
             // not in expected race
-            if (!player || !(raceMask & player->getRaceMask()))
+            if (!(raceMask & player->getRaceMask()))
                 { return false; }
         }
 
         if (questStart)
         {
             // not in expected required quest state
-            if (!player || (!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart))
+            if ((!questStartCanActive || !player->IsActiveQuest(questStart)) || player->GetQuestRewardStatus(questStart))
                 { return false; }
         }
 
         if (questEnd)
         {
             // not in expected forbidden quest state
-            if (!player || player->GetQuestRewardStatus(questEnd))
+            if (player->GetQuestRewardStatus(questEnd))
                 { return false; }
         }
-    }
-
-    if (areaId)
-    {
-        // not in expected zone
-        if (newZone != areaId && newArea != areaId)
-            { return false; }
     }
 
     if (auraSpell)
     {
         // not have expected aura
-        if (!player)
-            { return false; }
         if (auraSpell > 0)
             // have expected aura
             { return player->HasAura(auraSpell); }
