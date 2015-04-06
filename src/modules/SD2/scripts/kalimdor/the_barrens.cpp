@@ -63,6 +63,7 @@ struct npc_beaten_corpse : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_INCOMPLETE ||
             pPlayer->GetQuestStatus(QUEST_LOST_IN_BATTLE) == QUEST_STATUS_COMPLETE)
         {
@@ -75,6 +76,7 @@ struct npc_beaten_corpse : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
         {
             pPlayer->SEND_GOSSIP_MENU(3558, pCreature->GetObjectGuid());
@@ -1152,6 +1154,7 @@ struct npc_regthar_deathgate : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pCreature->IsQuestGiver())
             pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
 
@@ -1168,6 +1171,7 @@ struct npc_regthar_deathgate : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
         {
             DoScriptText(SAY_START_REGTHAR, pCreature, pPlayer);
