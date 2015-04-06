@@ -183,6 +183,7 @@ struct npc_shadowfang_prisoner : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         ScriptedInstance* pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
 
         if (pInstance && pInstance->GetData(TYPE_FREE_NPC) != DONE && pInstance->GetData(TYPE_RETHILGORE) == DONE)
@@ -196,6 +197,7 @@ struct npc_shadowfang_prisoner : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
         {
             pPlayer->CLOSE_GOSSIP_MENU();

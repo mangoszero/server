@@ -62,6 +62,7 @@ struct npc_spirit_guide : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* /*pCreature*/) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         pPlayer->CastSpell(pPlayer, SPELL_WAITING_TO_RESURRECT, true);
         return true;
     }
@@ -71,7 +72,6 @@ struct npc_spirit_guide : public CreatureScript
         npc_spirit_guideAI(Creature* pCreature) : ScriptedAI(pCreature)
         {
             pCreature->SetActiveObjectState(true);
-            Reset();
         }
 
         void Reset() override {}

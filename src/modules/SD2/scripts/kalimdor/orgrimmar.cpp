@@ -167,6 +167,7 @@ struct npc_thrall_warchief : public CreatureScript  //TODO localise
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pCreature->IsQuestGiver())
         {
             pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
@@ -183,6 +184,7 @@ struct npc_thrall_warchief : public CreatureScript  //TODO localise
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         switch (uiAction)
         {
         case GOSSIP_ACTION_INFO_DEF + 1:
