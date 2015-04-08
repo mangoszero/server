@@ -33,61 +33,20 @@ class BigNumber;
 
 #define SEED_KEY_SIZE 16
 
-/**
- * @brief
- *
- */
 class HMACSHA1
 {
-    public:
-        /**
-         * @brief
-         *
-         */
-        HMACSHA1();
-        /**
-         * @brief
-         *
-         */
-        ~HMACSHA1();
-        /**
-         * @brief
-         *
-         * @param bn
-         */
-        void UpdateBigNumber(BigNumber* bn);
-        /**
-         * @brief
-         *
-         * @param data
-         * @param length
-         */
-        void UpdateData(const uint8* data, int length);
-        /**
-         * @brief
-         *
-         */
-        void Initialize();
-        /**
-         * @brief
-         *
-         */
-        void Finalize();
-        /**
-         * @brief
-         *
-         * @return uint8
-         */
-        uint8* GetDigest() { return (uint8*)m_digest; }
-        /**
-         * @brief
-         *
-         * @return int
-         */
-        int GetLength() { return SHA_DIGEST_LENGTH; };
-    private:
-        HMAC_CTX m_ctx; /**< TODO */
-        uint8 m_key[SEED_KEY_SIZE]; /**< TODO */
-        uint8 m_digest[SHA_DIGEST_LENGTH]; /**< TODO */
+public:
+    HMACSHA1(uint32 len, uint8 *seed);
+    ~HMACSHA1();
+    void UpdateBigNumber(BigNumber *bn);
+    void UpdateData(const uint8 *data, int length);
+    void UpdateData(const std::string &str);
+    void Finalize();
+    uint8 *ComputeHash(BigNumber *bn);
+    uint8 *GetDigest() { return (uint8*)m_digest; }
+    int GetLength() { return SHA_DIGEST_LENGTH; }
+private:
+    HMAC_CTX m_ctx;
+    uint8 m_digest[SHA_DIGEST_LENGTH];
 };
 #endif

@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
 #define REVISION_NR "21000"
-#define REVISION_DB_CHARACTERS "required_21000_00_Release_021_Initial"
-#define REVISION_DB_MANGOS "required_21000_05_Script_refactoring"
-#define REVISION_DB_REALMD "required_20140607_Realm_Resync"
+#define REVISION_DB_CHARACTERS "required_21000_01_warden_action"
+#define REVISION_DB_MANGOS "required_21000_08_warden_checks"
+#define REVISION_DB_REALMD "required_20150409_Playerbot_and_Warden"
 #endif // __REVISION_H__

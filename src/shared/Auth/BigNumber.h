@@ -241,7 +241,7 @@ class BigNumber
          * @return uint8
          */
         uint8* AsByteArray(int minSize = 0);
-
+        uint8* AsByteArray(int minSize, bool reverse);
         /**
          * @brief
          *

@@ -31,6 +31,8 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/Server"
   "${CMAKE_CURRENT_SOURCE_DIR}/Tools"
   "${CMAKE_CURRENT_SOURCE_DIR}/vmap"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Warden"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Warden/Modules"
   "${CMAKE_CURRENT_SOURCE_DIR}/WorldHandlers"
   "${CMAKE_SOURCE_DIR}/dep/g3dlite"
   "${CMAKE_SOURCE_DIR}/dep/zlib"
@@ -39,6 +41,7 @@ include_directories(
   "${CMAKE_SOURCE_DIR}/dep/recastnavigation/"
   "${CMAKE_SOURCE_DIR}/dep/include"
   "${CMAKE_SOURCE_DIR}/src/shared"
+  "${CMAKE_SOURCE_DIR}/src/shared/Auth"
   "${CMAKE_SOURCE_DIR}/src/shared/Config"
   "${CMAKE_SOURCE_DIR}/src/shared/Common"
   "${CMAKE_SOURCE_DIR}/src/shared/Database"
@@ -137,6 +140,20 @@ source_group("vmaps"
   FILES
     ${SRC_GRP_VMAPS}
 )
+
+#Warden group
+file(GLOB SRC_GRP_WARDEN Warden/*.cpp Warden/*.h)
+source_group("Warden"
+  FILES
+    ${SRC_GRP_WARDEN}
+)
+
+#Warden Modules group
+file(GLOB SRC_GRP_WARDEN_MODULES Warden/Modules/*.cpp Warden/Modules/*.h)
+source_group("Warden\\Modules"
+  FILES
+    ${SRC_GRP_WARDEN_MODULES}
+)
 	
 #World and Handlers group
 file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
@@ -158,6 +175,8 @@ set(LIBRARY_SRCS
     ${SRC_GRP_SERVER}
     ${SRC_GRP_TOOL}
     ${SRC_GRP_VMAPS}
+    ${SRC_GRP_WARDEN}
+    ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
     pchdef.cpp
     pchdef.h

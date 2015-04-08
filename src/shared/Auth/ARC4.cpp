@@ -3,6 +3,7 @@
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
  * Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
+ * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,45 +23,36 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Auth/HMACSHA1.h"
-#include "BigNumber.h"
+#include "ARC4.h"
 
-HMACSHA1::HMACSHA1(uint32 len, uint8 *seed)
+ARC4::ARC4(uint8 len) : m_ctx()
 {
-    HMAC_CTX_init(&m_ctx);
-    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), NULL);
+    EVP_CIPHER_CTX_init(&m_ctx);
+    EVP_EncryptInit_ex(&m_ctx, EVP_rc4(), NULL, NULL, NULL);
+    EVP_CIPHER_CTX_set_key_length(&m_ctx, len);
 }
 
-HMACSHA1::~HMACSHA1()
+ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx()
 {
-    HMAC_CTX_cleanup(&m_ctx);
+    EVP_CIPHER_CTX_init(&m_ctx);
+    EVP_EncryptInit_ex(&m_ctx, EVP_rc4(), NULL, NULL, NULL);
+    EVP_CIPHER_CTX_set_key_length(&m_ctx, len);
+    EVP_EncryptInit_ex(&m_ctx, NULL, NULL, seed, NULL);
 }
 
-void HMACSHA1::UpdateBigNumber(BigNumber *bn)
+ARC4::~ARC4()
 {
-    UpdateData(bn->AsByteArray(), bn->GetNumBytes());
+    EVP_CIPHER_CTX_cleanup(&m_ctx);
 }
 
-void HMACSHA1::UpdateData(const uint8 *data, int length)
+void ARC4::Init(uint8 *seed)
 {
-    HMAC_Update(&m_ctx, data, length);
+    EVP_EncryptInit_ex(&m_ctx, NULL, NULL, seed, NULL);
 }
 
-void HMACSHA1::UpdateData(const std::string &str)
+void ARC4::UpdateData(int len, uint8 *data)
 {
-    UpdateData((uint8 const*)str.c_str(), str.length());
-}
-
-void HMACSHA1::Finalize()
-{
-    uint32 length = 0;
-    HMAC_Final(&m_ctx, (uint8*)m_digest, &length);
-    MANGOS_ASSERT(length == SHA_DIGEST_LENGTH);
-}
-
-uint8 *HMACSHA1::ComputeHash(BigNumber *bn)
-{
-    HMAC_Update(&m_ctx, bn->AsByteArray(), bn->GetNumBytes());
-    Finalize();
-    return (uint8*)m_digest;
+    int outlen = 0;
+    EVP_EncryptUpdate(&m_ctx, data, &outlen, data, len);
+    EVP_EncryptFinal_ex(&m_ctx, data, &outlen);
 }

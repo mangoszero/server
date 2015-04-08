@@ -81,6 +81,9 @@
 #include "RandomPlayerbotMgr.h"
 #endif
 
+// WARDEN
+#include "WardenCheckMgr.h"
+
 INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
@@ -729,6 +732,16 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_PLAYERBOT_SHAREDBOTS, "PlayerbotAI.SharedBots", true);
 #endif
 
+    // WARDEN
+
+    setConfig(CONFIG_BOOL_WARDEN_ENABLED, "Warden.Enabled", false);
+    setConfig(CONFIG_INT32_WARDEN_NUM_MEM_CHECKS, "Warden.NumMemChecks", 3);
+    setConfig(CONFIG_INT32_WARDEN_NUM_OTHER_CHECKS, "Warden.NumOtherChecks", 7);
+    setConfig(CONFIG_INT32_WARDEN_CLIENT_BAN_DURATION, "Warden.BanDuration", 86400);
+    setConfig(CONFIG_INT32_WARDEN_CLIENT_CHECK_HOLDOFF, "Warden.ClientCheckHoldOff", 30);
+    setConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION, "Warden.ClientCheckFailAction", 0);
+    setConfig(CONFIG_INT32_WARDEN_CLIENT_RESPONSE_DELAY, "Warden.ClientResponseDelay", 600);
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
@@ -1318,6 +1331,15 @@ void World::SetInitialWorldSettings()
     // Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager
     sLog.outString("Loading Transports...");
     sMapMgr.LoadTransports();
+
+    // Initialize Warden
+    sLog.outString("Loading Warden Checks...");
+    sWardenCheckMgr->LoadWardenChecks();
+    sLog.outString();
+
+    sLog.outString("Loading Warden Action Overrides...");
+    sWardenCheckMgr->LoadWardenOverrides();
+    sLog.outString();
 
     sLog.outString("Deleting expired bans...");
     LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");

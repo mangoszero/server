@@ -716,4 +716,7 @@ uint32 CreatePIDFile(const std::string& filename);
  * @param result
  */
 void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result);
+
+std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = false);
+void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
 #endif

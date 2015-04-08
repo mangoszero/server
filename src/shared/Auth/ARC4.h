@@ -3,6 +3,7 @@
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
  * Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
+ * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,45 +23,22 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Auth/HMACSHA1.h"
-#include "BigNumber.h"
+#ifndef _AUTH_SARC4_H
+#define _AUTH_SARC4_H
 
-HMACSHA1::HMACSHA1(uint32 len, uint8 *seed)
-{
-    HMAC_CTX_init(&m_ctx);
-    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), NULL);
-}
+#include <openssl/evp.h>
+#include "Common/Common.h"
 
-HMACSHA1::~HMACSHA1()
+class ARC4
 {
-    HMAC_CTX_cleanup(&m_ctx);
-}
+    public:
+        ARC4(uint8 len);
+        ARC4(uint8 *seed, uint8 len);
+        ~ARC4();
+        void Init(uint8 *seed);
+        void UpdateData(int len, uint8 *data);
+    private:
+        EVP_CIPHER_CTX m_ctx;
+};
 
-void HMACSHA1::UpdateBigNumber(BigNumber *bn)
-{
-    UpdateData(bn->AsByteArray(), bn->GetNumBytes());
-}
-
-void HMACSHA1::UpdateData(const uint8 *data, int length)
-{
-    HMAC_Update(&m_ctx, data, length);
-}
-
-void HMACSHA1::UpdateData(const std::string &str)
-{
-    UpdateData((uint8 const*)str.c_str(), str.length());
-}
-
-void HMACSHA1::Finalize()
-{
-    uint32 length = 0;
-    HMAC_Final(&m_ctx, (uint8*)m_digest, &length);
-    MANGOS_ASSERT(length == SHA_DIGEST_LENGTH);
-}
-
-uint8 *HMACSHA1::ComputeHash(BigNumber *bn)
-{
-    HMAC_Update(&m_ctx, bn->AsByteArray(), bn->GetNumBytes());
-    Finalize();
-    return (uint8*)m_digest;
-}
+#endif
