@@ -128,6 +128,7 @@ struct go_table_theka : public GameObjectScript
 
     bool OnGossipHello(Player* pPlayer, GameObject* pGo) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pPlayer->GetQuestStatus(QUEST_SPIDER_GOD) == QUEST_STATUS_INCOMPLETE)
             pPlayer->AreaExploredOrEventHappens(QUEST_SPIDER_GOD);
 

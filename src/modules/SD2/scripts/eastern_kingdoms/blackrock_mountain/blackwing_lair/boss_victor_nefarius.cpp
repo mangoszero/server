@@ -412,6 +412,7 @@ struct boss_victor_nefarius : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pCreature->GetMapId() != MAP_ID_BWL)
         {
             return true;
@@ -424,6 +425,7 @@ struct boss_victor_nefarius : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         if (pCreature->GetMapId() != MAP_ID_BWL)
         {
             return true;

@@ -500,6 +500,7 @@ struct npc_disciple_of_naralex : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         ScriptedInstance* m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
 
         if (pCreature->IsQuestGiver())
@@ -525,6 +526,7 @@ struct npc_disciple_of_naralex : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         ScriptedInstance* m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
 
         if (!m_pInstance)

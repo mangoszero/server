@@ -2027,7 +2027,7 @@ void ScriptMgr::LoadScriptBinding()
     {
         if (m_scriptBind[i].size()) //ignore missing script types to shorten the log
         {
-            sLog.outString(".. type %u: %u binds", i, m_scriptBind[i].size());
+            sLog.outString(".. type %u: %u binds", i, uint32(m_scriptBind[i].size()));
             count -= m_scriptBind[i].size();
         }
     }

@@ -91,6 +91,7 @@ struct npc_ragged_john : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override   //TODO localisation setup
     {
+        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pCreature->IsQuestGiver())
         {
             pPlayer->PrepareQuestMenu(pCreature->GetObjectGuid());
@@ -107,6 +108,7 @@ struct npc_ragged_john : public CreatureScript
 
     bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction) override
     {
+        pPlayer->PlayerTalkClass->ClearMenus();
         switch (uiAction)
         {
         case GOSSIP_ACTION_INFO_DEF:
