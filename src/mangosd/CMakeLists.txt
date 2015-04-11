@@ -1,4 +1,7 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+# MaNGOS is a full featured server for World of Warcraft, supporting
+# the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+#
+# Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,26 +19,26 @@
 
 set(EXECUTABLE_NAME mangosd)
 
-#Command Line
-file(GLOB_RECURSE SRC_GRP_COMM Comm/*.cpp Comm/*.h)
+#Main Files
+file(GLOB SRC_GRP_MAIN *.cpp *.h)
+source_group("Main" FILES ${SRC_GRP_MAIN})
+
+#Command Line Files
+file(GLOB SRC_GRP_COMM Comm/*.cpp Comm/*.h)
 source_group("Command Line" FILES ${SRC_GRP_COMM})
 
-#Remote Access
-file(GLOB_RECURSE SRC_GRP_RA RA/*.cpp RA/*.h)
+#Remote Access Files
+file(GLOB SRC_GRP_RA RA/*.cpp RA/*.h)
 source_group("Remote Access" FILES ${SRC_GRP_RA})
 
 set(EXECUTABLE_SRCS
     ${SRC_GRP_COMM}
     ${SRC_GRP_RA}
-    Main.cpp
-    Master.cpp
-    Master.h
-    WorldRunnable.cpp
-    WorldRunnable.h
+    ${SRC_GRP_MAIN}
 )
 
 if(SOAP)
-    file(GLOB_RECURSE SRC_GRP_SOAP SOAP/*.cpp SOAP/*.h)
+    file(GLOB SRC_GRP_SOAP SOAP/*.cpp SOAP/*.h)
     source_group("SOAP" FILES ${SRC_GRP_SOAP})
     LIST(APPEND EXECUTABLE_SRCS ${SRC_GRP_SOAP})
 endif()
@@ -73,8 +76,8 @@ include_directories(
 
 if(PLAYERBOTS)
     include_directories(
-        "${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot"
-        "${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot"
+        ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot
+        ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot
     )
 endif()
 

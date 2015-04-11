@@ -1,6 +1,7 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+# MaNGOS is a full featured server for World of Warcraft, supporting
+# the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
 #
-# ***** BEGIN GPL LICENSE BLOCK *****
+# Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,39 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-# ***** END GPL LICENSE BLOCK *****
-#
-# World of Warcraft, and all World of Warcraft or Warcraft art, images,
-# and lore are copyrighted by Blizzard Entertainment, Inc.
 
 set(LIBRARY_NAME shared)
 
-file(GLOB_RECURSE SRC_GRP_AUTH Auth/*.cpp Auth/*.h)
+file(GLOB SRC_GRP_AUTH Auth/*.cpp Auth/*.h)
 source_group("Auth" FILES ${SRC_GRP_AUTH})
 
-file(GLOB_RECURSE SRC_GRP_COMMON Common/*.cpp Common/*.h)
+file(GLOB SRC_GRP_COMMON Common/*.cpp Common/*.h)
 source_group("Common" FILES ${SRC_GRP_COMMON})
 
-file(GLOB_RECURSE SRC_GRP_CONFIG Config/*.cpp Config/*.h)
+file(GLOB SRC_GRP_CONFIG Config/*.cpp Config/*.h)
 source_group("Config" FILES ${SRC_GRP_CONFIG})
 
-file(GLOB_RECURSE SRC_GRP_DATABASE Database/*.cpp Database/*.h)
+file(GLOB SRC_GRP_DATABASE Database/*.cpp Database/*.h)
 source_group("Database" FILES ${SRC_GRP_DATABASE})
 
-file(GLOB_RECURSE SRC_GRP_DATASTORE DataStores/*.cpp DataStores/*.h)
+file(GLOB SRC_GRP_DATASTORE DataStores/*.cpp DataStores/*.h)
 source_group("DataStores" FILES ${SRC_GRP_DATASTORE})
 
-file(GLOB_RECURSE SRC_GRP_LOCKQ LockedQueue/*.cpp LockedQueue/*.h)
+file(GLOB SRC_GRP_LOCKQ LockedQueue/*.cpp LockedQueue/*.h)
 source_group("LockedQueue" FILES ${SRC_GRP_LOCKQ})
 
-file(GLOB_RECURSE SRC_GRP_LOG Log/*.cpp Log/*.h)
+file(GLOB SRC_GRP_LOG Log/*.cpp Log/*.h)
 source_group("Log" FILES ${SRC_GRP_LOG})
 
-file(GLOB_RECURSE SRC_GRP_THREAD Threading/*.cpp Threading/*.h)
+file(GLOB SRC_GRP_THREAD Threading/*.cpp Threading/*.h)
 source_group("Threading" FILES ${SRC_GRP_THREAD})
 
-file(GLOB_RECURSE SRC_GRP_UTIL Utilities/*.cpp Utilities/*.h)
+file(GLOB SRC_GRP_UTIL Utilities/*.cpp Utilities/*.h)
 source_group("Utilities" FILES ${SRC_GRP_UTIL})
 
 set(LIBRARY_SRCS
@@ -65,10 +61,10 @@ set(LIBRARY_SRCS
 
 # OS specific files
 if(WIN32)
-    file(GLOB_RECURSE SRC_GRP_WIN Win/*.cpp Win/*.h)
+    file(GLOB SRC_GRP_WIN Win/*.cpp Win/*.h)
     LIST(APPEND LIBRARY_SRCS ${SRC_GRP_WIN})
 else()
-    file(GLOB_RECURSE SRC_GRP_LINUX Linux/*.cpp Linux/*.h)
+    file(GLOB SRC_GRP_LINUX Linux/*.cpp Linux/*.h)
     LIST(APPEND LIBRARY_SRCS ${SRC_GRP_LINUX})
 endif()
 
@@ -89,9 +85,7 @@ endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/SystemConfig.h.in" "${CMAKE_CURRENT_BINARY_DIR}/SystemConfig.h")
 
-add_library(${LIBRARY_NAME} STATIC
-    ${LIBRARY_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
 if(POSTGRESQL)
     target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})

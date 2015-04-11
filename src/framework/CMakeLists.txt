@@ -1,4 +1,7 @@
-# This code is part of MaNGOS. Contributor & Copyright details are in AUTHORS/THANKS.
+# MaNGOS is a full featured server for World of Warcraft, supporting
+# the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+#
+# Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,102 +19,40 @@
 
 set(LIBRARY_NAME framework)
 
-set(SRC_GRP_DYNAMIC
-    Dynamic/FactoryHolder.h
-    Dynamic/ObjectRegistry.h
-)
+file(GLOB SRC_GRP_DYNAMIC Dynamic/*.h)
+source_group("Dynamic" FILES ${SRC_GRP_DYNAMIC})
 
-set(SRC_GRP_GAMESYSTEM
-    GameSystem/Grid.h
-    GameSystem/GridLoader.h
-    GameSystem/GridReference.h
-    GameSystem/GridRefManager.h
-    GameSystem/NGrid.h
-    GameSystem/TypeContainer.h
-    GameSystem/TypeContainerFunctions.h
-    GameSystem/TypeContainerVisitor.h
-)
+file(GLOB SRC_GRP_GAMESYSTEM GameSystem/*.h)
+source_group("GameSystem" FILES ${SRC_GRP_GAMESYSTEM})
 
-set(SRC_GRP_PLATFORM
-    Platform/CompilerDefs.h
-    Platform/Define.h
-)
+file(GLOB SRC_GRP_PLATFORM Platform/*.h)
+source_group("Platform" FILES ${SRC_GRP_PLATFORM})
 
-set(SRC_GRP_POLICIES
-    Policies/CreationPolicy.h
-    Policies/ObjectLifeTime.cpp
-    Policies/ObjectLifeTime.h
-    Policies/Singleton.h
-    Policies/ThreadingModel.h
-)
+file(GLOB SRC_GRP_POLICIES Policies/*.h Policies/*.cpp)
+source_group("Policies" FILES ${SRC_GRP_POLICIES})
 
-set(SRC_GRP_UTIL
-    Utilities/ByteConverter.h
-    Utilities/Callback.h
-    Utilities/EventProcessor.cpp
-    Utilities/EventProcessor.h
-    Utilities/LinkedList.h
-    Utilities/TypeList.h
-    Utilities/UnorderedMapSet.h
-)
+file(GLOB SRC_GRP_UTILITIES Utilities/*.h Utilities/*.cpp)
+source_group("Utilities" FILES ${SRC_GRP_UTILITIES})
 
-set(SRC_GRP_LINKED_REFERENCE
-    Utilities/LinkedReference/Reference.h
-    Utilities/LinkedReference/RefManager.h
-)
+file(GLOB SRC_GRP_LINKED_REFERENCE Utilities/LinkedReference/*.h)
+source_group("Utilities\\LinkedReference" FILES ${SRC_GRP_LINKED_REFERENCE})
 
 set(LIBRARY_SRCS
     ${SRC_GRP_DYNAMIC}
     ${SRC_GRP_GAMESYSTEM}
     ${SRC_GRP_PLATFORM}
     ${SRC_GRP_POLICIES}
-    ${SRC_GRP_UTIL}
-    ${SRC_GRP_LINKED_REFERENCE}
-)
-
-source_group("Dynamic"
-  FILES
-    ${SRC_GRP_DYNAMIC}
-)
-
-source_group("GameSystem"
-  FILES
-    ${SRC_GRP_GAMESYSTEM}
-)
-
-source_group("Platform"
-  FILES
-    ${SRC_GRP_PLATFORM}
-)
-
-source_group("Policies"
-  FILES
-    ${SRC_GRP_POLICIES}
-)
-
-source_group("Utilities"
-  FILES
-    ${SRC_GRP_UTIL}
-)
-
-source_group("Utilities\\LinkedReference"
-  FILES
+    ${SRC_GRP_UTILITIES}
     ${SRC_GRP_LINKED_REFERENCE}
 )
 
 include_directories(
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${ACE_INCLUDE_DIR}"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${ACE_INCLUDE_DIR}
 )
 
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
 if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ace)
+    add_dependencies(${LIBRARY_NAME} ace)
 endif()
-
-target_link_libraries(${LIBRARY_NAME}
-  ${TBB_LIBRARIES}
-)

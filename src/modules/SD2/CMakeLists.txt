@@ -1,5 +1,8 @@
+# MaNGOS is a full featured server for World of Warcraft, supporting
+# the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
 #
-# Copyright (C) 2005-2015 MaNGOS <http://getmangos.eu/>
+# Copyright (C) 2005-2015  MaNGOS project <http://getmangos.eu>
+# Copyright (C) 2006-2013  ScriptDev2 project <http://www.scriptdev2.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-#
-# ***** END GPL LICENSE BLOCK *****
-#
-# World of Warcraft, and all World of Warcraft or Warcraft art, images,
-# and lore are copyrighted by Blizzard Entertainment, Inc.
 
 include(MacroMangosSourceGroup)
 
@@ -210,9 +208,7 @@ file(GLOB sources_raid_k_taq scripts/kalimdor/temple_of_ahnqiraj/*.cpp scripts/k
     LIST(APPEND mangosscript_LIB_SRCS ${sources_raid_k_taq})
     source_group("Kalimdor Scripts\\Raids\\Temple of AQ" FILES ${sources_raid_k_taq})
 
-add_library(mangosscript STATIC
-    ${mangosscript_LIB_SRCS}
-)
+add_library(mangosscript STATIC ${mangosscript_LIB_SRCS})
   
 # Generate PCH
 if(PCH)
