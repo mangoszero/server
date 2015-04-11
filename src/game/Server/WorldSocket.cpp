@@ -659,7 +659,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     BigNumber v, s, g, N, K;
     std::string os;
     WorldPacket packet, SendAddonPacked;
-    bool wardenActive = sWorld.getConfig(CONFIG_BOOL_WARDEN_ENABLED);
+    bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
 
     // Read the content of the packet
     recvPacket >> BuiltNumberClient;

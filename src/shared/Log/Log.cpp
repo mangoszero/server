@@ -76,7 +76,7 @@ Log::Log() :
 #ifdef ENABLE_ELUNA
     elunaErrLogfile(NULL), 
 #endif /* ENABLE_ELUNA */
-    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), m_colored(false), 
+    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
     Initialize();
@@ -279,6 +279,7 @@ void Log::Initialize()
     eventAiErLogfile = openLogFile("EventAIErrorLogFile", NULL, "a");
     raLogfile = openLogFile("RaLogFile", NULL, "a");
     worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
+    wardenLogfile = openLogFile("WardenLogFile", "WardenLogTimestamp", "a");
 
     // Main log file settings
     m_includeTime  = sConfig.GetBoolDefault("LogTime", false);
@@ -864,6 +865,69 @@ void Log::outCommand(uint32 account, const char* str, ...)
         fprintf(gmLogfile, "\n");
         va_end(ap);
         fflush(gmLogfile);
+    }
+
+    fflush(stdout);
+}
+
+void Log::outWarden()
+{
+    if (m_includeTime)
+    {
+        outTime();
+    }
+    printf("\n");
+    if (wardenLogfile)
+    {
+        outTimestamp(wardenLogfile);
+        fprintf(wardenLogfile, "\n");
+        fflush(wardenLogfile);
+    }
+
+    fflush(stdout);
+}
+
+void Log::outWarden(const char* str, ...)
+{
+    if (!str)
+    {
+        return;
+    }
+
+    if (m_colored)
+    {
+        SetColor(true, m_colors[LogNormal]);
+    }
+
+    if (m_includeTime)
+    {
+        outTime();
+    }
+
+    va_list ap;
+
+    va_start(ap, str);
+    vutf8printf(stdout, str, &ap);
+    va_end(ap);
+
+    if (m_colored)
+    {
+        ResetColor(true);
+    }
+
+    printf("\n");
+
+    if (wardenLogfile)
+    {
+        outTimestamp(wardenLogfile);
+        fprintf(wardenLogfile, "[Warden]: ");
+
+        va_start(ap, str);
+        vfprintf(wardenLogfile, str, ap);
+        fprintf(wardenLogfile, "\n");
+        va_end(ap);
+
+        fflush(wardenLogfile);
     }
 
     fflush(stdout);

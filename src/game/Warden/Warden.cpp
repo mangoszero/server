@@ -53,7 +53,7 @@ Warden::~Warden()
 
 void Warden::SendModuleToClient()
 {
-    sLog.outError("[Warden]: Send module to client");
+    sLog.outWarden("Send module to client");
 
     // Create packet structure
     WardenModuleTransfer packet;
@@ -79,7 +79,7 @@ void Warden::SendModuleToClient()
 
 void Warden::RequestModule()
 {
-    sLog.outError("[Warden]: Request module");
+    sLog.outWarden("Request module");
 
     // Create packet structure
     WardenModuleUse request;
@@ -114,7 +114,7 @@ void Warden::Update()
                 // Kick player if client response delays more than set in config
                 if (_clientResponseTimer > maxClientResponseDelay * IN_MILLISECONDS)
                 {
-                    sLog.outError("[Warden]: %s (latency: %u, IP: %s) exceeded Warden module response delay for more than %s - disconnecting client",
+                    sLog.outWarden("%s (latency: %u, IP: %s) exceeded Warden module response delay for more than %s - disconnecting client",
                         _session->GetPlayerName(), _session->GetLatency(), _session->GetRemoteAddress().c_str(), secsToTimeString(maxClientResponseDelay, true).c_str());
                     _session->KickPlayer();
                 }
@@ -150,12 +150,12 @@ bool Warden::IsValidCheckSum(uint32 checksum, const uint8* data, const uint16 le
 
     if (checksum != newChecksum)
     {
-        sLog.outError("[Warden]: CHECKSUM IS NOT VALID");
+        sLog.outWarden("CHECKSUM IS NOT VALID");
         return false;
     }
     else
     {
-        sLog.outError("[Warden]: CHECKSUM IS VALID");
+        sLog.outWarden("CHECKSUM IS VALID");
         return true;
     }
 }
@@ -233,7 +233,7 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
     _warden->DecryptData(const_cast<uint8*>(recvData.contents()), recvData.size());
     uint8 opcode;
     recvData >> opcode;
-    sLog.outError("[Warden]: Got packet, opcode %02X, size %u", opcode, uint32(recvData.size()));
+    sLog.outWarden("Got packet, opcode %02X, size %u", opcode, uint32(recvData.size()));
     recvData.hexlike();
 
     switch (opcode)
@@ -248,17 +248,17 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
             _warden->HandleData(recvData);
             break;
         case WARDEN_CMSG_MEM_CHECKS_RESULT:
-            sLog.outError("[Warden]: NYI WARDEN_CMSG_MEM_CHECKS_RESULT received!");
+            sLog.outWarden("NYI WARDEN_CMSG_MEM_CHECKS_RESULT received!");
             break;
         case WARDEN_CMSG_HASH_RESULT:
             _warden->HandleHashResult(recvData);
             _warden->InitializeModule();
             break;
         case WARDEN_CMSG_MODULE_FAILED:
-            sLog.outError("[Warden]: NYI WARDEN_CMSG_MODULE_FAILED received!");
+            sLog.outWarden("NYI WARDEN_CMSG_MODULE_FAILED received!");
             break;
         default:
-            sLog.outError("[Warden]: Got unknown warden opcode %02X of size %u.", opcode, uint32(recvData.size() - 1));
+            sLog.outWarden("Got unknown warden opcode %02X of size %u.", opcode, uint32(recvData.size() - 1));
             break;
     }
 }

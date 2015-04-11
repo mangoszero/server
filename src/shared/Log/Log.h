@@ -166,6 +166,12 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             if (worldLogfile != NULL)
                 { fclose(worldLogfile); }
             worldLogfile = NULL;
+
+            if (wardenLogfile != NULL)
+            {
+                fclose(wardenLogfile);
+            }
+            wardenLogfile = NULL;
         }
     public:
         /**
@@ -301,6 +307,17 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          */
         void outRALog(const char* str, ...)       ATTR_PRINTF(2, 3);
         /**
+        * @brief any log level
+        *
+        */
+        void outWarden();
+        /**
+        * @brief any log level
+        *
+        * @param str...
+        */
+        void outWarden(const char* str, ...)      ATTR_PRINTF(2, 3);
+        /**
          * @brief
          *
          * @return uint32
@@ -425,6 +442,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* eventAiErLogfile; /**< TODO */
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
+        FILE* wardenLogfile; /**< TODO */
         ACE_Thread_Mutex m_worldLogMtx; /**< TODO */
 
         LogLevel m_logLevel; /**< log/console control */

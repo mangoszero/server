@@ -825,15 +825,14 @@ void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
 
 void WorldSession::InitWarden(BigNumber* k, std::string const& os)
 {
-    if (os == "Win")
+    if (os == "Win" && sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED))
     {
         _warden = new WardenWin();
         _warden->Init(this, k);
     }
-    else if (os == "OSX")
+    else if (os == "OSX" && sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED))
     {
-        // Disabled as it is causing the client to crash
-        // _warden = new WardenMac();
-        // _warden->Init(this, k);
+        _warden = new WardenMac();
+        _warden->Init(this, k);
     }
 }

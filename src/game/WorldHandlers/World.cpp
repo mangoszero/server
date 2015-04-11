@@ -734,7 +734,8 @@ void World::LoadConfigSettings(bool reload)
 
     // WARDEN
 
-    setConfig(CONFIG_BOOL_WARDEN_ENABLED, "Warden.Enabled", false);
+    setConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED, "Warden.WinEnabled", true);
+    setConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED, "Warden.OSXEnabled", false);
     setConfig(CONFIG_INT32_WARDEN_NUM_MEM_CHECKS, "Warden.NumMemChecks", 3);
     setConfig(CONFIG_INT32_WARDEN_NUM_OTHER_CHECKS, "Warden.NumOtherChecks", 7);
     setConfig(CONFIG_INT32_WARDEN_CLIENT_BAN_DURATION, "Warden.BanDuration", 86400);

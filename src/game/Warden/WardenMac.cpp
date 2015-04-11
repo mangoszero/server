@@ -61,16 +61,16 @@ void WardenMac::Init(WorldSession* pClient, BigNumber* K)
 
     _inputCrypto.Init(_inputKey);
     _outputCrypto.Init(_outputKey);
-    sLog.outError("[Warden]: Server side warden for client %u initializing...", pClient->GetAccountId());
-    sLog.outError("[Warden]: C->S Key: %s", ByteArrayToHexStr(_inputKey, 16).c_str());
-    sLog.outError("[Warden]: S->C Key: %s", ByteArrayToHexStr(_outputKey, 16).c_str());
-    sLog.outError("[Warden]:   Seed: %s", ByteArrayToHexStr(_seed, 16).c_str());
-    sLog.outError("[Warden]: Loading Module...");
+    sLog.outWarden("Server side warden for client %u initializing...", pClient->GetAccountId());
+    sLog.outWarden("C->S Key: %s", ByteArrayToHexStr(_inputKey, 16).c_str());
+    sLog.outWarden("S->C Key: %s", ByteArrayToHexStr(_outputKey, 16).c_str());
+    sLog.outWarden("  Seed: %s", ByteArrayToHexStr(_seed, 16).c_str());
+    sLog.outWarden("Loading Module...");
 
     _module = GetModuleForClient();
 
-    sLog.outError("[Warden]: Module Key: %s", ByteArrayToHexStr(_module->Key, 16).c_str());
-    sLog.outError("[Warden]: Module ID: %s", ByteArrayToHexStr(_module->Id, 16).c_str());
+    sLog.outWarden("Module Key: %s", ByteArrayToHexStr(_module->Key, 16).c_str());
+    sLog.outWarden("Module ID: %s", ByteArrayToHexStr(_module->Id, 16).c_str());
     RequestModule();
 }
 
@@ -97,12 +97,12 @@ ClientWardenModule* WardenMac::GetModuleForClient()
 
 void WardenMac::InitializeModule()
 {
-    sLog.outError("[Warden]: Initialize module");
+    sLog.outWarden("Initialize module");
 }
 
 void WardenMac::RequestHash()
 {
-    sLog.outError("[Warden]: Request hash");
+    sLog.outWarden("Request hash");
 
     // Create packet structure
     WardenHashRequest Request;
@@ -170,11 +170,13 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     // Verify key
     if (memcmp(buff.contents() + 1, sha1.GetDigest(), 20) != 0)
     {
-        sLog.outError("[Warden]: %s failed hash reply. Action: %s", _session->GetPlayerName(), Penalty().c_str());
+        sLog.outWarden("%s failed hash reply. Action: %s", _session->GetPlayerName(), Penalty().c_str());
+        if (sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION) != 0)
+            _session->KickPlayer();
         return;
     }
 
-    sLog.outError("[Warden]: Request hash reply: succeed");
+    sLog.outWarden("Request hash reply: succeed");
 
     // client 7F96EEFDA5B63D20A4DF8E00CBF48304
     //const uint8 client_key[16] = { 0x7F, 0x96, 0xEE, 0xFD, 0xA5, 0xB6, 0x3D, 0x20, 0xA4, 0xDF, 0x8E, 0x00, 0xCB, 0xF4, 0x83, 0x04 };
@@ -196,7 +198,7 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
 
 void WardenMac::RequestData()
 {
-    sLog.outError("[Warden]: Request data");
+    sLog.outWarden("Request data");
 
     ByteBuffer buff;
     buff << uint8(WARDEN_SMSG_CHEAT_CHECKS_REQUEST);
@@ -220,7 +222,7 @@ void WardenMac::RequestData()
 
 void WardenMac::HandleData(ByteBuffer &buff)
 {
-    sLog.outError("[Warden]: Handle data");
+    sLog.outWarden("Handle data");
 
     _dataSent = false;
     _clientResponseTimer = 0;
@@ -238,7 +240,7 @@ void WardenMac::HandleData(ByteBuffer &buff)
     //    return;
     //}
 
-    //bool found = false;
+    bool found = false;
 
     std::string str = "Test string!";
 
@@ -253,8 +255,8 @@ void WardenMac::HandleData(ByteBuffer &buff)
 
     if (memcmp(sha1Hash, sha1.GetDigest(), 20) != 0)
     {
-        sLog.outError("[Warden]: Handle data failed: SHA1 hash is wrong!");
-        //found = true;
+        sLog.outWarden("Handle data failed: SHA1 hash is wrong!");
+        found = true;
     }
 
     MD5_CTX ctx;
@@ -268,9 +270,16 @@ void WardenMac::HandleData(ByteBuffer &buff)
 
     if (memcmp(ourMD5Hash, theirsMD5Hash, 16) != 0)
     {
-        sLog.outError("[Warden]: Handle data failed: MD5 hash is wrong!");
-        //found = true;
+        sLog.outWarden("Handle data failed: MD5 hash is wrong!");
+        found = true;
     }
 
-    _session->KickPlayer();
+    if (found && sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION) != 0)
+        _session->KickPlayer();
+    else
+        sLog.outWarden("SHA1 and MD5 hash verified. Handle data passed.");
+
+    // Set hold off timer, minimum timer should at least be 1 second
+    uint32 holdOff = sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_CHECK_HOLDOFF);
+    _checkTimer = (holdOff < 1 ? 1 : holdOff) * IN_MILLISECONDS;
 }

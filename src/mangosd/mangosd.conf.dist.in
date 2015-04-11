@@ -3,7 +3,7 @@
 ################################################################################
 
 [MangosdConf]
-ConfVersion=2015040901
+ConfVersion=2015041201
 
 ################################################################################
 # CONNECTIONS AND DIRECTORIES
@@ -372,6 +372,11 @@ CleanCharacterDB                  = 1
 #        Default: "Ra.log"
 #                 "" - Empty name for disable
 #
+#    WardenLogFile
+#        Log file for warden-related output
+#        Default: ""          - no log file created
+#                 "warden.log" - recommended name to create a log file
+#
 #    LogColors
 #        Color for messages (format "normal_color details_color debug_color error_color")
 #        Colors: 0 - BLACK, 1 - RED, 2 - GREEN,  3 - BROWN, 4 - BLUE, 5 - MAGENTA, 6 -  CYAN, 7 - GREY,
@@ -417,6 +422,8 @@ GmLogFile                   = "world-gamemaster.log"
 GmLogTimestamp              = 0
 GmLogPerAccount             = 0
 RaLogFile                   = "world-remote-access.log"
+WardenLogFile               = "warden.log"
+WardenLogTimestamp          = 0
 LogColors                   = "13 7 11 9"
 SD2ErrorLogFile             = "scriptdev2-errors.log"
 
@@ -1621,10 +1628,15 @@ CharDelete.KeepDays = 30
 ###################################################################################################
 # WARDEN SETTINGS
 #
-#    Warden.Enabled
-#        Description: Enable Warden anticheat system.
+#    Warden.WinEnabled
+#        Description: Enables Warden checks for Windows clients.
 #        Default:     1 - (Enabled)
 #                     0 - (Disabled)
+#
+#    Warden.OSXEnabled
+#        Description: Enables Warden checks for OSX clients.
+#        Default:     0 - (Disabled)
+#                     1 - (Enabled)
 #
 #    Warden.NumMemChecks
 #        Description: Number of Warden memory checks that are sent to the client each cycle.
@@ -1664,7 +1676,8 @@ CharDelete.KeepDays = 30
 #
 ###################################################################################################
 
-Warden.Enabled = 1
+Warden.WinEnabled = 1
+Warden.OSXEnabled = 0
 Warden.NumMemChecks = 3
 Warden.NumOtherChecks = 7
 Warden.ClientResponseDelay = 600
