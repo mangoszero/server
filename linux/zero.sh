@@ -176,6 +176,9 @@ while [ $choice -eq 3 ]; do
 		sleep 1
 		apt-get -y install git 
 		apt-get -y install g++ 
+		apt-get -y install gcc 
+		apt-get -y install make 
+		apt-get -y install autoconf
 		cecho "-------------------------" $bldgreen
 		cecho "Installing required libraries..." $bldgreen
 		cecho "-------------------------" $bldgreen
@@ -187,7 +190,6 @@ while [ $choice -eq 3 ]; do
 		apt-get -y install libmysqlclient-dev 
 		apt-get -y install libssl-dev
 		apt-get -y install zlib1g-dev
-		apt-get -y install autoconf
 		apt-get -y install libtool
 		cecho "-------------------------" $bldgreen
 		cecho "Installing mysql..." $bldgreen
@@ -353,8 +355,7 @@ while [ $choice -eq 3 ]; do
 		cecho "Preparing DB Updates..." $bldgreen
 		cecho "--------------" $bldgreen
 		sleep 1
-		su -c "cat /home/mangos/database/Character/Updates/Rel21/*.sql > /home/mangos/database/Character/Updates/Rel21/all.sql" -s /bin/bash mangos
-		su -c "cat /home/mangos/database/World/Setup/FullDB/*.sql > /home/mangos/database/World/Setup/FullDB/all.sql" -s /bin/bash mangos
+		su -c "cat /home/mangos/database/World/Setup/FullDB/*.sql >> /home/mangos/database/World/Setup/FullDB/all.sql" -s /bin/bash mangos
 		cecho "--------------" $bldgreen
 		cecho "Importing realmd..." $bldgreen
 		cecho "--------------" $bldgreen
@@ -365,7 +366,6 @@ while [ $choice -eq 3 ]; do
 		cecho "--------------" $bldgreen
 		sleep 1
 		mysql -u root -p$mysqlpass characters < /home/mangos/database/Character/Setup/characterLoadDB.sql
-		mysql -u root -p$mysqlpass characters < /home/mangos/database/Character/Updates/Rel21/all.sql
 		cecho "--------------" $bldgreen
 		cecho "Importing mangos world..." $bldgreen
 		cecho "--------------" $bldgreen
@@ -416,6 +416,9 @@ while [ $choice -eq 3 ]; do
 			wait' >> /home/mangos/zero/mangos.sh
 		chown -R mangos:mangos /home/mangos/zero/*.sh
 		su -c "chmod +x /home/mangos/zero/*.sh" -s /bin/bash mangos
+		su -c "mv /home/mangos/zero/etc/realmd.conf.dist /home/mangos/zero/etc/realmd.conf" -s /bin/bash mangos
+		su -c "mv /home/mangos/zero/etc/mangos.conf.dist /home/mangos/zero/etc/mangos.conf" -s /bin/bash mangos
+		su -c "mv /home/mangos/zero/etc/ahbot.conf.dist /home/mangos/zero/etc/ahbot.conf" -s /bin/bash mangos
 		echo -e ""
 		cecho "------------------" $bldgreen
 		cecho "Auto Restart Scripts" $bldgreen
