@@ -26,10 +26,6 @@
 #ifndef _WARDEN_WIN_H
 #define _WARDEN_WIN_H
 
-#include <map>
-#include "ARC4.h"
-#include "BigNumber.h"
-#include "ByteBuffer.h"
 #include "Warden.h"
 
 #if defined(__GNUC__)
@@ -86,7 +82,6 @@ class WardenWin : public Warden
         void Init(WorldSession* session, BigNumber* K) override;
         ClientWardenModule* GetModuleForClient() override;
         void InitializeModule() override;
-        void RequestHash() override;
         void HandleHashResult(ByteBuffer &buff) override;
         void RequestData() override;
         void HandleData(ByteBuffer &buff) override;

@@ -3,7 +3,7 @@
 ################################################################################
 
 [MangosdConf]
-ConfVersion=2015041201
+ConfVersion=2015041202
 
 ################################################################################
 # CONNECTIONS AND DIRECTORIES
@@ -1674,6 +1674,13 @@ CharDelete.KeepDays = 30
 #        Default:     86400 - (24 hours)
 #                     0     - (Permanent ban)
 #
+#    Warden.DBLogLevel
+#        Description: The minimal WardenActions value of Warden check to be logged into realmd.warden_log table.
+#                     WardenActions: 0 - log, 1 - kick, 2 - ban
+#
+#        Deafult:     0 - (Logging any failed check)
+#                     3 - (Disable DB logging)
+#
 ###################################################################################################
 
 Warden.WinEnabled = 1
@@ -1684,6 +1691,7 @@ Warden.ClientResponseDelay = 600
 Warden.ClientCheckHoldOff = 30
 Warden.ClientCheckFailAction = 1
 Warden.BanDuration = 86400
+Warden.DBLogLevel = 0
 
 ###################################################################################################################
 #  ELUNA SETTINGS
