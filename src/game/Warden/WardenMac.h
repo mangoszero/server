@@ -26,14 +26,9 @@
 #ifndef _WARDEN_MAC_H
 #define _WARDEN_MAC_H
 
-#include "ARC4.h"
-#include <map>
-#include "BigNumber.h"
-#include "ByteBuffer.h"
 #include "Warden.h"
 
 class WorldSession;
-class Warden;
 
 class WardenMac : public Warden
 {
@@ -44,7 +39,6 @@ class WardenMac : public Warden
         void Init(WorldSession* session, BigNumber* k) override;
         ClientWardenModule* GetModuleForClient() override;
         void InitializeModule() override;
-        void RequestHash() override;
         void HandleHashResult(ByteBuffer& buff) override;
         void RequestData() override;
         void HandleData(ByteBuffer& buff) override;

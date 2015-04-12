@@ -31,6 +31,7 @@
 #include "BigNumber.h"
 #include "ByteBuffer.h"
 #include "WardenCheckMgr.h"
+#include "Database/DatabaseEnv.h"
 
 enum WardenOpcodes
 {
@@ -109,9 +110,6 @@ class WorldSession;
 
 class Warden
 {
-    friend class WardenWin;
-    friend class WardenMac;
-
     public:
         Warden();
         virtual ~Warden();
@@ -119,10 +117,10 @@ class Warden
         virtual void Init(WorldSession* session, BigNumber* k) = 0;
         virtual ClientWardenModule* GetModuleForClient() = 0;
         virtual void InitializeModule() = 0;
-        virtual void RequestHash() = 0;
+        virtual void RequestHash();
         virtual void HandleHashResult(ByteBuffer &buff) = 0;
         virtual void RequestData() = 0;
-        virtual void HandleData(ByteBuffer &buff) = 0;
+        virtual void HandleData(ByteBuffer &buff);
 
         void SendModuleToClient();
         void RequestModule();
@@ -136,7 +134,9 @@ class Warden
         // If no check is passed, the default action from config is executed
         std::string Penalty(WardenCheck* check = NULL);
 
-    private:
+    protected:
+        void LogPositiveToDB(WardenCheck* check);
+
         WorldSession* _session;
         uint8 _inputKey[16];
         uint8 _outputKey[16];

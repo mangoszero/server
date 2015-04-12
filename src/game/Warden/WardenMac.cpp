@@ -100,23 +100,6 @@ void WardenMac::InitializeModule()
     sLog.outWarden("Initialize module");
 }
 
-void WardenMac::RequestHash()
-{
-    sLog.outWarden("Request hash");
-
-    // Create packet structure
-    WardenHashRequest Request;
-    Request.Command = WARDEN_SMSG_HASH_REQUEST;
-    memcpy(Request.Seed, _seed, 16);
-
-    // Encrypt with warden RC4 key.
-    EncryptData((uint8*)&Request, sizeof(WardenHashRequest));
-
-    WorldPacket pkt(SMSG_WARDEN_DATA, sizeof(WardenHashRequest));
-    pkt.append((uint8*)&Request, sizeof(WardenHashRequest));
-    _session->SendPacket(&pkt);
-}
-
 struct keyData {
     union
     {
@@ -171,7 +154,7 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     if (memcmp(buff.contents() + 1, sha1.GetDigest(), 20) != 0)
     {
         sLog.outWarden("%s failed hash reply. Action: %s", _session->GetPlayerName(), Penalty().c_str());
-        if (sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION) != 0)
+        if (sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION) > uint32(WARDEN_ACTION_LOG))
             _session->KickPlayer();
         return;
     }
@@ -274,12 +257,10 @@ void WardenMac::HandleData(ByteBuffer &buff)
         found = true;
     }
 
-    if (found && sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION) != 0)
+    if (found && sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION) > uint32(WARDEN_ACTION_LOG))
         _session->KickPlayer();
     else
         sLog.outWarden("SHA1 and MD5 hash verified. Handle data passed.");
 
-    // Set hold off timer, minimum timer should at least be 1 second
-    uint32 holdOff = sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_CHECK_HOLDOFF);
-    _checkTimer = (holdOff < 1 ? 1 : holdOff) * IN_MILLISECONDS;
+    Warden::HandleData(buff);
 }

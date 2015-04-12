@@ -134,23 +134,6 @@ void WardenWin::InitializeModule()
     _session->SendPacket(&pkt);
 }
 
-void WardenWin::RequestHash()
-{
-    sLog.outWarden("Request hash");
-
-    // Create packet structure
-    WardenHashRequest Request;
-    Request.Command = WARDEN_SMSG_HASH_REQUEST;
-    memcpy(Request.Seed, _seed, 16);
-
-    // Encrypt with warden RC4 key.
-    EncryptData((uint8*)&Request, sizeof(WardenHashRequest));
-
-    WorldPacket pkt(SMSG_WARDEN_DATA, sizeof(WardenHashRequest));
-    pkt.append((uint8*)&Request, sizeof(WardenHashRequest));
-    _session->SendPacket(&pkt);
-}
-
 void WardenWin::HandleHashResult(ByteBuffer &buff)
 {
     buff.rpos(buff.wpos());
@@ -195,7 +178,7 @@ void WardenWin::RequestData()
     _currentChecks.clear();
 
     // Build check request
-    for (int32 i = 0; i < sWorld.getConfig(CONFIG_INT32_WARDEN_NUM_MEM_CHECKS); ++i)
+    for (uint16 i = 0; i < sWorld.getConfig(CONFIG_UINT32_WARDEN_NUM_MEM_CHECKS); ++i)
     {
         // If todo list is done break loop (will be filled on next Update() run)
         if (_memChecksTodo.empty())
@@ -214,7 +197,7 @@ void WardenWin::RequestData()
 
     ACE_READ_GUARD(ACE_RW_Mutex, g, sWardenCheckMgr->_checkStoreLock);
 
-    for (int32 i = 0; i < sWorld.getConfig(CONFIG_INT32_WARDEN_NUM_OTHER_CHECKS); ++i)
+    for (uint16 i = 0; i < sWorld.getConfig(CONFIG_UINT32_WARDEN_NUM_OTHER_CHECKS); ++i)
     {
         // If todo list is done break loop (will be filled on next Update() run)
         if (_otherChecksTodo.empty())
@@ -364,10 +347,8 @@ void WardenWin::HandleData(ByteBuffer &buff)
         uint32 ticksNow = WorldTimer::getMSTime();
         uint32 ourTicks = newClientTicks + (ticksNow - _serverTicks);
 
-        sLog.outWarden("ServerTicks %u", ticksNow);         // Now
-        sLog.outWarden("RequestTicks %u", _serverTicks);    // At request
-        sLog.outWarden("Ticks %u", newClientTicks);         // At response
-        sLog.outWarden("Ticks diff %u", ourTicks - newClientTicks);
+        sLog.outWarden("ServerTicks %u, RequestTicks %u, CLientTicks %u", ticksNow, _serverTicks, newClientTicks);  // Now, At request, At response
+        sLog.outWarden("Waittime %u", ourTicks - newClientTicks);
     }
 
     WardenCheckResult* rs;
@@ -494,11 +475,10 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
     if (checkFailed > 0)
     {
-        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(checkFailed);
+        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(checkFailed);   //note it IS NOT NULL here
         sLog.outWarden("%s failed Warden check %u. Action: %s", _session->GetPlayerName(), checkFailed, Penalty(check).c_str());
+        LogPositiveToDB(check);
     }
 
-    // Set hold off timer, minimum timer should at least be 1 second
-    uint32 holdOff = sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_CHECK_HOLDOFF);
-    _checkTimer = (holdOff < 1 ? 1 : holdOff) * IN_MILLISECONDS;
+    Warden::HandleData(buff);
 }

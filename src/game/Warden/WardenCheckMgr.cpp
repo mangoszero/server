@@ -95,7 +95,7 @@ void WardenCheckMgr::LoadWardenChecks()
         wardenCheck->CheckId = id;
 
         // Initialize action with default action from config
-        wardenCheck->Action = WardenActions(sWorld.getConfig(CONFIG_INT32_WARDEN_CLIENT_FAIL_ACTION));
+        wardenCheck->Action = WardenActions(sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION));
 
         if (checkType == PAGE_CHECK_A || checkType == PAGE_CHECK_B || checkType == DRIVER_CHECK)
         {
