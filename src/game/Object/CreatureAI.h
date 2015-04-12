@@ -342,6 +342,9 @@ class CreatureAI
          */
         virtual void ReceiveAIEvent(AIEventType /*eventType*/, Creature* /*pSender*/, Unit* /*pInvoker*/, uint32 /*miscValue*/) {}
 
+        // Reset should be defined here, as it is called from out the AI ctor now
+        virtual void Reset() {}
+
     protected:
         void HandleMovementOnAttackStart(Unit* victim);
 

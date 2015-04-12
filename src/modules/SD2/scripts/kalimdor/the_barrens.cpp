@@ -546,16 +546,12 @@ struct at_twiggy_flathead : public AreaTriggerScript
                 return true;
             }
 
-            if (CreatureAI* pTwiggyAI = pCreature->AI())    //TODO how the data transfer unit->object (GO, AT) may be implemented? CreatureAI::GetData()? or &miscValue in SendAIEvent?
+            if (CreatureAI* pTwiggyAI = pCreature->AI())
             {
-                pTwiggyAI->SendAIEvent(AI_EVENT_CUSTOM_A, pPlayer, pCreature);  //TODO check the state here and return true/false (other possible AT uses are blocked now!)
-                //if (pTwiggyAI->CanStartEvent(pPlayer))
-                //{
-                //    return false;    // ok to let mangos process further
-                //}
+                pTwiggyAI->SendAIEvent(AI_EVENT_CUSTOM_A, pPlayer, pCreature);
             }
 
-            return true;
+            return false;   //this will let the trigger pop up several times until the quest is complete, but who cares
         }
         return true;
     }

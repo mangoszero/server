@@ -514,7 +514,11 @@ CreatureAI* SD2::GetCreatureAI(Creature* pCreature)
         return NULL;
     }
 
-    return pTempScript->ToCreatureScript()->GetAI(pCreature);
+    CreatureAI* ai = pTempScript->ToCreatureScript()->GetAI(pCreature);
+    if (ai)
+        ai->Reset();
+
+    return ai;
 }
 
 bool SD2::ItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets)
