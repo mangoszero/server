@@ -262,6 +262,21 @@ bool IsIPAddress(char const* ipaddress)
     return ACE_OS::inet_addr(ipaddress) != INADDR_NONE;
 }
 
+std::string GetAddressString(ACE_INET_Addr const& addr)
+{
+    char buf[ACE_MAX_FULLY_QUALIFIED_NAME_LEN + 16];
+    addr.addr_to_string(buf, ACE_MAX_FULLY_QUALIFIED_NAME_LEN + 16);
+    return buf;
+}
+
+bool IsIPAddrInNetwork(ACE_INET_Addr const& net, ACE_INET_Addr const& addr, ACE_INET_Addr const& subnetMask)
+{
+    uint32 mask = subnetMask.get_ip_address();
+    if ((net.get_ip_address() & mask) == (addr.get_ip_address() & mask))
+        return true;
+    return false;
+}
+
 /// create PID file
 uint32 CreatePIDFile(const std::string& filename)
 {

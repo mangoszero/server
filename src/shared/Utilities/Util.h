@@ -26,6 +26,8 @@
 #define MANGOS_H_UTIL
 
 #include "Common/Common.h"
+#include <ace/Null_Mutex.h>
+#include <ace/INET_Addr.h>
 
 #include <string>
 #include <vector>
@@ -700,6 +702,13 @@ void vutf8printf(FILE* out, const char* str, va_list* ap);
  * @return bool
  */
 bool IsIPAddress(char const* ipaddress);
+
+/// Checks if address belongs to the a network with specified submask
+bool IsIPAddrInNetwork(ACE_INET_Addr const& net, ACE_INET_Addr const& addr, ACE_INET_Addr const& subnetMask);
+
+/// Transforms ACE_INET_Addr address into string format "dotted_ip:port"
+std::string GetAddressString(ACE_INET_Addr const& addr);
+
 /**
  * @brief
  *
