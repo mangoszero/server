@@ -130,7 +130,7 @@ struct boss_thermaplugg : public CreatureScript
         void Aggro(Unit* /*pWho*/) override
         {
             //copy faces GUIDs from instance script; BombFaces are fully controlled by this AI
-            uint32 faces[MAX_GNOME_FACES] {GO_GNOME_FACE_1, GO_GNOME_FACE_2, GO_GNOME_FACE_3, GO_GNOME_FACE_4, GO_GNOME_FACE_5, GO_GNOME_FACE_6};
+            uint32 faces[MAX_GNOME_FACES] = {GO_GNOME_FACE_1, GO_GNOME_FACE_2, GO_GNOME_FACE_3, GO_GNOME_FACE_4, GO_GNOME_FACE_5, GO_GNOME_FACE_6};
             for (int i = 0; i < MAX_GNOME_FACES; ++i)
             {
                 m_asBombFaces[i].m_gnomeFaceGuid = ObjectGuid(m_pInstance->GetData64(faces[i]));
