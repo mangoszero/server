@@ -103,10 +103,10 @@ void WardenWin::InitializeModule()
     Request.Unk2 = 0;
     Request.Type = 1;
     Request.String_library1 = 0;
-    Request.Function1[0] = 0x00024F80;                      // 0x00400000 + 0x00024F80 SFileOpenFile
-    Request.Function1[1] = 0x000218C0;                      // 0x00400000 + 0x000218C0 SFileGetFileSize
-    Request.Function1[2] = 0x00022530;                      // 0x00400000 + 0x00022530 SFileReadFile
-    Request.Function1[3] = 0x00022910;                      // 0x00400000 + 0x00022910 SFileCloseFile
+    Request.Function1[0] = 0x002485F0;                      // 0x00400000 + 0x002485F0 SFileOpenFile
+    Request.Function1[1] = 0x002487F0;                      // 0x00400000 + 0x002487F0 SFileGetFileSize
+    Request.Function1[2] = 0x00248460;                      // 0x00400000 + 0x00248460 SFileReadFile
+    Request.Function1[3] = 0x00248730;                      // 0x00400000 + 0x00248730 SFileCloseFile
 
     Request.Command2 = WARDEN_SMSG_MODULE_INITIALIZE;
     Request.Size2 = 8;
