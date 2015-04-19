@@ -299,7 +299,7 @@ void Warden::LogPositiveToDB(WardenCheck* check)
 
     SqlStatement stmt = LoginDatabase.CreateStatement(insWardenPositive, "INSERT INTO warden_log (`check`, `action`, `account`, `guid`, `map`, `position_x`, `position_y`, `position_z`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
-    stmt.addUInt8(check->CheckId);
+    stmt.addUInt16(check->CheckId);
     stmt.addInt8(check->Action);
     stmt.addUInt32(_session->GetAccountId());
     if (Player* pl = _session->GetPlayer())
