@@ -194,7 +194,7 @@ class WorldSession
         }
 
         // Warden
-        void InitWarden(BigNumber* k, std::string const& os);
+        void InitWarden(uint16 build, BigNumber* k, std::string const& os);
 
         /// Session in auth.queue currently
         void SetInQueue(bool state)
@@ -737,6 +737,9 @@ class WorldSession
         void HandleBotPackets();
 #endif
 
+        // for Warden
+        uint16 GetClientBuild() const { return _build; }
+
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
@@ -759,6 +762,7 @@ class WorldSession
 
         // Warden
         Warden* _warden;                                    // Remains NULL if Warden system is not enabled by config
+        uint16 _build;                                      // connected client build
 
         time_t _logoutTime;
         bool m_inQueue;                                     // session wait in auth.queue

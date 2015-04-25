@@ -66,12 +66,8 @@ class WardenCheckMgr
             return &instance;
         }
 
-        // We have a linear key without any gaps, so we use vector for fast access
-        typedef std::vector<WardenCheck*> CheckContainer;
-        typedef std::map<uint32, WardenCheckResult*> CheckResultContainer;
-
-        WardenCheck* GetWardenDataById(uint16 Id);
-        WardenCheckResult* GetWardenResultById(uint16 Id);
+        WardenCheck* GetWardenDataById(uint16 build, uint16 Id);
+        WardenCheckResult* GetWardenResultById(uint16 build, uint16 Id);
 
         std::vector<uint16> MemChecksIdPool;
         std::vector<uint16> OtherChecksIdPool;
@@ -82,8 +78,21 @@ class WardenCheckMgr
         ACE_RW_Mutex _checkStoreLock;
 
     private:
+        uint32 inline ComposeMultiCheckKey(uint16 clientBuild, uint16 checkID) { return (uint32(checkID) << 16) | clientBuild; }
+
+        // We have a linear key without any gaps, so we use vector for fast access
+        typedef std::vector<WardenCheck*> CheckContainer;
+        typedef std::map<uint32, WardenCheckResult*> CheckResultContainer;
+
         CheckContainer CheckStore;
         CheckResultContainer CheckResultStore;
+
+        // here we have just few checks, vector is not appropriate; key is from ComposeMultiCheckKey
+        typedef std::map<uint32 /*MultiCheckKey*/, WardenCheck*> MultiCheckContainer;
+        typedef std::map<uint32 /*MultiCheckKey*/, WardenCheckResult*> MultiResultContainer;
+
+        MultiCheckContainer MCheckStore;
+        MultiResultContainer MCheckResultStore;
 };
 
 #define sWardenCheckMgr WardenCheckMgr::instance()

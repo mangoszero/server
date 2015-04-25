@@ -66,6 +66,7 @@ void WardenCheckMgr::LoadWardenChecks()
 
     CheckStore.resize(maxCheckId + 1);
 
+    delete result;
     //                                    0    1     2     3        4       5      6      7
     result = WorldDatabase.Query("SELECT id, type, data, result, address, length, str, comment FROM warden_checks ORDER BY id ASC");
 
@@ -147,7 +148,7 @@ void WardenCheckMgr::LoadWardenChecks()
         }
 
         if (comment.empty())
-            wardenCheck->Comment = "Undocumented Check";
+            wardenCheck->Comment = "";
         else
             wardenCheck->Comment = comment;
 
@@ -155,6 +156,81 @@ void WardenCheckMgr::LoadWardenChecks()
     } while (result->NextRow());
 
     sLog.outWarden(">> Loaded %u warden checks.", count);
+
+    delete result;
+    //                                    0      1     2       3        4       5    6
+    result = WorldDatabase.Query("SELECT id, build, data, result, address, length, str FROM warden_build_specific ORDER BY id ASC");
+
+    if (!result)
+    {
+        sLog.outString("[Warden]: >> Loaded 0 warden client build-specific data.");
+        return;
+    }
+
+    count = 0;
+    do
+    {
+        fields = result->Fetch();
+
+        uint16 id = fields[0].GetUInt16();
+        if (id >= CheckStore.size())
+        {
+            sLog.outWarden("ERROR: Build-specific, check is missing in warden_checks, skipping id %u.", id);
+            continue;
+        }
+
+        uint16 build = fields[1].GetUInt16();
+        if (build == DEFAULT_CLIENT_BUILD)
+        {
+            sLog.outWarden("ERROR: Build-specific table may not contain checks for default %u build, skipping id %u.", DEFAULT_CLIENT_BUILD, id);
+            continue;
+        }
+
+        //std::string data = fields[2].GetString(); //unused for now
+        std::string checkResult = fields[3].GetString();
+        uint32 address = fields[4].GetUInt32();
+        uint8 length = fields[5].GetUInt8();
+        std::string str = fields[6].GetString();
+
+        WardenCheck* wardenCheck = new WardenCheck();
+        wardenCheck->CheckId = id;
+        wardenCheck->Type = CheckStore[id]->Type;
+
+        WardenCheckResult* wr = new WardenCheckResult();
+        switch (wardenCheck->Type)
+        {
+        case MEM_CHECK:
+            wardenCheck->Address = address;
+            wardenCheck->Length = length;
+            wardenCheck->Str = str;
+            wr->Result.SetHexStr(checkResult.c_str());
+            {
+                int len = checkResult.size() / 2;
+                if (wr->Result.GetNumBytes() < len)
+                {
+                    uint8 *temp = new uint8[len];
+                    memset(temp, 0, len);
+                    memcpy(temp, wr->Result.AsByteArray(), wr->Result.GetNumBytes());
+                    std::reverse(temp, temp + len);
+                    wr->Result.SetBinary((uint8*)temp, len);
+                    delete[] temp;
+                }
+            }
+            break;
+        default:
+            sLog.outWarden("The check type %u is considered as build-independent, skipping id %u.", wardenCheck->Type, id);
+            delete wr;
+            delete wardenCheck;
+            continue;
+        }
+
+        MCheckStore[ComposeMultiCheckKey(build, id)] = wardenCheck;
+        MCheckResultStore[ComposeMultiCheckKey(build, id)] = wr;
+        ++count;
+
+    } while (result->NextRow());
+
+    sLog.outString(">> Loaded %u warden client build-specific check overrides.", count);
 }
 
 void WardenCheckMgr::LoadWardenOverrides()
@@ -203,18 +279,34 @@ void WardenCheckMgr::LoadWardenOverrides()
     sLog.outWarden(">> Loaded %u warden action overrides.", count);
 }
 
-WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 Id)
+WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 Id)
 {
     if (Id < CheckStore.size())
+    {
+        if (build != DEFAULT_CLIENT_BUILD)
+        {
+            MultiCheckContainer::const_iterator it = MCheckStore.find(ComposeMultiCheckKey(build, Id));
+            if (it != MCheckStore.end())
+                return it->second;
+        }
         return CheckStore[Id];
+    }
 
     return NULL;
 }
 
-WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 Id)
+WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 Id)
 {
+    if (build != DEFAULT_CLIENT_BUILD)
+    {
+        MultiResultContainer::const_iterator it = MCheckResultStore.find(ComposeMultiCheckKey(build, Id));
+        if (it != MCheckResultStore.end())
+            return it->second;
+    }
+
     CheckResultContainer::const_iterator itr = CheckResultStore.find(Id);
     if (itr != CheckResultStore.end())
         return itr->second;
+
     return NULL;
 }

@@ -864,7 +864,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Initialize Warden system only if it is enabled by config
     if (wardenActive)
-        m_Session->InitWarden(&K, os);
+        m_Session->InitWarden(uint16(BuiltNumberClient), &K, os);
 
     sWorld.AddSession(m_Session);
 
