@@ -430,7 +430,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
             else if (index == UNIT_DYNAMIC_FLAGS && GetTypeId() == TYPEID_UNIT)
             {
                 uint32 send_value = m_uint32Values[index];
-
+                
                 /* Initiate pointer to creature so we can check loot */
                 if (Creature* my_creature = (Creature*)this)
                     /* If the creature is NOT fully looted */
@@ -455,6 +455,22 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                 /* If the creature has tapped flag but is tapped by us, remove the flag */
                 if (send_value & UNIT_DYNFLAG_TAPPED && is_tapped)
                     { send_value = send_value & ~UNIT_DYNFLAG_TAPPED; }
+
+                 // Checking SPELL_AURA_EMPATHY and caster
+                if (send_value & UNIT_DYNFLAG_SPECIALINFO && ((Unit*)this)->IsAlive())
+                {
+                    bool bIsEmpathy = false;
+                    bool bIsCaster = false;
+                    Unit::AuraList const& mAuraEmpathy = ((Unit*)this)->GetAurasByType(SPELL_AURA_EMPATHY);
+                    for (Unit::AuraList::const_iterator itr = mAuraEmpathy.begin(); !bIsCaster && itr != mAuraEmpathy.end(); ++itr)
+                    {
+                        bIsEmpathy = true; // Empathy by aura set
+                        if ((*itr)->GetCasterGuid() == target->GetObjectGuid())
+                        bIsCaster = true; // target is the caster of an empathy aura
+                    }
+                if (bIsEmpathy && !bIsCaster) // Empathy by aura, but target is not the caster
+                    send_value &= ~UNIT_DYNFLAG_SPECIALINFO;
+                }
 
                 *data << send_value;
             }
