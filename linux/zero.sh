@@ -361,6 +361,7 @@ while [ $choice -eq 3 ]; do
 		cecho "--------------" $bldgreen
 		sleep 1
 		mysql -u root -p$mysqlpass realmd < /home/mangos/database/Realm/Setup/realmdLoadDB.sql
+		mysql -u root -p$mysqlpass realmd < /home/mangos/database/Tools/updateRealm.sql
 		cecho "--------------" $bldgreen
 		cecho "Importing characters..." $bldgreen
 		cecho "--------------" $bldgreen
@@ -490,4 +491,3 @@ while [ $choice -eq 3 ]; do
 	fi
 done
 #END
-
