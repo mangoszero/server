@@ -272,7 +272,12 @@ struct npc_doctor : public CreatureScript
             m_uiPatientSavedCount = 0;
 
             m_lPatientGuids.clear();
-            m_vPatientSummonCoordinates.clear();
+            if (!m_vPatientSummonCoordinates.empty())
+            {
+                for (std::vector<Location*>::iterator itr = m_vPatientSummonCoordinates.begin(); itr != m_vPatientSummonCoordinates.end(); ++itr)
+                    delete (*itr);
+                m_vPatientSummonCoordinates.clear();
+            }
 
             m_bIsEventInProgress = false;
 
@@ -293,13 +298,13 @@ struct npc_doctor : public CreatureScript
             case DOCTOR_ALLIANCE:
                 for (uint8 i = 0; i < ALLIANCE_COORDS; ++i)
                 {
-                    m_vPatientSummonCoordinates.push_back(&AllianceCoords[i]);
+                    m_vPatientSummonCoordinates.push_back(new Location(AllianceCoords[i]));
                 }
                 break;
             case DOCTOR_HORDE:
                 for (uint8 i = 0; i < HORDE_COORDS; ++i)
                 {
-                    m_vPatientSummonCoordinates.push_back(&HordeCoords[i]);
+                    m_vPatientSummonCoordinates.push_back(new Location(HordeCoords[i]));
                 }
                 break;
             }
@@ -433,6 +438,7 @@ struct npc_doctor : public CreatureScript
                             SendAIEvent(AI_EVENT_CUSTOM_A, m_creature, Patient);
                             //pPatientAI->m_doctorGuid = m_creature->GetObjectGuid();
                             //pPatientAI->m_pCoord = *itr;
+                            delete (*itr);
                             m_vPatientSummonCoordinates.erase(itr);
                         }
                     }
