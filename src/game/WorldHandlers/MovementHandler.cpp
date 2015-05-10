@@ -308,30 +308,12 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     /*----------------*/
 
     // Calculate timestamp
-    int32 move_time, mstime;
+    uint32 move_time, mstime;
     mstime = mTimeStamp();
     if (m_clientTimeDelay == 0)
-    {
         m_clientTimeDelay = mstime - movementInfo.GetTime();
-    }
 
-    /* if(movementInfo.GetTime() - (mstime + m_clientTimeDelay) < 0)
-    {
-        move_time = mstime + 500;
-        move_time -= (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
-        movementInfo.UpdateTime(move_time);
-    }
-    else
-    {
-    int calc_var = (movementInfo.GetTime() - (mstime + m_clientTimeDelay));
-    if(calc_var < 0)
-    {
-        calc_var *= -1;
-    }
-    calc_var += 500 + mstime;
-    move_time = calc_var; */
-
-    move_time = (movementInfo.GetTime() - (mstime - m_clientTimeDelay)) + 500 + mstime;
+    move_time = (movementInfo.GetTime() - (mstime - m_clientTimeDelay) + mstime + 500);
     movementInfo.UpdateTime(move_time);
 
     if (!VerifyMovementInfo(movementInfo))
@@ -489,20 +471,6 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket& recv_data)
     recv_data >> Unused<uint32>(); // Always set to zero?
     movementInfo.Read(recv_data);
 
-    // Calculate timestamp (should probably move this into its own function?
-    int32 move_time, mstime;
-    mstime = mTimeStamp();
-    if (m_clientTimeDelay == 0)
-    {
-        m_clientTimeDelay = mstime - movementInfo.GetTime();
-    }
-
-    /* The 500 delay lets the client sync the movement correctly.
-     * Yes it slows things a bit, but removing it causes stutter.
-     * Fixes itself after a short while */
-    move_time = (movementInfo.GetTime() - (mstime - m_clientTimeDelay)) + 500 + mstime;
-    movementInfo.UpdateTime(move_time);
-
     /* Make sure input is valid */
     if (!VerifyMovementInfo(movementInfo, guid))
     {
@@ -611,8 +579,6 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
 
 void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 {
-    movementInfo.UpdateTime(WorldTimer::getMSTime());
-
     Unit* mover = _player->GetMover();
 
     if (Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL)
