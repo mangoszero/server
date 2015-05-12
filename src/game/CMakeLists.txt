@@ -163,8 +163,6 @@ if(PCH)
     ADD_CXX_PCH(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
 endif()
 
-add_subdirectory(AuctionHouseBot)
-
 if(PLAYERBOTS)
     include_directories(
         ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot
@@ -190,4 +188,14 @@ if(SCRIPT_LIB_ELUNA)
   target_link_libraries(${LIBRARY_NAME} lualib)
   add_dependencies(${LIBRARY_NAME} LuaEngine)
   add_dependencies(${LIBRARY_NAME} lualib)
+endif()
+
+#AH Bot Config
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot/ahbot.conf.dist.in" "${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist" DESTINATION "${CONF_INSTALL_DIR}")
+
+if(WIN32 AND MSVC)
+    add_custom_command(TARGET ${LIBRARY_NAME}
+        POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist" "${CONF_COPY_DIR}"
+    )
 endif()
