@@ -4928,8 +4928,11 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
             break;
     }
 
-    m_isHeartbeatSubject = (GetSpellMechanicMask(m_spellProto, (1 << MAX_EFFECT_INDEX) - 1) & HEARTBEAT_AURA_MECHANIC_MASK)
-        && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
+    //m_isHeartbeatSubject = (GetSpellMechanicMask(m_spellProto, (1 << MAX_EFFECT_INDEX) - 1) & HEARTBEAT_AURA_MECHANIC_MASK) && caster != target
+    //    && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
+
+    //TODO consider removing the m_isHeartbeatSubject variable due to simplified condition check
+    m_isHeartbeatSubject = bool(m_spellProto->Attributes & SPELL_ATTR_HEARTBEAT_RESIST_CHECK);
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
         { m_auras[i] = NULL; }
