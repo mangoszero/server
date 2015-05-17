@@ -262,11 +262,11 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
             moveFlags |= MOVEFLAG_ONTRANSPORT;
         }
 
-        //float x, y, z;
-        //if (m_objectTypeId == TYPEID_UNIT && ((Unit*)this)->GetMotionMaster()->GetDestination(x, y, z))
-        //{
-        //    moveFlags |= MOVEFLAG_WALK_MODE | MOVEFLAG_FORWARD | MOVEFLAG_SPLINE_ENABLED;
-        //}
+        float x;    // not used anywhere
+        if (m_objectTypeId == TYPEID_UNIT && ((Unit*)this)->movespline && ((Unit*)this)->GetMotionMaster()->GetDestination(x, x, x))
+        {
+            moveFlags |= MOVEFLAG_WALK_MODE | MOVEFLAG_FORWARD | MOVEFLAG_SPLINE_ENABLED;
+        }
 
         *data << uint32(moveFlags);                         // movement flags
         *data << uint32(WorldTimer::getMSTime());           // time (in milliseconds)
@@ -327,7 +327,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 
         if (m_objectTypeId == TYPEID_UNIT)
         {
-            if (moveFlags & MOVEFLAG_SPLINE_ENABLED)        // 0x00400000
+            if (moveFlags & MOVEFLAG_SPLINE_ENABLED && ((Unit*)this)->movespline)        // 0x00400000
             {
                 Movement::PacketBuilder::WriteCreate((*((Unit*)this)->movespline), *data);
             }
