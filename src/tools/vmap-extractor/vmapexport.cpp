@@ -75,7 +75,7 @@ uint32 map_count;
 char output_path[128] = ".";
 char input_path[1024] = ".";
 bool hasInputPathParam = false;
-bool preciseVectorData = false;
+bool preciseVectorData = true;
 
 // Constants
 
@@ -107,11 +107,11 @@ void strToLower(char* str)
 // copied from contrib/extractor/System.cpp
 void ReadLiquidTypeTableDBC()
 {
-    printf("Read LiquidType.dbc file...");
+    printf("Reading liquid types from LiquidType.dbc...");
     DBCFile dbc("DBFilesClient\\LiquidType.dbc");
     if (!dbc.open())
     {
-        printf("Fatal error: Invalid LiquidType.dbc file format!\n");
+        printf("Fatal error: Could not read LiquidType.dbc!\n");
         exit(1);
     }
 
@@ -121,9 +121,11 @@ void ReadLiquidTypeTableDBC()
     memset(LiqType, 0xff, (LiqType_maxid + 1) * sizeof(uint16));
 
     for (uint32 x = 0; x < LiqType_count; ++x)
-        { LiqType[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3); }
+    {
+        LiqType[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
+    }
 
-    printf("Done! (%u LiqTypes loaded)\n", (unsigned int)LiqType_count);
+    printf("Success! %lu liquid types loaded.\n", LiqType_count);
 }
 
 bool ExtractWmo()
@@ -349,8 +351,6 @@ void Usage(char* prg)
     printf("   -d, --data <path>     search path for game client archives\n");
     printf("   -s, --small           extract smaller vmaps by optimizing data. Reduces\n");
     printf("                         size by ~ 500MB\n");
-    printf("   -l, --large           extract larger vmaps with full data. Increases\n");
-    printf("                         size by ~ 500MB\n");
     printf("\n");
     printf("Example:\n");
     printf("- use data path and create larger vmaps:\n");
@@ -361,7 +361,7 @@ bool processArgv(int argc, char** argv)
 {
     bool result = true;
     bool hasInputPathParam = false;
-    bool preciseVectorData = false;
+    bool preciseVectorData = true;
     char* param = NULL;
 
     for (int i = 1; i < argc; ++i)
@@ -375,11 +375,6 @@ bool processArgv(int argc, char** argv)
         {
             result = true;
             preciseVectorData = false;
-        }
-        else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--large") == 0 )
-        {
-            result = true;
-            preciseVectorData = true;
         }
         else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--data") == 0 )
         {
