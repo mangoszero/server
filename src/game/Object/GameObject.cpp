@@ -1752,7 +1752,45 @@ void GameObject::RollIfMineralVein()
 uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodstone and indurium have alternate spawns?
 {
     uint32 entrynew = entry;
-    switch (entry)
+
+    if ((GetZoneId() == 46) || (GetZoneId() == 51)) // each node in searing gorge or burning steppes is able to spawn dark iron
+        {
+            if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_DARKIRON))
+            entrynew = 165658;
+            return entrynew;
+        }
+
+    if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_LOWER)) // beside silver all base ores have the possibility to spawn the lower base ore type so rol for lower version spawn
+    {
+        switch (entry)
+        {
+            case 1735: // Iron can spawn Tin
+                entry = 1732;
+                break;
+            case 2040: // Mithril can spawn Iron
+                entry = 1735; 
+                break;
+            case 123310: // Ooze covered mithril can spawn ooze covered iron
+                entry = 73939;
+                break;
+            case 324: // small thorium Vein can spawn Mithril
+                entry = 2040;
+                break;
+            case 123848: // ooze covered thorium Vein can spawn ooze covered mithril
+                entry = 123310;
+                break;
+            case 175404: // Rich thorium Vein can spawn small Thorium vein
+                entry = 324;
+                break;
+            case 177388: // ooze covered Rich thorium Vein can spawn ooze covered thorium
+                entry = 123848;
+                break;
+            default: //default case for copper, tin or not listet special veins
+                break;
+        }
+    }
+
+    switch (entry)                      // Now roll for rare spawn
     {
         case 1732: // Tin can spawn Silver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
@@ -1768,14 +1806,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
                 break;
         case 2040: // Mithril can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
-            {
                 entrynew = 2047; 
-                if ((GetZoneId() == 46) || (GetZoneId() == 51)) // roll for darkiron spawn in burning steppes and searing gorge
-                    {
-                        if (urand (0,3) < 1)
-                            entrynew = 165658;
-                    }
-             }
                 break;
         case 123310: // Ooze covered mithril can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
