@@ -789,6 +789,8 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                     return false;
                 case SPELL_AURA_MOD_ROOT:
                 case SPELL_AURA_MOD_SILENCE:
+                    if (spellproto->Id == 24732)
+                        {return true;}
                 case SPELL_AURA_GHOST:
                 case SPELL_AURA_PERIODIC_LEECH:
                 case SPELL_AURA_MOD_STALKED:
