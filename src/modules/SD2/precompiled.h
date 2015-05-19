@@ -37,6 +37,7 @@
 #include "sc_grid_searchers.h"
 #include "sc_instance.h"
 #include "SpellAuras.h"
+#include "World.h"
 
 // sc_gossip.h:             ADD_GOSSIP_ITEM_EXTENDED outcommented box-money (Required until professions are fixed)
 // sc_creature.cpp:         Used in ScriptedAI::SelectSpell, outcommented SchoolMask

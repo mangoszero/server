@@ -1265,8 +1265,12 @@ Visibility.AIRelocationNotifyDelay = 1000
 #        Mining Rates (Mining.Amount changes minimum/maximum usetimes of a deposit,
 #        Mining.Next changes chance to have next use of a deposit)
 #
+#    Rate.Mining.Lower
+#        Spawn percentage of lower mineral base ores
 #    Rate.Mining.Rare
 #        Spawn percentage of rare mineral nodes
+#    Rate.Mining.Darkiron
+#        Spawn percentage Darkiron in Burning Steppes and Searing Gorge
 #    Autopooling.Mining.Enable
 #        Increases server startup can be disabled for testing purposes when fast server restart is demanded
 #        0 = Disabled (default)
@@ -1402,7 +1406,9 @@ Auction.Deposit.Min               = 0
 Rate.Honor                        = 1
 Rate.Mining.Amount                = 1
 Rate.Mining.Next                  = 1
+Rate.Mining.Lower                 = 50
 Rate.Mining.Rare                  = 20
+Rate.Mining.Darkiron              = 10
 Autopooling.Mining.Enable         = 0
 Rate.Mining.Autopooling           = 90
 Rate.Talent                       = 1
