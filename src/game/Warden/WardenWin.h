@@ -71,7 +71,7 @@ struct WardenInitModuleRequest
 #endif
 
 class WorldSession;
-class Warden;
+//class Warden;
 
 class WardenWin : public Warden
 {

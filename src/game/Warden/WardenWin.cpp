@@ -56,7 +56,7 @@ void WardenWin::Init(WorldSession* session, BigNumber* k)
 
     _inputCrypto.Init(_inputKey);
     _outputCrypto.Init(_outputKey);
-    sLog.outWarden("Server side warden for client %u initializing...", session->GetAccountId());
+    sLog.outWarden("Server side warden for client %u (build %u) initializing...", session->GetAccountId(), _session->GetClientBuild());
     sLog.outWarden("C->S Key: %s", ByteArrayToHexStr(_inputKey, 16).c_str());
     sLog.outWarden("S->C Key: %s", ByteArrayToHexStr(_outputKey, 16).c_str());
     sLog.outWarden("  Seed: %s", ByteArrayToHexStr(_seed, 16).c_str());
@@ -210,7 +210,7 @@ void WardenWin::RequestData()
         // Add the id to the list sent in this cycle
         _currentChecks.push_back(id);
 
-        wd = sWardenCheckMgr->GetWardenDataById(id);
+        wd = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), id);
 
         switch (wd->Type)
         {
@@ -235,7 +235,7 @@ void WardenWin::RequestData()
 
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
     {
-        wd = sWardenCheckMgr->GetWardenDataById(*itr);
+        wd = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), *itr);
 
         type = wd->Type;
         buff << uint8(type ^ xorByte);
@@ -360,8 +360,8 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
     {
-        rd = sWardenCheckMgr->GetWardenDataById(*itr);
-        rs = sWardenCheckMgr->GetWardenResultById(*itr);
+        rd = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), *itr);
+        rs = sWardenCheckMgr->GetWardenResultById(_session->GetClientBuild(), *itr);
 
         type = rd->Type;
         switch (type)
@@ -475,7 +475,7 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
     if (checkFailed > 0)
     {
-        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(checkFailed);   //note it IS NOT NULL here
+        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), checkFailed);   //note it IS NOT NULL here
         sLog.outWarden("%s failed Warden check %u. Action: %s", _session->GetPlayerName(), checkFailed, Penalty(check).c_str());
         LogPositiveToDB(check);
     }
