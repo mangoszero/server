@@ -86,12 +86,6 @@ struct InstanceTemplate
     uint32 script_id;
 };
 
-struct WorldTemplate
-{
-    uint32 map;                                             // non-instance map
-    uint32 script_id;
-};
-
 #if defined( __GNUC__ )
 #pragma pack()
 #else

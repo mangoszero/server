@@ -38,7 +38,6 @@ extern SQLStorage sEquipmentStorageRaw;
 extern SQLStorage sPageTextStore;
 extern SQLStorage sItemStorage;
 extern SQLStorage sInstanceTemplate;
-extern SQLStorage sWorldTemplate;
 extern SQLStorage sConditionStorage;
 
 extern SQLHashStorage sGOStorage;
