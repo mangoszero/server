@@ -363,7 +363,7 @@ struct boss_jeklik : public CreatureScript
         }
     };
 
-    CreatureAI* GetAI_boss_jeklik(Creature* pCreature)
+    CreatureAI* GetAI(Creature* pCreature) override
     {
         return new boss_jeklikAI(pCreature);
     }
