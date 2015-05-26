@@ -26,6 +26,6 @@
 #define MANGOS_H_REVISION
 #define REVISION_NR "21000"
 #define REVISION_DB_CHARACTERS "required_21000_01_warden_action"
-#define REVISION_DB_MANGOS "required_21000_11_STV_Sleeping_Creatures"
+#define REVISION_DB_MANGOS "required_21000_13_Backports"
 #define REVISION_DB_REALMD "required_20150420_warden_db_log"
 #endif // __REVISION_H__
