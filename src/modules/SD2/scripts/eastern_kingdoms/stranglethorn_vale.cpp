@@ -39,6 +39,7 @@
  */
 
 #include "precompiled.h"
+#include "GameEventMgr.h"
 
 /*######
 ## mob_yenniku
@@ -136,9 +137,16 @@ struct mob_yenniku : public CreatureScript
 ## PANTHERS: Shadowmaw Panther (684), Elder Shadowmaw Panther (1713),  Young Panther (683),  Panther (736) 
 ######*/
 
+enum
+{
+    SPELL_SLEEP_DND = 25148, // zzzZZZ animation - not implemented yet, due to removal failing!
+    EVENT_ID      = 3, // Nights
+    
+};
+
 struct mob_sleeping_creature : public CreatureScript
 {        
-	   mob_sleeping_creature() : CreatureScript("mob_sleeping_creature") {}
+	mob_sleeping_creature() : CreatureScript("mob_sleeping_creature") {}
 
     struct mob_sleeping_creatureAI : public ScriptedAI
     {
@@ -154,7 +162,7 @@ struct mob_sleeping_creature : public CreatureScript
                 // go to sleep if it is night time (9pm to 5am)
                 time_t t = sWorld.GetGameTime();
                 struct tm *tmp = gmtime(&t);
-                if (tmp->tm_hour >= 21 || tmp->tm_hour < 5)
+                if (sGameEventMgr.IsActiveEvent(EVENT_ID))
                 {
                     // search area for nearby player characters
                     Map::PlayerList const& players = m_creature->GetMap()->GetPlayers();
@@ -182,6 +190,7 @@ struct mob_sleeping_creature : public CreatureScript
                     // no players nearby, therefore send the creature to sleep
                     m_creature->SetStandState(UNIT_STAND_STATE_SLEEP);
                     m_creature->GetMotionMaster()->MoveIdle();
+                    //    DoCastSpellIfCan(m_creature, SPELL_SLEEP_DND); // zzzZZZ animation
 
                 }
             }
