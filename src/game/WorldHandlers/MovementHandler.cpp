@@ -309,7 +309,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
 
     // Calculate timestamp
     uint32 move_time, mstime;
-    mstime = mTimeStamp();
+    mstime = WorldTimer::getMSTime();
     if (m_clientTimeDelay == 0)
         m_clientTimeDelay = mstime - movementInfo.GetTime();
 
