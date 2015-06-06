@@ -117,9 +117,9 @@ if( UNIX )
 endif( UNIX )
 
 if( WIN32 )
-  find_library( MYSQL_LIBRARY
+  find_path( MYSQL_LIBRARY_DIR
     NAMES
-      libmysql
+      libmysql.lib
     PATHS
       ${MYSQL_ADD_LIBRARIES_PATH}
       "C:/Program Files/MySQL/MySQL Server 5.6/lib"
@@ -161,8 +161,15 @@ if( WIN32 )
       "$ENV{SystemDrive}/MySQL/*/lib/opt"
       "c:/msys/local/include"
       "$ENV{MYSQL_ROOT}/lib"
+    DOC "Specify the path to the mysql library (.lib) here."
+)
+find_library( MYSQL_LIBRARY
+    NAMES
+      libmysql
+    PATHS
+      "${MYSQL_LIBRARY_DIR}"
     DOC "Specify the location of the mysql library here."
-  )
+)
 endif( WIN32 )
 
 # On Windows you typically don't need to include any extra libraries
@@ -185,6 +192,7 @@ endif( NOT WIN32 )
 if( MYSQL_LIBRARY )
   if( MYSQL_INCLUDE_DIR )
     set( MYSQL_FOUND 1 )
+    message(STATUS "Found MySQL library path: ${MYSQL_LIBRARY_DIR}")
     message(STATUS "Found MySQL library: ${MYSQL_LIBRARY}")
     message(STATUS "Found MySQL headers: ${MYSQL_INCLUDE_DIR}")
   else( MYSQL_INCLUDE_DIR )
