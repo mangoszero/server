@@ -35,6 +35,12 @@ endif()
 
 find_program(GIT_EXECUTABLE
   NAMES ${git_names}
+  PATHS
+    "$ENV{ProgramFiles}/Git/bin"
+    "$ENV{ProgramFiles(x86)}/Git/bin"
+    "$ENV{PATH}"
+    "/usr/bin"
+    "/usr/local/bin"
   DOC "git command line client"
   )
 mark_as_advanced(GIT_EXECUTABLE)
