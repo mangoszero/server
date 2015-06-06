@@ -173,7 +173,7 @@ if(WIN32)
     elseif(XCODE)
         add_custom_command(TARGET ${EXECUTABLE_NAME}
             POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY}" "${CMAKE_BINARY_DIR}/bin/"
+            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY_PATH}/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
         )
     endif()
 endif()

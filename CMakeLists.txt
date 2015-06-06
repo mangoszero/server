@@ -27,7 +27,6 @@ cmake_minimum_required(VERSION 2.8)
 if(POLICY CMP0043)
     cmake_policy(SET CMP0043 OLD)
 endif()
-cmake_policy(SET CMP0005 OLD)
 
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
