@@ -158,6 +158,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist DESTINATION ${CONF_I
 
 if(WIN32 AND MSVC)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}" CONFIGURATIONS Debug)
+    add_custom_command(TARGET ${EXECUTABLE_NAME}
+        POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist" "${CONF_COPY_DIR}"
+    )
 endif()
 
 #Copy dlls to build dir
