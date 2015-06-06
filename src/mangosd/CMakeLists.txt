@@ -168,12 +168,12 @@ if(WIN32)
     if(MSVC)
         add_custom_command(TARGET ${EXECUTABLE_NAME}
             POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY_PATH}/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
+            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY_DIR}/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
         )
     elseif(XCODE)
         add_custom_command(TARGET ${EXECUTABLE_NAME}
             POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY_PATH}/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
+            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY_DIR}/libmysql.dll" "${CMAKE_BINARY_DIR}/bin/"
         )
     endif()
 endif()

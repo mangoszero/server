@@ -117,7 +117,7 @@ if( UNIX )
 endif( UNIX )
 
 if( WIN32 )
-  find_path( MYSQL_LIBRARY_PATH
+  find_path( MYSQL_LIBRARY_DIR
     NAMES
       libmysql.lib
     PATHS
@@ -167,7 +167,7 @@ find_library( MYSQL_LIBRARY
     NAMES
       libmysql
     PATHS
-      "${MYSQL_LIBRARY_PATH}"
+      "${MYSQL_LIBRARY_DIR}"
     DOC "Specify the location of the mysql library here."
 )
 endif( WIN32 )
@@ -192,7 +192,7 @@ endif( NOT WIN32 )
 if( MYSQL_LIBRARY )
   if( MYSQL_INCLUDE_DIR )
     set( MYSQL_FOUND 1 )
-    message(STATUS "Found MySQL library path: ${MYSQL_LIBRARY_PATH}")
+    message(STATUS "Found MySQL library path: ${MYSQL_LIBRARY_DIR}")
     message(STATUS "Found MySQL library: ${MYSQL_LIBRARY}")
     message(STATUS "Found MySQL headers: ${MYSQL_INCLUDE_DIR}")
   else( MYSQL_INCLUDE_DIR )
