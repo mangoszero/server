@@ -670,9 +670,7 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                 }
                 break;
             }
-            case SCRIPT_COMMAND_TURN_TO:                    // 35
-                break;
-            case SCRIPT_COMMAND_SEND_AI_EVENT_AROUND:       // 36
+            case SCRIPT_COMMAND_SEND_AI_EVENT_AROUND:       // 35
             {
                 if (tmp.sendAIEvent.eventType >= MAXIMAL_AI_EVENT_EVENTAI)
                 {
@@ -681,6 +679,8 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                 }
                 break;
             }
+            case SCRIPT_COMMAND_TURN_TO:                    // 36
+                break;
             case SCRIPT_COMMAND_MOVE_DYNAMIC:               // 37
             {
                 if (tmp.moveDynamic.maxDist < tmp.moveDynamic.minDist)
@@ -704,6 +704,16 @@ void ScriptMgr::LoadScripts(ScriptMapMapName& scripts, const char* tablename)
                 }
                 break;
             }
+            case SCRIPT_COMMAND_CHANGE_ENTRY:              // 39
+            {
+                if (tmp.changeEntry.creatureEntry && !ObjectMgr::GetCreatureTemplate(tmp.changeEntry.creatureEntry))
+                    {
+                        sLog.outErrorDb("Table `%s` has datalong = %u in SCRIPT_COMMAND_CHANGE_ENTRY for script id %u, but this creature_template does not exist.", tablename, tmp.changeEntry.creatureEntry, tmp.id);
+                        continue;
+                    }
+                break;
+            }
+
             default:
             {
                 sLog.outErrorDb("Table `%s` unknown command %u, skipping.", tablename, tmp.command);
@@ -1905,6 +1915,14 @@ bool ScriptAction::HandleScriptStep()
             uint32 deliverDelay = m_script->textId[0] > 0 ? (uint32)m_script->textId[0] : 0;
 
             MailDraft(m_script->sendMail.mailTemplateId).SendMailTo(static_cast<Player*>(pTarget), sender, MAIL_CHECK_MASK_HAS_BODY, deliverDelay);
+            break;
+        }
+        case SCRIPT_COMMAND_CHANGE_ENTRY:                   // 39
+        {
+            if (LogIfNotCreature(pSource))
+                { break; }
+
+            ((Creature*)pSource)->UpdateEntry(m_script->changeEntry.creatureEntry);
             break;
         }
         default:

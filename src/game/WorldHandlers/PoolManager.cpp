@@ -1014,7 +1014,7 @@ void PoolManager::LoadFromDB()
             }
         }
     }
-    /*if (sWorld.getConfig(CONFIG_BOOL_AUTOPOOLING_MINING_ENABLE))
+    if (sWorld.getConfig(CONFIG_BOOL_AUTOPOOLING_MINING_ENABLE))
     {
 
         // autocreate mining pools
@@ -1028,7 +1028,7 @@ void PoolManager::LoadFromDB()
         {
                 PoolTemplateData& pPoolTemplate = mPoolTemplate[pool_entry];
                 pPoolTemplate.MaxLimit = 0;
-                pPoolTemplate.description = "autopool" ;
+                pPoolTemplate.description = "autopool zone %u" ,pool_entry ;
                 pPoolTemplate.AutoSpawn = true;          // will update and later data loading
         }
 
@@ -1124,7 +1124,7 @@ void PoolManager::LoadFromDB()
         delete result;
 
         sLog.outString(">> Loaded %u mining nodes", count);
-        }*/
+        }
 }
 
 // The initialize method will spawn all pools not in an event and not in another pool

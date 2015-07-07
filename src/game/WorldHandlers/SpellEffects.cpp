@@ -940,15 +940,15 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 case 1661:
                 {
                     uint32 healthPerc = uint32((float(m_caster->GetHealth()) / m_caster->GetMaxHealth()) * 100);
-                    int32 melee_mod = 10;
+                    int32 speed_mod = 10;
                     if (healthPerc <= 40)
-                        { melee_mod = 30; }
+                        { speed_mod = 30; }
                     if (healthPerc < 100 && healthPerc > 40)
-                        { melee_mod = 10 + (100 - healthPerc) / 3; }
+                        { speed_mod = 10 + (100 - healthPerc) / 3; }
 
-                    int32 hasteModBasePoints0 = melee_mod;  // (EffectBasePoints[0]+1)-1+(5-melee_mod) = (melee_mod-1+1)-1+5-melee_mod = 5-1
-                    int32 hasteModBasePoints1 = (5 - melee_mod);
-                    int32 hasteModBasePoints2 = 5;
+                    int32 hasteModBasePoints0 = speed_mod;
+                    int32 hasteModBasePoints1 = speed_mod;
+                    int32 hasteModBasePoints2 = speed_mod;
 
                     // FIXME: custom spell required this aura state by some unknown reason, we not need remove it anyway
                     m_caster->ModifyAuraState(AURA_STATE_BERSERKING, true);
@@ -1511,6 +1511,8 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
     if (!unitTarget)
         { return; }
 
+    if (m_spellInfo->Id == 20594)                           // Stoneform Racial
+        { m_caster->CastSpell(m_caster, 20612, true); }
     if (m_spellInfo->Id == 30918)                           // Improved Sprint
     {
         // Don't need to apply any actual aura here, just remove snare and root effects from the target!

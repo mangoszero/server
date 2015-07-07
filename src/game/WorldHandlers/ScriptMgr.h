@@ -146,6 +146,8 @@ enum DBScriptCommand                                        // resSource, resTar
                                                             // datalong: Send mailTemplateId from resSource (if provided) to player resTarget
                                                             // datalong2: AlternativeSenderEntry. Use as sender-Entry
                                                             // dataint1: Delay (>= 0) in Seconds
+    SCRIPT_COMMAND_CHANGE_ENTRY             = 39,           // resSource = Creature, datalong=creature entry
+                                                            // dataint1 = entry
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -391,6 +393,12 @@ struct ScriptInfo
             uint32 mailTemplateId;                          // datalong
             uint32 altSender;                               // datalong2;
         } sendMail;
+
+        struct                                              // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (23)
+        {
+            uint32 creatureEntry;                           // datalong
+            uint32 empty1;                                  // datalong2
+        } changeEntry;
 
         struct
         {
