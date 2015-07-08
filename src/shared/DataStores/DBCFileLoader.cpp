@@ -40,7 +40,8 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
     delete[] data;
 
     FILE* f = fopen(filename, "rb");
-    if (!f) { return false; }
+    if (!f)
+        { return false; }
 
     if (fread(&header, 4, 1, f) != 1)                       // Number of records
     {
@@ -49,6 +50,7 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
     }
 
     EndianConvert(header);
+
     if (header != 0x43424457)                               //'WDBC'
     {
         fclose(f);
@@ -151,13 +153,13 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
                 recordsize += sizeof(uint8);
                 break;
             case DBC_FF_LOGIC:
-                assert(false && "DBC files not have logic field type");
+                assert(false && "Attempted to load DBC files that do not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
                 break;
             case DBC_FF_NA:
             case DBC_FF_NA_BYTE:
                 break;
             default:
-                assert(false && "unknown format character");
+                assert(false && "Unknown field format character in DBCfmt.h");
                 break;
         }
     }
@@ -196,7 +198,8 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
         for (uint32 y = 0; y < recordCount; ++y)
         {
             uint32 ind = getRecord(y).getUInt(i);
-            if (ind > maxi) { maxi = ind; }
+            if (ind > maxi)
+                { maxi = ind; }
         }
 
         ++maxi;
@@ -241,18 +244,18 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
                     offset += sizeof(uint8);
                     break;
                 case DBC_FF_STRING:
-                    *((char**)(&dataTable[offset])) = NULL; // will be replaces non-empty or "" strings in AutoProduceStrings
+                    *((char**)(&dataTable[offset])) = NULL; // will replace non-empty or "" strings in AutoProduceStrings
                     offset += sizeof(char*);
                     break;
                 case DBC_FF_LOGIC:
-                    assert(false && "DBC files not have logic field type");
+                    assert(false && "Attempted to load DBC files that do not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
                     break;
                 case DBC_FF_NA:
                 case DBC_FF_NA_BYTE:
                 case DBC_FF_SORT:
                     break;
                 default:
-                    assert(false && "unknown format character");
+                    assert(false && "Unknown field format character in DBCfmt.h");
                     break;
             }
         }
@@ -300,14 +303,14 @@ char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
                     break;
                 }
                 case DBC_FF_LOGIC:
-                    assert(false && "DBC files not have logic field type");
+                    assert(false && "Attempted to load DBC files that does not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
                     break;
                 case DBC_FF_NA:
                 case DBC_FF_NA_BYTE:
                 case DBC_FF_SORT:
                     break;
                 default:
-                    assert(false && "unknown format character");
+                    assert(false && "Unknown field format character in DBCfmt.h");
                     break;
             }
         }

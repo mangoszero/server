@@ -180,7 +180,7 @@ class DBCFileLoader
          *
          * @return bool
          */
-        bool IsLoaded() {return (data != NULL);}
+        bool IsLoaded() const {return (data != NULL);}
         /**
          * @brief
          *
