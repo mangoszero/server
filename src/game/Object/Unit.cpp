@@ -1300,7 +1300,9 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
 
     if (!this || !pVictim)
         { return; }
-    if (!this->IsAlive() || !pVictim->IsAlive())
+
+    // units which are not alive cannot deal damage except for dying creatures
+    if ((!this->IsAlive() || !pVictim->IsAlive()) && (this->GetTypeId() != TYPEID_UNIT && this->GetDeathState() != DEAD))
         { return; }
 
     // Check spell crit chance
@@ -1309,7 +1311,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
     // damage bonus (per damage class)
     switch (spellInfo->DmgClass)
     {
-            // Melee and Ranged Spells
+        // Melee and Ranged Spells
         case SPELL_DAMAGE_CLASS_RANGED:
         case SPELL_DAMAGE_CLASS_MELEE:
         {
