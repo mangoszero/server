@@ -6687,10 +6687,7 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
 
     if (radius < 0.1f)
     {
-        if (unit->GetTypeId() == TYPEID_UNIT)
-            PSendSysMessage("Provided spawn radius in table for %s is too small. using 5.0f instead.");
-        else
-            PSendSysMessage("Provided spawn radius is too small. using 5.0f instead.");
+        PSendSysMessage("Provided spawn radius for %s is too small. Using 5.0f instead.", unit->GetGuidStr().c_str());
         radius = 5.0f;
     }
 
