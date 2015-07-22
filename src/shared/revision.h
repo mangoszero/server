@@ -27,5 +27,5 @@
 #define REVISION_NR "21000"
 #define REVISION_DB_CHARACTERS "required_21000_01_warden_action"
 #define REVISION_DB_MANGOS "required_21000_18_Update_for_quest_502_and_5203"
-#define REVISION_DB_REALMD "required_20150420_warden_db_log"
+#define REVISION_DB_REALMD "required_20150722_01_realmcharacters_remove_constraint"
 #endif // __REVISION_H__
