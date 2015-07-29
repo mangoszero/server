@@ -170,7 +170,6 @@ struct npc_corrupt_saber : public CreatureScript
 
     bool OnGossipHello(Player* pPlayer, Creature* pCreature) override
     {
-        //pPlayer->PlayerTalkClass->ClearMenus();
         if (pPlayer->GetQuestStatus(QUEST_CORRUPT_SABER) == QUEST_STATUS_INCOMPLETE)
         {
             if (GetClosestCreatureWithEntry(pCreature, NPC_WINNA, INTERACTION_DISTANCE))
@@ -566,7 +565,7 @@ struct npc_captured_arkonarin : public CreatureScript
                     pCage->Use(m_creature);
                 m_creature->RemoveFlag (UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 m_creature->RemoveFlag (UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
-
+                
             }
         }
 
