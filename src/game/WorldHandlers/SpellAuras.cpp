@@ -4871,13 +4871,6 @@ void Aura::HandleInterruptRegen(bool apply, bool Real)
     GetTarget()->SetInDummyCombatState(apply);
 }
 
-// NOTE this may be moved to the header file, but no need because it is used locally
-#define HEARTBEAT_AURA_MECHANIC_MASK ( \
-    (1 << (MECHANIC_CHARM - 1)) | (1 << (MECHANIC_BANISH - 1)) | (1 << (MECHANIC_DISORIENTED - 1)) | \
-    (1 << (MECHANIC_POLYMORPH - 1)) | (1 << (MECHANIC_HORROR - 1)) | (1 << (MECHANIC_FEAR - 1)) | \
-    (1 << (MECHANIC_SLEEP - 1)) | (1 << (MECHANIC_SAPPED - 1)) | (1 << (MECHANIC_FREEZE - 1)) | \
-    (1 << (MECHANIC_ROOT - 1)) | (1 << (MECHANIC_STUN - 1)) | (1 << (MECHANIC_KNOCKOUT - 1)))
-
 SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, WorldObject* caster, Item* castItem) :
     m_spellProto(spellproto),
     m_target(target), m_castItemGuid(castItem ? castItem->GetObjectGuid() : ObjectGuid()),
@@ -4934,11 +4927,8 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
             break;
     }
 
-    //m_isHeartbeatSubject = (GetSpellMechanicMask(m_spellProto, (1 << MAX_EFFECT_INDEX) - 1) & HEARTBEAT_AURA_MECHANIC_MASK) && caster != target
-    //    && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
-
-    //TODO consider removing the m_isHeartbeatSubject variable due to simplified condition check
-    m_isHeartbeatSubject = bool(m_spellProto->Attributes & SPELL_ATTR_HEARTBEAT_RESIST_CHECK);
+    m_isHeartbeatSubject = (m_spellProto->Attributes & SPELL_ATTR_HEARTBEAT_RESIST_CHECK) && caster != target
+        && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
         { m_auras[i] = NULL; }
