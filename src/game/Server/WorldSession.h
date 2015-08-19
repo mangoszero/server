@@ -775,7 +775,7 @@ class WorldSession
         uint32 m_latency;
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
-        int32 m_clientTimeDelay;
+        uint32 m_clientTimeDelay;
         ACE_Based::LockedQueue<WorldPacket*, ACE_Thread_Mutex> _recvQueue;
 };
 #endif

@@ -36,42 +36,7 @@
 #include "MapPersistentStateMgr.h"
 #include "ObjectMgr.h"
 
-#if defined(WIN32) && !defined(__MINGW32__)
-#include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
-#define DELTA_EPOCH_IN_USEC  11644473600000000ULL
-
-uint32 mTimeStamp()
-{
-    /* We subtract 20 years from the epoch so that it doesn't overflow uint32
-     * TODO: Remember to update code in 20 years */
-    const uint32 YEAR_IN_SECONDS = 31556952;
-
-    FILETIME ft;
-    uint64 t;
-    GetSystemTimeAsFileTime(&ft);
-
-    t = (uint64)ft.dwHighDateTime << 32;
-    t |= ft.dwLowDateTime;
-    t /= 10;
-    t -= DELTA_EPOCH_IN_USEC;
-
-    return uint32((((t / 1000000L) * 1000) + ((t % 1000000L) / 1000)) - ((YEAR_IN_SECONDS * 20) * 1000LL));
-}
-
-#else
-#include <time.h>
-
-uint32 mTimeStamp()
-{
-    struct timeval tp;
-    const uint32 YEAR_IN_SECONDS = 31556952;
-    gettimeofday(&tp, NULL);
-    uint32 return_val = (((tp.tv_sec * 1000) + (tp.tv_usec / 1000)) - ((YEAR_IN_SECONDS * 20) * 1000));
-    return return_val;
-}
-
-#endif
+#define MOVEMENT_PACKET_TIME_DELAY 300
 
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recv_data*/)
 {
@@ -307,15 +272,6 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     movementInfo.Read(recv_data);
     /*----------------*/
 
-    // Calculate timestamp
-    uint32 move_time, mstime;
-    mstime = mTimeStamp();
-    if (m_clientTimeDelay == 0)
-        m_clientTimeDelay = mstime - movementInfo.GetTime();
-
-    move_time = (movementInfo.GetTime() - (mstime - m_clientTimeDelay) + mstime + 500);
-    movementInfo.UpdateTime(move_time);
-
     if (!VerifyMovementInfo(movementInfo))
         { return; }
 
@@ -469,7 +425,7 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket& recv_data)
 
     recv_data >> guid;
     recv_data >> Unused<uint32>(); // Always set to zero?
-    movementInfo.Read(recv_data);
+    recv_data >> movementInfo;
 
     /* Make sure input is valid */
     if (!VerifyMovementInfo(movementInfo, guid))
@@ -479,21 +435,14 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket& recv_data)
 
     HandleMoverRelocation(movementInfo);
 
-    /* Weird size, maybe needs correcting */
-    WorldPacket data(MSG_MOVE_KNOCK_BACK, uint16(recv_data.size() + 4));
-    data.appendPackGUID(guid);
-
-    /* Includes data shown below (but in different order) */
-    movementInfo.Write(data);
-
-    /* This is sent in addition to the rest of the movement data (yes, angle+velocity are sent twice) */
+    WorldPacket data(MSG_MOVE_KNOCK_BACK, recv_data.size() + 15);
+    data << mover->GetObjectGuid();
+    data << movementInfo;
     data << movementInfo.GetJumpInfo().sinAngle;
     data << movementInfo.GetJumpInfo().cosAngle;
     data << movementInfo.GetJumpInfo().xyspeed;
     data << movementInfo.GetJumpInfo().velocity;
-
-    /* Do we really need to send the data to everyone? Seemed to work better */
-    mover->SendMessageToSet(&data, false);
+    mover->SendMessageToSetExcept(&data, _player);
 }
 
 void WorldSession::SendKnockBack(float angle, float horizontalSpeed, float verticalSpeed)
@@ -579,6 +528,12 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
 
 void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 {
+    uint32 mstime = WorldTimer::getMSTime();
+    if (m_clientTimeDelay == 0)
+        m_clientTimeDelay = mstime - movementInfo.GetTime();
+
+    movementInfo.UpdateTime(movementInfo.GetTime() + m_clientTimeDelay + MOVEMENT_PACKET_TIME_DELAY);
+
     Unit* mover = _player->GetMover();
 
     if (Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL)
