@@ -25,6 +25,7 @@
 #include "DatabaseEnv.h"
 #include "Config/Config.h"
 #include "Database/SqlOperations.h"
+#include "revision.h"
 
 #include <ctime>
 #include <iostream>
@@ -452,92 +453,78 @@ bool Database::RollbackTransaction()
     return true;
 }
 
-bool Database::CheckRequiredField(char const* table_name, char const* required_name)
+bool Database::CheckDatabaseVersion(DatabaseTypes database)
 {
-    // check required field
-    QueryResult* result = PQuery("SELECT %s FROM %s LIMIT 1", required_name, table_name);
-    if (result)
-    {
-        delete result;
-        return true;
-    }
+    const DBVersion& dbversion = databaseVersions[database];
 
-    // check fail, prepare readabale error message
+    // Fetch the database version table information
+    QueryResult* result = Query("SELECT version, structure, content, description FROM db_version ORDER BY version DESC, structure DESC, content DESC LIMIT 1");
 
-    // search current required_* field in DB
-    const char* db_name;
-    if (!strcmp(table_name, "db_version"))
-        { db_name = "WORLD"; }
-    else if (!strcmp(table_name, "character_db_version"))
-        { db_name = "CHARACTER"; }
-    else if (!strcmp(table_name, "realmd_db_version"))
-        { db_name = "REALMD"; }
-    else
-        { db_name = "UNKNOWN"; }
-
-    char const* req_sql_update_name = required_name + strlen("required_");
-
-    QueryNamedResult* result2 = PQueryNamed("SELECT * FROM %s LIMIT 1", table_name);
-    if (result2)
-    {
-        QueryFieldNames const& namesMap = result2->GetFieldNames();
-        std::string reqName;
-        for (QueryFieldNames::const_iterator itr = namesMap.begin(); itr != namesMap.end(); ++itr)
-        {
-            if (itr->substr(0, 9) == "required_")
-            {
-                reqName = *itr;
-                break;
-            }
-        }
-
-        delete result2;
-
-        std::string cur_sql_update_name = reqName.substr(strlen("required_"), reqName.npos);
-
-        if (!reqName.empty())
-        {
-            sLog.outErrorDb("The table `%s` in your [%s] database indicates that this database is out of date!", table_name, db_name);
-            sLog.outErrorDb();
-            sLog.outErrorDb("  [A] You have: --> `%s.sql`", cur_sql_update_name.c_str());
-            sLog.outErrorDb();
-            sLog.outErrorDb("  [B] You need: --> `%s.sql`", req_sql_update_name);
-            sLog.outErrorDb();
-            sLog.outErrorDb("You must apply all updates after [A] to [B] to use mangos with this database.");
-            sLog.outErrorDb("These updates are included in the sql/updates folder.");
-            sLog.outErrorDb("Please read the included [README] in sql/updates for instructions on updating.");
-        }
-        else
-        {
-            sLog.outErrorDb("The table `%s` in your [%s] database is missing its version info.", table_name, db_name);
-            sLog.outErrorDb("MaNGOS can not find the version info needed to check that the db is up to date.");
-            sLog.outErrorDb();
-            sLog.outErrorDb("This revision of MaNGOS requires a database updated to:");
-            sLog.outErrorDb("`%s.sql`", req_sql_update_name);
-            sLog.outErrorDb();
-
-            if (!strcmp(db_name, "WORLD"))
-                { sLog.outErrorDb("Post this error to your database provider forum or find a solution there."); }
-            else
-                { sLog.outErrorDb("Reinstall your [%s] database with the included sql file in the sql folder.", db_name); }
-        }
-    }
-    else
-    {
-        sLog.outErrorDb("The table `%s` in your [%s] database is missing or corrupt.", table_name, db_name);
-        sLog.outErrorDb("MaNGOS can not find the version info needed to check that the db is up to date.");
+    // db_version table does not exist or is empty
+    if (!result)
+    { 
+        sLog.outErrorDb("The table `db_version` in your [%s] database is missing or corrupt.", dbversion.dbname.c_str());
         sLog.outErrorDb();
-        sLog.outErrorDb("This revision of mangos requires a database updated to:");
-        sLog.outErrorDb("`%s.sql`", req_sql_update_name);
+        sLog.outErrorDb("  [A] You have database Version: MaNGOS can not verify your database version or its existence!");
         sLog.outErrorDb();
-
-        if (!strcmp(db_name, "WORLD"))
-            { sLog.outErrorDb("Post this error to your database provider forum or find a solution there."); }
-        else
-            { sLog.outErrorDb("Reinstall your [%s] database with the included sql file in the sql folder.", db_name); }
+        sLog.outErrorDb("  [B] You need database Version: %u", dbversion.expected_version);
+        sLog.outErrorDb("                      Structure: %u", dbversion.expected_structure);
+        sLog.outErrorDb("                        Content: %u", dbversion.expected_content);
+        sLog.outErrorDb("                    Description: %s", dbversion.description.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("Please verify your database location or your database integrity.");
+        return false;
     }
 
-    return false;
+    Field* fields = result->Fetch();
+    uint32 version = fields[0].GetUInt32();
+    uint32 structure = fields[1].GetUInt32();
+    uint32 content = fields[2].GetUInt32();
+    std::string description = fields[3].GetCppString();
+
+    delete result;
+
+    // Structure does not match the required version
+    if (structure != dbversion.expected_structure)
+    {
+        sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected structure!", dbversion.dbname.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("  [A] You have database Version: %u", version);
+        sLog.outErrorDb("                      Structure: %u", structure);
+        sLog.outErrorDb("                        Content: %u", content);
+        sLog.outErrorDb("                    Description: %s", description.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("  [B] You need database Version: %u", dbversion.expected_version);
+        sLog.outErrorDb("                      Structure: %u", dbversion.expected_structure);
+        sLog.outErrorDb("                        Content: %u", dbversion.expected_content);
+        sLog.outErrorDb("                    Description: %s", dbversion.description.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("You must apply all updates after [A] to [B] to use MaNGOS with this database.");
+        sLog.outErrorDb("These updates are included in the database/%s/Updates folder.", dbversion.dbname.c_str());
+        return false;
+    }
+
+    // DB is not up to date, but structure is correct. Send warning but start core
+    if (version != dbversion.expected_version || content != dbversion.expected_content)
+    {
+        sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected version!", dbversion.dbname.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("  [A] You have database Version: %u", version);
+        sLog.outErrorDb("                      Structure: %u", structure);
+        sLog.outErrorDb("                        Content: %u", content);
+        sLog.outErrorDb("                    Description: %s", description.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("  [B] You need database Version: %u", dbversion.expected_version);
+        sLog.outErrorDb("                      Structure: %u", dbversion.expected_structure);
+        sLog.outErrorDb("                        Content: %u", dbversion.expected_content);
+        sLog.outErrorDb("                    Description: %s", dbversion.description.c_str());
+        sLog.outErrorDb();
+        sLog.outErrorDb("You are missing content updates or you have content updates beyond the expected core version.");
+        sLog.outErrorDb("It is recommended to run ALL database updates up to the required core version.");
+        sLog.outErrorDb("These updates are included in the database/%s/Updates folder.", dbversion.dbname.c_str());
+    };
+
+    return true;
 }
 
 bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)

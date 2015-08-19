@@ -116,7 +116,6 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
         { SendSysMessage(LANG_USING_SCRIPT_LIB_NONE); }
 
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
-    PSendSysMessage(LANG_USING_EVENT_AI, sWorld.GetCreatureEventAIVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
 

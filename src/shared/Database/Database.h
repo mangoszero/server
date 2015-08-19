@@ -25,6 +25,7 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include "revision.h"
 #include "Threading/Threading.h"
 #include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
@@ -42,6 +43,29 @@ class SqlParamBinder;
 class Database;
 
 #define MAX_QUERY_LEN   (32*1024)
+
+enum DatabaseTypes
+{
+    DATABASE_WORLD,
+    DATABASE_REALMD,
+    DATABASE_CHARACTER,
+    COUNT_DATABASES,
+};
+
+struct DBVersion
+{
+    std::string dbname;
+    uint32 expected_version;
+    uint32 expected_structure;
+    uint32 expected_content;
+    std::string description;
+};
+
+const DBVersion databaseVersions[COUNT_DATABASES] = {
+    { "World", WORLD_DB_VERSION_NR, WORLD_DB_STRUCTURE_NR, WORLD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_WORLD
+    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
+    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
+};
 
 /**
  * @brief
@@ -613,13 +637,12 @@ class Database
         void ProcessResultQueue();
 
         /**
-         * @brief
-         *
-         * @param table_name
-         * @param required_name
-         * @return bool
-         */
-        bool CheckRequiredField(char const* table_name, char const* required_name);
+        * @brief Function to check that the database version matches expected core version
+        *
+        * @param DatabaseTypes 
+        * @return bool
+        */
+        bool CheckDatabaseVersion(DatabaseTypes database);
         /**
          * @brief
          *

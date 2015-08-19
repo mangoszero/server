@@ -601,7 +601,6 @@ class World
         // used World DB version
         void LoadDBVersion();
         char const* GetDBVersion() { return m_DBVersion.c_str(); }
-        char const* GetCreatureEventAIVersion() { return m_CreatureEventAIVersion.c_str(); }
 
 
         /**
@@ -692,7 +691,6 @@ class World
 
         // used versions
         std::string m_DBVersion;
-        std::string m_CreatureEventAIVersion;
 
         // List of Maps that should be force-loaded on startup
         std::set<uint32>* m_configForceLoadMapIds;

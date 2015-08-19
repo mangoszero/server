@@ -84,6 +84,9 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+#include <iostream>
+#include <sstream>
+
 INSTANTIATE_SINGLETON_1(World);
 
 extern void LoadGameObjectModelList();
@@ -2066,22 +2069,25 @@ void World::UpdateMaxSessionCounters()
 
 void World::LoadDBVersion()
 {
-    QueryResult* result = WorldDatabase.Query("SELECT version, creature_ai_version FROM db_version LIMIT 1");
+    QueryResult* result = WorldDatabase.Query("SELECT version, structure, content FROM db_version ORDER BY version DESC, structure DESC, content DESC LIMIT 1");
     if (result)
     {
         Field* fields = result->Fetch();
 
-        m_DBVersion              = fields[0].GetCppString();
-        m_CreatureEventAIVersion = fields[1].GetCppString();
+        uint32 version = fields[0].GetUInt32();
+        uint32 structure = fields[1].GetUInt32();
+        uint32 content = fields[2].GetUInt32();
 
         delete result;
+
+        std::stringstream ss;
+        ss << "Version: " << version << ", Structure: " << structure << ", Content: " << content;
+
+        m_DBVersion = ss.str();
     }
 
     if (m_DBVersion.empty())
         { m_DBVersion = "Unknown world database."; }
-
-    if (m_CreatureEventAIVersion.empty())
-        { m_CreatureEventAIVersion = "Unknown creature EventAI."; }
 }
 
 void World::setConfig(eConfigUInt32Values index, char const* fieldname, uint32 defvalue)
