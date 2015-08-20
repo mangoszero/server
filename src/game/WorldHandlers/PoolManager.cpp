@@ -1028,7 +1028,9 @@ void PoolManager::LoadFromDB()
         {
                 PoolTemplateData& pPoolTemplate = mPoolTemplate[pool_entry];
                 pPoolTemplate.MaxLimit = 0;
-                pPoolTemplate.description = "autopool zone " + std::to_string(pool_entry);
+                std::ostringstream sZone;
+                sZone << "autopool zone " << pool_entry;
+                pPoolTemplate.description = sZone.str();
                 pPoolTemplate.AutoSpawn = true;          // will update and later data loading
         }
 
