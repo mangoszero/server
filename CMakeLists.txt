@@ -72,9 +72,9 @@ message(
     PLAYERBOTS              Enable Player Bots
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. see 'cmake --help' for more details
-  For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos"
+  For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos
   
-  Note: On UNIX systems, CONF_DIR is relative to the bin folder.
+  Note: On UNIX systems, CONF_DIR is relative to the bin folder."
 )
 message("")
 
