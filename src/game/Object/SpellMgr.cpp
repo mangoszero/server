@@ -2080,8 +2080,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // All Generic Spell with SpellIconID 200 et Ancestral Fortitude
                     // Second condition is usefull to avoid stacking Ancestral Fortitude.
-                    if ((spellInfo_1->SpellIconID == 200 && (spellInfo_2->Id == 16177 || spellInfo_2->Id == 16236 || spellInfo_2->Id == 16237) && !(spellInfo_1->Id == 16177 || spellInfo_1->Id == 16236 || spellInfo_1->Id == 16237))
-                        || ((spellInfo_1->Id == 16177 || spellInfo_1->Id == 16236 || spellInfo_1->Id == 16237) && spellInfo_2->SpellIconID == 200) && !(spellInfo_2->Id == 16177 || spellInfo_2->Id == 16236 || spellInfo_2->Id == 16237))
+                    if ((spellInfo_1->SpellIconID == 200 && ((spellInfo_2->Id == 16177 || spellInfo_2->Id == 16236 || spellInfo_2->Id == 16237) && !(spellInfo_1->Id == 16177 || spellInfo_1->Id == 16236 || spellInfo_1->Id == 16237)))
+                        || (spellInfo_2->SpellIconID == 200 && ((spellInfo_1->Id == 16177 || spellInfo_1->Id == 16236 || spellInfo_1->Id == 16237) && !(spellInfo_2->Id == 16177 || spellInfo_2->Id == 16236 || spellInfo_2->Id == 16237))))
                     {
                         return false;
                     }
@@ -2090,8 +2090,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // All Generic Spell with SpellIconID 958 et Scare Beast
                     // Second condition is usefull to avoid stacking Scare Beast
-                    if ((spellInfo_1->SpellIconID == 958 && (spellInfo_2->Id == 14326 || spellInfo_2->Id == 14327 || spellInfo_2->Id == 1513) && !(spellInfo_1->Id == 1513 || spellInfo_1->Id == 14326 || spellInfo_1->Id == 14327))
-                        || ((spellInfo_1->Id == 1513 || spellInfo_1->Id == 14326 || spellInfo_1->Id == 14327) && spellInfo_2->SpellIconID == 958) && !(spellInfo_2->Id == 1513 || spellInfo_2->Id == 14326 || spellInfo_2->Id == 14327))
+                    if (
+                    (spellInfo_1->SpellIconID == 958 && ((spellInfo_2->Id == 14326 || spellInfo_2->Id == 14327 || spellInfo_2->Id == 1513) && !(spellInfo_1->Id == 1513 || spellInfo_1->Id == 14326 || spellInfo_1->Id == 14327)))
+                        || (spellInfo_2->SpellIconID == 958 && ((spellInfo_1->Id == 14326 || spellInfo_1->Id == 14327 || spellInfo_1->Id == 1513) && !(spellInfo_2->Id == 1513 || spellInfo_2->Id == 14326 || spellInfo_2->Id == 14327))))
                     {
                         return false;
                     }
