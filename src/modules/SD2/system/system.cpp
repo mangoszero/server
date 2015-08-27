@@ -28,14 +28,8 @@
 #include "ProgressBar.h"
 #include "ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
-#include "SystemConfig.h"
 
-DatabaseType SD2Database;
-std::string  strSD2Version;
-
-SystemMgr::SystemMgr()
-{
-}
+SystemMgr::SystemMgr() { }
 
 SystemMgr& SystemMgr::Instance()
 {
@@ -43,51 +37,22 @@ SystemMgr& SystemMgr::Instance()
     return pSysMgr;
 }
 
-void SystemMgr::LoadVersion()
-{
-    // Get Version information
-    QueryResult* pResult = SD2Database.PQuery("SELECT version FROM sd2_db_version LIMIT 1");
-
-    if (pResult)
-    {
-        Field* pFields = pResult->Fetch();
-
-        strSD2Version = pFields[0].GetCppString();
-
-        delete pResult;
-    }
-    else
-    {
-        script_error_log("Missing `sd2_db_version` information.");
-    }
-
-    // Setup version info and display it
-    if (strSD2Version.empty())
-    {
-        strSD2Version.append("ScriptDev2 ");
-    }
-
-    strSD2Version.append(MANGOS_FULLVERSION("*", "*", "*", "*"));
-
-    outstring_log("Loading %s", strSD2Version.c_str());
-}
-
 void SystemMgr::LoadScriptTexts()
 {
-    outstring_log("SD2: Loading Script Texts...");
-    LoadMangosStrings(SD2Database, "script_texts", TEXT_SOURCE_TEXT_START, TEXT_SOURCE_TEXT_END, true);
+    outstring_log("[SD2]: Loading Script Texts...");
+    LoadMangosStrings(WorldDatabase, "script_texts", TEXT_SOURCE_TEXT_START, TEXT_SOURCE_TEXT_END, true);
 }
 
 void SystemMgr::LoadScriptTextsCustom()
 {
-    outstring_log("SD2: Loading Custom Texts...");
-    LoadMangosStrings(SD2Database, "custom_texts", TEXT_SOURCE_CUSTOM_START, TEXT_SOURCE_CUSTOM_END, true);
+    outstring_log("[SD2]: Loading Custom Texts...");
+    LoadMangosStrings(WorldDatabase, "custom_texts", TEXT_SOURCE_CUSTOM_START, TEXT_SOURCE_CUSTOM_END, true);
 }
 
 void SystemMgr::LoadScriptGossipTexts()
 {
-    outstring_log("SD2: Loading Gossip Texts...");
-    LoadMangosStrings(SD2Database, "gossip_texts", TEXT_SOURCE_GOSSIP_START, TEXT_SOURCE_GOSSIP_END);
+    outstring_log("[SD2]: Loading Gossip Texts...");
+    LoadMangosStrings(WorldDatabase, "gossip_texts", TEXT_SOURCE_GOSSIP_START, TEXT_SOURCE_GOSSIP_END);
 }
 
 void SystemMgr::LoadScriptWaypoints()
@@ -98,16 +63,16 @@ void SystemMgr::LoadScriptWaypoints()
     uint64 uiCreatureCount = 0;
 
     // Load Waypoints
-    QueryResult* pResult = SD2Database.PQuery("SELECT COUNT(entry) FROM script_waypoint GROUP BY entry");
+    QueryResult* pResult = WorldDatabase.PQuery("SELECT COUNT(entry) FROM script_waypoint GROUP BY entry");
     if (pResult)
     {
         uiCreatureCount = pResult->GetRowCount();
         delete pResult;
     }
 
-    outstring_log("SD2: Loading Script Waypoints for " UI64FMTD " creature(s)...", uiCreatureCount);
+    outstring_log("[SD2]: Loading Script Waypoints for " UI64FMTD " creature(s)...", uiCreatureCount);
 
-    pResult = SD2Database.PQuery("SELECT entry, pointid, location_x, location_y, location_z, waittime FROM script_waypoint ORDER BY pointid");
+    pResult = WorldDatabase.PQuery("SELECT entry, pointid, location_x, location_y, location_z, waittime FROM script_waypoint ORDER BY pointid");
 
     if (pResult)
     {
@@ -132,13 +97,13 @@ void SystemMgr::LoadScriptWaypoints()
 
             if (!pCInfo)
             {
-                error_db_log("SD2: DB table script_waypoint has waypoint for nonexistent creature entry %u", pTemp.uiCreatureEntry);
+                error_db_log("[SD2]: DB table script_waypoint has waypoint for nonexistent creature entry %u", pTemp.uiCreatureEntry);
                 continue;
             }
 
             if (!sScriptMgr.GetBoundScriptId(SCRIPTED_UNIT, pTemp.uiCreatureEntry))
             {
-                error_db_log("SD2: DB table script_waypoint has waypoint for creature entry %u, but creature does not have ScriptName defined and then useless.", pTemp.uiCreatureEntry);
+                error_db_log("[SD2]: DB table script_waypoint has waypoint for creature entry %u, but creature does not have ScriptName defined and then useless.", pTemp.uiCreatureEntry);
             }
 
             m_mPointMoveMap[uiEntry].push_back(pTemp);

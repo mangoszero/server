@@ -23,7 +23,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "precompiled.h"//..\bindings\scripts\include\precompiled.h"
+#include "precompiled.h"
 #include "Config/Config.h"
 #include "SystemConfig.h"
 #include "Database/DatabaseEnv.h"
@@ -42,35 +42,12 @@ Config SD2Config;
 
 void FillSpellSummary();
 
-void LoadDatabase()
+void LoadSD2Bindings()
 {
-    std::string strSD2DBinfo = SD2Config.GetStringDefault("ScriptDev2DatabaseInfo", "");
-
-    if (strSD2DBinfo.empty())
-    {
-        script_error_log("Missing Scriptdev2 database info from configuration file. Load database aborted.");
-        return;
-    }
-
-    // Initialize connection to DB
-    if (SD2Database.Initialize(strSD2DBinfo.c_str()))
-    {
-        outstring_log("SD2: ScriptDev2 database initialized.");
-        outstring_log("\n");
-
-        pSystemMgr.LoadVersion();
-        pSystemMgr.LoadScriptTexts();
-        pSystemMgr.LoadScriptTextsCustom();
-        pSystemMgr.LoadScriptGossipTexts();
-        pSystemMgr.LoadScriptWaypoints();
-    }
-    else
-    {
-        script_error_log("Unable to connect to Database. Load database aborted.");
-        return;
-    }
-
-    SD2Database.HaltDelayThread();
+    pSystemMgr.LoadScriptTexts();
+    pSystemMgr.LoadScriptTextsCustom();
+    pSystemMgr.LoadScriptGossipTexts();
+    pSystemMgr.LoadScriptWaypoints();
 }
 
 struct TSpellSummary
@@ -230,7 +207,7 @@ void SD2::InitScriptLibrary()
     }
     else
     {
-        outstring_log("SD2: Using configuration file %s", MANGOSD_CONFIG_LOCATION);
+        outstring_log("[SD2]: Using configuration file %s", MANGOSD_CONFIG_LOCATION);
     }
 
     // Set SD2 Error Log File
@@ -239,21 +216,15 @@ void SD2::InitScriptLibrary()
 
     if (configFailure)
     {
-        script_error_log("Unable to open configuration file. Database will be unaccessible. Configuration values will use default.");
-    }
-
-    // Check config file version
-    if (SD2Config.GetIntDefault("ConfVersion", 0) != MANGOSD_CONFIG_VERSION)
-    {
-        script_error_log("Configuration file version doesn't match expected version. Some config variables may be wrong or missing.");
+        script_error_log("[SD2]: Unable to open configuration file. Configuration values will use default.");
     }
 
     outstring_log("\n");
 
-    // Load database (must be called after SD2Config.SetSource).
-    LoadDatabase();
+    // Load SD2 Script Bindings from the database
+    LoadSD2Bindings();
 
-    outstring_log("SD2: Loading C++ scripts");
+    outstring_log("[SD2]: Loading C++ scripts");
     BarGoLink bar(1);
     bar.step();
 
@@ -269,7 +240,7 @@ void SD2::InitScriptLibrary()
     {
         if (!m_scripts[i])
         {
-            script_error_log("No script found for ScriptName '%s'.", GetScriptName(i));
+            script_error_log("[SD2]: No script found for ScriptName '%s'.", GetScriptName(i));
         }
     }
 
@@ -278,7 +249,7 @@ void SD2::InitScriptLibrary()
 
 char const* SD2::GetScriptLibraryVersion()
 {
-    return strSD2Version.c_str();
+    return "[SD2] for MaNGOS";
 }
 
 bool SD2::GossipHello(Player* pPlayer, Creature* pCreature)
@@ -311,7 +282,7 @@ bool SD2::GOGossipHello(Player* pPlayer, GameObject* pGo)
 
 bool SD2::GossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction)
 {
-    debug_log("SD2: Gossip selection, sender: %u, action: %u", uiSender, uiAction);
+    debug_log("[SD2]: Gossip selection, sender: %u, action: %u", uiSender, uiAction);
 
     Script* pTempScript = m_scripts[pCreature->GetScriptId()];
 
@@ -325,7 +296,7 @@ bool SD2::GossipSelect(Player* pPlayer, Creature* pCreature, uint32 uiSender, ui
 
 bool SD2::GOGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 uiAction)
 {
-    debug_log("SD2: GO Gossip selection, sender: %u, action: %u", uiSender, uiAction);
+    debug_log("[SD2]: GO Gossip selection, sender: %u, action: %u", uiSender, uiAction);
 
     Script* pTempScript = m_scripts[pGo->GetScriptId()];
 
@@ -339,7 +310,7 @@ bool SD2::GOGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint
 
 bool SD2::GossipSelectWithCode(Player* pPlayer, Creature* pCreature, uint32 uiSender, uint32 uiAction, const char* sCode)
 {
-    debug_log("SD2: Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
+    debug_log("[SD2]: Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
 
     Script* pTempScript = m_scripts[pCreature->GetScriptId()];
 
@@ -355,7 +326,7 @@ bool SD2::GossipSelectWithCode(Player* pPlayer, Creature* pCreature, uint32 uiSe
 
 bool SD2::GOGossipSelectWithCode(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 uiAction, const char* sCode)
 {
-    debug_log("SD2: GO Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
+    debug_log("[SD2]: GO Gossip selection with code, sender: %u, action: %u", uiSender, uiAction);
 
     Script* pTempScript = m_scripts[pGo->GetScriptId()];
 
@@ -630,11 +601,3 @@ InstanceData* SD2::CreateInstanceData(Map* pMap)
 
     return pTempScript->ToInstanceScript()->GetInstanceData(pMap);
 }
-
-//#ifdef WIN32
-//#  include <windows.h>
-//BOOL APIENTRY DllMain(HANDLE /*hModule*/, DWORD /*ul_reason_for_call*/, LPVOID /*lpReserved*/)
-//{
-//    return true;
-//}
-//#endif

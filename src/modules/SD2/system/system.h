@@ -26,9 +26,6 @@
 #ifndef SC_SYSTEM_H
 #define SC_SYSTEM_H
 
-extern DatabaseType SD2Database;
-extern std::string  strSD2Version;                          // version info: database entry and revision
-
 #define TEXT_SOURCE_RANGE -1000000                          // the amount of entries each text source has available
 
 #define TEXT_SOURCE_TEXT_START      TEXT_SOURCE_RANGE
@@ -60,8 +57,7 @@ class SystemMgr
 
         typedef UNORDERED_MAP<uint32, std::vector<ScriptPointMove> > PointMoveMap;
 
-        // Database
-        void LoadVersion();
+        // SD2 Database Bindings
         void LoadScriptTexts();
         void LoadScriptTextsCustom();
         void LoadScriptGossipTexts();
