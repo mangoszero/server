@@ -996,7 +996,7 @@ void WorldObject::Relocate(float x, float y, float z)
 
 void WorldObject::SetOrientation(float orientation)
 {
-    m_position.o = orientation;
+    m_position.o = MapManager::NormalizeOrientation(orientation);
 
     if (isType(TYPEMASK_UNIT))
         { ((Unit*)this)->m_movementInfo.ChangeOrientation(orientation); }
