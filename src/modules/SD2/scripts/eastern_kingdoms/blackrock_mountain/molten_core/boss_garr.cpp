@@ -189,35 +189,15 @@ struct mob_firesworn : public CreatureScript
         {
             m_uiImmolateTimer = urand(4 * IN_MILLISECONDS, 8 * IN_MILLISECONDS);    // These times are probably wrong
             m_uiSeparationCheckTimer = 5 * IN_MILLISECONDS;
-            m_bExploding = false;
-        }
-
-        void JustDied(Unit* /*pKiller*/) override
-        {
-            if (m_pInstance)
-            {
-                if (Creature* pGarr = m_pInstance->GetSingleCreatureFromStorage(NPC_GARR))
-                    pGarr->CastSpell(pGarr, SPELL_ENRAGE, true, NULL, NULL, m_creature->GetObjectGuid());
-            }
+            m_uiExplodeTimer = 0;
         }
 
         void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
         {
-            if (!m_bExploding && m_creature->HealthBelowPctDamaged(10, uiDamage))
-            {
-                ReceiveAIEvent(AI_EVENT_CUSTOM_A, m_creature, m_creature, SPELL_ERUPTION);
-                uiDamage = 0;
-            }
-        }
-
-        void ReceiveAIEvent(AIEventType type, Creature* /*pSender*/, Unit* pInvoker, uint32 uiData) override
-        {
-            if (type == AI_EVENT_CUSTOM_A && pInvoker == m_creature)
+            if (!m_uiExplodeTimer && m_creature->HealthBelowPctDamaged(10, uiDamage))
             {
                 m_creature->CastSpell(m_creature, SPELL_ERUPTION, true);
-                m_creature->ForcedDespawn(100);
-                uiDamage = 0;   // just for more convenient GM testing by .damage
-                m_bExploding = true;
+                m_uiExplodeTimer = 500;
             }
         }
 
@@ -226,6 +206,16 @@ struct mob_firesworn : public CreatureScript
             if (!m_creature->SelectHostileTarget() || !m_creature->getVictim() || m_bExploding)
             {
                 return;
+            }
+
+            if (m_uiExplodeTimer)
+            {
+                if (m_uiExplodeTimer <= uiDiff)
+                    m_creature->SetHealth(0);
+                else
+                    m_uiExplodeTimer -= uiDiff;
+
+                return; // no other actions during and after explosion
             }
 
             // Immolate_Timer
@@ -240,14 +230,6 @@ struct mob_firesworn : public CreatureScript
                 }
             }
             else m_uiImmolateTimer -= uiDiff;
-
-            // Cast Erruption and let them die
-            if (m_creature->GetHealthPercent() <= 10.0f)
-            {
-                DoCastSpellIfCan(m_creature->getVictim(), SPELL_ERUPTION);
-                m_creature->SetDeathState(JUST_DIED);
-                m_creature->RemoveCorpse();
-            }
 
             DoMeleeAttackIfReady();
         }
