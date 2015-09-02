@@ -275,9 +275,12 @@ ChatCommand* ChatHandler::getCommandTable()
     static ChatCommand gobjectCommandTable[] =
     {
         { "add",            SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectAddCommand,       "", NULL },
+        { "anim",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectAnimationCommand, "", NULL },
         { "delete",         SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectDeleteCommand,    "", NULL },
+        { "lootstate",      SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectLootstateCommand, "", NULL },
         { "move",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectMoveCommand,      "", NULL },
         { "near",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectNearCommand,      "", NULL },
+        { "state",          SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectStateCommand,     "", NULL },
         { "target",         SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTargetCommand,    "", NULL },
         { "turn",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGameObjectTurnCommand,      "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }

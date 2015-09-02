@@ -597,8 +597,8 @@ enum MangosStrings
     LANG_GET_UINT_FIELD                 = 570,
     LANG_GET_FLOAT                      = 571,              // log
     LANG_GET_FLOAT_FIELD                = 572,
-    //                                    573,              // not used
-    //                                    574,              // not used
+    LANG_GET_GAMEOBJECT_LOOTSTATE       = 573,
+    LANG_GET_GAMEOBJECT_STATE           = 574,
     LANG_CHANGE_INT32                   = 575,              // log
     LANG_CHANGE_INT32_FIELD             = 576,
 

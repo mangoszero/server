@@ -63,6 +63,7 @@
 #include "MoveMap.h"                                        // for mmap manager
 #include "PathFinder.h"                                     // for mmap commands
 #include "movement/MoveSplineInit.h"
+#include "../../modules/SD2/include/sc_grid_searchers.h"
 
 static uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 {
@@ -1142,6 +1143,10 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
 
 bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
 {
+    Player *pl = m_session->GetPlayer();
+    if (!pl)
+        return false;
+
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
         return false;
@@ -1154,7 +1159,7 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
     if (!goData)
         return false;
 
-    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    if (GameObject *go = GetClosestGameObjectWithEntry(pl, goData->id, 10.0f))
     {
         if (type < 0)
             go->SendObjectDeSpawnAnim(go->GetObjectGuid());
@@ -1167,6 +1172,10 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
 
 bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
 {
+    Player *pl = m_session->GetPlayer();
+    if (!pl)
+        return false;
+
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
         return false;
@@ -1179,7 +1188,7 @@ bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
     if (!goData)
         return false;
 
-    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    if (GameObject *go = GetClosestGameObjectWithEntry(pl, goData->id, 10.0f))
     {
         if (type < 0)
             PSendSysMessage(LANG_GET_GAMEOBJECT_LOOTSTATE, lowguid, go->getLootState());
@@ -1192,6 +1201,10 @@ bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
 
 bool ChatHandler::HandleGameObjectStateCommand(char* args)
 {
+    Player *pl = m_session->GetPlayer();
+    if (!pl)
+        return false;
+
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
         return false;
@@ -1204,7 +1217,7 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
     if (!goData)
         return false;
 
-    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    if (GameObject *go = GetClosestGameObjectWithEntry(pl, goData->id, 10.0f))
     {
         if (type < 0)
             PSendSysMessage(LANG_GET_GAMEOBJECT_STATE, lowguid, go->GetGoState());
