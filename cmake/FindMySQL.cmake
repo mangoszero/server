@@ -40,7 +40,9 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
   else(WIN32 AND MSVC)
     find_library(MYSQL_LIBRARY
       NAMES
-        mysql 
+        mysqlclient
+        mysqlclient_r
+        mysql
         libmysql
       PATHS
         /usr/lib/mysql
