@@ -23,7 +23,9 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
   endif(${PROGRAM_FILES_ARCH_PATH})
 
   find_path(MYSQL_INCLUDE_DIR mysql.h
+    /usr/include
     /usr/include/mysql
+    /usr/local/include
     /usr/local/include/mysql
     /usr/local/mysql/include
     /opt/local/include/mysql*/mysql
