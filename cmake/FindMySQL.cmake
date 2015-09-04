@@ -29,7 +29,12 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
     /usr/local/include/mysql
     /usr/local/mysql/include
     /opt/local/include/mysql*/mysql
-    ${PROGRAM_FILES_ARCH_PATH}/MySQL/MYSQLS~1.6/include
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.1/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.2/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.3/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/include"
   )
 
   if(WIN32 AND MSVC)
@@ -37,7 +42,12 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
       NAMES
         libmysql
       PATHS
-        ${PROGRAM_FILES_ARCH_PATH}/MySQL/MYSQLS~1.6/lib
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.1/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.2/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.3/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/lib"
       )
   else(WIN32 AND MSVC)
     find_library(MYSQL_LIBRARY
