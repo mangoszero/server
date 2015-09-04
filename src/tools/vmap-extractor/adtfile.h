@@ -26,7 +26,7 @@
 #define ADT_H
 
 #include <libmpq/mpq.h>
-#include "mpq_libmpq.h"
+#include <ml/mpq.h>
 #include "wmo.h"
 #include "vmapexport.h"
 #include "model.h"

@@ -22,7 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "mpq_libmpq.h"
+#include <ml\mpq.h>
 #include "vmapexport.h"
 #include "model.h"
 #include "wmo.h"

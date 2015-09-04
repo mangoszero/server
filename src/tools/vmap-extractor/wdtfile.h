@@ -25,7 +25,7 @@
 #ifndef WDTFILE_H
 #define WDTFILE_H
 
-#include "mpq_libmpq.h"
+#include <ml/mpq.h>
 #include "wmo.h"
 #include <string>
 #include "stdlib.h"

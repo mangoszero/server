@@ -25,7 +25,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "loadlib.h"
+#include <ml\loadlib.h>
 #include "vec3d.h"
 #include "modelheaders.h"
 #include <vector>
