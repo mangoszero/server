@@ -31,16 +31,14 @@ USE_MMAPS_DELAY=""
 DisplayHeader()
 {
 	clear
-	echo "  __  __      _  _  ___  ___  ___      "
-	echo " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|  "
-	echo " | |\\/| / _\` | .\` | (_ | (_) \\__ \\"
-	echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/ "
-	echo "                                       "
-	echo " For help and support please visit:    "
-	echo " Website: https://getmangos.eu         "
-	echo "    Wiki: http://github.com/mangoswiki "
-	echo "======================================="
-
+	echo "  __  __      _  _  ___  ___  ___        "
+	echo " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|    "
+	echo " | |\\/| / _\` | .\` | (_ | (_) \\__ \\  "
+	echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   "
+	echo "                                         "
+	echo " For help and support please visit:      "
+	echo " Website/Forum/Wiki: https://getmangos.eu"
+    echo "========================================================="
 }
 
 if [ "$1" = "a" ]

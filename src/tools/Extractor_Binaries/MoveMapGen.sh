@@ -130,7 +130,7 @@ DisplayHeader()
 	echo "                                         "
 	echo " For help and support please visit:      "
 	echo " Website/Forum/Wiki: https://getmangos.eu"
-	echo "======================================="
+	echo "=========================================="
 
 }
 
