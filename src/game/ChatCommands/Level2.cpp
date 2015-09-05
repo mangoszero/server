@@ -1140,6 +1140,81 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
+{
+    uint32 lowguid;
+    if (!ExtractUInt32(&args, lowguid))
+        return false;
+
+    int type;
+    if (!ExtractInt32(&args, type))
+        return false;
+
+    GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
+    if (!goData)
+        return false;
+
+    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    {
+        if (type < 0)
+            go->SendObjectDeSpawnAnim(go->GetObjectGuid());
+        else
+            go->SendGameObjectCustomAnim(go->GetObjectGuid(), uint32(type));
+        return true;
+    }
+    return false;
+}
+
+bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
+{
+    uint32 lowguid;
+    if (!ExtractUInt32(&args, lowguid))
+        return false;
+
+    int32 type;
+    if (!ExtractInt32(&args, type))
+        type = -1;
+
+    GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
+    if (!goData)
+        return false;
+
+    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    {
+        if (type < 0)
+            PSendSysMessage(LANG_GET_GAMEOBJECT_LOOTSTATE, lowguid, go->getLootState());
+        else
+            go->SetLootState(LootState(type));  // no check for max value of "type" is intended here
+        return true;
+    }
+    return false;
+}
+
+bool ChatHandler::HandleGameObjectStateCommand(char* args)
+{
+    uint32 lowguid;
+    if (!ExtractUInt32(&args, lowguid))
+        return false;
+
+    int32 type;
+    if (!ExtractInt32(&args, type))
+        type = -1;
+
+    GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
+    if (!goData)
+        return false;
+
+    if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
+    {
+        if (type < 0)
+            PSendSysMessage(LANG_GET_GAMEOBJECT_STATE, lowguid, go->GetGoState());
+        else
+            go->SetGoState(GOState(type));  // no check for max value of "type" is intended here
+        return true;
+    }
+    return false;
+}
+
 bool ChatHandler::HandleGameObjectNearCommand(char* args)
 {
     float distance;
