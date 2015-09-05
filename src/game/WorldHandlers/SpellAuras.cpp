@@ -2238,6 +2238,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         target->CombatStop(true);
         target->DeleteThreatList();
         target->GetHostileRefManager().deleteReferences();
+        target->GetMotionMaster()->MovementExpired(true);
 
         if (target->GetTypeId() == TYPEID_UNIT)
         {
@@ -2269,6 +2270,8 @@ void Aura::HandleModCharm(bool apply, bool Real)
                 }
             }
         }
+        else if (Player *plTarget = target->ToPlayer())
+            plTarget->SetClientControl(plTarget, 0);
 
         if (caster->GetTypeId() == TYPEID_PLAYER)
             { ((Player*)caster)->CharmSpellInitialize(); }
@@ -2277,8 +2280,11 @@ void Aura::HandleModCharm(bool apply, bool Real)
     {
         target->SetCharmerGuid(ObjectGuid());
 
-        if (target->GetTypeId() == TYPEID_PLAYER)
-            { ((Player*)target)->setFactionForRace(target->getRace()); }
+        if (Player *plTarget = target->ToPlayer())
+        {
+            plTarget->SetClientControl(plTarget, 1);
+            plTarget->setFactionForRace(target->getRace());
+        }
         else
         {
             CreatureInfo const* cinfo = ((Creature*)target)->GetCreatureInfo();
@@ -2315,6 +2321,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         target->CombatStop(true);
         target->DeleteThreatList();
         target->GetHostileRefManager().deleteReferences();
+        target->GetMotionMaster()->MovementExpired(true);
 
         if (target->GetTypeId() == TYPEID_UNIT)
         {
