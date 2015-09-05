@@ -238,6 +238,9 @@ struct ScriptedAI : public CreatureAI
 
         bool EnterEvadeIfOutOfCombatArea(const uint32 uiDiff);
 
+        // a wrapper for aggro list browsing
+        Unit *SelectAttackTarget(AttackingTarget type, uint32 position, uint32 spellId = 0, uint32 selectFlags = 0) { return m_creature->SelectAttackingTarget(type, position, spellId, selectFlags); }
+
     private:
         uint32 m_uiEvadeCheckCooldown;
 };
