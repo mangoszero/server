@@ -270,7 +270,7 @@ namespace VMAP
              * @param filename
              * @return WorldModel
              */
-            WorldModel* acquireModelInstance(const std::string& basepath, const std::string& filename);
+            WorldModel* acquireModelInstance(const std::string& basepath, const std::string& filename, uint32 flags = 0);
             /**
              * @brief
              *
