@@ -183,12 +183,22 @@ struct mob_firesworn : public CreatureScript
 
         uint32 m_uiImmolateTimer;
         uint32 m_uiSeparationCheckTimer;
+        bool m_bExploding;
 
         void Reset() override
         {
             m_uiImmolateTimer = urand(4 * IN_MILLISECONDS, 8 * IN_MILLISECONDS);    // These times are probably wrong
             m_uiSeparationCheckTimer = 5 * IN_MILLISECONDS;
             m_bExploding = false;
+        }
+
+        void JustDied(Unit* /*pKiller*/) override
+        {
+            if (m_pInstance)
+            {
+                if (Creature* pGarr = m_pInstance->GetSingleCreatureFromStorage(NPC_GARR))
+                    pGarr->CastSpell(pGarr, SPELL_ENRAGE, true, NULL, NULL, m_creature->GetObjectGuid());
+            }
         }
 
         void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
@@ -204,8 +214,9 @@ struct mob_firesworn : public CreatureScript
         {
             if (type == AI_EVENT_CUSTOM_A && pInvoker == m_creature)
             {
-                m_creature->CastSpell(m_creature, uiData, true);
+                m_creature->CastSpell(m_creature, SPELL_ERUPTION, true);
                 m_creature->ForcedDespawn(100);
+                uiDamage = 0;   // just for more convenient GM testing by .damage
                 m_bExploding = true;
             }
         }
@@ -216,19 +227,6 @@ struct mob_firesworn : public CreatureScript
             {
                 return;
             }
-
-            if (m_uiSeparationCheckTimer < uiDiff)
-            {
-                // Distance guesswork, but should be ok
-                Creature* pGarr = m_pInstance->GetSingleCreatureFromStorage(NPC_GARR);
-                if (pGarr && pGarr->IsAlive() && !m_creature->IsWithinDist2d(pGarr->GetPositionX(), pGarr->GetPositionY(), 50.0f))
-                {
-                    DoCastSpellIfCan(m_creature, SPELL_SEPARATION_ANXIETY, CAST_TRIGGERED);
-                }
-
-                m_uiSeparationCheckTimer = 5000;
-            }
-            else m_uiSeparationCheckTimer -= uiDiff;
 
             // Immolate_Timer
             if (m_uiImmolateTimer < uiDiff)
