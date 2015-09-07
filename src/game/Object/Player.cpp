@@ -1560,6 +1560,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             SendTransferAbortedByLockStatus(mEntry, lockStatus, miscRequirement);
             return false;
         }
+        if (IsDead())   // rare case of teleporting the player into an instance with no areatrigger participation
+        {
+            ResurrectPlayer(0.5f);
+            SpawnCorpseBones();
+        }
     }
 
     // if we were on a transport, leave
