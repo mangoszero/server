@@ -222,9 +222,9 @@ GameObject* ScriptedInstance::GetSingleGameObjectFromStorage(uint32 uiEntry)
 }
 
 /// Returns a pointer to a loaded Creature that was stored in m_mGoEntryGuidStore. Can return NULL
-Creature* ScriptedInstance::GetSingleCreatureFromStorage(uint32 uiEntry, bool bSkipDebugLog /*=false*/)
+Creature* ScriptedInstance::GetSingleCreatureFromStorage(uint32 uiEntry, bool bSkipDebugLog /*=false*/) const
 {
-    EntryGuidMap::iterator find = m_mNpcEntryGuidStore.find(uiEntry);
+    EntryGuidMap::const_iterator find = m_mNpcEntryGuidStore.find(uiEntry);
     if (find != m_mNpcEntryGuidStore.end())
     {
         return instance->GetCreature(find->second);
