@@ -40,6 +40,18 @@ enum
     TYPE_SULFURON               = 7,
     TYPE_MAJORDOMO              = 8,
     TYPE_RAGNAROS               = 9,
+    TYPE_FLAME_DOSED            = MAX_ENCOUNTER,
+    TYPE_DO_FREE_GARR_ADDS      = MAX_ENCOUNTER+1,
+
+    MAX_MOLTEN_RUNES            = 7,
+
+    TYPE_RUNE_KRESS             = 0,
+    TYPE_RUNE_MOHN              = 1,
+    TYPE_RUNE_BLAZ              = 2,
+    TYPE_RUNE_MAZJ              = 3,
+    TYPE_RUNE_ZETH              = 4,
+    TYPE_RUNE_THERI             = 5,
+    TYPE_RUNE_KORO              = 6,
 
     NPC_LUCIFRON                = 12118,
     NPC_MAGMADAR                = 11982,
@@ -61,6 +73,7 @@ enum
     NPC_FLAMEWAKER_PRIEST       = 11662,                    // Sulfuron
     NPC_FLAMEWAKER_HEALER       = 11663,                    // Majordomo
     NPC_FLAMEWAKER_ELITE        = 11664,                    // Majordomo
+    NPC_LAVA_SURGER             = 12101,
 
     GO_LAVA_STEAM               = 178107,
     GO_LAVA_SPLASH              = 178108,
@@ -77,6 +90,11 @@ enum
     MAX_MAJORDOMO_ADDS          = 8,
     FACTION_MAJORDOMO_FRIENDLY  = 1080,
     SAY_MAJORDOMO_SPAWN         = -1409004,
+
+    // Garr encounter spells
+    SPELL_GARR_ENRAGE           = 19516,
+    SPELL_GARR_ARMOR_DEBUFF     = 20481,
+    SPELL_SEPARATION_ANXIETY    = 23492,    // selfcast, for 5 sec: dmg +300% and banish immunity
 };
 
 struct sSpawnLocation

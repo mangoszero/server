@@ -89,6 +89,48 @@ struct is_molten_core : public InstanceScript
             case NPC_MAJORDOMO:
                 m_mNpcEntryGuidStore[pCreature->GetEntry()] = pCreature->GetObjectGuid();
                 break;
+            case NPC_FIRESWORN:
+                m_sFireswornGUID.insert(pCreature->GetObjectGuid());
+                break;
+            case NPC_LAVA_SURGER:
+                if (GetData(TYPE_GARR) == DONE)
+                    pCreature->ForcedDespawn(500);
+                break;
+            }
+        }
+
+        void OnCreatureDeath(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+            case NPC_FIRESWORN:
+                m_sFireswornGUID.erase(pCreature->GetObjectGuid());
+                if (Creature* pGarr = GetSingleCreatureFromStorage(NPC_GARR))
+                {
+                    if (pGarr->IsAlive())
+                    {
+                        pGarr->CastSpell(pGarr, SPELL_GARR_ENRAGE, true);
+                        pGarr->CastSpell(pGarr, SPELL_GARR_ARMOR_DEBUFF, true);
+
+                        if (!m_sFireswornGUID.size())
+                            pGarr->AI()->ReceiveAIEvent(AI_EVENT_CUSTOM_B, pGarr, pGarr, 0);
+                    }
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
+        void OnCreatureDespawn(Creature* pCreature) override
+        {
+            switch (pCreature->GetEntry())
+            {
+            case NPC_FIRESWORN:
+                OnCreatureDeath(pCreature);
+                break;
+            default:
+                break;
             }
         }
 
@@ -159,6 +201,16 @@ struct is_molten_core : public InstanceScript
             case TYPE_RAGNAROS:
                 m_auiEncounter[uiType] = uiData;
                 break;
+            case TYPE_DO_FREE_GARR_ADDS:
+                for (std::set<ObjectGuid>::const_iterator it = m_sFireswornGUID.begin(); it != m_sFireswornGUID.end(); ++it)
+                {
+                    ObjectGuid guid = *it;
+                    int32 bp0 = 0;
+                    if (Creature* firesworn = instance->GetCreature(guid))
+                        if (firesworn->IsAlive())
+                            firesworn->CastCustomSpell(firesworn, SPELL_SEPARATION_ANXIETY, &bp0, NULL, NULL, true);
+                }
+                return;
             }
 
             // Check if Majordomo can be summoned
@@ -191,6 +243,28 @@ struct is_molten_core : public InstanceScript
                 return m_auiEncounter[uiType];
             }
 
+            return 0;
+        }
+
+        uint64 GetData64(uint32 uiType) const override
+        {
+            switch (uiType)
+            {
+            case NPC_FIRESWORN:
+            {
+                Creature* garr = GetSingleCreatureFromStorage(NPC_GARR);
+                for (std::set<ObjectGuid>::const_iterator it = m_sFireswornGUID.begin(); it != m_sFireswornGUID.end(); ++it)
+                {
+                    ObjectGuid guid = *it;
+                    if (Creature* firesworn = instance->GetCreature(guid))
+                        if (firesworn->IsAlive() && firesworn->IsWithinDistInMap(garr, 20.0f, false))
+                            return guid.GetRawValue();
+                }
+                break;
+            }
+            default:
+                break;
+            }
             return 0;
         }
 
@@ -280,6 +354,8 @@ struct is_molten_core : public InstanceScript
 
         std::string m_strInstData;
         uint32 m_auiEncounter[MAX_ENCOUNTER];
+        uint32 m_auiRuneState[MAX_MOLTEN_RUNES];
+        std::set<ObjectGuid> m_sFireswornGUID;
     };
 
     InstanceData* GetInstanceData(Map* pMap) override

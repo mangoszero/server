@@ -40,13 +40,13 @@ enum
     // Garr spells
     SPELL_ANTIMAGICPULSE        = 19492,
     SPELL_MAGMASHACKLES         = 19496,
-    SPELL_ENRAGE                = 19516,                    // TODO Stacking enrage (stacks to 10 times)
+    SPELL_ERUPTION_TRIGGER      = 20482,    // target script, dispel and permanent immune to banish anywhere on map
+    SPELL_ENRAGE_TRIGGER        = 19515,    // target script, effect dummy anywhere on map
 
     // Add spells
     SPELL_ERUPTION              = 19497,
     SPELL_MASSIVE_ERUPTION      = 20483,                    // TODO possible on death
     SPELL_IMMOLATE              = 20294,
-    SPELL_SEPARATION_ANXIETY    = 23492,                    // Used if separated too far from Garr, 21095 use unknown.
 };
 
 struct boss_garr : public CreatureScript
@@ -64,11 +64,15 @@ struct boss_garr : public CreatureScript
 
         uint32 m_uiAntiMagicPulseTimer;
         uint32 m_uiMagmaShacklesTimer;
+        uint32 m_uiExplodeAddTimer;
+        bool m_bHasFreed;
 
         void Reset() override
         {
-            m_uiAntiMagicPulseTimer = 25000;
-            m_uiMagmaShacklesTimer = 15000;
+            m_uiAntiMagicPulseTimer = 25 * IN_MILLISECONDS;
+            m_uiMagmaShacklesTimer = 15 * IN_MILLISECONDS;
+            m_uiExplodeAddTimer = 60 * IN_MILLISECONDS;
+            m_bHasFreed = false;
         }
 
         void Aggro(Unit* /*pWho*/) override
@@ -95,6 +99,25 @@ struct boss_garr : public CreatureScript
             }
         }
 
+        void DamageTaken(Unit *damager, uint32 &damage) override
+        {
+            if (!m_bHasFreed && m_creature->HealthBelowPctDamaged(50, damage))
+            {
+                m_pInstance->SetData(TYPE_DO_FREE_GARR_ADDS, 0);
+                m_bHasFreed = true;
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType type, Creature* pSender, Unit* /*pInvoker*/, uint32 /*uiData*/) override
+        {
+            if (type == AI_EVENT_CUSTOM_B && pSender == m_creature)
+            {
+                if (Creature* spawn = m_creature->SummonCreature(NPC_FIRESWORN, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), m_creature->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN, true))
+                    spawn->SetOwnerGuid(ObjectGuid());  // trying to prevent despawn of the summon at Garr death
+                m_uiExplodeAddTimer = 25 * IN_MILLISECONDS;
+            }
+        }
+
         void UpdateAI(const uint32 uiDiff) override
         {
             if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -107,26 +130,33 @@ struct boss_garr : public CreatureScript
             {
                 if (DoCastSpellIfCan(m_creature, SPELL_ANTIMAGICPULSE) == CAST_OK)
                 {
-                    m_uiAntiMagicPulseTimer = urand(10000, 15000);
+                    m_uiAntiMagicPulseTimer = urand(10 * IN_MILLISECONDS, 15 * IN_MILLISECONDS);
                 }
             }
-            else
-            {
-                m_uiAntiMagicPulseTimer -= uiDiff;
-            }
+            else m_uiAntiMagicPulseTimer -= uiDiff;
 
             // MagmaShackles_Timer
             if (m_uiMagmaShacklesTimer < uiDiff)
             {
                 if (DoCastSpellIfCan(m_creature, SPELL_MAGMASHACKLES) == CAST_OK)
                 {
-                    m_uiMagmaShacklesTimer = urand(8000, 12000);
+                    m_uiMagmaShacklesTimer = urand(8 * IN_MILLISECONDS, 12 * IN_MILLISECONDS);
                 }
             }
-            else
+            else m_uiMagmaShacklesTimer -= uiDiff;
+
+            // Explode an add
+            if (m_uiExplodeAddTimer < uiDiff)
             {
-                m_uiMagmaShacklesTimer -= uiDiff;
+                if (urand(0, 1)) // 50% chance to explode, is it too much?
+                {
+                    ObjectGuid guid = m_pInstance->GetGuid(NPC_FIRESWORN);
+                    if (Creature* firesworn = m_pInstance->instance->GetCreature(guid))
+                        SendAIEvent(AI_EVENT_CUSTOM_A, firesworn, firesworn, SPELL_MASSIVE_ERUPTION);   // this is an instant explosion with no SPELL_ERUPTION_TRIGGER
+                }
+                m_uiExplodeAddTimer = 15 * IN_MILLISECONDS;
             }
+            else m_uiExplodeAddTimer -= uiDiff;
 
             DoMeleeAttackIfReady();
         }
@@ -156,29 +186,36 @@ struct mob_firesworn : public CreatureScript
 
         void Reset() override
         {
-            m_uiImmolateTimer = urand(4000, 8000);              // These times are probably wrong
-            m_uiSeparationCheckTimer = 5000;
+            m_uiImmolateTimer = urand(4 * IN_MILLISECONDS, 8 * IN_MILLISECONDS);    // These times are probably wrong
+            m_uiSeparationCheckTimer = 5 * IN_MILLISECONDS;
+            m_bExploding = false;
+        }
+
+        void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
+        {
+            if (!m_bExploding && m_creature->HealthBelowPctDamaged(10, uiDamage))
+            {
+                ReceiveAIEvent(AI_EVENT_CUSTOM_A, m_creature, m_creature, SPELL_ERUPTION);
+                uiDamage = 0;
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType type, Creature* /*pSender*/, Unit* pInvoker, uint32 uiData) override
+        {
+            if (type == AI_EVENT_CUSTOM_A && pInvoker == m_creature)
+            {
+                m_creature->CastSpell(m_creature, uiData, true);
+                m_creature->ForcedDespawn(100);
+                m_bExploding = true;
+            }
         }
 
         void UpdateAI(const uint32 uiDiff) override
         {
-            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
+            if (!m_creature->SelectHostileTarget() || !m_creature->getVictim() || m_bExploding)
             {
                 return;
             }
-
-            // Immolate_Timer
-            if (m_uiImmolateTimer < uiDiff)
-            {
-                if (Unit* pTarget = m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0))
-                {
-                    if (DoCastSpellIfCan(pTarget, SPELL_IMMOLATE) == CAST_OK)
-                    {
-                        m_uiImmolateTimer = urand(5000, 10000);
-                    }
-                }
-            }
-            else { m_uiImmolateTimer -= uiDiff; }
 
             if (m_uiSeparationCheckTimer < uiDiff)
             {
@@ -191,10 +228,20 @@ struct mob_firesworn : public CreatureScript
 
                 m_uiSeparationCheckTimer = 5000;
             }
-            else
+            else m_uiSeparationCheckTimer -= uiDiff;
+
+            // Immolate_Timer
+            if (m_uiImmolateTimer < uiDiff)
             {
-                m_uiSeparationCheckTimer -= uiDiff;
+                if (Unit* pTarget = SelectAttackTarget(ATTACKING_TARGET_RANDOM, 0, SPELL_IMMOLATE))
+                {
+                    if (DoCastSpellIfCan(pTarget, SPELL_IMMOLATE, CAST_TRIGGERED) == CAST_OK)
+                    {
+                        m_uiImmolateTimer = urand(5 * IN_MILLISECONDS, 10 * IN_MILLISECONDS);
+                    }
+                }
             }
+            else m_uiImmolateTimer -= uiDiff;
 
             // Cast Erruption and let them die
             if (m_creature->GetHealthPercent() <= 10.0f)
