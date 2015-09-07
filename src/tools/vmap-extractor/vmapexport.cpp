@@ -125,7 +125,7 @@ void ReadLiquidTypeTableDBC()
         LiqType[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
     }
 
-    printf("Success! %lu liquid types loaded.\n", LiqType_count);
+    printf("Success! (%u LiqTypes loaded)\n", (unsigned int)LiqType_count);
 }
 
 bool ExtractWmo()

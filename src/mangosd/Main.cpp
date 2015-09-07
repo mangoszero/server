@@ -191,8 +191,8 @@ extern int main(int argc, char** argv)
                    " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/                    \n"
                    "                                        ____              \n"
                    " For help and support please visit:    /_  /___ _ _ ___   \n" 
-                   " Website: https://getmangos.eu          / // -_) '_/ _ \\ \n" 
-                   "    Wiki: http://github.com/mangoswiki /___\\___|_| \\___/\n" 
+                   "      Website: https://getmangos.eu     / // -_) '_/ _ \\ \n" 
+                   " Forum / Wiki: https://getmangos.eu    /___\\___|_| \\___/\n" 
                   );
     sLog.outString("Using configuration file %s.", cfg_file);
 

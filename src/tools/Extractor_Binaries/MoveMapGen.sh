@@ -215,23 +215,23 @@ createSummary()
 	  "2" )
 		echo "2 CPUs selected:"
 		echo "==============="
-		echo " CPU 1: Maps:$MAP_Continent2 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10"
-		echo " CPU 2: Maps:$MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19"
+		echo " CPU 1: Maps: $MAP_Continent2 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10"
+		echo " CPU 2: Maps: $MAP_Continent1 $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19"
 		;;
 	  "3" )
 		echo "3 CPUs selected:"
 		echo "==============="
-		echo " CPU 1: Maps:$MAP_Continent1"
-		echo " CPU 2: Maps:$MAP_Continent2"
-		echo " CPU 3: Maps:$MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
+		echo " CPU 1: Maps: $MAP_Continent1"
+		echo " CPU 2: Maps: $MAP_Continent2"
+		echo " CPU 3: Maps: $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
 		;;
 	  "4" )
 		echo "4 CPUs selected:"
 		echo "==============="
-		echo " CPU 1: Maps:$MAP_Continent1"
-		echo " CPU 2: Maps:$MAP_Continent2"
-		echo " CPU 3: Maps:$MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
-		echo " CPU 4: Maps:$MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Big5 $MAP_Big6 $MAP_Medium4 $MAP_Medium5 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small11 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_Small12 $MAP_LIST_Junk7 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
+		echo " CPU 1: Maps: $MAP_Continent1"
+		echo " CPU 2: Maps: $MAP_Continent2"
+		echo " CPU 3: Maps: $MAP_Big1 $MAP_Big2 $MAP_Big3 $MAP_Big4 $MAP_Big5 $MAP_Big6 $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Medium4 $MAP_Medium5 $MAP_Medium6 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Small10 $MAP_Small11 $MAP_Small12 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_LIST_Junk1 $MAP_LIST_Junk2 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_LIST_Junk7 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
+		echo " CPU 4: Maps: $MAP_Medium1 $MAP_Medium2 $MAP_Medium3 $MAP_Small1 $MAP_Small2 $MAP_Small3 $MAP_Small4 $MAP_Small5 $MAP_Small6 $MAP_Small7 $MAP_Small8 $MAP_Small9 $MAP_Big5 $MAP_Big6 $MAP_Medium4 $MAP_Medium5 $MAP_Medium7 $MAP_Medium8 $MAP_Medium9 $MAP_Small11 $MAP_LIST_Junk3 $MAP_LIST_Junk4 $MAP_LIST_Junk5 $MAP_LIST_Junk6 $MAP_Small12 $MAP_LIST_Junk7 $MAP_Small13 $MAP_Small14 $MAP_Small15 $MAP_Small16 $MAP_Small17 $MAP_Small18 $MAP_Small19 $MAP_LIST_Junk8 $MAP_LIST_Junk9"
 		;;
 	  * )
 		badParam

@@ -1,7 +1,7 @@
 Historic Authors
 =======
 
-The **mangos-zero server** is the work of many awesome people, and contributors
+The **mangos** server is the work of many awesome people, and contributors
 from all over the world, and is the result of quite a few predecessors.
 
 This files contains all the projects and people involved in the project and its'
