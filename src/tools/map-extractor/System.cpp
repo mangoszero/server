@@ -34,10 +34,10 @@
 #endif
 
 #include "dbcfile.h"
-#include <ml\mpq.h>
+#include <ml/mpq.h>
 
-#include <ml\adt.h>
-#include <ml\wdt.h>
+#include <ml/adt.h>
+#include <ml/wdt.h>
 #include <fcntl.h>
 
 #ifndef WIN32

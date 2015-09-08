@@ -25,7 +25,7 @@
 #include "dbcfile.h"
 #undef min
 #undef max
-#include <ml\mpq.h>
+#include <ml/mpq.h>
 
 #include <cstdio>
 
