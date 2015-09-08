@@ -50,7 +50,7 @@
 #include "wdtfile.h"
 #include "dbcfile.h"
 #include "wmo.h"
-#include <ml\mpq.h>
+#include <ml/mpq.h>
 
 #include "vmapexport.h"
 

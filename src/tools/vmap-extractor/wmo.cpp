@@ -32,7 +32,7 @@
 #include <fstream>
 #undef min
 #undef max
-#include <ml\mpq.h>
+#include <ml/mpq.h>
 
 using namespace std;
 extern uint16* LiqType;
