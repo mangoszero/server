@@ -327,9 +327,8 @@ bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
     pArchiveNames.push_back(path);
     sprintf(path, "%s/Data/wmo.MPQ", input_path);
     pArchiveNames.push_back(path);
-    sprintf(path, "%s/Data/base.MPQ", input_path);
-    pArchiveNames.push_back(path);
     sprintf(path, "%s/Data/misc.MPQ", input_path);
+    pArchiveNames.push_back(path);
 
     // now, scan for the patch levels in the core dir
     printf("Scanning patch levels from data directory.\n");
