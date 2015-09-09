@@ -323,7 +323,6 @@ bool fillArchiveNameVector(std::vector<std::string>& pArchiveNames)
     pArchiveNames.push_back(path);
     sprintf(path, "%s/Data/model.MPQ", input_path);
     pArchiveNames.push_back(path);
-    pArchiveNames.push_back(path);
     sprintf(path, "%s/Data/texture.MPQ", input_path);
     pArchiveNames.push_back(path);
     sprintf(path, "%s/Data/wmo.MPQ", input_path);
