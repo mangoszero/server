@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 1
-    #define WORLD_DB_CONTENT_NR 0
-    #define WORLD_DB_UPDATE_DESCRIPTION "revision_refactor"
+    #define WORLD_DB_CONTENT_NR 6
+    #define WORLD_DB_UPDATE_DESCRIPTION "list_aura_command"
 #endif // __REVISION_H__
