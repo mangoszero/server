@@ -68,7 +68,7 @@ std::string GetUniformName(std::string& path);
  * @brief Get extension for a file
  *
  * @param file
- * @return extension, if found, or std::string::npos if not
+ * @return extension, if found, or empty string if not
  */
 std::string GetExtension(std::string& file);
 

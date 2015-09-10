@@ -26,9 +26,8 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <algorithm>
 #include <errno.h>
-#include <sstream>
-#include <iomanip>
 
 #if defined WIN32
 #include <Windows.h>
