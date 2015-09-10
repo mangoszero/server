@@ -31,14 +31,14 @@ enum
     MAX_ENCOUNTER               = 10,
 
     TYPE_LUCIFRON               = 0,
-    TYPE_MAGMADAR               = 1,
+    TYPE_MAGMADAR               = 1,    // do not change order: begin
     TYPE_GEHENNAS               = 2,
     TYPE_GARR                   = 3,
     TYPE_SHAZZRAH               = 4,
     TYPE_GEDDON                 = 5,
     TYPE_GOLEMAGG               = 6,
-    TYPE_SULFURON               = 7,
-    TYPE_MAJORDOMO              = 8,
+    TYPE_SULFURON               = 7,    // do not change order: end
+    TYPE_MAJORDOMO              = 8, 
     TYPE_RAGNAROS               = 9,
     TYPE_FLAME_DOSED            = MAX_ENCOUNTER,
     TYPE_DO_FREE_GARR_ADDS      = MAX_ENCOUNTER+1,
@@ -86,7 +86,14 @@ enum
     GO_RUNE_THERI               = 176954,                   // Golemagg
     GO_RUNE_KORO                = 176951,                   // Sulfuron
 
-    MAX_MOLTEN_RUNES            = 7,
+    GO_RUNE_KRESS_TRAP          = 178192,
+    GO_RUNE_MOHN_TRAP           = 178193,
+    GO_RUNE_BLAZ_TRAP           = 178191,
+    GO_RUNE_MAZJ_TRAP           = 178189,
+    GO_RUNE_ZETH_TRAP           = 178188,
+    GO_RUNE_THERI_TRAP          = 178190,
+    GO_RUNE_KORO_TRAP           = 178187,
+
     MAX_MAJORDOMO_ADDS          = 8,
     FACTION_MAJORDOMO_FRIENDLY  = 1080,
     SAY_MAJORDOMO_SPAWN         = -1409004,
@@ -109,4 +116,22 @@ static sSpawnLocation m_aMajordomoLocations[2] =
     {NPC_MAJORDOMO, 847.103f, -816.153f, -229.775f, 4.344f} // Summon and teleport location (near Ragnaros)
 };
 
+struct sRuneEncounters
+{
+    uint32 m_uiRuneEntry, m_uiTrapEntry;
+    uint8 m_bossType;
+    uint8 getRuneType() const { return m_bossType - 1; }
+};
+
+static const sRuneEncounters m_aMoltenCoreRunes[MAX_MOLTEN_RUNES] =
+{
+    { GO_RUNE_KRESS, GO_RUNE_KRESS_TRAP, TYPE_MAGMADAR },
+    { GO_RUNE_MOHN,  GO_RUNE_MOHN_TRAP,  TYPE_GEHENNAS },
+    { GO_RUNE_BLAZ,  GO_RUNE_BLAZ_TRAP,  TYPE_GARR },
+    { GO_RUNE_MAZJ,  GO_RUNE_MAZJ_TRAP,  TYPE_SHAZZRAH },
+    { GO_RUNE_ZETH,  GO_RUNE_ZETH_TRAP,  TYPE_GEDDON },
+    { GO_RUNE_THERI, GO_RUNE_THERI_TRAP, TYPE_GOLEMAGG },
+    { GO_RUNE_KORO,  GO_RUNE_KORO_TRAP,  TYPE_SULFURON }
+};
 #endif
+
