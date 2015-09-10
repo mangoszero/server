@@ -189,15 +189,25 @@ struct mob_firesworn : public CreatureScript
         {
             m_uiImmolateTimer = urand(4 * IN_MILLISECONDS, 8 * IN_MILLISECONDS);    // These times are probably wrong
             m_uiSeparationCheckTimer = 5 * IN_MILLISECONDS;
-            m_uiExplodeTimer = 0;
+            m_bExploding = false;
         }
 
         void DamageTaken(Unit* /*pDealer*/, uint32& uiDamage) override
         {
-            if (!m_uiExplodeTimer && m_creature->HealthBelowPctDamaged(10, uiDamage))
+            if (!m_bExploding && m_creature->HealthBelowPctDamaged(10, uiDamage))
             {
-                m_creature->CastSpell(m_creature, SPELL_ERUPTION, true);
-                m_uiExplodeTimer = 500;
+                ReceiveAIEvent(AI_EVENT_CUSTOM_A, m_creature, m_creature, SPELL_ERUPTION);
+                uiDamage = 0;
+            }
+        }
+
+        void ReceiveAIEvent(AIEventType type, Creature* /*pSender*/, Unit* pInvoker, uint32 uiData) override
+        {
+            if (type == AI_EVENT_CUSTOM_A && pInvoker == m_creature)
+            {
+                m_creature->CastSpell(m_creature, uiData, true);
+                m_creature->ForcedDespawn(100);
+                m_bExploding = true;
             }
         }
 
@@ -208,15 +218,18 @@ struct mob_firesworn : public CreatureScript
                 return;
             }
 
-            if (m_uiExplodeTimer)
+            if (m_uiSeparationCheckTimer < uiDiff)
             {
-                if (m_uiExplodeTimer <= uiDiff)
-                    m_creature->SetHealth(0);
-                else
-                    m_uiExplodeTimer -= uiDiff;
+                // Distance guesswork, but should be ok
+                Creature* pGarr = m_pInstance->GetSingleCreatureFromStorage(NPC_GARR);
+                if (pGarr && pGarr->IsAlive() && !m_creature->IsWithinDist2d(pGarr->GetPositionX(), pGarr->GetPositionY(), 50.0f))
+                {
+                    DoCastSpellIfCan(m_creature, SPELL_SEPARATION_ANXIETY, CAST_TRIGGERED);
+                }
 
-                return; // no other actions during and after explosion
+                m_uiSeparationCheckTimer = 5000;
             }
+            else m_uiSeparationCheckTimer -= uiDiff;
 
             // Immolate_Timer
             if (m_uiImmolateTimer < uiDiff)
@@ -259,3 +272,4 @@ void AddSC_boss_garr()
     //pNewScript->GetAI = &GetAI_mob_firesworn;
     //pNewScript->RegisterSelf();
 }
+
