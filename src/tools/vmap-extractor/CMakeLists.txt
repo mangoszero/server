@@ -32,11 +32,11 @@ include_directories(
 add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS}
     adtfile.cpp
     dbcfile.cpp
-    gameobject_extract.cpp
     model.cpp
     vmapexport.cpp
     wdtfile.cpp
     wmo.cpp
+    ${CMAKE_SOURCE_DIR}/src/shared/Auth/md5.c
 )
 
 target_link_libraries(${EXECUTABLE_NAME} libmpq loadlib bzip2 zlib)

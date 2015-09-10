@@ -49,41 +49,27 @@ extern const char* szWorkDirWmo; /**< TODO */
 extern const char* szRawVMAPMagic; /**< vmap magic string for extracted raw vmap data */
 
 /**
- * @brief
+ * @brief Test if the specified file exists in the building directory
  *
  * @param file
  * @return bool
  */
 bool FileExists(const char* file);
-/**
- * @brief
- *
- * @param str
- */
-void strToLower(char* str);
 
 /**
- * @brief
+ * @brief Get "uniform" name for a path (a uniform name has the format <md5hash>-<filename>.<ext>)
  *
- * @param fname
- * @return bool
+ * @param path
+ * @return string
  */
-bool ExtractSingleWmo(std::string& fname);
+std::string GetUniformName(std::string& path);
 
 /**
- * @brief
+ * @brief Get extension for a file
  *
- * @param origPath original path of the model, cleaned with fixnamen and fixname2
- * @param fixedName will store the translated name (if changed)
- * @param failedPaths Set to collect errors
- * @return bool
+ * @param file
+ * @return extension, if found, or std::string::npos if not
  */
-bool ExtractSingleModel(std::string& origPath, std::string& fixedName, StringSet& failedPaths);
-
-/**
- * @brief
- *
- */
-void ExtractGameobjectModels();
+std::string GetExtension(std::string& file);
 
 #endif

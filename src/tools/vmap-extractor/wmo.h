@@ -43,7 +43,6 @@
 #define WMO_MATERIAL_WALL_SURFACE    0x40
 
 class WMOInstance;
-class WMOManager;
 class MPQFile;
 
 /**
@@ -93,7 +92,6 @@ class WMORoot
         bool ConvertToVMAPRootWmo(FILE* output);
     private:
         std::string filename; /**< TODO */
-        char outfilename; /**< TODO */
 };
 
 /**
@@ -182,7 +180,6 @@ class WMOGroup
 
     private:
         std::string filename; /**< TODO */
-        char outfilename; /**< TODO */
 };
 
 /**
@@ -212,7 +209,7 @@ class WMOInstance
          * @param tileY
          * @param pDirfile
          */
-        WMOInstance(MPQFile& f, const char* WmoInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile);
+        WMOInstance(MPQFile& f, std::string& WmoInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile);
 
         /**
          * @brief
@@ -220,5 +217,14 @@ class WMOInstance
          */
         static void reset();
 };
+
+/**
+ * @brief
+ *
+ * @param fname
+ * @return bool
+ */
+bool ExtractSingleWmo(std::string& fname);
+
 
 #endif

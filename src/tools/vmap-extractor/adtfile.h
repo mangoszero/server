@@ -175,57 +175,9 @@ class ADTFile
          * @return bool
          */
         bool init(uint32 map_num, uint32 tileX, uint32 tileY, StringSet& failedPaths);
-        //void LoadMapChunks();
-
-        //uint32 wmo_count;
-        /*
-            const mcell& Getmcell() const
-            {
-                return Mcell;
-            }
-        */
     private:
-        //size_t mcnk_offsets[256], mcnk_sizes[256];
         MPQFile ADT; /**< TODO */
-        //mcell Mcell;
-        string Adtfilename; /**< TODO */
+        string AdtFilename; /**< TODO */
 };
-
-/**
- * @brief
- *
- * @param FileName
- * @return const char
- */
-const char* GetPlainName(const char* FileName);
-/**
- * @brief
- *
- * @param FileName
- * @return char
- */
-char* GetPlainName(char* FileName);
-/**
- * @brief
- *
- * @param FileName
- * @return const char
- */
-char const* GetExtension(char const* FileName);
-/**
- * @brief
- *
- * @param name
- * @param len
- */
-void fixnamen(char* name, size_t len);
-/**
- * @brief
- *
- * @param name
- * @param len
- */
-void fixname2(char* name, size_t len);
-//void fixMapNamen(char *name, size_t len);
 
 #endif
