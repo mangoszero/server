@@ -64,6 +64,7 @@ struct is_molten_core : public InstanceScript
         void Initialize() override
         {
             memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+            memset(&m_auiRuneState, 0, sizeof(m_auiRuneState));
         }
 
         bool IsEncounterInProgress() const override
@@ -146,12 +147,47 @@ struct is_molten_core : public InstanceScript
             case GO_RUNE_ZETH:
             case GO_RUNE_THERI:
             case GO_RUNE_KORO:
-
+                if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(pGo->GetGOInfo()->button.linkedTrapId))
+                {
+                    switch (m_auiRuneState[rstr->getRuneType()])
+                    {
+                    case DONE:
+                        pGo->SetGoState(GO_STATE_READY);
+                        break;
+                    default:
+                        pGo->SetGoState(GO_STATE_ACTIVE);
+                        break;
+                    }
+                }
+                // no break here!
                 // Majordomo event chest
             case GO_CACHE_OF_THE_FIRE_LORD:
                 // Ragnaros GOs
             case GO_LAVA_STEAM:
             case GO_LAVA_SPLASH:
+                m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
+                break;
+                // rune traps: just change state
+            case GO_RUNE_KRESS_TRAP:
+            case GO_RUNE_MOHN_TRAP:
+            case GO_RUNE_BLAZ_TRAP:
+            case GO_RUNE_MAZJ_TRAP:
+            case GO_RUNE_ZETH_TRAP:
+            case GO_RUNE_THERI_TRAP:
+            case GO_RUNE_KORO_TRAP:
+                if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(pGo->GetEntry()))
+                {
+                    switch (m_auiRuneState[rstr->getRuneType()])
+                    {
+                    case DONE:
+                        pGo->SetLootState(GO_JUST_DEACTIVATED); //TODO fix GameObject::Use for traps
+                        // no break here!
+                    case NOT_STARTED:
+                        pGo->SetGoState(GO_STATE_ACTIVE);
+                    default:
+                        break;
+                    }
+                }
                 m_mGoEntryGuidStore[pGo->GetEntry()] = pGo->GetObjectGuid();
                 break;
             }
@@ -165,41 +201,40 @@ struct is_molten_core : public InstanceScript
 
         void SetData(uint32 uiType, uint32 uiData) override
         {
+            bool save = (uiData == DONE);
             switch (uiType)
             {
-            case TYPE_LUCIFRON:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_MAGMADAR:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_GEHENNAS:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_GARR:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_SHAZZRAH:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_GEDDON:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_GOLEMAGG:
-                m_auiEncounter[uiType] = uiData;
-                break;
-            case TYPE_SULFURON:
-                m_auiEncounter[uiType] = uiData;
-                break;
             case TYPE_MAJORDOMO:
-                m_auiEncounter[uiType] = uiData;
                 if (uiData == DONE)
                 {
                     DoRespawnGameObject(GO_CACHE_OF_THE_FIRE_LORD, HOUR);
                 }
-                break;
+                // no break here!
+            case TYPE_LUCIFRON:
+            case TYPE_MAGMADAR:
+            case TYPE_GEHENNAS:
+            case TYPE_GARR:
+            case TYPE_SHAZZRAH:
+            case TYPE_GEDDON:
+            case TYPE_GOLEMAGG:
+            case TYPE_SULFURON:
             case TYPE_RAGNAROS:
-                m_auiEncounter[uiType] = uiData;
+                 m_auiEncounter[uiType] = uiData;
+               break;
+            case TYPE_FLAME_DOSED:
+                if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(uiData))
+                {
+                    m_auiRuneState[rstr->getRuneType()] = DONE;
+                    save = true;
+                    if (GameObject *trap = GetSingleGameObjectFromStorage(rstr->m_uiTrapEntry))
+                    {
+                        trap->SetGoState(GO_STATE_ACTIVE);
+                        trap->SetLootState(GO_JUST_DEACTIVATED);    //TODO fix GameObject::Use for traps
+                    }
+                    if (GameObject *rune = GetSingleGameObjectFromStorage(rstr->m_uiRuneEntry))
+                        rune->SetGoState(GO_STATE_READY);
+                    DoSpawnMajordomoIfCan(false);
+                }
                 break;
             case TYPE_DO_FREE_GARR_ADDS:
                 for (std::set<ObjectGuid>::const_iterator it = m_sFireswornGUID.begin(); it != m_sFireswornGUID.end(); ++it)
@@ -213,13 +248,17 @@ struct is_molten_core : public InstanceScript
                 return;
             }
 
-            // Check if Majordomo can be summoned
-            if (uiData == SPECIAL)
+            if (uiType < MAX_ENCOUNTER && uiData == DONE)   // a boss just killed
             {
-                DoSpawnMajordomoIfCan(false);
+                if (sRuneEncounters const *rstr = GetRuneStructForBoss(uiType))
+                {
+                    m_auiRuneState[rstr->getRuneType()] = SPECIAL;
+                    if (GameObject *trap = GetSingleGameObjectFromStorage(rstr->m_uiTrapEntry))
+                        trap->SetGoState(GO_STATE_READY);
+                }
             }
 
-            if (uiData == DONE || uiData == SPECIAL)
+            if (save)
             {
                 OUT_SAVE_INST_DATA;
 
@@ -227,7 +266,9 @@ struct is_molten_core : public InstanceScript
                 saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " "
                     << m_auiEncounter[3] << " " << m_auiEncounter[4] << " " << m_auiEncounter[5] << " "
                     << m_auiEncounter[6] << " " << m_auiEncounter[7] << " " << m_auiEncounter[8] << " "
-                    << m_auiEncounter[9];
+                    << m_auiEncounter[9] << " " << m_auiRuneState[0] << " " << m_auiRuneState[1] << " "
+                    << m_auiRuneState[2] << " " << m_auiRuneState[3] << " " << m_auiRuneState[4] << " "
+                    << m_auiRuneState[5] << " " << m_auiRuneState[6];
 
                 m_strInstData = saveStream.str();
 
@@ -239,9 +280,9 @@ struct is_molten_core : public InstanceScript
         uint32 GetData(uint32 uiType) const override
         {
             if (uiType < MAX_ENCOUNTER)
-            {
                 return m_auiEncounter[uiType];
-            }
+            else if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(uiType))
+                return m_auiRuneState[rstr->getRuneType()];
 
             return 0;
         }
@@ -283,7 +324,9 @@ struct is_molten_core : public InstanceScript
 
             loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3]
                 >> m_auiEncounter[4] >> m_auiEncounter[5] >> m_auiEncounter[6] >> m_auiEncounter[7]
-                >> m_auiEncounter[8] >> m_auiEncounter[9];
+                >> m_auiEncounter[8] >> m_auiEncounter[9] >> m_auiRuneState[0] >> m_auiRuneState[1]
+                >> m_auiRuneState[2] >> m_auiRuneState[3] >> m_auiRuneState[4] >> m_auiRuneState[5]
+                >> m_auiRuneState[6];
 
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
             {
@@ -350,6 +393,24 @@ struct is_molten_core : public InstanceScript
                     }
                 }
             }
+        }
+
+        sRuneEncounters const *GetRuneStructForBoss(uint32 uiType) const
+        {
+            for (int i = 0; i < MAX_MOLTEN_RUNES; ++i)
+                if (m_aMoltenCoreRunes[i].m_bossType == uiType)
+                    return &m_aMoltenCoreRunes[i];
+
+            return NULL;
+        }
+
+        sRuneEncounters const *GetRuneStructForTrapEntry(uint32 entry) const
+        {
+            for (int i = 0; i < MAX_MOLTEN_RUNES; ++i)
+            if (m_aMoltenCoreRunes[i].m_uiTrapEntry == entry)
+                return &m_aMoltenCoreRunes[i];
+
+            return NULL;
         }
 
         std::string m_strInstData;
