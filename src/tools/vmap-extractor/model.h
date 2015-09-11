@@ -68,7 +68,7 @@ class Model
          * @param outfilename
          * @return bool
          */
-        bool ConvertToVMAPModel(const char* outfilename);
+        bool ConvertToVMAPModel(std::string& outfilename);
 
         bool ok; /**< TODO */
 
@@ -97,7 +97,6 @@ class Model
             indices = NULL;
         }
         std::string filename; /**< TODO */
-        char outfilename; /**< TODO */
 };
 
 /**
@@ -131,8 +130,24 @@ class ModelInstance
          * @param tileY
          * @param pDirfile
          */
-        ModelInstance(MPQFile& f, const char* ModelInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile);
+        ModelInstance(MPQFile& f, std::string& ModelInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile);
 
 };
+
+/**
+ * @brief
+ *
+ * @param origPath original path of the model, cleaned with fixnamen and fixname2
+ * @param fixedName will store the translated name (if changed)
+ * @param failedPaths Set to collect errors
+ * @return bool
+ */
+bool ExtractSingleModel(std::string& origPath, std::string& fixedName, StringSet& failedPaths);
+
+/**
+ * @brief
+ *
+ */
+void ExtractGameobjectModels();
 
 #endif

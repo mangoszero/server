@@ -22,13 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include <ml/mpq.h>
 #include "vmapexport.h"
-#include "model.h"
-#include "wmo.h"
 #include <cassert>
 #include <algorithm>
 #include <cstdio>
+#include <ml/mpq.h>
+#include "model.h"
+#include "wmo.h"
+#include "dbcfile.h"
+
+using namespace std;
+
+Vec3D fixCoordSystem(Vec3D v)
+{
+    return Vec3D(v.x, v.z, -v.y);
+}
+
+Vec3D fixCoordSystem2(Vec3D v)
+{
+    return Vec3D(v.x, v.z, v.y);
+}
+
 
 Model::Model(std::string& filename) : filename(filename), vertices(0), indices(0)
 {
@@ -77,37 +91,38 @@ bool Model::open(StringSet& failedPaths)
     return true;
 }
 
-bool Model::ConvertToVMAPModel(const char* outfilename)
+bool Model::ConvertToVMAPModel(std::string& outfilename)
 {
     int N[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    FILE* output = fopen(outfilename, "wb");
+    FILE* output = fopen(outfilename.c_str(), "wb");
     if (!output)
     {
-        printf("Can't create the output file '%s'\n", outfilename);
+        printf("Can't create the output file '%s'\n", outfilename.c_str());
         return false;
     }
-    fwrite(szRawVMAPMagic, 8, 1, output);
+    
+    std::fwrite(szRawVMAPMagic, 8, 1, output);
     uint32 nVertices = 0;
     nVertices = header.nBoundingVertices;
 
-    fwrite(&nVertices, sizeof(int), 1, output);
+    std::fwrite(&nVertices, sizeof(int), 1, output);
     uint32 nofgroups = 1;
-    fwrite(&nofgroups, sizeof(uint32), 1, output);
-    fwrite(N, 4 * 3, 1, output); // rootwmoid, flags, groupid
-    fwrite(N, sizeof(float), 3 * 2, output); //bbox, only needed for WMO currently
-    fwrite(N, 4, 1, output); // liquidflags
-    fwrite("GRP ", 4, 1, output);
+    std::fwrite(&nofgroups, sizeof(uint32), 1, output);
+    std::fwrite(N, 4 * 3, 1, output); // rootwmoid, flags, groupid
+    std::fwrite(N, sizeof(float), 3 * 2, output); //bbox, only needed for WMO currently
+    std::fwrite(N, 4, 1, output); // liquidflags
+    std::fwrite("GRP ", 4, 1, output);
     uint32 branches = 1;
     int wsize;
     wsize = sizeof(branches) + sizeof(uint32) * branches;
-    fwrite(&wsize, sizeof(int), 1, output);
-    fwrite(&branches, sizeof(branches), 1, output);
+    std::fwrite(&wsize, sizeof(int), 1, output);
+    std::fwrite(&branches, sizeof(branches), 1, output);
     uint32 nIndexes = (uint32) nIndices;
-    fwrite(&nIndexes, sizeof(uint32), 1, output);
-    fwrite("INDX", 4, 1, output);
+    std::fwrite(&nIndexes, sizeof(uint32), 1, output);
+    std::fwrite("INDX", 4, 1, output);
     wsize = sizeof(uint32) + sizeof(unsigned short) * nIndexes;
-    fwrite(&wsize, sizeof(int), 1, output);
-    fwrite(&nIndexes, sizeof(uint32), 1, output);
+    std::fwrite(&wsize, sizeof(int), 1, output);
+    std::fwrite(&nIndexes, sizeof(uint32), 1, output);
     if (nIndexes > 0)
     {
         for (uint32 i = 0; i < nIndices; ++i)
@@ -120,12 +135,12 @@ bool Model::ConvertToVMAPModel(const char* outfilename)
                 indices[i+1] = tmp;
             }
         }
-        fwrite(indices, sizeof(unsigned short), nIndexes, output);
+        std::fwrite(indices, sizeof(unsigned short), nIndexes, output);
     }
-    fwrite("VERT", 4, 1, output);
+    std::fwrite("VERT", 4, 1, output);
     wsize = sizeof(int) + sizeof(float) * 3 * nVertices;
-    fwrite(&wsize, sizeof(int), 1, output);
-    fwrite(&nVertices, sizeof(int), 1, output);
+    std::fwrite(&wsize, sizeof(int), 1, output);
+    std::fwrite(&nVertices, sizeof(int), 1, output);
     if (nVertices > 0)
     {
         for (uint32 vpos = 0; vpos < nVertices; ++vpos)
@@ -134,7 +149,7 @@ bool Model::ConvertToVMAPModel(const char* outfilename)
             vertices[vpos].y = -vertices[vpos].z;
             vertices[vpos].z = tmp;
         }
-        fwrite(vertices, sizeof(float) * 3, nVertices, output);
+        std::fwrite(vertices, sizeof(float) * 3, nVertices, output);
     }
 
     fclose(output);
@@ -143,17 +158,8 @@ bool Model::ConvertToVMAPModel(const char* outfilename)
 }
 
 
-Vec3D fixCoordSystem(Vec3D v)
-{
-    return Vec3D(v.x, v.z, -v.y);
-}
 
-Vec3D fixCoordSystem2(Vec3D v)
-{
-    return Vec3D(v.x, v.z, v.y);
-}
-
-ModelInstance::ModelInstance(MPQFile& f, const char* ModelInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile)
+ModelInstance::ModelInstance(MPQFile& f, string& ModelInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile)
 {
     float ff[3];
     f.read(&id, 4);
@@ -170,7 +176,7 @@ ModelInstance::ModelInstance(MPQFile& f, const char* ModelInstName, uint32 mapID
     sc = scale / 1024.0f;
 
     char tempname[512];
-    sprintf(tempname, "%s/%s", szWorkDirWmo, ModelInstName);
+    sprintf(tempname, "%s/%s", szWorkDirWmo, ModelInstName.c_str());
     FILE* input;
     input = fopen(tempname, "r+b");
 
@@ -192,32 +198,115 @@ ModelInstance::ModelInstance(MPQFile& f, const char* ModelInstName, uint32 mapID
     uint32 flags = MOD_M2;
     if (tileX == 65 && tileY == 65) { flags |= MOD_WORLDSPAWN; }
     //write mapID, tileX, tileY, Flags, ID, Pos, Rot, Scale, name
-    fwrite(&mapID, sizeof(uint32), 1, pDirfile);
-    fwrite(&tileX, sizeof(uint32), 1, pDirfile);
-    fwrite(&tileY, sizeof(uint32), 1, pDirfile);
-    fwrite(&flags, sizeof(uint32), 1, pDirfile);
-    fwrite(&adtId, sizeof(uint16), 1, pDirfile);
-    fwrite(&id, sizeof(uint32), 1, pDirfile);
-    fwrite(&pos, sizeof(float), 3, pDirfile);
-    fwrite(&rot, sizeof(float), 3, pDirfile);
-    fwrite(&sc, sizeof(float), 1, pDirfile);
-    uint32 nlen = strlen(ModelInstName);
-    fwrite(&nlen, sizeof(uint32), 1, pDirfile);
-    fwrite(ModelInstName, sizeof(char), nlen, pDirfile);
+    std::fwrite(&mapID, sizeof(uint32), 1, pDirfile);
+    std::fwrite(&tileX, sizeof(uint32), 1, pDirfile);
+    std::fwrite(&tileY, sizeof(uint32), 1, pDirfile);
+    std::fwrite(&flags, sizeof(uint32), 1, pDirfile);
+    std::fwrite(&adtId, sizeof(uint16), 1, pDirfile);
+    std::fwrite(&id, sizeof(uint32), 1, pDirfile);
+    std::fwrite(&pos, sizeof(float), 3, pDirfile);
+    std::fwrite(&rot, sizeof(float), 3, pDirfile);
+    std::fwrite(&sc, sizeof(float), 1, pDirfile);
+    uint32 nlen = ModelInstName.length();
+    std::fwrite(&nlen, sizeof(uint32), 1, pDirfile);
+    std::fwrite(ModelInstName.c_str(), sizeof(char), nlen, pDirfile);
 
-    /* int realx1 = (int) ((float) pos.x / 533.333333f);
-    int realy1 = (int) ((float) pos.z / 533.333333f);
-    int realx2 = (int) ((float) pos.x / 533.333333f);
-    int realy2 = (int) ((float) pos.z / 533.333333f);
+}
 
-    fprintf(pDirfile,"%s/%s %f,%f,%f_%f,%f,%f %f %d %d %d,%d %d\n",
-        MapName,
-        ModelInstName,
-        (float) pos.x, (float) pos.y, (float) pos.z,
-        (float) rot.x, (float) rot.y, (float) rot.z,
-        sc,
-        nVertices,
-        realx1, realy1,
-        realx2, realy2
-        ); */
+bool ExtractSingleModel(std::string& origPath, std::string& fixedName, StringSet& failedPaths)
+{
+    string ext = GetExtension(origPath);
+
+    // < 3.1.0 ADT MMDX section store filename.mdx filenames for corresponded .m2 file
+    if (ext == "mdx")
+    {
+        // replace .mdx -> .m2
+        origPath.erase(origPath.length() - 2, 2);
+        origPath.append("2");
+    }
+    // >= 3.1.0 ADT MMDX section store filename.m2 filenames for corresponded .m2 file
+    // nothing do
+
+    fixedName = GetUniformName(origPath);
+    std::string output(szWorkDirWmo);                       // Stores output filename
+    output += "/";
+    output += fixedName;
+
+    if (FileExists(output.c_str()))
+        { return true; }
+
+    Model mdl(origPath);                                    // Possible changed fname
+    if (!mdl.open(failedPaths))
+        { return false; }
+
+    return mdl.ConvertToVMAPModel(output);
+}
+
+void ExtractGameobjectModels()
+{
+    printf("\n");
+    printf("Extracting GameObject models...\n");
+    DBCFile dbc("DBFilesClient\\GameObjectDisplayInfo.dbc");
+    if (!dbc.open())
+    {
+        printf("Fatal error: Invalid GameObjectDisplayInfo.dbc file format!\n");
+        exit(1);
+    }
+
+    std::string basepath = szWorkDirWmo;
+    basepath += "/";
+    std::string path;
+    StringSet failedPaths;
+
+    FILE* model_list = fopen((basepath + "temp_gameobject_models").c_str(), "wb");
+
+    for (DBCFile::Iterator it = dbc.begin(); it != dbc.end(); ++it)
+    {
+        path = it->getString(1);
+
+        if (path.length() < 4)
+            { continue; }
+
+        string name;
+
+        string ch_ext = GetExtension(path);
+        if (ch_ext.empty())
+            { continue; }
+
+        bool result = false;
+        if (ch_ext == "wmo")
+        {
+            result = ExtractSingleWmo(path);
+        }
+        else if (ch_ext == "mdl")
+        {
+            // TODO: extract .mdl files, if needed
+            continue;
+        }
+        else
+        {
+            result = ExtractSingleModel(path, name, failedPaths);
+        }
+
+        if (result)
+        {
+            uint32 displayId = it->getUInt(0);
+            uint32 path_length = name.length();
+            std::fwrite(&displayId, sizeof(uint32), 1, model_list);
+            std::fwrite(&path_length, sizeof(uint32), 1, model_list);
+            std::fwrite(name.c_str(), sizeof(char), path_length, model_list);
+        }
+    }
+
+    fclose(model_list);
+
+    if (!failedPaths.empty())
+    {
+        printf("Warning: Some models could not be extracted, see below\n");
+        for (StringSet::const_iterator itr = failedPaths.begin(); itr != failedPaths.end(); ++itr)
+            { printf("Could not find file of model %s\n", itr->c_str()); }
+        printf("A few of these warnings are expected to happen, so be not alarmed!\n");
+    }
+
+    printf("Done!\n");
 }

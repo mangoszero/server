@@ -490,7 +490,8 @@ WMOGroup::~WMOGroup()
     delete [] LiquBytes;
 }
 
-WMOInstance::WMOInstance(MPQFile& f, const char* WmoInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile)
+//WmoInstName is in the form MD5/name.wmo
+WMOInstance::WMOInstance(MPQFile& f, std::string& WmoInstName, uint32 mapID, uint32 tileX, uint32 tileY, FILE* pDirfile)
 {
     pos = Vec3D(0, 0, 0);
 
@@ -513,7 +514,7 @@ WMOInstance::WMOInstance(MPQFile& f, const char* WmoInstName, uint32 mapID, uint
     //-----------add_in _dir_file----------------
 
     char tempname[512];
-    sprintf(tempname, "%s/%s", szWorkDirWmo, WmoInstName);
+    sprintf(tempname, "%s/%s", szWorkDirWmo, WmoInstName.c_str());
     FILE* input;
     input = fopen(tempname, "r+b");
 
@@ -558,19 +559,8 @@ WMOInstance::WMOInstance(MPQFile& f, const char* WmoInstName, uint32 mapID, uint
     fwrite(&scale, sizeof(float), 1, pDirfile);
     fwrite(&pos2, sizeof(float), 3, pDirfile);
     fwrite(&pos3, sizeof(float), 3, pDirfile);
-    uint32 nlen = strlen(WmoInstName);
+    uint32 nlen = WmoInstName.length();
     fwrite(&nlen, sizeof(uint32), 1, pDirfile);
-    fwrite(WmoInstName, sizeof(char), nlen, pDirfile);
+    fwrite(WmoInstName.c_str(), sizeof(char), nlen, pDirfile);
 
-    /* fprintf(pDirfile,"%s/%s %f,%f,%f_%f,%f,%f 1.0 %d %d %d,%d %d\n",
-        MapName,
-        WmoInstName,
-        (float) x, (float) pos.y, (float) z,
-        (float) rot.x, (float) rot.y, (float) rot.z,
-        nVertices,
-        realx1, realy1,
-        realx2, realy2
-        ); */
-
-    // fclose(dirfile);
 }
