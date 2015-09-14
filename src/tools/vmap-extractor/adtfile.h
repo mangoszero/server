@@ -25,7 +25,6 @@
 #ifndef ADT_H
 #define ADT_H
 
-#include <libmpq/mpq.h>
 #include <ml/mpq.h>
 #include "wmo.h"
 #include "vmapexport.h"
@@ -34,8 +33,6 @@
 #define TILESIZE (533.33333f)
 #define CHUNKSIZE ((TILESIZE) / 16.0f)
 #define UNITSIZE (CHUNKSIZE / 8.0f)
-
-class Liquid;
 
 /**
  * @brief
@@ -141,7 +138,6 @@ struct MapChunkHeader
     uint32 props; /**< TODO */
     uint32 effectId; /**< TODO */
 };
-
 
 /**
  * @brief

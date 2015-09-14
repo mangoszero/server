@@ -25,22 +25,11 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <vector>
 #include <ml/loadlib.h>
 #include "vec3d.h"
 #include "modelheaders.h"
-#include <vector>
-#include "vmapexport.h"
-
-class WMOInstance;
-class MPQFile;
-
-/**
- * @brief
- *
- * @param v
- * @return Vec3D
- */
-Vec3D fixCoordSystem(Vec3D v);
+#include "wmo.h"
 
 /**
  * @brief
@@ -61,7 +50,7 @@ class Model
          * @param failedPaths
          * @return bool
          */
-        bool open(StringSet& failedPaths);
+        bool open(std::set<std::string>& failedPaths);
         /**
          * @brief
          *
@@ -142,7 +131,7 @@ class ModelInstance
  * @param failedPaths Set to collect errors
  * @return bool
  */
-bool ExtractSingleModel(std::string& origPath, std::string& fixedName, StringSet& failedPaths);
+bool ExtractSingleModel(std::string& origPath, std::string& fixedName, std::set<std::string>& failedPaths);
 
 /**
  * @brief

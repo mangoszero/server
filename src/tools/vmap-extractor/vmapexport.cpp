@@ -52,7 +52,6 @@
 #include "dbcfile.h"
 #include "wmo.h"
 #include <ml/mpq.h>
-
 #include "vmapexport.h"
 #include "Auth/md5.h"
 
@@ -126,9 +125,6 @@ std::string GetUniformName(std::string& path)
     }
     else { file = tempPath = path; }
 
-    if (tempPath == "<empty>")  //GameObjectDisplayInfo, OnyxiasLair
-       tempPath.assign("world\\wmo\\dungeon\\kl_onyxiaslair");
-
     if(!tempPath.empty())
         compute_md5(tempPath.c_str(),digest);
     else
@@ -172,109 +168,6 @@ void ReadLiquidTypeTableDBC()
     }
 
     printf("Success! (%u LiqTypes loaded)\n", (unsigned int)LiqType_count);
-}
-
-bool ExtractWmo()
-{
-    bool success = true;
-    
-    for (ArchiveSet::const_iterator ar_itr = gOpenArchives.begin(); ar_itr != gOpenArchives.end() && success; ++ar_itr)
-    {
-        vector<string> filelist;
-
-        (*ar_itr)->GetFileListTo(filelist);
-        for (vector<string>::iterator fname = filelist.begin(); fname != filelist.end() && success; ++fname)
-        {
-            if (fname->find(".wmo") != string::npos) { success = ExtractSingleWmo(*fname);}
-        }
-    }
-
-    if (success)
-        { printf("\nExtract wmo complete (No (fatal) errors)\n"); }
-
-    return success;
-}
-
-bool ExtractSingleWmo(std::string& fname)
-{
-    // Copy files from archive
-
-    char szLocalFile[1024];
-    string plain_name = GetUniformName(fname);
-        
-    sprintf(szLocalFile, "%s/%s", szWorkDirWmo, plain_name.c_str());
-
-    if (FileExists(szLocalFile))
-        { return true; }
-
-    int p = 0;
-    //Select root wmo files
-    const char* rchr = strrchr(plain_name.c_str(), '_');
-    if (rchr != NULL)
-    {
-        char cpy[4];
-        strncpy((char*)cpy, rchr, 4);
-        for (int i = 0; i < 4; ++i)
-        {
-            int m = cpy[i];
-            if (isdigit(m))
-                { p++; }
-        }
-    }
-
-    if (p == 3)
-        { return true; }
-
-    bool file_ok = true;
-    std::cout << "Extracting " << fname << std::endl;
-    WMORoot froot(fname);
-    if (!froot.open())
-    {
-        printf("Couldn't open RootWmo!!!\n");
-        return true;
-    }
-
-    FILE* output = fopen(szLocalFile, "wb");
-    if (!output)
-    {
-        printf("couldn't open %s for writing!\n", szLocalFile);
-        return false;
-    }
-
-    froot.ConvertToVMAPRootWmo(output);
-    int Wmo_nVertices = 0;
-    if (froot.nGroups != 0)
-    {
-        for (uint32 i = 0; i < froot.nGroups; ++i)
-        {
-            char temp[1024];
-            strcpy(temp, fname.c_str());
-            temp[fname.length() - 4] = 0;
-            char groupFileName[1024];
-            sprintf(groupFileName, "%s_%03d.wmo", temp, i);
-
-            string s(groupFileName);
-            
-            WMOGroup fgroup(s);
-            if (!fgroup.open())
-            {
-                printf("Could not open all Group file for: %s\n", plain_name.c_str());
-                file_ok = false;
-                break;
-            }
-
-            Wmo_nVertices += fgroup.ConvertToVMAPGroupWmo(output, &froot, preciseVectorData);
-        }
-    }
-
-    fseek(output, 8, SEEK_SET); // store the correct no of vertices
-    fwrite(&Wmo_nVertices, sizeof(int), 1, output);
-    fclose(output);
-
-    // Delete the extracted file in the case of an error
-    if (!file_ok)
-        { remove(szLocalFile); }
-    return true;
 }
 
 void ParsMapFiles()
@@ -537,7 +430,6 @@ int main(int argc, char** argv)
             strcpy(map_ids[x].name, dbc->getRecord(x).getString(1));
             printf("Map - %s\n", map_ids[x].name);
         }
-
 
         delete dbc;
         ParsMapFiles();

@@ -355,7 +355,8 @@ namespace VMAP
         {
             if (fread(&displayId, sizeof(uint32), 1, model_list) <= 0)
             {
-                std::cout << "\nFile '" << GAMEOBJECT_MODELS << "' seems to be corrupted" << std::endl;
+                if (!feof(model_list))
+                    std::cout << "\nFile '" << GAMEOBJECT_MODELS << "' seems to be corrupted" << std::endl;
                 break;
             }
             if (fread(&name_length, sizeof(uint32), 1, model_list) <= 0)
