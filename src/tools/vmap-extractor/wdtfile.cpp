@@ -22,14 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <cstdio>
 #include "vmapexport.h"
 #include "wdtfile.h"
-#include "adtfile.h"
-#include <cstdio>
 
 WDTFile::WDTFile(char* file_name, char* file_name1): WDT(file_name)
 {
-    filename.append(file_name1, strlen(file_name1));
+    filename.assign(file_name1);
 }
 
 bool WDTFile::init(char* map_id, unsigned int mapID)
@@ -107,7 +106,6 @@ bool WDTFile::init(char* map_id, unsigned int mapID)
         WDT.seek((int)nextpos);
     }
 
-    WDT.close();
     fclose(dirfile);
     return true;
 }

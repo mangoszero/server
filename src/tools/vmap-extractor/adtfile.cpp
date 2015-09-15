@@ -22,20 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <algorithm>
+#include <cstdio>
 #include "vmapexport.h"
 #include "adtfile.h"
 
-#include <algorithm>
-#include <cstdio>
-
-#ifdef WIN32
-#define snprintf _snprintf
-#endif
-
-
 ADTFile::ADTFile(char* filename): ADT(filename)
 {
-    AdtFilename.append(filename);
+    AdtFilename.assign(filename);
 }
 
 bool ADTFile::init(uint32 map_num, uint32 tileX, uint32 tileY, StringSet& failedPaths)
@@ -97,7 +91,6 @@ bool ADTFile::init(uint32 map_num, uint32 tileX, uint32 tileY, StringSet& failed
                     std::string uName;
                     ExtractSingleModel(path, uName, failedPaths);
                     ModelInstansName[t++] = uName;
-
                     p = p + strlen(p) + 1;
                 }
                 delete[] buf;
@@ -116,7 +109,6 @@ bool ADTFile::init(uint32 map_num, uint32 tileX, uint32 tileY, StringSet& failed
                 {
                     std::string path(p);
                     WmoInstansName[q++] = GetUniformName(path);
-;
                     p = p + strlen(p) + 1;
                 }
                 delete[] buf;

@@ -31,6 +31,7 @@
 #include <string>
 #include <set>
 #include "vec3d.h"
+#include <ml/mpq.h>
 #include <ml/loadlib.h>
 
 // MOPY flags
@@ -41,17 +42,6 @@
 #define WMO_MATERIAL_RENDER          0x10
 #define WMO_MATERIAL_COLLIDE_HIT     0x20
 #define WMO_MATERIAL_WALL_SURFACE    0x40
-
-class WMOInstance;
-class MPQFile;
-
-/**
- * @brief for whatever reason a certain company just can't stick to one coordinate system...
- *
- * @param v
- * @return Vec3D
- */
-static inline Vec3D fixCoords(const Vec3D& v) { return Vec3D(v.z, v.x, v.y); }
 
 /**
  * @brief
@@ -226,5 +216,12 @@ class WMOInstance
  */
 bool ExtractSingleWmo(std::string& fname);
 
+/**
+ * @brief
+ *
+ * @param
+ * @return bool
+ */
+bool ExtractWmo();
 
 #endif

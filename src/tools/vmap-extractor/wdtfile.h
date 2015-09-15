@@ -25,12 +25,10 @@
 #ifndef WDTFILE_H
 #define WDTFILE_H
 
+#include <string>
 #include <ml/mpq.h>
 #include "wmo.h"
-#include <string>
-#include "stdlib.h"
-
-class ADTFile;
+#include "adtfile.h"
 
 /**
  * @brief
@@ -60,7 +58,7 @@ class WDTFile
          */
         bool init(char* map_id, unsigned int mapID);
 
-        string* gWmoInstansName; /**< TODO */
+        std::string* gWmoInstansName; /**< TODO */
         int gnWMO, nMaps; /**< TODO */
 
         /**
@@ -75,7 +73,7 @@ class WDTFile
     private:
         MPQFile WDT; /**< TODO */
         bool maps[64][64]; /**< TODO */
-        string filename; /**< TODO */
+        std::string filename; /**< TODO */
 };
 
 #endif

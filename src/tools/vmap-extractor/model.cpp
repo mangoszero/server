@@ -22,27 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "vmapexport.h"
 #include <cassert>
 #include <algorithm>
 #include <cstdio>
+
 #include <ml/mpq.h>
 #include "model.h"
 #include "wmo.h"
 #include "dbcfile.h"
-
-using namespace std;
-
-Vec3D fixCoordSystem(Vec3D v)
-{
-    return Vec3D(v.x, v.z, -v.y);
-}
-
-Vec3D fixCoordSystem2(Vec3D v)
-{
-    return Vec3D(v.x, v.z, v.y);
-}
-
+#include "vmapexport.h"
 
 Model::Model(std::string& filename) : filename(filename), vertices(0), indices(0)
 {
@@ -101,28 +89,28 @@ bool Model::ConvertToVMAPModel(std::string& outfilename)
         return false;
     }
     
-    std::fwrite(szRawVMAPMagic, 8, 1, output);
+    fwrite(szRawVMAPMagic, 8, 1, output);
     uint32 nVertices = 0;
     nVertices = header.nBoundingVertices;
 
-    std::fwrite(&nVertices, sizeof(int), 1, output);
+    fwrite(&nVertices, sizeof(int), 1, output);
     uint32 nofgroups = 1;
-    std::fwrite(&nofgroups, sizeof(uint32), 1, output);
-    std::fwrite(N, 4 * 3, 1, output); // rootwmoid, flags, groupid
-    std::fwrite(N, sizeof(float), 3 * 2, output); //bbox, only needed for WMO currently
-    std::fwrite(N, 4, 1, output); // liquidflags
-    std::fwrite("GRP ", 4, 1, output);
+    fwrite(&nofgroups, sizeof(uint32), 1, output);
+    fwrite(N, 4 * 3, 1, output); // rootwmoid, flags, groupid
+    fwrite(N, sizeof(float), 3 * 2, output); //bbox, only needed for WMO currently
+    fwrite(N, 4, 1, output); // liquidflags
+    fwrite("GRP ", 4, 1, output);
     uint32 branches = 1;
     int wsize;
     wsize = sizeof(branches) + sizeof(uint32) * branches;
-    std::fwrite(&wsize, sizeof(int), 1, output);
-    std::fwrite(&branches, sizeof(branches), 1, output);
+    fwrite(&wsize, sizeof(int), 1, output);
+    fwrite(&branches, sizeof(branches), 1, output);
     uint32 nIndexes = (uint32) nIndices;
-    std::fwrite(&nIndexes, sizeof(uint32), 1, output);
-    std::fwrite("INDX", 4, 1, output);
+    fwrite(&nIndexes, sizeof(uint32), 1, output);
+    fwrite("INDX", 4, 1, output);
     wsize = sizeof(uint32) + sizeof(unsigned short) * nIndexes;
-    std::fwrite(&wsize, sizeof(int), 1, output);
-    std::fwrite(&nIndexes, sizeof(uint32), 1, output);
+    fwrite(&wsize, sizeof(int), 1, output);
+    fwrite(&nIndexes, sizeof(uint32), 1, output);
     if (nIndexes > 0)
     {
         for (uint32 i = 0; i < nIndices; ++i)
@@ -135,12 +123,12 @@ bool Model::ConvertToVMAPModel(std::string& outfilename)
                 indices[i+1] = tmp;
             }
         }
-        std::fwrite(indices, sizeof(unsigned short), nIndexes, output);
+        fwrite(indices, sizeof(unsigned short), nIndexes, output);
     }
-    std::fwrite("VERT", 4, 1, output);
+    fwrite("VERT", 4, 1, output);
     wsize = sizeof(int) + sizeof(float) * 3 * nVertices;
-    std::fwrite(&wsize, sizeof(int), 1, output);
-    std::fwrite(&nVertices, sizeof(int), 1, output);
+    fwrite(&wsize, sizeof(int), 1, output);
+    fwrite(&nVertices, sizeof(int), 1, output);
     if (nVertices > 0)
     {
         for (uint32 vpos = 0; vpos < nVertices; ++vpos)
@@ -149,7 +137,7 @@ bool Model::ConvertToVMAPModel(std::string& outfilename)
             vertices[vpos].y = -vertices[vpos].z;
             vertices[vpos].z = tmp;
         }
-        std::fwrite(vertices, sizeof(float) * 3, nVertices, output);
+        fwrite(vertices, sizeof(float) * 3, nVertices, output);
     }
 
     fclose(output);
@@ -198,18 +186,18 @@ ModelInstance::ModelInstance(MPQFile& f, string& ModelInstName, uint32 mapID, ui
     uint32 flags = MOD_M2;
     if (tileX == 65 && tileY == 65) { flags |= MOD_WORLDSPAWN; }
     //write mapID, tileX, tileY, Flags, ID, Pos, Rot, Scale, name
-    std::fwrite(&mapID, sizeof(uint32), 1, pDirfile);
-    std::fwrite(&tileX, sizeof(uint32), 1, pDirfile);
-    std::fwrite(&tileY, sizeof(uint32), 1, pDirfile);
-    std::fwrite(&flags, sizeof(uint32), 1, pDirfile);
-    std::fwrite(&adtId, sizeof(uint16), 1, pDirfile);
-    std::fwrite(&id, sizeof(uint32), 1, pDirfile);
-    std::fwrite(&pos, sizeof(float), 3, pDirfile);
-    std::fwrite(&rot, sizeof(float), 3, pDirfile);
-    std::fwrite(&sc, sizeof(float), 1, pDirfile);
+    fwrite(&mapID, sizeof(uint32), 1, pDirfile);
+    fwrite(&tileX, sizeof(uint32), 1, pDirfile);
+    fwrite(&tileY, sizeof(uint32), 1, pDirfile);
+    fwrite(&flags, sizeof(uint32), 1, pDirfile);
+    fwrite(&adtId, sizeof(uint16), 1, pDirfile);
+    fwrite(&id, sizeof(uint32), 1, pDirfile);
+    fwrite(&pos, sizeof(float), 3, pDirfile);
+    fwrite(&rot, sizeof(float), 3, pDirfile);
+    fwrite(&sc, sizeof(float), 1, pDirfile);
     uint32 nlen = ModelInstName.length();
-    std::fwrite(&nlen, sizeof(uint32), 1, pDirfile);
-    std::fwrite(ModelInstName.c_str(), sizeof(char), nlen, pDirfile);
+    fwrite(&nlen, sizeof(uint32), 1, pDirfile);
+    fwrite(ModelInstName.c_str(), sizeof(char), nlen, pDirfile);
 
 }
 
@@ -218,9 +206,9 @@ bool ExtractSingleModel(std::string& origPath, std::string& fixedName, StringSet
     string ext = GetExtension(origPath);
 
     // < 3.1.0 ADT MMDX section store filename.mdx filenames for corresponded .m2 file
-    if (ext == "mdx")
+    if ((ext == "mdx") || (ext=="mdl"))
     {
-        // replace .mdx -> .m2
+        // replace .md[l,x] -> .m2
         origPath.erase(origPath.length() - 2, 2);
         origPath.append("2");
     }
@@ -276,25 +264,21 @@ void ExtractGameobjectModels()
         bool result = false;
         if (ch_ext == "wmo")
         {
+            name = GetUniformName(path);
             result = ExtractSingleWmo(path);
-        }
-        else if (ch_ext == "mdl")
-        {
-            // TODO: extract .mdl files, if needed
-            continue;
         }
         else
         {
             result = ExtractSingleModel(path, name, failedPaths);
         }
 
-        if (result)
+        if (result && FileExists((basepath + name).c_str()))
         {
             uint32 displayId = it->getUInt(0);
             uint32 path_length = name.length();
-            std::fwrite(&displayId, sizeof(uint32), 1, model_list);
-            std::fwrite(&path_length, sizeof(uint32), 1, model_list);
-            std::fwrite(name.c_str(), sizeof(char), path_length, model_list);
+            fwrite(&displayId, sizeof(uint32), 1, model_list);
+            fwrite(&path_length, sizeof(uint32), 1, model_list);
+            fwrite(name.c_str(), sizeof(char), path_length, model_list);
         }
     }
 

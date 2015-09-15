@@ -32,10 +32,10 @@
 #include <fstream>
 #undef min
 #undef max
-#include <ml/mpq.h>
 
-using namespace std;
 extern uint16* LiqType;
+extern bool preciseVectorData;
+extern ArchiveSet gOpenArchives;
 
 WMORoot::WMORoot(std::string& filename) : filename(filename)
 {
@@ -563,4 +563,110 @@ WMOInstance::WMOInstance(MPQFile& f, std::string& WmoInstName, uint32 mapID, uin
     fwrite(&nlen, sizeof(uint32), 1, pDirfile);
     fwrite(WmoInstName.c_str(), sizeof(char), nlen, pDirfile);
 
+}
+
+bool ExtractSingleWmo(std::string& fname)
+{
+    // Copy files from archive
+    char szLocalFile[1024];
+    string plain_name = GetUniformName(fname);
+        
+    sprintf(szLocalFile, "%s/%s", szWorkDirWmo, plain_name.c_str());
+
+    if (FileExists(szLocalFile))
+        { return true; }
+
+    int p = 0;
+    //Select root wmo files
+    const char* rchr = strrchr(plain_name.c_str(), '_');
+    if (rchr != NULL)
+    {
+        char cpy[4];
+        strncpy((char*)cpy, rchr, 4);
+        for (int i = 0; i < 4; ++i)
+        {
+            int m = cpy[i];
+            if (isdigit(m))
+                { p++; }
+        }
+    }
+
+    if (p == 3)
+        { return true; }
+
+    bool file_ok = true;
+    printf("Extracting %s\n", fname.c_str());
+
+    WMORoot froot(fname);
+    if (!froot.open())
+    {
+        printf("Couldn't open RootWmo!!!\n");
+        return true;
+    }
+
+    FILE* output = fopen(szLocalFile, "wb");
+    if (!output)
+    {
+        printf("Couldn't open %s for writing!\n", szLocalFile);
+        return false;
+    }
+
+    froot.ConvertToVMAPRootWmo(output);
+    int Wmo_nVertices = 0;
+    if (froot.nGroups != 0)
+    {
+        for (uint32 i = 0; i < froot.nGroups; ++i)
+        {
+            char temp[1024];
+            strcpy(temp, fname.c_str());
+            temp[fname.length() - 4] = 0;
+            char groupFileName[1024];
+            sprintf(groupFileName, "%s_%03d.wmo", temp, i);
+
+            string s(groupFileName);
+            
+            WMOGroup fgroup(s);
+            if (!fgroup.open())
+            {
+                printf("Could not open all Group file for: %s\n", plain_name.c_str());
+                file_ok = false;
+                break;
+            }
+
+            Wmo_nVertices += fgroup.ConvertToVMAPGroupWmo(output, &froot, preciseVectorData);
+        }
+    }
+
+    fseek(output, 8, SEEK_SET); // store the correct no of vertices
+    fwrite(&Wmo_nVertices, sizeof(int), 1, output);
+    fclose(output);
+
+    // Delete the extracted file in the case of an error
+    if (!file_ok)
+        { remove(szLocalFile); }
+    return true;
+}
+
+bool ExtractWmo()
+{
+    bool success = true;
+
+    for (ArchiveSet::const_iterator ar_itr = gOpenArchives.begin(); ar_itr != gOpenArchives.end() && success; ++ar_itr)
+    {
+        vector<std::string> filelist;
+
+        (*ar_itr)->GetFileListTo(filelist);
+        for (vector<std::string>::iterator fname = filelist.begin(); fname != filelist.end() && success; ++fname)
+        {
+            if (fname->find(".wmo") != string::npos)
+            {
+                ExtractSingleWmo(*fname);
+            }
+        }
+    }
+
+    if (success)
+        { printf("\nExtract wmo complete (No (fatal) errors)\n"); }
+
+    return success;
 }
