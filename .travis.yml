@@ -1,5 +1,8 @@
 language: cpp
 
+before_install:
+  - bash .travis.sh
+
 # reduce clone time by only getting the latest commit and not the whole history (default for travis is 100)
 git:
   depth: 1
@@ -14,10 +17,10 @@ branches:
     - release20
     - develop21
 
-# build on both Linux and OSX
+# build on both Linux and OSX (finally)
 os:
   - linux
-#  - osx 
+  - osx 
 
 # build with both gcc and clang to ensure compatibility
 compiler:

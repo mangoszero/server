@@ -67,11 +67,23 @@ else()
     target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
+target_link_libraries(${EXECUTABLE_NAME} g3dlite vmap detour recast zlib shared)
+
+set(EXECUTABLE_LINK_FLAGS "")
+
 if(UNIX)
-    target_link_libraries(${EXECUTABLE_NAME} rt)
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,-pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
+    elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,-ldl -pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
+    endif()
 endif()
 
-target_link_libraries(${EXECUTABLE_NAME} g3dlite vmap detour recast zlib shared)
+if(APPLE)
+    set(EXECUTABLE_LINK_FLAGS "-framework CoreServices ${EXECUTABLE_LINK_FLAGS}")
+endif()
+
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS "${EXECUTABLE_LINK_FLAGS}")
 
 #Output the compiled exes to build/bin/$(Configuration)/tools directory on windows by default
 if(WIN32)
