@@ -47,10 +47,6 @@ else()
     target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
-if(UNIX)
-    target_link_libraries(${EXECUTABLE_NAME} rt dl)
-endif()
-
 target_link_libraries(${EXECUTABLE_NAME} vmap g3dlite zlib)
 
 set(EXECUTABLE_LINK_FLAGS "")
