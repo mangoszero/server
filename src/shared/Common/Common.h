@@ -150,8 +150,8 @@ typedef off_t ACE_OFF_T;
 #endif
 
 #if defined(__APPLE__)
-#  if defined(I64FMT)
-#    undef(I64FMT)
+#  ifdef I64FMT
+#    undef I64FMT
 #  endif
 #  define I64FMT "%016llX"
 #  define UI64FMTD "%llu"
