@@ -149,7 +149,16 @@ typedef off_t ACE_OFF_T;
 
 #endif
 
-#define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
+#if defined(__APPLE__)
+#  ifdef I64FMT
+#    undef I64FMT
+#  endif
+#  define I64FMT "%016llX"
+#  define UI64FMTD "%llu"
+#else
+#  define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
+#endif
+
 #define UI64LIT(N) ACE_UINT64_LITERAL(N)
 
 #define SI64FMTD ACE_INT64_FORMAT_SPECIFIER

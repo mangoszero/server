@@ -47,18 +47,20 @@ else()
     target_link_libraries(${EXECUTABLE_NAME} ACE)
 endif()
 
-if(UNIX)
-    target_link_libraries(${EXECUTABLE_NAME} rt dl)
-endif()
-
 target_link_libraries(${EXECUTABLE_NAME} vmap g3dlite zlib)
 
 set(EXECUTABLE_LINK_FLAGS "")
 
 if(UNIX)
-    if(CMAKE_C_COMPILER MATCHES "clang" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
-        set(EXECUTABLE_LINK_FLAGS "-pthread${EXECUTABLE_LINK_FLAGS}")
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,-pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
+    elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,-ldl -pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
     endif()
+endif()
+
+if(APPLE)
+    set(EXECUTABLE_LINK_FLAGS "-framework CoreServices ${EXECUTABLE_LINK_FLAGS}")
 endif()
 
 set_target_properties(${EXECUTABLE_NAME} PROPERTIES LINK_FLAGS "${EXECUTABLE_LINK_FLAGS}")
