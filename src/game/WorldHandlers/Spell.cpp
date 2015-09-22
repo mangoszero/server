@@ -3702,7 +3702,7 @@ void Spell::TakeCastItem()
 
 void Spell::TakePower()
 {
-    if (m_CastItem || m_triggeredByAuraSpell)
+    if (m_CastItem || m_IsTriggeredSpell)   // all triggered spells ignore power req
         { return; }
 
     // health as power used
@@ -3712,11 +3712,8 @@ void Spell::TakePower()
         return;
     }
 
-    if (m_spellInfo->powerType >= MAX_POWERS)
-    {
-        sLog.outError("Spell::TakePower: Unknown power type '%d'", m_spellInfo->powerType);
-        return;
-    }
+    // the static data (m_spellInfo) should be checked elsewhere
+    // [+ZERO] actual DBC power values are 0..3 and uint32(-2)
 
     Powers powerType = Powers(m_spellInfo->powerType);
 
@@ -5559,33 +5556,40 @@ uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spel
 
 SpellCastResult Spell::CheckPower()
 {
+    // never check power for triggered spells
+    if (m_IsTriggeredSpell)
+        return SPELL_CAST_OK;
+
     // item cast not used power
     if (m_CastItem)
         { return SPELL_CAST_OK; }
 
-    // Questgivers ignore power requirements for scripts
-    if (m_caster->GetTypeId() != TYPEID_PLAYER && m_caster->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER) != m_caster->IsInCombat())
-        { return SPELL_CAST_OK; }
+    // Questgivers ignore power requirements for scripts, any other creature (except a per) is checked only in combat
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+    {
+        // power for pets should be checked
+        if (!m_caster->GetObjectGuid().IsPet() && m_caster->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER) != m_caster->IsInCombat())
+            return SPELL_CAST_OK;
+    }
 
     // health as power used - need check health amount
     if (m_spellInfo->powerType == POWER_HEALTH)
     {
         if (m_caster->GetHealth() <= m_powerCost)
-            { return SPELL_FAILED_CANT_DO_THAT_YET; }
-        return SPELL_CAST_OK;
+            return SPELL_FAILED_CANT_DO_THAT_YET;
     }
-
-    // Check valid power type
-    if (m_spellInfo->powerType >= MAX_POWERS)
+    else  // any power except health
     {
-        sLog.outError("Spell::CheckMana: Unknown power type '%d'", m_spellInfo->powerType);
-        return SPELL_FAILED_UNKNOWN;
-    }
+        // Check valid power type: since the static data (m_spellInfo) are checked, the check should be done elsewhere
+        // [+ZERO] actual DBC power values are 0..3 and uint32(-2)
 
-    // Check power amount
-    Powers powerType = Powers(m_spellInfo->powerType);
-    if (m_caster->GetPower(powerType) < m_powerCost)
-        { return SPELL_FAILED_NO_POWER; }
+        // Check power amount
+        Powers powerType = Powers(m_spellInfo->powerType);
+        if (m_caster->GetPower(powerType) < m_powerCost)
+        {
+            return SPELL_FAILED_NO_POWER;
+        }
+    }
 
     return SPELL_CAST_OK;
 }
