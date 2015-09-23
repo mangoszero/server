@@ -6889,23 +6889,23 @@ bool Unit::CanDetectInvisibilityOf(Unit const* u) const
 void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
 {
     // not in combat pet have same speed as owner
-    switch (mtype)
-    {
-        case MOVE_RUN:
-        case MOVE_WALK:
-        case MOVE_SWIM:
-            if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->IsPet() && hasUnitState(UNIT_STAT_FOLLOW))
-            {
-                if (Unit* owner = GetOwner())
-                {
-                    SetSpeedRate(mtype, owner->GetSpeedRate(mtype), forced);
-                    return;
-                }
-            }
-            break;
-        default:
-            break;
-    }
+    //switch (mtype)
+    //{
+    //    case MOVE_RUN:
+    //    case MOVE_WALK:
+    //    case MOVE_SWIM:
+    //        if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->IsPet() && hasUnitState(UNIT_STAT_FOLLOW))
+    //        {
+    //            if (Unit* owner = GetOwner())
+    //            {
+    //                SetSpeedRate(mtype, owner->GetSpeedRate(mtype), forced);
+    //                return;
+    //            }
+    //        }
+    //        break;
+    //    default:
+    //        break;
+    //}
 
     int32 main_speed_mod  = 0;
     float stack_bonus     = 1.0f;
