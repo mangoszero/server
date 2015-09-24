@@ -6221,7 +6221,7 @@ bool Spell::IsNeedSendToClient() const
 
 bool Spell::IsTriggeredSpellWithRedundentCastTime() const
 {
-    return m_IsTriggeredSpell;  // && (m_spellInfo->manaCost || m_spellInfo->ManaCostPercentage);
+    return m_triggeredByAuraSpell || (m_IsTriggeredSpell && (m_spellInfo->manaCost || m_spellInfo->ManaCostPercentage));
 }
 
 bool Spell::HaveTargetsForEffect(SpellEffectIndex effect) const
