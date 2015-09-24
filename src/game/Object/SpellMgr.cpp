@@ -109,6 +109,7 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
     if (spell)
     {
         // some triggered spells have data only usable for client
+        // any triggered spell should be an instant cast
         if (spell->IsTriggeredSpellWithRedundentCastTime())
             { return 0; }
 
