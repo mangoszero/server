@@ -1971,7 +1971,10 @@ class Unit : public WorldObject
          * @param durabilityLoss whether or not durability loss should happen
          */
         void DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss);
-
+        /**
+        * Handles all extra attacks set up by a spell
+        */
+        void HandleProcExtraAttackFor(Unit* victim);
         /**
          * Calculates how much damage a spell should do, it will do some bonus damage according
          * to which SpellNonMeleeDamage::DmgClass it belongs to, ie: SPELL_DAMAGE_CLASS_RANGED

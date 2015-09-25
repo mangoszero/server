@@ -2950,6 +2950,22 @@ void Spell::_handle_finish_phase()
     // spell log
     if (m_needSpellLog)
         { SendLogExecute(); }
+
+    if (m_caster->m_extraAttacks && m_spellInfo->HasSpellEffect(SPELL_EFFECT_ADD_EXTRA_ATTACKS))
+    {
+        switch (m_spellInfo->Id)
+        {
+        case 15494:
+        case 18797:
+        case 21919:
+        case 20178: // paladin reckoning proc
+            break;
+        default:
+            if (Unit* victim = m_caster->getVictim())
+                m_caster->HandleProcExtraAttackFor(victim);
+            break;
+        }
+    }
 }
 
 void Spell::SendSpellCooldown()
