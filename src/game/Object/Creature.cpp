@@ -1794,16 +1794,7 @@ SpellEntry const* Creature::ReachWithSpellCure(Unit* pVictim)
             continue;
         }
 
-        bool bcontinue = true;
-        for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
-        {
-            if ((spellInfo->Effect[j] == SPELL_EFFECT_HEAL))
-            {
-                bcontinue = false;
-                break;
-            }
-        }
-        if (bcontinue)
+        if (!spellInfo->HasSpellEffect(SPELL_EFFECT_HEAL))
             { continue; }
 
         if (spellInfo->manaCost > GetPower(POWER_MANA))

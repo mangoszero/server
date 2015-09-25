@@ -4041,8 +4041,8 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELLFAMILY_SHAMAN:
             case SPELLFAMILY_PALADIN:
             {
-                if (IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_HEAL) || IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL) ||
-                        IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_DISPEL))
+                if (m_spellInfo->HasSpellEffect(SPELL_EFFECT_HEAL) || IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL) ||
+                        m_spellInfo->HasSpellEffect(SPELL_EFFECT_DISPEL))
                 {
                     Unit::AuraList const& auraClassScripts = m_caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
                     for (Unit::AuraList::const_iterator itr = auraClassScripts.begin(); itr != auraClassScripts.end();)
@@ -4086,7 +4086,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
 
         // give error message when applying lower hot rank to higher hot rank on target
-        if (!IsSpellHaveEffect(m_spellInfo, SPELL_EFFECT_HEAL) && IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL))
+        if (!m_spellInfo->HasSpellEffect(SPELL_EFFECT_HEAL) && IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL))
         {
             Unit::AuraList const& mPeriodicHeal = target->GetAurasByType(SPELL_AURA_PERIODIC_HEAL);
             for (Unit::AuraList::const_iterator i = mPeriodicHeal.begin(); i != mPeriodicHeal.end(); ++i)

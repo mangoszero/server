@@ -921,7 +921,7 @@ struct SpellEntry
         */
         inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
 
-        inline bool HasSpellEffect(uint16 effect) const
+        inline bool HasSpellEffect(SpellEffects effect) const
         {
             for (uint8 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; ++i)
                 if (Effect[i] == effect)

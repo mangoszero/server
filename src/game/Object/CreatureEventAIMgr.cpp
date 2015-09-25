@@ -667,7 +667,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
 
                             // used TARGET_T_ACTION_INVOKER, but likely should be _INVOKER_OWNER instead
                             if (action.cast.target == TARGET_T_ACTION_INVOKER &&
-                                (IsSpellHaveEffect(spell, SPELL_EFFECT_QUEST_COMPLETE) || IsSpellHaveEffect(spell, SPELL_EFFECT_DUMMY)))
+                                (spell->HasSpellEffect(SPELL_EFFECT_QUEST_COMPLETE) || spell->HasSpellEffect(SPELL_EFFECT_DUMMY)))
                                 { sLog.outErrorEventAI("Event %u Action %u has TARGET_T_ACTION_INVOKER(%u) target type, but should have TARGET_T_ACTION_INVOKER_OWNER(%u).", i, j + 1, TARGET_T_ACTION_INVOKER, TARGET_T_ACTION_INVOKER_OWNER); }
 
                             // Spell that should only target players, but could get any

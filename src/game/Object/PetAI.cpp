@@ -235,7 +235,7 @@ void PetAI::UpdateAI(const uint32 diff)
                         { continue; }
 
                     // not allow instant kill autocasts as full health cost
-                    if (IsSpellHaveEffect(spellInfo, SPELL_EFFECT_INSTAKILL))
+                    if (spellInfo->HasSpellEffect(SPELL_EFFECT_INSTAKILL))
                         { continue; }
                 }
             }
