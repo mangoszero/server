@@ -98,6 +98,12 @@ uint16 GetSpellAuraMaxTicks(SpellEntry const* spellInfo);
 uint16 GetSpellAuraMaxTicks(uint32 spellId);
 WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo);
 
+// workaround for not touching Eluna code
+inline bool IsSpellHaveEffect(SpellEntry const* spellInfo, SpellEffects effect)
+{
+    return spellInfo ? spellInfo->HasSpellEffect(effect) : false;
+}
+
 inline bool IsAuraApplyEffect(SpellEntry const* spellInfo, SpellEffectIndex effecIdx)
 {
     switch (spellInfo->Effect[effecIdx])
