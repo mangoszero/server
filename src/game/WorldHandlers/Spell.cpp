@@ -2955,6 +2955,7 @@ void Spell::_handle_finish_phase()
     {
         switch (m_spellInfo->Id)
         {
+        // on next swing
         case 15494:
         case 18797:
         case 21919:
@@ -2963,6 +2964,8 @@ void Spell::_handle_finish_phase()
         default:
             if (Unit* victim = m_caster->getVictim())
                 m_caster->HandleProcExtraAttackFor(victim);
+            else
+                m_caster->m_extraAttacks = 0;   // do not allow to accumulate instant extra attacks
             break;
         }
     }
