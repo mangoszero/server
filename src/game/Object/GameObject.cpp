@@ -787,6 +787,8 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
     if (IsTransport() && IsInMap(u))
         { return true; }
 
+    float visibleDistance = GetMap()->GetVisibilityDistance() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f);
+
     // quick check visibility false cases for non-GM-mode
     if (!u->isGameMaster())
     {
@@ -795,21 +797,50 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
             { return false; }
 
         // special invisibility cases
-        /* TODO: implement trap stealth, take look at spell 2836
-        if(GetGOInfo()->type == GAMEOBJECT_TYPE_TRAP && GetGOInfo()->trap.stealthed && u->IsHostileTo(GetOwner()))
+        // implementing armed trap stealth, basing on the spell 2836 structure
+        if (GetGOInfo()->type == GAMEOBJECT_TYPE_TRAP && GetGOInfo()->trap.stealthed && GetGoState() == GO_STATE_READY)
         {
-            if(check stuff here)
-                return false;
-        }*/
+            Unit *owner = GetOwner();
+            if (!owner || u->IsHostileTo(owner))
+            {
+                visibleDistance = 10.5f;
+                //2^3=8 and 300 - from spell 2836, EFFECT_INDEX_1 - SPELL_AURA_MOD_INVISIBILITY_DETECTION; TODO check 200 and improve
+                if (u->GetMaxPositiveAuraModifierByMiscValue(SPELL_AURA_MOD_INVISIBILITY_DETECTION, 8) < 200)
+                {
+                    if (u->getClass() != CLASS_ROGUE)
+                        return false;       // a wild or enemy trap cannot be seen by non-rogues without proper invis detection
+                    visibleDistance = 0.0f; // minimal detection distance, will be normalized below
+                }
 
-        // Smuggled Mana Cell required 10 invisibility type detection/state
-        if (GetEntry() == 187039 && ((u->m_detectInvisibilityMask | u->m_invisibilityMask) & (1 << 10)) == 0)
-            { return false; }
+                if (owner)
+                {
+                    // apply to the "owner" and "u" the rules for usual stealth detection; the fragment is taken from Unit::IsVisibleForOrDetect
+                    // Visible distance based on stealth value (stealth rank 4 300MOD, 10.5 - 3 = 7.5)
+                    visibleDistance -= (owner->getLevel() / 20.0f);  // for rogue stealth (4 spells): modifier = 5*level
+
+                    // Visible distance is modified by
+                    //-Level Diff (every level diff = 1.0f in visible distance)
+                    visibleDistance += int32(u->GetLevelForTarget(owner)) - int32(owner->GetLevelForTarget(u));
+                }
+
+                //-Stealth Detection(negative like paranoia)
+                visibleDistance += (int32(u->GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH_DETECT))) / 5.0f;
+
+                // normalize visible distance
+                if (visibleDistance > MAX_PLAYER_STEALTH_DETECT_RANGE)
+                    visibleDistance = MAX_PLAYER_STEALTH_DETECT_RANGE;
+                else if (visibleDistance < GetGOInfo()->trap.radius + INTERACTION_DISTANCE)
+                    visibleDistance = GetGOInfo()->trap.radius + INTERACTION_DISTANCE;
+            }
+        }
+
+        // [-ZERO] Smuggled Mana Cell required 10 invisibility type detection/state
+        //if (GetEntry() == 187039 && ((u->m_detectInvisibilityMask | u->m_invisibilityMask) & (1 << 10)) == 0)
+        //    { return false; }
     }
 
     // check distance
-    return IsWithinDistInMap(viewPoint, GetMap()->GetVisibilityDistance() +
-                             (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
+    return IsWithinDistInMap(viewPoint, visibleDistance, false);
 }
 
 void GameObject::Respawn()
