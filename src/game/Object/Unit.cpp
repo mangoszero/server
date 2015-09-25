@@ -6858,21 +6858,10 @@ bool Unit::CanDetectInvisibilityOf(Unit const* u) const
                 { continue; }
 
             // find invisibility level
-            int32 invLevel = 0;
-            Unit::AuraList const& iAuras = u->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY);
-            for (Unit::AuraList::const_iterator itr = iAuras.begin(); itr != iAuras.end(); ++itr)
-                if ((*itr)->GetModifier()->m_miscvalue == i && invLevel < (*itr)->GetModifier()->m_amount)
-                    { invLevel = (*itr)->GetModifier()->m_amount; }
+            int32 invLevel = GetMaxPositiveAuraModifierByMiscValue(SPELL_AURA_MOD_INVISIBILITY, i);
 
-            // find invisibility detect level
-            int32 detectLevel = 0;
-            Unit::AuraList const& dAuras = GetAurasByType(SPELL_AURA_MOD_INVISIBILITY_DETECTION);
-            for (Unit::AuraList::const_iterator itr = dAuras.begin(); itr != dAuras.end(); ++itr)
-                if ((*itr)->GetModifier()->m_miscvalue == i && detectLevel < (*itr)->GetModifier()->m_amount)
-                    { detectLevel = (*itr)->GetModifier()->m_amount; }
-
-            if (i == 6 && GetTypeId() == TYPEID_PLAYER)     // special drunk detection case
-                { detectLevel = ((Player*)this)->GetDrunkValue(); }
+            // find invisibility detect level + special drunk detection case
+            int32 detectLevel = (i == 6 && GetTypeId() == TYPEID_PLAYER) ? ((Player*)this)->GetDrunkValue() : GetMaxPositiveAuraModifierByMiscValue(SPELL_AURA_MOD_INVISIBILITY_DETECTION, i);
 
             if (invLevel <= detectLevel)
                 { return true; }
