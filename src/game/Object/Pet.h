@@ -228,6 +228,7 @@ class Pet : public Creature
         void UpdateMaxPower(Powers power) override;
         void UpdateAttackPowerAndDamage(bool ranged = false) override;
         void UpdateDamagePhysical(WeaponAttackType attType) override;
+        void UpdateSpeed(UnitMoveType mtype, bool forced, float ratio = 1.0f) override;
 
         bool   CanTakeMoreActiveSpells(uint32 SpellIconID);
         void   ToggleAutocast(uint32 spellid, bool apply);

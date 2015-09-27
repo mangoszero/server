@@ -6873,25 +6873,6 @@ bool Unit::CanDetectInvisibilityOf(Unit const* u) const
 
 void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
 {
-    // not in combat pet have same speed as owner
-    //switch (mtype)
-    //{
-    //    case MOVE_RUN:
-    //    case MOVE_WALK:
-    //    case MOVE_SWIM:
-    //        if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->IsPet() && hasUnitState(UNIT_STAT_FOLLOW))
-    //        {
-    //            if (Unit* owner = GetOwner())
-    //            {
-    //                SetSpeedRate(mtype, owner->GetSpeedRate(mtype), forced);
-    //                return;
-    //            }
-    //        }
-    //        break;
-    //    default:
-    //        break;
-    //}
-
     int32 main_speed_mod  = 0;
     float stack_bonus     = 1.0f;
     float non_stack_bonus = 1.0f;
@@ -6901,7 +6882,6 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
         case MOVE_WALK:
             break;
         case MOVE_RUN:
-        {
             if (IsMounted()) // Use on mount auras
             {
                 main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
@@ -6915,14 +6895,11 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                 non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
             }
             break;
-        }
         case MOVE_RUN_BACK:
             return;
         case MOVE_SWIM:
-        {
             main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
             break;
-        }
         case MOVE_SWIM_BACK:
             return;
         default:
@@ -6938,7 +6915,6 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     {
         case MOVE_RUN:
         case MOVE_SWIM:
-        {
             // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
             // TODO: possible affect only on MOVE_RUN
             if (int32 normalization = GetMaxPositiveAuraModifier(SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED))
@@ -6949,7 +6925,6 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                     { speed = max_speed; }
             }
             break;
-        }
         default:
             break;
     }

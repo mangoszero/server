@@ -2056,3 +2056,77 @@ void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
     data << uint32(m_petModeFlags);
     ((Player*)owner)->GetSession()->SendPacket(&data);
 }
+
+void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
+{
+    Unit* unitOwner = GetOwner();
+    Player *owner = unitOwner ? unitOwner->ToPlayer() : NULL;
+    if (!owner)
+        return Unit::UpdateSpeed(mtype, forced, ratio);         // NPC pets are usual creatures
+
+    int32 main_speed_mod  = 0;
+    float stack_bonus     = 1.0f;
+    float non_stack_bonus = 1.0f;
+
+    switch (mtype)
+    {
+        case MOVE_WALK:
+            break;
+        case MOVE_RUN:
+        {
+            main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
+            stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
+            non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
+            break;
+        }
+        case MOVE_RUN_BACK:
+            return;
+        case MOVE_SWIM:
+        {
+            main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
+            break;
+        }
+        case MOVE_SWIM_BACK:
+            return;
+        default:
+            sLog.outError("Pet::UpdateSpeed: Unsupported move type (%d)", mtype);
+            return;
+    }
+
+    float bonus = non_stack_bonus > stack_bonus ? non_stack_bonus : stack_bonus;
+    if (owner->IsMounted())
+        bonus = owner->GetSpeedRate(mtype); //for mounted player, base speed of pet is the same
+
+    // now we ready for speed calculation
+    float speed  = main_speed_mod ? bonus * (100.0f + main_speed_mod) / 100.0f : bonus;
+
+    switch (mtype)
+    {
+        case MOVE_RUN:
+        case MOVE_SWIM:
+        {
+            // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
+            // TODO: possible affect only on MOVE_RUN
+            if (int32 normalization = GetMaxPositiveAuraModifier(SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED))
+            {
+                // Use speed from aura
+                float max_speed = normalization / baseMoveSpeed[mtype];
+                if (speed > max_speed)
+                    { speed = max_speed; }
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    // Apply strongest slow aura mod to speed
+    int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
+    if (slow)
+        { speed *= (100.0f + slow) / 100.0f; }
+
+    if (mtype == MOVE_RUN)
+            speed *= 1.14286f;
+
+    SetSpeedRate(mtype, speed * ratio, forced);
+}
