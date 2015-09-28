@@ -7319,7 +7319,7 @@ bool Unit::SelectHostileTarget()
     }
 
     // no target but something prevent go to evade mode
-    if (!IsInCombat() || HasAuraType(SPELL_AURA_MOD_TAUNT))
+    if (!IsInCombat() || HasAuraType(SPELL_AURA_MOD_TAUNT) || m_dummyCombatState)
         { return false; }
 
     // last case when creature don't must go to evade mode:
