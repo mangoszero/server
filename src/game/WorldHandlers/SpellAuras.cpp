@@ -2479,6 +2479,16 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             return;
         }
     }
+    // special rule for allowing Improved Sap
+    if (GetSpellProto()->IsFitToFamily(SPELLFAMILY_ROGUE, UI64LIT(0x80)))
+    {
+        target->SetInDummyCombatState(apply);
+        if (!apply)
+        {
+            target->GetThreatManager().setDirty(true);
+            GetCaster()->GetThreatManager().setDirty(true);
+        }
+    }
 }
 
 void Aura::HandleModStealth(bool apply, bool Real)

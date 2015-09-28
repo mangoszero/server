@@ -3773,6 +3773,28 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
     // Vanish allows to remove all threat and cast regular stealth so other spells can be used
     if (m_spellInfo->IsFitToFamily(SPELLFAMILY_ROGUE, UI64LIT(0x0000000000000800)))
         { ((Player*)m_caster)->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT); }
+
+
+    // Improved Sap: a hacky way
+    if (m_triggeredByAuraSpell && m_spellInfo->Id == 14093 && unitTarget->GetTypeId() == TYPEID_PLAYER)
+    {
+        // find Stealth spell cooldown
+        uint32 stealth_id = 0;
+        SpellCooldowns const scm = ((Player*)unitTarget)->GetSpellCooldownMap();
+        for (SpellCooldowns::const_iterator it = scm.begin(); it != scm.end(); ++it)
+        {
+            if (it->first >= 1784 && it->first <= 1787)
+            {
+                stealth_id = it->first;
+                break;
+            }
+        }
+        if (!stealth_id)
+            return;
+        // drop cooldown and prepare to recast the aura
+        ((Player*)unitTarget)->RemoveSpellCooldown(stealth_id);
+        unitTarget->CastSpell(unitTarget, stealth_id, true);
+    }
 }
 
 void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
