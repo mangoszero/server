@@ -4122,7 +4122,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
         Unit::SpellAuraHolderMap& tAuras = target->GetSpellAuraHolderMap();
         for (Unit::SpellAuraHolderMap::iterator itr = tAuras.begin(); itr != tAuras.end();)
         {
-            if (itr->second->IsRemovedOnShapeLost() || itr->second->GetSpellProto()->Id == 24864)   // Feline Swiftness Passive 2a
+            if ((itr->second->IsRemovedOnShapeLost() && itr->second->GetSpellProto()->Id != 12292) || itr->second->GetSpellProto()->Id == 24864)   // Feline Swiftness Passive 2a drop, Sweeping Strikes keep TODO
             {
                 target->RemoveAurasDueToSpell(itr->second->GetId());
                 itr = tAuras.begin();
