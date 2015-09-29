@@ -8531,6 +8531,8 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
         GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
+        if (GetTypeId() == TYPEID_PLAYER)
+            InterruptMoving(true);
 
         if (GetTypeId() != TYPEID_PLAYER && IsAlive())
         {
@@ -8574,6 +8576,8 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
          RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
          GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
+         if (GetTypeId() == TYPEID_PLAYER)
+             InterruptMoving(true);
 
          if (GetTypeId() != TYPEID_PLAYER && IsAlive())
          {
