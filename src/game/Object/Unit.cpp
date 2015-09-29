@@ -8532,7 +8532,7 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
 
         GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
         if (GetTypeId() == TYPEID_PLAYER)
-            InterruptMoving(true);
+            StopMoving(true);
 
         if (GetTypeId() != TYPEID_PLAYER && IsAlive())
         {
@@ -8567,8 +8567,8 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
 
          if (GetTypeId() == TYPEID_UNIT)
          {
-                 SetTargetGuid(ObjectGuid());
-                 GetMotionMaster()->MoveConfused();
+            SetTargetGuid(ObjectGuid());
+            GetMotionMaster()->MoveConfused();
          }
     }
     else
@@ -8577,7 +8577,7 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
 
          GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
          if (GetTypeId() == TYPEID_PLAYER)
-             InterruptMoving(true);
+             StopMoving(true);
 
          if (GetTypeId() != TYPEID_PLAYER && IsAlive())
          {
