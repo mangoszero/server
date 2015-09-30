@@ -36,7 +36,8 @@ enum DisableType
     DISABLE_TYPE_MMAP                   = 7,
     DISABLE_TYPE_CREATURE_SPAWN         = 8,
     DISABLE_TYPE_GAMEOBJECT_SPAWN       = 9,
-    MAX_DISABLE_TYPES                   = 10
+    DISABLE_TYPE_ITEM_DROP              = 10,
+    MAX_DISABLE_TYPES                   = 11
 };
 
 enum SpellDisableTypes

@@ -31,6 +31,7 @@
 #include "SharedDefines.h"
 #include "DBCStores.h"
 #include "SQLStorages.h"
+#include "DisableMgr.h"
 
 static eConfigFloatValues const qualityToRate[MAX_ITEM_QUALITY] =
 {
@@ -1003,7 +1004,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 void LootTemplate::LootGroup::Process(Loot& loot) const
 {
     LootStoreItem const* item = Roll();
-    if (item != NULL)
+    if (item != NULL && !DisableMgr::IsDisabledFor(DISABLE_TYPE_ITEM_DROP, item->itemid))
         { loot.AddItem(*item); }
 }
 
@@ -1101,7 +1102,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
     // Rolling non-grouped items
     for (LootStoreItemList::const_iterator i = Entries.begin() ; i != Entries.end() ; ++i)
     {
-        if (!i->Roll(rate))
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_ITEM_DROP, i->itemid) || !i->Roll(rate))
             { continue; }                                       // Bad luck for the entry
 
         if (i->mincountOrRef < 0)                           // References processing
