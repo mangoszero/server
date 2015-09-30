@@ -187,7 +187,7 @@ void Creature::AddToWorld()
 #endif /* ENABLE_ELUNA */
 
     ///- Register the creature for guid lookup
-    if (!IsInWorld() && GetObjectGuid().GetHigh() == HIGHGUID_UNIT)
+    if (!IsInWorld() && GetObjectGuid().IsCreature())
         { GetMap()->GetObjectsStore().insert<Creature>(GetObjectGuid(), (Creature*)this); }
 
     Unit::AddToWorld();
@@ -211,7 +211,7 @@ void Creature::RemoveFromWorld()
 #endif /* ENABLE_ELUNA */
 
     ///- Remove the creature from the accessor
-    if (IsInWorld() && GetObjectGuid().GetHigh() == HIGHGUID_UNIT)
+    if (IsInWorld() && GetObjectGuid().IsCreature())
         { GetMap()->GetObjectsStore().erase<Creature>(GetObjectGuid(), (Creature*)NULL); }
 
     Unit::RemoveFromWorld();
