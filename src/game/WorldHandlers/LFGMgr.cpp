@@ -36,6 +36,7 @@
 #include "Group.h"
 #include "LFGMgr.h"
 #include "LFGHandler.h"
+#include "DisableMgr.h"
 
 // Add group or player into queue. If player has group and he's a leader then whole party will be added to queue.
 void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
@@ -43,7 +44,16 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
     if(!leader)
         return;
 
-   Group* grp = leader->GetGroup();
+    if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(queAreaID))
+    {
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, areaEntry->mapid))
+        {
+            ChatHandler(leader->GetSession()).SendSysMessage(LANG_MAP_IS_DISABLED);
+            return;
+        }
+    }
+
+    Group* grp = leader->GetGroup();
 
     //add players from group to queue list & group to group list
     // Calculate what roles group need and add it to the GroupQueueList, (DONT'ADD PLAYERS!)

@@ -37,6 +37,7 @@
 #include "Language.h"
 #include "ScriptMgr.h"
 #include "World.h"
+#include "DisableMgr.h"
 
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
 {
@@ -101,6 +102,12 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
     }
 
     DEBUG_LOG("WORLD: Received opcode CMSG_BATTLEMASTER_JOIN from %s", guid.GetString().c_str());
+
+    if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeId))
+    {
+        ChatHandler(this).SendSysMessage(LANG_BG_IS_DISABLED);
+        return;
+    }
 
     // can do this, since it's battleground, not arena
     BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bgTypeId);

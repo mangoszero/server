@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Characters dbdocs update"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 1
-    #define WORLD_DB_CONTENT_NR 26
-    #define WORLD_DB_UPDATE_DESCRIPTION "quest_level_fixes"
+    #define WORLD_DB_STRUCTURE_NR 2
+    #define WORLD_DB_CONTENT_NR 1
+    #define WORLD_DB_UPDATE_DESCRIPTION "Add_Disables_table"
 #endif // __REVISION_H__

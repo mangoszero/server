@@ -102,6 +102,14 @@ namespace VMAP
      */
     typedef UNORDERED_MAP<std::string, ManagedModel> ModelFileMap;
 
+    enum DisableTypes
+    {
+        VMAP_DISABLE_AREAFLAG     = 0x1,
+        VMAP_DISABLE_HEIGHT       = 0x2,
+        VMAP_DISABLE_LOS          = 0x4,
+        VMAP_DISABLE_LIQUIDSTATUS = 0x8
+    };
+
     /**
      * @brief
      *
@@ -301,6 +309,9 @@ namespace VMAP
              * @return bool
              */
             bool existsMap(const char* pBasePath, unsigned int pMapId, int x, int y) override;
+
+            typedef bool(*IsVMAPDisabledForFn)(uint32 entry, uint8 flags);
+            IsVMAPDisabledForFn IsVMAPDisabledForPtr;
 
 #ifdef MMAP_GENERATOR
         public:

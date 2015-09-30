@@ -70,6 +70,7 @@
 #include "CreatureLinkingMgr.h"
 #include "Weather.h"
 #include "LFGMgr.h"
+#include "DisableMgr.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -888,6 +889,13 @@ void World::SetInitialWorldSettings()
     ///- Initialize config settings
     LoadConfigSettings();
 
+    ///- Initialize VMapManager function pointers (to untangle game/collision circular deps)
+    if (VMAP::VMapManager2* vmmgr2 = dynamic_cast<VMAP::VMapManager2*>(VMAP::VMapFactory::createOrGetVMapManager()))
+    {
+        //vmmgr2->GetLiquidFlagsPtr = &GetLiquidFlags;
+        vmmgr2->IsVMAPDisabledForPtr = &DisableMgr::IsVMAPDisabledFor;
+    }
+
     ///- Check the existence of the map files for all races start areas.
     if (!MapManager::ExistMapAndVMap(0, -6240.32f, 331.033f) ||                     // Dwarf/ Gnome
         !MapManager::ExistMapAndVMap(0, -8949.95f, -132.493f) ||                // Human
@@ -1007,6 +1015,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Item Random Enchantments Table...");
     LoadRandomEnchantmentsTable();
 
+    sLog.outString("Loading Disables...");                  // must be before loading quests and items
+    DisableMgr::LoadDisables();
+
     sLog.outString("Loading Item Templates...");            // must be after LoadRandomEnchantmentsTable and LoadPageTexts
     sObjectMgr.LoadItemPrototypes();
 
@@ -1079,6 +1090,9 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadQuestRelations();                        // must be after quest load
     sLog.outString(">>> Quests Relations loaded");
     sLog.outString();
+
+    sLog.outString("Checking Quest Disables...");
+    DisableMgr::CheckQuestDisables();                       // must be after loading quests
 
     sLog.outString("Loading Game Event Data...");           // must be after sPoolMgr.LoadFromDB and quests to properly load pool events and quests for events
     sGameEventMgr.LoadFromDB();

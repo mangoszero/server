@@ -38,6 +38,7 @@
 #include "WorldPacket.h"
 #include "Language.h"
 #include "GameEventMgr.h"
+#include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -1171,6 +1172,9 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         bar.step();
 
         uint32 bgTypeID_ = fields[0].GetUInt32();
+
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeID_))
+            continue;
 
         BattleGroundTypeId bgTypeID = BattleGroundTypeId(bgTypeID_);
 

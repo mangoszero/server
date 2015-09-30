@@ -146,7 +146,9 @@ namespace VMAP
 
     bool VMapManager2::isInLineOfSight(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2)
     {
-        if (!isLineOfSightCalcEnabled()) { return true; }
+        if (!isLineOfSightCalcEnabled() || IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_LOS))
+            return true;
+
         bool result = true;
         InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
         if (instanceTree != iInstanceMapTrees.end())
@@ -171,7 +173,7 @@ namespace VMAP
         rx = x2;
         ry = y2;
         rz = z2;
-        if (isLineOfSightCalcEnabled())
+        if (isLineOfSightCalcEnabled() && !IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_LOS))
         {
             InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
             if (instanceTree != iInstanceMapTrees.end())
@@ -197,7 +199,7 @@ namespace VMAP
     float VMapManager2::getHeight(unsigned int pMapId, float x, float y, float z, float maxSearchDist)
     {
         float height = VMAP_INVALID_HEIGHT_VALUE;           // no height
-        if (isHeightCalcEnabled())
+        if (isHeightCalcEnabled() && !IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_HEIGHT))
         {
             InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
             if (instanceTree != iInstanceMapTrees.end())
@@ -218,32 +220,38 @@ namespace VMAP
     bool VMapManager2::getAreaInfo(unsigned int pMapId, float x, float y, float& z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const
     {
         bool result = false;
-        InstanceTreeMap::const_iterator instanceTree = iInstanceMapTrees.find(pMapId);
-        if (instanceTree != iInstanceMapTrees.end())
+        if (!IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_AREAFLAG))
         {
-            Vector3 pos = convertPositionToInternalRep(x, y, z);
-            result = instanceTree->second->getAreaInfo(pos, flags, adtId, rootId, groupId);
-            // z is not touched by convertPositionToMangosRep(), so just copy
-            z = pos.z;
+            InstanceTreeMap::const_iterator instanceTree = iInstanceMapTrees.find(pMapId);
+            if (instanceTree != iInstanceMapTrees.end())
+            {
+                Vector3 pos = convertPositionToInternalRep(x, y, z);
+                result = instanceTree->second->getAreaInfo(pos, flags, adtId, rootId, groupId);
+                // z is not touched by convertPositionToMangosRep(), so just copy
+                z = pos.z;
+            }
         }
         return result;
     }
 
     bool VMapManager2::GetLiquidLevel(uint32 pMapId, float x, float y, float z, uint8 ReqLiquidType, float& level, float& floor, uint32& type) const
     {
-        InstanceTreeMap::const_iterator instanceTree = iInstanceMapTrees.find(pMapId);
-        if (instanceTree != iInstanceMapTrees.end())
+        if (!IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_LIQUIDSTATUS))
         {
-            LocationInfo info;
-            Vector3 pos = convertPositionToInternalRep(x, y, z);
-            if (instanceTree->second->GetLocationInfo(pos, info))
+            InstanceTreeMap::const_iterator instanceTree = iInstanceMapTrees.find(pMapId);
+            if (instanceTree != iInstanceMapTrees.end())
             {
-                floor = info.ground_Z;
-                type = info.hitModel->GetLiquidType();
-                if (ReqLiquidType && !(type & ReqLiquidType))
-                    { return false; }
-                if (info.hitInstance->GetLiquidLevel(pos, info, level))
-                    { return true; }
+                LocationInfo info;
+                Vector3 pos = convertPositionToInternalRep(x, y, z);
+                if (instanceTree->second->GetLocationInfo(pos, info))
+                {
+                    floor = info.ground_Z;
+                    type = info.hitModel->GetLiquidType();
+                    if (ReqLiquidType && !(type & ReqLiquidType))
+                        return false;
+                    if (info.hitInstance->GetLiquidLevel(pos, info, level))
+                        return true;
+                }
             }
         }
         return false;
