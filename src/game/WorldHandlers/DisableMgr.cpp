@@ -237,6 +237,17 @@ void LoadDisables()
             }
             case DISABLE_TYPE_CREATURE_SPAWN:
             case DISABLE_TYPE_GAMEOBJECT_SPAWN:
+                if ((flags & SPAWN_DISABLE_CHECK_GUID) != 0)
+                {
+                    if (data0)
+                        data->params[0].insert(data0);
+                    else
+                    {
+                        ERROR_DB_STRICT_LOG("Disables type %u: required GUID is missing for entry %u, ignoring disable entry.", type, entry);
+                        delete data;
+                        continue;
+                    }
+                }
                 break;
             default:
                 break;
@@ -278,7 +289,7 @@ void CheckQuestDisables()
     sLog.outString(">> Checked %u quest disables", count);
 }
 
-bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags)
+bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags, uint32 adData)
 {
     MANGOS_ASSERT(type < MAX_DISABLE_TYPES);
     if (m_DisableMap[type].empty())
@@ -366,11 +377,12 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
         case DISABLE_TYPE_OUTDOORPVP:
         case DISABLE_TYPE_ACHIEVEMENT_CRITERIA:
         case DISABLE_TYPE_MMAP:
-        case DISABLE_TYPE_CREATURE_SPAWN:
-        case DISABLE_TYPE_GAMEOBJECT_SPAWN:
             return true;
         case DISABLE_TYPE_VMAP:
            return (flags & itr->second.flags) != 0;
+        case DISABLE_TYPE_CREATURE_SPAWN:
+        case DISABLE_TYPE_GAMEOBJECT_SPAWN:
+            return (itr->second.flags & SPAWN_DISABLE_CHECK_GUID) == 0 || itr->second.params[0].count(adData) > 0;
     }
 
     return false;
