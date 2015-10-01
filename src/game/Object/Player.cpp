@@ -14071,8 +14071,8 @@ bool Player::IsTappedByMeOrMyGroup(Creature* creature)
  * Called from Object::BuildValuesUpdate */
 bool Player::isAllowedToLoot(Creature* creature)
 {
-    /* Nobody tapped the monster (solo kill by another NPC) */
-    if (!creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED))
+    /* Nobody tapped the monster (kill either solo or mostly by another NPC) */
+    if (!creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED) || !creature->IsDamageEnoughForLootingAndReward())
         { return false; }
 
     /* If we there is a loot recipient, assign it to recipient */

@@ -962,6 +962,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             DoSpellHitOnUnit(m_caster, mask, true);
             unitTarget = m_caster;
+
+            if (m_caster->GetTypeId() == TYPEID_UNIT)
+                m_caster->ToCreature()->LowerPlayerDamageReq(target->damage);
         }
     }
     else                                                    // in 1.12.1 we need explicit miss info

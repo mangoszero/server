@@ -684,6 +684,9 @@ class Creature : public Unit
         Player* GetLootRecipient() const;                   // use group cases as prefered
         Group* GetGroupLootRecipient() const;
         bool IsTappedBy(Player const* player) const;
+        bool IsDamageEnoughForLootingAndReward() const { return m_PlayerDamageReq == 0; }
+        void LowerPlayerDamageReq(uint32 unDamage);
+        void ResetPlayerDamageReq() { m_PlayerDamageReq = GetHealth() / 2; }
 
         /**
         * function indicating whether the whether the creature has a looter recipient defined (either a group ID, either a player GUID).
@@ -842,6 +845,7 @@ class Creature : public Unit
         MovementGeneratorType m_defaultMovementType;
         Cell m_currentCell;                                 // store current cell where creature listed
         uint32 m_equipmentId;
+        uint32 m_PlayerDamageReq;
 
         // below fields has potential for optimization
         bool m_AlreadyCallAssistance;

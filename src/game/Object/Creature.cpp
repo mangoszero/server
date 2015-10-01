@@ -150,7 +150,7 @@ Creature::Creature(CreatureSubtype subtype) : Unit(),
     m_AlreadyCallAssistance(false), m_AlreadySearchedAssistance(false),
     m_AI_locked(false), m_IsDeadByDefault(false), m_temporaryFactionFlags(TEMPFACTION_NONE),
     m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0),
-    m_creatureInfo(NULL)
+    m_creatureInfo(NULL), m_PlayerDamageReq(0)
 {
     /* Loot data */
     hasBeenLootedOnce = false;
@@ -1251,6 +1251,8 @@ void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 10
     else
         { SetHealthPercent(percentHealth); }
 
+    ResetPlayerDamageReq();
+
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, float(health));
 
     // all power types
@@ -1333,6 +1335,12 @@ float Creature::_GetDamageMod(int32 Rank)
         default:
             return sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_ELITE_ELITE_DAMAGE);
     }
+}
+
+void Creature::LowerPlayerDamageReq(uint32 unDamage)
+{
+    if (m_PlayerDamageReq)
+        m_PlayerDamageReq > unDamage ? m_PlayerDamageReq -= unDamage : m_PlayerDamageReq = 0;
 }
 
 float Creature::_GetSpellDamageMod(int32 Rank)
@@ -1651,6 +1659,7 @@ void Creature::SetDeathState(DeathState s)
         // Dynamic flags must be set on Tapped by default.
         SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
         LoadCreatureAddon(true);
+        ResetPlayerDamageReq();
 
         // Flags after LoadCreatureAddon. Any spell in *addon
         // will not be able to adjust these.
