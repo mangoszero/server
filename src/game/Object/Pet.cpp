@@ -2073,11 +2073,11 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
         case MOVE_WALK:
             break;
         case MOVE_RUN:
-            if (hasUnitState(UNIT_STAT_FOLLOW) && HasSpell(19596))  // Bestial Swiftness: prevent while following
+            if (!m_attacking && owner->HasAura(19596))   // Bestial Swiftness: prevent while following
             {
                 AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
                 for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
-                    if ((*it)->GetId() != 19582)                    // exclude aura influenced by Bestial Swiftness
+                    if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
                         main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
             }
             else
