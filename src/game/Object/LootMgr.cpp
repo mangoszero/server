@@ -471,7 +471,7 @@ void Loot::AddItem(LootStoreItem const& item)
         if (m_questItems.size() < MAX_NR_QUEST_ITEMS)
             { m_questItems.push_back(LootItem(item)); }
     }
-    else if (items.size() < MAX_NR_LOOT_ITEMS)              // Non-quest drop
+    else if (items.size() < MAX_NR_LOOT_ITEMS && !DisableMgr::IsDisabledFor(DISABLE_TYPE_ITEM_DROP, item.itemid))              // Non-quest drop
     {
         items.push_back(LootItem(item));
 
