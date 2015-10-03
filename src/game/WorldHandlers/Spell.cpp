@@ -722,7 +722,7 @@ void Spell::prepareDataForTriggerSystem()
     // avoid triggering negative hit for only positive targets
     m_negativeEffectMask = 0x0;
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (!IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
+        if (m_spellInfo->Effect[i] != SPELL_EFFECT_NONE && !IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
             { m_negativeEffectMask |= (1 << i); }
 
     // Hunter traps spells (for Entrapment trigger)
