@@ -55,6 +55,7 @@
 #include "CellImpl.h"
 #include "movement/MoveSplineInit.h"
 #include "CreatureLinkingMgr.h"
+#include "DisableMgr.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -2125,7 +2126,7 @@ bool Creature::MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* 
     if (selectFlags & SELECT_FLAG_NOT_IN_MELEE_RANGE && CanReachWithMeleeAttack(pTarget))
         { return false; }
 
-    if (selectFlags & SELECT_FLAG_IN_LOS && !IsWithinLOSInMap(pTarget))
+    if (selectFlags & SELECT_FLAG_IN_LOS && !DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, pSpellInfo->Id, pTarget, SPELL_DISABLE_LOS) && !IsWithinLOSInMap(pTarget))
         { return false; }
 
     if (pSpellInfo)
