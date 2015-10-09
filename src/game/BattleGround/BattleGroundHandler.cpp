@@ -62,6 +62,12 @@ void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
     if (bgTypeId == BATTLEGROUND_TYPE_NONE)
         { return; }
 
+    if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeId))
+    {
+        SendNotification(LANG_BG_IS_DISABLED);
+        return;
+    }
+
     if (!_player->GetBGAccessByLevel(bgTypeId))
     {
         // temp, must be gossip message...
@@ -102,12 +108,6 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
     }
 
     DEBUG_LOG("WORLD: Received opcode CMSG_BATTLEMASTER_JOIN from %s", guid.GetString().c_str());
-
-    if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeId))
-    {
-        ChatHandler(this).SendSysMessage(LANG_BG_IS_DISABLED);
-        return;
-    }
 
     // can do this, since it's battleground, not arena
     BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bgTypeId);
