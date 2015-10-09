@@ -19465,6 +19465,21 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
         return AREA_LOCKSTATUS_QUEST_NOT_COMPLETED;
     }
 
+    // TODO remove this hack! change areatrigger_teleport to include conditionID, add condition about PvP rank
+    switch (at->target_mapId)
+    {
+    case 449:
+        if (GetTeam() == HORDE || GetHonorRankInfo().rank < 10)
+            return AREA_LOCKSTATUS_NOT_ALLOWED;
+        break;
+    case 450:
+        if (GetTeam() == ALLIANCE || GetHonorRankInfo().rank < 10)
+            return AREA_LOCKSTATUS_NOT_ALLOWED;
+        break;
+    default:
+        break;
+    }
+
     // If the map is not created, assume it is possible to enter it.
     DungeonPersistentState* state = GetBoundInstanceSaveForSelfOrGroup(at->target_mapId);
     Map* map = sMapMgr.FindMap(at->target_mapId, state ? state->GetInstanceId() : 0);
