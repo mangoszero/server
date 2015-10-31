@@ -133,7 +133,10 @@ struct boss_garr : public CreatureScript
                     m_uiAntiMagicPulseTimer = urand(10 * IN_MILLISECONDS, 15 * IN_MILLISECONDS);
                 }
             }
-            else m_uiAntiMagicPulseTimer -= uiDiff;
+            else
+            {
+                m_uiAntiMagicPulseTimer -= uiDiff;
+            }
 
             // MagmaShackles_Timer
             if (m_uiMagmaShacklesTimer < uiDiff)
@@ -143,7 +146,10 @@ struct boss_garr : public CreatureScript
                     m_uiMagmaShacklesTimer = urand(8 * IN_MILLISECONDS, 12 * IN_MILLISECONDS);
                 }
             }
-            else m_uiMagmaShacklesTimer -= uiDiff;
+            else
+            {
+                m_uiMagmaShacklesTimer -= uiDiff;
+            }
 
             // Explode an add
             if (m_uiExplodeAddTimer < uiDiff)
@@ -229,7 +235,10 @@ struct mob_firesworn : public CreatureScript
 
                 m_uiSeparationCheckTimer = 5000;
             }
-            else m_uiSeparationCheckTimer -= uiDiff;
+            else
+            {
+                m_uiSeparationCheckTimer -= uiDiff;
+            }
 
             // Immolate_Timer
             if (m_uiImmolateTimer < uiDiff)
@@ -242,7 +251,10 @@ struct mob_firesworn : public CreatureScript
                     }
                 }
             }
-            else m_uiImmolateTimer -= uiDiff;
+            else
+            {
+                m_uiImmolateTimer -= uiDiff;
+            }
 
             DoMeleeAttackIfReady();
         }

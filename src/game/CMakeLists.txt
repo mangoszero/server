@@ -85,7 +85,7 @@ source_group("Movement" FILES ${SRC_GRP_MOVEMENT})
 
 #Object group
 file(GLOB SRC_GRP_OBJECT Object/*.cpp Object/*.h)
-source_group("Object" FILES ${SRC_GRP_OBJECT})	
+source_group("Object" FILES ${SRC_GRP_OBJECT})
 
 #Outdoors PvP group
 file(GLOB SRC_GRP_OUTDOOR_PVP OutdoorPvP/*.cpp OutdoorPvP/*.h)
@@ -98,7 +98,7 @@ source_group("References" FILES ${SRC_GRP_REFERENCES})
 #Server group
 file(GLOB SRC_GRP_SERVER Server/*.cpp Server/*.h)
 source_group("Server" FILES ${SRC_GRP_SERVER})
-	
+
 #Tools group
 file(GLOB SRC_GRP_TOOL Tools/*.cpp Tools/*.h)
 source_group("Tool" FILES ${SRC_GRP_TOOL})
@@ -114,11 +114,11 @@ source_group("Warden" FILES ${SRC_GRP_WARDEN})
 #Warden Modules group
 file(GLOB SRC_GRP_WARDEN_MODULES Warden/Modules/*.cpp Warden/Modules/*.h)
 source_group("Warden\\Modules" FILES ${SRC_GRP_WARDEN_MODULES})
-	
+
 #World and Handlers group
 file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
 source_group("World/Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
-	
+
 set(LIBRARY_SRCS
     ${SRC_GRP_AHBOT}
     ${SRC_GRP_BATTLEGROUND}
@@ -183,11 +183,11 @@ if(SCRIPT_LIB_ELUNA)
         ${CMAKE_SOURCE_DIR}/dep/lualib
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna
     )
-  list(APPEND LIBRARY_SRCS ${SRC_GRP_LUAENGINE})
-  target_link_libraries(${LIBRARY_NAME} LuaEngine)
-  target_link_libraries(${LIBRARY_NAME} lualib)
-  add_dependencies(${LIBRARY_NAME} LuaEngine)
-  add_dependencies(${LIBRARY_NAME} lualib)
+    list(APPEND LIBRARY_SRCS ${SRC_GRP_LUAENGINE})
+    target_link_libraries(${LIBRARY_NAME} LuaEngine)
+    target_link_libraries(${LIBRARY_NAME} lualib)
+    add_dependencies(${LIBRARY_NAME} LuaEngine)
+    add_dependencies(${LIBRARY_NAME} lualib)
 endif()
 
 #AH Bot Config

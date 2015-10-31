@@ -219,8 +219,8 @@ struct is_molten_core : public InstanceScript
             case TYPE_GOLEMAGG:
             case TYPE_SULFURON:
             case TYPE_RAGNAROS:
-                 m_auiEncounter[uiType] = uiData;
-               break;
+                m_auiEncounter[uiType] = uiData;
+                break;
             case TYPE_FLAME_DOSED:
                 if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(uiData))
                 {
@@ -280,7 +280,9 @@ struct is_molten_core : public InstanceScript
         uint32 GetData(uint32 uiType) const override
         {
             if (uiType < MAX_ENCOUNTER)
+            {
                 return m_auiEncounter[uiType];
+            }
             else if (sRuneEncounters const *rstr = GetRuneStructForTrapEntry(uiType))
                 return m_auiRuneState[rstr->getRuneType()];
 
