@@ -81,14 +81,14 @@ enum AIEventType
     // Internal Use
     AI_EVENT_CALL_ASSISTANCE    = 10,                       // Sender = Attacked Npc, Invoker = Enemy
 
-    // Predefined for SD2
+    // Predefined for SD3
     AI_EVENT_START_ESCORT       = 100,                      // Invoker = Escorting Player
     AI_EVENT_START_ESCORT_B     = 101,                      // Invoker = Escorting Player
     AI_EVENT_START_EVENT        = 102,                      // Invoker = EventStarter
     AI_EVENT_START_EVENT_A      = 103,                      // Invoker = EventStarter
     AI_EVENT_START_EVENT_B      = 104,                      // Invoker = EventStarter
 
-    // Some IDs for special cases in SD2
+    // Some IDs for special cases in SD3
     AI_EVENT_CUSTOM_A           = 1000,
     AI_EVENT_CUSTOM_B           = 1001,
     AI_EVENT_CUSTOM_C           = 1002,

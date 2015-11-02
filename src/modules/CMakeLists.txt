@@ -18,8 +18,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 # Build the mangos script library if enabled
-if(SCRIPT_LIB_SD2)
-    add_subdirectory(SD2)
+if(SCRIPT_LIB_SD3)
+    add_subdirectory(SD3)
 endif()
 
 # Build the Eluna library if enabled

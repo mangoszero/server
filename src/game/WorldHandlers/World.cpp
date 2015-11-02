@@ -1118,10 +1118,10 @@ void World::SetInitialWorldSettings()
     //sLog.outString("Loading spell script names...");
     //sScriptMgr.LoadSpellIdScripts();
 
-#ifdef ENABLE_SD2
+#ifdef ENABLE_SD3
     sLog.outString("Loading all script bindings...");
     sScriptMgr.LoadScriptBinding();
-#endif /* ENABLE_SD2 */
+#endif /* ENABLE_SD3 */
 
     sLog.outString("Loading Graveyard-zone links...");
     sObjectMgr.LoadGraveyardZones();
@@ -1264,7 +1264,7 @@ void World::SetInitialWorldSettings()
     sEventAIMgr.LoadCreatureEventAI_Scripts();
 
     sLog.outString("Initializing Scripts...");
-#ifdef ENABLE_SD2
+#ifdef ENABLE_SD3
     switch (sScriptMgr.LoadScriptLibrary(MANGOS_SCRIPT_NAME))
     {
         case SCRIPT_LOAD_OK:
@@ -1280,9 +1280,9 @@ void World::SetInitialWorldSettings()
             sLog.outError("Scripting library build for old mangosd revision. You need rebuild it.");
             break;
     }
-#else /* ENABLE_SD2 */
-    sLog.outError("SD2 was not included in compilation, not using it.");
-#endif /* ENABLE_SD2 */
+#else /* ENABLE_SD3 */
+    sLog.outError("SD3 was not included in compilation, not using it.");
+#endif /* ENABLE_SD3 */
     sLog.outString();
 
     ///- Initialize game time and timers
