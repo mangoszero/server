@@ -31,6 +31,42 @@ Authors
 -------
 For Authors prior to Release 0.19, please see the file [Historic Authors](Authors_historic.md)
 
+We are grateful to the following who contributed to Release 0.21:
+
+* Antzmangos/billy1arm
+* cala
+* Chuck5ta
+* cyberium
+* evil-at-wow
+* Evildead666
+* Faded
+* fgreinus
+* Flying--Dutchman
+* Foereaper
+* H0zen
+* hallabro
+* iLeopard66
+* krullgor
+* kvipka
+* Machiavell1
+* neo2003
+* Olion17
+* patman64
+* robinsch
+* Rochet2
+* schmoozerd
+* spp-
+* stfx 
+* cabfever/stormrage-project
+* tarwyn
+* VelVet
+* virusav
+* vladimirmangos
+* xfurry
+* y1x2
+* zingzah
+
+The Following contributed to Release 0.20
 
 * 249CAAFE40
 * Andrewmunro
