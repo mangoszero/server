@@ -53,7 +53,7 @@ set(EXECUTABLE_LINK_FLAGS "")
 
 if(UNIX)
     if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(EXECUTABLE_LINK_FLAGS "-Wl,-pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
+        set(EXECUTABLE_LINK_FLAGS "-Wl,-lrt -pthread ${EXECUTABLE_LINK_FLAGS}")
     elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
         set(EXECUTABLE_LINK_FLAGS "-Wl,-ldl -pthread -lrt ${EXECUTABLE_LINK_FLAGS}")
     endif()

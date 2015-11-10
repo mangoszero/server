@@ -106,10 +106,16 @@ HASH_NAMESPACE_END
 using std::hash_map;
 using std::hash_set;
 #elif COMPILER == COMPILER_CLANG && defined(__FreeBSD__)
+#  include <osreldate.h>
 #  define UNORDERED_MAP std::unordered_map
 #  define UNORDERED_SET std::unordered_set
-#  define HASH_NAMESPACE_START namespace std { namespace __1 {
-#  define HASH_NAMESPACE_END } }
+#  if __FreeBSD_version >= 1001000
+#    define HASH_NAMESPACE_START namespace std {
+#    define HASH_NAMESPACE_END }
+#  else
+#    define HASH_NAMESPACE_START namespace std { namespace __1 {
+#    define HASH_NAMESPACE_END } }
+#  endif
 #elif COMPILER == COMPILER_CLANG
 #  if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_9) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
 #    define UNORDERED_MAP std::unordered_map
