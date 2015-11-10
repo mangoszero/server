@@ -2751,12 +2751,12 @@ void ObjectMgr::FlushRankPoints(uint32 dateTop)
 
             if (type == HONORABLE)
             {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(updHonorable, "UPDATE characters SET stored_honorable_kills = stored_honorable_kills + %u WHERE guid = %u");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(updHonorable, "UPDATE characters SET stored_honorable_kills = (stored_honorable_kills + ?) WHERE guid = ?");
                 stmt.PExecute(kills, guid);
             }
             else if (type == DISHONORABLE)
             {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(updDishonorable, "UPDATE characters SET stored_dishonorable_kills = stored_dishonorable_kills + %u WHERE guid = %u");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(updDishonorable, "UPDATE characters SET stored_dishonorable_kills = (stored_dishonorable_kills + ?) WHERE guid = ?");
                 stmt.PExecute(kills, guid);
             }
         }
