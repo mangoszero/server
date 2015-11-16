@@ -57,6 +57,9 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         if (pSpell->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
             { return CAST_FAIL_STATE; }
 
+        if (!m_creature->IsWithinLOSInMap(pTarget))
+            { return CAST_FAIL_NO_LOS; }
+
         // Check for power (also done by Spell::CheckCast())
         if (m_creature->GetPower((Powers)pSpell->powerType) < Spell::CalculatePowerCost(pSpell, m_creature))
             { return CAST_FAIL_POWER; }
@@ -145,10 +148,19 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
 
     if (stopOrStartMovement && m_creature->getVictim())     // Only change current movement while in combat
     {
+        MotionMaster* creatureMotion = m_creature->GetMotionMaster();
         if (enable)
-            { m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle); }
-        else if (!enable && m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
-            { m_creature->StopMoving(); }
+        {
+            m_creature->CastStop();
+            creatureMotion->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle);
+        }
+        else if (creatureMotion->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
+        {
+            creatureMotion->MovementExpired();
+            creatureMotion->Clear(false);
+            m_creature->StopMoving();
+            creatureMotion->MoveIdle();
+        }
     }
 }
 
@@ -160,8 +172,8 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
     // TODO - adapt this to only stop OOC-MMGens when MotionMaster rewrite is finished
     else if (creatureMotion->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE || creatureMotion->GetCurrentMovementGeneratorType() == RANDOM_MOTION_TYPE)
     {
-        creatureMotion->MoveIdle();
         m_creature->StopMoving();
+        creatureMotion->MoveIdle();
     }
 }
 

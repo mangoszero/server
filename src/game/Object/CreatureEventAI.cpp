@@ -637,7 +637,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (!target)
             {
                 if (reportTargetError)
-                    { sLog.outErrorEventAI("NULL target for ACTION_T_CAST creature entry %u casting spell id %u", m_creature->GetEntry(), action.cast.spellId); }
+                    { sLog.outErrorEventAI("NULL target for ACTION_T_CAST %s casting spell id %u", m_creature->GetGuidStr().c_str(), action.cast.spellId); }
                 return;
             }
 
@@ -647,30 +647,18 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             {
                 case CAST_FAIL_POWER:
                 case CAST_FAIL_TOO_FAR:
+                case CAST_FAIL_NO_LOS:
                 {
                     // Melee current victim if flag not set
                     if (!(action.cast.castFlags & CAST_NO_MELEE_IF_OOM))
                     {
-                        switch (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType())
-                        {
-                            case CHASE_MOTION_TYPE:
-                            case FOLLOW_MOTION_TYPE:
-                                m_attackDistance = 0.0f;
-                                m_attackAngle = 0.0f;
-
-                                m_creature->GetMotionMaster()->Clear(false);
-                                m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle);
-                                break;
-                            default:
-                                break;
-                        }
+                        SetCombatMovement(true,true);
                     }
                     break;
                 }
                 default:
                     break;
             }
-
             break;
         }
         case ACTION_T_SUMMON:               //12
