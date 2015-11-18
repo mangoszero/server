@@ -57,13 +57,13 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         if (pSpell->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
             { return CAST_FAIL_STATE; }
 
-        if (!m_creature->IsWithinLOSInMap(pTarget))
-            { return CAST_FAIL_NO_LOS; }
-
         // Check for power (also done by Spell::CheckCast())
         if (m_creature->GetPower((Powers)pSpell->powerType) < Spell::CalculatePowerCost(pSpell, m_creature))
             { return CAST_FAIL_POWER; }
     }
+
+    if (!m_creature->IsWithinLOSInMap(pTarget))
+        { return CAST_FAIL_NO_LOS; }
 
     if (const SpellRangeEntry* pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
     {
@@ -137,26 +137,43 @@ bool CreatureAI::DoMeleeAttackIfReady()
     return m_creature->UpdateMeleeAttackingState();
 }
 
+void CreatureAI::AddCombatMovementFlags(uint32 cmFlags)
+{
+    if (!m_combatMovement)
+      { m_creature->clearUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
+
+    m_combatMovement |= cmFlags;
+}
+
+void CreatureAI::ClearCombatMovementFlags(uint32 cmFlags)
+{
+    m_combatMovement &= ~cmFlags;
+
+    if (!m_combatMovement)
+        { m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
+}
+
 void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=false*/)
 {
-    m_isCombatMovement = enable;
-
-    if (enable)
-        { m_creature->clearUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
-    else
-        { m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
-
     if (stopOrStartMovement && m_creature->getVictim())     // Only change current movement while in combat
     {
         MotionMaster* creatureMotion = m_creature->GetMotionMaster();
+        creatureMotion->MovementExpired(false);
         if (enable)
         {
-            m_creature->CastStop();
-            creatureMotion->MoveChase(m_creature->getVictim(), m_attackDistance, m_attackAngle);
+            switch(creatureMotion->GetCurrentMovementGeneratorType())
+            {
+                case CHASE_MOTION_TYPE:
+                case FOLLOW_MOTION_TYPE:
+                    creatureMotion->Clear(false);
+                    break;
+                default:
+                    break;
+            }
+            creatureMotion->MoveChase(m_creature->getVictim(), m_attackDistance, m_creature->GetAngle(m_creature->getVictim()));
         }
         else if (creatureMotion->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
         {
-            creatureMotion->MovementExpired();
             creatureMotion->Clear(false);
             m_creature->StopMoving();
             creatureMotion->MoveIdle();
@@ -167,7 +184,9 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
 void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 {
     MotionMaster* creatureMotion = m_creature->GetMotionMaster();
-    if (m_isCombatMovement)
+    creatureMotion->MovementExpired(false);
+
+    if (IsCombatMovement())
         { creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle); }
     // TODO - adapt this to only stop OOC-MMGens when MotionMaster rewrite is finished
     else if (creatureMotion->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE || creatureMotion->GetCurrentMovementGeneratorType() == RANDOM_MOTION_TYPE)
