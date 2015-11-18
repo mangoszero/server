@@ -768,7 +768,11 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         case ACTION_T_COMBAT_MOVEMENT:      //21
             // ignore no affect case
             if (IsCombatMovement() == (action.combat_movement.state != 0) || m_creature->IsNonMeleeSpellCasted(false))
-                { return; }
+            {
+                if (IsCombatMovement())
+                    { AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
+                return;
+            }
 
             if (action.combat_movement.state != 0)
                 {  AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
