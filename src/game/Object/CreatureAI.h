@@ -66,6 +66,14 @@ enum CastFlags
     CAST_AURA_NOT_PRESENT       = 0x20,                     // Only casts the spell if the target does not have an aura from the spell
 };
 
+enum CombatMovementFlags
+{
+    COMBAT_MOVEMENT_SCRIPT      = 0x01,                      // Combat movement enforced by script
+    COMBAT_MOVEMENT_LOS         = 0x02,                      // Combat movement triggered by LoS issues
+    COMBAT_MOVEMENT_OOM         = 0x04,                      // Combat movement triggered by power exhaustion
+    COMBAT_MOVEMENT_DISTANCE    = 0x08                       // Combat movement triggered by distance checks
+};
+
 enum AIEventType
 {
     // Usable with Event AI
@@ -103,16 +111,16 @@ class CreatureAI
     public:
         explicit CreatureAI(Creature* creature) :
             m_creature(creature),
-            m_isCombatMovement(true),
+            m_combatMovement(0),
             m_attackDistance(0.0f),
             m_attackAngle(0.0f)
-        {}
+        { AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
 
         virtual ~CreatureAI();
 
         ///== Information about AI ========================
         /**
-         * This funcion is used to display information about the AI.
+         * This function is used to display information about the AI.
          * It is called when the .npc aiinfo command is used.
          * Use this for on-the-fly debugging
          * @param reader is a ChatHandler to send messages to.
@@ -312,10 +320,12 @@ class CreatureAI
          */
         CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
 
-        /// Set combat movement (on/off), also sets UNIT_STAT_NO_COMBAT_MOVEMENT
+        /// Combat movement functions
         void SetCombatMovement(bool enable, bool stopOrStartMovement = false);
-        bool IsCombatMovement() const { return m_isCombatMovement; }
-
+        bool IsCombatMovement() const { return m_combatMovement != 0; }
+        void AddCombatMovementFlags(uint32 cmFlags);
+        void ClearCombatMovementFlags(uint32 cmFlags);
+        
         ///== Event Handling ===============================
 
         /*
@@ -355,7 +365,7 @@ class CreatureAI
         Creature* const m_creature;
 
         /// Combat movement currently enabled
-        bool m_isCombatMovement;
+        uint32 m_combatMovement;
         /// How should an enemy be chased
         float m_attackDistance;
         float m_attackAngle;
