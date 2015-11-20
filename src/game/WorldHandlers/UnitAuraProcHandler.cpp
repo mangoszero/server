@@ -310,7 +310,14 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance);
     }
 
-    return roll_chance_f(chance);
+    if (!roll_chance_f(chance))
+       {
+       // Break stealth on sap if improved sap doesnt proc
+       if ((procSpell && procSpell->SpellIconID == 249 && procSpell->SpellVisual == 257) && (spellProto->SpellFamilyName == SPELLFAMILY_ROGUE && spellProto->SpellIconID == 249 && spellProto->SpellVisual == 0))
+       RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+       return false;
+       }
+    return true;
 }
 
 SpellAuraProcResult Unit::HandleHasteAuraProc(Unit* pVictim, uint32 damage, Aura* triggeredByAura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 cooldown)
