@@ -69,7 +69,7 @@ CharacterDatabaseInfo        = "127.0.0.1;3306;mangos;mangos;characters"
 LoginDatabaseConnections     = 1
 WorldDatabaseConnections     = 1
 CharacterDatabaseConnections = 1
-MaxPingTime                  = 30
+MaxPingTime                  = 5
 WorldServerPort              = 8085
 BindIP                       = "0.0.0.0"
 
