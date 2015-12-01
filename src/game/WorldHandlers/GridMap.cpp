@@ -90,7 +90,8 @@ bool GridMap::loadData(char* filename)
 
     fread(&header, sizeof(header), 1, in);
     if (header.mapMagic     == *((uint32 const*)(MAP_MAGIC)) &&
-            header.versionMagic == *((uint32 const*)(MAP_VERSION_MAGIC)))
+            header.versionMagic == *((uint32 const*)(MAP_VERSION_MAGIC)) &&
+            IsAcceptableClientBuild(header.buildMagic))
     {
         // loadup area data
         if (header.areaMapOffset && !loadAreaData(in, header.areaMapOffset, header.areaMapSize))
@@ -694,7 +695,8 @@ bool GridMap::ExistMap(uint32 mapid, int gx, int gy)
         return false;
     }
     if (header.mapMagic     != *((uint32 const*)(MAP_MAGIC)) ||
-        header.versionMagic != *((uint32 const*)(MAP_VERSION_MAGIC)))
+            header.versionMagic != *((uint32 const*)(MAP_VERSION_MAGIC)) ||
+            !IsAcceptableClientBuild(header.buildMagic))
     {
         sLog.outError("Map file '%s' is non-compatible version created with a different map-extractor version.", tmp);
         delete[] tmp;

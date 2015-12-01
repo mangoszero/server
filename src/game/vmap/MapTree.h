@@ -61,14 +61,14 @@ namespace VMAP
              * @brief
              *
              */
-            typedef UNORDERED_MAP<int, bool> loadedTileMap;
+            typedef UNORDERED_MAP<uint32, bool> loadedTileMap;
             /**
              * @brief
              *
              */
-            typedef UNORDERED_MAP<int, int> loadedSpawnMap;
+            typedef UNORDERED_MAP<uint32, uint32> loadedSpawnMap;
         private:
-            int iMapID; /**< TODO */
+            uint32 iMapID; /**< TODO */
             bool iIsTiled; /**< TODO */
             BIH iTree; /**< TODO */
             ModelInstance* iTreeValues; // the tree entries /**< TODO */
@@ -102,7 +102,7 @@ namespace VMAP
              * @param tileY
              * @return std::string
              */
-            static std::string getTileFileName(int mapID, int tileX, int tileY);
+            static std::string getTileFileName(uint32 mapID, uint32 tileX, uint32 tileY);
             /**
              * @brief
              *
@@ -110,7 +110,7 @@ namespace VMAP
              * @param tileY
              * @return uint32
              */
-            static int packTileID(int tileX, int tileY) { return tileX << 16 | tileY; }
+            static uint32 packTileID(uint32 tileX, uint32 tileY) { return tileX << 16 | tileY; }
             /**
              * @brief
              *
@@ -118,7 +118,7 @@ namespace VMAP
              * @param tileX
              * @param tileY
              */
-            static void unpackTileID(int ID, int& tileX, int& tileY) { tileX = ID >> 16; tileY = ID & 0xFF; }
+            static void unpackTileID(uint32 ID, uint32& tileX, uint32& tileY) { tileX = ID >> 16; tileY = ID & 0xFF; }
             /**
              * @brief
              *
@@ -128,7 +128,7 @@ namespace VMAP
              * @param tileY
              * @return bool
              */
-            static bool CanLoadMap(const std::string& basePath, int mapID, int tileX, int tileY);
+            static bool CanLoadMap(const std::string& basePath, uint32 mapID, uint32 tileX, uint32 tileY);
 
             /**
              * @brief
@@ -136,7 +136,7 @@ namespace VMAP
              * @param mapID
              * @param basePath
              */
-            StaticMapTree(int mapID, const std::string& basePath);
+            StaticMapTree(uint32 mapID, const std::string& basePath);
             /**
              * @brief
              *
@@ -211,7 +211,7 @@ namespace VMAP
              * @param vm
              * @return bool
              */
-            bool LoadMapTile(int tileX, int tileY, VMapManager2* vm);
+            bool LoadMapTile(uint32 tileX, uint32 tileY, VMapManager2* vm);
             /**
              * @brief
              *
@@ -219,7 +219,7 @@ namespace VMAP
              * @param tileY
              * @param vm
              */
-            void UnloadMapTile(int tileX, int tileY, VMapManager2* vm);
+            void UnloadMapTile(uint32 tileX, uint32 tileY, VMapManager2* vm);
             /**
              * @brief
              *
@@ -229,9 +229,9 @@ namespace VMAP
             /**
              * @brief
              *
-             * @return int
+             * @return uint32
              */
-            int numLoadedTiles() const { return iLoadedTiles.size(); }
+            uint32 numLoadedTiles() const { return iLoadedTiles.size(); }
 
 #ifdef MMAP_GENERATOR
         public:

@@ -148,7 +148,7 @@ namespace VMAP
          * @param path
          * @return bool
          */
-        bool Read(const char* path);
+        bool Read(const char* path, const char *RAW_VMAP_MAGIC);
     };
 
     /**
@@ -191,7 +191,7 @@ namespace VMAP
              *
              * @return bool
              */
-            bool convertWorld2();
+            bool convertWorld2(const char *RAW_VMAP_MAGIC);
             /**
              * @brief
              *
@@ -204,20 +204,20 @@ namespace VMAP
              * @param spawn
              * @return bool
              */
-            bool calculateTransformedBound(ModelSpawn& spawn);
+            bool calculateTransformedBound(ModelSpawn& spawn, const char *RAW_VMAP_MAGIC);
 
             /**
              * @brief
              *
              */
-            void exportGameobjectModels();
+            void exportGameobjectModels(const char *RAW_VMAP_MAGIC);
             /**
              * @brief
              *
              * @param pModelFilename
              * @return bool
              */
-            bool convertRawFile(const std::string& pModelFilename);
+            bool convertRawFile(const std::string& pModelFilename, const char *RAW_VMAP_MAGIC);
             /**
              * @brief
              *
@@ -240,5 +240,5 @@ namespace VMAP
              */
             unsigned int getUniqueNameId(const std::string pName);
     };
-}                                                           // VMAP
-#endif                                                      /*_TILEASSEMBLER_H_*/
+}
+#endif
