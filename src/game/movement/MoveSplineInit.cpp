@@ -109,7 +109,7 @@ namespace Movement
         // if (transportInfo)
         //    transportInfo->GetLocalPosition(real_position.x, real_position.y, real_position.z, real_position.orientation);
 
-        // there is a big chane that current position is unknown if current state is not finalized, need compute it
+        // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
         if (!move_spline.Finalized() /*&& !transportInfo*/)
             real_position = move_spline.ComputePosition();
@@ -120,7 +120,7 @@ namespace Movement
             MoveTo(real_position);
         }
 
-        // corrent first vertex
+        // current first vertex
         args.path[0] = real_position;
 
         args.flags = MoveSplineFlag::Done;

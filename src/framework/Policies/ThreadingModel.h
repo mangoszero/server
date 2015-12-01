@@ -39,7 +39,7 @@ namespace MaNGOS
      * @brief
      *
      */
-    class  GeneralLock
+    class GeneralLock
     {
         public:
 
@@ -86,7 +86,7 @@ namespace MaNGOS
      * @brief
      *
      */
-    class  SingleThreaded
+    class SingleThreaded
     {
         public:
 
@@ -128,7 +128,7 @@ namespace MaNGOS
      * @brief
      *
      */
-    class  ObjectLevelLockable
+    class ObjectLevelLockable
     {
         public:
 
@@ -193,7 +193,7 @@ namespace MaNGOS
      * @brief
      *
      */
-    class  ClassLevelLockable
+    class ClassLevelLockable
     {
         public:
 
@@ -265,6 +265,6 @@ namespace MaNGOS
 template<class T, class MUTEX> MUTEX MaNGOS::ClassLevelLockable<T, MUTEX>::si_mtx; /**< TODO */
 
 #define INSTANTIATE_CLASS_MUTEX(CTYPE, MUTEX) \
-    template class  MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
+    template class MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
 
 #endif

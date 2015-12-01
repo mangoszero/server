@@ -187,7 +187,7 @@ extern int main(int argc, char** argv)
     sLog.outString("<Ctrl-C> to stop.\n"
                    "  __  __      _  _  ___  ___  ___                         \n"
                    " |  \\/  |__ _| \\| |/ __|/ _ \\/ __|        We Love      \n"
-                   " | |\\/| / _` | .` | (_ | (_) \\__ \\      Vanilla Wow    \n"                                         
+                   " | |\\/| / _` | .` | (_ | (_) \\__ \\      Vanilla Wow    \n"
                    " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/                    \n"
                    "                                        ____              \n"
                    " For help and support please visit:    /_  /___ _ _ ___   \n" 

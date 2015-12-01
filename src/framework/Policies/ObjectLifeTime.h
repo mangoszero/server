@@ -48,7 +48,7 @@ namespace MaNGOS
      * @brief
      *
      */
-    class  ObjectLifeTime
+    class ObjectLifeTime
     {
         public:
 

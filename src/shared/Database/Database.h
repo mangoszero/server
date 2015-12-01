@@ -686,7 +686,7 @@ class Database
          * @brief
          *
          */
-        class  TransHelper
+        class TransHelper
         {
             public:
                 /**

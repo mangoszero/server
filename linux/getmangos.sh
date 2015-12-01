@@ -3,7 +3,7 @@
 # MaNGOS Build Automation Script                                              #
 # Written By: Ryan Ashley                                                     #
 # Copyright (c) 2014-2015 MaNGOS Project                                      #
-# http://getmangos.eu/                                                        #
+# https://getmangos.eu/                                                       #
 #                                                                             #
 # This program is free software; you can redistribute it and/or modify        #
 # it under the terms of the GNU General Public License as published by        #

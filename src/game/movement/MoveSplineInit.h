@@ -36,7 +36,7 @@ namespace Movement
      * @brief Initializes and launches spline movement
      *
      */
-    class  MoveSplineInit
+    class MoveSplineInit
     {
         public:
 
@@ -53,8 +53,11 @@ namespace Movement
              * @return int32 duration - estimated travel time
              */
             int32 Launch();
-
-            /* Stop any creature movement */
+            
+            /**
+             * @brief Stop any creature movement
+             * 
+             */
             void Stop();
 
             /**

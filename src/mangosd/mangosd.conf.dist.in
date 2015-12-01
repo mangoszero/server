@@ -421,7 +421,7 @@ RaLogFile                   = "world-remote-access.log"
 WardenLogFile               = "warden.log"
 WardenLogTimestamp          = 0
 LogColors                   = "13 7 11 9"
-SD2ErrorLogFile             = "scriptdev2-errors.log"
+SD3ErrorLogFile             = "scriptdev3-errors.log"
 
 ################################################################################
 # SERVER SETTINGS
