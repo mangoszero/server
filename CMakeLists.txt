@@ -20,7 +20,7 @@
 project(MaNGOS)
 set(MANGOS_VERSION 0.21)
 set(MANGOS_EXP "CLASSIC")
-
+add_definitions(-DCLASSIC)
 # CMake policies
 cmake_minimum_required(VERSION 2.8)
 # Until CMake 3.0 is the standard
@@ -141,6 +141,8 @@ if(GIT_EXECUTABLE)
 else()
     set(GIT_REVISION "Git not found")
 endif()
+
+set(DEFINITIONS ${DEFINITIONS} CLASSIC)
 
 message(STATUS "MaNGOS-Core revision  : ${GIT_REVISION}")
 message(STATUS "Install server to     : ${CMAKE_INSTALL_PREFIX}")

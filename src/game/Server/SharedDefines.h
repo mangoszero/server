@@ -31,7 +31,6 @@
 #ifndef MANGOS
 #define MANGOS
 #endif /* MANGOS */
-#define CLASSIC
 
 enum Gender
 {
