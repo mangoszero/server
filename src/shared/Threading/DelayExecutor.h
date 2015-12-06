@@ -40,7 +40,7 @@ class DelayExecutor : protected ACE_Task_Base
 
         int execute(ACE_Method_Request* new_req);
 
-        int activate(int num_threads = 1, ACE_Method_Request* pre_svc_hook = NULL, ACE_Method_Request* post_svc_hook = NULL);
+        int activate(int num_threads = 1);
 
         int deactivate();
 
@@ -51,8 +51,6 @@ class DelayExecutor : protected ACE_Task_Base
     private:
 
         ACE_Activation_Queue queue_;
-        ACE_Method_Request* pre_svc_hook_;
-        ACE_Method_Request* post_svc_hook_;
         bool activated_;
 
         void activated(bool s);
