@@ -37,8 +37,6 @@ link_directories(
   ${ACE_LIBRARIES_DIR}
 )
 
-set(HAVE_ACE_STACK_TRACE_H ON) # config.h.cmake
-
 #if(WIN32)
 #  foreach(DIR ${ACE_LIBRARIES_DIR})
 #    install(
