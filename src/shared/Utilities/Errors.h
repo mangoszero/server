@@ -27,7 +27,6 @@
 
 #include "Common/Common.h"
 
-#define HAVE_ACE_STACK_TRACE_H 1
 
 #ifdef HAVE_ACE_STACK_TRACE_H
 #  include <ace/Stack_Trace.h>
@@ -71,10 +70,6 @@
     }
 #endif
 
-#ifdef MANGOS_DEBUG
-#  define MANGOS_ASSERT WPError
-#else
-#  define MANGOS_ASSERT WPError                             // Error even if in release mode.
-#endif
+#define MANGOS_ASSERT WPError                             // Error even if in release mode.
 
 #endif
