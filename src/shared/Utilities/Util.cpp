@@ -31,7 +31,7 @@
 #include <ace/INET_Addr.h>
 
 typedef ACE_TSS<MTRand> MTRandTSS;
-static MTRandTSS mtRand;
+static MTRandTSS *mtRand;
 
 static ACE_Time_Value g_SystemTickTime = ACE_OS::gettimeofday();
 
@@ -74,44 +74,54 @@ uint32 WorldTimer::getMSTime_internal()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void initMTRandTSS()
+{
+    mtRand = new ACE_TSS<MTRand>();
+}
+
+void deleteMTRandTSS()
+{
+    delete mtRand;
+}
+
 int32 irand(int32 min, int32 max)
 {
-    return int32(mtRand->randInt(max - min)) + min;
+    return int32((*mtRand)->randInt(max - min)) + min;
 }
 
 uint32 urand(uint32 min, uint32 max)
 {
-    return mtRand->randInt(max - min) + min;
+    return (*mtRand)->randInt(max - min) + min;
 }
 
 float frand(float min, float max)
 {
-    return mtRand->randExc(max - min) + min;
+    return (*mtRand)->randExc(max - min) + min;
 }
 
 int32 rand32()
 {
-    return mtRand->randInt();
+    return (*mtRand)->randInt();
 }
 
 double rand_norm(void)
 {
-    return mtRand->randExc();
+    return (*mtRand)->randExc();
 }
 
 float rand_norm_f(void)
 {
-    return (float)mtRand->randExc();
+    return (float)(*mtRand)->randExc();
 }
 
 double rand_chance(void)
 {
-    return mtRand->randExc(100.0);
+    return (*mtRand)->randExc(100.0);
 }
 
 float rand_chance_f(void)
 {
-    return (float)mtRand->randExc(100.0);
+    return (float)(*mtRand)->randExc(100.0);
 }
 
 Tokens StrSplit(const std::string& src, const std::string& sep)

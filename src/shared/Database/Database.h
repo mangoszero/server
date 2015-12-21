@@ -658,7 +658,7 @@ class Database
         Database() :
             m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
             m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
-            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0)
+            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0), m_TransStorage(NULL)
         {
             m_nQueryCounter = -1;
         }
@@ -737,7 +737,7 @@ class Database
          *
          */
         typedef ACE_TSS<Database::TransHelper> DBTransHelperTSS;
-        Database::DBTransHelperTSS m_TransStorage; /**< TODO */
+        Database::DBTransHelperTSS *m_TransStorage; /**< TODO */
 
         ///< DB connections
         /**
@@ -788,7 +788,7 @@ class Database
 
         SqlResultQueue*     m_pResultQueue;                 /**< Transaction queues from diff. threads */
         SqlDelayThread*     m_threadBody;                   /**< Pointer to delay sql executer (owned by m_delayThread) */
-        ACE_Based::Thread* m_delayThread;                   /**< Pointer to executer thread */
+        ACE_Based::Thread*  m_delayThread;                  /**< Pointer to executer thread */
 
         bool m_bAllowAsyncTransactions;                     /**< flag which specifies if async transactions are enabled */
 
