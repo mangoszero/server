@@ -151,12 +151,14 @@ World::~World()
     while (cliCmdQueue.next(command))
         { delete command; }
 
+    WorldSession* session = NULL;
+    while (addSessQueue.next(session))
+        { delete session; }
+
     VMAP::VMapFactory::clear();
     MMAP::MMapFactory::clear();
 
     delete m_configForceLoadMapIds;
-
-    // TODO free addSessQueue
 }
 
 /// Cleanups before world stop
