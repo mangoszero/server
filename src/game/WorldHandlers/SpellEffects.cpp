@@ -4204,7 +4204,7 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
             { return; }
 
         // Apply the temporary enchantment
-        item->SetEnchantment(slot, enchant_id, duration * IN_MILLISECONDS, 0);
+        item->SetEnchantment(slot, enchant_id, duration, 0);
         item_owner->ApplyEnchantment(item, slot, true);
     }
 }
