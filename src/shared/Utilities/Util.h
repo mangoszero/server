@@ -107,6 +107,20 @@ inline uint32 secsToTimeBitFields(time_t secs)
 }
 
 /**
+ * @brief Initializes the TSS for MersenneTwister
+ *
+ *
+ */
+void initMTRandTSS();
+
+/**
+ * @brief Cleanups the TSS for MersenneTwister
+ *
+ *
+ */
+void deleteMTRandTSS();
+
+/**
  * @brief Return a random number in the range min..max; (max-min) must be smaller than 32768.
  *
  * @param min

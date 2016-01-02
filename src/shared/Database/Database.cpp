@@ -46,8 +46,8 @@ struct DBVersion
 
 const DBVersion databaseVersions[COUNT_DATABASES] = {
     { "World", WORLD_DB_VERSION_NR, WORLD_DB_STRUCTURE_NR, WORLD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_WORLD
-    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
-    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
+    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, REALMD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
+    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, CHAR_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -194,6 +194,7 @@ void Database::InitDelayThread()
 
     // New delay thread for delay execute
     m_threadBody = CreateDelayThread();              // will deleted at m_delayThread delete
+    m_TransStorage = new ACE_TSS<Database::TransHelper>();
     m_delayThread = new ACE_Based::Thread(m_threadBody);
 }
 
@@ -203,9 +204,11 @@ void Database::HaltDelayThread()
 
     m_threadBody->Stop();                                   // Stop event
     m_delayThread->wait();                                  // Wait for flush to DB
+    delete m_TransStorage;
     delete m_delayThread;                                   // This also deletes m_threadBody
     m_delayThread = NULL;
     m_threadBody = NULL;
+    m_TransStorage=NULL;
 }
 
 void Database::ThreadStart()
@@ -349,7 +352,7 @@ bool Database::Execute(const char* sql)
     if (!m_pAsyncConn)
         { return false; }
 
-    SqlTransaction* pTrans = m_TransStorage->get();
+    SqlTransaction* pTrans = (*m_TransStorage)->get();
     if (pTrans)
     {
         // add SQL request to trans queue
@@ -415,7 +418,7 @@ bool Database::BeginTransaction()
 
     // initiate transaction on current thread
     // currently we do not support queued transactions
-    m_TransStorage->init();
+    (*m_TransStorage)->init();
     return true;
 }
 
@@ -425,7 +428,7 @@ bool Database::CommitTransaction()
         { return false; }
 
     // check if we have pending transaction
-    if (!m_TransStorage->get())
+    if (!(*m_TransStorage)->get())
         { return false; }
 
     // if async execution is not available
@@ -433,7 +436,7 @@ bool Database::CommitTransaction()
         { return CommitTransactionDirect(); }
 
     // add SqlTransaction to the async queue
-    m_threadBody->Delay(m_TransStorage->detach());
+    m_threadBody->Delay((*m_TransStorage)->detach());
     return true;
 }
 
@@ -443,11 +446,11 @@ bool Database::CommitTransactionDirect()
         { return false; }
 
     // check if we have pending transaction
-    if (!m_TransStorage->get())
+    if (!(*m_TransStorage)->get())
         { return false; }
 
     // directly execute SqlTransaction
-    SqlTransaction* pTrans = m_TransStorage->detach();
+    SqlTransaction* pTrans = (*m_TransStorage)->detach();
     pTrans->Execute(m_pAsyncConn);
     delete pTrans;
 
@@ -459,11 +462,11 @@ bool Database::RollbackTransaction()
     if (!m_pAsyncConn)
         { return false; }
 
-    if (!m_TransStorage->get())
+    if (!(*m_TransStorage)->get())
         { return false; }
 
     // remove scheduled transaction
-    m_TransStorage->reset();
+    (*m_TransStorage)->reset();
 
     return true;
 }
@@ -547,7 +550,7 @@ bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
     if (!m_pAsyncConn)
         { return false; }
 
-    SqlTransaction* pTrans = m_TransStorage->get();
+    SqlTransaction* pTrans = (*m_TransStorage)->get();
     if (pTrans)
     {
         // add SQL request to trans queue
