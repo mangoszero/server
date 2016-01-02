@@ -4190,7 +4190,7 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
         if (!duration)
             { duration = m_currentBasePoints[eff_idx]; }        // Base points after...
         if (!duration)
-            { duration = 10; }                                  // 10 seconds for enchants which don't have listed duration
+            { duration = 10 * IN_MILLISECONDS; }                // 10 seconds for enchants which don't have listed duration
 
         SpellItemEnchantmentEntry const* pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if (!pEnchant)
