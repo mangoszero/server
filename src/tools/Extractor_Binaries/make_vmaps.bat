@@ -19,7 +19,7 @@ cls
 echo.
 echo.
 echo.
-IF NOT %ERRORLEVEL% LEQ 1 (echo The vmap assembler tool finalized with errors.
+IF NOT %ERRORLEVEL% LEQ 1 (echo The vmap extract tool finished with errors.
 echo Hit Enter to continue . . .
 pause>nul)
 cls
