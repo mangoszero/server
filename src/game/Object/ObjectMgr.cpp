@@ -7159,11 +7159,13 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
         {
             GameObject* pGo = NULL;
 
-            MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*source, m_value1, m_value2);
-            MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> searcher(pGo, go_check);
+            if (source)
+            {
+                MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*source, m_value1, m_value2);
+                MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> searcher(pGo, go_check);
 
-            Cell::VisitGridObjects(source, searcher, m_value2);
-
+                Cell::VisitGridObjects(source, searcher, m_value2);
+            }
             return pGo;
         }
         default:
