@@ -4252,12 +4252,17 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (!target)
                         { return SPELL_FAILED_BAD_TARGETS; }
 
+                    // Arcane Missile self cast forbidden
+                    if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
+                        m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800) &&
+                        m_caster == target)
+                        { return SPELL_FAILED_BAD_TARGETS; }
+
                     m_targets.setUnitTarget(target);
                 }
             }
 
             // Some special spells with non-caster only mode
-
             // Fire Shield
             if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARLOCK &&
                 m_spellInfo->SpellIconID == 16)
