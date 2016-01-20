@@ -259,7 +259,7 @@ Unit::Unit() :
     m_modMeleeHitChance = 0.0f;
     m_modRangedHitChance = 0.0f;
     m_modSpellHitChance = 0.0f;
-    m_baseSpellCritChance = 5;
+    m_baseSpellCritChance = 0;
 
     m_CombatTimer = 0;
     m_lastManaUseTimer = 0;
