@@ -4241,12 +4241,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         else if (m_caster == target)
         {
             if (m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->IsInWorld())
-            {
-                // Arcane Missile self cast forbidden
-                if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
-                    m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800))
-                    { return SPELL_FAILED_BAD_TARGETS; }
-                        
+            {                        
                 // Additional check for some spells
                 // If 0 spell effect empty - client not send target data (need use selection)
                 // TODO: check it on next client version
@@ -4255,6 +4250,12 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     target = m_caster->GetMap()->GetUnit(((Player*)m_caster)->GetSelectionGuid());
                     if (!target)
+                        { return SPELL_FAILED_BAD_TARGETS; }                    
+
+                    // Arcane Missile self cast forbidden
+                    if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
+                        m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800) &&
+                        m_caster == target)
                         { return SPELL_FAILED_BAD_TARGETS; }
 
                     m_targets.setUnitTarget(target);
