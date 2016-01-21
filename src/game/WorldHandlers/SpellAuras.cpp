@@ -2991,15 +2991,23 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
 
     Unit* target = GetTarget();
 
-    switch (GetId())
+    if (apply)
     {
+        switch (GetId())
+        {
             // some spell have charges by functionality not have its in spell data
-        case 28200:                                         // Ascendance (Talisman of Ascendance trinket)
-            if (apply)
-                { GetHolder()->SetAuraCharges(6); }
-            break;
-        default:
-            break;
+            case 28200:                                    // Ascendance (Talisman of Ascendance trinket)
+                GetHolder()->SetAuraCharges(6);
+                break;
+            case 8179:                                     // Grounding Totem
+                target->CastSpell(target, 8178, true, 0, this);
+                return;
+            case 6474:                                     // Earthbind Totem
+                target->CastSpell(target, 3600, true, 0, this);
+                return;
+            default:
+                break;
+        }
     }
 }
 
