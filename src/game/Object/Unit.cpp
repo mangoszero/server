@@ -8553,7 +8553,7 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
     }
 
     if (GetTypeId() == TYPEID_PLAYER)
-        { ((Player*)this)->SetClientControl(this, apply ? 0 : 1); }
+        { ((Player*)this)->SetClientControl(this, !apply); }
 }
 
 void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
@@ -8566,10 +8566,9 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
          CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
 
          if (GetTypeId() == TYPEID_UNIT)
-         {
-            SetTargetGuid(ObjectGuid());
-            GetMotionMaster()->MoveConfused();
-         }
+             SetTargetGuid(ObjectGuid());
+
+        GetMotionMaster()->MoveConfused();
     }
     else
     {
@@ -8593,7 +8592,7 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
     }
 
     if (GetTypeId() == TYPEID_PLAYER)
-        { ((Player*)this)->SetClientControl(this, apply ? 0 : 1); }
+        { ((Player*)this)->SetClientControl(this, !apply); }
 }
 
 void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
