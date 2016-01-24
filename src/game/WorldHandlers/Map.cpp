@@ -62,6 +62,11 @@ Map::~Map()
     if (m_persistentState)
         { m_persistentState->SetUsedByMapState(NULL); }         // field pointer can be deleted after this
 
+#ifdef ENABLE_ELUNA
+    if (Instanceable())
+        sEluna->FreeInstanceId(GetInstanceId());
+#endif /* ENABLE_ELUNA */
+
     delete i_data;
     i_data = NULL;
 
@@ -1192,14 +1197,22 @@ void Map::CreateInstanceData(bool load)
     if (i_data != NULL)
         { return; }
 
-    uint32 i_script_id = GetScriptId();
+#ifdef ENABLE_ELUNA
+    i_data = sEluna->GetInstanceData(this);
+#endif /* ENABLE_ELUNA */
 
-    if (!i_script_id)
-        { return; }
-
-    i_data = sScriptMgr.CreateInstanceData(this);
+    uint32 i_script_id = 0;
     if (!i_data)
-        { return; }
+    {
+        i_script_id = GetScriptId();
+
+        if (!i_script_id)
+            { return; }
+
+        i_data = sScriptMgr.CreateInstanceData(this);
+        if (!i_data)
+            { return; }
+    }
 
     if (load)
     {

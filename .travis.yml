@@ -1,7 +1,7 @@
 language: cpp
 
-before_install:
-  - bash .travis.sh
+# use docker in travis
+sudo: false
 
 # reduce clone time by only getting the latest commit and not the whole history (default for travis is 100)
 git:
@@ -10,23 +10,30 @@ git:
 # send notifications to stack as well as email
 notifications:
   slack: getmangos:yRgNBSgRQVh8WdfGEbT08Hit
-  
-# only run travis on the master branch
-branches:
-  only:
-    - release20
-    - develop21
 
 # build on both Linux and OSX (finally)
 os:
   - linux
-  - osx 
+  - osx
 
 # build with both gcc and clang to ensure compatibility
 compiler:
   - gcc
   - clang
- 
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+      - clang
+
+before_install:
+  - bash .travis.sh
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CC" = "gcc" ] ; then export CC=gcc-4.8 CXX=g++-4.8 ; fi
+
 script:
   - test -d _build || mkdir _build
   - test -d _install || mkdir _install

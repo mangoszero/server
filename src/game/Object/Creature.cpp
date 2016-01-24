@@ -183,8 +183,7 @@ Creature::~Creature()
 void Creature::AddToWorld()
 {
 #ifdef ENABLE_ELUNA
-    if (!IsInWorld())
-        sEluna->OnAddToWorld(this);
+    bool inWorld = IsInWorld();
 #endif /* ENABLE_ELUNA */
 
     ///- Register the creature for guid lookup
@@ -197,6 +196,11 @@ void Creature::AddToWorld()
     std::set<uint32> const* mapList = sWorld.getConfigForceLoadMapIds();
     if ((mapList && mapList->find(GetMapId()) != mapList->end()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
         { SetActiveObjectState(true); }
+
+#ifdef ENABLE_ELUNA
+    if (!inWorld)
+        sEluna->OnAddToWorld(this);
+#endif /* ENABLE_ELUNA */
 }
 
 void Creature::RemoveFromWorld()
