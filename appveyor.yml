@@ -14,15 +14,16 @@ platform:
 # Probably not the best solution, but it works for now.
 install:
   - ps: |
-    if ($env:platform -eq "Win32")
-    {
-      Invoke-WebRequest "http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.28-win32.zip" -OutFile mysql-5.6.28-win32.zip
-      7z e -y mysql-5.6.28-win32.zip mysql-5.6.28-win32/lib -o"C:\Program Files (x86)\MySql\MySQL Server 5.6\lib"
-      7z e -y mysql-5.6.28-win32.zip mysql-5.6.28-win32/include -o"C:\Program Files (x86)\MySql\MySQL Server 5.6\include"
-    }
+        if ($env:platform -eq "Win32")
+        {
+            Invoke-WebRequest "http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.28-win32.zip" -OutFile mysql-5.6.28-win32.zip
+            7z e -y mysql-5.6.28-win32.zip mysql-5.6.28-win32/lib -o"C:\Program Files (x86)\MySql\MySQL Server 5.6\lib"
+            7z e -y mysql-5.6.28-win32.zip mysql-5.6.28-win32/include -o"C:\Program Files (x86)\MySql\MySQL Server 5.6\include"
+        }
 
 # Clone to the specified folder below, and only clone the latest commit without history.
 clone_folder: c:\mzero\server
+
 clone_depth: 1
 
 # Enable parallel builds to speed up the compilation process.
