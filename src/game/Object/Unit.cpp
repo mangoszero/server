@@ -3068,7 +3068,9 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
     m_currentSpells[CSpellType] = pSpell;
     pSpell->SetReferencedFromCurrent(true);
 
-    pSpell->m_selfContainer = &(m_currentSpells[pSpell->GetCurrentContainer()]);
+    pSpell->SetSelfContainer(&(m_currentSpells[pSpell->GetCurrentContainer()])); 
+    // previous and faulty version of the following code. If the above proves to work, then delete this instruction
+    //   pSpell->m_selfContainer = &(m_currentSpells[pSpell->GetCurrentContainer()]);
 }
 
 void Unit::InterruptSpell(CurrentSpellTypes spellType, bool withDelayed)
