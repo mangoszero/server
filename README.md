@@ -144,7 +144,7 @@ respects for all of the code used other than [OpenSSL][48].
 
 [^1]: Visual Studio Express versions prior to the 2012 release can only
       build 32 bit applications, unless you install the Windows SDK.
-[^2]: Clang support for Windows is experimental. Failure to compile Mangos
+[^2]: Clang support for Windows is experimental. Failure to compile MangosZero
       may also relate to the experimental state of the port.
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
@@ -155,10 +155,12 @@ respects for all of the code used other than [OpenSSL][48].
 [6]: http://www.wowpedia.org/Patch_1.12.2 "Vanilla WoW · Patch 1.12.2 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
-[10]: https://getmangos.eu/ "mangos · project site"
-[12]: http://github.com/mangoszero "MaNGOS Zero · github organization"
-[13]: http://github.com/mangoszero/server "MaNGOS Zero · server repository"
-[15]: http://github.com/mangoszero/database "MaNGOS Zero · content database repository"
+[10]: http://getmangos.eu/ "mangos · project site"
+[12]: http://github.com/mangoszero "mangos-zero · github organization"
+[13]: http://github.com/mangoszero/server "mangos zero · server repository"
+[15]: http://github.com/mangoszero/database "mangos zero · content database repository"
+[16]: https://travis-ci.org/mangoszero/server "Travis CI · mangos-zero build status"
+[17]: https://scan.coverity.com/ "Coverity Scan · Static Code Analysis"
 
 [19]: http://www.cmake.org/ "CMake · Cross Platform Make"
 [20]: http://windows.microsoft.com/ "Microsoft Windows · that OS, yes."
