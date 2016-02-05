@@ -284,7 +284,7 @@ def doTables(db):
             if (db[1] >= 1):
                 progressTable("prospecting_loot_template", "entry", "item", "lootcondition, condition_value1, condition_value2", 1)
             if (db[1] >= 2):
-                progressTable("spell_loot_template", "entry", "item", "lootcondition, condition_value1, condition_value2", 1)
+                #progressTable("spell_loot_template", "entry", "item", "lootcondition, condition_value1, condition_value2", 1)
                 progressTable("milling_loot_template", "entry", "item", "lootcondition, condition_value1, condition_value2", 1)
 
         if (processNumConditions < 3):

@@ -96,7 +96,7 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
     QueryResult* results = WorldDatabase.PQuery(
         "select max(ChanceOrQuestChance) from ( "
         "select ChanceOrQuestChance from gameobject_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from spell_loot_template where item = '%u' "
+        //"union select ChanceOrQuestChance from spell_loot_template where item = '%u' "
         "union select ChanceOrQuestChance from disenchant_loot_template where item = '%u' "
         "union select ChanceOrQuestChance from fishing_loot_template where item = '%u' "
         "union select ChanceOrQuestChance from item_loot_template where item = '%u' "
