@@ -54,8 +54,9 @@ Compilers
 Building *Mangos* is currently possible with these compilers:
 
 * **Microsoft Visual Studio (Express[^1])**, 32 bit and 64 bit. Both
-  [Visual Studio][30] and the Express editions of [Visual Studio][31]
-  are supported.
+  [Visual Studio][30] and the Express editions of [Visual Studio][31] are
+  supported. Only Visual Studio 2012 and above are now officially supported.
+
 * **Microsoft Windows SDK**, 32 bit and 64 bit. The [Windows 7 SDK][32] is
   recommended, as older versions lack compiler features required to build
   the server.
@@ -93,7 +94,7 @@ their systems package management instead of source packages.*
   scripting environment, which allows us to make live changes to scripted
   content.
 
-*Recast*, *G3D* and *libmpq* are included in the *Mangos* distribution as
+*ACE*, *Recast*, *G3D* and *libmpq* are included in the *Mangos* distribution as
 we rely on specific versions.
 
 Optional dependencies
