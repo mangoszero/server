@@ -742,7 +742,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 case 20577:                                 // Cannibalize
                 {
                     if (unitTarget)
-                        { m_caster->CastSpell(m_caster, 20578, true, NULL); }
+                        { AddTriggeredSpell(20578); }
                     return;
                 }
                 case 21147:                                 // Arcane Vacuum

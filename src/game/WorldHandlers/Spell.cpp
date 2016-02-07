@@ -3973,7 +3973,11 @@ void Spell::CastTriggerSpells()
 {
     for (SpellInfoList::const_iterator si = m_TriggerSpells.begin(); si != m_TriggerSpells.end(); ++si)
     {
-        Spell* spell = new Spell(m_caster, (*si), true, m_originalCasterGUID);
+        bool _triggered = true;
+        if ((*si)->Id == 20578)                             // Cannibalize healing effect
+            { _triggered = false; }
+
+        Spell* spell = new Spell(m_caster, (*si), _triggered, m_originalCasterGUID);
         spell->prepare(&m_targets);                         // use original spell original targets
     }
 }
