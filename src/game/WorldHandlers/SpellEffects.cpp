@@ -508,6 +508,22 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, spell_id, true, NULL);
                     return;
                 }
+                case 13180:                                 // Gnomish mind control cap
+                {
+                    if (!unitTarget)
+                        { return; }
+
+                    uint32 roll = urand(0,99);
+
+                    if (roll < 5)                          // 5% victim MC the caster (off-like chance unknown)
+                        { unitTarget->CastSpell(m_caster, 13181, true, NULL); }
+                    else if (roll < 35)                    // 30% fail (off-like chance unknown)
+                        { return; }
+                    else                                   // 65% caster MC the victim (off-like chance unknown)
+                        { AddTriggeredSpell(13181); }
+
+                    return;
+                }
                 case 13535:                                 // Tame Beast
                 {
                     if (!m_originalCaster || m_originalCaster->GetTypeId() != TYPEID_PLAYER)
