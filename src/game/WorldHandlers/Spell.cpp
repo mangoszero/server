@@ -444,7 +444,9 @@ void Spell::FillTargetMap()
                     {
                         case TARGET_NONE:                   // Fill Target based on A only
                             // Arcane Missiles have strange targeting for auras
-                            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800))
+                            // Gnomish Death Ray triggered 13280
+                            if ((m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800)) ||
+                                (m_spellInfo->Id == 13280))
                             {
                                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
                                     if (Unit* target = ObjectAccessor::Instance().GetUnit(*m_caster, ((Player*)m_caster)->GetSelectionGuid()))
@@ -1183,6 +1185,8 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
                     case 9901:
                     case 8955:
                     case 2908:
+                        // Gnomish Mind Control Cap
+                    case 13180:
                         break;
                     default:
                     {
@@ -3973,7 +3977,20 @@ void Spell::CastTriggerSpells()
 {
     for (SpellInfoList::const_iterator si = m_TriggerSpells.begin(); si != m_TriggerSpells.end(); ++si)
     {
-        Spell* spell = new Spell(m_caster, (*si), true, m_originalCasterGUID);
+        bool _triggered = true;
+
+        // ignore triggered status for certain spells
+        switch ((*si)->Id)
+        {
+            case 13181:                                      // Gnomish MC cap
+            case 20578:                                      // Cannibalize healing effect
+                _triggered = false;
+                break;
+            default:
+                break;
+        }
+
+        Spell* spell = new Spell(m_caster, (*si), _triggered, m_originalCasterGUID);
         spell->prepare(&m_targets);                         // use original spell original targets
     }
 }
@@ -4256,6 +4273,10 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
                         m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000800) &&
                         m_caster == target)
+                        { return SPELL_FAILED_BAD_TARGETS; }
+
+                    // Gnomish Death Ray self cast forbidden
+                    if (m_spellInfo->Id == 13278 && m_caster == target)
                         { return SPELL_FAILED_BAD_TARGETS; }
 
                     m_targets.setUnitTarget(target);

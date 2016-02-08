@@ -508,6 +508,70 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, spell_id, true, NULL);
                     return;
                 }
+                case 13006:                                 // Gnomish Shrink Ray
+                {
+                    if (!unitTarget)
+                        { return; }
+
+                    uint32 roll = urand(0,99);
+                    uint32 inner_roll = urand(1,3);
+
+                    if (roll < 5) // 5% negative backfire
+                    {
+                        switch (inner_roll)
+                        {
+                            case 1:
+                                m_caster->CastSpell(m_caster, 13003, true, m_CastItem);  // -250 AP + shrink caster 
+                                break;
+                            case 2:
+                                m_caster->CastSpell(m_caster, 13010, true, m_CastItem);  // -250AP + shrink all caster's party 
+                                break;
+                            default:
+                                unitTarget->CastSpell(unitTarget, 13004, true, NULL);    // +250AP + grow victim
+                                break;
+                        }
+                    }
+                    else if (roll < 25) // 20% positive backfire
+                        { m_caster->CastSpell(m_caster, 13004, true, m_CastItem); }   // +250AP + grow caster's party
+                    else
+                        { m_caster->CastSpell(unitTarget, 13003, true, m_CastItem); } // -250AP + shrink victim
+
+                    return;
+                }
+                case 13180:                                 // Gnomish mind control cap
+                {
+                    if (!unitTarget)
+                        { return; }
+
+                    uint32 roll = urand(0,99);
+
+                    if (roll < 5)                          // 5% victim MC the caster (off-like chance unknown)
+                        { unitTarget->CastSpell(m_caster, 13181, true, NULL); }
+                    else if (roll < 35)                    // 30% fail (off-like chance unknown)
+                        { return; }
+                    else                                   // 65% caster MC the victim (off-like chance unknown)
+                        { AddTriggeredSpell(13181); }
+
+                    return;
+                }
+                case 13278:                                // Gnomish Death Ray charging
+                {
+                   if (unitTarget)
+                      { m_caster->CastSpell(m_caster, 13493, true, NULL); }
+
+                   return;
+                }
+                case 13280:                                // Gnomish Death Ray ending charge
+                {
+                   if (unitTarget)
+                      {
+                          uint32 roll = urand(0,7);
+                          int32 dmg[8] = {900, 1200, 1500, 1800, 2100, 2400, 2700, 3000};
+
+                          m_caster->CastCustomSpell(unitTarget, 13279, &dmg[roll], NULL, NULL, true);
+                      }
+                  return;
+                }
                 case 13535:                                 // Tame Beast
                 {
                     if (!m_originalCaster || m_originalCaster->GetTypeId() != TYPEID_PLAYER)
@@ -742,7 +806,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 case 20577:                                 // Cannibalize
                 {
                     if (unitTarget)
-                        { m_caster->CastSpell(m_caster, 20578, true, NULL); }
+                        { AddTriggeredSpell(20578); }
                     return;
                 }
                 case 21147:                                 // Arcane Vacuum

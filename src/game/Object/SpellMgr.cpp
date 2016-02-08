@@ -676,6 +676,16 @@ bool IsExplicitNegativeTarget(uint32 targetA)
 
 bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
 {
+    //fast returns in some special cases
+    switch (spellproto->Id)
+    {
+        case 13003:
+        case 13010:
+            return false;
+        default:
+            break;
+    }
+    
     switch (spellproto->Effect[effIndex])
     {
         case SPELL_EFFECT_DUMMY:
@@ -1992,6 +2002,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
     // Allow stack passive and not passive spells
     if (spellInfo_1->HasAttribute(SPELL_ATTR_PASSIVE) != spellInfo_2->HasAttribute(SPELL_ATTR_PASSIVE))
+        { return false; }
+    
+    // Gnomish Death Ray
+    if (spellInfo_1->Id == 13278 || spellInfo_2->Id == 13278)
         { return false; }
 
     // Specific spell family spells
