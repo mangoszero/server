@@ -12926,16 +12926,22 @@ void Player::ItemAddedQuestCheck(uint32 entry, uint32 count)
     {
         uint32 questid = GetQuestSlotQuestId(i);
         if (questid == 0)
-            { continue; }
+        {
+            continue;
+        }
 
         QuestStatusData& q_status = mQuestStatus[questid];
 
         if (q_status.m_status != QUEST_STATUS_INCOMPLETE)
-            { continue; }
+        {
+            continue;
+        }
 
         Quest const* qInfo = sObjectMgr.GetQuestTemplate(questid);
         if (!qInfo || !qInfo->HasSpecialFlag(QUEST_SPECIAL_FLAG_DELIVER))
-            { continue; }
+        {
+            continue;
+        }
 
         for (int j = 0; j < QUEST_ITEM_OBJECTIVES_COUNT; ++j)
         {
@@ -12949,17 +12955,24 @@ void Player::ItemAddedQuestCheck(uint32 entry, uint32 count)
                     uint32 additemcount = (curitemcount + count <= reqitemcount ? count : reqitemcount - curitemcount);
                     q_status.m_itemcount[j] += additemcount;
                     if (q_status.uState != QUEST_NEW)
-                        { q_status.uState = QUEST_CHANGED; }
+                    {
+                        q_status.uState = QUEST_CHANGED;
+                    }
 
                     SendQuestUpdateAddItem(qInfo, j, additemcount);
                 }
                 if (CanCompleteQuest(questid))
-                    { CompleteQuest(questid); }
+                {
+                    CompleteQuest(questid);     // UpdateForQuestWorldObjects() inside
+                    return;
+                }
+                if (reqitemcount == q_status.m_itemcount[j])    // only 1 of several conditions is met
+                    UpdateForQuestWorldObjects();
                 return;
             }
         }
     }
-    UpdateForQuestWorldObjects();
+    UpdateForQuestWorldObjects();   // TODO is it needed here?
 }
 
 void Player::ItemRemovedQuestCheck(uint32 entry, uint32 count)
@@ -12994,9 +13007,9 @@ void Player::ItemRemovedQuestCheck(uint32 entry, uint32 count)
                     q_status.m_itemcount[j] = curitemcount - remitemcount;
                     if (q_status.uState != QUEST_NEW) { q_status.uState = QUEST_CHANGED; }
 
-                    IncompleteQuest(questid);
+                    IncompleteQuest(questid);       // UpdateForQuestWorldObjects() inside
                 }
-                return;
+                return;     // TODO what do we have here for the item required for 2 quests at once?
             }
         }
     }
