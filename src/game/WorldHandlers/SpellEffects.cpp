@@ -508,6 +508,36 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, spell_id, true, NULL);
                     return;
                 }
+                case 13006:                                 // Gnomish Shrink Ray
+                {
+                    if (!unitTarget)
+                        { return; }
+
+                    uint32 roll = urand(0,99);
+                    uint32 inner_roll = urand(1,3);
+
+                    if (roll < 5) // 5% negative backfire
+                    {
+                        switch (inner_roll)
+                        {
+                            case 1:
+                                m_caster->CastSpell(m_caster, 13003, true, m_CastItem);  // -250 AP + shrink caster 
+                                break;
+                            case 2:
+                                m_caster->CastSpell(m_caster, 13010, true, m_CastItem);  // -250AP + shrink all caster's party 
+                                break;
+                            default:
+                                unitTarget->CastSpell(unitTarget, 13004, true, NULL);    // +250AP + grow victim
+                                break;
+                        }
+                    }
+                    else if (roll < 25) // 20% positive backfire
+                        { m_caster->CastSpell(m_caster, 13004, true, m_CastItem); }   // +250AP + grow caster's party
+                    else
+                        { m_caster->CastSpell(unitTarget, 13003, true, m_CastItem); } // -250AP + shrink victim
+
+                    return;
+                }
                 case 13180:                                 // Gnomish mind control cap
                 {
                     if (!unitTarget)

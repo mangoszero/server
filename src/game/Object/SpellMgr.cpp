@@ -676,6 +676,16 @@ bool IsExplicitNegativeTarget(uint32 targetA)
 
 bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
 {
+    //fast returns in some special cases
+    switch (spellproto->Id)
+    {
+        case 13003:
+        case 13010:
+            return false;
+        default:
+            break;
+    }
+    
     switch (spellproto->Effect[effIndex])
     {
         case SPELL_EFFECT_DUMMY:
