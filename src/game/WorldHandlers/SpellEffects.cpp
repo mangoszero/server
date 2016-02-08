@@ -554,6 +554,24 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     return;
                 }
+                case 13278:                                // Gnomish Death Ray charging
+                {
+                   if (unitTarget)
+                      { m_caster->CastSpell(m_caster, 13493, true, NULL); }
+
+                   return;
+                }
+                case 13280:                                // Gnomish Death Ray ending charge
+                {
+                   if (unitTarget)
+                      {
+                          uint32 roll = urand(0,7);
+                          int32 dmg[8] = {900, 1200, 1500, 1800, 2100, 2400, 2700, 3000};
+
+                          m_caster->CastCustomSpell(unitTarget, 13279, &dmg[roll], NULL, NULL, true);
+                      }
+                  return;
+                }
                 case 13535:                                 // Tame Beast
                 {
                     if (!m_originalCaster || m_originalCaster->GetTypeId() != TYPEID_PLAYER)
