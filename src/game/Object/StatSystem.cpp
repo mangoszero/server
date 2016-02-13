@@ -518,7 +518,7 @@ void Player::UpdateAllSpellCritChances()
 void Player::UpdateManaRegen()
 {
     // Mana regen from spirit
-    float power_regen = OCTRegenMPPerSpirit() / 2.0f;
+    float power_regen = OCTRegenMPPerSpirit();
     // Apply PCT bonus from SPELL_AURA_MOD_POWER_REGEN_PERCENT aura on spirit base regen
     power_regen *= GetTotalAuraMultiplierByMiscValue(SPELL_AURA_MOD_POWER_REGEN_PERCENT, POWER_MANA);
 
