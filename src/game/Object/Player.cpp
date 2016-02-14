@@ -1525,7 +1525,7 @@ ChatTagFlags Player::GetChatTag() const
     return CHAT_TAG_NONE;
 }
 
-bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options /*=0*/, AreaTrigger const* at /*=NULL*/)
+bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options /*=0*/, bool allowNoDelay /*=false*/)
 {
     if (!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
     {
@@ -1550,29 +1550,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     if (!InBattleGround() && mEntry->IsBattleGround())
         { return false; }
 
-    // Get MapEntrance trigger if teleport to other -nonBG- map
-    bool assignedAreaTrigger = false;
-    if (GetMapId() != mapid && !mEntry->IsBattleGround() && !at)
-    {
-        at = sObjectMgr.GetMapEntranceTrigger(mapid);
-        assignedAreaTrigger = true;
-    }
-
     // Check requirements for teleport
-    if (at)
+    if (!IsAlive() && mEntry->IsDungeon())    // rare case of teleporting the player into an instance with no areatrigger participation
     {
-        uint32 miscRequirement = 0;
-        AreaLockStatus lockStatus = GetAreaTriggerLockStatus(at, miscRequirement);
-        if (lockStatus != AREA_LOCKSTATUS_OK)
-        {
-            SendTransferAbortedByLockStatus(mEntry, lockStatus, miscRequirement);
-            return false;
-        }
-        if (IsDead() && mEntry->IsDungeon())    // rare case of teleporting the player into an instance with no areatrigger participation
-        {
-            ResurrectPlayer(0.5f);
-            SpawnCorpseBones();
-        }
+        ResurrectPlayer(0.5f);
+        SpawnCorpseBones();
     }
 
     // if we were on a transport, leave
@@ -1601,13 +1583,16 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         // setup delayed teleport flag
         // if teleport spell is casted in Unit::Update() func
         // then we need to delay it until update process will be finished
-        if (SetDelayedTeleportFlagIfCan())
+        if (!allowNoDelay)
         {
-            SetSemaphoreTeleportNear(true);
-            // lets save teleport destination for player
-            m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
-            m_teleport_options = options;
-            return true;
+            if (SetDelayedTeleportFlagIfCan())
+            {
+                SetSemaphoreTeleportNear(true);
+                // lets save teleport destination for player
+                m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
+                m_teleport_options = options;
+                return true;
+            }
         }
 
         if (!(options & TELE_TO_NOT_UNSUMMON_PET))
@@ -1652,13 +1637,16 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             // setup delayed teleport flag
             // if teleport spell is casted in Unit::Update() func
             // then we need to delay it until update process will be finished
-            if (SetDelayedTeleportFlagIfCan())
+            if (!allowNoDelay)
             {
-                SetSemaphoreTeleportFar(true);
-                // lets save teleport destination for player
-                m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
-                m_teleport_options = options;
-                return true;
+                if (SetDelayedTeleportFlagIfCan())
+                {
+                    SetSemaphoreTeleportFar(true);
+                    // lets save teleport destination for player
+                    m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
+                    m_teleport_options = options;
+                    return true;
+                }
             }
 
             SetSelectionGuid(ObjectGuid());

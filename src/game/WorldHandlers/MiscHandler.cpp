@@ -811,8 +811,16 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         player->SpawnCorpseBones();
     }
 
-    // teleport player (trigger requirement will be checked on TeleportTo)
-    player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, at);
+    uint32 miscRequirement = 0;
+    AreaLockStatus lockStatus = player->GetAreaTriggerLockStatus(at, miscRequirement);
+    if (lockStatus != AREA_LOCKSTATUS_OK)
+    {
+        player->SendTransferAbortedByLockStatus(targetMapEntry, lockStatus, miscRequirement);
+        return;
+    }
+
+    // teleport player
+    player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, true);
 }
 
 void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
