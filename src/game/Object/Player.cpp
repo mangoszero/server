@@ -2983,8 +2983,10 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
         m_spells[spell_id] = newspell;
 
-        // return false if spell disabled
-        if (newspell.disabled)
+        // return false if spell disabled or spell is non-stackable with lower-ranks
+        if (newspell.disabled ||
+            (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spellInfo) &&
+            (sSpellMgr.GetFirstSpellInChain(spell_id) != spell_id)))
             { return false; }
     }
 

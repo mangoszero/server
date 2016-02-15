@@ -1964,6 +1964,9 @@ bool SpellMgr::canStackSpellRanksInSpellBook(SpellEntry const* spellInfo) const
         switch (spellInfo->SpellFamilyName)
         {
             case SPELLFAMILY_PALADIN:
+                // Paladin SoR spell, Judgement version
+                if (spellInfo->Id == 21084 || spellInfo->Id == 20154)
+                    { return false; }
                 // Paladin aura Spell
                 if (spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PARTY)
                     { return false; }
