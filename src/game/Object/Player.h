@@ -908,7 +908,7 @@ class Player : public Unit
         void AddToWorld() override;
         void RemoveFromWorld() override;
 
-        bool TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options = 0, AreaTrigger const* at = NULL);
+        bool TeleportTo(uint32 mapid, float x, float y, float z, float orientation, uint32 options = 0, bool allowNoDelay = false);
 
         bool TeleportTo(WorldLocation const& loc, uint32 options = 0)
         {
