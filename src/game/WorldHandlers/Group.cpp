@@ -1019,13 +1019,13 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
     }
 
     // end of the roll
+    bool won = false;
     if (roll->totalNeed > 0)
     {
         if (!roll->playerVote.empty())
         {
             uint8 maxresul = 0;
             ObjectGuid maxguid  = (*roll->playerVote.begin()).first;
-            Player* player;
 
             for (Roll::PlayerVote::const_iterator itr = roll->playerVote.begin(); itr != roll->playerVote.end(); ++itr)
             {
@@ -1040,51 +1040,55 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
                     maxresul = randomN;
                 }
             }
-            SendLootRollWon(maxguid, maxresul, ROLL_NEED, *roll);
-            player = sObjectMgr.GetPlayer(maxguid);
 
-            if (player && player->GetSession())
+            if (Player* player = sObjectMgr.GetPlayer(maxguid))
             {
-                ItemPosCountVec dest;
-                LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
-                InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, roll->itemid, item->count);
-                if (msg == EQUIP_ERR_OK)
+                if (Object* object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
                 {
-                    item->is_looted = true;
-                    roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
-                    --roll->getLoot()->unlootedCount;
-                    Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
-                    player->SendNewItem(newitem, uint32(item->count), false, false, true);
-                    
-                    Object * object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID);
-
-                    if (object->GetTypeId() == TYPEID_UNIT)
+                    SendLootRollWon(maxguid, maxresul, ROLL_NEED, *roll);
+                    won = true;
+                    if (player->GetSession())
                     {
-                        /// Warn players about the loot status on the corpse.
-                        Creature * creature = player->GetMap()->GetCreature(roll->lootedTargetGUID);
-                        /// If creature has been fully looted, remove flag.
-                        if (creature->loot.isLooted())
+                        ItemPosCountVec dest;
+                        LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
+                        InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, roll->itemid, item->count);
+                        if (msg == EQUIP_ERR_OK)
                         {
-                            creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                            item->is_looted = true;
+                            roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
+                            --roll->getLoot()->unlootedCount;
+                            Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
+                            player->SendNewItem(newitem, uint32(item->count), false, false, true);
+
+                            if (object->GetTypeId() == TYPEID_UNIT)
+                            {
+                                /// Warn players about the loot status on the corpse.
+                                Creature * creature = object->ToCreature();
+                                /// If creature has been fully looted, remove flag.
+                                if (creature->loot.isLooted())
+                                {
+                                    creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            item->is_blocked = false;
+                            player->SendEquipError(msg, NULL, NULL, roll->itemid);
+                            item->winner = player->GetObjectGuid();
                         }
                     }
-                }
-                else
-                {
-                    item->is_blocked = false;
-                    player->SendEquipError(msg, NULL, NULL, roll->itemid);
-                    item->winner = player->GetObjectGuid();
                 }
             }
         }
     }
-    else if (roll->totalGreed > 0)
+
+    if (!won && roll->totalGreed > 0)
     {
         if (!roll->playerVote.empty())
         {
             uint8 maxresul = 0;
             ObjectGuid maxguid = (*roll->playerVote.begin()).first;
-            Player* player;
             RollVote rollvote = ROLL_PASS;                  // Fixed: Using uninitialized memory 'rollvote'
 
             Roll::PlayerVote::iterator itr;
@@ -1101,50 +1105,58 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
                     maxresul = randomN;
                 }
             }
-            SendLootRollWon(maxguid, maxresul, ROLL_GREED, *roll);
-            player = sObjectMgr.GetPlayer(maxguid);
 
-            if (player && player->GetSession())
+            if (Player* player = sObjectMgr.GetPlayer(maxguid))
             {
-                ItemPosCountVec dest;
-                LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
-                InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, roll->itemid, item->count);
-                if (msg == EQUIP_ERR_OK)
+                if (Object * object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
                 {
-                    item->is_looted = true;
-                    roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
-                    --roll->getLoot()->unlootedCount;
-                    Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
-                    player->SendNewItem(newitem, uint32(item->count), false, false, true);
-                    
-                    Object * object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID);
-                    if (object->GetTypeId() == TYPEID_UNIT)
+                    SendLootRollWon(maxguid, maxresul, ROLL_GREED, *roll);
+                    won = true;
+                    if (player->GetSession())
                     {
-                        /// Warn players about the loot status on the corpse.
-                        Creature * creature = player->GetMap()->GetCreature(roll->lootedTargetGUID);
-                        /// If creature has been fully looted, remove flag.
-                        if (creature->loot.isLooted())
+                        ItemPosCountVec dest;
+                        LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
+                        InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, roll->itemid, item->count);
+                        if (msg == EQUIP_ERR_OK)
                         {
-                            creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                            item->is_looted = true;
+                            roll->getLoot()->NotifyItemRemoved(roll->itemSlot);
+                            --roll->getLoot()->unlootedCount;
+                            Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
+                            player->SendNewItem(newitem, uint32(item->count), false, false, true);
+                            if (object->GetTypeId() == TYPEID_UNIT)
+                            {
+                                /// Warn players about the loot status on the corpse.
+                                Creature * creature = object->ToCreature();
+                                /// If creature has been fully looted, remove flag.
+                                if (creature->loot.isLooted())
+                                {
+                                    creature->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            item->is_blocked = false;
+                            player->SendEquipError(msg, NULL, NULL, roll->itemid);
+
+                            // Storing the winner to recall in LootView.
+                            item->winner = player->GetObjectGuid();
                         }
                     }
-                }
-                else
-                {
-                    item->is_blocked = false;
-                    player->SendEquipError(msg, NULL, NULL, roll->itemid);
-
-                    // Storing the winner to recall in LootView.
-                    item->winner = player->GetObjectGuid();
                 }
             }
         }
     }
-    else
+
+    if (!won)
     {
         SendLootAllPassed(*roll);
         LootItem* item = &(roll->getLoot()->items[roll->itemSlot]);
-        if (item) { item->is_blocked = false; }
+        if (item)
+        {
+            item->is_blocked = false;
+        }
     }
 
     rollI = RollId.erase(rollI);
