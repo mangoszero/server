@@ -2845,15 +2845,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
             }
             else if (IsInWorld())
             {
-                if (next_active_spell_id)
-                {
-                    // update spell ranks in spellbook and action bar
-                    WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                    data << uint16(spell_id);
-                    data << uint16(next_active_spell_id);
-                    GetSession()->SendPacket(&data);
-                }
-                else
+                if (!next_active_spell_id)
                 {
                     WorldPacket data(SMSG_REMOVED_SPELL, 4);
                     data << uint16(spell_id);
@@ -2931,8 +2923,10 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         newspell.dependent = dependent;
         newspell.disabled  = disabled;
 
+        bool canAddToSpellBook = true;
+
         // replace spells in action bars and spellbook to bigger rank if only one spell rank must be accessible
-        if (newspell.active && !newspell.disabled && sSpellMgr.IsRankedSpellNonStackableInSpellBook(spellInfo))
+        if (newspell.active && !newspell.disabled)
         {
             for (PlayerSpellMap::iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
             {
@@ -2946,7 +2940,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                 {
                     if (playerSpell2.active)
                     {
-                        if (sSpellMgr.IsHighRankOfSpell(spell_id, itr2->first))
+                        if (sSpellMgr.IsHighRankOfSpell(spell_id, itr2->first) &&
+                            sSpellMgr.IsRankedSpellNonStackableInSpellBook(i_spellInfo))
                         {
                             if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
                             {
@@ -2960,8 +2955,11 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                             playerSpell2.active = false;
                             if (playerSpell2.state != PLAYERSPELL_NEW)
                                 { playerSpell2.state = PLAYERSPELL_CHANGED; }
+
+                            canAddToSpellBook = false;
                         }
-                        else if (sSpellMgr.IsHighRankOfSpell(itr2->first, spell_id))
+                        else if (sSpellMgr.IsHighRankOfSpell(itr2->first, spell_id) &&
+                                 sSpellMgr.IsRankedSpellNonStackableInSpellBook(spellInfo))
                         {
                             if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
                             {
@@ -2975,6 +2973,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                             newspell.active = false;
                             if (newspell.state != PLAYERSPELL_NEW)
                                 { newspell.state = PLAYERSPELL_CHANGED; }
+
+                            canAddToSpellBook = false;
                         }
                     }
                 }
@@ -2983,10 +2983,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
         m_spells[spell_id] = newspell;
 
-        // return false if spell disabled or spell is non-stackable with lower-ranks
-        if (newspell.disabled ||
-            (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spellInfo) &&
-            (sSpellMgr.GetFirstSpellInChain(spell_id) != spell_id)))
+        // return false if spell disabled or spell is non-stackable in spellbook
+        if (newspell.disabled || !canAddToSpellBook)
             { return false; }
     }
 

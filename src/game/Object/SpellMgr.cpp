@@ -1958,33 +1958,15 @@ bool SpellMgr::canStackSpellRanksInSpellBook(SpellEntry const* spellInfo) const
     if (IsSkillBonusSpell(spellInfo->Id))
         { return false; }
 
-    // All stance spells. if any better way, change it.
-    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    // Any spell which has skill forward spell
+    // Include party auras from paladins, stealth from rogues, shapeshift spells for druids...and more :)
+    SkillLineAbilityMap::const_iterator itr = mSkillLineAbilityMap.find(spellInfo->Id);
+    if (itr != mSkillLineAbilityMap.end())
     {
-        switch (spellInfo->SpellFamilyName)
-        {
-            case SPELLFAMILY_PALADIN:
-                // Paladin SoR spell, Judgement version
-                if (spellInfo->Id == 21084 || spellInfo->Id == 20154)
-                    { return false; }
-                // Paladin aura Spell
-                if (spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PARTY)
-                    { return false; }
-                break;
-            case SPELLFAMILY_DRUID:
-                // Druid form Spell
-                if (spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA &&
-                    spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_SHAPESHIFT)
-                    { return false; }
-                break;
-            case SPELLFAMILY_ROGUE:
-                // Rogue Stealth
-                if (spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA &&
-                    spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_SHAPESHIFT)
-                    { return false; }
-                break;
-        }
+        if (itr->second->forward_spellid != 0)
+            { return false; }
     }
+
     return true;
 }
 
