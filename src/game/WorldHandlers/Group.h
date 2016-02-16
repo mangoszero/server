@@ -385,7 +385,6 @@ class Group
         }
 
         void SetTargetIcon(uint8 id, ObjectGuid targetGuid);
-        uint16 InInstance();
         bool InCombatToInstance(uint32 instanceId);
         void ResetInstances(InstanceResetMethod method, Player* SendMsgTo);
 
