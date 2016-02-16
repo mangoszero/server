@@ -706,6 +706,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                 uint32 spellId;
                 switch (triggeredByAura->GetId())
                 {
+                    case 20154:
                     case 21084: spellId = 25742; break;     // Rank 1
                     case 20287: spellId = 25740; break;     // Rank 2
                     case 20288: spellId = 25739; break;     // Rank 3

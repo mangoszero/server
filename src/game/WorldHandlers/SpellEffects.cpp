@@ -2274,8 +2274,8 @@ void Spell::EffectLearnSpell(SpellEffectIndex eff_idx)
     }
 
     Player* player = (Player*)unitTarget;
-
     uint32 spellToLearn = m_spellInfo->EffectTriggerSpell[eff_idx];
+
     player->learnSpell(spellToLearn, false);
 
     if (WorldObject const* caster = GetCastingObject())
