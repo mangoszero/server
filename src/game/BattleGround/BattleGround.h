@@ -470,6 +470,12 @@ class BattleGround
         /**
          * @brief
          *
+         * @return Team
+         */
+        virtual Team GetPrematureWinner();
+        /**
+         * @brief
+         *
          * @return uint32
          */
         uint32 GetBattlemasterEntry() const;
@@ -1040,9 +1046,8 @@ class BattleGround
          * @brief
          *
          * @param player
-         * @param plr_guid
          */
-        void EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid);
+        void EventPlayerLoggedIn(Player* player);
         /**
          * @brief
          *

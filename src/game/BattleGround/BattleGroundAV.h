@@ -508,6 +508,13 @@ class BattleGroundAV : public BattleGround
         /**
          * @brief
          *
+         * @return Team
+         */
+        virtual Team GetPrematureWinner() override;
+
+        /**
+         * @brief
+         *
          * @param team
          * @return BattleGroundAVTeamIndex
          */
