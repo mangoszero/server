@@ -993,15 +993,18 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
     recv_data >> guid;
     DEBUG_LOG("Inspected guid is %s", guid.GetString().c_str());
 
-    _player->SetSelectionGuid(guid);
-
     Player* plr = sObjectMgr.GetPlayer(guid);
-    if (!plr)                                               // wrong player
-        { return; }
+    if (plr && _player->IsFriendlyTo(plr) && _player->IsWithinDistInMap(plr, TRADE_DISTANCE, false))  // why not 3D check?
+    {
+        _player->SetSelectionGuid(guid);
 
-    WorldPacket data(SMSG_INSPECT, 8);
-    data << ObjectGuid(guid);
-    SendPacket(&data);
+        WorldPacket data(SMSG_INSPECT, 8);
+        data << ObjectGuid(guid);
+        SendPacket(&data);
+    }
+    else
+        { DEBUG_LOG("%s not found!", guid.GetString().c_str()); }
+
 }
 
 void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
@@ -1010,7 +1013,7 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     recv_data >> guid;
 
     Player* pl = sObjectMgr.GetPlayer(guid);
-    if (pl)
+    if (pl && _player->IsFriendlyTo(pl) && _player->IsWithinDistInMap(pl, TRADE_DISTANCE, false))
     {
         WorldPacket data(MSG_INSPECT_HONOR_STATS, (8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + 1));
         data << guid;                                       // player guid
