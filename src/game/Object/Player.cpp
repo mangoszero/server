@@ -13512,18 +13512,18 @@ void Player::_LoadIntoDataField(const char* data, uint32 startOffset, uint32 cou
 
 bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 {
-    //       0     1        2     3     4      5       6      7   8      9            10            11
-    // SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,"
+    //        0     1        2     3     4      5       6      7   8      9            10            11
+    // SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,
     // 12          13          14          15   16           17        18         19         20         21          22           23                 24
-    //"position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,"
+    // position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,
     // 25                 26       27       28       29       30         31           32            33        34    35      36                 37
-    //"resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path,
+    // resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path,
     // 38                  39              40                   41                        42
-    //"honor_highest_rank, honor_standing, stored_honor_rating, stored_dishonorablekills, stored_honorable_kills,"
+    // honor_highest_rank, honor_standing, stored_honor_rating, stored_dishonorablekills, stored_honorable_kills,
     // 43               44
-    //"watchedFaction,  drunk,"
+    // watchedFaction,  drunk,
     // 45      46      47      48      49      50      51             52              53      54
-    //"health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, actionBars  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    // health, power1, power2, power3, power4, power5, exploredZones, equipmentCache, ammoId, actionBars  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     QueryResult* result = holder->GetResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
     if (!result)
@@ -13679,7 +13679,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
             m_bgData.bgTypeID = currentBg->GetTypeID();     // bg data not marked as modified
 
             // join player to battleground group
-            currentBg->EventPlayerLoggedIn(this, GetObjectGuid());
+            currentBg->EventPlayerLoggedIn(this);
             currentBg->AddOrSetPlayerToCorrectBgGroup(this, GetObjectGuid(), m_bgData.bgTeam);
 
             SetInviteForBattleGroundQueueType(bgQueueTypeId, currentBg->GetInstanceID());

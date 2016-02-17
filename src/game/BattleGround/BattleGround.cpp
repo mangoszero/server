@@ -350,14 +350,7 @@ void BattleGround::Update(uint32 diff)
         }
         else if (m_PrematureCountDownTimer < diff)
         {
-            // time's up!
-            Team winner = TEAM_NONE;
-            if (GetPlayersCountByTeam(ALLIANCE) >= GetMinPlayersPerTeam())
-                { winner = ALLIANCE; }
-            else if (GetPlayersCountByTeam(HORDE) >= GetMinPlayersPerTeam())
-                { winner = HORDE; }
-
-            EndBattleGround(winner);
+            EndBattleGround(GetPrematureWinner());
             m_PrematureCountDown = false;
         }
         else if (!sBattleGroundMgr.isTesting())
@@ -1233,9 +1226,10 @@ void BattleGround::AddOrSetPlayerToCorrectBgGroup(Player* plr, ObjectGuid plr_gu
 /// This method should be called when player logs into running battleground
 /// </summary>
 /// <param name="player">The player.</param>
-/// <param name="plr_guid">The plr_guid.</param>
-void BattleGround::EventPlayerLoggedIn(Player* player, ObjectGuid plr_guid)
+void BattleGround::EventPlayerLoggedIn(Player* player)
 {
+    ObjectGuid plr_guid = player->GetObjectGuid();
+
     // player is correct pointer
     for (OfflineQueue::iterator itr = m_OfflineQueue.begin(); itr != m_OfflineQueue.end(); ++itr)
     {
@@ -1807,4 +1801,23 @@ void BattleGround::SetBgRaid(Team team, Group* bg_raid)
 WorldSafeLocsEntry const* BattleGround::GetClosestGraveYard(Player* player)
 {
     return sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam());
+}
+
+/// <summary>
+/// Gets the winner in case of premature finish of the BG.
+/// Different BG's may have different criteria for choosing the winner besides simple player accounting
+/// </summary>
+/// <returns>The winner team</returns>
+Team BattleGround::GetPrematureWinner()
+{
+    uint32 hPlayers = GetPlayersCountByTeam(HORDE);
+    uint32 aPlayers = GetPlayersCountByTeam(ALLIANCE);
+    
+    if (aPlayers > hPlayers)
+      { return ALLIANCE; }
+
+    if (hPlayers > aPlayers)
+      { return HORDE; }
+
+    return TEAM_NONE;
 }
