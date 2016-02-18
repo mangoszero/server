@@ -697,6 +697,8 @@ class GameObject : public WorldObject
         void SetCapturePointSlider(float value, bool isLocked);
         float GetCapturePointSliderValue() const { return m_captureSlider; }
 
+        float GetInteractionDistance() const;              // Get the maximum distance for a GO to interact with
+
         uint32 GetScriptId();
 
         GridReference<GameObject>& GetGridRef() { return m_gridRef; }
