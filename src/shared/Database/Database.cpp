@@ -503,7 +503,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     delete result;
 
     // Structure does not match the required version
-    if (structure != dbversion.expected_structure)
+    if (version != dbversion.expected_version || structure != dbversion.expected_structure)
     {
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected structure!", dbversion.dbname.c_str());
         sLog.outErrorDb();
@@ -523,7 +523,13 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     }
 
     // DB is not up to date, but structure is correct. Send warning but start core
-    if (version != dbversion.expected_version || content != dbversion.expected_content)
+    if (content > dbversion.expected_content)
+    {
+        sLog.outErrorDb("You have not updated the core for few DB [%s] updates!", dbversion.dbname.c_str());
+        sLog.outErrorDb("Current DB content is %u, core expects %u", content, dbversion.expected_content);
+        sLog.outErrorDb("This is ok for now but should not last long.");
+    }
+    else if (content != dbversion.expected_content) 
     {
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected version!", dbversion.dbname.c_str());
         sLog.outErrorDb();
