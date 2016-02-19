@@ -31,6 +31,17 @@
 #include "movement/MoveSpline.h"
 
 template<>
+RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ) : 
+    i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ)
+{
+    if (radius < 0.1f)
+    {
+        DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "RandomMovementGenerator<Creature> constructor: wrong value for spawn distance. Set to 0.1f");
+        i_radius = 0.1f;
+    }
+}
+
+template<>
 RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creature)
 {
     float respX, respY, respZ, respO, wander_distance;
