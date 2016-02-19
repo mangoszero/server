@@ -61,6 +61,7 @@ namespace Movement
             spline.evaluate_derivative(point_Idx, u, hermite);
             c.orientation = atan2(hermite.y, hermite.x);
         }
+        c.orientation = G3D::wrap(c.orientation, 0.f, (float)G3D::twoPi());
         return c;
     }
 

@@ -2213,25 +2213,39 @@ bool Map::GetReachableRandomPointOnGround(float& x, float& y, float& z, float ra
         return false;
 
     // here we have a valid position but the point can have a big Z in some case
-    // next code will check angle from 2 points
+    // next code will check angle from 2 points of view: x-axis and y-axis movement
     //        c
     //       /|
     //      / |
     //    b/__|a
 
     // project vector to get only positive value
-    float ab = fabs(x - i_x);
     float ac = fabs(z - i_z);
+    float delta = 0;
 
-    // slope represented by c angle (in radian)
+    // slope represented by b angle (in radian)
     float slope = 0;
     const float MAX_SLOPE_IN_RADIAN = 50.0f / 180.0f * M_PI_F;  // 50(degree) max seem best value for walkable slope
 
-    // check ab vector to avoid divide by 0
-    if (ab > 0.0f)
+    delta = fabs(x - i_x);  // check x-axis movement
+    if (delta > 0.0f)       // check to avoid divide by 0
     {
-        // compute c angle and convert it from radian to degree
-        slope = atan(ac / ab);
+        // compute slope
+        slope = atan(ac / delta);
+        if (slope < MAX_SLOPE_IN_RADIAN)
+        {
+            x = i_x;
+            y = i_y;
+            z = i_z;
+            return true;
+        }
+    }
+
+    delta = fabs(y - i_y);  // check y-axis movement
+    if (delta > 0.0f)       // check to avoid divide by 0
+    {
+        // compute slope
+        slope = atan(ac / delta);
         if (slope < MAX_SLOPE_IN_RADIAN)
         {
             x = i_x;
