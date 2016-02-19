@@ -36,8 +36,7 @@ class RandomMovementGenerator
 {
     public:
         explicit RandomMovementGenerator(const Creature&);
-        explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f) :
-            i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ) {}
+        explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f);
 
         void _setRandomLocation(T&);
         void Initialize(T&);
