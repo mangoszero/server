@@ -2280,21 +2280,19 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
             isSwimming = static_cast<Creature*>(unit)->IsSwimming();
             break;
         default:
-            sLog.outError("Map::GetReachableRandomPosition> Unsupported unit type is passed!");
+            sLog.outError("Map::GetReachableRandomPosition> Unsupported unit (%s) is passed!", unit->GetGuidStr().c_str());
             return false;
     }
 
     if (radius < 0.1f)
     {
-        sLog.outError("Map::GetReachableRandomPosition> Unsupported unit type is passed!");
+        sLog.outError("Map::GetReachableRandomPosition> Invalid radius (%f) for %s", radius, unit->GetGuidStr().c_str());
         return false;
     }
 
     if (isFlying)
     {
         newDestAssigned = GetRandomPointInTheAir(i_x, i_y, i_z, radius);
-        /*if (newDestAssigned)
-        sLog.outString("Generating air random point for %s", GetGuidStr().c_str());*/
     }
     else
     {
@@ -2303,14 +2301,10 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
         if (isSwimming && (res & (LIQUID_MAP_UNDER_WATER | LIQUID_MAP_IN_WATER)))
         {
             newDestAssigned = GetRandomPointUnderWater(i_x, i_y, i_z, radius, liquid_status);
-            /*if (newDestAssigned)
-            sLog.outString("Generating swim random point for %s", GetGuidStr().c_str());*/
         }
         else
         {
             newDestAssigned = GetReachableRandomPointOnGround(i_x, i_y, i_z, radius);
-            /*if (newDestAssigned)
-            sLog.outString("Generating ground random point for %s", GetGuidStr().c_str());*/
         }
     }
 
