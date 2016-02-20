@@ -142,7 +142,7 @@ class ChatHandler
         bool HasLowerSecurity(Player* target, ObjectGuid guid = ObjectGuid(), bool strong = false);
         bool HasLowerSecurityAccount(WorldSession* target, uint32 account, bool strong = false);
 
-        void SendGlobalSysMessage(const char* str);
+        void SendGlobalSysMessage(const char* str, AccountTypes minSec = SEC_PLAYER);
 
         bool SetDataForCommandInTable(ChatCommand* table, const char* text, uint32 security, std::string const& help);
         void ExecuteCommand(const char* text);

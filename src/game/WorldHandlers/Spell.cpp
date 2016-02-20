@@ -1183,6 +1183,10 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
 
                 switch (m_spellInfo->Id)
                 {
+                         // Mind Soothe (all ranks)
+                    case 453:
+                    case 8192:
+                    case 10953:
                         //Soothe animal
                     case 9901:
                     case 8955:

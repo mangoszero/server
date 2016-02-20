@@ -1658,13 +1658,15 @@ void World::SendWorldText(int32 string_id, ...)
     va_end(ap);
 }
 
-/// Sends a packet to all players with optional team and instance restrictions
-void World::SendGlobalMessage(WorldPacket* packet)
+/// Sends a packet to all players with optional account access level restrictions
+void World::SendGlobalMessage(WorldPacket* packet, AccountTypes minSec)
 {
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
     {
         if (WorldSession* session = itr->second)
         {
+            if (session->GetSecurity() < minSec)
+                continue;
             Player* player = session->GetPlayer();
             if (player && player->IsInWorld())
                 { session->SendPacket(packet); }

@@ -45,7 +45,7 @@
 char serviceName[] = "mangosd";
 char serviceLongName[] = "MaNGOS world service";
 char serviceDescription[] = "Massive Network Game Object Server";
-const char RAW_VMAP_MAGIC[] = "VMAPz05";                    /**< used in extracted vmap files with raw data */
+const char RAW_VMAP_MAGIC[] = "VMAPz06";                    /**< used in extracted vmap files with raw data */
 /*
  * -1 - not in service mode
  *  0 - stopped

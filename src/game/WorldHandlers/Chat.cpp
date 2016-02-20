@@ -939,7 +939,7 @@ void ChatHandler::SendSysMessage(const char* str)
     delete[] buf;
 }
 
-void ChatHandler::SendGlobalSysMessage(const char* str)
+void ChatHandler::SendGlobalSysMessage(const char* str, AccountTypes minSec)
 {
     // Chat output
     WorldPacket data;
@@ -952,7 +952,7 @@ void ChatHandler::SendGlobalSysMessage(const char* str)
     while (char* line = LineFromMessage(pos))
     {
         ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, line, LANG_UNIVERSAL, CHAT_TAG_NONE, guid);
-        sWorld.SendGlobalMessage(&data);
+        sWorld.SendGlobalMessage(&data, minSec);
     }
 
     delete[] buf;

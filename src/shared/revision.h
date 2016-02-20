@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 3
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "Fix SoR paladin"
+    #define WORLD_DB_CONTENT_NR 2
+    #define WORLD_DB_UPDATE_DESCRIPTION "Fix Random MMGen Scripts"
 #endif // __REVISION_H__

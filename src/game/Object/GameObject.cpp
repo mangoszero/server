@@ -2267,3 +2267,23 @@ uint32 GameObject::GetScriptId()
 {
     return sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) ? sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) : sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, GetEntry());
 }
+
+float GameObject::GetInteractionDistance() const
+{
+    float maxdist = INTERACTION_DISTANCE;
+    switch (GetGoType())
+    {
+        // TODO: find out how the client calculates the maximal usage distance to spellless working
+        // gameobjects like mailboxes - 10.0 is a just an abitrary choosen number
+        case GAMEOBJECT_TYPE_MAILBOX:
+            maxdist = 10.0f;
+            break;
+        case GAMEOBJECT_TYPE_FISHINGHOLE:
+        case GAMEOBJECT_TYPE_FISHINGNODE:
+            maxdist = 20.0f + CONTACT_DISTANCE;     // max spell range
+            break;
+        default:
+            break;
+    }
+    return maxdist;
+}
