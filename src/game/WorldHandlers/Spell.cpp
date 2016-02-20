@@ -1749,8 +1749,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 }
             }
 
-            // exclude caster
-            targetUnitMap.remove(m_caster);
             break;
         }
         case TARGET_AREAEFFECT_CUSTOM:
@@ -2448,6 +2446,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             // sLog.outError( "SPELL: Unknown implicit target (%u) for spell ID %u", targetMode, m_spellInfo->Id );
             break;
     }
+
+    if (targetMode != TARGET_SELF && m_spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF))
+      { targetUnitMap.remove(m_caster); }
 
     if (unMaxTargets && targetUnitMap.size() > unMaxTargets)
     {
@@ -4670,11 +4671,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     if (!m_targets.getUnitTarget() || m_targets.getUnitTarget()->GetHealth() > m_targets.getUnitTarget()->GetMaxHealth() * 0.2)
                         { return SPELL_FAILED_BAD_TARGETS; }
-                }
-                else if (m_spellInfo->Id == 51582)          // Rocket Boots Engaged
-                {
-                    if (m_caster->IsInWater())
-                        { return SPELL_FAILED_ONLY_ABOVEWATER; }
                 }
                 else if (m_spellInfo->SpellIconID == 156)   // Holy Shock
                 {
