@@ -19464,8 +19464,8 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
                         switch (fault.param2)
                         {
                             case 0: { return AREA_LOCKSTATUS_LEVEL_NOT_EQUAL; }
-                            case 1: { return AREA_LOCKSTATUS_LEVEL_TOO_HIGH; }
-                            case 2: { return AREA_LOCKSTATUS_LEVEL_TOO_LOW; }
+                            case 1: { return AREA_LOCKSTATUS_LEVEL_TOO_LOW; }
+                            case 2: { return AREA_LOCKSTATUS_LEVEL_TOO_HIGH; }
                         }
                     }
                 }
