@@ -66,10 +66,7 @@ typedef UNORDERED_MAP<uint32, GameTele > GameTeleMap;
 
 struct AreaTrigger
 {
-    uint8  requiredLevel;
-    uint32 requiredItem;
-    uint32 requiredItem2;
-    uint32 requiredQuest;
+    uint32 condition;
     uint32 target_mapId;
     float  target_X;
     float  target_Y;
@@ -79,15 +76,10 @@ struct AreaTrigger
     // Operators
     bool IsMinimal() const
     {
-        return requiredLevel == 0 && requiredItem == 0 && requiredItem2 == 0 && requiredQuest == 0;
+        return condition == 0;
     }
 
-    bool IsLessOrEqualThan(AreaTrigger const* l) const      // Expected to have same map
-    {
-        MANGOS_ASSERT(target_mapId == l->target_mapId);
-        return requiredLevel <= l->requiredLevel && requiredItem <= l->requiredItem && requiredItem2 <= l->requiredItem2
-               && requiredQuest <= l->requiredQuest;
-    }
+    bool IsLessOrEqualThan(AreaTrigger const* l) const;
 };
 
 typedef std::map < uint32/*player guid*/, uint32/*instance*/ > CellCorpseSet;
@@ -330,6 +322,7 @@ enum ConditionType
                                                             // value2: if != 0 only consider players in range of this value
     CONDITION_CREATURE_IN_RANGE     = 37,                   // value1: creature entry; value2: range; returns only alive creatures
     CONDITION_GAMEOBJECT_IN_RANGE   = 38,                   // value1: gameobject entry; value2: range
+    CONDITION_PVP_RANK              = 39,                   // value1: rank; value2: 0 = eq, 1 = equal or higher, 2 = equal or less
 };
 
 enum ConditionSource                                        // From where was the condition called?
@@ -344,10 +337,20 @@ enum ConditionSource                                        // From where was th
     CONDITION_FROM_SPELL_AREA       = 7,                    // Used to check a condition from spell_area table
     CONDITION_FROM_RESERVED_1       = 8,                    // reserved for 3.x and later
     CONDITION_FROM_DBSCRIPTS        = 9,                    // Used to check a condition from DB Scripts Engine
+    CONDITION_AREA_TRIGGER          = 10,                   // Used to check a condition from CMSG_AREATRIGGER
+};
+
+struct ConditionEntry
+{
+    ConditionEntry() : type(CONDITION_NONE), param1(0), param2(0) {}
+    ConditionType type;
+    uint32 param1;
+    uint32 param2;
 };
 
 class PlayerCondition
 {
+    friend struct AreaTrigger;
     public:
         // Default constructor, required for SQL Storage (Will give errors if used elsewise)
         PlayerCondition() : m_entry(0), m_condition(CONDITION_AND), m_value1(0), m_value2(0) {}
@@ -365,7 +368,11 @@ class PlayerCondition
         static bool CanBeUsedWithoutPlayer(uint16 entry);
 
         // Checks if the player meets the condition
-        bool Meets(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
+        // if the param entry is not null, it will be filled at return as follows:
+        //  - if function fails, entry will contain the first faulty condition
+        //  - if function succeeds, entry will contain the last condition checked (if chained)
+        // entry is only useful on failure case
+        bool Meets(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry = NULL) const;
 
     private:
         bool CheckParamRequirements(Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
@@ -987,7 +994,7 @@ class ObjectMgr
         LocaleConstant GetLocaleForIndex(int i);
 
         // Check if a player meets condition conditionId
-        bool IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
+        bool IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry = NULL) const;
 
         GameTele const* GetGameTele(uint32 id) const
         {
