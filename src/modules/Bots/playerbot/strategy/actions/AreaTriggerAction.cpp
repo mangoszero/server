@@ -28,13 +28,12 @@ bool ReachAreaTriggerAction::Execute(Event event)
         return true;
     }
 
-    if (at->requiredLevel > bot->getLevel())
+    if (at->condition && !sObjectMgr.IsPlayerMeetToCondition(at->condition, bot, bot->GetMap(), NULL, CONDITION_AREA_TRIGGER))
     {
-        ostringstream out; out << "I won't follow: |h|cff00ff00" << (int)at->requiredLevel << "|h|cffffffff level is required";
-        ai->TellMaster(out);
+        ai->TellMaster("I won't follow: I don't meet the conditions");
         return false;
     }
-
+    
     if (bot->GetMapId() != atEntry->mapid || bot->GetDistance(atEntry->x, atEntry->y, atEntry->z) > sPlayerbotAIConfig.sightDistance)
     {
         ai->TellMaster("I won't follow: too far away");
