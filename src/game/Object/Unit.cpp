@@ -631,8 +631,14 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             { SetContestedPvP(attackedPlayer); }
     }
 
-    if (pVictim->GetTypeId() == TYPEID_UNIT && !((Creature*)pVictim)->IsPet() && !((Creature*)pVictim)->HasLootRecipient())
-        { ((Creature*)pVictim)->SetLootRecipient(this); }
+    if (Creature* victim = pVictim->ToCreature())
+    {
+        if (!victim->IsPet() && !victim->HasLootRecipient())
+            victim->SetLootRecipient(this);
+
+        if (IsControlledByPlayer()) // more narrow: IsPet(), IsGuardian() ?
+            victim->LowerPlayerDamageReq(health < damage ? health : damage);
+    }
 
     if (health <= damage)
     {
@@ -681,23 +687,36 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
         /*
          *                      Generic Actions (ProcEvents, Combat-Log, Kill Rewards, Stop Combat)
          */
+        bool isRewardAllowed = true;
+        if (Creature* creature = pVictim->ToCreature())
+        {
+            isRewardAllowed = creature->IsDamageEnoughForLootingAndReward();
+            if (!isRewardAllowed)
+                creature->SetLootRecipient(NULL);
+        }
+
         // call kill spell proc event (before real die and combat stop to triggering auras removed at death/combat stop)
         if (player_tap && player_tap != pVictim)
         {
             player_tap->ProcDamageAndSpell(pVictim, PROC_FLAG_KILL, PROC_FLAG_KILLED, PROC_EX_NONE, 0);
 
-            WorldPacket data(SMSG_PARTYKILLLOG, (8 + 8));   // send event PARTY_KILL
-            data << player_tap->GetObjectGuid();            // player with killing blow
-            data << pVictim->GetObjectGuid();               // victim
+            if (isRewardAllowed)
+            {
+                WorldPacket data(SMSG_PARTYKILLLOG, (8 + 8));   // send event PARTY_KILL
+                data << player_tap->GetObjectGuid();            // player with killing blow
+                data << pVictim->GetObjectGuid();               // victim
 
-            if (group_tap)
-                { group_tap->BroadcastPacket(&data, false, group_tap->GetMemberGroup(player_tap->GetObjectGuid()), player_tap->GetObjectGuid()); }
+                if (group_tap)
+                {
+                    group_tap->BroadcastPacket(&data, false, group_tap->GetMemberGroup(player_tap->GetObjectGuid()), player_tap->GetObjectGuid());
+                }
 
-            player_tap->SendDirectMessage(&data);
+                player_tap->SendDirectMessage(&data);
+            }
         }
 
         // Reward player, his pets, and group/raid members
-        if (player_tap != pVictim)
+        if (isRewardAllowed && player_tap != pVictim)
         {
             if (group_tap)
                 { group_tap->RewardGroupAtKill(pVictim, player_tap); }

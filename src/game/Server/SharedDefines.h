@@ -331,7 +331,7 @@ enum SpellAttributesEx
     SPELL_ATTR_EX_UNAFFECTED_BY_SCHOOL_IMMUNE   = 0x00010000,            // 16 unaffected by school immunity
     SPELL_ATTR_EX_UNK17                         = 0x00020000,            // 17 for auras SPELL_AURA_TRACK_CREATURES, SPELL_AURA_TRACK_RESOURCES and SPELL_AURA_TRACK_STEALTHED select non-stacking tracking spells
     SPELL_ATTR_EX_UNK18                         = 0x00040000,            // 18
-    SPELL_ATTR_EX_UNK19                         = 0x00080000,            // 19
+    SPELL_ATTR_EX_CANT_TARGET_SELF              = 0x00080000,            // 19 spells that exclude the caster
     SPELL_ATTR_EX_REQ_TARGET_COMBO_POINTS       = 0x00100000,            // 20 Req combo points on target
     SPELL_ATTR_EX_UNK21                         = 0x00200000,            // 21
     SPELL_ATTR_EX_REQ_COMBO_POINTS              = 0x00400000,            // 22 Use combo points (in 4.x not required combo point target selected)
@@ -2548,15 +2548,17 @@ enum AreaLockStatus
 {
     AREA_LOCKSTATUS_OK                          = 0,
     AREA_LOCKSTATUS_UNKNOWN_ERROR               = 1,
-    AREA_LOCKSTATUS_TOO_LOW_LEVEL               = 2,
-    AREA_LOCKSTATUS_TOO_HIGH_LEVEL              = 3,
-    AREA_LOCKSTATUS_RAID_LOCKED                 = 4,
-    AREA_LOCKSTATUS_QUEST_NOT_COMPLETED         = 5,
-    AREA_LOCKSTATUS_MISSING_ITEM                = 6,
-    AREA_LOCKSTATUS_ZONE_IN_COMBAT              = 7,
-    AREA_LOCKSTATUS_INSTANCE_IS_FULL            = 8,
-    AREA_LOCKSTATUS_NOT_ALLOWED                 = 9,
-    AREA_LOCKSTATUS_HAS_BIND                    = 10,
+    AREA_LOCKSTATUS_LEVEL_NOT_EQUAL             = 2,
+    AREA_LOCKSTATUS_LEVEL_TOO_LOW               = 3,
+    AREA_LOCKSTATUS_LEVEL_TOO_HIGH              = 4,
+    AREA_LOCKSTATUS_RAID_LOCKED                 = 5,
+    AREA_LOCKSTATUS_QUEST_NOT_COMPLETED         = 6,
+    AREA_LOCKSTATUS_MISSING_ITEM                = 7,
+    AREA_LOCKSTATUS_ZONE_IN_COMBAT              = 8,
+    AREA_LOCKSTATUS_INSTANCE_IS_FULL            = 9,
+    AREA_LOCKSTATUS_NOT_ALLOWED                 = 10,
+    AREA_LOCKSTATUS_HAS_BIND                    = 11,
+    AREA_LOCKSTATUS_WRONG_TEAM                  = 12,
 };
 
 enum TrackedAuraType

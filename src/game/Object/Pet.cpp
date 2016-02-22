@@ -2073,7 +2073,6 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
         case MOVE_WALK:
             break;
         case MOVE_RUN:
-        {
             if (!m_attacking && owner->HasAura(19596))   // Bestial Swiftness: prevent while following
             {
                 AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
@@ -2084,10 +2083,9 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             else
                 main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
 
-            stack_bonus = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
+            stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
             non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
             break;
-        }
         case MOVE_RUN_BACK:
             return;
         case MOVE_SWIM:

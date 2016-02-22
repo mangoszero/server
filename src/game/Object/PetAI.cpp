@@ -85,6 +85,7 @@ void PetAI::AttackStart(Unit* u)
         // thus with the following clear the original TMG gets invalidated and crash, doh
         // hope it doesn't start to leak memory without this :-/
         // i_pet->Clear();
+        m_creature->UpdateSpeed(MOVE_RUN, false);
         HandleMovementOnAttackStart(u);
         inCombat = true;
     }
@@ -117,6 +118,7 @@ void PetAI::_stopAttack()
     if (owner && m_creature->GetCharmInfo() && m_creature->GetCharmInfo()->HasCommandState(COMMAND_FOLLOW))
     {
         m_creature->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
+        m_creature->UpdateSpeed(MOVE_RUN, false);
     }
     else
     {

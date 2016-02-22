@@ -79,7 +79,7 @@ enum MangosStrings
     LANG_NON_EXIST_CHARACTER            = 47,
     LANG_FRIEND_IGNORE_UNKNOWN          = 48,
     LANG_LEVEL_MINREQUIRED              = 49,
-    LANG_LEVEL_MINREQUIRED_AND_ITEM     = 50,
+    LANG_REQUIRED_ITEM                  = 50,
     LANG_NPC_TAINER_HELLO               = 51,
     LANG_COMMAND_INVALID_ITEM_COUNT     = 52,
     LANG_COMMAND_MAIL_ITEMS_LIMIT       = 53,
@@ -96,7 +96,11 @@ enum MangosStrings
     LANG_GM_NO_WHISPER                  = 64,
     LANG_USING_SCRIPT_LIB_UNKNOWN       = 65,
     LANG_USING_SCRIPT_LIB_NONE          = 66,
-    // Room for more level 0              67-99 not used
+    LANG_WRONG_TEAM_HORDE               = 67,
+    LANG_WRONG_TEAM_ALLIANCE            = 68,
+    LANG_LEVEL_MAXREQUIRED              = 69,
+    LANG_LEVEL_EQUALREQUIRED            = 70,
+    // Room for more level 0              71-99 not used
 
     // level 1 chat
     LANG_GLOBAL_NOTIFY                  = 100,
@@ -363,9 +367,9 @@ enum MangosStrings
     LANG_TRIGGER_TAVERN                 = 364,
     LANG_TRIGGER_QUEST                  = 365,
     LANG_TRIGGER_EXPLORE_QUEST          = 366,
-    LANG_TRIGGER_REQ_LEVEL              = 367,
-    LANG_TRIGGER_REQ_ITEMS              = 368,
-    LANG_TRIGGER_REQ_QUEST              = 369,
+    LANG_TRIGGER_CONDITION              = 367,
+    //                                    368
+    //                                    369
     //                                    370 used in master branch
     //                                    371 used in master branch
     //                                    372 used in master branch

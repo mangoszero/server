@@ -131,6 +131,38 @@ bool operator < (const HonorStanding& lhs, const HonorStanding& rhs)
     return lhs.honorPoints > rhs.honorPoints;
 }
 
+// TODO improve the algorithm based on conditions
+bool AreaTrigger::IsLessOrEqualThan(AreaTrigger const* l) const      // Expected to have same map
+{
+    MANGOS_ASSERT(target_mapId == l->target_mapId);
+    if (!condition)
+      { return true; }
+
+    if (!l->condition)
+      { return false; }
+
+    if (condition == l->condition)
+      { return true; }
+
+    // most conditions for AT have level requirement
+    // let's order by the least restrictive
+    const PlayerCondition* pCond1 = sConditionStorage.LookupEntry<PlayerCondition>(condition);
+    const PlayerCondition* pCond2 = sConditionStorage.LookupEntry<PlayerCondition>(l->condition);
+    if (pCond1->m_condition == CONDITION_LEVEL && pCond2->m_condition == CONDITION_LEVEL)
+    {
+        return (pCond1->m_value1 <= pCond2->m_value1);
+    }
+    if (pCond1->m_condition == CONDITION_LEVEL)
+    {
+        return false;
+    }
+    if (pCond2->m_condition == CONDITION_LEVEL)
+    {
+        return true;
+    }
+    return false;
+}
+
 ObjectMgr::ObjectMgr() :
     m_AuctionIds("Auction ids"),
     m_GuildIds("Guild ids"),
@@ -1062,7 +1094,7 @@ void ObjectMgr::LoadCreatures()
         uint32 guid         = fields[ 0].GetUInt32();
         uint32 entry        = fields[ 1].GetUInt32();
 
-        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_CREATURE_SPAWN, guid))
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_CREATURE_SPAWN, entry, NULL, 0, guid))
         {
             sLog.outDebug("Creature guid %u (entry %u) spawning is disabled.", guid, entry);
             continue;
@@ -1236,7 +1268,7 @@ void ObjectMgr::LoadGameObjects()
         uint32 guid         = fields[ 0].GetUInt32();
         uint32 entry        = fields[ 1].GetUInt32();
 
-        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_GAMEOBJECT_SPAWN, guid))
+        if (DisableMgr::IsDisabledFor(DISABLE_TYPE_GAMEOBJECT_SPAWN, entry, NULL, 0, guid))
         {
             sLog.outDebug("Gameobject guid %u (entry %u) spawning is disabled.", guid, entry);
             continue;
@@ -5065,8 +5097,8 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
     uint32 count = 0;
 
-    //                                                0   1               2              3               4                    5           6                  7                  8                  9
-    QueryResult* result = WorldDatabase.Query("SELECT id, required_level, required_item, required_item2, required_quest_done, target_map, target_position_x, target_position_y, target_position_z, target_orientation FROM areatrigger_teleport");
+    //                                                0   1           2                  3                  4                  5                   6                  7                  8                  9
+    QueryResult* result = WorldDatabase.Query("SELECT id, target_map, target_position_x, target_position_y, target_position_z, target_orientation, condition_id FROM areatrigger_teleport");
     if (!result)
     {
         BarGoLink bar(1);
@@ -5090,51 +5122,18 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
         AreaTrigger at;
 
-        at.requiredLevel        = fields[1].GetUInt8();
-        at.requiredItem         = fields[2].GetUInt32();
-        at.requiredItem2        = fields[3].GetUInt32();
-        at.requiredQuest        = fields[4].GetUInt32();
-        at.target_mapId         = fields[5].GetUInt32();
-        at.target_X             = fields[6].GetFloat();
-        at.target_Y             = fields[7].GetFloat();
-        at.target_Z             = fields[8].GetFloat();
-        at.target_Orientation   = fields[9].GetFloat();
+        at.target_mapId         = fields[1].GetUInt32();
+        at.target_X             = fields[2].GetFloat();
+        at.target_Y             = fields[3].GetFloat();
+        at.target_Z             = fields[4].GetFloat();
+        at.target_Orientation   = fields[5].GetFloat();
+        at.condition            = fields[6].GetUInt16();
 
         AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
         if (!atEntry)
         {
             sLog.outErrorDb("Table `areatrigger_teleport` has area trigger (ID:%u) not listed in `AreaTrigger.dbc`.", Trigger_ID);
             continue;
-        }
-
-        if (at.requiredItem)
-        {
-            ItemPrototype const* pProto = GetItemPrototype(at.requiredItem);
-            if (!pProto)
-            {
-                sLog.outError("Table `areatrigger_teleport` has nonexistent key item %u for trigger %u, removing key requirement.", at.requiredItem, Trigger_ID);
-                at.requiredItem = 0;
-            }
-        }
-
-        if (at.requiredItem2)
-        {
-            ItemPrototype const* pProto = GetItemPrototype(at.requiredItem2);
-            if (!pProto)
-            {
-                sLog.outError("Table `areatrigger_teleport` has nonexistent second key item %u for trigger %u, remove key requirement.", at.requiredItem2, Trigger_ID);
-                at.requiredItem2 = 0;
-            }
-        }
-
-        if (at.requiredQuest)
-        {
-            QuestMap::iterator qReqItr = mQuestTemplates.find(at.requiredQuest);
-            if (qReqItr == mQuestTemplates.end())
-            {
-                sLog.outErrorDb("Table `areatrigger_teleport` has nonexistent required quest %u for trigger %u, remove quest done requirement.", at.requiredQuest, Trigger_ID);
-                at.requiredQuest = 0;
-            }
         }
 
         MapEntry const* mapEntry = sMapStore.LookupEntry(at.target_mapId);
@@ -5147,6 +5146,12 @@ void ObjectMgr::LoadAreaTriggerTeleports()
         if (at.target_X == 0 && at.target_Y == 0 && at.target_Z == 0)
         {
             sLog.outErrorDb("Table `areatrigger_teleport` has area trigger (ID:%u) without target coordinates.", Trigger_ID);
+            continue;
+        }
+
+        if (at.condition && !sConditionStorage.LookupEntry<PlayerCondition>(at.condition))
+        {
+            sLog.outErrorDb("Table `areatrigger_teleport` has nonexistent condition (ID:%u) for Area trigger (ID:%u).", at.condition, Trigger_ID);
             continue;
         }
 
@@ -6870,10 +6875,10 @@ void ObjectMgr::LoadFishingBaseSkillLevel()
 }
 
 // Check if a player meets condition conditionId
-bool ObjectMgr::IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const
+bool ObjectMgr::IsPlayerMeetToCondition(uint16 conditionId, Player const* pPlayer, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry) const
 {
     if (const PlayerCondition* condition = sConditionStorage.LookupEntry<PlayerCondition>(conditionId))
-        { return condition->Meets(pPlayer, map, source, conditionSourceType); }
+        { return condition->Meets(pPlayer, map, source, conditionSourceType, entry); }
 
     return false;
 }
@@ -6891,15 +6896,23 @@ char const* conditionSourceToStr[] =
     "vendor's item check",
     "spell_area check",
     "npc_spellclick_spells check", // Unused. For 3.x and later.
-    "DBScript engine"
+    "DBScript engine",
+    "area trigger check"
 };
 
 // Checks if player meets the condition
-bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const
+bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject const* source, ConditionSource conditionSourceType, ConditionEntry* entry) const
 {
     DEBUG_LOG("Condition-System: Check condition %u, type %i - called from %s with params plr: %s, map %i, src %s",
               m_entry, m_condition, conditionSourceToStr[conditionSourceType], player ? player->GetGuidStr().c_str() : "<NULL>", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "<NULL>");
 
+    if (entry)
+    {
+        entry->type = m_condition;
+        entry->param1 = m_value1;
+        entry->param2 = m_value2;
+    }
+    
     if (!CheckParamRequirements(player, map, source, conditionSourceType))
         { return false; }
 
@@ -6907,13 +6920,13 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
     {
         case CONDITION_NOT:
             // Checked on load
-            return !sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType);
+            return !sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType, entry);
         case CONDITION_OR:
             // Checked on load
-            return sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType) || sConditionStorage.LookupEntry<PlayerCondition>(m_value2)->Meets(player, map, source, conditionSourceType);
+            return sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType, entry) || sConditionStorage.LookupEntry<PlayerCondition>(m_value2)->Meets(player, map, source, conditionSourceType, entry);
         case CONDITION_AND:
             // Checked on load
-            return sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType) && sConditionStorage.LookupEntry<PlayerCondition>(m_value2)->Meets(player, map, source, conditionSourceType);
+            return sConditionStorage.LookupEntry<PlayerCondition>(m_value1)->Meets(player, map, source, conditionSourceType, entry) && sConditionStorage.LookupEntry<PlayerCondition>(m_value2)->Meets(player, map, source, conditionSourceType, entry);
         case CONDITION_NONE:
             return true;                                    // empty condition, always met
         case CONDITION_AURA:
@@ -7168,6 +7181,15 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
             }
             return pGo;
         }
+        case CONDITION_PVP_RANK:
+        {
+            switch (m_value2)
+            {
+              case 0: return player->GetHonorRankInfo().rank == m_value1;
+              case 1: return player->GetHonorRankInfo().rank >= m_value1;
+              case 2: return player->GetHonorRankInfo().rank <= m_value1;
+            }
+        }
         default:
             return false;
     }
@@ -7236,6 +7258,14 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
                     }
                 case 3:                                     // Creature source is dead
                     return true;
+            }
+            break;
+        case CONDITION_PVP_RANK:
+            if (!pPlayer)
+            {
+                sLog.outErrorDb("CONDITION %u type %u used with bad parameters, called from %s, used with %s, map %i, src %s",
+                                m_entry, m_condition, conditionSourceToStr[conditionSourceType], pPlayer ? pPlayer->GetGuidStr().c_str() : "NULL", map ? map->GetId() : -1, source ? source->GetGuidStr().c_str() : "NULL");
+                return false;
             }
             break;
         default:
@@ -7596,6 +7626,15 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             if (value2 <= 0)
             {
                 sLog.outErrorDb("Game object in range condition (entry %u, type %u) has an invalid value in value2 (range). (Range %u must be greater than 0), skipping.", entry, condition, value2);
+                return false;
+            }
+            break;
+        }
+        case CONDITION_PVP_RANK:
+        {
+            if (value2 > 2)
+            {
+                sLog.outErrorDb("PVP rank condition (entry %u, type %u) has invalid argument %u (must be 0..2), skipped", entry, condition, value2);
                 return false;
             }
             break;

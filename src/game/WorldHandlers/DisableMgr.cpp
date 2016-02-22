@@ -44,6 +44,8 @@ namespace
     DisableMap m_DisableMap;
 }
 
+#define CONTINUE if (newData) delete data; continue
+
 void LoadDisables()
 {
     // reload case
@@ -79,10 +81,14 @@ void LoadDisables()
         uint32 data0 = fields[3].GetUInt32();
 
         DisableData* data;
+        bool newData = false;
         if (m_DisableMap[type].find(entry) != m_DisableMap[type].end())
             data = &m_DisableMap[type][entry];
         else
+        {
             data = new DisableData();
+            newData = true;
+        }
 
         data->flags = flags;
 
@@ -92,13 +98,13 @@ void LoadDisables()
                 if (!(sSpellStore.LookupEntry(entry) || flags & SPELL_DISABLE_DEPRECATED_SPELL))
                 {
                     ERROR_DB_STRICT_LOG("Spell entry %u from `disables` doesn't exist in dbc, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
 
                 if (!flags || flags > MAX_SPELL_DISABLE_TYPE)
                 {
                     ERROR_DB_STRICT_LOG("Disable flags for spell %u are invalid, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
 
                 if (flags & SPELL_DISABLE_MAP)
@@ -117,7 +123,7 @@ void LoadDisables()
                 if (!mapEntry)
                 {
                     ERROR_DB_STRICT_LOG("Map entry %u from `disables` doesn't exist in dbc, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 bool isFlagInvalid = false;
                 switch (mapEntry->map_type)
@@ -131,12 +137,12 @@ void LoadDisables()
                     case MAP_BATTLEGROUND:
                     //case MAP_ARENA: [-ZERO]
                         ERROR_DB_STRICT_LOG("Battleground map %u specified to be disabled in map case, skipped.", entry);
-                        continue;
+                        CONTINUE;
                 }
                 if (isFlagInvalid)
                 {
                     ERROR_DB_STRICT_LOG("Disable flags for map %u are invalid, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 break;
             }
@@ -144,7 +150,7 @@ void LoadDisables()
                 if (!sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(entry)))
                 {
                     ERROR_DB_STRICT_LOG("Battleground entry %u from `disables` doesn't exist in dbc, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 if (flags)
                     ERROR_DB_STRICT_LOG("Disable flags specified for battleground %u, useless data.", entry);
@@ -153,7 +159,7 @@ void LoadDisables()
                 if (entry > MAX_OPVP_ID)
                 {
                     ERROR_DB_STRICT_LOG("OutdoorPvPTypes value %u from `disables` is invalid, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 if (flags)
                     ERROR_DB_STRICT_LOG("Disable flags specified for outdoor PvP %u, useless data.", entry);
@@ -173,7 +179,7 @@ void LoadDisables()
                 if (!mapEntry)
                 {
                     ERROR_DB_STRICT_LOG("Map entry %u from `disables` doesn't exist in dbc, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 switch (mapEntry->map_type)
                 {
@@ -213,7 +219,7 @@ void LoadDisables()
                 if (!mapEntry)
                 {
                     ERROR_DB_STRICT_LOG("Map entry %u from `disables` doesn't exist in dbc, skipped.", entry);
-                    continue;
+                    CONTINUE;
                 }
                 switch (mapEntry->map_type)
                 {
@@ -237,6 +243,18 @@ void LoadDisables()
             }
             case DISABLE_TYPE_CREATURE_SPAWN:
             case DISABLE_TYPE_GAMEOBJECT_SPAWN:
+                if ((flags & SPAWN_DISABLE_CHECK_GUID) != 0)
+                {
+                    if (data0)
+                        data->params[0].insert(data0);
+                    else
+                    {
+                        ERROR_DB_STRICT_LOG("Disables type %u: required GUID is missing for entry %u, ignoring disable entry.", type, entry);
+                        CONTINUE;
+                    }
+                }
+                break;
+            case DISABLE_TYPE_ITEM_DROP:
                 break;
             default:
                 break;
@@ -278,7 +296,7 @@ void CheckQuestDisables()
     sLog.outString(">> Checked %u quest disables", count);
 }
 
-bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags)
+bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags, uint32 adData)
 {
     MANGOS_ASSERT(type < MAX_DISABLE_TYPES);
     if (m_DisableMap[type].empty())
@@ -366,11 +384,13 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
         case DISABLE_TYPE_OUTDOORPVP:
         case DISABLE_TYPE_ACHIEVEMENT_CRITERIA:
         case DISABLE_TYPE_MMAP:
-        case DISABLE_TYPE_CREATURE_SPAWN:
-        case DISABLE_TYPE_GAMEOBJECT_SPAWN:
+        case DISABLE_TYPE_ITEM_DROP:
             return true;
         case DISABLE_TYPE_VMAP:
            return (flags & itr->second.flags) != 0;
+        case DISABLE_TYPE_CREATURE_SPAWN:
+        case DISABLE_TYPE_GAMEOBJECT_SPAWN:
+            return (itr->second.flags & SPAWN_DISABLE_CHECK_GUID) == 0 || itr->second.params[0].count(adData) > 0;
     }
 
     return false;

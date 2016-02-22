@@ -54,6 +54,7 @@ Channel::Channel(const std::string& name)
     else                                                    // it's custom channel
     {
         m_flags |= CHANNEL_FLAG_CUSTOM;
+        m_announce = (name.compare("world") != 0);
     }
 }
 

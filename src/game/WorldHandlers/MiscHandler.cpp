@@ -430,6 +430,12 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
 
     _player->SetSelectionGuid(guid);
 
+    if (guid.IsEmpty())     // TODO this is probably a wrong place for such action, so it's a "hacky" or "wrong" fix
+    {
+        _player->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
+        return;
+    }
+
     // update reputation list if need
     Unit* unit = ObjectAccessor::GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)

@@ -722,7 +722,7 @@ void Spell::prepareDataForTriggerSystem()
     // avoid triggering negative hit for only positive targets
     m_negativeEffectMask = 0x0;
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-        if (!IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
+        if (m_spellInfo->Effect[i] != SPELL_EFFECT_NONE && !IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
             { m_negativeEffectMask |= (1 << i); }
 
     // Hunter traps spells (for Entrapment trigger)
@@ -962,6 +962,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             DoSpellHitOnUnit(m_caster, mask, true);
             unitTarget = m_caster;
+
+            if (m_caster->GetTypeId() == TYPEID_UNIT)
+                m_caster->ToCreature()->LowerPlayerDamageReq(target->damage);
         }
     }
     else                                                    // in 1.12.1 we need explicit miss info
@@ -1749,8 +1752,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 }
             }
 
-            // exclude caster
-            targetUnitMap.remove(m_caster);
             break;
         }
         case TARGET_AREAEFFECT_CUSTOM:
@@ -2449,6 +2450,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             break;
     }
 
+    if (targetMode != TARGET_SELF && m_spellInfo->HasAttribute(SPELL_ATTR_EX_CANT_TARGET_SELF))
+      { targetUnitMap.remove(m_caster); }
+
     if (unMaxTargets && targetUnitMap.size() > unMaxTargets)
     {
         // make sure one unit is always removed per iteration
@@ -3018,11 +3022,24 @@ void Spell::update(uint32 difftime)
     // update pointers based at it's GUIDs
     UpdatePointers();
 
-    if (m_targets.getUnitTargetGuid() && !m_targets.getUnitTarget())
+    if (!m_targets.getUnitTargetGuid().IsEmpty() && !m_targets.getUnitTarget())
     {
         cancel();
         return;
     }
+
+    // check for target going invisiblity/fake death
+    if (Unit* target = m_targets.getUnitTarget())
+    {
+        if (!target->IsVisibleForOrDetect(m_caster, m_caster, true) || target->HasAuraType(SPELL_AURA_FEIGN_DEATH))
+        {
+            if (m_caster->GetTargetGuid() == target->GetObjectGuid())
+                m_caster->SetTargetGuid(ObjectGuid());
+            cancel();
+            return;
+        }
+    }
+
 
     if (m_targets.getUnitTarget() && (m_targets.getUnitTarget() != m_caster) && IsSingleTargetSpell(m_spellInfo) &&
         !IsNextMeleeSwingSpell() && !IsAutoRepeat() && !m_IsTriggeredSpell)
@@ -4670,11 +4687,6 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     if (!m_targets.getUnitTarget() || m_targets.getUnitTarget()->GetHealth() > m_targets.getUnitTarget()->GetMaxHealth() * 0.2)
                         { return SPELL_FAILED_BAD_TARGETS; }
-                }
-                else if (m_spellInfo->Id == 51582)          // Rocket Boots Engaged
-                {
-                    if (m_caster->IsInWater())
-                        { return SPELL_FAILED_ONLY_ABOVEWATER; }
                 }
                 else if (m_spellInfo->SpellIconID == 156)   // Holy Shock
                 {
