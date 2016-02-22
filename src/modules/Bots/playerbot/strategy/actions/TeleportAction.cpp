@@ -31,7 +31,7 @@ bool TeleportAction::Execute(Event event)
         Spell *spell = new Spell(bot, pSpellInfo, false);
         SpellCastTargets targets;
         targets.setUnitTarget(bot);
-        spell->prepare(&targets, false);
+        spell->prepare(&targets, NULL);
         spell->cast(true);
         return true;
     }

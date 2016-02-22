@@ -698,24 +698,22 @@ void WorldSession::HandleResurrectResponseOpcode(WorldPacket& recv_data)
 
 void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
 {
-    DEBUG_LOG("WORLD: Received opcode CMSG_AREATRIGGER");
-
     uint32 Trigger_ID;
-
     recv_data >> Trigger_ID;
-    DEBUG_LOG("Trigger ID: %u", Trigger_ID);
-    Player* player = GetPlayer();
 
-    if (player->IsTaxiFlying())
+    DEBUG_LOG("WORLD: Received opcode CMSG_AREATRIGGER");
+    DEBUG_LOG("Trigger ID: %u", Trigger_ID);
+
+    if (_player->IsTaxiFlying())
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) in flight, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("%s in flight, ignore Area Trigger ID: %u", _player->GetGuidStr().c_str(), Trigger_ID);
         return;
     }
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
     if (!atEntry)
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) send unknown (by DBC) Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("%s send unknown (by DBC) Area Trigger ID: %u", _player->GetGuidStr().c_str(), Trigger_ID);
         return;
     }
 
@@ -723,23 +721,23 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     const float delta = 5.0f;
 
     // check if player in the range of areatrigger
-    if (!IsPointInAreaTriggerZone(atEntry, player->GetMapId(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), delta))
+    if (!IsPointInAreaTriggerZone(atEntry, _player->GetMapId(), _player->GetPositionX(), _player->GetPositionY(), _player->GetPositionZ(), delta))
     {
-        DEBUG_LOG("Player '%s' (GUID: %u) too far, ignore Area Trigger ID: %u", player->GetName(), player->GetGUIDLow(), Trigger_ID);
+        DEBUG_LOG("%s too far, ignore Area Trigger ID: %u", _player->GetGuidStr().c_str(), Trigger_ID);
         return;
     }
 
-    if (sScriptMgr.OnAreaTrigger(player, atEntry))
+    if (sScriptMgr.OnAreaTrigger(_player, atEntry))
         { return; }
 
     uint32 quest_id = sObjectMgr.GetQuestForAreaTrigger(Trigger_ID);
-    if (quest_id && player->IsAlive() && player->IsActiveQuest(quest_id))
+    if (quest_id && _player->IsAlive() && _player->IsActiveQuest(quest_id))
     {
         Quest const* pQuest = sObjectMgr.GetQuestTemplate(quest_id);
         if (pQuest)
         {
-            if (player->GetQuestStatus(quest_id) == QUEST_STATUS_INCOMPLETE)
-                { player->AreaExploredOrEventHappens(quest_id); }
+            if (_player->GetQuestStatus(quest_id) == QUEST_STATUS_INCOMPLETE)
+                { _player->AreaExploredOrEventHappens(quest_id); }
         }
     }
 
@@ -747,19 +745,19 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     if (sObjectMgr.IsTavernAreaTrigger(Trigger_ID))
     {
         // set resting flag we are in the inn
-        if (player->GetRestType() != REST_TYPE_IN_CITY)
-            { player->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID); }
+        if (_player->GetRestType() != REST_TYPE_IN_CITY)
+            { _player->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID); }
         return;
     }
 
-    if (BattleGround* bg = player->GetBattleGround())
+    if (BattleGround* bg = _player->GetBattleGround())
     {
-        bg->HandleAreaTrigger(player, Trigger_ID);
+        bg->HandleAreaTrigger(_player, Trigger_ID);
         return;
     }
-    else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(player->GetCachedZoneId()))
+    else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(_player->GetCachedZoneId()))
     {
-        if (outdoorPvP->HandleAreaTrigger(player, Trigger_ID))
+        if (outdoorPvP->HandleAreaTrigger(_player, Trigger_ID))
             { return; }
     }
 
@@ -773,10 +771,10 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         { return; }
 
     // ghost resurrected at enter attempt to dungeon with corpse (including fail enter cases)
-    if (!player->IsAlive() && targetMapEntry->IsDungeon())
+    if (!_player->IsAlive() && targetMapEntry->IsDungeon())
     {
         int32 corpseMapId = 0;
-        if (Corpse* corpse = player->GetCorpse())
+        if (Corpse* corpse = _player->GetCorpse())
             { corpseMapId = corpse->GetMapId(); }
 
         // check back way from corpse to entrance
@@ -795,8 +793,8 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         // corpse not in dungeon or some linked deep dungeons
         if (!instance_map)
         {
-            player->GetSession()->SendAreaTriggerMessage("You can not enter %s while in a ghost mode",
-                    targetMapEntry->name[player->GetSession()->GetSessionDbcLocale()]);
+            _player->GetSession()->SendAreaTriggerMessage("You can not enter %s while in a ghost mode",
+                    targetMapEntry->name[_player->GetSession()->GetSessionDbcLocale()]);
             return;
         }
 
@@ -813,20 +811,20 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
         }
 
         // now we can resurrect player, and then check teleport requirements
-        player->ResurrectPlayer(0.5f);
-        player->SpawnCorpseBones();
+        _player->ResurrectPlayer(0.5f);
+        _player->SpawnCorpseBones();
     }
 
     uint32 miscRequirement = 0;
-    AreaLockStatus lockStatus = player->GetAreaTriggerLockStatus(at, miscRequirement);
+    AreaLockStatus lockStatus = _player->GetAreaTriggerLockStatus(at, miscRequirement);
     if (lockStatus != AREA_LOCKSTATUS_OK)
     {
-        player->SendTransferAbortedByLockStatus(targetMapEntry, lockStatus, miscRequirement);
+        _player->SendTransferAbortedByLockStatus(targetMapEntry, lockStatus, miscRequirement);
         return;
     }
 
     // teleport player
-    player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, true);
+    _player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, true);
 }
 
 void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
