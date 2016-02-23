@@ -2420,16 +2420,17 @@ bool ScriptMgr::OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget,
 #endif
 }
 
-bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
+bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Unit* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    if (sEluna->OnDummyEffect(pCaster, spellId, effIndex, pTarget))
-        return true;
+    if (pTarget->ToCreature())
+        if (sEluna->OnDummyEffect(pCaster, spellId, effIndex, pTarget->ToCreature()))
+            return true;
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_SD3
-    return SD3::EffectDummyCreature(pCaster, spellId, effIndex, pTarget, originalCasterGuid);
+    return SD3::EffectDummyUnit(pCaster, spellId, effIndex, pTarget, originalCasterGuid);
 #else
     return false;
 #endif
@@ -2465,10 +2466,10 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
 #endif
 }
 
-bool ScriptMgr::OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Creature* pTarget, ObjectGuid originalCasterGuid)
+bool ScriptMgr::OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Unit* pTarget, ObjectGuid originalCasterGuid)
 {
 #ifdef ENABLE_SD3
-    return SD3::EffectScriptEffectCreature(pCaster, spellId, effIndex, pTarget, originalCasterGuid);
+    return SD3::EffectScriptEffectUnit(pCaster, spellId, effIndex, pTarget, originalCasterGuid);
 #else
     return false;
 #endif
@@ -2553,7 +2554,7 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
             }
         }
     }
-#if defined(TBC)
+#if defined(TBC) || defined (WOTLK)
     // Load all possible event entries from taxi path nodes
     for (size_t path_idx = 0; path_idx < sTaxiPathNodesByPath.size(); ++path_idx)
     {

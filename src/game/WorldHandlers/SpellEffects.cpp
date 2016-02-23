@@ -1318,8 +1318,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
     bool libraryResult = false;
     if (gameObjTarget)
         { libraryResult = sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, gameObjTarget, m_originalCasterGUID); }
-    else if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT)
-        { libraryResult = sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, (Creature*)unitTarget, m_originalCasterGUID); }
+    else if (unitTarget && (unitTarget->GetTypeId() == TYPEID_UNIT || unitTarget->GetTypeId() == TYPEID_PLAYER))
+        { libraryResult = sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, unitTarget, m_originalCasterGUID); }
     else if (itemTarget)
         { libraryResult = sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, itemTarget, m_originalCasterGUID); }
 
@@ -3811,9 +3811,9 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
     // Script based implementation. Must be used only for not good for implementation in core spell effects
     // So called only for not processed cases
-    if (unitTarget->GetTypeId() == TYPEID_UNIT)
+    if (unitTarget->GetTypeId() == TYPEID_UNIT || unitTarget->GetTypeId() == TYPEID_PLAYER)
     {
-        if (sScriptMgr.OnEffectScriptEffect(m_caster, m_spellInfo->Id, eff_idx, (Creature*)unitTarget, m_originalCasterGUID))
+        if (sScriptMgr.OnEffectScriptEffect(m_caster, m_spellInfo->Id, eff_idx, unitTarget, m_originalCasterGUID))
             { return; }
     }
 
