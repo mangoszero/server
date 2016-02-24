@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Fix SoR paladin"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 4
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "Refactor areatrigger_teleport"
+    #define WORLD_DB_STRUCTURE_NR 5
+    #define WORLD_DB_CONTENT_NR 2
+    #define WORLD_DB_UPDATE_DESCRIPTION "BG template addition"
 #endif // __REVISION_H__
