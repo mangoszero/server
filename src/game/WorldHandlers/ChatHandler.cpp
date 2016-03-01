@@ -597,25 +597,16 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     if (!sEluna->OnChat(GetPlayer(), type, lang, msg, chn))
                         return;
 #endif /* ENABLE_ELUNA */
-
-                    chn->Say(_player, msg.c_str(), lang); 
-                }
-            }
-
 #ifdef ENABLE_PLAYERBOTS
-            if (ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
-            {
-                if (Channel* chn = cMgr->GetChannel(channel, _player))
-                {
                     if (_player->GetPlayerbotMgr() && chn->GetFlags() & 0x18)
                     {
                         _player->GetPlayerbotMgr()->HandleCommand(type, msg);
                     }
                     sRandomPlayerbotMgr.HandleCommand(type, msg, *_player);
-                    chn->Say(_player, msg.c_str(), lang);
+#endif /* ENABLE_PLAYERBOTS */
+                    chn->Say(_player, msg.c_str(), lang); 
                 }
             }
-#endif
 
         } break;
 
