@@ -90,7 +90,7 @@ void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
    sLFGMgr.AddToQueue(_player, gInfo->meetingstone.areaID);
 }
 
-void WorldSession::HandleMeetingStoneLeaveOpcode(WorldPacket& recv_data)
+void WorldSession::HandleMeetingStoneLeaveOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Recvd CMSG_MEETINGSTONE_LEAVE");
     if(Group *grp = _player->GetGroup())

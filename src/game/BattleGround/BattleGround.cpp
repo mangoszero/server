@@ -715,7 +715,7 @@ void BattleGround::EndBattleGround(Team winner)
 #endif /* ENABLE_ELUNA */
     this->RemoveFromBGFreeSlotQueue();
 
-    uint32 loser_rating = 0;
+    //uint32 loser_rating = 0;
     uint32 winner_rating = 0;
     WorldPacket data;
     int32 winmsg_id = 0;

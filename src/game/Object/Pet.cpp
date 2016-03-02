@@ -402,9 +402,9 @@ void Pet::SavePetToDB(PetSaveMode mode)
         _SaveSpellCooldowns();
         _SaveAuras();
 
-        uint32 loyalty = 1;
-        if (getPetType() != HUNTER_PET)
-            { loyalty = GetLoyaltyLevel(); }
+        //uint32 loyalty = 1;
+        //if (getPetType() != HUNTER_PET)
+        //    { loyalty = GetLoyaltyLevel(); }
 
         uint32 ownerLow = GetOwnerGuid().GetCounter();
         // remove current data
@@ -1998,7 +1998,7 @@ void Pet::CastOwnerTalentAuras()
     if (!GetOwner() || GetOwner()->GetTypeId() != TYPEID_PLAYER)
         { return; }
 
-    Player* pOwner = static_cast<Player*>(GetOwner());
+    //Player* pOwner = static_cast<Player*>(GetOwner());
 
     // Add below code handling spells cast by pet when owner/player has aura from talent
 }

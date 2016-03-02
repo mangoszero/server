@@ -142,7 +142,7 @@ PlayerTaxi::PlayerTaxi()
     memset(m_taximask, 0, sizeof(m_taximask));
 }
 
-void PlayerTaxi::InitTaxiNodes(uint32 race, uint32 level)
+void PlayerTaxi::InitTaxiNodes(uint32 race, uint32 /*level*/)
 {
     memset(m_taximask, 0, sizeof(m_taximask));
     // capital and taxi hub masks
@@ -1098,7 +1098,7 @@ DrunkenState Player::GetDrunkenstateByValue(uint16 value)
     return DRUNKEN_SOBER;
 }
 
-void Player::SetDrunkValue(uint16 newDrunkenValue, uint32 itemId)
+void Player::SetDrunkValue(uint16 newDrunkenValue, uint32 /*itemId*/)
 {
     uint32 oldDrunkenState = Player::GetDrunkenstateByValue(m_drunk);
 
@@ -4065,7 +4065,7 @@ void Player::SetWaterWalk(bool enable)
     GetSession()->SendPacket(&data);
 }
 
-void Player::SetLevitate(bool enable)
+void Player::SetLevitate(bool /*enable*/)
 {
     // TODO: check if there is something similar for 2.4.3.
     // WorldPacket data;
@@ -4084,7 +4084,7 @@ void Player::SetLevitate(bool enable)
     // SendMessageToSet(&data, false);
 }
 
-void Player::SetCanFly(bool enable)
+void Player::SetCanFly(bool /*enable*/)
 {
 //     TODO: check if there is something similar for 1.12.x (99% chance there is not)
 //     WorldPacket data;
@@ -4535,7 +4535,7 @@ void Player::RepopAtGraveyard()
     // note: this can be called also when the player is alive
     // for example from WorldSession::HandleMovementOpcodes
 
-    AreaTableEntry const* zone = GetAreaEntryByAreaID(GetAreaId());
+    //AreaTableEntry const* zone = GetAreaEntryByAreaID(GetAreaId());
 
     WorldSafeLocsEntry const* ClosestGrave = NULL;
 
@@ -4792,7 +4792,7 @@ float Player::GetSpellCritFromIntellect()
     // increases his intelligence by other means (enchants, buffs, talents, ...)
 
     //[TZERO] from mangos 3462 for 1.12 MUST BE CHECKED
-    float val = 0.0f;
+    //float val = 0.0f;
 
     static const struct
     {
@@ -5952,7 +5952,7 @@ void Player::RewardReputation(Quest const* pQuest)
 // Update honor fields , cleanKills is only used during char saving
 void Player::UpdateHonor()
 {
-    uint32 lastweek_honorableKills = 0;
+    //uint32 lastweek_honorableKills = 0;
     uint32 today_honorableKills = 0;
     uint32 today_dishonorableKills = 0;
     uint32 yesterdayKills = 0;
@@ -5962,7 +5962,7 @@ void Player::UpdateHonor()
     float yesterdayHonor = 0.0f;
     float thisWeekHonor = 0.0f;
     float lastWeekHonor = 0.0f;
-    float todayLostHonor = 0.0f;
+    //float todayLostHonor = 0.0f;
 
     uint32 today = sWorld.GetDateToday();
 
@@ -6127,7 +6127,7 @@ uint32 Player::CalculateTotalKills(Unit* Victim, uint32 fromDate, uint32 toDate)
 bool Player::RewardHonor(Unit* uVictim, uint32 groupsize)
 {
     float honor_points = 0;
-    int kill_type = 0;
+    //int kill_type = 0;
 
     DETAIL_LOG("PLAYER: RewardHonor");
 
@@ -8354,7 +8354,7 @@ InventoryResult Player::_CanTakeMoreSimilarItems(uint32 entry, uint32 count, Ite
     return EQUIP_ERR_OK;
 }
 
-bool Player::HasItemTotemCategory(uint32 TotemCategory) const
+bool Player::HasItemTotemCategory(uint32 /*TotemCategory*/) const
 {
     /*[-ZERO] Item *pItem;
      for(uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
@@ -11048,7 +11048,7 @@ void Player::ApplyEnchantment(Item* item, bool apply)
         { ApplyEnchantment(item, EnchantmentSlot(slot), apply); }
 }
 
-void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool apply_dur, bool ignore_condition)
+void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool apply_dur, bool /*ignore_condition*/)
 {
     if (!item)
         { return; }
@@ -14835,7 +14835,7 @@ void Player::_LoadBoundInstances(QueryResult* result)
 
 InstancePlayerBind* Player::GetBoundInstance(uint32 mapid)
 {
-    const MapEntry* entry = sMapStore.LookupEntry(mapid);
+    //const MapEntry* entry = sMapStore.LookupEntry(mapid);
 
     BoundInstancesMap::iterator itr = m_boundInstances.find(mapid);
     if (itr != m_boundInstances.end())
@@ -14938,7 +14938,7 @@ void Player::SendRaidInfo()
     size_t p_counter = data.wpos();
     data << uint32(counter);                                // placeholder
 
-    time_t now = time(NULL);
+    //time_t now = time(NULL);
 
     for (BoundInstancesMap::const_iterator itr = m_boundInstances.begin(); itr != m_boundInstances.end(); ++itr)
     {
@@ -18260,7 +18260,7 @@ bool Player::HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item cons
     return false;
 }
 
-bool Player::CanNoReagentCast(SpellEntry const* spellInfo) const
+bool Player::CanNoReagentCast(SpellEntry const* /*spellInfo*/) const
 {
     // don't take reagents for spells with SPELL_ATTR_EX5_NO_REAGENT_WHILE_PREP
 //[-ZERO]    if (spellInfo->AttributesEx5 & SPELL_ATTR_EX5_NO_REAGENT_WHILE_PREP &&

@@ -846,7 +846,7 @@ void BattleGroundMgr::DeleteAllBattleGrounds()
 }
 
 // used to update running battlegrounds, and delete finished ones
-void BattleGroundMgr::Update(uint32 diff)
+void BattleGroundMgr::Update(uint32 /*diff*/)
 {
     // update scheduled queues
     if (!m_QueueUpdateScheduler.empty())
@@ -1258,7 +1258,7 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid 
     *data << uint8(0x00);                                   // unk
 
     size_t count_pos = data->wpos();
-    uint32 count = 0;
+    //uint32 count = 0;
     *data << uint32(0);                                     // number of bg instances
 
     // battleground

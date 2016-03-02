@@ -170,9 +170,9 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         return;
     }
 
-    uint32 rc_account = receive
-                        ? receive->GetSession()->GetAccountId()
-                        : sObjectMgr.GetPlayerAccountIdByGUID(rc);
+    //uint32 rc_account = receive
+    //                    ? receive->GetSession()->GetAccountId()
+    //                    : sObjectMgr.GetPlayerAccountIdByGUID(rc);
 
     Item* item = NULL;
 
@@ -542,7 +542,7 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
         { return; }
 
     // client can't work with packets > max int16 value
-    const uint32 maxPacketSize = 32767;
+    //const uint32 maxPacketSize = 32767;
 
     uint32 mailsCount = 0;                                  // send to client mails amount
 

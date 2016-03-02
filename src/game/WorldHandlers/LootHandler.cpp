@@ -154,6 +154,8 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
                 }
                 break;
             }
+            default:
+                break;
         }
     }
 

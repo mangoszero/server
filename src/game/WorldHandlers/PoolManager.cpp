@@ -1094,7 +1094,7 @@ void PoolManager::LoadFromDB()
                 pool_id = zone_id + max_pool_id + 3486; //3486 zero value for maxzoneID
             }
 
-            PoolTemplateData* pPoolTemplate = &mPoolTemplate[pool_id];
+            //PoolTemplateData* pPoolTemplate = &mPoolTemplate[pool_id];
 
             PoolObject plObject = PoolObject(guid, 0);
             PoolGroup<GameObject>& gogroup = mPoolGameobjectGroups[pool_id];

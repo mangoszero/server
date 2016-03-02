@@ -315,7 +315,7 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
         { return; }
 
     SpellEntry const* proto = sSpellStore.LookupEntry(trainer_spell->spell);
-    SpellEntry const* spellInfo = sSpellStore.LookupEntry(proto->EffectTriggerSpell[0]);
+    //SpellEntry const* spellInfo = sSpellStore.LookupEntry(proto->EffectTriggerSpell[0]);
 
     // apply reputation discount
     uint32 nSpellCost = uint32(floor(trainer_spell->spellCost * _player->GetReputationPriceDiscount(unit)));

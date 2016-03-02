@@ -561,14 +561,14 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     if (!text)
         return;
 
-    uint32 sec = 0;
+    //uint32 sec = 0;
     ObjectGuid guid = player->GetObjectGuid();
     Player* plr = sObjectMgr.GetPlayer(guid);
     bool speakInLocalDef = false;
     bool speakInWorldDef = false;
     if (plr)
     {
-        sec = plr->GetSession()->GetSecurity();
+        //sec = plr->GetSession()->GetSecurity();
         if (plr->isGameMaster())
         {
             speakInLocalDef = true;
@@ -935,12 +935,12 @@ void Channel::MakeThrottled(WorldPacket* data)
     MakeNotifyPacket(data, CHAT_THROTTLED_NOTICE);
 }
 
-void Channel::JoinNotify(ObjectGuid guid)
+void Channel::JoinNotify(ObjectGuid /*guid*/)
 {
     // [-ZERO] Feature doesn't exist in 1.x.
 }
 
-void Channel::LeaveNotify(ObjectGuid guid)
+void Channel::LeaveNotify(ObjectGuid /*guid*/)
 {
     // [-ZERO] Feature doesn't exist in 1.x.
 }

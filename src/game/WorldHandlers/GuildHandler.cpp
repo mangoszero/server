@@ -73,7 +73,7 @@ void WorldSession::HandleGuildCreateOpcode(WorldPacket& recvPacket)
     sGuildMgr.AddGuild(guild);
 }
 
-void WorldSession::SendGuildInvite(Player* player, bool alreadyInGuild /*= false*/)
+void WorldSession::SendGuildInvite(Player* player, bool /*alreadyInGuild*/ /*= false*/)
 {
     Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId());
     player->SetGuildIdInvited(GetPlayer()->GetGuildId());

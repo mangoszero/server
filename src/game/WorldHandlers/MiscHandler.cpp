@@ -51,7 +51,7 @@
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
-void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
+void WorldSession::HandleRepopRequestOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_REPOP_REQUEST");
 
@@ -454,7 +454,7 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
     _player->SetStandState(animstate);
 }
 
-void WorldSession::HandleFriendListOpcode(WorldPacket& recv_data)
+void WorldSession::HandleFriendListOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_FRIEND_LIST");
     _player->GetSocial()->SendFriendList();
@@ -773,7 +773,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     // ghost resurrected at enter attempt to dungeon with corpse (including fail enter cases)
     if (!_player->IsAlive() && targetMapEntry->IsDungeon())
     {
-        int32 corpseMapId = 0;
+        uint32 corpseMapId = 0; // was planned to be negative as "incorrect" id? anyway map 0 is not instanceable
         if (Corpse* corpse = _player->GetCorpse())
             { corpseMapId = corpse->GetMapId(); }
 

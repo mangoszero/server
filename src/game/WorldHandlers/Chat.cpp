@@ -3347,7 +3347,7 @@ void ChatHandler::LogCommand(char const* fullcmd)
 
 void ChatHandler::BuildChatPacket(WorldPacket& data, ChatMsg msgtype, char const* message, Language language /*= LANG_UNIVERSAL*/, ChatTagFlags chatTag /*= CHAT_TAG_NONE*/,
                                   ObjectGuid const& senderGuid /*= ObjectGuid()*/, char const* senderName /*= NULL*/,
-                                  ObjectGuid const& targetGuid /*= ObjectGuid()*/, char const* targetName /*= NULL*/,
+                                  ObjectGuid const& targetGuid /*= ObjectGuid()*/, char const* /*targetName*/ /*= NULL*/,
                                   char const* channelName /*= NULL*/, uint8 playerRank /*= 0*/)
 {
     data.Initialize(SMSG_MESSAGECHAT);

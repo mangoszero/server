@@ -1260,7 +1260,7 @@ void Creature::SelectLevel(const CreatureInfo* cinfo, float percentHealth /*= 10
     SetModifierValue(UNIT_MOD_HEALTH, BASE_VALUE, float(health));
 
     // all power types
-    for (int i = POWER_MANA; i <= POWER_HAPPINESS; ++i)
+    for (uint8 i = POWER_MANA; i <= POWER_HAPPINESS; ++i)
     {
         uint32 maxValue;
 
@@ -2693,7 +2693,7 @@ void Creature::SetSwim(bool enable)
     SendMessageToSet(&data, true);
 }
 
-void Creature::SetCanFly(bool enable)
+void Creature::SetCanFly(bool /*enable*/)
 {
 //     TODO: check if there is something similar for 1.12.x (dragons and other flying NPCs)
 //     if (enable)
