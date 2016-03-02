@@ -2874,6 +2874,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
     }
 
     TalentSpellPos const* talentPos = GetTalentSpellPos(spell_id);
+    bool canAddToSpellBook = true;
 
     if (!disabled_case) // skip new spell adding if spell already known (disabled spells case)
     {
@@ -2907,8 +2908,6 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         newspell.active    = active;
         newspell.dependent = dependent;
         newspell.disabled  = disabled;
-
-        bool canAddToSpellBook = true;
 
         // replace spells in action bars and spellbook to bigger rank if only one spell rank must be accessible
         if (newspell.active && !newspell.disabled)
@@ -2968,8 +2967,8 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
         m_spells[spell_id] = newspell;
 
-        // return false if spell disabled or spell is non-stackable in spellbook
-        if (newspell.disabled || !canAddToSpellBook)
+        // return false if spell disabled
+        if (newspell.disabled)
             { return false; }
     }
 
@@ -3080,7 +3079,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
     }
 
     // return true (for send learn packet) only if spell active (in case ranked spells) and not replace old spell
-    return active && !disabled;
+    return active && !disabled && canAddToSpellBook;
 }
 
 bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const
