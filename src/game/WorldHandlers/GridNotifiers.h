@@ -378,6 +378,28 @@ namespace MaNGOS
         template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
     };
 
+    // unit worker
+    template<class Do>
+    struct UnitWorker
+    {
+        Do& i_do;
+
+        explicit UnitWorker(Do& _do) : i_do(_do) {}
+
+        void Visit(PlayerMapType& m)
+        {
+            for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+                { i_do(itr->getSource()); }
+        }
+        void Visit(CreatureMapType& m)
+        {
+            for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+                { i_do(itr->getSource()); }
+        }
+
+        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+    };
+
     // Creature searchers
 
     template<class Check>
@@ -925,6 +947,60 @@ namespace MaNGOS
             WorldObject const* i_obj;
             float i_range;
             bool i_targetForPlayer;
+    };
+
+    class AnySpecificUnitInGameObjectRangeCheck
+    {
+        public:
+            AnySpecificUnitInGameObjectRangeCheck(GameObject* go, float range, bool friendly = true)
+                : i_obj(go), i_range(range), i_isFriendly(friendly)
+            {
+            }
+            WorldObject const& GetFocusObject() const { return *i_obj; }
+            bool operator()(Unit* u)
+            {
+                // Check contains checks for: live, non-selectable, non-attackable flags, flight check and GM check, ignore totems
+                if (!u->IsTargetableForAttack())
+                    { return false; }
+
+                if (u->GetTypeId() == TYPEID_UNIT && ((Creature*)u)->IsTotem())
+                    { return false; }
+
+                if ((i_isFriendly ? i_obj->IsFriendlyTo(u) : i_obj->IsHostileTo(u)) && i_obj->IsWithinDistInMap(u, i_range))
+                    { return true; }
+
+                return false;
+            }
+        private:
+            GameObject*         i_obj;
+            float               i_range;
+            bool                i_isFriendly;
+    };
+
+    class AllSpecificUnitsInGameObjectRangeDo
+    {
+        public:
+            AllSpecificUnitsInGameObjectRangeDo(GameObject* go, float range, bool friendly = true)
+                : i_obj(go), i_range(range), i_isFriendly(friendly)
+            {
+            }
+            WorldObject const& GetFocusObject() const { return *i_obj; }
+            void operator()(Unit* u)
+            {
+                // Check contains checks for: live, non-selectable, non-attackable flags, flight check and GM check, ignore totems
+                if (!u->IsTargetableForAttack())
+                    { return; }
+
+                if (u->GetTypeId() == TYPEID_UNIT && ((Creature*)u)->IsTotem())
+                    { return; }
+
+                if ((i_isFriendly ? i_obj->IsFriendlyTo(u) : i_obj->IsHostileTo(u)) && i_obj->IsWithinDistInMap(u, i_range))
+                    { i_obj->Use(u); }
+            }
+        private:
+            GameObject*         i_obj;
+            float               i_range;
+            bool                i_isFriendly;
     };
 
     // do attack at call of help to friendly crearture
