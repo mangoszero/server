@@ -2912,43 +2912,40 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         // replace spells in action bars and spellbook to bigger rank if only one spell rank must be accessible
         if (newspell.active && !newspell.disabled)
         {
-            SpellChainMapNext const& nextMap = sSpellMgr.GetSpellChainNext();
-            for (SpellChainMapNext::const_iterator next_itr = nextMap.lower_bound(spell_id); next_itr != nextMap.upper_bound(spell_id); ++next_itr)
+            do
             {
-                uint32 tested_spell_id = next_itr->second;  // synonym just for the code clarity
-                if (m_spells.find(tested_spell_id) == m_spells.end())
+                uint32 prev_spell_id = sSpellMgr.GetPrevSpellInChain(spell_id);  // get the previous spell in chain (if any)
+                if(!prev_spell_id)  //spell_id does not have ranks or is the first spell in chain; must add in spellbook
+                    continue;
+                
+                if ((m_spells.find(prev_spell_id) == m_spells.end()))
                     continue;
 
-                PlayerSpell &lowerRank = m_spells[tested_spell_id];
-                if (lowerRank.state == PLAYERSPELL_REMOVED || !lowerRank.active)
+                PlayerSpell* lowerRank = &m_spells[prev_spell_id];
+                if (lowerRank->state == PLAYERSPELL_REMOVED || !lowerRank->active)
                     continue;
 
-                SpellEntry const *spell_old = sSpellStore.LookupEntry(tested_spell_id); // was checked for NULL in SpellMgr::LoadSpellChains()
+                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id); 
                 SpellEntry const *spell_new = spellInfo;
-                if (sSpellMgr.IsHighRankOfSpell(tested_spell_id, spell_id) && sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_old))
+
+                if (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_old))
                 {
-                    spell_new = spell_old;
-                    spell_old = spellInfo;
-                    lowerRank = newspell;
+                    if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
+                    {
+                        WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
+                        data << uint16(spell_old->Id);
+                        data << uint16(spell_new->Id);
+                        GetSession()->SendPacket(&data);
+                    }
+
+                    // mark lower rank disabled (SMSG_SUPERCEDED_SPELL replaced it in client by new)
+                    lowerRank->active = false;
+                    if (lowerRank->state != PLAYERSPELL_NEW)
+                        lowerRank->state = PLAYERSPELL_CHANGED;
+
+                    canAddToSpellBook = false;
                 }
-                else if (!(sSpellMgr.IsHighRankOfSpell(spell_id, tested_spell_id) && sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_new)))
-                    continue;
-
-                if (IsInWorld())                // not send spell (re-/over-)learn packets at loading
-                {
-                    WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                    data << uint16(spell_old->Id);
-                    data << uint16(spell_new->Id);
-                    GetSession()->SendPacket(&data);
-                }
-
-                // mark lower rank disabled (SMSG_SUPERCEDED_SPELL replaced it in client by new)
-                lowerRank.active = false;
-                if (lowerRank.state != PLAYERSPELL_NEW)
-                    lowerRank.state = PLAYERSPELL_CHANGED;
-
-                canAddToSpellBook = false;
-            }
+            } while(0);
         }
 
         m_spells[spell_id] = newspell;

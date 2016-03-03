@@ -365,13 +365,22 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                         }
                     }
 
-                    // Should trap trigger?
-                    Unit* enemy = NULL;                     // pointer to appropriate target if found any
-                    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(this, radius);
-                    MaNGOS::UnitSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> checker(enemy, u_check);
-                    Cell::VisitAllObjects(this, checker, radius);
-                    if (enemy)
-                        { Use(enemy); }
+                    SpellEntry const* se = sSpellStore.LookupEntry(goInfo->trap.spellId);
+                    if(IsAreaOfEffectSpell(se))
+                    {
+                        MaNGOS::AllSpecificUnitsInGameObjectRangeDo unit_do(this, radius, IsPositiveSpell(se));
+                        MaNGOS::UnitWorker<MaNGOS::AllSpecificUnitsInGameObjectRangeDo> worker(unit_do);
+                        Cell::VisitAllObjects(this,worker,radius);
+                    }
+                    else
+                    {
+                        Unit* targetUnit = NULL;                     // pointer to appropriate target if found any
+                        MaNGOS::AnySpecificUnitInGameObjectRangeCheck u_check(this, radius, IsPositiveSpell(se));
+                        MaNGOS::UnitSearcher<MaNGOS::AnySpecificUnitInGameObjectRangeCheck> checker(targetUnit, u_check);
+                        Cell::VisitAllObjects(this, checker, radius);
+                        if (targetUnit)
+                          { Use(targetUnit); }
+                    }
                 }
 
                 if (uint32 max_charges = goInfo->GetCharges())
