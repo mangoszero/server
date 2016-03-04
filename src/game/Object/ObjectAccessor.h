@@ -59,21 +59,28 @@ class HashMapHolder
 
         static void Insert(T* o)
         {
-            WriteGuard guard(i_lock);
-            m_objectMap[o->GetObjectGuid()] = o;
+            WriteGuard guard(i_lock, true);
+            if (guard.locked())
+                m_objectMap[o->GetObjectGuid()] = o;
         }
 
         static void Remove(T* o)
         {
-            WriteGuard guard(i_lock);
-            m_objectMap.erase(o->GetObjectGuid());
+            WriteGuard guard(i_lock, true);
+            if (guard.locked())
+                m_objectMap.erase(o->GetObjectGuid());
         }
 
         static T* Find(ObjectGuid guid)
         {
-            ReadGuard guard(i_lock);
-            typename MapType::iterator itr = m_objectMap.find(guid);
-            return (itr != m_objectMap.end()) ? itr->second : NULL;
+            ReadGuard guard(i_lock, true);
+            if (guard.locked())
+            {
+                typename MapType::iterator itr = m_objectMap.find(guid);
+                return (itr != m_objectMap.end()) ? itr->second : NULL;
+            }
+            else
+                return NULL;
         }
 
         static MapType& GetContainer() { return m_objectMap; }
@@ -137,7 +144,6 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         Player2CorpsesMapType   i_player2corpse;
 
         typedef ACE_Thread_Mutex LockType;
-        typedef MaNGOS::GeneralLock<LockType > Guard;
 
         LockType i_playerGuard;
         LockType i_corpseGuard;
