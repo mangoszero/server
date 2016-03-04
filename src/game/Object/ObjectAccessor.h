@@ -54,33 +54,24 @@ class HashMapHolder
 
         typedef UNORDERED_MAP<ObjectGuid, T*>   MapType;
         typedef ACE_RW_Thread_Mutex LockType;
-        typedef ACE_Read_Guard<LockType> ReadGuard;
-        typedef ACE_Write_Guard<LockType> WriteGuard;
 
         static void Insert(T* o)
         {
-            WriteGuard guard(i_lock, true);
-            if (guard.locked())
-                m_objectMap[o->GetObjectGuid()] = o;
+            ACE_WRITE_GUARD(LockType, guard, i_lock)
+            m_objectMap[o->GetObjectGuid()] = o;
         }
 
         static void Remove(T* o)
         {
-            WriteGuard guard(i_lock, true);
-            if (guard.locked())
-                m_objectMap.erase(o->GetObjectGuid());
+            ACE_WRITE_GUARD(LockType, guard, i_lock)
+            m_objectMap.erase(o->GetObjectGuid());
         }
 
         static T* Find(ObjectGuid guid)
         {
-            ReadGuard guard(i_lock, true);
-            if (guard.locked())
-            {
-                typename MapType::iterator itr = m_objectMap.find(guid);
-                return (itr != m_objectMap.end()) ? itr->second : NULL;
-            }
-            else
-                return NULL;
+            ACE_READ_GUARD_RETURN (LockType, guard, i_lock, NULL)
+            typename MapType::iterator itr = m_objectMap.find(guid);
+            return (itr != m_objectMap.end()) ? itr->second : NULL;
         }
 
         static MapType& GetContainer() { return m_objectMap; }
