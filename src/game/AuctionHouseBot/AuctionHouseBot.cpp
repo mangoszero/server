@@ -388,7 +388,8 @@ INSTANTIATE_SINGLETON_1(AuctionBotConfig);
 
 //== AuctionBotConfig functions ============================
 
-AuctionBotConfig::AuctionBotConfig() : m_configFileName(AUCTIONHOUSEBOT_CONFIG_LOCATION)
+AuctionBotConfig::AuctionBotConfig() : m_configFileName(AUCTIONHOUSEBOT_CONFIG_LOCATION),
+                                       m_configUint32Values(), m_configBoolValues()
 {
 }
 
