@@ -24,10 +24,10 @@
 
 #pragma once
 
+#include "BIH.h"
 #include <G3D/Table.h>
 #include <G3D/Array.h>
 #include <G3D/Set.h>
-#include "BIH.h"
 
 template<class T, class BoundsFunc = BoundsTrait<T> >
 /**

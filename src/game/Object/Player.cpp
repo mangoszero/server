@@ -335,6 +335,15 @@ void TradeData::SetMoney(uint32 money)
     if (m_money == money)
         { return; }
 
+    if (money > m_player->GetMoney())
+    {
+        TradeStatusInfo info;
+        info.Status = TRADE_STATUS_CLOSE_WINDOW;
+        info.Result = EQUIP_ERR_NOT_ENOUGH_MONEY;
+        m_player->GetSession()->SendTradeStatus(info);
+        return;
+    }
+
     m_money = money;
 
     SetAccepted(false);
@@ -357,10 +366,12 @@ void TradeData::SetAccepted(bool state, bool crosssend /*= false*/)
 
     if (!state)
     {
+        TradeStatusInfo info;
+        info.Status = TRADE_STATUS_BACK_TO_TRADE;
         if (crosssend)
-            { m_trader->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE); }
+            m_trader->GetSession()->SendTradeStatus(info);
         else
-            { m_player->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE); }
+            m_player->GetSession()->SendTradeStatus(info);
     }
 }
 
@@ -9150,7 +9161,7 @@ InventoryResult Player::CanStoreItems(Item** pItems, int count) const
 
         // no free slot found?
         if (!b_found)
-            { return EQUIP_ERR_INVENTORY_FULL; }
+            { return EQUIP_ERR_BAG_FULL; }
     }
 
     return EQUIP_ERR_OK;
