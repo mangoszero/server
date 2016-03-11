@@ -27,6 +27,11 @@
 #include "GameSystem/Grid.h"
 #include "Log.h"
 
+GridState::~GridState()
+{
+    DEBUG_LOG("GridState destroyed");
+}
+
 void
 InvalidState::Update(Map&, NGridType&, GridInfo&, const uint32& /*x*/, const uint32& /*y*/, const uint32&) const
 {

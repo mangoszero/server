@@ -730,7 +730,7 @@ bool GridMap::ExistVMap(uint32 mapid, int gx, int gy)
 }
 
 //////////////////////////////////////////////////////////////////////////
-TerrainInfo::TerrainInfo(uint32 mapid) : m_mapId(mapid)
+TerrainInfo::TerrainInfo(uint32 mapid) : m_mapId(mapid), m_refMutex(), m_mutex()
 {
     for (int k = 0; k < MAX_NUMBER_OF_GRIDS; ++k)
     {
@@ -831,7 +831,7 @@ int TerrainInfo::RefGrid(const uint32& x, const uint32& y)
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
     MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
 
-    LOCK_GUARD _lock(m_refMutex);
+    ACE_GUARD_RETURN(LOCK_TYPE, _lock, m_refMutex, -1)
     return (m_GridRef[x][y] += 1);
 }
 
@@ -842,7 +842,7 @@ int TerrainInfo::UnrefGrid(const uint32& x, const uint32& y)
 
     int16& iRef = m_GridRef[x][y];
 
-    LOCK_GUARD _lock(m_refMutex);
+    ACE_GUARD_RETURN(LOCK_TYPE, _lock, m_refMutex, -1)
     if (iRef > 0)
         { return (iRef -= 1); }
 
@@ -1151,7 +1151,7 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
     // double checked lock pattern
     if (!m_GridMaps[x][y])
     {
-        LOCK_GUARD lock(m_mutex);
+        ACE_GUARD_RETURN(LOCK_TYPE, lock, m_mutex, NULL)
 
         if (!m_GridMaps[x][y])
         {
@@ -1225,7 +1225,7 @@ float TerrainInfo::GetWaterLevel(float x, float y, float z, float* pGround /*= N
 INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(TerrainManager, ACE_Thread_Mutex);
 
-TerrainManager::TerrainManager()
+TerrainManager::TerrainManager() : m_mutex()
 {
 }
 
@@ -1237,7 +1237,7 @@ TerrainManager::~TerrainManager()
 
 TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
 {
-    Guard _guard(*this);
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_mutex, NULL)
 
     TerrainInfo* ptr = NULL;
     TerrainDataMap::const_iterator iter = i_TerrainMap.find(mapId);
@@ -1257,7 +1257,7 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
     if (sWorld.getConfig(CONFIG_BOOL_GRID_UNLOAD) == 0)
         { return; }
 
-    Guard _guard(*this);
+    ACE_GUARD(LOCK_TYPE, _guard, m_mutex)
 
     TerrainDataMap::iterator iter = i_TerrainMap.find(mapId);
     if (iter != i_TerrainMap.end())

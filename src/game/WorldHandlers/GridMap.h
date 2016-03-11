@@ -281,8 +281,8 @@ class TerrainInfo : public Referencable<AtomicLong>
         ShortIntervalTimer i_timer;
 
         typedef ACE_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_GUARD;
         LOCK_TYPE m_mutex;
+        char _cache_guard[1024];
         LOCK_TYPE m_refMutex;
 };
 
@@ -328,7 +328,8 @@ class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLev
         TerrainManager(const TerrainManager&);
         TerrainManager& operator=(const TerrainManager&);
 
-        typedef MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>::Lock Guard;
+        typedef ACE_Thread_Mutex LOCK_TYPE;
+        LOCK_TYPE m_mutex;
         TerrainDataMap i_TerrainMap;
 };
 

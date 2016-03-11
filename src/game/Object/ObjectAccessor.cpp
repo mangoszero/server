@@ -43,7 +43,10 @@
 INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Thread_Mutex);
 
-ObjectAccessor::ObjectAccessor() {}
+ObjectAccessor::ObjectAccessor() : i_playerGuard(), i_corpseGuard()
+{
+}
+
 ObjectAccessor::~ObjectAccessor()
 {
     for (Player2CorpsesMapType::const_iterator itr = i_player2corpse.begin(); itr != i_player2corpse.end(); ++itr)
@@ -284,7 +287,7 @@ void ObjectAccessor::RemoveOldCorpses()
 /// Define the static member of HashMapHolder
 
 template <class T> typename HashMapHolder<T>::MapType HashMapHolder<T>::m_objectMap;
-template <class T> ACE_RW_Thread_Mutex HashMapHolder<T>::i_lock;
+template <class T> typename HashMapHolder<T>::LockType HashMapHolder<T>::i_lock;
 
 /// Global definitions for the hashmap storage
 
