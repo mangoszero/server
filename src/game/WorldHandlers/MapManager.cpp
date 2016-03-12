@@ -39,7 +39,7 @@ INSTANTIATE_SINGLETON_2(MapManager, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(MapManager, ACE_Recursive_Thread_Mutex);
 
 MapManager::MapManager()
-    : i_gridCleanUpDelay(sWorld.getConfig(CONFIG_UINT32_INTERVAL_GRIDCLEAN))
+    : i_gridCleanUpDelay(sWorld.getConfig(CONFIG_UINT32_INTERVAL_GRIDCLEAN)), m_lock()
 {
     i_timer.SetInterval(sWorld.getConfig(CONFIG_UINT32_INTERVAL_MAPUPDATE));
 }
@@ -101,7 +101,7 @@ void MapManager::InitializeVisibilityDistanceInfo()
 /// @param id - MapId of the to be created map. @param obj WorldObject for which the map is to be created. Must be player for Instancable maps.
 Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
 {
-    Guard _guard(*this);
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
 
     Map* m = NULL;
 
@@ -139,13 +139,13 @@ Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
 {
     sTerrainMgr.LoadTerrain(mapid);
 
-    Guard _guard(*this);
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
     return CreateBattleGroundMap(mapid, sMapMgr.GenerateInstanceId(), bg);
 }
 
 Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 {
-    Guard guard(*this);
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
 
     MapMapType::const_iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter == i_maps.end())
@@ -163,7 +163,7 @@ Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 
 void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
 {
-    Guard _guard(*this);
+    ACE_GUARD(LOCK_TYPE, _guard, m_lock)
 
     MapMapType::iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter != i_maps.end())
@@ -276,9 +276,9 @@ void MapManager::InitMaxInstanceId()
 
 uint32 MapManager::GetNumInstances()
 {
-    Guard guard(*this);
-
     uint32 ret = 0;
+
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, ret)
     for (MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
         Map* map = itr->second;
@@ -290,9 +290,9 @@ uint32 MapManager::GetNumInstances()
 
 uint32 MapManager::GetNumPlayersInInstances()
 {
-    Guard guard(*this);
-
     uint32 ret = 0;
+
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, ret)
     for (MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
         Map* map = itr->second;

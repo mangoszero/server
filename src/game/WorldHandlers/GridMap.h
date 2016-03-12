@@ -234,6 +234,7 @@ class TerrainInfo : public Referencable<AtomicLong>
         float GetWaterLevel(float x, float y, float z, float* pGround = NULL) const;
         float GetWaterOrGroundLevel(float x, float y, float z, float* pGround = NULL, bool swim = false) const;
         bool IsInWater(float x, float y, float z, GridMapLiquidData* data = 0) const;
+        bool IsSwimable(float x, float y, float pZ, float radius = 1.5f, GridMapLiquidData* data = 0) const;
         bool IsUnderWater(float x, float y, float z) const;
 
         GridMapLiquidStatus getLiquidStatus(float x, float y, float z, uint8 ReqLiquidType, GridMapLiquidData* data = 0) const;
@@ -280,8 +281,8 @@ class TerrainInfo : public Referencable<AtomicLong>
         ShortIntervalTimer i_timer;
 
         typedef ACE_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_GUARD;
         LOCK_TYPE m_mutex;
+        char _cache_guard[1024];
         LOCK_TYPE m_refMutex;
 };
 
@@ -327,7 +328,8 @@ class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLev
         TerrainManager(const TerrainManager&);
         TerrainManager& operator=(const TerrainManager&);
 
-        typedef MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>::Lock Guard;
+        typedef ACE_Thread_Mutex LOCK_TYPE;
+        LOCK_TYPE m_mutex;
         TerrainDataMap i_TerrainMap;
 };
 

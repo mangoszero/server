@@ -137,6 +137,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         typedef ACE_Thread_Mutex LockType;
 
         LockType i_playerGuard;
+        char _cache_guard[1024];
         LockType i_corpseGuard;
 };
 

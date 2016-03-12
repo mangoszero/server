@@ -39,6 +39,7 @@
 struct ItemPrototype;
 struct AuctionEntry;
 struct AuctionHouseEntry;
+struct TradeStatusInfo;
 
 class ObjectGuid;
 class Creature;
@@ -250,7 +251,7 @@ class WorldSession
 
         void SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgTypeId);
 
-        void SendTradeStatus(TradeStatus status);
+        void SendTradeStatus(const TradeStatusInfo& status);
         void SendUpdateTrade(bool trader_state = true);
         void SendCancelTrade();
 

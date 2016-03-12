@@ -383,7 +383,8 @@ bool Creature::InitEntry(uint32 Entry, Team team, CreatureData const* data /*=NU
     // check if we need to add swimming movement. TODO: i thing movement flags should be computed automatically at each movement of creature so we need a sort of UpdateMovementFlags() method
     if (cinfo->InhabitType & INHABIT_WATER &&                                   // check inhabit type water
         data &&                                                                 // check if there is data to get creature spawn pos
-        GetMap()->GetTerrain()->IsInWater(data->posX, data->posY, data->posZ))  // check if creature is in water
+        !(cinfo->ExtraFlags & CREATURE_EXTRA_FLAG_WALK_IN_WATER) &&             // check if creature is forced to walk (crabs, giant,...)
+        GetMap()->GetTerrain()->IsSwimable(data->posX, data->posY, data->posZ, minfo->bounding_radius))  // check if creature is in water and have enough space to swim
         m_movementInfo.AddMovementFlag(MOVEFLAG_SWIMMING);                      // add swimming movement
 
     // checked at loading
@@ -421,6 +422,11 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
     // we may need to append or remove additional flags
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT))
         { unitFlags |= UNIT_FLAG_IN_COMBAT; }
+
+    if (m_movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) && (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_HAVE_NO_SWIM_ANIMATION) == 0)
+        unitFlags |= UNIT_FLAG_UNK_15;
+    else
+        unitFlags &= ~UNIT_FLAG_UNK_15;
 
     SetUInt32Value(UNIT_FIELD_FLAGS, unitFlags);
 

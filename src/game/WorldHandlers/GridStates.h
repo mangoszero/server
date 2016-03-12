@@ -32,6 +32,7 @@ class GridState
     public:
 
         virtual void Update(Map&, NGridType&, GridInfo&, const uint32& x, const uint32& y, const uint32& t_diff) const = 0;
+        virtual ~GridState();
 };
 
 class InvalidState : public GridState

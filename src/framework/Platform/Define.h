@@ -27,10 +27,6 @@
 
 #include <sys/types.h>
 
-#if defined(__APPLE__)
-#  define ACE_UINT64_TYPE unsigned long long
-#endif
-
 #include <ace/Basic_Types.h>
 #include <ace/Default_Constants.h>
 #include <ace/OS_NS_dlfcn.h>

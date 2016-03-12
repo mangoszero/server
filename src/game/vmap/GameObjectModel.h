@@ -25,6 +25,8 @@
 #ifndef MANGOSSERVER_GAMEOBJECTMODEL_H
 #define MANGOSSERVER_GAMEOBJECTMODEL_H
 
+#include "Platform/Define.h"
+
 #include <G3D/Matrix3.h>
 #include <G3D/Vector3.h>
 #include <G3D/AABox.h>
@@ -32,7 +34,6 @@
 #include "DBCStructure.h"
 #include "GameObject.h"
 
-#include "Platform/Define.h"
 
 namespace VMAP
 {

@@ -31,10 +31,6 @@
 #ifndef MANGOS_H_WORLDSOCKET
 #define MANGOS_H_WORLDSOCKET
 
-#if defined(__APPLE__)
-#  define ACE_UINT64_TYPE unsigned long long
-#endif
-
 #include <ace/Basic_Types.h>
 #include <ace/Synch_Traits.h>
 #include <ace/Svc_Handler.h>

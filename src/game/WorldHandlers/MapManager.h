@@ -59,10 +59,6 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
 {
         friend class MaNGOS::OperatorNew<MapManager>;
 
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_TYPE_GUARD;
-        typedef MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>::Lock Guard;
-
     public:
         typedef std::map<MapID, Map* > MapMapType;
 
@@ -185,8 +181,10 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         MapMapType i_maps;
         IntervalTimer i_timer;
         MapUpdater m_updater;
-
         uint32 i_MaxInstanceId;
+
+        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+        mutable LOCK_TYPE m_lock;
 };
 
 template<typename Do>
