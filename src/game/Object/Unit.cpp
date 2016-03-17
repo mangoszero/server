@@ -5494,7 +5494,8 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
     else 
         { coeff = CalculateDefaultCoefficient(spellProto, damagetype); }
 
-    float LvlPenalty = CalculateLevelPenalty(spellProto);
+    //float LvlPenalty = CalculateLevelPenalty(spellProto);//[-ZERO] not need. http://wowwiki.wikia.com/wiki/Patch_2.0.1
+    float LvlPenalty = 1.0f;
 
     // Spellmod SpellDamage
     if (Player* modOwner = GetSpellModOwner())
