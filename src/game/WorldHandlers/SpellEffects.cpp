@@ -1944,7 +1944,7 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
     switch (m_spellInfo->Id)
     {
         case 9512:                                          // Restore Energy
-            level_diff = m_caster->getLevel() - 40;
+            level_diff = m_caster->getLevel() - 60;
             level_multiplier = 2;
             break;
         case 24571:                                         // Blood Fury
