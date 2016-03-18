@@ -5541,8 +5541,11 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
     else 
         { coeff = CalculateDefaultCoefficient(spellProto, damagetype); }
 
-    //float LvlPenalty = CalculateLevelPenalty(spellProto);//[-ZERO] not need. http://wowwiki.wikia.com/wiki/Patch_2.0.1
-    float LvlPenalty = 1.0f;
+    float LvlPenalty = CalculateLevelPenalty(spellProto);
+
+    // Holy Light and Seal of Righteousness PROC and Flash of Light receive benefit from Spell Damage and Healing too low.
+    if (spellProto->SpellFamilyName == SPELLFAMILY_PALADIN && (spellProto->SpellIconID == 25 || spellProto->SpellIconID == 70 || spellProto->SpellIconID == 242))
+         LvlPenalty = 1.0f;
 
     // Spellmod SpellDamage
     if (Player* modOwner = GetSpellModOwner())
