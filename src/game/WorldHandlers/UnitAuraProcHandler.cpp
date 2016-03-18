@@ -724,14 +724,25 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
 
                 int damagePoint;
 
+                // Talent - Improve Seal of Righteousness
+                uint32 ModSpellId[] = { 20224, 20225, 20330, 20331, 20332 };
+                float ModPct = 1.0f;
+                AuraList const& mModDamagePercentModifier = GetAurasByType(SPELL_AURA_ADD_PCT_MODIFIER);
+                for (AuraList::const_iterator i = mModDamagePercentModifier.begin(); i != mModDamagePercentModifier.end(); ++i)
+                {
+                    for (int j = 0; j < 5; j++)
+                    {
+                        if ((*i)->GetId() == ModSpellId[j])
+                            ModPct *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
+                    }
+                }
+                triggerAmount = triggerAmount * ModPct;
+
                 // In the description, we can find the divider of the base points for min/max effects.
                 int min=triggerAmount/87;
                 int max=triggerAmount/25;
 
                 damagePoint = (speed<=1.5?min:(speed>=4.0?max:min+(((max-min)/2.5f)*(speed-1.5))));
-
-                damagePoint = SpellDamageBonusDone(pVictim, dummySpell, damagePoint, SPELL_DIRECT_DAMAGE);
-                damagePoint = pVictim->SpellDamageBonusTaken(this, dummySpell, damagePoint, SPELL_DIRECT_DAMAGE);
 
                 CastCustomSpell(pVictim, spellId, &damagePoint, NULL, NULL, true, NULL, triggeredByAura);
                 return SPELL_AURA_PROC_OK;                  // no hidden cooldown

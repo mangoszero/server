@@ -1038,15 +1038,16 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
         { mapInstance->OnCreatureDeath(victim); }
 
     if (responsiblePlayer)                                  // killedby Player, inform BG
+    {
         if (BattleGround* bg = responsiblePlayer->GetBattleGround())
         {
             bg->HandleKillUnit(victim, responsiblePlayer);
-
+        }
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             sEluna->OnCreatureKill(responsiblePlayer, victim);
 #endif /* ENABLE_ELUNA */
-        }
+    }
 
     // Notify the outdoor pvp script
     if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(responsiblePlayer ? responsiblePlayer->GetCachedZoneId() : GetZoneId()))
@@ -1332,11 +1333,58 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
     {
         // Melee and Ranged Spells
         case SPELL_DAMAGE_CLASS_RANGED:
+        {
+            // Calculate damage bonus
+            switch (spellInfo->Id)
+            {
+                // Paladin Hammer of Wrath receive benefit from Spell Damage and Healing
+                case 24274:    case 24275:    case 24239:
+                {
+                    damage = SpellDamageBonusDone(pVictim, spellInfo, damage, SPELL_DIRECT_DAMAGE);
+                    damage = pVictim->SpellDamageBonusTaken(this, spellInfo, damage, SPELL_DIRECT_DAMAGE);
+                    break;
+                }
+                default:
+                {
+                    damage = MeleeDamageBonusDone(pVictim, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
+                    damage = pVictim->MeleeDamageBonusTaken(this, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
+                }
+            break;
+            }
+
+            // if crit add critical bonus
+            if (crit)
+            {
+                damageInfo->HitInfo |= SPELL_HIT_TYPE_CRIT;
+                damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
+            }
+        }
+        break;
         case SPELL_DAMAGE_CLASS_MELEE:
         {
             // Calculate damage bonus
-            damage = MeleeDamageBonusDone(pVictim, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
-            damage = pVictim->MeleeDamageBonusTaken(this, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
+            switch (spellInfo->Id)
+            {
+                // Paladin
+                // Judgement of Command receive benefit from Spell Damage and Healing
+                case 20467:    case 20963:    case 20964:    case 20965:    case 20966:
+                // Seal of Command PROC receive benefit from Spell Damage and Healing
+                case 20424:
+                //	Seal of Righteousness Dummy Proc receive benefit from Spell Damage and Healing
+                case 25735:	   case 25736:	  case 25737:    case 25738:    case 25739:     case 25740:
+                case 25713:    case 25742:
+                    {
+                        damage = SpellDamageBonusDone(pVictim, spellInfo, damage, SPELL_DIRECT_DAMAGE);
+                        damage = pVictim->SpellDamageBonusTaken(this, spellInfo, damage, SPELL_DIRECT_DAMAGE);
+                        break;
+                    }
+                default:
+                    {
+                        damage = MeleeDamageBonusDone(pVictim, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
+                        damage = pVictim->MeleeDamageBonusTaken(this, damage, attackType, spellInfo, SPELL_DIRECT_DAMAGE);
+                    }
+            break;
+            }
 
             // if crit add critical bonus
             if (crit)
@@ -5494,8 +5542,11 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
     else 
         { coeff = CalculateDefaultCoefficient(spellProto, damagetype); }
 
-    //float LvlPenalty = CalculateLevelPenalty(spellProto);//[-ZERO] not need. http://wowwiki.wikia.com/wiki/Patch_2.0.1
-    float LvlPenalty = 1.0f;
+    float LvlPenalty = CalculateLevelPenalty(spellProto);
+
+    // Holy Light and Seal of Righteousness PROC and Flash of Light receive benefit from Spell Damage and Healing too low.
+    if (spellProto->SpellFamilyName == SPELLFAMILY_PALADIN && (spellProto->SpellIconID == 25 || spellProto->SpellIconID == 70 || spellProto->SpellIconID == 242))
+         LvlPenalty = 1.0f;
 
     // Spellmod SpellDamage
     if (Player* modOwner = GetSpellModOwner())
