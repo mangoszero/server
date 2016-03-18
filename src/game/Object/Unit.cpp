@@ -1038,15 +1038,16 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
         { mapInstance->OnCreatureDeath(victim); }
 
     if (responsiblePlayer)                                  // killedby Player, inform BG
+    {
         if (BattleGround* bg = responsiblePlayer->GetBattleGround())
         {
             bg->HandleKillUnit(victim, responsiblePlayer);
-
+        }
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             sEluna->OnCreatureKill(responsiblePlayer, victim);
 #endif /* ENABLE_ELUNA */
-        }
+    }
 
     // Notify the outdoor pvp script
     if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(responsiblePlayer ? responsiblePlayer->GetCachedZoneId() : GetZoneId()))
