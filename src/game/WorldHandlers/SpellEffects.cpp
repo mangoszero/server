@@ -3177,16 +3177,6 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
 
     switch (m_spellInfo->SpellFamilyName)
     {
-        case SPELLFAMILY_GENERIC:
-        {
-            // Seal of Command - receive benefit from Spell Damage and Healing
-            if (m_spellInfo->Id == 20424)
-            {
-                spell_bonus = m_caster->SpellDamageBonusDone(unitTarget, m_spellInfo, spell_bonus, SPELL_DIRECT_DAMAGE);
-                spell_bonus = unitTarget->SpellDamageBonusTaken(m_caster, m_spellInfo, spell_bonus, SPELL_DIRECT_DAMAGE);
-            }
-            break;
-        }
         case SPELLFAMILY_ROGUE:
         {
             // Ambush
@@ -3214,6 +3204,23 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
                 break;
             case SPELL_EFFECT_WEAPON_PERCENT_DAMAGE:
                 weaponDamagePercentMod *= float(CalculateDamage(SpellEffectIndex(j), unitTarget)) / 100.0f;
+
+                //Prevent Seal of Command damage overflow
+                if (m_spellInfo->Id == 20424)
+                {
+                    Unit::AuraList const& mModDamagePercentDone = m_caster->GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
+                    for (Unit::AuraList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
+                    {
+                        if (((*i)->GetModifier()->m_miscvalue & SPELL_SCHOOL_MASK_HOLY) && ((*i)->GetModifier()->m_miscvalue & SPELL_SCHOOL_MASK_NORMAL) &&
+                            (*i)->GetSpellProto()->EquippedItemClass == -1 &&
+                            // -1 == any item class (not wand then)
+                            (*i)->GetSpellProto()->EquippedItemInventoryTypeMask == 0)
+                            // 0 == any inventory type (not wand then)
+                        {
+                            totalDamagePercentMod /= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
+                        }
+                    }
+                }
 
                 // applied only to prev.effects fixed damage
                 if (customBonusDamagePercentMod)
