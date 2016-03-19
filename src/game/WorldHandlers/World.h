@@ -128,6 +128,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_GM_LOGIN_STATE,
     CONFIG_UINT32_GM_VISIBLE_STATE,
     CONFIG_UINT32_GM_ACCEPT_TICKETS,
+    CONFIG_UINT32_GM_TICKET_LIST_SIZE,
     CONFIG_UINT32_GM_CHAT,
     CONFIG_UINT32_GM_WISPERING_TO,
     CONFIG_UINT32_GM_LEVEL_IN_GM_LIST,
@@ -362,6 +363,7 @@ enum eConfigBoolValues
 #endif
     CONFIG_BOOL_WARDEN_WIN_ENABLED,
     CONFIG_BOOL_WARDEN_OSX_ENABLED,
+    CONFIG_BOOL_GM_TICKET_OFFLINE_CLOSING,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -411,7 +413,6 @@ enum RealmZone
     REALM_ZONE_QA_SERVER     = 28,                          // any language
     REALM_ZONE_CN9           = 29                           // basic-Latin at create, any at login
 };
-
 
 /// Storage class for commands issued for delayed execution
 struct CliCommandHolder

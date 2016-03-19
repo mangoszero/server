@@ -574,8 +574,17 @@ class ChatHandler
         bool HandleChangeWeatherCommand(char* args);
         bool HandleKickPlayerCommand(char* args);
 
-        bool HandleTicketCommand(char* args);
-        bool HandleDelTicketCommand(char* args);
+        bool HandleTicketAcceptCommand(char* args);
+        bool HandleTicketCloseCommand(char* args);
+        bool HandleTicketDeleteCommand(char* args);
+        bool HandleTicketInfoCommand(char* args);
+        bool HandleTicketListCommand(char* args);
+        bool HandleTicketMeAcceptCommand(char* args);
+        bool HandleTicketOnlineListCommand(char* args);
+        bool HandleTicketRespondCommand(char* args);
+        bool HandleTicketShowCommand(char* args);
+        bool HandleTickerSurveyClose(char* args);
+
         bool HandleMaxSkillCommand(char* args);
         bool HandleSetSkillCommand(char* args);
         bool HandleRespawnCommand(char* args);

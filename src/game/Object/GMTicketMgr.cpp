@@ -116,15 +116,13 @@ void GMTicket::Close() const
 void GMTicket::_Close(GMTicketStatus statusCode) const
 {
     Player* pPlayer = sObjectMgr.GetPlayer(m_guid);
-    if (!pPlayer)
-        return;
     
     CharacterDatabase.PExecute("UPDATE character_ticket "
                                "SET resolved = 1 "
                                "WHERE guid = %u AND resolved = 0",
                                m_guid.GetCounter());
     
-    if (statusCode != GM_TICKET_STATUS_DO_NOTHING)
+    if (pPlayer && statusCode != GM_TICKET_STATUS_DO_NOTHING)
         { pPlayer->GetSession()->SendGMTicketStatusUpdate(statusCode); }
 }
 
@@ -164,7 +162,7 @@ void GMTicketMgr::LoadGMTickets()
         GMTicket& ticket = m_GMTicketMap[guid];
         
         ticket.Init(guid, fields[1].GetCppString(), fields[2].GetCppString(), time_t(fields[3].GetUInt64()), fields[4].GetUInt32());
-        m_GMTicketListByCreatingOrder.push_back(&ticket);
+        m_GMTicketIdMap[ticket.GetId()] = &ticket;
     }
     while (result->NextRow());
     delete result;
@@ -202,11 +200,11 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
     //This implicitly creates a new instance since we're using operator[]
     GMTicket& ticket = m_GMTicketMap[guid];
     if (ticket.GetPlayerGuid())
-        m_GMTicketListByCreatingOrder.remove(&ticket);
+        m_GMTicketIdMap.erase(ticketId);
             
     //Lets reinitialize with new data
     ticket.Init(guid, text, "", time(NULL), ticketId);
-    m_GMTicketListByCreatingOrder.push_back(&ticket);
+    m_GMTicketIdMap[ticketId] = &ticket;
 }
 
 void GMTicketMgr::DeleteAll()
@@ -217,6 +215,6 @@ void GMTicketMgr::DeleteAll()
             { owner->GetSession()->SendGMTicketGetTicket(0x0A); }
     }
     CharacterDatabase.Execute("DELETE FROM character_ticket");
-    m_GMTicketListByCreatingOrder.clear();
+    m_GMTicketIdMap.clear();
     m_GMTicketMap.clear();
 }

@@ -2410,7 +2410,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     return true;
 }
 
-// show tickets
+// show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
 {
     std::string lastupdated = TimeToTimestampStr(ticket->GetLastUpdate());
@@ -2429,238 +2429,88 @@ void ChatHandler::ShowTicket(GMTicket const* ticket)
 }
 
 // ticket commands
-bool ChatHandler::HandleTicketCommand(char* args)
+bool ChatHandler::HandleTicketAcceptCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
 
-    // ticket<end>
-    if (!px)
-    {
-        size_t count = sTicketMgr.GetTicketCount();
-
-        if (m_session)
-        {
-            bool accept = m_session->GetPlayer()->isAcceptTickets();
-
-            PSendSysMessage(LANG_COMMAND_TICKETCOUNT, count, GetOnOffStr(accept));
-        }
-        else
-            { PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count); }
-
-        return true;
-    }
-
-    if (strncmp(px, "system_on", 10) == 0)
+    if (strncmp(px, "on", 3) == 0)
     {
         sTicketMgr.SetAcceptTickets(true);
         SendSysMessage(LANG_COMMAND_TICKETS_SYSTEM_ON);
-        return true;
     }
-    
-    if (strncmp(px, "system_off", 11) == 0)
+    else if (strncmp(px, "off", 4) == 0)
     {
         sTicketMgr.SetAcceptTickets(false);
         SendSysMessage(LANG_COMMAND_TICKETS_SYSTEM_OFF);
-        return true;
     }
-    
-    // ticket on
-    if (strncmp(px, "on", 3) == 0)
-    {
-        if (!m_session)
-        {
-            SendSysMessage(LANG_PLAYER_NOT_FOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
+    else
+        return false;
 
-        m_session->GetPlayer()->SetAcceptTicket(true);
-        SendSysMessage(LANG_COMMAND_TICKETON);
-        return true;
-    }
+    return true;
+}
 
-    // ticket off
-    if (strncmp(px, "off", 4) == 0)
-    {
-        if (!m_session)
-        {
-            SendSysMessage(LANG_PLAYER_NOT_FOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
+bool ChatHandler::HandleTicketCloseCommand(char* args)
+{
+    GMTicket* ticket = NULL;
 
-        m_session->GetPlayer()->SetAcceptTicket(false);
-        SendSysMessage(LANG_COMMAND_TICKETOFF);
-        return true;
-    }
-
-    //TODO: Break both of these out into extract functions
-    // ticket close, can show them a gm-survey
-    if (strncmp(px, "close", 6) == 0 || strncmp(px, "close_survey", 13) == 0)
-    {
-        GMTicket* ticket = NULL;
-
-        uint32 num;
-        if (ExtractUInt32(&args, num))
-        {
-            if (num == 0)
-                return false;
-
-            ticket = sTicketMgr.GetGMTicketByOrderPos(num - 1);
-
-            if (!ticket)
-            {
-                PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
-                SetSentErrorMessage(true);
-                return false;
-            }
-        }
-        else
-        {
-            ObjectGuid target_guid;
-            std::string target_name;
-            if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
-                return false;
-
-            // ticket respond $char_name
-            ticket = sTicketMgr.GetGMTicket(target_guid);
-
-            if (!ticket)
-            {
-                PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
-                SetSentErrorMessage(true);
-                return false;
-            }
-        }
-
-        if (strncmp(px, "close_survey", 13) == 0)
-            ticket->CloseWithSurvey();
-        else
-            ticket->Close();
-
-        //This needs to be before we delete the ticket
-        Player* pPlayer = sObjectMgr.GetPlayer(ticket->GetPlayerGuid());
-
-        //For now we can't close tickets for offline players, TODO
-        if (!pPlayer)
-        {
-            SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
-            return false;
-        }
-        
-        //This logic feels misplaced, but you can't have it in GMTicket?
-        sTicketMgr.Delete(ticket->GetPlayerGuid());
-        ticket = NULL;
-        
-        PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer->GetName());
-        
-        return true;
-    }
-    
-    // ticket respond
-    if (strncmp(px, "respond", 8) == 0 || strncmp(px, "response", 9) == 0
-        || strncmp(px, "whisper", 8) == 0)
-    {
-        GMTicket* ticket = NULL;
-
-        // ticket respond #num
-        uint32 num;
-        if (ExtractUInt32(&args, num))
-        {
-            if (num == 0)
-                { return false; }
-
-            // mgr numbering tickets start from 0
-            ticket = sTicketMgr.GetGMTicketByOrderPos(num - 1);
-
-            if (!ticket)
-            {
-                PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
-                SetSentErrorMessage(true);
-                return false;
-            }
-        }
-        else
-        {
-            ObjectGuid target_guid;
-            std::string target_name;
-            if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
-                { return false; }
-
-            // ticket respond $char_name
-            ticket = sTicketMgr.GetGMTicket(target_guid);
-
-            if (!ticket)
-            {
-                PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
-                SetSentErrorMessage(true);
-                return false;
-            }
-        }
-
-        // no response text?
-        if (!*args)
-            { return false; }
-        ticket->SetResponseText(args);
-        
-        if (Player* pl = sObjectMgr.GetPlayer(ticket->GetPlayerGuid()))
-        {
-            pl->GetSession()->SendGMTicketGetTicket(0x06, ticket);
-            //How should we error here?
-            if (m_session)
-                m_session->GetPlayer()->Whisper(args, LANG_UNIVERSAL, pl->GetObjectGuid());
-        }
-
-        return true;
-    }
-
-    // ticket #num
     uint32 num;
-    if (ExtractUInt32(&px, num))
+    if (ExtractUInt32(&args, num))
     {
         if (num == 0)
-            { return false; }
+            return false;
 
-        // mgr numbering tickets start from 0
-        GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(num - 1);
+        ticket = sTicketMgr.GetGMTicket(num);
+
         if (!ticket)
         {
             PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
             SetSentErrorMessage(true);
             return false;
         }
+    }
+    else
+    {
+        ObjectGuid target_guid;
+        std::string target_name;
+        if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
+            return false;
 
-        ShowTicket(ticket);
-        return true;
+        // ticket respond $char_name
+        ticket = sTicketMgr.GetGMTicket(target_guid);
+
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        }
     }
 
-    ObjectGuid target_guid;
-    std::string target_name;
-    if (!ExtractPlayerTarget(&px, NULL, &target_guid, &target_name))
-        { return false; }
+    Player* pPlayer = sObjectMgr.GetPlayer(ticket->GetPlayerGuid());
 
-    // ticket $char_name
-    GMTicket* ticket = sTicketMgr.GetGMTicket(target_guid);
-    if (!ticket)
+    if (!pPlayer && !sWorld.getConfig(CONFIG_BOOL_GM_TICKET_OFFLINE_CLOSING))
     {
-        PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
-        SetSentErrorMessage(true);
+        SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
         return false;
     }
 
-    ShowTicket(ticket);
+    ticket->Close();
+
+    //This logic feels misplaced, but you can't have it in GMTicket?
+    sTicketMgr.Delete(ticket->GetPlayerGuid()); // here, ticket become invalidated and should not be used below
+
+    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer ? pPlayer->GetName() : "an offline player");
 
     return true;
 }
 
-// dell all tickets
-bool ChatHandler::HandleDelTicketCommand(char* args)
+bool ChatHandler::HandleTicketDeleteCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
     if (!px)
-        { return false; }
+        return false;
 
-    // delticket all
+    // ticket delete all
     if (strncmp(px, "all", 4) == 0)
     {
         sTicketMgr.DeleteAll();
@@ -2670,14 +2520,14 @@ bool ChatHandler::HandleDelTicketCommand(char* args)
 
     uint32 num;
 
-    // delticket #num
+    // ticket delete #id
     if (ExtractUInt32(&px, num))
     {
         if (num == 0)
-            { return false; }
+            return false;
 
         // mgr numbering tickets start from 0
-        GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(num - 1);
+        GMTicket* ticket = sTicketMgr.GetGMTicket(num);
 
         if (!ticket)
         {
@@ -2697,27 +2547,269 @@ bool ChatHandler::HandleDelTicketCommand(char* args)
             PSendSysMessage(LANG_COMMAND_TICKETPLAYERDEL, GetNameLink(pl).c_str());
         }
         else
-            { PSendSysMessage(LANG_COMMAND_TICKETDEL); }
+            PSendSysMessage(LANG_COMMAND_TICKETDEL);
 
         return true;
     }
 
+    // ticket delete $charName
     Player* target;
     ObjectGuid target_guid;
     std::string target_name;
     if (!ExtractPlayerTarget(&px, &target, &target_guid, &target_name))
-        { return false; }
+        return false;
 
-    // delticket $char_name
     sTicketMgr.Delete(target_guid);
 
     // notify players about ticket deleting
     if (target)
-        { target->GetSession()->SendGMTicketGetTicket(0x0A); }
+        target->GetSession()->SendGMTicketGetTicket(0x0A);
 
     std::string nameLink = playerLink(target_name);
 
     PSendSysMessage(LANG_COMMAND_TICKETPLAYERDEL, nameLink.c_str());
+    return true;
+}
+
+bool ChatHandler::HandleTicketInfoCommand(char *args)
+{
+    char* px = ExtractLiteralArg(&args);
+
+    size_t count = sTicketMgr.GetTicketCount();
+
+    if (m_session)
+        PSendSysMessage(LANG_COMMAND_TICKETCOUNT, count, GetOnOffStr(m_session->GetPlayer()->isAcceptTickets()));
+    else
+        PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count);
+
+    return true;
+}
+
+bool ChatHandler::HandleTicketListCommand(char* args)
+{
+    uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()), uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
+    for (uint16 i = 0; i < numToShow; ++i)
+    {
+        GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(i);
+        time_t lastChanged = time_t(ticket->GetLastUpdate());
+        PSendSysMessage(LANG_COMMAND_TICKET_OFFLINE_INFO, ticket->GetId(), ticket->GetPlayerGuid().GetCounter(), ticket->HasResponse() ? "+" : "-", ctime(&lastChanged));
+    }
+
+    PSendSysMessage(LANG_COMMAND_TICKET_COUNT_ALL, numToShow, sTicketMgr.GetTicketCount());
+    return true;
+}
+
+bool ChatHandler::HandleTicketOnlineListCommand(char* args)
+{
+    uint16 count = 0;
+    for (uint16 i = 0; i < sTicketMgr.GetTicketCount(); ++i)
+    {
+        GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(i);
+        if (Player* player = sObjectMgr.GetPlayer(ticket->GetPlayerGuid(), true))
+        {
+            ++count;
+            if (i < sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE))
+            {
+                time_t lastChanged = time_t(ticket->GetLastUpdate());
+                PSendSysMessage(LANG_COMMAND_TICKET_BRIEF_INFO, ticket->GetId(), player->GetName(), ticket->HasResponse() ? "+" : "-", ctime(&lastChanged));
+            }
+        }
+    }
+
+    PSendSysMessage(LANG_COMMAND_TICKET_COUNT_ONLINE, std::min(count, uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE))), count);
+    return true;
+}
+
+bool ChatHandler::HandleTicketMeAcceptCommand(char* args)
+{
+    char* px = ExtractLiteralArg(&args);
+    if (!px)
+    {
+        PSendSysMessage(LANG_COMMAND_TICKET_ACCEPT_STATE, m_session->GetPlayer()->isAcceptTickets() ? "on" : "off");
+        return true;
+    }
+
+    if (!m_session)
+    {
+        SendSysMessage(LANG_PLAYER_NOT_FOUND);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    // ticket on
+    if (strncmp(px, "on", 3) == 0)
+    {
+        m_session->GetPlayer()->SetAcceptTicket(true);
+        SendSysMessage(LANG_COMMAND_TICKETON);
+    }
+    // ticket off
+    else if (strncmp(px, "off", 4) == 0)
+    {
+        m_session->GetPlayer()->SetAcceptTicket(false);
+        SendSysMessage(LANG_COMMAND_TICKETOFF);
+    }
+    else
+        return false;
+
+    return true;
+}
+
+bool ChatHandler::HandleTicketRespondCommand(char* args)
+{
+    GMTicket* ticket = NULL;
+
+    // ticket respond #num
+    uint32 num;
+    if (ExtractUInt32(&args, num))
+    {
+        if (num == 0)
+            return false;
+
+        // mgr numbering tickets start from 0
+        ticket = sTicketMgr.GetGMTicket(num);
+
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+    else
+    {
+        ObjectGuid target_guid;
+        std::string target_name;
+        if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
+            return false;
+
+        // ticket respond $char_name
+        ticket = sTicketMgr.GetGMTicket(target_guid);
+
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+
+    // no response text?
+    if (!*args)
+        return false;
+
+    ticket->SetResponseText(args);
+
+    if (Player* pl = sObjectMgr.GetPlayer(ticket->GetPlayerGuid()))
+    {
+        pl->GetSession()->SendGMTicketGetTicket(0x06, ticket);
+        //How should we error here?
+        if (m_session)
+            m_session->GetPlayer()->Whisper(args, LANG_UNIVERSAL, pl->GetObjectGuid());
+    }
+
+    return true;
+}
+
+bool ChatHandler::HandleTicketShowCommand(char *args)
+{
+    // ticket #num
+    char* px = ExtractLiteralArg(&args);
+    if (!px)
+        return false;
+
+    uint32 num;
+    if (ExtractUInt32(&px, num))
+    {
+        if (num == 0)
+            return false;
+
+        // mgr numbering tickets start from 0
+        GMTicket* ticket = sTicketMgr.GetGMTicket(num);
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
+            SetSentErrorMessage(true);
+            return false;
+        }
+
+        ShowTicket(ticket);
+        return true;
+    }
+
+    ObjectGuid target_guid;
+    std::string target_name;
+    if (!ExtractPlayerTarget(&px, NULL, &target_guid, &target_name))
+        return false;
+
+    // ticket $char_name
+    GMTicket* ticket = sTicketMgr.GetGMTicket(target_guid);
+    if (!ticket)
+    {
+        PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    ShowTicket(ticket);
+
+    return true;
+}
+
+bool ChatHandler::HandleTickerSurveyClose(char *args)
+{
+    GMTicket* ticket = NULL;
+
+    uint32 num;
+    if (ExtractUInt32(&args, num))
+    {
+        if (num == 0)
+            return false;
+
+        ticket = sTicketMgr.GetGMTicket(num);
+
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST, num);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+    else
+    {
+        ObjectGuid target_guid;
+        std::string target_name;
+        if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
+            return false;
+
+        // ticket respond $char_name
+        ticket = sTicketMgr.GetGMTicket(target_guid);
+
+        if (!ticket)
+        {
+            PSendSysMessage(LANG_COMMAND_TICKETNOTEXIST_NAME, target_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+
+    ticket->CloseWithSurvey();
+
+    //This needs to be before we delete the ticket
+    Player* pPlayer = sObjectMgr.GetPlayer(ticket->GetPlayerGuid());
+
+    //For now we can't close tickets for offline players, TODO
+    if (!pPlayer)
+    {
+        SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
+        return false;
+    }
+        
+    //This logic feels misplaced, but you can't have it in GMTicket?
+    sTicketMgr.Delete(ticket->GetPlayerGuid());
+    ticket = NULL;
+        
+    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer->GetName());
+        
     return true;
 }
 

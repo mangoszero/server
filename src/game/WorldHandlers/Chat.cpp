@@ -661,6 +661,21 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
+    static ChatCommand ticketCommandTable[] =
+    {
+        { "accept",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleTicketAcceptCommand,         "", NULL },
+        { "close",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketCloseCommand,          "", NULL },
+        { "delete",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleTicketDeleteCommand,         "", NULL },
+        { "info",           SEC_MODERATOR,      true,  &ChatHandler::HandleTicketInfoCommand,           "", NULL },
+        { "list",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketListCommand,           "", NULL },
+        { "meaccept",       SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketMeAcceptCommand,       "", NULL },
+        { "onlinelist",     SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketOnlineListCommand,     "", NULL },
+        { "respond",        SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketRespondCommand,        "", NULL },
+        { "show",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketShowCommand,           "", NULL },
+        { "surveyclose",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleTickerSurveyClose,           "", NULL },
+        { NULL,             0,                  false, NULL,                                            "", NULL }
+    };
+
     static ChatCommand triggerCommandTable[] =
     {
         { "active",         SEC_GAMEMASTER,     false, &ChatHandler::HandleTriggerActiveCommand,       "", NULL },
@@ -755,8 +770,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "additemset",     SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAddItemSetCommand,          "", NULL },
         { "bank",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleBankCommand,                "", NULL },
         { "wchange",        SEC_ADMINISTRATOR,  false, &ChatHandler::HandleChangeWeatherCommand,       "", NULL },
-        { "ticket",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketCommand,              "", NULL },
-        { "delticket",      SEC_GAMEMASTER,     true,  &ChatHandler::HandleDelTicketCommand,           "", NULL },
+        { "ticket",         SEC_GAMEMASTER,     true,  NULL,                                           "", ticketCommandTable   },
         { "maxskill",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleMaxSkillCommand,            "", NULL },
         { "setskill",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleSetSkillCommand,            "", NULL },
         { "whispers",       SEC_MODERATOR,      false, &ChatHandler::HandleWhispersCommand,            "", NULL },
