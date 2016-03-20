@@ -4,11 +4,11 @@
  * This is the source documentation for the \b %MaNGOS (Massive Network Game %Object Server) project.\n
  * %MaNGOS is an object-oriented Massively Multiplayer Online Role-Playing Game Server (MMORPGS).\n
  * The project documentation can be found on the <A HREF="http://github.com/mangoswiki/wiki">%MaNGOS wiki</A>.
- * The project bug tracker can be found on the <A HREF="http://getmangos.eu">%MaNGOS website</A>.
+ * The project bug tracker can be found on the <A HREF="https://getmangos.eu">%MaNGOS website</A>.
  *
  * \section begin Where to begin?
  * If you are interested in understanding the source code of this project you can begin
- * - <A HREF="http://getmangos.eu/wiki/">On the wiki</A> to get an overview of the different modules of the server
+ * - <A HREF="https://getmangos.eu/wiki/">On the wiki</A> to get an overview of the different modules of the server
  * - <A HREF="./modules.html">In this source doumentation</A>, starting at the module hierarchy
  *
  * \section conventions Naming/Coding conventions
