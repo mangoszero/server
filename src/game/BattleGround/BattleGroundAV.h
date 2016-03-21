@@ -428,7 +428,7 @@ class BattleGroundAV : public BattleGround
          * @param source
          * @param trigger
          */
-        void HandleAreaTrigger(Player* source, uint32 trigger) override;
+        bool HandleAreaTrigger(Player* source, uint32 trigger) override;
         /**
          * @brief
          *
