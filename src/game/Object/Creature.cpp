@@ -386,7 +386,7 @@ bool Creature::InitEntry(uint32 Entry, Team team, CreatureData const* data /*=NU
     if (cinfo->InhabitType & INHABIT_WATER &&                                   // check inhabit type water
         data &&                                                                 // check if there is data to get creature spawn pos
         !(cinfo->ExtraFlags & CREATURE_EXTRA_FLAG_WALK_IN_WATER) &&             // check if creature is forced to walk (crabs, giant,...)
-        GetMap()->GetTerrain()->IsSwimable(data->posX, data->posY, data->posZ, minfo->bounding_radius))  // check if creature is in water and have enough space to swim
+        GetMap()->GetTerrain()->IsSwimmable(data->posX, data->posY, data->posZ, minfo->bounding_radius))  // check if creature is in water and have enough space to swim
         m_movementInfo.AddMovementFlag(MOVEFLAG_SWIMMING);                      // add swimming movement
 
     // checked at loading
