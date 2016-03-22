@@ -7899,6 +7899,202 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
     return NULL_SLOT;
 }
 
+
+bool Player::ViableEquipSlots(ItemPrototype const* proto, uint8 *viable_slots) const
+{
+    uint8 pClass;
+
+    //DEBUG_LOG("**** [Player::ViableEquipSlots] Start ****");
+
+    if (!viable_slots)
+    {
+        //DEBUG_LOG("**** [Player::ViableEquipSlots] Return array is NULL ****");
+        return false;
+    }
+
+    //DEBUG_LOG("**** [Player::ViableEquipSlots] Initialize return array ****");
+    viable_slots[0] = NULL_SLOT;
+    viable_slots[1] = NULL_SLOT;
+    viable_slots[2] = NULL_SLOT;
+    viable_slots[3] = NULL_SLOT;
+
+    if (CanUseItem(proto) == EQUIP_ERR_OK)
+    {
+        //DEBUG_LOG("**** [Player::ViableEquipSlots] Class/Race/Faction determined viable ****");
+
+        //DEBUG_LOG("**** [Player::ViableEquipSlots] switch (proto->InventoryType) ****");
+        switch (proto->InventoryType)
+        {
+            case INVTYPE_HEAD:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_HEAD ****");
+                viable_slots[0] = EQUIPMENT_SLOT_HEAD;
+                break;
+            case INVTYPE_NECK:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_NECK ****");
+                viable_slots[0] = EQUIPMENT_SLOT_NECK;
+                break;
+            case INVTYPE_SHOULDERS:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_SHOULDERS ****");
+                viable_slots[0] = EQUIPMENT_SLOT_SHOULDERS;
+                break;
+            case INVTYPE_BODY:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_BODY ****");
+                viable_slots[0] = EQUIPMENT_SLOT_BODY;
+                break;
+            case INVTYPE_CHEST:
+            case INVTYPE_ROBE:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == %s ****",(INVTYPE_CHEST ? "INVTYPE_CHEST" : "INVTYPE_ROBE"));
+                viable_slots[0] = EQUIPMENT_SLOT_CHEST;
+                break;
+            case INVTYPE_WAIST:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_WAIST ****");
+                viable_slots[0] = EQUIPMENT_SLOT_WAIST;
+                break;
+            case INVTYPE_LEGS:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_LEGS ****");
+                viable_slots[0] = EQUIPMENT_SLOT_LEGS;
+                break;
+            case INVTYPE_FEET:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_FEET ****");
+                viable_slots[0] = EQUIPMENT_SLOT_FEET;
+                break;
+            case INVTYPE_WRISTS:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_WRISTS ****");
+                viable_slots[0] = EQUIPMENT_SLOT_WRISTS;
+                break;
+            case INVTYPE_HANDS:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_HANDS ****");
+                viable_slots[0] = EQUIPMENT_SLOT_HANDS;
+                break;
+            case INVTYPE_FINGER:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_FINGER ****");
+                viable_slots[0] = EQUIPMENT_SLOT_FINGER1;
+                viable_slots[1] = EQUIPMENT_SLOT_FINGER2;
+                break;
+            case INVTYPE_TRINKET:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_TRINKET ****");
+                viable_slots[0] = EQUIPMENT_SLOT_TRINKET1;
+                viable_slots[1] = EQUIPMENT_SLOT_TRINKET2;
+                break;
+            case INVTYPE_CLOAK:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_CLOAK ****");
+                viable_slots[0] = EQUIPMENT_SLOT_BACK;
+                break;
+            case INVTYPE_WEAPON:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_WEAPON ****");
+                viable_slots[0] = EQUIPMENT_SLOT_MAINHAND;
+
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] INVTYPE_WEAPON/Determining if can dual weild ****");
+                if (CanDualWield())
+                {
+                    //DEBUG_LOG("**** [Player::ViableEquipSlots] INVTYPE_WEAPON/CanDualWield() == TRUE  ****");
+                    viable_slots[1] = EQUIPMENT_SLOT_OFFHAND;
+                }
+                break;
+            case INVTYPE_SHIELD:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_SHIELD ****");
+                viable_slots[0] = EQUIPMENT_SLOT_OFFHAND;
+                break;
+            case INVTYPE_RANGED:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RANGED ****");
+                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                break;
+            case INVTYPE_2HWEAPON:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_2HWEAPON ****");
+                viable_slots[0] = EQUIPMENT_SLOT_MAINHAND;
+
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] INVTYPE_2HWEAPON/Determining if can dual weild and Titian Grip ****");
+                if (CanDualWield())
+                {
+                    //DEBUG_LOG("**** [Player::ViableEquipSlots] INVTYPE_2HWEAPON/CanDualWield() && CanTitanGrip() == TRUE  ****");
+                    viable_slots[1] = EQUIPMENT_SLOT_OFFHAND;
+                }
+                break;
+            case INVTYPE_TABARD:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_TABARD ****");
+                viable_slots[0] = EQUIPMENT_SLOT_TABARD;
+                break;
+            case INVTYPE_WEAPONMAINHAND:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_WEAPONMAINHAND ****");
+                viable_slots[0] = EQUIPMENT_SLOT_MAINHAND;
+                break;
+            case INVTYPE_WEAPONOFFHAND:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_WEAPONOFFHAND ****");
+                viable_slots[0] = EQUIPMENT_SLOT_OFFHAND;
+                break;
+            case INVTYPE_HOLDABLE:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_HOLDABLE ****");
+                viable_slots[0] = EQUIPMENT_SLOT_OFFHAND;
+                break;
+            case INVTYPE_THROWN:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_THROWN ****");
+                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                break;
+            case INVTYPE_RANGEDRIGHT:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RANGEDRIGHT ****");
+                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                break;
+            case INVTYPE_BAG:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_BAG ****");
+                viable_slots[0] = INVENTORY_SLOT_BAG_START + 0;
+                viable_slots[1] = INVENTORY_SLOT_BAG_START + 1;
+                viable_slots[2] = INVENTORY_SLOT_BAG_START + 2;
+                viable_slots[3] = INVENTORY_SLOT_BAG_START + 3;
+                break;
+            case INVTYPE_RELIC:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC ****");
+
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC - Determine Play Class ****");
+                pClass = getClass();
+
+                if (pClass)
+                {
+                    //DEBUG_LOG("**** [Player::ViableEquipSlots]  proto->InventoryType == INVTYPE_RELIC - Call to getClass() returned sucess ****");
+
+                    switch (proto->SubClass)
+                    {
+                        case ITEM_SUBCLASS_ARMOR_LIBRAM:
+                            //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC / proto->SubClass == ITEM_SUBCLASS_ARMOR_LIBRAM ****");
+                            if (pClass == CLASS_PALADIN)
+                            {
+                                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                            }
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_IDOL:
+                            //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC / proto->SubClass == ITEM_SUBCLASS_ARMOR_IDOL ****");
+                            if (pClass == CLASS_DRUID)
+                            {
+                                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                            }
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_TOTEM:
+                            //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC / proto->SubClass == ITEM_SUBCLASS_ARMOR_TOTEM ****");
+                            if (pClass == CLASS_SHAMAN)
+                            {
+                                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                            }
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_MISC:
+                            //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC / proto->SubClass == ITEM_SUBCLASS_ARMOR_MISC ****");
+                            if (pClass == CLASS_WARLOCK)
+                            {
+                                viable_slots[0] = EQUIPMENT_SLOT_RANGED;
+                            }
+                            break;
+                        default:
+                            //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == INVTYPE_RELIC / proto->SubClass == UNKNOWN ****");
+                            break;
+                    }
+                }
+                break;
+            default:
+                //DEBUG_LOG("**** [Player::ViableEquipSlots] proto->InventoryType == UNKNOWN ****");
+                break;
+        }
+    }
+    return (viable_slots[0] != NULL_SLOT);
+}
+
 InventoryResult Player::CanUnequipItems(uint32 item, uint32 count) const
 {
     Item* pItem;
