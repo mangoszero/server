@@ -32,9 +32,9 @@
     #define REALMD_DB_UPDATE_DESCRIPTION "dbdocs update"
 
     #define CHAR_DB_VERSION_NR 21
-    #define CHAR_DB_STRUCTURE_NR 4
+    #define CHAR_DB_STRUCTURE_NR 5
     #define CHAR_DB_CONTENT_NR 1
-    #define CHAR_DB_UPDATE_DESCRIPTION "match_client_limits"
+    #define CHAR_DB_UPDATE_DESCRIPTION "characters_pvpstats"
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 6
