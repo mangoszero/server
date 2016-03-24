@@ -822,9 +822,11 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     time_t mutetime = time_t (fields[7].GetUInt64());
 
-    locale = LocaleConstant(fields[8].GetUInt8());
-    if (locale >= MAX_LOCALE)
+    uint8 tmpLoc = fields[8].GetUInt8();
+    if (tmpLoc >= MAX_LOCALE)
         { locale = LOCALE_enUS; }
+    else
+        { locale = LocaleConstant(tmpLoc); }
 
     os = fields[9].GetString();
 

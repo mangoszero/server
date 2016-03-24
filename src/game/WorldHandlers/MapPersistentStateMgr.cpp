@@ -23,7 +23,6 @@
  */
 
 #include "MapPersistentStateMgr.h"
-
 #include "SQLStorages.h"
 #include "Player.h"
 #include "GridNotifiers.h"
@@ -41,6 +40,7 @@
 #include "Group.h"
 #include "InstanceData.h"
 #include "ProgressBar.h"
+#include <vector>
 
 INSTANTIATE_SINGLETON_1(MapPersistentStateManager);
 
@@ -896,9 +896,14 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
         }
 
         // remove all binds for online player
+        std::vector<DungeonPersistentState*> unbindList;
+
         for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end(); ++itr)
             if (itr->second->GetMapId() == mapid)
-                ((DungeonPersistentState*)(itr->second))->UnbindThisState();
+                unbindList.push_back((DungeonPersistentState*)itr->second);
+
+        for (std::vector<DungeonPersistentState*>::const_iterator it = unbindList.begin(); it != unbindList.end(); ++it)
+                (*it)->UnbindThisState();
 
         // reset maps, teleport player automaticaly to their homebinds and unload maps
         MapPersistantStateResetWorker worker;
