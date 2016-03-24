@@ -252,7 +252,7 @@ void PlayerLogger::StartLogging(PlayerLogEntity entity)
 uint32 PlayerLogger::Stop(PlayerLogEntity entity)
 {
     SetLogActiveMask(entity, false);
-    sLog.outDebug("PlayerLogger: logging type %u stopped for player %u at %u records.", entity, playerGuid, data[entity]->size());
+    sLog.outDebug("PlayerLogger: logging type %u stopped for player %u at %lu records.", entity, playerGuid, data[entity]->size());
     return data[entity]->size();
 }
 

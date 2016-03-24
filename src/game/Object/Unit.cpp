@@ -3139,8 +3139,6 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
 
 void Unit::InterruptSpell(CurrentSpellTypes spellType, bool withDelayed)
 {
-    MANGOS_ASSERT(spellType < CURRENT_MAX_SPELL);
-
     if (m_currentSpells[spellType] && (withDelayed || m_currentSpells[spellType]->getState() != SPELL_STATE_DELAYED))
     {
         // send autorepeat cancel message for autorepeat spells
@@ -5307,7 +5305,7 @@ Unit* Unit::_GetTotem(TotemSlot slot) const
 
 Totem* Unit::GetTotem(TotemSlot slot) const
 {
-    if (slot >= MAX_TOTEM_SLOT || !IsInWorld() || !m_TotemSlot[slot])
+    if (!IsInWorld() || !m_TotemSlot[slot])
         { return NULL; }
 
     Creature* totem = GetMap()->GetCreature(m_TotemSlot[slot]);
@@ -8812,8 +8810,8 @@ float Unit::GetObjectScaleMod() const
     // TODO:: not sure we have to do this sanity check, less than /100 or more than *100 seem not reasonable
     if (result < 0.01f)
         { result = 0.01f; }
-    else if (result > 100)
-        { result = 100; }
+    else if (result > 100.0f)
+        { result = 100.0f; }
 
     return result;
 }

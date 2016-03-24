@@ -27,6 +27,7 @@
 
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
+#include "G3D/Vector3.h"
 
 class PathFinder;
 
@@ -71,9 +72,9 @@ class TargetedMovementGeneratorMedium
         ShortTimeTracker i_recheckDistance;
         float i_offset;
         float i_angle;
+        G3D::Vector3 m_prevTargetPos;
         bool m_speedChanged : 1;
         bool i_targetReached : 1;
-
         PathFinder* i_path;
 };
 
