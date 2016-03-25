@@ -30,6 +30,8 @@
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
 #include <ace/Atomic_Op.h>
+#include <ace/Thread_Mutex.h>
+#include <ace/Guard_T.h>
 
 struct AreaTriggerEntry;
 struct SpellEntry;
@@ -574,13 +576,7 @@ class ScriptMgr
 
         bool ReloadScriptBinding();
 
-        ScriptChainMap const* GetScriptChainMap(DBScriptType type)
-        {
-            if ((type != DBS_INTERNAL) && type < DBS_END)
-                return &m_dbScripts[type];
-
-            return NULL;
-        }
+        ScriptChainMap const* GetScriptChainMap(DBScriptType type);
 
         const char* GetScriptName(uint32 id) const
         {
@@ -668,6 +664,8 @@ class ScriptMgr
 #endif /* _DEBUG */
         // atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
+        char __cache_guard[1024];
+        ACE_Thread_Mutex m_lock;
 };
 
 // Starters for events

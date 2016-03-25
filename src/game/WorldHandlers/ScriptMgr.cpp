@@ -55,7 +55,7 @@
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
 
-ScriptMgr::ScriptMgr() : m_scheduledScripts(0)
+ScriptMgr::ScriptMgr() : m_scheduledScripts(0), m_lock(0)
 {
     m_dbScripts.resize(DBS_END);
 
@@ -69,6 +69,16 @@ ScriptMgr::~ScriptMgr()
 {
     m_dbScripts.clear();
 }
+
+ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
+{
+    ACE_GUARD_RETURN(ACE_Thread_Mutex, _guard, m_lock, NULL)
+    if ((type != DBS_INTERNAL) && type < DBS_END)
+        return &m_dbScripts[type];
+
+    return NULL;
+}
+
 
 // /////////////////////////////////////////////////////////
 //              DB SCRIPTS (loaders of static data)
@@ -738,12 +748,17 @@ void ScriptMgr::LoadScripts(DBScriptType type)
 
 void ScriptMgr::LoadDbScripts(DBScriptType t)
 {
+
     std::set<uint32> eventIds;                              // Store possible event ids
 
     if (t == DBS_ON_EVENT)
       CollectPossibleEventIds(eventIds);
 
-    LoadScripts(t);
+    {
+        ACE_GUARD(ACE_Thread_Mutex, _g, m_lock)
+        LoadScripts(t);
+    }
+
     ScriptChainMap& scm = m_dbScripts[t];
 
     for (ScriptChainMap::const_iterator itr = scm.begin(); itr != scm.end(); ++itr)
