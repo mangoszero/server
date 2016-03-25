@@ -1188,7 +1188,7 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadNpcGossips();                            // must be after load Creature and LoadGossipText
 
     sLog.outString("Loading Gossip scripts...");
-    sScriptMgr.LoadGossipScripts();                         // must be before gossip menu options
+    sScriptMgr.LoadDbScripts(DBS_ON_GOSSIP);                 // must be before gossip menu options
 
     sObjectMgr.LoadGossipMenus();
 
@@ -1201,7 +1201,7 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadTrainers();                              // must be after load CreatureTemplate, TrainerTemplate
 
     sLog.outString("Loading Waypoint scripts...");          // before loading from creature_movement
-    sScriptMgr.LoadCreatureMovementScripts();
+    sScriptMgr.LoadDbScripts(DBS_ON_CREATURE_MOVEMENT);
 
     sLog.outString("Loading Waypoints...");
     sWaypointMgr.Load();
@@ -1258,13 +1258,13 @@ void World::SetInitialWorldSettings()
 
     ///- Load and initialize DBScripts Engine
     sLog.outString("Loading DB-Scripts Engine...");
-    sScriptMgr.LoadQuestStartScripts();                     // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
-    sScriptMgr.LoadQuestEndScripts();                       // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
-    sScriptMgr.LoadSpellScripts();                          // must be after load Creature/Gameobject(Template/Data)
-    sScriptMgr.LoadGameObjectScripts();                     // must be after load Creature/Gameobject(Template/Data)
-    sScriptMgr.LoadGameObjectTemplateScripts();             // must be after load Creature/Gameobject(Template/Data)
-    sScriptMgr.LoadEventScripts();                          // must be after load Creature/Gameobject(Template/Data)
-    sScriptMgr.LoadCreatureDeathScripts();                  // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadDbScripts(DBS_ON_QUEST_START);           // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
+    sScriptMgr.LoadDbScripts(DBS_ON_QUEST_END);             // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
+    sScriptMgr.LoadDbScripts(DBS_ON_SPELL);                 // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadDbScripts(DBS_ON_GO_USE);                // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadDbScripts(DBS_ON_GOT_USE);               // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadDbScripts(DBS_ON_EVENT);                 // must be after load Creature/Gameobject(Template/Data)
+    sScriptMgr.LoadDbScripts(DBS_ON_CREATURE_DEATH);        // must be after load Creature/Gameobject(Template/Data)
     sLog.outString(">>> DB Scripts loaded");
     sLog.outString();
 

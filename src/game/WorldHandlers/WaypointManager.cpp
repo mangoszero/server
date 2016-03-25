@@ -61,9 +61,13 @@ void WaypointManager::Load()
     uint32 total_nodes = 0;
     uint32 total_behaviors = 0;
 
+    ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_CREATURE_MOVEMENT);
+    if (!scm)
+        return;
+
     std::set<uint32> movementScriptSet;
 
-    for (ScriptMapMap::const_iterator itr = sCreatureMovementScripts.second.begin(); itr != sCreatureMovementScripts.second.end(); ++itr)
+    for (ScriptChainMap::const_iterator itr = scm->begin(); itr != scm->end(); ++itr)
         { movementScriptSet.insert(itr->first); }
 
     // /////////////////////////////////////////////////////
@@ -159,7 +163,7 @@ void WaypointManager::Load()
 
             if (node.script_id)
             {
-                if (sCreatureMovementScripts.second.find(node.script_id) == sCreatureMovementScripts.second.end())
+                if (scm->find(node.script_id) == scm->end())
                 {
                     sLog.outErrorDb("Table creature_movement for id %u, point %u have script_id %u that does not exist in `dbscripts_on_creature_movement`, ignoring", id, point, node.script_id);
                     continue;
@@ -314,7 +318,7 @@ void WaypointManager::Load()
 
             if (node.script_id)
             {
-                if (sCreatureMovementScripts.second.find(node.script_id) == sCreatureMovementScripts.second.end())
+                if (scm->find(node.script_id) == scm->end())
                 {
                     sLog.outErrorDb("Table creature_movement_template for entry %u, point %u have script_id %u that does not exist in `dbscripts_on_creature_movement`, ignoring", entry, point, node.script_id);
                     continue;
@@ -586,7 +590,11 @@ bool WaypointManager::SetNodeScriptId(uint32 entry, uint32 dbGuid, uint32 point,
     if (find != path->end())
         find->second.script_id = scriptId;
 
-    return sCreatureMovementScripts.second.find(scriptId) != sCreatureMovementScripts.second.end();
+    ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_CREATURE_MOVEMENT);
+    if (!scm)
+        return false;
+
+    return scm->find(scriptId) != scm->end();
 }
 
 inline void CheckWPText(bool isTemplate, uint32 entryOrGuid, uint32 point, WaypointBehavior* be, std::set<int32>& ids)

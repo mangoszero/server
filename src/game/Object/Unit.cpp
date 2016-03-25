@@ -1054,7 +1054,7 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
         { outdoorPvP->HandleCreatureDeath(victim); }
 
     // Start creature death script
-    GetMap()->ScriptsStart(sCreatureDeathScripts, victim->GetEntry(), victim, responsiblePlayer ? responsiblePlayer : this);
+    GetMap()->ScriptsStart(DBS_ON_CREATURE_DEATH, victim->GetEntry(), victim, responsiblePlayer ? responsiblePlayer : this);
 
     if (victim->IsLinkingEventTrigger())
         { victim->GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_DIE, victim); }
