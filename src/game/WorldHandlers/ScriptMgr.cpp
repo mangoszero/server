@@ -748,12 +748,17 @@ void ScriptMgr::LoadScripts(DBScriptType type)
 
 void ScriptMgr::LoadDbScripts(DBScriptType t)
 {
+
     std::set<uint32> eventIds;                              // Store possible event ids
 
     if (t == DBS_ON_EVENT)
       CollectPossibleEventIds(eventIds);
 
-    LoadScripts(t);
+    {
+        ACE_GUARD(ACE_Thread_Mutex, _g, m_lock)
+        LoadScripts(t);
+    }
+
     ScriptChainMap& scm = m_dbScripts[t];
 
     for (ScriptChainMap::const_iterator itr = scm.begin(); itr != scm.end(); ++itr)
