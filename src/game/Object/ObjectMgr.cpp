@@ -8238,9 +8238,13 @@ void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
         // Check script-id
         if (gMenu.script_id)
         {
-            if (sGossipScripts.second.find(gMenu.script_id) == sGossipScripts.second.end())
+            ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_GOSSIP);
+            if (!scm)
+                continue;
+
+            if (scm->find(gMenu.script_id) == scm->end())
             {
-                sLog.outErrorDb("Table gossip_menu for menu %u, text-id %u have script_id %u that does not exist in `dbscripts_on_gossip`, ignoring", gMenu.entry, gMenu.text_id, gMenu.script_id);
+                sLog.outErrorDb("Table gossip_menu for menu %u, text-id %u have script_id %u that does not exist in `db_scripts [type = %d]`, ignoring", gMenu.entry, gMenu.text_id, gMenu.script_id, DBS_ON_GOSSIP);
                 continue;
             }
 
@@ -8419,9 +8423,13 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
 
         if (gMenuItem.action_script_id)
         {
-            if (sGossipScripts.second.find(gMenuItem.action_script_id) == sGossipScripts.second.end())
+            ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_GOSSIP);
+            if (!scm)
+                continue;
+
+            if (scm->find(gMenuItem.action_script_id) == scm->end())
             {
-                sLog.outErrorDb("Table gossip_menu_option for menu %u, id %u have action_script_id %u that does not exist in `dbscripts_on_gossip`, ignoring", gMenuItem.menu_id, gMenuItem.id, gMenuItem.action_script_id);
+                sLog.outErrorDb("Table gossip_menu_option for menu %u, id %u have action_script_id %u that does not exist in `db_scripts [type = %d]`, ignoring", gMenuItem.menu_id, gMenuItem.id, gMenuItem.action_script_id, DBS_ON_GOSSIP);
                 continue;
             }
 
@@ -8459,9 +8467,13 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
 
 void ObjectMgr::LoadGossipMenus()
 {
-    // Check which script-ids in dbscripts_on_gossip are not used
+    ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_GOSSIP);
+    if (!scm)
+        return;
+
+    // Check which script-ids in db_scripts type DBS_ON_GOSSIP are not used
     std::set<uint32> gossipScriptSet;
-    for (ScriptMapMap::const_iterator itr = sGossipScripts.second.begin(); itr != sGossipScripts.second.end(); ++itr)
+    for (ScriptChainMap::const_iterator itr = scm->begin(); itr != scm->end(); ++itr)
         { gossipScriptSet.insert(itr->first); }
 
     // Load gossip_menu and gossip_menu_option data
@@ -8471,7 +8483,7 @@ void ObjectMgr::LoadGossipMenus()
     LoadGossipMenuItems(gossipScriptSet);
 
     for (std::set<uint32>::const_iterator itr = gossipScriptSet.begin(); itr != gossipScriptSet.end(); ++itr)
-        { sLog.outErrorDb("Table `dbscripts_on_gossip` contains unused script, id %u.", *itr); }
+        { sLog.outErrorDb("Table `db_scripts [type = %d]` contains unused script, id %u.", DBS_ON_GOSSIP, *itr); }
 }
 
 void ObjectMgr::AddVendorItem(uint32 entry, uint32 item, uint32 maxcount, uint32 incrtime)
