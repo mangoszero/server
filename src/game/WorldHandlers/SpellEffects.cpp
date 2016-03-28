@@ -1267,16 +1267,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     if (!spell_proto)
                         { return; }
 
-                    Spell* triggered = new Spell(m_caster, spell_proto, true);
-                    int damagePoint = 0;
-
-                    damagePoint = triggered->CalculateDamage(SpellEffectIndex(0) ,unitTarget);
-                    damagePoint = m_caster->SpellDamageBonusDone(unitTarget, m_spellInfo, damagePoint, SPELL_DIRECT_DAMAGE);
-                    damagePoint = unitTarget->SpellDamageBonusTaken(m_caster, m_spellInfo, damagePoint, SPELL_DIRECT_DAMAGE);
-
-                    m_caster->CastCustomSpell(unitTarget, spell_proto, &damagePoint, NULL, NULL, true, NULL, NULL);
-                    //m_caster->CastSpell(unitTarget, spell_proto, true, NULL);
-
+                    m_caster->CastSpell(unitTarget, spell_proto, true, NULL);
                     return;
                 }
             }
