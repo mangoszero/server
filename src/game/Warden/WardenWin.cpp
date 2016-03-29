@@ -163,18 +163,20 @@ void WardenWin::RequestData()
 {
     sLog.outWarden("Request data");
 
+    uint16 build = _session->GetClientBuild();
+    uint16 id = 0;
+    uint8 type = 0;
+    WardenCheck* wd = NULL;
+
     // If all checks were done, fill the todo list again
     if (_memChecksTodo.empty())
-        _memChecksTodo.assign(sWardenCheckMgr->MemChecksIdPool.begin(), sWardenCheckMgr->MemChecksIdPool.end());
+        sWardenCheckMgr->GetWardenCheckIds(true, build, _memChecksTodo);
 
     if (_otherChecksTodo.empty())
-        _otherChecksTodo.assign(sWardenCheckMgr->OtherChecksIdPool.begin(), sWardenCheckMgr->OtherChecksIdPool.end());
+        sWardenCheckMgr->GetWardenCheckIds(false, build, _otherChecksTodo);
 
     _serverTicks = WorldTimer::getMSTime();
 
-    uint16 id;
-    uint8 type;
-    WardenCheck* wd;
     _currentChecks.clear();
 
     // Build check request
@@ -195,8 +197,6 @@ void WardenWin::RequestData()
     ByteBuffer buff;
     buff << uint8(WARDEN_SMSG_CHEAT_CHECKS_REQUEST);
 
-    ACE_READ_GUARD(ACE_RW_Mutex, g, sWardenCheckMgr->_checkStoreLock);
-
     for (uint16 i = 0; i < sWorld.getConfig(CONFIG_UINT32_WARDEN_NUM_OTHER_CHECKS); ++i)
     {
         // If todo list is done break loop (will be filled on next Update() run)
@@ -210,18 +210,22 @@ void WardenWin::RequestData()
         // Add the id to the list sent in this cycle
         _currentChecks.push_back(id);
 
-        wd = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), id);
-
-        switch (wd->Type)
+        // if we are here, the function is guaranteed to not return NULL
+        // but ... who knows
+        wd = sWardenCheckMgr->GetWardenDataById(build, id);
+        if (wd)
         {
-            case MPQ_CHECK:
-            case LUA_STR_CHECK:
-            case DRIVER_CHECK:
-                buff << uint8(wd->Str.size());
-                buff.append(wd->Str.c_str(), wd->Str.size());
-                break;
-            default:
-                break;
+            switch (wd->Type)
+            {
+                case MPQ_CHECK:
+                case LUA_STR_CHECK:
+                case DRIVER_CHECK:
+                    buff << uint8(wd->Str.size());
+                    buff.append(wd->Str.c_str(), wd->Str.size());
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -235,7 +239,7 @@ void WardenWin::RequestData()
 
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
     {
-        wd = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), *itr);
+        wd = sWardenCheckMgr->GetWardenDataById(build, *itr);
 
         type = wd->Type;
         buff << uint8(type ^ xorByte);
@@ -355,8 +359,6 @@ void WardenWin::HandleData(ByteBuffer &buff)
     WardenCheck *rd;
     uint8 type;
     uint16 checkFailed = 0;
-
-    ACE_READ_GUARD(ACE_RW_Mutex, g, sWardenCheckMgr->_checkStoreLock);
 
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
     {

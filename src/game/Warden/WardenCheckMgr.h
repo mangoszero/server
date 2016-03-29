@@ -50,6 +50,7 @@ struct WardenCheck
 
 struct WardenCheckResult
 {
+    uint16 Id;
     BigNumber Result;                                       // MEM_CHECK
 };
 
@@ -68,22 +69,15 @@ class WardenCheckMgr
 
         WardenCheck* GetWardenDataById(uint16 /*build*/, uint16 /*id*/);
         WardenCheckResult* GetWardenResultById(uint16 /*build*/, uint16 /*id*/);
-
-        std::vector<uint16> MemChecksIdPool;
-        std::vector<uint16> OtherChecksIdPool;
+        void GetWardenCheckIds(bool isMemCheck /* true = MEM */, uint16 build, std::list<uint16>& list);
 
         void LoadWardenChecks();
         void LoadWardenOverrides();
 
-        ACE_RW_Mutex _checkStoreLock;
-
     private:
-        // We have a linear key without any gaps, so we use vector for fast access
-        typedef std::map< uint16, WardenCheck* > CheckContainer;
-        typedef std::map< uint16, WardenCheckResult* > CheckResultContainer;
-        
-        typedef std::map< uint16 /*build*/, CheckContainer* > CheckMap;
-        typedef std::map< uint16 /*build*/, CheckResultContainer* > CheckResultMap;
+        ACE_RW_Mutex m_lock;
+        typedef std::multimap< uint16, WardenCheck* > CheckMap;
+        typedef std::multimap< uint16, WardenCheckResult* > CheckResultMap;
 
         CheckMap       CheckStore;
         CheckResultMap CheckResultStore;

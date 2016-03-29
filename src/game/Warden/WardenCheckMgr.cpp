@@ -32,23 +32,15 @@
 #include "WardenCheckMgr.h"
 #include "Warden.h"
 
-WardenCheckMgr::WardenCheckMgr() { }
+WardenCheckMgr::WardenCheckMgr() : m_lock(0), CheckStore(), CheckResultStore() { }
 
 WardenCheckMgr::~WardenCheckMgr()
 {
     for (CheckMap::iterator it = CheckStore.begin(); it != CheckStore.end(); ++it)
-    {
-        for (CheckContainer::iterator itr = it->second->begin(); itr != it->second->end(); ++itr)
-            delete itr->second;
         delete it->second;
-    }
 
     for (CheckResultMap::iterator it = CheckResultStore.begin(); it != CheckResultStore.end(); ++it)
-    {
-        for (CheckResultContainer::iterator itr = it->second->begin(); itr != it->second->end(); ++itr)
-            delete itr->second;
         delete it->second;
-    }
 }
 
 void WardenCheckMgr::LoadWardenChecks()
@@ -60,7 +52,8 @@ void WardenCheckMgr::LoadWardenChecks()
         return;
     }
 
-    QueryResult *result = WorldDatabase.Query("SELECT DISTINCT build FROM warden");
+                                                  //  0   1      2     3     4       5        6       7    8
+    QueryResult *result = WorldDatabase.Query("SELECT id, build, type, data, result, address, length, str, comment FROM warden ORDER BY build ASC, id ASC");
 
     if (!result)
     {
@@ -68,26 +61,8 @@ void WardenCheckMgr::LoadWardenChecks()
         return;
     }
 
-    Field* fields;
-    
-    do
-    {
-        fields = result->Fetch();
-        uint16 build = fields[0].GetUInt16();
-        CheckContainer* ck = new CheckContainer();
-        CheckResultContainer* ckr = new CheckResultContainer();
-        CheckStore[build] = ck;
-        CheckResultStore[build] = ckr;
-        
-    } while (result->NextRow());
-
-    delete result;
-
-    //                                    0  1      2     3     4       5        6      7     8
-    result = WorldDatabase.Query("SELECT id, build, type, data, result, address, length, str, comment FROM warden ORDER BY build ASC, id ASC");
-    // no need to check. done in SELECT DISTINCT before
-
     uint32 count = 0;
+    Field* fields;
 
     do
     {
@@ -125,11 +100,6 @@ void WardenCheckMgr::LoadWardenChecks()
             }
         }
 
-        if (checkType == MEM_CHECK || checkType == MODULE_CHECK)
-            MemChecksIdPool.push_back(id);
-        else
-            OtherChecksIdPool.push_back(id);
-
         if (checkType == MEM_CHECK || checkType == PAGE_CHECK_A || checkType == PAGE_CHECK_B || checkType == PROC_CHECK)
         {
             wardenCheck->Address = address;
@@ -140,11 +110,12 @@ void WardenCheckMgr::LoadWardenChecks()
         if (checkType == MEM_CHECK || checkType == MPQ_CHECK || checkType == LUA_STR_CHECK || checkType == DRIVER_CHECK || checkType == MODULE_CHECK)
             wardenCheck->Str = str;
 
-        CheckStore[build]->insert(std::pair<uint16,WardenCheck*>(id, wardenCheck));
+        CheckStore.insert(std::pair<uint16, WardenCheck*>(build, wardenCheck));
 
         if (checkType == MPQ_CHECK || checkType == MEM_CHECK)
         {
             WardenCheckResult* wr = new WardenCheckResult();
+            wr->Id = id;
             wr->Result.SetHexStr(checkResult.c_str());
             int len = checkResult.size() / 2;
             if (wr->Result.GetNumBytes() < len)
@@ -156,7 +127,7 @@ void WardenCheckMgr::LoadWardenChecks()
                 wr->Result.SetBinary((uint8*)temp, len);
                 delete[] temp;
             }
-            CheckResultStore[build]->insert(std::pair<uint16, WardenCheckResult*>(id,wr));
+            CheckResultStore.insert(std::pair<uint16, WardenCheckResult*>(build, wr));
         }
 
         if (comment.empty())
@@ -192,7 +163,7 @@ void WardenCheckMgr::LoadWardenOverrides()
 
     uint32 count = 0;
 
-    ACE_WRITE_GUARD(ACE_RW_Mutex, g, _checkStoreLock);
+    ACE_WRITE_GUARD(ACE_RW_Mutex, g, m_lock);
 
     do
     {
@@ -204,21 +175,20 @@ void WardenCheckMgr::LoadWardenOverrides()
         // Check if action value is in range (0-2, see WardenActions enum)
         if (action > WARDEN_ACTION_BAN)
             sLog.outWarden("Warden check override action out of range (ID: %u, action: %u)", checkId, action);
-
-        // Check if check actually exists before accessing the CheckStore vector
         else 
         {
+            bool found = false;
             for (CheckMap::iterator it = CheckStore.begin(); it != CheckStore.end(); ++it)
             {
-                CheckContainer::iterator ir = it->second->find(checkId);
-                if (ir == it->second->end())
-                    sLog.outWarden("Warden check action override for non-existing check (ID: %u, action: %u), skipped", checkId, action);
-                else
+                if (it->second->CheckId == checkId)
                 {
-                    ir->second->Action = WardenActions(action);
+                    it->second->Action = WardenActions(action);
                     ++count;
+                    found = true;
                 }
             }
+            if (!found)
+                sLog.outWarden("Warden check action override for non-existing check (ID: %u, action: %u), skipped", checkId, action);
         }
     }
     while (result->NextRow());
@@ -229,12 +199,12 @@ void WardenCheckMgr::LoadWardenOverrides()
 WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
 {
     WardenCheck* result = NULL;
-    CheckMap::iterator it = CheckStore.find(build);
-    if (it != CheckStore.end())
+
+    ACE_READ_GUARD_RETURN(ACE_RW_Mutex, g, m_lock, result)
+    for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
     {
-        CheckContainer::iterator ir = it->second->find(id);
-        if (ir != it->second->end())
-            result = ir->second;
+        if (it->second->CheckId == id)
+            result = it->second;
     }
 
     return result;
@@ -243,13 +213,30 @@ WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
 WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 id)
 {
     WardenCheckResult* result = NULL;
-    CheckResultMap::iterator it = CheckResultStore.find(build);
-    if (it != CheckResultStore.end())
+
+    ACE_READ_GUARD_RETURN(ACE_RW_Mutex, g, m_lock, result)
+    for (CheckResultMap::iterator it = CheckResultStore.lower_bound(build); it != CheckResultStore.upper_bound(build); ++it)
     {
-        CheckResultContainer::iterator ir = it->second->find(id);
-        if (ir != it->second->end())
-            result = ir->second;
+        if (it->second->Id == id)
+            result = it->second;
     }
 
     return result;
+}
+
+void WardenCheckMgr::GetWardenCheckIds(bool isMemCheck, uint16 build, std::list<uint16>& idl)
+{
+    idl.clear(); //just to be sure
+
+    ACE_READ_GUARD(ACE_RW_Mutex, g, m_lock);
+    for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
+    {
+        if (isMemCheck)
+        {
+            if ((it->second->Type == MEM_CHECK) || (it->second->Type == MODULE_CHECK))
+                idl.push_back(it->second->CheckId);
+        }
+        else
+            idl.push_back(it->second->CheckId);
+    }
 }
