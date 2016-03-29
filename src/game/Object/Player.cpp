@@ -16946,7 +16946,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     // prevent stealth flight
     RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
-    if (sWorld.getConfig(CONFIG_BOLL_INSTANT_TAXI))
+    if (sWorld.getConfig(CONFIG_BOOL_INSTANT_TAXI))
     {
         TaxiNodesEntry const* lastnode = sTaxiNodesStore.LookupEntry(nodes[nodes.size() - 1]);
         m_taxi.ClearTaxiDestinations();
