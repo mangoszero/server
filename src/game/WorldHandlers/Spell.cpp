@@ -3804,17 +3804,15 @@ void Spell::TakePower()
         {
             if (m_caster->GetTypeId() == TYPEID_PLAYER)
             {
-                if (powerType == POWER_ENERGY)
-                    if (uint64 targetGUID = m_targets.getUnitTargetGuid())
-                        for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
-                            if (ihit->targetGUID = targetGUID)
+                if (powerType == POWER_ENERGY || powerType == POWER_RAGE)
+                    for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                        {
+                            if (ihit->missCondition != SPELL_MISS_NONE)
                             {
-                                if (ihit->missCondition != SPELL_MISS_NONE)
-                                {
-                                    hit = false;
-                                }
-                                break;
+                                hit = false;
                             }
+                            break;
+                        }
             }
         }
     }
