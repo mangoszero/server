@@ -893,32 +893,36 @@ void Log::outWarden(const char* str, ...)
     {
         return;
     }
-
-    if (m_colored)
+    if (m_logLevel >= LOG_LVL_DETAIL)
     {
-        SetColor(true, m_colors[LogNormal]);
+        if (m_colored)
+        {
+            SetColor(true, m_colors[LogNormal]);
+        }
+
+        if (m_includeTime)
+        {
+            outTime();
+        }
+
+        va_list ap;
+
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
+
+        if (m_colored)
+        {
+            ResetColor(true);
+        }
+
+        printf("\n");
     }
 
-    if (m_includeTime)
+    if (wardenLogfile && m_logFileLevel >= LOG_LVL_DETAIL)
     {
-        outTime();
-    }
+        va_list ap;
 
-    va_list ap;
-
-    va_start(ap, str);
-    vutf8printf(stdout, str, &ap);
-    va_end(ap);
-
-    if (m_colored)
-    {
-        ResetColor(true);
-    }
-
-    printf("\n");
-
-    if (wardenLogfile)
-    {
         outTimestamp(wardenLogfile);
         fprintf(wardenLogfile, "[Warden]: ");
 
