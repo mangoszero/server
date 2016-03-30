@@ -351,8 +351,9 @@ void WardenWin::HandleData(ByteBuffer &buff)
         uint32 ticksNow = WorldTimer::getMSTime();
         uint32 ourTicks = newClientTicks + (ticksNow - _serverTicks);
 
-        sLog.outWarden("ServerTicks %u, RequestTicks %u, CLientTicks %u", ticksNow, _serverTicks, newClientTicks);  // Now, At request, At response
+        sLog.outWarden("ServerTicks %u, RequestTicks %u, ClientTicks %u", ticksNow, _serverTicks, newClientTicks);  // Now, At request, At response
         sLog.outWarden("Waittime %u", ourTicks - newClientTicks);
+
     }
 
     WardenCheckResult* rs;

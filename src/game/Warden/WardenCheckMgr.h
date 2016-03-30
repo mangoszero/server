@@ -75,10 +75,11 @@ class WardenCheckMgr
         void LoadWardenOverrides();
 
     private:
-        ACE_RW_Mutex m_lock;
+        typedef ACE_RW_Thread_Mutex LOCK;
         typedef std::multimap< uint16, WardenCheck* > CheckMap;
         typedef std::multimap< uint16, WardenCheckResult* > CheckResultMap;
 
+        LOCK           m_lock;
         CheckMap       CheckStore;
         CheckResultMap CheckResultStore;
 
