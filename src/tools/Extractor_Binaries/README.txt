@@ -14,11 +14,10 @@ Also, you will have to run a full build of *mangos* to create all map tools.
 Instructions
 ------------
 Copy the created map tools to the [World of Warcraft][1] installation directory,
-namely the tolls named:
+namely the tools named:
 
 * `map-extractor`
 * `vmap-extractor`
-* `vmap-assembler`
 * `mmap-generator`
 
 Then copy `ExtractResources.sh`, `MoveMapGen.sh` and `offmesh.txt` into the client
@@ -29,7 +28,7 @@ Now open a [git Bash shell][2], and change to the installation directory.
 Execute `ExtractResources.sh`, and answer the questions asked by the tool to
 
 * extract client database files, and maps (**required**).
-* extract and assemble vmaps (**required**).
+* extract vmaps (**required**).
 * extract movement maps (**optional**). Be aware that this process is very CPU
   intense, and depending on your CPU may take up to a half day to create all
   movement maps.
