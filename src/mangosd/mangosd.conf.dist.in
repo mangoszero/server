@@ -830,7 +830,7 @@ BeepAtStart                               = 1
 ShowProgressBars                          = 1
 WaitAtStartupError                        = 10
 PlayerCommands                            = 0
-Motd                                      = "Welcome to the Mangos Zero"
+Motd                                      = "Welcome to Mangos Zero"
 
 ################################################################################
 # PLAYER INTERACTION
