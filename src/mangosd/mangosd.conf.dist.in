@@ -753,7 +753,8 @@ SD3ErrorLogFile             = "scriptdev3-errors.log"
 #    WaitAtStartupError
 #        After startup error report wait <Enter> or some time before continue (and possible close console window)
 #                 -1 (wait until <Enter> press)
-#        Default:  0 (not wait)
+#        Default: 10 (wait 10 seconds before closing)
+#                  0 (not wait)
 #                  N (>0, wait N secs)
 #
 #    PlayerCommands
@@ -827,9 +828,9 @@ PetUnsummonAtMount                        = 0
 Event.Announce                            = 0
 BeepAtStart                               = 1
 ShowProgressBars                          = 1
-WaitAtStartupError                        = 0
+WaitAtStartupError                        = 10
 PlayerCommands                            = 0
-Motd                                      = "Welcome to the World of Warcraft."
+Motd                                      = "Welcome to the Mangos Zero"
 
 ################################################################################
 # PLAYER INTERACTION
