@@ -665,6 +665,8 @@ class CreatureEventAI : public CreatureAI
         void AttackStart(Unit* who) override;
         void MoveInLineOfSight(Unit* who) override;
         void SpellHit(Unit* pUnit, const SpellEntry* pSpell) override;
+        void OnSpellCastChange(const SpellEntry* pSpell, SpellCastResult reason) override;
+        virtual CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
         void DamageTaken(Unit* done_by, uint32& damage) override;
         void HealedBy(Unit* healer, uint32& healedAmount) override;
         void UpdateAI(const uint32 diff) override;
@@ -701,6 +703,7 @@ class CreatureEventAI : public CreatureAI
         bool   m_MeleeEnabled;                              // If we allow melee auto attack
         bool   m_HasOOCLoSEvent;                            // Cache if a OOC-LoS Event exists
         uint32 m_InvinceabilityHpLevel;                     // Minimal health level allowed at damage apply
+        uint32 m_currSpell;                                 // track current spell from ACTION_T_CAST if any
 
         uint32 m_throwAIEventMask;                          // Automatically throw AIEvents that are encoded into this mask
         // Note that Step 100 means that AI_EVENT_GOT_FULL_HEALTH was sent

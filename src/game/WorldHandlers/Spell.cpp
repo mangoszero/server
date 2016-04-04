@@ -3261,7 +3261,11 @@ void Spell::finish(bool ok)
 void Spell::SendCastResult(SpellCastResult result)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
-        { return; }
+    {
+        if (((Creature*)m_caster)->AI())
+            ((Creature*)m_caster)->AI()->OnSpellCastChange(m_spellInfo, result);
+        return;
+    }
 
     if (((Player*)m_caster)->GetSession()->PlayerLoading()) // don't send cast results at loading time
         { return; }

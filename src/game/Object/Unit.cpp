@@ -8591,7 +8591,9 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
 
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
+        StopMoving(GetTypeId() == TYPEID_PLAYER);
         GetMotionMaster()->MovementExpired(false);
+
         CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
 
         if (GetTypeId() == TYPEID_UNIT)
@@ -8635,39 +8637,41 @@ void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
 {
     if (apply)
     {
-         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-         GetMotionMaster()->MovementExpired(false);
-         CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
+        StopMoving(GetTypeId() == TYPEID_PLAYER);
+        GetMotionMaster()->MovementExpired(false);
 
-         if (GetTypeId() == TYPEID_UNIT)
-             SetTargetGuid(ObjectGuid());
+        CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
+
+        if (GetTypeId() == TYPEID_UNIT)
+           SetTargetGuid(ObjectGuid());
 
         GetMotionMaster()->MoveConfused();
     }
     else
     {
-         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
+        RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-         GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
-         if (GetTypeId() == TYPEID_PLAYER)
-             StopMoving(true);
+        GetMotionMaster()->MovementExpired(GetTypeId() == TYPEID_PLAYER);
+        if (GetTypeId() == TYPEID_PLAYER)
+           StopMoving(true);
 
-         if (GetTypeId() != TYPEID_PLAYER && IsAlive())
-         {
+        if (GetTypeId() != TYPEID_PLAYER && IsAlive())
+        {
             // restore appropriate movement generator
-             if (getVictim())
-             {
-                 SetTargetGuid(getVictim()->GetObjectGuid());
-                 GetMotionMaster()->MoveChase(getVictim());
-             }
-             else
+            if (getVictim())
+            {
+                SetTargetGuid(getVictim()->GetObjectGuid());
+                GetMotionMaster()->MoveChase(getVictim());
+            }
+            else
              { GetMotionMaster()->Initialize(); }
-          }
+        }
     }
 
     if (GetTypeId() == TYPEID_PLAYER)
-        { ((Player*)this)->SetClientControl(this, !apply); }
+      { ((Player*)this)->SetClientControl(this, !apply); }
 }
 
 void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)

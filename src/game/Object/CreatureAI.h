@@ -53,7 +53,8 @@ enum CanCastResult
     CAST_FAIL_POWER             = 5,
     CAST_FAIL_STATE             = 6,
     CAST_FAIL_TARGET_AURA       = 7,
-    CAST_FAIL_NO_LOS            = 8
+    CAST_FAIL_NO_LOS            = 8,
+    CAST_FAIL_SILENCED          = 9
 };
 
 enum CastFlags
@@ -68,10 +69,8 @@ enum CastFlags
 
 enum CombatMovementFlags
 {
-    COMBAT_MOVEMENT_SCRIPT      = 0x01,                      // Combat movement enforced by script
-    COMBAT_MOVEMENT_LOS         = 0x02,                      // Combat movement triggered by LoS issues
-    COMBAT_MOVEMENT_OOM         = 0x04,                      // Combat movement triggered by power exhaustion
-    COMBAT_MOVEMENT_DISTANCE    = 0x08                       // Combat movement triggered by distance checks
+    CM_SCRIPT = 0x01,
+    CM_SPELL  = 0x02,
 };
 
 enum AIEventType
@@ -109,13 +108,7 @@ enum AIEventType
 class CreatureAI
 {
     public:
-        explicit CreatureAI(Creature* creature) :
-            m_creature(creature),
-            m_combatMovement(0),
-            m_attackDistance(0.0f),
-            m_attackAngle(0.0f)
-        { AddCombatMovementFlags(COMBAT_MOVEMENT_SCRIPT); }
-
+        explicit CreatureAI(Creature* creature);
         virtual ~CreatureAI();
 
         ///== Information about AI ========================
@@ -233,6 +226,12 @@ class CreatureAI
         virtual void SpellHit(Unit* /*pCaster*/, const SpellEntry* /*pSpell*/) {}
 
         /**
+         * Called when the current casted spell is processed
+         * @param pSpell The spell that is casted currently
+         * @param reason The spell state (see SpellCastResult enum)
+         */
+        virtual void OnSpellCastChange(const SpellEntry* /*pSpell*/, SpellCastResult /*reason*/) {}
+        /**
          * Called when spell hits creature's target
          * @param pTarget Target that we hit with the spell
          * @param pSpell Spell with which we hit pTarget
@@ -318,14 +317,14 @@ class CreatureAI
          * @param uiCastFlags Some flags to define how to cast, see enum CastFlags
          * @param OriginalCasterGuid the original caster of the spell if required, empty by default
          */
-        CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
+        virtual CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
 
         /// Combat movement functions
         void SetCombatMovement(bool enable, bool stopOrStartMovement = false);
         bool IsCombatMovement() const { return m_combatMovement != 0; }
-        void AddCombatMovementFlags(uint32 cmFlags);
-        void ClearCombatMovementFlags(uint32 cmFlags);
-        
+        uint8 GetCombatMovementFlags() const { return m_combatMovement; }
+        void SetCombatMovementFlag(uint8 flag, bool setFlag = true);
+
         ///== Event Handling ===============================
 
         /*
@@ -354,21 +353,23 @@ class CreatureAI
         virtual void ReceiveAIEvent(AIEventType /*eventType*/, Creature* /*pSender*/, Unit* /*pInvoker*/, uint32 /*miscValue*/) {}
 
         // Reset should be defined here, as it is called from out the AI ctor now
-        virtual void Reset() {}
+        virtual void Reset() { m_combatMovement = CM_SCRIPT; }
 
     protected:
         void HandleMovementOnAttackStart(Unit* victim);
+        void SetChase(bool chase);
 
         ///== Fields =======================================
 
         /// Pointer to the Creature controlled by this AI
         Creature* const m_creature;
 
-        /// Combat movement currently enabled
-        uint32 m_combatMovement;
         /// How should an enemy be chased
         float m_attackDistance;
         float m_attackAngle;
+    private:
+        /// Combat movement currently enabled
+        uint8 m_combatMovement;
 };
 
 struct SelectableAI : public FactoryHolder<CreatureAI>, public Permissible<Creature>
