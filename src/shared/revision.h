@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "characters_pvpstats"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 10
+    #define WORLD_DB_STRUCTURE_NR 11
     #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "warden_table_redone"
+    #define WORLD_DB_UPDATE_DESCRIPTION "quest_relations"
 #endif // __REVISION_H__

@@ -286,7 +286,7 @@ bool ChatHandler::HandleReloadAllQuestCommand(char* /*args*/)
 
     sLog.outString("Re-Loading Quests Relations...");
     sObjectMgr.LoadQuestRelations();
-    SendGlobalSysMessage("DB tables `*_questrelation` and `*_involvedrelation` reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` reloaded.", SEC_MODERATOR);
     return true;
 }
 
@@ -403,17 +403,17 @@ bool ChatHandler::HandleReloadCommandCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadCreatureQuestRelationsCommand(char* /*args*/)
 {
-    sLog.outString("Loading Quests Relations... (`creature_questrelation`)");
+    sLog.outString("Loading creature quest givers...");
     sObjectMgr.LoadCreatureQuestRelations();
-    SendGlobalSysMessage("DB table `creature_questrelation` (creature quest givers) reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` (creature quest givers) reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadCreatureQuestInvRelationsCommand(char* /*args*/)
 {
-    sLog.outString("Loading Quests Relations... (`creature_involvedrelation`)");
+    sLog.outString("Loading creature quest takers...");
     sObjectMgr.LoadCreatureInvolvedRelations();
-    SendGlobalSysMessage("DB table `creature_involvedrelation` (creature quest takers) reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` (creature quest takers) reloaded.", SEC_MODERATOR);
     return true;
 }
 
@@ -442,17 +442,17 @@ bool ChatHandler::HandleReloadGossipMenuCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadGOQuestRelationsCommand(char* /*args*/)
 {
-    sLog.outString("Loading Quests Relations... (`gameobject_questrelation`)");
+    sLog.outString("Loading gameobject quest givers...");
     sObjectMgr.LoadGameobjectQuestRelations();
-    SendGlobalSysMessage("DB table `gameobject_questrelation` (gameobject quest givers) reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` (gameobject quest givers) reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadGOQuestInvRelationsCommand(char* /*args*/)
 {
-    sLog.outString("Loading Quests Relations... (`gameobject_involvedrelation`)");
+    sLog.outString("Loading gameobject quest takers...");
     sObjectMgr.LoadGameobjectInvolvedRelations();
-    SendGlobalSysMessage("DB table `gameobject_involvedrelation` (gameobject quest takers) reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` (gameobject quest takers) reloaded.", SEC_MODERATOR);
     return true;
 }
 
@@ -460,7 +460,7 @@ bool ChatHandler::HandleReloadQuestAreaTriggersCommand(char* /*args*/)
 {
     sLog.outString("Re-Loading Quest Area Triggers...");
     sObjectMgr.LoadQuestAreaTriggers();
-    SendGlobalSysMessage("DB table `areatrigger_involvedrelation` (quest area triggers) reloaded.", SEC_MODERATOR);
+    SendGlobalSysMessage("DB table `quest_relations` (quest area triggers) reloaded.", SEC_MODERATOR);
     return true;
 }
 
