@@ -163,6 +163,19 @@ enum QuestSpecialFlags
 
 #define QUEST_SPECIAL_FLAG_DB_ALLOWED (QUEST_SPECIAL_FLAG_REPEATABLE | QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT)
 
+enum QuestActor
+{
+    QA_CREATURE    = 0,
+    QA_GAMEOBJECT  = 1,
+    QA_AREATRIGGER = 2,
+};
+
+enum QuestRole
+{
+    QR_START = 0,
+    QR_END   = 1,
+};
+
 struct QuestLocale
 {
     QuestLocale() { ObjectiveText.resize(QUEST_OBJECTIVES_COUNT); }
