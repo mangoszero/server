@@ -35,12 +35,14 @@ IF(PLATFORM EQUAL 64)
     "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;InstallLocation]"
     "C:/OpenSSL-Win64/"
     "C:/OpenSSL/"
+    "/usr/local/Cellar/openssl/1.0.2g/"
   )
 ELSE()
   SET(_OPENSSL_ROOT_PATHS
     "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
     "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
     "C:/OpenSSL/"
+    "/usr/local/Cellar/openssl/1.0.2g/"
   )
 ENDIF()
 
