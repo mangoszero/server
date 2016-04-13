@@ -496,6 +496,15 @@ void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
     _player->SummonIfPossible(true);
 }
 
+void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
+{
+	ObjectGuid guid;
+	uint32 time_skipped;
+	recv_data >> guid;
+	recv_data >> time_skipped;
+	DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_TIME_SKIPPED, guid: %u, time_skipped: %u", guid, time_skipped);
+}
+
 bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo, ObjectGuid const& guid) const
 {
     // ignore wrong guid (player attempt cheating own session for not own guid possible...)
