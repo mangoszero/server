@@ -1822,8 +1822,6 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
                 uint32 damage = (*i)->GetModifier()->m_amount;
                 SpellEntry const* i_spellProto = (*i)->GetSpellProto();
 
-                //apply bonus damage from existing auras with id = 14 (SPELL_AURA_MOD_DAMAGE_TAKEN)
-                damage += SpellBaseDamageBonusTaken(GetSpellSchoolMask(i_spellProto));
                 pVictim->DealDamageMods(this, damage, NULL);
 
                 WorldPacket data(SMSG_SPELLDAMAGESHIELD, (8 + 8 + 4 + 4));
@@ -5455,7 +5453,7 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
     // Just don't waste time into this function if there's no benefit.
     if (!benefit)
         { return total; }
-    
+
     // Distribute Damage over multiple effects, reduce by AoE
     float coeff = 1.0f;
 
@@ -5465,7 +5463,6 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
     // Check for table values
     else if (SpellBonusEntry const* bonus = sSpellMgr.GetSpellBonusData(spellProto->Id))
     {
-
         switch (damagetype)
         {
             case DOT:
