@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 11
-    #define WORLD_DB_CONTENT_NR 7
-    #define WORLD_DB_UPDATE_DESCRIPTION "Fix BG buffs"
+    #define WORLD_DB_CONTENT_NR 14
+    #define WORLD_DB_UPDATE_DESCRIPTION "Fixed req. of PvP items"
 #endif // __REVISION_H__
