@@ -11,8 +11,325 @@ Many Thanks to all the groups and individuals who contributed to this release.
 * Removed the old SD2 scripts and Added the new unified SD3 Submodule
 * Removed the individual extractor projects and added a unified Extractors Submodule
 
-* TODO: Add full list of fixes from Rel20 to 21 for both Server, Scripts and Database
-
+* .ticket command rework
+* 50% player damage to mob required for reward Unchanged TC backport. Not fully tested.
+* A bit better decoupling of the movement speeds of pet and its master.
+* Accounting disabled LoS check while mob casting
+* Add "go" and "to_me" option to ".mmap path" command.
+* Add a debug command to show all possible random point for selected creature.
+* Add const descriptor to GetSingleCreatureFromStorage method.
+* Add core support for spell 29201 Basic version of Corrupted Mind spell for Loatheb encounter in Naxxramas (original)
+* Add necessary pthread flag for clang
+* Added `disables` table
+* Added and updated map mthread
+* Added Dbdocs editor
+* Added IsSpellHaveEffect
+* Added minor account table update for PlayerBotAI
+* Added Missing function
+* Added support for openssl on OSX systems running OpenSSL 1.0.2g (installed using homebrew). (#115)
+* Added unified extractor submodule
+* Added: LazyMaNGOS Auto Installer (Debian)
+* Adding DB log, minor refactoring
+* Adding wrapper to ScriptedAI for target selection
+* Adds infrastructure to support talent based effects in the future.
+* Adjusted version info
+* Allow creatures to handle several EVENT_T_RECEIVE_EMOTE instead of one.
+* Allow dying creatures to deal damage when casting spells.
+* Allow GAMEOBJECT_TYPE_BUTTON and TRAP respawn using SCRIPT_COMMAND_RESPAWN_GAMEOBJECT.
+* Allow GAMEOBJECT_TYPE_GOOBER to start DBScripts on GO Use.
+* Allow pet motion speed change like other mobs
+* Allow SD3 scripted dummy and script spelleffects upon players
+* Any triggered by aura spell should be casted instantly (a weaker condition).
+* Any triggered spell should be casted instantly.
+* Applied Extractor Updates
+* Arena Master Quest Fix
+* Bestial Swiftness: should be incative while pet following.
+* Better handling of movement generators when fear/confuse ends for a player.
+* Boss Gar tidy up
+* C++11 build fix
+* Call Reset() after AI ctor; AT 522 script fix
+* Case statement not terminated properly
+* Changes made to bring in-line with One
+* Channel world: disabling join/leave announces
+* Character manaregen: looks like one /2 was excessive
+* Charm effect on player causes control loss and motion interrupt
+* Check pet power before it casts
+* Chest with quest loot deactivation
+* Clang return error fix
+* Clarify some issues regarding negative angles. The client seems to handle them strange.
+* Clarify some logic in SpellMgr.cpp
+* Clarify weather packet
+* Classic Mistletoe Spell Fix
+* Cleaning of the new GO commands implementation
+* cleanup inspired by GCC build
+* Cleanup: no more used after SD2 reactoring WorldTemplate stuff
+* Commands for GO manipulations (gobj): anim, state, lootstate
+* Complete redesign of waypoint system
+* Core/Collision: Models with flag MOD_M2
+* Corections made to indentations in script
+* Correct Heartbeat resist after my #39efe8c
+* Correct SD2 return values
+* correct spawn rules and configurability for new ore system
+* Correct spell damage taken on melee attacks.
+* Correct sutble typo
+* Corrected website URL
+* Correction to FindPlatform
+* Corrections to the build system.
+* Creature sleeping script altered
+* DB log: correct check ID
+* DBScripts-Engine: Implement new commands
+* Disable access to PvP barracks for too low ranks and other faction.
+* Disable BG: another way to do
+* Disable spawns: base checking entry, additionally.
+* Disables: DISABLE_TYPE_ITEM_DROP=10. Also fixed memory leak
+* Disables: item drop disable Quest loot cannot be disabled here.
+* Don't interrupt certain channeled spells
+* Druid Clearcasting: do not drop aura if spellmod was not used (for 0 spellcost)
+* Eluna update version - Fix VS 2013 build
+* Eluna: Remove travis script for getting last eluna
+* Enable areatrigger teleports in battleground
+* Enabled autopooling code and fixed quest 5203 as well as Troll Beserking and Stoneform Racial
+* enhance readability and correct numbers
+* Ensure the resurrection when entering instantiable map
+* Experimental movement lag fix
+* Explicit conversion ObjectGuid to uint64 (gcc build fix)
+* Extra attack: allow to accumulate only next swing extra atttacks
+* Extra attack: instant or on the next swing
+* Extractor updates
+* Fake combat state is also a reason to prevent mob evade
+* Few improvements for Win32
+* Fix "Unknown player" bug Fixed old bug where players where all are named "Unknown" after some log in / log out
+* Fix .goname command
+* fix a bug in Player::addSpell causing wrong values in skills and talents.
+* Fix a bug in previous commit where some wmo's were not extracted at all.
+* Fix a client freeze caused by malformed paths
+* Fix a crash. Using format specifiers without matching values is a no-go and clean up.
+* Fix a small typo in previous commit.
+* Fix ACE_TSS usage.
+* fix and simplify the Player::addSpell function.
+* Fix Arcane Missile self cast bug.
+* Fix Archlinux build
+* Fix bot PCH
+* Fix Cannibalize
+* Fix channeling spells for unit (will not cast channeling spells when walking, attacking etc.)
+* Fix compiler warning.
+* Fix crash during gm .saveall
+* Fix crash on taming rare creatures.
+* Fix crash when loading invalid vmap data.
+* Fix crash when using console commands
+* Fix crash when using DB script command 34 (TERMINATE_CONDITION).
+* Fix deeprun rat roundout crash
+* Fix Deeprun spell used on player
+* Fix Devouring Plague
+* Fix displaying the right ranks of spells in spellbook
+* fix doubling the text displayed in channels` chat when playerbots building is enabled.
+* Fix Eluna OnCreatureKill
+* Fix false error display - Bloodthirst triggers
+* Fix for branching within exclusiveGroup questline.
+* fix for last stand 1hp bug
+* fix for spell 24732 Bat Costume
+* Fix Gnomish Death Ray.
+* Fix Gnomish Mind control cap
+* Fix Gnomish Ray Shrink.
+* Fix Ground and EarthBind Totems
+* Fix Grounding Totem delay bug.
+* Fix Improved Shield Block Talent Its additional charge was removed by a Dummy Effect.
+* Fix incorrect enum in previous commit
+* Fix invalid table reference for playerbots
+* Fix item Lifegiving Gem, in classic it was providing 15% health.
+* Fix Linux build
+* Fix Linux include
+* Fix Mage's frost nova damage breaking aura
+* Fix Mind Soothe aggro.
+* fix Movement::MoveSpline::ComputePosition to return only positive angles.
+* Fix mysql lib location for 5.0 and 5.1
+* Fix NPC's running to the first waypoint
+* Fix of the previous: copy mangosd config
+* Fix Out Of Tree error for Linux builds
+* Fix Paladin Hammer of Wrath,Judgement of Command,Seal of Command PROC,Seal of Righteousness Dummy Proc receive benefit from Spell *Damage and Healing.
+* Fix playerbot module building
+* Fix previous commit.
+* Fix PvPstats table to fit with its web app
+* fix Quest 7603 - Kroshius
+* Fix resource leaks in DBCFileLoader.
+* Fix server crash due to incorrect SQL parameter bindings.
+* Fix server crash on CONDITION_GAMEOBJECT_IN_RANGE check.
+* Fix server crash on shutdown
+* Fix sleeping peon in durotar
+* Fix SMSG_WHO show players matching given criteria.
+* Fix some include paths in tools.
+* Fix spell 19714 is buff instead of debuff. May fix also other spells that use same aura.
+* Fix spelling of IsSwimmable.
+* Fix spells with the target combination (TARGET_SCRIPT, TARGET_SELF).
+* Fix stealthing animation for group members.
+* Fix Talent improved Seal of Righteousness. 
+* Fix TARGET_SELF-TARGET_SCRIPT target combination.
+* Fix temporary enchantment duration
+* Fix text typo
+* Fix the AuctionHouseBot seller not posting auctions on some architectures/builds The issue was a forgotten initialization.
+* Fix the description field for realm and characters database. Also update the revision.h
+* Fix to 729bc32: resurrect only in case dungeon target map
+* Fix Travis build on OS X.
+* Fix typing error for High Priestess Jeklik
+* fix typo
+* Fix uint32_t errors (VS 2013)
+* Fix Unit::SetConfused to work on players.
+* Fix warden crash for NYI builds
+* Fix wrong include
+* Fix wrong PartyResult enum value.
+* Fix wrong use of uninitialized locks.
+* fixed *MacOS X build
+* Fixed dos/unix file problem
+* Fixed double fclose() in genrevision and general tidy up
+* Fixed OpenSSL location (#118)
+* Fixed output error in .mmap path
+* Fixed PCH warnings and bot add command
+* Fixing a glitch.
+* fixing beast lore Aura
+* Fixing crash at player leave map during loot roll
+* Fixing few warnings
+* Forgot a couple required OSX and Unix library names
+* Garr - Improved firesworn on death exploding and added enrage ability
+* Garr adds explosion fix
+* Gcc build fix: no cbegin()/cend() container members
+* Gcc build: get rid of few warnings
+* Heartbeat resist first implementation
+* Holy Light and Seal of Righteousness PROC and Flash of Light receive benefit from Spell Damage and Healing too low.
+* Honor flush and GetDateToday() method fix
+* Implement Appveyor Windows testing
+* Implement CMSG_MOVE_TIME_SKIPPED packet!
+* Implement CREATURE_FLAG_EXTRA_NO_PARRY_HASTEN
+* Implement holes handling on map. Now GetHeight correctly returns no height when a hole is detected.
+* Implement Inferno spell for Baron Geddon (classic version with TriggerSpell)
+* Implement instance data call for OnCreatureDespawn.
+* Implement movement wrappers for creatures and players
+* Implement player rank in defensive channels
+* Implement possibility to force enable/disable mmap-usage for specific creatures.
+* Implement quest_relations table (#114)
+* Implement SCRIPT_COMMAND_SEND_MAIL
+* Implemented EasyBuild for windows
+* Implementing CAST_FAIL_NO_LOS EventAI
+* Improve and Finalize new Weather system
+* Improve confused, random and fleeing movement generators.
+* Improve jerky player movement on high latency
+* improved algorithm for finding a random reachable point on ground
+* Improved Blink
+* Improved Combat Movement handling
+* Improved logic in ACTION_T_CAST
+* Improved Rune game objects a lot
+* Improved sap Talent
+* Improved vmap-extractor.
+* Include forgotten data file in vmap-extractor.
+* Include location fix
+* Instance Reset Fix
+* Instant Flight Paths option added.
+* Interrupt autoshot by deselecting target
+* Judgement of command not need CastCustomSpell
+* Large rearrangement and cleanup of base cmake system
+* LazyMaNGOS Re-Vamp
+* Linux build fix
+* List aura - added number of aura stacks, see DB
+* Low-level spells cast by high-level players will receive smaller bonuses from +healing and +spell damage.
+* Mage Arcane Power update
+* Major refactoring of SD2 script system
+* Make ACE build on other OSes too
+* Make some errors more verbose.
+* Make use of attribute SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY.
+* Massive improvements on Garr encounter
+* Match client limits in cgaracter DB.
+* Merged Vmaps extractor/assembler, updated scripts
+* Minor cleanup Too lazy to find out what exactly was influenced by it, but it was wrong :) no effect != negative effect
+* Minor corrections to the build system.
+* Minor fixes for clang builds.
+* Minor refactoring Like HasSpellEffect method here, other now global-scoped methods from SpellMgr.h.
+* Minor refactoring of auto-replacing player spell ranks
+* Minor refactoring of detect visibility code The predefined method of getting aura modifier is used for clarity.
+* Minor syntax correction
+* Missed one spot in previous commit.
+* Modified Pet Owner combat state
+* Molton Core cleanup
+* More fixes. This solves the annoying issue of Basic Campfires not *giving spirit buffs.
+* More lock fixes. Also fix the .character level command
+* More minor fixes for worldserver startup/shutdown on *nix
+* More robust checks on mutex acquire.
+* More thread-safety checks.
+* Move core definition into cmake
+* Move DB revision struct to cpp
+* Moved condition related to mage casting on self
+* Movement changes
+* My guess to 5875 client methods
+* MySQL CMake Macro rewrite
+* Naxx: Gothik - redesign
+* Necessary include path for osx
+* non initialised variable.
+* Normalize Username so that Telnet users can use lower case usernames
+* Not so bright warning if DB content newer than core awaits
+* Override spell range for script target spells when not provided.
+* Paladin Reckoning bomb with the limitation.
+* Paladin reckoning bomb.
+* Partial revert of PCH changes
+* Partially debugged logging code.
+* Player movement interrupt when fear/confuse fades Should be improved due to difference between StopMoving() and tMoving().
+* Player::TeleportTo() signature change to request undelayed teleport.
+* Pool-System: Allow pooling non-lootable gameobjects
+* Prevent Seal of Command damage overflow.
+* Reapply Properly display creatures with waypoint when they enter player range
+* Reapply Properly display creatures with waypoint when they enter player range
+* Refactor the areatrigger_teleport to use condition system.
+* Refactoring db_scripts
+* Reload command do not announce to player accs
+* Remove duplicate line in vmap-extractor.
+* Remove policy CMP0005
+* Removed character updates import and added config rename along with two required compilers
+* Removed deprecated SD2
+* Removed non-classic items from ah selection.
+* Removed SD2 database binding
+* Removed SFN wildcards
+* Removed the individual extractor projects and added a unified Extractors Submodule
+* Removed the old SD2 scripts and Added the new unified SD3 Submodule
+* Removed unnecessary cmake macro
+* Rename the cmake variable respecting conventions
+* Restore commit 'Mr Smite Weapon Correction'
+* Rogue - Improved Sap.
+* SD2: correct handling OnGossipSelect
+* Server-owned world channel
+* Shared Final
+* Skip item SPELLTRIGGER_ON_USE at form change.
+* Some pet fixes (#119)
+* Spell attribute allowing heartbeart resist mechanic
+* Spell class - Fix for inaccessible class data
+* Spell_Miss will Restore Rage and Energy
+* Split the look-up portion of FindEquipSlot into a 2nd function ViableEquipSlots.
+* Start dbscripts_on_spell for SPELL_EFFECT_TRIGGER_MISSILE with missing spell id.
+* Stop casting non-instant spell when target is lost.
+* Stop motion of players when fear/confuse fades
+* Stranglethorn Vale sleeping creatures script
+* Support C++11 and update Eluna
+* Support of several client builds
+* Suppress some clang warnings and cleanup redundant directives.
+* The energy gained from "Thistle Tea" now decreases with levels past 40.
+* The next Bestial Swiftness improvement Looks like the only issue left: the pet returns to the master at normal "follow" speed after combat.
+* Trap stealth implementation
+* Triage quest: fixing memory leak
+* Typo and  Take Power.
+* Update conf file to work with modern SQL servers
+* update deeprun rat roundup script
+* Update dependencies and necessary changes to tools
+* Updated Easybuild to include VS2015 support
+* Updated Eluna and SD3 submodules
+* Updated Expected content level
+* Updated extractors to fix movement bug. Will need to reextract
+* Updated Realmd to now accept both local and external connections
+* Updated SD3 submodule
+* Updated Unified Extractor subModule
+* UpdateMask class refactoring
+* Validate the spawn distance passed to RandomMovementGenerator constructor.
+* Various db fixes from external sources
+* Warden checks refactoring
+* Warden table redone to allow grouping of similar checks
+* warden_refactor - db update
+* Warrior - Sweeping Strikes, do not drop aura when stance changes.
+* Warrior Talent - IMPROVED SHIELD BLOCK
 
 
 0.20 (2015-03-23) - "New Beginnings"
