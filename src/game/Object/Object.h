@@ -404,6 +404,7 @@ class Object
         virtual bool HasQuest(uint32 /* quest_id */) const { return false; }
         virtual bool HasInvolvedQuest(uint32 /* quest_id */) const { return false; }
         void _ReCreate(uint32 entry);
+        void SetAsNewObject(bool isNew) { m_isNewObject = isNew; }
 
     protected:
         Object();
@@ -440,6 +441,7 @@ class Object
 
     private:
         bool m_inWorld;
+        bool m_isNewObject;
 
         PackedGuid m_PackGUID;
 

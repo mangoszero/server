@@ -373,7 +373,9 @@ Map::Add(T* obj)
     DEBUG_LOG("%s enters grid[%u,%u]", obj->GetGuidStr().c_str(), cell.GridX(), cell.GridY());
 
     obj->GetViewPoint().Event_AddedToWorld(&(*grid)(cell.CellX(), cell.CellY()));
+    obj->SetAsNewObject(true);
     UpdateObjectVisibility(obj, cell, p);
+    obj->SetAsNewObject(false);
 }
 
 void Map::MessageBroadcast(Player const* player, WorldPacket* msg, bool to_self)
