@@ -2440,8 +2440,10 @@ void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
     if (unitTarget->hasUnitState(UNIT_STAT_CAN_NOT_REACT))
         { return; }
 
-    unitTarget->SetFacingTo(unitTarget->GetAngle(m_targets.m_destX, m_targets.m_destY));
+    float angle = unitTarget->GetAngle(m_targets.m_destX, m_targets.m_destY);
+    unitTarget->SetFacingTo(angle);
     unitTarget->clearUnitState(UNIT_STAT_MOVING);
+    unitTarget->SetOrientation(angle);
 
     if (unitTarget->GetTypeId() == TYPEID_UNIT)
         { unitTarget->GetMotionMaster()->MoveDistract(damage * IN_MILLISECONDS); }
@@ -3840,10 +3842,10 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
     // Improved Sap: a hacky way
     if (m_triggeredByAuraSpell && m_spellInfo->Id == 14093 && unitTarget->GetTypeId() == TYPEID_PLAYER)
     {
-        // find Stealth spell cooldown
+        // find highest rank Stealth spell cooldown
         uint32 stealth_id = 0;
         SpellCooldowns const scm = ((Player*)unitTarget)->GetSpellCooldownMap();
-        for (SpellCooldowns::const_iterator it = scm.begin(); it != scm.end(); ++it)
+        for (SpellCooldowns::const_reverse_iterator it = scm.rbegin(); it != scm.rend(); ++it)
         {
             if (it->first >= 1784 && it->first <= 1787)
             {
