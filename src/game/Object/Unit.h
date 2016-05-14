@@ -3244,11 +3244,15 @@ class Unit : public WorldObject
          */
         void RemoveAurasDueToItemSpell(Item* castItem, uint32 spellId);
         /** 
+         * Removes all \ref Aura s applied by spells casted by a certain \ref Player / \ref Unit
+         * @param casterGuid \ref ObjectGuid of the caster
+         */
+        void RemoveAurasByCaster(ObjectGuid casterGuid);
+        /** 
          * Removes all \ref Aura s that a certain spell cast by a certain \ref Player / \ref Unit
          * would cause via it's effects (up to 3 of them per \ref Aura)
          * @param spellId id of the \ref Spell causing the \ref Aura s you would like to remove
          * @param casterGuid \ref ObjectGuid of the caster
-         * @param mode reason for removal
          */
         void RemoveAurasByCasterSpell(uint32 spellId, ObjectGuid casterGuid);
         /** 

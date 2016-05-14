@@ -469,6 +469,36 @@ bool Map::loaded(const GridPair& p) const
     return (getNGrid(p.x_coord, p.y_coord) && isGridObjectDataLoaded(p.x_coord, p.y_coord));
 }
 
+void Map::VisitNearbyCellsOf(WorldObject* obj,
+                             TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor,
+                             TypeContainerVisitor<MaNGOS::ObjectUpdater, WorldTypeMapContainer> &worldVisitor)
+{
+    if (!obj->IsPositionValid())
+      return;
+
+    // lets update mobs/objects in ALL visible cells around player!
+    CellArea area = Cell::CalculateCellArea(obj->GetPositionX(), obj->GetPositionY(), GetVisibilityDistance());
+
+    for (uint32 x = area.low_bound.x_coord; x <= area.high_bound.x_coord; ++x)
+    {
+        for (uint32 y = area.low_bound.y_coord; y <= area.high_bound.y_coord; ++y)
+        {
+            // marked cells are those that have been visited
+            // don't visit the same cell twice
+            uint32 cell_id = (y * TOTAL_NUMBER_OF_CELLS_PER_MAP) + x;
+            if (!isCellMarked(cell_id))
+            {
+                markCell(cell_id);
+                CellPair pair(x, y);
+                Cell cell(pair);
+                cell.SetNoCreate();
+                Visit(cell, gridVisitor);
+                Visit(cell, worldVisitor);
+            }
+        }
+    }
+}
+
 void Map::Update(const uint32& t_diff)
 {
     m_dyn_tree.update(t_diff);
@@ -512,30 +542,42 @@ void Map::Update(const uint32& t_diff)
     {
         Player* plr = m_mapRefIter->getSource();
 
-        if (!plr->IsInWorld() || !plr->IsPositionValid())
+        if (!plr || !plr->IsInWorld())
             { continue; }
 
-        // lets update mobs/objects in ALL visible cells around player!
-        CellArea area = Cell::CalculateCellArea(plr->GetPositionX(), plr->GetPositionY(), GetVisibilityDistance());
+        VisitNearbyCellsOf(plr, grid_object_update, world_object_update);
 
-        for (uint32 x = area.low_bound.x_coord; x <= area.high_bound.x_coord; ++x)
+        // Collect and remove references to creatures too far away from player's m_HostileRefManager
+        // Combat state will change on next tick, if case
+        if (!IsDungeon() && plr->IsInCombat())
         {
-            for (uint32 y = area.low_bound.y_coord; y <= area.high_bound.y_coord; ++y)
+            std::vector<Creature*> _removeList;
+            HostileRefManager& href = plr->GetHostileRefManager();
+            HostileReference* ref = href.getFirst();
+
+            while (ref)
             {
-                // marked cells are those that have been visited
-                // don't visit the same cell twice
-                uint32 cell_id = (y * TOTAL_NUMBER_OF_CELLS_PER_MAP) + x;
-                if (!isCellMarked(cell_id))
-                {
-                    markCell(cell_id);
-                    CellPair pair(x, y);
-                    Cell cell(pair);
-                    cell.SetNoCreate();
-                    Visit(cell, grid_object_update);
-                    Visit(cell, world_object_update);
-                }
+                if (Unit* unit = ref->getSource()->getOwner())
+                    if (unit->ToCreature() && unit->GetMapId() == plr->GetMapId() && !unit->IsWithinDistInMap(plr, GetVisibilityDistance(), false))
+                        _removeList.push_back(unit->ToCreature());
+
+                ref = ref->next();
+            }
+
+            for (std::vector<Creature*>::iterator it = _removeList.begin(); it != _removeList.end(); ++it)
+            {
+                if ((*it)->IsTappedBy(plr))
+                    { (*it)->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED); }
+                (*it)->RemoveAurasByCaster(plr->GetObjectGuid());
+                (*it)->_removeAttacker(plr);
+                (*it)->GetHostileRefManager().deleteReference(plr);
+
+                href.deleteReference(*it);
+
+                VisitNearbyCellsOf(*it, grid_object_update, world_object_update);
             }
         }
+
     }
 
     // non-player active objects
@@ -543,37 +585,17 @@ void Map::Update(const uint32& t_diff)
     {
         for (m_activeNonPlayersIter = m_activeNonPlayers.begin(); m_activeNonPlayersIter != m_activeNonPlayers.end();)
         {
-            // skip not in world
             WorldObject* obj = *m_activeNonPlayersIter;
 
             // step before processing, in this case if Map::Remove remove next object we correctly
             // step to next-next, and if we step to end() then newly added objects can wait next update.
             ++m_activeNonPlayersIter;
 
-            if (!obj->IsInWorld() || !obj->IsPositionValid())
+            // skip not in world
+            if (!obj || !obj->IsInWorld())
                 { continue; }
 
-            // lets update mobs/objects in ALL visible cells around player!
-            CellArea area = Cell::CalculateCellArea(obj->GetPositionX(), obj->GetPositionY(), GetVisibilityDistance());
-
-            for (uint32 x = area.low_bound.x_coord; x <= area.high_bound.x_coord; ++x)
-            {
-                for (uint32 y = area.low_bound.y_coord; y <= area.high_bound.y_coord; ++y)
-                {
-                    // marked cells are those that have been visited
-                    // don't visit the same cell twice
-                    uint32 cell_id = (y * TOTAL_NUMBER_OF_CELLS_PER_MAP) + x;
-                    if (!isCellMarked(cell_id))
-                    {
-                        markCell(cell_id);
-                        CellPair pair(x, y);
-                        Cell cell(pair);
-                        cell.SetNoCreate();
-                        Visit(cell, grid_object_update);
-                        Visit(cell, world_object_update);
-                    }
-                }
-            }
+            VisitNearbyCellsOf(obj, grid_object_update, world_object_update);
         }
     }
 
