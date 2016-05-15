@@ -566,8 +566,6 @@ void Map::Update(const uint32& t_diff)
 
             for (std::vector<Creature*>::iterator it = _removeList.begin(); it != _removeList.end(); ++it)
             {
-                if ((*it)->IsTappedBy(plr))
-                    { (*it)->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED); }
                 (*it)->RemoveAurasByCaster(plr->GetObjectGuid());
                 (*it)->_removeAttacker(plr);
                 (*it)->GetHostileRefManager().deleteReference(plr);
@@ -577,7 +575,6 @@ void Map::Update(const uint32& t_diff)
                 VisitNearbyCellsOf(*it, grid_object_update, world_object_update);
             }
         }
-
     }
 
     // non-player active objects

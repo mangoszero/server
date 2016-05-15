@@ -4219,6 +4219,9 @@ void Unit::RemoveAllAurasOnEvade()
         RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
         iter = m_spellAuraHolders.begin();
     }
+
+    if ((GetTypeId() == TYPEID_UNIT) && HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED))
+        { RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED); }
 }
 
 void Unit::DelaySpellAuraHolder(uint32 spellId, int32 delaytime, ObjectGuid casterGuid)
@@ -6618,9 +6621,6 @@ void Unit::ClearInCombat()
         Creature* cThis = static_cast<Creature*>(this);
         if (cThis->GetCreatureInfo()->UnitFlags & UNIT_FLAG_OOC_NOT_ATTACKABLE && !(cThis->GetTemporaryFactionFlags() & TEMPFACTION_TOGGLE_OOC_NOT_ATTACK))
             { SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE); }
-
-        if (cThis->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED))
-            { RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED); }
 
         clearUnitState(UNIT_STAT_ATTACK_PLAYER);
     }
