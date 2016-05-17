@@ -237,14 +237,15 @@ namespace Movement
                 path.setPathLengthLimit(maxPathRange);
             }
             path.calculate(dest.x, dest.y, dest.z, forceDestination);
-            MovebyPath(path.getPath());
+            if (!(path.getPathType() & PATHFIND_NOPATH))
+            {
+                MovebyPath(path.getPath());
+                return;
+            }
         }
-        else
-        {
-            args.path_Idx_offset = 0;
-            args.path.resize(2);
-            args.path[1] = dest;
-        }
+        args.path_Idx_offset = 0;
+        args.path.resize(2);
+        args.path[1] = dest;
     }
 
     /**

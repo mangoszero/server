@@ -9169,7 +9169,7 @@ void Unit::NearTeleportTo(float x, float y, float z, float orientation, bool cas
 void Unit::MonsterMoveWithSpeed(float x, float y, float z, float speed, bool generatePath, bool forceDestination)
 {
     Movement::MoveSplineInit init(*this);
-    init.MoveTo(x, y, z, generatePath, forceDestination);
+    init.MoveTo(x, y, z, generatePath, forceDestination, 30.f);
     init.SetVelocity(speed);
     init.Launch();
 }
