@@ -5028,11 +5028,25 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_SUMMON_DEAD_PET:
             {
                 Creature* pet = m_caster->GetPet();
-                if (!pet)
-                    { return SPELL_FAILED_NO_PET; }
 
-                if (pet->IsAlive())
+                if (pet && pet->IsAlive())
                     { return SPELL_FAILED_ALREADY_HAVE_SUMMON; }
+
+                if (!pet)
+                {
+                    if (Player* player = m_caster->ToPlayer())
+                    {
+                      PetDatabaseStatus status = Pet::GetStatusFromDB(player);
+                      if (status == PET_DB_NO_PET)
+                          return SPELL_FAILED_NO_PET;
+                      else if (status == PET_DB_ALIVE)
+                          return SPELL_FAILED_TARGET_NOT_DEAD;
+                    }
+                    else
+                    {
+                        return SPELL_FAILED_NO_PET;
+                    }
+                }
 
                 break;
             }
@@ -5053,21 +5067,26 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             case SPELL_EFFECT_SUMMON_PET:
             {
+                Player* plr = m_caster->ToPlayer();
                 if (m_caster->GetPetGuid())                 // let warlock do a replacement summon
                 {
-                    Pet* pet = ((Player*)m_caster)->GetPet();
+                    Pet* pet = m_caster->GetPet();
 
-                    if (m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->getClass() == CLASS_WARLOCK)
-                    {
-                        if (strict)                         // Summoning Disorientation, trigger pet stun (cast by pet so it doesn't attack player)
-                            { pet->CastSpell(pet, 32752, true, NULL, NULL, pet->GetObjectGuid()); }
-                    }
-                    else
+                    if (plr && m_caster->getClass() != CLASS_WARLOCK)
                         { return SPELL_FAILED_ALREADY_HAVE_SUMMON; }
                 }
 
                 if (m_caster->GetCharmGuid())
                     { return SPELL_FAILED_ALREADY_HAVE_CHARM; }
+
+                if (plr)
+                {
+                    PetDatabaseStatus status = Pet::GetStatusFromDB(plr);
+                    if (status == PET_DB_DEAD)
+                      return SPELL_FAILED_TARGETS_DEAD;
+                    else if ((plr->getClass() == CLASS_HUNTER) && (status == PET_DB_NO_PET))
+                      return SPELL_FAILED_NO_PET;
+                }
 
                 break;
             }

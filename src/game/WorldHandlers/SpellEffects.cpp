@@ -4884,16 +4884,41 @@ void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
 
 void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
 {
-    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+    Player* _player = m_caster->ToPlayer();
+
+    if (!_player || damage < 0)
         { return; }
-    Player* _player = (Player*)m_caster;
+
     Pet* pet = _player->GetPet();
-    if (!pet)
-        { return; }
-    if (pet->IsAlive())
-        { return; }
-    if (damage < 0)
-        { return; }
+
+    bool hadPet = true;
+
+    if (pet)
+    {
+        if (pet->IsAlive())
+            return;
+    }
+    else
+    {
+        Pet* newPet = new Pet;
+        if (!newPet->LoadPetFromDB(_player))
+        {
+            delete newPet;
+            return;
+        }
+        hadPet = false;
+    }
+
+    pet = _player->GetPet();
+    if (!pet || pet->IsAlive())
+        return;
+
+    if (hadPet)
+    {
+            float px, py, pz;
+            _player->GetClosePoint(px, py, pz, pet->GetObjectBoundingRadius(), _player->GetObjectBoundingRadius());
+            pet->NearTeleportTo(px, py, pz, PET_FOLLOW_ANGLE);
+    }
 
     pet->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
     pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);

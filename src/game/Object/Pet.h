@@ -52,6 +52,13 @@ enum PetSaveMode
     PET_SAVE_REAGENTS          =  101                       // PET_SAVE_NOT_IN_SLOT with reagents return
 };
 
+enum PetDatabaseStatus
+{
+    PET_DB_NO_PET       = 0,
+    PET_DB_DEAD         = 1,
+    PET_DB_ALIVE        = 2,
+};
+
 // There might be a lot more
 enum PetModeFlags
 {
@@ -174,7 +181,9 @@ class Pet : public Creature
         bool LoadPetFromDB(Player* owner, uint32 petentry = 0, uint32 petnumber = 0, bool current = false);
         void SavePetToDB(PetSaveMode mode);
         void Unsummon(PetSaveMode mode, Unit* owner = NULL);
+
         static void DeleteFromDB(uint32 guidlow, bool separate_transaction = true);
+        static PetDatabaseStatus GetStatusFromDB(Player*);
 
         void SetDeathState(DeathState s) override;          // overwrite virtual Creature::SetDeathState and Unit::SetDeathState
         void Update(uint32 update_diff, uint32 diff) override;  // overwrite virtual Creature::Update and Unit::Update
