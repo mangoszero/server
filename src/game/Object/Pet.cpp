@@ -2161,8 +2161,8 @@ PetDatabaseStatus Pet::GetStatusFromDB(Player* owner)
     QueryResult* result;
                                       //      0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
     result = CharacterDatabase.PQuery("SELECT id, entry, owner, modelid, level, exp, Reactstate, loyaltypoints, loyalty, trainpoint, slot, name, renamed, curhealth, curmana, curhappiness, abdata, TeachSpelldata, savetime, resettalents_cost, resettalents_time, CreatedBySpell, PetType "
-                                      "FROM character_pet WHERE owner = '%u' AND (slot = '%u') ",
-                                      ownerid, PET_SAVE_AS_CURRENT);
+                                      "FROM character_pet WHERE owner = %u AND (slot = %u OR slot > %u)",
+                                      ownerid, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
     if (!result)
         { return status; }
 
