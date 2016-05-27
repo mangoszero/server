@@ -461,7 +461,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                 case GAMEOBJECT_TYPE_CHEST:
                     {
                         uint32 trapEntry = GetGOInfo()->GetLinkedGameObjectEntry();
-                        if (144064) // Special case for Gordunni Cobalt Visual
+                        if (trapEntry == 144064) // Special case for Gordunni Cobalt Visual
                         {
                             float range = 0.5f;
                             GameObject* visualGO = NULL;
