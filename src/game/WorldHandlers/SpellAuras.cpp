@@ -628,6 +628,10 @@ bool Aura::isAffectedOnSpell(SpellEntry const* spell) const
 
 bool Aura::CanProcFrom(SpellEntry const* spell, uint32 EventProcEx, uint32 procEx, bool active, bool useClassMask) const
 {
+    // Aura cannot proc from itself unless it's periodic
+    if (GetId() == spell->Id && !IsPeriodic())
+      { return false; }
+
     // Check EffectClassMask (in pre-3.x stored in spell_affect in fact)
     ClassFamilyMask mask = sSpellMgr.GetSpellAffectMask(GetId(), GetEffIndex());
 
