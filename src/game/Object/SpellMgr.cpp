@@ -681,11 +681,12 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
     {
         case 13003:
         case 13010:
+        case 23182:  // Mark of Frost
             return false;
         default:
             break;
     }
-    
+
     switch (spellproto->Effect[effIndex])
     {
         case SPELL_EFFECT_DUMMY:
