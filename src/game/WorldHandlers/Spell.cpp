@@ -4184,6 +4184,14 @@ SpellCastResult Spell::CheckCast(bool strict)
                 { return SPELL_FAILED_TARGET_AURASTATE; }
         }
 
+        // Tame Beast trigger
+        if (m_spellInfo->Id == 1515)
+        {
+            SpellCastResult castResult = CanTameUnit(false);
+            if (castResult != SPELL_CAST_OK)
+                { return castResult; }
+        }
+
         // give error message when applying lower hot rank to higher hot rank on target
         if (!m_spellInfo->HasSpellEffect(SPELL_EFFECT_HEAL) && IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL))
         {
@@ -4786,55 +4794,12 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             case SPELL_EFFECT_TAMECREATURE:
             {
-                // Spell can be triggered, we need to check original caster prior to caster
-                Unit* caster = GetAffectiveCaster();
-                if (!caster || caster->GetTypeId() != TYPEID_PLAYER ||
-                    !m_targets.getUnitTarget() ||
-                    m_targets.getUnitTarget()->GetTypeId() == TYPEID_PLAYER)
-                    { return SPELL_FAILED_BAD_TARGETS; }
-
-                Player* plrCaster = (Player*)caster;
-
-                bool gmmode = m_triggeredBySpellInfo == NULL;
-
-                if (gmmode && !ChatHandler(plrCaster).FindCommand("npc tame"))
+                if (m_triggeredBySpellInfo == NULL)
                 {
-                    plrCaster->SendPetTameFailure(PETTAME_UNKNOWNERROR);
-                    return SPELL_FAILED_DONT_REPORT;
+                    SpellCastResult castResult = CanTameUnit(true);
+                    if (castResult != SPELL_CAST_OK)
+                        { return castResult; }
                 }
-
-                if (plrCaster->getClass() != CLASS_HUNTER && !gmmode)
-                {
-                    plrCaster->SendPetTameFailure(PETTAME_UNITSCANTTAME);
-                    return SPELL_FAILED_DONT_REPORT;
-                }
-
-                Creature* target = (Creature*)m_targets.getUnitTarget();
-
-                if (target->IsPet() || target->IsCharmed())
-                {
-                    plrCaster->SendPetTameFailure(PETTAME_CREATUREALREADYOWNED);
-                    return SPELL_FAILED_DONT_REPORT;
-                }
-
-                if (target->getLevel() > plrCaster->getLevel() && !gmmode)
-                {
-                    plrCaster->SendPetTameFailure(PETTAME_TOOHIGHLEVEL);
-                    return SPELL_FAILED_DONT_REPORT;
-                }
-
-                if (!target->GetCreatureInfo()->isTameable())
-                {
-                    plrCaster->SendPetTameFailure(PETTAME_NOTTAMEABLE);
-                    return SPELL_FAILED_DONT_REPORT;
-                }
-
-                if (plrCaster->GetPetGuid() || plrCaster->GetCharmGuid())
-                {
-                    plrCaster->SendPetTameFailure(PETTAME_ANOTHERSUMMONACTIVE);
-                    return SPELL_FAILED_DONT_REPORT;
-                }
-
                 break;
             }
             case SPELL_EFFECT_LEARN_SPELL:
@@ -6792,4 +6757,64 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
         default:
             break;
     }
+}
+
+SpellCastResult Spell::CanTameUnit(bool isGM)
+{
+    // Spell can be triggered, we need to check original caster prior to caster
+    Unit* caster = GetAffectiveCaster();
+    if (!caster || caster->GetTypeId() != TYPEID_PLAYER ||
+        !m_targets.getUnitTarget() || m_targets.getUnitTarget()->GetTypeId() == TYPEID_PLAYER)
+        { return SPELL_FAILED_BAD_TARGETS; }
+
+    Player* plrCaster = caster->ToPlayer();
+
+    if (plrCaster->getClass() != CLASS_HUNTER)
+    {
+        plrCaster->SendPetTameFailure(PETTAME_UNITSCANTTAME);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    if (isGM && !ChatHandler(plrCaster).FindCommand("npc tame"))
+    {
+        plrCaster->SendPetTameFailure(PETTAME_UNKNOWNERROR);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    Creature* target = (Creature*)m_targets.getUnitTarget();
+
+    if (target->IsPet() || target->IsCharmed())
+    {
+        plrCaster->SendPetTameFailure(PETTAME_CREATUREALREADYOWNED);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    if (target->getLevel() > plrCaster->getLevel() && !isGM)
+    {
+        plrCaster->SendPetTameFailure(PETTAME_TOOHIGHLEVEL);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    if (!target->GetCreatureInfo()->isTameable())
+    {
+        plrCaster->SendPetTameFailure(PETTAME_NOTTAMEABLE);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
+    Pet* pet = plrCaster->GetPet();
+    if (pet || plrCaster->GetCharmGuid())
+    {
+        plrCaster->SendPetTameFailure(PETTAME_ANOTHERSUMMONACTIVE);
+        return SPELL_FAILED_DONT_REPORT;
+    }
+    else
+    {
+        PetDatabaseStatus status = Pet::GetStatusFromDB(plrCaster);
+        if (status != PET_DB_NO_PET)
+        {
+            plrCaster->SendPetTameFailure(PETTAME_ANOTHERSUMMONACTIVE);
+            return SPELL_FAILED_DONT_REPORT;
+        }
+    }
+    return SPELL_CAST_OK;
 }
