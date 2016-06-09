@@ -54,21 +54,16 @@ void WorldRunnable::run()
     sEluna->OnStartup();
 #endif /* ENABLE_ELUNA */
 
-    uint32 realCurrTime = 0;
-    uint32 realPrevTime = WorldTimer::tick();
-
     uint32 prevSleepTime = 0;                               // used for balanced full tick time length near WORLD_SLEEP_CONST
 
     ///- While we have not World::m_stopEvent, update the world
     while (!World::IsStopped())
     {
         ++World::m_worldLoopCounter;
-        realCurrTime = WorldTimer::getMSTime();
 
         uint32 diff = WorldTimer::tick();
 
         sWorld.Update(diff);
-        realPrevTime = realCurrTime;
 
         // diff (D0) include time of previous sleep (d0) + tick time (t0)
         // we want that next d1 + t1 == WORLD_SLEEP_CONST
