@@ -8,6 +8,11 @@ ConfVersion=2010102201
 ################################################################################
 # AUCTION HOUSE BOT SETTINGS
 #
+#    AuctionHouseBot.CharacterName
+#        The name of the character that the bot will use to auction
+#        items in the Alliance, Horde and neutral auction houses.
+#    Default "" (No owner)
+#
 #    AuctionHouseBot.Seller.Enabled
 #        Enable or disable sales functionality
 #    Default 0 (Disabled)
@@ -145,6 +150,7 @@ ConfVersion=2010102201
 #    Default ""
 #
 ################################################################################
+AuctionHouseBot.CharacterName  = ""
 AuctionHouseBot.Seller.Enabled = 0
 AuctionHouseBot.DEBUG.Seller   = 0
 

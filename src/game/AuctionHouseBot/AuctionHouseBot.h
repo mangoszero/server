@@ -192,6 +192,12 @@ class AuctionBotConfig
          * @return const char
          */
         const char* GetAHBotExcludes() const { return m_AHBotExcludes.c_str(); }
+        /**
+         * @brief
+         *
+         * @return const char
+         */
+        const char* GetAHBotCharacterName() const { return m_AHBotCharacterName.c_str(); }
 
         /**
          * @brief
@@ -286,6 +292,7 @@ class AuctionBotConfig
         std::string m_configFileName; /**< TODO */
         std::string m_AHBotIncludes; /**< TODO */
         std::string m_AHBotExcludes; /**< TODO */
+        std::string m_AHBotCharacterName;
         Config      m_AhBotCfg; /**< TODO */
         uint32      m_ItemsPerCycleBoost; /**< TODO */
         uint32      m_ItemsPerCycleNormal; /**< TODO */
@@ -305,6 +312,12 @@ class AuctionBotConfig
          * @param AHBotExcludes
          */
         void SetAHBotExcludes(const std::string& AHBotExcludes) { m_AHBotExcludes = AHBotExcludes; }
+        /**
+         * @brief
+         *
+         * @param AHBotCharacterName
+         */
+        void SetAHBotCharacterName(const std::string& AHBotCharacterName) { m_AHBotCharacterName = AHBotCharacterName; }
 
         /**
          * @brief Sets a certain config value to the given default value

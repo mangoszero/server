@@ -484,6 +484,7 @@ void AuctionBotConfig::GetConfigFromFile()
 
     SetAHBotIncludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceIncludeItems", ""));
     SetAHBotExcludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceExcludeItems", ""));
+    SetAHBotCharacterName(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
 
     setConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED       , "AuctionHouseBot.Buyer.Alliance.Enabled"      , false);
     setConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED          , "AuctionHouseBot.Buyer.Horde.Enabled"         , false);
@@ -1742,7 +1743,12 @@ void AuctionBotSeller::addNewAuctions(AHB_Seller_Config& config)
         // Price of items are set here
         SetPricesOfItem(config, buyoutPrice, bidPrice, stackCount, ItemQualities(prototype->Quality));
 
-        auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice);
+        // Add the auction under the player name specified in the configuration.
+        std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+        if (!AHBotCharacterName.empty())
+            { auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice, 0, sObjectMgr.GetPlayer(AHBotCharacterName.c_str())); }
+        else
+            { auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice); }
     }
 }
 
