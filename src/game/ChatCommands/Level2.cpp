@@ -4173,20 +4173,29 @@ void ChatHandler::HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id)
 
 bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
 {
-    for (uint32 i = 0; i < sSkillLineStore.GetNumRows(); ++i)
-    {
-        SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(i);
-        if (!skillInfo)
-            { continue; }
+	for (uint32 i = 0; i < sSkillLineStore.GetNumRows(); ++i)
+	{
+		SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(i);
+		if (!skillInfo)
+		{ continue; }
 
-        if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
-        {
-            HandleLearnSkillRecipesHelper(m_session->GetPlayer(), skillInfo->id);
-        }
-    }
+		if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
+		{
+			// Learn only the crafts that actually are crafts (MaNGOS ZERO)
+			if (skillInfo->id == SKILL_ENGINEERING || skillInfo->id == SKILL_BLACKSMITHING ||
+				skillInfo->id == SKILL_LEATHERWORKING || skillInfo->id == SKILL_ALCHEMY ||
+				skillInfo->id == SKILL_HERBALISM || skillInfo->id == SKILL_MINING ||
+				skillInfo->id == SKILL_TAILORING || skillInfo->id == SKILL_ENCHANTING ||
+				skillInfo->id == SKILL_SKINNING || skillInfo->id == SKILL_FIRST_AID ||
+				skillInfo->id == SKILL_COOKING || skillInfo->id == SKILL_FISHING)
+			{
+				HandleLearnSkillRecipesHelper(m_session->GetPlayer(), skillInfo->id);
+			}
+		}
+	}
 
-    SendSysMessage(LANG_COMMAND_LEARN_ALL_CRAFT);
-    return true;
+	SendSysMessage(LANG_COMMAND_LEARN_ALL_CRAFT);
+	return true;
 }
 
 bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
