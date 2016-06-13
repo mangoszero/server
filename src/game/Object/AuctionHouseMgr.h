@@ -152,6 +152,7 @@ class AuctionHouseObject
                                    uint32 inventoryType, uint32 itemClass, uint32 itemSubClass, uint32 quality,
                                    uint32& count, uint32& totalcount);
         AuctionEntry* AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout = 0, uint32 deposit = 0, Player* pl = NULL);
+        AuctionEntry* AddAuctionByGuid(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 lowguid);
     private:
         AuctionEntryMap AuctionsMap;
 };

@@ -717,7 +717,11 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
                 else if (buyerItem.MinBidPrice == 0)
                     { buyerItem.MinBidPrice = Aentry->startbid / item->GetCount(); }
 
-                if (!Aentry->owner)
+                uint32 AHBotGuid;
+                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+                if (!AHBotCharacterName.empty())
+                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
+                if (!Aentry->owner || Aentry->owner == AHBotGuid)
                 {
                     if ((Aentry->bid != 0) && Aentry->bidder) // Add bided by player
                     {
@@ -992,11 +996,15 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
                          minBuyPrice / 10000, minBidPrice / 10000);
         DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: Actual Entry price,  Buy=%ug, Bid=%ug.", buyoutPrice / 10000, bidPrice / 10000);
 
-        if (!auction->owner)                // Original auction owner
+        uint32 AHBotGuid;
+        std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+        if (!AHBotCharacterName.empty())
+            { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
+        if (!auction->owner || auction->owner == AHBotGuid)        // Original auction owner
         {
-            MaxChance = MaxChance / 5;      // if Owner is AHBot this mean player placed bid on this auction. We divide by 5 chance for AhBuyer to place bid on it. (This make more challenge than ignore entry)
+            MaxChance = MaxChance / 5;                             // if Owner is AHBot this mean player placed bid on this auction. We divide by 5 chance for AhBuyer to place bid on it. (This make more challenge than ignore entry)
         }
-        if (auction->buyout != 0)           // Is the item directly buyable?
+        if (auction->buyout != 0)                                  // Is the item directly buyable?
         {
             if (IsBuyableEntry(buyoutPrice, InGame_BuyPrice, MaxBuyablePrice, minBuyPrice, MaxChance, config.FactionChance))
             {
@@ -1544,7 +1552,11 @@ uint32 AuctionBotSeller::SetStat(AHB_Seller_Config& config)
             ItemPrototype const* prototype = item->GetProto();
             if (prototype)
             {
-                if (!Aentry->owner)                         // Add only ahbot items
+                uint32 AHBotGuid;
+                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+                if (!AHBotCharacterName.empty())
+                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
+                if (!Aentry->owner || Aentry->owner == AHBotGuid)                                  // Add only ahbot items
                 {
                     ++ItemsInAH[prototype->Quality][prototype->Class];
                 }
@@ -1746,7 +1758,11 @@ void AuctionBotSeller::addNewAuctions(AHB_Seller_Config& config)
         // Add the auction under the player name specified in the configuration.
         std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
         if (!AHBotCharacterName.empty())
-            { auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice, 0, sObjectMgr.GetPlayer(AHBotCharacterName.c_str())); }
+        {
+            ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str());
+            if (guid)
+                { auctionHouse->AddAuctionByGuid(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice, guid.GetCounter()); }
+        }
         else
             { auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice); }
     }
@@ -1859,7 +1875,11 @@ void AuctionHouseBot::PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo)
             if (Item* item = sAuctionMgr.GetAItem(Aentry->itemGuidLow))
             {
                 ItemPrototype const* prototype = item->GetProto();
-                if (!Aentry->owner)                         // Add only ahbot items
+                uint32 AHBotGuid;
+                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+                if (!AHBotCharacterName.empty())
+                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
+                if (!Aentry->owner || Aentry->owner == AHBotGuid)                                  // Add only ahbot items
                 {
                     if (prototype->Quality < MAX_AUCTION_QUALITY)
                         { ++statusInfo[i].QualityInfo[prototype->Quality]; }
@@ -1880,8 +1900,12 @@ void AuctionHouseBot::Rebuild(bool all)
         for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             AuctionEntry* entry = itr->second;
-            if (!entry->owner)                              // ahbot auction
-                if (all || entry->bid == 0)                 // expire now auction if no bid or forced
+            uint32 AHBotGuid;
+            std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
+            if (!AHBotCharacterName.empty())
+                { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); };
+            if (!entry->owner || entry->owner == AHBotGuid)                                        // ahbot auction
+                if (all || entry->bid == 0)                                                        // expire now auction if no bid or forced
                     entry->expireTime = sWorld.GetGameTime();
         }
     }

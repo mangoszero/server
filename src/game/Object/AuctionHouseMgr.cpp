@@ -695,6 +695,39 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
     return AH;
 }
 
+AuctionEntry* AuctionHouseObject::AddAuctionByGuid(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 lowguid)
+{
+    uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
+
+    AuctionEntry* AH = new AuctionEntry;
+    AH->Id = sObjectMgr.GenerateAuctionID();
+    AH->itemGuidLow = newItem->GetObjectGuid().GetCounter();
+    AH->itemTemplate = newItem->GetEntry();
+    AH->itemCount = newItem->GetCount();
+    AH->itemRandomPropertyId = newItem->GetItemRandomPropertyId();
+    AH->owner = lowguid;
+    AH->startbid = bid;
+    AH->bidder = 0;
+    AH->bid = 0;
+    AH->buyout = buyout;
+    AH->expireTime = time(NULL) + auction_time;
+    AH->deposit = 0;
+    AH->auctionHouseEntry = auctionHouseEntry;
+
+    AddAuction(AH);
+
+    sAuctionMgr.AddAItem(newItem);
+
+    CharacterDatabase.BeginTransaction();
+
+    newItem->SaveToDB();
+    AH->SaveToDB();
+
+    CharacterDatabase.CommitTransaction();
+
+    return AH;
+}
+
 // this function inserts to WorldPacket auction's data
 bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
 {
