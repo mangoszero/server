@@ -576,6 +576,7 @@ bool IsSingleFromSpellSpecificSpellRanksPerTarget(SpellSpecific spellSpec1, Spel
         case SPELL_AURA:
         case SPELL_CURSE:
         case SPELL_ASPECT:
+        case SPELL_POSITIVE_SHOUT:
             return spellSpec1 == spellSpec2;
         default:
             return false;
