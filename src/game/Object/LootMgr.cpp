@@ -403,6 +403,10 @@ LootItem::LootItem(uint32 itemid_, uint32 count_, int32 randomPropertyId_)
 // Basic checks for player/item compatibility - if false no chance to see the item in the loot
 bool LootItem::AllowedForPlayer(Player const* player, WorldObject const* lootTarget) const
 {
+    // player check
+    if (!player || !player->IsInWorld())
+        { return false; }
+
     // DB conditions check
     if (conditionId && !sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), lootTarget, CONDITION_FROM_LOOT))
         { return false; }

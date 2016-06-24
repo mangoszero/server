@@ -36,9 +36,12 @@ PathFinder::PathFinder(const Unit* owner) :
     m_useStraightPath(false), m_forceDestination(false), m_pointPathLimit(MAX_POINT_PATH_LENGTH),
     m_sourceUnit(owner), m_navMesh(NULL), m_navMeshQuery(NULL)
 {
-    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::PathInfo for %u \n", m_sourceUnit->GetGUIDLow());
+    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::PathFinder for %s \n", m_sourceUnit->GetGuidStr().c_str());
+
+    memset(m_pathPolyRefs, 0, sizeof(m_pathPolyRefs));
 
     uint32 mapId = m_sourceUnit->GetMapId();
+
     if (MMAP::MMapFactory::IsPathfindingEnabled(mapId, owner))
     {
         MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
@@ -51,23 +54,26 @@ PathFinder::PathFinder(const Unit* owner) :
 
 PathFinder::~PathFinder()
 {
-    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::~PathInfo() for %u \n", m_sourceUnit->GetGUIDLow());
+    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::~PathFinder() for %s \n", m_sourceUnit->GetGuidStr().c_str());
 }
 
 bool PathFinder::calculate(float destX, float destY, float destZ, bool forceDest)
 {
-    // Vector3 oldDest = getEndPosition();
-    Vector3 dest(destX, destY, destZ);
-    setEndPosition(dest);
-
     float x, y, z;
     m_sourceUnit->GetPosition(x, y, z);
+
+    if (!MaNGOS::IsValidMapCoord(x,y,z) || !MaNGOS::IsValidMapCoord(destX, destY, destZ))
+      { return false; }
+
     Vector3 start(x, y, z);
     setStartPosition(start);
 
+    Vector3 dest(destX, destY, destZ);
+    setEndPosition(dest);
+
     m_forceDestination = forceDest;
 
-    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::calculate() for %u \n", m_sourceUnit->GetGUIDLow());
+    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::calculate() for %s \n", m_sourceUnit->GetGuidStr().c_str());
 
     // make sure navMesh works - we can run on map w/o mmap
     // check if the start and end point have a .mmtile loaded (can we pass via not loaded tile on the way?)
@@ -97,8 +103,8 @@ dtPolyRef PathFinder::getPathPolyByPosition(const dtPolyRef* polyPath, uint32 po
     for (uint32 i = 0; i < polyPathSize; ++i)
     {
         float closestPoint[VERTEX_SIZE];
-        dtStatus dtResult = m_navMeshQuery->closestPointOnPoly(polyPath[i], point, closestPoint, NULL);
-        if (dtStatusFailed(dtResult))
+
+        if (dtStatusFailed(m_navMeshQuery->closestPointOnPoly(polyPath[i], point, closestPoint, NULL)))
             continue;
 
         float d = dtVdist2DSqr(point, closestPoint);
@@ -133,8 +139,7 @@ dtPolyRef PathFinder::getPolyByLocation(const float* point, float* distance) con
     // first try with low search box
     float extents[VERTEX_SIZE] = {3.0f, 5.0f, 3.0f};    // bounds of poly search area
     float closestPoint[VERTEX_SIZE] = {0.0f, 0.0f, 0.0f};
-    dtStatus dtResult = m_navMeshQuery->findNearestPoly(point, extents, &m_filter, &polyRef, closestPoint);
-    if (dtStatusSucceed(dtResult) && polyRef != INVALID_POLYREF)
+    if (dtStatusSucceed(m_navMeshQuery->findNearestPoly(point, extents, &m_filter, &polyRef, closestPoint)) && polyRef != INVALID_POLYREF)
     {
         *distance = dtVdist(closestPoint, point);
         return polyRef;
@@ -143,8 +148,7 @@ dtPolyRef PathFinder::getPolyByLocation(const float* point, float* distance) con
     // still nothing ..
     // try with bigger search box
     extents[1] = 200.0f;
-    dtResult = m_navMeshQuery->findNearestPoly(point, extents, &m_filter, &polyRef, closestPoint);
-    if (dtStatusSucceed(dtResult) && polyRef != INVALID_POLYREF)
+    if (dtStatusSucceed(m_navMeshQuery->findNearestPoly(point, extents, &m_filter, &polyRef, closestPoint)) && polyRef != INVALID_POLYREF)
     {
         *distance = dtVdist(closestPoint, point);
         return polyRef;
@@ -171,7 +175,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     // its up to caller how he will use this info
     if (startPoly == INVALID_POLYREF || endPoly == INVALID_POLYREF)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPoly == 0 || endPoly == 0)\n");
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPoly == 0 || endPoly == 0) for %s\n", m_sourceUnit->GetGuidStr().c_str());
         BuildShortcut();
 
         if (m_sourceUnit->GetTypeId() == TYPEID_UNIT)
@@ -179,9 +183,9 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
             // Check for swimming or flying shortcut
             if ((startPoly == INVALID_POLYREF && m_sourceUnit->GetTerrain()->IsUnderWater(startPos.x, startPos.y, startPos.z)) ||
                 (endPoly == INVALID_POLYREF && m_sourceUnit->GetTerrain()->IsUnderWater(endPos.x, endPos.y, endPos.z)))
-                { m_type = ((Creature*)m_sourceUnit)->CanSwim() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
+                { m_type = m_sourceUnit->ToCreature()->CanSwim() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
             else
-                { m_type = ((Creature*)m_sourceUnit)->CanFly() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
+                { m_type = m_sourceUnit->ToCreature()->CanFly() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
         }
         else
             { m_type = PATHFIND_NOPATH; }
@@ -193,23 +197,24 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     bool farFromPoly = (distToStartPoly > 7.0f || distToEndPoly > 7.0f);
     if (farFromPoly)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: farFromPoly distToStartPoly=%.3f distToEndPoly=%.3f\n", distToStartPoly, distToEndPoly);
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: farFromPoly distToStartPoly=%.3f distToEndPoly=%.3f for %s\n",
+                         distToStartPoly, distToEndPoly, m_sourceUnit->GetGuidStr().c_str());
 
         bool buildShotrcut = false;
         if (m_sourceUnit->GetTypeId() == TYPEID_UNIT)
         {
-            Creature* owner = (Creature*)m_sourceUnit;
+            const Creature* owner = m_sourceUnit->ToCreature();
 
             Vector3 p = (distToStartPoly > 7.0f) ? startPos : endPos;
             if (m_sourceUnit->GetTerrain()->IsUnderWater(p.x, p.y, p.z))
             {
-                DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: underWater case\n");
+                DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: underWater case for %s\n", m_sourceUnit->GetGuidStr().c_str());
                 if (owner->CanSwim())
                     { buildShotrcut = true; }
             }
             else
             {
-                DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: flying case\n");
+                DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: flying case for %s\n", m_sourceUnit->GetGuidStr().c_str());
                 if (owner->CanFly())
                     { buildShotrcut = true; }
             }
@@ -242,7 +247,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     // just need to move in straight line
     if (startPoly == endPoly)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPoly == endPoly)\n");
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPoly == endPoly) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
         BuildShortcut();
 
@@ -250,7 +255,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         m_polyLength = 1;
 
         m_type = farFromPoly ? PATHFIND_INCOMPLETE : PATHFIND_NORMAL;
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: path type %d\n", m_type);
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: path type %d for %s\n", m_type, m_sourceUnit->GetGuidStr().c_str());
         return;
     }
 
@@ -284,7 +289,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
 
     if (startPolyFound && endPolyFound)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPolyFound && endPolyFound)\n");
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPolyFound && endPolyFound) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
         // we moved along the path and the target did not move out of our old poly-path
         // our path is a simple subpath case, we have all the data we need
@@ -295,7 +300,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     }
     else if (startPolyFound && !endPolyFound)
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPolyFound && !endPolyFound)\n");
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (startPolyFound && !endPolyFound) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
         // we are moving on the old path but target moved out
         // so we have atleast part of poly-path ready
@@ -353,14 +358,15 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
             sLog.outError("%u's Path Build failed: 0 length path", m_sourceUnit->GetGUIDLow());
         }
 
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++  m_polyLength=%u prefixPolyLength=%u suffixPolyLength=%u \n", m_polyLength, prefixPolyLength, suffixPolyLength);
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ m_polyLength=%u prefixPolyLength=%u suffixPolyLength=%u for %s\n",
+                         m_polyLength, prefixPolyLength, suffixPolyLength, m_sourceUnit->GetGuidStr().c_str());
 
         // new path = prefix + suffix - overlap
         m_polyLength = prefixPolyLength + suffixPolyLength - 1;
     }
     else
     {
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (!startPolyFound && !endPolyFound)\n");
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (!startPolyFound && !endPolyFound) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
         // either we have no path at all -> first run
         // or something went really wrong -> we aren't moving along the path to the target
@@ -382,7 +388,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         if (!m_polyLength || dtStatusFailed(dtResult))
         {
             // only happens if we passed bad data to findPath(), or navmesh is messed up
-            sLog.outError("%u's Path Build failed: 0 length path", m_sourceUnit->GetGUIDLow());
+            sLog.outError("Path Build failed: 0 length path for %s", m_sourceUnit->GetGuidStr().c_str());
             BuildShortcut();
             m_type = PATHFIND_NOPATH;
             return;
@@ -434,7 +440,7 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
         // only happens if pass bad data to findStraightPath or navmesh is broken
         // single point paths can be generated here
         // TODO : check the exact cases
-        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildPointPath FAILED! path sized %d returned\n", pointCount);
+        DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildPointPath FAILED! path sized %d returned for %s\n", pointCount, m_sourceUnit->GetGuidStr().c_str());
         BuildShortcut();
         m_type = PATHFIND_NOPATH;
         return;
@@ -443,6 +449,8 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
     m_pathPoints.resize(pointCount);
     for (uint32 i = 0; i < pointCount; ++i)
         { m_pathPoints[i] = Vector3(pathPoints[i * VERTEX_SIZE + 2], pathPoints[i * VERTEX_SIZE], pathPoints[i * VERTEX_SIZE + 1]); }
+
+    //NormalizePath(pointCount);
 
     // first point is always our current location - we need the next one
     setActualEndPosition(m_pathPoints[pointCount - 1]);
@@ -467,21 +475,25 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
         m_type = PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH);
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildPointPath path type %d size %d poly-size %d\n", m_type, pointCount, m_polyLength);
+    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildPointPath path type %d size %d poly-size %d for %s\n",
+                     m_type, pointCount, m_polyLength, m_sourceUnit->GetGuidStr().c_str());
 }
 
 void PathFinder::BuildShortcut()
 {
-    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildShortcut :: making shortcut\n");
+    DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ PathFinder::BuildShortcut :: making shortcut for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
     clear();
 
     // make two point path, our curr pos is the start, and dest is the end
-    m_pathPoints.resize(2);
+    uint32 size = 2;
+    m_pathPoints.resize(size);
 
     // set start and a default next position
     m_pathPoints[0] = getStartPosition();
     m_pathPoints[1] = getActualEndPosition();
+
+    //NormalizePath(size);
 
     m_type = PATHFIND_SHORTCUT;
 }
@@ -782,4 +794,24 @@ bool PathFinder::inRange(const Vector3& p1, const Vector3& p2, float r, float h)
 float PathFinder::dist3DSqr(const Vector3& p1, const Vector3& p2) const
 {
     return (p1 - p2).squaredLength();
+}
+
+void PathFinder::NormalizePath(uint32& size)
+{
+    for (uint32 i = 0; i < m_pathPoints.size(); ++i)
+      { m_sourceUnit->UpdateAllowedPositionZ(m_pathPoints[i].x, m_pathPoints[i].y, m_pathPoints[i].z); }
+
+    // check if the Z difference between each point is higher than SMOOTH_PATH_HEIGHT.
+    // add another point if that's the case and keep adding new midpoints till the Z difference is low enough
+    for (uint32 i = 1; i < m_pathPoints.size(); ++i)
+    {
+        if ((m_pathPoints[i - 1].z - m_pathPoints[i].z) > SMOOTH_PATH_HEIGHT)
+        {
+            auto midPoint = m_pathPoints[i - 1] + (m_pathPoints[i] - m_pathPoints[i - 1]) / 2.f;
+            m_sourceUnit->UpdateAllowedPositionZ(midPoint.x, midPoint.y, midPoint.z);
+            m_pathPoints.insert(m_pathPoints.begin() + i, midPoint);
+            --i;
+        }
+    }
+    size = m_pathPoints.size();
 }
