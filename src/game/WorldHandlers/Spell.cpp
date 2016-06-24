@@ -5568,6 +5568,19 @@ SpellCastResult Spell::CheckRange(bool strict)
             }
             break;                                          // let continue in generic way for no target
         }
+	case SPELL_RANGE_IDX_SHORT:
+	{
+		if ((m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) || m_spellInfo->SpellFamilyFlags & 0x800000)))
+		{
+			Pet* pet = m_caster->GetPet();
+			if (pet)
+			{
+				float max_range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(SPELL_RANGE_IDX_SHORT));
+				return m_caster->IsWithinDistInMap(pet, max_range) ? SPELL_CAST_OK : SPELL_FAILED_OUT_OF_RANGE;
+			}
+		}
+		break;
+	}        
     }
 
     // add radius of caster and ~5 yds "give" for non stricred (landing) check

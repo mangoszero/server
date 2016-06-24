@@ -1063,6 +1063,8 @@ enum SpellRangeIndex
     SPELL_RANGE_IDX_SELF_ONLY = 1,
     /// 5.5 (but dynamic), seems to indicate melee range
     SPELL_RANGE_IDX_COMBAT    = 2,
+    /// 20 short range
+    SPELL_RANGE_IDX_SHORT     = 3,
     /// 500000 (anywhere)
     SPELL_RANGE_IDX_ANYWHERE  = 13,
 };
