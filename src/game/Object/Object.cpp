@@ -1537,8 +1537,6 @@ void WorldObject::ResetMap()
     delete elunaEvents;
     elunaEvents = NULL;
 #endif
-
-    m_currMap = NULL;
 }
 
 TerrainInfo const* WorldObject::GetTerrain() const
