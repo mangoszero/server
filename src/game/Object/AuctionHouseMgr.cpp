@@ -833,9 +833,6 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
 
     if ((newbid < buyout) || (buyout == 0))                 // bid
     {
-        if (auction_owner)
-            { auction_owner->GetSession()->SendAuctionOwnerNotification(this, false); }
-
         // after this update we should save player's money ...
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute("UPDATE auction SET buyguid = '%u', lastbid = '%u' WHERE id = '%u'", bidder, bid, Id);
@@ -846,6 +843,10 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
     }
     else                                                    // buyout
     {
+        if (auction_owner)
+        {
+            auction_owner->GetSession()->SendAuctionOwnerNotification(this, false);
+        }
         AuctionBidWinning(newbidder);
         return false;
     }
