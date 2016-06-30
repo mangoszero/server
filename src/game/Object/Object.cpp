@@ -337,29 +337,15 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
     MANGOS_ASSERT(updateMask && updateMask->GetCount() == m_valuesCount);
 
     *data << (uint8)updateMask->GetBlockCount();
-    data->append(updateMask->GetMask(), updateMask->GetLength());
-
-    // checking the new bit extraction mechanic
-//#ifdef _DEBUG
-    uint16 ix = 0;
-    for (uint16 i = 0; i < m_valuesCount; i++)
-    {
-        if (updateMask->GetBit(i))
-        {
-            ix = updateMask->GetNextSetIndex(ix);
-            if (i != ix)
-                sLog.outError("ERROR BuildValuesUpdate: new index %u, should be %u for object type %u entry %u", ix, i, GetTypeId(), GetEntry());
-            ++ix;
-        }
-    }
-//#endif
+    updateMask->AppendToPacket(data);
 
     // 2 specialized loops for speed optimization in non-unit case
     if (isType(TYPEMASK_UNIT))                              // unit (creature/player) case
     {
-        uint16 index = 0;
-        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
+        for (uint16 index = 0; index < m_valuesCount; ++index)
         {
+          if(updateMask->GetBit(index))
+          {
             if (index == UNIT_NPC_FLAGS)
             {
                 uint32 appendValue = m_uint32Values[index];
@@ -406,7 +392,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
             else if (index == UNIT_DYNAMIC_FLAGS && GetTypeId() == TYPEID_UNIT)
             {
                 uint32 send_value = m_uint32Values[index];
-                
+
                 /* Initiate pointer to creature so we can check loot */
                 if (Creature* my_creature = (Creature*)this)
                     /* If the creature is NOT fully looted */
@@ -455,14 +441,15 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                 // send in current format (float as float, uint32 as uint32)
                 *data << m_uint32Values[index];
             }
-            ++index;
+          }
         }
     }
     else if (isType(TYPEMASK_GAMEOBJECT))                   // gameobject case
     {
-        uint16 index = 0;
-        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
+        for (uint16 index = 0; index < m_valuesCount; ++index)
         {
+          if (updateMask->GetBit(index))
+          {
             // send in current format (float as float, uint32 as uint32)
             if (index == GAMEOBJECT_DYN_FLAGS)
             {
@@ -488,17 +475,18 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
             }
             else
                 { *data << m_uint32Values[index]; }         // other cases
-            ++index;
+          }
         }
     }
     else                                                    // other objects case (no special index checks)
     {
-        uint16 index = 0;
-        while ((index = updateMask->GetNextSetIndex(index)) < m_valuesCount)
+        for (uint16 index = 0; index < m_valuesCount; ++index)
         {
-            // send in current format (float as float, uint32 as uint32)
-            *data << m_uint32Values[index];
-            ++index;
+            if (updateMask->GetBit(index))
+            {
+                // send in current format (float as float, uint32 as uint32)
+                *data << m_uint32Values[index];
+            }
         }
     }
 }
