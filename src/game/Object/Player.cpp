@@ -4583,7 +4583,7 @@ void Player::RepopAtGraveyard()
     if (ClosestGrave)
     {
         bool updateVisibility = IsInWorld() && GetMapId() == ClosestGrave->map_id;
-        TeleportTo(ClosestGrave->map_id, ClosestGrave->x, ClosestGrave->y, ClosestGrave->z, GetOrientation());
+        TeleportTo(ClosestGrave->map_id, ClosestGrave->x, ClosestGrave->y, ClosestGrave->z, GetOrientation(), 0, GetSession()->isLogingOut());
         if (updateVisibility && IsInWorld())
             { UpdateVisibilityAndView(); }
     }
