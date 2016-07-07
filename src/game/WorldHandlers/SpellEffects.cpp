@@ -521,10 +521,10 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         switch (inner_roll)
                         {
                             case 1:
-                                m_caster->CastSpell(m_caster, 13003, true, m_CastItem);  // -250 AP + shrink caster 
+                                m_caster->CastSpell(m_caster, 13003, true, m_CastItem);  // -250 AP + shrink caster
                                 break;
                             case 2:
-                                m_caster->CastSpell(m_caster, 13010, true, m_CastItem);  // -250AP + shrink all caster's party 
+                                m_caster->CastSpell(m_caster, 13010, true, m_CastItem);  // -250AP + shrink all caster's party
                                 break;
                             default:
                                 unitTarget->CastSpell(unitTarget, 13004, true, NULL);    // +250AP + grow victim
@@ -1340,7 +1340,22 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
     // special cases
     switch (triggered_spell_id)
     {
-            // Vanish (not exist)
+        // Temporal Parasite Summon #2, special case because chance is set to 101% in DBC while description is 67%
+        case 16630:
+            if (urand(0, 100) < 67)
+            {
+                m_caster->CastSpell(unitTarget, triggered_spell_id, true);
+            }
+            return;
+        // Temporal Parasite Summon #3, special case because chance is set to 101% in DBC while description is 34%
+        case 16631:
+            if (urand(0, 100) < 34)
+            {
+                m_caster->CastSpell(unitTarget, triggered_spell_id, true);
+            }
+            return;
+
+        // Vanish (not exist)
         case 18461:
         {
             unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
