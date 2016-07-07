@@ -11,11 +11,9 @@
 <a href='https://ci.appveyor.com/project/MaNGOS/server-9fytl/history' target='MangosZero'><img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=develop21&svg=true' border=0></a>
 </td></tr></table>
 
-Mangos
+VANILLA WOW BRANCH
 ===
-CLASSIC WOW BRANCH
-===
-### A World of Warcraft server for Classic WoW  
+### A World of Warcraft server for Vanilla WoW  
 ----
 *Mangos* is open source project, built in [C++][7], it's fast, runs on multiple
 platforms, can store game data in [MySQL][40] and [PostgreSQL][42]. It also has
@@ -161,8 +159,6 @@ respects for all of the code used other than [OpenSSL][48].
 [12]: http://github.com/mangoszero "MaNGOS Zero · github organization"
 [13]: http://github.com/mangoszero/server "MaNGOS Zero · server repository"
 [15]: http://github.com/mangoszero/database "MaNGOS Zero · content database repository"
-[16]: https://travis-ci.org/mangoszero/server "Travis CI · MaNGOS Zero Linux Build Status"
-[17]: https://ci.appveyor.com/project/MaNGOS/server-9fytl "AppVeyor Scan · MaNGOS Zero Windows Build Status"
 
 [19]: http://www.cmake.org/ "CMake · Cross Platform Make"
 [20]: http://windows.microsoft.com/ "Microsoft Windows · that OS, yes."
