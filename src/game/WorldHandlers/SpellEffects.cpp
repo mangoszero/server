@@ -5144,6 +5144,11 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
             }
             break;
         }
+        case GAMEOBJECT_TYPE_SPELLCASTER:
+        {
+            m_caster->AddGameObject(pGameObj);
+            break;
+        }
         case GAMEOBJECT_TYPE_FISHINGHOLE:
         case GAMEOBJECT_TYPE_CHEST:
         default:
