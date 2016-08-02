@@ -11,9 +11,10 @@
 <a href='https://ci.appveyor.com/project/MaNGOS/server-9fytl/history' target='MangosZero'><img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=develop21&svg=true' border=0></a>
 </td></tr></table>
 
-VANILLA WOW BRANCH
 ===
-### A World of Warcraft server for Vanilla WoW  
+CLASSIC WOW BRANCH
+===
+### A World of Warcraft server for Classic WoW  
 ----
 *Mangos* is open source project, built in [C++][7], it's fast, runs on multiple
 platforms, can store game data in [MySQL][40] and [PostgreSQL][42]. It also has
