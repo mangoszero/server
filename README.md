@@ -1,5 +1,5 @@
 <table border=0 cellpadding=0 cellspacing=0 valign='top'><tr>
-<td><a href='https://getmangos.eu' target='getmangos.eu'><img src='https://www.getmangos.eu/images/primus/blue/misc/logo.png' border=0></a></td>
+<td><a href='https://getmangos.eu' target='getmangos.eu'><img src='https://www.getmangos.eu/!assets_mangos/logo.png' border=0></a></td>
 <td valign='top'>
 <a href='https://www.getmangos.eu/forum.php' target='getmangos.forum'><img src='https://www.getmangos.eu/wiki/icons/FORUM.gif' border=0></a>
 <a href='https://www.getmangos.eu/wiki' target='getmangos.wiki'><img src='https://www.getmangos.eu/wiki/icons/WIKI.gif' border=0></a>
