@@ -7,20 +7,37 @@ menu selections, when starting and completing quests, and when casting spells.
 
 Database structure
 ------------------
-All script tables share a common structure, to store parameterized commands for
-the various types of game content.
+All database scripts are stored in the `db_scripts` table in the world database
+
+`script_guid`
+-------------
+Unique ID for the script, used as primary key in the table
+
+`script_type`
+--------------
+Type of script. The values are:
+* DBS_ON_QUEST_START(0): scripts which are executed at the quest taking
+* DBS_ON_QUEST_END(1): scripts which are executed when the quest is rewarded
+* DBS_ON_GOSSIP(2): scripts which are executed when player selects an item from a gossip NPC/GO
+* DBS_ON_CREATURE_MOVEMENT(3): scripts executed when a creature passes through waypoints,
+* DBS_ON_CREATURE_DEATH(4): as the name says
+* DBS_ON_SPELL(5): scripts executed when a spell is cast (see what kind of spells below)
+* DBS_ON_GO_USE(6): scripts executed when a particular gameobject (one from `gameobject` table) is "used" (i.e. opening/closing a door)
+* DBS_ON_GOT_USE(7): scripts executed when a gameobject having the entry specified in `gameobject_template` is used
+* DBS_ON_EVENT(8): scripts executed when an event occurs (like passing through taxi/transport nodes, spells with effect 61, gameobject_template data)
 
 `id` column
 -----------
-* `dbscripts_on_creature_death`: Creature entry
-* `dbscripts_on_creature_movement`: DB project self defined id
-* `dbscripts_on_event`: Event id. Several sources: spell effect 61, taxi/transport nodes, game object_template data
-* `dbscripts_on_go_use`: Game object guid
-* `dbscripts_on_go_template_use`: Game object entry
-* `dbscripts_on_gossip`: DB project self defined id
-* `dbscripts_on_quest_end`: DB project self defined id (generally quest entry)
-* `dbscripts_on_quest_start`: DB project self defined id (generally quest entry)
-* `dbscripts_on_spell`: Spell id
+Has different meanings, depending of script type
+* type 0: DB project self defined id (generally quest entry)
+* type 1: DB project self defined id (generally quest entry)
+* type 2: DB project self defined id
+* type 3: DB project self defined id
+* type 4: Creature entry
+* type 5: Spell id
+* type 6: Game object guid
+* type 7: Game object entry
+* type 8: Event id
 
 `delay` column
 --------------
@@ -37,7 +54,7 @@ The action to execute.
 `buddy_entry` column
 --------------------
 1 field to store the entry of a "buddy". Depending on the command used this can
-can point to a game object template or and creature template entry.
+can point to a game object template or/and creature template entry.
 
 `search_radius` column
 ----------------------
@@ -56,6 +73,7 @@ Value | Name                            | Notes
 8     | SCRIPT_FLAG_COMMAND_ADDITIONAL  | (Only for some commands possible)
 16    | SCRIPT_FLAG_BUDDY_BY_GUID       | (Interpret search_radius as buddy's guid)
 32    | SCRIPT_FLAG_BUDDY_IS_PET        | (Do not search for an NPC, but for a pet)
+64    | SCRIPT_FLAG_BUDDY_IS_DESPAWNED  | (Search for dead/despawned creatures)
 
 `dataint` columns
 -----------------
@@ -64,7 +82,8 @@ Value | Name                            | Notes
 *Note*: used for text ids SCRIPT_COMMAND_TALK (0),
       for emote ids in SCRIPT_COMMAND_EMOTE (1),
       for spell ids in SCRIPT_COMMAND_CAST_SPELL (15)
-      and as waittime with SCRIPT_COMMAND_TERMINATE_SCRIPT (31)
+      as waittime with SCRIPT_COMMAND_TERMINATE_SCRIPT (31)
+      as equipment ID's with SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS (42)
 
 `x`, `y`, `z` and `o` columns
 -----------------------------
@@ -73,26 +92,26 @@ Map coordinates for commands that require coordinates
 Origin of script and source/target in scripts
 ---------------------------------------------
 
-* `dbscripts_on_creature_death`: Creature death.
-  Source: creature. Target: Unit (player/creature)
-* `dbscripts_on_creature_movement`: `creature_movement` and `creature_movement_template`.
+* type 0: `quest_template` with source: quest giver (creature/GO)
+  and target: player.
+* type 1: `quest_template` with source: quest taker (creature/GO)
+  and target: player.
+* type 2: `gossip_menu_option`, `gossip_menu` with source: creature
+  and target: player in case of NPC-Gossip, or with source: player and target:
+  game object in case of GO-Gossip.
+* type 3: `creature_movement` and `creature_movement_template`.
   Source: creature. Target: creature
-* `dbscripts_on_event`: Flight path with source: player and target: player,
+* type 4: Creature death.
+  Source: creature. Target: Unit (player/creature)
+* type 5: spell with effect 77(SCRIPT_EFFECT), spells with effect 3
+  (DUMMY), spells with effect 64 (TRIGGER_SPELL, with non-existing triggered spell)
+  having source: caster: and target: target of spell (Unit).
+* type 6, 7: game object use with
+  source: user: and target: game object.
+* type 8: Flight path with source: player and target: player,
   transport path with source: transport game object and target transport game
   object, `gameobject_template` with source: user (player/creature) and target:
   game object, spells having effect 61 with source: caster and target: target.
-* `dbscripts_on_go_use`, `dbscripts_on_go_template_use`: game object use with
-  source: user: and target: game object.
-* `dbscripts_on_gossip`: `gossip_menu_option`, `gossip_menu` with source: creature
-  and target: player in case of NPC-Gossip, or with source: player and target:
-  game object in case of GO-Gossip.
-* `dbscripts_on_quest_end`: `quest_template` with source: quest taker (creature/GO)
-  and target: player.
-* `dbscripts_on_quest_start`: `quest_template` with source: quest giver (creature/GO)
-  and target: player.
-* `dbscripts_on_spell`: spell with effect 77(SCRIPT_EFFECT), spells with effect 3
-  (DUMMY), spells with effect 64 (TRIGGER_SPELL, with non-existing triggered spell)
-  having source: caster: and target: target of spell (Unit).
 
 Buddy concept
 -------------
@@ -143,7 +162,7 @@ Commands and their parameters
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>6</td><td align='left' valign='middle'>SCRIPT_COMMAND_TELEPORT_TO</td><td align='left' valign='middle'>source or target with Player. `datalong` = map_id, x/y/z</td></tr>
 <tr bgcolor='#FEFEFF'><td align='center' valign='middle'>7</td><td align='left' valign='middle'>SCRIPT_COMMAND_QUEST_EXPLORED</td><td align='left' valign='middle'>one from source or target must be Player, another GO/Creature. `datalong` = quest_id, `datalong2` = distance or 0</td></tr>
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>8</td><td align='left' valign='middle'>SCRIPT_COMMAND_KILL_CREDIT</td><td align='left' valign='middle'>source or target with Player. `datalong` = creature entry, or 0; If 0 the entry of the creature source or target is used, `datalong2` = bool (0=personal credit, 1=group credit)</td></tr>
-<tr bgcolor='#FEFEFF'><td align='center' valign='middle'>9</td><td align='left' valign='middle'>SCRIPT_COMMAND_RESPAWN_GAMEOBJECT</td><td align='left' valign='middle'>source = any, target = any. `datalong`=db_guid (can be skipped for buddy), `datalong2` = despawn_delay</td></tr>
+<tr bgcolor='#FEFEFF'><td align='center' valign='middle'>9</td><td align='left' valign='middle'>SCRIPT_COMMAND_RESPAWN_GO</td><td align='left' valign='middle'>source = any, target = any. `datalong`=db_guid (can be skipped for buddy), `datalong2` = despawn_delay</td></tr>
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>10</td><td align='left' valign='middle'>SCRIPT_COMMAND_TEMP_SUMMON_CREATURE</td><td align='left' valign='middle'>source = any, target = any. `datalong` = creature entry, `datalong2` = despawn_delay, `data_flags` & SCRIPT_FLAG_COMMAND_ADDITIONAL: summon as active object</td></tr>
 <tr bgcolor='#FEFEFF'><td align='center' valign='middle'>11</td><td align='left' valign='middle'>SCRIPT_COMMAND_OPEN_DOOR</td><td align='left' valign='middle'>source = any. `datalong` = db_guid (can be skipped for buddy), `datalong2` = reset_delay</td></tr>
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>12</td><td align='left' valign='middle'>SCRIPT_COMMAND_CLOSE_DOOR</td><td align='left' valign='middle'>source = any. `datalong` = db_guid (can be skipped for buddy), `datalong2` = reset_delay</td></tr>
@@ -173,6 +192,12 @@ Commands and their parameters
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>36</td><td align='left' valign='middle'>SCRIPT_COMMAND_TURN_TO</td><td align='left' valign='middle'>resultingSource = Creature, resultingTarget = Unit/none.</td></tr>
 <tr bgcolor='#FEFEFF'><td align='center' valign='middle'>37</td><td align='left' valign='middle'>SCRIPT_COMMAND_MOVE_DYNAMIC</td><td align='left' valign='middle'>Move resultingSource to a random point around resultingTarget or to resultingTarget. `resultingSource` = Creature, resultingTarget Worldobject. `datalong` = 0:Move resultingSource towards resultingTarget, `datalong` != 0: Move resultingSource to a random point between datalong2..datalong around resultingTarget. `orientation` != 0: Obtain a random point around resultingTarget in direction of orientation, `data_flags` & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a point in direction of resTarget->GetOrientation + orientation for resTarget == resSource and orientation == 0 this will mean resSource moving forward.</td></tr>
 <tr bgcolor='#FFFFEE'><td align='center' valign='middle'>38</td><td align='left' valign='middle'>SCRIPT_COMMAND_SEND_MAIL</td><td align='left' valign='middle'>Send a mail from resSource to resTarget. `resultingSource` = Creature OR NULL, resTarget must be Player, `datalong` = mailTemplateId, `datalong2`: AlternativeSenderEntry. Use as sender-Entry of the sent mail, `dataint1`: Delay (>= 0) in Seconds</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>39</td><td align='left' valign='middle'>SCRIPT_COMMAND_SET_FLY</td><td align='left' valign='middle'>Toggles the fly mode for a creature.<br/>* resultingSource = Creature<br/>datalong = 0(off) | 1 (on)<br/>* data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL = sets/unsets the flying animation</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>40</td><td align='left' valign='middle'>SCRIPT_COMMAND_DESPAWN_GO</td><td align='left' valign='middle'>* resultingTarget = GameObject. Not all gameobject types support this command</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>41</td><td align='left' valign='middle'>SCRIPT_COMMAND_RESPAWN</td><td align='left' valign='middle'>* resultingSource = Creature. Requires data_flags & SCRIPT_FLAG_BUDDY_IS_DESPAWNED to find dead or despawned targets</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>42</td><td align='left' valign='middle'>SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS</td><td align='left' valign='middle'>Change equipment slots of the resultingSource (Creature)<br/>* resultingSource = Creature<br/>* datalong = reset default (0 - false, 1 - true)<br/>* dataint = main hand slot<br/>* dataint2 = off handslot<br/>* dataint3 = ranged slot</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>43</td><td align='left' valign='middle'>SCRIPT_COMMAND_RESET_GO</td><td align='left' valign='middle'>Resets doors or buttons (GO type 0 or 1)<br/>* resultingTarget = GameObject</td></tr>
+<tr bgcolor='#FFFFEE'><td align='center' valign='middle'>44</td><td align='left' valign='middle'>SCRIPT_COMMAND_UPDATE_TEMPLATE</td><td align='left' valign='middle'>Update creature entry of the resultingSource<br/>* resultingSource = creature<br/>* datalong = new creature entry. Must be different than the current one</td></tr>
 </table>
 
 TemporaryFactionFlags

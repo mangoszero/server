@@ -104,7 +104,7 @@ enum DBScriptCommand                                        // resSource, resTar
     SCRIPT_COMMAND_TELEPORT_TO              = 6,            // source or target with Player, datalong2 = map_id, x/y/z
     SCRIPT_COMMAND_QUEST_EXPLORED           = 7,            // one from source or target must be Player, another GO/Creature, datalong=quest_id, datalong2=distance or 0
     SCRIPT_COMMAND_KILL_CREDIT              = 8,            // source or target with Player, datalong = creature entry (or 0 for target-entry), datalong2 = bool (0=personal credit, 1=group credit)
-    SCRIPT_COMMAND_RESPAWN_GAMEOBJECT       = 9,            // source = any, datalong=db_guid, datalong2=despawn_delay
+    SCRIPT_COMMAND_RESPAWN_GO               = 9,            // source = any, datalong=db_guid, datalong2=despawn_delay
     SCRIPT_COMMAND_TEMP_SUMMON_CREATURE     = 10,           // source = any, datalong=creature entry, datalong2=despawn_delay
                                                             // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL = summon active
     SCRIPT_COMMAND_OPEN_DOOR                = 11,           // datalong=db_guid (or not provided), datalong2=reset_delay
@@ -157,15 +157,20 @@ enum DBScriptCommand                                        // resSource, resTar
     SCRIPT_COMMAND_MOVE_DYNAMIC             = 37,           // resSource = Creature, resTarget Worldobject.
                                                             // datalong = 0: Move resSource towards resTarget
                                                             // datalong != 0: Move resSource to a random point between datalong2..datalong around resTarget.
-                                                            //      orientation != 0: Obtain a random point around resTarget in direction of orientation
+                                                            // orientation != 0: Obtain a random point around resTarget in direction of orientation
                                                             // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL Obtain a random point around resTarget in direction of resTarget->GetOrientation + orientation
                                                             // for resTarget == resSource and orientation == 0 this will mean resSource moving forward
     SCRIPT_COMMAND_SEND_MAIL                = 38,           // resSource WorldObject, can be NULL, resTarget Player
                                                             // datalong: Send mailTemplateId from resSource (if provided) to player resTarget
                                                             // datalong2: AlternativeSenderEntry. Use as sender-Entry
                                                             // dataint1: Delay (>= 0) in Seconds
-    SCRIPT_COMMAND_CHANGE_ENTRY             = 39,           // resSource = Creature, datalong=creature entry
-                                                            // dataint1 = entry
+    SCRIPT_COMMAND_SET_FLY                  = 39,           // resSource = Creature, datalong = 0 (off) | 1 (on)
+    SCRIPT_COMMAND_DESPAWN_GO               = 40,           // resTarget = GameObject
+    SCRIPT_COMMAND_RESPAWN                  = 41,           // resSource = Creature. Requires SCRIPT_FLAG_BUDDY_IS_DESPAWNED to find dead or despawned targets
+    SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS      = 42,           // resSource = Creature, datalong = reset default 0(false) | 1(true)
+                                                            // dataint = main hand slot, dataint2 = offhand slot, dataint3 = ranged slot
+    SCRIPT_COMMAND_RESET_GO                 = 43,           // resTarget = GameObject
+    SCRIPT_COMMAND_UPDATE_TEMPLATE          = 44,           // resSource = Creature, datalong = new creature entry, datalong2 = 0(Alliance) | 1(Horde)
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -179,8 +184,9 @@ enum ScriptInfoDataFlags
     SCRIPT_FLAG_COMMAND_ADDITIONAL          = 0x08,         // command dependend
     SCRIPT_FLAG_BUDDY_BY_GUID               = 0x10,         // take the buddy by guid
     SCRIPT_FLAG_BUDDY_IS_PET                = 0x20,         // buddy is a pet
+    SCRIPT_FLAG_BUDDY_IS_DESPAWNED          = 0x40,         // buddy is dead or despawned
 };
-#define MAX_SCRIPT_FLAG_VALID               (2 * SCRIPT_FLAG_BUDDY_IS_PET - 1)
+#define MAX_SCRIPT_FLAG_VALID               (2 * SCRIPT_FLAG_BUDDY_IS_DESPAWNED - 1)
 
 struct ScriptInfo
 {
@@ -412,11 +418,28 @@ struct ScriptInfo
             uint32 altSender;                               // datalong2;
         } sendMail;
 
-        struct                                              // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (23)
+        struct                                              // SCRIPT_COMMAND_SET_FLY (39)
         {
-            uint32 creatureEntry;                           // datalong
-            uint32 empty1;                                  // datalong2
-        } changeEntry;
+            uint32 enable;                                  // datalong
+            uint32 empty;                                   // datalong2
+        } fly;
+
+        // datalong unused                                  // SCRIPT_COMMAND_DESPAWN_GO (40)
+        // datalong unused                                  // SCRIPT_COMMAND_RESPAWN (41)
+
+        struct                                              // SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS (42)
+        {
+            uint32 resetDefault;                            // datalong
+            uint32 empty;                                   // datalong2
+        } setEquipment;
+
+        // datalong unused                                  // SCRIPT_COMMAND_RESET_GO (43)
+
+        struct                                              // SCRIPT_COMMAND_UPDATE_TEMPLATE (44)
+        {
+            uint32 entry;                                   // datalong
+            uint32 faction;                                 // datalong2
+        } updateTemplate;
 
         struct
         {
@@ -441,7 +464,7 @@ struct ScriptInfo
     {
         switch (command)
         {
-            case SCRIPT_COMMAND_RESPAWN_GAMEOBJECT:
+            case SCRIPT_COMMAND_RESPAWN_GO:
                 return respawnGo.goGuid;
             case SCRIPT_COMMAND_OPEN_DOOR:
             case SCRIPT_COMMAND_CLOSE_DOOR:
@@ -455,11 +478,13 @@ struct ScriptInfo
     {
         switch (command)
         {
-            case SCRIPT_COMMAND_RESPAWN_GAMEOBJECT:
+            case SCRIPT_COMMAND_RESPAWN_GO:
             case SCRIPT_COMMAND_OPEN_DOOR:
             case SCRIPT_COMMAND_CLOSE_DOOR:
             case SCRIPT_COMMAND_ACTIVATE_OBJECT:
             case SCRIPT_COMMAND_GO_LOCK_STATE:
+            case SCRIPT_COMMAND_DESPAWN_GO:
+            case SCRIPT_COMMAND_RESET_GO:
                 return false;
             default:
                 return true;
@@ -481,6 +506,7 @@ struct ScriptInfo
             case SCRIPT_COMMAND_TERMINATE_COND:
             case SCRIPT_COMMAND_TURN_TO:
             case SCRIPT_COMMAND_MOVE_DYNAMIC:
+            case SCRIPT_COMMAND_SET_FLY:
                 return true;
             default:
                 return false;
