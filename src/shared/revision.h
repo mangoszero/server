@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 11
-    #define WORLD_DB_CONTENT_NR 19
-    #define WORLD_DB_UPDATE_DESCRIPTION "respawn_time_fixes"
+    #define WORLD_DB_CONTENT_NR 44
+    #define WORLD_DB_UPDATE_DESCRIPTION "Update_DBScript_Type"
 #endif // __REVISION_H__
