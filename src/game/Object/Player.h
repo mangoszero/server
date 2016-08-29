@@ -1750,7 +1750,7 @@ class Player : public Unit
 
         uint32 GetBaseDefenseSkillValue() const
         {
-            return GetBaseSkillValue(SKILL_DEFENSE);
+            return GetPureSkillValue(SKILL_DEFENSE);
         }
         uint32 GetBaseWeaponSkillValue(WeaponAttackType attType) const;
 
