@@ -107,8 +107,8 @@ ConfVersion=2010102201
 #    AuctionHouseBot.Items.Amount.*
 #        Defines the amount of auctions to be created for each item quality
 #        Values will be adjusted using faction specific settings (if specified)
-#    Default 0, 500, 750, 500, 250, 0, 0
-#            (gray, white, green, blue, purple, orange, yellow)
+#    Default 0, 2000, 2500, 1500, 1000, 0, 0
+#            (grey, white, green, blue, purple, orange, yellow)
 #
 #    AuctionHouseBot.Class.*
 #        Defines which item classes can be put up for auction. See pre-defined
