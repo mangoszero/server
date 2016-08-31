@@ -37,14 +37,14 @@ ConfVersion=2016032801
 #                    hostname;port;username;password;database
 #                    .;/path/to/unix_socket/DIRECTORY or . for default path;username;password;database - use Unix sockets at Unix/Linux
 #
-#	LoginDatabaseConnections
-#	WorldDatabaseConnections
-#	CharacterDatabaseConnections
-#		 Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
-#		 Please, note, for data consistency only one connection for each database is used for transactions and async SELECTs.
-#		 So formula to find out how many connections will be established:
+#    LoginDatabaseConnections
+#    WorldDatabaseConnections
+#    CharacterDatabaseConnections
+#        Amount of connections to database which will be used for SELECT queries. Maximum 16 connections per database.
+#        Please, note, for data consistency only one connection for each database is used for transactions and async SELECTs.
+#        So formula to find out how many connections will be established:
 #                X = LoginDatabaseConnections + WorldDatabaseConnections + CharacterDatabaseConnections + 1
-#		 Default: 1 connection for SELECT statements
+#        Default: 1 connection for SELECT statements
 #
 #    MaxPingTime
 #        Settings for maximum database-ping interval (minutes between pings)
@@ -63,9 +63,9 @@ ConfVersion=2016032801
 RealmID                      = 1
 DataDir                      = "."
 LogsDir                      = ""
-LoginDatabaseInfo            = "127.0.0.1;3306;mangos;mangos;realmd"
-WorldDatabaseInfo            = "127.0.0.1;3306;mangos;mangos;mangos"
-CharacterDatabaseInfo        = "127.0.0.1;3306;mangos;mangos;characters"
+LoginDatabaseInfo            = "127.0.0.1;3306;root;mangos;realmd"
+WorldDatabaseInfo            = "127.0.0.1;3306;root;mangos;mangos0"
+CharacterDatabaseInfo        = "127.0.0.1;3306;root;mangos;character0"
 LoginDatabaseConnections     = 1
 WorldDatabaseConnections     = 1
 CharacterDatabaseConnections = 1
@@ -165,7 +165,6 @@ BindIP                       = "0.0.0.0"
 #        Requires VMaps enabled to work.
 #        Default: 1 (Enabled)
 #                 0 (Disabled)
-#
 #
 #    DetectPosCollision
 #        Check final move position, summon position, etc for visible collision with other objects or
@@ -382,46 +381,46 @@ CleanCharacterDB                  = 1
 #
 ################################################################################
 
-LogSQL                      = 1
-PidFile                     = ""
-LogLevel                    = 3
-LogTime                     = 0
-LogFile                     = "world-server.log"
-LogTimestamp                = 0
-LogFileLevel                = 0
-LogFilter_TransportMoves    = 1
-LogFilter_CreatureMoves     = 1
-LogFilter_VisibilityChanges = 1
-LogFilter_Weather           = 1
-LogFilter_DbStrictedCheck   = 1
-LogFilter_Pathfinding       = 1
-LogFilter_MapsLoading       = 1
-LogFilter_EventAiDev        = 1
-LogFilter_PeriodicAffects   = 0
-LogFilter_PlayerMoves       = 1
-LogFilter_SQLText           = 1
-LogFilter_AIAndMovegens     = 0
-LogFilter_PlayerStats       = 0
-LogFilter_Damage            = 0
-LogFilter_Combat            = 0
-LogFilter_SpellCast         = 0
-LogWhispers                 = 1
-WorldLogFile                = "world-packets.log"
-WorldLogTimestamp           = 0
-DBErrorLogFile              = "world-database.log"
-ElunaErrorLogFile           = "ElunaErrors.log"
-EventAIErrorLogFile         = "world-eventai.log"
-CharLogFile                 = "world-characters.log"
-CharLogTimestamp            = 0
-CharLogDump                 = 0
-GmLogFile                   = "world-gamemaster.log"
-GmLogTimestamp              = 0
-GmLogPerAccount             = 0
-RaLogFile                   = "world-remote-access.log"
-WardenLogFile               = "warden.log"
-WardenLogTimestamp          = 0
-LogColors                   = "13 7 11 9"
-SD3ErrorLogFile             = "scriptdev3-errors.log"
+LogSQL                       = 1
+PidFile                      = ""
+LogLevel                     = 3
+LogTime                      = 0
+LogFile                      = "world-server.log"
+LogTimestamp                 = 0
+LogFileLevel                 = 0
+LogFilter_TransportMoves     = 1
+LogFilter_CreatureMoves      = 1
+LogFilter_VisibilityChanges  = 1
+LogFilter_Weather            = 1
+LogFilter_DbStrictedCheck    = 1
+LogFilter_Pathfinding        = 1
+LogFilter_MapsLoading        = 1
+LogFilter_EventAiDev         = 1
+LogFilter_PeriodicAffects    = 0
+LogFilter_PlayerMoves        = 1
+LogFilter_SQLText            = 1
+LogFilter_AIAndMovegens      = 0
+LogFilter_PlayerStats        = 0
+LogFilter_Damage             = 0
+LogFilter_Combat             = 0
+LogFilter_SpellCast          = 0
+LogWhispers                  = 1
+WorldLogFile                 = "world-packets.log"
+WorldLogTimestamp            = 0
+DBErrorLogFile               = "world-database.log"
+ElunaErrorLogFile            = "ElunaErrors.log"
+EventAIErrorLogFile          = "world-eventai.log"
+CharLogFile                  = "world-characters.log"
+CharLogTimestamp             = 0
+CharLogDump                  = 0
+GmLogFile                    = "world-gamemaster.log"
+GmLogTimestamp               = 0
+GmLogPerAccount              = 0
+RaLogFile                    = "world-remote-access.log"
+WardenLogFile                = "warden.log"
+WardenLogTimestamp           = 0
+LogColors                    = "13 7 11 9"
+SD3ErrorLogFile              = "scriptdev3-errors.log"
 
 ################################################################################
 # SERVER SETTINGS
@@ -469,6 +468,11 @@ SD3ErrorLogFile             = "scriptdev3-errors.log"
 #        DBC Language Settings
 #        0 = English; 1 = Korean; 2 = French; 3 = German; 4 = Chinese; 5 = Taiwanese; 6 = Spanish;
 #        255 = Auto Detect (Default)
+#
+#    DeclinedNames
+#    Allow russian clients to set and use declined names
+#    Default: 0 - do not use declined names, except when the Russian RealmZone is set
+#             1 - use declined names
 #
 #    StrictPlayerNames
 #        Limit player name to language specific symbols set, not allow create characters, and set rename request and disconnect at not allowed symbols name
@@ -796,7 +800,7 @@ EpicMountCost                             = 1000000
 TrainEpicMountCost                        = 9000000
 MinTrainEpicMountLevel                    = 60
 AllFlightPaths                            = 0
-InstantFlightPaths			   = 0
+InstantFlightPaths                        = 0
 AlwaysMaxSkillForLevel                    = 0
 ActivateWeather                           = 1
 CastUnstuck                               = 1
@@ -847,8 +851,8 @@ Motd                                      = "Welcome to Mangos Zero"
 #    AllowTwoSide.Interaction.Trade
 #    AllowTwoSide.Interaction.Auction
 #    AllowTwoSide.Interaction.Mail
-#        Allow or not common :chat(say,yell);channel(chat)group(join)guild(join);trade with different team,
-#        merge all auction houses for players from different teams, send mail to different team.
+#        Allow or not common :chat(say,yell); channel(chat); group(join); guild(join); trade with different team;
+#        merge all auction houses for players from different teams; send mail to different team.
 #        Default: 0 (Not allowed)
 #                 1 (Allowed)
 #
@@ -870,17 +874,17 @@ Motd                                      = "Welcome to Mangos Zero"
 #
 ################################################################################
 
-AllowTwoSide.Accounts            = 0
-AllowTwoSide.Interaction.Chat    = 0
-AllowTwoSide.Interaction.Channel = 0
-AllowTwoSide.Interaction.Group   = 0
-AllowTwoSide.Interaction.Guild   = 0
-AllowTwoSide.Interaction.Trade   = 0
-AllowTwoSide.Interaction.Auction = 0
-AllowTwoSide.Interaction.Mail    = 0
-AllowTwoSide.WhoList             = 0
-AllowTwoSide.AddFriend           = 0
-TalentsInspecting                = 1
+AllowTwoSide.Accounts             = 0
+AllowTwoSide.Interaction.Chat     = 0
+AllowTwoSide.Interaction.Channel  = 0
+AllowTwoSide.Interaction.Group    = 0
+AllowTwoSide.Interaction.Guild    = 0
+AllowTwoSide.Interaction.Trade    = 0
+AllowTwoSide.Interaction.Auction  = 0
+AllowTwoSide.Interaction.Mail     = 0
+AllowTwoSide.WhoList              = 0
+AllowTwoSide.AddFriend            = 0
+TalentsInspecting                 = 1
 
 ################################################################################
 # CREATURE AND GAMEOBJECT SETTINGS
@@ -1151,19 +1155,19 @@ Channel.SilentlyGMJoin          = 0
 #
 ################################################################################
 
-GM.LoginState           = 2
-GM.Visible              = 2
-GM.AcceptTickets        = 2
-GM.TicketListSize       = 30
-GM.TicketOfflineClosing = 1
-GM.Chat                 = 2
-GM.WhisperingTo         = 2
-GM.InGMList.Level       = 3
-GM.InWhoList.Level      = 3
-GM.LogTrade             = 1
-GM.StartLevel           = 1
-GM.LowerSecurity        = 0
-GM.InvisibleAura        = 31748
+GM.LoginState            = 2
+GM.Visible               = 2
+GM.AcceptTickets         = 2
+GM.TicketListSize        = 30
+GM.TicketOfflineClosing  = 1
+GM.Chat                  = 2
+GM.WhisperingTo          = 2
+GM.InGMList.Level        = 3
+GM.InWhoList.Level       = 3
+GM.LogTrade              = 1
+GM.StartLevel            = 1
+GM.LowerSecurity         = 0
+GM.InvisibleAura         = 31748
 
 ################################################################################
 # VISIBILITY AND RADIUSES
@@ -1703,15 +1707,15 @@ CharDelete.KeepDays = 30
 #
 ###################################################################################################
 
-Warden.WinEnabled = 1
-Warden.OSXEnabled = 0
-Warden.NumMemChecks = 3
-Warden.NumOtherChecks = 7
-Warden.ClientResponseDelay = 600
-Warden.ClientCheckHoldOff = 30
+Warden.WinEnabled            = 1
+Warden.OSXEnabled            = 0
+Warden.NumMemChecks          = 3
+Warden.NumOtherChecks        = 7
+Warden.ClientResponseDelay   = 600
+Warden.ClientCheckHoldOff    = 30
 Warden.ClientCheckFailAction = 1
-Warden.BanDuration = 86400
-Warden.DBLogLevel = 0
+Warden.BanDuration           = 86400
+Warden.DBLogLevel            = 0
 
 ###################################################################################################################
 #  ELUNA SETTINGS
@@ -1734,6 +1738,6 @@ Warden.DBLogLevel = 0
 #
 ###################################################################################################################
 
-Eluna.Enabled = 1
-Eluna.TraceBack = false
+Eluna.Enabled    = 1
+Eluna.TraceBack  = false
 Eluna.ScriptPath = "lua_scripts"
