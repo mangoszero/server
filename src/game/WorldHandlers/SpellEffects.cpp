@@ -827,8 +827,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     if (m_caster->GetThreatManager().getThreat(unitTarget))
                         { m_caster->GetThreatManager().modifyThreatPercent(unitTarget, -100); }
 
-                    // cast summon player
-                    m_caster->CastSpell(unitTarget, 21150, true);
+                    // cast summon player if not affected by Aura of Frost (23186)
+                    if (!unitTarget->HasAura(23186))
+                        { m_caster->CastSpell(unitTarget, 21150, true); }
 
                     return;
                 }

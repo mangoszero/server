@@ -2009,6 +2009,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         (spellInfo_2->Id == 21992 && spellInfo_1->Id == 27648))
                         { return false; }
 
+                    // Mark of Frost
+                    if ((spellInfo_1->Id == 23182 && spellInfo_2->Id == 23183) ||
+                        (spellInfo_2->Id == 23182 && spellInfo_1->Id == 23183))
+                        { return false; }
+
                     // Lightning Speed (Mongoose) and Fury of the Crashing Waves (Tsunami Talisman)
                     if ((spellInfo_1->Id == 28093 && spellInfo_2->Id == 42084) ||
                         (spellInfo_2->Id == 28093 && spellInfo_1->Id == 42084))
@@ -2272,6 +2277,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Code refactoring
                     if (spellInfo_2->Id == 132 && spellInfo_1->IsFitToFamilyMask(0x0000000000008000))
                         { return false; }
+
+                    // Ice Block and Mark of Frost
+                    if (spellInfo_2->Id == 23182 && spellInfo_1->Id == 11958)
+                        { return true; }
 
                     // Arcane Intellect and Insight
                     // Code refactoring
