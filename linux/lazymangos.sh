@@ -313,7 +313,7 @@ mangos_install()
 					sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf 
 					sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/zero/etc/mangosd.conf > /home/${user}/zero/etc/mangosd.conf.dist
 					sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf
-					rm -rf /home/${user}/zero/etc/mangos.conf.dist					
+					rm -rf /home/${user}/zero/etc/mangosd.conf.dist					
 				fi
 			
 				if [ -f /home/${user}/zero/etc/realmd.conf.dist ]; then
