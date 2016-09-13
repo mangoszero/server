@@ -68,12 +68,12 @@ choose_modules()
 	echo -e "${BGre}Choose sub modules to include:"
 	echo -e "${BWhi}------------------------"
 	echo -e "${BCya}1. Eluna (only)"
-	echo -e "${BCya}2. SD2 (only)"
+	echo -e "${BCya}2. SD3 (only)"
 	echo -e "${BCya}3. Player Bots (early development)"
 	echo -e "${BCya}4. Eluna + Player Bots"
-	echo -e "${BCya}5. SD2 + Player Bots"
-	echo -e "${BCya}6. Eluna + SD2 + Player Bots"
-	echo -e "${BCya}7. Eluna + SD2 (recommended)"
+	echo -e "${BCya}5. SD3 + Player Bots"
+	echo -e "${BCya}6. Eluna + SD3 + Player Bots"
+	echo -e "${BCya}7. Eluna + SD3 (recommended)"
 	echo -e "${BCya}8. None"
 	echo -e "${BWhi}------------------------"
 	echo -e "Choose (1-8)"
@@ -81,42 +81,42 @@ choose_modules()
 	while [ $opt_list -eq 9 ]; do
 		read opt_list
 	if [ $opt_list -eq 1 ]; then
-		options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD2=0"
+		options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3=0"
 		echo -e "${BGre}Eluna (only) selected"
 		sleep 2
 	else
 		if [ $opt_list -eq 2 ]; then
-			options="-DSCRIPT_LIB_SD2=1"
-			echo -e "${BGre}SD2 (only) selected"
+			options="-DSCRIPT_LIB_SD3=1"
+			echo -e "${BGre}SD3 (only) selected"
 			sleep 2
 		else
 			if [ $opt_list -eq 3 ]; then
-				options="-DPLAYERBOTS=1 -DSCRIPT_LIB_SD2=0"
+				options="-DPLAYERBOTS=1 -DSCRIPT_LIB_SD3=0"
 				echo -e "${BGre}Player Bots (only) selected"
 				sleep 2
 			else
 				if [ $opt_list -eq 4 ]; then
-					options="-DSCRIPT_LIB_ELUNA=1 -DPLAYERBOTS=1 -DSCRIPT_LIB_SD2=0"
+					options="-DSCRIPT_LIB_ELUNA=1 -DPLAYERBOTS=1 -DSCRIPT_LIB_SD3=0"
 					echo -e "${BGre}Eluna + Player Bots"
 					sleep 2
 				else
 					if [ $opt_list -eq 5 ]; then
-						options="-DSCRIPT_LIB_SD2=1 -DPLAYERBOTS=1"
-						echo -e "${BGre}SD2 + Player Bots selected"
+						options="-DSCRIPT_LIB_SD3=1 -DPLAYERBOTS=1"
+						echo -e "${BGre}SD3 + Player Bots selected"
 						sleep 2
 					else
 						if [ $opt_list -eq 6 ]; then
-							options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD2=1 -DPLAYERBOTS=1"
-							echo -e "${BGre}Eluna + SD2 + Player Bots selected"
+							options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3=1 -DPLAYERBOTS=1"
+							echo -e "${BGre}Eluna + SD3 + Player Bots selected"
 							sleep 2
 						else
 							if [ $opt_list -eq 7 ]; then
-								options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD2=1"
-								echo -e "${BGre}Eluna + SD2 selected"
+								options="-DSCRIPT_LIB_ELUNA=1 -DSCRIPT_LIB_SD3=1"
+								echo -e "${BGre}Eluna + SD3 selected"
 								sleep 2
 							else
 								if [ $opt_list -eq 8 ]; then
-									options="-DSCRIPT_LIB_SD2=0"
+									options="-DSCRIPT_LIB_SD3=0"
 									echo -e "${BGre}None selected"
 									sleep 2
 								else
@@ -127,12 +127,12 @@ choose_modules()
 									echo -e "Please choose which options to include:"
 									echo -e "${BWhi}------------------------"
 									echo -e "${BCya}1. Eluna (only)"
-									echo -e "${BCya}2. SD2 (only)"
+									echo -e "${BCya}2. SD3 (only)"
 									echo -e "${BCya}3. Player Bots (early development)"
 									echo -e "${BCya}4. Eluna + Player Bots"
-									echo -e "${BCya}5. SD2 + Player Bots"
-									echo -e "${BCya}6. Eluna + SD2 + Player Bots"
-									echo -e "${BCya}7. Eluna + SD2 (recommended)"
+									echo -e "${BCya}5. SD3 + Player Bots"
+									echo -e "${BCya}6. Eluna + SD3 + Player Bots"
+									echo -e "${BCya}7. Eluna + SD3 (recommended)"
 									echo -e "${BCya}8. None"
 									echo -e "${BWhi}------------------------"
 									echo -e "Choose (1-8)"
@@ -151,103 +151,11 @@ choose_modules()
 
 mysql_setup()
 {
-	echo -e ""
-	echo -e "${BWhi}--------------------------------------"
-	echo -e "${BGre}Please enter your mysql password."
-	echo -e "${BWhi}--------------------------------------"
-	sleep 1
-	echo -n "-> "
-	read mysqlpass
-	echo -e ""
-	db="create database realmd; create database mangos; create database characters;
-			GRANT ALL PRIVILEGES ON realmd.* TO mangos@'127.0.0.1' IDENTIFIED BY 'mangos';
-			GRANT ALL PRIVILEGES ON mangos.* TO mangos@'127.0.0.1' IDENTIFIED BY 'mangos';
-			GRANT ALL PRIVILEGES ON characters.* TO mangos@'127.0.0.1' IDENTIFIED BY 'mangos';
-			flush privileges;"
-	mysql -u root -p$mysqlpass -e "$db"
-	echo -e ""
-	echo -e "${BWhi}-------------------------"
-	echo -e "${BGre}DB's created."
-	echo -e "${BGre}SQL Login: mangos"
-	echo -e "${BGre}SQL Pass: mangos"
-	echo -e "^ Save this info ^"
-	echo -e "${BWhi}-------------------------"
-	echo -e ""
-	echo -e "${BWhi}-------------------------"
-	echo -e "${BGre}Preparing DB Updates..."
-	echo -e "${BWhi}-------------------------"
-	sleep 1
-	su -c "cat /home/$user/database/World/Setup/FullDB/*.sql >> /home/$user/database/World/Setup/FullDB/all.sql" -s /bin/bash $user
-	su -c "cat /home/$user/database/World/Updates/Rel21/*.sql >> /home/$user/database/World/Updates/Rel21/all.sql" -s /bin/bash $user
-	su -c "cat /home/$user/database/Character/Updates/Rel21/*.sql >> /home/$user/database/Character/Updates/Rel21/all.sql" -s /bin/bash $user
-	echo -e "${BWhi}-------------------------"
-	echo -e "${BGre}Importing Realmd..."
-	echo -e "${BWhi}-------------------------"
-	sleep 1
-	mysql -u root -p$mysqlpass realmd < /home/$user/database/Realm/Setup/realmdLoadDB.sql
-	echo -e "${BWhi}-------------------------"
-	echo -e "${BGre}Importing Characters..."
-	echo -e "${BWhi}-------------------------"
-	sleep 1
-	mysql -u root -p$mysqlpass characters < /home/$user/database/Character/Setup/characterLoadDB.sql
-	echo -e "${BWhi}-------------------------" 
-	echo -e "${BGre}Importing MaNGOS World..." 
-	echo -e "${BWhi}-------------------------" 
-	sleep 1
-	mysql -u root -p$mysqlpass mangos < /home/$user/database/World/Setup/mangosdLoadDB.sql
-	mysql -u root -p$mysqlpass mangos < /home/$user/database/World/Setup/FullDB/all.sql
-	echo -e "${BWhi}-------------------------" 
-	echo -e "${BGre}Import Complete" 
-	echo -e "${BWhi}-------------------------" 
-	echo -e ""
-	choice=3
-	echo -e "${BWhi}-------------------------" 
-	echo -e "${BGre}Would you like to apply DB updates?" 
-	echo -e "${BYel}WARNING! THIS MAY ERROR!" 
-	echo -e "${BGre}Yes, apply the updates" 
-	echo -e "${BGre}No, finish install" 
-	echo -e "${BWhi}-------------------------" 
-	echo -e "Choose (1 or 2)" 
-	echo -n "-> "
-	while [ $choice -eq 3 ]; do
-	read choice
-	if [ $choice -eq 1 ]; then
-		echo -e "${BWhi}-------------------------"
-		echo -e "${BGre}Updating Characters..."
-		echo -e "${BWhi}-------------------------"
-		sleep 1
-		mysql -u root -p$mysqlpass characters < /home/$user/database/Character/Updates/Rel21/all.sql
-		echo -e "${BWhi}-------------------------"
-		echo -e "${BGre}Updating MaNGOS World..."
-		echo -e "${BWhi}-------------------------"
-		sleep 1
-		mysql -u root -p$mysqlpass mangos < /home/$user/database/World/Updates/Rel21/all.sql
-		echo -e "${BWhi}-------------------------"
-		echo -e "${BGre}Updating Realmd..."
-		echo -e "${BWhi}-------------------------"
-		sleep 1
-		mysql -u root -p$mysqlpass realmd < /home/$user/database/Tools/updateRealm.sql
-		echo -e "${BWhi}-------------------------"
-		echo -e "${BGre}Updating Complete..."
-		echo -e "${BWhi}-------------------------"
-		sleep 1
+	if [ -f "~/database/InstallDatabases.sh" ]; then
+		sudo su - $user -c "cd ~/database; ./InstallDatabases.sh -s"
 	else
-		if [ $choice -eq 2 ]; then
-			echo -e "${BWhi}-------------------------"
-			echo -e "${BGre}Skipping Updates..."
-			echo -e "${BWhi}-------------------------"
-			sleep 1
-		else
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Would you like to apply DB updates?" 
-			echo -e "${BYel}WARNING! THIS MAY ERROR!" 
-			echo -e "${BWhi}-------------------------" 
-			echo -e "Choose (y or n)" 
-			echo -n "-> "
-			choice=3
-		fi
+		echo -e "Database configuration SKIPPED - Cannot find the script to setup the database"
 	fi
-	done
 }
 
 mangos_install()
@@ -270,16 +178,36 @@ mangos_install()
 			######
 			#CleanUp & Install
 			######
-			echo -e ""
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Cloning Zero...     " 
-			echo -e "${BWhi}-------------------------"
-			sleep 1
-			su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/server.git" -s /bin/bash $user
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Cloning Database..." 
-			echo -e "${BWhi}-------------------------" 
-			su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/database.git" -s /bin/bash $user
+			if [ ! -d "../../server" ]; then
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Cloning Zero...     " 
+				echo -e "${BWhi}-------------------------"
+				sleep 1
+				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/server.git" -s /bin/bash $user
+			else 
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Copying Zero...     " 
+				echo -e "${BWhi}-------------------------"
+				sleep 1 
+				cp -R ../../server /home/$user/
+				chown -R $user:$user /home/$user/server				
+			fi
+			if [ ! -d "../../database" ]; then
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Cloning Database..." 
+				echo -e "${BWhi}-------------------------" 
+				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/database.git" -s /bin/bash $user
+			else
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Copying Database...     " 
+				echo -e "${BWhi}-------------------------"
+				sleep 1 
+				cp -R ../../database /home/$user/
+				chown -R $user:$user /home/$user/database
+			fi
 			echo -e "${BCya}Done" 
 			echo -e ""
 			sleep 1
@@ -352,9 +280,7 @@ mangos_install()
 			########################
 			#LazyMaNGOS .03 Zero
 			########################
-			- Important Information -
-			DB User: mangos
-			DB Pass: mangos
+			- Important Information -			
 			Server Location: /home/$user/zero
 			Config Location: /home/$user/zero/etc
 			
@@ -405,16 +331,36 @@ mangos_install()
 				######
 				#CleanUp & Install
 				######
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Cloning MaNGOS One...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1
-				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/server.git" -s /bin/bash $user
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Cloning Database..." 
-				echo -e "${BWhi}-------------------------" 
-				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/database.git" -s /bin/bash $user
+				if [ ! -d "../../server" ]; then				
+					echo -e ""
+					echo -e "${BWhi}-------------------------" 
+					echo -e "${BGre}Cloning MaNGOS One...     " 
+					echo -e "${BWhi}-------------------------"
+					sleep 1
+					su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/server.git" -s /bin/bash $user
+				else
+					echo -e ""
+					echo -e "${BWhi}-------------------------" 
+					echo -e "${BGre}Copying MaNGOS One...     " 
+					echo -e "${BWhi}-------------------------"
+					sleep 1					
+					cp -R ../../server /home/$user/
+					chown -R $user:$user /home/$user/server				
+				fi
+				if [ ! -d "../../database" ]; then
+					echo -e "${BWhi}-------------------------" 
+					echo -e "${BGre}Cloning Database..." 
+					echo -e "${BWhi}-------------------------" 
+					su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/database.git" -s /bin/bash $user
+				else
+					echo -e ""
+					echo -e "${BWhi}-------------------------" 
+					echo -e "${BGre}Copying Database...     " 
+					echo -e "${BWhi}-------------------------"
+					sleep 1					
+					cp -R ../../database /home/$user/
+					chown -R $user:$user /home/$user/database				
+				fi
 				echo -e "${BCya}Done" 
 				echo -e ""
 				sleep 1
@@ -487,8 +433,6 @@ mangos_install()
 				#LazyMaNGOS .03 One
 				########################
 				- Important Information -
-				DB User: mangos
-				DB Pass: mangos
 				Server Location: /home/$user/one
 				Config Location: /home/$user/one/etc
 				
