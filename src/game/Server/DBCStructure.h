@@ -141,7 +141,7 @@ struct ChatChannelsEntry
     uint32  ChannelID;                                      // 0        m_ID - ID of the Channel in DBC.
     uint32  flags;                                          // 1        m_flags - Flags indicating the type of channel (trading, guid recruitment, ...).
     // 2        m_factionGroup
-    char*   pattern[8];                                     // 3-10     m_name_lang - Channel Name (using locales).
+    char const*   pattern[8];                               // 3-10     m_name_lang - Channel Name (using locales).
     // 11 string flags
     // char*       name[8];                                 // 12-19    m_shortcut_lang
     // 20 string flag

@@ -244,6 +244,12 @@ class BattleGroundQueue
                 /**
                  * @brief
                  *
+                 * Constructor
+                 */
+                SelectionPool() : PlayerCount(0) {}
+                /**
+                 * @brief
+                 *
                  */
                 void Init();
                 /**

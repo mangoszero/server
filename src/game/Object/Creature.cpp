@@ -194,8 +194,7 @@ void Creature::AddToWorld()
     Unit::AddToWorld();
 
     // Make active if required
-    std::set<uint32> const* mapList = sWorld.getConfigForceLoadMapIds();
-    if ((mapList && mapList->find(GetMapId()) != mapList->end()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
+    if (sWorld.isForceLoadMap(GetMapId()) || (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE))
         { SetActiveObjectState(true); }
 
 #ifdef ENABLE_ELUNA
@@ -745,7 +744,7 @@ void Creature::RegenerateHealth()
     if (curValue >= maxValue)
         { return; }
 
-    uint32 addvalue = 0;
+    uint32 addvalue;
 
     // Not only pet, but any controlled creature
     if (GetCharmerOrOwnerGuid())
@@ -1473,6 +1472,8 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
 
     // checked at creature_template loading
     m_defaultMovementType = MovementGeneratorType(data->movementType);
+
+    map->Add(this);
 
     AIM_Initialize();
 
@@ -2601,10 +2602,6 @@ struct SpawnCreatureInMapsWorker
             if (!pCreature->LoadFromDB(i_guid, map))
             {
                 delete pCreature;
-            }
-            else
-            {
-                map->Add(pCreature);
             }
         }
     }

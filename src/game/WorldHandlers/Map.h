@@ -313,9 +313,6 @@ class Map : public GridRefManager<NGridType>
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }
 
-        template<class T> void AddType(T* obj);
-        template<class T> void RemoveType(T* obj, bool);
-
         NGridType* getNGrid(uint32 x, uint32 y) const
         {
             MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);

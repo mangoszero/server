@@ -90,7 +90,6 @@ class ObjectGridStoper
     public:
         ObjectGridStoper(NGridType& grid) : i_grid(grid) {}
 
-        void MoveToRespawnN();
         void StopN()
         {
             for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)

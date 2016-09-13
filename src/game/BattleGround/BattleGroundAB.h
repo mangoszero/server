@@ -324,14 +324,6 @@ class BattleGroundAB : public BattleGround
          * @brief
          *
          * @param node
-         * @param type
-         * @param teamIndex
-         */
-        void _DelBanner(uint8 node, uint8 type, uint8 teamIndex);
-        /**
-         * @brief
-         *
-         * @param node
          */
         void _SendNodeUpdate(uint8 node);
 

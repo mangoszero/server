@@ -2374,7 +2374,6 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
 
     // key:data...|h[name]|h|r
     char* keyStart = tail;                                  // remember key start for return
-    char* keyEnd   = tail;                                  // key end for truncate, will updated
 
     while (*tail && *tail != '|' && *tail != ':')
         { ++tail; }
@@ -2382,7 +2381,7 @@ char* ChatHandler::ExtractLinkArg(char** args, char const* const* linkTypes /*= 
     if (!*tail)
         { return NULL; }
 
-    keyEnd = tail;                                          // remember key end for truncate
+    char* keyEnd = tail;                                    // remember key end for truncate
 
     // |h[name]|h|r or :something...|h[name]|h|r
 

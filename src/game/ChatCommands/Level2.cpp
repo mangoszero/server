@@ -236,8 +236,6 @@ bool ChatHandler::HandleTriggerCommand(char* args)
 
         float dist2 = MAP_SIZE * MAP_SIZE;
 
-        Player* pl = m_session->GetPlayer();
-
         // Search triggers
         for (uint32 id = 0; id < sAreaTriggerStore.GetNumRows(); ++id)
         {
@@ -1496,8 +1494,6 @@ bool ChatHandler::HandleNpcAddCommand(char* args)
     // To call _LoadGoods(); _LoadQuests(); CreateTrainerSpells();
     pCreature->LoadFromDB(db_guid, map);
 
-    map->Add(pCreature);
-    sObjectMgr.AddCreatureToGrid(db_guid, sObjectMgr.GetCreatureData(db_guid));
     return true;
 }
 

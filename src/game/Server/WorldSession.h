@@ -279,8 +279,6 @@ class WorldSession
             }
         }
 
-        bool SendItemInfo(uint32 itemid, WorldPacket data);
-
         // auction
         void SendAuctionHello(Unit* unit);
         void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK);
@@ -344,7 +342,6 @@ class WorldSession
         // Misc
         void SendKnockBack(float angle, float horizontalSpeed, float verticalSpeed);
         void SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit);
-        void SendItemPageInfo(ItemPrototype* itemProto);
 
         // opcodes handlers
         void Handle_NULL(WorldPacket& recvPacket);          // not used
@@ -392,8 +389,6 @@ class WorldSession
         void HandleMoveTeleportAckOpcode(WorldPacket& recvPacket);
         void HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data);
 
-        void HandlePingOpcode(WorldPacket& recvPacket);
-        void HandleAuthSessionOpcode(WorldPacket& recvPacket);
         void HandleRepopRequestOpcode(WorldPacket& recvPacket);
         void HandleAutostoreLootItemOpcode(WorldPacket& recvPacket);
         void HandleLootMoneyOpcode(WorldPacket& recvPacket);
@@ -574,8 +569,6 @@ class WorldSession
         void HandleAuctionRemoveItem(WorldPacket& recv_data);
         void HandleAuctionListOwnerItems(WorldPacket& recv_data);
         void HandleAuctionPlaceBid(WorldPacket& recv_data);
-
-        void AuctionBind(uint32 price, AuctionEntry * auction, Player * pl, Player* auction_owner);
 
         void HandleGetMailList(WorldPacket& recv_data);
         void HandleSendMail(WorldPacket& recv_data);

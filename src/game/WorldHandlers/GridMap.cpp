@@ -1239,17 +1239,14 @@ TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
 {
     ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_mutex, NULL)
 
-    TerrainInfo* ptr = NULL;
     TerrainDataMap::const_iterator iter = i_TerrainMap.find(mapId);
     if (iter == i_TerrainMap.end())
     {
-        ptr = new TerrainInfo(mapId);
-        i_TerrainMap[mapId] = ptr;
+        TerrainInfo* ti = new TerrainInfo(mapId);
+        i_TerrainMap[mapId] = ti;
+        return ti;
     }
-    else
-        { ptr = (*iter).second; }
-
-    return ptr;
+    return (*iter).second;
 }
 
 void TerrainManager::UnloadTerrain(const uint32 mapId)

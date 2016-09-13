@@ -200,8 +200,8 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     CreatureInfo const* cinfo = GetCreatureInfo();
     if (cinfo->CreatureType == CREATURE_TYPE_CRITTER)
     {
-        AIM_Initialize();
         pos.GetMap()->Add((Creature*)this);
+        AIM_Initialize();
         delete result;
         return true;
     }
@@ -333,8 +333,8 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
 
     }
 
-    AIM_Initialize();
     map->Add((Creature*)this);
+    AIM_Initialize();
 
     // Spells should be loaded after pet is added to map, because in CheckCast is check on it
     _LoadSpells();

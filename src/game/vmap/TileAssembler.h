@@ -224,21 +224,6 @@ namespace VMAP
              * @param )
              */
             void setModelNameFilterMethod(bool (*pFilterMethod)(char* pName)) { iFilterMethod = pFilterMethod; }
-            /**
-             * @brief
-             *
-             * @param pMapId
-             * @param pModPosName
-             * @return std::string
-             */
-            std::string getDirEntryNameFromModName(unsigned int pMapId, const std::string& pModPosName);
-            /**
-             * @brief
-             *
-             * @param pName
-             * @return unsigned int
-             */
-            unsigned int getUniqueNameId(const std::string pName);
     };
 }
 #endif

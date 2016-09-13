@@ -5348,6 +5348,22 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
 
     switch (GetSpellProto()->SpellFamilyName)
     {
+        case SPELLFAMILY_GENERIC:
+        {
+            switch (GetId())
+            {
+                case 20594:                                 // Stoneform (dwarven racial)
+                {
+                    spellId1 = 20612;
+                    break;
+                }
+                default:
+                {
+                    return;
+                }
+            }
+            break;
+        }
         case SPELLFAMILY_MAGE:
         {
             switch (GetId())
