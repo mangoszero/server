@@ -151,8 +151,8 @@ choose_modules()
 
 mysql_setup()
 {
-	if [ -f "~/database/InstallDatabases.sh" ]; then
-		sudo su - $user -c "cd ~/database; ./InstallDatabases.sh -s"
+	if [ -f "/home/${user}/database/InstallDatabases.sh" ]; then
+		sudo su - $user -c "cd /home/${user}/database; ./InstallDatabases.sh -s -d"
 	else
 		echo -e "Database configuration SKIPPED - Cannot find the script to setup the database"
 	fi
@@ -303,9 +303,33 @@ mangos_install()
 			" >> /home/$user/Lazy-README
 			chown -R $user:$user /home/$user/*
 			su -c "chmod +x /home/$user/zero/*.sh" -s /bin/bash $user
-			su -c "mv /home/$user/zero/etc/realmd.conf.dist /home/$user/zero/etc/realmd.conf" -s /bin/bash $user
-			su -c "mv /home/$user/zero/etc/mangosd.conf.dist /home/$user/zero/etc/mangosd.conf" -s /bin/bash $user
-			su -c "mv /home/$user/zero/etc/ahbot.conf.dist /home/$user/zero/etc/ahbot.conf" -s /bin/bash $user
+			
+			if [ -f /home/${user}/db.conf ]; then
+				realmdb=$(head -1 /home/${user}/db.conf | tail -1)
+				mangosdb=$(head -2 /home/${user}/db.conf | tail -1)
+				chardb=$(head -3 /home/${user}/db.conf | tail -1)
+
+				if [ -f /home/${user}/zero/etc/mangosd.conf.dist ]; then				
+					sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf 
+					sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/zero/etc/mangosd.conf > /home/${user}/zero/etc/mangosd.conf.dist
+					sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf
+					rm -rf /home/${user}/zero/etc/mangosd.conf.dist					
+				fi
+			
+				if [ -f /home/${user}/zero/etc/realmd.conf.dist ]; then
+					sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/zero/etc/realmd.conf.dist > /home/${user}/zero/etc/realmd.conf 
+					rm -rf /home/${user}/zero/etc/realmd.conf.dist
+				fi
+				chown ${user}:${user} /home/${user}/zero/etc/mangosd.conf
+				chown ${user}:${user} /home/${user}/zero/etc/realmd.conf
+				rm -rf /home/${user}/db.conf
+			else
+				su -c "mv /home/$user/zero/etc/mangosd.conf.dist /home/$user/zero/etc/mangosd.conf" -s /bin/bash $user				
+				su -c "mv /home/$user/zero/etc/realmd.conf.dist /home/$user/zero/etc/realmd.conf" -s /bin/bash $user				
+			fi
+				
+			su -c "mv /home/$user/zero/etc/ahbot.conf.dist /home/$user/zero/etc/ahbot.conf" -s /bin/bash $user				
+			
 			echo -e ""
 			echo -e "${BWhi}-------------------------" 
 			echo -e "${BGre}Auto Restart Scripts" 
@@ -455,9 +479,34 @@ mangos_install()
 				" >> /home/$user/Lazy-README
 				chown -R $user:$user /home/$user/*
 				su -c "chmod +x /home/$user/one/*.sh" -s /bin/bash $user
-				su -c "mv /home/$user/one/etc/realmd.conf.dist /home/$user/one/etc/realmd.conf" -s /bin/bash $user
-				su -c "mv /home/$user/one/etc/mangosd.conf.dist /home/$user/one/etc/mangosd.conf" -s /bin/bash $user
-				su -c "mv /home/$user/one/etc/ahbot.conf.dist /home/$user/one/etc/ahbot.conf" -s /bin/bash $user
+				
+				if [ -f /home/${user}/db.conf ]; then
+					realmdb=$(head -1 /home/${user}/db.conf | tail -1)
+					mangosdb=$(head -2 /home/${user}/db.conf | tail -1)
+					chardb=$(head -3 /home/${user}/db.conf | tail -1)
+
+					if [ -f /home/${user}/one/etc/mangosd.conf.dist ]; then				
+						sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/one/etc/mangosd.conf.dist > /home/${user}/one/etc/mangosd.conf 
+						sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/one/etc/mangosd.conf > /home/${user}/one/etc/mangosd.conf.dist
+						sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/one/etc/mangosd.conf.dist > /home/${user}/one/etc/mangosd.conf
+						rm -rf /home/${user}/one/etc/mangosd.conf.dist
+					fi
+
+					if [ -f /home/${user}/one/etc/realmd.conf.dist ]; then
+						sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/one/etc/realmd.conf.dist > /home/${user}/one/etc/realmd.conf 
+						rm -rf /home/${user}/one/etc/realmd.conf.dist
+					fi
+					
+					chown ${user}:${user} /home/${user}/one/etc/mangosd.conf
+					chown ${user}:${user} /home/${user}/one/etc/realmd.conf
+					rm -rf /home/${user}/db.conf
+				else
+					su -c "mv /home/$user/one/etc/mangosd.conf.dist /home/$user/one/etc/mangosd.conf" -s /bin/bash $user				
+					su -c "mv /home/$user/one/etc/realmd.conf.dist /home/$user/one/etc/realmd.conf" -s /bin/bash $user				
+				fi
+				
+				su -c "mv /home/$user/one/etc/ahbot.conf.dist /home/$user/one/etc/ahbot.conf" -s /bin/bash $user				
+				
 				echo -e ""
 				echo -e "${BWhi}-------------------------" 
 				echo -e "${BGre}Auto Restart Scripts" 
