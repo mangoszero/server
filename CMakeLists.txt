@@ -46,6 +46,8 @@ endif()
 option(DEBUG                "Debug mode (strict compile, all warnings)"     OFF)
 option(ACE_USE_EXTERNAL     "Use external ACE"                              OFF)
 option(POSTGRESQL           "Use PostgreSQL instead of MySQL"               OFF)
+option(BUILD_MANGOSD        "Build the main server"                         ON)
+option(BUILD_REALMD         "Build the login server"                        ON)
 option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev2 scripts"   ON)
@@ -64,6 +66,8 @@ message(
     CONF_DIR                Path to the configs, can be absolute or relative.
     DEBUG                   Debug mode (strict compile, all warnings)
     ACE_USE_EXTERNAL        Use external ACE
+    BUILD_MANGOSD           Build the main server
+    BUILD_REALMD            Build the login server
     BUILD_TOOLS             Build the map/vmap/mmap extractors
     SOAP                    Enable remote access via SOAP
    Scripting engines:
@@ -184,6 +188,18 @@ else()
     message(STATUS "Enable Player Bots    : No")
 endif()
 
+if(BUILD_MANGOSD)
+    message(STATUS "Build main server     : Yes (default)")
+else()
+    message(STATUS "Build main server     : No")
+endif()
+
+if(BUILD_REALMD)
+    message(STATUS "Build login server    : Yes (default)")
+else()
+    message(STATUS "Build login server    : No")
+endif()
+
 if(BUILD_TOOLS)
     message(STATUS "Build tools           : Yes (default)")
 else()
@@ -199,7 +215,11 @@ else()
 endif()
 
 # Add dependency path
-add_subdirectory(dep)
+if(BUILD_MANGOSD OR BUILD_TOOLS)
+    add_subdirectory(dep)
+else()
+    add_subdirectory(dep/acelite)
+endif()
 
 # Add source path
 add_subdirectory(src)
