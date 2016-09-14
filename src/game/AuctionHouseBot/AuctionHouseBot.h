@@ -195,9 +195,9 @@ class AuctionBotConfig
         /**
          * @brief
          *
-         * @return const char
+         * @return uint32 - AH Bot ID
          */
-        const char* GetAHBotCharacterName() const { return m_AHBotCharacterName.c_str(); }
+        uint32      GetAHBotId() const { return m_BotId; }
 
         /**
          * @brief
@@ -292,11 +292,10 @@ class AuctionBotConfig
         std::string m_configFileName; /**< TODO */
         std::string m_AHBotIncludes; /**< TODO */
         std::string m_AHBotExcludes; /**< TODO */
-        std::string m_AHBotCharacterName;
         Config      m_AhBotCfg; /**< TODO */
         uint32      m_ItemsPerCycleBoost; /**< TODO */
         uint32      m_ItemsPerCycleNormal; /**< TODO */
-
+        uint32      m_BotId;
         uint32 m_configUint32Values[CONFIG_UINT32_AHBOT_UINT32_COUNT]; /**< TODO */
         bool   m_configBoolValues[CONFIG_UINT32_AHBOT_BOOL_COUNT]; /**< TODO */
 
@@ -315,9 +314,9 @@ class AuctionBotConfig
         /**
          * @brief
          *
-         * @param AHBotCharacterName
+         * @param AHBot Character Name
          */
-        void SetAHBotCharacterName(const std::string& AHBotCharacterName) { m_AHBotCharacterName = AHBotCharacterName; }
+        void SetAHBotId(const std::string& BotCharName);
 
         /**
          * @brief Sets a certain config value to the given default value
@@ -519,8 +518,7 @@ class AuctionHouseBot
          * @brief Initializes the agents, ie: the \ref AuctionBotBuyer and \ref AuctionBotSeller
          *
          */
-        void InitilizeAgents();
-
+        void InitializeAgents();
         AuctionBotAgent* m_Buyer; /**< The buyer (\ref AuctionBotBuyer) for this \ref AuctionHouseBot */
         AuctionBotAgent* m_Seller; /**< The seller (\ref AuctionBotSeller) for this \ref AuctionHouseBot */
 

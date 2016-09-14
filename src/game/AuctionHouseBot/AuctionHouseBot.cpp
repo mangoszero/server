@@ -428,7 +428,19 @@ bool AuctionBotConfig::Initialize()
 
     m_ItemsPerCycleBoost = getConfig(CONFIG_UINT32_AHBOT_ITEMS_PER_CYCLE_BOOST);
     m_ItemsPerCycleNormal = getConfig(CONFIG_UINT32_AHBOT_ITEMS_PER_CYCLE_NORMAL);
+
     return true;
+}
+
+void AuctionBotConfig::SetAHBotId(const std::string& BotCharName)
+{
+    m_BotId = 0;
+    if (!BotCharName.empty())
+    {
+        m_BotId = sObjectMgr.GetPlayerGuidByName(BotCharName.c_str()).GetCounter();
+        if (!m_BotId)
+          { sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str()); }
+    }
 }
 
 void AuctionBotConfig::setConfig(AuctionBotConfigUInt32Values index, char const* fieldname, uint32 defvalue)
@@ -484,7 +496,7 @@ void AuctionBotConfig::GetConfigFromFile()
 
     SetAHBotIncludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceIncludeItems", ""));
     SetAHBotExcludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceExcludeItems", ""));
-    SetAHBotCharacterName(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
+    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
 
     setConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED       , "AuctionHouseBot.Buyer.Alliance.Enabled"      , false);
     setConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED          , "AuctionHouseBot.Buyer.Horde.Enabled"         , false);
@@ -717,11 +729,7 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
                 else if (buyerItem.MinBidPrice == 0)
                     { buyerItem.MinBidPrice = Aentry->startbid / item->GetCount(); }
 
-                uint32 AHBotGuid;
-                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-                if (!AHBotCharacterName.empty())
-                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
-                if (!Aentry->owner || Aentry->owner == AHBotGuid)
+                if (Aentry->owner == sAuctionBotConfig.GetAHBotId())
                 {
                     if ((Aentry->bid != 0) && Aentry->bidder) // Add bided by player
                     {
@@ -752,7 +760,7 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
         }
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: %u items added to buyable vector for ah type: %u", count, config.GetHouseType());
+    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: %u items added to buyable vector for AH type: %u", count, config.GetHouseType());
     DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: SameItemInfo size = " SIZEFMTD, config.SameItemInfo.size());
     return count;
 }
@@ -993,11 +1001,7 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
                          minBuyPrice / 10000, minBidPrice / 10000);
         DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: Actual Entry price,  Buy=%ug, Bid=%ug.", buyoutPrice / 10000, bidPrice / 10000);
 
-        uint32 AHBotGuid;
-        std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-        if (!AHBotCharacterName.empty())
-            { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
-        if (!auction->owner || auction->owner == AHBotGuid)        // Original auction owner
+        if (auction->owner == sAuctionBotConfig.GetAHBotId())      // Original auction owner
         {
             MaxChance = MaxChance / 5;                             // if Owner is AHBot this mean player placed bid on this auction. We divide by 5 chance for AhBuyer to place bid on it. (This make more challenge than ignore entry)
         }
@@ -1549,11 +1553,7 @@ uint32 AuctionBotSeller::SetStat(AHB_Seller_Config& config)
             ItemPrototype const* prototype = item->GetProto();
             if (prototype)
             {
-                uint32 AHBotGuid;
-                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-                if (!AHBotCharacterName.empty())
-                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
-                if (!Aentry->owner || Aentry->owner == AHBotGuid)                                  // Add only ahbot items
+                if (Aentry->owner == sAuctionBotConfig.GetAHBotId())             // Add only ahbot items
                 {
                     ++ItemsInAH[prototype->Quality][prototype->Class];
                 }
@@ -1752,16 +1752,7 @@ void AuctionBotSeller::addNewAuctions(AHB_Seller_Config& config)
         // Price of items are set here
         SetPricesOfItem(config, buyoutPrice, bidPrice, stackCount, ItemQualities(prototype->Quality));
 
-        // Add the auction under the player name specified in the configuration.
-        std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-        if (!AHBotCharacterName.empty())
-        {
-            ObjectGuid guid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str());
-            if (guid)
-                { auctionHouse->AddAuctionByGuid(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice, guid.GetCounter()); }
-        }
-        else
-            { auctionHouse->AddAuction(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice); }
+        auctionHouse->AddAuctionByGuid(ahEntry, item, urand(config.GetMinTime(), config.GetMaxTime()) * HOUR, bidPrice, buyoutPrice, sAuctionBotConfig.GetAHBotId());
     }
 }
 
@@ -1790,7 +1781,7 @@ AuctionHouseBot::~AuctionHouseBot()
     delete m_Seller;
 }
 
-void AuctionHouseBot::InitilizeAgents()
+void AuctionHouseBot::InitializeAgents()
 {
     if (sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_SELLER_ENABLED))
     {
@@ -1817,7 +1808,9 @@ void AuctionHouseBot::InitilizeAgents()
 void AuctionHouseBot::Initialize()
 {
     if (sAuctionBotConfig.Initialize())
-        { InitilizeAgents(); }
+    {
+        InitializeAgents();
+    }
 }
 
 void AuctionHouseBot::SetItemsRatio(uint32 al, uint32 ho, uint32 ne)
@@ -1852,7 +1845,7 @@ bool AuctionHouseBot::ReloadAllConfig()
         return false;
     }
 
-    InitilizeAgents();
+    InitializeAgents();
     return true;
 }
 
@@ -1872,11 +1865,7 @@ void AuctionHouseBot::PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo)
             if (Item* item = sAuctionMgr.GetAItem(Aentry->itemGuidLow))
             {
                 ItemPrototype const* prototype = item->GetProto();
-                uint32 AHBotGuid;
-                std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-                if (!AHBotCharacterName.empty())
-                    { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); }
-                if (!Aentry->owner || Aentry->owner == AHBotGuid)                                  // Add only ahbot items
+                if (Aentry->owner == sAuctionBotConfig.GetAHBotId())                          // Add only ahbot items
                 {
                     if (prototype->Quality < MAX_AUCTION_QUALITY)
                         { ++statusInfo[i].QualityInfo[prototype->Quality]; }
@@ -1897,12 +1886,8 @@ void AuctionHouseBot::Rebuild(bool all)
         for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             AuctionEntry* entry = itr->second;
-            uint32 AHBotGuid;
-            std::string AHBotCharacterName = sAuctionBotConfig.GetAHBotCharacterName();
-            if (!AHBotCharacterName.empty())
-                { AHBotGuid = sObjectMgr.GetPlayerGuidByName(AHBotCharacterName.c_str()); };
-            if (!entry->owner || entry->owner == AHBotGuid)                                        // ahbot auction
-                if (all || entry->bid == 0)                                                        // expire now auction if no bid or forced
+            if (entry->owner == sAuctionBotConfig.GetAHBotId())                                    // ahbot auction
+                if (all || entry->bid == 0)                                                        // expire auction now if no bid or forced
                     entry->expireTime = sWorld.GetGameTime();
         }
     }
