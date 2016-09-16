@@ -343,6 +343,58 @@ mangos_install()
 			echo -e "${BGre}Please view the README in /home/$user/" 
 			echo -e "${BWhi}---------------------------------------" 
 			echo -e ""
+			
+			echo -e ""
+			echo -e "${BWhi}Provide the path of your game directory"
+			read path			
+			
+			if [ -d "${path}" ]; then
+				dir=$(basename ${path})
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Copying Game...     " 
+				echo -e "${BWhi}-------------------------"
+				sleep 1 
+				mkdir /home/${user}/zero/game
+				cp -R ${path} /home/${user}/zero/game
+				chown -R ${user}:${user} /home/${user}/zero/game
+				rm -rf /home/${user}/zero/game/${dir}/Buildings
+				rm -rf /home/${user}/zero/game/${dir}/vmaps
+				rm -rf /home/${user}/zero/game/${dir}/mmaps
+				rm -rf /home/${user}/zero/game/${dir}/maps
+				rm -rf /home/${user}/zero/game/${dir}/dbc				
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Copying Tools...     " 
+				echo -e "${BWhi}-------------------------"
+				sleep 1
+				sudo su - ${user} -c "cp -R /home/${user}/zero/bin/tools/* /home/${user}/zero/game/${dir}"
+				sudo su - ${user} -c "cd /home/${user}/zero/game/${dir}; ./ExtractResources.sh"				
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Moving dbc...     " 
+				echo -e "${BWhi}-------------------------"
+				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/dbc /home/${user}/zero/bin"
+				
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Moving vmaps...     " 
+				echo -e "${BWhi}-------------------------"
+				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/vmaps /home/${user}/zero/bin"
+				
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Moving mmaps...     " 
+				echo -e "${BWhi}-------------------------"
+				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/mmaps /home/${user}/zero/bin"
+				
+				echo -e ""
+				echo -e "${BWhi}-------------------------" 
+				echo -e "${BGre}Moving maps...     " 
+				echo -e "${BWhi}-------------------------"
+				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/maps /home/${user}/zero/bin"
+			fi
+			
 			exit
 		else
 			if [ $choice -eq 2 ]; then

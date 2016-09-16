@@ -43,8 +43,8 @@ class BIHWrap
          */
         struct MDLCallback
         {
-            const T* const* objects; /**< TODO */
             RayCallback& cb; /**< TODO */
+            const T* const* objects; /**< TODO */
             uint32 objects_size;
 
             /**
@@ -53,7 +53,7 @@ class BIHWrap
              * @param callback
              * @param constobjects_array
              */
-            MDLCallback(RayCallback& callback, const T* const* objects_array, uint32 objects_size ) : cb(callback), objects(objects_array) {}
+            MDLCallback(RayCallback& callback, const T* const* obj_array, uint32 obj_size ) : cb(callback), objects(obj_array), objects_size(obj_size) {}
 
             /**
              * @brief
