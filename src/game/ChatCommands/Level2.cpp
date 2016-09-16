@@ -4177,11 +4177,11 @@ void ChatHandler::HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id)
 
 bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
 {
-	for (uint32 i = 0; i < sSkillLineStore.GetNumRows(); ++i)
-	{
-		SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(i);
-		if (!skillInfo)
-		{ continue; }
+    for (uint32 i = 0; i < sSkillLineStore.GetNumRows(); ++i)
+    {
+        SkillLineEntry const* skillInfo = sSkillLineStore.LookupEntry(i);
+        if (!skillInfo)
+        { continue; }
 
 		if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
 		{
@@ -4198,8 +4198,8 @@ bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
 		}
 	}
 
-	SendSysMessage(LANG_COMMAND_LEARN_ALL_CRAFT);
-	return true;
+    SendSysMessage(LANG_COMMAND_LEARN_ALL_CRAFT);
+    return true;
 }
 
 bool ChatHandler::HandleLearnAllRecipesCommand(char* args)

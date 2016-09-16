@@ -561,14 +561,12 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     if (!text)
         return;
 
-    //uint32 sec = 0;
     ObjectGuid guid = player->GetObjectGuid();
     Player* plr = sObjectMgr.GetPlayer(guid);
     bool speakInLocalDef = false;
     bool speakInWorldDef = false;
     if (plr)
     {
-        //sec = plr->GetSession()->GetSecurity();
         if (plr->isGameMaster())
         {
             speakInLocalDef = true;

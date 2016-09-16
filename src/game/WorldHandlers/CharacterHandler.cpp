@@ -602,34 +602,37 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     /* 1.12.1 does not have SMSG_MOTD, so we send a server message */
     /* Used for counting number of newlines in MOTD */
-    uint32 linecount = 0;
-    /* The MOTD itself */
-    std::string str_motd = sWorld.GetMotd();
-    /* Used for tracking our position within the MOTD while iterating through it */
-    std::string::size_type pos = 0, nextpos;
 
-    /* Find the next occurance of @ in the string
-     * This is how newlines are represented */
-    while ((nextpos = str_motd.find('@', pos)) != std::string::npos)
+    // Send MOTD
     {
-        /* If these are not equal, it means a '@' was found
-         * These are used to represent newlines in the string
-         * It is set by the code above here */
-        if (nextpos != pos)
+        uint32 linecount = 0;
+        /* The MOTD itself */
+        std::string str_motd = sWorld.GetMotd();
+        /* Used for tracking our position within the MOTD while iterating through it */
+        std::string::size_type pos = 0, nextpos;
+
+        /* Find the next occurance of @ in the string
+         * This is how newlines are represented */
+        while ((nextpos = str_motd.find('@', pos)) != std::string::npos)
         {
-            /* Send the player a system message containing the substring from pos to nextpos - pos */
-            ChatHandler(pCurrChar).PSendSysMessage("%s", str_motd.substr(pos, nextpos - pos).c_str());
-            ++linecount;
+            /* If these are not equal, it means a '@' was found
+             * These are used to represent newlines in the string
+             * It is set by the code above here */
+            if (nextpos != pos)
+            {
+                /* Send the player a system message containing the substring from pos to nextpos - pos */
+                ChatHandler(pCurrChar).PSendSysMessage("%s", str_motd.substr(pos, nextpos - pos).c_str());
+                ++linecount;
+            }
+            pos = nextpos + 1;
         }
-
-        pos = nextpos + 1;
+        /* There are no more newlines in our MOTD, so we send whatever is left */
+        if (pos < str_motd.length())
+        {
+            ChatHandler(pCurrChar).PSendSysMessage("%s", str_motd.substr(pos).c_str());
+        }
+        DEBUG_LOG("WORLD: Sent motd (SMSG_MOTD)");
     }
-    /* There are no more newlines in our MOTD, so we send whatever is left */
-    if (pos < str_motd.length())
-    {
-        ChatHandler(pCurrChar).PSendSysMessage("%s", str_motd.substr(pos).c_str());
-    }
-    DEBUG_LOG("WORLD: Sent motd (SMSG_MOTD)");
 
     /* Attempt to load guild for player */
     if (QueryResult *resultGuild = holder->GetResult(PLAYER_LOGIN_QUERY_LOADGUILD))

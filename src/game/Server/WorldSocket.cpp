@@ -864,7 +864,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         BASIC_LOG("WorldSocket::HandleAuthSession: User tries to login but his security level is not enough");
         return -1;
     }
-    
+
     // Must be done before WorldSession is created
     if (wardenActive && os != "Win" && os != "OSX")
     {

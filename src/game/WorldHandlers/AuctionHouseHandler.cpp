@@ -339,6 +339,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 
     SendAuctionCommandResult(AH, AUCTION_STARTED, AUCTION_OK);
 
+    // Used by Eluna
 #ifdef ENABLE_ELUNA
     sEluna->OnAdd(auctionHouse, AH);
 #endif /* ENABLE_ELUNA */
@@ -492,6 +493,8 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     CharacterDatabase.CommitTransaction();
     sAuctionMgr.RemoveAItem(auction->itemGuidLow);
     auctionHouse->RemoveAuction(auction->Id);
+
+    // Used by Eluna
 #ifdef ENABLE_ELUNA
     sEluna->OnRemove(auctionHouse, auction);
 #endif /* ENABLE_ELUNA */

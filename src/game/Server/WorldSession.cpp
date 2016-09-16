@@ -343,6 +343,7 @@ bool WorldSession::Update(PacketFilter& updater)
         m_Socket = NULL;
     }
 
+    // Warden
     if (m_Socket && !m_Socket->IsClosed() && _warden)
         _warden->Update();
 
@@ -355,6 +356,7 @@ bool WorldSession::Update(PacketFilter& updater)
         if (!m_Socket || (ShouldLogOut(currTime) && !m_playerLoading))
             { LogoutPlayer(true); }
 
+        // Warden
         if (m_Socket && GetPlayer() && _warden)
             _warden->Update();
 
