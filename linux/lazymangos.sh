@@ -11,6 +11,8 @@
 #Supported Cores:
 #  MaNGOS Zero
 #  MaNGOS One
+#  MaNGOS Two
+#  MaNGOS Three
 #
 #Supported Distro(s):
 # Debian 6+ (ubuntu, linux mint)
@@ -18,6 +20,7 @@
 #
 # Written By: Faded (emudevs.com)
 #(faded@getmangos.eu)
+# Updated By: Warkdev/Talendrys (getmangos.eu)
 ########################
 
 #-------------------------------------------------------------------------------
@@ -41,6 +44,14 @@ Whi='\e[0;37m'; BWhi='\e[1;37m'; UWhi='\e[4;37m';
 
 proccnt="$(grep -c ^processor /proc/cpuinfo)"
 options=""
+
+##############
+# General Vars
+##############
+VERSION="NONE"
+RELEASE="NONE"
+
+
 
 ###########
 # Functions
@@ -158,448 +169,285 @@ mysql_setup()
 	fi
 }
 
+choose_release()
+{	
+	releases=$(curl -s 'https://api.github.com/repos/mangos${version}/server/branches | grep "name" | awk 'BEGIN{FS="\""}{print $4} | tr '\n' ' ') 	
+	max=$(echo ${releases} | wc -w)
+	selected=$((${max}+1))
+	while [ ${selected} -eq $((${max}+1))]; do	
+		cpt=1
+		echo -e "${BWhi}---------------------------"
+		echo -e "${BGre}Please choose which branch" 
+		echo -e "${BWhi}---------------------------"
+		for rel in ${releases}
+		do		
+			echo -e "${BCya}${cpt}. ${rel}" 			
+			cpt=$((${cpt}+1))
+		done
+		echo -e "${BWhi}---------------------------" 
+		echo -e "Choose" 
+		echo -n "-> "
+		read selected
+		if [ ${selected} -gt ${max} ]; then
+			selected=${max}
+		fi
+	done
+	RELEASE=$(echo ${releases} | awk '{PRINT '${selected}'}')
+}
+
 mangos_install()
 {
 	sleep 1
 	choice=5
-	echo -e "${BWhi}---------------------------"
-	echo -e "${BGre}Please choose which version" 
-	echo -e "${BWhi}---------------------------"
-	echo -e "${BCya}1. Install MaNGOS Zero" 
-	echo -e "${BCya}2. Install MaNGOS One" 
-	echo -e "${BCya}3. (Disabled) Install MaNGOS Two"
-	echo -e "${BCya}4. (Disabled) Install MaNGOS Three" 
-	echo -e "${BWhi}---------------------------" 
-	echo -e "Choose (1 or 2)" 
-	echo -n "-> "
 	while [ $choice -eq 5 ]; do
+		echo -e "${BWhi}---------------------------"
+		echo -e "${BGre}Please choose which version" 
+		echo -e "${BWhi}---------------------------"
+		echo -e "${BCya}1. Install MaNGOS Zero" 
+		echo -e "${BCya}2. Install MaNGOS One" 
+		echo -e "${BCya}3. Install MaNGOS Two"
+		echo -e "${BCya}4. Install MaNGOS Three" 
+		echo -e "${BWhi}---------------------------" 
+		echo -e "Choose" 
+		echo -n "-> "
 		read choice
-		if [ $choice -eq 1 ]; then
-			######
-			#CleanUp & Install
-			######
-			if [ ! -d "../../server" ]; then
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Cloning Zero...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1
-				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/server.git" -s /bin/bash $user
-			else 
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Copying Zero...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1 
-				cp -R ../../server /home/$user/
-				chown -R $user:$user /home/$user/server				
-			fi
-			if [ ! -d "../../database" ]; then
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Cloning Database..." 
-				echo -e "${BWhi}-------------------------" 
-				su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangoszero/database.git" -s /bin/bash $user
-			else
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Copying Database...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1 
-				cp -R ../../database /home/$user/
-				chown -R $user:$user /home/$user/database
-			fi
-			echo -e "${BCya}Done" 
+		case $choice in
+			1)
+				VERSION="zero"				
+				;;
+			2)
+				VERSION="one"
+				;;
+			3)
+				VERSION="two"
+				;;
+			4)
+				VERSION="three"
+				;;
+			*)				
+				VERSION="NONE"
+				RELEASE="NONE"
+				choice=5
+				continue
+				;;
+		esac										
+		
+		choose_release
+		
+		if [ ! -d "../../server" ]; then
 			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Cloning $VERSION...     " 
+			echo -e "${BWhi}-------------------------"
 			sleep 1
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Preparing Zero..." 
-			echo -e "${BWhi}-------------------------" 
-			sleep 1
-
-			######	
-			#Get Zero Options
-			######
-			choose_modules
+			su -c "cd /home/$user/ && git clone --recursive -b ${RELEASE} https://github.com/mangos${VERSION}/server.git" -s /bin/bash $user
+		else 
 			echo -e ""
 			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Running CMake..." 
-			echo -e "${BWhi}-------------------------" 
-			sleep 1
-			su -c "mkdir /home/$user/server/build" -s /bin/bash $user
-			su -c "cd /home/$user/server/build && cmake /home/$user/server $options -DCMAKE_INSTALL_PREFIX=/home/$user/zero" -s /bin/bash $user
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Compiling Zero..." 
-			echo -e "${BWhi}-------------------------" 
-			sleep 1
-			su -c "cd /home/$user/server/build && make -j $proccnt" -s /bin/bash $user
-			su -c "cd /home/$user/server/build && make install" -s /bin/bash $user
-			##########
-			#Setup SQL
-			##########
-			mysql_setup
-			
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Adding auto restart scripts" 
-			echo -e "${BWhi}-------------------------" 
-			echo -e ""
-			su -c "mkdir /home/${user}/zero/scripts" -s /bin/bash $user
-			echo "while true; do
-				cd /home/$user/zero/bin
-				./realmd
-				wait
-				done" >> /home/$user/zero/scripts/realmd_check.sh
-			echo "SESSION='realmd'
-				DAEMON='screen -d -m -S $SESSION /home/$user/zero/scripts/realmd_check.sh'
-				screen -r $SESSION -ls -q 2>&1 >/dev/null
-				echo -e ''
-				echo 'Realmd has been launched into the background.'
-				echo -e ''
-				if [ $? -le 10 ]; then
-				echo 'Restarting $DAEMON'
-				$DAEMON
-				fi
-				wait" >> /home/$user/zero/realmd.sh
-			echo "while true; do
-				cd /home/$user/zero/bin
-				./mangos
-				wait
-				done
-				" >> /home/$user/zero/scripts/mangos_check.sh
-			echo "SESSION='mangos'
-				DAEMON='screen -d -m -S $SESSION /home/$user/zero/scripts/mangos_check.sh'
-				screen -r $SESSION -ls -q 2>&1 >/dev/null
-				echo -e ''
-				echo 'Mangos World has been launched into the background.'
-				echo -e ''
-				if [ $? -le 10 ]; then
-				echo 'Restarting $DAEMON'
-				$DAEMON
-				fi
-				wait" >> /home/$user/zero/mangos.sh
-			echo "
-			########################
-			#LazyMaNGOS .03 Zero
-			########################
-			- Important Information -			
-			Server Location: /home/$user/zero
-			Config Location: /home/$user/zero/etc
-			
-			- What to do next -
-			From here on out, ONLY run the server as $user
-			Edit your configuration files as needed.
-			Then enter the zero/bin directory and run 
-			./realmd & 
-			./mangos &
-			& means it will run in the background.
-			
-			Option 2:
-			Use the auto scripts in /zero/
-			run ./realmd.sh & ./mangos.sh
-			
-			Dont forget to add your realm to the realms
-			table in the realmd database.
-			
-			Support: www.emudevs.com | www.getmangos.eu
-			" >> /home/$user/Lazy-README
-			chown -R $user:$user /home/$user/*
-			su -c "chmod +x /home/$user/zero/*.sh" -s /bin/bash $user
-			
-			if [ -f /home/${user}/db.conf ]; then
-				realmdb=$(head -1 /home/${user}/db.conf | tail -1)
-				mangosdb=$(head -2 /home/${user}/db.conf | tail -1)
-				chardb=$(head -3 /home/${user}/db.conf | tail -1)
-
-				if [ -f /home/${user}/zero/etc/mangosd.conf.dist ]; then				
-					sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf 
-					sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/zero/etc/mangosd.conf > /home/${user}/zero/etc/mangosd.conf.dist
-					sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/zero/etc/mangosd.conf.dist > /home/${user}/zero/etc/mangosd.conf
-					rm -rf /home/${user}/zero/etc/mangosd.conf.dist					
-				fi
-			
-				if [ -f /home/${user}/zero/etc/realmd.conf.dist ]; then
-					sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/zero/etc/realmd.conf.dist > /home/${user}/zero/etc/realmd.conf 
-					rm -rf /home/${user}/zero/etc/realmd.conf.dist
-				fi
-				chown ${user}:${user} /home/${user}/zero/etc/mangosd.conf
-				chown ${user}:${user} /home/${user}/zero/etc/realmd.conf
-				rm -rf /home/${user}/db.conf
-			else
-				su -c "mv /home/$user/zero/etc/mangosd.conf.dist /home/$user/zero/etc/mangosd.conf" -s /bin/bash $user				
-				su -c "mv /home/$user/zero/etc/realmd.conf.dist /home/$user/zero/etc/realmd.conf" -s /bin/bash $user				
-			fi
-				
-			su -c "mv /home/$user/zero/etc/ahbot.conf.dist /home/$user/zero/etc/ahbot.conf" -s /bin/bash $user				
-			
-			echo -e ""
-			echo -e "${BWhi}-------------------------" 
-			echo -e "${BGre}Auto Restart Scripts" 
-			echo -e "${BGre}      Created      " 
-			echo -e "${BGre}First run ./realmd then run ./mangos" 
-			echo -e "${BGre}Both scripts located in /home/$user/zero/" 
-			echo -e "${BWhi}-------------------------" 
-			echo -e ""
-			echo -e "${BWhi}---------------------------------------" 
-			echo -e "${BGre}LazyMaNGOS Complete" 
-			echo -e "${BGre}Please view the README in /home/$user/" 
-			echo -e "${BWhi}---------------------------------------" 
-			echo -e ""
-			
-			echo -e ""
-			echo -e "${BWhi}Provide the path of your game directory"
-			read path			
-			
-			if [ -d "${path}" ]; then
-				dir=$(basename ${path})
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Copying Game...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1 
-				mkdir /home/${user}/zero/game
-				cp -R ${path} /home/${user}/zero/game
-				chown -R ${user}:${user} /home/${user}/zero/game
-				rm -rf /home/${user}/zero/game/${dir}/Buildings
-				rm -rf /home/${user}/zero/game/${dir}/vmaps
-				rm -rf /home/${user}/zero/game/${dir}/mmaps
-				rm -rf /home/${user}/zero/game/${dir}/maps
-				rm -rf /home/${user}/zero/game/${dir}/dbc				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Copying Tools...     " 
-				echo -e "${BWhi}-------------------------"
-				sleep 1
-				sudo su - ${user} -c "cp -R /home/${user}/zero/bin/tools/* /home/${user}/zero/game/${dir}"
-				sudo su - ${user} -c "cd /home/${user}/zero/game/${dir}; ./ExtractResources.sh"				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Moving dbc...     " 
-				echo -e "${BWhi}-------------------------"
-				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/dbc /home/${user}/zero/bin"
-				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Moving vmaps...     " 
-				echo -e "${BWhi}-------------------------"
-				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/vmaps /home/${user}/zero/bin"
-				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Moving mmaps...     " 
-				echo -e "${BWhi}-------------------------"
-				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/mmaps /home/${user}/zero/bin"
-				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Moving maps...     " 
-				echo -e "${BWhi}-------------------------"
-				sudo su - ${user} -c "mv /home/${user}/zero/game/${dir}/maps /home/${user}/zero/bin"
-			fi
-			
-			exit
-		else
-			if [ $choice -eq 2 ]; then
-				echo -e ""
-				echo -e "${BWhi}---------------------------" 
-				echo -e "${BGre}Preparing for MaNGOS One" 
-				echo -e "${BWhi}---------------------------" 
-				echo -e ""
-				sleep 2
-				######
-				#CleanUp & Install
-				######
-				if [ ! -d "../../server" ]; then				
-					echo -e ""
-					echo -e "${BWhi}-------------------------" 
-					echo -e "${BGre}Cloning MaNGOS One...     " 
-					echo -e "${BWhi}-------------------------"
-					sleep 1
-					su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/server.git" -s /bin/bash $user
-				else
-					echo -e ""
-					echo -e "${BWhi}-------------------------" 
-					echo -e "${BGre}Copying MaNGOS One...     " 
-					echo -e "${BWhi}-------------------------"
-					sleep 1					
-					cp -R ../../server /home/$user/
-					chown -R $user:$user /home/$user/server				
-				fi
-				if [ ! -d "../../database" ]; then
-					echo -e "${BWhi}-------------------------" 
-					echo -e "${BGre}Cloning Database..." 
-					echo -e "${BWhi}-------------------------" 
-					su -c "cd /home/$user/ && git clone --recursive -b develop21 https://github.com/mangosone/database.git" -s /bin/bash $user
-				else
-					echo -e ""
-					echo -e "${BWhi}-------------------------" 
-					echo -e "${BGre}Copying Database...     " 
-					echo -e "${BWhi}-------------------------"
-					sleep 1					
-					cp -R ../../database /home/$user/
-					chown -R $user:$user /home/$user/database				
-				fi
-				echo -e "${BCya}Done" 
-				echo -e ""
-				sleep 1
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Preparing MaNGOS One..." 
-				echo -e "${BWhi}-------------------------" 
-				sleep 1
-				######	
-				#Get One Options
-				######
-				choose_modules
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Running CMake..." 
-				echo -e "${BWhi}-------------------------" 
-				sleep 1
-				su -c "mkdir /home/$user/server/build" -s /bin/bash $user
-				su -c "cd /home/$user/server/build && cmake ../ $options -DCMAKE_INSTALL_PREFIX=/home/$user/one" -s /bin/bash $user
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Compiling MaNGOS One..." 
-				echo -e "${BWhi}-------------------------" 
-				sleep 1
-				su -c "cd /home/$user/server/build && make -j $proccnt" -s /bin/bash $user
-				su -c "cd /home/$user/server/build && make install" -s /bin/bash $user
-				##########
-				#Setup SQL
-				##########
-				mysql_setup
-	
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Adding auto restart scripts" 
-				echo -e "${BWhi}-------------------------" 
-				echo -e ""
-				su -c "mkdir /home/$user/one/scripts" -s /bin/bash $user
-				echo "while true; do
-					cd /home/$user/one/bin
-					./realmd
-					wait
-					done" >> /home/$user/one/scripts/realmd_check.sh
-				echo "SESSION='realmd'
-					DAEMON='screen -d -m -S $SESSION /home/$user/one/scripts/realmd_check.sh'
-					screen -r $SESSION -ls -q 2>&1 >/dev/null
-					echo -e ''
-					echo 'Realmd has been launched into the background.'
-					echo -e ""
-					if [ $? -le 10 ]; then
-					echo 'Restarting $DAEMON'
-					$DAEMON
-					fi
-					wait" >> /home/$user/one/realmd.sh
-				echo "while true; do
-					cd /home/$user/one/bin
-					./mangos
-					wait
-					done
-					" >> /home/$user/one/scripts/mangos_check.sh
-				echo "SESSION='mangos'
-					DAEMON='screen -d -m -S $SESSION /home/$user/one/scripts/mangos_check.sh'
-					screen -r $SESSION -ls -q 2>&1 >/dev/null
-					echo -e ''
-					echo 'Mangos World has been launched into the background.'
-					echo -e ''
-					if [ $? -le 10 ]; then
-					echo 'Restarting $DAEMON'
-					$DAEMON
-					fi
-					wait" >> /home/$user/one/mangos.sh
-				echo "
-				########################
-				#LazyMaNGOS .03 One
-				########################
-				- Important Information -
-				Server Location: /home/$user/one
-				Config Location: /home/$user/one/etc
-				
-				- What to do next -
-				From here on out, ONLY run the server as $user
-				Edit your configuration files as needed.
-				Then enter the one/bin directory and run 
-				./realmd & 
-				./mangos &
-				& means it will run in the background.
-				
-				Option 2:
-				Use the auto scripts in /one/
-				run ./realmd.sh & ./mangos.sh
-				
-				Dont forget to add your realm to the realms
-				table in the realmd database.
-				
-				Support: www.emudevs.com | www.getmangos.eu
-				" >> /home/$user/Lazy-README
-				chown -R $user:$user /home/$user/*
-				su -c "chmod +x /home/$user/one/*.sh" -s /bin/bash $user
-				
-				if [ -f /home/${user}/db.conf ]; then
-					realmdb=$(head -1 /home/${user}/db.conf | tail -1)
-					mangosdb=$(head -2 /home/${user}/db.conf | tail -1)
-					chardb=$(head -3 /home/${user}/db.conf | tail -1)
-
-					if [ -f /home/${user}/one/etc/mangosd.conf.dist ]; then				
-						sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/one/etc/mangosd.conf.dist > /home/${user}/one/etc/mangosd.conf 
-						sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/one/etc/mangosd.conf > /home/${user}/one/etc/mangosd.conf.dist
-						sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/one/etc/mangosd.conf.dist > /home/${user}/one/etc/mangosd.conf
-						rm -rf /home/${user}/one/etc/mangosd.conf.dist
-					fi
-
-					if [ -f /home/${user}/one/etc/realmd.conf.dist ]; then
-						sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/one/etc/realmd.conf.dist > /home/${user}/one/etc/realmd.conf 
-						rm -rf /home/${user}/one/etc/realmd.conf.dist
-					fi
-					
-					chown ${user}:${user} /home/${user}/one/etc/mangosd.conf
-					chown ${user}:${user} /home/${user}/one/etc/realmd.conf
-					rm -rf /home/${user}/db.conf
-				else
-					su -c "mv /home/$user/one/etc/mangosd.conf.dist /home/$user/one/etc/mangosd.conf" -s /bin/bash $user				
-					su -c "mv /home/$user/one/etc/realmd.conf.dist /home/$user/one/etc/realmd.conf" -s /bin/bash $user				
-				fi
-				
-				su -c "mv /home/$user/one/etc/ahbot.conf.dist /home/$user/one/etc/ahbot.conf" -s /bin/bash $user				
-				
-				echo -e ""
-				echo -e "${BWhi}-------------------------" 
-				echo -e "${BGre}Auto Restart Scripts" 
-				echo -e "${BGre}      Created      " 
-				echo -e "${BGre}First run ./realmd then run ./mangos" 
-				echo -e "${BGre}Both scripts located in /home/$user/one/" 
-				echo -e "${BWhi}-------------------------"
-				echo -e ""
-				echo -e "${BWhi}---------------------------------------" 
-				echo -e "${BGre}LazyMaNGOS Complete" 
-				echo -e "${BGre}Please view the README in /home/$user/" 
-				echo -e "${BWhi}---------------------------------------" 
-				echo -e ""
-				exit
-			else
-				if [ $choice -eq 3 ]; then
-					echo "Sorry, MaNGOS Two is currently disabled on LazyMaNGOS."
-					exit 1
-				else
-					if [ $choice -eq 4 ]; then
-						echo "Sorry, MaNGOS Three is currently disabled on LazyMaNGOS."
-						exit 1
-					else
-						echo -e ""
-						echo -e "Error: Selection not recognized." 
-						echo -e ""
-						echo -e "${BWhi}---------------------------" 
-						echo -e "${BGre}Please choose which version" 
-						echo -e "${BWhi}---------------------------" 
-						echo -e "${BCya}1. Install MaNGOS Zero (Classic)" 
-						echo -e "${BCya}2. Install MaNGOS One (TBC)" 
-						echo -e "${BCya}3. (Disabled) Install MaNGOS Two (WotLK)" 
-						echo -e "${BCya}3. (Disabled) Install MaNGOS Three (Cataclysm)"
-						echo -e "${BWhi}---------------------------" 
-						echo -e "Choose (1 or 2)" 
-						echo -n "-> "
-						choice=5
-					fi
-				fi
-			fi
+			echo -e "${BGre}Copying $VERSION...     " 
+			echo -e "${BWhi}-------------------------"
+			sleep 1 
+			cp -R ../../server /home/$user/
+			chown -R $user:$user /home/$user/server				
 		fi
+		
+		if [ ! -d "../../database" ]; then
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Cloning Database..." 
+			echo -e "${BWhi}-------------------------" 
+			su -c "cd /home/$user/ && git clone --recursive -b ${RELEASE} https://github.com/mangos${VERSION}/database.git" -s /bin/bash $user
+		else
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Copying Database...     " 
+			echo -e "${BWhi}-------------------------"
+			sleep 1 
+			cp -R ../../database /home/$user/
+			chown -R $user:$user /home/$user/database
+		fi
+		echo -e "${BCya}Done" 
+		echo -e ""
+		sleep 1
+		echo -e "${BWhi}-------------------------" 
+		echo -e "${BGre}Preparing ${VERSION}..." 
+		echo -e "${BWhi}-------------------------" 
+		sleep 1
+
+		choose_modules
+
+		echo -e ""
+		echo -e "${BWhi}-------------------------" 
+		echo -e "${BGre}Running CMake..." 
+		echo -e "${BWhi}-------------------------" 
+		sleep 1
+		su -c "mkdir /home/$user/server/build" -s /bin/bash $user
+		su -c "cd /home/$user/server/build && cmake /home/$user/server $options -DCMAKE_INSTALL_PREFIX=/home/$user/zero" -s /bin/bash $user
+		echo -e "${BWhi}-------------------------" 
+		echo -e "${BGre}Compiling ${VERSION}..." 
+		echo -e "${BWhi}-------------------------" 
+		sleep 1
+		su -c "cd /home/$user/server/build && make -j $proccnt" -s /bin/bash $user
+		su -c "cd /home/$user/server/build && make install" -s /bin/bash $user
+		##########
+		#Setup SQL
+		##########
+		mysql_setup
+		
+		echo -e "${BWhi}-------------------------" 
+		echo -e "${BGre}Adding auto restart scripts" 
+		echo -e "${BWhi}-------------------------" 
+		echo -e ""
+		su -c "mkdir /home/${user}/${VERSION}/scripts" -s /bin/bash $user
+		echo "while true; do
+			cd /home/$user/${VERSION}/bin
+			./realmd
+			wait
+			done" >> /home/$user/${VERSION}/scripts/realmd_check.sh
+		echo "SESSION='realmd'
+			DAEMON='screen -d -m -S $SESSION /home/$user/${VERSION}/scripts/realmd_check.sh'
+			screen -r $SESSION -ls -q 2>&1 >/dev/null
+			echo -e ''
+			echo 'Realmd has been launched into the background.'
+			echo -e ''
+			if [ $? -le 10 ]; then
+			echo 'Restarting $DAEMON'
+			$DAEMON
+			fi
+			wait" >> /home/$user/${VERSION}/realmd.sh
+		echo "while true; do
+			cd /home/$user/${VERSION}/bin
+			./mangos
+			wait
+			done
+			" >> /home/$user/${VERSION}/scripts/mangos_check.sh
+		echo "SESSION='mangos'
+			DAEMON='screen -d -m -S $SESSION /home/$user/${VERSION}/scripts/mangos_check.sh'
+			screen -r $SESSION -ls -q 2>&1 >/dev/null
+			echo -e ''
+			echo 'Mangos World has been launched into the background.'
+			echo -e ''
+			if [ $? -le 10 ]; then
+			echo 'Restarting $DAEMON'
+			$DAEMON
+			fi
+			wait" >> /home/$user/${VERSION}/mangos.sh
+		echo "
+		########################
+		#LazyMaNGOS .03 ${VERSION}
+		########################
+		- Important Information -			
+		Server Location: /home/$user/${VERSION}
+		Config Location: /home/$user/${VERSION}/etc
+		
+		- What to do next -
+		From here on out, ONLY run the server as $user
+		Edit your configuration files as needed.
+		Then enter the ${VERSION}/bin directory and run 
+		./realmd & 
+		./mangos &
+		& means it will run in the background.
+		
+		Option 2:
+		Use the auto scripts in /${VERSION}/
+		run ./realmd.sh & ./mangos.sh
+		
+		Dont forget to add your realm to the realms
+		table in the realmd database.
+		
+		Support: www.emudevs.com | www.getmangos.eu
+		" >> /home/$user/Lazy-README
+		chown -R $user:$user /home/$user/*
+		su -c "chmod +x /home/$user/${VERSION}/*.sh" -s /bin/bash $user
+		
+		if [ -f /home/${user}/db.conf ]; then
+			realmdb=$(head -1 /home/${user}/db.conf | tail -1)
+			mangosdb=$(head -2 /home/${user}/db.conf | tail -1)
+			chardb=$(head -3 /home/${user}/db.conf | tail -1)
+				if [ -f /home/${user}/${VERSION}/etc/mangosd.conf.dist ]; then				
+				sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/${VERSION}/etc/mangosd.conf.dist > /home/${user}/${VERSION}/etc/mangosd.conf 
+				sed 's/WorldDatabaseInfo.*/WorldDatabaseInfo\t     = '"\"${mangosdb}\""'/g' /home/${user}/${VERSION}/etc/mangosd.conf > /home/${user}/${VERSION}/etc/mangosd.conf.dist
+				sed 's/CharacterDatabaseInfo.*/CharacterDatabaseInfo\t     = '"\"${chardb}\""'/g' /home/${user}/${VERSION}/etc/mangosd.conf.dist > /home/${user}/${VERSION}/etc/mangosd.conf
+				rm -rf /home/${user}/${VERSION}/etc/mangosd.conf.dist					
+			fi
+		
+			if [ -f /home/${user}/${VERSION}/etc/realmd.conf.dist ]; then
+				sed 's/LoginDatabaseInfo.*/LoginDatabaseInfo\t     = '"\"${realmdb}\""'/g' /home/${user}/${VERSION}/etc/realmd.conf.dist > /home/${user}/${VERSION}/etc/realmd.conf 
+				rm -rf /home/${user}/${VERSION}/etc/realmd.conf.dist
+			fi
+			chown ${user}:${user} /home/${user}/${VERSION}/etc/mangosd.conf
+			chown ${user}:${user} /home/${user}/${VERSION}/etc/realmd.conf
+			rm -rf /home/${user}/db.conf
+		else
+			su -c "mv /home/$user/${VERSION}/etc/mangosd.conf.dist /home/$user/${VERSION}/etc/mangosd.conf" -s /bin/bash $user				
+			su -c "mv /home/$user/${VERSION}/etc/realmd.conf.dist /home/$user/${VERSION}/etc/realmd.conf" -s /bin/bash $user				
+		fi
+			
+		su -c "mv /home/$user/${VERSION}/etc/ahbot.conf.dist /home/$user/${VERSION}/etc/ahbot.conf" -s /bin/bash $user				
+		
+		echo -e ""
+		echo -e "${BWhi}-------------------------" 
+		echo -e "${BGre}Auto Restart Scripts" 
+		echo -e "${BGre}      Created      " 
+		echo -e "${BGre}First run ./realmd then run ./mangos" 
+		echo -e "${BGre}Both scripts located in /home/$user/${VERSION}/" 
+		echo -e "${BWhi}-------------------------" 
+		echo -e ""
+		echo -e "${BWhi}---------------------------------------" 
+		echo -e "${BGre}LazyMaNGOS Complete" 
+		echo -e "${BGre}Please view the README in /home/$user/" 
+		echo -e "${BWhi}---------------------------------------" 
+		echo -e ""
+		
+		echo -e ""
+		echo -e "${BWhi}Provide the path of your game directory"
+		read path			
+		
+		if [ -d "${path}" ]; then
+			dir=$(basename ${path})
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Copying Game...     " 
+			echo -e "${BWhi}-------------------------"
+			sleep 1 
+			mkdir /home/${user}/${VERSION}/game
+			cp -R ${path} /home/${user}/${VERSION}/game
+			chown -R ${user}:${user} /home/${user}/${VERSION}/game
+			rm -rf /home/${user}/${VERSION}/game/${dir}/Buildings
+			rm -rf /home/${user}/${VERSION}/game/${dir}/vmaps
+			rm -rf /home/${user}/${VERSION}/game/${dir}/mmaps
+			rm -rf /home/${user}/${VERSION}/game/${dir}/maps
+			rm -rf /home/${user}/${VERSION}/game/${dir}/dbc				
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Copying Tools...     " 
+			echo -e "${BWhi}-------------------------"
+			sleep 1
+			sudo su - ${user} -c "cp -R /home/${user}/${VERSION}/bin/tools/* /home/${user}/${VERSION}/game/${dir}"
+			sudo su - ${user} -c "cd /home/${user}/${VERSION}/game/${dir}; ./ExtractResources.sh"				
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Moving dbc...     " 
+			echo -e "${BWhi}-------------------------"
+			sudo su - ${user} -c "mv /home/${user}/${VERSION}/game/${dir}/dbc /home/${user}/${VERSION}/bin"
+			
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Moving vmaps...     " 
+			echo -e "${BWhi}-------------------------"
+			sudo su - ${user} -c "mv /home/${user}/${VERSION}/game/${dir}/vmaps /home/${user}/${VERSION}/bin"
+			
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Moving mmaps...     " 
+			echo -e "${BWhi}-------------------------"
+			sudo su - ${user} -c "mv /home/${user}/${VERSION}/game/${dir}/mmaps /home/${user}/${VERSION}/bin"
+			
+			echo -e ""
+			echo -e "${BWhi}-------------------------" 
+			echo -e "${BGre}Moving maps...     " 
+			echo -e "${BWhi}-------------------------"
+			sudo su - ${user} -c "mv /home/${user}/${VERSION}/game/${dir}/maps /home/${user}/${VERSION}/bin"
+		fi			
 	done
 }
 
@@ -675,7 +523,7 @@ while [ $distro ]; do
 		echo -e "${BGre}Preparing the server..." 
 		echo -e "${BGre}This may take a moment."
 		echo -e "${BWhi}-------------------------" 
-		sleep 2
+		sleep 1
 		######
 		#Fetch Username & Password
 		######
