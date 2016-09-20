@@ -51,8 +51,6 @@ options=""
 VERSION="NONE"
 RELEASE="NONE"
 
-
-
 ###########
 # Functions
 ###########
