@@ -16,3 +16,6 @@
 [submodule "src/tools/Extractor_projects"]
 	path = src/tools/Extractor_projects
 	url = https://github.com/mangos/Extractor_projects.git
+[submodule "win"]
+	path = win
+	url = https://github.com/mangostools/EasyBuild
