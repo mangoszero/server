@@ -511,32 +511,32 @@ function GetMangos()
     case "$VERSION" in
       0)
         Log "Cloning Zero branch: $BRANCH" 1
-        git clone git://github.com/mangoszero/server.git "$SRCPATH/server" -b $BRANCH --recursive
-        git clone git://github.com/mangoszero/database.git "$SRCPATH/database" -b $BRANCH --recursive
+        git clone http://github.com/mangoszero/server.git "$SRCPATH/server" -b $BRANCH --recursive
+        git clone http://github.com/mangoszero/database.git "$SRCPATH/database" -b $BRANCH --recursive
         ;;
 
       1)
         Log "Cloning One branch: $BRANCH" 1
-        git clone git://github.com/mangosone/server.git "$SRCPATH/server" -b $BRANCH --recursive
-        git clone git://github.com/mangosone/database.git "$SRCPATH/database" -b $BRANCH --recursive
+        git clone http://github.com/mangosone/server.git "$SRCPATH/server" -b $BRANCH --recursive
+        git clone http://github.com/mangosone/database.git "$SRCPATH/database" -b $BRANCH --recursive
         ;;
 
       2)
         Log "Cloning Two branch: $BRANCH" 1
-        git clone git://github.com/mangostwo/server.git "$SRCPATH/server" -b $BRANCH --recursive
-        git clone git://github.com/mangostwo/database.git "$SRCPATH/database" -b $BRANCH --recursive
+        git clone http://github.com/mangostwo/server.git "$SRCPATH/server" -b $BRANCH --recursive
+        git clone http://github.com/mangostwo/database.git "$SRCPATH/database" -b $BRANCH --recursive
         ;;
 
       3)
         Log "Cloning Three branch: $BRANCH" 1
-        git clone git://github.com/mangosthree/server.git "$SRCPATH/server" -b $BRANCH --recursive
-        git clone git://github.com/mangosthree/database.git "$SRCPATH/database" -b $BRANCH --recursive
+        git clone http://github.com/mangosthree/server.git "$SRCPATH/server" -b $BRANCH --recursive
+        git clone http://github.com/mangosthree/database.git "$SRCPATH/database" -b $BRANCH --recursive
         ;;
 
       4)
         Log "Cloning Four branch: $BRANCH" 1
-        git clone git://github.com/mangosfour/server.git "$SRCPATH/server" -b $BRANCH --recursive
-        git clone git://github.com/mangosfour/database.git "$SRCPATH/database" -b $BRANCH --recursive
+        git clone http://github.com/mangosfour/server.git "$SRCPATH/server" -b $BRANCH --recursive
+        git clone http://github.com/mangosfour/database.git "$SRCPATH/database" -b $BRANCH --recursive
         ;;
 
       *)
