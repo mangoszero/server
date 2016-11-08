@@ -50,7 +50,7 @@ option(BUILD_MANGOSD        "Build the main server"                         ON)
 option(BUILD_REALMD         "Build the login server"                        ON)
 option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
-option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev2 scripts"   ON)
+option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
 option(PLAYERBOTS           "Enable Player Bots"                            OFF)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
 # Hidden option to enable/disable PCH. DEV ONLY!
@@ -72,7 +72,7 @@ message(
     SOAP                    Enable remote access via SOAP
    Scripting engines:
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
-    SCRIPT_LIB_SD3          Compile with support for ScriptDev2 scripts
+    SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
    Modules:
     PLAYERBOTS              Enable Player Bots
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
