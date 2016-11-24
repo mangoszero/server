@@ -36,6 +36,7 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
     "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/include"
     "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/include"
     "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/include"
+    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.7/include"
   )
 
   if(WIN32 AND MSVC)
@@ -50,6 +51,7 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/lib"
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/lib"
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.7/lib"
       )
   else(WIN32 AND MSVC)
     find_library(MYSQL_LIBRARY
