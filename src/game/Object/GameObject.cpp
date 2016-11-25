@@ -1903,7 +1903,7 @@ void GameObject::UpdateCollisionState() const
     if (!m_model || !IsInWorld())
         { return; }
 
-    m_model->enable(IsCollisionEnabled() ? true : false);
+    m_model->SetCollidable(IsCollisionEnabled());
 }
 
 void GameObject::UpdateModel()
@@ -1912,7 +1912,7 @@ void GameObject::UpdateModel()
         { GetMap()->RemoveGameObjectModel(*m_model); }
     delete m_model;
 
-    m_model = GameObjectModel::construct(this);
+    m_model = GameObjectModel::Create(this);
     if (m_model)
         { GetMap()->InsertGameObjectModel(*m_model); }
 }

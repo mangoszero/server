@@ -265,7 +265,7 @@ namespace VMAP
         if (model == iLoadedModelFiles.end())
         {
             WorldModel* worldmodel = new WorldModel();
-            if (!worldmodel->readFile(basepath + filename + ".vmo"))
+            if (!worldmodel->ReadFile(basepath + filename + ".vmo"))
             {
                 ERROR_LOG("VMapManager2: could not load '%s%s.vmo'!", basepath.c_str(), filename.c_str());
                 delete worldmodel;

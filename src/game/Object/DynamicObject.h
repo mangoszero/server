@@ -69,6 +69,11 @@ class DynamicObject : public WorldObject
             return 0.0f;                                    // dynamic object not have real interact size
         }
 
+        bool IsControlledByPlayer() const override
+        {
+            return GetCasterGuid().IsPlayer();
+        }
+
         bool IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const override;
 
         GridReference<DynamicObject>& GetGridRef() { return m_gridRef; }

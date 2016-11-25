@@ -962,17 +962,17 @@ void WorldObject::SetOrientation(float orientation)
 
 uint32 WorldObject::GetZoneId() const
 {
-    return GetTerrain()->GetZoneId(m_position.x, m_position.y, m_position.z);
+    return GetMap()->GetTerrain()->GetZoneId(m_position.x, m_position.y, m_position.z);
 }
 
 uint32 WorldObject::GetAreaId() const
 {
-    return GetTerrain()->GetAreaId(m_position.x, m_position.y, m_position.z);
+    return GetMap()->GetTerrain()->GetAreaId(m_position.x, m_position.y, m_position.z);
 }
 
 void WorldObject::GetZoneAndAreaId(uint32& zoneid, uint32& areaid) const
 {
-    GetTerrain()->GetZoneAndAreaId(zoneid, areaid, m_position.x, m_position.y, m_position.z);
+    GetMap()->GetTerrain()->GetZoneAndAreaId(zoneid, areaid, m_position.x, m_position.y, m_position.z);
 }
 
 InstanceData* WorldObject::GetInstanceData() const
@@ -1222,22 +1222,22 @@ bool WorldObject::HasInArc(const float arcangle, const WorldObject* obj) const
     return ((angle >= lborder) && (angle <= rborder));
 }
 
-bool WorldObject::isInFrontInMap(WorldObject const* target, float distance,  float arc) const
+bool WorldObject::IsInFrontInMap(WorldObject const* target, float distance,  float arc) const
 {
     return IsWithinDistInMap(target, distance) && HasInArc(arc, target);
 }
 
-bool WorldObject::isInBackInMap(WorldObject const* target, float distance, float arc) const
+bool WorldObject::IsInBackInMap(WorldObject const* target, float distance, float arc) const
 {
     return IsWithinDistInMap(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
 }
 
-bool WorldObject::isInFront(WorldObject const* target, float distance,  float arc) const
+bool WorldObject::IsInFront(WorldObject const* target, float distance,  float arc) const
 {
     return IsWithinDist(target, distance) && HasInArc(arc, target);
 }
 
-bool WorldObject::isInBack(WorldObject const* target, float distance, float arc) const
+bool WorldObject::IsInBack(WorldObject const* target, float distance, float arc) const
 {
     return IsWithinDist(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
 }
@@ -1525,12 +1525,6 @@ void WorldObject::ResetMap()
     delete elunaEvents;
     elunaEvents = NULL;
 #endif
-}
-
-TerrainInfo const* WorldObject::GetTerrain() const
-{
-    MANGOS_ASSERT(m_currMap);
-    return m_currMap->GetTerrain();
 }
 
 void WorldObject::AddObjectToRemoveList()
@@ -1903,24 +1897,6 @@ void WorldObject::BuildUpdateData(UpdateDataMapType& update_players)
     ClearUpdateMask(false);
 }
 
-bool WorldObject::IsControlledByPlayer() const
-{
-    switch (GetTypeId())
-    {
-        case TYPEID_GAMEOBJECT:
-            return ((GameObject*)this)->GetOwnerGuid().IsPlayer();
-        case TYPEID_UNIT:
-        case TYPEID_PLAYER:
-            return ((Unit*)this)->IsCharmerOrOwnerPlayerOrPlayerItself();
-        case TYPEID_DYNAMICOBJECT:
-            return ((DynamicObject*)this)->GetCasterGuid().IsPlayer();
-        case TYPEID_CORPSE:
-            return true;
-        default:
-            return false;
-    }
-}
-
 bool WorldObject::PrintCoordinatesError(float x, float y, float z, char const* descr) const
 {
     sLog.outError("%s with invalid %s coordinates: mapid = %uu, x = %f, y = %f, z = %f", GetGuidStr().c_str(), descr, GetMapId(), x, y, z);
@@ -1936,9 +1912,9 @@ void WorldObject::SetActiveObjectState(bool active)
         // player's update implemented in a different from other active worldobject's way
         // it's considired to use generic way in future
     {
-        if (isActiveObject() && !active)
+        if (IsActiveObject() && !active)
             { GetMap()->RemoveFromActive(this); }
-        else if (!isActiveObject() && active)
+        else if (IsActiveObject() && active)
             { GetMap()->AddToActive(this); }
     }
     m_isActiveObject = active;

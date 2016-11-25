@@ -1142,6 +1142,11 @@ class Unit : public WorldObject
          */
         void CleanupsBeforeDelete() override;
 
+        bool IsControlledByPlayer() const override
+        {
+            return IsCharmerOrOwnerPlayerOrPlayerItself();
+        }
+
         float GetObjectBoundingRadius() const override      // overwrite WorldObject version
         {
             return m_floatValues[UNIT_FIELD_BOUNDINGRADIUS];

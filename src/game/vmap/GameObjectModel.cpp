@@ -78,13 +78,13 @@ void LoadGameObjectModelList()
             break;
         }
 
-        Vector3 v1, v2;
-        if (fread(&v1, sizeof(Vector3), 1, model_list_file) <= 0)
+        G3D::Vector3 v1, v2;
+        if (fread(&v1, sizeof(G3D::Vector3), 1, model_list_file) <= 0)
         {
             sLog.outDebug("File %s seems to be corrupted", VMAP::GAMEOBJECT_MODELS);
             break;
         }
-        if (fread(&v2, sizeof(Vector3), 1, model_list_file) <= 0)
+        if (fread(&v2, sizeof(G3D::Vector3), 1, model_list_file) <= 0)
         {
             sLog.outDebug("File %s seems to be corrupted", VMAP::GAMEOBJECT_MODELS);
             break;
@@ -98,7 +98,7 @@ void LoadGameObjectModelList()
 GameObjectModel::~GameObjectModel()
 {
     if (iModel)
-        { ((VMAP::VMapManager2*)VMAP::VMapFactory::createOrGetVMapManager())->releaseModelInstance(name); }
+        { ((VMAP::VMapManager2*)VMAP::VMapFactory::createOrGetVMapManager())->releaseModelInstance(iName); }
 }
 
 bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDisplayInfoEntry* const pDisplayInfo)
@@ -120,39 +120,27 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     if (!iModel)
         { return false; }
 
-    name = it->second.name;
+    iOwner = pGo;
+    iName = it->second.name;
     iPos = Vector3(pGo->GetPositionX(), pGo->GetPositionY(), pGo->GetPositionZ());
-    collision_enabled = true;
     iScale = pGo->GetObjectScale();
     iInvScale = 1.f / iScale;
 
-    G3D::Matrix3 iRotation = G3D::Matrix3::fromEulerAnglesZYX(pGo->GetOrientation(), 0, 0);
-    iInvRot = iRotation.inverse();
+    iRot = G3D::Matrix3::fromEulerAnglesZYX(pGo->GetOrientation(), 0, 0);
+    iInvRot = iRot.inverse();
+
     // transform bounding box:
     mdl_box = AABox(mdl_box.low() * iScale, mdl_box.high() * iScale);
     AABox rotated_bounds;
     for (int i = 0; i < 8; ++i)
-        { rotated_bounds.merge(iRotation * mdl_box.corner(i)); }
+        { rotated_bounds.merge(iRot * mdl_box.corner(i)); }
 
-    this->iBound = rotated_bounds + iPos;
-
-#ifdef SPAWN_CORNERS
-    // test:
-    for (int i = 0; i < 8; ++i)
-    {
-        Vector3 pos(iBound.corner(i));
-        if (Creature* c = const_cast<GameObject*>(pGo)->SummonCreature(24440, pos.x, pos.y, pos.z, 0, TEMPSUMMON_MANUAL_DESPAWN, 0))
-        {
-            c->setFaction(35);
-            c->SetObjectScale(0.1f);
-        }
-    }
-#endif
+    iBound = rotated_bounds + iPos;
 
     return true;
 }
 
-GameObjectModel* GameObjectModel::construct(const GameObject* const pGo)
+GameObjectModel* GameObjectModel::Create(const GameObject* const pGo)
 {
     const GameObjectDisplayInfoEntry* info = sGameObjectDisplayInfoStore.LookupEntry(pGo->GetDisplayId());
     if (!info)
@@ -168,9 +156,9 @@ GameObjectModel* GameObjectModel::construct(const GameObject* const pGo)
     return mdl;
 }
 
-bool GameObjectModel::intersectRay(const G3D::Ray& ray, float& MaxDist, bool StopAtFirstHit) const
+bool GameObjectModel::IntersectRay(const G3D::Ray& ray, float& MaxDist, bool StopAtFirstHit) const
 {
-    if (!collision_enabled)
+    if (!isCollidable)
         { return false; }
 
     float time = ray.intersectionTime(iBound);
@@ -189,3 +177,32 @@ bool GameObjectModel::intersectRay(const G3D::Ray& ray, float& MaxDist, bool Sto
     }
     return hit;
 }
+
+bool GameObjectModel::GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vector3& dstPoint, bool absolute) const
+{
+    G3D::Vector3 p;
+    if (absolute)
+        p = iInvRot * (srcPoint - iPos) * iInvScale;
+    else
+        p = srcPoint;
+
+    float dist;
+    bool hit = iModel->GetContactPoint(p, G3D::Vector3(0.0f, 0.0f, -1.0f), dist);
+    if (hit)
+    {
+        dstPoint = p;
+        dstPoint.z -= dist;
+    }
+    return hit;
+}
+
+void GameObjectModel::GetLocalCoords(const G3D::Vector3& worldCoords, G3D::Vector3& localCoords)
+{
+
+}
+
+void GameObjectModel::GetWorldCoords(const G3D::Vector3& localCoords, G3D::Vector3& worldCoords)
+{
+
+}
+

@@ -57,12 +57,10 @@ namespace VMAP
     {
         public:
             AreaInfoCallback(ModelInstance* val): prims(val) {}
+
             void operator()(const Vector3& point, uint32 entry)
             {
-#ifdef VMAP_DEBUG
-                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
-#endif
-                prims[entry].intersectPoint(point, aInfo);
+                prims[entry].GetAreaInfo(point, aInfo);
             }
 
             ModelInstance* prims;
@@ -73,11 +71,9 @@ namespace VMAP
     {
         public:
             LocationInfoCallback(ModelInstance* val, LocationInfo& info): prims(val), locInfo(info), result(false) {}
+
             void operator()(const Vector3& point, uint32 entry)
             {
-#ifdef VMAP_DEBUG
-                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
-#endif
                 if (prims[entry].GetLocationInfo(point, locInfo))
                     { result = true; }
             }

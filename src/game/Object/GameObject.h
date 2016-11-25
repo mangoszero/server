@@ -583,6 +583,11 @@ class GameObject : public WorldObject
         ObjectGuid const& GetOwnerGuid() const { return GetGuidValue(OBJECT_FIELD_CREATED_BY); }
         Unit* GetOwner() const;
 
+        bool IsControlledByPlayer() const override
+        {
+            return GetOwnerGuid().IsPlayer();
+        }
+
         void SetSpellId(uint32 id)
         {
             m_spawnedByDefault = false;                     // all summoned object is despawned after delay

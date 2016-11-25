@@ -79,12 +79,12 @@ void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
 
     // detach and deregister from active objects if there are no more reasons to be active
     m_source->GetViewPoint().Detach(this);
-    if (!m_source->isActiveObject())
+    if (!m_source->IsActiveObject())
         { m_source->GetMap()->RemoveFromActive(m_source); }
 
     m_source = obj;
 
-    if (!m_source->isActiveObject())
+    if (!m_source->IsActiveObject())
         { m_source->GetMap()->AddToActive(m_source); }
 
     m_source->GetViewPoint().Attach(this);

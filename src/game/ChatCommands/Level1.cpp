@@ -330,7 +330,7 @@ bool ChatHandler::HandleGPSCommand(char* args)
     uint32 have_map = GridMap::ExistMap(obj->GetMapId(), gx, gy) ? 1 : 0;
     uint32 have_vmap = GridMap::ExistVMap(obj->GetMapId(), gx, gy) ? 1 : 0;
 
-    TerrainInfo const* terrain = obj->GetTerrain();
+    TerrainInfo const* terrain = obj->GetMap()->GetTerrain();
 
     if (have_vmap)
     {

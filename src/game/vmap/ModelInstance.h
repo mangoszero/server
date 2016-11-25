@@ -140,7 +140,7 @@ namespace VMAP
              * @param p
              * @param info
              */
-            void intersectPoint(const G3D::Vector3& p, AreaInfo& info) const;
+            void GetAreaInfo(const G3D::Vector3& p, AreaInfo& info) const;
             /**
              * @brief
              *

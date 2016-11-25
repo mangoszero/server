@@ -138,7 +138,7 @@ namespace VMAP
              * @param wf
              * @return bool
              */
-            bool writeToFile(FILE* wf);
+            bool WriteToFile(FILE* wf);
             /**
              * @brief
              *
@@ -146,13 +146,14 @@ namespace VMAP
              * @param liquid
              * @return bool
              */
-            static bool readFromFile(FILE* rf, WmoLiquid*& liquid);
+            static bool ReadFromFile(FILE* rf, WmoLiquid*& liquid);
         private:
             /**
              * @brief
              *
              */
             WmoLiquid(): iHeight(0), iFlags(0) {};
+
             uint32 iTilesX;  /**< number of tiles in x direction, each */
             uint32 iTilesY;  /**< TODO */
             Vector3 iCorner; /**< the lower corner */
@@ -204,13 +205,13 @@ namespace VMAP
              * @param vert
              * @param tri
              */
-            void setMeshData(std::vector<Vector3>& vert, std::vector<MeshTriangle>& tri);
+            void SetMeshData(std::vector<Vector3>& vert, std::vector<MeshTriangle>& tri);
             /**
              * @brief
              *
              * @param liquid
              */
-            void setLiquidData(WmoLiquid*& liquid) { iLiquid = liquid; liquid = NULL; }
+            void SetLiquidData(WmoLiquid*& liquid) { iLiquid = liquid; liquid = NULL; }
             /**
              * @brief
              *
@@ -249,14 +250,14 @@ namespace VMAP
              * @param wf
              * @return bool
              */
-            bool writeToFile(FILE* wf);
+            bool WriteToFile(FILE* wf);
             /**
              * @brief
              *
              * @param rf
              * @return bool
              */
-            bool readFromFile(FILE* rf);
+            bool ReadFromFile(FILE* rf);
             /**
              * @brief
              *
@@ -307,13 +308,13 @@ namespace VMAP
              *
              * @param models
              */
-            void setGroupModels(std::vector<GroupModel>& models);
+            void SetGroupModels(std::vector<GroupModel>& models);
             /**
              * @brief
              *
              * @param id
              */
-            void setRootWmoID(uint32 id) { RootWMOID = id; }
+            void SetRootWmoID(uint32 id) { RootWMOID = id; }
             /**
              * @brief
              *
@@ -326,48 +327,57 @@ namespace VMAP
             /**
              * @brief
              *
-             * @param p
-             * @param down
+             * @param point
+             * @param dir
              * @param dist
              * @param info
              * @return bool
              */
-            bool IntersectPoint(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, AreaInfo& info) const;
+            bool GetAreaInfo(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist, AreaInfo& info) const;
             /**
              * @brief
              *
-             * @param p
-             * @param down
+             * @param point
+             * @param dir
              * @param dist
              * @param info
              * @return bool
              */
-            bool GetLocationInfo(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, LocationInfo& info) const;
+            bool GetLocationInfo(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist, LocationInfo& info) const;
+            /**
+             * @brief
+             *
+             * @param point
+             * @param dir
+             * @param dist
+             * @return bool
+             */
+            bool GetContactPoint(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist) const;
             /**
              * @brief
              *
              * @param filename
              * @return bool
              */
-            bool writeFile(const std::string& filename);
+            bool WriteFile(const std::string& filename);
             /**
              * @brief
              *
              * @param filename
              * @return bool
              */
-            bool readFile(const std::string& filename);
+            bool ReadFile(const std::string& filename);
             uint32 Flags;
         protected:
-            uint32 RootWMOID; /**< TODO */
-            std::vector<GroupModel> groupModels; /**< TODO */
-            BIH groupTree; /**< TODO */
+            uint32 RootWMOID;
+            std::vector<GroupModel> groupModels;
+            BIH groupTree;
 
 #ifdef MMAP_GENERATOR
         public:
             void getGroupModels(std::vector<GroupModel>& groupModels);
 #endif
     };
-} // namespace VMAP
+}
 
 #endif // _WORLDMODEL_H

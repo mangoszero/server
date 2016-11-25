@@ -46,80 +46,46 @@ namespace VMAP
  */
 class GameObjectModel
 {
-        bool collision_enabled; /**< TODO */
-        G3D::AABox iBound; /**< TODO */
-        G3D::Matrix3 iInvRot; /**< TODO */
-        G3D::Vector3 iPos; /**< TODO */
-        //G3D::Vector3 iRot;
-        float iInvScale; /**< TODO */
-        float iScale; /**< TODO */
-        VMAP::WorldModel* iModel; /**< TODO */
+    private:
+        bool         isCollidable;
 
-        /**
-         * @brief
-         *
-         */
-        GameObjectModel() : collision_enabled(false), iModel(NULL) {}
-        /**
-         * @brief
-         *
-         * @param pGo
-         * @param info
-         * @return bool
-         */
+        std::string   iName;
+        G3D::AABox    iBound;
+        G3D::Vector3  iPos;
+        G3D::Matrix3  iRot;
+        float         iScale;
+
+        float         iInvScale;
+        G3D::Matrix3  iInvRot;
+
+        VMAP::WorldModel* iModel;
+        GameObject const* iOwner;
+
+        GameObjectModel() : isCollidable(false), iModel(NULL), iOwner(NULL) {}
         bool initialize(const GameObject* const pGo, const GameObjectDisplayInfoEntry* info);
 
     public:
-        std::string name; /**< TODO */
+        const G3D::AABox& GetBounds() const { return iBound; }
+        const std::string& GetName() const { return iName; }
 
-        /**
-         * @brief
-         *
-         * @return const G3D::AABox
-         */
-        const G3D::AABox& getBounds() const { return iBound; }
-
-        /**
-         * @brief
-         *
-         */
         ~GameObjectModel();
 
-        /**
-         * @brief
-         *
-         * @return const G3D::Vector3
-         */
-        const G3D::Vector3& getPosition() const { return iPos;}
+        const G3D::Vector3& GetPosition() const { return iPos;}
+        const GameObject* GetOwner() const { return iOwner; }
 
-        /** Enables\disables collision. */
-        /**
-         * @brief
-         *
-         */
-        void disable() { collision_enabled = false;}
-        /**
-         * @brief
-         *
-         * @param enabled
-         */
-        void enable(bool enabled) { collision_enabled = enabled;}
-        /**
-         * @brief
-         *
-         * @param Ray
-         * @param MaxDist
-         * @param StopAtFirstHit
-         * @return bool
-         */
-        bool intersectRay(const G3D::Ray& Ray, float& MaxDist, bool StopAtFirstHit) const;
+        void SetCollidable(bool enabled) { isCollidable = enabled; }
 
-        /**
-         * @brief
-         *
-         * @param pGo
-         * @return GameObjectModel
-         */
-        static GameObjectModel* construct(const GameObject* const pGo);
+        bool IntersectRay(const G3D::Ray& Ray, float& MaxDist, bool StopAtFirstHit) const;
+
+        // returns the intersection point given from srcPoint down.
+        // If absolute is true, srcPoint is in world space, else srcPoint is assumed in local space.
+        // If method succeeds, dstPoint will be filled with local space coordinates of the intersection
+        // else will be untouched
+        bool GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vector3& dstPoint, bool absolute = true) const;
+
+        void GetLocalCoords(const G3D::Vector3& worldCoords, G3D::Vector3& localCoords); //NYI
+        void GetWorldCoords(const G3D::Vector3& localCoords, G3D::Vector3& worldCoords); //NYI
+
+        static GameObjectModel* Create(const GameObject* const pGo);
 };
 #endif
