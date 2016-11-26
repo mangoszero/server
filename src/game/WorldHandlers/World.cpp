@@ -1576,11 +1576,6 @@ void World::Update(uint32 diff)
     // And last, but not least handle the issued cli commands
     ProcessCliCommands();
 
-    ///- Used by Eluna
-#ifdef ENABLE_ELUNA
-    sEluna->OnWorldUpdate(diff);
-#endif /* ENABLE_ELUNA */
-
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
 }
