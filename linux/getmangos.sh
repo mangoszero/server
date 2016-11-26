@@ -120,54 +120,121 @@ function Log()
 # Function to install prerequisite libraries
 function GetPrerequisites()
 {
-  local OS_VER=0
+  # First, let's check that we have the necessary tools to define the OS version.
+  which lsb_release
+  
+  if [ $? -ne 0 ]; then
+    Log "Cannot define your OS distribution and version." 1
+    return 0
+  fi  
+  
+  local OS=$(lsb_release -si)
+  local VER=$(lsb_release -sc)
+  local OS_VER=1
 
   # Ask the user to continue
   $DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Install Required Dependencies" \
     --yesno "Would you like to install the required build and development packages?" 8 60
 
-  # Check the suer's response
+  # Check the user's response
   if [ $? -ne 0 ]; then
     Log "User declined to install required tools and development libraries." 1
     return 0
+  fi 
+
+  # Inform the user of the need for root access
+  $DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Install Required Dependencies" \
+    --yesno "Installing packages requires root access, which you will be prompted for.\nDo you want to proceed?" 8 60
+
+  # Check the user's response
+  if [ $? -ne 0 ]; then
+    Log "User declined to proved root access for package installation." 1
+    return 0
   fi
 
-  # Handle Debian OS
-  if [ -f "/etc/debian_version" ]; then
-    # Inform the user of the need for root access
-    $DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Install Required Dependencies" \
-      --yesno "Installing packages requires root access, which you will be prompted for.\nDo you want to proceed?" 8 60
-
-    # Check the user's response
-    if [ $? -ne 0 ]; then
-      Log "User declined to proved root access for package installation." 1
-      return 0
-    fi
-
-    # Grab the version of Debian installed on this system
-    OS_VER=`cat /etc/debian_version`
-
-    # Check for a valid version
-    if [ $(echo "$OS_VER < 6.0" | bc) -eq 1 ] || [ $(echo "$OS_VER >= 8.0" | bc) -eq 1 ]; then
-      Log "Error: Only Debian Squeeze and Wheezy are supported." 1
-      return 1
-    fi
-
-    # Handle Debian Wheezy
-    if [ $(echo "$OS_VER >= 7.0" | bc) -eq 1 ] && [ $(echo "$OS_VER < 8.0" | bc) -eq 1 ]; then
-      # Install the prerequisite packages
-      su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
-    fi
-
-    # Handle Debian Squeeze
-    if [ $(echo "$OS_VER >= 6.0" | bc) -eq 1 ] && [ $(echo "$OS_VER < 7.0" | bc) -eq 1 ]; then
-      # Install the prerequisite packages
-      su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-5.7.7 libssl-dev libmysqlclient-dev zlib1g-dev" root
-    fi
-  fi
+  # Handle OS
+  case ${OS} in
+    "LinuxMint")
+      case ${VER} in
+        "sarah")
+          # Linux Mint 18 - Ubuntu Xenial based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "rosa")
+          # Linux Mint 17.3 - Ubuntu Trusty based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "rafaela")
+          # Linux Mint 17.2 - Ubuntu Trusty based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "rebecca")
+          # Linux Mint 17.1 - Ubuntu Trusty based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "qiana")
+          # Linux Mint 17 - Ubuntu Trusty based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "maya")
+          # Linux Mint 13 - Ubuntu Precise based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "betsy")
+          # LMDE 2 - Debian Jessie based
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev zliblg-dev" root
+          ;;
+        *)
+          OS_VER=0
+          ;;
+      esac
+      ;;
+    "Ubuntu")
+      case ${VER} in
+        "precise")
+          # Ubuntu 12.04 LTS
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "trusty")
+          # Ubuntu 14.04 LTS
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "xenial")
+          # Ubuntu 16.04 LTS
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        "yakkety")
+          # Ubuntu 16.10
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          ;;
+        *)
+          OS_VER=0
+          ;;
+      esac
+      su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+      ;;
+    "Debian")
+      case ${VER} in
+        "jessie")
+          # Debian 8.0 "current"
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev zliblg-dev" root
+          ;;
+        "stretch")
+          # Debian Next
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zliblg-dev" root
+          ;;
+        *)
+          OS_VER=0
+          ;;
+      esac      
+      ;;
+    *)
+      OS_VER=0
+      ;;
+  esac    
 
   # See if a supported OS was detected
-  if [ OS_VER -ne 0 ]; then
+  if [ ${OS_VER} -ne 0 ]; then
     # Log success
     Log "The development tools and libraries have been installed!" 1
   else
