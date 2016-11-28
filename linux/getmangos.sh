@@ -162,23 +162,23 @@ function GetPrerequisites()
           ;;
         "rosa")
           # Linux Mint 17.3 - Ubuntu Trusty based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "rafaela")
           # Linux Mint 17.2 - Ubuntu Trusty based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "rebecca")
           # Linux Mint 17.1 - Ubuntu Trusty based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "qiana")
           # Linux Mint 17 - Ubuntu Trusty based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "maya")
           # Linux Mint 13 - Ubuntu Precise based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "betsy")
           # LMDE 2 - Debian Jessie based
@@ -193,19 +193,19 @@ function GetPrerequisites()
       case ${VER} in
         "precise")
           # Ubuntu 12.04 LTS
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "trusty")
           # Ubuntu 14.04 LTS
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "xenial")
           # Ubuntu 16.04 LTS
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         "yakkety")
           # Ubuntu 16.10
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev zlib1g-dev" root
           ;;
         *)
           OS_VER=0
