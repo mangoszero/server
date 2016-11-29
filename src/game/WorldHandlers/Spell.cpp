@@ -4455,12 +4455,8 @@ SpellCastResult Spell::CheckCast(bool strict)
         // Must be behind the target.
         if (m_spellInfo->AttributesEx2 == SPELL_ATTR_EX2_UNK20 && m_spellInfo->HasAttribute(SPELL_ATTR_EX_UNK9) && target->HasInArc(M_PI_F, m_caster))
         {
-            // Exclusion for Pounce: Facing Limitation was removed in 2.0.1, but it still uses the same, old Ex-Flags
-            if (!m_spellInfo->IsFitToFamily(SPELLFAMILY_DRUID, UI64LIT(0x0000000000020000)))
-            {
-                SendInterrupted(2);
-                return SPELL_FAILED_NOT_BEHIND;
-            }
+            SendInterrupted(2);
+            return SPELL_FAILED_NOT_BEHIND;
         }
 
         // Target must be facing you.
