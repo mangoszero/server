@@ -38,5 +38,5 @@ script:
   - test -d _build || mkdir _build
   - test -d _install || mkdir _install
   - cd _build
-  - cmake -DCMAKE_INSTALL_PREFIX=../_install ..
+  - cmake .. -DCMAKE_INSTALL_PREFIX=../_install -DSOAP=1 -DPLAYERBOTS=1
   - make -j4
