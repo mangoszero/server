@@ -180,7 +180,6 @@ class Object
 
         void BuildValuesUpdateBlockForPlayer(UpdateData* data, Player* target) const;
         void BuildOutOfRangeUpdateBlock(UpdateData* data) const;
-        void BuildMovementUpdateBlock(UpdateData* data, uint8 flags = 0) const;
 
         virtual void DestroyForPlayer(Player* target) const;
 
@@ -273,9 +272,6 @@ class Object
         void MarkFlagUpdateForClient(uint16 index);
         void SetFlag(uint16 index, uint32 newFlag);
         void RemoveFlag(uint16 index, uint32 oldFlag);
-
-        void SetPlayerSpecificFlag(uint16 index, uint32 newFlag, Player* plr);
-        void RemovePlayerSpecificFlag(uint16 index, uint32 newFlag, Player* plr);
 
         void ToggleFlag(uint16 index, uint32 flag)
         {

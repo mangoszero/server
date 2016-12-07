@@ -138,18 +138,6 @@ void Object::SendForcedObjectUpdate()
     }
 }
 
-void Object::BuildMovementUpdateBlock(UpdateData* data, uint8 flags) const
-{
-    ByteBuffer buf(500);
-
-    buf << uint8(UPDATETYPE_MOVEMENT);
-    buf << GetObjectGuid();
-
-    BuildMovementUpdate(&buf, flags);
-
-    data->AddUpdateBlock(buf);
-}
-
 void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) const
 {
     if (!target)
@@ -715,62 +703,6 @@ void Object::RemoveFlag(uint16 index, uint32 oldFlag)
     {
         m_uint32Values[index] = newval;
         m_changedValues[index] = true;
-        MarkForClientUpdate();
-    }
-}
-
-void Object::RemovePlayerSpecificFlag(uint16 index, uint32 oldFlag, Player* plr)
-{
-    /* Validate input */
-    MANGOS_ASSERT(index < m_valuesCount || PrintIndexError(index, true));
-
-    uint32 oldval, newval;
-
-    /* See if we already have custom flags set for the player */
-    if (m_plrSpecificFlags.find(plr->GetGUIDLow()) != m_plrSpecificFlags.end())
-        { oldval = m_plrSpecificFlags.find(plr->GetGUIDLow())->second; }
-    /* We don't already have flags, get them from the creature */
-    else
-        { oldval = m_uint32Values[index]; }
-
-    /* Set the new flag */
-    newval = oldval & ~oldval;
-
-    /* Make sure they're not the same */
-    if (oldval != newval)
-    {
-        /* Update existing flag */
-        m_plrSpecificFlags.find(plr->GetGUIDLow())->second = newval;
-
-        /* Push updates to client */
-        MarkForClientUpdate();
-    }
-}
-
-void Object::SetPlayerSpecificFlag(uint16 index, uint32 newFlag, Player* plr)
-{
-    /* Validate input */
-    MANGOS_ASSERT(index < m_valuesCount || PrintIndexError(index, true));
-
-    uint32 oldval, newval;
-
-    /* See if we already have custom flags set for the player */
-    if (m_plrSpecificFlags.find(plr->GetGUIDLow()) != m_plrSpecificFlags.end())
-        { oldval = m_plrSpecificFlags.find(plr->GetGUIDLow())->second; }
-    /* We don't already have flags, get them from the creature */
-    else
-        { oldval = m_uint32Values[index]; }
-
-    /* Set the new flag */
-    newval = oldval | newFlag;
-
-    /* Make sure they're not the same */
-    if (oldval != newval)
-    {
-        /* Update existing flag */
-        m_plrSpecificFlags.find(plr->GetGUIDLow())->second = newval;
-
-        /* Push updates to client */
         MarkForClientUpdate();
     }
 }
