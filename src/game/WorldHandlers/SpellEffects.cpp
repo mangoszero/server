@@ -662,7 +662,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     return;
                 }
                 case 15998:                                 // Capture Worg Pup
-                {
+				case 19614:                                 // Despawn Caster
+				{
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
                         { return; }
 

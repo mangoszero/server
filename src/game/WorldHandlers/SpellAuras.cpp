@@ -1127,6 +1127,9 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
     Unit* target = GetTarget();
 
+	if (!target || !target->IsAlive())
+	    { return; }
+
     // AT APPLY
     if (apply)
     {
@@ -1209,7 +1212,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     // AT REMOVE
     else
     {
-        if (IsQuestTameSpell(GetId()) && target->IsAlive())
+        if (IsQuestTameSpell(GetId()) && (GetAuraDuration() == 0))
         {
             Unit* caster = GetCaster();
             if (!caster || !caster->IsAlive())
@@ -2219,6 +2222,8 @@ void Aura::HandleModCharm(bool apply, bool Real)
         { return; }
 
     Unit* target = GetTarget();
+	if (!target || !target->IsAlive())
+	    { return;	}
 
     // not charm yourself
     if (GetCasterGuid() == target->GetObjectGuid())
@@ -2277,7 +2282,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         else if (Player *plTarget = target->ToPlayer())
             plTarget->SetClientControl(plTarget, 0);
 
-        if (caster->GetTypeId() == TYPEID_PLAYER)
+		if (caster->GetTypeId() == TYPEID_PLAYER)
             { ((Player*)caster)->CharmSpellInitialize(); }
     }
     else
@@ -2330,7 +2335,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         if (target->GetTypeId() == TYPEID_UNIT)
         {
             ((Creature*)target)->AIM_Initialize();
-            target->AttackedBy(caster);
+            //target->AttackedBy(caster);
         }
     }
 }
@@ -5671,13 +5676,13 @@ void SpellAuraHolder::UpdateAuraDuration()
     if (GetAuraSlot() >= MAX_AURAS || m_isPassive)
         { return; }
 
-    if (m_target->GetTypeId() == TYPEID_PLAYER)
+	if (m_target->GetTypeId() == TYPEID_PLAYER)
     {
         WorldPacket data(SMSG_UPDATE_AURA_DURATION, 5);
         data << uint8(GetAuraSlot());
         data << uint32(GetAuraDuration());
         ((Player*)m_target)->SendDirectMessage(&data);
-    }
+	}
 
     // not send in case player loading (will not work anyway until player not added to map), sent in visibility change code
     if (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading())
