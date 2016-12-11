@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 11
-    #define WORLD_DB_CONTENT_NR 47
-    #define WORLD_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
+    #define WORLD_DB_CONTENT_NR 73
+    #define WORLD_DB_UPDATE_DESCRIPTION "Script_Binding"
 #endif // __REVISION_H__
