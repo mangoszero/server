@@ -589,18 +589,17 @@ void Creature::Update(uint32 update_diff, uint32 diff)
         }
         case ALIVE:
         {
-			// unsummon pet that lost owner
-		    Unit* charmer = GetCharmer();
-			if (GetCharmerGuid() && (!charmer || 
-				(!IsWithinDistInMap(charmer, GetMap()->GetVisibilityDistance()) &&
-				(charmer->GetCharmGuid() == GetObjectGuid()))))
-			{
-				if (charmer)
-					charmer->Uncharm();
-				ForcedDespawn();
-			    return;
-			}
-			if (m_aggroDelay <= update_diff)
+            Unit* charmer = GetCharmer();
+            if (GetCharmerGuid() && (!charmer || (!IsWithinDistInMap(charmer, GetMap()->GetVisibilityDistance()) &&
+                (charmer->GetCharmGuid() == GetObjectGuid()))))
+            {
+                if (charmer)
+                  { charmer->Uncharm(); }
+                ForcedDespawn();
+                return;
+            }
+
+            if (m_aggroDelay <= update_diff)
                 m_aggroDelay = 0;
             else
                 m_aggroDelay -= update_diff;
@@ -674,11 +673,9 @@ void Creature::RegenerateAll(uint32 update_diff)
     if (m_regenTimer != 0)
         { return; }
 
-	if (!IsInCombat() || IsPolymorphed())
-	{
-		RegenerateHealth();
-	}
-	
+    if (!IsInCombat() || IsPolymorphed())
+      { RegenerateHealth(); }
+
     RegeneratePower();
 
     m_regenTimer = REGEN_TIME_FULL;
@@ -763,15 +760,15 @@ void Creature::RegenerateHealth()
     if (GetCharmerOrOwnerGuid())
     {
         float HealthIncreaseRate = sWorld.getConfig(CONFIG_FLOAT_RATE_HEALTH);
-        float Spirit = GetStat(STAT_SPIRIT);
+        float Spirit = GetStat(STAT_SPIRIT); //for charmed creatures, spirit = 0!
         if (GetPower(POWER_MANA) > 0)
             { addvalue = uint32(Spirit * 0.25 * HealthIncreaseRate); }
         else
             { addvalue = uint32(Spirit * 0.80 * HealthIncreaseRate); }
     }
 
-	if (addvalue == 0)
-        { addvalue = maxValue / 3; }
+    if (addvalue == 0)
+      { addvalue = maxValue / 3; }
 
     ModifyHealth(addvalue);
 }
