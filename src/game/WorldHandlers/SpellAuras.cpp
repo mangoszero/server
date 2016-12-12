@@ -1123,12 +1123,12 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 {
     // spells required only Real aura add/remove
     if (!Real)
-        { return; }
+      { return; }
 
     Unit* target = GetTarget();
 
-	if (!target || !target->IsAlive())
-	    { return; }
+    if (!target || !target->IsAlive())
+      { return; }
 
     // AT APPLY
     if (apply)
@@ -2219,11 +2219,11 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
 void Aura::HandleModCharm(bool apply, bool Real)
 {
     if (!Real)
-        { return; }
+      { return; }
 
     Unit* target = GetTarget();
-	if (!target || !target->IsAlive())
-	    { return;	}
+    if (!target || !target->IsAlive())
+      { return; }
 
     // not charm yourself
     if (GetCasterGuid() == target->GetObjectGuid())
@@ -2280,10 +2280,10 @@ void Aura::HandleModCharm(bool apply, bool Real)
             }
         }
         else if (Player *plTarget = target->ToPlayer())
-            plTarget->SetClientControl(plTarget, 0);
+          { plTarget->SetClientControl(plTarget, 0); }
 
-		if (caster->GetTypeId() == TYPEID_PLAYER)
-            { ((Player*)caster)->CharmSpellInitialize(); }
+        if (caster->GetTypeId() == TYPEID_PLAYER)
+          { ((Player*)caster)->CharmSpellInitialize(); }
     }
     else
     {
@@ -5676,13 +5676,13 @@ void SpellAuraHolder::UpdateAuraDuration()
     if (GetAuraSlot() >= MAX_AURAS || m_isPassive)
         { return; }
 
-	if (m_target->GetTypeId() == TYPEID_PLAYER)
+    if (m_target->GetTypeId() == TYPEID_PLAYER)
     {
         WorldPacket data(SMSG_UPDATE_AURA_DURATION, 5);
         data << uint8(GetAuraSlot());
         data << uint32(GetAuraDuration());
         ((Player*)m_target)->SendDirectMessage(&data);
-	}
+    }
 
     // not send in case player loading (will not work anyway until player not added to map), sent in visibility change code
     if (m_target->GetTypeId() == TYPEID_PLAYER && ((Player*)m_target)->GetSession()->PlayerLoading())
