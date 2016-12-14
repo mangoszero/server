@@ -1326,13 +1326,21 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     UpdateEnchantTime(update_diff);
     UpdateHomebindTime(update_diff);
 
-    // Group update
-    SendUpdateToOutOfRangeGroupMembers();
-
+    // unsummon pet/charmed that lost owner
     Pet* pet = GetPet();
     if (pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGuid() && (pet->GetObjectGuid() != GetCharmGuid())))
-        { pet->Unsummon(PET_SAVE_REAGENTS, this); }
+      { pet->Unsummon(PET_SAVE_REAGENTS, this); }
 
+    Unit* charmed = GetCharm();
+    if (charmed && (GetCharmGuid() == charmed->GetObjectGuid()) && !IsWithinDistInMap(charmed, GetMap()->GetVisibilityDistance()))
+    {
+        Uncharm();
+        if(charmed->GetTypeId() == TYPEID_UNIT)
+          { ((Creature*)charmed)->ForcedDespawn(); }
+    }
+
+    // Group update
+    SendUpdateToOutOfRangeGroupMembers();
     if (IsHasDelayedTeleport())
         { TeleportTo(m_teleport_dest, m_teleport_options); }
 

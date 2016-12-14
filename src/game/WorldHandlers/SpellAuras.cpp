@@ -1123,9 +1123,12 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 {
     // spells required only Real aura add/remove
     if (!Real)
-        { return; }
+      { return; }
 
     Unit* target = GetTarget();
+
+    if (!target || !target->IsAlive())
+      { return; }
 
     // AT APPLY
     if (apply)
@@ -1209,7 +1212,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     // AT REMOVE
     else
     {
-        if (IsQuestTameSpell(GetId()) && target->IsAlive())
+        if (IsQuestTameSpell(GetId()) && (GetAuraDuration() == 0))
         {
             Unit* caster = GetCaster();
             if (!caster || !caster->IsAlive())
@@ -2216,9 +2219,11 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
 void Aura::HandleModCharm(bool apply, bool Real)
 {
     if (!Real)
-        { return; }
+      { return; }
 
     Unit* target = GetTarget();
+    if (!target || !target->IsAlive())
+      { return; }
 
     // not charm yourself
     if (GetCasterGuid() == target->GetObjectGuid())
@@ -2275,10 +2280,10 @@ void Aura::HandleModCharm(bool apply, bool Real)
             }
         }
         else if (Player *plTarget = target->ToPlayer())
-            plTarget->SetClientControl(plTarget, 0);
+          { plTarget->SetClientControl(plTarget, 0); }
 
         if (caster->GetTypeId() == TYPEID_PLAYER)
-            { ((Player*)caster)->CharmSpellInitialize(); }
+          { ((Player*)caster)->CharmSpellInitialize(); }
     }
     else
     {
@@ -2330,7 +2335,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         if (target->GetTypeId() == TYPEID_UNIT)
         {
             ((Creature*)target)->AIM_Initialize();
-            target->AttackedBy(caster);
+            //target->AttackedBy(caster);
         }
     }
 }
