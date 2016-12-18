@@ -32,6 +32,7 @@
 #include "GameObjectModel.h"
 #include "DBCStores.h"
 #include "Creature.h"
+#include "G3D/Quat.h"
 
 struct GameobjectModelData
 {
@@ -107,9 +108,9 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     if (it == model_list.end())
         { return false; }
 
-    G3D::AABox mdl_box(it->second.bound);
+    iModelBound = it->second.bound;
     // ignore models with no bounds
-    if (mdl_box == G3D::AABox::zero())
+    if (iModelBound == G3D::AABox::zero())
     {
         sLog.outDebug("Model %s has zero bounds, loading skipped", it->second.name.c_str());
         return false;
@@ -126,18 +127,30 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     iScale = pGo->GetObjectScale();
     iInvScale = 1.f / iScale;
 
-    iRot = G3D::Matrix3::fromEulerAnglesZYX(pGo->GetOrientation(), 0, 0);
+    G3D::Quat q;
+    pGo->GetQuaternion(q);
+    UpdateRotation(q);
+
+    return true;
+}
+
+void GameObjectModel::UpdateRotation(G3D::Quat const& q)
+{
+    q.toRotationMatrix(iRot);
+
     iInvRot = iRot.inverse();
+
+    G3D::AABox mdl_box(iModelBound);
 
     // transform bounding box:
     mdl_box = AABox(mdl_box.low() * iScale, mdl_box.high() * iScale);
-    AABox rotated_bounds;
+
+    G3D::AABox rotated_bounds;
+
     for (int i = 0; i < 8; ++i)
         { rotated_bounds.merge(iRot * mdl_box.corner(i)); }
 
     iBound = rotated_bounds + iPos;
-
-    return true;
 }
 
 GameObjectModel* GameObjectModel::Create(const GameObject* const pGo)

@@ -23,6 +23,7 @@
  */
 
 #include "GameObject.h"
+#include "G3D/Quat.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
 #include "PoolManager.h"
@@ -145,10 +146,32 @@ void GameObject::CleanupsBeforeDelete()
     WorldObject::CleanupsBeforeDelete();
 }
 
-bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state)
+bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
-    MANGOS_ASSERT(map);
-    Relocate(x, y, z, ang);
+    if (!map)
+      { return false; }
+
+    GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(name_id);
+    if (!goinfo)
+    {
+        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u does not exist in `gameobject_template`", guidlow, name_id);
+        return false;
+    }
+
+    Object::_Create(guidlow, goinfo->id, HIGHGUID_GAMEOBJECT);
+
+    // let's make sure we don't send the client invalid quaternion
+    if (r0 == 0.0f && r1 == 0.0f && r2 == 0.0f)
+    {
+        r2 = sin(ang/2);
+        r3 = cos(ang/2);
+    }
+
+    G3D::Quat q(r0, r1, r2, r3);
+    q.unitize();
+
+    float o = GetOrientationFromQuat(q);
+    Relocate(x, y, z, o);
     SetMap(map);
 
     if (!IsPositionValid())
@@ -157,14 +180,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         return false;
     }
 
-    GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(name_id);
-    if (!goinfo)
-    {
-        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u does not exist in `gameobject_template`. Map: %u  (X: %f Y: %f Z: %f) ang: %f rotation0: %f rotation1: %f rotation2: %f rotation3: %f", guidlow, name_id, map->GetId(), x, y, z, ang, rotation0, rotation1, rotation2, rotation3);
-        return false;
-    }
-
-    Object::_Create(guidlow, goinfo->id, HIGHGUID_GAMEOBJECT);
+    SetQuaternion(q);
 
     m_goInfo = goinfo;
 
@@ -179,11 +195,6 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
     SetFloatValue(GAMEOBJECT_POS_X, x);
     SetFloatValue(GAMEOBJECT_POS_Y, y);
     SetFloatValue(GAMEOBJECT_POS_Z, z);
-
-    SetFloatValue(GAMEOBJECT_ROTATION + 0, rotation0);
-    SetFloatValue(GAMEOBJECT_ROTATION + 1, rotation1);
-
-    UpdateRotationFields(rotation2, rotation3);             // GAMEOBJECT_FACING, GAMEOBJECT_ROTATION+2/3
 
     SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
     SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
@@ -1673,18 +1684,30 @@ const char* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
     return GetName();
 }
 
-void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3 /*=0.0f*/)
+void GameObject::SetQuaternion(G3D::Quat const& q)
 {
-    SetFloatValue(GAMEOBJECT_FACING, GetOrientation());
+    SetFloatValue(GAMEOBJECT_ROTATION + 0, q.x);
+    SetFloatValue(GAMEOBJECT_ROTATION + 1, q.y);
+    SetFloatValue(GAMEOBJECT_ROTATION + 2, q.z);
+    SetFloatValue(GAMEOBJECT_ROTATION + 3, q.w);
 
-    if (rotation2 == 0.0f && rotation3 == 0.0f)
-    {
-        rotation2 = sin(GetOrientation() / 2);
-        rotation3 = cos(GetOrientation() / 2);
-    }
+    if (m_model)
+      { m_model->UpdateRotation(q); }
+}
 
-    SetFloatValue(GAMEOBJECT_ROTATION + 2, rotation2);
-    SetFloatValue(GAMEOBJECT_ROTATION + 3, rotation3);
+void GameObject::GetQuaternion(G3D::Quat& q) const
+{
+    q.x = GetFloatValue(GAMEOBJECT_ROTATION + 0);
+    q.y = GetFloatValue(GAMEOBJECT_ROTATION + 1);
+    q.z = GetFloatValue(GAMEOBJECT_ROTATION + 2);
+    q.w = GetFloatValue(GAMEOBJECT_ROTATION + 3);
+}
+
+float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
+{
+    double t1 = +2.0f * (q.w * q.z + q.x * q.y);
+    double t2 = +1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    return MapManager::NormalizeOrientation(std::atan2(t1, t2));
 }
 
 bool GameObject::IsHostileTo(Unit const* unit) const

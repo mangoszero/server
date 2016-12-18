@@ -491,16 +491,16 @@ enum GOState
 // from `gameobject`
 struct GameObjectData
 {
-    uint32 id;                                              // entry in gamobject_template
+    uint32 id;                                              // entry in gameobject_template
     uint32 mapid;
     float posX;
     float posY;
     float posZ;
     float orientation;
-    float rotation0;
-    float rotation1;
-    float rotation2;
-    float rotation3;
+    float rotation0;                                        // i component of rotation quaternion
+    float rotation1;                                        // j
+    float rotation2;                                        // k
+    float rotation3;                                        // w
     int32  spawntimesecs;
     uint32 animprogress;
     GOState go_state;
@@ -538,6 +538,12 @@ enum CapturePointSliderValue
 
 class Unit;
 class GameObjectModel;
+
+namespace G3D
+{
+    class Quat;
+};
+
 struct GameObjectDisplayInfoEntry;
 
 // 5 sec for bobber catch
@@ -565,7 +571,12 @@ class GameObject : public WorldObject
 
         bool HasStaticDBSpawnData() const;                  // listed in `gameobject` table and have fixed in DB guid
 
-        void UpdateRotationFields(float rotation2 = 0.0f, float rotation3 = 0.0f);
+        // rotation methods
+        void GetQuaternion(G3D::Quat& q) const;
+        void SetQuaternion(G3D::Quat const& q);
+        float GetOrientationFromQuat(G3D::Quat const& q);
+
+        void SetDisplayId(uint32 model_id);
 
         // overwrite WorldObject function for proper name localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const override;
@@ -636,7 +647,7 @@ class GameObject : public WorldObject
         uint32 GetGoAnimProgress() const { return GetUInt32Value(GAMEOBJECT_ANIMPROGRESS); }
         void SetGoAnimProgress(uint32 animprogress) { SetUInt32Value(GAMEOBJECT_ANIMPROGRESS, animprogress); }
         uint32 GetDisplayId() const { return GetUInt32Value(GAMEOBJECT_DISPLAYID); }
-        void SetDisplayId(uint32 modelId);
+        void SetDisplayIdx(uint32 modelId);
 
         float GetObjectBoundingRadius() const override;     // overwrite WorldObject version
 

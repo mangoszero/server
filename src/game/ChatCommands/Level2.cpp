@@ -58,7 +58,7 @@
 #include <map>
 #include <typeinfo>
 #include "Formulas.h"
-
+#include "G3D/Quat.h"                                         // for turning GO's
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
 #include "MoveMap.h"                                        // for mmap manager
 #include "PathFinder.h"                                     // for mmap commands
@@ -947,11 +947,27 @@ bool ChatHandler::HandleGameObjectTurnCommand(char* args)
     if (!ExtractOptFloat(&args, o, m_session->GetPlayer()->GetOrientation()))
         { return false; }
 
-    Map* map = obj->GetMap();
-    map->Remove(obj, false);
+    // ok, let's rotate the GO around Z axis
+    // we first get the original rotation quaternion
+    // then we'll create a rotation quat describing the rotation around Z
+    G3D::Quat original_rot;
+    obj->GetQuaternion(original_rot);
 
-    obj->Relocate(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), o);
-    obj->UpdateRotationFields();
+    // the rotation amount around Z-axis
+    float deltaO = o - obj->GetOrientationFromQuat(original_rot);
+
+    // multiplying 2 quaternions gives the final rotation
+    // quaternion multiplication is not commutative!
+    G3D::Quat final_rot = G3D::Quat(0.0f, 0.0f, sin(deltaO/2), cos(deltaO/2)) * original_rot;
+
+    // quaternion multiplication gives a non-unit quat
+    final_rot.unitize();
+
+    Map* map = obj->GetMap();
+    map->Remove(obj, false); //mandatory to remove GO model from m_dyn_tree
+
+    obj->SetQuaternion(final_rot); // this will update internal model rotation matrices
+    obj->Relocate(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientationFromQuat(final_rot));
 
     map->Add(obj);
 
