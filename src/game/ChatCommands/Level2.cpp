@@ -58,7 +58,7 @@
 #include <map>
 #include <typeinfo>
 #include "Formulas.h"
-#include "G3D/Quat.h"                                         // for turning GO's
+#include "G3D/Quat.h"                                       // for turning GO's
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
 #include "MoveMap.h"                                        // for mmap manager
 #include "PathFinder.h"                                     // for mmap commands
