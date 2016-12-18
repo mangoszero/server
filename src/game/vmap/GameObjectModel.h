@@ -31,6 +31,7 @@
 #include <G3D/Vector3.h>
 #include <G3D/AABox.h>
 #include <G3D/Ray.h>
+#include <G3D/Quat.h>
 #include "DBCStructure.h"
 #include "GameObject.h"
 
@@ -40,11 +41,6 @@ namespace VMAP
     class WorldModel;
 }
 
-namespace G3D
-{
-    class Quat;
-}
-
 /**
  * @brief
  *
@@ -52,17 +48,16 @@ namespace G3D
 class GameObjectModel
 {
     private:
-        bool         isCollidable;
+        bool          isCollidable;
 
         std::string   iName;
         G3D::AABox    iBound;
         G3D::AABox    iModelBound;
         G3D::Vector3  iPos;
-        G3D::Matrix3  iRot;
-        float         iScale;
+        G3D::Quat     iQuat;  //Note: this must be a unit quaternion!!!
 
+        float         iScale;
         float         iInvScale;
-        G3D::Matrix3  iInvRot;
 
         VMAP::WorldModel* iModel;
         GameObject const* iOwner;

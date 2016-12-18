@@ -32,7 +32,6 @@
 #include "GameObjectModel.h"
 #include "DBCStores.h"
 #include "Creature.h"
-#include "G3D/Quat.h"
 
 struct GameobjectModelData
 {
@@ -136,9 +135,7 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
 
 void GameObjectModel::UpdateRotation(G3D::Quat const& q)
 {
-    q.toRotationMatrix(iRot);
-
-    iInvRot = iRot.inverse();
+    iQuat = q;
 
     G3D::AABox mdl_box(iModelBound);
 
@@ -148,7 +145,7 @@ void GameObjectModel::UpdateRotation(G3D::Quat const& q)
     G3D::AABox rotated_bounds;
 
     for (int i = 0; i < 8; ++i)
-        { rotated_bounds.merge(iRot * mdl_box.corner(i)); }
+        { rotated_bounds.merge((iQuat * G3D::Quat(mdl_box.corner(i)) * iQuat.conj()).imag()); }
 
     iBound = rotated_bounds + iPos;
 }
@@ -179,8 +176,8 @@ bool GameObjectModel::IntersectRay(const G3D::Ray& ray, float& MaxDist, bool Sto
         { return false; }
 
     // child bounds are defined in object space:
-    Vector3 p = iInvRot * (ray.origin() - iPos) * iInvScale;
-    Ray modRay(p, iInvRot * ray.direction());
+    Vector3 p = (iQuat.conj() * G3D::Quat((ray.origin() - iPos) * iInvScale) * iQuat).imag();
+    Ray modRay(p, (iQuat.conj() * G3D::Quat(ray.direction()) * iQuat).imag());
     float distance = MaxDist * iInvScale;
     bool hit = iModel->IntersectRay(modRay, distance, StopAtFirstHit);
     if (hit)
@@ -195,7 +192,7 @@ bool GameObjectModel::GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vecto
 {
     G3D::Vector3 p;
     if (absolute)
-        p = iInvRot * (srcPoint - iPos) * iInvScale;
+        p = (iQuat * G3D::Quat((srcPoint - iPos) * iInvScale) * iQuat.conj()).imag();
     else
         p = srcPoint;
 
@@ -218,4 +215,3 @@ void GameObjectModel::GetWorldCoords(const G3D::Vector3& localCoords, G3D::Vecto
 {
 
 }
-
