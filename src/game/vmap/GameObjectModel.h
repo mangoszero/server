@@ -40,6 +40,11 @@ namespace VMAP
     class WorldModel;
 }
 
+namespace G3D
+{
+    class Quat;
+}
+
 /**
  * @brief
  *
@@ -51,6 +56,7 @@ class GameObjectModel
 
         std::string   iName;
         G3D::AABox    iBound;
+        G3D::AABox    iModelBound;
         G3D::Vector3  iPos;
         G3D::Matrix3  iRot;
         float         iScale;
@@ -71,6 +77,7 @@ class GameObjectModel
         ~GameObjectModel();
 
         const G3D::Vector3& GetPosition() const { return iPos;}
+        void UpdateRotation(G3D::Quat const& q);
         const GameObject* GetOwner() const { return iOwner; }
 
         void SetCollidable(bool enabled) { isCollidable = enabled; }
