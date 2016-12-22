@@ -499,7 +499,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
 }
 
 /**
- * What - if any - kind of explanation mark or question-mark should a quest-giver display for a player
+ * What - if any - kind of exclamation mark or question-mark should a quest-giver display for a player
  * @param pPlayer - for whom
  * @param questgiver - from whom
  * @param defstatus - initial set status (usually it will be called with DIALOG_STATUS_NONE) - must not be DIALOG_STATUS_UNDEFINED
