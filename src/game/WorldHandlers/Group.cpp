@@ -543,7 +543,7 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
     // guess size
     WorldPacket data(SMSG_GROUP_LIST, (1 + 1 + 1 + 4 + GetMembersCount() * 20) + 8 + 1 + 8 + 1);
     data << (uint8)m_groupType;                         // group type
-    data << (uint8)(subGroup | (IsAssistant(pPlayer->GetGUID()) ? 0x80 : 0)); // own flags (groupid | (assistant?0x80:0))
+    data << (uint8)(subGroup | (IsAssistant(pPlayer->GetObjectGuid()) ? 0x80 : 0)); // own flags (groupid | (assistant?0x80:0))
 
     data << uint32(GetMembersCount() - 1);
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
@@ -1043,7 +1043,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
             if (Player* player = sObjectMgr.GetPlayer(maxguid))
             {
-                if (Object* object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
+                if (WorldObject* object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
                 {
                     SendLootRollWon(maxguid, maxresul, ROLL_NEED, *roll);
                     won = true;
@@ -1060,10 +1060,8 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
                             Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
                             player->SendNewItem(newitem, uint32(item->count), false, false, true);
 
-                            if (object->GetTypeId() == TYPEID_UNIT)
+                            if (Creature* creature = object->ToCreature())
                             {
-                                /// Warn players about the loot status on the corpse.
-                                Creature * creature = object->ToCreature();
                                 /// If creature has been fully looted, remove flag.
                                 if (creature->loot.isLooted())
                                 {
@@ -1108,7 +1106,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
             if (Player* player = sObjectMgr.GetPlayer(maxguid))
             {
-                if (Object * object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
+                if (WorldObject* object = player->GetMap()->GetWorldObject(roll->lootedTargetGUID))
                 {
                     SendLootRollWon(maxguid, maxresul, ROLL_GREED, *roll);
                     won = true;
@@ -1124,10 +1122,8 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
                             --roll->getLoot()->unlootedCount;
                             Item* newitem = player->StoreNewItem(dest, roll->itemid, true, item->randomPropertyId);
                             player->SendNewItem(newitem, uint32(item->count), false, false, true);
-                            if (object->GetTypeId() == TYPEID_UNIT)
+                            if (Creature* creature = object->ToCreature())
                             {
-                                /// Warn players about the loot status on the corpse.
-                                Creature * creature = object->ToCreature();
                                 /// If creature has been fully looted, remove flag.
                                 if (creature->loot.isLooted())
                                 {

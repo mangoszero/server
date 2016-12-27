@@ -14447,10 +14447,10 @@ bool Player::isAllowedToLoot(Creature* creature)
 
                     /* This is the player that will be given permission to loot */
                     Player* final_looter = recipient;
-                    
+
                     /* Iterate through the valid party members */
                     Group::MemberSlotList slots = plr_group->GetMemberSlots();
-                    
+
                     for (Group::MemberSlotList::iterator itr = slots.begin(); itr != slots.end(); ++itr)
                     {
                         /* Get the player data */
@@ -14473,18 +14473,17 @@ bool Player::isAllowedToLoot(Creature* creature)
 
                     /* We have our looter, update their loot time */
                     final_looter->lastTimeLooted = time(NULL);
-                    
+
                     /* Update the creature with the looter that has been assigned to them */
                     creature->assignedLooter = final_looter->GetGUIDLow();
-                    final_looter->GetGroup()->SetLooterGuid(final_looter->GetGUID());
-                    
+                    final_looter->GetGroup()->SetLooterGuid(final_looter->GetObjectGuid());
+
                     /* Finally, return if we are the assigned looter */
                     return (final_looter->GetGUIDLow() == GetGUIDLow() || hasSharedLoot || hasStartingQuestLoot);
                     /* End of switch statement */
                 }
                 default:
                     // Something went wrong, avoid crash
-                    
                     return false;
             }
         }
@@ -16879,7 +16878,7 @@ void Player::HandleStealthedUnitsDetection()
                 (*i)->SendCreateUpdateToPlayer(this);
                 m_clientGUIDs.insert(i_guid);
 
-                DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(TemplateV): %s is detected in stealth by player %u. Distance = %f", i_guid.GetString().c_str(), GetGUIDLow(), GetDistance(*i));
+                DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(): %s is detected in stealth by player %u. Distance = %f", i_guid.GetString().c_str(), GetGUIDLow(), GetDistance(*i));
 
                 // target aura duration for caster show only if target exist at caster client
                 // send data at target visibility change (adding to client)
@@ -17711,18 +17710,16 @@ bool Player::IsVisibleGloballyFor(Player* u) const
     return true;
 }
 
-template<class T>
-inline void BeforeVisibilityDestroy(T* /*t*/, Player* /*p*/)
+inline void BeforeVisibilityDestroy(WorldObject* o, Player* p)
 {
+    if (Creature* t = o->ToCreature())
+    {
+        if (p->GetPetGuid() == t->GetObjectGuid() && t->IsPet())
+            { ((Pet*)t)->Unsummon(PET_SAVE_REAGENTS); }
+    }
 }
 
-template<>
-inline void BeforeVisibilityDestroy<Creature>(Creature* t, Player* p)
-{
-    if (p->GetPetGuid() == t->GetObjectGuid() && ((Creature*)t)->IsPet())
-        { ((Pet*)t)->Unsummon(PET_SAVE_REAGENTS); }
-}
-
+//2 params version (2p)
 void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target)
 {
     if (HaveAtClient(target))
@@ -17732,12 +17729,12 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
             ObjectGuid t_guid = target->GetObjectGuid();
 
             if (target->GetTypeId() == TYPEID_UNIT)
-                { BeforeVisibilityDestroy<Creature>((Creature*)target, this); }
+                { BeforeVisibilityDestroy(target, this); }
 
             target->DestroyForPlayer(this);
             m_clientGUIDs.erase(t_guid);
 
-            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf: %s out of range for player %u. Distance = %f", t_guid.GetString().c_str(), GetGUIDLow(), GetDistance(target));
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(2p): %s out of range for player %u. Distance = %f", t_guid.GetString().c_str(), GetGUIDLow(), GetDistance(target));
         }
     }
     else
@@ -17748,7 +17745,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
             if (target->GetTypeId() != TYPEID_GAMEOBJECT || !((GameObject*)target)->IsTransport())
                 { m_clientGUIDs.insert(target->GetObjectGuid()); }
 
-            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf: %s is visible now for player %u. Distance = %f", target->GetGuidStr().c_str(), GetGUIDLow(), GetDistance(target));
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(2p): %s is visible now for player %u. Distance = %f", target->GetGuidStr().c_str(), GetGUIDLow(), GetDistance(target));
 
             // target aura duration for caster show only if target exist at caster client
             // send data at target visibility change (adding to client)
@@ -17758,34 +17755,21 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
     }
 }
 
-template<class T>
-inline void UpdateVisibilityOf_helper(GuidSet& s64, T* target)
-{
-    s64.insert(target->GetObjectGuid());
-}
-
-template<>
-inline void UpdateVisibilityOf_helper(GuidSet& s64, GameObject* target)
-{
-    if (!target->IsTransport())
-        { s64.insert(target->GetObjectGuid()); }
-}
-
-template<class T>
-void Player::UpdateVisibilityOf(WorldObject const* viewPoint, T* target, UpdateData& data, std::set<WorldObject*>& visibleNow)
+//4 params version (4p)
+void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target, UpdateData& data, std::set<WorldObject*>& visibleNow)
 {
     if (HaveAtClient(target))
     {
         if (!target->IsVisibleForInState(this, viewPoint, true))
         {
-            BeforeVisibilityDestroy<T>(target, this);
+            BeforeVisibilityDestroy(target, this);
 
             ObjectGuid t_guid = target->GetObjectGuid();
 
             target->BuildOutOfRangeUpdateBlock(&data);
             m_clientGUIDs.erase(t_guid);
 
-            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(TemplateV): %s is out of range for %s. Distance = %f", t_guid.GetString().c_str(), GetGuidStr().c_str(), GetDistance(target));
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(4p): %s is out of range for %s. Distance = %f", t_guid.GetString().c_str(), GetGuidStr().c_str(), GetDistance(target));
         }
     }
     else
@@ -17794,18 +17778,21 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, T* target, UpdateD
         {
             visibleNow.insert(target);
             target->BuildCreateUpdateBlockForPlayer(&data, this);
-            UpdateVisibilityOf_helper(m_clientGUIDs, target);
-
-            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(TemplateV): %s is visible now for %s. Distance = %f", target->GetGuidStr().c_str(), GetGuidStr().c_str(), GetDistance(target));
+            if (GameObject* g = target->ToGameObject())
+            {
+                if (!g->IsTransport())
+                {
+                    m_clientGUIDs.insert(g->GetObjectGuid());
+                }
+            }
+            else
+            {
+                m_clientGUIDs.insert(target->GetObjectGuid());
+            }
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "UpdateVisibilityOf(4p): %s is visible now for %s. Distance = %f", target->GetGuidStr().c_str(), GetGuidStr().c_str(), GetDistance(target));
         }
     }
 }
-
-template void Player::UpdateVisibilityOf(WorldObject const* viewPoint, Player*        target, UpdateData& data, std::set<WorldObject*>& visibleNow);
-template void Player::UpdateVisibilityOf(WorldObject const* viewPoint, Creature*      target, UpdateData& data, std::set<WorldObject*>& visibleNow);
-template void Player::UpdateVisibilityOf(WorldObject const* viewPoint, Corpse*        target, UpdateData& data, std::set<WorldObject*>& visibleNow);
-template void Player::UpdateVisibilityOf(WorldObject const* viewPoint, GameObject*    target, UpdateData& data, std::set<WorldObject*>& visibleNow);
-template void Player::UpdateVisibilityOf(WorldObject const* viewPoint, DynamicObject* target, UpdateData& data, std::set<WorldObject*>& visibleNow);
 
 void Player::InitPrimaryProfessions()
 {

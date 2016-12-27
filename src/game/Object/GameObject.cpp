@@ -158,6 +158,12 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         return false;
     }
 
+    if (goinfo->type >= MAX_GAMEOBJECT_TYPE)
+    {
+        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u has invalid type %u in `gameobject_template`. It may crash client if created.", guidlow, name_id, goinfo->type);
+        return false;
+    }
+
     Object::_Create(guidlow, goinfo->id, HIGHGUID_GAMEOBJECT);
 
     // let's make sure we don't send the client invalid quaternion
@@ -181,32 +187,17 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
     }
 
     SetQuaternion(q);
-
-    m_goInfo = goinfo;
-
-    if (goinfo->type >= MAX_GAMEOBJECT_TYPE)
-    {
-        sLog.outErrorDb("Gameobject (GUID: %u) not created: Entry %u has invalid type %u in `gameobject_template`. It may crash client if created.", guidlow, name_id, goinfo->type);
-        return false;
-    }
-
-    SetObjectScale(goinfo->size);
-
+    SetGOInfo(goinfo);
+    SetObjectScale(m_goInfo->size);
     SetFloatValue(GAMEOBJECT_POS_X, x);
     SetFloatValue(GAMEOBJECT_POS_Y, y);
     SetFloatValue(GAMEOBJECT_POS_Z, z);
-
-    SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
-
-    if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT)
-        { SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN)); }
-
-    SetEntry(goinfo->id);
-    SetDisplayId(goinfo->displayId);
-
+    SetUInt32Value(GAMEOBJECT_FACTION, m_goInfo->faction);
+    SetUInt32Value(GAMEOBJECT_FLAGS, m_goInfo->flags);
+    SetEntry(m_goInfo->id);
+    SetDisplayId(m_goInfo->displayId);
     SetGoState(go_state);
-    SetGoType(GameobjectTypes(goinfo->type));
+    SetGoType(GameobjectTypes(m_goInfo->type));
 
     SetGoAnimProgress(animprogress);
 
@@ -750,11 +741,6 @@ void GameObject::DeleteFromDB()
     WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", GetGUIDLow());
     WorldDatabase.PExecuteLog("DELETE FROM game_event_gameobject WHERE guid = '%u'", GetGUIDLow());
     WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", GetGUIDLow());
-}
-
-GameObjectInfo const* GameObject::GetGOInfo() const
-{
-    return m_goInfo;
 }
 
 /*********************************************************/
@@ -1801,7 +1787,7 @@ void GameObject::RollIfMineralVein()
     GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(GetEntry());
     if (goinfo->chest.minSuccessOpens != 0 && goinfo->chest.maxSuccessOpens > goinfo->chest.minSuccessOpens) //in this case it is a mineral vein
     {
-        uint32 entrynew = RollMineralVein(GetRealEntry());
+        uint32 entrynew = RollMineralVein(GetObjectGuid().GetEntry());
 
         GameObjectInfo const* goinfonew = ObjectMgr::GetGameObjectInfo(entrynew);
         m_goInfo = goinfonew;

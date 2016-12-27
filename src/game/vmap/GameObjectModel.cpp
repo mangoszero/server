@@ -192,7 +192,7 @@ bool GameObjectModel::GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vecto
 {
     G3D::Vector3 p;
     if (absolute)
-        p = (iQuat * G3D::Quat((srcPoint - iPos) * iInvScale) * iQuat.conj()).imag();
+        p = (iQuat.conj() * G3D::Quat((srcPoint - iPos) * iInvScale) * iQuat).imag();
     else
         p = srcPoint;
 

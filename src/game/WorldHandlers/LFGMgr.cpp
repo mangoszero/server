@@ -348,7 +348,7 @@ void LFGQueue::Update(uint32 diff)
                     }
 
                     WorldPacket data;
-                    BuildMemberAddedPacket(data, member->GetGUID());
+                    BuildMemberAddedPacket(data, member->GetObjectGuid());
 
                     leader->GetSession()->SendPacket(&data);
 
@@ -432,7 +432,7 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
             }
 
             WorldPacket data;
-            BuildMemberAddedPacket(data, plr->GetGUID());
+            BuildMemberAddedPacket(data, plr->GetObjectGuid());
             grp->BroadcastPacket(&data, true);
 
             // Add member to the group.
@@ -506,7 +506,7 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
                 }
 
                 WorldPacket data;
-                BuildMemberAddedPacket(data, plr->GetGUID());
+                BuildMemberAddedPacket(data, plr->GetObjectGuid());
                 grp->BroadcastPacket(&data, true);
 
                 // Add member to the group.
