@@ -1349,9 +1349,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting Outdoor PvP System");
     sOutdoorPvPMgr.InitOutdoorPvP();
 
-    // Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager
-    sLog.outString("Loading Transports...");
-    sMapMgr.LoadTransports();
 
     // Initialize Warden
     sLog.outString("Loading Warden Checks...");
@@ -1377,8 +1374,12 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    // depend on next event
     sLog.outString();
 
-    sLog.outString("Loading grids for active creatures or transports...");
-    sObjectMgr.LoadActiveEntities(NULL);
+    sLog.outString("Loading grids for active creatures and local transports...");
+    sMapMgr.LoadContinents();
+    sLog.outString();
+
+    sLog.outString("Loading global transports...");
+    sMapMgr.LoadTransports();
     sLog.outString();
 
     // Delete all characters which have been deleted X days before

@@ -31,19 +31,57 @@
 #include <set>
 #include <string>
 
+typedef std::set<Unit*> UnitSet;
+
+//Base class for all transporter types
 class Transport : public GameObject
 {
     public:
+
         explicit Transport();
+        virtual ~Transport();
 
-        bool Create(uint32 guidlow, uint32 mapid, float x, float y, float z, float ang, uint32 animprogress);
-        bool GenerateWaypoints(uint32 pathid, std::set<uint32>& mapids);
-        void Update(uint32 update_diff, uint32 p_time) override;
-        bool AddPassenger(Player* passenger);
-        bool RemovePassenger(Player* passenger);
+        bool AddPassenger(Unit* passenger);
+        bool RemovePassenger(Unit* passenger);
 
-        typedef std::set<Player*> PlayerSet;
-        PlayerSet const& GetPassengers() const { return m_passengers; }
+        virtual void Update(uint32 update_diff, uint32 p_time) = 0;
+        virtual void DeleteFromDB() override {}
+
+        UnitSet const& GetPassengers() const { return m_passengers; }
+
+    protected:
+        UnitSet m_passengers;
+
+};
+
+
+class LocalTransport : public Transport
+{
+    public:
+        explicit LocalTransport();
+        virtual ~LocalTransport();
+        bool Initialize(uint32 guid, Map* m);
+        virtual void Update(uint32 update_diff, uint32 p_time) override {} //NYI
+    private:
+        uint32 m_period;
+};
+
+
+class GlobalTransport : public Transport
+{
+    public:
+        explicit GlobalTransport();
+        virtual ~GlobalTransport();
+        virtual void Update(uint32 update_diff, uint32 p_time) override;
+
+        bool Initialize(uint32 entry, uint32 period, std::string const& name);
+        std::set<uint32> const* GetMapsUsed() const { return &m_mapsUsed; }
+
+    private:
+        bool GenerateWaypoints();
+        void TeleportTransport(uint32 newMapid, float x, float y, float z);
+        void UpdateForMap(Map const* map);
+        void MoveToNextWayPoint();                          // move m_next/m_cur to next points
 
     private:
         struct WayPoint
@@ -60,21 +98,15 @@ class Transport : public GameObject
 
         typedef std::map<uint32, WayPoint> WayPointMap;
 
+        WayPointMap m_WayPoints;
         WayPointMap::const_iterator m_curr;
         WayPointMap::const_iterator m_next;
+
+        std::set<uint32> m_mapsUsed;
+
         uint32 m_pathTime;
         uint32 m_timer;
-
-        PlayerSet m_passengers;
-
-    public:
-        WayPointMap m_WayPoints;
         uint32 m_nextNodeTime;
         uint32 m_period;
-
-    private:
-        void TeleportTransport(uint32 newMapid, float x, float y, float z);
-        void UpdateForMap(Map const* map);
-        void MoveToNextWayPoint();                          // move m_next/m_cur to next points
 };
 #endif

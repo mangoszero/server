@@ -64,7 +64,7 @@ void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
 
     if (Group* grp = _player->GetGroup())
     {
-        if (!grp->IsLeader(_player->GetGUID()))
+        if (!grp->IsLeader(_player->GetObjectGuid()))
         {
             SendMeetingstoneFailed(MEETINGSTONE_FAIL_PARTYLEADER);
 

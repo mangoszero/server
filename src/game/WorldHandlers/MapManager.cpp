@@ -115,7 +115,8 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
         // create DungeonMap object
         m = CreateInstance(id, (Player*)obj);
         // Load active objects for this map
-        sObjectMgr.LoadActiveEntities(m);
+        if (m != NULL)
+          { LoadActiveEntities(m); }
     }
     else
     {
@@ -126,6 +127,8 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
             m = new WorldMap(id, i_gridCleanUpDelay);
             // add map into container
             i_maps[MapID(id)] = m;
+
+            LoadActiveEntities(m);
 
             // non-instanceable maps always expected have saved state
             m->CreateInstanceData(true);
@@ -390,3 +393,51 @@ BattleGroundMap* MapManager::CreateBattleGroundMap(uint32 id, uint32 InstanceId,
 
     return map;
 }
+
+void MapManager::LoadContinents()
+{
+    uint32 continents[] = {0, 1};
+    Map* _map = NULL;
+
+    for (uint8 i = 0; i < countof(continents); ++i)
+    {
+        _map = sMapMgr.FindMap(continents[i]);
+
+        if (!_map)
+          { _map = sMapMgr.CreateMap(continents[i], NULL); }
+
+        if (!_map)
+          { sLog.outError("MapManager::LoadContinents() - Unable to create map %u", continents[i]); }
+    }
+
+    return;
+}
+
+void MapManager::LoadActiveEntities(Map* m)
+{
+
+    // Create all local transporters for this map
+    m->LoadLocalTransports();
+
+    // Load grids for all objects on this map, if configured so
+    if (sWorld.isForceLoadMap(m->GetId()))
+    {
+        for (CreatureDataMap::const_iterator itr = sObjectMgr.GetCreatureDataMap()->begin(); itr != sObjectMgr.GetCreatureDataMap()->end(); ++itr)
+        {
+            if (itr->second.mapid == m->GetId())
+            {
+                m->ForceLoadGrid(itr->second.posX, itr->second.posY);
+            }
+        }
+    }
+    else // Normal case - load only grids for npcs that are active
+    {
+        std::pair<ActiveCreatureGuidsOnMap::const_iterator, ActiveCreatureGuidsOnMap::const_iterator> bounds = sObjectMgr.GetActiveCreatureGuids()->equal_range(m->GetId());
+        for (ActiveCreatureGuidsOnMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        {
+            CreatureData const* data = sObjectMgr.GetCreatureData(itr->second);
+            m->ForceLoadGrid(data->posX, data->posY);
+        }
+    }
+}
+

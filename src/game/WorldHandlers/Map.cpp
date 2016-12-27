@@ -44,6 +44,8 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "Chat.h"
 #include "Weather.h"
+#include "Transports.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -69,6 +71,12 @@ Map::~Map()
 
     delete i_data;
     i_data = NULL;
+
+    // unload all local transporters
+    for (std::set<Transport*>::iterator t = i_transports.begin(); t != i_transports.end(); ++t)
+    {
+        delete *t;
+    }
 
     // unload instance specific navigation data
     MMAP::MMapFactory::createOrGetMMapManager()->unloadMapInstance(m_TerrainData->GetMapId(), GetInstanceId());
@@ -121,6 +129,7 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
     m_persistentState->SetUsedByMapState(this);
 
     m_weatherSystem = new WeatherSystem(this);
+    i_transports.clear();
 #ifdef ENABLE_ELUNA
     sEluna->OnCreate(this);
 #endif /* ENABLE_ELUNA */
@@ -525,6 +534,13 @@ void Map::Update(const uint32& t_diff)
             WorldObject::UpdateHelper helper(plr);
             helper.Update(t_diff);
         }
+    }
+
+    /// update local transports
+    for (std::set<Transport*>::iterator t = i_transports.begin(); t != i_transports.end(); ++t)
+    {
+        WorldObject::UpdateHelper helper(*t);
+        helper.Update(t_diff);
     }
 
     /// update active cells around players and active objects
@@ -946,7 +962,7 @@ void Map::SendInitSelf(Player* player)
     // build other passengers at transport also (they always visible and marked as visible and will not send at visibility update at add to map
     if (Transport* transport = player->GetTransport())
     {
-        for (Transport::PlayerSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
+        for (UnitSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
         {
             if (player != (*itr) && player->HaveAtClient(*itr))
             {
@@ -963,55 +979,87 @@ void Map::SendInitSelf(Player* player)
 
 void Map::SendInitTransports(Player* player)
 {
-    // Hack to send out transports
+    // Send out global transports
     MapManager::TransportMap& tmap = sMapMgr.m_TransportsByMap;
 
-    // no transports at map
-    if (tmap.find(player->GetMapId()) == tmap.end())
-        { return; }
-
-    UpdateData transData;
-
-    MapManager::TransportSet& tset = tmap[player->GetMapId()];
-
-    bool hasTransport = false;
-
-    for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
+    if (tmap.find(player->GetMapId()) != tmap.end())
     {
-        // send data for current transport in other place
-        if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
+        MapManager::TransportSet& tset = tmap[player->GetMapId()];
+
+        UpdateData transData;
+        bool hasTransport = false;
+
+        for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
         {
-            hasTransport = true;
-            (*i)->BuildCreateUpdateBlockForPlayer(&transData, player);
+            // send data for current transport in other place
+            if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
+            {
+                hasTransport = true;
+                (*i)->BuildCreateUpdateBlockForPlayer(&transData, player);
+            }
         }
+
+        WorldPacket packet;
+        transData.BuildPacket(&packet, hasTransport);
+        player->GetSession()->SendPacket(&packet);
     }
 
-    WorldPacket packet;
-    transData.BuildPacket(&packet, hasTransport);
-    player->GetSession()->SendPacket(&packet);
+    // Now send out local transports
+    if (i_transports.size() != 0)
+    {
+        UpdateData transData;
+        bool hasTransport = false;
+
+        for (MapManager::TransportSet::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
+        {
+            // send data for current transport in other place
+            if ((*i) != player->GetTransport() && (*i)->GetMapId() == i_id)
+            {
+                hasTransport = true;
+                (*i)->BuildCreateUpdateBlockForPlayer(&transData, player);
+            }
+        }
+
+        WorldPacket packet;
+        transData.BuildPacket(&packet, hasTransport);
+        player->GetSession()->SendPacket(&packet);
+    }
 }
 
 void Map::SendRemoveTransports(Player* player)
 {
-    // Hack to send out transports
+    // Global transports
     MapManager::TransportMap& tmap = sMapMgr.m_TransportsByMap;
 
-    // no transports at map
-    if (tmap.find(player->GetMapId()) == tmap.end())
-        { return; }
+    if (tmap.find(player->GetMapId()) != tmap.end())
+    {
+        UpdateData transData;
+        MapManager::TransportSet& tset = tmap[player->GetMapId()];
 
-    UpdateData transData;
+        // except used transport
+        for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
+            if ((*i) != player->GetTransport() && (*i)->GetMapId() != i_id)
+                { (*i)->BuildOutOfRangeUpdateBlock(&transData); }
 
-    MapManager::TransportSet& tset = tmap[player->GetMapId()];
+        WorldPacket packet;
+        transData.BuildPacket(&packet);
+        player->GetSession()->SendPacket(&packet);
+    }
 
-    // except used transport
-    for (MapManager::TransportSet::const_iterator i = tset.begin(); i != tset.end(); ++i)
-        if ((*i) != player->GetTransport() && (*i)->GetMapId() != i_id)
-            { (*i)->BuildOutOfRangeUpdateBlock(&transData); }
+    // Local transports
+    if (i_transports.size() != 0)
+    {
+        UpdateData transData;
 
-    WorldPacket packet;
-    transData.BuildPacket(&packet);
-    player->GetSession()->SendPacket(&packet);
+        // except used transport
+        for (MapManager::TransportSet::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
+            if ((*i) != player->GetTransport() && (*i)->GetMapId() != i_id)
+                { (*i)->BuildOutOfRangeUpdateBlock(&transData); }
+
+        WorldPacket packet;
+        transData.BuildPacket(&packet);
+        player->GetSession()->SendPacket(&packet);
+    }
 }
 
 inline void Map::setNGrid(NGridType* grid, uint32 x, uint32 y)

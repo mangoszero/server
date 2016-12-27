@@ -63,6 +63,7 @@ class BattleGround;
 class GridMap;
 class GameObjectModel;
 class WeatherSystem;
+class Transport;
 
 namespace MaNGOS { struct ObjectUpdater; }
 
@@ -294,6 +295,8 @@ class Map : public GridRefManager<NGridType>
         bool GetRandomPointInTheAir(float& x, float& y, float& z, float radius);
         bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
+        void LoadLocalTransports();
+
     private:
         void LoadMapAndVMap(int gx, int gy);
 
@@ -358,6 +361,7 @@ class Map : public GridRefManager<NGridType>
         std::bitset<TOTAL_NUMBER_OF_CELLS_PER_MAP* TOTAL_NUMBER_OF_CELLS_PER_MAP> marked_cells;
 
         std::set<WorldObject*> i_objectsToRemove;
+        std::set<Transport*> i_transports;
 
         typedef std::multimap<time_t, ScriptAction> ScriptScheduleMap;
         ScriptScheduleMap m_scriptSchedule;
