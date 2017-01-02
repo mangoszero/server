@@ -3,7 +3,7 @@ version: 0.21.{build}
 # Branches to build
 branches:
   only:
-  - develop21
+  - master
 
 # Specify platform for MySQL check
 platform:
