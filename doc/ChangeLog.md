@@ -3,7 +3,7 @@ MaNGOS Zero Changelog
 This change log references the relevant changes (bug and security fixes) done
 in recent versions.
 
-0.21 (2016-04-01) - "The Battle for Azeroth"
+0.21 (2017-01-02) - "The Battle for Azeroth"
 --------------------------------------------
 Many Thanks to all the groups and individuals who contributed to this release.
 - 520+ Commits since the previous release.

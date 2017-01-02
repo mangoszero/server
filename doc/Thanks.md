@@ -18,11 +18,4 @@ We would also like to acknowledge the contributions made by the following
 teams, those input and code has from time to time been included in the MaNGOS
 code.
 
-Each of the commits will have a prefix indicating the source team :
-
-* **t**: TrinityCore
-* **p**: Project SilverPine
-* **r**: MangosR2
-* **s**: ScriptDev
-* **c**: cMangos
-* **m**: mangos
+Each of the commits will attempt to clearly identify the author.

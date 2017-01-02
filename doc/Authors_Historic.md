@@ -29,6 +29,56 @@ for the community.
 
 Authors
 -------
+The Following contributed to Release 0.20
+
+* 249CAAFE40
+* Andrewmunro
+* Antzmangos/billy1arm
+* Boxa
+* cabfever
+* cala
+* Chuck5ta
+* Cyberium
+* Dalon
+* Evacomaroski
+* EvilDead666
+* Exxenoz
+* Foereaper
+* GiantCrocodile
+* Grz3s
+* Hallabro
+* iLeopard66
+* Jackpoz
+* Jonascone
+* Laise
+* Laizerox
+* LfxGroove
+* LilleCarl
+* MadMaxMangos
+* Meladath
+* Neo2003
+* Neotmiren
+* Nymph2013
+* olion17
+* Patman64
+* Rage311
+* Rochet2
+* Salja
+* Sanctum32
+* Schmoozerd
+* ShinDarth
+* Sikevux
+* Stfx
+* The-Great-Sephiroth
+* Tobschinski
+* Trimken
+* VladimirMangos
+* vstar0v0
+* Warkdev
+* Xfurry
+* Zackbcom
+* Zwisus
+
 Prior to Release 0.20, the following helped get Mangos to where it was.
 
 * *TeamPython*, *Wow Python* and *WoWd* teams

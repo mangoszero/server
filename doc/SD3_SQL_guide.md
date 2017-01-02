@@ -1,41 +1,10 @@
-Introduction to Database content for SD2
+Introduction to Database content for SD3
 ================================================
 
 This guide is intended to help people
 
-* to understand which information of the database is used with SD2
+* to understand which information of the database is used with SD3
 * who want to contribute their patches as complete as possible
-
-All SQL-related files are located in the ScriptDev2/SQL and subsequent directories.
-
-SQL-Files
----------
-
-Files that contain full SD2-Database content
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For a script we usually have to take care of these files:
-
-* mangos_scriptname_full.sql
-+
-This file is applied to the world database (default: mangos), and contains the script names
-+
-* scriptdev2_script_full.sql
-+
-This file is applied to the sd2 database (default: scriptdev2), and contains texts, gossip-items and waypoints
-
-Patchfiles for incremental Updates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Patches for the databases are stored in the files:
-
-* Updates/rXXXX_mangos.sql
-+
-This file contains the changes that should be done with the patch to the world-database
-+
-* Updates/rXXXX_scriptdev2.sql
-+
-This file contains the changes that should be done with the patch to the scriptdev2-database
 
 World-Database
 --------------
@@ -65,7 +34,7 @@ DELETE FROM scripted_areatrigger WHERE entry=XYZ;
 INSERT INTO scripted_areatrigger VALUES (XYZ, at_some_place);
 -----------
 
-ScriptDev2-Database
+ScriptDev3-Database
 -------------------
 
 entry-Format for texts and for gossip-texts:
@@ -177,12 +146,8 @@ Creating the Patch
 
 There are different ways to get to a patch, I prefer this workflow:
 
-For the scriptdev2 database (patch files):
+For the scriptdev3 database (patch files):
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Open scriptdev2_script_full.txt +
-scroll to the right place for the needed SQL-statements, to note the entry. +
-(for texts depending on mapId, and to the last counter, for waypoints behind the last inserted waypoint)
 
 Example for normal world text:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

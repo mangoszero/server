@@ -8,8 +8,7 @@ Tab Size
 --------
 First of all, we use spaces. Tabs are four-character width. That is, no 8-space
 tabs, no 2-space tabs. Four. Unfortunately there's no such thing as 'standard
-tab width', and 4-space indenting looks best from our point of view, besides MSVC'
-editor has this setting by default.
+tab width', and 4-space indenting looks best from our point of view, besides MSVC' editor has this setting by default.
 
 Line length
 -----------
