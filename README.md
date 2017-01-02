@@ -11,10 +11,9 @@
 <a href='https://ci.appveyor.com/project/MaNGOS/server-9fytl/history' target='MangosZero'><img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=develop21&svg=true' border=0></a>
 </td></tr></table>
 
+VANILLA WOW BRANCH
 ===
-CLASSIC WOW BRANCH
-===
-### A World of Warcraft server for Classic WoW  
+### A World of Warcraft server for Vanilla WoW  
 ----
 *Mangos* is open source project, built in [C++][7], it's fast, runs on multiple
 platforms, can store game data in [MySQL][40] and [PostgreSQL][42]. It also has
@@ -145,7 +144,7 @@ respects for all of the code used other than [OpenSSL][48].
 
 [^1]: Visual Studio Express versions prior to the 2012 release can only
       build 32 bit applications, unless you install the Windows SDK.
-[^2]: Clang support for Windows is experimental. Failure to compile MangosZero
+[^2]: Clang support for Windows is experimental. Failure to compile Mangos
       may also relate to the experimental state of the port.
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
@@ -156,12 +155,10 @@ respects for all of the code used other than [OpenSSL][48].
 [6]: http://www.wowpedia.org/Patch_1.12.2 "Vanilla WoW · Patch 1.12.2 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
-[10]: http://getmangos.eu/ "mangos · project site"
-[12]: http://github.com/mangoszero "mangos-zero · github organization"
-[13]: http://github.com/mangoszero/server "mangos zero · server repository"
-[15]: http://github.com/mangoszero/database "mangos zero · content database repository"
-[16]: https://travis-ci.org/mangoszero/server "Travis CI · mangos-zero build status"
-[17]: https://scan.coverity.com/ "Coverity Scan · Static Code Analysis"
+[10]: https://getmangos.eu/ "mangos · project site"
+[12]: http://github.com/mangoszero "MaNGOS Zero · github organization"
+[13]: http://github.com/mangoszero/server "MaNGOS Zero · server repository"
+[15]: http://github.com/mangoszero/database "MaNGOS Zero · content database repository"
 
 [19]: http://www.cmake.org/ "CMake · Cross Platform Make"
 [20]: http://windows.microsoft.com/ "Microsoft Windows · that OS, yes."
