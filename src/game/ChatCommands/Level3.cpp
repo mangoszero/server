@@ -235,6 +235,7 @@ bool ChatHandler::HandleReloadAllCommand(char* /*args*/)
     HandleReloadSkillFishingBaseLevelCommand((char*)"");
 
     HandleReloadAllAreaCommand((char*)"");
+    HandleReloadAutoBroadcastCommand((char*)"");
     HandleReloadAllEventAICommand((char*)"");
     HandleReloadAllLootCommand((char*)"");
     HandleReloadAllNpcCommand((char*)"");
@@ -391,6 +392,14 @@ bool ChatHandler::HandleReloadAreaTriggerTeleportCommand(char* /*args*/)
     sLog.outString("Re-Loading AreaTrigger teleport definitions...");
     sObjectMgr.LoadAreaTriggerTeleports();
     SendGlobalSysMessage("DB table `areatrigger_teleport` reloaded.", SEC_MODERATOR);
+    return true;
+}
+
+bool ChatHandler::HandleReloadAutoBroadcastCommand(char* /*args*/)
+{
+    sLog.outString("Re-Loading broadcast strings...");
+    sWorld.LoadBroadcastStrings();
+    SendGlobalSysMessage("Broadcast strings reloaded.", SEC_MODERATOR);
     return true;
 }
 

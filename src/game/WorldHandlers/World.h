@@ -74,13 +74,13 @@ enum ShutdownExitCode
 /// Timers for different object refresh rates
 enum WorldTimers
 {
-    WUPDATE_AUCTIONS    = 0,
-    WUPDATE_UPTIME      = 1,
-    WUPDATE_CORPSES     = 2,
-    WUPDATE_EVENTS      = 3,
-    WUPDATE_DELETECHARS = 4,
-    WUPDATE_AHBOT       = 5,
-    WUPDATE_COUNT       = 6
+    WUPDATE_AUCTIONS = 0,
+    WUPDATE_UPTIME,
+    WUPDATE_CORPSES,
+    WUPDATE_EVENTS,
+    WUPDATE_DELETECHARS,
+    WUPDATE_AHBOT,
+    WUPDATE_COUNT
 };
 
 /// Configuration elements
@@ -203,6 +203,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_PLAYERBOT_RESTRICTLEVEL,
     CONFIG_UINT32_PLAYERBOT_MINBOTLEVEL,
 #endif
+    CONFIG_UINT32_AUTOBROADCAST_INTERVAL,
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -605,6 +606,7 @@ class World
         void LoadDBVersion();
         char const* GetDBVersion() { return m_DBVersion.c_str(); }
 
+        void LoadBroadcastStrings();
 
         /**
         * \brief: force all client to request player data
@@ -638,6 +640,18 @@ class World
         bool configNoReload(bool reload, eConfigInt32Values index, char const* fieldname, int32 defvalue);
         bool configNoReload(bool reload, eConfigFloatValues index, char const* fieldname, float defvalue);
         bool configNoReload(bool reload, eConfigBoolValues index, char const* fieldname, bool defvalue);
+
+        // AutoBroadcast system
+        void AutoBroadcast();
+        struct BroadcastString
+        {
+            uint32 freq;
+            std::string text;
+        };
+        std::vector<BroadcastString> m_broadcastList;
+        uint32 m_broadcastWeight;
+        bool m_broadcastEnable;
+        IntervalTimer m_broadcastTimer;
 
         static volatile bool m_stopEvent;
         static uint8 m_ExitCode;

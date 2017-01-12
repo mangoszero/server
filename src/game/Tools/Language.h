@@ -1051,8 +1051,9 @@ enum MangosStrings
     LANG_OPVP_SI_CAPTURE_H              = 1635,
     LANG_OPVP_SI_CAPTURE_A              = 1636,
 
-    // FREE IDS                           1700-9999
+    LANG_AUTOBROADCAST                  = 1700
 
+    // FREE IDS                           1701-9999
     // Use for not-in-official-sources patches
     //                                    10000-10999
 

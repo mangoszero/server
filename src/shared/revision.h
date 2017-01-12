@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 11
-    #define WORLD_DB_CONTENT_NR 73
-    #define WORLD_DB_UPDATE_DESCRIPTION "Script_Binding"
+    #define WORLD_DB_STRUCTURE_NR 12
+    #define WORLD_DB_CONTENT_NR 1
+    #define WORLD_DB_UPDATE_DESCRIPTION "AutoBroadcast"
 #endif // __REVISION_H__

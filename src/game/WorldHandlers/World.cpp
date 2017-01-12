@@ -71,6 +71,7 @@
 #include "Weather.h"
 #include "LFGMgr.h"
 #include "DisableMgr.h"
+#include "Language.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -118,6 +119,9 @@ World::World()
     m_startTime = m_gameTime;
     m_maxActiveSessionCount = 0;
     m_maxQueuedSessionCount = 0;
+    m_broadcastEnable = false;
+    m_broadcastList.clear();
+    m_broadcastWeight = 0;
 
     m_defaultDbcLocale = LOCALE_enUS;
     m_availableDbcLocaleMask = 0;
@@ -477,6 +481,17 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_CLEAN_CHARACTER_DB, "CleanCharacterDB", true);
     setConfig(CONFIG_BOOL_GRID_UNLOAD, "GridUnload", true);
 
+    setConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL, "AutoBroadcast", 600);
+
+    if (getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) > 0)
+      { m_broadcastEnable = true; }
+    else
+      { m_broadcastEnable = false; }
+
+    if (reload && m_broadcastEnable)
+      { m_broadcastTimer.SetInterval(getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) * IN_MILLISECONDS); }
+
+
     std::string forceLoadGridOnMaps = sConfig.GetStringDefault("LoadAllGridsOnMaps", "");
     if (!forceLoadGridOnMaps.empty())
     {
@@ -559,7 +574,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
     setConfig(CONFIG_BOOL_INSTANT_TAXI, "InstantFlightPaths", false);
-    
+
     setConfig(CONFIG_UINT32_MOUNT_COST, "MountCost", 100000);    
     setConfigMin(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL, "MinTrainMountLevel", 40, 1);
     setConfig(CONFIG_UINT32_TRAIN_MOUNT_COST, "TrainMountCost", 900000);
@@ -1316,13 +1331,24 @@ void World::SetInitialWorldSettings()
                            realmID, uint64(m_startTime), isoDate);
 
     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE * IN_MILLISECONDS);
-    m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE)*MINUTE * IN_MILLISECONDS);
+    m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE) * MINUTE * IN_MILLISECONDS);
     // Update "uptime" table based on configuration entry in minutes.
     m_timers[WUPDATE_CORPSES].SetInterval(20 * MINUTE * IN_MILLISECONDS);
     m_timers[WUPDATE_DELETECHARS].SetInterval(DAY * IN_MILLISECONDS); // check for chars to delete every day
 
     // for AhBot
     m_timers[WUPDATE_AHBOT].SetInterval(20 * IN_MILLISECONDS); // every 20 sec
+
+    // for AutoBroadcast
+    sLog.outString("Starting AutoBroadcast System");
+    if (m_broadcastEnable)
+      { LoadBroadcastStrings(); }
+    else
+      { sLog.outString("AutoBroadcast is disabled");}
+    sLog.outString();
+
+    if (m_broadcastEnable)
+      { m_broadcastTimer.SetInterval(getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) * IN_MILLISECONDS); }
 
     // to set mailtimer to return mails every day between 4 and 5 am
     // mailtimer is increased when updating auctions
@@ -1466,6 +1492,20 @@ void World::Update(uint32 diff)
             { m_timers[i].Update(diff); }
         else
             { m_timers[i].SetCurrent(0); }
+    }
+
+    if (m_broadcastEnable)
+    {
+        if (m_broadcastTimer.GetCurrent() >= 0)
+          { m_broadcastTimer.Update(diff); }
+        else
+          { m_broadcastTimer.SetCurrent(0); }
+
+        if (m_broadcastTimer.Passed())
+        {
+            m_broadcastTimer.Reset();
+            AutoBroadcast();
+        }
     }
 
     ///- Update the game time and check for shutdown time
@@ -2265,4 +2305,75 @@ void World::InvalidatePlayerDataToAllClient(ObjectGuid guid)
     WorldPacket data(SMSG_INVALIDATE_PLAYER, 8);
     data << guid;
     SendGlobalMessage(&data);
+}
+
+void World::LoadBroadcastStrings()
+{
+    if (!m_broadcastEnable)
+    return;
+
+    std::string queryStr = "SELECT `autobroadcast`.`id`, `autobroadcast`.`content`,`autobroadcast`.`ratio` FROM `autobroadcast`";
+
+    QueryResult* result = WorldDatabase.Query(queryStr.c_str());
+
+    if (!result)
+    {
+        m_broadcastEnable = false;
+        sLog.outErrorDb("DB table `autobroadcast` is empty.");
+        sLog.outString();
+        return;
+    }
+
+    m_broadcastList.clear();
+
+    BarGoLink bar(result->GetRowCount());
+    m_broadcastWeight = 0;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        bar.step();
+
+        uint32 ratio = fields[2].GetUInt32();
+        if (ratio == 0)
+          continue;
+
+        m_broadcastWeight += ratio;
+
+        BroadcastString bs;
+        bs.text = fields[1].GetString();
+        bs.freq = m_broadcastWeight;
+        m_broadcastList.push_back(bs);
+    }
+    while (result->NextRow());
+
+    delete result;
+    if (m_broadcastWeight == 0)
+    {
+        sLog.outString(">> Loaded 0 broadcast strings.");
+        m_broadcastEnable = false;
+    }
+    else
+    {
+        sLog.outString(">> Loaded " SIZEFMTD " broadcast strings.", m_broadcastList.size());
+    }
+}
+
+void World::AutoBroadcast()
+{
+    if (m_broadcastList.size() == 1)
+    {
+        SendWorldText(LANG_AUTOBROADCAST, m_broadcastList[0].text.c_str());
+    }
+    else
+    {
+        uint32 rn = urand(1, m_broadcastWeight);
+        std::vector<BroadcastString>::const_iterator it;
+        for (it = m_broadcastList.begin(); it != m_broadcastList.end(); ++it)
+        {
+            if (rn <= it->freq)
+            break;
+        }
+        SendWorldText(LANG_AUTOBROADCAST, it->text.c_str());
+    }
 }
