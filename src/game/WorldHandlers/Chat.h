@@ -401,6 +401,7 @@ class ChatHandler
 
         bool HandleReloadAreaTriggerTavernCommand(char* args);
         bool HandleReloadAreaTriggerTeleportCommand(char* args);
+        bool HandleReloadAutoBroadcastCommand(char* args);
         bool HandleReloadBattleEventCommand(char* args);
         bool HandleReloadCommandCommand(char* args);
         bool HandleReloadConditionsCommand(char* args);
@@ -738,8 +739,5 @@ class CliHandler : public ChatHandler
         void* m_callbackArg;
         Print* m_print;
 };
-
-
-
 
 #endif
