@@ -159,6 +159,8 @@ respects for all of the code used other than [OpenSSL][48].
 [12]: http://github.com/mangoszero "MaNGOS Zero · github organization"
 [13]: http://github.com/mangoszero/server "MaNGOS Zero · server repository"
 [15]: http://github.com/mangoszero/database "MaNGOS Zero · content database repository"
+[16]: https://travis-ci.org/mangoszero/server "Travis CI . MaNGOS Zero build status"
+[17]: https://scan.coverity.com/ "Coverity Scan · Static Code Analysis"
 
 [19]: http://www.cmake.org/ "CMake · Cross Platform Make"
 [20]: http://windows.microsoft.com/ "Microsoft Windows · that OS, yes."
