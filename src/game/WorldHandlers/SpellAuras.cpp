@@ -2533,6 +2533,10 @@ void Aura::HandleModStealth(bool apply, bool Real)
         if (Real && target->GetTypeId() == TYPEID_PLAYER && GetId() == 20580)
             { target->RemoveAurasDueToSpell(21009); }
 
+        // Remove vanish buff if user cancel stealth
+        if (m_removeMode == AURA_REMOVE_BY_CANCEL)
+            target->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+
         // only at real aura remove of _last_ SPELL_AURA_MOD_STEALTH
         if (Real && !target->HasAuraType(SPELL_AURA_MOD_STEALTH))
         {
