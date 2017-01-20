@@ -25,7 +25,6 @@
 #include <set>
 #include <iomanip>
 #include <sstream>
-#include <iomanip>
 
 #include "TileAssembler.h"
 #include "MapTree.h"

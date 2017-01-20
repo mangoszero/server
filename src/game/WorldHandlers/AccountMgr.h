@@ -26,8 +26,6 @@
 #define MANGOS_H_ACCMGR
 
 #include "Common.h"
-#include "Policies/Singleton.h"
-#include <string>
 
 enum AccountOpResult
 {

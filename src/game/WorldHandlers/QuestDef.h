@@ -28,7 +28,6 @@
 #include "Platform/Define.h"
 #include "Database/DatabaseEnv.h"
 
-#include <string>
 #include <vector>
 
 class Player;

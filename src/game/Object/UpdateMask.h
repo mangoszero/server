@@ -25,7 +25,6 @@
 #ifndef MANGOS_H_UPDATEMASK
 #define MANGOS_H_UPDATEMASK
 
-#include "UpdateFields.h"
 #include "Errors.h"
 #include "ByteBuffer.h"
 

@@ -26,7 +26,6 @@
 #define MANGOS_H_GUILDMGR
 
 #include "Common.h"
-#include "Policies/Singleton.h"
 
 class Guild;
 class ObjectGuid;

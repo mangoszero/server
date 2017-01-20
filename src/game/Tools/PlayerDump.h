@@ -25,8 +25,6 @@
 #ifndef MANGOS_H_PLAYER_DUMP
 #define MANGOS_H_PLAYER_DUMP
 
-#include <string>
-#include <map>
 #include <set>
 
 enum DumpTableType

@@ -26,8 +26,6 @@
 #define MANGOSSERVER_MOVESPLINEFLAG_H
 
 #include "typedefs.h"
-#include <string>
-
 namespace Movement
 {
 #if defined( __GNUC__ )

@@ -26,13 +26,11 @@
 #define MANGOS_H_OBJECTMGR
 
 #include "Common.h"
-#include "Log.h"
 #include "Object.h"
 #include "Bag.h"
 #include "Creature.h"
 #include "Player.h"
 #include "GameObject.h"
-#include "Corpse.h"
 #include "QuestDef.h"
 #include "ItemPrototype.h"
 #include "NPCHandler.h"
@@ -43,7 +41,6 @@
 #include "ObjectGuid.h"
 #include "Policies/Singleton.h"
 
-#include <string>
 #include <map>
 #include <limits>
 

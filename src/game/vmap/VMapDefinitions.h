@@ -25,8 +25,6 @@
 #ifndef MANGOS_H_VMAPDEFINITIONS
 #define MANGOS_H_VMAPDEFINITIONS
 
-#include <cstring>
-
 #define LIQUID_TILE_SIZE (533.333f / 128.f)
 
 namespace VMAP

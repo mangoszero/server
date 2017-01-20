@@ -23,8 +23,7 @@
  */
 
 #include "GridStates.h"
-#include "GridNotifiers.h"
-#include "GameSystem/Grid.h"
+#include "ObjectGridLoader.h"
 #include "Log.h"
 
 GridState::~GridState()

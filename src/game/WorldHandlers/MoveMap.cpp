@@ -22,11 +22,9 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "GridMap.h"
 #include "Log.h"
 #include "World.h"
 #include "Creature.h"
-
 #include "MoveMap.h"
 #include "MoveMapSharedDefines.h"
 

@@ -23,7 +23,6 @@
  */
 
 #include "GuardAI.h"
-#include "Errors.h"
 #include "Creature.h"
 #include "Player.h"
 #include "World.h"

@@ -27,7 +27,6 @@
 
 #include "Common.h"
 #include "Platform/Define.h"
-#include "Policies/Singleton.h"
 #include "Creature.h"
 #include "GameObject.h"
 

@@ -27,7 +27,6 @@
 #include "Creature.h"
 #include "DBCStores.h"
 #include "SpellMgr.h"
-
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"

@@ -36,9 +36,6 @@
 #include "LFGHandler.h"
 #include "LFGMgr.h"
 
-#include <map>
-#include <vector>
-
 class WorldSession;
 class Map;
 class BattleGround;

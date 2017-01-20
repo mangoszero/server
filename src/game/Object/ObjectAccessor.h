@@ -40,9 +40,6 @@
 #include "Player.h"
 #include "Corpse.h"
 
-#include <set>
-#include <list>
-
 class Unit;
 class WorldObject;
 class Map;

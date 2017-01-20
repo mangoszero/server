@@ -22,7 +22,6 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include <iostream>
 #include <iomanip>
 #include <string>
 #include <sstream>

@@ -29,7 +29,6 @@
 
 #include <map>
 #include <set>
-#include <string>
 
 typedef std::set<Unit*> UnitSet;
 

@@ -26,7 +26,6 @@
 #define MANGOS_H_SCRIPTMGR
 
 #include "Common.h"
-#include "Policies/Singleton.h"
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
 #include <ace/Atomic_Op.h>

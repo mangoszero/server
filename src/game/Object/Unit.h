@@ -43,10 +43,10 @@
 #include "Utilities/EventProcessor.h"
 #include "MotionMaster.h"
 #include "DBCStructure.h"
-#include "Path.h"
 #include "WorldPacket.h"
 #include "Timer.h"
 #include "Log.h"
+
 #include <list>
 
 enum SpellInterruptFlags

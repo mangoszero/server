@@ -30,7 +30,6 @@
 #include "ObjectMgr.h"
 #include "ProgressBar.h"
 #include "Policies/Singleton.h"
-#include "ObjectGuid.h"
 #include "GridDefines.h"
 #include "SpellMgr.h"
 #include "World.h"

@@ -31,7 +31,6 @@
 #include "World.h"
 #include "GameObjectModel.h"
 #include "DBCStores.h"
-#include "Creature.h"
 
 struct GameobjectModelData
 {

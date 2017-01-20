@@ -28,12 +28,9 @@
 #include "Common.h"
 #include "ObjectGuid.h"
 #include "WorldPacket.h"
-#include "Opcodes.h"
 #include "Player.h"
 
-#include <list>
 #include <map>
-#include <string>
 
 enum ChatNotify
 {

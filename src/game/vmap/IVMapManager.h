@@ -25,7 +25,7 @@
 #ifndef MANGOS_H_IVMAPMANAGER
 #define MANGOS_H_IVMAPMANAGER
 
-#include<string>
+#include <string>
 #include <Platform/Define.h>
 
 //===========================================================

@@ -24,7 +24,6 @@
 
 #include "MoveSplineFlag.h"
 #include <math.h>
-#include <string>
 
 namespace Movement
 {

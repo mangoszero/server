@@ -22,16 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include <stdlib.h>
-#include <functional>
 #include "ItemEnchantmentMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "ProgressBar.h"
+#include "Util.h"
+
 #include <list>
 #include <vector>
-#include "Util.h"
 
 struct EnchStoreItem
 {

@@ -25,16 +25,12 @@
 #include "AggressorAI.h"
 #include "Errors.h"
 #include "Creature.h"
-#include "SharedDefines.h"
-#include "VMapFactory.h"
 #include "World.h"
 #include "DBCStores.h"
 #include "Map.h"
+#include "Log.h"
 
-#include <list>
-
-int
-AggressorAI::Permissible(const Creature* creature)
+int AggressorAI::Permissible(const Creature* creature)
 {
     // have some hostile factions, it will be selected by IsHostileTo check at MoveInLineOfSight
     if (!(creature->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_AGGRO) && !creature->IsNeutralToAll())
@@ -47,8 +43,7 @@ AggressorAI::AggressorAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_
 {
 }
 
-void
-AggressorAI::MoveInLineOfSight(Unit* u)
+void AggressorAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
     if (!m_creature->CanFly() && m_creature->GetDistanceZ(u) > CREATURE_Z_ATTACK_RANGE)

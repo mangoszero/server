@@ -27,7 +27,6 @@
 #include "ObjectMgr.h"
 #include "MapPersistentStateMgr.h"
 #include "Creature.h"
-#include "GameObject.h"
 #include "DynamicObject.h"
 #include "Corpse.h"
 #include "World.h"

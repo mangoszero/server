@@ -31,7 +31,6 @@
 #include "GridDefines.h"
 #include "World.h"
 #include "CellImpl.h"
-#include "Corpse.h"
 #include "ObjectMgr.h"
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>

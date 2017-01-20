@@ -35,7 +35,6 @@
 #include "WaypointManager.h"
 #include "DBCStructure.h"
 
-#include <vector>
 #include <set>
 
 #define FLIGHT_TRAVEL_UPDATE  100

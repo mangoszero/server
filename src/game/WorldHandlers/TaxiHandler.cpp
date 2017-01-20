@@ -30,7 +30,6 @@
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
-#include "UpdateMask.h"
 #include "Path.h"
 #include "WaypointMovementGenerator.h"
 

@@ -22,7 +22,6 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Player.h"
 #include "Group.h"
 #include "GroupReference.h"
 

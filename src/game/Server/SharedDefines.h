@@ -26,7 +26,6 @@
 #define MANGOS_SHAREDDEFINES_H
 
 #include "Platform/Define.h"
-#include <cassert>
 
 #ifndef MANGOS
 #define MANGOS

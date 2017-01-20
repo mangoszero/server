@@ -27,7 +27,6 @@
 #include "Player.h"
 #include "GridNotifiers.h"
 #include "Log.h"
-#include "GridStates.h"
 #include "CellImpl.h"
 #include "InstanceData.h"
 #include "GridNotifiersImpl.h"
@@ -41,10 +40,10 @@
 #include "MapPersistentStateMgr.h"
 #include "VMapFactory.h"
 #include "MoveMap.h"
-#include "BattleGround/BattleGroundMgr.h"
 #include "Chat.h"
 #include "Weather.h"
 #include "Transports.h"
+#include "ObjectGridLoader.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
