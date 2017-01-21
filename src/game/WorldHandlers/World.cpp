@@ -118,6 +118,7 @@ World::World()
     m_startTime = m_gameTime;
     m_maxActiveSessionCount = 0;
     m_maxQueuedSessionCount = 0;
+    m_MaintenanceTimeChecker = 0;
     m_broadcastEnable = false;
     m_broadcastList.clear();
     m_broadcastWeight = 0;
