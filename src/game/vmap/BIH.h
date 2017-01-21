@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 #include <Platform/Define.h>
 
