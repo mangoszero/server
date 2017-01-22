@@ -508,7 +508,7 @@ class Creature : public Unit
 
         bool Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Team team = TEAM_NONE, const CreatureData* data = NULL, GameEventCreatureData const* eventData = NULL);
         bool LoadCreatureAddon(bool reload);
-		void SelectLevel(uint32 forcedLevel = USE_DEFAULT_DATABASE_LEVEL);
+        void SelectLevel(uint32 forcedLevel = USE_DEFAULT_DATABASE_LEVEL);
         void LoadEquipment(uint32 equip_entry, bool force = false);
 
         bool HasStaticDBSpawnData() const;                  // listed in `creature` table and have fixed in DB guid
