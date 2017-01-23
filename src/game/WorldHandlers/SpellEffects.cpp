@@ -746,6 +746,17 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, spell_list[urand(0, 5)], true);
                     return;
                 }
+                case 18269:                                 // Kodo Kombobulator
+                {
+                    if (!unitTarget)
+                        { return; }
+
+                    if (unitTarget->GetTypeId() == TYPEID_PLAYER)
+                        { return; }
+
+                        ((Creature*)unitTarget)->ForcedDespawn();
+                        return;
+                }
                 case 18350:                                 // Dummy Trigger
                 {
                     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
