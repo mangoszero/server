@@ -24,7 +24,7 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "21000"
+    #define REVISION_NR "21014"
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 1
@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 13
-    #define WORLD_DB_CONTENT_NR 1
-    #define WORLD_DB_UPDATE_DESCRIPTION "SchoolImmuneMask"
+    #define WORLD_DB_STRUCTURE_NR 14
+    #define WORLD_DB_CONTENT_NR 2
+    #define WORLD_DB_UPDATE_DESCRIPTION "MC,AQ20,AQ40_Equipment"
 #endif // __REVISION_H__
