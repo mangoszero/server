@@ -270,35 +270,41 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
     if (pLoot)
     {
         pLoot->NotifyMoneyRemoved();
-
-        if (!guid.IsItem() && player->GetGroup())           // item can be looted only single player
+		// Items/objects can ONLY be looted by a single player
+        if (!guid.IsItem() && player->GetGroup())
         {
-            Group* group = player->GetGroup();
+			// Pickpocket case
+			if (player->getClass() == CLASS_ROGUE && GetPlayer()->GetMap()->GetCreature(guid)->lootForPickPocketed)
+				player->ModifyMoney(pLoot->gold);
+			else
+			{
+				Group* group = player->GetGroup();
 
-            std::vector<Player*> playersNear;
-            for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
-            {
-                Player* playerGroup = itr->getSource();
-                if (!playerGroup)
-                    { continue; }
-                if (player->IsWithinDistInMap(playerGroup, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
-                    { playersNear.push_back(playerGroup); }
-            }
+				std::vector<Player*> playersNear;
+				for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+				{
+					Player* playerGroup = itr->getSource();
+					if (!playerGroup)
+						continue;
+					if (player->IsWithinDistInMap(playerGroup, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+						playersNear.push_back(playerGroup);
+				}
 
-            uint32 money_per_player = uint32((pLoot->gold) / (playersNear.size()));
+				uint32 money_per_player = uint32((pLoot->gold) / (playersNear.size()));
 
-            for (std::vector<Player*>::const_iterator i = playersNear.begin(); i != playersNear.end(); ++i)
-            {
-                (*i)->ModifyMoney(money_per_player);
+				for (std::vector<Player*>::const_iterator i = playersNear.begin(); i != playersNear.end(); ++i)
+				{
+					(*i)->ModifyMoney(money_per_player);
 
-                WorldPacket data(SMSG_LOOT_MONEY_NOTIFY, 4);
-                data << uint32(money_per_player);
+					WorldPacket data(SMSG_LOOT_MONEY_NOTIFY, 4);
+					data << uint32(money_per_player);
 
-                (*i)->GetSession()->SendPacket(&data);
-            }
+					(*i)->GetSession()->SendPacket(&data);
+				}
+			}
         }
         else
-            { player->ModifyMoney(pLoot->gold); }
+            player->ModifyMoney(pLoot->gold);
 
         // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -308,7 +314,7 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
         pLoot->gold = 0;
 
         if (pItem)
-            { pItem->SetLootState(ITEM_LOOT_CHANGED); }
+            pItem->SetLootState(ITEM_LOOT_CHANGED);
     }
 }
 
