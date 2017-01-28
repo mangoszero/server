@@ -1871,7 +1871,7 @@ void Player::RemoveFromWorld()
     // Notifies the client that he has left the raid group.
     // Only valid when the player is on the transport.
     if (GetTransport() && GetGroup() && GetGroup()->isRaidGroup())
-    {            
+    {
         WorldPacket data;
         // For client, sending an empty group list is enough to be ungroup.
         data.Initialize(SMSG_GROUP_LIST, 24);
@@ -2956,7 +2956,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                 uint32 prev_spell_id = sSpellMgr.GetPrevSpellInChain(spell_id);  // get the previous spell in chain (if any)
                 if(!prev_spell_id)  //spell_id does not have ranks or is the first spell in chain; must add in spellbook
                     continue;
-                
+
                 if ((m_spells.find(prev_spell_id) == m_spells.end()))
                     continue;
 
@@ -2964,7 +2964,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                 if (lowerRank->state == PLAYERSPELL_REMOVED || !lowerRank->active)
                     continue;
 
-                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id); 
+                SpellEntry const *spell_old = sSpellStore.LookupEntry(prev_spell_id);
                 SpellEntry const *spell_new = spellInfo;
 
                 if (sSpellMgr.IsRankedSpellNonStackableInSpellBook(spell_old))
@@ -3835,7 +3835,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
     CharacterDatabase.PExecute("DELETE FROM character_ticket "
                                "WHERE resolved = 0 AND guid = %u",
                                playerguid.GetCounter());
-    
+
     // for nonexistent account avoid update realm
     if (accountId == 0)
         { updateRealmChars = false; }
@@ -4128,11 +4128,11 @@ void Player::SetCanFly(bool /*enable*/)
 //         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
 //     else
 //         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-// 
+//
 //     data << GetPackGUID();
 //     data << uint32(0);                                      // unk
 //     SendMessageToSet(&data, true);
-// 
+//
 //     data.Initialize(MSG_MOVE_UPDATE_CAN_FLY, 64);
 //     data << GetPackGUID();
 //     m_movementInfo.Write(data);
@@ -4766,7 +4766,7 @@ float Player::GetMeleeCritFromAgility()
 {
     // from mangos 3462 for 1.12
     float val = 0.0f, classrate = 0.0f, levelfactor = 0.0f, fg = 0.0f;
-    
+
     fg = (0.35f*(float) (getLevel())) + 5.55f;
     levelfactor = (106.20f / fg) - 3;
 
@@ -6542,7 +6542,7 @@ void Player::DuelComplete(DuelCompleteType type)
         duel->initiator->RemoveGameObject(obj, true);
     }
 
-    /* remove auras */ 
+    /* remove auras */
     // TODO: Needs a simpler method
     std::vector<uint32> auras2remove;
     SpellAuraHolderMap const& vAuras = duel->opponent->GetSpellAuraHolderMap();
@@ -9453,8 +9453,8 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                 if (IsNonMeleeSpellCasted(false))
                     { return EQUIP_ERR_CANT_DO_RIGHT_NOW; }
 
-                // prevent equip item in Spirit of Redemption (Aura: 27827)  
-                if (HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))  
+                // prevent equip item in Spirit of Redemption (Aura: 27827)
+                if (HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
                     { return EQUIP_ERR_CANT_DO_RIGHT_NOW; }
             }
 
@@ -12331,8 +12331,10 @@ bool Player::CanRewardQuest(Quest const* pQuest, uint32 reward, bool msg) const
 		ItemPosCountVec destActual;
 		numOptionalRewards = pQuest->GetRewChoiceItemsCount();
 		numRewards = pQuest->GetRewItemsCount();
-		// Only ONE optional reward can be selected
-		requiredSlots = numRewards + 1;
+		if (numOptionalRewards > 0)
+            requiredSlots = numRewards + 1; // Only ONE optional reward can be selected
+        else
+            requiredSlots = numRewards;
 
 		if (numRewards > 0 || numOptionalRewards > 0)
 		{
@@ -14448,7 +14450,7 @@ bool Player::isAllowedToLoot(Creature* creature)
                     /* If the assigned looter's GUID is equal to ours */
                     else if (creature->assignedLooter == GetGUIDLow())
                         { return true; }
-                    /* If the creature already has an assigned looter and that looter isn't us */                    
+                    /* If the creature already has an assigned looter and that looter isn't us */
                     else if (creature->assignedLooter != 0 && !hasSharedLoot && !hasStartingQuestLoot)
                         { return false; }
 
@@ -16442,24 +16444,24 @@ void Player::TextEmote(const std::string& text)
     SendMessageToSetInRange(&data, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE), true, !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT));
 }
 
-void Player::LogWhisper(const std::string& text, ObjectGuid receiver) 
+void Player::LogWhisper(const std::string& text, ObjectGuid receiver)
 {
     WhisperLoggingLevels loggingLevel = WhisperLoggingLevels(sWorld.getConfig(CONFIG_UINT32_LOG_WHISPERS));
 
     if (loggingLevel == WHISPER_LOGGING_NONE)
         return;
-    
+
     //Try to find ticket by either this player or the receiver
     GMTicket* ticket = sTicketMgr.GetGMTicket(GetObjectGuid());
     if (!ticket)
         ticket = sTicketMgr.GetGMTicket(receiver);
-    
+
     uint32 ticketId = 0;
     if (ticket)
         ticketId = ticket->GetId();
-    
+
     bool isSomeoneGM = false;
-    
+
     //Find out if at least one of them is a GM for ticket logging
     if (GetSession()->GetSecurity() >= SEC_GAMEMASTER)
         isSomeoneGM = true;
@@ -16469,7 +16471,7 @@ void Player::LogWhisper(const std::string& text, ObjectGuid receiver)
         if (pRecvPlayer && pRecvPlayer->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
             isSomeoneGM = true;
     }
-    
+
     if ((loggingLevel == WHISPER_LOGGING_TICKETS && ticket && isSomeoneGM)
         || loggingLevel == WHISPER_LOGGING_EVERYTHING)
     {
@@ -18319,7 +18321,7 @@ float Player::GetReputationPriceDiscount(Creature const* pCreature) const
     FactionTemplateEntry const* vendor_faction = pCreature->getFactionTemplateEntry();
     if (!vendor_faction || !vendor_faction->faction)
         { return 1.0f; }
-    
+
     uint32 discount = 100;
     ReputationRank rank = GetReputationRank(vendor_faction->faction);   // get repution rank for that specific vendor faction
     if (rank >= REP_HONORED)                                            // give 10% reduction if rank is at least honored
@@ -18386,7 +18388,7 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
                 {
                     // for riding spells, override the required level with the level from the configuration file
                     switch (spell_id) {
-                        case 33388: // Riding 
+                        case 33388: // Riding
                         case 33389: // Apprentice Riding
                             if (getLevel() < uint32(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL)))
                                 { return false; }
@@ -19815,13 +19817,13 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
                     miscRequirement = fault.param1;
                     return AREA_LOCKSTATUS_WRONG_TEAM;
                 }
-                
+
                 case CONDITION_PVP_RANK:
                 {
                     miscRequirement = fault.param1;
                     return AREA_LOCKSTATUS_NOT_ALLOWED;
                 }
-                
+
                 default:
                     return AREA_LOCKSTATUS_UNKNOWN_ERROR;
             }
