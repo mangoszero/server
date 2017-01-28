@@ -12318,42 +12318,52 @@ bool Player::CanRewardQuest(Quest const* pQuest, bool msg) const
 
 bool Player::CanRewardQuest(Quest const* pQuest, uint32 reward, bool msg) const
 {
-    // prevent receive reward with quest items in bank or for not completed quest
-    if (!CanRewardQuest(pQuest, msg))
-        { return false; }
+	bool result;
+	uint32 numOptionalRewards;
+	uint32 numRewards;
+	uint32 requiredSlots;
+	InventoryResult iRes;
 
-    if (pQuest->GetRewChoiceItemsCount() > 0)
-    {
-        if (pQuest->RewChoiceItemId[reward])
-        {
-            ItemPosCountVec dest;
-            InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, pQuest->RewChoiceItemId[reward], pQuest->RewChoiceItemCount[reward]);
-            if (res != EQUIP_ERR_OK)
-            {
-                SendEquipError(res, NULL, NULL, pQuest->RewChoiceItemId[reward]);
-                return false;
-            }
-        }
-    }
+	requiredSlots = 0;
+	result = CanRewardQuest(pQuest, msg);
+	if (result)
+	{
+		ItemPosCountVec destActual;
+		numOptionalRewards = pQuest->GetRewChoiceItemsCount();
+		numRewards = pQuest->GetRewItemsCount();
+		// Only ONE optional reward can be selected
+		requiredSlots = numRewards + 1;
 
-    if (pQuest->GetRewItemsCount() > 0)
-    {
-        for (uint32 i = 0; i < pQuest->GetRewItemsCount(); ++i)
-        {
-            if (pQuest->RewItemId[i])
-            {
-                ItemPosCountVec dest;
-                InventoryResult res = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, pQuest->RewItemId[i], pQuest->RewItemCount[i]);
-                if (res != EQUIP_ERR_OK)
-                {
-                    SendEquipError(res, NULL, NULL);
-                    return false;
-                }
-            }
-        }
-    }
-
-    return true;
+		if (numRewards > 0 || numOptionalRewards > 0)
+		{
+			if (pQuest->RewChoiceItemId[reward])
+			{
+				ItemPosCountVec dest;
+				iRes = CanStoreNewItem(0, 0, dest, pQuest->RewChoiceItemId[reward], pQuest->RewChoiceItemCount[reward]);
+				if (iRes != EQUIP_ERR_OK)
+					goto CANT_EQUIP;
+			}
+			for (uint32 i = 0; i < numRewards; ++i)
+			{
+				if (pQuest->RewItemId[i])
+				{
+					ItemPosCountVec dest;
+					iRes = CanStoreNewItem(0, 0, dest, pQuest->RewItemId[i], pQuest->RewItemCount[i]);
+					if (iRes != EQUIP_ERR_OK)
+						goto CANT_EQUIP;
+				}
+			}
+			// We use 2586 (Gamemaster's Robes) as the item ID so that we can verify that the slots can be filled for all selected quest rewards
+			iRes = CanStoreNewItem(0, 0, destActual, 2586, requiredSlots);
+CANT_EQUIP:
+			if (iRes != EQUIP_ERR_OK)
+			{
+				SendEquipError(iRes, 0, 0);
+				result = false;
+			}
+		}
+	}
+	return result;
 }
 
 void Player::SendPetTameFailure(PetTameFailureReason reason)
