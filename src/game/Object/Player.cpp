@@ -9816,7 +9816,7 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
             { return EQUIP_ERR_CANT_EQUIP_RANK; }
 
         // override mount level requirements with the settings from the configuration file
-        int requiredLevel = pProto->RequiredLevel;
+        uint32 requiredLevel = pProto->RequiredLevel;
         switch(pProto->ItemId) {
              case 1132: //regular mounts
              case 2411:
