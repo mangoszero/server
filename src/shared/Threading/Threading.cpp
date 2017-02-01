@@ -131,7 +131,6 @@ Thread::~Thread()
 }
 
 // initialize Thread's class static member
-Thread::ThreadStorage *Thread::m_ThreadStorage = NULL;
 ThreadPriority Thread::m_TpEnum;
 
 bool Thread::start()
@@ -141,8 +140,6 @@ bool Thread::start()
 
     // incRef before spawing the thread, otherwise Thread::ThreadTask() might call decRef and delete m_task
     m_task->incReference();
-
-    m_ThreadStorage = new ACE_TSS<Thread>();
 
     bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
 
@@ -162,8 +159,6 @@ bool Thread::wait()
 
     m_iThreadId = 0;
     m_hThreadHandle = 0;
-    delete m_ThreadStorage;
-    m_ThreadStorage = NULL;
 
     return (_res == 0);
 }
@@ -178,8 +173,6 @@ void Thread::destroy()
 
     m_iThreadId = 0;
     m_hThreadHandle = 0;
-    delete m_ThreadStorage;
-    m_ThreadStorage = NULL;
 
     // reference set at ACE_Thread::spawn
     m_task->decReference();
@@ -199,42 +192,13 @@ ACE_THR_FUNC_RETURN Thread::ThreadTask(void* param)
 {
     Runnable* _task = static_cast<Runnable*>(param);
     _task->incReference();
-    
+
     _task->run();
 
     // task execution complete, free referecne added at
     _task->decReference();
 
     return (ACE_THR_FUNC_RETURN)0;
-}
-
-ACE_thread_t Thread::currentId()
-{
-    return ACE_Thread::self();
-}
-
-ACE_hthread_t Thread::currentHandle()
-{
-    ACE_hthread_t _handle;
-    ACE_Thread::self(_handle);
-
-    return _handle;
-}
-
-Thread* Thread::current()
-{
-    Thread* _thread = (*m_ThreadStorage).ts_object();
-    if (!_thread)
-    {
-        _thread = new Thread();
-        _thread->m_iThreadId = Thread::currentId();
-        _thread->m_hThreadHandle = Thread::currentHandle();
-
-        Thread* _oldValue = (*m_ThreadStorage).ts_object(_thread);
-        delete _oldValue;
-    }
-
-    return _thread;
 }
 
 void Thread::setPriority(Priority type)
