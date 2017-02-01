@@ -175,24 +175,6 @@ namespace ACE_Based
              * @param msecs
              */
             static void Sleep(unsigned long msecs);
-            /**
-             * @brief
-             *
-             * @return ACE_thread_t
-             */
-            static ACE_thread_t currentId();
-            /**
-             * @brief
-             *
-             * @return ACE_hthread_t
-             */
-            static ACE_hthread_t currentHandle();
-            /**
-             * @brief
-             *
-             * @return Thread
-             */
-            static Thread* current();
 
         private:
             /**
@@ -225,8 +207,6 @@ namespace ACE_Based
              * @brief
              *
              */
-            typedef ACE_TSS<Thread> ThreadStorage;
-            static ThreadStorage *m_ThreadStorage; /**< global object - container for Thread class representation of every thread */
             static ThreadPriority m_TpEnum; /**< use this object to determine current OS thread priority values mapped to enum Priority{} */
     };
 }
