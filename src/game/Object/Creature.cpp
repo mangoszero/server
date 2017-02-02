@@ -1679,6 +1679,11 @@ void Creature::SetDeathState(DeathState s)
         if (CanFly())
             { i_motionMaster.MoveFall(); }
 
+        if (Pet* pet = GetPet())
+        {
+            pet->Unsummon(PET_SAVE_AS_DELETED, this);
+        }
+
         Unit::SetDeathState(CORPSE);
     }
 
