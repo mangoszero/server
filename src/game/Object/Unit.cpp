@@ -6871,7 +6871,7 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     // Calculation if target is in front
 
     // Visible distance based on stealth value (stealth rank 4 300MOD, 10.5 - 3 = 7.5)
-    visibleDistance = 10.5f - (GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH) / 100.0f);
+    visibleDistance = (10.5f - (GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH) / 100.0f)) /2;
 
     // Visible distance is modified by
     //-Level Diff (every level diff = 1.0f in visible distance)
