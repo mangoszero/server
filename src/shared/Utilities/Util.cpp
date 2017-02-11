@@ -477,14 +477,6 @@ bool Utf8FitTo(const std::string& str, std::wstring search)
     return true;
 }
 
-void utf8printf(FILE* out, const char* str, ...)
-{
-    va_list ap;
-    va_start(ap, str);
-    vutf8printf(out, str, &ap);
-    va_end(ap);
-}
-
 void vutf8printf(FILE* out, const char* str, va_list* ap)
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -570,3 +562,28 @@ void HexStrToByteArray(std::string const& str, uint8* out, bool reverse /*= fals
         out[j++] = strtoul(buffer, NULL, 16);
     }
 }
+
+void utf8print(void* /*arg*/, const char* str)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+    wchar_t wtemp_buf[6000];
+    size_t wtemp_len = 6000 - 1;
+    if (!Utf8toWStr(str, strlen(str), wtemp_buf, wtemp_len))
+        { return; }
+
+    char temp_buf[6000];
+    CharToOemBuffW(&wtemp_buf[0], &temp_buf[0], wtemp_len + 1);
+    printf("%s", temp_buf);
+#else
+    printf("%s", str);
+#endif
+}
+
+void utf8printf(FILE* out, const char* str, ...)
+{
+    va_list ap;
+    va_start(ap, str);
+    vutf8printf(out, str, &ap);
+    va_end(ap);
+}
+

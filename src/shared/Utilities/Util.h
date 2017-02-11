@@ -703,6 +703,12 @@ void utf8printf(FILE* out, const char* str, ...);
 /**
  * @brief
  *
+ * @param str
+ */
+void utf8print(void* /*arg*/, const char* str);
+/**
+ * @brief
+ *
  * @param out
  * @param str
  * @param ap

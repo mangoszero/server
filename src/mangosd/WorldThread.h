@@ -26,24 +26,25 @@
 /// @{
 /// \file
 
-#ifndef MANGOS_H_CLIRUNNABLE
-#define MANGOS_H_CLIRUNNABLE
+#ifndef MANGOS_H_WORLDTHREAD
+#define MANGOS_H_WORLDTHREAD
+
+#include <ace/INET_Addr.h>
+#include <ace/Task.h>
 
 #include "Common.h"
-#include "Threading.h"
-
 /**
- * @brief Command Line Interface handling thread
+ * @brief Heartbeat thread for the World
  *
  */
-class CliRunnable : public ACE_Based::Runnable
+class WorldThread : public ACE_Task_Base
 {
     public:
-        /**
-         * @brief
-         *
-         */
-        void run() override;
+        explicit WorldThread(uint16 port, const char* host);
+        virtual int open(void*) override;
+        virtual int svc();
+    private:
+        ACE_INET_Addr listen_addr;
 };
 #endif
 /// @}

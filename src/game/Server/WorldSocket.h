@@ -52,9 +52,10 @@
 class ACE_Message_Block;
 class WorldPacket;
 class WorldSession;
+class WorldSocket;
 
-/// Handler that can communicate over stream sockets.
 typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH> WorldHandler;
+typedef ACE_Acceptor< WorldSocket, ACE_SOCK_ACCEPTOR > WorldAcceptor;
 
 /**
  * WorldSocket.
@@ -92,16 +93,13 @@ typedef ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH> WorldHandler;
  * notification.
  *
  */
+
 class WorldSocket : protected WorldHandler
 {
     public:
         /// Declare some friends
         friend class ACE_Acceptor< WorldSocket, ACE_SOCK_ACCEPTOR >;
         friend class WorldSocketMgr;
-        friend class ReactorRunnable;
-
-        /// Declare the acceptor for this class
-        typedef ACE_Acceptor< WorldSocket, ACE_SOCK_ACCEPTOR > Acceptor;
 
         /// Mutex type used for various synchronizations.
         typedef ACE_Thread_Mutex LockType;
