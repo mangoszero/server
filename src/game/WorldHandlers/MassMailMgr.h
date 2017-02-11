@@ -40,6 +40,8 @@
 #ifndef MANGOS_MASS_MAIL_MGR_H
 #define MANGOS_MASS_MAIL_MGR_H
 
+#include <memory>
+
 #include "Common.h"
 #include "Mail.h"
 
