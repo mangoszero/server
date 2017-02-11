@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include <ace/OS.h>
 #include <ace/Message_Block.h>
 
 #include "SoapThread.h"
