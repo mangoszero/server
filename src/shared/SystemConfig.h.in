@@ -42,7 +42,7 @@
 // Format is YYYYMMDDRR where RR is the change in the conf file
 // for that day.
 #ifndef MANGOSD_CONFIG_VERSION
-# define MANGOSD_CONFIG_VERSION 2017011200
+# define MANGOSD_CONFIG_VERSION 2017021100
 #endif
 #ifndef REALMD_CONFIG_VERSION
 # define REALMD_CONFIG_VERSION 2010062001
