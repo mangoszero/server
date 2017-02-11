@@ -22,73 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/// \addtogroup mangosd
-/// @{
-/// \file
+#ifndef ANTIFREEZE_THREAD
+#define ANTIFREEZE_THREAD
 
-#ifndef MANGOS_H_MASTER
-#define MANGOS_H_MASTER
-
+#include "ace/Task.h"
 #include "Common.h"
-#include "Policies/Singleton.h"
 
-/**
- * @brief Start the server
- *
- */
-class Master
+class AntiFreezeThread : public ACE_Task_Base
 {
     public:
-        /**
-         * @brief
-         *
-         */
-        Master();
-        /**
-         * @brief
-         *
-         */
-        ~Master();
-        /**
-         * @brief
-         *
-         * @return int
-         */
-        int Run();
-        static volatile uint32 m_masterLoopCounter; /**< TODO */
+        explicit AntiFreezeThread(uint32 delay);
+        virtual int open(void*) override;
+        virtual int svc() override;
 
     private:
-        /**
-         * @brief
-         *
-         * @return bool
-         */
-        bool _StartDB();
-
-        /**
-         * @brief
-         *
-         */
-        void _HookSignals();
-        /**
-         * @brief
-         *
-         */
-        void _UnhookSignals();
-        /**
-         * @brief
-         *
-         * @param s
-         */
-        static void _OnSignal(int s);
-
-        /**
-         * @brief
-         *
-         */
-        void clearOnlineAccounts();
+        uint32 m_loops;
+        uint32 m_lastchange;
+        uint32 w_loops;
+        uint32 w_lastchange;
+        uint32 delaytime_;
 };
 
-#define sMaster MaNGOS::Singleton<Master>::Instance()
 #endif
-/// @}

@@ -26,24 +26,25 @@
 /// @{
 /// \file
 
-#ifndef MANGOS_H_WORLDRUNNABLE
-#define MANGOS_H_WORLDRUNNABLE
+#ifndef MANGOS_H_CLITHREAD
+#define MANGOS_H_CLITHREAD
 
-#include "Common.h"
-#include "Threading.h"
+#include "ace/Task.h"
 
 /**
- * @brief Heartbeat thread for the World
+ * @brief Command Line Interface handling thread
  *
  */
-class WorldRunnable : public ACE_Based::Runnable
+class CliThread : public ACE_Task_Base
 {
+    enum { BUFFSIZE = 256 };
     public:
-        /**
-         * @brief
-         *
-         */
-        void run() override;
+        CliThread(bool);
+        virtual int svc() override;
+        void cli_shutdown();
+    private:
+        char buffer_[BUFFSIZE];
+        bool beep_;
 };
 #endif
 /// @}

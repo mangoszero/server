@@ -26,14 +26,14 @@
     \ingroup mangosd
 */
 
-#include "WorldSocketMgr.h"
 #include "Common.h"
+#include "WorldSocket.h"
+#include "WorldSocketMgr.h"
 #include "World.h"
-#include "WorldRunnable.h"
+#include "WorldThread.h"
 #include "Timer.h"
 #include "ObjectAccessor.h"
 #include "MapManager.h"
-
 #include "Database/DatabaseEnv.h"
 
 #ifdef ENABLE_ELUNA 
@@ -43,18 +43,36 @@
 #define WORLD_SLEEP_CONST 50
 
 #ifdef WIN32
-#include "ServiceWin32.h"
-extern int m_ServiceStatus;
+  #include "ServiceWin32.h"
+  extern int m_ServiceStatus;
 #endif
 
-/// Heartbeat for the World
-void WorldRunnable::run()
+WorldThread::WorldThread(uint16 port, const char* host) : listen_addr(port, host)
 {
+}
+
+int WorldThread::open(void* unused)
+{
+    if (sWorldSocketMgr->StartNetwork(listen_addr) == -1)
+    {
+        sLog.outError("Failed to start network");
+        Log::WaitBeforeContinueIfNeed();
+        World::StopNow(ERROR_EXIT_CODE);
+        return -1;
+    }
 #ifdef ENABLE_ELUNA
     sEluna->OnStartup();
 #endif /* ENABLE_ELUNA */
 
+    activate();
+    return 0;
+}
+
+/// Heartbeat for the World
+int WorldThread::svc()
+{
     uint32 prevSleepTime = 0;                               // used for balanced full tick time length near WORLD_SLEEP_CONST
+    sLog.outString("World Updater Thread started (%dms min update interval)", WORLD_SLEEP_CONST);
 
     ///- While we have not World::m_stopEvent, update the world
     while (!World::IsStopped())
@@ -78,25 +96,21 @@ void WorldRunnable::run()
         {
             prevSleepTime = 0;
         }
-
 #ifdef _WIN32
-        if (m_ServiceStatus == 0)
+        if (m_ServiceStatus == 0) //service stopped
         {
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
 
-        while (m_ServiceStatus == 2)
+        while (m_ServiceStatus == 2) //service paused
             Sleep(1000);
 #endif
     }
-
 #ifdef ENABLE_ELUNA
     sEluna->OnShutdown();
 #endif /* ENABLE_ELUNA */
-
     sWorld.KickAll();                                       // save and kick all players
     sWorld.UpdateSessions(1);                               // real players unload required UpdateSessions call
-
     sWorldSocketMgr->StopNetwork();
 
     sMapMgr.UnloadAll();                                    // unload all grids (including locked in memory)
@@ -106,4 +120,7 @@ void WorldRunnable::run()
     //   and must be unloaded before the DB, since it can access the DB.
     Eluna::Uninitialize();
 #endif /* ENABLE_ELUNA */
+
+    sLog.outString("World Updater Thread stopped");
+    return 0;
 }

@@ -446,7 +446,7 @@ typedef UNORDERED_MAP<uint32, WorldSession*> SessionMap;
 class World
 {
     public:
-        static volatile uint32 m_worldLoopCounter;
+        static ACE_Atomic_Op<ACE_Thread_Mutex, uint32> m_worldLoopCounter;
 
         World();
         ~World();
