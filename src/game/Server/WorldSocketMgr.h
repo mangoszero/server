@@ -65,10 +65,6 @@ class WorldSocketMgr : public ACE_Task_Base
 
         ACE_Reactor   *reactor_;
         WorldAcceptor *acceptor_;
-
-        typedef std::set<WorldSocket*> SocketSet;
-        ACE_TSS<SocketSet> sockets_;
-
 };
 
 #define sWorldSocketMgr ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>::instance()
