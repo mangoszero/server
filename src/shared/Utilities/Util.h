@@ -748,4 +748,16 @@ void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result);
 
 std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = false);
 void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
+
+/**
+* @brief Define iCoreNumber to be set for the currently defined core
+*
+* @return int
+*/
+int return_iCoreNumber();
+
+/**
+* @brief Display the startup banner
+*/
+void print_banner();
 #endif

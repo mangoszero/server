@@ -71,6 +71,7 @@
 #include "LFGMgr.h"
 #include "DisableMgr.h"
 #include "Language.h"
+#include "revision.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -1491,14 +1492,97 @@ void World::SetInitialWorldSettings()
     sPlayerbotAIConfig.Initialize();
 #endif
 
-    sLog.outString("------------------------");
-    sLog.outString("WORLD: World initialized");
-    sLog.outString("------------------------");
-    sLog.outString();
+    showFooter();
 
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
     sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
     sLog.outString();
+}
+
+void World::showFooter()
+{
+    std::set<std::string> modules_;
+
+    // ELUNA is either included or disabled
+#ifdef ENABLE_ELUNA
+    modules_.insert("                 Eluna : Enabled");
+#endif
+
+    // SD3 is either included or disabled
+#ifdef ENABLE_SD3
+    modules_.insert("      ScriptDev3 (SD3) : Enabled");
+#endif
+
+    // PLAYERBOTS can be included or excluded but also disabled via mangos.conf
+#ifdef ENABLE_PLAYERBOTS
+    bool playerBotActive = sConfig.GetBoolDefault("PlayerbotAI.DisableBots", true);
+    if (playerBotActive)
+    {
+        modules_.insert("            PlayerBots : Disabled");
+    }
+    else
+    {
+        modules_.insert("            PlayerBots : Enabled");
+    }
+#endif
+
+    // Remote Access can be activated / deactivated via mangos.conf
+    bool raActive = sConfig.GetBoolDefault("Ra.Enable", false);
+    if (raActive)
+    {
+        modules_.insert("    Remote Access (RA) : Enabled");
+    }
+    else
+    {
+        modules_.insert("    Remote Access (RA) : Disabled");
+    }
+
+    // SOAP can be included or excluded but also disabled via mangos.conf
+#ifdef ENABLE_SOAP
+    bool soapActive = sConfig.GetBoolDefault("SOAP.Enabled", false);
+    if (soapActive)
+    {
+        modules_.insert("                  SOAP : Enabled");
+    }
+    else
+    {
+        modules_.insert("                  SOAP : Disabled");
+    }
+#endif
+
+    // Warden is always included, set active or disabled via mangos.conf
+    bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
+    if (wardenActive)
+    {
+        modules_.insert("                Warden : Enabled");
+    }
+    else
+    {
+        modules_.insert("                Warden : Disabled");
+    }
+
+    std::string thisClientVersion = EXPECTED_MANGOSD_CLIENT_VERSION;
+    std::string thisClientBuilds = AcceptableClientBuildsListStr();
+
+    std::string sModules;
+    for (std::set<std::string>::const_iterator it = modules_.begin(); it != modules_.end(); ++it)
+        sModules = sModules + " \n" + *it;
+
+    sLog.outString("\n"
+        "_______________________________________________________\n"
+        "\n"
+        " MaNGOS Server: World Initialization Complete\n"
+        "_______________________________________________________\n"
+        "\n"
+        "        Server Version : %s\n"
+        "      Database Version : Rel%i.%i.%i\n"
+        "\n"
+        "    Supporting Clients : %s\n"
+        "                Builds : %s\n"
+        "\n"
+        "         Module Status -\n%s\n"
+        "_______________________________________________________\n"
+        , REVISION_NR, WORLD_DB_VERSION_NR, WORLD_DB_STRUCTURE_NR, WORLD_DB_CONTENT_NR, thisClientVersion.c_str(), thisClientBuilds.c_str(), sModules.c_str());
 }
 
 void World::DetectDBCLang()

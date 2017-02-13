@@ -2576,6 +2576,7 @@ enum TrackedAuraType
 // will only support 1.12.1 client (build 5875), 1.12.2 client (build 6005) and 1.12.3 client (build 6141)..
 
 #define EXPECTED_MANGOSD_CLIENT_BUILD        {5875, 6005, 6141, 0}
+#define EXPECTED_MANGOSD_CLIENT_VERSION      {"1.12.x"}
 
 // Max creature level (included some bosses and elite)
 #define DEFAULT_MAX_CREATURE_LEVEL 65

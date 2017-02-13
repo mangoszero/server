@@ -489,6 +489,7 @@ class World
         void SetMotd(const std::string& motd) { m_motd = motd; }
         /// Get the current Message of the Day
         const char* GetMotd() const { return m_motd.c_str(); }
+        void showFooter();
 
         LocaleConstant GetDefaultDbcLocale() const { return m_defaultDbcLocale; }
 
