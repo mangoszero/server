@@ -421,13 +421,19 @@ void Log::outString(const char* str, ...)
 void Log::outError(const char* err, ...)
 {
     if (!err)
-        { return; }
+    {
+        return;
+    }
 
     if (m_colored)
-        { SetColor(false, m_colors[LogError]); }
+    {
+        SetColor(false, m_colors[LogError]);
+    }
 
     if (m_includeTime)
-        { outTime(); }
+    {
+        outTime();
+    }
 
     va_list ap;
 
@@ -436,7 +442,9 @@ void Log::outError(const char* err, ...)
     va_end(ap);
 
     if (m_colored)
-        { ResetColor(false); }
+    {
+        ResetColor(false);
+    }
 
     fprintf(stderr, "\n");
     if (logfile)
