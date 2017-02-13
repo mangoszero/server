@@ -44,8 +44,7 @@
 
 WorldSocketMgr::WorldSocketMgr()
   : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
-    acceptor_(NULL),reactor_(NULL),
-    sockets_()
+    acceptor_(NULL),reactor_(NULL)
 {
 }
 
@@ -60,28 +59,7 @@ int WorldSocketMgr::svc()
 {
     DEBUG_LOG("Starting Network Thread");
 
-    SocketSet::iterator i, t;
-
-    while (!reactor_->reactor_event_loop_done())
-    {
-        ACE_Time_Value interval(0, 10000);
-        if (reactor_->run_reactor_event_loop(interval) == -1)
-          { break; }
-
-        for (i = sockets_->begin(); i != sockets_->end();)
-        {
-            if ((*i)->Update() == -1)
-            {
-                t = i;
-                ++i;
-                (*t)->CloseSocket();
-                (*t)->RemoveReference();
-                sockets_->erase(t);
-            }
-            else
-              { ++i; }
-        }
-    }
+    reactor_->run_reactor_event_loop();
 
     DEBUG_LOG("Network Thread Exitting");
     return 0;
@@ -162,10 +140,7 @@ int WorldSocketMgr::OnSocketOpen(WorldSocket* sock)
     }
 
     sock->m_OutBufferSize = static_cast<size_t>(m_SockOutUBuff);
-
-    sock->AddReference();
     sock->reactor(reactor_);
-    sockets_->insert(sock); //no need for synch here, due to ACE_TSS
 
     return 0;
 }

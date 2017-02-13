@@ -86,9 +86,9 @@ WorldSocket::WorldSocket(void) :
     m_RecvWPct(0),
     m_RecvPct(),
     m_Header(sizeof(ClientPktHeader)),
+    m_OutBufferLock(),
     m_OutBuffer(0),
     m_OutBufferSize(65536),
-    m_OutActive(false),
     m_Seed(static_cast<uint32>(rand32()))
 {
     reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
@@ -107,7 +107,7 @@ WorldSocket::~WorldSocket(void)
 
     WorldPacket* pct;
     while (m_PacketQueue.dequeue_head(pct) == 0)
-        { delete pct; }
+      { delete pct; }
 }
 
 bool WorldSocket::IsClosed(void) const
@@ -117,21 +117,15 @@ bool WorldSocket::IsClosed(void) const
 
 void WorldSocket::CloseSocket(void)
 {
-    {
-        ACE_GUARD(LockType, Guard, m_OutBufferLock);
+    ACE_GUARD(LockType, Guard, m_OutBufferLock);
 
-        if (closing_)
-            { return; }
+    if (closing_)
+      { return; }
 
-        closing_ = true;
-        peer().close_writer();
-    }
+    closing_ = true;
+    peer().close_writer();
 
-    {
-        ACE_GUARD(LockType, Guard, m_SessionLock);
-
-        m_Session = NULL;
-    }
+    m_Session = NULL;
 }
 
 const std::string& WorldSocket::GetRemoteAddress(void) const
@@ -148,14 +142,6 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
 
     WorldPacket pct = pkt;
 
-    // Dump outgoing packet.
-    sLog.outWorldPacketDump(uint32(get_handle()), pct.GetOpcode(), pct.GetOpcodeName(), &pct, false);
-
-#ifdef ENABLE_ELUNA
-    if (!sEluna->OnPacketSend(m_Session, pct))
-        { return 0; }
-#endif /* ENABLE_ELUNA */
-
     if (iSendPacket(pct) == -1)
     {
         WorldPacket* npct;
@@ -171,6 +157,8 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
             return -1;
         }
     }
+
+    reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK);
 
     return 0;
 }
@@ -193,10 +181,6 @@ int WorldSocket::open(void* a)
     if (m_OutBuffer)
         { return -1; }
 
-    // This will also prevent the socket from being Updated
-    // while we are initializing it.
-    m_OutActive = true;
-
     // Hook for the manager.
     if (sWorldSocketMgr->OnSocketOpen(this) == -1)
         { return -1; }
@@ -215,15 +199,8 @@ int WorldSocket::open(void* a)
 
     m_Address = remote_addr.get_host_addr();
 
-    // Send startup packet.
-    WorldPacket packet(SMSG_AUTH_CHALLENGE, 4);
-    packet << m_Seed;
-
-    if (SendPacket(packet) == -1)
-        { return -1; }
-
     // Register with ACE Reactor
-    if (reactor()->register_handler(this, ACE_Event_Handler::READ_MASK | ACE_Event_Handler::WRITE_MASK) == -1)
+    if (reactor()->register_handler(this, ACE_Event_Handler::READ_MASK) == -1)
     {
         sLog.outError("WorldSocket::open: unable to register client handler errno = %s", ACE_OS::strerror(errno));
         return -1;
@@ -232,7 +209,11 @@ int WorldSocket::open(void* a)
     // reactor takes care of the socket from now on
     remove_reference();
 
-    return 0;
+    // Send startup packet.
+    WorldPacket packet(SMSG_AUTH_CHALLENGE, 4);
+    packet << m_Seed;
+
+    return SendPacket(packet);
 }
 
 int WorldSocket::close(int)
@@ -255,28 +236,18 @@ int WorldSocket::handle_input(ACE_HANDLE)
     {
         case -1 :
         {
-            if ((errno == EWOULDBLOCK) ||
-                (errno == EAGAIN))
+            if ((errno == EWOULDBLOCK) || (errno == EAGAIN))
             {
-                return Update();                            // interesting line ,isn't it ?
+                return 0;
             }
-
-            DEBUG_LOG("WorldSocket::handle_input: Peer error closing connection errno = %s", ACE_OS::strerror(errno));
-
-            errno = ECONNRESET;
-            return -1;
         }
         case 0:
         {
-            DEBUG_LOG("WorldSocket::handle_input: Peer has closed connection");
-
             errno = ECONNRESET;
             return -1;
         }
-        case 1:
-            return 1;
         default:
-            return Update();                                // another interesting line ;)
+            return 0;
     }
 
     ACE_NOTREACHED(return -1);
@@ -292,7 +263,10 @@ int WorldSocket::handle_output(ACE_HANDLE)
     const size_t send_len = m_OutBuffer->length();
 
     if (send_len == 0)
-        { return cancel_wakeup_output(Guard); }
+    {
+        reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+        return 0;
+    }
 
 #ifdef MSG_NOSIGNAL
     ssize_t n = peer().send(m_OutBuffer->rd_ptr(), send_len, MSG_NOSIGNAL);
@@ -301,11 +275,16 @@ int WorldSocket::handle_output(ACE_HANDLE)
 #endif // MSG_NOSIGNAL
 
     if (n == 0)
-        { return -1; }
+    {
+        return -1;
+    }
+
     else if (n == -1)
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            { return schedule_wakeup_output(Guard); }
+            {
+            return 0;
+            }
 
         return -1;
     }
@@ -316,85 +295,24 @@ int WorldSocket::handle_output(ACE_HANDLE)
         // move the data to the base of the buffer
         m_OutBuffer->crunch();
 
-        return schedule_wakeup_output(Guard);
+        return 0;
     }
     else // now n == send_len
     {
         m_OutBuffer->reset();
 
-        if (!iFlushPacketQueue())
-            { return cancel_wakeup_output(Guard); }
-        else
-            { return schedule_wakeup_output(Guard); }
+        if(!iFlushPacketQueue()) //no more packets in queue
+        {
+            reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+        }
+        return 0;
     }
 
     ACE_NOTREACHED(return 0);
 }
 
-int WorldSocket::handle_output_queue(GuardType& g)
-{
-    if (msg_queue()->is_empty())
-        return cancel_wakeup_output(g);
-
-    ACE_Message_Block* mblk;
-
-    if (msg_queue()->dequeue_head(mblk, (ACE_Time_Value*)&ACE_Time_Value::zero) == -1)
-    {
-        sLog.outError("WorldSocket::handle_output_queue dequeue_head");
-        return -1;
-    }
-
-    const size_t send_len = mblk->length();
-
-#ifdef MSG_NOSIGNAL
-    ssize_t n = peer().send(mblk->rd_ptr(), send_len, MSG_NOSIGNAL);
-#else
-    ssize_t n = peer().send(mblk->rd_ptr(), send_len);
-#endif // MSG_NOSIGNAL
-
-    if (n == 0)
-    {
-        mblk->release();
-
-        return -1;
-    }
-    else if (n == -1)
-    {
-        if (errno == EWOULDBLOCK || errno == EAGAIN)
-        {
-            msg_queue()->enqueue_head(mblk, (ACE_Time_Value*)&ACE_Time_Value::zero);
-            return schedule_wakeup_output(g);
-        }
-
-        mblk->release();
-        return -1;
-    }
-    else if (n < (ssize_t)send_len) // now n > 0
-    {
-        mblk->rd_ptr(static_cast<size_t>(n));
-
-        if (msg_queue()->enqueue_head(mblk, (ACE_Time_Value*)&ACE_Time_Value::zero) == -1)
-        {
-            sLog.outError("WorldSocket::handle_output_queue enqueue_head");
-            mblk->release();
-            return -1;
-        }
-
-        return schedule_wakeup_output(g);
-    }
-    else // now n == send_len
-    {
-        mblk->release();
-
-        return msg_queue()->is_empty() ? cancel_wakeup_output(g) : ACE_Event_Handler::WRITE_MASK;
-    }
-
-    ACE_NOTREACHED(return -1);
-}
-
 int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 {
-    // Critical section
     {
         ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
 
@@ -404,27 +322,12 @@ int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
             { peer().close_writer(); }
     }
 
-    // Critical section
-    {
-        ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
-        m_Session = NULL;
-    }
+    m_Session = NULL;
 
     reactor()->remove_handler(this, ACE_Event_Handler::DONT_CALL | ACE_Event_Handler::ALL_EVENTS_MASK);
     return 0;
 }
 
-int WorldSocket::Update(void)
-{
-    if (closing_)
-        { return -1; }
-
-    if (m_OutActive || m_OutBuffer->length() == 0)
-        { return 0; }
-
-    return handle_output(get_handle());
-}
 
 int WorldSocket::handle_input_header(void)
 {
@@ -577,45 +480,6 @@ int WorldSocket::handle_input_missing_data(void)
     return size_t(n) == recv_size ? 1 : 2;
 }
 
-int WorldSocket::cancel_wakeup_output(GuardType& g)
-{
-    if (!m_OutActive)
-        { return 0; }
-
-    m_OutActive = false;
-
-    g.release();
-
-    if (reactor()->cancel_wakeup
-        (this, ACE_Event_Handler::WRITE_MASK) == -1)
-    {
-        // would be good to store errno from reactor with errno guard
-        sLog.outError("WorldSocket::cancel_wakeup_output");
-        return -1;
-    }
-
-    return 0;
-}
-
-int WorldSocket::schedule_wakeup_output(GuardType& g)
-{
-    if (m_OutActive)
-        { return 0; }
-
-    m_OutActive = true;
-
-    g.release();
-
-    if (reactor()->schedule_wakeup
-        (this, ACE_Event_Handler::WRITE_MASK) == -1)
-    {
-        sLog.outError("WorldSocket::schedule_wakeup_output");
-        return -1;
-    }
-
-    return 0;
-}
-
 int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 {
     MANGOS_ASSERT(new_pct);
@@ -664,14 +528,10 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
                 return 0;
             default:
             {
-                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
                 if (m_Session != NULL)
                 {
                     // OK ,give the packet to WorldSession
                     aptr.release();
-                    // WARNING here we call it with locks held.
-                    // Its possible to cause deadlock if QueuePacket calls back
                     m_Session->QueuePacket(new_pct);
                     return 0;
                 }
@@ -876,7 +736,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         BASIC_LOG("WorldSocket::HandleAuthSession: Client %s attempted to log in using invalid client OS (%s).", GetRemoteAddress().c_str(), os.c_str());
         return -1;
     }
-    
+
     // Check that Key and account name are the same on client and server
     Sha1Hash sha;
 
@@ -964,8 +824,6 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
 
             if (max_count && m_OverSpeedPings > max_count)
             {
-                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
                 if (m_Session && m_Session->GetSecurity() == SEC_PLAYER)
                 {
                     sLog.outError("WorldSocket::HandlePing: Player kicked for "
@@ -980,23 +838,18 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
             { m_OverSpeedPings = 0; }
     }
 
-    // critical section
+    if (m_Session)
     {
-        ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
-        if (m_Session)
-        {
-            m_Session->SetLatency(latency);
-            m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
-        }
-        else
-        {
-            sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
-                          "but is not authenticated or got recently kicked,"
-                          " address = %s",
-                          GetRemoteAddress().c_str());
-            return -1;
-        }
+        m_Session->SetLatency(latency);
+        m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
+    }
+    else
+    {
+        sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
+                      "but is not authenticated or got recently kicked,"
+                      " address = %s",
+                      GetRemoteAddress().c_str());
+        return -1;
     }
 
     WorldPacket packet(SMSG_PONG, 4);
