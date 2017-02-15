@@ -840,7 +840,7 @@ ShowProgressBars                          = 1
 WaitAtStartupError                        = 10
 PlayerCommands                            = 0
 Motd                                      = "Welcome to Mangos Zero"
-AutoBroadcast                             = 600
+AutoBroadcast                             = 0
 
 ################################################################################
 # PLAYER INTERACTION
