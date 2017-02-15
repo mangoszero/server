@@ -412,6 +412,10 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_modManaRegen = 0;
     m_modManaRegenInterrupt = 0;
+
+    m_rageDecayRate = 1.25f;
+    m_rageDecayMultiplier = 19.50f;
+
     for (int s = 0; s < MAX_SPELL_SCHOOL; s++)
         { m_SpellCritPercentage[s] = 0.0f; }
     m_regenTimer = 0;
@@ -1924,16 +1928,22 @@ void Player::RewardRage(uint32 damage, bool attacker)
 
 void Player::RegenerateAll()
 {
-    if (m_regenTimer != 0)
-        { return; }
+    if (
+        m_regenTimer != 0
+        || GetPower(POWER_RAGE) < 1
+        && GetPowerType() == POWER_RAGE
+        )
+    {
+        return;
+    }
 
     // Not in combat or they have regeneration
     if (!IsInCombat() || HasAuraType(SPELL_AURA_MOD_REGEN_DURING_COMBAT) ||
-        HasAuraType(SPELL_AURA_MOD_HEALTH_REGEN_IN_COMBAT) || IsPolymorphed())
+        HasAuraType(SPELL_AURA_MOD_HEALTH_REGEN_IN_COMBAT) || IsPolymorphed() || HasAuraType(SPELL_AURA_MOD_POWER_REGEN))
     {
         RegenerateHealth();
-        if (!IsInCombat() && !HasAuraType(SPELL_AURA_INTERRUPT_REGEN))
-            { Regenerate(POWER_RAGE); }
+        if ((!IsInCombat() && !HasAuraType(SPELL_AURA_INTERRUPT_REGEN)) || HasAuraType(SPELL_AURA_MOD_POWER_REGEN))
+            Regenerate(POWER_RAGE);
     }
 
     Regenerate(POWER_ENERGY);
@@ -1968,8 +1978,7 @@ void Player::Regenerate(Powers power)
         }   break;
         case POWER_RAGE:                                    // Regenerate rage
         {
-            float RageDecreaseRate = sWorld.getConfig(CONFIG_FLOAT_RATE_POWER_RAGE_LOSS);
-            addvalue = 20 * RageDecreaseRate;               // 2 rage by tick (= 2 seconds => 1 rage/sec)
+            addvalue = (m_rageDecayRate * m_rageDecayMultiplier);
         }   break;
         case POWER_ENERGY:                                  // Regenerate energy (rogue)
         {
@@ -1998,15 +2007,20 @@ void Player::Regenerate(Powers power)
     {
         curValue += uint32(addvalue);
         if (curValue > maxValue)
-            { curValue = maxValue; }
+        {
+            curValue = maxValue;
+        }
     }
-    else
+    else if (!IsInCombat())
     {
         if (curValue <= uint32(addvalue))
             { curValue = 0; }
         else
             { curValue -= uint32(addvalue); }
     }
+    else
+        { return; }
+
     SetPower(power, curValue);
 }
 

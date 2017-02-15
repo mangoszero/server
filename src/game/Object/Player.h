@@ -2176,6 +2176,10 @@ class Player : public Unit
         /*********************************************************/
         float m_modManaRegen;
         float m_modManaRegenInterrupt;
+
+        float m_rageDecayRate;
+        float m_rageDecayMultiplier;
+
         float m_SpellCritPercentage[MAX_SPELL_SCHOOL];
         bool HasMovementFlag(MovementFlags f) const;        // for script access to m_movementInfo.HasMovementFlag
         void UpdateFallInformationIfNeed(MovementInfo const& minfo, uint16 opcode);

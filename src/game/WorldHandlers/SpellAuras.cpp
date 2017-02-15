@@ -4745,7 +4745,7 @@ void Aura::PeriodicTick()
                 { return; }
 
             Powers powerType = target->GetPowerType();
-            if (int32(powerType) != m_modifier.m_miscvalue)
+            if (int32(powerType) != m_modifier.m_miscvalue)     // spell's power is not the same as of the player's
                 { return; }
 
             if (spellProto->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED)
@@ -4754,11 +4754,9 @@ void Aura::PeriodicTick()
                 target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
             }
 
-            // Anger Management
-            // amount = 1+ 16 = 17 = 3,4*5 = 10,2*5/3
-            // so 17 is rounded amount for 5 sec tick grow ~ 1 range grow in 3 sec
-            if (powerType == POWER_RAGE && !target->IsInCombat())
-                { target->ModifyPower(powerType, m_modifier.m_amount * 1 / 5); }
+            // Setting the rage decay rate to the value of the spell/aura. Currently only works on players.
+            if (powerType == POWER_RAGE)
+                { target->ToPlayer()->m_rageDecayMultiplier = m_modifier.m_amount; }
             break;
         }
         // Here tick dummy auras
