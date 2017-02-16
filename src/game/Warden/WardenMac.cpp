@@ -98,7 +98,7 @@ ClientWardenModule* WardenMac::GetModuleForClient()
 void WardenMac::InitializeModule()
 {
     sLog.outWarden("Initialize module");
-	Warden::InitializeModule();
+    Warden::InitializeModule();
 }
 
 struct keyData {
