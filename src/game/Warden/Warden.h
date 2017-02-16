@@ -156,10 +156,10 @@ class Warden
 
         virtual void Init(WorldSession* session, BigNumber* k) = 0;
         virtual ClientWardenModule* GetModuleForClient() = 0;
-        virtual void InitializeModule() = 0;
+        virtual void InitializeModule();
         virtual void RequestHash();
         virtual void HandleHashResult(ByteBuffer &buff) = 0;
-        virtual void RequestData() = 0;
+        virtual void RequestData();
         virtual void HandleData(ByteBuffer &buff);
 
         void SendModuleToClient();
