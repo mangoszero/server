@@ -187,9 +187,9 @@ class Warden
         ARC4 _outputCrypto;
         uint32 _checkTimer;                          // Timer for sending check requests
         uint32 _clientResponseTimer;                 // Timer for client response delay
-	uint32 _previousTimestamp;
-	ClientWardenModule* _module;
-	WardenState::Value _state;
+        uint32 _previousTimestamp;
+        ClientWardenModule* _module;
+        WardenState::Value _state;
 };
 
 #endif
