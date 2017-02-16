@@ -3437,7 +3437,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
         duration = 3600;                                     // 1 hour
     }
     // Consecrated Weapon and Blessed Wizard Oil
-    else if (m_spellInfo->Id == 28891 && m_spellInfo->Id == 28898)
+    else if (m_spellInfo->Id == 28891 || m_spellInfo->Id == 28898)
     {
         duration = 3600;                                     // 1 hour
     }
