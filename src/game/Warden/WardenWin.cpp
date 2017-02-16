@@ -133,7 +133,7 @@ void WardenWin::InitializeModule()
     pkt.append((uint8*)&Request, sizeof(WardenInitModuleRequest));
     _session->SendPacket(&pkt);
 
-	Warden::InitializeModule();
+    Warden::InitializeModule();
 }
 
 void WardenWin::HandleHashResult(ByteBuffer &buff)
@@ -312,7 +312,7 @@ void WardenWin::RequestData()
 
     sLog.outWarden("%s", stream.str().c_str());
 
-	Warden::RequestData();
+    Warden::RequestData();
 }
 
 void WardenWin::HandleData(ByteBuffer &buff)
