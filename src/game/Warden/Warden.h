@@ -97,39 +97,39 @@ struct WardenHashRequest
 
 namespace WardenState
 {
-	enum Value
-	{
-		STATE_INITIAL,
-		STATE_REQUESTED_MODULE,
-		STATE_SENDED_MODULE,
-		STATE_REQUESTED_HASH,
-		STATE_INITIALIZE_MODULE,
-		STATE_REQUESTED_DATA,
-		STATE_RESTING
-	};
+    enum Value
+    {
+        STATE_INITIAL,
+        STATE_REQUESTED_MODULE,
+        STATE_SENDED_MODULE,
+        STATE_REQUESTED_HASH,
+        STATE_INITIALIZE_MODULE,
+        STATE_REQUESTED_DATA,
+        STATE_RESTING
+    };
 
-	inline char* to_string(WardenState::Value value)
-	{
-		switch (value)
-		{
-		case WardenState::STATE_INITIAL:
-			return "STATE_INITIAL";
-		case WardenState::STATE_REQUESTED_MODULE:
-			return "STATE_REQUESTED_MODULE";
-		case WardenState::STATE_SENDED_MODULE:
-			return "STATE_SENDED_MODULE";
-		case WardenState::STATE_REQUESTED_HASH:
-			return "STATE_REQUESTED_HASH";
-		case WardenState::STATE_INITIALIZE_MODULE:
-			return "STATE_INITIALIZE_MODULE";
-		case WardenState::STATE_REQUESTED_DATA:
-			return "STATE_SENDED_DATA";
-		case WardenState::STATE_RESTING:
-			return "STATE_RESTING";
-		default:
-			return "UNDEFINED STATE";
-		}
-	}
+    inline char* to_string(WardenState::Value value)
+    {
+        switch (value)
+        {
+            case WardenState::STATE_INITIAL:
+                return "STATE_INITIAL";
+            case WardenState::STATE_REQUESTED_MODULE:
+                return "STATE_REQUESTED_MODULE";
+            case WardenState::STATE_SENDED_MODULE:
+                return "STATE_SENDED_MODULE";
+            case WardenState::STATE_REQUESTED_HASH:
+                return "STATE_REQUESTED_HASH";
+            case WardenState::STATE_INITIALIZE_MODULE:
+                return "STATE_INITIALIZE_MODULE";
+            case WardenState::STATE_REQUESTED_DATA:
+                return "STATE_SENDED_DATA";
+            case WardenState::STATE_RESTING:
+                return "STATE_RESTING";
+            default:
+                return "UNDEFINED STATE";
+        }
+    }
 };
 
 #if defined(__GNUC__)
