@@ -52,7 +52,7 @@ Warden::~Warden()
 
 void Warden::InitializeModule()
 {
-	SetNewState(WardenState::STATE_INITIALIZE_MODULE);
+    SetNewState(WardenState::STATE_INITIALIZE_MODULE);
 }
 
 void Warden::RequestHash()
@@ -71,7 +71,7 @@ void Warden::RequestHash()
     pkt.append((uint8*)&Request, sizeof(WardenHashRequest));
     _session->SendPacket(&pkt);
 
-	SetNewState(WardenState::STATE_REQUESTED_HASH);
+    SetNewState(WardenState::STATE_REQUESTED_HASH);
 }
 
 void Warden::SendModuleToClient()
@@ -99,7 +99,7 @@ void Warden::SendModuleToClient()
         _session->SendPacket(&pkt1);
     }
 
-	SetNewState(WardenState::STATE_SENDED_MODULE);
+    SetNewState(WardenState::STATE_SENDED_MODULE);
 }
 
 void Warden::RequestModule()
@@ -121,55 +121,60 @@ void Warden::RequestModule()
     pkt.append((uint8*)&request, sizeof(WardenModuleUse));
     _session->SendPacket(&pkt);
 
-	SetNewState(WardenState::STATE_REQUESTED_MODULE);
+    SetNewState(WardenState::STATE_REQUESTED_MODULE);
 }
 
 void Warden::Update()
 {
-	uint32 currentTimestamp = WorldTimer::getMSTime();
-	uint32 diff = currentTimestamp - _previousTimestamp;
-	_previousTimestamp = currentTimestamp;
+    uint32 currentTimestamp = WorldTimer::getMSTime();
+    uint32 diff = currentTimestamp - _previousTimestamp;
+    _previousTimestamp = currentTimestamp;
 
-	switch (_state)
-	{
-	case WardenState::STATE_INITIAL:
-		break;
-	case WardenState::STATE_REQUESTED_MODULE:
-	case WardenState::STATE_SENDED_MODULE:
-	case WardenState::STATE_REQUESTED_HASH:
-	case WardenState::STATE_REQUESTED_DATA:
-	{
-		uint32 maxClientResponseDelay = sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_RESPONSE_DELAY);
+    switch (_state)
+    {
+        case WardenState::STATE_INITIAL:
+            break;
+        case WardenState::STATE_REQUESTED_MODULE:
+        case WardenState::STATE_SENDED_MODULE:
+        case WardenState::STATE_REQUESTED_HASH:
+        case WardenState::STATE_REQUESTED_DATA:
+        {
+            uint32 maxClientResponseDelay = sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_RESPONSE_DELAY);
 
-		if (maxClientResponseDelay > 0)
+            if (maxClientResponseDelay > 0)
+            {
+                // Kick player if client response delays more than set in config
+                if (_clientResponseTimer > maxClientResponseDelay * IN_MILLISECONDS)
+                {
+                    sLog.outWarden("%s (latency: %u, IP: %s) exceeded Warden module response delay on state %s for more than %s - disconnecting client",
+                                   _session->GetPlayerName(), _session->GetLatency(), _session->GetRemoteAddress().c_str(), WardenState::to_string(_state), secsToTimeString(maxClientResponseDelay, true).c_str());
+                    _session->KickPlayer();
+                }
+                else
 		{
-			// Kick player if client response delays more than set in config
-			if (_clientResponseTimer > maxClientResponseDelay * IN_MILLISECONDS)
-			{
-				sLog.outWarden("%s (latency: %u, IP: %s) exceeded Warden module response delay on state %s for more than %s - disconnecting client",
-					_session->GetPlayerName(), _session->GetLatency(), _session->GetRemoteAddress().c_str(), WardenState::to_string(_state), secsToTimeString(maxClientResponseDelay, true).c_str());
-				_session->KickPlayer();
-			}
-			else
-				_clientResponseTimer += diff;
+                    _clientResponseTimer += diff;
 		}
+
+	    }
 	}
-	break;
-	case WardenState::STATE_INITIALIZE_MODULE:
-	case WardenState::STATE_RESTING:
-	{
-		if (diff >= _checkTimer)
-		{
-			RequestData();
-		}
-		else
-			_checkTimer -= diff;
-	}
-	break;
-	default:
-		sLog.outWarden("Unimplemented warden state!");
-		break;
-	}
+        break;
+        case WardenState::STATE_INITIALIZE_MODULE:
+        case WardenState::STATE_RESTING:
+        {
+            if (diff >= _checkTimer)
+            {
+                RequestData();
+            }
+            else
+            {
+                _checkTimer -= diff;
+            }
+        }
+        break;
+        default:
+            sLog.outWarden("Unimplemented warden state!");
+            break;
+    }
 }
 
 void Warden::DecryptData(uint8* buffer, uint32 length)
@@ -184,24 +189,24 @@ void Warden::EncryptData(uint8* buffer, uint32 length)
 
 void Warden::SetNewState(WardenState::Value state)
 {
-	//if we pass all initial checks, allow change
-	if (state < WardenState::STATE_REQUESTED_DATA)
-	{
-		if (state < _state)
-		{
-			sLog.outWarden("Warden Error: jump from %s to %s which is lower by initialization routine", WardenState::to_string(_state), WardenState::to_string(state));
-			return;
-		}
-	}
+    //if we pass all initial checks, allow change
+    if (state < WardenState::STATE_REQUESTED_DATA)
+    {
+        if (state < _state)
+        {
+            sLog.outWarden("Warden Error: jump from %s to %s which is lower by initialization routine", WardenState::to_string(_state), WardenState::to_string(state));
+            return;
+        }
+    }
 
-	_state = state;
+    _state = state;
 
-	//Reset timers
-	// Set hold off timer, minimum timer should at least be 1 second
-	uint32 holdOff = sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_CHECK_HOLDOFF);
-	_checkTimer = (holdOff < 1 ? 1 : holdOff) * IN_MILLISECONDS;
+    //Reset timers
+    // Set hold off timer, minimum timer should at least be 1 second
+    uint32 holdOff = sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_CHECK_HOLDOFF);
+    _checkTimer = (holdOff < 1 ? 1 : holdOff) * IN_MILLISECONDS;
 
-	_clientResponseTimer = 0;
+    _clientResponseTimer = 0;
 }
 
 bool Warden::IsValidCheckSum(uint32 checksum, const uint8* data, const uint16 length)
@@ -325,12 +330,12 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
 
 void Warden::RequestData()
 {
-	SetNewState(WardenState::STATE_REQUESTED_DATA);
+    SetNewState(WardenState::STATE_REQUESTED_DATA);
 }
 
 void Warden::HandleData(ByteBuffer& /*buff*/)
 {
-	SetNewState(WardenState::STATE_RESTING);
+    SetNewState(WardenState::STATE_RESTING);
 }
 
 void Warden::LogPositiveToDB(WardenCheck* check)
