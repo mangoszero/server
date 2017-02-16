@@ -7288,7 +7288,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                 return;
             }
 
-			GameObjectInfo const* goInfo = go->GetGOInfo();
+            GameObjectInfo const* goInfo = go->GetGOInfo();
 
             loot = &go->loot;
 
