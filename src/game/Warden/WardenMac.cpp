@@ -199,7 +199,7 @@ void WardenMac::RequestData()
     pkt.append(buff);
     _session->SendPacket(&pkt);
 
-	Warden::RequestData();
+    Warden::RequestData();
 }
 
 void WardenMac::HandleData(ByteBuffer &buff)
