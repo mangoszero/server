@@ -36,7 +36,7 @@
 #include "AccountMgr.h"
 
 Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTimer(10000/*10 sec*/), _clientResponseTimer(0),
-_state(WardenState::STATE_INITIAL), _previousTimestamp(0), _module(NULL)
+                   _state(WardenState::STATE_INITIAL), _previousTimestamp(0), _module(NULL)
 {
     memset(_inputKey, 0, sizeof(_inputKey));
     memset(_outputKey, 0, sizeof(_outputKey));
