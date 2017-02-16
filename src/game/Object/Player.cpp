@@ -7279,7 +7279,6 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
         {
             DEBUG_LOG("       IS_GAMEOBJECT_GUID(guid)");
             GameObject* go = GetMap()->GetGameObject(guid);
-            GameObjectInfo const* goInfo = go->GetGOInfo();
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
             // And permit out of range GO with no owner in case fishing hole
@@ -7288,6 +7287,8 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                 SendLootRelease(guid);
                 return;
             }
+
+			GameObjectInfo const* goInfo = go->GetGOInfo();
 
             loot = &go->loot;
 
