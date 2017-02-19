@@ -2393,7 +2393,14 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         if (GetAccessLevel() >= security)
         {
-            email = fields[2].GetCppString();
+            if (security = SEC_ADMINISTRATOR)
+            {
+                email = fields[2].GetCppString();
+            }
+            else
+            {
+                email = "*hidden*";
+            }
             last_ip = fields[3].GetCppString();
             last_login = fields[4].GetCppString();
         }
@@ -2446,7 +2453,7 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
     // ticket<end>
     if (!px)
         { return false; }
-    
+
     // ticket accept on
     if (strncmp(px, "on", 3) == 0)
     {
@@ -2821,13 +2828,13 @@ bool ChatHandler::HandleTickerSurveyClose(char *args)
         SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
         return false;
     }
-        
+
     //This logic feels misplaced, but you can't have it in GMTicket?
     sTicketMgr.Delete(ticket->GetPlayerGuid());
     ticket = NULL;
-        
+
     PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer->GetName());
-        
+
     return true;
 }
 
