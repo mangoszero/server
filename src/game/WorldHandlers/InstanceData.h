@@ -102,6 +102,9 @@ class InstanceData
         // called on creature despawn
         virtual void OnCreatureDespawn(Creature* /*creature*/) {}
 
+        // called on creature looted
+        virtual void OnCreatureLooted(Creature* /*creature*/, LootType) {}
+
         // All-purpose data storage 64 bit
         virtual uint64 GetData64(uint32 /*Data*/) const { return 0; }
         virtual void SetData64(uint32 /*Data*/, uint64 /*Value*/) { }
