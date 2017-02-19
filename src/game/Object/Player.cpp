@@ -1930,8 +1930,7 @@ void Player::RegenerateAll()
 {
     if (
         m_regenTimer != 0
-        || GetPower(POWER_RAGE) < 1
-        && GetPowerType() == POWER_RAGE
+        || (GetPower(POWER_RAGE) < 1 && GetPowerType() == POWER_RAGE && GetHealth() == GetMaxHealth())
         )
     {
         return;
