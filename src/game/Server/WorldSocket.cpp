@@ -158,7 +158,11 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
         }
     }
 
-    reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK);
+    if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
+    {
+        sLog.outError("SendPacket failed setting WRITE mask, peer = %s", GetRemoteAddress().c_str());
+        return -1;
+    }
 
     return 0;
 }
