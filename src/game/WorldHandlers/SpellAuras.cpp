@@ -4754,11 +4754,9 @@ void Aura::PeriodicTick()
                 target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
             }
 
-            // Anger Management
-            // amount = 1+ 16 = 17 = 3,4*5 = 10,2*5/3
-            // so 17 is rounded amount for 5 sec tick grow ~ 1 range grow in 3 sec
-            if (powerType == POWER_RAGE)
-                { target->ModifyPower(powerType, m_modifier.m_amount * 3 / 5); }
+			// Setting the rage decay rate to the value of the spell/aura. Currently only works on players.
+			if (powerType == POWER_RAGE)
+				target->ToPlayer()->m_rageDecayMultiplier = m_modifier.m_amount;
             break;
         }
         // Here tick dummy auras
@@ -4781,6 +4779,7 @@ void Aura::PeriodicDummyTick()
 {
     SpellEntry const* spell = GetSpellProto();
     Unit* target = GetTarget();
+
     switch (spell->SpellFamilyName)
     {
         case SPELLFAMILY_GENERIC:
@@ -5486,8 +5485,10 @@ void SpellAuraHolder::Update(uint32 diff)
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (Aura* aura = m_auras[i])
             { aura->UpdateAura(diff); }
+    }
 
     if (m_isHeartbeatSubject && m_duration)
     {
