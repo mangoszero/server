@@ -249,6 +249,8 @@ namespace MaNGOS
                 { return 0; }
             else if (pl_level <= 39)
                 { return pl_level - 5 - pl_level / 10; }
+            else if (pl_level == 60)
+                { return 51; }
             else
                 { return pl_level - 1 - pl_level / 5; }
         }
