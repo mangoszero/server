@@ -2393,7 +2393,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         if (GetAccessLevel() >= security)
         {
-            if (security = SEC_ADMINISTRATOR)
+            if (security == SEC_ADMINISTRATOR)
             {
                 email = fields[2].GetCppString();
             }
