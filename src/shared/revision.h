@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 14
-    #define WORLD_DB_CONTENT_NR 2
-    #define WORLD_DB_UPDATE_DESCRIPTION "MC,AQ20,AQ40_Equipment"
+    #define WORLD_DB_CONTENT_NR 11
+    #define WORLD_DB_UPDATE_DESCRIPTION "Verog_increase_spawn_chance"
 #endif // __REVISION_H__
