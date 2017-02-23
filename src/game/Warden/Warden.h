@@ -126,9 +126,8 @@ namespace WardenState
                 return "STATE_SENDED_DATA";
             case WardenState::STATE_RESTING:
                 return "STATE_RESTING";
-            default:
-                return "UNDEFINED STATE";
         }
+        return "UNDEFINED STATE";
     }
 };
 
