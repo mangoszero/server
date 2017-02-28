@@ -2487,6 +2487,15 @@ void Player::SetGameMaster(bool on)
 
         GetHostileRefManager().setOnlineOfflineState(false);
         CombatStopWithPets();
+        
+        if (Pet* pet = GetPet())
+        {
+            if (m_ExtraFlags |= PLAYER_EXTRA_GM_ON)
+                pet->setFaction(35);
+            pet->GetHostileRefManager().setOnlineOfflineState(false);
+        }
+	   
+
     }
     else
     {
@@ -2494,6 +2503,12 @@ void Player::SetGameMaster(bool on)
         //setFactionForRace(getRace());
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_0);
         RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM);
+        
+        if (Pet* pet = GetPet())
+        {
+            pet->setFaction(getFaction());
+            pet->GetHostileRefManager().setOnlineOfflineState(true);
+        }
 
 
         CallForAllControlledUnits(SetGameMasterOffHelper(getFaction()), CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
