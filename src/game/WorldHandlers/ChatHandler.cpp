@@ -52,6 +52,13 @@ bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg
 {
     if (lang != LANG_ADDON)
     {
+        //client can't send more than 255 character's, so if we break limit - that's cheater
+        if (msg.size() > 255)
+        {
+            sLog.outError("Player %s (GUID: %u) tries send a chatmessage with more than 255 symbols", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
+            return false;
+        }
+
         // strip invisible characters for non-addon messages
         if (sWorld.getConfig(CONFIG_BOOL_CHAT_FAKE_MESSAGE_PREVENTING))
             { stripLineInvisibleChars(msg); }
@@ -93,7 +100,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
         SendNotification(LANG_UNKNOWN_LANGUAGE);
         return;
     }
-    if (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id))
+
+    //prevent cheating, by sending LANG_UNIVERSAL
+    if ((langDesc->lang_id == LANG_UNIVERSAL && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && GetSecurity() == SEC_PLAYER) ||
+         (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
     {
         SendNotification(LANG_NOT_LEARNED_LANGUAGE);
         return;
@@ -103,7 +113,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     {
         // Disabled addon channel?
         if (!sWorld.getConfig(CONFIG_BOOL_ADDON_CHANNEL))
-            { return; }
+        { return; }
     }
     // LANG_ADDON should not be changed nor be affected by flood control
     else

@@ -132,6 +132,8 @@ void WardenWin::InitializeModule()
     WorldPacket pkt(SMSG_WARDEN_DATA, sizeof(WardenInitModuleRequest));
     pkt.append((uint8*)&Request, sizeof(WardenInitModuleRequest));
     _session->SendPacket(&pkt);
+
+    Warden::InitializeModule();
 }
 
 void WardenWin::HandleHashResult(ByteBuffer &buff)
@@ -153,8 +155,6 @@ void WardenWin::HandleHashResult(ByteBuffer &buff)
 
     _inputCrypto.Init(_inputKey);
     _outputCrypto.Init(_outputKey);
-
-    _initialized = true;
 
     _previousTimestamp = WorldTimer::getMSTime();
 }
@@ -305,22 +305,19 @@ void WardenWin::RequestData()
     pkt.append(buff);
     _session->SendPacket(&pkt);
 
-    _dataSent = true;
-
     std::stringstream stream;
     stream << "Sent check id's: ";
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
         stream << *itr << " ";
 
     sLog.outWarden("%s", stream.str().c_str());
+
+    Warden::RequestData();
 }
 
 void WardenWin::HandleData(ByteBuffer &buff)
 {
     sLog.outWarden("Handle data");
-
-    _dataSent = false;
-    _clientResponseTimer = 0;
 
     uint16 Length;
     buff >> Length;
