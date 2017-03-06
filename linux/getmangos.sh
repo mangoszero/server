@@ -158,31 +158,31 @@ function GetPrerequisites()
       case ${VER} in
         "sarah")
           # Linux Mint 18 - Ubuntu Xenial based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rosa")
           # Linux Mint 17.3 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rafaela")
           # Linux Mint 17.2 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rebecca")
           # Linux Mint 17.1 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "qiana")
           # Linux Mint 17 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "maya")
           # Linux Mint 13 - Ubuntu Precise based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "betsy")
           # LMDE 2 - Debian Jessie based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         *)
           OS_VER=0
@@ -193,35 +193,35 @@ function GetPrerequisites()
       case ${VER} in
         "precise")
           # Ubuntu 12.04 LTS
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "trusty")
           # Ubuntu 14.04 LTS
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "xenial")
           # Ubuntu 16.04 LTS
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "yakkety")
           # Ubuntu 16.10
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         *)
           OS_VER=0
           ;;
       esac
-      su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+      su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
       ;;
     "Debian")
       case ${VER} in
         "jessie")
           # Debian 8.0 "current"
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         "stretch")
           # Debian Next
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         *)
           OS_VER=0
@@ -232,11 +232,11 @@ function GetPrerequisites()
       case ${VER} in        
         "santiago")
           # Red Hat 6.x
-          su -c "yum -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         "maipo")
           # Red Hat 7.x
-          su -c "yum -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         *)
           OS_VER=0
@@ -824,7 +824,7 @@ function UpdateDatabases()
   local DB_TOONS="$6"
 
   # Loop through the character files
-  for pFile in $(ls $SRCPATH/database/Character/Updates/*.sql); do    
+  for pFile in $(ls $SRCPATH/database/Character/Updates/$(ls -a $SRCPATH/database/Character/Updates/ | tail -1)/*.sql); do    
     if [ ! -f "$pFile" ]; then
       continue
     fi
@@ -840,7 +840,7 @@ function UpdateDatabases()
   done
 
   # Loop through the realm files  
-  for pFile in $(ls $SRCPATH/database/Realm/Updates/*.sql); do 
+  for pFile in $(ls $SRCPATH/database/Realm/Updates/$(ls -a $SRCPATH/database/Realm/Updates/ | tail -1)/*.sql); do 
     if [ ! -f "$pFile" ]; then
       continue
     fi
@@ -856,7 +856,7 @@ function UpdateDatabases()
   done
 
   # Loop through the world files
-  for pFile in $(ls $SRCPATH/database/World/Updates/*.sql); do    
+  for pFile in $(ls $SRCPATH/database/World/Updates/$(ls -a $SRCPATH/database/World/Updates/ | tail -1)/*.sql); do    
     if [ ! -f "$pFile" ]; then
       continue
     fi
@@ -1086,7 +1086,7 @@ function HandleDatabases()
 # Function helper to extract resources (mmaps, vmaps, dbc, ...) from the game
 function ExtractResources
 {
-  INSTGAMEPATH=$(dirname $(find /home -name "WoW.exe" 2>>/dev/null))
+  INSTGAMEPATH=$(dirname $(find /home -name "WoW.exe"| head -1 2>>/dev/null))
 
   GAMEPATH=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "WoW Game Path" \
     --inputbox "Please, provide the path to your game directory. Default: $INSTGAMEPATH" 8 60 3>&2 2>&1 1>&3)
@@ -1111,7 +1111,8 @@ function ExtractResources
     Log "The mangos server is not build, cannot extract data" 1
     exit 1
   fi
-  
+ 
+#TODO What if DBC are not yet generated ?? 
   if [[ $ACTIONS == *1* ]]; then
     if [ -d "$GAMEPATH/dbc" ]; then
       $DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "DBC and Maps were already generated" \
@@ -1151,9 +1152,30 @@ function ExtractResources
         cp -R "$GAMEPATH/dbc" "$INSTPATH/bin"
         cp -R "$GAMEPATH/maps" "$INSTPATH/bin"                
       fi
+    else
+	rm -rf $GAMEPATH/map-extractor
+	cp "$INSTPATH/bin/tools/map-extractor" "$GAMEPATH"
+	
+	Log "Extracting DBC and Maps" 0
+	cd $GAMEPATH
+	./map-extractor
+	
+	if [ $? -eq 0 ]; then
+	  Log "DBC and Maps are extracted" 0
+	  Log "Copying DBC and Maps files to installation directory" 0
+	  cp -R "$GAMEPATH/dbc" "$INSTPATH/bin"
+          cp -R "$GAMEPATH/maps" "$INSTPATH/bin"
+          rm -rf "$GAMEPATH/map-extractor"
+          Log "Changing ownership of the extracted directories"
+          chown -R $USER:$USER "$INSTPATH"
+        else
+          Log "There was an issue while extracting DBC and Maps!" 1
+          rm -rf "$GAMEPATH/map-extractor"
+          rm -rf "$GAMEPATH/dbc"
+          rm -rf "$GAMEPATH/maps"
+          exit 1
+        fi
     fi
-    
-    
   fi
   
   if [[ $ACTIONS == *2* ]]; then
@@ -1192,6 +1214,30 @@ function ExtractResources
         Log "Copying VMaps files to installation directory" 0           
         cp -R "$GAMEPATH/vmaps" "$INSTPATH/bin"                
       fi
+    else
+     Log "Copying VMaps extractor" 0
+     rm -f "$GAMEPATH/vmap-extractor"
+     cp "$INSTPATH/bin/tools/vmap-extractor" "$GAMEPATH"
+
+     Log "Extracting VMaps" 0
+     cd $GAMEPATH
+     # Make sure there is no previous vmaps generation that cause issue.
+     rm -rf Buildings
+     ./vmap-extractor
+
+     if [ $? -eq 0 ]; then
+       Log "VMaps are extracted" 0
+       Log "Copying VMaps files to installation directory" 0
+       cp -R "$GAMEPATH/vmaps" "$INSTPATH/bin"
+       rm -rf "$GAMEPATH/vmap-extractor"
+       Log "Changing ownership of the extracted directories"
+       chown -R $USER:$USER "$INSTPATH"
+     else
+       Log "There was an issue while extracting VMaps!" 1
+       rm -rf "$GAMEPATH/vmap-extractor"
+       rm -rf "$GAMEPATH/vmaps"
+       exit 1
+     fi 
     fi    
   fi
   
@@ -1265,6 +1311,57 @@ function ExtractResources
         Log "Copying MMaps files to installation directory" 0           
         cp -R "$GAMEPATH/mmaps" "$INSTPATH/bin"          
       fi  
+    else
+	Log "Copying MMaps extractor" 0
+        rm -f "$GAMEPATH/MoveMapGen.sh"
+        cp "$INSTPATH/bin/tools/MoveMapGen.sh" "$GAMEPATH"
+        cp "$INSTPATH/bin/tools/offmesh.txt" "$GAMEPATH"
+        cp "$INSTPATH/bin/tools/mmap_excluded.txt" "$GAMEPATH"
+        cp "$INSTPATH/bin/tools/movemap-generator" "$GAMEPATH" 
+	CPU=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Please provide the number of CPU to be used to generate MMaps (1-4)" \
+         --inputbox "Default: 1" 8 80 3>&2 2>&1 1>&3)
+
+        # User cancelled his choice, set default to 1.
+        if [ $? -ne 0 ]; then
+          Log "User selection was cancelled. Max CPU set to 1." 1
+          CPU=1
+        fi
+
+        if [ -z "$CPU" ]; then
+          Log "User didn't gave any value. Max CPU set to 1." 1
+          CPU=1
+        fi
+
+        if [ "$CPU" -lt 1 ] || [ "$CPU" -gt 4 ]; then
+          Log "User entered invalid value. Max CPU set to 1." 1
+          CPU=1
+        fi
+
+        Log "Extracting MMaps" 0
+        cd $GAMEPATH
+        # Making sure we can execute the script
+        chmod 700 MoveMapGen.sh
+        ./MoveMapGen.sh $CPU
+
+        if [ $? -eq 0 ]; then
+          Log "MMaps are extracted" 0
+          Log "Copying MMaps files to installation directory" 0
+          cp -R "$GAMEPATH/mmaps" "$INSTPATH/bin"
+          rm -rf "$GAMEPATH/MoveMapGen.sh"
+          rm -rf "$GAMEPATH/offmesh.txt"
+          rm -rf "$GAMEPATH/mmap_excluded.txt"
+          rm -rf "$GAMEPATH/movemap-generator"
+          Log "Changing ownership of the extracted directories"
+          chown -R $USER:$USER "$INSTPATH"
+        else
+	  Log "There was an issue while extracting MMaps!" 1
+          rm -rf "$GAMEPATH/MoveMapGen.sh"
+          rm -rf "$GAMEPATH/mmaps"
+          rm -rf "$GAMEPATH/offmesh.txt"
+          rm -rf "$GAMEPATH/mmap_excluded.txt"
+          rm -rf "$GAMEPATH/movemap-generator"
+          exit 1
+        fi
     fi    
   fi
 }
