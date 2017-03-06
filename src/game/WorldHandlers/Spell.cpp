@@ -4084,6 +4084,11 @@ SpellCastResult Spell::CheckCast(bool strict)
             if (bg->GetStatus() == STATUS_WAIT_LEAVE)
                 { return SPELL_FAILED_DONT_REPORT; }
 
+    if (!m_IsTriggeredSpell && m_spellInfo->Id == 2479) //honorless target as non-triggered spell
+    {
+        return SPELL_FAILED_DONT_REPORT;
+    }
+
     if (!m_IsTriggeredSpell && IsNonCombatSpell(m_spellInfo) &&
         m_caster->IsInCombat())
         { return SPELL_FAILED_AFFECTING_COMBAT; }
