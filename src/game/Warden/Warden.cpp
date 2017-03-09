@@ -99,7 +99,7 @@ void Warden::SendModuleToClient()
         _session->SendPacket(&pkt1);
     }
 
-    SetNewState(WardenState::STATE_SENDED_MODULE);
+    SetNewState(WardenState::STATE_SENT_MODULE);
 }
 
 void Warden::RequestModule()
@@ -135,7 +135,7 @@ void Warden::Update()
         case WardenState::STATE_INITIAL:
             break;
         case WardenState::STATE_REQUESTED_MODULE:
-        case WardenState::STATE_SENDED_MODULE:
+        case WardenState::STATE_SENT_MODULE:
         case WardenState::STATE_REQUESTED_HASH:
         case WardenState::STATE_REQUESTED_DATA:
         {

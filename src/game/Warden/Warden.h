@@ -101,7 +101,7 @@ namespace WardenState
     {
         STATE_INITIAL,
         STATE_REQUESTED_MODULE,
-        STATE_SENDED_MODULE,
+        STATE_SENT_MODULE,
         STATE_REQUESTED_HASH,
         STATE_INITIALIZE_MODULE,
         STATE_REQUESTED_DATA,
@@ -116,14 +116,14 @@ namespace WardenState
                 return "STATE_INITIAL";
             case WardenState::STATE_REQUESTED_MODULE:
                 return "STATE_REQUESTED_MODULE";
-            case WardenState::STATE_SENDED_MODULE:
-                return "STATE_SENDED_MODULE";
+            case WardenState::STATE_SENT_MODULE:
+                return "STATE_SENT_MODULE";
             case WardenState::STATE_REQUESTED_HASH:
                 return "STATE_REQUESTED_HASH";
             case WardenState::STATE_INITIALIZE_MODULE:
                 return "STATE_INITIALIZE_MODULE";
             case WardenState::STATE_REQUESTED_DATA:
-                return "STATE_SENDED_DATA";
+                return "STATE_REQUESTED_DATA";
             case WardenState::STATE_RESTING:
                 return "STATE_RESTING";
         }
