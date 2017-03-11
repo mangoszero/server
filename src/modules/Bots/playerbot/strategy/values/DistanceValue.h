@@ -6,8 +6,8 @@
 namespace ai
 {
     class DistanceValue : public FloatCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         DistanceValue(PlayerbotAI* ai) : FloatCalculatedValue(ai) {}
 
     public:

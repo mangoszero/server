@@ -14,24 +14,24 @@ bool EmoteAction::Execute(Event event)
     uint32 emote = 0;
 
     string param = event.getParam();
-	if (param.empty() || emotes.find(param) == emotes.end())
+    if (param.empty() || emotes.find(param) == emotes.end())
     {
         int index = rand() % emotes.size();
-		for (map<string, uint32>::iterator i = emotes.begin(); i != emotes.end() && index; ++i, --index)
-			emote = i->second;
+        for (map<string, uint32>::iterator i = emotes.begin(); i != emotes.end() && index; ++i, --index)
+            emote = i->second;
     }
     else
     {
         emote = emotes[param];
     }
 
-	bot->CastStop();
-	ai->InterruptSpell();
-	bot->SetStandState(UNIT_STAND_STATE_STAND);
+    bot->CastStop();
+    ai->InterruptSpell();
+    bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     Player* master = GetMaster();
-	if (master)
-	{
+    if (master)
+    {
         ObjectGuid masterSelection = master->GetSelectionGuid();
         if (masterSelection)
         {
@@ -41,7 +41,7 @@ bool EmoteAction::Execute(Event event)
             bot->SetSelectionGuid(oldSelection);
             return true;
         }
-	}
+    }
 
     bot->HandleEmoteCommand(emote);
     return true;

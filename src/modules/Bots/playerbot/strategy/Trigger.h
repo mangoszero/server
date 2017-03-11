@@ -20,15 +20,15 @@ class clazz : public super \
 namespace ai
 {
     class Trigger : public AiNamedObject
-	{
-	public:
+    {
+    public:
         Trigger(PlayerbotAI* ai, string name = "trigger", int checkInterval = 1) : AiNamedObject(ai, name) {
-			this->checkInterval = checkInterval;
-			ticksElapsed = 0;
+            this->checkInterval = checkInterval;
+            ticksElapsed = 0;
         }
         virtual ~Trigger() {}
 
-	public:
+    public:
         virtual Event Check();
         virtual void ExternalEvent(string param, Player* owner = NULL) {}
         virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) {}
@@ -40,18 +40,18 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string GetTargetName() { return "self target"; }
 
-		bool needCheck() {
-			if (++ticksElapsed >= checkInterval) {
-				ticksElapsed = 0;
-				return true;
-			}
-			return false;
-		}
+        bool needCheck() {
+            if (++ticksElapsed >= checkInterval) {
+                ticksElapsed = 0;
+                return true;
+            }
+            return false;
+        }
 
     protected:
-		int checkInterval;
-		int ticksElapsed;
-	};
+        int checkInterval;
+        int ticksElapsed;
+    };
 
 
     class TriggerNode

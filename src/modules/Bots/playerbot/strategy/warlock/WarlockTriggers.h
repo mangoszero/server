@@ -3,12 +3,12 @@
 
 namespace ai
 {
-	class DemonArmorTrigger : public BuffTrigger
-	{
-	public:
-		DemonArmorTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "demon armor") {}
-		virtual bool IsActive();
-	};
+    class DemonArmorTrigger : public BuffTrigger
+    {
+    public:
+        DemonArmorTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "demon armor") {}
+        virtual bool IsActive();
+    };
 
     class SpellstoneTrigger : public BuffTrigger
     {

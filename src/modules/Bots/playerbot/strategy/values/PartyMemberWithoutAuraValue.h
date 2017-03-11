@@ -6,12 +6,12 @@
 namespace ai
 {
     class PartyMemberWithoutAuraValue : public PartyMemberValue, public Qualified
-	{
-	public:
+    {
+    public:
         PartyMemberWithoutAuraValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
           PartyMemberValue(ai) {}
 
     protected:
         virtual Unit* Calculate();
-	};
+    };
 }

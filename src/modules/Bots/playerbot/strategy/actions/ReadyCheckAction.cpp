@@ -8,15 +8,15 @@ using namespace ai;
 bool ReadyCheckAction::Execute(Event event)
 {
     WorldPacket &p = event.getPacket();
-	ObjectGuid player;
-	p.rpos(0);
+    ObjectGuid player;
+    p.rpos(0);
     if (!p.empty())
         p >> player;
 
-	if (player == bot->GetObjectGuid())
+    if (player == bot->GetObjectGuid())
         return false;
 
-	return ReadyCheck();
+    return ReadyCheck();
 }
 
 bool ReadyCheckAction::ReadyCheck()

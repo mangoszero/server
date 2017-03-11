@@ -2736,12 +2736,12 @@ void Spell::cast(bool skipCheck)
                 { AddPrecastSpell(25771); }                     // Forbearance
             break;
         }
-		case SPELLFAMILY_ROGUE:
-	            {
-	            // exit stealth on sap when improved sap is not skilled 
-	            if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
-	            m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
-	            }
+        case SPELLFAMILY_ROGUE:
+                {
+                // exit stealth on sap when improved sap is not skilled 
+                if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
+                m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+                }
         case SPELLFAMILY_WARRIOR:
             break;
         case SPELLFAMILY_PRIEST:
@@ -5571,19 +5571,19 @@ SpellCastResult Spell::CheckRange(bool strict)
             }
             break;                                          // let continue in generic way for no target
         }
-	case SPELL_RANGE_IDX_SHORT:
-	{
-		if ((m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) || m_spellInfo->SpellFamilyFlags & 0x800000)))
-		{
-			Pet* pet = m_caster->GetPet();
-			if (pet)
-			{
-				float max_range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(SPELL_RANGE_IDX_SHORT));
-				return m_caster->IsWithinDistInMap(pet, max_range) ? SPELL_CAST_OK : SPELL_FAILED_OUT_OF_RANGE;
-			}
-		}
-		break;
-	}        
+    case SPELL_RANGE_IDX_SHORT:
+    {
+        if ((m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) || m_spellInfo->SpellFamilyFlags & 0x800000)))
+        {
+            Pet* pet = m_caster->GetPet();
+            if (pet)
+            {
+                float max_range = GetSpellMaxRange(sSpellRangeStore.LookupEntry(SPELL_RANGE_IDX_SHORT));
+                return m_caster->IsWithinDistInMap(pet, max_range) ? SPELL_CAST_OK : SPELL_FAILED_OUT_OF_RANGE;
+            }
+        }
+        break;
+    }        
     }
 
     // add radius of caster and ~5 yds "give" for non stricred (landing) check

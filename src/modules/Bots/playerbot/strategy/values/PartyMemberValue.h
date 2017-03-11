@@ -16,8 +16,8 @@ namespace ai
     };
 
     class PartyMemberValue : public UnitCalculatedValue
-	{
-	public:
+    {
+    public:
         PartyMemberValue(PlayerbotAI* ai) : UnitCalculatedValue(ai) {}
 
     public:
@@ -27,5 +27,5 @@ namespace ai
         Unit* FindPartyMember(FindPlayerPredicate &predicate);
         Unit* FindPartyMember(list<Player*>* party, FindPlayerPredicate &predicate);
         bool Check(Unit* player);
-	};
+    };
 }

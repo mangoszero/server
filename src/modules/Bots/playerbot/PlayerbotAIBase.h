@@ -9,16 +9,16 @@ using namespace std;
 class PlayerbotAIBase
 {
 public:
-	PlayerbotAIBase();
+    PlayerbotAIBase();
 
 public:
-	bool CanUpdateAI();
-	void SetNextCheckDelay(const uint32 delay);
+    bool CanUpdateAI();
+    void SetNextCheckDelay(const uint32 delay);
     void IncreaseNextCheckDelay(uint32 delay);
-	void YieldThread();
+    void YieldThread();
     virtual void UpdateAI(uint32 elapsed);
     virtual void UpdateAIInternal(uint32 elapsed) = 0;
 
 protected:
-	uint32 nextAICheckDelay;
+    uint32 nextAICheckDelay;
 };

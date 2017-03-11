@@ -5,12 +5,12 @@
 namespace ai
 {
     class PartyMemberToResurrect : public PartyMemberValue
-	{
-	public:
+    {
+    public:
         PartyMemberToResurrect(PlayerbotAI* ai) : 
           PartyMemberValue(ai) {}
     
     protected:
         virtual Unit* Calculate();
-	};
+    };
 }

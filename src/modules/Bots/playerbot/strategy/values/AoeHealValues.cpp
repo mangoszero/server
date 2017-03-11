@@ -9,29 +9,29 @@ uint8 AoeHealValue::Calculate()
 {
     Group* group = bot->GetGroup();
     if (!group)
-    	return 0;
+        return 0;
 
     float range = 0;
     if (qualifier == "low")
-    	range = sPlayerbotAIConfig.lowHealth;
+        range = sPlayerbotAIConfig.lowHealth;
     else if (qualifier == "medium")
-    	range = sPlayerbotAIConfig.mediumHealth;
+        range = sPlayerbotAIConfig.mediumHealth;
     else if (qualifier == "critical")
-    	range = sPlayerbotAIConfig.criticalHealth;
+        range = sPlayerbotAIConfig.criticalHealth;
 
     uint8 count = 0;
-	Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
-	for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
-	{
-		Player *player = sObjectMgr.GetPlayer(itr->guid);
-		if( !player || !player->IsAlive())
-			continue;
+    Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
+    for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
+    {
+        Player *player = sObjectMgr.GetPlayer(itr->guid);
+        if( !player || !player->IsAlive())
+            continue;
 
-	    float percent = (static_cast<float> (player->GetHealth()) / player->GetMaxHealth()) * 100;
-	    if (percent <= range)
-	    	count++;
-	}
+        float percent = (static_cast<float> (player->GetHealth()) / player->GetMaxHealth()) * 100;
+        if (percent <= range)
+            count++;
+    }
 
-	return count;
+    return count;
 }
 

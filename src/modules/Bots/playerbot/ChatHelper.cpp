@@ -20,8 +20,8 @@ static bool substrContainsInMap(string searchTerm, map<string, T> searchIn)
 {
     for (typename map<string, T>::iterator i = searchIn.begin(); i != searchIn.end(); ++i)
     {
-		string term = i->first;
-		if (term.size() > 1 && searchTerm.find(term) != string::npos)
+        string term = i->first;
+        if (term.size() > 1 && searchTerm.find(term) != string::npos)
             return true;
     }
 
@@ -150,11 +150,11 @@ ChatHelper::ChatHelper(PlayerbotAI* ai) : PlayerbotAIAware(ai)
 string ChatHelper::formatMoney(uint32 copper)
 {
     ostringstream out;
-	if (!copper)
-	{
-		out << "0|TInterface\\AddOns\\AtlasLoot\\Images\\bronze:0|t";
-		return out.str();
-	}
+    if (!copper)
+    {
+        out << "0|TInterface\\AddOns\\AtlasLoot\\Images\\bronze:0|t";
+        return out.str();
+    }
 
     uint32 gold = uint32(copper / 10000);
     copper -= (gold * 10000);
@@ -165,8 +165,8 @@ string ChatHelper::formatMoney(uint32 copper)
         out << gold <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\gold:0|t ";
     if (silver > 0 && gold < 50)
         out << silver <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\silver:0|t ";
-	if (copper > 0 && gold < 10)
-		out << copper <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\bronze:0|t";
+    if (copper > 0 && gold < 10)
+        out << copper <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\bronze:0|t";
 
     return out.str();
 }

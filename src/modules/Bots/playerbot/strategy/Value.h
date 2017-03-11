@@ -26,14 +26,14 @@ namespace ai
 
     template<class T>
     class CalculatedValue : public UntypedValue, public Value<T>
-	{
-	public:
+    {
+    public:
         CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
             checkInterval(checkInterval), ticksElapsed(checkInterval)
         { }
         virtual ~CalculatedValue() {}
 
-	public:
+    public:
         virtual T Get()
         {
             if (ticksElapsed >= checkInterval) {
@@ -54,10 +54,10 @@ namespace ai
         virtual T Calculate() = 0;
 
     protected:
-		int checkInterval;
-		int ticksElapsed;
+        int checkInterval;
+        int ticksElapsed;
         T value;
-	};
+    };
 
     class Uint8CalculatedValue : public CalculatedValue<uint8>
     {

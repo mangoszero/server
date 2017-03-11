@@ -151,12 +151,12 @@ void Warden::Update()
                     _session->KickPlayer();
                 }
                 else
-		{
+        {
                     _clientResponseTimer += diff;
-		}
+        }
 
-	    }
-	}
+        }
+    }
         break;
         case WardenState::STATE_INITIALIZE_MODULE:
         case WardenState::STATE_RESTING:

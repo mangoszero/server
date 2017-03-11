@@ -167,7 +167,7 @@ class Warden
         void DecryptData(uint8* buffer, uint32 length);
         void EncryptData(uint8* buffer, uint32 length);
 
-	void SetNewState(WardenState::Value state);
+    void SetNewState(WardenState::Value state);
 
         static bool IsValidCheckSum(uint32 checksum, const uint8 *data, const uint16 length);
         static uint32 BuildChecksum(const uint8 *data, uint32 length);

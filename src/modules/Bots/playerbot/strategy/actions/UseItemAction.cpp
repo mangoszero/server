@@ -256,7 +256,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
                 continue;
             }
 
-			if (replace && enchantEntry->GemID != gem->GetProto()->ItemId)
+            if (replace && enchantEntry->GemID != gem->GetProto()->ItemId)
             {
                 *packet << gem->GetObjectGuid();
                 fits = true;

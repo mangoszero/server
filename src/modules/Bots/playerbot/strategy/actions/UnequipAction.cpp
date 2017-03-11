@@ -25,7 +25,7 @@ void UnequipAction::UnequipItem(FindItemVisitor* visitor)
 {
     IterateItems(visitor, ITERATE_ALL_ITEMS);
     list<Item*> items = visitor->GetResult();
-	if (!items.empty()) UnequipItem(**items.begin());
+    if (!items.empty()) UnequipItem(**items.begin());
 }
 
 void UnequipAction::UnequipItem(Item& item)

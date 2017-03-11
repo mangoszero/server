@@ -22,19 +22,19 @@ namespace ai
         float maxValue, minValue;
     };
 
-	class HealthInRangeTrigger : public ValueInRangeTrigger
-	{
-	public:
-		HealthInRangeTrigger(PlayerbotAI* ai, string name, float maxValue, float minValue = 0) :
-		  ValueInRangeTrigger(ai, name, maxValue, minValue) {}
+    class HealthInRangeTrigger : public ValueInRangeTrigger
+    {
+    public:
+        HealthInRangeTrigger(PlayerbotAI* ai, string name, float maxValue, float minValue = 0) :
+          ValueInRangeTrigger(ai, name, maxValue, minValue) {}
 
-		virtual bool IsActive()
-		{
-		    return ValueInRangeTrigger::IsActive() && !AI_VALUE2(bool, "dead", GetTargetName());
-		}
+        virtual bool IsActive()
+        {
+            return ValueInRangeTrigger::IsActive() && !AI_VALUE2(bool, "dead", GetTargetName());
+        }
 
-		virtual float GetValue();
-	};
+        virtual float GetValue();
+    };
 
     class LowHealthTrigger : public HealthInRangeTrigger
     {
@@ -43,7 +43,7 @@ namespace ai
             float value = sPlayerbotAIConfig.lowHealth, float minValue = sPlayerbotAIConfig.criticalHealth) :
             HealthInRangeTrigger(ai, name, value, minValue) {}
 
-		virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName() { return "self target"; }
     };
 
     class CriticalHealthTrigger : public LowHealthTrigger
@@ -110,12 +110,12 @@ namespace ai
         TargetCriticalHealthTrigger(PlayerbotAI* ai) : TargetLowHealthTrigger(ai, 20) {}
     };
 
-	class PartyMemberDeadTrigger : public Trigger {
-	public:
-		PartyMemberDeadTrigger(PlayerbotAI* ai) : Trigger(ai, "resurrect", 10) {}
+    class PartyMemberDeadTrigger : public Trigger {
+    public:
+        PartyMemberDeadTrigger(PlayerbotAI* ai) : Trigger(ai, "resurrect", 10) {}
         virtual string GetTargetName() { return "party member to resurrect"; }
-		virtual bool IsActive();
-	};
+        virtual bool IsActive();
+    };
 
     class DeadTrigger : public Trigger {
     public:
@@ -126,8 +126,8 @@ namespace ai
 
     class AoeHealTrigger : public Trigger {
     public:
-    	AoeHealTrigger(PlayerbotAI* ai, string name, string type, int count) :
-    		Trigger(ai, name), type(type), count(count) {}
+        AoeHealTrigger(PlayerbotAI* ai, string name, string type, int count) :
+            Trigger(ai, name), type(type), count(count) {}
     public:
         virtual bool IsActive();
 

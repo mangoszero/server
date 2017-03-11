@@ -4,8 +4,8 @@
 namespace ai
 {
     class LastSpellCastTimeValue : public ManualSetValue<time_t>, public Qualified
-	{
-	public:
+    {
+    public:
         LastSpellCastTimeValue(PlayerbotAI* ai) : ManualSetValue<time_t>(ai, 0), Qualified() {}
     };
 }

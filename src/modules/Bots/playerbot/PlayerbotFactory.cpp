@@ -130,7 +130,7 @@ void PlayerbotFactory::InitPet()
         if (!map)
             return;
 
-		vector<uint32> ids;
+        vector<uint32> ids;
         for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
         {
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
@@ -140,12 +140,12 @@ void PlayerbotFactory::InitPet()
             if (co->MinLevel > bot->getLevel())
                 continue;
 
-			PetLevelInfo const* petInfo = sObjectMgr.GetPetLevelInfo(co->Entry, bot->getLevel());
+            PetLevelInfo const* petInfo = sObjectMgr.GetPetLevelInfo(co->Entry, bot->getLevel());
             if (!petInfo)
                 continue;
 
-			ids.push_back(id);
-		}
+            ids.push_back(id);
+        }
 
         if (ids.empty())
         {
@@ -153,10 +153,10 @@ void PlayerbotFactory::InitPet()
             return;
         }
 
-		for (int i = 0; i < 100; i++)
-		{
-			int index = urand(0, ids.size() - 1);
-			CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
+        for (int i = 0; i < 100; i++)
+        {
+            int index = urand(0, ids.size() - 1);
+            CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
 
             PetLevelInfo const* petInfo = sObjectMgr.GetPetLevelInfo(co->Entry, bot->getLevel());
             if (!petInfo)
@@ -1016,11 +1016,11 @@ void PlayerbotFactory::InitAvailableSpells()
         if (co->TrainerType == TRAINER_TYPE_CLASS && co->TrainerClass != bot->getClass())
             continue;
 
-		uint32 trainerId = co->TrainerTemplateId;
+        uint32 trainerId = co->TrainerTemplateId;
         if (!trainerId)
             trainerId = co->Entry;
 
-		TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
+        TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
         if (!trainer_spells)
             trainer_spells = sObjectMgr.GetNpcTrainerSpells(trainerId);
 
@@ -1099,7 +1099,7 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
                 bot->learnSpell(spellId, false);
                 bot->UpdateFreeTalentPoints(false);
             }
-			spells.erase(spells.begin() + index);
+            spells.erase(spells.begin() + index);
         }
 
         freePoints = bot->GetFreeTalentPoints();
@@ -1161,7 +1161,7 @@ void PlayerbotFactory::InitQuests()
     {
         for (list<uint32>::iterator i = ids.begin(); i != ids.end(); ++i)
         {
-			uint32 questId = *i;
+            uint32 questId = *i;
             Quest const *quest = sObjectMgr.GetQuestTemplate(questId);
 
             bot->SetQuestStatus(questId, QUEST_STATUS_NONE);

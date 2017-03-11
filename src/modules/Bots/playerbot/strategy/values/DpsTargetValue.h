@@ -6,8 +6,8 @@ namespace ai
 {
    
     class DpsTargetValue : public TargetValue
-	{
-	public:
+    {
+    public:
         DpsTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
     public:

@@ -100,13 +100,13 @@ void DpsWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "target critical health",
         NextAction::array(0, new NextAction("execute", ACTION_HIGH + 4), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"hamstring",
-		NextAction::array(0, new NextAction("hamstring", ACTION_INTERRUPT), NULL)));
+    triggers.push_back(new TriggerNode(
+        "hamstring",
+        NextAction::array(0, new NextAction("hamstring", ACTION_INTERRUPT), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"victory rush",
-		NextAction::array(0, new NextAction("victory rush", ACTION_HIGH + 3), NULL)));
+    triggers.push_back(new TriggerNode(
+        "victory rush",
+        NextAction::array(0, new NextAction("victory rush", ACTION_HIGH + 3), NULL)));
 
     triggers.push_back(new TriggerNode(
         "death wish",

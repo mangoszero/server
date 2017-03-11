@@ -12,7 +12,7 @@ bool TaxiAction::Execute(Event event)
     LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
 
     WorldPacket& p = event.getPacket();
-	if (!p.empty() && p.GetOpcode() == CMSG_MOVE_SPLINE_DONE)
+    if (!p.empty() && p.GetOpcode() == CMSG_MOVE_SPLINE_DONE)
     {
         WorldPacket p1(p);
         p1.rpos(0);

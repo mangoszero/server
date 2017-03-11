@@ -8,7 +8,7 @@ namespace ai
     public:
         DpsAssistStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName() { return "dps assist"; }
-		virtual int GetType() { return STRATEGY_TYPE_DPS; }
+        virtual int GetType() { return STRATEGY_TYPE_DPS; }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

@@ -4,11 +4,11 @@
 namespace ai
 {
     class InvalidTargetValue : public BoolCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         InvalidTargetValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
-	public:
+    public:
         virtual bool Calculate();
     };
 }

@@ -6,8 +6,8 @@
 namespace ai
 {
     class HasTotemValue : public BoolCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         HasTotemValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
     public:

@@ -24,7 +24,7 @@ bool RageAvailable::IsActive()
 
 bool EnergyAvailable::IsActive()
 {
-	return AI_VALUE2(uint8, "energy", "self target") >= amount;
+    return AI_VALUE2(uint8, "energy", "self target") >= amount;
 }
 
 bool ComboPointsAvailableTrigger::IsActive()
@@ -45,25 +45,25 @@ bool HasAggroTrigger::IsActive()
 bool PanicTrigger::IsActive()
 {
     return AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.criticalHealth &&
-		(!AI_VALUE2(bool, "has mana", "self target") || AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.lowMana);
+        (!AI_VALUE2(bool, "has mana", "self target") || AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.lowMana);
 }
 
 bool BuffTrigger::IsActive()
 {
     Unit* target = GetTarget();
-	return SpellTrigger::IsActive() &&
-		!ai->HasAura(spell, target) &&
-		(!AI_VALUE2(bool, "has mana", "self target") || AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.lowMana);
+    return SpellTrigger::IsActive() &&
+        !ai->HasAura(spell, target) &&
+        (!AI_VALUE2(bool, "has mana", "self target") || AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.lowMana);
 }
 
 Value<Unit*>* BuffOnPartyTrigger::GetTargetValue()
 {
-	return context->GetValue<Unit*>("party member without aura", spell);
+    return context->GetValue<Unit*>("party member without aura", spell);
 }
 
 Value<Unit*>* DebuffOnAttackerTrigger::GetTargetValue()
 {
-	return context->GetValue<Unit*>("attacker without aura", spell);
+    return context->GetValue<Unit*>("attacker without aura", spell);
 }
 
 bool NoAttackersTrigger::IsActive()
@@ -78,7 +78,7 @@ bool InvalidTargetTrigger::IsActive()
 
 bool NoTargetTrigger::IsActive()
 {
-	return !AI_VALUE(Unit*, "current target");
+    return !AI_VALUE(Unit*, "current target");
 }
 
 bool MyAttackerCountTrigger::IsActive()
@@ -93,18 +93,18 @@ bool AoeTrigger::IsActive()
 
 bool DebuffTrigger::IsActive()
 {
-	return BuffTrigger::IsActive() && AI_VALUE2(uint8, "health", "current target") > 25;
+    return BuffTrigger::IsActive() && AI_VALUE2(uint8, "health", "current target") > 25;
 }
 
 bool SpellTrigger::IsActive()
 {
-	return GetTarget();
+    return GetTarget();
 }
 
 bool SpellCanBeCastTrigger::IsActive()
 {
-	Unit* target = GetTarget();
-	return target && ai->CanCastSpell(spell, target);
+    Unit* target = GetTarget();
+    return target && ai->CanCastSpell(spell, target);
 }
 
 bool RandomTrigger::IsActive()
@@ -128,28 +128,28 @@ string AndTrigger::getName()
 
 bool BoostTrigger::IsActive()
 {
-	return BuffTrigger::IsActive() && AI_VALUE(uint8, "balance") <= balance;
+    return BuffTrigger::IsActive() && AI_VALUE(uint8, "balance") <= balance;
 }
 
 bool SnareTargetTrigger::IsActive()
 {
-	Unit* target = GetTarget();
-	return DebuffTrigger::IsActive() && AI_VALUE2(bool, "moving", "current target") && !ai->HasAura(spell, target);
+    Unit* target = GetTarget();
+    return DebuffTrigger::IsActive() && AI_VALUE2(bool, "moving", "current target") && !ai->HasAura(spell, target);
 }
 
 bool ItemCountTrigger::IsActive()
 {
-	return AI_VALUE2(uint8, "item count", item) < count;
+    return AI_VALUE2(uint8, "item count", item) < count;
 }
 
 bool InterruptSpellTrigger::IsActive()
 {
-	return SpellTrigger::IsActive() && ai->IsInterruptableSpellCasting(GetTarget(), getName());
+    return SpellTrigger::IsActive() && ai->IsInterruptableSpellCasting(GetTarget(), getName());
 }
 
 bool HasAuraTrigger::IsActive()
 {
-	return ai->HasAura(getName(), GetTarget());
+    return ai->HasAura(getName(), GetTarget());
 }
 
 bool TankAoeTrigger::IsActive()
@@ -187,7 +187,7 @@ bool HasCcTargetTrigger::IsActive()
 
 bool NoMovementTrigger::IsActive()
 {
-	return !AI_VALUE2(bool, "moving", "self target");
+    return !AI_VALUE2(bool, "moving", "self target");
 }
 
 bool NoPossibleTargetsTrigger::IsActive()
@@ -223,7 +223,7 @@ bool HasNearestAddsTrigger::IsActive()
 
 bool HasItemForSpellTrigger::IsActive()
 {
-	string spell = getName();
+    string spell = getName();
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     return spellId && AI_VALUE2(Item*, "item for spell", spellId);
 }

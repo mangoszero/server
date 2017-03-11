@@ -25,7 +25,7 @@ void EquipAction::EquipItem(FindItemVisitor* visitor)
 {
     IterateItems(visitor);
     list<Item*> items = visitor->GetResult();
-	if (!items.empty()) EquipItem(**items.begin());
+    if (!items.empty()) EquipItem(**items.begin());
 }
 
 

@@ -21,7 +21,7 @@ class MANGOS_DLL_SPEC RandomPlayerbotMgr : public PlayerbotHolder
 
         virtual void UpdateAIInternal(uint32 elapsed);
 
-	public:
+    public:
         bool IsRandomBot(Player* bot);
         bool IsRandomBot(uint32 bot);
         void Randomize(Player* bot);
@@ -40,8 +40,8 @@ class MANGOS_DLL_SPEC RandomPlayerbotMgr : public PlayerbotHolder
         uint32 GetTradeDiscount(Player* bot);
         void Refresh(Player* bot);
 
-	protected:
-	    virtual void OnBotLoginInternal(Player * const bot) {}
+    protected:
+        virtual void OnBotLoginInternal(Player * const bot) {}
 
     private:
         uint32 GetEventValue(uint32 bot, string event);

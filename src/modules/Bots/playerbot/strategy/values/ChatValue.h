@@ -4,8 +4,8 @@
 namespace ai
 {
     class ChatValue : public ManualSetValue<ChatMsg>
-	{
-	public:
+    {
+    public:
         ChatValue(PlayerbotAI* ai) : ManualSetValue<ChatMsg>(ai, CHAT_MSG_WHISPER) {}
     };
 }

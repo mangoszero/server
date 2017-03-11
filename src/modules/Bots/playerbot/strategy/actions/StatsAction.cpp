@@ -59,11 +59,11 @@ void StatsAction::ListBagSlots(ostringstream &out)
 
     }
 
-	string color = "ff00ff00";
-	if (totalfree < total / 2)
-		color = "ffffff00";
-	if (totalfree < total / 4)
-		color = "ffff0000";
+    string color = "ff00ff00";
+    if (totalfree < total / 2)
+        color = "ffffff00";
+    if (totalfree < total / 4)
+        color = "ffff0000";
     out << "|h|c" << color << (total - totalfree) << "/" << total << "|h|cffffffff Bag";
 }
 

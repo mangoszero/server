@@ -4754,9 +4754,9 @@ void Aura::PeriodicTick()
                 target->HandleEmoteCommand(EMOTE_ONESHOT_EAT);
             }
 
-			// Setting the rage decay rate to the value of the spell/aura. Currently only works on players.
-			if (powerType == POWER_RAGE)
-				target->ToPlayer()->m_rageDecayMultiplier = m_modifier.m_amount;
+            // Setting the rage decay rate to the value of the spell/aura. Currently only works on players.
+            if (powerType == POWER_RAGE)
+                target->ToPlayer()->m_rageDecayMultiplier = m_modifier.m_amount;
             break;
         }
         // Here tick dummy auras

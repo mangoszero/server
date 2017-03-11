@@ -15,12 +15,12 @@ namespace ai
     class LivingBombTrigger : public DebuffTrigger {
     public:
         LivingBombTrigger(PlayerbotAI* ai) : DebuffTrigger(ai, "living bomb") {}
-	};
+    };
 
     class FireballTrigger : public DebuffTrigger {
     public:
         FireballTrigger(PlayerbotAI* ai) : DebuffTrigger(ai, "fireball") {}
-	};
+    };
 
     class PyroblastTrigger : public DebuffTrigger {
     public:

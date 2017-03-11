@@ -39,6 +39,6 @@ private:
 
 Unit* PartyMemberToResurrect::Calculate()
 {
-	FindDeadPlayer finder(this);
+    FindDeadPlayer finder(this);
     return FindPartyMember(finder);
 }

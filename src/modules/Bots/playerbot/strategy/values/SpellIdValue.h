@@ -6,8 +6,8 @@ namespace ai
 {
 
     class SpellIdValue : public CalculatedValue<uint32>, public Qualified
-	{
-	public:
+    {
+    public:
         SpellIdValue(PlayerbotAI* ai);
 
     public:

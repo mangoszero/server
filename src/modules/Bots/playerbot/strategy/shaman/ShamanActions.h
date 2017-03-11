@@ -32,10 +32,10 @@ namespace ai
         CastChainHealAction(PlayerbotAI* ai) : CastAoeHealSpellAction(ai, "chain heal") {}
     };
 
-	class CastLightningShieldAction : public CastBuffSpellAction {
-	public:
-		CastLightningShieldAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "lightning shield") {}
-	};
+    class CastLightningShieldAction : public CastBuffSpellAction {
+    public:
+        CastLightningShieldAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "lightning shield") {}
+    };
 
     class CastRockbiterWeaponAction : public CastEnchantItemAction {
     public:
@@ -88,18 +88,18 @@ namespace ai
         CastManaSpringTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "mana spring totem") {}
     };
 
-	class CastManaTideTotemAction : public CastTotemAction
-	{
-	public:
-		CastManaTideTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "mana tide totem") {}
-		virtual string GetTargetName() { return "self target"; }
-	};
+    class CastManaTideTotemAction : public CastTotemAction
+    {
+    public:
+        CastManaTideTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "mana tide totem") {}
+        virtual string GetTargetName() { return "self target"; }
+    };
 
-	class CastHealingStreamTotemAction : public CastTotemAction
-	{
-	public:
-		CastHealingStreamTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "healing stream totem") {}
-	};
+    class CastHealingStreamTotemAction : public CastTotemAction
+    {
+    public:
+        CastHealingStreamTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "healing stream totem") {}
+    };
 
     class CastCleansingTotemAction : public CastTotemAction
     {
@@ -134,23 +134,23 @@ namespace ai
         virtual bool isUseful() { return CastMeleeSpellAction::isUseful() && !AI_VALUE2(bool, "has totem", name); }
     };
 
-	class CastAncestralSpiritAction : public ResurrectPartyMemberAction
-	{
-	public:
-		CastAncestralSpiritAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "ancestral spirit") {}
-	};
+    class CastAncestralSpiritAction : public ResurrectPartyMemberAction
+    {
+    public:
+        CastAncestralSpiritAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "ancestral spirit") {}
+    };
 
 
-	class CastPurgeAction : public CastSpellAction
-	{
-	public:
-		CastPurgeAction(PlayerbotAI* ai) : CastSpellAction(ai, "purge") {}
-	};
+    class CastPurgeAction : public CastSpellAction
+    {
+    public:
+        CastPurgeAction(PlayerbotAI* ai) : CastSpellAction(ai, "purge") {}
+    };
 
-	class CastStormstrikeAction : public CastMeleeSpellAction {
-	public:
-		CastStormstrikeAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "stormstrike") {}
-	};
+    class CastStormstrikeAction : public CastMeleeSpellAction {
+    public:
+        CastStormstrikeAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "stormstrike") {}
+    };
 
     class CastWaterBreathingAction : public CastBuffSpellAction {
     public:

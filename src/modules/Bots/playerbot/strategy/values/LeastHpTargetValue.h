@@ -5,8 +5,8 @@
 namespace ai
 {
     class LeastHpTargetValue : public TargetValue
-	{
-	public:
+    {
+    public:
         LeastHpTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
     public:

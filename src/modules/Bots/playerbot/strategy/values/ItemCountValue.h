@@ -16,13 +16,13 @@ namespace ai
     };
 
     class ItemCountValue : public Uint8CalculatedValue, public Qualified, InventoryItemValueBase
-	{
-	public:
+    {
+    public:
         ItemCountValue(PlayerbotAI* ai) : Uint8CalculatedValue(ai), InventoryItemValueBase(ai) {}
 
     public:
         virtual uint8 Calculate();
-	};
+    };
 
     class InventoryItemValue : public CalculatedValue<list<Item*> >, public Qualified, InventoryItemValueBase
     {

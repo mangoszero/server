@@ -29,8 +29,8 @@ namespace ai
     };
 
     class TargetValue : public UnitCalculatedValue
-	{
-	public:
+    {
+    public:
         TargetValue(PlayerbotAI* ai) : UnitCalculatedValue(ai) {}
 
     protected:

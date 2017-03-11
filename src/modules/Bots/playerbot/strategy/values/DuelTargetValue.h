@@ -5,8 +5,8 @@
 namespace ai
 {
     class DuelTargetValue : public TargetValue
-	{
-	public:
+    {
+    public:
         DuelTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
     public:

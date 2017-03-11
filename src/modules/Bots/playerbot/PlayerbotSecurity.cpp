@@ -168,6 +168,6 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
         break;
     }
 
-	bot->Whisper(out.str(), LANG_UNIVERSAL, from->GetObjectGuid());
+    bot->Whisper(out.str(), LANG_UNIVERSAL, from->GetObjectGuid());
     return false;
 }

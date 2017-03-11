@@ -29,8 +29,8 @@ namespace ai
     };
    
     class LastSpellCastValue : public ManualSetValue<LastSpellCast&>
-	{
-	public:
+    {
+    public:
         LastSpellCastValue(PlayerbotAI* ai) : ManualSetValue<LastSpellCast&>(ai, data) {}
 
     private:

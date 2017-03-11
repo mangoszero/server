@@ -7,10 +7,10 @@ using namespace ai;
 
 bool DemonArmorTrigger::IsActive() 
 {
-	Unit* target = GetTarget();
-	return !ai->HasAura("demon skin", target) &&
-		!ai->HasAura("demon armor", target) &&
-		!ai->HasAura("fel armor", target);
+    Unit* target = GetTarget();
+    return !ai->HasAura("demon skin", target) &&
+        !ai->HasAura("demon armor", target) &&
+        !ai->HasAura("fel armor", target);
 }
 
 bool SpellstoneTrigger::IsActive() 

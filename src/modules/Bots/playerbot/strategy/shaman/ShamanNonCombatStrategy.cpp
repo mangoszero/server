@@ -9,17 +9,17 @@ void ShamanNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     NonCombatStrategy::InitTriggers(triggers);
 
-	triggers.push_back(new TriggerNode(
-		"party member dead",
-		NextAction::array(0, new NextAction("ancestral spirit", 33.0f), NULL)));
+    triggers.push_back(new TriggerNode(
+        "party member dead",
+        NextAction::array(0, new NextAction("ancestral spirit", 33.0f), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"water breathing",
-		NextAction::array(0, new NextAction("water breathing", 12.0f), NULL)));
+    triggers.push_back(new TriggerNode(
+        "water breathing",
+        NextAction::array(0, new NextAction("water breathing", 12.0f), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"water walking",
-		NextAction::array(0, new NextAction("water walking", 12.0f), NULL)));
+    triggers.push_back(new TriggerNode(
+        "water walking",
+        NextAction::array(0, new NextAction("water walking", 12.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
         "water breathing on party",

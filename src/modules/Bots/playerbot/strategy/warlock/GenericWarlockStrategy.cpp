@@ -56,9 +56,9 @@ void GenericWarlockStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "low mana",
         NextAction::array(0, new NextAction("life tap", ACTION_EMERGENCY + 5), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"target critical health",
-		NextAction::array(0, new NextAction("drain soul", 30.0f), NULL)));
+    triggers.push_back(new TriggerNode(
+        "target critical health",
+        NextAction::array(0, new NextAction("drain soul", 30.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
         "banish",

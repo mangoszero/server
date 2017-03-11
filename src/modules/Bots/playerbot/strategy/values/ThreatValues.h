@@ -4,14 +4,14 @@
 namespace ai
 {
     class ThreatValue : public Uint8CalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         ThreatValue(PlayerbotAI* ai) : Uint8CalculatedValue(ai) {}
 
     public:
-    	virtual uint8 Calculate();
+        virtual uint8 Calculate();
 
     protected:
-    	uint8 Calculate(Unit* target);
+        uint8 Calculate(Unit* target);
     };
 }

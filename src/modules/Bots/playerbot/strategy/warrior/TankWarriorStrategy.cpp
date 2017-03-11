@@ -100,15 +100,15 @@ void TankWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "medium health",
         NextAction::array(0, new NextAction("shield wall", ACTION_MEDIUM_HEAL), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"critical health",
-		NextAction::array(0, new NextAction("last stand", ACTION_EMERGENCY + 3), NULL)));
+    triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("last stand", ACTION_EMERGENCY + 3), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"medium aoe",
-		NextAction::array(0, new NextAction("shockwave", ACTION_HIGH + 2), NULL)));
+    triggers.push_back(new TriggerNode(
+        "medium aoe",
+        NextAction::array(0, new NextAction("shockwave", ACTION_HIGH + 2), NULL)));
 
-	triggers.push_back(new TriggerNode(
+    triggers.push_back(new TriggerNode(
         "light aoe",
         NextAction::array(0, new NextAction("thunder clap", ACTION_HIGH + 2), new NextAction("demoralizing shout", ACTION_HIGH + 2),  new NextAction("cleave", ACTION_HIGH + 1), NULL)));
 
@@ -116,9 +116,9 @@ void TankWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "high aoe",
         NextAction::array(0, new NextAction("challenging shout", ACTION_HIGH + 3), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"concussion blow",
-		NextAction::array(0, new NextAction("concussion blow", ACTION_INTERRUPT), NULL)));
+    triggers.push_back(new TriggerNode(
+        "concussion blow",
+        NextAction::array(0, new NextAction("concussion blow", ACTION_INTERRUPT), NULL)));
 
     triggers.push_back(new TriggerNode(
         "sword and board",

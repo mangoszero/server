@@ -5,10 +5,10 @@
 
 namespace ai
 {
-	class AttackAction : public MovementAction
-	{
-	public:
-		AttackAction(PlayerbotAI* ai, string name) : MovementAction(ai, name) {}
+    class AttackAction : public MovementAction
+    {
+    public:
+        AttackAction(PlayerbotAI* ai, string name) : MovementAction(ai, name) {}
 
     public:
         virtual bool Execute(Event event);

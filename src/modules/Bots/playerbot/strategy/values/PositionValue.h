@@ -16,11 +16,11 @@ namespace ai
     };
 
     class PositionValue : public ManualSetValue<Position&>, public Qualified
-	{
-	public:
+    {
+    public:
         PositionValue(PlayerbotAI* ai);
 
-	private:
+    private:
         Position position;
     };
 }

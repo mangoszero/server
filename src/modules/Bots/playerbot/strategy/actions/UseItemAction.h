@@ -4,9 +4,9 @@
 
 namespace ai
 {
-	class UseItemAction : public Action {
-	public:
-		UseItemAction(PlayerbotAI* ai, string name = "use", bool selfOnly = false) : Action(ai, name), selfOnly(selfOnly) {}
+    class UseItemAction : public Action {
+    public:
+        UseItemAction(PlayerbotAI* ai, string name = "use", bool selfOnly = false) : Action(ai, name), selfOnly(selfOnly) {}
 
     public:
         virtual bool Execute(Event event);

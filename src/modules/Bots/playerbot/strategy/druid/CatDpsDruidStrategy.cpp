@@ -120,9 +120,9 @@ void CatDpsDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "faerie fire (feral)",
         NextAction::array(0, new NextAction("faerie fire (feral)", ACTION_HIGH + 1), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"tiger's fury",
-		NextAction::array(0, new NextAction("tiger's fury", ACTION_EMERGENCY + 1), NULL)));
+    triggers.push_back(new TriggerNode(
+        "tiger's fury",
+        NextAction::array(0, new NextAction("tiger's fury", ACTION_EMERGENCY + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "entangling roots",

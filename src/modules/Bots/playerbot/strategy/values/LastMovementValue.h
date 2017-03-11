@@ -51,8 +51,8 @@ namespace ai
     };
 
     class LastMovementValue : public ManualSetValue<LastMovement&>
-	{
-	public:
+    {
+    public:
         LastMovementValue(PlayerbotAI* ai) : ManualSetValue<LastMovement&>(ai, data) {}
 
     private:

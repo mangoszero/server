@@ -4,8 +4,8 @@
 namespace ai
 {
     class IsFacingValue : public BoolCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         IsFacingValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
         virtual bool Calculate()

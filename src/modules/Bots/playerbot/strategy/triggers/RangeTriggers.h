@@ -8,8 +8,8 @@ namespace ai
     public:
         EnemyTooCloseForSpellTrigger(PlayerbotAI* ai) : Trigger(ai, "enemy too close for spell") {}
         virtual bool IsActive()
-		{
-			Unit* target = AI_VALUE(Unit*, "current target");
+        {
+            Unit* target = AI_VALUE(Unit*, "current target");
             return target && AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.spellDistance / 2;
         }
     };
@@ -18,8 +18,8 @@ namespace ai
     public:
         EnemyTooCloseForMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "enemy too close for melee", 5) {}
         virtual bool IsActive()
-		{
-			Unit* target = AI_VALUE(Unit*, "current target");
+        {
+            Unit* target = AI_VALUE(Unit*, "current target");
             return target && AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.contactDistance;
         }
     };
@@ -27,13 +27,13 @@ namespace ai
     class OutOfRangeTrigger : public Trigger {
     public:
         OutOfRangeTrigger(PlayerbotAI* ai, string name, float distance) : Trigger(ai, name)
-		{
+        {
             this->distance = distance;
         }
         virtual bool IsActive()
-		{
-			Unit* target = AI_VALUE(Unit*, GetTargetName());
-			return target && AI_VALUE2(float, "distance", GetTargetName()) > distance;
+        {
+            Unit* target = AI_VALUE(Unit*, GetTargetName());
+            return target && AI_VALUE2(float, "distance", GetTargetName()) > distance;
         }
         virtual string GetTargetName() { return "current target"; }
 
@@ -42,19 +42,19 @@ namespace ai
     };
 
     class EnemyOutOfMeleeTrigger : public OutOfRangeTrigger
-	{
+    {
     public:
         EnemyOutOfMeleeTrigger(PlayerbotAI* ai) : OutOfRangeTrigger(ai, "enemy out of melee range", sPlayerbotAIConfig.meleeDistance) {}
     };
 
     class EnemyOutOfSpellRangeTrigger : public OutOfRangeTrigger
-	{
+    {
     public:
         EnemyOutOfSpellRangeTrigger(PlayerbotAI* ai) : OutOfRangeTrigger(ai, "enemy out of spell range", sPlayerbotAIConfig.spellDistance) {}
     };
 
     class PartyMemberToHealOutOfSpellRangeTrigger : public OutOfRangeTrigger
-	{
+    {
     public:
         PartyMemberToHealOutOfSpellRangeTrigger(PlayerbotAI* ai) : OutOfRangeTrigger(ai, "party member to heal out of spell range", sPlayerbotAIConfig.spellDistance) {}
         virtual string GetTargetName() { return "party member to heal"; }

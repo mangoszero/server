@@ -201,12 +201,12 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
 
 bool ChatHandler::HandlePlayerbotCommand(char* args)
 {
-	if (!sPlayerbotAIConfig.enabled)
-	{
-		PSendSysMessage("|cffff0000Playerbot system is currently disabled!");
+    if (!sPlayerbotAIConfig.enabled)
+    {
+        PSendSysMessage("|cffff0000Playerbot system is currently disabled!");
         SetSentErrorMessage(true);
         return false;
-	}
+    }
 
     if (!m_session)
     {
@@ -270,14 +270,14 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         Group::MemberSlotList slots = group->GetMemberSlots();
         for (Group::member_citerator i = slots.begin(); i != slots.end(); i++)
         {
-			ObjectGuid member = i->guid;
+            ObjectGuid member = i->guid;
 
-			if (member == master->GetObjectGuid())
-				continue;
+            if (member == master->GetObjectGuid())
+                continue;
 
-			string bot;
-			if (sObjectMgr.GetPlayerNameByGUID(member, bot))
-			    bots.insert(bot);
+            string bot;
+            if (sObjectMgr.GetPlayerNameByGUID(member, bot))
+                bots.insert(bot);
         }
     }
 
@@ -317,7 +317,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
 
             delete results;
         }
-	}
+    }
 
     for (set<string>::iterator i = bots.begin(); i != bots.end(); ++i)
     {

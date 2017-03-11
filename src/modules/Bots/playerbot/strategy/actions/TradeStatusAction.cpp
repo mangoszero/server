@@ -21,7 +21,7 @@ bool TradeStatusAction::Execute(Event event)
 
     if (trader != master)
     {
-		bot->Whisper("I'm kind of busy now", LANG_UNIVERSAL, trader->GetObjectGuid());
+        bot->Whisper("I'm kind of busy now", LANG_UNIVERSAL, trader->GetObjectGuid());
     }
 
     if (trader != master || !ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_ALLOW_ALL, true, master))
@@ -119,10 +119,10 @@ bool TradeStatusAction::CheckTrade()
         {
             ostringstream out; out << item->GetProto()->ItemId;
             ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
-			if (!auctionbot.GetBuyPrice(item->GetProto()) || usage == ITEM_USAGE_NONE)
+            if (!auctionbot.GetBuyPrice(item->GetProto()) || usage == ITEM_USAGE_NONE)
             {
                 ostringstream out;
-				out << chat->formatItem(item->GetProto()) << " - I don't need this";
+                out << chat->formatItem(item->GetProto()) << " - I don't need this";
                 ai->TellMaster(out);
                 return false;
             }

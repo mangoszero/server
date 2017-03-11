@@ -60,9 +60,9 @@ void TankPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "lose aggro",
         NextAction::array(0, new NextAction("hand of reckoning", ACTION_HIGH + 7), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"holy shield",
-		NextAction::array(0, new NextAction("holy shield", ACTION_HIGH + 7), NULL)));
+    triggers.push_back(new TriggerNode(
+        "holy shield",
+        NextAction::array(0, new NextAction("holy shield", ACTION_HIGH + 7), NULL)));
 
     triggers.push_back(new TriggerNode(
         "blessing",

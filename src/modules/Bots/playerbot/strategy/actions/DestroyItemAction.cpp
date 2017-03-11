@@ -24,9 +24,9 @@ void DestroyItemAction::DestroyItem(FindItemVisitor* visitor)
 {
     IterateItems(visitor);
     list<Item*> items = visitor->GetResult();
-	for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
+    for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
     {
-		Item* item = *i;
+        Item* item = *i;
         bot->DestroyItem(item->GetBagSlot(),item->GetSlot(), true);
         bot->SaveInventoryAndGoldToDB();
         ostringstream out; out << chat->formatItem(item->GetProto()) << " destroyed";

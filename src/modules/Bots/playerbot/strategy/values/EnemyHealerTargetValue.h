@@ -4,12 +4,12 @@
 namespace ai
 {
     class EnemyHealerTargetValue : public UnitCalculatedValue, public Qualified
-	{
-	public:
+    {
+    public:
         EnemyHealerTargetValue(PlayerbotAI* ai) :
             UnitCalculatedValue(ai, "enemy healer target") {}
 
     protected:
         virtual Unit* Calculate();
-	};
+    };
 }

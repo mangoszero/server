@@ -34,53 +34,53 @@ namespace ai
         virtual string getName() { return "bdps"; }
     };
 
-	class PaladinBuffArmorStrategy : public Strategy
-	{
-	public:
-		PaladinBuffArmorStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+    class PaladinBuffArmorStrategy : public Strategy
+    {
+    public:
+        PaladinBuffArmorStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-		virtual string getName() { return "barmor"; }
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        virtual string getName() { return "barmor"; }
+    };
 
-	class PaladinBuffSpeedStrategy : public Strategy
-	{
-	public:
-		PaladinBuffSpeedStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+    class PaladinBuffSpeedStrategy : public Strategy
+    {
+    public:
+        PaladinBuffSpeedStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-		virtual string getName() { return "bspeed"; }
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        virtual string getName() { return "bspeed"; }
+    };
 
-	class PaladinShadowResistanceStrategy : public Strategy
-	{
-	public:
-		PaladinShadowResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+    class PaladinShadowResistanceStrategy : public Strategy
+    {
+    public:
+        PaladinShadowResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-		virtual string getName() { return "rshadow"; }
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        virtual string getName() { return "rshadow"; }
+    };
 
-	class PaladinFrostResistanceStrategy : public Strategy
-	{
-	public:
-		PaladinFrostResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+    class PaladinFrostResistanceStrategy : public Strategy
+    {
+    public:
+        PaladinFrostResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-		virtual string getName() { return "rfrost"; }
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        virtual string getName() { return "rfrost"; }
+    };
 
-	class PaladinFireResistanceStrategy : public Strategy
-	{
-	public:
-		PaladinFireResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+    class PaladinFireResistanceStrategy : public Strategy
+    {
+    public:
+        PaladinFireResistanceStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-		virtual string getName() { return "rfire"; }
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        virtual string getName() { return "rfire"; }
+    };
 }

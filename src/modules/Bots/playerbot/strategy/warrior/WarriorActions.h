@@ -75,9 +75,9 @@ namespace ai
     class CastShieldBlockAction : public CastBuffSpellAction {
     public:
         CastShieldBlockAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "shield block") {}
-		virtual NextAction** getPrerequisites() {
-			return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
-		}
+        virtual NextAction** getPrerequisites() {
+            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
+        }
     };
 
     // defensive
@@ -97,11 +97,11 @@ namespace ai
         CastSlamAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "slam") {}
     };
 
-	// all
-	class CastShieldSlamAction : public CastMeleeSpellAction {
-	public:
-		CastShieldSlamAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "shield slam") {}
-	};
+    // all
+    class CastShieldSlamAction : public CastMeleeSpellAction {
+    public:
+        CastShieldSlamAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "shield slam") {}
+    };
 
     // after dodge
     BEGIN_MELEE_SPELL_ACTION(CastRevengeAction, "revenge")
@@ -148,44 +148,44 @@ namespace ai
     END_SPELL_ACTION()
 
     // buffs
-	class CastBattleShoutAction : public CastBuffSpellAction {
-	public:
-		CastBattleShoutAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "battle shout") {}
-	};
+    class CastBattleShoutAction : public CastBuffSpellAction {
+    public:
+        CastBattleShoutAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "battle shout") {}
+    };
 
-	class CastDefensiveStanceAction : public CastBuffSpellAction {
-	public:
-		CastDefensiveStanceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "defensive stance") {}
-	};
+    class CastDefensiveStanceAction : public CastBuffSpellAction {
+    public:
+        CastDefensiveStanceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "defensive stance") {}
+    };
 
-	class CastBattleStanceAction : public CastBuffSpellAction {
-	public:
-		CastBattleStanceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "battle stance") {}
-	};
+    class CastBattleStanceAction : public CastBuffSpellAction {
+    public:
+        CastBattleStanceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "battle stance") {}
+    };
 
     BEGIN_RANGED_SPELL_ACTION(CastChargeAction, "charge")
     END_SPELL_ACTION()
 
-	class CastDeathWishAction : public CastBuffSpellAction {
-	public:
-		CastDeathWishAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "death wish") {}
-	};
+    class CastDeathWishAction : public CastBuffSpellAction {
+    public:
+        CastDeathWishAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "death wish") {}
+    };
 
-	class CastBerserkerRageAction : public CastBuffSpellAction {
-	public:
-		CastBerserkerRageAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "berserker rage") {}
-	};
+    class CastBerserkerRageAction : public CastBuffSpellAction {
+    public:
+        CastBerserkerRageAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "berserker rage") {}
+    };
 
-	class CastLastStandAction : public CastBuffSpellAction {
-	public:
-		CastLastStandAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "last stand") {}
-	};
+    class CastLastStandAction : public CastBuffSpellAction {
+    public:
+        CastLastStandAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "last stand") {}
+    };
 
-	// defensive
-	class CastConcussionBlowAction : public CastDefensiveMeleeSpellAction {
-	public:
-		CastConcussionBlowAction(PlayerbotAI* ai) : CastDefensiveMeleeSpellAction(ai, "concussion blow") {}
-	};
+    // defensive
+    class CastConcussionBlowAction : public CastDefensiveMeleeSpellAction {
+    public:
+        CastConcussionBlowAction(PlayerbotAI* ai) : CastDefensiveMeleeSpellAction(ai, "concussion blow") {}
+    };
 
     class CastShieldBashOnEnemyHealerAction : public CastSpellOnEnemyHealerAction
     {

@@ -10,12 +10,12 @@ public:
 public:
     ~Queue(void) {}
 public:
-	void Push(ActionBasket *action);
-	void Push(ActionBasket **actions);
-	ActionNode* Pop();
+    void Push(ActionBasket *action);
+    void Push(ActionBasket **actions);
+    ActionNode* Pop();
     ActionBasket* Peek();
-	int Size();
+    int Size();
 private:
-	std::list<ActionBasket*> actions;
+    std::list<ActionBasket*> actions;
 };
 }

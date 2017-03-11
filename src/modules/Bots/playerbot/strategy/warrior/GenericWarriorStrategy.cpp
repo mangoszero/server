@@ -67,7 +67,7 @@ void GenericWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "shield bash on enemy healer",
         NextAction::array(0, new NextAction("shield bash on enemy healer", ACTION_INTERRUPT + 3), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"critical health",
-		NextAction::array(0, new NextAction("intimidating shout", ACTION_EMERGENCY), NULL)));
+    triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("intimidating shout", ACTION_EMERGENCY), NULL)));
 }

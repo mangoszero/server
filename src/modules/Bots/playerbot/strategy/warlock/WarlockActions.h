@@ -4,96 +4,96 @@
 
 namespace ai
 {
-	class CastDemonSkinAction : public CastBuffSpellAction {
-	public:
-		CastDemonSkinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon skin") {}
-	};
+    class CastDemonSkinAction : public CastBuffSpellAction {
+    public:
+        CastDemonSkinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon skin") {}
+    };
 
-	class CastDemonArmorAction : public CastBuffSpellAction
-	{
-	public:
-		CastDemonArmorAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon armor") {}
-	};
+    class CastDemonArmorAction : public CastBuffSpellAction
+    {
+    public:
+        CastDemonArmorAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "demon armor") {}
+    };
 
     BEGIN_RANGED_SPELL_ACTION(CastShadowBoltAction, "shadow bolt")
     END_SPELL_ACTION()
 
-	class CastDrainSoulAction : public CastSpellAction
-	{
-	public:
-		CastDrainSoulAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain soul") {}
-		virtual bool isUseful()
-		{
-			return AI_VALUE2(uint8, "item count", "soul shard") < 2;
-		}
-	};
+    class CastDrainSoulAction : public CastSpellAction
+    {
+    public:
+        CastDrainSoulAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain soul") {}
+        virtual bool isUseful()
+        {
+            return AI_VALUE2(uint8, "item count", "soul shard") < 2;
+        }
+    };
 
-	class CastDrainManaAction : public CastSpellAction
-	{
-	public:
-		CastDrainManaAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain mana") {}
-	};
+    class CastDrainManaAction : public CastSpellAction
+    {
+    public:
+        CastDrainManaAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain mana") {}
+    };
 
-	class CastDrainLifeAction : public CastSpellAction
-	{
-	public:
-		CastDrainLifeAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain life") {}
-	};
+    class CastDrainLifeAction : public CastSpellAction
+    {
+    public:
+        CastDrainLifeAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain life") {}
+    };
 
-	class CastCurseOfAgonyAction : public CastDebuffSpellAction
-	{
-	public:
-		CastCurseOfAgonyAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "curse of agony") {}
-	};
+    class CastCurseOfAgonyAction : public CastDebuffSpellAction
+    {
+    public:
+        CastCurseOfAgonyAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "curse of agony") {}
+    };
 
-	class CastCurseOfWeaknessAction : public CastDebuffSpellAction
-	{
-	public:
-		CastCurseOfWeaknessAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "curse of weakness") {}
-	};
+    class CastCurseOfWeaknessAction : public CastDebuffSpellAction
+    {
+    public:
+        CastCurseOfWeaknessAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "curse of weakness") {}
+    };
 
-	class CastCorruptionAction : public CastDebuffSpellAction
-	{
-	public:
-		CastCorruptionAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "corruption") {}
-	};
+    class CastCorruptionAction : public CastDebuffSpellAction
+    {
+    public:
+        CastCorruptionAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "corruption") {}
+    };
 
-	class CastCorruptionOnAttackerAction : public CastDebuffSpellOnAttackerAction
-	{
-	public:
-	    CastCorruptionOnAttackerAction(PlayerbotAI* ai) : CastDebuffSpellOnAttackerAction(ai, "corruption") {}
-	};
+    class CastCorruptionOnAttackerAction : public CastDebuffSpellOnAttackerAction
+    {
+    public:
+        CastCorruptionOnAttackerAction(PlayerbotAI* ai) : CastDebuffSpellOnAttackerAction(ai, "corruption") {}
+    };
 
 
-	class CastSummonVoidwalkerAction : public CastBuffSpellAction
-	{
-	public:
-		CastSummonVoidwalkerAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "summon voidwalker") {}
-	};
+    class CastSummonVoidwalkerAction : public CastBuffSpellAction
+    {
+    public:
+        CastSummonVoidwalkerAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "summon voidwalker") {}
+    };
 
-	class CastSummonImpAction : public CastBuffSpellAction
-	{
-	public:
-		CastSummonImpAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "summon imp") {}
-	};
+    class CastSummonImpAction : public CastBuffSpellAction
+    {
+    public:
+        CastSummonImpAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "summon imp") {}
+    };
 
-	class CastCreateHealthstoneAction : public CastBuffSpellAction
-	{
-	public:
-		CastCreateHealthstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create healthstone") {}
-	};
+    class CastCreateHealthstoneAction : public CastBuffSpellAction
+    {
+    public:
+        CastCreateHealthstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create healthstone") {}
+    };
 
-	class CastCreateFirestoneAction : public CastBuffSpellAction
-	{
-	public:
-		CastCreateFirestoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create firestone") {}
-	};
+    class CastCreateFirestoneAction : public CastBuffSpellAction
+    {
+    public:
+        CastCreateFirestoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create firestone") {}
+    };
 
-	class CastCreateSpellstoneAction : public CastBuffSpellAction
-	{
-	public:
-		CastCreateSpellstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create spellstone") {}
-	};
+    class CastCreateSpellstoneAction : public CastBuffSpellAction
+    {
+    public:
+        CastCreateSpellstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create spellstone") {}
+    };
 
     class CastBanishAction : public CastBuffSpellAction
     {

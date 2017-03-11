@@ -16,7 +16,7 @@ namespace ai
         TotemTrigger(PlayerbotAI* ai, string spell, int attackerCount = 0) : Trigger(ai, spell), attackerCount(attackerCount) {}
 
         virtual bool IsActive()
-		{
+        {
             return AI_VALUE(uint8, "attacker count") >= attackerCount && !AI_VALUE2(bool, "has totem", name);
         }
 

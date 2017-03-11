@@ -4,8 +4,8 @@
 namespace ai
 {
     class MasterTargetValue : public UnitCalculatedValue
-	{
-	public:
+    {
+    public:
         MasterTargetValue(PlayerbotAI* ai) : UnitCalculatedValue(ai) {}
 
         virtual Unit* Calculate() { return ai->GetMaster(); }

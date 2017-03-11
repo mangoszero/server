@@ -131,13 +131,13 @@ void CasterDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("rejuvenation on party", ACTION_LIGHT_HEAL + 1), NULL)));
 
 
-	triggers.push_back(new TriggerNode(
-		"insect swarm",
-		NextAction::array(0, new NextAction("insect swarm", ACTION_NORMAL + 5), NULL)));
+    triggers.push_back(new TriggerNode(
+        "insect swarm",
+        NextAction::array(0, new NextAction("insect swarm", ACTION_NORMAL + 5), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"moonfire",
-		NextAction::array(0, new NextAction("moonfire", ACTION_NORMAL + 4), NULL)));
+    triggers.push_back(new TriggerNode(
+        "moonfire",
+        NextAction::array(0, new NextAction("moonfire", ACTION_NORMAL + 4), NULL)));
 
     triggers.push_back(new TriggerNode(
         "eclipse (solar)",
@@ -153,9 +153,9 @@ void CasterDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
 
 
-	triggers.push_back(new TriggerNode(
-		"nature's grasp",
-		NextAction::array(0, new NextAction("nature's grasp", ACTION_EMERGENCY), NULL)));
+    triggers.push_back(new TriggerNode(
+        "nature's grasp",
+        NextAction::array(0, new NextAction("nature's grasp", ACTION_EMERGENCY), NULL)));
 
     triggers.push_back(new TriggerNode(
         "entangling roots",
@@ -164,9 +164,9 @@ void CasterDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
 void CasterDruidAoeStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
-	triggers.push_back(new TriggerNode(
-		"high aoe",
-		NextAction::array(0, new NextAction("starfall", ACTION_HIGH + 1), NULL)));
+    triggers.push_back(new TriggerNode(
+        "high aoe",
+        NextAction::array(0, new NextAction("starfall", ACTION_HIGH + 1), NULL)));
 }
 
 void CasterDruidDebuffStrategy::InitTriggers(std::list<TriggerNode*> &triggers)

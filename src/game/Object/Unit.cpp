@@ -1366,8 +1366,8 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
                 case 20467:    case 20963:    case 20964:    case 20965:    case 20966:
                 // Seal of Command PROC receive benefit from Spell Damage and Healing
                 case 20424:
-                //	Seal of Righteousness Dummy Proc receive benefit from Spell Damage and Healing
-                case 25735:	   case 25736:	  case 25737:    case 25738:    case 25739:     case 25740:
+                //    Seal of Righteousness Dummy Proc receive benefit from Spell Damage and Healing
+                case 25735:       case 25736:      case 25737:    case 25738:    case 25739:     case 25740:
                 case 25713:    case 25742:
                     {
                         damage = SpellDamageBonusDone(pVictim, spellInfo, damage, SPELL_DIRECT_DAMAGE);

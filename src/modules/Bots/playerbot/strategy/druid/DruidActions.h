@@ -7,11 +7,11 @@
 
 namespace ai
 {
-	class CastFaerieFireAction : public CastSpellAction
-	{
-	public:
-		CastFaerieFireAction(PlayerbotAI* ai) : CastSpellAction(ai, "faerie fire") {}
-	};
+    class CastFaerieFireAction : public CastSpellAction
+    {
+    public:
+        CastFaerieFireAction(PlayerbotAI* ai) : CastSpellAction(ai, "faerie fire") {}
+    };
 
     class CastFaerieFireFeralAction : public CastSpellAction
     {
@@ -19,16 +19,16 @@ namespace ai
         CastFaerieFireFeralAction(PlayerbotAI* ai) : CastSpellAction(ai, "faerie fire (feral)") {}
     };
 
-	class CastRejuvenationAction : public CastHealingSpellAction {
-	public:
-		CastRejuvenationAction(PlayerbotAI* ai) : CastHealingSpellAction(ai, "rejuvenation") {}
-	};
+    class CastRejuvenationAction : public CastHealingSpellAction {
+    public:
+        CastRejuvenationAction(PlayerbotAI* ai) : CastHealingSpellAction(ai, "rejuvenation") {}
+    };
 
-	class CastRegrowthAction : public CastHealingSpellAction {
-	public:
-		CastRegrowthAction(PlayerbotAI* ai) : CastHealingSpellAction(ai, "regrowth") {}
+    class CastRegrowthAction : public CastHealingSpellAction {
+    public:
+        CastRegrowthAction(PlayerbotAI* ai) : CastHealingSpellAction(ai, "regrowth") {}
 
-	};
+    };
 
     class CastHealingTouchAction : public CastHealingSpellAction {
     public:
@@ -54,66 +54,66 @@ namespace ai
         CastHealingTouchOnPartyAction(PlayerbotAI* ai) : HealPartyMemberAction(ai, "healing touch") {}
     };
 
-	class CastRebirthAction : public ResurrectPartyMemberAction
-	{
-	public:
-		CastRebirthAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "rebirth") {}
+    class CastRebirthAction : public ResurrectPartyMemberAction
+    {
+    public:
+        CastRebirthAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "rebirth") {}
 
-		virtual NextAction** getPrerequisites() {
-			return NextAction::merge( NextAction::array(0, new NextAction("caster form"), NULL), ResurrectPartyMemberAction::getPrerequisites());
-		}
-	};
+        virtual NextAction** getPrerequisites() {
+            return NextAction::merge( NextAction::array(0, new NextAction("caster form"), NULL), ResurrectPartyMemberAction::getPrerequisites());
+        }
+    };
 
-	class CastMarkOfTheWildAction : public CastBuffSpellAction {
-	public:
-		CastMarkOfTheWildAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "mark of the wild") {}
-	};
+    class CastMarkOfTheWildAction : public CastBuffSpellAction {
+    public:
+        CastMarkOfTheWildAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "mark of the wild") {}
+    };
 
-	class CastMarkOfTheWildOnPartyAction : public BuffOnPartyAction {
-	public:
-		CastMarkOfTheWildOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "mark of the wild") {}
-	};
+    class CastMarkOfTheWildOnPartyAction : public BuffOnPartyAction {
+    public:
+        CastMarkOfTheWildOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "mark of the wild") {}
+    };
 
-	class CastThornsAction : public CastBuffSpellAction {
-	public:
-		CastThornsAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "thorns") {}
-	};
+    class CastThornsAction : public CastBuffSpellAction {
+    public:
+        CastThornsAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "thorns") {}
+    };
 
-	class CastWrathAction : public CastSpellAction
-	{
-	public:
-		CastWrathAction(PlayerbotAI* ai) : CastSpellAction(ai, "wrath") {}
-	};
+    class CastWrathAction : public CastSpellAction
+    {
+    public:
+        CastWrathAction(PlayerbotAI* ai) : CastSpellAction(ai, "wrath") {}
+    };
 
-	class CastHurricaneAction : public CastSpellAction
-	{
-	public:
-	    CastHurricaneAction(PlayerbotAI* ai) : CastSpellAction(ai, "hurricane") {}
-	};
+    class CastHurricaneAction : public CastSpellAction
+    {
+    public:
+        CastHurricaneAction(PlayerbotAI* ai) : CastSpellAction(ai, "hurricane") {}
+    };
 
-	class CastMoonfireAction : public CastDebuffSpellAction
-	{
-	public:
-		CastMoonfireAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "moonfire") {}
-	};
+    class CastMoonfireAction : public CastDebuffSpellAction
+    {
+    public:
+        CastMoonfireAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "moonfire") {}
+    };
 
-	class CastInsectSwarmAction : public CastDebuffSpellAction
-	{
-	public:
-		CastInsectSwarmAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "insect swarm") {}
-	};
+    class CastInsectSwarmAction : public CastDebuffSpellAction
+    {
+    public:
+        CastInsectSwarmAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "insect swarm") {}
+    };
 
-	class CastStarfireAction : public CastSpellAction
-	{
-	public:
-		CastStarfireAction(PlayerbotAI* ai) : CastSpellAction(ai, "starfire") {}
-	};
+    class CastStarfireAction : public CastSpellAction
+    {
+    public:
+        CastStarfireAction(PlayerbotAI* ai) : CastSpellAction(ai, "starfire") {}
+    };
 
-	class CastEntanglingRootsAction : public CastSpellAction
-	{
-	public:
-		CastEntanglingRootsAction(PlayerbotAI* ai) : CastSpellAction(ai, "entangling roots") {}
-	};
+    class CastEntanglingRootsAction : public CastSpellAction
+    {
+    public:
+        CastEntanglingRootsAction(PlayerbotAI* ai) : CastSpellAction(ai, "entangling roots") {}
+    };
 
     class CastEntanglingRootsCcAction : public CastSpellAction
     {
@@ -123,23 +123,23 @@ namespace ai
         virtual bool Execute(Event event);
     };
 
-	class CastNaturesGraspAction : public CastBuffSpellAction
-	{
-	public:
-		CastNaturesGraspAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "nature's grasp") {}
-	};
+    class CastNaturesGraspAction : public CastBuffSpellAction
+    {
+    public:
+        CastNaturesGraspAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "nature's grasp") {}
+    };
 
-	class CastHibernateAction : public CastSpellAction
-	{
-	public:
-		CastHibernateAction(PlayerbotAI* ai) : CastSpellAction(ai, "hibernate") {}
-	};
+    class CastHibernateAction : public CastSpellAction
+    {
+    public:
+        CastHibernateAction(PlayerbotAI* ai) : CastSpellAction(ai, "hibernate") {}
+    };
 
-	class CastCurePoisonAction : public CastCureSpellAction
-	{
-	public:
-		CastCurePoisonAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "cure poison") {}
-	};
+    class CastCurePoisonAction : public CastCureSpellAction
+    {
+    public:
+        CastCurePoisonAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "cure poison") {}
+    };
 
     class CastCurePoisonOnPartyAction : public CurePartyMemberAction
     {
@@ -147,12 +147,12 @@ namespace ai
         CastCurePoisonOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cure poison", DISPEL_POISON) {}
     };
 
-	class CastAbolishPoisonAction : public CastCureSpellAction
-	{
-	public:
-		CastAbolishPoisonAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "abolish poison") {}
-		virtual NextAction** getAlternatives();
-	};
+    class CastAbolishPoisonAction : public CastCureSpellAction
+    {
+    public:
+        CastAbolishPoisonAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "abolish poison") {}
+        virtual NextAction** getAlternatives();
+    };
 
     class CastAbolishPoisonOnPartyAction : public CurePartyMemberAction
     {

@@ -11,17 +11,17 @@ namespace ai
     {
     public:
         HunterAspectOfTheHawkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the hawk") {
-			checkInterval = 1;
-		}
+            checkInterval = 1;
+        }
     };
 
-	class HunterAspectOfTheWildTrigger : public BuffTrigger
-	{
-	public:
-		HunterAspectOfTheWildTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the wild") {
-			checkInterval = 1;
-		}
-	};
+    class HunterAspectOfTheWildTrigger : public BuffTrigger
+    {
+    public:
+        HunterAspectOfTheWildTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the wild") {
+            checkInterval = 1;
+        }
+    };
 
     class HunterAspectOfTheViperTrigger : public BuffTrigger
     {
@@ -38,7 +38,7 @@ namespace ai
     public:
         HunterAspectOfThePackTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the pack") {}
         virtual bool IsActive() {
-			return BuffTrigger::IsActive() && !ai->HasAura("aspect of the cheetah", GetTarget());
+            return BuffTrigger::IsActive() && !ai->HasAura("aspect of the cheetah", GetTarget());
         };
     };
 

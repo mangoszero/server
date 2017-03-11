@@ -5,7 +5,7 @@
 
 namespace ai
 {
-	class FollowAction : public MovementAction {
+    class FollowAction : public MovementAction {
     public:
         FollowAction(PlayerbotAI* ai, string name) : MovementAction(ai, name) {}
     };
@@ -13,8 +13,8 @@ namespace ai
     class FollowLineAction : public FollowAction {
     public:
         FollowLineAction(PlayerbotAI* ai) : FollowAction(ai, "follow line") {}
-		virtual bool Execute(Event event);
-	};
+        virtual bool Execute(Event event);
+    };
 
     class FollowMasterAction : public MovementAction {
     public:

@@ -7,53 +7,53 @@
 
 namespace ai
 {
-	class CastEvasionAction : public CastBuffSpellAction
-	{
-	public:
-		CastEvasionAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "evasion") {}
-	};
+    class CastEvasionAction : public CastBuffSpellAction
+    {
+    public:
+        CastEvasionAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "evasion") {}
+    };
 
-	class CastSprintAction : public CastBuffSpellAction
-	{
-	public:
-		CastSprintAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "sprint") {}
-	};
+    class CastSprintAction : public CastBuffSpellAction
+    {
+    public:
+        CastSprintAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "sprint") {}
+    };
 
-	class CastKickAction : public CastSpellAction
-	{
-	public:
-		CastKickAction(PlayerbotAI* ai) : CastSpellAction(ai, "kick") {}
-	};
+    class CastKickAction : public CastSpellAction
+    {
+    public:
+        CastKickAction(PlayerbotAI* ai) : CastSpellAction(ai, "kick") {}
+    };
 
-	class CastFeintAction : public CastBuffSpellAction
-	{
-	public:
-		CastFeintAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "feint") {}
-	};
+    class CastFeintAction : public CastBuffSpellAction
+    {
+    public:
+        CastFeintAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "feint") {}
+    };
 
-	class CastDistractAction : public CastSpellAction
-	{
-	public:
-		CastDistractAction(PlayerbotAI* ai) : CastSpellAction(ai, "distract") {}
-	};
+    class CastDistractAction : public CastSpellAction
+    {
+    public:
+        CastDistractAction(PlayerbotAI* ai) : CastSpellAction(ai, "distract") {}
+    };
 
-	class CastVanishAction : public CastBuffSpellAction
-	{
-	public:
-		CastVanishAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "vanish") {}
-	};
+    class CastVanishAction : public CastBuffSpellAction
+    {
+    public:
+        CastVanishAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "vanish") {}
+    };
 
-	class CastBlindAction : public CastDebuffSpellAction
-	{
-	public:
-		CastBlindAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "blind") {}
-	};
+    class CastBlindAction : public CastDebuffSpellAction
+    {
+    public:
+        CastBlindAction(PlayerbotAI* ai) : CastDebuffSpellAction(ai, "blind") {}
+    };
 
-	class CastBladeFlurryAction : public CastBuffSpellAction
-	{
-	public:
-		CastBladeFlurryAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "blade flurry") {}
-	};
+    class CastBladeFlurryAction : public CastBuffSpellAction
+    {
+    public:
+        CastBladeFlurryAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "blade flurry") {}
+    };
 
     class CastKickOnEnemyHealerAction : public CastSpellOnEnemyHealerAction
     {

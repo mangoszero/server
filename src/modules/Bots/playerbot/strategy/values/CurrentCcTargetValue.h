@@ -6,8 +6,8 @@ namespace ai
 {
    
     class CurrentCcTargetValue : public TargetValue, public Qualified
-	{
-	public:
+    {
+    public:
         CurrentCcTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
     public:

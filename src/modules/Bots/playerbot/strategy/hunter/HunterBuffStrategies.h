@@ -25,23 +25,23 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 
-	class HunterBuffDpsStrategy : public NonCombatStrategy
-	{
-	public:
-		HunterBuffDpsStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-		virtual string getName() { return "bdps"; }
+    class HunterBuffDpsStrategy : public NonCombatStrategy
+    {
+    public:
+        HunterBuffDpsStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+        virtual string getName() { return "bdps"; }
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+    };
 
-	class HunterNatureResistanceStrategy : public NonCombatStrategy
-	{
-	public:
-		HunterNatureResistanceStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-		virtual string getName() { return "rnature"; }
+    class HunterNatureResistanceStrategy : public NonCombatStrategy
+    {
+    public:
+        HunterNatureResistanceStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+        virtual string getName() { return "rnature"; }
 
-	public:
-		virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-	};
+    public:
+        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+    };
 }

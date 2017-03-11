@@ -16,12 +16,12 @@ class MANGOS_DLL_SPEC RandomPlayerbotFactory
 {
     public:
         RandomPlayerbotFactory(uint32 accountId);
-		virtual ~RandomPlayerbotFactory() {}
+        virtual ~RandomPlayerbotFactory() {}
 
-	public:
+    public:
         bool CreateRandomBot(uint8 cls);
 
-	private:
+    private:
         string CreateRandomBotName();
 
     private:

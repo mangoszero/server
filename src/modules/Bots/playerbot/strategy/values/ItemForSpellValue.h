@@ -6,8 +6,8 @@ namespace ai
 {
 
     class ItemForSpellValue : public CalculatedValue<Item*>, public Qualified
-	{
-	public:
+    {
+    public:
         ItemForSpellValue(PlayerbotAI* ai) : CalculatedValue<Item*>(ai) {}
 
     public:

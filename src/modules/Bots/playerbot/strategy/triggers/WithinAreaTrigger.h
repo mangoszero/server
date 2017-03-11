@@ -9,7 +9,7 @@ namespace ai
         WithinAreaTrigger(PlayerbotAI* ai) : Trigger(ai, "within area trigger") {}
 
         virtual bool IsActive()
-		{
+        {
             
 
             LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();

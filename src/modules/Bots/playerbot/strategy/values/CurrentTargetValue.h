@@ -4,8 +4,8 @@
 namespace ai
 {
     class CurrentTargetValue : public UnitManualSetValue
-	{
-	public:
+    {
+    public:
         CurrentTargetValue(PlayerbotAI* ai) : UnitManualSetValue(ai, NULL) {}
 
         virtual Unit* Get();

@@ -15,11 +15,11 @@ namespace ai
         RendDebuffOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "rend") {}
     };
 
-	class RevengeAvailableTrigger : public SpellCanBeCastTrigger
-	{
-	public:
-		RevengeAvailableTrigger(PlayerbotAI* ai) : SpellCanBeCastTrigger(ai, "revenge") {}
-	};
+    class RevengeAvailableTrigger : public SpellCanBeCastTrigger
+    {
+    public:
+        RevengeAvailableTrigger(PlayerbotAI* ai) : SpellCanBeCastTrigger(ai, "revenge") {}
+    };
 
     class BloodrageDebuffTrigger : public DebuffTrigger
     {

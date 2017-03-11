@@ -6,9 +6,9 @@
 
 namespace ai
 {
-	class ReleaseSpiritAction : public Action {
-	public:
-		ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
+    class ReleaseSpiritAction : public Action {
+    public:
+        ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
 
     public:
         virtual bool Execute(Event event)
@@ -17,7 +17,7 @@ namespace ai
                 return false;
 
             ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
-			
+            
             bot->SetBotDeathTimer();
             bot->BuildPlayerRepop();
 

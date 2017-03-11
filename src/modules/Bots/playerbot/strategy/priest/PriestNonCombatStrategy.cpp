@@ -58,9 +58,9 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "medium aoe heal",
         NextAction::array(0, new NextAction("circle of healing", 27.0f), NULL)));
 
-	triggers.push_back(new TriggerNode(
-		"party member dead",
-		NextAction::array(0, new NextAction("resurrection", 30.0f), NULL)));
+    triggers.push_back(new TriggerNode(
+        "party member dead",
+        NextAction::array(0, new NextAction("resurrection", 30.0f), NULL)));
 
 
     triggers.push_back(new TriggerNode(
