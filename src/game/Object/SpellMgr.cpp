@@ -904,6 +904,16 @@ bool IsPositiveSpell(SpellEntry const* spellproto)
 
 bool IsSingleTargetSpell(SpellEntry const* spellInfo)
 {
+    switch (spellInfo->Id)
+    {
+        case 339:                                           // Druid Roots Rank 1
+        case 1062:                                          // Druid Roots Rank 2
+        case 5195:                                          // Druid Roots Rank 3
+        case 5196:                                          // Druid Roots Rank 4
+        case 9852:                                          // Druid Roots Rank 5
+        case 9853:                                          // Druid Roots Rank 6
+            return true;
+    }
     // hunter's mark and similar
     if (spellInfo->SpellVisual == 3239)
         { return true; }
