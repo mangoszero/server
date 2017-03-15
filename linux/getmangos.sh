@@ -120,7 +120,36 @@ function Log()
 # Function to install prerequisite libraries
 function GetPrerequisites()
 {
-  # First, let's check that we have the necessary tools to define the OS version.
+  # First, we need to check the installer.
+  installer=0
+  
+  which apt-get
+  
+  if [ $? -ne 0 ]; then
+    Log "apt-get isn't the installer by default" 1
+  else
+    installer=1
+	apt-get -y install git lsb_release curl
+  fi
+  
+  which yum
+  
+  if [ $? -ne 0 ]; then
+    Log "yum isn't the installer by default" 1
+  else
+	installer=1
+	yum -y install git redhat-lsb curl
+  fi
+  
+  which aptitude
+  if [ $? -ne 0 ]; then
+    Log "aptitude isn't the installer by default" 1
+  else
+    installer=1
+	aptitude -y install git lsb_release curl
+  fi
+
+  # Then, let's check that we have the necessary tools to define the OS version.
   which lsb_release
   
   if [ $? -ne 0 ]; then
@@ -158,31 +187,31 @@ function GetPrerequisites()
       case ${VER} in
         "sarah")
           # Linux Mint 18 - Ubuntu Xenial based
-          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rosa")
           # Linux Mint 17.3 - Ubuntu Trusty based
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rafaela")
           # Linux Mint 17.2 - Ubuntu Trusty based
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "rebecca")
           # Linux Mint 17.1 - Ubuntu Trusty based
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "qiana")
           # Linux Mint 17 - Ubuntu Trusty based
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "maya")
           # Linux Mint 13 - Ubuntu Precise based
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
           ;;
         "betsy")
           # LMDE 2 - Debian Jessie based
-          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         *)
           OS_VER=0
@@ -232,12 +261,28 @@ function GetPrerequisites()
       case ${VER} in        
         "santiago")
           # Red Hat 6.x
-          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev ace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
         "maipo")
           # Red Hat 7.x
-          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "yum -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev ace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
           ;;
+        *)
+          OS_VER=0
+          ;;
+      esac
+      ;;
+	"CentOS")
+      case ${VER} in        
+        "Core")
+          # Default CentOS - Adding necessary RPM third-party.
+		  rpm -Uv ftp://ftp.pbone.net/mirror/ftp5.gwdg.de/pub/opensuse/repositories/devel:/libraries:/ACE:/micro/CentOS_7/x86_64/ace-6.3.3-55.1.x86_64.rpm
+		  rpm -Uv ftp://rpmfind.net/linux/centos/7.3.1611/os/x86_64/Packages/perl-Net-Telnet-3.03-19.el7.noarch.rpm
+		  rpm -Uv ftp://ftp.pbone.net/mirror/ftp5.gwdg.de/pub/opensuse/repositories/devel:/libraries:/ACE:/micro:/versioned/CentOS_7/x86_64/mpc-6.3.3-42.1.x86_64.rpm		  		  
+		  rpm -Uv ftp://rpmfind.net/linux/centos/7.3.1611/os/x86_64/Packages/libtool-2.4.2-21.el7_2.x86_64.rpm
+		  rpm -Uv ftp://ftp.pbone.net/mirror/ftp5.gwdg.de/pub/opensuse/repositories/devel:/libraries:/ACE:/micro/CentOS_7/x86_64/ace-devel-6.3.3-55.1.x86_64.rpm
+          su -c "yum -y install curl autoconf automake cmake ace-devel ace-6.3.3 openssl-devel mysql-devel libtool gcc-c++" root
+          ;;        
         *)
           OS_VER=0
           ;;
@@ -817,19 +862,21 @@ function InstallMaNGOS()
 function UpdateDatabases()
 {  
   local DB_HOST="$1"
-  local DB_USER="$2"
-  local DB_UPW="$3"
-  local DB_REALM="$4"
-  local DB_WORLD="$5"
-  local DB_TOONS="$6"
+  local DB_TYPE="$2"
+  local DB_COMMAND="$3"
+  local DB_USER="$4"
+  local DB_UPW="$5"
+  local DB_REALM="$6"
+  local DB_WORLD="$7"
+  local DB_TOONS="$8"
 
   # Loop through the character files
-  for pFile in $(ls $SRCPATH/database/Character/Updates/$(ls -a $SRCPATH/database/Character/Updates/ | tail -1)/*.sql); do    
+  for pFile in $(ls $SRCPATH/database/Character/Updates/$(ls -a $SRCPATH/database/Character/Updates/ | tail -1)/*.sql 2>>/dev/null); do    
     if [ ! -f "$pFile" ]; then
       continue
     fi
     # Attempt to apply the update
-    mysql --login-path=local -q -s $DB_TOONS < "$pFile" > /dev/null 2>&1
+    $DB_COMMAND $DB_TOONS < "$pFile" > /dev/null 2>&1
 
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
@@ -840,12 +887,12 @@ function UpdateDatabases()
   done
 
   # Loop through the realm files  
-  for pFile in $(ls $SRCPATH/database/Realm/Updates/$(ls -a $SRCPATH/database/Realm/Updates/ | tail -1)/*.sql); do 
+  for pFile in $(ls $SRCPATH/database/Realm/Updates/$(ls -a $SRCPATH/database/Realm/Updates/ | tail -1)/*.sql 2>>/dev/null); do 
     if [ ! -f "$pFile" ]; then
       continue
     fi
     # Attempt to apply the update
-    mysql --login-path=local -q -s $DB_REALM < "$pFile" > /dev/null 2>&1
+    $DB_COMMAND $DB_REALM < "$pFile" > /dev/null 2>&1
 
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
@@ -856,12 +903,12 @@ function UpdateDatabases()
   done
 
   # Loop through the world files
-  for pFile in $(ls $SRCPATH/database/World/Updates/$(ls -a $SRCPATH/database/World/Updates/ | tail -1)/*.sql); do    
+  for pFile in $(ls $SRCPATH/database/World/Updates/$(ls -a $SRCPATH/database/World/Updates/ | tail -1)/*.sql 2>>/dev/null); do    
     if [ ! -f "$pFile" ]; then
       continue
     fi
     # Attempt to apply the update
-    mysql --login-path=local -q -s $DB_WORLD < "$pFile" > /dev/null 2>&1
+    $DB_COMMAND $DB_WORLD < "$pFile" > /dev/null 2>&1
 
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
@@ -876,14 +923,16 @@ function UpdateDatabases()
 function InstallDatabases()
 {
   local DB_HOST="$1"
-  local DB_USER="$2"
-  local DB_UPW="$3"
-  local DB_REALM="$4"
-  local DB_WORLD="$5"
-  local DB_TOONS="$6"
+  local DB_TYPE="$2"
+  local DB_COMMAND="$3"
+  local DB_USER="$4"
+  local DB_UPW="$5"
+  local DB_REALM="$6"
+  local DB_WORLD="$7"
+  local DB_TOONS="$8"
 
   # First create the realm database structure
-  mysql --login-path=local -q -s $DB_REALM < $SRCPATH/database/Realm/Setup/realmdLoadDB.sql  
+  $DB_COMMAND $DB_REALM < $SRCPATH/database/Realm/Setup/realmdLoadDB.sql  
 
   # Check for success
   if [ $? -ne 0 ]; then
@@ -892,7 +941,7 @@ function InstallDatabases()
   fi
 
   # Now create the characters database structure
-  mysql --login-path=local -q -s $DB_TOONS < $SRCPATH/database/Character/Setup/characterLoadDB.sql
+  $DB_COMMAND $DB_TOONS < $SRCPATH/database/Character/Setup/characterLoadDB.sql
 
   # Check for success
   if [ $? -ne 0 ]; then
@@ -901,7 +950,7 @@ function InstallDatabases()
   fi
 
   # Next create the world database structure
-  mysql --login-path=local -q -s $DB_WORLD < $SRCPATH/database/World/Setup/mangosdLoadDB.sql
+  $DB_COMMAND $DB_WORLD < $SRCPATH/database/World/Setup/mangosdLoadDB.sql
 
   # Check for success
   if [ $? -ne 0 ]; then
@@ -912,7 +961,7 @@ function InstallDatabases()
   # Finally, loop through and build the world database database
   for fFile in $SRCPATH/database/World/Setup/FullDB/*.sql; do
     # Attempt to execute the SQL file
-    mysql --login-path=local -q -s $DB_WORLD < $fFile
+    $DB_COMMAND $DB_WORLD < $fFile
 
     # Check for success
     if [ $? -ne 0 ]; then
@@ -922,13 +971,15 @@ function InstallDatabases()
   done  
 
   # Now apply any updates
-  UpdateDatabases $DB_HOST $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS  
+  UpdateDatabases $DB_HOST $DB_TYPE "$DB_COMMAND" $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS
 }
 
 # Function to install or update the MySQL/MariaDB databases
 function HandleDatabases()
 {
   local DBMODE="0"
+  local DB_TYPE="0"
+  local DB_COMMAND=""
   local DB_TMP="0"
   local DB_USER="mangos"
   local DB_UPW="mangos"
@@ -959,6 +1010,20 @@ function HandleDatabases()
     return 0
   fi
 
+  # Ask the user the DB type
+  DBTYPE=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Database Type" \
+    --menu "Which database are you using?" 0 0 3 \
+    0 "MariaDB" \
+    1 "MySQL" \
+    2 "PostgreSQL" \
+    3>&2 2>&1 1>&3)
+  
+  # Exit if cancelled
+  if [ $? -ne 0 ]; then
+	Log "Database type selection cancelled. No modifications have been made to your databases." 1
+	return 0
+  fi   
+  
   # Get the database hostname or IP address
   DB_TMP=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Database Hostname Or IP Address" \
     --inputbox "Default: localhost" 0 0 3>&2 2>&1 1>&3)
@@ -1018,9 +1083,21 @@ function HandleDatabases()
   if [ ! -z "$DB_TMP" ]; then
     DB_UPW="$DB_TMP"
   fi
-
-  printf "Confirm your MySQL password\t, "    
-  mysql_config_editor set --login-path=local --host=$DB_HOST --port=$DB_PORT --user=$DB_USER --password --skip-warn
+   
+  case "${DB_TYPE}" in
+	"0")
+		DB_COMMAND="mysql -u ${DB_USER} -p${DB_UPW} "
+		;;
+	"1")
+		printf "Confirm your MySQL password\t, "    
+		mysql_config_editor set --login-path=local --host=$DB_HOST --port=$DB_PORT --user=$DB_USER --password --skip-warn
+		DB_COMMAND="mysql --login-path=local -q -s "		
+		;;
+	"2")
+		Log "Currently not supported." 1
+		return 0
+		;;
+  esac  
 
   # Setup database names based on release
   DB_REALM="$DB_PREFIX$DB_REALM"
@@ -1046,20 +1123,20 @@ function HandleDatabases()
 
     # Remove and create the realm DB if selected
     if [[ $DBSEL == *0* ]]; then
-      mysql --login-path=local -q -s -e "DROP DATABASE IF EXISTS $DB_REALM;"
-      mysql --login-path=local -q -s -e "CREATE DATABASE $DB_REALM;"      
+      $DB_COMMAND -e "DROP DATABASE IF EXISTS $DB_REALM;"
+      $DB_COMMAND -e "CREATE DATABASE $DB_REALM;"      
     fi
 
     # Remove and create the world DB if selected
     if [[ $DBSEL == *1* ]]; then
-      mysql --login-path=local -q -s -e "DROP DATABASE IF EXISTS $DB_WORLD;"
-      mysql --login-path=local -q -s -e "CREATE DATABASE $DB_WORLD;"
+      $DB_COMMAND -e "DROP DATABASE IF EXISTS $DB_WORLD;"
+      $DB_COMMAND -e "CREATE DATABASE $DB_WORLD;"
     fi
     
     # Remove and create the character DB if selected
     if [[ $DBSEL == *2* ]]; then      
-      mysql --login-path=local -q -s -e "DROP DATABASE IF EXISTS $DB_TOONS;"
-      mysql --login-path=local -q -s -e "CREATE DATABASE $DB_TOONS;"      
+      $DB_COMMAND -e "DROP DATABASE IF EXISTS $DB_TOONS;"
+      $DB_COMMAND -e "CREATE DATABASE $DB_TOONS;"      
     fi    
 
     # Validate success
@@ -1069,17 +1146,17 @@ function HandleDatabases()
     fi
 
     # Finally, populate the databases
-    InstallDatabases $DB_HOST $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS
+    InstallDatabases $DB_HOST $DB_TYPE "$DB_COMMAND" $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS
     
     # Updating the realmlist
     if [[ $DBSEL == *3* ]]; then
-      mysql --login-path=local -q -s $DB_REALM < $SRCPATH/database/Tools/updateRealm.sql
+      $DB_COMMAND $DB_REALM < $SRCPATH/database/Tools/updateRealm.sql
     fi
   fi
 
   # Update the databases if requested
   if [ "$DBMODE" = "1" ]; then    
-    UpdateDatabases $DB_HOST $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS
+    UpdateDatabases $DB_HOST $DB_TYPE "$DB_COMMAND" $DB_USER $DB_UPW $DB_REALM $DB_WORLD $DB_TOONS
   fi
 }
 
@@ -1397,13 +1474,13 @@ UseDialog
 # Select which activities to do
 TASKS=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Select Tasks" \
   --checklist "Please select the tasks to perform" 0 70 8 \
-  1 "Install Prerequisites" Off \
+  1 "Install Prerequisites" On \
   2 "Set Download And Install Paths" On \
   3 "Clone Source Repositories" On \
   4 "Build MaNGOS" On \
   5 "Install MaNGOS" On \
-  6 "Install Databases" Off \
-  7 "Extract Resources" Off \
+  6 "Install Databases" On \
+  7 "Extract Resources" On \
   8 "Create Code::Blocks Project File" Off \
   3>&2 2>&1 1>&3)
 
