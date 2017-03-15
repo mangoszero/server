@@ -291,6 +291,29 @@ function GetPrerequisites()
     *)
       OS_VER=0
       ;;
+	"Fedora")
+      case ${VER} in        
+        "TwentyFive")
+          # Fedora 25 - Adding necessary RPM third-party.
+		  su -c "yum install autoconf automake libtool gcc-c++" root
+		  # Getting and building ACE. Not provided in RPM for Fedora...
+		  wget ftp://download.dre.vanderbilt.edu/previous_versions/ACE-6.4.2.tar.bz2		  
+		  tar xjvf ACE-6.4.2.tar.bz2
+		  export ACE_ROOT=/root/ACE_wrappers
+		  echo "#include \"ace/config-linux.h\"" >> $ACE_ROOT/ace/config.sh
+		  echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
+		  echo 'INSTALL_PREFIX=/usr/local' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
+		  export LD_LIBRARY_PATH=$ACE_ROOT/lib:$LD_LIBRARY_PATH		  
+		  make
+		  make install
+		  # Installing remaining dependencies..
+          su -c "yum -y install cmake openssl-devel mariadb-devel" root
+          ;;        
+        *)
+          OS_VER=0
+          ;;
+      esac
+      ;;
   esac    
 
   # See if a supported OS was detected
