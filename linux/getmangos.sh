@@ -188,27 +188,27 @@ function GetPrerequisites()
       case ${VER} in
         "sarah")
           # Linux Mint 18 - Ubuntu Xenial based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rosa")
           # Linux Mint 17.3 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rafaela")
           # Linux Mint 17.2 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rebecca")
           # Linux Mint 17.1 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "qiana")
           # Linux Mint 17 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "maya")
           # Linux Mint 13 - Ubuntu Precise based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "betsy")
           # LMDE 2 - Debian Jessie based
