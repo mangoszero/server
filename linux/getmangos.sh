@@ -29,6 +29,7 @@ SRCPATH="$HOME/mangos/src"
 INSTPATH="$HOME/mangos"
 DB_PREFIX="zero"
 USER="mangos"
+P_SOAP="0"
 P_DEBUG="0"
 P_STD_MALLOC="1"
 P_ACE_EXTERNAL="1"
@@ -741,6 +742,7 @@ function GetBuildOptions()
     5 "Build Client Tools" Off \
     6 "Use SD3" On \
     7 "Use Eluna" On \
+	8 "Use SOAP" Off \
     3>&2 2>&1 1>&3)
 
   if [ $? -ne 0 ]; then
@@ -796,6 +798,13 @@ function GetBuildOptions()
   else
     P_ELUNA="0"
   fi
+  
+  # See if SOAP will be used
+  if [[ $OPTIONS == *8* ]]; then
+    P_SOAP="1"
+  else
+	P_SOAP="0"
+  fi
 
   # Verify that at least one scripting library is enabled
   if [ $P_SD3 -eq 0 ] && [ $P_ELUNA -eq 0 ]; then
@@ -843,7 +852,7 @@ function BuildMaNGOS()
   # Attempt to configure and build MaNGOS
   Log "Building MaNGOS..." 0
   cd "$SRCPATH/server/linux"
-  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DCMAKE_INSTALL_PREFIX="$INSTPATH"
+  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DSOAP=$P_SOAP -DCMAKE_INSTALL_PREFIX="$INSTPATH"
   make
 
   # Check for an error
