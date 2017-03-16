@@ -288,32 +288,36 @@ function GetPrerequisites()
           ;;
       esac
       ;;
-    *)
-      OS_VER=0
-      ;;
-	"Fedora")
+    "Fedora")
       case ${VER} in        
         "TwentyFive")
           # Fedora 25 - Adding necessary RPM third-party.
-		  su -c "yum install autoconf automake libtool gcc-c++" root
+		  su -c "yum -y install autoconf automake libtool gcc-c++" root
 		  # Getting and building ACE. Not provided in RPM for Fedora...
-		  wget ftp://download.dre.vanderbilt.edu/previous_versions/ACE-6.4.2.tar.bz2		  
-		  tar xjvf ACE-6.4.2.tar.bz2
+		  rm -rf ACE-6.3.3.tar.bz2
+		  rm -rf ACE_wrappers
+		  wget ftp://download.dre.vanderbilt.edu/previous_versions/ACE-6.3.3.tar.bz2		  
+		  tar xjvf ACE-6.3.3.tar.bz2
 		  export ACE_ROOT=/root/ACE_wrappers
-		  echo "#include \"ace/config-linux.h\"" >> $ACE_ROOT/ace/config.sh
+		  echo '#include "ace/config-linux.h"' >> $ACE_ROOT/ace/config.h
 		  echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
 		  echo 'INSTALL_PREFIX=/usr/local' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
 		  export LD_LIBRARY_PATH=$ACE_ROOT/lib:$LD_LIBRARY_PATH		  
+		  CD $ACE_ROOT
 		  make
 		  make install
+		  cd ~
 		  # Installing remaining dependencies..
-          su -c "yum -y install cmake openssl-devel mariadb-devel" root
+          su -c "yum -y install cmake openssl-devel mariadb-devel" root		  
           ;;        
         *)
           OS_VER=0
           ;;
       esac
       ;;
+	*)
+      OS_VER=0
+      ;;	
   esac    
 
   # See if a supported OS was detected
@@ -904,8 +908,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
        Log "Database update \"$pFile\" was not applied!" 0
+	   Log "Database update \"$pFile\" was not applied!" 1
     else
        Log "Database update \"$pFile\" was successfully applied!" 0
+	   Log "Database update \"$pFile\" was successfully applied!" 1
     fi          
   done
 
@@ -920,8 +926,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
       Log "Database update \"$pFile\" was not applied!" 0
+	  Log "Database update \"$pFile\" was not applied!" 1
     else
       Log "Database update \"$pFile\" was successfully applied!" 0
+	  Log "Database update \"$pFile\" was successfully applied!" 1
     fi          
   done
 
@@ -936,8 +944,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
       Log "Database update \"$pFile\" was not applied!" 0
+	  Log "Database update \"$pFile\" was not applied!" 1
     else
       Log "Database update \"$pFile\" was successfully applied!" 0
+	  Log "Database update \"$pFile\" was successfully applied!" 1
     fi        
   done
 }
@@ -961,6 +971,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the realm database!" 1
     return 1
+  else
+    Log "The realm database has been created!" 1
   fi
 
   # Now create the characters database structure
@@ -970,6 +982,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the characters database!" 1
     return 1
+  else
+    Log "The characters database has been created!" 1
   fi
 
   # Next create the world database structure
@@ -979,6 +993,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the world database!" 1
     return 1
+  else
+    Log "The world database has been created!" 1
   fi
 
   # Finally, loop through and build the world database database
@@ -990,6 +1006,8 @@ function InstallDatabases()
     if [ $? -ne 0 ]; then
       Log "There was an error processing \"$fFile\" during database creation!" 1
       return 1
+	else
+	  Log "The file \"$fFile\" was processed properly" 1
     fi
   done  
 
@@ -1561,7 +1579,7 @@ fi
 
 # If one of these actions has been performed, then we know the user.
 if [[ $TASKS == *2* ]] || [[ $TASKS == *3* ]] || [[ $TASKS == *4* ]] || [[ $TASKS == *5* ]] || [[ $TASKS == *7* ]]; then
-  Log "Changing ownership of the extracted directories"
+  Log "Changing ownership of the extracted directories" 1
   chown -R $USER:$USER "$INSTPATH"
 fi
 
