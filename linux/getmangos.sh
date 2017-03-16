@@ -29,6 +29,7 @@ SRCPATH="$HOME/mangos/src"
 INSTPATH="$HOME/mangos"
 DB_PREFIX="zero"
 USER="mangos"
+P_SOAP="0"
 P_DEBUG="0"
 P_STD_MALLOC="1"
 P_ACE_EXTERNAL="1"
@@ -187,27 +188,27 @@ function GetPrerequisites()
       case ${VER} in
         "sarah")
           # Linux Mint 18 - Ubuntu Xenial based
-          su -c "aptitude -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rosa")
           # Linux Mint 17.3 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rafaela")
           # Linux Mint 17.2 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "rebecca")
           # Linux Mint 17.1 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "qiana")
           # Linux Mint 17 - Ubuntu Trusty based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "maya")
           # Linux Mint 13 - Ubuntu Precise based
-          su -c "apt-get -y install build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "aptitude -y install build-essential cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev" root
           ;;
         "betsy")
           # LMDE 2 - Debian Jessie based
@@ -288,32 +289,36 @@ function GetPrerequisites()
           ;;
       esac
       ;;
-    *)
-      OS_VER=0
-      ;;
-	"Fedora")
+    "Fedora")
       case ${VER} in        
         "TwentyFive")
           # Fedora 25 - Adding necessary RPM third-party.
-		  su -c "yum install autoconf automake libtool gcc-c++" root
+		  su -c "yum -y install autoconf automake libtool gcc-c++" root
 		  # Getting and building ACE. Not provided in RPM for Fedora...
-		  wget ftp://download.dre.vanderbilt.edu/previous_versions/ACE-6.4.2.tar.bz2		  
-		  tar xjvf ACE-6.4.2.tar.bz2
+		  rm -rf ACE-6.3.3.tar.bz2
+		  rm -rf ACE_wrappers
+		  wget ftp://download.dre.vanderbilt.edu/previous_versions/ACE-6.3.3.tar.bz2		  
+		  tar xjvf ACE-6.3.3.tar.bz2
 		  export ACE_ROOT=/root/ACE_wrappers
-		  echo "#include \"ace/config-linux.h\"" >> $ACE_ROOT/ace/config.sh
+		  echo '#include "ace/config-linux.h"' >> $ACE_ROOT/ace/config.h
 		  echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
 		  echo 'INSTALL_PREFIX=/usr/local' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
 		  export LD_LIBRARY_PATH=$ACE_ROOT/lib:$LD_LIBRARY_PATH		  
+		  CD $ACE_ROOT
 		  make
 		  make install
+		  cd ~
 		  # Installing remaining dependencies..
-          su -c "yum -y install cmake openssl-devel mariadb-devel" root
+          su -c "yum -y install cmake openssl-devel mariadb-devel" root		  
           ;;        
         *)
           OS_VER=0
           ;;
       esac
       ;;
+	*)
+      OS_VER=0
+      ;;	
   esac    
 
   # See if a supported OS was detected
@@ -737,6 +742,7 @@ function GetBuildOptions()
     5 "Build Client Tools" Off \
     6 "Use SD3" On \
     7 "Use Eluna" On \
+	8 "Use SOAP" Off \
     3>&2 2>&1 1>&3)
 
   if [ $? -ne 0 ]; then
@@ -792,6 +798,13 @@ function GetBuildOptions()
   else
     P_ELUNA="0"
   fi
+  
+  # See if SOAP will be used
+  if [[ $OPTIONS == *8* ]]; then
+    P_SOAP="1"
+  else
+	P_SOAP="0"
+  fi
 
   # Verify that at least one scripting library is enabled
   if [ $P_SD3 -eq 0 ] && [ $P_ELUNA -eq 0 ]; then
@@ -839,7 +852,7 @@ function BuildMaNGOS()
   # Attempt to configure and build MaNGOS
   Log "Building MaNGOS..." 0
   cd "$SRCPATH/server/linux"
-  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DCMAKE_INSTALL_PREFIX="$INSTPATH"
+  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DSOAP=$P_SOAP -DCMAKE_INSTALL_PREFIX="$INSTPATH"
   make
 
   # Check for an error
@@ -904,8 +917,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
        Log "Database update \"$pFile\" was not applied!" 0
+	   Log "Database update \"$pFile\" was not applied!" 1
     else
        Log "Database update \"$pFile\" was successfully applied!" 0
+	   Log "Database update \"$pFile\" was successfully applied!" 1
     fi          
   done
 
@@ -920,8 +935,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
       Log "Database update \"$pFile\" was not applied!" 0
+	  Log "Database update \"$pFile\" was not applied!" 1
     else
       Log "Database update \"$pFile\" was successfully applied!" 0
+	  Log "Database update \"$pFile\" was successfully applied!" 1
     fi          
   done
 
@@ -936,8 +953,10 @@ function UpdateDatabases()
     # Notify the user of which updates were and were not applied
     if [ $? -ne 0 ]; then
       Log "Database update \"$pFile\" was not applied!" 0
+	  Log "Database update \"$pFile\" was not applied!" 1
     else
       Log "Database update \"$pFile\" was successfully applied!" 0
+	  Log "Database update \"$pFile\" was successfully applied!" 1
     fi        
   done
 }
@@ -961,6 +980,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the realm database!" 1
     return 1
+  else
+    Log "The realm database has been created!" 1
   fi
 
   # Now create the characters database structure
@@ -970,6 +991,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the characters database!" 1
     return 1
+  else
+    Log "The characters database has been created!" 1
   fi
 
   # Next create the world database structure
@@ -979,6 +1002,8 @@ function InstallDatabases()
   if [ $? -ne 0 ]; then
     Log "There was an error creating the world database!" 1
     return 1
+  else
+    Log "The world database has been created!" 1
   fi
 
   # Finally, loop through and build the world database database
@@ -990,6 +1015,8 @@ function InstallDatabases()
     if [ $? -ne 0 ]; then
       Log "There was an error processing \"$fFile\" during database creation!" 1
       return 1
+	else
+	  Log "The file \"$fFile\" was processed properly" 1
     fi
   done  
 
@@ -1561,7 +1588,7 @@ fi
 
 # If one of these actions has been performed, then we know the user.
 if [[ $TASKS == *2* ]] || [[ $TASKS == *3* ]] || [[ $TASKS == *4* ]] || [[ $TASKS == *5* ]] || [[ $TASKS == *7* ]]; then
-  Log "Changing ownership of the extracted directories"
+  Log "Changing ownership of the extracted directories" 1
   chown -R $USER:$USER "$INSTPATH"
 fi
 
