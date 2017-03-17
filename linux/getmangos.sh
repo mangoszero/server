@@ -130,7 +130,7 @@ function GetPrerequisites()
     Log "apt-get isn't the installer by default" 1
   else
     installer=1
-	apt-get -y install git lsb_release curl
+	apt-get -y install git lsb-release curl
   fi
   
   which yum
@@ -147,7 +147,7 @@ function GetPrerequisites()
     Log "aptitude isn't the installer by default" 1
   else
     installer=1
-	aptitude -y install git lsb_release curl
+	aptitude -y install git lsb-release curl
   fi
 
   # Then, let's check that we have the necessary tools to define the OS version.
@@ -223,35 +223,34 @@ function GetPrerequisites()
       case ${VER} in
         "precise")
           # Ubuntu 12.04 LTS
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.1 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "trusty")
           # Ubuntu 14.04 LTS
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.0.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "xenial")
           # Ubuntu 16.04 LTS
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "yakkety")
           # Ubuntu 16.10
-          su -c "apt-get -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         *)
           OS_VER=0
           ;;
-      esac
-      su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zlib1g-dev" root
+      esac      
       ;;
     "Debian")
       case ${VER} in
         "jessie")
           # Debian 8.0 "current"
-          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.2.8 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "stretch")
           # Debian Next
-          su -c "aptitude -y install curl build-essential linux-headers-$(uname -r) autoconf automake cmake libbz2-dev libace-dev libace-6.3.3 libssl-dev libmysqlclient-dev libtool zliblg-dev" root
+          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         *)
           OS_VER=0
@@ -1061,7 +1060,7 @@ function HandleDatabases()
   fi
 
   # Ask the user the DB type
-  DBTYPE=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Database Type" \
+  DB_TYPE=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Database Type" \
     --menu "Which database are you using?" 0 0 3 \
     0 "MariaDB" \
     1 "MySQL" \
@@ -1070,9 +1069,9 @@ function HandleDatabases()
   
   # Exit if cancelled
   if [ $? -ne 0 ]; then
-	Log "Database type selection cancelled. No modifications have been made to your databases." 1
+	Log "Database type selection cancelled. No modifications have been made to your databases." 1	
 	return 0
-  fi   
+  fi      
   
   # Get the database hostname or IP address
   DB_TMP=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Database Hostname Or IP Address" \
