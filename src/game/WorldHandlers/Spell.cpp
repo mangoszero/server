@@ -5073,7 +5073,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (sMapStore.LookupEntry(m_caster->GetMapId())->IsDungeon())
                 {
                     InstanceTemplate const* instance = ObjectMgr::GetInstanceTemplate(m_caster->GetMapId());
-                    if (!instance)
+                    if (m_caster->GetMap() != target->GetMap())
                         { return SPELL_FAILED_TARGET_NOT_IN_INSTANCE; }
                     if (instance->levelMin > target->getLevel())
                         { return SPELL_FAILED_LOWLEVEL; }
