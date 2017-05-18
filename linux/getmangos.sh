@@ -738,7 +738,7 @@ function GetBuildOptions()
     2 "Use Standard Malloc" On \
     3 "Use External ACE Libraries" On \
     4 "Use PostgreSQL Instead Of MySQL/MariaDB" Off \
-    5 "Build Client Tools" Off \
+    5 "Build Client Tools" On \
     6 "Use SD3" On \
     7 "Use Eluna" On \
 	8 "Use SOAP" Off \
