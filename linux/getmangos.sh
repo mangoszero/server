@@ -1234,7 +1234,7 @@ function ExtractResources
     3>&2 2>&1 1>&3)
     
   if [ ! -d "$INSTPATH/bin/tools" ]; then
-    Log "The mangos server is not build, cannot extract data" 1
+    Log "The client tools have not been built, cannot extract data" 1
     exit 1
   fi
  
