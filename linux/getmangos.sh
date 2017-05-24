@@ -738,7 +738,7 @@ function GetBuildOptions()
     2 "Use Standard Malloc" On \
     3 "Use External ACE Libraries" On \
     4 "Use PostgreSQL Instead Of MySQL/MariaDB" Off \
-    5 "Build Client Tools" Off \
+    5 "Build Client Tools" On \
     6 "Use SD3" On \
     7 "Use Eluna" On \
 	8 "Use SOAP" Off \
@@ -1234,7 +1234,7 @@ function ExtractResources
     3>&2 2>&1 1>&3)
     
   if [ ! -d "$INSTPATH/bin/tools" ]; then
-    Log "The mangos server is not build, cannot extract data" 1
+    Log "The client tools have not been built, cannot extract data" 1
     exit 1
   fi
  
