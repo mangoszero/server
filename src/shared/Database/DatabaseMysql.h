@@ -169,7 +169,7 @@ class MySQLConnection : public SqlConnection
          * @param length
          * @return unsigned long
          */
-        unsigned long escape_string(char* to, const char* from, unsigned long length);
+        unsigned long escape_string(char* to, const char* from, unsigned long length) override;
 
         /**
          * @brief

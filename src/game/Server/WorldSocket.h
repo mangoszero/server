@@ -146,7 +146,7 @@ class WorldSocket : protected WorldHandler
 
         /// Called when connection is closed or error happens.
         virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                                 ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK);
+                                 ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
 
     private:
         /// Helper functions for processing incoming data.
