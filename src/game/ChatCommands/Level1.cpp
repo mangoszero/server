@@ -1673,7 +1673,7 @@ bool ChatHandler::HandleSendMailCommand(char* args)
         { return false; }
 
     // GM mail
-    MailSender sender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(target, target_guid), sender);
 
