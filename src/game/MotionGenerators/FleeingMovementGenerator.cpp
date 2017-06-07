@@ -174,7 +174,7 @@ void FleeingMovementGenerator<T>::Reset(T& owner)
 template<class T>
 bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
 {
-    if (!&owner || !owner.IsAlive())
+    if (!owner.IsAlive())
         { return false; }
 
     // ignore in case other no reaction state

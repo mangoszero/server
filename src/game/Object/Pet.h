@@ -188,7 +188,7 @@ class Pet : public Creature
         void SetDeathState(DeathState s) override;          // overwrite virtual Creature::SetDeathState and Unit::SetDeathState
         void Update(uint32 update_diff, uint32 diff) override;  // overwrite virtual Creature::Update and Unit::Update
 
-        uint8 GetPetAutoSpellSize() const { return m_autospells.size(); }
+        virtual uint8 GetPetAutoSpellSize() const override { return m_autospells.size(); }
         uint32 GetPetAutoSpellOnPos(uint8 pos) const override
         {
             if (pos >= m_autospells.size())
@@ -197,7 +197,7 @@ class Pet : public Creature
                 { return m_autospells[pos]; }
         }
 
-        bool CanSwim() const
+        virtual bool CanSwim() const override
         {
             Unit const* owner = GetOwner();
             if (owner)
@@ -206,7 +206,7 @@ class Pet : public Creature
                 { return Creature::CanSwim(); }
         }
 
-        bool CanFly() const { return false; } // pet are not able to fly. TODO: check if this is right
+        virtual bool CanFly() const override { return false; } // pet are not able to fly. TODO: check if this is right
 
         void RegenerateAll(uint32 update_diff) override;    // overwrite Creature::RegenerateAll
         void LooseHappiness();
@@ -288,7 +288,7 @@ class Pet : public Creature
         void ResetAuraUpdateMask() { m_auraUpdateMask = 0; }
 
         // overwrite Creature function for name localization back to WorldObject version without localization
-        const char* GetNameForLocaleIdx(int32 locale_idx) const { return WorldObject::GetNameForLocaleIdx(locale_idx); }
+        virtual const char* GetNameForLocaleIdx(int32 locale_idx) const override { return WorldObject::GetNameForLocaleIdx(locale_idx); }
 
         bool    m_removed;                                  // prevent overwrite pet state in DB at next Pet::Update if pet already removed(saved)
     protected:

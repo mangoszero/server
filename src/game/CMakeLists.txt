@@ -139,11 +139,12 @@ set(LIBRARY_SRCS
     pchdef.h
 )
 
-if(PCH)
-    include_directories(${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
+
+# Generate precompiled header
+if(PCH)
+    ADD_CXX_PCH(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
+endif()
 
 target_link_libraries(${LIBRARY_NAME} shared detour)
 
@@ -156,11 +157,6 @@ endif()
 
 if(NOT ACE_USE_EXTERNAL)
     add_dependencies(${LIBRARY_NAME} ace)
-endif()
-
-# Generate precompiled header
-if(PCH)
-    ADD_CXX_PCH(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
 endif()
 
 if(PLAYERBOTS)
