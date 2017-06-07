@@ -19,3 +19,6 @@
 [submodule "win"]
 	path = win
 	url = https://github.com/mangostools/EasyBuild
+[submodule "sql"]
+	path = sql
+	url = https://github.com/mangoszero/database
