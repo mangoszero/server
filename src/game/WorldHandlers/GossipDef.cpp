@@ -457,9 +457,10 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
     {
         ItemPrototype const* IProto;
 
-        data << uint32(pQuest->GetRewChoiceItemsCount());
+        uint32 count = pQuest->GetRewChoiceItemsCount();
+        data << uint32(count);
 
-        for (uint32 i = 0; i < QUEST_REWARD_CHOICES_COUNT; ++i)
+        for (uint32 i = 0; i < count; ++i)
         {
             data << uint32(pQuest->RewChoiceItemId[i]);
             data << uint32(pQuest->RewChoiceItemCount[i]);
@@ -472,9 +473,10 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
                 { data << uint32(0x00); }
         }
 
-        data << uint32(pQuest->GetRewItemsCount());
+        count = pQuest->GetRewItemsCount();
+        data << uint32(count);
 
-        for (uint32 i = 0; i < QUEST_REWARDS_COUNT; ++i)
+        for (uint32 i = 0; i < count; ++i)
         {
             data << uint32(pQuest->RewItemId[i]);
             data << uint32(pQuest->RewItemCount[i]);
@@ -490,19 +492,14 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
         data << uint32(pQuest->GetRewOrReqMoney());
     }
 
-    data << pQuest->GetReqItemsCount();
-    for (uint32 i = 0; i <  QUEST_OBJECTIVES_COUNT; i++)
-    {
-        data << pQuest->ReqItemId[i];
-        data << pQuest->ReqItemCount[i];
-    }
+    data << uint32(pQuest->GetRewSpell());
 
-
-    data << pQuest->GetReqCreatureOrGOcount();
-    for (uint32 i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
+    uint32 count = pQuest->GetDetailsEmoteCount();
+    data << uint32(count);
+    for (uint32 i = 0; i < count; ++i)
     {
-        data << uint32(pQuest->ReqCreatureOrGOId[i]);
-        data << pQuest->ReqCreatureOrGOCount[i];
+        data << uint32(pQuest->DetailsEmote[i]);
+        data << uint32(pQuest->DetailsEmoteDelay[i]); // delay between emotes in ms
     }
 
     GetMenuSession()->SendPacket(&data);
