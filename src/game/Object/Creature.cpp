@@ -456,7 +456,8 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
         if (factionTemplate->factionFlags & FACTION_TEMPLATE_FLAG_PVP)
             SetPvP(true);
         else
-            SetPvP(false);
+            if (!IsRacialLeader())
+                SetPvP(false);
     }
 
     // Try difficulty dependend version before falling back to base entry
