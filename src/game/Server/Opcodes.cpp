@@ -688,7 +688,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x273*/  StoreOpcode(SMSG_STABLE_RESULT,                "SMSG_STABLE_RESULT",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x274*/  StoreOpcode(CMSG_STABLE_REVIVE_PET,            "CMSG_STABLE_REVIVE_PET",           STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleStableRevivePet);
     /*0x275*/  StoreOpcode(CMSG_STABLE_SWAP_PET,              "CMSG_STABLE_SWAP_PET",             STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleStableSwapPet);
-    /*[-ZERO] Need check */ /*0x276*/  StoreOpcode(MSG_QUEST_PUSH_RESULT,             "MSG_QUEST_PUSH_RESULT",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestPushResult);
+    /*0x276*/  StoreOpcode(MSG_QUEST_PUSH_RESULT,             "MSG_QUEST_PUSH_RESULT",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestPushResult);
     /*[-ZERO] Need check */ /*0x277*/  StoreOpcode(SMSG_PLAY_MUSIC,                   "SMSG_PLAY_MUSIC",                  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x278*/  StoreOpcode(SMSG_PLAY_OBJECT_SOUND,            "SMSG_PLAY_OBJECT_SOUND",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x279*/  StoreOpcode(CMSG_REQUEST_PET_INFO,             "CMSG_REQUEST_PET_INFO",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleRequestPetInfoOpcode);
