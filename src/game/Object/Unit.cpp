@@ -8818,7 +8818,7 @@ void Unit::SetStandState(uint8 state)
     {
         WorldPacket data(SMSG_STANDSTATE_UPDATE, 1);
         data << (uint8)state;
-        ((Player*)this)->GetSession()->SendPacket(data);
+        ((Player*)this)->GetSession()->SendPacket(&data);
     }
 }
 
