@@ -904,16 +904,6 @@ bool IsPositiveSpell(SpellEntry const* spellproto)
 
 bool IsSingleTargetSpell(SpellEntry const* spellInfo)
 {
-    switch (spellInfo->Id)
-    {
-        case 339:                                           // Druid Roots Rank 1
-        case 1062:                                          // Druid Roots Rank 2
-        case 5195:                                          // Druid Roots Rank 3
-        case 5196:                                          // Druid Roots Rank 4
-        case 9852:                                          // Druid Roots Rank 5
-        case 9853:                                          // Druid Roots Rank 6
-            return true;
-    }
     // hunter's mark and similar
     if (spellInfo->SpellVisual == 3239)
         { return true; }
@@ -943,19 +933,21 @@ bool IsSingleTargetSpell(SpellEntry const* spellInfo)
         case 24664:                                         // Sleep (group targets)
             return false;
     }
-    // can not be cast on another target while not cooled down anyway
-    if (GetSpellDuration(spellInfo) < int32(GetSpellRecoveryTime(spellInfo)))
-        { return false; }
-
     // all other single target spells have if it has AttributesEx
-    if (spellInfo->AttributesEx & (1 << 18))
+    if (spellInfo->HasAttribute(SPELL_ATTR_EX_UNK18))
         { return true; }
+
+    // can not be cast on another target while not cooled down anyway
+    //if (GetSpellDuration(spellInfo) < int32(GetSpellRecoveryTime(spellInfo)))
+    //    { return true; }
 
     // other single target
     // Fear
     if ((spellInfo->SpellIconID == 98 && spellInfo->SpellVisual == 336)
         // Banish
         || (spellInfo->SpellIconID == 96 && spellInfo->SpellVisual == 1305)
+        // Entangling roots
+        || spellInfo->IsFitToFamily(SPELLFAMILY_DRUID, ClassFamilyMask(UI64LIT(0x0200)))
        ) { return true; }
 
     // TODO - need found Judgements rule
