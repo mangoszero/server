@@ -1785,6 +1785,8 @@ class Unit : public WorldObject
          * @return true if the Unit is standing normally, false otherwise
          */
         bool IsStandState() const;
+        
+        bool IsSeatedState() const;
         /**
          * Change the stand state for this Unit. For possible values check
          * UnitStandStateType.
