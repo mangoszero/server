@@ -11212,6 +11212,14 @@ void Player::SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2, uint
     GetSession()->SendPacket(&data);
 }
 
+void Player::SendOpenContainer()
+{
+    DEBUG_LOG("WORLD: Sent SMSG_OPEN_CONTAINER");
+    WorldPacket data(SMSG_OPEN_CONTAINER, 8);   // opens the main bag in the UI
+    data << GetObjectGuid();
+    GetSession()->SendPacket(&data);
+}
+
 void Player::SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param)
 {
     DEBUG_LOG("WORLD: Sent SMSG_BUY_FAILED");
