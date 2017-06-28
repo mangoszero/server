@@ -78,11 +78,20 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
     std::string ticketText;
     recv_data >> ticketText;
 
+    GMTicketResponse responce = GMTICKET_RESPONSE_UPDATE_SUCCESS;
     if (GMTicket* ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid()))
-        { ticket->SetText(ticketText.c_str()); }
+    {
+        ticket->SetText(ticketText.c_str());
+    }
     else
-        { sLog.outError("Ticket update: Player %s (GUID: %u) doesn't have active ticket", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow()); }
-    
+    {
+        sLog.outError("Ticket update: Player %s (GUID: %u) doesn't have active ticket", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
+        responce = GMTICKET_RESPONSE_UPDATE_ERROR;
+    }
+
+    WorldPacket data(SMSG_GMTICKET_UPDATETEXT, 4);
+    data << uint32(responce);
+    SendPacket(&data);
 }
 
 //A statusCode of 3 would mean that the client should show the survey now
@@ -102,7 +111,7 @@ void WorldSession::HandleGMTicketDeleteTicketOpcode(WorldPacket& /*recv_data*/)
     sTicketMgr.Delete(GetPlayer()->GetObjectGuid());
 
     WorldPacket data(SMSG_GMTICKET_DELETETICKET, 4);
-    data << uint32(9);
+    data << uint32(GMTICKET_RESPONSE_TICKET_DELETED);
     SendPacket(&data);
 
     SendGMTicketGetTicket(0x0A);
@@ -126,7 +135,7 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
     if (sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid()))
     {
         WorldPacket data(SMSG_GMTICKET_CREATE, 4);
-        data << uint32(1);                                  // 1 - You already have GM ticket
+        data << uint32(GMTICKET_RESPONSE_ALREADY_EXIST);    // 1 - You already have GM ticket
         SendPacket(&data);
         return;
     }
@@ -136,7 +145,7 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
     SendQueryTimeResponse();
 
     WorldPacket data(SMSG_GMTICKET_CREATE, 4);
-    data << uint32(2);                                      // 2 - nothing appears (3-error creating, 5-error updating)
+    data << uint32(GMTICKET_RESPONSE_CREATE_SUCCESS);       // 2 - nothing appears (3-error creating, 5-error updating)
     SendPacket(&data);
 
     // TODO: Guard player map
