@@ -426,8 +426,8 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x16B*/  StoreOpcode(SMSG_DUEL_WINNER,                  "SMSG_DUEL_WINNER",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x16C*/  StoreOpcode(CMSG_DUEL_ACCEPTED,                "CMSG_DUEL_ACCEPTED",               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleDuelAcceptedOpcode);
     /*[-ZERO] Need check */ /*0x16D*/  StoreOpcode(CMSG_DUEL_CANCELLED,               "CMSG_DUEL_CANCELLED",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleDuelCancelledOpcode);
-    /*[-ZERO] Need check */ /*0x16E*/  StoreOpcode(SMSG_MOUNTRESULT,                  "SMSG_MOUNTRESULT",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x16F*/  StoreOpcode(SMSG_DISMOUNTRESULT,               "SMSG_DISMOUNTRESULT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x16E*/  StoreOpcode(SMSG_MOUNTRESULT,                  "SMSG_MOUNTRESULT",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x16F*/  StoreOpcode(SMSG_DISMOUNTRESULT,               "SMSG_DISMOUNTRESULT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x170*/  StoreOpcode(SMSG_PUREMOUNT_CANCELLED_OBSOLETE, "SMSG_PUREMOUNT_CANCELLED_OBSOLETE", STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x171*/  StoreOpcode(CMSG_MOUNTSPECIAL_ANIM,            "CMSG_MOUNTSPECIAL_ANIM",           STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleMountSpecialAnimOpcode);
     /*[-ZERO] Need check */ /*0x172*/  StoreOpcode(SMSG_MOUNTSPECIAL_ANIM,            "SMSG_MOUNTSPECIAL_ANIM",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
