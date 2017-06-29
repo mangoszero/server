@@ -1815,7 +1815,7 @@ class Unit : public WorldObject
          * @param spellId id of the spell used to summon the mount, if 0 is passed in this is treated
          * as a GM command or the Taxi service mounting the Player.
          */
-        void Mount(uint32 mount, uint32 spellId = 0);
+        virtual void Mount(uint32 mount, uint32 spellId = 0);
         /**
          * Unmounts this Unit by sending the SMSG_DISMOUNT to the client if it was a dismount
          * not issued by a GM / the Taxi service. Also changes the UNIT_FIELD_MOUNTDISPLAYID
@@ -1823,7 +1823,7 @@ class Unit : public WorldObject
          * @param from_aura if this was true the Unit was probably interrupted by a spell
          * or something hitting it forcing a dismount.
          */
-        void Unmount(bool from_aura = false);
+        virtual void Unmount(bool from_aura = false);
 
         /**
          * Returns the maximum skill value the given Unit can have. Ie: the sword skill can

@@ -17191,6 +17191,57 @@ void Player::ContinueTaxiFlight()
     GetSession()->SendDoFlight(mountDisplayId, path, startNode);
 }
 
+void Player::Mount(uint32 mount, uint32 spellId)
+{
+    if (!mount)
+      { return; }
+
+    Unit::Mount(mount, spellId);
+
+    // Called by Taxi system / GM command
+    if (!spellId)
+    {
+        UnsummonPetTemporaryIfAny();
+    }
+    // Called by mount aura
+    else
+    {
+        // Normal case (Unsummon only permanent pet)
+        if (Pet* pet = GetPet())
+        {
+            if (pet->IsPermanentPetFor((Player*)this) &&
+                sWorld.getConfig(CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT))
+            {
+                UnsummonPetTemporaryIfAny();
+            }
+            else
+            {
+                pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, true);
+            }
+        }
+    }
+}
+
+void Player::Unmount(bool from_aura)
+{
+    if (!IsMounted())
+        { return; }
+
+    Unit::Unmount(from_aura);
+
+    // only resummon old pet if the player is already added to a map
+    // this prevents adding a pet to a not created map which would otherwise cause a crash
+    // (it could probably happen when logging in after a previous crash)
+    if (Pet* pet = GetPet())
+    {
+        pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, false);
+    }
+    else
+    {
+        ResummonPetTemporaryUnSummonedIfAny();
+    }
+}
+
 void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
 {
     // last check 1.12
