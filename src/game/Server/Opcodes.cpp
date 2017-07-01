@@ -124,7 +124,7 @@ void Opcodes::BuildOpcodeList()
     /*0x03D*/  StoreOpcode(CMSG_PLAYER_LOGIN,                 "CMSG_PLAYER_LOGIN",                STATUS_AUTHED,    PROCESS_INPLACE,      &WorldSession::HandlePlayerLoginOpcode);
     /*[-ZERO] Need check */ /*0x03E*/  StoreOpcode(SMSG_NEW_WORLD,                    "SMSG_NEW_WORLD",                   STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x03F*/  StoreOpcode(SMSG_TRANSFER_PENDING,             "SMSG_TRANSFER_PENDING",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x040*/  StoreOpcode(SMSG_TRANSFER_ABORTED,             "SMSG_TRANSFER_ABORTED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x040*/  StoreOpcode(SMSG_TRANSFER_ABORTED,             "SMSG_TRANSFER_ABORTED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x041*/  StoreOpcode(SMSG_CHARACTER_LOGIN_FAILED,       "SMSG_CHARACTER_LOGIN_FAILED",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x042*/  StoreOpcode(SMSG_LOGIN_SETTIMESPEED,           "SMSG_LOGIN_SETTIMESPEED",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x043*/  StoreOpcode(SMSG_GAMETIME_UPDATE,              "SMSG_GAMETIME_UPDATE",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
