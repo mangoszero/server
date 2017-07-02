@@ -1065,6 +1065,27 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
         { SendNotification(LANG_YOU_NOT_HAVE_PERMISSION); }
 }
 
+void WorldSession::HandleMoveSetRawPosition(WorldPacket& recv_data)
+{
+    DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_SET_RAW_POSITION from %s", GetPlayer()->GetGuidStr().c_str());
+    // write in client console: setrawpos x y z o
+    // For now, it is implemented like worldport but on the same map. Consider using MSG_MOVE_SET_RAW_POSITION_ACK.
+    float PosX, PosY, PosZ, PosO;
+    recv_data >> PosX >> PosY >> PosZ >> PosO;
+    //DEBUG_LOG("Set to: X=%f, Y=%f, Z=%f, orient=%f", PosX, PosY, PosZ, PosO);
+
+    if (!GetPlayer()->IsInWorld() || GetPlayer()->IsTaxiFlying())
+    {
+        DEBUG_LOG("Player '%s' (GUID: %u) in a transfer, ignore setrawpos command.", GetPlayer()->GetName(), GetPlayer()->GetGUIDLow());
+        return;
+    }
+
+    if (GetSecurity() >= SEC_ADMINISTRATOR)
+        { GetPlayer()->TeleportTo(GetPlayer()->GetMapId(), PosX, PosY, PosZ, PosO); }
+    else
+        { SendNotification(LANG_YOU_NOT_HAVE_PERMISSION); }
+}
+
 void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHOIS");
