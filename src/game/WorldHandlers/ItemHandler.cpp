@@ -303,7 +303,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         sObjectMgr.GetItemLocaleStrings(pProto->ItemId, loc_idx, &name, &description);
 
         // override mount level requirements with the settings from the configuration file
-        int requiredLevel = pProto->RequiredLevel;
+        uint32 requiredLevel = pProto->RequiredLevel;
         switch(pProto->ItemId) {
              case 1132: //regular mounts
              case 2411:
@@ -341,7 +341,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
              case 18246:
              case 18247:
              case 18248:
-                 requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
+                 requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
                  break;
             case 12302: // epic mounts
             case 12303:
@@ -379,7 +379,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
             case 18797:
             case 18798:
             case 18902:
-                requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
+                requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL);
                 break;
         }
 
@@ -389,7 +389,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         data << pProto->Class;
         // client known only 0 subclass (and 1-2 obsolute subclasses)
         data << (pProto->Class == ITEM_CLASS_CONSUMABLE ? uint32(0) : pProto->SubClass);
-        data << name;
+        data << name;                                       // max length of any of 4 names: 256 bytes
         data << uint8(0x00);                                // pProto->Name2; // blizz not send name there, just uint8(0x00); <-- \0 = empty string = empty name...
         data << uint8(0x00);                                // pProto->Name3; // blizz not send name there, just uint8(0x00);
         data << uint8(0x00);                                // pProto->Name4; // blizz not send name there, just uint8(0x00);

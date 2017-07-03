@@ -148,7 +148,7 @@ void Opcodes::BuildOpcodeList()
     /*0x055*/  StoreOpcode(SMSG_GUILD_QUERY_RESPONSE,         "SMSG_GUILD_QUERY_RESPONSE",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x056*/  StoreOpcode(CMSG_ITEM_QUERY_SINGLE,            "CMSG_ITEM_QUERY_SINGLE",           STATUS_LOGGEDIN,  PROCESS_INPLACE,      &WorldSession::HandleItemQuerySingleOpcode);
     /*0x057*/  StoreOpcode(CMSG_ITEM_QUERY_MULTIPLE,          "CMSG_ITEM_QUERY_MULTIPLE",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
-    /*[-ZERO] Need check */ /*0x058*/  StoreOpcode(SMSG_ITEM_QUERY_SINGLE_RESPONSE,   "SMSG_ITEM_QUERY_SINGLE_RESPONSE",  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x058*/  StoreOpcode(SMSG_ITEM_QUERY_SINGLE_RESPONSE,   "SMSG_ITEM_QUERY_SINGLE_RESPONSE",  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x059*/  StoreOpcode(SMSG_ITEM_QUERY_MULTIPLE_RESPONSE, "SMSG_ITEM_QUERY_MULTIPLE_RESPONSE", STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x05A*/  StoreOpcode(CMSG_PAGE_TEXT_QUERY,              "CMSG_PAGE_TEXT_QUERY",             STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandlePageTextQueryOpcode);
     /*[-ZERO] Need check */ /*0x05B*/  StoreOpcode(SMSG_PAGE_TEXT_QUERY_RESPONSE,     "SMSG_PAGE_TEXT_QUERY_RESPONSE",    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
