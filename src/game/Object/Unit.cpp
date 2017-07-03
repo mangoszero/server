@@ -6407,28 +6407,6 @@ void Unit::Mount(uint32 mount, uint32 spellId)
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MOUNTING);
 
     SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, mount);
-
-    if (GetTypeId() == TYPEID_PLAYER)
-    {
-        // Called by Taxi system / GM command
-        if (!spellId)
-            { ((Player*)this)->UnsummonPetTemporaryIfAny(); }
-        // Called by mount aura
-        else
-        {
-            // Normal case (Unsummon only permanent pet)
-            if (Pet* pet = GetPet())
-            {
-                if (pet->IsPermanentPetFor((Player*)this) &&
-                    sWorld.getConfig(CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT))
-                {
-                    ((Player*)this)->UnsummonPetTemporaryIfAny();
-                }
-                else
-                    { pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, true); }
-            }
-        }
-    }
 }
 
 void Unit::Unmount(bool from_aura)
@@ -6446,17 +6424,6 @@ void Unit::Unmount(bool from_aura)
         WorldPacket data(SMSG_DISMOUNT, 8);
         data << GetPackGUID();
         SendMessageToSet(&data, true);
-    }
-
-    // only resummon old pet if the player is already added to a map
-    // this prevents adding a pet to a not created map which would otherwise cause a crash
-    // (it could probably happen when logging in after a previous crash)
-    if (GetTypeId() == TYPEID_PLAYER)
-    {
-        if (Pet* pet = GetPet())
-            { pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, false); }
-        else
-            { ((Player*)this)->ResummonPetTemporaryUnSummonedIfAny(); }
     }
 }
 
@@ -8801,12 +8768,18 @@ bool Unit::IsStandState() const
     return !IsSitState() && s != UNIT_STAND_STATE_SLEEP && s != UNIT_STAND_STATE_KNEEL;
 }
 
+bool Unit::IsSeatedState() const
+{
+	uint8 standState = getStandState();
+	return standState != UNIT_STAND_STATE_SLEEP && standState != UNIT_STAND_STATE_STAND;
+}
+
 void Unit::SetStandState(uint8 state)
 {
     SetByteValue(UNIT_FIELD_BYTES_1, 0, state);
 
-    if (IsStandState())
-        { RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED); }
+    if (!IsSeatedState())
+        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED);
 
     if (GetTypeId() == TYPEID_PLAYER)
     {

@@ -11212,6 +11212,14 @@ void Player::SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2, uint
     GetSession()->SendPacket(&data);
 }
 
+void Player::SendOpenContainer()
+{
+    DEBUG_LOG("WORLD: Sent SMSG_OPEN_CONTAINER");
+    WorldPacket data(SMSG_OPEN_CONTAINER, 8);   // opens the main bag in the UI
+    data << GetObjectGuid();
+    GetSession()->SendPacket(&data);
+}
+
 void Player::SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param)
 {
     DEBUG_LOG("WORLD: Sent SMSG_BUY_FAILED");
@@ -13742,14 +13750,13 @@ void Player::SendQuestConfirmAccept(const Quest* pQuest, Player* pReceiver)
     }
 }
 
-void Player::SendPushToPartyResponse(Player* pPlayer, uint32 msg)
+void Player::SendPushToPartyResponse(Player* pPlayer, uint8 msg)
 {
     if (pPlayer)
     {
-        WorldPacket data(MSG_QUEST_PUSH_RESULT, (8 + 4 + 1));
+        WorldPacket data(MSG_QUEST_PUSH_RESULT, (8 + 1));
         data << pPlayer->GetObjectGuid();
-        data << uint32(msg);                                // valid values: 0-8
-        data << uint8(0);
+        data << uint8(msg);                   // enum QuestShareMessages
         GetSession()->SendPacket(&data);
         DEBUG_LOG("WORLD: Sent MSG_QUEST_PUSH_RESULT");
     }
@@ -17184,6 +17191,71 @@ void Player::ContinueTaxiFlight()
     GetSession()->SendDoFlight(mountDisplayId, path, startNode);
 }
 
+void Player::Mount(uint32 mount, uint32 spellId)
+{
+    if (!mount)
+      { return; }
+
+    Unit::Mount(mount, spellId);
+
+    // Called by Taxi system / GM command
+    if (!spellId)
+    {
+        UnsummonPetTemporaryIfAny();
+    }
+    // Called by mount aura
+    else
+    {
+        // Normal case (Unsummon only permanent pet)
+        if (Pet* pet = GetPet())
+        {
+            if (pet->IsPermanentPetFor((Player*)this) &&
+                sWorld.getConfig(CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT))
+            {
+                UnsummonPetTemporaryIfAny();
+            }
+            else
+            {
+                pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, true);
+            }
+        }
+    }
+}
+
+void Player::Unmount(bool from_aura)
+{
+    if (!IsMounted())
+        { return; }
+
+    Unit::Unmount(from_aura);
+
+    // only resummon old pet if the player is already added to a map
+    // this prevents adding a pet to a not created map which would otherwise cause a crash
+    // (it could probably happen when logging in after a previous crash)
+    if (Pet* pet = GetPet())
+    {
+        pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, false);
+    }
+    else
+    {
+        ResummonPetTemporaryUnSummonedIfAny();
+    }
+}
+
+void Player::SendMountResult(PlayerMountResult result)
+{
+    WorldPacket data(SMSG_MOUNTRESULT, 4);
+    data << uint32(result);
+    GetSession()->SendPacket(&data);
+}
+
+void Player::SendDismountResult(PlayerDismountResult result)
+{
+    WorldPacket data(SMSG_DISMOUNTRESULT, 4);
+    data << uint32(result);
+    GetSession()->SendPacket(&data);
+}
+
 void Player::ProhibitSpellSchool(SpellSchoolMask idSchoolMask, uint32 unTimeMs)
 {
     // last check 1.12
@@ -17465,7 +17537,7 @@ void Player::UpdateHomebindTime(uint32 time)
             // hide reminder
             WorldPacket data(SMSG_RAID_GROUP_ONLY, 4 + 4);
             data << uint32(0);
-            data << uint32(ERR_RAID_GROUP_NONE);            // error used only when timer = 0
+            data << uint32(ERR_RAID_GROUP_REQUIRED);        // error used only when timer = 0
             GetSession()->SendPacket(&data);
         }
         // instance is valid, reset homebind timer
@@ -17488,7 +17560,7 @@ void Player::UpdateHomebindTime(uint32 time)
         // send message to player
         WorldPacket data(SMSG_RAID_GROUP_ONLY, 4 + 4);
         data << uint32(m_HomebindTimer);
-        data << uint32(ERR_RAID_GROUP_NONE);                // error used only when timer = 0
+        data << uint32(ERR_RAID_GROUP_REQUIRED);        // error used only when timer = 0
         GetSession()->SendPacket(&data);
         DEBUG_LOG("PLAYER: Player '%s' (GUID: %u) will be teleported to homebind in 60 seconds", GetName(), GetGUIDLow());
     }

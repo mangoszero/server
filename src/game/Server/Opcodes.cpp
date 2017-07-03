@@ -123,8 +123,8 @@ void Opcodes::BuildOpcodeList()
     /*0x03C*/  StoreOpcode(SMSG_CHAR_DELETE,                  "SMSG_CHAR_DELETE",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x03D*/  StoreOpcode(CMSG_PLAYER_LOGIN,                 "CMSG_PLAYER_LOGIN",                STATUS_AUTHED,    PROCESS_INPLACE,      &WorldSession::HandlePlayerLoginOpcode);
     /*[-ZERO] Need check */ /*0x03E*/  StoreOpcode(SMSG_NEW_WORLD,                    "SMSG_NEW_WORLD",                   STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x03F*/  StoreOpcode(SMSG_TRANSFER_PENDING,             "SMSG_TRANSFER_PENDING",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x040*/  StoreOpcode(SMSG_TRANSFER_ABORTED,             "SMSG_TRANSFER_ABORTED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x03F*/  StoreOpcode(SMSG_TRANSFER_PENDING,             "SMSG_TRANSFER_PENDING",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x040*/  StoreOpcode(SMSG_TRANSFER_ABORTED,             "SMSG_TRANSFER_ABORTED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x041*/  StoreOpcode(SMSG_CHARACTER_LOGIN_FAILED,       "SMSG_CHARACTER_LOGIN_FAILED",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x042*/  StoreOpcode(SMSG_LOGIN_SETTIMESPEED,           "SMSG_LOGIN_SETTIMESPEED",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x043*/  StoreOpcode(SMSG_GAMETIME_UPDATE,              "SMSG_GAMETIME_UPDATE",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -285,7 +285,7 @@ void Opcodes::BuildOpcodeList()
     /*0x0DE*/  StoreOpcode(SMSG_MOVE_WATER_WALK,              "SMSG_MOVE_WATER_WALK",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x0DF*/  StoreOpcode(SMSG_MOVE_LAND_WALK,               "SMSG_MOVE_LAND_WALK",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x0E0*/  StoreOpcode(MSG_MOVE_SET_RAW_POSITION_ACK,     "MSG_MOVE_SET_RAW_POSITION_ACK",    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
-    /*0x0E1*/  StoreOpcode(CMSG_MOVE_SET_RAW_POSITION,        "CMSG_MOVE_SET_RAW_POSITION",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
+    /*0x0E1*/  StoreOpcode(CMSG_MOVE_SET_RAW_POSITION,        "CMSG_MOVE_SET_RAW_POSITION",       STATUS_LOGGEDIN,     PROCESS_THREADUNSAFE,      &WorldSession::HandleMoveSetRawPosition);
     /*0x0E2*/  StoreOpcode(SMSG_FORCE_RUN_SPEED_CHANGE,       "SMSG_FORCE_RUN_SPEED_CHANGE",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x0E3*/  StoreOpcode(CMSG_FORCE_RUN_SPEED_CHANGE_ACK,   "CMSG_FORCE_RUN_SPEED_CHANGE_ACK",  STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleForceSpeedChangeAckOpcodes);
     /*0x0E4*/  StoreOpcode(SMSG_FORCE_RUN_BACK_SPEED_CHANGE,  "SMSG_FORCE_RUN_BACK_SPEED_CHANGE", STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -426,8 +426,8 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x16B*/  StoreOpcode(SMSG_DUEL_WINNER,                  "SMSG_DUEL_WINNER",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x16C*/  StoreOpcode(CMSG_DUEL_ACCEPTED,                "CMSG_DUEL_ACCEPTED",               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleDuelAcceptedOpcode);
     /*[-ZERO] Need check */ /*0x16D*/  StoreOpcode(CMSG_DUEL_CANCELLED,               "CMSG_DUEL_CANCELLED",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleDuelCancelledOpcode);
-    /*[-ZERO] Need check */ /*0x16E*/  StoreOpcode(SMSG_MOUNTRESULT,                  "SMSG_MOUNTRESULT",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x16F*/  StoreOpcode(SMSG_DISMOUNTRESULT,               "SMSG_DISMOUNTRESULT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x16E*/  StoreOpcode(SMSG_MOUNTRESULT,                  "SMSG_MOUNTRESULT",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x16F*/  StoreOpcode(SMSG_DISMOUNTRESULT,               "SMSG_DISMOUNTRESULT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x170*/  StoreOpcode(SMSG_PUREMOUNT_CANCELLED_OBSOLETE, "SMSG_PUREMOUNT_CANCELLED_OBSOLETE", STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x171*/  StoreOpcode(CMSG_MOUNTSPECIAL_ANIM,            "CMSG_MOUNTSPECIAL_ANIM",           STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleMountSpecialAnimOpcode);
     /*[-ZERO] Need check */ /*0x172*/  StoreOpcode(SMSG_MOUNTSPECIAL_ANIM,            "SMSG_MOUNTSPECIAL_ANIM",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -519,9 +519,9 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x1C8*/  StoreOpcode(SMSG_FISH_NOT_HOOKED,              "SMSG_FISH_NOT_HOOKED",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x1C9*/  StoreOpcode(SMSG_FISH_ESCAPED,                 "SMSG_FISH_ESCAPED",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x1CA*/  StoreOpcode(CMSG_BUG,                          "CMSG_BUG",                         STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleBugOpcode);
-    /*[-ZERO] Need check */ /*0x1CB*/  StoreOpcode(SMSG_NOTIFICATION,                 "SMSG_NOTIFICATION",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x1CB*/  StoreOpcode(SMSG_NOTIFICATION,                 "SMSG_NOTIFICATION",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x1CC*/  StoreOpcode(CMSG_PLAYED_TIME,                  "CMSG_PLAYED_TIME",                 STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandlePlayedTime);
-    /*[-ZERO] Need check */ /*0x1CD*/  StoreOpcode(SMSG_PLAYED_TIME,                  "SMSG_PLAYED_TIME",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x1CD*/  StoreOpcode(SMSG_PLAYED_TIME,                  "SMSG_PLAYED_TIME",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x1CE*/  StoreOpcode(CMSG_QUERY_TIME,                   "CMSG_QUERY_TIME",                  STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleQueryTimeOpcode);
     /*[-ZERO] Need check */ /*0x1CF*/  StoreOpcode(SMSG_QUERY_TIME_RESPONSE,          "SMSG_QUERY_TIME_RESPONSE",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x1D0*/  StoreOpcode(SMSG_LOG_XPGAIN,                   "SMSG_LOG_XPGAIN",                  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -688,7 +688,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x273*/  StoreOpcode(SMSG_STABLE_RESULT,                "SMSG_STABLE_RESULT",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x274*/  StoreOpcode(CMSG_STABLE_REVIVE_PET,            "CMSG_STABLE_REVIVE_PET",           STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleStableRevivePet);
     /*0x275*/  StoreOpcode(CMSG_STABLE_SWAP_PET,              "CMSG_STABLE_SWAP_PET",             STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleStableSwapPet);
-    /*[-ZERO] Need check */ /*0x276*/  StoreOpcode(MSG_QUEST_PUSH_RESULT,             "MSG_QUEST_PUSH_RESULT",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestPushResult);
+    /*0x276*/  StoreOpcode(MSG_QUEST_PUSH_RESULT,             "MSG_QUEST_PUSH_RESULT",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestPushResult);
     /*[-ZERO] Need check */ /*0x277*/  StoreOpcode(SMSG_PLAY_MUSIC,                   "SMSG_PLAY_MUSIC",                  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x278*/  StoreOpcode(SMSG_PLAY_OBJECT_SOUND,            "SMSG_PLAY_OBJECT_SOUND",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x279*/  StoreOpcode(CMSG_REQUEST_PET_INFO,             "CMSG_REQUEST_PET_INFO",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleRequestPetInfoOpcode);
@@ -755,8 +755,8 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x2B6*/  StoreOpcode(SMSG_SCRIPT_MESSAGE,               "SMSG_SCRIPT_MESSAGE",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x2B7*/  StoreOpcode(SMSG_DUEL_COUNTDOWN,               "SMSG_DUEL_COUNTDOWN",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2B8*/  StoreOpcode(SMSG_AREA_TRIGGER_MESSAGE,         "SMSG_AREA_TRIGGER_MESSAGE",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x2B9*/  StoreOpcode(CMSG_TOGGLE_HELM,                  "CMSG_TOGGLE_HELM",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleShowingHelmOpcode);
-    /*[-ZERO] Need check */ /*0x2BA*/  StoreOpcode(CMSG_TOGGLE_CLOAK,                 "CMSG_TOGGLE_CLOAK",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleShowingCloakOpcode);
+    /*0x2B9*/  StoreOpcode(CMSG_TOGGLE_HELM,                  "CMSG_TOGGLE_HELM",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleShowingHelmOpcode);
+    /*0x2BA*/  StoreOpcode(CMSG_TOGGLE_CLOAK,                 "CMSG_TOGGLE_CLOAK",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleShowingCloakOpcode);
     /*0x2BB*/  StoreOpcode(SMSG_MEETINGSTONE_JOINFAILED,      "SMSG_MEETINGSTONE_JOINFAILED",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2BC*/  StoreOpcode(SMSG_PLAYER_SKINNED,               "SMSG_PLAYER_SKINNED",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2BD*/  StoreOpcode(SMSG_DURABILITY_DAMAGE_DEATH,      "SMSG_DURABILITY_DAMAGE_DEATH",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
