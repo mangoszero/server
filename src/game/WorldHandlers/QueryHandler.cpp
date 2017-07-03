@@ -43,10 +43,10 @@ void WorldSession::SendNameQueryOpcode(Player* p)
         { return; }
 
     // guess size
-    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
+    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 25 + 1 + 4 + 4 + 4));   // guess size
     data << p->GetObjectGuid();                             // player guid
-    data << p->GetName();                                   // played name
-    data << uint8(0);                                       // realm name for cross realm BG usage
+    data << p->GetName();                                   // CString(48): played name
+    data << uint8(0);                                       // CString(256): realm name for cross realm BG usage
     data << uint32(p->getRace());
     data << uint32(p->getGender());
     data << uint32(p->getClass());
@@ -79,9 +79,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     uint32 lowguid      = fields[0].GetUInt32();
     std::string name = fields[1].GetCppString();
     uint8 pRace = 0, pGender = 0, pClass = 0;
-    if (name.empty())
-        { name         = session->GetMangosString(LANG_NON_EXIST_CHARACTER); }
-    else
+    if (!name.empty())
     {
         pRace        = fields[2].GetUInt8();
         pGender      = fields[3].GetUInt8();
@@ -89,7 +87,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     }
 
     // guess size
-    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
+    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + (name.size()+1) + 1 + 4 + 4 + 4));
     data << ObjectGuid(HIGHGUID_PLAYER, lowguid);
     data << name;
     data << uint8(0);                                       // realm name for cross realm BG usage
