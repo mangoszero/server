@@ -73,16 +73,15 @@ enum Typecommand
     GUILD_CREATE_S  = 0x00,
     GUILD_INVITE_S  = 0x01,
     GUILD_QUIT_S    = 0x03,
-    // 0x05?
     GUILD_FOUNDER_S = 0x0E,
-    // [-ZERO] tbc enumerations [?]
-    GUILD_UNK1      = 0x10,
-    GUILD_UNK3      = 0x16
+    GUILD_UNK19     = 0x13,
+    GUILD_UNK20     = 0x14
+    // [ZERO] in SMSG_GUILD_COMMAND_RESULT: 2,4-13,15-18 no effect for no error
 };
 
 enum CommandErrors
 {
-    ERR_PLAYER_NO_MORE_IN_GUILD     = 0x00,
+    ERR_PLAYER_NO_MORE_IN_GUILD     = 0x00, // no message/error
     ERR_GUILD_INTERNAL              = 0x01,
     ERR_ALREADY_IN_GUILD            = 0x02,
     ERR_ALREADY_IN_GUILD_S          = 0x03,
@@ -90,18 +89,19 @@ enum CommandErrors
     ERR_ALREADY_INVITED_TO_GUILD_S  = 0x05,
     ERR_GUILD_NAME_INVALID          = 0x06,
     ERR_GUILD_NAME_EXISTS_S         = 0x07,
-    ERR_GUILD_LEADER_LEAVE          = 0x08,
-    ERR_GUILD_PERMISSIONS           = 0x08,
+    ERR_GUILD_LEADER_LEAVE          = 0x08, // for Typecommand 0x03
+    ERR_GUILD_PERMISSIONS           = 0x08, // for another Typecommand
     ERR_GUILD_PLAYER_NOT_IN_GUILD   = 0x09,
     ERR_GUILD_PLAYER_NOT_IN_GUILD_S = 0x0A,
     ERR_GUILD_PLAYER_NOT_FOUND_S    = 0x0B,
     ERR_GUILD_NOT_ALLIED            = 0x0C,
-    // [-ZERO] tbc enumerations ?
     ERR_GUILD_RANK_TOO_HIGH_S       = 0x0D,
     ERR_GUILD_RANK_TOO_LOW_S        = 0x0E,
+    // [ZERO] 0x0F, 0x10 unused
     ERR_GUILD_RANKS_LOCKED          = 0x11,
     ERR_GUILD_RANK_IN_USE           = 0x12,
     ERR_GUILD_IGNORING_YOU_S        = 0x13,
+    ERR_GUILD_UNK20                 = 0x14  // for Typecommand 0x05 only
 };
 
 enum GuildEvents
