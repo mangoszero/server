@@ -208,9 +208,10 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
         data << uint32(info->type);
         data << uint32(info->displayId);
         data << Name;
-        data << uint16(0) << uint8(0) << uint8(0);          // name2, name3, name4
-        data.append(info->raw.data, 24);
-        // data << float(info->size);                       // go size , to check
+        data << uint8(0) << uint8(0) << uint8(0);   // name2, name3, name4
+        data << uint8(0);                           // one more name, client handles it a bit differently
+        data.append(info->raw.data, 24);            // these are read as int32
+        // data << float(info->size);               // [-ZERO] go size: not in Zero
         SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_GAMEOBJECT_QUERY_RESPONSE");
     }
