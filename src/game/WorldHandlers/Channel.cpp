@@ -754,16 +754,16 @@ void Channel::MakeLeft(WorldPacket* data, ObjectGuid guid)
 void Channel::MakeYouJoined(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_YOU_JOINED_NOTICE);
-    *data << uint8(GetFlags());
-    *data << uint32(GetChannelId());
-    *data << uint32(0);
+    *data << uint32(GetFlags());
+    *data << uint32(0);                                     // the non-zero number will be appended to the channel name
+    *data << uint8(0);                                      // CString max length 512, conditional read
 }
 
 void Channel::MakeYouLeft(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_YOU_LEFT_NOTICE);
-    *data << uint32(GetChannelId());
-    *data << uint8(0);                                      // can be 0x00 and 0x01
+    //*data << uint32(GetChannelId());                        //[-ZERO]
+    //*data << uint8(0);                                      //[-ZERO] can be 0x00 and 0x01 (bool)
 }
 
 void Channel::MakeWrongPassword(WorldPacket* data)

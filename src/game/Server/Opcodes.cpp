@@ -213,7 +213,7 @@ void Opcodes::BuildOpcodeList()
     /*0x096*/  StoreOpcode(SMSG_MESSAGECHAT,                  "SMSG_MESSAGECHAT",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x097*/  StoreOpcode(CMSG_JOIN_CHANNEL,                 "CMSG_JOIN_CHANNEL",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleJoinChannelOpcode);
     /*[-ZERO] Need check */ /*0x098*/  StoreOpcode(CMSG_LEAVE_CHANNEL,                "CMSG_LEAVE_CHANNEL",               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLeaveChannelOpcode);
-    /*[-ZERO] Need check */ /*0x099*/  StoreOpcode(SMSG_CHANNEL_NOTIFY,               "SMSG_CHANNEL_NOTIFY",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x099*/  StoreOpcode(SMSG_CHANNEL_NOTIFY,               "SMSG_CHANNEL_NOTIFY",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x09A*/  StoreOpcode(CMSG_CHANNEL_LIST,                 "CMSG_CHANNEL_LIST",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleChannelListOpcode);
     /*[-ZERO] Need check */ /*0x09B*/  StoreOpcode(SMSG_CHANNEL_LIST,                 "SMSG_CHANNEL_LIST",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x09C*/  StoreOpcode(CMSG_CHANNEL_PASSWORD,             "CMSG_CHANNEL_PASSWORD",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleChannelPasswordOpcode);
