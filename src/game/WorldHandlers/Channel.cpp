@@ -776,6 +776,12 @@ void Channel::MakeNotMember(WorldPacket* data)
     MakeNotifyPacket(data, CHAT_NOT_MEMBER_NOTICE);
 }
 
+void Channel::MakeNotOnPacket(WorldPacket* data, const std::string &name)
+{
+    data->Initialize(SMSG_CHANNEL_NOTIFY, (1 + name.length() + 1));
+    (*data) << (uint8)CHAT_NOT_MEMBER_NOTICE << name;
+}
+
 void Channel::MakeNotModerator(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_NOT_MODERATOR_NOTICE);
