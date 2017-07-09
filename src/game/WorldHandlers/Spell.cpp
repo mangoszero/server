@@ -2632,7 +2632,7 @@ void Spell::cancel()
             //(no break)
         case SPELL_STATE_DELAYED:
         {
-            SendInterrupted(0);
+            SendInterrupted(SPELL_FAILED_INTERRUPTED);
 
             if (sendInterrupt)
                 { SendCastResult(SPELL_FAILED_INTERRUPTED); }
@@ -2651,7 +2651,7 @@ void Spell::cancel()
             }
 
             SendChannelUpdate(0);
-            SendInterrupted(0);
+            SendInterrupted(SPELL_FAILED_INTERRUPTED);
 
             if (sendInterrupt)
                 { SendCastResult(SPELL_FAILED_INTERRUPTED); }
@@ -3274,9 +3274,8 @@ void Spell::SendCastResult(SpellCastResult result)
     // Reseting emote state for case not handled by the client.
     if (result == SPELL_FAILED_CHEST_IN_USE)
     {
-        SendInterrupted(0);
+        SendInterrupted(result);
     }
-
 
     SendCastResult((Player*)m_caster, m_spellInfo, result);
 }
@@ -3587,18 +3586,26 @@ void Spell::SendLogExecute()
     m_caster->SendMessageToSet(&data, true);
 }
 
-void Spell::SendInterrupted(uint8 result)
+void Spell::SendInterrupted(SpellCastResult result)
 {
-    WorldPacket data(SMSG_SPELL_FAILURE, (8 + 4 + 1));
-    data << m_caster->GetPackGUID();
-    data << m_spellInfo->Id;
-    data << result;
-    m_caster->SendMessageToSet(&data, true);
+    Player *casterPlayer = m_caster->ToPlayer();
 
-    data.Initialize(SMSG_SPELL_FAILED_OTHER, (8 + 4));
+    if (casterPlayer)
+    {
+        WorldPacket data(SMSG_SPELL_FAILURE, (8 + 4 + 1));
+        data << m_caster->GetObjectGuid();
+        data << m_spellInfo->Id;
+        data << uint8(result);
+        casterPlayer->SendDirectMessage(&data);
+    }
+
+    WorldPacket data(SMSG_SPELL_FAILED_OTHER, (8 + 4));
     data << m_caster->GetObjectGuid();
     data << m_spellInfo->Id;
-    m_caster->SendMessageToSet(&data, true);
+    if (casterPlayer)
+        casterPlayer->SendMessageToSetExcept(&data, casterPlayer);
+    else
+        m_caster->SendMessageToSet(&data, true);
 }
 
 void Spell::SendChannelUpdate(uint32 time)
@@ -4458,14 +4465,14 @@ SpellCastResult Spell::CheckCast(bool strict)
         // Must be behind the target.
         if (m_spellInfo->AttributesEx2 == SPELL_ATTR_EX2_UNK20 && m_spellInfo->HasAttribute(SPELL_ATTR_EX_UNK9) && target->HasInArc(M_PI_F, m_caster))
         {
-            SendInterrupted(2);
+            SendInterrupted(SPELL_FAILED_NOT_BEHIND);
             return SPELL_FAILED_NOT_BEHIND;
         }
 
         // Target must be facing you.
         if ((m_spellInfo->Attributes == (SPELL_ATTR_UNK4 | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_UNK18 | SPELL_ATTR_STOP_ATTACK_TARGET)) && !target->HasInArc(M_PI_F, m_caster))
         {
-            SendInterrupted(2);
+            SendInterrupted(SPELL_FAILED_NOT_INFRONT);
             return SPELL_FAILED_NOT_INFRONT;
         }
 
