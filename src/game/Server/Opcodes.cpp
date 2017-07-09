@@ -236,10 +236,10 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x0AD*/  StoreOpcode(CMSG_READ_ITEM,                    "CMSG_READ_ITEM",                   STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleReadItemOpcode);
     /*0x0AE*/  StoreOpcode(SMSG_READ_ITEM_OK,                 "SMSG_READ_ITEM_OK",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x0AF*/  StoreOpcode(SMSG_READ_ITEM_FAILED,             "SMSG_READ_ITEM_FAILED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x0B0*/  StoreOpcode(SMSG_ITEM_COOLDOWN,                "SMSG_ITEM_COOLDOWN",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0B0*/  StoreOpcode(SMSG_ITEM_COOLDOWN,                "SMSG_ITEM_COOLDOWN",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x0B1*/  StoreOpcode(CMSG_GAMEOBJ_USE,                  "CMSG_GAMEOBJ_USE",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleGameObjectUseOpcode);
     /*0x0B2*/  StoreOpcode(CMSG_GAMEOBJ_CHAIR_USE_OBSOLETE,   "CMSG_GAMEOBJ_CHAIR_USE_OBSOLETE",  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
-    /*[-ZERO] Need check */ /*0x0B3*/  StoreOpcode(SMSG_GAMEOBJECT_CUSTOM_ANIM,       "SMSG_GAMEOBJECT_CUSTOM_ANIM",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0B3*/  StoreOpcode(SMSG_GAMEOBJECT_CUSTOM_ANIM,       "SMSG_GAMEOBJECT_CUSTOM_ANIM",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x0B4*/  StoreOpcode(CMSG_AREATRIGGER,                  "CMSG_AREATRIGGER",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE,      &WorldSession::HandleAreaTriggerOpcode);
     /*0x0B5*/  StoreOpcode(MSG_MOVE_START_FORWARD,            "MSG_MOVE_START_FORWARD",           STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMovementOpcodes);
     /*0x0B6*/  StoreOpcode(MSG_MOVE_START_BACKWARD,           "MSG_MOVE_START_BACKWARD",          STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMovementOpcodes);
@@ -276,7 +276,7 @@ void Opcodes::BuildOpcodeList()
     /*0x0D5*/  StoreOpcode(MSG_MOVE_SET_SWIM_BACK_SPEED,      "MSG_MOVE_SET_SWIM_BACK_SPEED",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x0D6*/  StoreOpcode(MSG_MOVE_SET_ALL_SPEED_CHEAT,      "MSG_MOVE_SET_ALL_SPEED_CHEAT",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x0D7*/  StoreOpcode(MSG_MOVE_SET_TURN_RATE_CHEAT,      "MSG_MOVE_SET_TURN_RATE_CHEAT",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
-    /*[-ZERO] Need check */ /*0x0D8*/  StoreOpcode(MSG_MOVE_SET_TURN_RATE,            "MSG_MOVE_SET_TURN_RATE",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
+    /*[-ZERO] No effect */ /*0x0D8*/  StoreOpcode(MSG_MOVE_SET_TURN_RATE,            "MSG_MOVE_SET_TURN_RATE",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x0D9*/  StoreOpcode(MSG_MOVE_TOGGLE_COLLISION_CHEAT,   "MSG_MOVE_TOGGLE_COLLISION_CHEAT",  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x0DA*/  StoreOpcode(MSG_MOVE_SET_FACING,               "MSG_MOVE_SET_FACING",              STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMovementOpcodes);
     /*0x0DB*/  StoreOpcode(MSG_MOVE_SET_PITCH,                "MSG_MOVE_SET_PITCH",               STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMovementOpcodes);
@@ -319,9 +319,9 @@ void Opcodes::BuildOpcodeList()
     /*0x100*/  StoreOpcode(CMSG_TUTORIAL_RESET,               "CMSG_TUTORIAL_RESET",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleTutorialResetOpcode);
     /*0x101*/  StoreOpcode(CMSG_STANDSTATECHANGE,             "CMSG_STANDSTATECHANGE",            STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleStandStateChangeOpcode);
     /*[-ZERO] Need check */ /*0x102*/  StoreOpcode(CMSG_EMOTE,                        "CMSG_EMOTE",                       STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleEmoteOpcode);
-    /*[-ZERO] Need check */ /*0x103*/  StoreOpcode(SMSG_EMOTE,                        "SMSG_EMOTE",                       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x103*/  StoreOpcode(SMSG_EMOTE,                        "SMSG_EMOTE",                       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x104*/  StoreOpcode(CMSG_TEXT_EMOTE,                   "CMSG_TEXT_EMOTE",                  STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleTextEmoteOpcode);
-    /*[-ZERO] Need check */ /*0x105*/  StoreOpcode(SMSG_TEXT_EMOTE,                   "SMSG_TEXT_EMOTE",                  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x105*/  StoreOpcode(SMSG_TEXT_EMOTE,                   "SMSG_TEXT_EMOTE",                  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x106*/  StoreOpcode(CMSG_AUTOEQUIP_GROUND_ITEM,        "CMSG_AUTOEQUIP_GROUND_ITEM",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x107*/  StoreOpcode(CMSG_AUTOSTORE_GROUND_ITEM,        "CMSG_AUTOSTORE_GROUND_ITEM",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x108*/  StoreOpcode(CMSG_AUTOSTORE_LOOT_ITEM,          "CMSG_AUTOSTORE_LOOT_ITEM",         STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleAutostoreLootItemOpcode);
@@ -348,7 +348,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x11D*/  StoreOpcode(CMSG_SET_TRADE_ITEM,               "CMSG_SET_TRADE_ITEM",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleSetTradeItemOpcode);
     /*[-ZERO] Need check */ /*0x11E*/  StoreOpcode(CMSG_CLEAR_TRADE_ITEM,             "CMSG_CLEAR_TRADE_ITEM",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleClearTradeItemOpcode);
     /*[-ZERO] Need check */ /*0x11F*/  StoreOpcode(CMSG_SET_TRADE_GOLD,               "CMSG_SET_TRADE_GOLD",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleSetTradeGoldOpcode);
-    /*[-ZERO] Need check */ /*0x120*/  StoreOpcode(SMSG_TRADE_STATUS,                 "SMSG_TRADE_STATUS",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x120*/  StoreOpcode(SMSG_TRADE_STATUS,                 "SMSG_TRADE_STATUS",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x121*/  StoreOpcode(SMSG_TRADE_STATUS_EXTENDED,        "SMSG_TRADE_STATUS_EXTENDED",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x122*/  StoreOpcode(SMSG_INITIALIZE_FACTIONS,          "SMSG_INITIALIZE_FACTIONS",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x123*/  StoreOpcode(SMSG_SET_FACTION_VISIBLE,          "SMSG_SET_FACTION_VISIBLE",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
