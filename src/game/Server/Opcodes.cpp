@@ -349,7 +349,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x11E*/  StoreOpcode(CMSG_CLEAR_TRADE_ITEM,             "CMSG_CLEAR_TRADE_ITEM",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleClearTradeItemOpcode);
     /*[-ZERO] Need check */ /*0x11F*/  StoreOpcode(CMSG_SET_TRADE_GOLD,               "CMSG_SET_TRADE_GOLD",              STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleSetTradeGoldOpcode);
     /*0x120*/  StoreOpcode(SMSG_TRADE_STATUS,                 "SMSG_TRADE_STATUS",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x121*/  StoreOpcode(SMSG_TRADE_STATUS_EXTENDED,        "SMSG_TRADE_STATUS_EXTENDED",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x121*/  StoreOpcode(SMSG_TRADE_STATUS_EXTENDED,        "SMSG_TRADE_STATUS_EXTENDED",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x122*/  StoreOpcode(SMSG_INITIALIZE_FACTIONS,          "SMSG_INITIALIZE_FACTIONS",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x123*/  StoreOpcode(SMSG_SET_FACTION_VISIBLE,          "SMSG_SET_FACTION_VISIBLE",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x124*/  StoreOpcode(SMSG_SET_FACTION_STANDING,         "SMSG_SET_FACTION_STANDING",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
@@ -367,7 +367,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x130*/  StoreOpcode(SMSG_CAST_FAILED,                  "SMSG_CAST_FAILED",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x131*/  StoreOpcode(SMSG_SPELL_START,                  "SMSG_SPELL_START",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x132*/  StoreOpcode(SMSG_SPELL_GO,                     "SMSG_SPELL_GO",                    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x133*/  StoreOpcode(SMSG_SPELL_FAILURE,                "SMSG_SPELL_FAILURE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x133*/  StoreOpcode(SMSG_SPELL_FAILURE,                "SMSG_SPELL_FAILURE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x134*/  StoreOpcode(SMSG_SPELL_COOLDOWN,               "SMSG_SPELL_COOLDOWN",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x135*/  StoreOpcode(SMSG_COOLDOWN_EVENT,               "SMSG_COOLDOWN_EVENT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x136*/  StoreOpcode(CMSG_CANCEL_AURA,                  "CMSG_CANCEL_AURA",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleCancelAuraOpcode);
@@ -736,7 +736,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x2A3*/  StoreOpcode(CMSG_LOOT_MASTER_GIVE,             "CMSG_LOOT_MASTER_GIVE",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLootMasterGiveOpcode);
     /*[-ZERO] Need check */ /*0x2A4*/  StoreOpcode(SMSG_LOOT_MASTER_LIST,             "SMSG_LOOT_MASTER_LIST",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2A5*/  StoreOpcode(SMSG_SET_FORCED_REACTIONS,         "SMSG_SET_FORCED_REACTIONS",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x2A6*/  StoreOpcode(SMSG_SPELL_FAILED_OTHER,           "SMSG_SPELL_FAILED_OTHER",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x2A6*/  StoreOpcode(SMSG_SPELL_FAILED_OTHER,           "SMSG_SPELL_FAILED_OTHER",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2A7*/  StoreOpcode(SMSG_GAMEOBJECT_RESET_STATE,       "SMSG_GAMEOBJECT_RESET_STATE",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2A8*/  StoreOpcode(CMSG_REPAIR_ITEM,                  "CMSG_REPAIR_ITEM",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleRepairItemOpcode);
     /*[-ZERO] Need check */ /*0x2A9*/  StoreOpcode(SMSG_CHAT_PLAYER_NOT_FOUND,        "SMSG_CHAT_PLAYER_NOT_FOUND",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
