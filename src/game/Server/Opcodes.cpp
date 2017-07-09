@@ -229,13 +229,13 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x0A6*/  StoreOpcode(CMSG_CHANNEL_UNBAN,                "CMSG_CHANNEL_UNBAN",               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleChannelUnbanOpcode);
     /*[-ZERO] Need check */ /*0x0A7*/  StoreOpcode(CMSG_CHANNEL_ANNOUNCEMENTS,        "CMSG_CHANNEL_ANNOUNCEMENTS",       STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleChannelAnnouncementsOpcode);
     /*[-ZERO] Need check */ /*0x0A8*/  StoreOpcode(CMSG_CHANNEL_MODERATE,             "CMSG_CHANNEL_MODERATE",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleChannelModerateOpcode);
-    /*[-ZERO] Need check */ /*0x0A9*/  StoreOpcode(SMSG_UPDATE_OBJECT,                "SMSG_UPDATE_OBJECT",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x0AA*/  StoreOpcode(SMSG_DESTROY_OBJECT,               "SMSG_DESTROY_OBJECT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0A9*/  StoreOpcode(SMSG_UPDATE_OBJECT,                "SMSG_UPDATE_OBJECT",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0AA*/  StoreOpcode(SMSG_DESTROY_OBJECT,               "SMSG_DESTROY_OBJECT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x0AB*/  StoreOpcode(CMSG_USE_ITEM,                     "CMSG_USE_ITEM",                    STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleUseItemOpcode);
     /*[-ZERO] Need check */ /*0x0AC*/  StoreOpcode(CMSG_OPEN_ITEM,                    "CMSG_OPEN_ITEM",                   STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleOpenItemOpcode);
     /*[-ZERO] Need check */ /*0x0AD*/  StoreOpcode(CMSG_READ_ITEM,                    "CMSG_READ_ITEM",                   STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleReadItemOpcode);
-    /*[-ZERO] Need check */ /*0x0AE*/  StoreOpcode(SMSG_READ_ITEM_OK,                 "SMSG_READ_ITEM_OK",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x0AF*/  StoreOpcode(SMSG_READ_ITEM_FAILED,             "SMSG_READ_ITEM_FAILED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0AE*/  StoreOpcode(SMSG_READ_ITEM_OK,                 "SMSG_READ_ITEM_OK",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x0AF*/  StoreOpcode(SMSG_READ_ITEM_FAILED,             "SMSG_READ_ITEM_FAILED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x0B0*/  StoreOpcode(SMSG_ITEM_COOLDOWN,                "SMSG_ITEM_COOLDOWN",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x0B1*/  StoreOpcode(CMSG_GAMEOBJ_USE,                  "CMSG_GAMEOBJ_USE",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleGameObjectUseOpcode);
     /*0x0B2*/  StoreOpcode(CMSG_GAMEOBJ_CHAIR_USE_OBSOLETE,   "CMSG_GAMEOBJ_CHAIR_USE_OBSOLETE",  STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
