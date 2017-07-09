@@ -369,10 +369,10 @@ void Opcodes::BuildOpcodeList()
     /*0x132*/  StoreOpcode(SMSG_SPELL_GO,                     "SMSG_SPELL_GO",                    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x133*/  StoreOpcode(SMSG_SPELL_FAILURE,                "SMSG_SPELL_FAILURE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x134*/  StoreOpcode(SMSG_SPELL_COOLDOWN,               "SMSG_SPELL_COOLDOWN",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x135*/  StoreOpcode(SMSG_COOLDOWN_EVENT,               "SMSG_COOLDOWN_EVENT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x135*/  StoreOpcode(SMSG_COOLDOWN_EVENT,               "SMSG_COOLDOWN_EVENT",              STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x136*/  StoreOpcode(CMSG_CANCEL_AURA,                  "CMSG_CANCEL_AURA",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleCancelAuraOpcode);
-    /*[-ZERO] Need check */ /*0x137*/  StoreOpcode(SMSG_UPDATE_AURA_DURATION,         "SMSG_UPDATE_AURA_DURATION",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x138*/  StoreOpcode(SMSG_PET_CAST_FAILED,              "SMSG_PET_CAST_FAILED",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x137*/  StoreOpcode(SMSG_UPDATE_AURA_DURATION,         "SMSG_UPDATE_AURA_DURATION",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x138*/  StoreOpcode(SMSG_PET_CAST_FAILED,              "SMSG_PET_CAST_FAILED",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x139*/  StoreOpcode(MSG_CHANNEL_START,                 "MSG_CHANNEL_START",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x13A*/  StoreOpcode(MSG_CHANNEL_UPDATE,                "MSG_CHANNEL_UPDATE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*[-ZERO] Need check */ /*0x13B*/  StoreOpcode(CMSG_CANCEL_CHANNELLING,           "CMSG_CANCEL_CHANNELLING",          STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleCancelChanneling);
