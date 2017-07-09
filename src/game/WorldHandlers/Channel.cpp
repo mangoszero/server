@@ -455,13 +455,12 @@ void Channel::List(Player* player)
     }
 
     // list players in channel
-    WorldPacket data(SMSG_CHANNEL_LIST, 1 + (GetName().size() + 1) + 1 + 4 + m_players.size() * (8 + 1));
-    data << uint8(1);                                       // channel type?
+    WorldPacket data(SMSG_CHANNEL_LIST, (GetName().size() + 1) + 1 + 4 + m_players.size() * (8 + 1));   // guess size
     data << GetName();                                      // channel name
     data << uint8(GetFlags());                              // channel flags?
 
     size_t pos = data.wpos();
-    data << uint32(0);                                      // size of list, placeholder
+    data << int32(0);                                       // size of list, placeholder
 
     AccountTypes gmLevelInWhoList = (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_WHO_LIST);
 
@@ -481,7 +480,7 @@ void Channel::List(Player* player)
         }
     }
 
-    data.put<uint32>(pos, count);
+    data.put<int32>(pos, count);
 
     SendToOne(&data, guid);
 }
