@@ -412,6 +412,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x15D*/  StoreOpcode(CMSG_LOOT,                         "CMSG_LOOT",                        STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLootOpcode);
     /*[-ZERO] Need check */ /*0x15E*/  StoreOpcode(CMSG_LOOT_MONEY,                   "CMSG_LOOT_MONEY",                  STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLootMoneyOpcode);
     /*[-ZERO] Need check */ /*0x15F*/  StoreOpcode(CMSG_LOOT_RELEASE,                 "CMSG_LOOT_RELEASE",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLootReleaseOpcode);
+    /*0x160*/  StoreOpcode(SMSG_LOOT_RESPONSE,                "SMSG_LOOT_RESPONSE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x160*/  StoreOpcode(SMSG_LOOT_RESPONSE,                "SMSG_LOOT_RESPONSE",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x161*/  StoreOpcode(SMSG_LOOT_RELEASE_RESPONSE,        "SMSG_LOOT_RELEASE_RESPONSE",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x162*/  StoreOpcode(SMSG_LOOT_REMOVED,                 "SMSG_LOOT_REMOVED",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
