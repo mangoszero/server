@@ -825,13 +825,14 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
         { return b; }                                           // nothing output more
 
 
+    // TODO: single packet may contain 16 loot item descriptions at most. Any excessive item will be ignored by client. Test itemsShown
     for (uint8 i = 0; i < l.items.size(); ++i)
     {
         LootSlotType slot_type = l.items[i].GetSlotTypeForSharedLoot(lv.permission, lv.viewer, l.GetLootTarget());
         if (slot_type >= MAX_LOOT_SLOT_TYPE)
             { continue; }
 
-        b << uint8(i) << l.items[i];
+        b << uint8(itemsShown) << l.items[i];
         b << uint8(slot_type);                              // 0 - get 1 - look only 2 - master selection
         ++itemsShown;
     }
@@ -849,7 +850,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
             if (slot_type >= MAX_LOOT_SLOT_TYPE)
                 { continue; }
 
-            b << uint8(ci->index) << item;
+            b << uint8(itemsShown) << item;
             b << uint8(slot_type);                          // allow loot
             ++itemsShown;
         }
@@ -868,8 +869,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
             LootItem& item = l.m_questItems[qi->index];
             if (!qi->is_looted && !item.is_looted)
             {
-                b << uint8(l.items.size() + (qi - q_list->begin()));
-                b << item;
+                b << uint8(itemsShown) << item;
                 b << uint8(slot_type);                      // allow loot
                 ++itemsShown;
             }
@@ -886,7 +886,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
             LootItem& item = l.items[fi->index];
             if (!fi->is_looted && !item.is_looted)
             {
-                b << uint8(fi->index) << item;
+                b << uint8(itemsShown) << item;
                 b << uint8(slot_type);                      // allow loot
                 ++itemsShown;
             }
