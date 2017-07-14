@@ -2449,7 +2449,7 @@ void Unit::SendMeleeAttackStop(Unit* victim)
     if (!victim)
         { return; }
 
-    WorldPacket data(SMSG_ATTACKSTOP, (4 + 16));            // we guess size
+    WorldPacket data(SMSG_ATTACKSTOP, (8 + 8 + 4));         // guess size, max is 9+9+4
     data << GetPackGUID();
     data << victim->GetPackGUID();                          // can be 0x00...
     data << uint32(0);                                      // can be 0x1
@@ -4622,6 +4622,13 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
     data << uint32(0);                                      // spell id, seen with heroic strike and disarm as examples.
     // HITINFO_NOACTION normally set if spell
     data << uint32(damageInfo->blocked_amount);
+    //if (damageInfo->HitInfo & HITINFO_UNK0)
+    //{
+    //    data << uint32(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0);
+    //    for (int i = 0; i < 4; ++i)
+    //        data << float(0) << float(0);
+    //    data << uint32(0);
+    //}
     SendMessageToSet(&data, true);  /**/
 }
 
@@ -5417,7 +5424,7 @@ void Unit::SendHealSpellLog(Unit* pVictim, uint32 SpellID, uint32 Damage, bool c
     data << uint32(SpellID);
     data << uint32(Damage);
     data << uint8(critical ? 1 : 0);
-    data << uint8(0);                                       // unused in client?
+    // data << uint8(0);                                       // [-ZERO]
     SendMessageToSet(&data, true);
 }
 
