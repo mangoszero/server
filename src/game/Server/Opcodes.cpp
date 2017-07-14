@@ -465,9 +465,9 @@ void Opcodes::BuildOpcodeList()
     /*0x192*/  StoreOpcode(SMSG_QUESTGIVER_QUEST_FAILED,      "SMSG_QUESTGIVER_QUEST_FAILED",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x193*/  StoreOpcode(CMSG_QUESTLOG_SWAP_QUEST,          "CMSG_QUESTLOG_SWAP_QUEST",         STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestLogSwapQuest);
     /*[-ZERO] Need check */ /*0x194*/  StoreOpcode(CMSG_QUESTLOG_REMOVE_QUEST,        "CMSG_QUESTLOG_REMOVE_QUEST",       STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleQuestLogRemoveQuest);
-    /*[-ZERO] Need check */ /*0x195*/  StoreOpcode(SMSG_QUESTLOG_FULL,                "SMSG_QUESTLOG_FULL",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x196*/  StoreOpcode(SMSG_QUESTUPDATE_FAILED,           "SMSG_QUESTUPDATE_FAILED",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x197*/  StoreOpcode(SMSG_QUESTUPDATE_FAILEDTIMER,      "SMSG_QUESTUPDATE_FAILEDTIMER",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x195*/  StoreOpcode(SMSG_QUESTLOG_FULL,                "SMSG_QUESTLOG_FULL",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x196*/  StoreOpcode(SMSG_QUESTUPDATE_FAILED,           "SMSG_QUESTUPDATE_FAILED",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x197*/  StoreOpcode(SMSG_QUESTUPDATE_FAILEDTIMER,      "SMSG_QUESTUPDATE_FAILEDTIMER",     STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x198*/  StoreOpcode(SMSG_QUESTUPDATE_COMPLETE,         "SMSG_QUESTUPDATE_COMPLETE",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x199*/  StoreOpcode(SMSG_QUESTUPDATE_ADD_KILL,         "SMSG_QUESTUPDATE_ADD_KILL",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x19A*/  StoreOpcode(SMSG_QUESTUPDATE_ADD_ITEM,         "SMSG_QUESTUPDATE_ADD_ITEM",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
