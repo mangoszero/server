@@ -13706,7 +13706,7 @@ void Player::SendQuestReward(Quest const* pQuest, uint32 XP)
 /// Sent when a quest is failed to be given off at questtaker. Specifically handled reasons:
 /// INVALIDREASON_QUEST_FAILED_INVENTORY_FULL=4 (or 50)
 /// INVALIDREASON_QUEST_FAILED_DUPLICATE_ITEM=17
-void Player::SendQuestFailed(uint32 quest_id, uint32 reason)
+void Player::SendQuestFailedAtTaker(uint32 quest_id, uint32 reason)
 {
     if (quest_id)
     {
@@ -13715,6 +13715,17 @@ void Player::SendQuestFailed(uint32 quest_id, uint32 reason)
         data << uint32(reason);
         GetSession()->SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_QUEST_FAILED");
+    }
+}
+
+void Player::SendQuestFailed(uint32 quest_id)
+{
+    if (quest_id)
+    {
+        WorldPacket data(SMSG_QUESTUPDATE_FAILED, 4);
+        data << uint32(quest_id);
+        GetSession()->SendPacket(&data);
+        DEBUG_LOG("WORLD: Sent SMSG_QUESTUPDATE_FAILED");
     }
 }
 
