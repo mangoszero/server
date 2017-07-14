@@ -551,7 +551,7 @@ enum NPCFlags
 {
     UNIT_NPC_FLAG_NONE                  = 0x00000000,
     UNIT_NPC_FLAG_GOSSIP                = 0x00000001,       ///< 100%
-    UNIT_NPC_FLAG_QUESTGIVER            = 0x00000002,       ///< guessed, probably ok
+    UNIT_NPC_FLAG_QUESTGIVER            = 0x00000002,       ///< 100%
     UNIT_NPC_FLAG_VENDOR                = 0x00000004,       ///< 100%
     UNIT_NPC_FLAG_FLIGHTMASTER          = 0x00000008,       ///< 100%
     UNIT_NPC_FLAG_TRAINER               = 0x00000010,       ///< 100%

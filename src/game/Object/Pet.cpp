@@ -2066,7 +2066,7 @@ void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
     WorldPacket data(SMSG_PET_MODE, 12);
     data << GetObjectGuid();
     data << uint32(m_petModeFlags);
-    ((Player*)owner)->GetSession()->SendPacket(&data);
+    owner->ToPlayer()->SendDirectMessage(&data);
 }
 
 void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)

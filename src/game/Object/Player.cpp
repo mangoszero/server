@@ -11585,7 +11585,7 @@ void Player::SendNewItem(Item* item, uint32 count, bool received, bool created, 
     data << uint32(item->GetItemSuffixFactor());            // SuffixFactor
     data << uint32(item->GetItemRandomPropertyId());        // random item property id
     data << uint32(count);                                  // count of items
-    data << uint32(GetItemCount(item->GetEntry()));         // count of items in inventory
+    //data << uint32(GetItemCount(item->GetEntry()));         // [-ZERO] count of items in inventory
 
     if (broadcast && GetGroup())
         { GetGroup()->BroadcastPacket(&data, true); }
@@ -16693,7 +16693,7 @@ void Player::CharmSpellInitialize()
     if (charm->GetTypeId() != TYPEID_PLAYER)
         { data << uint8(charmInfo->GetReactState()) << uint8(charmInfo->GetCommandState()) << uint16(0); }
     else
-        { data << uint8(0) << uint8(0) << uint16(0); }
+        { data << uint8(0) << uint8(0) << uint16(0); }  // TODO it is exactly the same as uint32(PetModeFlags) from SMSG_PET_MODE
 
     charmInfo->BuildActionBar(&data);
 
