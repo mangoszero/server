@@ -662,6 +662,7 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
     }
 
     data << EmoteCount;                                     // Emote Count
+    // TODO unify cycle constructions: the previous one allows non-sequential data placing, while the next one does not
     for (uint32 i = 0; i < EmoteCount; ++i)
     {
         data << uint32(pQuest->OfferRewardEmoteDelay[i]);   // Delay Emote
