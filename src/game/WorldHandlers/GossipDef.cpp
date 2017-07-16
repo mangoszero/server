@@ -730,7 +730,7 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
     // that is shown when you talk to the quest giver while the quest is incomplete.
     // Therefore the text should not be shown for them when the quest is complete.
     // For quests that do require items, it is self explanatory.
-    if (RequestItemsText.empty() || (!pQuest->HasItemsRequirement() && Completable))
+    if (RequestItemsText.empty() || ((pQuest->GetReqItemsCount() == 0) && Completable))
     {
         SendQuestGiverOfferReward(pQuest, npcGUID, true);
         return;
