@@ -256,6 +256,7 @@ class Quest
         bool   IsRepeatable() const { return m_SpecialFlags & QUEST_SPECIAL_FLAG_REPEATABLE; }
         bool   IsAutoComplete() const { return QuestMethod ? false : true; }
         bool   IsAllowedInRaid() const;
+        bool   HasItemsRequirement() const { return (ReqItemId[0] || ReqItemId[1] || ReqItemId[2] || ReqItemId[03]); }
 
         // quest can be fully deactivated and will not be available for any player
         void SetQuestActiveState(bool state) { m_isActive = state; }
