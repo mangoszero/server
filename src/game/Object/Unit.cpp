@@ -2449,7 +2449,7 @@ void Unit::SendMeleeAttackStop(Unit* victim)
     if (!victim)
         { return; }
 
-    WorldPacket data(SMSG_ATTACKSTOP, (4 + 16));            // we guess size
+    WorldPacket data(SMSG_ATTACKSTOP, (8 + 8 + 4));         // guess size, max is 9+9+4
     data << GetPackGUID();
     data << victim->GetPackGUID();                          // can be 0x00...
     data << uint32(0);                                      // can be 0x1
@@ -4622,6 +4622,13 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
     data << uint32(0);                                      // spell id, seen with heroic strike and disarm as examples.
     // HITINFO_NOACTION normally set if spell
     data << uint32(damageInfo->blocked_amount);
+    //if (damageInfo->HitInfo & HITINFO_UNK0)
+    //{
+    //    data << uint32(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0);
+    //    for (int i = 0; i < 4; ++i)
+    //        data << float(0) << float(0);
+    //    data << uint32(0);
+    //}
     SendMessageToSet(&data, true);  /**/
 }
 
@@ -5417,7 +5424,7 @@ void Unit::SendHealSpellLog(Unit* pVictim, uint32 SpellID, uint32 Damage, bool c
     data << uint32(SpellID);
     data << uint32(Damage);
     data << uint8(critical ? 1 : 0);
-    data << uint8(0);                                       // unused in client?
+    // data << uint8(0);                                       // [-ZERO]
     SendMessageToSet(&data, true);
 }
 
@@ -8493,10 +8500,31 @@ void Unit::SendPetCastFail(uint32 spellid, SpellCastResult msg)
     if (!owner || owner->GetTypeId() != TYPEID_PLAYER)
         { return; }
 
-    WorldPacket data(SMSG_PET_CAST_FAILED, 4 + 1);
+    WorldPacket data(SMSG_PET_CAST_FAILED, 4 + 1 + 1);
     data << uint32(spellid);
+    data << uint8(0);               // unknown, maybe unused
     data << uint8(msg);
-    ((Player*)owner)->GetSession()->SendPacket(&data);
+    switch (msg)
+    {
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
+        data << int32(0);           // required and actual item class?
+        data << int32(0);
+        break;
+    case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
+        data << int32(0);           // required spellfocus id?
+        break;
+    case SPELL_FAILED_REQUIRES_AREA:
+        data << int32(GetAreaId()); // untested
+        break;
+    case SPELL_FAILED_PREVENTED_BY_MECHANIC:
+        data << int32(0);           // mechanic id?
+        break;
+    default:
+        break;
+    }
+    owner->ToPlayer()->SendDirectMessage(&data);
 }
 
 void Unit::SendPetActionFeedback(uint8 msg)

@@ -298,8 +298,8 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     if (reason)
     {
         WorldPacket data(SMSG_LOGOUT_RESPONSE, 1+4);
-        data << uint8(reason);
-        data << uint32(0);
+        data << uint32(reason);
+        data << uint8(0);
         SendPacket(&data);
         LogoutRequest(0);
         return;
@@ -310,8 +310,8 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         GetSecurity() >= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_INSTANT_LOGOUT))
     {
         WorldPacket data(SMSG_LOGOUT_RESPONSE, 1+4);
-        data << uint8(0);
-        data << uint32(16777216);
+        data << uint32(0);
+        data << uint8(1);
         SendPacket(&data);
         LogoutPlayer(true);
         return;
@@ -329,8 +329,8 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     }
 
     WorldPacket data(SMSG_LOGOUT_RESPONSE, 1 + 4);
-    data << uint8(0);
     data << uint32(0);
+    data << uint8(0);
     SendPacket(&data);
     LogoutRequest(time(NULL));
 }
@@ -1134,7 +1134,7 @@ void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 
     std::string msg = charname + "'s " + "account is " + acc + ", e-mail: " + email + ", last ip: " + lastip;
 
-    WorldPacket data(SMSG_WHOIS, msg.size() + 1);
+    WorldPacket data(SMSG_WHOIS, msg.size() + 1);   // max CString length allowed: 256
     data << msg;
     _player->GetSession()->SendPacket(&data);
 

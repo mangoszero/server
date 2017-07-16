@@ -367,7 +367,7 @@ class Spell
         void SendSpellGo();
         void SendSpellCooldown();
         void SendLogExecute();
-        void SendInterrupted(uint8 result);
+        void SendInterrupted(SpellCastResult result);
         void SendChannelUpdate(uint32 time);
         void SendChannelStart(uint32 duration);
         void SendResurrectRequest(Player* target);

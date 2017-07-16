@@ -159,7 +159,7 @@ void PlayerMenu::SendGossipMenu(uint32 TitleTextId, ObjectGuid objectGuid)
     WorldPacket data(SMSG_GOSSIP_MESSAGE, (100));           // guess size
     data << ObjectGuid(objectGuid);
     data << uint32(TitleTextId);
-    data << uint32(mGossipMenu.MenuItemCount());            // max count 0x20
+    data << uint32(mGossipMenu.MenuItemCount());            // [ZERO] max count 15
 
     for (uint32 iI = 0; iI < mGossipMenu.MenuItemCount(); ++iI)
     {
@@ -384,7 +384,7 @@ void PlayerMenu::SendQuestGiverQuestList(QEmote eEmote, const std::string& Title
     data << uint32(eEmote._Emote);                          // NPC emote
 
     size_t count_pos = data.wpos();
-    data << uint8(mQuestMenu.MenuItemCount());
+    data << uint8(mQuestMenu.MenuItemCount());              // TODO maximum 32 entries
     uint32 count = 0;
     for (; count < mQuestMenu.MenuItemCount(); ++count)
     {
@@ -662,6 +662,7 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
     }
 
     data << EmoteCount;                                     // Emote Count
+    // TODO unify cycle constructions: the previous one allows non-sequential data placing, while the next one does not
     for (uint32 i = 0; i < EmoteCount; ++i)
     {
         data << uint32(pQuest->OfferRewardEmoteDelay[i]);   // Delay Emote
@@ -780,7 +781,7 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
 
     data << uint32(0x04);                                   // flags2
     data << uint32(0x08);                                   // flags3
-    data << uint32(0x10);                                   // flags4
+    //data << uint32(0x10);                                   // [-ZERO] flags4
 
     GetMenuSession()->SendPacket(&data);
     DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_REQUEST_ITEMS NPCGuid = %s, questid = %u", npcGUID.GetString().c_str(), pQuest->GetQuestId());

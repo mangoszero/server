@@ -1411,6 +1411,7 @@ class Player : public Unit
         void SendQuestCompleteEvent(uint32 quest_id);
         void SendQuestReward(Quest const* pQuest, uint32 XP);
         void SendQuestFailed(uint32 quest_id);
+        void SendQuestFailedAtTaker(uint32 quest_id, uint32 reason = INVALIDREASON_DONT_HAVE_REQ);
         void SendQuestTimerFailed(uint32 quest_id);
         void SendCanTakeQuestResponse(uint32 msg) const;
         void SendQuestConfirmAccept(Quest const* pQuest, Player* pReceiver);

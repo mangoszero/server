@@ -2511,7 +2511,7 @@ enum TradeStatus
     TRADE_STATUS_TARGET_TO_FAR  = 10,
     TRADE_STATUS_WRONG_FACTION  = 11,
     TRADE_STATUS_CLOSE_WINDOW   = 12,
-    // 13?
+    TRADE_STATUS_UNKNOWN_13     = 13,                       // handled with TRADE_STATUS_TRADE_CANCELED
     TRADE_STATUS_IGNORE_YOU     = 14,
     TRADE_STATUS_YOU_STUNNED    = 15,
     TRADE_STATUS_TARGET_STUNNED = 16,
@@ -2520,8 +2520,7 @@ enum TradeStatus
     TRADE_STATUS_YOU_LOGOUT     = 19,
     TRADE_STATUS_TARGET_LOGOUT  = 20,
     TRADE_STATUS_TRIAL_ACCOUNT  = 21,                       // Trial accounts can not perform that action
-    TRADE_STATUS_WRONG_REALM    = 22,                       // You can only trade conjured items... (cross realm BG related).
-    TRADE_STATUS_NOT_ON_TAPLIST = 23
+    TRADE_STATUS_WRONG_REALM    = 22                        // You can only trade conjured items... (cross realm BG related).
 };
 
 enum WorldStateType
