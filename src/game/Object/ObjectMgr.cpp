@@ -186,8 +186,10 @@ ObjectMgr::~ObjectMgr()
         { delete[] playerClassInfo[class_].levelInfo; }
 
     for (int race = 0; race < MAX_RACES; ++race)
-        for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
-            { delete[] playerInfo[race][class_].levelInfo; }
+        {
+            for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
+                { delete[] playerInfo[race][class_].levelInfo; }
+        }
 
     // free objects
     for (GroupMap::iterator itr = mGroupMap.begin(); itr != mGroupMap.end(); ++itr)
@@ -217,8 +219,9 @@ void ObjectMgr::AddLocaleString(std::string const& s, LocaleConstant locale, Str
     if (!s.empty())
     {
         if (data.size() <= size_t(locale))
+        {
             data.resize(locale + 1);
-
+        }
         data[locale] = s;
     }
 }
@@ -733,17 +736,25 @@ void ObjectMgr::LoadCreatureAddons()
 
     // check entry ids
     for (uint32 i = 1; i < sCreatureInfoAddonStorage.GetMaxEntry(); ++i)
+    {
         if (CreatureDataAddon const* addon = sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(i))
+        {
             if (!sCreatureStorage.LookupEntry<CreatureInfo>(addon->guidOrEntry))
                 { sLog.outErrorDb("Creature (Entry: %u) does not exist but has a record in `%s`", addon->guidOrEntry, sCreatureInfoAddonStorage.GetTableName()); }
+        }
+    }
 
     LoadCreatureAddons(sCreatureDataAddonStorage, "GUID", "creature addons");
 
     // check entry ids
     for (uint32 i = 1; i < sCreatureDataAddonStorage.GetMaxEntry(); ++i)
+    {
         if (CreatureDataAddon const* addon = sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(i))
+        {
             if (mCreatureDataMap.find(addon->guidOrEntry) == mCreatureDataMap.end())
                 { sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`", addon->guidOrEntry); }
+        }
+    }
 }
 
 void ObjectMgr::LoadCreatureItemTemplates()
@@ -850,7 +861,9 @@ CreatureClassLvlStats const* ObjectMgr::GetCreatureClassLvlStats(uint32 level, u
     CreatureClassLvlStats const* cCLS = &m_creatureClassLvlStats[level][classToIndex[unitClass]];
 
     if (cCLS->BaseHealth != 0 && cCLS->BaseDamage > 0.01f)
+    {
         return cCLS;
+    }
 
     return NULL;
 }
@@ -905,10 +918,13 @@ void ObjectMgr::LoadEquipmentTemplates()
 
     sEquipmentStorageRaw.Load(false);
     for (uint32 i = 1; i < sEquipmentStorageRaw.GetMaxEntry(); ++i)
+    {
         if (sEquipmentStorageRaw.LookupEntry<EquipmentInfoRaw>(i))
+        {
             if (sEquipmentStorage.LookupEntry<EquipmentInfo>(i))
                 { sLog.outErrorDb("Table 'creature_equip_template_raw` have redundant data for ID %u ('creature_equip_template` already have data)", i); }
-
+        }
+    }
     sLog.outString(">> Loaded %u equipment template (deprecated format)", sEquipmentStorageRaw.GetRecordCount());
     sLog.outString();
 }

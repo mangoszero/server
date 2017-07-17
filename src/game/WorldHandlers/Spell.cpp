@@ -153,7 +153,7 @@ void SpellCastTargets::Update(Unit* caster)
 
     m_itemTarget = NULL;
     if (caster->GetTypeId() == TYPEID_PLAYER)
-{
+    {
         Player* player = ((Player*)caster);
 
         if (m_targetMask & TARGET_FLAG_ITEM)
@@ -161,8 +161,10 @@ void SpellCastTargets::Update(Unit* caster)
         else if (m_targetMask & TARGET_FLAG_TRADE_ITEM)
         {
             if (TradeData* pTrade = player->GetTradeData())
+            {
                 if (m_itemTargetGUID.GetRawValue() < TRADE_SLOT_COUNT)
                     { m_itemTarget = pTrade->GetTraderData()->GetItem(TradeSlots(m_itemTargetGUID.GetRawValue())); }
+            }
         }
 
         if (m_itemTarget)
@@ -447,9 +449,13 @@ void Spell::FillTargetMap()
                                 (m_spellInfo->Id == 13280))
                             {
                                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                                {
                                     if (Unit* target = ObjectAccessor::Instance().GetUnit(*m_caster, ((Player*)m_caster)->GetSelectionGuid()))
+                                    {
                                         if (!m_caster->IsFriendlyTo(target))
                                             { tmpUnitLists[i /*==effToIndex[i]*/].push_back(target); }
+                                    }
+                                }
                             }
                             else
                                 { SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitLists[i /*==effToIndex[i]*/]); }
@@ -486,8 +492,10 @@ void Spell::FillTargetMap()
                         case TARGET_AREAEFFECT_GO_AROUND_DEST:
                             // triggered spells get dest point from default target set, ignore it
                             if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) || m_IsTriggeredSpell)
+                            {
                                 if (WorldObject* castObject = GetCastingObject())
                                     { m_targets.setDestination(castObject->GetPositionX(), castObject->GetPositionY(), castObject->GetPositionZ()); }
+                            }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
                             // target pre-selection required
@@ -720,8 +728,10 @@ void Spell::prepareDataForTriggerSystem()
     // avoid triggering negative hit for only positive targets
     m_negativeEffectMask = 0x0;
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (m_spellInfo->Effect[i] != SPELL_EFFECT_NONE && !IsPositiveEffect(m_spellInfo, SpellEffectIndex(i)))
             { m_negativeEffectMask |= (1 << i); }
+    }
 
     // Hunter traps spells (for Entrapment trigger)
     // Gives your Immolation Trap, Frost Trap, Explosive Trap, and Snake Trap ....
@@ -945,8 +955,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     {
         // mark effects that were already handled in Spell::HandleDelayedSpellLaunch on spell launch as processed
         for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+        {
             if (IsEffectHandledOnDelayedSpellLaunch(m_spellInfo, SpellEffectIndex(i)))
                 { mask &= ~(1 << i); }
+        }
 
         // maybe used in effects that are handled on hit
         m_damage += target->damage;
@@ -962,7 +974,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
             unitTarget = m_caster;
 
             if (m_caster->GetTypeId() == TYPEID_UNIT)
-                m_caster->ToCreature()->LowerPlayerDamageReq(target->damage);
+                { m_caster->ToCreature()->LowerPlayerDamageReq(target->damage); }
         }
     }
     else                                                    // in 1.12.1 we need explicit miss info
@@ -1107,8 +1119,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
         // ignore pets or autorepeat/melee casts for speed (not exist quest for spells (hm... )
         if (real_caster && !((Creature*)unit)->IsPet() && !IsAutoRepeat() && !IsNextMeleeSwingSpell() && !IsChannelActive())
+        {
             if (Player* p = real_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
                 { p->RewardPlayerAndGroupAtCast(unit, m_spellInfo->Id); }
+        }
 
         if (((Creature*)unit)->AI())
             { ((Creature*)unit)->AI()->SpellHit(m_caster, m_spellInfo); }
@@ -1263,8 +1277,10 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
                 float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
                 // Apply multiplier mods
                 if (realCaster)
+                {
                     if (Player* modOwner = realCaster->GetSpellModOwner())
                         { modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this); }
+                }
                 m_damageMultipliers[effectNumber] *= multiplier;
             }
         }
@@ -1319,8 +1335,10 @@ void Spell::DoAllEffectOnTarget(GOTargetInfo* target)
         { return; }
 
     for (int effectNumber = 0; effectNumber < MAX_EFFECT_INDEX; ++effectNumber)
+    {
         if (effectMask & (1 << effectNumber))
             { HandleEffects(NULL, NULL, go, SpellEffectIndex(effectNumber)); }
+    }
 
     // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
     // ignore autorepeat/melee casts for speed (not exist quest for spells (hm... )
@@ -1382,8 +1400,10 @@ void Spell::HandleDelayedSpellLaunch(TargetInfo* target)
                     float multiplier = m_spellInfo->DmgMultiplier[effectNumber];
                     // Apply multiplier mods
                     if (real_caster)
+                    {
                         if (Player* modOwner = real_caster->GetSpellModOwner())
                             { modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_EFFECT_PAST_FIRST, multiplier, this); }
+                    }
                     m_damageMultipliers[effectNumber] *= multiplier;
                 }
             }
@@ -1601,7 +1621,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             while (t && next != tempTargetUnitMap.end())
             {
                 if (!prev->IsWithinDist(*next, CHAIN_SPELL_JUMP_RADIUS))
-                    break;
+                    { break; }
 
                 if (!DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->Id, NULL, SPELL_DISABLE_LOS) && !prev->IsWithinLOSInMap(*next))
                 {
