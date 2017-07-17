@@ -727,8 +727,11 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
         }
     }
 
-    // We may wish a better check, perhaps checking the real quest requirements
-    if (RequestItemsText.empty())
+    // Quests that don't require items use the RequestItemsText field to store the text
+    // that is shown when you talk to the quest giver while the quest is incomplete.
+    // Therefore the text should not be shown for them when the quest is complete.
+    // For quests that do require items, it is self explanatory.
+    if (RequestItemsText.empty() || ((pQuest->GetReqItemsCount() == 0) && Completable))
     {
         SendQuestGiverOfferReward(pQuest, npcGUID, true);
         return;
