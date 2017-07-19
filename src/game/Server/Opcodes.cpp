@@ -631,7 +631,7 @@ void Opcodes::BuildOpcodeList()
     /*0x23A*/  StoreOpcode(CMSG_GET_MAIL_LIST,                "CMSG_GET_MAIL_LIST",               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleGetMailList);
     /*0x23B*/  StoreOpcode(SMSG_MAIL_LIST_RESULT,             "SMSG_MAIL_LIST_RESULT",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x23C*/  StoreOpcode(CMSG_BATTLEFIELD_LIST,             "CMSG_BATTLEFIELD_LIST",            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleBattlefieldListOpcode);
-    /*[-ZERO] Need check */ /*0x23D*/  StoreOpcode(SMSG_BATTLEFIELD_LIST,             "SMSG_BATTLEFIELD_LIST",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x23D*/  StoreOpcode(SMSG_BATTLEFIELD_LIST,             "SMSG_BATTLEFIELD_LIST",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x23E*/  StoreOpcode(CMSG_BATTLEFIELD_JOIN,             "CMSG_BATTLEFIELD_JOIN",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_NULL);
     /*0x23F*/  StoreOpcode(SMSG_BATTLEFIELD_WIN_OBSOLETE,     "SMSG_BATTLEFIELD_WIN_OBSOLETE",    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x240*/  StoreOpcode(SMSG_BATTLEFIELD_LOSE_OBSOLETE,    "SMSG_BATTLEFIELD_LOSE_OBSOLETE",   STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
