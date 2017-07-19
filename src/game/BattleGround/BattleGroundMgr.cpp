@@ -1257,26 +1257,22 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid 
     *data << uint32(mapId);                                 // battleground id
     *data << uint8(0x00);                                   // unk
 
-    size_t count_pos = data->wpos();
-    //uint32 count = 0;
-    *data << uint32(0);                                     // number of bg instances
-
     // battleground
     {
-        *data << uint8(0x00);                               // unk
+        //*data << uint8(0x00);                               // [-ZERO] unk
 
-        size_t count_pos = data->wpos();
-        uint32 count = 0;
-        *data << uint32(0);                                 // number of bg instances
+        //size_t count_pos = data->wpos();
+        //uint32 count = 0;
 
         uint32 bracket_id = plr->GetBattleGroundBracketIdFromLevel(bgTypeId);
         ClientBattleGroundIdSet const& ids = m_ClientBattleGroundIds[bgTypeId][bracket_id];
+        *data << uint32(ids.size());                        // number of bg instances
         for (std::set<uint32>::const_iterator itr = ids.begin(); itr != ids.end(); ++itr)
         {
             *data << uint32(*itr);
-            ++count;
+            //++count;
         }
-        data->put<uint32>(count_pos , count);
+        //data->put<uint32>(count_pos , count);
     }
 }
 
