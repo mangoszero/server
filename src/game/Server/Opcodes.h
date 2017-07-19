@@ -521,7 +521,7 @@ enum OpcodesList
     CMSG_WRAP_ITEM                                  = 0x1D3,
     SMSG_LEVELUP_INFO                               = 0x1D4,
     MSG_MINIMAP_PING                                = 0x1D5,
-    SMSG_RESISTLOG                                  = 0x1D6,
+    SMSG_RESISTLOG                                  = 0x1D6,// GUID, GUID, int32, float, float, int32, int32
     SMSG_ENCHANTMENTLOG                             = 0x1D7,
     CMSG_SET_SKILL_CHEAT                            = 0x1D8,
     SMSG_START_MIRROR_TIMER                         = 0x1D9,

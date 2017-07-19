@@ -165,16 +165,8 @@ void PlayerTaxi::LoadTaxiMask(const char* data)
 
 void PlayerTaxi::AppendTaximaskTo(ByteBuffer& data, bool all)
 {
-    if (all)
-    {
-        for (uint8 i = 0; i < TaxiMaskSize; ++i)
-            { data << uint32(sTaxiNodesMask[i]); }              // all existing nodes
-    }
-    else
-    {
-        for (uint8 i = 0; i < TaxiMaskSize; ++i)
-            { data << uint32(m_taximask[i]); }                  // known nodes
-    }
+    for (uint8 i = 0; i < TaxiMaskSize; ++i)
+        { data << uint32(all ? sTaxiNodesMask[i] : m_taximask[i]); }              // all or just known existing nodes
 }
 
 bool PlayerTaxi::LoadTaxiDestinationsFromString(const std::string& values, Team team)
@@ -2742,17 +2734,17 @@ void Player::RemoveMail(uint32 id)
 
 void Player::SendMailResult(uint32 mailId, MailResponseType mailAction, MailResponseResult mailError, uint32 equipError, uint32 item_guid, uint32 item_count)
 {
-    WorldPacket data(SMSG_SEND_MAIL_RESULT, (4 + 4 + 4 + (mailError == MAIL_ERR_EQUIP_ERROR ? 4 : (mailAction == MAIL_ITEM_TAKEN ? 4 + 4 : 0))));
+    WorldPacket data(SMSG_SEND_MAIL_RESULT, (4 + 4 + 4 + (mailError == MAIL_ERR_EQUIP_ERROR ? 4 : 0)));
     data << (uint32) mailId;
     data << (uint32) mailAction;
     data << (uint32) mailError;
     if (mailError == MAIL_ERR_EQUIP_ERROR)
         { data << (uint32) equipError; }
-    else if (mailAction == MAIL_ITEM_TAKEN)
-    {
-        data << (uint32) item_guid;                         // item guid low?
-        data << (uint32) item_count;                        // item count?
-    }
+    //else if (mailAction == MAIL_ITEM_TAKEN)   // [-ZERO]
+    //{
+    //    data << (uint32) item_guid;                         // item guid low?
+    //    data << (uint32) item_count;                        // item count?
+    //}
     GetSession()->SendPacket(&data);
 }
 
@@ -11220,26 +11212,26 @@ void Player::SendOpenContainer()
     GetSession()->SendPacket(&data);
 }
 
-void Player::SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param)
+void Player::SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 /*param*/)
 {
     DEBUG_LOG("WORLD: Sent SMSG_BUY_FAILED");
-    WorldPacket data(SMSG_BUY_FAILED, (8 + 4 + 4 + 1));
+    WorldPacket data(SMSG_BUY_FAILED, (8 + 4 + 1));
     data << (pCreature ? pCreature->GetObjectGuid() : ObjectGuid());
     data << uint32(item);
-    if (param > 0)
-        { data << uint32(param); }
+    //if (param > 0)
+    //    { data << uint32(param); }    // [-ZERO]
     data << uint8(msg);
     GetSession()->SendPacket(&data);
 }
 
-void Player::SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemGuid, uint32 param)
+void Player::SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemGuid, uint32 /*param*/)
 {
     DEBUG_LOG("WORLD: Sent SMSG_SELL_ITEM");
-    WorldPacket data(SMSG_SELL_ITEM, (8 + 8 + (param ? 4 : 0) + 1)); // last check 2.0.10
+    WorldPacket data(SMSG_SELL_ITEM, (8 + 8 + /*(param ? 4 : 0) +*/ 1)); // last check [ZERO]
     data << (pCreature ? pCreature->GetObjectGuid() : ObjectGuid());
     data << ObjectGuid(itemGuid);
-    if (param > 0)
-        { data << uint32(param); }
+    //if (param > 0)
+    //    { data << uint32(param); }    // [-ZERO]
     data << uint8(msg);
     GetSession()->SendPacket(&data);
 }
@@ -18014,7 +18006,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
     WorldPacket data(SMSG_SET_REST_START, 4);
-    data << uint32(0);                                      // unknown, may be rest state time or experience
+    data << uint32(0);                                      // rest state time
     GetSession()->SendPacket(&data);
 
     /* Send information about player's home binding */

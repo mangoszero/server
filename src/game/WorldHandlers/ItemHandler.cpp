@@ -1046,8 +1046,14 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
     ObjectGuid guid;
     recvPacket >> guid;
 
+    WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
+
     if (!CheckBanker(guid))
-        { return; }
+    {
+        data << uint32(ERR_BANKSLOT_NOTBANKER);
+        SendPacket(&data);
+        return;
+    }
 
     uint32 slot = _player->GetBankBagSlotCount();
 
@@ -1057,8 +1063,6 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
     DETAIL_LOG("PLAYER: Buy bank bag slot, slot number = %u", slot);
 
     BankBagSlotPricesEntry const* slotEntry = sBankBagSlotPricesStore.LookupEntry(slot);
-
-    WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
 
     if (!slotEntry)
     {
@@ -1078,9 +1082,6 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 
     _player->SetBankBagSlotCount(slot);
     _player->ModifyMoney(-int32(price));
-
-    data << uint32(ERR_BANKSLOT_OK);
-    SendPacket(&data);
 }
 
 void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)

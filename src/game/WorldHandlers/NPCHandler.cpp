@@ -552,11 +552,6 @@ void WorldSession::SendBindPoint(Creature* npc)
     // send spell for bind 3286 bind magic
     npc->CastSpell(_player, 3286, true);                    // Bind
 
-    WorldPacket data(SMSG_TRAINER_BUY_SUCCEEDED, (8 + 4));
-    data << npc->GetObjectGuid();
-    data << uint32(3286);                                   // Bind
-    SendPacket(&data);
-
     _player->PlayerTalkClass->CloseGossip();
 }
 
