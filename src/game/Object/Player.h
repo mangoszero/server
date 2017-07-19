@@ -442,7 +442,7 @@ enum MirrorTimerType
 {
     FATIGUE_TIMER               = 0,
     BREATH_TIMER                = 1,
-    FIRE_TIMER                  = 2
+    FIRE_TIMER                  = 2     // probably mistake. More like to FEIGN_DEATH_TIMER
 };
 #define MAX_TIMERS              3
 #define DISABLED_MIRROR_TIMER   -1
