@@ -646,11 +646,11 @@ void Opcodes::BuildOpcodeList()
     /*0x249*/  StoreOpcode(CMSG_MAIL_DELETE,                  "CMSG_MAIL_DELETE",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleMailDelete);
     /*0x24A*/  StoreOpcode(CMSG_MAIL_CREATE_TEXT_ITEM,        "CMSG_MAIL_CREATE_TEXT_ITEM",       STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleMailCreateTextItem);
     /*[-ZERO] Need check */ /*0x24B*/  StoreOpcode(SMSG_SPELLLOGMISS,                 "SMSG_SPELLLOGMISS",                STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x24C*/  StoreOpcode(SMSG_SPELLLOGEXECUTE,              "SMSG_SPELLLOGEXECUTE",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x24D*/  StoreOpcode(SMSG_DEBUGAURAPROC,                "SMSG_DEBUGAURAPROC",               STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x24E*/  StoreOpcode(SMSG_PERIODICAURALOG,              "SMSG_PERIODICAURALOG",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x24F*/  StoreOpcode(SMSG_SPELLDAMAGESHIELD,            "SMSG_SPELLDAMAGESHIELD",           STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x250*/  StoreOpcode(SMSG_SPELLNONMELEEDAMAGELOG,       "SMSG_SPELLNONMELEEDAMAGELOG",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x24C*/  StoreOpcode(SMSG_SPELLLOGEXECUTE,              "SMSG_SPELLLOGEXECUTE",             STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x251*/  StoreOpcode(CMSG_LEARN_TALENT,                 "CMSG_LEARN_TALENT",                STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleLearnTalentOpcode);
     /*[-ZERO] Need check */ /*0x252*/  StoreOpcode(SMSG_RESURRECT_FAILED,             "SMSG_RESURRECT_FAILED",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x253*/  StoreOpcode(CMSG_TOGGLE_PVP,                   "CMSG_TOGGLE_PVP",                  STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleTogglePvP);
