@@ -520,8 +520,8 @@ class Spell
         void FillAreaTargets(UnitList& targetUnitMap, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster = NULL);
         void FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float radius, bool raid, bool withPets, bool withcaster);
 
-        // Returns a target that was filled by SPELL_SCRIPT_TARGET (or selected victim) Can return NULL
-        Unit* GetPrefilledUnitTargetOrUnitTarget(SpellEffectIndex effIndex) const;
+        // Returns GUID either of the 1st target from the implicit target list, or of explicit one (selected victim)
+        ObjectGuid GetPrefilledOrUnitTargetGuid(SpellEffectIndex effIndex) const;
         void GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uint32& EffectChainTarget, uint32& unMaxTargets) const;
 
         //*****************************************

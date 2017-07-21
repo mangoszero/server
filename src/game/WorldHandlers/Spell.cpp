@@ -4080,13 +4080,13 @@ void Spell::CastPreCastSpells(Unit* target)
         { m_caster->CastSpell(target, (*si), true, m_CastItem); }
 }
 
-Unit* Spell::GetPrefilledUnitTargetOrUnitTarget(SpellEffectIndex effIndex) const
+ObjectGuid Spell::GetPrefilledOrUnitTargetGuid(SpellEffectIndex effIndex) const
 {
     for (TargetList::const_iterator itr = m_UniqueTargetInfo.begin(); itr != m_UniqueTargetInfo.end(); ++itr)
         if (itr->effectMask & (1 << effIndex))
-            { return m_caster->GetMap()->GetUnit(itr->targetGUID); }
+            { return itr->targetGUID; }
 
-    return m_targets.getUnitTarget();
+    return m_targets.getUnitTargetGuid();
 }
 
 SpellCastResult Spell::CheckCast(bool strict)
@@ -5147,7 +5147,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             { continue; }
 
         // Possible Unit-target for the spell
-        Unit* expectedTarget = GetPrefilledUnitTargetOrUnitTarget(SpellEffectIndex(i));
+        Unit* expectedTarget = m_caster->GetMap() ? m_caster->GetMap()->GetUnit(GetPrefilledOrUnitTargetGuid(SpellEffectIndex(i))) : NULL;
 
         switch (m_spellInfo->EffectApplyAuraName[i])
         {
