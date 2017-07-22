@@ -8726,13 +8726,6 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
 {
     if (apply)
     {
-        /*
-        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 9);
-        data<<GetGUID();
-        data<<uint8(0);
-        SendMessageToSet(&data,true);
-        */
-
         if (GetTypeId() != TYPEID_PLAYER)
             { StopMoving(); }
         else
@@ -8757,11 +8750,9 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
     }
     else
     {
-        /*
-        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 9);
-        data<<GetGUID();
-        data<<uint8(1);
-        SendMessageToSet(&data,true);
+        /* when appropriate! not within this method
+        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 0);
+        SendDirectMessage(&data);
         */
 
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_29);

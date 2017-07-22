@@ -1000,6 +1000,7 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
         data << guid;                                       // player guid
         // Rank, filling bar, PLAYER_BYTES_3, ??
         data << (uint8)pl->GetByteValue(PLAYER_FIELD_BYTES2, 0);
+        // FIXME: below must be 8*uint16, 6*uint32, uint8
         // Today Honorable and Dishonorable Kills
         data << pl->GetUInt32Value(PLAYER_FIELD_SESSION_KILLS);
         // Yesterday Honorable Kills
