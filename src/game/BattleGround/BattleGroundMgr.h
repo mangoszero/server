@@ -104,6 +104,13 @@ enum BattleGroundQueueGroupTypes
 };
 #define BG_QUEUE_GROUP_TYPES_COUNT 4
 
+enum BattleGroundGroupJoinStatus
+{
+    BG_GROUPJOIN_DESERTERS      = -2,
+    BG_GROUPJOIN_FAILED         = -1    // actually, any negative except 2
+    // any other value is a MapID meaning successful join
+};
+
 class BattleGround;
 /**
  * @brief
@@ -446,7 +453,7 @@ class BattleGroundMgr
          * @param data
          * @param bgTypeId
          */
-        void BuildGroupJoinedBattlegroundPacket(WorldPacket* data, BattleGroundTypeId bgTypeId);
+        void BuildGroupJoinedBattlegroundPacket(WorldPacket* data, int32 status);
         /**
          * @brief
          *

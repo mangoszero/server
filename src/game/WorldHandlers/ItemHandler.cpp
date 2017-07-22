@@ -1215,7 +1215,7 @@ void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
         WorldPacket data(SMSG_ITEM_NAME_QUERY_RESPONSE, (4 + 10));
         data << uint32(pProto->ItemId);
         data << name;
-        data << uint32(pProto->InventoryType);
+        //data << uint32(pProto->InventoryType);    [-ZERO]
         SendPacket(&data);
         return;
     }
