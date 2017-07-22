@@ -275,7 +275,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
                             SendForcedObjectUpdate();
 
-                            SendGameObjectCustomAnim(GetObjectGuid());
+                            SendGameObjectCustomAnim();
                         }
 
                         m_lootState = GO_READY;             // can be successfully open with some chance
@@ -1191,7 +1191,7 @@ void GameObject::Use(Unit* user)
 
             // TODO: Improve this when more information is available, currently these traps are known that must send the anim (Onyxia/ Heigan Fissures/ Trap in DireMaul)
             if (GetDisplayId() == 4392 || GetDisplayId() == 4472 || GetDisplayId() == 4491 || GetDisplayId() == 6785 || GetDisplayId() == 3073)
-                { SendGameObjectCustomAnim(GetObjectGuid()); }
+                { SendGameObjectCustomAnim(); }
 
             // TODO: Despawning of traps? (Also related to code in ::Update)
             return;
@@ -1283,7 +1283,7 @@ void GameObject::Use(Unit* user)
 
             // this appear to be ok, however others exist in addition to this that should have custom (ex: 190510, 188692, 187389)
             if (info->goober.customAnim)
-                { SendGameObjectCustomAnim(GetObjectGuid()); }
+                { SendGameObjectCustomAnim(); }
             else
                 { SetGoState(GO_STATE_ACTIVE); }
 
@@ -2303,4 +2303,19 @@ float GameObject::GetInteractionDistance() const
             break;
     }
     return maxdist;
+}
+
+void GameObject::SendGameObjectCustomAnim(uint32 animId /*= 0*/)
+{
+    WorldPacket data(SMSG_GAMEOBJECT_CUSTOM_ANIM, 8 + 4);
+    data << GetObjectGuid();
+    data << uint32(animId);
+    SendMessageToSet(&data, true);
+}
+
+void GameObject::SendGameObjectReset()
+{
+    WorldPacket data(SMSG_GAMEOBJECT_RESET_STATE, 8);
+    data << GetObjectGuid();
+    SendMessageToSet(&data, true);
 }
