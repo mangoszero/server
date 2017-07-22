@@ -4541,30 +4541,30 @@ void Unit::SendPeriodicAuraLog(SpellPeriodicAuraLogInfo* pInfo)
     data << uint32(mod->m_auraname);                        // auraId
     switch (mod->m_auraname)
     {
-        case SPELL_AURA_PERIODIC_DAMAGE:
-        case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-            data << uint32(pInfo->damage);                  // damage
-            data << uint32(aura->GetSpellProto()->School);
-            data << uint32(pInfo->absorb);                  // absorb
-            data << uint32(pInfo->resist);                  // resist
-            break;
-        case SPELL_AURA_PERIODIC_HEAL:
-        case SPELL_AURA_OBS_MOD_HEALTH:
-            data << uint32(pInfo->damage);                  // damage
-            break;
-        case SPELL_AURA_OBS_MOD_MANA:
-        case SPELL_AURA_PERIODIC_ENERGIZE:
-            data << uint32(mod->m_miscvalue);               // power type
-            data << uint32(pInfo->damage);                  // damage
-            break;
-        case SPELL_AURA_PERIODIC_MANA_LEECH:
-            data << uint32(mod->m_miscvalue);               // power type
-            data << uint32(pInfo->damage);                  // amount
-            data << float(pInfo->multiplier);               // gain multiplier
-            break;
-        default:
-            sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
-            return;
+    case SPELL_AURA_PERIODIC_DAMAGE:
+    case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+        data << uint32(pInfo->damage);                  // damage
+        data << uint32(aura->GetSpellProto()->School);
+        data << uint32(pInfo->absorb);                  // absorb
+        data << uint32(pInfo->resist);                  // resist
+        break;
+    case SPELL_AURA_PERIODIC_HEAL:
+    case SPELL_AURA_OBS_MOD_HEALTH:
+        data << uint32(pInfo->damage);                  // damage
+        break;
+    case SPELL_AURA_OBS_MOD_MANA:
+    case SPELL_AURA_PERIODIC_ENERGIZE:
+        data << uint32(mod->m_miscvalue);               // power type
+        data << uint32(pInfo->damage);                  // damage
+        break;
+    case SPELL_AURA_PERIODIC_MANA_LEECH:
+        data << uint32(mod->m_miscvalue);               // power type
+        data << uint32(pInfo->damage);                  // amount
+        data << float(pInfo->multiplier);               // gain multiplier
+        break;
+    default:
+        sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
+        return;
     }
 
     aura->GetTarget()->SendMessageToSet(&data, true);
@@ -4583,7 +4583,7 @@ void Unit::ProcDamageAndSpell(Unit* pVictim, uint32 procAttacker, uint32 procVic
 
 void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
 {
-    WorldPacket data(SMSG_SPELLLOGMISS, (4 + 8 + 1 + 4 + 8 + 1));
+    WorldPacket data(SMSG_SPELLLOGMISS, (4 + 8 + 1 + 4 + 8 + 1 + (missInfo == SPELL_MISS_NONE ? 0 : 8)));
     data << uint32(spellID);
     data << GetObjectGuid();
     data << uint8(0);                                       // can be 0 or 1
@@ -4591,6 +4591,8 @@ void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
     // for(i = 0; i < target count; ++i)
     data << target->GetObjectGuid();                        // target GUID
     data << uint8(missInfo);
+    if (missInfo != SPELL_MISS_NONE)
+        { data << float(0) << float(0); }                   // unk
     // end loop
     SendMessageToSet(&data, true);
 }
