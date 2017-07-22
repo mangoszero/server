@@ -770,7 +770,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x2C5*/  StoreOpcode(SMSG_ITEM_NAME_QUERY_RESPONSE,     "SMSG_ITEM_NAME_QUERY_RESPONSE",    STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2C6*/  StoreOpcode(SMSG_PET_ACTION_FEEDBACK,          "SMSG_PET_ACTION_FEEDBACK",         STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2C7*/  StoreOpcode(CMSG_CHAR_RENAME,                  "CMSG_CHAR_RENAME",                 STATUS_AUTHED,    PROCESS_THREADUNSAFE, &WorldSession::HandleCharRenameOpcode);
-    /*[-ZERO] Need check */ /*0x2C8*/  StoreOpcode(SMSG_CHAR_RENAME,                  "SMSG_CHAR_RENAME",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x2C8*/  StoreOpcode(SMSG_CHAR_RENAME,                  "SMSG_CHAR_RENAME",                 STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2C9*/  StoreOpcode(CMSG_MOVE_SPLINE_DONE,             "CMSG_MOVE_SPLINE_DONE",            STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMoveSplineDoneOpcode);
     /*0x2CA*/  StoreOpcode(CMSG_MOVE_FALL_RESET,              "CMSG_MOVE_FALL_RESET",             STATUS_LOGGEDIN,  PROCESS_THREADSAFE,   &WorldSession::HandleMovementOpcodes);
     /*[-ZERO] Need check */ /*0x2CB*/  StoreOpcode(SMSG_INSTANCE_SAVE_CREATED,        "SMSG_INSTANCE_SAVE_CREATED",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
