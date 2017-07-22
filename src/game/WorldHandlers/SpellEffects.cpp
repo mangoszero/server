@@ -4099,7 +4099,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
             break;
         }
         case 3:                     // GO custom anim - found mostly in Lunar Fireworks spells
-            gameObjTarget->SendGameObjectCustomAnim(gameObjTarget->GetObjectGuid());
+            gameObjTarget->SendGameObjectCustomAnim();
             break;
         case 12:                    // GO state active alternative - found mostly in Simon Game spells
             gameObjTarget->UseDoorOrButton(0, true);
