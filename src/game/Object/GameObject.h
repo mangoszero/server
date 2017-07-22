@@ -651,6 +651,8 @@ class GameObject : public WorldObject
         void SetDisplayIdx(uint32 modelId);
 
         void SendGameObjectCustomAnim(uint32 animId = 0);
+        void SendGameObjectReset();
+
         float GetObjectBoundingRadius() const override;     // overwrite WorldObject version
 
         void Use(Unit* user);

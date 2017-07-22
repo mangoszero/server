@@ -2313,3 +2313,9 @@ void GameObject::SendGameObjectCustomAnim(uint32 animId /*= 0*/)
     SendMessageToSet(&data, true);
 }
 
+void GameObject::SendGameObjectReset()
+{
+    WorldPacket data(SMSG_GAMEOBJECT_RESET_STATE, 8);
+    data << GetObjectGuid();
+    SendMessageToSet(&data, true);
+}

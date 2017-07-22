@@ -737,7 +737,7 @@ void Opcodes::BuildOpcodeList()
     /*[-ZERO] Need check */ /*0x2A4*/  StoreOpcode(SMSG_LOOT_MASTER_LIST,             "SMSG_LOOT_MASTER_LIST",            STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2A5*/  StoreOpcode(SMSG_SET_FORCED_REACTIONS,         "SMSG_SET_FORCED_REACTIONS",        STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*0x2A6*/  StoreOpcode(SMSG_SPELL_FAILED_OTHER,           "SMSG_SPELL_FAILED_OTHER",          STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
-    /*[-ZERO] Need check */ /*0x2A7*/  StoreOpcode(SMSG_GAMEOBJECT_RESET_STATE,       "SMSG_GAMEOBJECT_RESET_STATE",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
+    /*0x2A7*/  StoreOpcode(SMSG_GAMEOBJECT_RESET_STATE,       "SMSG_GAMEOBJECT_RESET_STATE",      STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2A8*/  StoreOpcode(CMSG_REPAIR_ITEM,                  "CMSG_REPAIR_ITEM",                 STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleRepairItemOpcode);
     /*[-ZERO] Need check */ /*0x2A9*/  StoreOpcode(SMSG_CHAT_PLAYER_NOT_FOUND,        "SMSG_CHAT_PLAYER_NOT_FOUND",       STATUS_NEVER,     PROCESS_INPLACE,      &WorldSession::Handle_ServerSide);
     /*[-ZERO] Need check */ /*0x2AA*/  StoreOpcode(MSG_TALENT_WIPE_CONFIRM,           "MSG_TALENT_WIPE_CONFIRM",          STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, &WorldSession::HandleTalentWipeConfirmOpcode);
