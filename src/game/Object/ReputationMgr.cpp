@@ -369,7 +369,12 @@ void ReputationMgr::SetAtWar(FactionState* faction, bool atWar)
     else
         { faction->Flags &= ~FACTION_FLAG_AT_WAR; }
 
-    faction->needSend = true;
+    WorldPacket data(SMSG_SET_FACTION_ATWAR, 4 + 1);
+    data << uint32(faction->ID);
+    data << uint8(faction->Flags & FACTION_FLAG_AT_WAR);    // the client tests only FACTION_FLAG_AT_WAR
+    m_player->SendDirectMessage(&data);
+
+    faction->needSend = false;
     faction->needSave = true;
 }
 
