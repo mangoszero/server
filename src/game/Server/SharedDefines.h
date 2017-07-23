@@ -2592,6 +2592,9 @@ enum GMTicketStatus
      * This code is used when the client closed the ticket itself and we shouldn't send an update
      * message to it */
     GM_TICKET_STATUS_DO_NOTHING = -1,
+    /** On this client responds by CMSG_GMTICKET_GETTICKET, updating the local ticket copy
+    */
+    GM_TICKET_STATUS_ASK_UPDATE = 1,
     /** Should close the window in the top right corner telling you that you have a
      * ticket open */
     GM_TICKET_STATUS_CLOSE = 2,

@@ -15355,7 +15355,7 @@ void Player::SendSavedInstances()
     }
 
     // Send opcode 811. true or false means, whether you have current raid instances
-    data.Initialize(SMSG_UPDATE_INSTANCE_OWNERSHIP);
+    data.Initialize(SMSG_UPDATE_INSTANCE_OWNERSHIP, 4);
     data << uint32(hasBeenSaved);
     GetSession()->SendPacket(&data);
 
@@ -15366,7 +15366,7 @@ void Player::SendSavedInstances()
     {
         if (itr->second.perm)
         {
-            data.Initialize(SMSG_UPDATE_LAST_INSTANCE);
+            data.Initialize(SMSG_UPDATE_LAST_INSTANCE, 4);
             data << uint32(itr->second.state->GetMapId());
             GetSession()->SendPacket(&data);
         }
@@ -16388,8 +16388,8 @@ void Player::SendResetInstanceSuccess(uint32 MapId)
 
 void Player::SendResetInstanceFailed(uint32 reason, uint32 MapId)
 {
-    // TODO: find what other fail reasons there are besides players in the instance
-    WorldPacket data(SMSG_INSTANCE_RESET_FAILED, 4);
+    // reason: see enum InstanceResetFailReason
+    WorldPacket data(SMSG_INSTANCE_RESET_FAILED, 8);
     data << uint32(reason);
     data << uint32(MapId);
     GetSession()->SendPacket(&data);
