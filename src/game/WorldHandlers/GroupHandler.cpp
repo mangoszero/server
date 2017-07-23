@@ -637,7 +637,7 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
         { mask |= (GROUP_UPDATE_FLAG_PET_CUR_POWER | GROUP_UPDATE_FLAG_PET_MAX_POWER); }
 
     uint32 byteCount = 0;
-    for (int i = 1; i < GROUP_UPDATE_FLAGS_COUNT; ++i)
+    for (int i = 0; i < GROUP_UPDATE_FLAGS_COUNT; ++i)
         if (mask & (1 << i))
             { byteCount += GroupUpdateLength[i]; }
 
@@ -787,7 +787,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
     Player* player = ObjectAccessor::FindPlayer(guid, false);
     if (!player)
     {
-        WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3 + 4 + 2);
+        WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3 + 4 + 1);
         data << guid.WriteAsPacked();
         data << uint32(GROUP_UPDATE_FLAG_STATUS);
         data << uint8(MEMBER_STATUS_OFFLINE);
@@ -797,12 +797,14 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
 
     Pet* pet = player->GetPet();
 
-    WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 4 + 2 + 2 + 2 + 1 + 2 * 6 + 8 + 1 + 8);
+    // expected number of auras on player: 12, on pet: 8. This is only for packet size estimation
+    WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3 + 4 + 1 + (23 + 12 * 2) + (pet ? (29 + 8 * 2) : 0));
     data << player->GetPackGUID();
 
-    uint32 mask1 = 0x00040BFF;                              // common mask, real flags used 0x000040BFF
+    //uint32 mask1 = 0x00040BFF;                              // common mask, real flags used 0x000040BFF
+    uint32 mask1 = GROUP_UPDATE_PLAYER;                     // actually, 0x000007FF
     if (pet)
-        { mask1 = 0x7FFFFFFF; }                                 // for hunters and other classes with pets
+        { mask1 |= GROUP_UPDATE_PET; }                      // for hunters and other classes with pets
 
     Powers powerType = player->GetPowerType();
     data << uint32(mask1);                                  // group update mask
@@ -844,7 +846,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
     uint32 auramask = 0;
     size_t maskPos = data.wpos();
     data << uint32(auramask);                               // placeholder
-    for (uint8 i = 0; i < MAX_AURAS; ++i)
+    for (uint8 i = 0; i < 32; ++i)
     {
         if (uint32 aura = player->GetUInt32Value(UNIT_FIELD_AURA + i))
         {
@@ -853,6 +855,18 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
         }
     }
     data.put<uint32>(maskPos, auramask);                    // GROUP_UPDATE_FLAG_AURAS
+    uint16 auramask1 = 0;
+    maskPos = data.wpos();
+    data << uint16(auramask1);
+    for (uint8 i = 32; i < MAX_AURAS; ++i)
+    {
+        if (uint32 aura = player->GetUInt32Value(UNIT_FIELD_AURA + i))
+        {
+            auramask1 |= (uint16(1) << (i-32));
+            data << uint16(aura);
+        }
+    }
+    data.put<uint16>(maskPos, auramask1);                    // GROUP_UPDATE_FLAG_AURAS_2
 
     if (pet)
     {
@@ -869,7 +883,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
         uint32 petauramask = 0;
         size_t petMaskPos = data.wpos();
         data << uint32(petauramask);                        // placeholder
-        for (uint8 i = 0; i < MAX_AURAS; ++i)
+        for (uint8 i = 0; i < 32; ++i)
         {
             if (uint32 petaura = pet->GetUInt32Value(UNIT_FIELD_AURA + i))
             {
@@ -878,11 +892,18 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
             }
         }
         data.put<uint32>(petMaskPos, petauramask);          // GROUP_UPDATE_FLAG_PET_AURAS
-    }
-    else
-    {
-        data << uint8(0);                                   // GROUP_UPDATE_FLAG_PET_NAME
-        data << uint32(0);                                  // GROUP_UPDATE_FLAG_PET_AURAS
+        uint16 petauramask1 = 0;
+        petMaskPos = data.wpos();
+        data << uint16(petauramask1);
+        for (uint8 i = 32; i < MAX_AURAS; ++i)
+        {
+            if (uint32 petaura = pet->GetUInt32Value(UNIT_FIELD_AURA + i))
+            {
+                petauramask1 |= (uint16(1) << (i-32));
+                data << uint16(petaura);
+            }
+        }
+        data.put<uint16>(petMaskPos, petauramask1);         // GROUP_UPDATE_FLAG_PET_AURAS_2
     }
 
     SendPacket(&data);
