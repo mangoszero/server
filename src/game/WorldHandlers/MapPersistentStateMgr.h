@@ -271,6 +271,14 @@ enum ResetEventType
     RESET_EVENT_FORCED_INFORM_LAST  = 8,
 };
 
+enum InstanceResetFailReason
+{
+    INSTANCERESET_FAIL_GENERAL  = 0,
+    INSTANCERESET_FAIL_OFFLINE  = 1,
+    INSTANCERESET_FAIL_ZONING   = 2,
+    INSTANCERESET_FAIL_SILENTLY = 3 // as well as any above this
+};
+
 #define MAX_RESET_EVENT_TYPE   9
 
 /* resetTime is a global propery of each (raid/heroic) map
