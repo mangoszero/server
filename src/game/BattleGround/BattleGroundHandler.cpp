@@ -241,7 +241,7 @@ void WorldSession::HandleBattleGroundPlayerPositionsOpcode(WorldPacket & /*recv_
             if (flagCarrierHorde)
                 { ++flagCarrierCount; }
 
-            WorldPacket data(MSG_BATTLEGROUND_PLAYER_POSITIONS, 4 + 4 + 16 * flagCarrierCount);
+            WorldPacket data(MSG_BATTLEGROUND_PLAYER_POSITIONS, 4 + 4 + 16 * flagCarrierCount); // FIXME wrong format
             data << uint32(0);
             data << uint32(flagCarrierCount);
 
