@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 14
-    #define WORLD_DB_CONTENT_NR 14
-    #define WORLD_DB_UPDATE_DESCRIPTION "Script_Binding"
+    #define WORLD_DB_CONTENT_NR 58
+    #define WORLD_DB_UPDATE_DESCRIPTION "debug recv Command"
 #endif // __REVISION_H__
