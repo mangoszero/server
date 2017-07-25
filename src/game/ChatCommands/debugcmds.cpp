@@ -122,6 +122,95 @@ bool ChatHandler::HandleDebugSendBuyErrorCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleDebugRecvOpcodeCommand(char* /*args*/)
+{
+    Unit* unit = getSelectedUnit();
+    if (!unit || (unit->GetTypeId() != TYPEID_PLAYER))
+        { unit = m_session->GetPlayer(); }
+
+    std::ifstream stream("ropcode.txt");
+    if (!stream.is_open())
+        { return false; }
+
+    uint32 opcode = 0;
+    if (!(stream >> opcode))
+    {
+        stream.close();
+        return false;
+    }
+
+    WorldPacket *data = new WorldPacket(opcode, 10);
+
+    std::string type;
+    while (stream >> type)
+    {
+        if (type.empty())
+            { break; }
+
+        if (type == "uint8")
+        {
+            uint16 value;
+            stream >> value;
+            *data << uint8(value);
+        }
+        else if (type == "uint16")
+        {
+            uint16 value;
+            stream >> value;
+            *data << value;
+        }
+        else if (type == "uint32")
+        {
+            uint32 value;
+            stream >> value;
+            *data << value;
+        }
+        else if (type == "uint64")
+        {
+            uint64 value;
+            stream >> value;
+            *data << value;
+        }
+        else if (type == "float")
+        {
+            float value;
+            stream >> value;
+            *data << value;
+        }
+        else if (type == "string")
+        {
+            std::string value;
+            stream >> value;
+            *data << value;
+        }
+        else if (type == "pguid")
+            { *data << unit->GetPackGUID(); }
+        else if (type == "guid")
+            { *data << unit->GetObjectGuid(); }
+        else if (type == "mypguid")
+            { *data << m_session->GetPlayer()->GetPackGUID(); }
+        else if (type == "myguid")
+            { *data << m_session->GetPlayer()->GetObjectGuid(); }
+        else if (type == "name")
+            { *data << unit->GetName(); }
+        else if (type == "myname")
+            { *data << m_session->GetPlayerName(); }
+        else
+        {
+            DEBUG_LOG("Sending opcode: unknown type '%s'", type.c_str());
+            break;
+        }
+    }
+    stream.close();
+
+    DEBUG_LOG("Queued opcode %u, %s", data->GetOpcode(), data->GetOpcodeName());
+
+    m_session->QueuePacket(data);
+
+    PSendSysMessage(LANG_COMMAND_OPCODEGOT, data->GetOpcode(), unit->GetName());
+    return true;
+}
+
 bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
 {
     Unit* unit = getSelectedUnit();
@@ -184,9 +273,17 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
             data << value;
         }
         else if (type == "pguid")
-        {
-            data << unit->GetPackGUID();
-        }
+            { data << unit->GetPackGUID(); }
+        else if (type == "guid")
+            { data << unit->GetObjectGuid(); }
+        else if(type == "mypguid")
+            { data << m_session->GetPlayer()->GetPackGUID(); }
+        else if (type == "myguid")
+            { data << m_session->GetPlayer()->GetObjectGuid(); }
+        else if (type == "name")
+            { data << unit->GetName(); }
+        else if (type == "myname")
+            { data << m_session->GetPlayerName(); }
         else
         {
             DEBUG_LOG("Sending opcode: unknown type '%s'", type.c_str());
@@ -198,7 +295,7 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
     DEBUG_LOG("Sending opcode %u, %s", data.GetOpcode(), data.GetOpcodeName());
 
     data.hexlike();
-    ((Player*)unit)->GetSession()->SendPacket(&data);
+    unit->ToPlayer()->SendDirectMessage(&data);
 
     PSendSysMessage(LANG_COMMAND_OPCODESENT, data.GetOpcode(), unit->GetName());
 
