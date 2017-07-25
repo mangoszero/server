@@ -172,7 +172,7 @@ void OutdoorPvP::SetBannerVisual(const WorldObject* objRef, ObjectGuid goGuid, u
 
 void OutdoorPvP::SetBannerVisual(GameObject* go, uint32 artKit, uint32 animId)
 {
-    go->SendGameObjectCustomAnim(go->GetObjectGuid(), animId);
+    go->SendGameObjectCustomAnim(animId);
     go->SetGoArtKit(artKit);
     go->Refresh();
 }

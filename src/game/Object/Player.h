@@ -330,11 +330,13 @@ typedef std::list<Item*> ItemDurationList;
 
 enum RaidGroupError
 {
-    ERR_RAID_GROUP_NONE                 = 0,
-    ERR_RAID_GROUP_LOWLEVEL             = 1,
-    ERR_RAID_GROUP_ONLY                 = 2,
-    ERR_RAID_GROUP_FULL                 = 3,
-    ERR_RAID_GROUP_REQUIREMENTS_UNMATCH = 4
+    ERR_RAID_GROUP_REQUIRED = 1,
+    ERR_RAID_GROUP_FULL     = 2
+    //ERR_RAID_GROUP_NONE                 = 0,
+    //ERR_RAID_GROUP_LOWLEVEL             = 1,
+    //ERR_RAID_GROUP_ONLY                 = 2,
+    //ERR_RAID_GROUP_FULL                 = 3,
+    //ERR_RAID_GROUP_REQUIREMENTS_UNMATCH = 4
 };
 
 enum DrunkenState
@@ -440,7 +442,7 @@ enum MirrorTimerType
 {
     FATIGUE_TIMER               = 0,
     BREATH_TIMER                = 1,
-    FIRE_TIMER                  = 2
+    FIRE_TIMER                  = 2     // probably mistake. More like to FEIGN_DEATH_TIMER
 };
 #define MAX_TIMERS              3
 #define DISABLED_MIRROR_TIMER   -1
@@ -600,13 +602,12 @@ enum TradeSlots
     TRADE_SLOT_NONTRADED        = 6
 };
 
-// [-ZERO] Need fix, or maybe not exists
 enum TransferAbortReason
 {
-    TRANSFER_ABORT_NONE                         = 0x00,
     TRANSFER_ABORT_MAX_PLAYERS                  = 0x01,     // Transfer Aborted: instance is full
     TRANSFER_ABORT_NOT_FOUND                    = 0x02,     // Transfer Aborted: instance not found
     TRANSFER_ABORT_TOO_MANY_INSTANCES           = 0x03,     // You have entered too many instances recently.
+    TRANSFER_ABORT_SILENTLY                     = 0x04,     // no message shown; the same effect give values above 5
     TRANSFER_ABORT_ZONE_IN_COMBAT               = 0x05,     // Unable to zone in while an encounter is in progress.
 };
 
@@ -721,6 +722,29 @@ enum PlayerRestState
     REST_STATE_RESTED           = 0x01,
     REST_STATE_NORMAL           = 0x02,
     REST_STATE_RAF_LINKED       = 0x04                      // Exact use unknown
+};
+
+enum PlayerMountResult
+{
+    MOUNTRESULT_INVALIDMOUNTEE  = 0,    // You can't mount that unit!
+    MOUNTRESULT_TOOFARAWAY      = 1,    // That mount is too far away!
+    MOUNTRESULT_ALREADYMOUNTED  = 2,    // You're already mounted!
+    MOUNTRESULT_NOTMOUNTABLE    = 3,    // That unit can't be mounted!
+    MOUNTRESULT_NOTYOURPET      = 4,    // That mount isn't your pet!
+    MOUNTRESULT_OTHER           = 5,    // internal
+    MOUNTRESULT_LOOTING         = 6,    // You can't mount while looting!
+    MOUNTRESULT_RACECANTMOUNT   = 7,    // You can't mount because of your race!
+    MOUNTRESULT_SHAPESHIFTED    = 8,    // You can't mount while shapeshifted!
+    MOUNTRESULT_FORCEDDISMOUNT  = 9,    // You dismount before continuing.
+    MOUNTRESULT_OK              = 10    // no error
+};
+
+enum PlayerDismountResult
+{
+    DISMOUNTRESULT_NOPET        = 0,    // internal
+    DISMOUNTRESULT_NOTMOUNTED   = 1,    // You're not mounted!
+    DISMOUNTRESULT_NOTYOURPET   = 2,    // internal
+    DISMOUNTRESULT_OK           = 3     // no error
 };
 
 class PlayerTaxi
@@ -990,6 +1014,10 @@ class Player : public Unit
         bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 0);
         // mount_id can be used in scripting calls
         void ContinueTaxiFlight();
+        void Mount(uint32 mount, uint32 spellId = 0) override;
+        void Unmount(bool from_aura = false) override;
+        void SendMountResult(PlayerMountResult result);
+        void SendDismountResult(PlayerDismountResult result);
         bool isAcceptTickets() const { return GetSession()->GetSecurity() >= SEC_GAMEMASTER && (m_ExtraFlags & PLAYER_EXTRA_GM_ACCEPT_TICKETS); }
         void SetAcceptTicket(bool on) { if (on) { m_ExtraFlags |= PLAYER_EXTRA_GM_ACCEPT_TICKETS; } else { m_ExtraFlags &= ~PLAYER_EXTRA_GM_ACCEPT_TICKETS; } }
         bool isAcceptWhispers() const { return m_ExtraFlags & PLAYER_EXTRA_ACCEPT_WHISPERS; }
@@ -1077,7 +1105,7 @@ class Player : public Unit
 
         void RemovePet(PetSaveMode mode);
         void RemoveMiniPet();
-        Pet* GetMiniPet() const;
+        virtual Pet* GetMiniPet() const override;
 
         // use only in Pet::Unsummon/Spell::DoSummon
         void _SetMiniPet(Pet* pet)
@@ -1220,6 +1248,7 @@ class Player : public Unit
         void SendEquipError(InventoryResult msg, Item* pItem, Item* pItem2 = NULL, uint32 itemid = 0) const;
         void SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint32 param);
         void SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemGuid, uint32 param);
+        void SendOpenContainer();
         void AddWeaponProficiency(uint32 newflag)
         {
             m_WeaponProficiency |= newflag;
@@ -1382,10 +1411,11 @@ class Player : public Unit
         void SendQuestCompleteEvent(uint32 quest_id);
         void SendQuestReward(Quest const* pQuest, uint32 XP);
         void SendQuestFailed(uint32 quest_id);
+        void SendQuestFailedAtTaker(uint32 quest_id, uint32 reason = INVALIDREASON_DONT_HAVE_REQ);
         void SendQuestTimerFailed(uint32 quest_id);
         void SendCanTakeQuestResponse(uint32 msg) const;
         void SendQuestConfirmAccept(Quest const* pQuest, Player* pReceiver);
-        void SendPushToPartyResponse(Player* pPlayer, uint32 msg);
+        void SendPushToPartyResponse(Player* pPlayer, uint8 msg);
         void SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32 count);
         void SendQuestUpdateAddCreatureOrGo(Quest const* pQuest, ObjectGuid guid, uint32 creatureOrGO_idx, uint32 count);
 
@@ -2195,8 +2225,8 @@ class Player : public Unit
         bool isMoving() const { return m_movementInfo.HasMovementFlag(movementFlagsMask); }
         bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(movementOrTurningFlagsMask); }
 
-        bool CanSwim() const { return true; }
-        bool CanFly() const { return false; }
+        virtual bool CanSwim() const override { return true; }
+        virtual bool CanFly() const override { return false; }
         bool IsFlying() const { return false; }
         bool IsFreeFlying() const { return false; }
 

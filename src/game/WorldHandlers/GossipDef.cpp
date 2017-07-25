@@ -159,7 +159,7 @@ void PlayerMenu::SendGossipMenu(uint32 TitleTextId, ObjectGuid objectGuid)
     WorldPacket data(SMSG_GOSSIP_MESSAGE, (100));           // guess size
     data << ObjectGuid(objectGuid);
     data << uint32(TitleTextId);
-    data << uint32(mGossipMenu.MenuItemCount());            // max count 0x20
+    data << uint32(mGossipMenu.MenuItemCount());            // [ZERO] max count 15
 
     for (uint32 iI = 0; iI < mGossipMenu.MenuItemCount(); ++iI)
     {
@@ -384,7 +384,7 @@ void PlayerMenu::SendQuestGiverQuestList(QEmote eEmote, const std::string& Title
     data << uint32(eEmote._Emote);                          // NPC emote
 
     size_t count_pos = data.wpos();
-    data << uint8(mQuestMenu.MenuItemCount());
+    data << uint8(mQuestMenu.MenuItemCount());              // TODO maximum 32 entries
     uint32 count = 0;
     for (; count < mQuestMenu.MenuItemCount(); ++count)
     {
@@ -457,9 +457,10 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
     {
         ItemPrototype const* IProto;
 
-        data << uint32(pQuest->GetRewChoiceItemsCount());
+        uint32 count = pQuest->GetRewChoiceItemsCount();
+        data << uint32(count);
 
-        for (uint32 i = 0; i < QUEST_REWARD_CHOICES_COUNT; ++i)
+        for (uint32 i = 0; i < count; ++i)
         {
             data << uint32(pQuest->RewChoiceItemId[i]);
             data << uint32(pQuest->RewChoiceItemCount[i]);
@@ -472,9 +473,10 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
                 { data << uint32(0x00); }
         }
 
-        data << uint32(pQuest->GetRewItemsCount());
+        count = pQuest->GetRewItemsCount();
+        data << uint32(count);
 
-        for (uint32 i = 0; i < QUEST_REWARDS_COUNT; ++i)
+        for (uint32 i = 0; i < count; ++i)
         {
             data << uint32(pQuest->RewItemId[i]);
             data << uint32(pQuest->RewItemCount[i]);
@@ -490,19 +492,14 @@ void PlayerMenu::SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid guid
         data << uint32(pQuest->GetRewOrReqMoney());
     }
 
-    data << pQuest->GetReqItemsCount();
-    for (uint32 i = 0; i <  QUEST_OBJECTIVES_COUNT; i++)
-    {
-        data << pQuest->ReqItemId[i];
-        data << pQuest->ReqItemCount[i];
-    }
+    data << uint32(pQuest->GetRewSpell());
 
-
-    data << pQuest->GetReqCreatureOrGOcount();
-    for (uint32 i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
+    uint32 count = pQuest->GetDetailsEmoteCount();
+    data << uint32(count);
+    for (uint32 i = 0; i < count; ++i)
     {
-        data << uint32(pQuest->ReqCreatureOrGOId[i]);
-        data << pQuest->ReqCreatureOrGOCount[i];
+        data << uint32(pQuest->DetailsEmote[i]);
+        data << uint32(pQuest->DetailsEmoteDelay[i]); // delay between emotes in ms
     }
 
     GetMenuSession()->SendPacket(&data);
@@ -665,6 +662,7 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
     }
 
     data << EmoteCount;                                     // Emote Count
+    // TODO unify cycle constructions: the previous one allows non-sequential data placing, while the next one does not
     for (uint32 i = 0; i < EmoteCount; ++i)
     {
         data << uint32(pQuest->OfferRewardEmoteDelay[i]);   // Delay Emote
@@ -729,8 +727,11 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
         }
     }
 
-    // We may wish a better check, perhaps checking the real quest requirements
-    if (RequestItemsText.empty())
+    // Quests that don't require items use the RequestItemsText field to store the text
+    // that is shown when you talk to the quest giver while the quest is incomplete.
+    // Therefore the text should not be shown for them when the quest is complete.
+    // For quests that do require items, it is self explanatory.
+    if (RequestItemsText.empty() || ((pQuest->GetReqItemsCount() == 0) && Completable))
     {
         SendQuestGiverOfferReward(pQuest, npcGUID, true);
         return;
@@ -783,7 +784,7 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
 
     data << uint32(0x04);                                   // flags2
     data << uint32(0x08);                                   // flags3
-    data << uint32(0x10);                                   // flags4
+    //data << uint32(0x10);                                   // [-ZERO] flags4
 
     GetMenuSession()->SendPacket(&data);
     DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_REQUEST_ITEMS NPCGuid = %s, questid = %u", npcGUID.GetString().c_str(), pQuest->GetQuestId());

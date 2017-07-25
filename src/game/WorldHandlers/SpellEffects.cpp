@@ -252,15 +252,13 @@ void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
     }
 
     if (m_caster == unitTarget)                             // prevent interrupt message
-        { finish(); }
-
-    WorldObject* caster = GetCastingObject();               // we need the original casting object
-
-    WorldPacket data(SMSG_SPELLINSTAKILLLOG, (8 + 8 + 4));
-    data << (caster && caster->GetTypeId() != TYPEID_GAMEOBJECT ? m_caster->GetObjectGuid() : ObjectGuid()); // Caster GUID
-    data << unitTarget->GetObjectGuid();                    // Victim GUID
-    data << uint32(m_spellInfo->Id);
-    m_caster->SendMessageToSet(&data, true);
+    {
+        finish();
+        WorldPacket data(SMSG_SPELLINSTAKILLLOG, (8 + 4));  // sent for selfkill only, other type is logged at SpellExecute
+        data << m_caster->GetObjectGuid();
+        data << uint32(m_spellInfo->Id);
+        m_caster->SendMessageToSet(&data, true);
+    }
 
     m_caster->DealDamage(unitTarget, unitTarget->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 }
@@ -2417,13 +2415,13 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
             data << unitTarget->GetPackGUID();              // Victim GUID
             data << m_caster->GetPackGUID();                // Caster GUID
             data << uint32(m_spellInfo->Id);                // Dispel spell id
-            data << uint8(0);                               // not used
+            //data << uint8(0);                               // [-ZERO] not used
             data << uint32(count);                          // count
             for (std::list<std::pair<SpellAuraHolder* , uint32> >::iterator j = success_list.begin(); j != success_list.end(); ++j)
             {
                 SpellAuraHolder* dispelledHolder = j->first;
                 data << uint32(dispelledHolder->GetId());   // Spell Id
-                data << uint8(0);                           // 0 - dispelled !=0 cleansed
+                //data << uint8(0);                           // [-ZERO] 0 - dispelled !=0 cleansed
                 unitTarget->RemoveAuraHolderDueToSpellByDispel(dispelledHolder->GetId(), j->second, dispelledHolder->GetCasterGuid(), m_caster);
             }
             m_caster->SendMessageToSet(&data, true);
@@ -4099,7 +4097,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
             break;
         }
         case 3:                     // GO custom anim - found mostly in Lunar Fireworks spells
-            gameObjTarget->SendGameObjectCustomAnim(gameObjTarget->GetObjectGuid());
+            gameObjTarget->SendGameObjectCustomAnim();
             break;
         case 12:                    // GO state active alternative - found mostly in Simon Game spells
             gameObjTarget->UseDoorOrButton(0, true);

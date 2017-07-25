@@ -1152,7 +1152,7 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
         if (type < 0)
             go->SendObjectDeSpawnAnim(go->GetObjectGuid());
         else
-            go->SendGameObjectCustomAnim(go->GetObjectGuid(), uint32(type));
+            go->SendGameObjectCustomAnim(uint32(type));
         return true;
     }
     return false;

@@ -2318,7 +2318,6 @@ enum ResponseCodes
     AUTH_DB_BUSY                                           = 0x1F,
     AUTH_SUSPENDED                                         = 0x20,
     AUTH_PARENTAL_CONTROL                                  = 0x21,
-    AUTH_LOCKED_ENFORCED                                   = 0x02, /// Unsure
 
     REALM_LIST_IN_PROGRESS                                 = 0x22,
     REALM_LIST_SUCCESS                                     = 0x23,
@@ -2339,47 +2338,42 @@ enum ResponseCodes
     CHAR_CREATE_ERROR                                      = 0x2F,
     CHAR_CREATE_FAILED                                     = 0x30,
     CHAR_CREATE_NAME_IN_USE                                = 0x31,
-    CHAR_CREATE_DISABLED                                   = 0x3A,
+    CHAR_CREATE_DISABLED                                   = 0x32,
     CHAR_CREATE_PVP_TEAMS_VIOLATION                        = 0x33,
     CHAR_CREATE_SERVER_LIMIT                               = 0x34,
     CHAR_CREATE_ACCOUNT_LIMIT                              = 0x35,
-    CHAR_CREATE_SERVER_QUEUE                               = 0x30,/// UNSURE
-    CHAR_CREATE_ONLY_EXISTING                              = 0x30,/// UNSURE
+    CHAR_CREATE_SERVER_QUEUE                               = 0x36,
+    CHAR_CREATE_ONLY_EXISTING                              = 0x37,
 
     CHAR_DELETE_IN_PROGRESS                                = 0x38,
     CHAR_DELETE_SUCCESS                                    = 0x39,
     CHAR_DELETE_FAILED                                     = 0x3A,
-    CHAR_DELETE_FAILED_LOCKED_FOR_TRANSFER                 = 0x3A,/// UNSURE
-    CHAR_DELETE_FAILED_GUILD_LEADER                        = 0x3A,/// UNSURE
+    CHAR_DELETE_FAILED_LOCKED_FOR_TRANSFER                 = 0x3B,
 
-    CHAR_LOGIN_IN_PROGRESS                                 = 0x3B,
-    CHAR_LOGIN_SUCCESS                                     = 0x3C,
-    CHAR_LOGIN_NO_WORLD                                    = 0x3D,
-    CHAR_LOGIN_DUPLICATE_CHARACTER                         = 0x3E,
-    CHAR_LOGIN_NO_INSTANCES                                = 0x3F,
-    CHAR_LOGIN_FAILED                                      = 0x40,
-    CHAR_LOGIN_DISABLED                                    = 0x41,
-    CHAR_LOGIN_NO_CHARACTER                                = 0x42,
-    CHAR_LOGIN_LOCKED_FOR_TRANSFER                         = 0x40, /// UNSURE
-    CHAR_LOGIN_LOCKED_BY_BILLING                           = 0x40, /// UNSURE
+    CHAR_LOGIN_IN_PROGRESS                                 = 0x3C,
+    CHAR_LOGIN_SUCCESS                                     = 0x3D,
+    CHAR_LOGIN_NO_WORLD                                    = 0x3E,
+    CHAR_LOGIN_DUPLICATE_CHARACTER                         = 0x3F,
+    CHAR_LOGIN_NO_INSTANCES                                = 0x40,
+    CHAR_LOGIN_FAILED                                      = 0x41,
+    CHAR_LOGIN_DISABLED                                    = 0x42,
+    CHAR_LOGIN_NO_CHARACTER                                = 0x43,
+    CHAR_LOGIN_LOCKED_FOR_TRANSFER                         = 0x44,
 
-    CHAR_NAME_SUCCESS                                      = 0x50,
-    CHAR_NAME_FAILURE                                      = 0x4F,
-    CHAR_NAME_NO_NAME                                      = 0x43,
-    CHAR_NAME_TOO_SHORT                                    = 0x44,
-    CHAR_NAME_TOO_LONG                                     = 0x45,
-    CHAR_NAME_INVALID_CHARACTER                            = 0x46,
-    CHAR_NAME_MIXED_LANGUAGES                              = 0x47,
-    CHAR_NAME_PROFANE                                      = 0x48,
-    CHAR_NAME_RESERVED                                     = 0x49,
-    CHAR_NAME_INVALID_APOSTROPHE                           = 0x4A,
-    CHAR_NAME_MULTIPLE_APOSTROPHES                         = 0x4B,
-    CHAR_NAME_THREE_CONSECUTIVE                            = 0x4C,
-    CHAR_NAME_INVALID_SPACE                                = 0x4D,
-    CHAR_NAME_CONSECUTIVE_SPACES                           = 0x4E,
-    CHAR_NAME_RUSSIAN_CONSECUTIVE_SILENT_CHARACTERS        = 0x4E,/// UNSURE
-    CHAR_NAME_RUSSIAN_SILENT_CHARACTER_AT_BEGINNING_OR_END = 0x4E,/// UNSURE
-    CHAR_NAME_DECLENSION_DOESNT_MATCH_BASE_NAME            = 0x4E,/// UNSURE
+    CHAR_NAME_NO_NAME                                      = 0x45,
+    CHAR_NAME_TOO_SHORT                                    = 0x46,
+    CHAR_NAME_TOO_LONG                                     = 0x47,
+    CHAR_NAME_INVALID_CHARACTER                            = 0x48,
+    CHAR_NAME_MIXED_LANGUAGES                              = 0x49,
+    CHAR_NAME_PROFANE                                      = 0x4A,
+    CHAR_NAME_RESERVED                                     = 0x4B,
+    CHAR_NAME_INVALID_APOSTROPHE                           = 0x4C,
+    CHAR_NAME_MULTIPLE_APOSTROPHES                         = 0x4D,
+    CHAR_NAME_THREE_CONSECUTIVE                            = 0x4E,
+    CHAR_NAME_INVALID_SPACE                                = 0x4F,
+    CHAR_NAME_CONSECUTIVE_SPACES                           = 0x50,
+    CHAR_NAME_FAILURE                                      = 0x51,
+    CHAR_NAME_SUCCESS                                      = 0x52,
 };
 
 /// Ban function modes
@@ -2454,6 +2448,7 @@ enum MailResponseResult
     MAIL_ERR_INTERNAL_ERROR            = 6,
     MAIL_ERR_DISABLED_FOR_TRIAL_ACC    = 14,
     MAIL_ERR_RECIPIENT_CAP_REACHED     = 15,
+    //in SMSG_SEND_MAIL_RESULT, 7-13 and 16+: "Mail database error"
     MAIL_ERR_CANT_SEND_WRAPPED_COD     = 16,
     MAIL_ERR_MAIL_AND_CHAT_SUSPENDED   = 17,
     MAIL_ERR_TOO_MANY_ATTACHMENTS      = 18,
@@ -2511,7 +2506,7 @@ enum TradeStatus
     TRADE_STATUS_TARGET_TO_FAR  = 10,
     TRADE_STATUS_WRONG_FACTION  = 11,
     TRADE_STATUS_CLOSE_WINDOW   = 12,
-    // 13?
+    TRADE_STATUS_UNKNOWN_13     = 13,                       // handled with TRADE_STATUS_TRADE_CANCELED
     TRADE_STATUS_IGNORE_YOU     = 14,
     TRADE_STATUS_YOU_STUNNED    = 15,
     TRADE_STATUS_TARGET_STUNNED = 16,
@@ -2520,8 +2515,7 @@ enum TradeStatus
     TRADE_STATUS_YOU_LOGOUT     = 19,
     TRADE_STATUS_TARGET_LOGOUT  = 20,
     TRADE_STATUS_TRIAL_ACCOUNT  = 21,                       // Trial accounts can not perform that action
-    TRADE_STATUS_WRONG_REALM    = 22,                       // You can only trade conjured items... (cross realm BG related).
-    TRADE_STATUS_NOT_ON_TAPLIST = 23
+    TRADE_STATUS_WRONG_REALM    = 22                        // You can only trade conjured items... (cross realm BG related).
 };
 
 enum WorldStateType
@@ -2598,6 +2592,9 @@ enum GMTicketStatus
      * This code is used when the client closed the ticket itself and we shouldn't send an update
      * message to it */
     GM_TICKET_STATUS_DO_NOTHING = -1,
+    /** On this client responds by CMSG_GMTICKET_GETTICKET, updating the local ticket copy
+    */
+    GM_TICKET_STATUS_ASK_UPDATE = 1,
     /** Should close the window in the top right corner telling you that you have a
      * ticket open */
     GM_TICKET_STATUS_CLOSE = 2,

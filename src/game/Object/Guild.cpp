@@ -804,7 +804,7 @@ void Guild::Roster(WorldSession* session /*= NULL*/)
 
 void Guild::Query(WorldSession* session)
 {
-    WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, (8 * 32 + 200)); // we can only guess size
+    WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, (4 + 48 + 10 * 32 + 5 * 4)); // guess size; max: name(96), rankname(64)
 
     data << uint32(m_Id);
     data << m_Name;

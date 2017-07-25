@@ -270,7 +270,9 @@ void __fastcall TFrmMain::ToolButton1Click(TObject* Sender)
                     }
                 }
                 if (SeFlag)  ShowMessage("Seach Top£¬Find Nothing.");
-                break;
+                {
+                    break;
+                }
             case 1:  //ÏòÏÂÕÒ;
                 for (int i = sgEdit->ColCount * sgEdit->Row + sgEdit->Col + 1; i < sgEdit->ColCount * sgEdit->RowCount; i++)
                 {

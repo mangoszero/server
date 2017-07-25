@@ -256,6 +256,7 @@ enum HitInfo
     HITINFO_RESIST              = 0x00000040,               // resisted atleast some damage
     HITINFO_CRITICALHIT         = 0x00000080,
     HITINFO_UNK8                = 0x00000100,               // wotlk?
+    HITINFO_BLOCK               = 0x00000800,               // [ZERO]
     HITINFO_UNK9                = 0x00002000,               // wotlk?
     HITINFO_GLANCING            = 0x00004000,
     HITINFO_CRUSHING            = 0x00008000,
@@ -551,7 +552,7 @@ enum NPCFlags
 {
     UNIT_NPC_FLAG_NONE                  = 0x00000000,
     UNIT_NPC_FLAG_GOSSIP                = 0x00000001,       ///< 100%
-    UNIT_NPC_FLAG_QUESTGIVER            = 0x00000002,       ///< guessed, probably ok
+    UNIT_NPC_FLAG_QUESTGIVER            = 0x00000002,       ///< 100%
     UNIT_NPC_FLAG_VENDOR                = 0x00000004,       ///< 100%
     UNIT_NPC_FLAG_FLIGHTMASTER          = 0x00000008,       ///< 100%
     UNIT_NPC_FLAG_TRAINER               = 0x00000010,       ///< 100%
@@ -1785,6 +1786,8 @@ class Unit : public WorldObject
          * @return true if the Unit is standing normally, false otherwise
          */
         bool IsStandState() const;
+        
+        bool IsSeatedState() const;
         /**
          * Change the stand state for this Unit. For possible values check
          * UnitStandStateType.
@@ -1813,7 +1816,7 @@ class Unit : public WorldObject
          * @param spellId id of the spell used to summon the mount, if 0 is passed in this is treated
          * as a GM command or the Taxi service mounting the Player.
          */
-        void Mount(uint32 mount, uint32 spellId = 0);
+        virtual void Mount(uint32 mount, uint32 spellId = 0);
         /**
          * Unmounts this Unit by sending the SMSG_DISMOUNT to the client if it was a dismount
          * not issued by a GM / the Taxi service. Also changes the UNIT_FIELD_MOUNTDISPLAYID
@@ -1821,7 +1824,7 @@ class Unit : public WorldObject
          * @param from_aura if this was true the Unit was probably interrupted by a spell
          * or something hitting it forcing a dismount.
          */
-        void Unmount(bool from_aura = false);
+        virtual void Unmount(bool from_aura = false);
 
         /**
          * Returns the maximum skill value the given Unit can have. Ie: the sword skill can

@@ -108,7 +108,7 @@ namespace WardenState
         STATE_RESTING
     };
 
-    inline char* to_string(WardenState::Value value)
+    inline const char* to_string(WardenState::Value value)
     {
         switch (value)
         {

@@ -1314,7 +1314,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage* damageInfo, int32 damage, S
     if (damage < 0)
         { return; }
 
-    if (!this || !pVictim)
+    if (!pVictim)
         { return; }
 
     // units which are not alive cannot deal damage except for dying creatures
@@ -1427,7 +1427,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage* damageInfo, bool durabilityLoss)
 
     Unit* pVictim = damageInfo->target;
 
-    if (!this || !pVictim)
+    if (!pVictim)
         { return; }
 
     if (!pVictim->IsAlive() || pVictim->IsTaxiFlying() || (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode()))
@@ -1477,7 +1477,7 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
     damageInfo->procEx           = PROC_EX_NONE;
     damageInfo->hitOutCome       = MELEE_HIT_EVADE;
 
-    if (!this || !pVictim)
+    if (!pVictim)
         { return; }
     if (!this->IsAlive() || !pVictim->IsAlive())
         { return; }
@@ -1707,7 +1707,7 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
     if (damageInfo == 0) { return; }
     Unit* pVictim = damageInfo->target;
 
-    if (!this || !pVictim)
+    if (!pVictim)
         { return; }
 
     if (!pVictim->IsAlive() || pVictim->IsTaxiFlying() || (pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode()))
@@ -2449,7 +2449,7 @@ void Unit::SendMeleeAttackStop(Unit* victim)
     if (!victim)
         { return; }
 
-    WorldPacket data(SMSG_ATTACKSTOP, (4 + 16));            // we guess size
+    WorldPacket data(SMSG_ATTACKSTOP, (8 + 8 + 4));         // guess size, max is 9+9+4
     data << GetPackGUID();
     data << victim->GetPackGUID();                          // can be 0x00...
     data << uint32(0);                                      // can be 0x1
@@ -4541,30 +4541,30 @@ void Unit::SendPeriodicAuraLog(SpellPeriodicAuraLogInfo* pInfo)
     data << uint32(mod->m_auraname);                        // auraId
     switch (mod->m_auraname)
     {
-        case SPELL_AURA_PERIODIC_DAMAGE:
-        case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-            data << uint32(pInfo->damage);                  // damage
-            data << uint32(aura->GetSpellProto()->School);
-            data << uint32(pInfo->absorb);                  // absorb
-            data << uint32(pInfo->resist);                  // resist
-            break;
-        case SPELL_AURA_PERIODIC_HEAL:
-        case SPELL_AURA_OBS_MOD_HEALTH:
-            data << uint32(pInfo->damage);                  // damage
-            break;
-        case SPELL_AURA_OBS_MOD_MANA:
-        case SPELL_AURA_PERIODIC_ENERGIZE:
-            data << uint32(mod->m_miscvalue);               // power type
-            data << uint32(pInfo->damage);                  // damage
-            break;
-        case SPELL_AURA_PERIODIC_MANA_LEECH:
-            data << uint32(mod->m_miscvalue);               // power type
-            data << uint32(pInfo->damage);                  // amount
-            data << float(pInfo->multiplier);               // gain multiplier
-            break;
-        default:
-            sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
-            return;
+    case SPELL_AURA_PERIODIC_DAMAGE:
+    case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+        data << uint32(pInfo->damage);                  // damage
+        data << uint32(aura->GetSpellProto()->School);
+        data << uint32(pInfo->absorb);                  // absorb
+        data << uint32(pInfo->resist);                  // resist
+        break;
+    case SPELL_AURA_PERIODIC_HEAL:
+    case SPELL_AURA_OBS_MOD_HEALTH:
+        data << uint32(pInfo->damage);                  // damage
+        break;
+    case SPELL_AURA_OBS_MOD_MANA:
+    case SPELL_AURA_PERIODIC_ENERGIZE:
+        data << uint32(mod->m_miscvalue);               // power type
+        data << uint32(pInfo->damage);                  // damage
+        break;
+    case SPELL_AURA_PERIODIC_MANA_LEECH:
+        data << uint32(mod->m_miscvalue);               // power type
+        data << uint32(pInfo->damage);                  // amount
+        data << float(pInfo->multiplier);               // gain multiplier
+        break;
+    default:
+        sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
+        return;
     }
 
     aura->GetTarget()->SendMessageToSet(&data, true);
@@ -4583,7 +4583,7 @@ void Unit::ProcDamageAndSpell(Unit* pVictim, uint32 procAttacker, uint32 procVic
 
 void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
 {
-    WorldPacket data(SMSG_SPELLLOGMISS, (4 + 8 + 1 + 4 + 8 + 1));
+    WorldPacket data(SMSG_SPELLLOGMISS, (4 + 8 + 1 + 4 + 8 + 1 + (missInfo == SPELL_MISS_NONE ? 0 : 8)));
     data << uint32(spellID);
     data << GetObjectGuid();
     data << uint8(0);                                       // can be 0 or 1
@@ -4591,6 +4591,8 @@ void Unit::SendSpellMiss(Unit* target, uint32 spellID, SpellMissInfo missInfo)
     // for(i = 0; i < target count; ++i)
     data << target->GetObjectGuid();                        // target GUID
     data << uint8(missInfo);
+    if (missInfo != SPELL_MISS_NONE)
+        { data << float(0) << float(0); }                   // unk
     // end loop
     SendMessageToSet(&data, true);
 }
@@ -4622,6 +4624,13 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
     data << uint32(0);                                      // spell id, seen with heroic strike and disarm as examples.
     // HITINFO_NOACTION normally set if spell
     data << uint32(damageInfo->blocked_amount);
+    //if (damageInfo->HitInfo & HITINFO_UNK0)
+    //{
+    //    data << uint32(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0);
+    //    for (int i = 0; i < 4; ++i)
+    //        data << float(0) << float(0);
+    //    data << uint32(0);
+    //}
     SendMessageToSet(&data, true);  /**/
 }
 
@@ -5417,7 +5426,7 @@ void Unit::SendHealSpellLog(Unit* pVictim, uint32 SpellID, uint32 Damage, bool c
     data << uint32(SpellID);
     data << uint32(Damage);
     data << uint8(critical ? 1 : 0);
-    data << uint8(0);                                       // unused in client?
+    // data << uint8(0);                                       // [-ZERO]
     SendMessageToSet(&data, true);
 }
 
@@ -6407,28 +6416,6 @@ void Unit::Mount(uint32 mount, uint32 spellId)
     RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_MOUNTING);
 
     SetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID, mount);
-
-    if (GetTypeId() == TYPEID_PLAYER)
-    {
-        // Called by Taxi system / GM command
-        if (!spellId)
-            { ((Player*)this)->UnsummonPetTemporaryIfAny(); }
-        // Called by mount aura
-        else
-        {
-            // Normal case (Unsummon only permanent pet)
-            if (Pet* pet = GetPet())
-            {
-                if (pet->IsPermanentPetFor((Player*)this) &&
-                    sWorld.getConfig(CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT))
-                {
-                    ((Player*)this)->UnsummonPetTemporaryIfAny();
-                }
-                else
-                    { pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, true); }
-            }
-        }
-    }
 }
 
 void Unit::Unmount(bool from_aura)
@@ -6446,17 +6433,6 @@ void Unit::Unmount(bool from_aura)
         WorldPacket data(SMSG_DISMOUNT, 8);
         data << GetPackGUID();
         SendMessageToSet(&data, true);
-    }
-
-    // only resummon old pet if the player is already added to a map
-    // this prevents adding a pet to a not created map which would otherwise cause a crash
-    // (it could probably happen when logging in after a previous crash)
-    if (GetTypeId() == TYPEID_PLAYER)
-    {
-        if (Pet* pet = GetPet())
-            { pet->ApplyModeFlags(PET_MODE_DISABLE_ACTIONS, false); }
-        else
-            { ((Player*)this)->ResummonPetTemporaryUnSummonedIfAny(); }
     }
 }
 
@@ -8526,10 +8502,31 @@ void Unit::SendPetCastFail(uint32 spellid, SpellCastResult msg)
     if (!owner || owner->GetTypeId() != TYPEID_PLAYER)
         { return; }
 
-    WorldPacket data(SMSG_PET_CAST_FAILED, 4 + 1);
+    WorldPacket data(SMSG_PET_CAST_FAILED, 4 + 1 + 1);
     data << uint32(spellid);
+    data << uint8(0);               // unknown, maybe unused
     data << uint8(msg);
-    ((Player*)owner)->GetSession()->SendPacket(&data);
+    switch (msg)
+    {
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
+    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
+        data << int32(0);           // required and actual item class?
+        data << int32(0);
+        break;
+    case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
+        data << int32(0);           // required spellfocus id?
+        break;
+    case SPELL_FAILED_REQUIRES_AREA:
+        data << int32(GetAreaId()); // untested
+        break;
+    case SPELL_FAILED_PREVENTED_BY_MECHANIC:
+        data << int32(0);           // mechanic id?
+        break;
+    default:
+        break;
+    }
+    owner->ToPlayer()->SendDirectMessage(&data);
 }
 
 void Unit::SendPetActionFeedback(uint8 msg)
@@ -8729,13 +8726,6 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
 {
     if (apply)
     {
-        /*
-        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 9);
-        data<<GetGUID();
-        data<<uint8(0);
-        SendMessageToSet(&data,true);
-        */
-
         if (GetTypeId() != TYPEID_PLAYER)
             { StopMoving(); }
         else
@@ -8760,11 +8750,9 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
     }
     else
     {
-        /*
-        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 9);
-        data<<GetGUID();
-        data<<uint8(1);
-        SendMessageToSet(&data,true);
+        /* when appropriate! not within this method
+        WorldPacket data(SMSG_FEIGN_DEATH_RESISTED, 0);
+        SendDirectMessage(&data);
         */
 
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_29);
@@ -8801,12 +8789,18 @@ bool Unit::IsStandState() const
     return !IsSitState() && s != UNIT_STAND_STATE_SLEEP && s != UNIT_STAND_STATE_KNEEL;
 }
 
+bool Unit::IsSeatedState() const
+{
+	uint8 standState = getStandState();
+	return standState != UNIT_STAND_STATE_SLEEP && standState != UNIT_STAND_STATE_STAND;
+}
+
 void Unit::SetStandState(uint8 state)
 {
     SetByteValue(UNIT_FIELD_BYTES_1, 0, state);
 
-    if (IsStandState())
-        { RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED); }
+    if (!IsSeatedState())
+        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED);
 
     if (GetTypeId() == TYPEID_PLAYER)
     {

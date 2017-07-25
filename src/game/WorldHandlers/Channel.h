@@ -211,7 +211,11 @@ class Channel
          * \ref Channel::SPEAK_IN_LOCALDEFENSE_RANK for more info on the 4 added.
          */
         static const uint8 SPEAK_IN_WORLDDEFENSE_RANK = 4 + 10; 
-        
+        /**
+        * This creates the packet informing client that the player is not on requested \ref name channel.
+        * See also \ref MakeNotMember for non-static version.
+        */
+        static void MakeNotOnPacket(WorldPacket* data, const std::string &name);
     private:
         // initial packet data (notify type and channel name)
         void MakeNotifyPacket(WorldPacket* data, uint8 notify_type);

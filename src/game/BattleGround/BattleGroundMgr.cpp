@@ -885,7 +885,6 @@ void BattleGroundMgr::BuildBattleGroundStatusPacket(WorldPacket* data, BattleGro
 
     data->Initialize(SMSG_BATTLEFIELD_STATUS, (4 + 8 + 4 + 1 + 4 + 4 + 4));
     *data << uint32(QueueSlot);                             // queue id (0...2) - player can be in 3 queues in time
-    // uint64 in client
     *data << uint32(bg->GetMapId());                        // MapID
     *data << uint8(0);                                      // Unknown
     *data << uint32(bg->GetClientInstanceID());
@@ -969,19 +968,11 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround* bg)
     }
 }
 
-void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, BattleGroundTypeId bgTypeId)
+void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, int32 status)
 {
-    /*bgTypeId is:
-    0 - Your group has joined a battleground queue, but you are not eligible
-    1 - Your group has joined the queue for AV
-    2 - Your group has joined the queue for WS
-    3 - Your group has joined the queue for AB
-    4 - Your group has joined the queue for NA
-    5 - Your group has joined the queue for BE Arena
-    6 - Your group has joined the queue for All Arenas
-    7 - Your group has joined the queue for EotS*/
     data->Initialize(SMSG_GROUP_JOINED_BATTLEGROUND, 4);
-    *data << uint32(bgTypeId);
+    // for status, see enum BattleGroundGroupJoinStatus
+    *data << int32(status);
 }
 
 void BattleGroundMgr::BuildUpdateWorldStatePacket(WorldPacket* data, uint32 field, uint32 value)
@@ -1257,26 +1248,22 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid 
     *data << uint32(mapId);                                 // battleground id
     *data << uint8(0x00);                                   // unk
 
-    size_t count_pos = data->wpos();
-    //uint32 count = 0;
-    *data << uint32(0);                                     // number of bg instances
-
     // battleground
     {
-        *data << uint8(0x00);                               // unk
+        //*data << uint8(0x00);                               // [-ZERO] unk
 
-        size_t count_pos = data->wpos();
-        uint32 count = 0;
-        *data << uint32(0);                                 // number of bg instances
+        //size_t count_pos = data->wpos();
+        //uint32 count = 0;
 
         uint32 bracket_id = plr->GetBattleGroundBracketIdFromLevel(bgTypeId);
         ClientBattleGroundIdSet const& ids = m_ClientBattleGroundIds[bgTypeId][bracket_id];
+        *data << uint32(ids.size());                        // number of bg instances
         for (std::set<uint32>::const_iterator itr = ids.begin(); itr != ids.end(); ++itr)
         {
             *data << uint32(*itr);
-            ++count;
+            //++count;
         }
-        data->put<uint32>(count_pos , count);
+        //data->put<uint32>(count_pos , count);
     }
 }
 

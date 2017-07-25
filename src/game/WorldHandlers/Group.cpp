@@ -1866,7 +1866,7 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
             if (isEmpty)
                 { SendMsgTo->SendResetInstanceSuccess(state->GetMapId()); }
             else
-                { SendMsgTo->SendResetInstanceFailed(0, state->GetMapId()); }
+                { SendMsgTo->SendResetInstanceFailed(INSTANCERESET_FAIL_ZONING, state->GetMapId()); }
         }
 
         if (isEmpty || method == INSTANCE_RESET_GROUP_DISBAND)

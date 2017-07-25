@@ -43,7 +43,7 @@ class Transport : public GameObject
         bool AddPassenger(Unit* passenger);
         bool RemovePassenger(Unit* passenger);
 
-        virtual void Update(uint32 update_diff, uint32 p_time) = 0;
+        virtual void Update(uint32 update_diff, uint32 p_time) override {}
         virtual void DeleteFromDB() override {}
 
         UnitSet const& GetPassengers() const { return m_passengers; }
@@ -60,7 +60,6 @@ class LocalTransport : public Transport
         explicit LocalTransport();
         virtual ~LocalTransport();
         bool Initialize(uint32 guid, Map* m);
-        virtual void Update(uint32 update_diff, uint32 p_time) override {} //NYI
     private:
         uint32 m_period;
 };

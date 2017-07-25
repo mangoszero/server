@@ -37,7 +37,7 @@ P_PGRESQL="0"
 P_TOOLS="0"
 P_SD3="1"
 P_ELUNA="1"
-
+P_BOTS="0"
 
 
 # Function to test for dialog
@@ -738,10 +738,11 @@ function GetBuildOptions()
     2 "Use Standard Malloc" On \
     3 "Use External ACE Libraries" On \
     4 "Use PostgreSQL Instead Of MySQL/MariaDB" Off \
-    5 "Build Client Tools" Off \
+    5 "Build Client Tools" On \
     6 "Use SD3" On \
     7 "Use Eluna" On \
-	8 "Use SOAP" Off \
+    8 "Use SOAP" Off \
+    9 "Use Player Bots AI" Off \
     3>&2 2>&1 1>&3)
 
   if [ $? -ne 0 ]; then
@@ -802,8 +803,14 @@ function GetBuildOptions()
   if [[ $OPTIONS == *8* ]]; then
     P_SOAP="1"
   else
-	P_SOAP="0"
+    P_SOAP="0"
   fi
+
+  if [[ $OPTIONS == *9* ]]; then
+    P_PBOTS="1"
+  else
+    P_PBOTS="0"
+  fi 
 
   # Verify that at least one scripting library is enabled
   if [ $P_SD3 -eq 0 ] && [ $P_ELUNA -eq 0 ]; then
@@ -851,7 +858,7 @@ function BuildMaNGOS()
   # Attempt to configure and build MaNGOS
   Log "Building MaNGOS..." 0
   cd "$SRCPATH/server/linux"
-  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DSOAP=$P_SOAP -DCMAKE_INSTALL_PREFIX="$INSTPATH"
+  cmake .. -DDEBUG=$P_DEBUG -DUSE_STD_MALLOC=$P_STD_MALLOC -DACE_USE_EXTERNAL=$P_ACE_EXTERNAL -DPOSTGRESQL=$P_PGRESQL -DBUILD_TOOLS=$P_TOOLS -DSCRIPT_LIB_ELUNA=$P_ELUNA -DSCRIPT_LIB_SD3=$P_SD3 -DSOAP=$P_SOAP -DPLAYERBOTS=$P_BOTS -DCMAKE_INSTALL_PREFIX="$INSTPATH"
   make
 
   # Check for an error
@@ -1234,7 +1241,7 @@ function ExtractResources
     3>&2 2>&1 1>&3)
     
   if [ ! -d "$INSTPATH/bin/tools" ]; then
-    Log "The mangos server is not build, cannot extract data" 1
+    Log "The client tools have not been built, cannot extract data" 1
     exit 1
   fi
  

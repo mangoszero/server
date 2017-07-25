@@ -1265,23 +1265,35 @@ bool AuctionBotSeller::Initialize()
             case ITEM_CLASS_WEAPON:
             {
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_ITEM_LEVEL))
+                {
                     if (prototype->ItemLevel < value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_ITEM_LEVEL))
+                {
                     if (prototype->ItemLevel > value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
+                {
                     if (prototype->RequiredLevel < value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
+                {
                     if (prototype->RequiredLevel > value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
+                {
                     if (prototype->RequiredSkillRank < value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
+                {
                     if (prototype->RequiredSkillRank > value)
                         { continue; }
+                }
                 break;
             }
             case ITEM_CLASS_RECIPE:
@@ -1289,17 +1301,25 @@ bool AuctionBotSeller::Initialize()
             case ITEM_CLASS_PROJECTILE:
             {
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
+                {
                     if (prototype->RequiredLevel < value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
+                {
                     if (prototype->RequiredLevel > value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
+                {
                     if (prototype->RequiredSkillRank < value)
                         { continue; }
+                }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
+                {
                     if (prototype->RequiredSkillRank > value)
                         { continue; }
+                }
                 break;
             }
             case ITEM_CLASS_MISC:

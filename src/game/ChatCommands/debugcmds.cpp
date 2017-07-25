@@ -309,8 +309,10 @@ bool ChatHandler::HandleDebugSendQuestPartyMsgCommand(char* args)
     uint32 msg;
     if (!ExtractUInt32(&args, msg))
         { return false; }
+    if (msg > 0xFF)
+        { return false; }
 
-    m_session->GetPlayer()->SendPushToPartyResponse(m_session->GetPlayer(), msg);
+    m_session->GetPlayer()->SendPushToPartyResponse(m_session->GetPlayer(), uint8(msg));
     return true;
 }
 

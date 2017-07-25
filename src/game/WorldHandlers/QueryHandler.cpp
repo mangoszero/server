@@ -43,10 +43,10 @@ void WorldSession::SendNameQueryOpcode(Player* p)
         { return; }
 
     // guess size
-    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
+    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 25 + 1 + 4 + 4 + 4));   // guess size
     data << p->GetObjectGuid();                             // player guid
-    data << p->GetName();                                   // played name
-    data << uint8(0);                                       // realm name for cross realm BG usage
+    data << p->GetName();                                   // CString(48): played name
+    data << uint8(0);                                       // CString(256): realm name for cross realm BG usage
     data << uint32(p->getRace());
     data << uint32(p->getGender());
     data << uint32(p->getClass());
@@ -79,9 +79,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     uint32 lowguid      = fields[0].GetUInt32();
     std::string name = fields[1].GetCppString();
     uint8 pRace = 0, pGender = 0, pClass = 0;
-    if (name.empty())
-        { name         = session->GetMangosString(LANG_NON_EXIST_CHARACTER); }
-    else
+    if (!name.empty())
     {
         pRace        = fields[2].GetUInt8();
         pGender      = fields[3].GetUInt8();
@@ -89,7 +87,7 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     }
 
     // guess size
-    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 1 + 4 + 4 + 4 + 10));
+    WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + (name.size()+1) + 1 + 4 + 4 + 4));
     data << ObjectGuid(HIGHGUID_PLAYER, lowguid);
     data << name;
     data << uint8(0);                                       // realm name for cross realm BG usage
@@ -165,7 +163,8 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         else
             { data << uint32(Creature::ChooseDisplayId(ci)); }  // workaround, way to manage models must be fixed
 
-        data << uint16(ci->civilian);                       // wdbFeild14
+        data << uint8(ci->civilian);                       // wdbFeild14
+        data << uint8(ci->RacialLeader);
         SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_CREATURE_QUERY_RESPONSE");
     }
@@ -209,9 +208,10 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
         data << uint32(info->type);
         data << uint32(info->displayId);
         data << Name;
-        data << uint16(0) << uint8(0) << uint8(0);          // name2, name3, name4
-        data.append(info->raw.data, 24);
-        // data << float(info->size);                       // go size , to check
+        data << uint8(0) << uint8(0) << uint8(0);   // name2, name3, name4
+        data << uint8(0);                           // one more name, client handles it a bit differently
+        data.append(info->raw.data, 24);            // these are read as int32
+        // data << float(info->size);               // [-ZERO] go size: not in Zero
         SendPacket(&data);
         DEBUG_LOG("WORLD: Sent SMSG_GAMEOBJECT_QUERY_RESPONSE");
     }

@@ -489,7 +489,7 @@ void WorldSession::HandleCharDeleteOpcode(WorldPacket& recv_data)
     if (sGuildMgr.GetGuildByLeader(guid))
     {
         WorldPacket data(SMSG_CHAR_DELETE, 1);
-        data << (uint8)CHAR_DELETE_FAILED_GUILD_LEADER;
+        data << uint8(CHAR_DELETE_FAILED);
         SendPacket(&data);
         return;
     }

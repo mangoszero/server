@@ -42,7 +42,7 @@ class WorldThread : public ACE_Task_Base
     public:
         explicit WorldThread(uint16 port, const char* host);
         virtual int open(void*) override;
-        virtual int svc();
+        virtual int svc() override;
     private:
         ACE_INET_Addr listen_addr;
 };

@@ -194,7 +194,7 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
             // send status packet (in queue)
             sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0);
             member->GetSession()->SendPacket(&data);
-            sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, bgTypeId);
+            sBattleGroundMgr.BuildGroupJoinedBattlegroundPacket(&data, int32(bg->GetMapId()));
             member->GetSession()->SendPacket(&data);
             DEBUG_LOG("Battleground: player joined queue for bg queue type %u bg type %u: GUID %u, NAME %s", bgQueueTypeId, bgTypeId, member->GetGUIDLow(), member->GetName());
         }
@@ -241,7 +241,7 @@ void WorldSession::HandleBattleGroundPlayerPositionsOpcode(WorldPacket & /*recv_
             if (flagCarrierHorde)
                 { ++flagCarrierCount; }
 
-            WorldPacket data(MSG_BATTLEGROUND_PLAYER_POSITIONS, 4 + 4 + 16 * flagCarrierCount);
+            WorldPacket data(MSG_BATTLEGROUND_PLAYER_POSITIONS, 4 + 4 + 16 * flagCarrierCount); // FIXME wrong format
             data << uint32(0);
             data << uint32(flagCarrierCount);
 

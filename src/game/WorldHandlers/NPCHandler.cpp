@@ -50,7 +50,7 @@ enum StableResultCode
 {
     STABLE_ERR_MONEY        = 0x01,                         // "you don't have enough money"
     STABLE_ERR_STABLE       = 0x06,                         // currently used in most fail cases
-    STABLE_SUCCESS_STABLE   = 0x08,                         // stable success
+    STABLE_SUCCESS_STABLE   = 0x08,                         // stable success, also 0x07
     STABLE_SUCCESS_UNSTABLE = 0x09,                         // unstable/swap success
     STABLE_SUCCESS_BUY_SLOT = 0x0A,                         // buy slot success
 };
@@ -551,11 +551,6 @@ void WorldSession::SendBindPoint(Creature* npc)
 
     // send spell for bind 3286 bind magic
     npc->CastSpell(_player, 3286, true);                    // Bind
-
-    WorldPacket data(SMSG_TRAINER_BUY_SUCCEEDED, (8 + 4));
-    data << npc->GetObjectGuid();
-    data << uint32(3286);                                   // Bind
-    SendPacket(&data);
 
     _player->PlayerTalkClass->CloseGossip();
 }

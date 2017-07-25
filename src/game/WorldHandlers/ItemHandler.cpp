@@ -303,7 +303,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         sObjectMgr.GetItemLocaleStrings(pProto->ItemId, loc_idx, &name, &description);
 
         // override mount level requirements with the settings from the configuration file
-        int requiredLevel = pProto->RequiredLevel;
+        uint32 requiredLevel = pProto->RequiredLevel;
         switch(pProto->ItemId) {
              case 1132: //regular mounts
              case 2411:
@@ -341,7 +341,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
              case 18246:
              case 18247:
              case 18248:
-                 requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
+                 requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
                  break;
             case 12302: // epic mounts
             case 12303:
@@ -379,7 +379,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
             case 18797:
             case 18798:
             case 18902:
-                requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
+                requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL);
                 break;
         }
 
@@ -389,7 +389,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         data << pProto->Class;
         // client known only 0 subclass (and 1-2 obsolute subclasses)
         data << (pProto->Class == ITEM_CLASS_CONSUMABLE ? uint32(0) : pProto->SubClass);
-        data << name;
+        data << name;                                       // max length of any of 4 names: 256 bytes
         data << uint8(0x00);                                // pProto->Name2; // blizz not send name there, just uint8(0x00); <-- \0 = empty string = empty name...
         data << uint8(0x00);                                // pProto->Name3; // blizz not send name there, just uint8(0x00);
         data << uint8(0x00);                                // pProto->Name4; // blizz not send name there, just uint8(0x00);
@@ -516,18 +516,23 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
         WorldPacket data;
 
         InventoryResult msg = _player->CanUseItem(pItem);
+        // TODO check player knowing GetProto()->LanguageID and handle both cases properly
+        // now this requirement is ignored serverside, will get EQUIP_ERR_OK
         if (msg == EQUIP_ERR_OK)
         {
             data.Initialize(SMSG_READ_ITEM_OK, 8);
+            data << ObjectGuid(pItem->GetObjectGuid());
             DETAIL_LOG("STORAGE: Item page sent");
         }
         else
         {
-            data.Initialize(SMSG_READ_ITEM_FAILED, 8);
+            data.Initialize(SMSG_READ_ITEM_FAILED, 8 + 1);
+            data << ObjectGuid(pItem->GetObjectGuid());
+            data << uint8(0);                       // 0..2, read failure reason? if == 1, use next command
+            // data << uint32(0);                     // pItem->GetProto()->LanguageID or clientside delay in ms to "translate" item?
             DETAIL_LOG("STORAGE: Unable to read item");
             _player->SendEquipError(msg, pItem, NULL);
         }
-        data << ObjectGuid(pItem->GetObjectGuid());
         SendPacket(&data);
     }
     else
@@ -1041,8 +1046,14 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
     ObjectGuid guid;
     recvPacket >> guid;
 
+    WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
+
     if (!CheckBanker(guid))
-        { return; }
+    {
+        data << uint32(ERR_BANKSLOT_NOTBANKER);
+        SendPacket(&data);
+        return;
+    }
 
     uint32 slot = _player->GetBankBagSlotCount();
 
@@ -1052,8 +1063,6 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
     DETAIL_LOG("PLAYER: Buy bank bag slot, slot number = %u", slot);
 
     BankBagSlotPricesEntry const* slotEntry = sBankBagSlotPricesStore.LookupEntry(slot);
-
-    WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
 
     if (!slotEntry)
     {
@@ -1073,9 +1082,6 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 
     _player->SetBankBagSlotCount(slot);
     _player->ModifyMoney(-int32(price));
-
-    data << uint32(ERR_BANKSLOT_OK);
-    SendPacket(&data);
 }
 
 void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)
@@ -1209,7 +1215,7 @@ void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
         WorldPacket data(SMSG_ITEM_NAME_QUERY_RESPONSE, (4 + 10));
         data << uint32(pProto->ItemId);
         data << name;
-        data << uint32(pProto->InventoryType);
+        //data << uint32(pProto->InventoryType);    [-ZERO]
         SendPacket(&data);
         return;
     }

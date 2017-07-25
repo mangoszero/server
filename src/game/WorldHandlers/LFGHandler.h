@@ -38,11 +38,11 @@ enum MeetingstoneQueueStatus
 
 enum MeetingstoneFailedStatus
 {
-    MEETINGSTONE_FAIL_NONE                                  = 0,
+    MEETINGSTONE_FAIL_NONE                                  = 0, // custom, not to be sent
     MEETINGSTONE_FAIL_PARTYLEADER                           = 1,
     MEETINGSTONE_FAIL_FULL_GROUP                            = 2,
     MEETINGSTONE_FAIL_RAID_GROUP                            = 3,
-    MEETINGSTONE_FAIL_NONE_UNK                              = 4
+    //MEETINGSTONE_FAIL_NONE_UNK                              = 4 [-ZERO]
 };
 
 #endif

@@ -6293,8 +6293,8 @@ bool ChatHandler::HandleSendMassMailCommand(char* args)
         return false;
     }
 
-    // from console show nonexistent sender
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetObjectGuid().GetCounter() : 0, MAIL_STATIONERY_GM);
+    // GM mail
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     sMassMailMgr.AddMassMailTask(draft, sender, raceMask);
 
@@ -6398,8 +6398,7 @@ bool ChatHandler::HandleSendItemsCommand(char* args)
     if (!HandleSendItemsHelper(draft, args))
         { return false; }
 
-    // from console show nonexistent sender
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetObjectGuid().GetCounter() : 0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(receiver, receiver_guid), sender);
 
@@ -6429,8 +6428,7 @@ bool ChatHandler::HandleSendMassItemsCommand(char* args)
         return false;
     }
 
-    // from console show nonexistent sender
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetObjectGuid().GetCounter() : 0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     sMassMailMgr.AddMassMailTask(draft, sender, raceMask);
 
@@ -6479,8 +6477,7 @@ bool ChatHandler::HandleSendMoneyCommand(char* args)
     if (!HandleSendMoneyHelper(draft, args))
         { return false; }
 
-    // from console show nonexistent sender
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetObjectGuid().GetCounter() : 0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(receiver, receiver_guid), sender);
 
@@ -6510,7 +6507,7 @@ bool ChatHandler::HandleSendMassMoneyCommand(char* args)
     }
 
     // from console show nonexistent sender
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetObjectGuid().GetCounter() : 0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
 
     sMassMailMgr.AddMassMailTask(draft, sender, raceMask);
 
