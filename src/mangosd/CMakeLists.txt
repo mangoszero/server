@@ -18,6 +18,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 set(EXECUTABLE_NAME mangosd)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 #Main Files
 file(GLOB SRC_GRP_MAIN *.cpp *.h)
@@ -34,8 +35,25 @@ if(SOAP)
 endif()
 
 if(WIN32)
+include(generate_product_version)
+generate_product_version(
+    VersionFilesOutputVariable
+    NAME "mangosd.exe"
+    ICON ${CMAKE_SOURCE_DIR}/src/mangosd/mangosd.ico
+    VERSION_MAJOR 0
+    VERSION_MINOR 21
+    VERSION_PATH ${BUILD_COUNTER}
+    VERSION_REVISION ${BUILD_REVISION}
+	COMPANY_NAME "getmangos.eu"
+# Do not alter, remove or prevent COMPANY_COPYRIGHT from displaying
+	COMPANY_COPYRIGHT
+	FILE_DESCRIPTION "Mangos Zero Server Daemon"
+)
+endif()
+
+if(WIN32)
     # add resource file to windows build
-    set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} mangosd.rc)
+    set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} VersionResource.rc)
 endif()
 
 include_directories(
