@@ -1964,7 +1964,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
     std::string safe_author = author;
     LoginDatabase.escape_string(safe_author);
 
-    QueryResult* resultAccounts = NULL;                     // used for kicking
+    QueryResult* resultAccounts;                     // used for kicking
 
     ///- Update the database with ban information
     switch (mode)

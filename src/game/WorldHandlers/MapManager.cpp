@@ -102,13 +102,12 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
 {
     ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
 
-    Map* m = NULL;
-
     const MapEntry* entry = sMapStore.LookupEntry(id);
     if (!entry)
         { return NULL; }
 
-    if (entry->Instanceable())
+	Map* m;
+	if (entry->Instanceable())
     {
         MANGOS_ASSERT(obj && obj->GetTypeId() == TYPEID_PLAYER);
         // create DungeonMap object
@@ -310,7 +309,7 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
 {
     Map* map = NULL;
     Map* pNewMap = NULL;
-    uint32 NewInstanceId = 0;                               // instanceId of the resulting map
+    uint32 NewInstanceId;                               // instanceId of the resulting map
     const MapEntry* entry = sMapStore.LookupEntry(id);
 
     if (entry->IsBattleGround())

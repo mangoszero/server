@@ -1619,7 +1619,6 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
             damageInfo->HitInfo |= HITINFO_GLANCING;
             damageInfo->TargetState = VICTIMSTATE_NORMAL;
             damageInfo->procEx |= PROC_EX_NORMAL_HIT;
-            float reducePercent = 1.0f;                     // damage factor
             // calculate base values and mods
             float baseLowEnd = 1.3f;
             float baseHighEnd = 1.2f;
@@ -1662,7 +1661,7 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
             if (lowEnd > highEnd)                           // prevent negative range size
                 { lowEnd = highEnd; }
 
-            reducePercent = lowEnd + rand_norm_f() * (highEnd - lowEnd);
+            float reducePercent = lowEnd + rand_norm_f() * (highEnd - lowEnd);
 
             damageInfo->cleanDamage += damageInfo->damage - uint32(reducePercent *  damageInfo->damage);
             damageInfo->damage   = uint32(reducePercent *  damageInfo->damage);
@@ -1865,7 +1864,6 @@ void Unit::HandleEmote(uint32 emote_id)
 
 uint32 Unit::CalcArmorReducedDamage(Unit* pVictim, const uint32 damage)
 {
-    uint32 newdamage = 0;
     float armor = (float)pVictim->GetArmor();
 
     // Ignore enemy armor by SPELL_AURA_MOD_TARGET_RESISTANCE aura
@@ -1884,7 +1882,7 @@ uint32 Unit::CalcArmorReducedDamage(Unit* pVictim, const uint32 damage)
     if (tmpvalue > 0.75f)
         { tmpvalue = 0.75f; }
 
-    newdamage = uint32(damage - (damage * tmpvalue));
+    uint32 newdamage = uint32(damage - (damage * tmpvalue));
 
     return (newdamage > 1) ? newdamage : 1;
 }
@@ -2944,7 +2942,7 @@ float Unit::GetUnitCriticalChance(WeaponAttackType attackType, const Unit* pVict
 
 uint32 Unit::GetWeaponSkillValue(WeaponAttackType attType, Unit const* target) const
 {
-    uint32 value = 0;
+    uint32 value;
     if (GetTypeId() == TYPEID_PLAYER)
     {
         Item* item = ((Player*)this)->GetWeaponForAttack(attType, true, true);
@@ -6621,8 +6619,6 @@ bool Unit::IsTargetableForAttack(bool inverseAlive /*=false*/) const
 
 int32 Unit::ModifyHealth(int32 dVal)
 {
-    int32 gain = 0;
-
     if (dVal == 0)
         { return 0; }
 
@@ -6637,7 +6633,8 @@ int32 Unit::ModifyHealth(int32 dVal)
 
     int32 maxHealth = (int32)GetMaxHealth();
 
-    if (val < maxHealth)
+	int32 gain;
+	if (val < maxHealth)
     {
         SetHealth(val);
         gain = val - curHealth;
@@ -6653,8 +6650,6 @@ int32 Unit::ModifyHealth(int32 dVal)
 
 int32 Unit::ModifyPower(Powers power, int32 dVal)
 {
-    int32 gain = 0;
-
     if (dVal == 0)
         { return 0; }
 
@@ -6669,6 +6664,7 @@ int32 Unit::ModifyPower(Powers power, int32 dVal)
 
     int32 maxPower = (int32)GetMaxPower(power);
 
+	int32 gain;
     if (val < maxPower)
     {
         SetPower(power, val);
@@ -7610,7 +7606,7 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
         return false;
     }
 
-    float val = 1.0f;
+	float val;
 
     switch (modifierType)
     {

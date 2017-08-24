@@ -988,7 +988,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         }
         case ACTION_T_SUMMON_UNIQUE:                    //49
         {
-            Creature* pCreature = NULL;
+            Creature* pCreature;
 
             MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*m_creature, action.summon_unique.creatureId, true, false, 100, true);
             MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreature, u_check);
