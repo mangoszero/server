@@ -436,7 +436,7 @@ WaypointNode const* WaypointManager::AddNode(uint32 entry, uint32 dbGuid, uint32
     // Prepare information
     char const* const table     = wpDest == PATH_FROM_GUID ? "creature_movement" : "creature_movement_template";
     char const* const key_field = wpDest == PATH_FROM_GUID ? "id" : "entry";
-    uint32 const key            = wpDest == PATH_FROM_GUID ? dbGuid : ((entry << 8) /*+ pathId*/);
+    uint32 key            = wpDest == PATH_FROM_GUID ? dbGuid : ((entry << 8) /*+ pathId*/);
     WaypointPathMap* wpMap      = wpDest == PATH_FROM_GUID ? &m_pathMap : &m_pathTemplateMap;
 
     WaypointPath& path = (*wpMap)[key];

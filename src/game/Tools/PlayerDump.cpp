@@ -282,7 +282,7 @@ void StoreGUID(QueryResult* result, uint32 data, uint32 field, std::set<uint32>&
 void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char const* tableFrom, char const* tableTo, DumpTableType type)
 {
     GUIDs const* guids = NULL;
-    char const* fieldname = NULL;
+    char const* fieldname;
 
     switch (type)
     {
@@ -420,7 +420,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
     if (!fin)
         { return DUMP_FILE_OPEN_ERROR; }
 
-    QueryResult* result = NULL;
+    QueryResult* result;
     char newguid[20], chraccount[20], newpetid[20], currpetid[20], lastpetid[20];
 
     // make sure the same guid doesn't already exist and is safe to use

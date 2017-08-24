@@ -13505,13 +13505,7 @@ void Player::TalkedToCreature(uint32 entry, ObjectGuid guid)
                     // skip spell casts and Gameobject objectives
                     if (qInfo->ReqSpell[j] > 0 || qInfo->ReqCreatureOrGOId[j] < 0)
                         { continue; }
-
-                    uint32 reqTarget = 0;
-
-                    if (qInfo->ReqCreatureOrGOId[j] > 0)    // creature activate objectives
-                        // checked at quest_template loading
-                        { reqTarget = qInfo->ReqCreatureOrGOId[j]; }
-                    else
+					uint32 reqTarget = qInfo->ReqCreatureOrGOId[j];
                         { continue; }
 
                     if (reqTarget == entry)
@@ -17059,13 +17053,12 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     uint32 totalcost = 0;
 
     uint32 prevnode = sourcenode;
-    uint32 lastnode = 0;
 
     for (uint32 i = 1; i < nodes.size(); ++i)
     {
         uint32 path, cost;
 
-        lastnode = nodes[i];
+        uint32 lastnode = nodes[i];
         sObjectMgr.GetTaxiPath(prevnode, lastnode, path, cost);
 
         if (!path)
@@ -17162,7 +17155,6 @@ void Player::ContinueTaxiFlight()
 
     TaxiPathNodeList const& nodeList = sTaxiPathNodesByPath[path];
 
-    float distPrev = MAP_SIZE * MAP_SIZE;
     float distNext =
         (nodeList[0].x - GetPositionX()) * (nodeList[0].x - GetPositionX()) +
         (nodeList[0].y - GetPositionY()) * (nodeList[0].y - GetPositionY()) +
@@ -17177,7 +17169,7 @@ void Player::ContinueTaxiFlight()
         if (node.mapid != GetMapId())
             { continue; }
 
-        distPrev = distNext;
+        float distPrev = distNext;
 
         distNext =
             (node.x - GetPositionX()) * (node.x - GetPositionX()) +

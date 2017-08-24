@@ -2306,7 +2306,7 @@ bool Map::GetReachableRandomPointOnGround(float& x, float& y, float& z, float ra
     if (delta > 0.0f)       // check to avoid divide by 0
     {
         // compute slope
-        slope = atan(ac / delta);
+        float slope = atan(ac / delta);
         if (slope < MAX_SLOPE_IN_RADIAN)
         {
             x = i_x;
