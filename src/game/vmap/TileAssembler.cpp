@@ -300,7 +300,6 @@ namespace VMAP
     //=================================================================
     bool TileAssembler::convertRawFile(const std::string& pModelFilename, const char *RAW_VMAP_MAGIC)
     {
-        bool success = true;
         std::string filename = iSrcDir;
         if (filename.length() > 0)
             { filename.append("/"); }
@@ -329,9 +328,7 @@ namespace VMAP
             model.SetGroupModels(groupsArray);
         }
 
-        success = model.WriteFile(iDestDir + "/" + pModelFilename + ".vmo");
-
-        return success;
+		return model.WriteFile(iDestDir + "/" + pModelFilename + ".vmo");
     }
 
     void TileAssembler::exportGameobjectModels(const char *RAW_VMAP_MAGIC)

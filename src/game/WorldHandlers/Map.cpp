@@ -2336,14 +2336,11 @@ bool Map::GetReachableRandomPointOnGround(float& x, float& y, float& z, float ra
 // Get random point by handling different situation depending of if the unit is flying/swimming/walking
 bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, float radius)
 {
-
     float i_x = x;
     float i_y = y;
     float i_z = z;
 
-    bool newDestAssigned = false;   // used to check if new random destination is found
-
-    bool isFlying = false;
+	bool isFlying;
     bool isSwimming = true;
     switch (unit->GetTypeId())
     {
@@ -2365,7 +2362,8 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
         return false;
     }
 
-    if (isFlying)
+	bool newDestAssigned;
+	if (isFlying)
     {
         newDestAssigned = GetRandomPointInTheAir(i_x, i_y, i_z, radius);
     }
