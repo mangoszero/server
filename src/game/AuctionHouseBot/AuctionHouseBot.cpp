@@ -841,7 +841,6 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
 
 bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, double MaxBidablePrice, uint32 MinBidPrice, uint32 MaxChance, uint32 ChanceRatio)
 {
-    double ratio = 0;
     uint32 Chance = 0;
 
     if (bidPrice <= MinBidPrice)
@@ -852,7 +851,7 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
         {
             if (bidPrice < MaxBidablePrice)
             {
-                ratio = MaxBidablePrice / bidPrice;
+                double ratio = MaxBidablePrice / bidPrice;
                 if (ratio < 3)
                     { Chance = ((MaxChance / 500) * ratio); }
                 else
@@ -866,7 +865,7 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
     {
         if (bidPrice < MaxBidablePrice)
         {
-            ratio = MaxBidablePrice / bidPrice;
+            double ratio = MaxBidablePrice / bidPrice;
             if (ratio < 4)
                 { Chance = ((MaxChance / 1000) * ratio); }
             else
