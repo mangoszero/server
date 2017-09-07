@@ -1409,6 +1409,14 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             }
             break;
         }
+        case SPELLFAMILY_PALADIN:
+        {
+            // Seal of the Crusader deals less damage with each attack. -28% damage,multiple tests.
+            if (GetSpellProto()->SpellIconID == 237 && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x00000200))
+                target->HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_PCT, -28.0f, apply);
+
+            break;
+        }
     }
 
     // pet auras
