@@ -13505,8 +13505,7 @@ void Player::TalkedToCreature(uint32 entry, ObjectGuid guid)
                     // skip spell casts and Gameobject objectives
                     if (qInfo->ReqSpell[j] > 0 || qInfo->ReqCreatureOrGOId[j] < 0)
                         { continue; }
-					uint32 reqTarget = qInfo->ReqCreatureOrGOId[j];
-                        { continue; }
+                    uint32 reqTarget = qInfo->ReqCreatureOrGOId[j];
 
                     if (reqTarget == entry)
                     {
