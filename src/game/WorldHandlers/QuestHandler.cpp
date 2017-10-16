@@ -490,7 +490,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
     if (Player* pPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid()))
     {
         WorldPacket data(MSG_QUEST_PUSH_RESULT, (8 + 1));
-        data << ObjectGuid(guid);
+        data << _player->GetObjectGuid();
         data << uint8(msg);               // enum QuestShareMessages
         pPlayer->GetSession()->SendPacket(&data);
         _player->ClearDividerGuid();
