@@ -84,6 +84,12 @@ class HashMapHolder
         static MapType  m_objectMap;
 };
 
+/// Define the static member of HashMapHolder
+
+template <class T> typename HashMapHolder<T>::MapType HashMapHolder<T>::m_objectMap;
+template <class T> typename HashMapHolder<T>::LockType HashMapHolder<T>::i_lock;
+
+
 class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Thread_Mutex> >
 {
         friend class MaNGOS::OperatorNew<ObjectAccessor>;
