@@ -158,45 +158,41 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     data << uint32(matchcount);                             // placeholder, count of players matching criteria
     data << uint32(displaycount);                           // placeholder, count of players displayed
 
-    // TODO: Guard Player map
-    HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
-    for (HashMapHolder<Player>::MapType::const_iterator itr = m.begin(); itr != m.end(); ++itr)
+    sObjectAccessor.DoForAllPlayers([&](Player* pl)
     {
-        Player* pl = itr->second;
-
         if (security == SEC_PLAYER)
         {
             // player can see member of other team only if CONFIG_BOOL_ALLOW_TWO_SIDE_WHO_LIST
             if (pl->GetTeam() != team && !allowTwoSideWhoList)
-                { continue; }
+                { return; }
 
             // player can see MODERATOR, GAME MASTER, ADMINISTRATOR only if CONFIG_GM_IN_WHO_LIST
             if (pl->GetSession()->GetSecurity() > gmLevelInWhoList)
-                { continue; }
+                { return; }
         }
 
         // do not process players which are not in world
         if (!pl->IsInWorld())
-            { continue; }
+            { return; }
 
         // check if target is globally visible for player
         if (!pl->IsVisibleGloballyFor(_player))
-            { continue; }
+            { return; }
 
         // check if target's level is in level range
         uint32 lvl = pl->getLevel();
         if (lvl < level_min || lvl > level_max)
-            { continue; }
+            { return; }
 
         // check if class matches classmask
         uint32 class_ = pl->getClass();
         if (!(classmask & (1 << class_)))
-            { continue; }
+            { return; }
 
         // check if race matches racemask
         uint32 race = pl->getRace();
         if (!(racemask & (1 << race)))
-            { continue; }
+            { return; }
 
         uint32 pzoneid = pl->GetZoneId();
 
@@ -214,25 +210,25 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             z_show = false;
         }
         if (!z_show)
-            { continue; }
+            { return; }
 
         std::string pname = pl->GetName();
         std::wstring wpname;
         if (!Utf8toWStr(pname, wpname))
-            { continue; }
+            { return; }
         wstrToLower(wpname);
 
         if (!(wplayer_name.empty() || wpname.find(wplayer_name) != std::wstring::npos))
-            { continue; }
+            { return; }
 
         std::string gname = sGuildMgr.GetGuildNameById(pl->GetGuildId());
         std::wstring wgname;
         if (!Utf8toWStr(gname, wgname))
-            { continue; }
+            { return; }
         wstrToLower(wgname);
 
         if (!(wguild_name.empty() || wgname.find(wguild_name) != std::wstring::npos))
-            { continue; }
+            { return; }
 
         std::string aname;
         if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(pzoneid))
@@ -254,12 +250,12 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             }
         }
         if (!s_show)
-            { continue; }
+            { return; }
 
         // 49 is maximum player count sent to client
         ++matchcount;
         if (matchcount > 49)
-            continue;
+            return;
 
         ++displaycount;
 
@@ -269,7 +265,7 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
         data << uint32(class_);                             // player class
         data << uint32(race);                               // player race
         data << uint32(pzoneid);                            // player zone id
-    }
+    });
 
     data.put(0, displaycount);                              // insert right count, count displayed
     data.put(4, matchcount);                                // insert right count, count of matches
@@ -418,7 +414,7 @@ void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
     _player->SetTargetGuid(guid);
 
     // update reputation list if need
-    Unit* unit = ObjectAccessor::GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
         { return; }
 
@@ -440,7 +436,7 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
     }
 
     // update reputation list if need
-    Unit* unit = ObjectAccessor::GetUnit(*_player, guid);   // can select group members at diff maps
+    Unit* unit = sObjectAccessor.GetUnit(*_player, guid);   // can select group members at diff maps
     if (!unit)
         { return; }
 
@@ -512,7 +508,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
             { friendResult = FRIEND_ALREADY; }
         else
         {
-            Player* pFriend = ObjectAccessor::FindPlayer(friendGuid);
+            Player* pFriend = sObjectAccessor.FindPlayer(friendGuid);
             if (pFriend && pFriend->IsInWorld() && pFriend->IsVisibleGloballyFor(player))
                 { friendResult = FRIEND_ADDED_ONLINE; }
             else

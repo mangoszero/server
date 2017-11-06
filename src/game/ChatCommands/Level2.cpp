@@ -897,7 +897,7 @@ bool ChatHandler::HandleGameObjectDeleteCommand(char* args)
 
     if (ObjectGuid ownerGuid = obj->GetOwnerGuid())
     {
-        Unit* owner = ObjectAccessor::GetUnit(*m_session->GetPlayer(), ownerGuid);
+        Unit* owner = sObjectAccessor.GetUnit(*m_session->GetPlayer(), ownerGuid);
         if (!owner || !ownerGuid.IsPlayer())
         {
             PSendSysMessage(LANG_COMMAND_DELOBJREFERCREATURE, obj->GetGUIDLow(), ownerGuid.GetString().c_str());

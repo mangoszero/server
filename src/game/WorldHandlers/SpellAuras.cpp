@@ -353,7 +353,7 @@ SingleEnemyTargetAura::~SingleEnemyTargetAura()
 
 Unit* SingleEnemyTargetAura::GetTriggerTarget() const
 {
-    return ObjectAccessor::GetUnit(*(m_spellAuraHolder->GetTarget()), m_castersTargetGuid);
+    return sObjectAccessor.GetUnit(*(m_spellAuraHolder->GetTarget()), m_castersTargetGuid);
 }
 
 Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem)
@@ -4224,7 +4224,7 @@ void Aura::HandleAuraRetainComboPoints(bool apply, bool Real)
     // combo points was added in SPELL_EFFECT_ADD_COMBO_POINTS handler
     // remove only if aura expire by time (in case combo points amount change aura removed without combo points lost)
     if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE && target->GetComboTargetGuid())
-        if (Unit* unit = ObjectAccessor::GetUnit(*GetTarget(), target->GetComboTargetGuid()))
+        if (Unit* unit = sObjectAccessor.GetUnit(*GetTarget(), target->GetComboTargetGuid()))
             { target->AddComboPoints(unit, -m_modifier.m_amount); }
 }
 
@@ -5252,7 +5252,7 @@ Unit* SpellAuraHolder::GetCaster() const
     if (GetCasterGuid() == m_target->GetObjectGuid())
         { return m_target; }
 
-    return ObjectAccessor::GetUnit(*m_target, m_casterGuid);// player will search at any maps
+    return sObjectAccessor.GetUnit(*m_target, m_casterGuid);// player will search at any maps
 }
 
 bool SpellAuraHolder::IsWeaponBuffCoexistableWith(SpellAuraHolder const* ref) const

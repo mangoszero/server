@@ -398,9 +398,9 @@ void PlayerLogger::SetLogActiveMask(PlayerLogEntity entity, bool on)
 
 Player* PlayerLogger::GetPlayer() const
 {
-    Player* pl = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
+    Player* pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
     if (!pl)
-        pl = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
+        pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
 
     if (!pl)
         sLog.outError("PlayerLogger: cannot get current player! Ignoring the record.");

@@ -79,7 +79,7 @@ AccountOpResult AccountMgr::DeleteAccount(uint32 accid)
             ObjectGuid guid = ObjectGuid(HIGHGUID_PLAYER, guidlo);
 
             // kick if player currently
-            ObjectAccessor::KickPlayer(guid);
+            sObjectAccessor.KickPlayer(guid);
             Player::DeleteFromDB(guid, accid, false);       // no need to update realm characters
         }
         while (result->NextRow());

@@ -116,7 +116,7 @@ bool DynamicObject::Create(uint32 guidlow, Unit* caster, uint32 spellId, SpellEf
 Unit* DynamicObject::GetCaster() const
 {
     // can be not found in some cases
-    return ObjectAccessor::GetUnit(*this, GetCasterGuid());
+    return sObjectAccessor.GetUnit(*this, GetCasterGuid());
 }
 
 void DynamicObject::Update(uint32 /*update_diff*/, uint32 p_time)

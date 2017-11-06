@@ -122,7 +122,7 @@ void GameObject::RemoveFromWorld()
         // Remove GO from owner
         if (ObjectGuid owner_guid = GetOwnerGuid())
         {
-            if (Unit* owner = ObjectAccessor::GetUnit(*this, owner_guid))
+            if (Unit* owner = sObjectAccessor.GetUnit(*this, owner_guid))
                 { owner->RemoveGameObject(this, false); }
             else
             {
@@ -777,7 +777,7 @@ bool GameObject::IsTransport() const
 
 Unit* GameObject::GetOwner() const
 {
-    return ObjectAccessor::GetUnit(*this, GetOwnerGuid());
+    return sObjectAccessor.GetUnit(*this, GetOwnerGuid());
 }
 
 void GameObject::SaveRespawnTime()
@@ -1945,7 +1945,7 @@ void GameObject::StopGroupLoot()
 
 Player* GameObject::GetOriginalLootRecipient() const
 {
-    return m_lootRecipientGuid ? ObjectAccessor::FindPlayer(m_lootRecipientGuid) : NULL;
+    return m_lootRecipientGuid ? sObjectAccessor.FindPlayer(m_lootRecipientGuid) : NULL;
 }
 
 Group* GameObject::GetGroupLootRecipient() const
