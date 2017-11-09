@@ -5756,7 +5756,8 @@ void Player::CheckAreaExploreAndOutdoor()
             ShapeshiftForm form = GetShapeshiftForm();
             if (!(spellInfo->Stances & (1 << (form - 1))))
                 { continue; }
-
+            if ((spellInfo->Stances || spellInfo->StancesNot) && !IsNeedCastSpellAtFormApply(spellInfo, GetShapeshiftForm()))
+                continue;
             CastSpell(this, itr->first, true, NULL);
         }
     }
