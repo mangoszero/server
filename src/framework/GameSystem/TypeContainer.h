@@ -28,401 +28,176 @@
 /*
  * Here, you'll find a series of containers that allow you to hold multiple
  * types of object at the same time.
+ *
+ * Refactored for C++11 by H0zen
  */
 
-#include <cassert>
-#include <map>
-#include <vector>
-#include "Platform/Define.h"
-#include "Utilities/TypeList.h"
-#include "Utilities/UnorderedMapSet.h"
+#include <cstddef>
+#include <tuple>
+#include <unordered_map>
 #include "GameSystem/GridRefManager.h"
 
-template<class OBJECT, class KEY_TYPE>
-/**
- * @brief
- *
- */
-struct ContainerUnorderedMap
-{
-    UNORDERED_MAP<KEY_TYPE, OBJECT*> _element; /**< TODO */
-};
 
-template<class KEY_TYPE>
-/**
- * @brief
- *
- */
-struct ContainerUnorderedMap<TypeNull, KEY_TYPE>
+// various metaprogramming primitives
+namespace Meta
 {
-};
+  // Gets the index of specified type T in a std::tuple
+  template <class T, class Tuple> struct IndexOf;
 
-template<class H, class T, class KEY_TYPE>
-/**
- * @brief
- *
- */
-struct ContainerUnorderedMap< TypeList<H, T>, KEY_TYPE >
-{
-    ContainerUnorderedMap<H, KEY_TYPE> _elements; /**< TODO */
-    ContainerUnorderedMap<T, KEY_TYPE> _TailElements; /**< TODO */
-};
+  template <class T, class... Types> struct IndexOf<T, std::tuple<T, Types...>>
+  {
+    static const std::size_t value = 0;
+  };
 
-template < class OBJECT_TYPES, class KEY_TYPE = OBJECT_HANDLE >
-/**
- * @brief
- *
- */
+  template <class T, class U, class... Types> struct IndexOf<T, std::tuple<U, Types...>>
+  {
+    static const std::size_t value = 1 + IndexOf<T, std::tuple<Types...>>::value;
+  };
+  //----------------------------------------------------------------------------------------
+
+  // apply a transformation on each element of a tuple
+  template<template<class...> class F, class L> struct Transform_Impl;
+
+  template<template<class...> class F, template<class...> class L, class... T>
+  struct Transform_Impl<F, L<T...>>
+  {
+    using type = L<F<T>...>;
+  };
+
+  template<template<class...> class F, class L>
+  using Transform = typename Transform_Impl<F, L>::type;
+  //----------------------------------------------------------------------------------------
+
+  // convert a tuple A into another tuple B
+  template<class A, template<class...> class B> struct Rename_Impl;
+
+  template<template<class...> class A, class... T, template<class...> class B>
+  struct Rename_Impl<A<T...>, B>
+  {
+    using type = B<T...>;
+  };
+
+  template<class A, template<class...> class B>
+  using Rename = typename Rename_Impl<A, B>::type;
+  //----------------------------------------------------------------------------------------
+
+  //tuple iteration
+  template<size_t index, typename F, typename... Ts>
+  struct iterate_tuple {
+     void operator() (std::tuple<Ts...>&& t, F&& callback) {
+         iterate_tuple<index - 1, F, Ts...>{}(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
+         callback.Visit(std::get<index>(t));
+     }
+  };
+
+  template<typename F, typename... Ts>
+  struct iterate_tuple<0, F, Ts...> {
+     void operator() (std::tuple<Ts...>&& t, F&& callback) {
+         callback.Visit(std::get<0>(t));
+     }
+  };
+
+  template<typename F, typename... Ts>
+  void for_each(std::tuple<Ts...>&& t, F&& callback) {
+     iterate_tuple<std::tuple_size<std::tuple<Ts...>>::value - 1, F, Ts...> it;
+     it(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
+  }
+
+} //Meta namespace end
+
+
+template<typename KEY_TYPE, typename TYPE_LIST>
 class TypeUnorderedMapContainer
 {
+    using Tuple = Meta::Rename<TYPE_LIST,std::tuple>;
+    template <typename T> using add_pointer = T*;
+    template <typename T> using add_wrap = std::unordered_map<KEY_TYPE, T>;
+
+    using Container = Meta::Transform<add_wrap , Meta::Transform<add_pointer, Tuple>>;
+
     public:
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param handle
-         * @param obj
-         * @return bool
-         */
-        bool insert(KEY_TYPE handle, SPECIFIC_TYPE* obj)
+        template <typename T>
+        std::unordered_map<KEY_TYPE, T*>& Get(T*)
         {
-            return TypeUnorderedMapContainer::insert(i_elements, handle, obj);
+            return std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
         }
 
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param handle
-         * @param
-         * @return bool
-         */
-        bool erase(KEY_TYPE handle, SPECIFIC_TYPE* /*obj*/)
+        template <typename T>
+        bool insert(KEY_TYPE handle, T* object)
         {
-            return TypeUnorderedMapContainer::erase(i_elements, handle, (SPECIFIC_TYPE*)NULL);
-        }
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param hdl
-         * @param
-         * @return SPECIFIC_TYPE
-         */
-        SPECIFIC_TYPE* find(KEY_TYPE hdl, SPECIFIC_TYPE* /*obj*/)
-        {
-            return TypeUnorderedMapContainer::find(i_elements, hdl, (SPECIFIC_TYPE*)NULL);
-        }
-
-    private:
-
-        ContainerUnorderedMap<OBJECT_TYPES, KEY_TYPE> i_elements; /**< TODO */
-
-        // Helpers
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief Insert helpers
-         *
-         * @param ContainerUnorderedMap<SPECIFIC_TYPE
-         * @param elements
-         * @param handle
-         * @param obj
-         * @return bool
-         */
-        static bool insert(ContainerUnorderedMap<SPECIFIC_TYPE, KEY_TYPE>& elements, KEY_TYPE handle, SPECIFIC_TYPE* obj)
-        {
-            typename UNORDERED_MAP<KEY_TYPE, SPECIFIC_TYPE*>::iterator i = elements._element.find(handle);
-            if (i == elements._element.end())
+            auto&& _element = std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
+            if (_element.end() == _element.find(handle))
             {
-                elements._element[handle] = obj;
+                _element[handle] = object;
                 return true;
             }
             else
             {
-                assert(i->second == obj && "Object with certain key already in but objects are different!");
+                assert(i->second == object && "Object with certain key already in but objects are different!");
                 return false;
             }
         }
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeNull
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return bool
-         */
-        static bool insert(ContainerUnorderedMap<TypeNull, KEY_TYPE>& /*elements*/, KEY_TYPE /*handle*/, SPECIFIC_TYPE* /*obj*/)
+        template <typename T>
+        bool erase(KEY_TYPE handle, T*)
         {
-            return false;
-        }
-
-        template<class SPECIFIC_TYPE, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<T
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return bool
-         */
-        static bool insert(ContainerUnorderedMap<T, KEY_TYPE>& /*elements*/, KEY_TYPE /*handle*/, SPECIFIC_TYPE* /*obj*/)
-        {
-            return false;
-        }
-
-        template<class SPECIFIC_TYPE, class H, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeList<H
-         * @param T>
-         * @param elements
-         * @param handle
-         * @param obj
-         * @return bool
-         */
-        static bool insert(ContainerUnorderedMap< TypeList<H, T>, KEY_TYPE >& elements, KEY_TYPE handle, SPECIFIC_TYPE* obj)
-        {
-            bool ret = TypeUnorderedMapContainer::insert(elements._elements, handle, obj);
-            return ret ? ret : TypeUnorderedMapContainer::insert(elements._TailElements, handle, obj);
-        }
-
-        // Find helpers
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<SPECIFIC_TYPE
-         * @param elements
-         * @param hdl
-         * @param
-         * @return SPECIFIC_TYPE
-         */
-        static SPECIFIC_TYPE* find(ContainerUnorderedMap<SPECIFIC_TYPE, KEY_TYPE>& elements, KEY_TYPE hdl, SPECIFIC_TYPE* /*obj*/)
-        {
-            typename UNORDERED_MAP<KEY_TYPE, SPECIFIC_TYPE*>::iterator i = elements._element.find(hdl);
-            if (i == elements._element.end())
-                { return NULL; }
-            else
-                { return i->second; }
-        }
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeNull
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return SPECIFIC_TYPE
-         */
-        static SPECIFIC_TYPE* find(ContainerUnorderedMap<TypeNull, KEY_TYPE>& /*elements*/, KEY_TYPE /*hdl*/, SPECIFIC_TYPE* /*obj*/)
-        {
-            return NULL;
-        }
-
-        template<class SPECIFIC_TYPE, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<T
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return SPECIFIC_TYPE
-         */
-        static SPECIFIC_TYPE* find(ContainerUnorderedMap<T, KEY_TYPE>& /*elements*/, KEY_TYPE /*hdl*/, SPECIFIC_TYPE* /*obj*/)
-        {
-            return NULL;
-        }
-
-        template<class SPECIFIC_TYPE, class H, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeList<H
-         * @param T>
-         * @param elements
-         * @param hdl
-         * @param
-         * @return SPECIFIC_TYPE
-         */
-        static SPECIFIC_TYPE* find(ContainerUnorderedMap< TypeList<H, T>, KEY_TYPE >& elements, KEY_TYPE hdl, SPECIFIC_TYPE* /*obj*/)
-        {
-            SPECIFIC_TYPE* ret = TypeUnorderedMapContainer::find(elements._elements, hdl, (SPECIFIC_TYPE*)NULL);
-            return ret ? ret : TypeUnorderedMapContainer::find(elements._TailElements, hdl, (SPECIFIC_TYPE*)NULL);
-        }
-
-        // Erase helpers
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<SPECIFIC_TYPE
-         * @param elements
-         * @param handle
-         * @param
-         * @return bool
-         */
-        static bool erase(ContainerUnorderedMap<SPECIFIC_TYPE, KEY_TYPE>& elements, KEY_TYPE handle, SPECIFIC_TYPE* /*obj*/)
-        {
-            elements._element.erase(handle);
-
+            std::get<Meta::IndexOf<T,Tuple>::value>(i_container).erase(handle);
             return true;
         }
 
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeNull
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return bool
-         */
-        static bool erase(ContainerUnorderedMap<TypeNull, KEY_TYPE>& /*elements*/, KEY_TYPE /*handle*/, SPECIFIC_TYPE* /*obj*/)
+        template <typename T>
+        T* find (KEY_TYPE handle, T*)
         {
-            return false;
+            auto&& _element = std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
+            auto&& iter = _element.find(handle);
+            if (iter == _element.end())
+              { return nullptr; }
+            else
+              { return iter->second; }
         }
-
-        template<class SPECIFIC_TYPE, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<T
-         * @param
-         * @param KEY_TYPE
-         * @param
-         * @return bool
-         */
-        static bool erase(ContainerUnorderedMap<T, KEY_TYPE>& /*elements*/, KEY_TYPE /*handle*/, SPECIFIC_TYPE* /*obj*/)
-        {
-            return false;
-        }
-
-        template<class SPECIFIC_TYPE, class H, class T>
-        /**
-         * @brief
-         *
-         * @param ContainerUnorderedMap<TypeList<H
-         * @param T>
-         * @param elements
-         * @param handle
-         * @param
-         * @return bool
-         */
-        static bool erase(ContainerUnorderedMap< TypeList<H, T>, KEY_TYPE >& elements, KEY_TYPE handle, SPECIFIC_TYPE* /*obj*/)
-        {
-            bool ret = TypeUnorderedMapContainer::erase(elements._elements, handle, (SPECIFIC_TYPE*)NULL);
-            return ret ? ret : TypeUnorderedMapContainer::erase(elements._TailElements, handle, (SPECIFIC_TYPE*)NULL);
-        }
-};
-
-template<class OBJECT>
-/**
- * @brief ontainerMapList is a multi-type container for map elements
- *
- * By itself its meaningless but collaborate along with TypeContainers,
- * it become the most powerfully container in the whole system.
- *
- */
-struct ContainerMapList
-{
-    GridRefManager<OBJECT> _element; /**< TODO */
-};
-
-template<>
-/**
- * @brief
- *
- */
-struct ContainerMapList<TypeNull>                           /* nothing is in type null */
-{
-};
-
-template<class H, class T>
-/**
- * @brief
- *
- */
-struct ContainerMapList<TypeList<H, T> >
-{
-    ContainerMapList<H> _elements; /**< TODO */
-    ContainerMapList<T> _TailElements; /**< TODO */
-};
-
-#include "TypeContainerFunctions.h"
-
-template<class OBJECT_TYPES>
-/**
- * @brief TypeMapContainer contains a fixed number of types and is determined at compile time.
- *
- * This is probably the most complicated class and do its simplest thing: holds
- * objects of different types.
- *
- */
-class TypeMapContainer
-{
-    public:
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief
-         *
-         * @return size_t
-         */
-        size_t Count() const { return MaNGOS::Count(i_elements, (SPECIFIC_TYPE*)NULL); }
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief inserts a specific object into the container
-         *
-         * @param obj
-         * @return bool
-         */
-        bool insert(SPECIFIC_TYPE* obj)
-        {
-            SPECIFIC_TYPE* t = MaNGOS::Insert(i_elements, obj);
-            return (t != NULL);
-        }
-
-        template<class SPECIFIC_TYPE>
-        /**
-         * @brief Removes the object from the container, and returns the removed object
-         *
-         * @param obj
-         * @return bool
-         */
-        bool remove(SPECIFIC_TYPE* obj)
-        {
-            SPECIFIC_TYPE* t = MaNGOS::Remove(i_elements, obj);
-            return (t != NULL);
-        }
-
-        /**
-         * @brief
-         *
-         * @return ContainerMapList<OBJECT_TYPES>
-         */
-        ContainerMapList<OBJECT_TYPES>& GetElements() { return i_elements; }
-        /**
-         * @brief
-         *
-         * @return const ContainerMapList<OBJECT_TYPES>
-         */
-        const ContainerMapList<OBJECT_TYPES>& GetElements() const { return i_elements;}
 
     private:
+      Container i_container;
+};
 
-        ContainerMapList<OBJECT_TYPES> i_elements; /**< TODO */
+//TypeMapContainer
+
+template<typename TYPE_LIST>
+class TypeMapContainer
+{
+    using Tuple = Meta::Rename<TYPE_LIST,std::tuple>;
+    template <typename T> using add_wrap = GridRefManager<T>;
+
+    using Container = Meta::Transform<add_wrap, Tuple>;
+
+    public:
+        template <typename T>
+        size_t count(T*) const 
+        {
+            return std::get<Meta::IndexOf<T,Tuple>::value>(i_container).getSize();
+        }
+
+        template <typename T>
+        T* insert(T* obj)
+        {
+            obj->GetGridRef().link(&std::get<Meta::IndexOf<T,Tuple>::value>(i_container), obj);
+            return obj;
+        }
+
+        template <typename T>
+        T* remove(T* obj)
+        {
+            obj->GetGridRef().unlink();
+            return obj;
+        }
+
+        template <typename Visitor>
+        void accept(Visitor&& v)
+        {
+            Meta::for_each(std::forward<Container>(i_container), std::forward<Visitor>(v));
+        }
+
+    private:
+      Container i_container;
 };
 
 #endif

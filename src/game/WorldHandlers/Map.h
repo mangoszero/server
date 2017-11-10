@@ -232,7 +232,7 @@ class Map : public GridRefManager<NGridType>
         Unit* GetUnit(ObjectGuid guid);                     // only use if sure that need objects at current map, specially for player case
         WorldObject* GetWorldObject(ObjectGuid guid);       // only use if sure that need objects at current map, specially for player case
 
-        typedef TypeUnorderedMapContainer<AllMapStoredObjectTypes, ObjectGuid> MapStoredObjectTypesContainer;
+        using MapStoredObjectTypesContainer = TypeUnorderedMapContainer<ObjectGuid, TypeList<Creature, Pet, GameObject, DynamicObject>> ;
         MapStoredObjectTypesContainer& GetObjectsStore() { return m_objectsStore; }
 
         void AddUpdateObject(Object* obj)
