@@ -108,8 +108,6 @@ elseif(UNIX)
     )
 
     if(CMAKE_C_COMPILER MATCHES "gcc" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-
         if(PLATFORM EQUAL 32)
             set(SSE_FLAGS "-msse2 -mfpmath=sse")
             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SSE_FLAGS}")

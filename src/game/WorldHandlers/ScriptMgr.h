@@ -678,7 +678,7 @@ class ScriptMgr
         void CheckScriptTexts(std::set<int32>& ids);
 
         typedef std::vector<std::string> ScriptNameMap;
-        typedef UNORDERED_MAP<int32, uint32> EntryToScriptIdMap;
+        typedef std::unordered_map<int32, uint32> EntryToScriptIdMap;
 
         EntryToScriptIdMap m_scriptBind[SCRIPTED_MAX_TYPE];
 

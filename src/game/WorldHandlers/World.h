@@ -441,7 +441,7 @@ struct CliCommandHolder
 
 /// The World
 
-typedef UNORDERED_MAP<uint32, WorldSession*> SessionMap;
+typedef std::unordered_map<uint32, WorldSession*> SessionMap;
 
 class World
 {

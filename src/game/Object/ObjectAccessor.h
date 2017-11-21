@@ -30,15 +30,14 @@
 #include "Policies/Singleton.h"
 #include <ace/Thread_Mutex.h>
 #include <ace/RW_Thread_Mutex.h>
-#include "Utilities/UnorderedMapSet.h"
 #include "Policies/ThreadingModel.h"
-
 #include "UpdateData.h"
-
 #include "GridDefines.h"
 #include "Object.h"
 #include "Player.h"
 #include "Corpse.h"
+
+#include <unordered_map>
 
 class Unit;
 class WorldObject;
@@ -56,7 +55,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         template <class T>
         struct HashMapHolder
         {
-            using MapType = UNORDERED_MAP<ObjectGuid, T*>;
+            using MapType = std::unordered_map<ObjectGuid, T*>;
             using LockType = ACE_RW_Thread_Mutex;
 
             HashMapHolder() : i_lock(NULL), m_objectMap() {}
@@ -89,7 +88,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
 
         };
 
-        using Player2CorpsesMapType = UNORDERED_MAP<ObjectGuid, Corpse*>;
+        using Player2CorpsesMapType = std::unordered_map<ObjectGuid, Corpse*>;
         using LockType = ACE_RW_Thread_Mutex;
 
     public:

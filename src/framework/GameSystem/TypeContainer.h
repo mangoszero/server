@@ -34,7 +34,7 @@
 
 #include <cstddef>
 #include <tuple>
-#include "Utilities/UnorderedMapSet.h"
+#include <unordered_map>
 #include "GameSystem/GridRefManager.h"
 
 
@@ -111,7 +111,7 @@ class TypeUnorderedMapContainer
 {
     using Tuple = Meta::Rename<TYPE_LIST,std::tuple>;
     template <typename T> using add_pointer = T*;
-    template <typename T> using add_wrap = UNORDERED_MAP<KEY_TYPE, T>;
+    template <typename T> using add_wrap = std::unordered_map<KEY_TYPE, T>;
 
     using Container = Meta::Transform<add_wrap , Meta::Transform<add_pointer, Tuple>>;
 

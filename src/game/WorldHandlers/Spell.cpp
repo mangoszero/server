@@ -2617,8 +2617,8 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
         m_caster->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
 
-    // add non-triggered (with cast time and without)
-    if (!m_IsTriggeredSpell)
+    // add non-triggered (with cast time and without) or triggered channeled
+    if (!m_IsTriggeredSpell || IsChanneledSpell(m_spellInfo))
     {
         // add to cast type slot
         m_caster->SetCurrentCastedSpell(this);
@@ -2759,7 +2759,11 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_ROGUE:
                 {
                 // exit stealth on sap when improved sap is not skilled 
-                if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
+                if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) &&
+                    m_caster->GetTypeId() == TYPEID_PLAYER && (
+                    !m_caster->GetAura(14076, SpellEffectIndex(0)) &&
+                    !m_caster->GetAura(14094, SpellEffectIndex(0)) &&
+                    !m_caster->GetAura(14095, SpellEffectIndex(0))))
                 m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
                 }
         case SPELLFAMILY_WARRIOR:
@@ -2767,10 +2771,10 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_PRIEST:
         {
             // Power Word: Shield
-            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_PRIEST && m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))
+            if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))
                 { AddPrecastSpell(6788); }                      // Weakened Soul
 
-            switch (m_spellInfo->Id)
+            switch (m_spellInfo->Id) //TODO: Move these into spell_linked table!!!
             {
                 case 15237: AddTriggeredSpell(23455); break;// Holy Nova, rank 1
                 case 15430: AddTriggeredSpell(23458); break;// Holy Nova, rank 2
