@@ -16,6 +16,3 @@
 [submodule "win"]
 	path = win
 	url = https://github.com/mangostools/EasyBuild
-[submodule "src/modules/Eluna"]
-	path = src/modules/Eluna
-	url = https://github.com/MangosServer/Eluna.git
