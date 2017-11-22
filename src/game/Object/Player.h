@@ -1337,7 +1337,7 @@ class Player : public Unit
         // The returned quest can then be used by AddQuest( ) to add to the character_queststatus table
         Quest const* GetQuestTemplate(uint32 quest_id);
         void AddQuest(Quest const* pQuest, Object* questGiver);
-        void CompleteQuest(uint32 quest_id, QuestStatus status = QUEST_STATUS_FORCE_COMPLETE);
+        void CompleteQuest(uint32 quest_id, QuestStatus status = QUEST_STATUS_COMPLETE);
         void IncompleteQuest(uint32 quest_id);
         void RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver, bool announce = true);
 
