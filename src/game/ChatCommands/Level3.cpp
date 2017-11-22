@@ -5004,7 +5004,7 @@ bool ChatHandler::HandleQuestCompleteCommand(char* args)
     if (ReqOrRewMoney < 0)
         { player->ModifyMoney(-ReqOrRewMoney); }
 
-    player->CompleteQuest(entry);
+    player->CompleteQuest(entry, QUEST_STATUS_FORCE_COMPLETE);
     return true;
 }
 
