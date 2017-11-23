@@ -5756,8 +5756,9 @@ void Player::CheckAreaExploreAndOutdoor()
             ShapeshiftForm form = GetShapeshiftForm();
             if (!(spellInfo->Stances & (1 << (form - 1))))
                 { continue; }
-
-            CastSpell(this, itr->first, true, nullptr);
+            if ((spellInfo->Stances || spellInfo->StancesNot) && !IsNeedCastSpellAtFormApply(spellInfo, GetShapeshiftForm()))
+                continue;
+            CastSpell(this, itr->first, true, NULL);
         }
     }
     else if (sWorld.getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) && !isGameMaster())
@@ -12527,11 +12528,11 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
     UpdateForQuestWorldObjects();
 }
 
-void Player::CompleteQuest(uint32 quest_id)
+void Player::CompleteQuest(uint32 quest_id, QuestStatus status)
 {
     if (quest_id)
     {
-        SetQuestStatus(quest_id, QUEST_STATUS_COMPLETE);
+        SetQuestStatus(quest_id, status);
 
         uint16 log_slot = FindQuestSlot(quest_id);
         if (log_slot < MAX_QUEST_LOG_SIZE)
@@ -13122,7 +13123,11 @@ QuestStatus Player::GetQuestStatus(uint32 quest_id) const
     {
         QuestStatusMap::const_iterator itr = mQuestStatus.find(quest_id);
         if (itr != mQuestStatus.end())
-            { return itr->second.m_status; }
+        {
+            if (itr->second.m_status == QUEST_STATUS_FORCE_COMPLETE)
+                return QUEST_STATUS_COMPLETE;
+            return itr->second.m_status;
+        }
     }
     return QUEST_STATUS_NONE;
 }
