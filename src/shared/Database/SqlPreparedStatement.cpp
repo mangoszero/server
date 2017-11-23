@@ -48,7 +48,7 @@ SqlStatement& SqlStatement::operator=(const SqlStatement& index)
         m_pDB = index.m_pDB;
 
         delete m_pParams;
-        m_pParams = NULL;
+        m_pParams = nullptr;
 
         if (index.m_pParams)
             { m_pParams = new SqlStmtParameters(*(index.m_pParams)); }

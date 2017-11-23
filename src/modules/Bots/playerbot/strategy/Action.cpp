@@ -19,14 +19,14 @@ int NextAction::size(NextAction** actions)
 NextAction** NextAction::clone(NextAction** actions)
 {
     if (!actions)
-        return NULL;
+        return nullptr;
 
     int size = NextAction::size(actions);
 
     NextAction** res = new NextAction*[size + 1];
     for (int i=0; i<size; i++)
         res[i] = new NextAction(*actions[i]);
-    res[size] = NULL;
+    res[size] = nullptr;
     return res;
 }
 
@@ -40,7 +40,7 @@ NextAction** NextAction::merge(NextAction** left, NextAction** right)
         res[i] = new NextAction(*left[i]);
     for (int i=0; i<rightSize; i++)
         res[leftSize + i] = new NextAction(*right[i]);
-    res[leftSize + rightSize] = NULL;
+    res[leftSize + rightSize] = nullptr;
 
     NextAction::destroy(left);
     NextAction::destroy(right);
@@ -54,7 +54,7 @@ NextAction** NextAction::array(uint8 _nil, ...)
     va_start(vl, _nil);
     
     int size = 0;
-    NextAction* cur = NULL;
+    NextAction* cur = nullptr;
     do 
     {
         cur = va_arg(vl, NextAction*);

@@ -50,7 +50,7 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
         delete result;
 
     for (int i = 0; i < PLAYER_SLOTS_COUNT; ++i)
-        m_items[i] = NULL;
+        m_items[i] = nullptr;
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
         m_deathState = DEAD;
@@ -361,7 +361,7 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
                     bidder, item->GetProto()->Name1, item->GetCount(), auctionIds[auction], entry->buyout);
 
             entry->bid = entry->buyout;
-            entry->AuctionBidWinning(NULL);
+            entry->AuctionBidWinning(nullptr);
         }
         else
         {
@@ -559,7 +559,7 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     auctionEntry->bidder = 0;
     auctionEntry->bid = 0;
     auctionEntry->deposit = 0;
-    auctionEntry->expireTime = (time_t) (urand(8, 24) * 60 * 60 + time(NULL));
+    auctionEntry->expireTime = (time_t) (urand(8, 24) * 60 * 60 + time(nullptr));
     auctionEntry->auctionHouseEntry = ahEntry;
     item->SaveToDB();
 

@@ -9,9 +9,9 @@ void EmoteStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
         "random",
-        NextAction::array(0, new NextAction("emote", 1.0f), NULL)));
+        NextAction::array(0, new NextAction("emote", 1.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "seldom",
-        NextAction::array(0, new NextAction("suggest what to do", 1.0f), NULL)));
+        NextAction::array(0, new NextAction("suggest what to do", 1.0f), nullptr)));
 }

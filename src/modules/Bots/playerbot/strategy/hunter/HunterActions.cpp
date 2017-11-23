@@ -17,7 +17,7 @@ bool CastViperStingAction::isUseful()
 
 bool CastAspectOfTheCheetahAction::isUseful() 
 {
-    return !ai->HasAnyAuraOf(GetTarget(), "aspect of the cheetah", "aspect of the pack", NULL);
+    return !ai->HasAnyAuraOf(GetTarget(), "aspect of the cheetah", "aspect of the pack", nullptr);
 }
 
 Value<Unit*>* CastFreezingTrap::GetTargetValue()

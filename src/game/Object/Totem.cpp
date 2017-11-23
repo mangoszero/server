@@ -139,7 +139,7 @@ void Totem::UnSummon()
             // Not only the player can summon the totem (scripted AI)
             if (Group* pGroup = ((Player*)owner)->GetGroup())
             {
-                for (GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
+                for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
                 {
                     Player* Target = itr->getSource();
                     if (Target && pGroup->SameSubGroup((Player*)owner, Target))
@@ -172,7 +172,7 @@ Unit* Totem::GetOwner()
     if (ObjectGuid ownerGuid = GetOwnerGuid())
         { return sObjectAccessor.GetUnit(*this, ownerGuid); }
 
-    return NULL;
+    return nullptr;
 }
 
 void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)

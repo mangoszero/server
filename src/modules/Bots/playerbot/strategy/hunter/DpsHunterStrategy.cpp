@@ -21,37 +21,37 @@ private:
     static ActionNode* viper_sting(PlayerbotAI* ai)
     {
         return new ActionNode ("viper sting",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("mana potion", 10.0f), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("mana potion", 10.0f), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* aimed_shot(PlayerbotAI* ai)
     {
         return new ActionNode ("aimed shot",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("chimera shot", 10.0f), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("chimera shot", 10.0f), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* chimera_shot(PlayerbotAI* ai)
     {
         return new ActionNode ("chimera shot",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("arcane shot", 10.0f), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("arcane shot", 10.0f), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* explosive_shot(PlayerbotAI* ai)
     {
         return new ActionNode ("explosive shot",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("aimed shot"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("aimed shot"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* concussive_shot(PlayerbotAI* ai)
     {
         return new ActionNode ("concussive shot",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NextAction::array(0, new NextAction("wyvern sting", 11.0f), NULL));
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ NextAction::array(0, new NextAction("wyvern sting", 11.0f), nullptr));
     }
 
 };
@@ -63,7 +63,7 @@ DpsHunterStrategy::DpsHunterStrategy(PlayerbotAI* ai) : GenericHunterStrategy(ai
 
 NextAction** DpsHunterStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("explosive shot", 11.0f), new NextAction("auto shot", 10.0f), NULL);
+    return NextAction::array(0, new NextAction("explosive shot", 11.0f), new NextAction("auto shot", 10.0f), nullptr);
 }
 
 void DpsHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
@@ -72,47 +72,47 @@ void DpsHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "black arrow",
-        NextAction::array(0, new NextAction("black arrow", 51.0f), NULL)));
+        NextAction::array(0, new NextAction("black arrow", 51.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "low mana",
-        NextAction::array(0, new NextAction("viper sting", ACTION_EMERGENCY + 5), NULL)));
+        NextAction::array(0, new NextAction("viper sting", ACTION_EMERGENCY + 5), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "no pet",
-        NextAction::array(0, new NextAction("call pet", 60.0f), NULL)));
+        NextAction::array(0, new NextAction("call pet", 60.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "hunters pet low health",
-        NextAction::array(0, new NextAction("mend pet", 60.0f), NULL)));
+        NextAction::array(0, new NextAction("mend pet", 60.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "hunter's mark",
-        NextAction::array(0, new NextAction("hunter's mark", 52.0f), NULL)));
+        NextAction::array(0, new NextAction("hunter's mark", 52.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "freezing trap",
-        NextAction::array(0, new NextAction("freezing trap", 83.0f), NULL)));
+        NextAction::array(0, new NextAction("freezing trap", 83.0f), nullptr)));
 }
 
 void DpsAoeHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
         "medium aoe",
-        NextAction::array(0, new NextAction("multi-shot", 20.0f), NULL)));
+        NextAction::array(0, new NextAction("multi-shot", 20.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "high aoe",
-        NextAction::array(0, new NextAction("volley", 20.0f), NULL)));
+        NextAction::array(0, new NextAction("volley", 20.0f), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "serpent sting on attacker",
-        NextAction::array(0, new NextAction("serpent sting on attacker", 49.0f), NULL)));
+        NextAction::array(0, new NextAction("serpent sting on attacker", 49.0f), nullptr)));
 }
 
 void DpsHunterDebuffStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
         "no stings",
-        NextAction::array(0, new NextAction("serpent sting", 50.0f), NULL)));
+        NextAction::array(0, new NextAction("serpent sting", 50.0f), nullptr)));
 }

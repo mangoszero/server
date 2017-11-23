@@ -113,7 +113,7 @@ bool FleePoint::isBetterByAll(FleePoint* other)
 
 FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
 {
-    FleePoint* byCreatures = NULL;
+    FleePoint* byCreatures = nullptr;
     for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
     {
         FleePoint* point = *i;
@@ -121,7 +121,7 @@ FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
             byCreatures = point;
     }
 
-    FleePoint* byAll = NULL;
+    FleePoint* byAll = nullptr;
     for (list<FleePoint*>::iterator i = points.begin(); i != points.end(); i++)
     {
         FleePoint* point = *i;

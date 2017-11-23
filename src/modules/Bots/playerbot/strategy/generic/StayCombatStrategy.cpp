@@ -6,5 +6,5 @@ using namespace ai;
 
 NextAction** StayCombatStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("stay combat", 1.0f), NULL);
+    return NextAction::array(0, new NextAction("stay combat", 1.0f), nullptr);
 }

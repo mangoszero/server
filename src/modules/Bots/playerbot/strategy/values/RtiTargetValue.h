@@ -28,21 +28,21 @@ namespace ai
         {
             Group *group = bot->GetGroup();
             if(!group)
-                return NULL;
+                return nullptr;
 
             string rti = AI_VALUE(string, "rti");
             int index = GetRtiIndex(rti);
 
             if (index == -1)
-                return NULL;
+                return nullptr;
 
             ObjectGuid guid = group->GetTargetIcon(index);
             if (!guid)
-                return NULL;
+                return nullptr;
 
             Unit* unit = ai->GetUnit(guid);
             if (!unit || unit->IsDead())
-                return NULL;
+                return nullptr;
 
             return unit;
         }

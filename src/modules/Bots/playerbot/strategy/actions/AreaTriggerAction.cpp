@@ -28,7 +28,7 @@ bool ReachAreaTriggerAction::Execute(Event event)
         return true;
     }
 
-    if (at->condition && !sObjectMgr.IsPlayerMeetToCondition(at->condition, bot, bot->GetMap(), NULL, CONDITION_AREA_TRIGGER))
+    if (at->condition && !sObjectMgr.IsPlayerMeetToCondition(at->condition, bot, bot->GetMap(), nullptr, CONDITION_AREA_TRIGGER))
     {
         ai->TellMaster("I won't follow: I don't meet the conditions");
         return false;

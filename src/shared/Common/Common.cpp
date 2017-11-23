@@ -48,7 +48,7 @@ LocaleNameStr const fullLocaleNameList[] =
     { "zhTW", LOCALE_zhTW },
     { "esES", LOCALE_esES },
     { "esMX", LOCALE_esMX },
-    { NULL,   LOCALE_enUS }
+    { nullptr,   LOCALE_enUS }
 };
 
 LocaleConstant GetLocaleByName(const std::string& name)

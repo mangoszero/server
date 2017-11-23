@@ -97,7 +97,7 @@ bool TrainerAction::Execute(Event event)
     if (text == "learn")
         List(creature, &TrainerAction::Learn, spells);
     else
-        List(creature, NULL, spells);
+        List(creature, nullptr, spells);
 
     return true;
 }

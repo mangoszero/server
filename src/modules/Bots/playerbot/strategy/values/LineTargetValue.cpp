@@ -8,11 +8,11 @@ Unit* LineTargetValue::Calculate()
 {
     Player* master = GetMaster();
     if (!master)
-        return NULL;
+        return nullptr;
 
     Group* group = master->GetGroup();
     if (!group)
-        return NULL;
+        return nullptr;
 
     Player *prev = master;
     Group::MemberSlotList const& groupSlot = group->GetMemberSlots();

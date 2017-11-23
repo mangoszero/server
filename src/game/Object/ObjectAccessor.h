@@ -58,7 +58,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             using MapType = std::unordered_map<ObjectGuid, T*>;
             using LockType = ACE_RW_Thread_Mutex;
 
-            HashMapHolder() : i_lock(NULL), m_objectMap() {}
+            HashMapHolder() : i_lock(nullptr), m_objectMap() {}
 
             void Insert(T* o)
             {
@@ -74,9 +74,9 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
 
             T* Find(ObjectGuid guid)
             {
-                ACE_READ_GUARD_RETURN (LockType, guard, i_lock, NULL)
+                ACE_READ_GUARD_RETURN (LockType, guard, i_lock, nullptr)
                 auto itr = m_objectMap.find(guid);
-                return (itr != m_objectMap.end()) ? itr->second : NULL;
+                return (itr != m_objectMap.end()) ? itr->second : nullptr;
             }
 
             inline MapType& GetContainer() { return m_objectMap; }

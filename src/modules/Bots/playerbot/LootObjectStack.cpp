@@ -124,7 +124,7 @@ WorldObject* LootObject::GetWorldObject(Player* bot)
     if (go && go->isSpawned())
         return go;
 
-    return NULL;
+    return nullptr;
 }
 
 LootObject::LootObject(const LootObject& other)

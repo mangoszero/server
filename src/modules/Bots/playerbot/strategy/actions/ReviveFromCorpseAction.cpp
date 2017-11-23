@@ -22,7 +22,7 @@ bool ReviveFromCorpseAction::Execute(Event event)
         ai->TellMaster(".. could not be revived ..");
         return false;
     }
-    context->GetValue<Unit*>("current target")->Set(NULL);
+    context->GetValue<Unit*>("current target")->Set(nullptr);
     bot->SetSelectionGuid(ObjectGuid());
     return true;
 }
@@ -45,7 +45,7 @@ bool SpiritHealerAction::Execute(Event event)
                 ai->TellMaster(".. could not be revived ..");
                 return false;
             }
-            context->GetValue<Unit*>("current target")->Set(NULL);
+            context->GetValue<Unit*>("current target")->Set(nullptr);
             bot->SetSelectionGuid(ObjectGuid());
             return true;
         }

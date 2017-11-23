@@ -247,7 +247,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
     }
 
     char *cmd = strtok ((char*)args, " ");
-    char *charname = strtok (NULL, " ");
+    char *charname = strtok (nullptr, " ");
     if (!cmd || !charname)
     {
         messages.push_back("usage: add/init/remove PLAYERNAME");

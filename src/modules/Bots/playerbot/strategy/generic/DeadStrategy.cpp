@@ -11,11 +11,11 @@ void DeadStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "dead",
-        NextAction::array(0, new NextAction("revive from corpse", relevance), NULL)));
+        NextAction::array(0, new NextAction("revive from corpse", relevance), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "resurrect request",
-        NextAction::array(0, new NextAction("accept resurrect", relevance), NULL)));
+        NextAction::array(0, new NextAction("accept resurrect", relevance), nullptr)));
 }
 
 DeadStrategy::DeadStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)

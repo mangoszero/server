@@ -16,13 +16,13 @@ Item* ItemForSpellValue::Calculate()
 {
     uint32 spellid = atoi(qualifier.c_str());
     if (!spellid)
-        return NULL;
+        return nullptr;
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid );
     if (!spellInfo)
-        return NULL;
+        return nullptr;
 
-    Item* itemForSpell = NULL;
+    Item* itemForSpell = nullptr;
     Player* trader = bot->GetTrader();
     if (trader)
     {
@@ -46,7 +46,7 @@ Item* ItemForSpellValue::Calculate()
         if (itemForSpell && itemForSpell->GetProto()->Class == ITEM_CLASS_WEAPON)
             return itemForSpell;
 
-        return NULL;
+        return nullptr;
     }
 
     for( uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++ ) {
@@ -54,17 +54,17 @@ Item* ItemForSpellValue::Calculate()
         if (itemForSpell)
             return itemForSpell;
     }
-    return NULL;
+    return nullptr;
 }
 
 Item* ItemForSpellValue::GetItemFitsToSpellRequirements(uint8 slot, SpellEntry const *spellInfo)
 {
     Item* const itemForSpell = bot->GetItemByPos( INVENTORY_SLOT_BAG_0, slot );
     if (!itemForSpell || itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
-        return NULL;
+        return nullptr;
 
     if (itemForSpell->IsFitToSpellRequirements(spellInfo))
         return itemForSpell;
 
-    return NULL;
+    return nullptr;
 }

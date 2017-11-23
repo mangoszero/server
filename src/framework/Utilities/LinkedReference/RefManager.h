@@ -91,7 +91,7 @@ class RefManager : public LinkedListHead
          *
          * @return iterator
          */
-        iterator end() { return iterator(NULL); }
+        iterator end() { return iterator(nullptr); }
         /**
          * @brief
          *
@@ -103,7 +103,7 @@ class RefManager : public LinkedListHead
          *
          * @return iterator
          */
-        iterator rend() { return iterator(NULL); }
+        iterator rend() { return iterator(nullptr); }
 
         /**
          * @brief
@@ -112,7 +112,7 @@ class RefManager : public LinkedListHead
         void clearReferences()
         {
             LinkedListElement* ref;
-            while ((ref = getFirst()) != NULL)
+            while ((ref = getFirst()) != nullptr)
             {
                 ((Reference<TO, FROM>*) ref)->invalidate();
                 ref->delink();                              // the delink might be already done by invalidate(), but doing it here again does not hurt and insures an empty list

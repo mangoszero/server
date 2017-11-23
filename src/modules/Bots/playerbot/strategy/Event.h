@@ -14,8 +14,8 @@ namespace ai
         }
         Event() {}
         Event(string source) : source(source) {}
-        Event(string source, string param, Player* owner = NULL) : source(source), param(param), owner(owner) {}
-        Event(string source, WorldPacket &packet, Player* owner = NULL) : source(source), packet(packet), owner(owner) {}
+        Event(string source, string param, Player* owner = nullptr) : source(source), param(param), owner(owner) {}
+        Event(string source, WorldPacket &packet, Player* owner = nullptr) : source(source), packet(packet), owner(owner) {}
         virtual ~Event() {}
 
     public:

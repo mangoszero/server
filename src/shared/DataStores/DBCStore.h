@@ -45,7 +45,7 @@ class DBCStorage
          *
          * @param f
          */
-        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) { }
+        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(nullptr), m_dataTable(nullptr) { }
         /**
          * @brief
          *
@@ -78,7 +78,7 @@ class DBCStorage
         * @param id
         * @return const T
         */
-        //T const* LookupEntry(uint32 id) const { return (id >= nCount) ? NULL : indexTable[id]; }
+        //T const* LookupEntry(uint32 id) const { return (id >= nCount) ? nullptr : indexTable[id]; }
         T const* LookupEntry(uint32 id) const
         {
             if (loaded)
@@ -87,7 +87,7 @@ class DBCStorage
                 if (it != data.end())
                     return it->second;
             }
-            return (id >= nCount) ? NULL : indexTable[id];
+            return (id >= nCount) ? nullptr : indexTable[id];
         }
         /**
          * @brief
@@ -110,8 +110,8 @@ class DBCStorage
             // load strings from dbc data
             m_stringPoolList.push_back(dbc.AutoProduceStrings(fmt, (char*)m_dataTable));
 
-            // error in dbc file at loading if NULL
-            return indexTable != NULL;
+            // error in dbc file at loading if nullptr
+            return indexTable != nullptr;
         }
 
         void SetEntry(uint32 id, T* t) // Cryptic they say..
@@ -169,9 +169,9 @@ class DBCStorage
                 { return; }
 
             delete[]((char*)indexTable);
-            indexTable = NULL;
+            indexTable = nullptr;
             delete[]((char*)m_dataTable);
-            m_dataTable = NULL;
+            m_dataTable = nullptr;
 
             while (!m_stringPoolList.empty())
             {
@@ -186,7 +186,7 @@ class DBCStorage
          *
          * @param id
          */
-        void EraseEntry(uint32 id) { assert(id < nCount && "Entry to be erased must be in bounds!") ; indexTable[id] = NULL; }
+        void EraseEntry(uint32 id) { assert(id < nCount && "Entry to be erased must be in bounds!") ; indexTable[id] = nullptr; }
         /**
          * @brief
          *

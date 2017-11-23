@@ -13,7 +13,7 @@ Unit* GrindTargetValue::Calculate()
     if (group)
         memberCount = group->GetMembersCount();
 
-    Unit* target = NULL;
+    Unit* target = nullptr;
     uint32 assistCount = 0;
     while (!target && assistCount < memberCount)
     {
@@ -43,10 +43,10 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
     list<ObjectGuid> targets = *context->GetValue<list<ObjectGuid> >("possible targets");
 
     if(targets.empty())
-        return NULL;
+        return nullptr;
 
     float distance = 0;
-    Unit* result = NULL;
+    Unit* result = nullptr;
     for(list<ObjectGuid>::iterator tIter = targets.begin(); tIter != targets.end(); tIter++)
     {
         Unit* unit = ai->GetUnit(*tIter);

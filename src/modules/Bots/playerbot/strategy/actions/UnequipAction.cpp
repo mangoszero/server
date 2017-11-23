@@ -32,7 +32,7 @@ void UnequipAction::UnequipItem(Item& item)
 {
     uint8 bagIndex = item.GetBagSlot();
     uint8 slot = item.GetSlot();
-    uint8 dstBag = NULL_BAG;
+    uint8 dstBag = nullptr_BAG;
 
 
     WorldPacket* const packet = new WorldPacket(CMSG_AUTOSTORE_BAG_ITEM, 3);

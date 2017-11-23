@@ -30,10 +30,10 @@ namespace ai
 
     public:
         virtual Event Check();
-        virtual void ExternalEvent(string param, Player* owner = NULL) {}
-        virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) {}
+        virtual void ExternalEvent(string param, Player* owner = nullptr) {}
+        virtual void ExternalEvent(WorldPacket &packet, Player* owner = nullptr) {}
         virtual bool IsActive() { return false; }
-        virtual NextAction** getHandlers() { return NULL; }
+        virtual NextAction** getHandlers() { return nullptr; }
         void Update() {}
         virtual void Reset() {}
         virtual Unit* GetTarget();
@@ -57,11 +57,11 @@ namespace ai
     class TriggerNode
     {
     public:
-        TriggerNode(string name, NextAction** handlers = NULL)
+        TriggerNode(string name, NextAction** handlers = nullptr)
         {
             this->name = name;
             this->handlers = handlers;
-            this->trigger = NULL;
+            this->trigger = nullptr;
         }
         virtual ~TriggerNode()
         {

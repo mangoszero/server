@@ -124,7 +124,7 @@ class MySQLConnection : public SqlConnection
          *
          * @param db
          */
-        MySQLConnection(Database& db) : SqlConnection(db), mMysql(NULL) {}
+        MySQLConnection(Database& db) : SqlConnection(db), mMysql(nullptr) {}
         /**
          * @brief
          *

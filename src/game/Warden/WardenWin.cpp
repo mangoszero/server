@@ -166,7 +166,7 @@ void WardenWin::RequestData()
     uint16 build = _session->GetClientBuild();
     uint16 id = 0;
     uint8 type = 0;
-    WardenCheck* wd = NULL;
+    WardenCheck* wd = nullptr;
 
     // If all checks were done, fill the todo list again
     if (_memChecksTodo.empty())
@@ -210,7 +210,7 @@ void WardenWin::RequestData()
         // Add the id to the list sent in this cycle
         _currentChecks.push_back(id);
 
-        // if we are here, the function is guaranteed to not return NULL
+        // if we are here, the function is guaranteed to not return nullptr
         // but ... who knows
         wd = sWardenCheckMgr->GetWardenDataById(build, id);
         if (wd)
@@ -475,7 +475,7 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
     if (checkFailed > 0)
     {
-        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), checkFailed);   //note it IS NOT NULL here
+        WardenCheck* check = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), checkFailed);   //note it IS NOT nullptr here
         sLog.outWarden("%s failed Warden check %u. Action: %s", _session->GetPlayerName(), checkFailed, Penalty(check).c_str());
         LogPositiveToDB(check);
     }

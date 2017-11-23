@@ -200,7 +200,7 @@ void WardenCheckMgr::LoadWardenOverrides()
 
 WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
 {
-    WardenCheck* result = NULL;
+    WardenCheck* result = nullptr;
 
     ACE_READ_GUARD_RETURN(LOCK, g, m_lock, result)
     for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
@@ -214,7 +214,7 @@ WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
 
 WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 id)
 {
-    WardenCheckResult* result = NULL;
+    WardenCheckResult* result = nullptr;
 
     ACE_READ_GUARD_RETURN(LOCK, g, m_lock, result)
     for (CheckResultMap::iterator it = CheckResultStore.lower_bound(build); it != CheckResultStore.upper_bound(build); ++it)

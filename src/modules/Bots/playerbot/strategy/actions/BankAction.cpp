@@ -69,10 +69,10 @@ bool BankAction::Withdraw(const uint32 itemid)
         return false;
 
     ItemPosCountVec dest;
-    InventoryResult msg = bot->CanStoreItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
+    InventoryResult msg = bot->CanStoreItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
     if (msg != EQUIP_ERR_OK)
     {
-        bot->SendEquipError(msg, pItem, NULL);
+        bot->SendEquipError(msg, pItem, nullptr);
         return false;
     }
 
@@ -90,10 +90,10 @@ bool BankAction::Deposit(Item* pItem)
     std::ostringstream out;
 
     ItemPosCountVec dest;
-    InventoryResult msg = bot->CanBankItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
+    InventoryResult msg = bot->CanBankItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
     if (msg != EQUIP_ERR_OK)
     {
-        bot->SendEquipError(msg, pItem, NULL);
+        bot->SendEquipError(msg, pItem, nullptr);
         return false;
     }
 
@@ -164,5 +164,5 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
                 }
             }
     }
-    return NULL;
+    return nullptr;
 }

@@ -53,15 +53,15 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 }
 
 
-PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL)
+PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(nullptr), aiObjectContext(nullptr),
+    currentEngine(nullptr), chatHelper(this), chatFilter(this), accountId(0), security(nullptr), master(nullptr)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
-        engines[i] = NULL;
+        engines[i] = nullptr;
 }
 
 PlayerbotAI::PlayerbotAI(Player* bot) :
-    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL)
+    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(nullptr)
 {
     this->bot = bot;
 
@@ -196,8 +196,8 @@ void PlayerbotAI::Reset()
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     nextAICheckDelay = 0;
 
-    aiObjectContext->GetValue<Unit*>("old target")->Set(NULL);
-    aiObjectContext->GetValue<Unit*>("current target")->Set(NULL);
+    aiObjectContext->GetValue<Unit*>("old target")->Set(nullptr);
+    aiObjectContext->GetValue<Unit*>("current target")->Set(nullptr);
     aiObjectContext->GetValue<LootObject>("loot target")->Set(LootObject());
     aiObjectContext->GetValue<uint32>("lfg proposal")->Set(0);
 
@@ -205,7 +205,7 @@ void PlayerbotAI::Reset()
     lastSpell.Reset();
 
     LastMovement & lastMovement = aiObjectContext->GetValue<LastMovement& >("last movement")->Get();
-    lastMovement.Set(NULL);
+    lastMovement.Set(nullptr);
 
     bot->GetMotionMaster()->Clear();
     bot->m_taxi.ClearTaxiDestinations();
@@ -393,7 +393,7 @@ void PlayerbotAI::DoNextAction()
     if (bot->IsBeingTeleported() /*|| bot->IsBeingTeleportedDelayEvent()*/|| (GetMaster() && GetMaster()->IsBeingTeleported()))
         return;
 
-    currentEngine->DoNextAction(NULL);
+    currentEngine->DoNextAction(nullptr);
 
     /*if (!bot->GetAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED).empty())
     {
@@ -533,7 +533,7 @@ bool PlayerbotAI::IsRanged(Player* player)
     case CLASS_ROGUE:
         return false;
     case CLASS_DRUID:
-        return !HasAnyAuraOf(player, "cat form", "bear form", "dire bear form", NULL);
+        return !HasAnyAuraOf(player, "cat form", "bear form", "dire bear form", nullptr);
     }
     return true;
 }
@@ -551,7 +551,7 @@ bool PlayerbotAI::IsTank(Player* player)
     case CLASS_WARRIOR:
         return true;
     case CLASS_DRUID:
-        return HasAnyAuraOf(player, "bear form", "dire bear form", NULL);
+        return HasAnyAuraOf(player, "bear form", "dire bear form", nullptr);
     }
     return false;
 }
@@ -567,7 +567,7 @@ bool PlayerbotAI::IsHeal(Player* player)
     case CLASS_PRIEST:
         return true;
     case CLASS_DRUID:
-        return HasAnyAuraOf(player, "tree of life form", NULL);
+        return HasAnyAuraOf(player, "tree of life form", nullptr);
     }
     return false;
 }
@@ -616,7 +616,7 @@ namespace MaNGOS
 Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
 {
     if (!guid)
-        return NULL;
+        return nullptr;
 
     list<Unit*> targets;
 
@@ -625,7 +625,7 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
     Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig.sightDistance);
 
     if (targets.empty())
-        return NULL;
+        return nullptr;
 
     return *targets.begin();
 }
@@ -634,7 +634,7 @@ Unit* PlayerbotAI::GetUnit(ObjectGuid guid)
 Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
 {
     if (!guid)
-        return NULL;
+        return nullptr;
 
     list<Unit *> targets;
 
@@ -649,13 +649,13 @@ Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
             return creature;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
 {
     if (!guid)
-        return NULL;
+        return nullptr;
 
     list<GameObject*> targets;
 
@@ -670,7 +670,7 @@ GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
             return go;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 bool PlayerbotAI::TellMasterNoFacing(string text, PlayerbotSecurityLevel securityLevel)
@@ -891,12 +891,12 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     }
 
     aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetObjectGuid(), time(0));
-    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
+    aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(nullptr);
 
     const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
 
     MotionMaster &mm = *bot->GetMotionMaster();
-    if (bot->isMoving() && GetSpellCastTime(pSpellInfo, NULL))
+    if (bot->isMoving() && GetSpellCastTime(pSpellInfo, nullptr))
     {
         return false;
     }

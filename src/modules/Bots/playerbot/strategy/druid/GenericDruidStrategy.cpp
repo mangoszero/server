@@ -25,65 +25,65 @@ private:
     static ActionNode* melee(PlayerbotAI* ai)
     {
         return new ActionNode ("melee",
-            /*P*/ NextAction::array(0, new NextAction("reach melee"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("reach melee"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* caster_form(PlayerbotAI* ai)
     {
         return new ActionNode ("caster form",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* cure_poison(PlayerbotAI* ai)
     {
         return new ActionNode ("cure poison",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* cure_poison_on_party(PlayerbotAI* ai)
     {
         return new ActionNode ("cure poison on party",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* abolish_poison(PlayerbotAI* ai)
     {
         return new ActionNode ("abolish poison",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* abolish_poison_on_party(PlayerbotAI* ai)
     {
         return new ActionNode ("abolish poison on party",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* rebirth(PlayerbotAI* ai)
     {
         return new ActionNode ("rebirth",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* entangling_roots_on_cc(PlayerbotAI* ai)
     {
         return new ActionNode ("entangling roots on cc",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* innervate(PlayerbotAI* ai)
     {
         return new ActionNode ("innervate",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("mana potion"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("mana potion"), nullptr),
+            /*C*/ nullptr);
     }
 };
 
@@ -98,35 +98,35 @@ void GenericDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "low health",
-        NextAction::array(0, new NextAction("regrowth", ACTION_MEDIUM_HEAL + 2), NULL)));
+        NextAction::array(0, new NextAction("regrowth", ACTION_MEDIUM_HEAL + 2), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "party member low health",
-        NextAction::array(0, new NextAction("regrowth on party", ACTION_MEDIUM_HEAL + 1), NULL)));
+        NextAction::array(0, new NextAction("regrowth on party", ACTION_MEDIUM_HEAL + 1), nullptr)));
 
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("regrowth", ACTION_CRITICAL_HEAL + 2), new NextAction("healing touch", ACTION_CRITICAL_HEAL + 2), NULL)));
+        NextAction::array(0, new NextAction("regrowth", ACTION_CRITICAL_HEAL + 2), new NextAction("healing touch", ACTION_CRITICAL_HEAL + 2), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "party member critical health",
-        NextAction::array(0,  new NextAction("regrowth on party", ACTION_CRITICAL_HEAL + 1), new NextAction("healing touch on party", ACTION_CRITICAL_HEAL + 1), NULL)));
+        NextAction::array(0,  new NextAction("regrowth on party", ACTION_CRITICAL_HEAL + 1), new NextAction("healing touch on party", ACTION_CRITICAL_HEAL + 1), nullptr)));
 
 
     triggers.push_back(new TriggerNode(
         "cure poison",
-        NextAction::array(0, new NextAction("abolish poison", ACTION_DISPEL + 2), NULL)));
+        NextAction::array(0, new NextAction("abolish poison", ACTION_DISPEL + 2), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "party member cure poison",
-        NextAction::array(0, new NextAction("abolish poison on party", ACTION_DISPEL + 1), NULL)));
+        NextAction::array(0, new NextAction("abolish poison on party", ACTION_DISPEL + 1), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "party member dead",
-        NextAction::array(0, new NextAction("rebirth", ACTION_HIGH + 1), NULL)));
+        NextAction::array(0, new NextAction("rebirth", ACTION_HIGH + 1), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "low mana",
-        NextAction::array(0, new NextAction("innervate", ACTION_EMERGENCY + 5), NULL)));
+        NextAction::array(0, new NextAction("innervate", ACTION_EMERGENCY + 5), nullptr)));
 }

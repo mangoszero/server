@@ -40,7 +40,7 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
         return ITEM_USAGE_NONE;
 
     uint16 dest;
-    InventoryResult result = bot->CanEquipItem(NULL_SLOT, dest, pItem, true, false);
+    InventoryResult result = bot->CanEquipItem(nullptr_SLOT, dest, pItem, true, false);
     pItem->RemoveFromUpdateQueueOf(bot);
     delete pItem;
 

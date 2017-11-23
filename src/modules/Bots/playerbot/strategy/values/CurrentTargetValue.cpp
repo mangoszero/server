@@ -9,11 +9,11 @@ Unit* CurrentTargetValue::Get()
     
 
     if (selection.IsEmpty())
-        return NULL;
+        return nullptr;
 
     Unit* unit = sObjectAccessor.GetUnit(*bot, selection);
     if (unit && !bot->IsWithinLOSInMap(unit))
-        return NULL;
+        return nullptr;
 
     return unit;
 }

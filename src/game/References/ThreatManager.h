@@ -168,7 +168,7 @@ class ThreatContainer
 
         bool empty() const { return(iThreatList.empty()); }
 
-        HostileReference* getMostHated() { return iThreatList.empty() ? NULL : iThreatList.front(); }
+        HostileReference* getMostHated() { return iThreatList.empty() ? nullptr : iThreatList.front(); }
 
         HostileReference* getReferenceByTarget(Unit* pVictim);
 
@@ -189,7 +189,7 @@ class ThreatManager
         void clearReferences();
 
         void addThreat(Unit* pVictim, float threat, bool crit, SpellSchoolMask schoolMask, SpellEntry const* threatSpell);
-        void addThreat(Unit* pVictim, float threat) { addThreat(pVictim, threat, false, SPELL_SCHOOL_MASK_NONE, NULL); }
+        void addThreat(Unit* pVictim, float threat) { addThreat(pVictim, threat, false, SPELL_SCHOOL_MASK_NONE, nullptr); }
 
         // add threat as raw value (ignore redirections and expection all mods applied already to it
         void addThreatDirectly(Unit* pVictim, float threat);

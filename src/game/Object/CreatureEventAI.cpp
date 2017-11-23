@@ -161,7 +161,7 @@ inline bool IsTimerBasedEvent(EventAI_Type type)
     }
 }
 
-bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pActionInvoker, Creature* pAIEventSender /*=NULL*/)
+bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pActionInvoker, Creature* pAIEventSender /*=nullptr*/)
 {
     if (!pHolder.Enabled || pHolder.Time)
         { return false; }
@@ -547,7 +547,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
             if (textId)
             {
-                Unit* target = NULL;
+                Unit* target = nullptr;
 
                 if (pActionInvoker)
                 {
@@ -637,7 +637,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (!target)
             {
                 if (reportTargetError)
-                    { sLog.outErrorEventAI("NULL target for ACTION_T_CAST %s casting spell id %u", m_creature->GetGuidStr().c_str(), action.cast.spellId); }
+                    { sLog.outErrorEventAI("nullptr target for ACTION_T_CAST %s casting spell id %u", m_creature->GetGuidStr().c_str(), action.cast.spellId); }
                 return;
             }
 
@@ -649,7 +649,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         {
             Unit* target = GetTargetByType(action.summon.target, pActionInvoker, pAIEventSender, reportTargetError);
             if (!target && reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SUMMON(%u), target-type %u", EventId, action.type, action.summon.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_SUMMON(%u), target-type %u", EventId, action.type, action.summon.target); }
 
             Creature* pCreature;
 
@@ -668,7 +668,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (Unit* target = GetTargetByType(action.threat_single_pct.target, pActionInvoker, pAIEventSender, reportTargetError))
                 { m_creature->GetThreatManager().modifyThreatPercent(target, action.threat_single_pct.percent); }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_THREAT_SINGLE_PCT(%u), target-type %u", EventId, action.type, action.threat_single_pct.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_THREAT_SINGLE_PCT(%u), target-type %u", EventId, action.type, action.threat_single_pct.target); }
             break;
         case ACTION_T_THREAT_ALL_PCT:       //14
         {
@@ -685,7 +685,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                     { ((Player*)target)->AreaExploredOrEventHappens(action.quest_event.questId); }
             }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_QUEST_EVENT(%u), target-type %u", EventId, action.type, action.quest_event.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_QUEST_EVENT(%u), target-type %u", EventId, action.type, action.quest_event.target); }
             break;
         case ACTION_T_CAST_EVENT:           //16
             if (Unit* target = GetTargetByType(action.cast_event.target, pActionInvoker, pAIEventSender, reportTargetError, 0, SELECT_FLAG_PLAYER))
@@ -694,7 +694,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                     { ((Player*)target)->CastedCreatureOrGO(action.cast_event.creatureId, m_creature->GetObjectGuid(), action.cast_event.spellId); }
             }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_CST_EVENT(%u), target-type %u", EventId, action.type, action.cast_event.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_CST_EVENT(%u), target-type %u", EventId, action.type, action.cast_event.target); }
             break;
         case ACTION_T_SET_UNIT_FIELD:       //17
         {
@@ -707,7 +707,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (target)
                 { target->SetUInt32Value(action.set_unit_field.field, action.set_unit_field.value); }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SET_UNIT_FIELD(%u), target-type %u", EventId, action.type, action.set_unit_field.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_SET_UNIT_FIELD(%u), target-type %u", EventId, action.type, action.set_unit_field.target); }
 
             break;
         }
@@ -715,13 +715,13 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (Unit* target = GetTargetByType(action.unit_flag.target, pActionInvoker, pAIEventSender, reportTargetError))
                 { target->SetFlag(UNIT_FIELD_FLAGS, action.unit_flag.value); }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SET_UNIT_FLAG(%u), target-type %u", EventId, action.type, action.unit_flag.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_SET_UNIT_FLAG(%u), target-type %u", EventId, action.type, action.unit_flag.target); }
             break;
         case ACTION_T_REMOVE_UNIT_FLAG:     //19
             if (Unit* target = GetTargetByType(action.unit_flag.target, pActionInvoker, pAIEventSender, reportTargetError))
                 { target->RemoveFlag(UNIT_FIELD_FLAGS, action.unit_flag.value); }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_REMOVE_UNIT_FLAG(%u), target-type %u", EventId, action.type, action.unit_flag.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_REMOVE_UNIT_FLAG(%u), target-type %u", EventId, action.type, action.unit_flag.target); }
             break;
         case ACTION_T_AUTO_ATTACK:          //20
             m_MeleeEnabled = action.auto_attack.state != 0;
@@ -788,7 +788,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (Unit* target = GetTargetByType(action.remove_aura.target, pActionInvoker, pAIEventSender, reportTargetError))
                 { target->RemoveAurasDueToSpell(action.remove_aura.spellId); }
             else if (reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_REMOVEAURASFROMSPELL(%u), target-type %u", EventId, action.type, action.remove_aura.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_REMOVEAURASFROMSPELL(%u), target-type %u", EventId, action.type, action.remove_aura.target); }
             break;
         case ACTION_T_RANGED_MOVEMENT:          //29
             m_attackDistance = (float)action.ranged_movement.distance;
@@ -818,7 +818,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         {
             Unit* target = GetTargetByType(action.summon_id.target, pActionInvoker, pAIEventSender, reportTargetError);
             if (!target && reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SUMMON_ID(%u), target-type %u", EventId, action.type, action.summon_id.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_SUMMON_ID(%u), target-type %u", EventId, action.type, action.summon_id.target); }
 
             CreatureEventAI_Summon_Map::const_iterator i = sEventAIMgr.GetCreatureEventAISummonMap().find(action.summon_id.spawnId);
             if (i == sEventAIMgr.GetCreatureEventAISummonMap().end())
@@ -853,7 +853,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                         { pPlayer2->RewardPlayerAndGroupAtEvent(action.killed_monster.creatureId, m_creature); }
                 }
                 else if (reportTargetError)
-                    { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_KILLED_MONSTER(%u), target-type %u", EventId, action.type, action.killed_monster.target); }
+                    { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_KILLED_MONSTER(%u), target-type %u", EventId, action.type, action.killed_monster.target); }
             }
             break;
         case ACTION_T_SET_INST_DATA:        //34
@@ -874,7 +874,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (!target)
             {
                 if (reportTargetError)
-                    { sLog.outErrorEventAI("Event %d attempt to set instance data64 but Target == NULL. Creature %d", EventId, m_creature->GetEntry()); }
+                    { sLog.outErrorEventAI("Event %d attempt to set instance data64 but Target == nullptr. Creature %d", EventId, m_creature->GetEntry()); }
                 return;
             }
 
@@ -903,7 +903,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 sLog.outErrorEventAI("Event %d ACTION_T_DIE on dead creature. Creature %d", EventId, m_creature->GetEntry());
                 return;
             }
-            m_creature->DealDamage(m_creature, m_creature->GetMaxHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+            m_creature->DealDamage(m_creature, m_creature->GetMaxHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
             break;
         case ACTION_T_ZONE_COMBAT_PULSE:    //38
         {
@@ -997,7 +997,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
             Unit* target = GetTargetByType(action.summon_unique.target, pActionInvoker, pAIEventSender, reportTargetError);
             if (!target && reportTargetError)
-                { sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SUMMON_UNIQUE(%u), target-type %u", EventId, action.type, action.summon_unique.target); }
+                { sLog.outErrorEventAI("Event %u - nullptr target for ACTION_T_SUMMON_UNIQUE(%u), target-type %u", EventId, action.type, action.summon_unique.target); }
 
             CreatureEventAI_Summon_Map::const_iterator i = sEventAIMgr.GetCreatureEventAISummonMap().find(action.summon_unique.spawnId);
             if (i == sEventAIMgr.GetCreatureEventAISummonMap().end())
@@ -1104,7 +1104,7 @@ void CreatureEventAI::EnterEvadeMode()
     if (m_creature->IsAlive())
         { m_creature->GetMotionMaster()->MoveTargetedHome(); }
 
-    m_creature->SetLootRecipient(NULL);
+    m_creature->SetLootRecipient(nullptr);
 
     // Handle Evade events
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
@@ -1341,7 +1341,7 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
         m_EventUpdateTime -= diff;
     }
 
-    // Melee Auto-Attack (getVictim might be NULL as result of timer based events and actions)
+    // Melee Auto-Attack (getVictim might be nullptr as result of timer based events and actions)
     if (Combat && m_creature->getVictim() && m_MeleeEnabled)
         { DoMeleeAttackIfReady(); }
 }
@@ -1421,7 +1421,7 @@ inline Unit* CreatureEventAI::GetTargetByType(uint32 Target, Unit* pActionInvoke
                 { isError = true; }
             return pActionInvoker;
         case TARGET_T_ACTION_INVOKER_OWNER:
-            resTarget = pActionInvoker ? pActionInvoker->GetCharmerOrOwnerOrSelf() : NULL;
+            resTarget = pActionInvoker ? pActionInvoker->GetCharmerOrOwnerOrSelf() : nullptr;
             if (!resTarget)
                 { isError = true; }
             return resTarget;
@@ -1431,13 +1431,13 @@ inline Unit* CreatureEventAI::GetTargetByType(uint32 Target, Unit* pActionInvoke
             return pAIEventSender;
         default:
             isError = true;
-            return NULL;
+            return nullptr;
     };
 }
 
 Unit* CreatureEventAI::DoSelectLowestHpFriendly(float range, uint32 MinHPDiff)
 {
-    Unit* pUnit = NULL;
+    Unit* pUnit = nullptr;
 
     MaNGOS::MostHPMissingInRangeCheck u_check(m_creature, range, MinHPDiff);
     MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRangeCheck> searcher(pUnit, u_check);

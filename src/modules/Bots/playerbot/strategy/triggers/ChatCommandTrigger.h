@@ -8,7 +8,7 @@ namespace ai
     public:
         ChatCommandTrigger(PlayerbotAI* ai, string command) : Trigger(ai, command), triggered(false) {}
 
-        virtual void ExternalEvent(string param, Player* owner = NULL)
+        virtual void ExternalEvent(string param, Player* owner = nullptr)
         {
             this->param = param;
             this->owner = owner;

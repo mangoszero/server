@@ -22,5 +22,5 @@ Unit* AttackerWithoutAuraTargetValue::Calculate()
             return unit;
     }
 
-    return NULL;
+    return nullptr;
 }

@@ -15,7 +15,7 @@ namespace ai
 
                 triggers.push_back(new TriggerNode(
                     s, 
-                    NextAction::array(0, new NextAction(s, relevance), NULL)));
+                    NextAction::array(0, new NextAction(s, relevance), nullptr)));
             }
         }
 

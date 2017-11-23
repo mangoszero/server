@@ -43,7 +43,7 @@ bool BuyAction::Execute(Event event)
         {
             if (tItems->GetItem(slot)->item == *i)
             {
-                bot->BuyItemFromVendor(vendorguid, *i, 1, NULL_BAG, NULL_SLOT);
+                bot->BuyItemFromVendor(vendorguid, *i, 1, nullptr_BAG, nullptr_SLOT);
                 ai->TellMaster("Bought item");
             }
         }

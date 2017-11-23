@@ -18,7 +18,7 @@ namespace ai {
         CastDireBearFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "dire bear form") {} 
         
         virtual NextAction** getAlternatives() {
-            return NextAction::merge(NextAction::array(0, new NextAction("bear form"), NULL), CastSpellAction::getAlternatives());
+            return NextAction::merge(NextAction::array(0, new NextAction("bear form"), nullptr), CastSpellAction::getAlternatives());
         }
     };
 
@@ -43,7 +43,7 @@ namespace ai {
 
         virtual bool isUseful() {
             return ai->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form", 
-                "flight form", "swift flight form", "moonkin form", "tree of life", NULL);
+                "flight form", "swift flight form", "moonkin form", "tree of life", nullptr);
         }
         virtual bool isPossible() { return true; }
         

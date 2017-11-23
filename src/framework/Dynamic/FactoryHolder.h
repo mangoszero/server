@@ -83,7 +83,7 @@ class FactoryHolder
          * @param data
          * @return T
          */
-        virtual T* Create(void* data = NULL) const = 0;
+        virtual T* Create(void* data = nullptr) const = 0;
     private:
         Key i_key; /**< TODO */
 };

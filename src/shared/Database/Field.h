@@ -53,7 +53,7 @@ class Field
          * @brief
          *
          */
-        Field() : mValue(NULL), mType(MYSQL_TYPE_NULL) {}
+        Field() : mValue(nullptr), mType(MYSQL_TYPE_NULL) {}
         /**
          * @brief
          *
@@ -79,7 +79,7 @@ class Field
          *
          * @return bool
          */
-        bool IsNULL() const { return mValue == NULL; }
+        bool Isnullptr() const { return mValue == nullptr; }
 
         /**
          * @brief

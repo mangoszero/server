@@ -656,9 +656,9 @@ class Database
          *
          */
         Database() :
-            m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
-            m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
-            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0), m_TransStorage(NULL)
+            m_nQueryConnPoolSize(1), m_pAsyncConn(nullptr), m_pResultQueue(nullptr),
+            m_threadBody(nullptr), m_delayThread(nullptr), m_bAllowAsyncTransactions(false),
+            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0), m_TransStorage(nullptr)
         {
             m_nQueryCounter = -1;
         }
@@ -693,7 +693,7 @@ class Database
                  * @brief
                  *
                  */
-                TransHelper() : m_pTrans(NULL) {}
+                TransHelper() : m_pTrans(nullptr) {}
                 /**
                  * @brief
                  *
@@ -707,7 +707,7 @@ class Database
                  */
                 SqlTransaction* init();
                 /**
-                 * @brief gets pointer on current transaction object. Returns NULL if transaction was not initiated
+                 * @brief gets pointer on current transaction object. Returns nullptr if transaction was not initiated
                  *
                  * @return SqlTransaction
                  */
@@ -716,7 +716,7 @@ class Database
                 /**
                  * @brief detaches SqlTransaction object allocated by init() function
                  *
-                 * next call to get() function will return NULL!
+                 * next call to get() function will return nullptr!
                  * do not forget to destroy obtained SqlTransaction object!
                  *
                  * @return SqlTransaction

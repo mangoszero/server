@@ -8,7 +8,7 @@ using namespace ai;
 
 void StayActionBase::Stay()
 {
-    AI_VALUE(LastMovement&, "last movement").Set(NULL);
+    AI_VALUE(LastMovement&, "last movement").Set(nullptr);
 
     MotionMaster &mm = *bot->GetMotionMaster();
     if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsTaxiFlying())

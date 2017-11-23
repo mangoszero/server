@@ -82,7 +82,7 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
     uint8 facialHair = urand(0, 7);
     uint8 outfitId = 0;
 
-    WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER, 0, LOCALE_enUS);
+    WorldSession* session = new WorldSession(accountId, nullptr, SEC_PLAYER, 0, LOCALE_enUS);
     if (!session)
     {
         sLog.outError("Couldn't create session for random bot account %d", accountId);
@@ -124,7 +124,7 @@ string RandomPlayerbotFactory::CreateRandomBotName()
     uint32 id = urand(0, maxId);
     result = CharacterDatabase.PQuery("SELECT n.name FROM ai_playerbot_names n "
             "LEFT OUTER JOIN characters e ON e.name = n.name "
-            "WHERE e.guid IS NULL AND n.name_id >= '%u' LIMIT 1", id);
+            "WHERE e.guid IS nullptr AND n.name_id >= '%u' LIMIT 1", id);
     if (!result)
     {
         sLog.outError("No more names left for random bots");

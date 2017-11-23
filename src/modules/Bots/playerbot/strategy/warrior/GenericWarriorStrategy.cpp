@@ -18,23 +18,23 @@ private:
     static ActionNode* hamstring(PlayerbotAI* ai)
     {
         return new ActionNode ("hamstring",
-            /*P*/ NextAction::array(0, new NextAction("battle stance"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("battle stance"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* heroic_strike(PlayerbotAI* ai)
     {
         return new ActionNode ("heroic strike",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("melee"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("melee"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* battle_shout(PlayerbotAI* ai)
     {
         return new ActionNode ("battle shout",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("melee"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("melee"), nullptr),
+            /*C*/ nullptr);
     }
 };
 
@@ -49,25 +49,25 @@ void GenericWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "battle shout",
-        NextAction::array(0, new NextAction("battle shout", ACTION_HIGH + 1), NULL)));
+        NextAction::array(0, new NextAction("battle shout", ACTION_HIGH + 1), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "rend",
-        NextAction::array(0, new NextAction("rend", ACTION_NORMAL + 1), NULL)));
+        NextAction::array(0, new NextAction("rend", ACTION_NORMAL + 1), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "bloodrage",
-        NextAction::array(0, new NextAction("bloodrage", ACTION_HIGH + 1), NULL)));
+        NextAction::array(0, new NextAction("bloodrage", ACTION_HIGH + 1), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "shield bash",
-        NextAction::array(0, new NextAction("shield bash", ACTION_INTERRUPT + 4), NULL)));
+        NextAction::array(0, new NextAction("shield bash", ACTION_INTERRUPT + 4), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "shield bash on enemy healer",
-        NextAction::array(0, new NextAction("shield bash on enemy healer", ACTION_INTERRUPT + 3), NULL)));
+        NextAction::array(0, new NextAction("shield bash on enemy healer", ACTION_INTERRUPT + 3), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("intimidating shout", ACTION_EMERGENCY), NULL)));
+        NextAction::array(0, new NextAction("intimidating shout", ACTION_EMERGENCY), nullptr)));
 }

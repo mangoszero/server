@@ -332,7 +332,7 @@ CreatureLinkingInfo const* CreatureLinkingMgr::GetLinkedTriggerInformation(uint3
             { return &(iter->second); }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // Function to add slave-NPCs to the holder
@@ -350,7 +350,7 @@ void CreatureLinkingHolder::AddSlaveToHolder(Creature* pCreature)
             if (itr->second.linkingFlag == pInfo->linkingFlag)
             {
                 itr->second.linkedGuids.push_back(pCreature->GetObjectGuid());
-                pCreature = NULL;                           // Store that is was handled
+                pCreature = nullptr;                           // Store that is was handled
                 break;
             }
         }
@@ -374,7 +374,7 @@ void CreatureLinkingHolder::AddSlaveToHolder(Creature* pCreature)
         if (itr->second.linkingFlag == pInfo->linkingFlag && itr->second.searchRange == pInfo->searchRange)
         {
             itr->second.linkedGuids.push_back(pCreature->GetObjectGuid());
-            pCreature = NULL;                               // Store that is was handled
+            pCreature = nullptr;                               // Store that is was handled
             break;
         }
     }
@@ -410,7 +410,7 @@ void CreatureLinkingHolder::AddMasterToHolder(Creature* pCreature)
 }
 
 // Function to process actions for linked NPCs
-void CreatureLinkingHolder::DoCreatureLinkingEvent(CreatureLinkingEvent eventType, Creature* pSource, Unit* pEnemy /* = NULL*/)
+void CreatureLinkingHolder::DoCreatureLinkingEvent(CreatureLinkingEvent eventType, Creature* pSource, Unit* pEnemy /* = nullptr*/)
 {
     // This check will be needed in reload case
     if (!sCreatureLinkingMgr.IsLinkedEventTrigger(pSource))
@@ -450,7 +450,7 @@ void CreatureLinkingHolder::DoCreatureLinkingEvent(CreatureLinkingEvent eventTyp
     {
         if (pInfo->linkingFlag & reverseEventFlagFilter)
         {
-            Creature* pMaster = NULL;
+            Creature* pMaster = nullptr;
             if (pInfo->mapId != INVALID_MAP_ID)             // entry case
             {
                 BossGuidMapBounds finds = m_masterGuid.equal_range(pInfo->masterId);
@@ -551,7 +551,7 @@ void CreatureLinkingHolder::ProcessSlave(CreatureLinkingEvent eventType, Creatur
             break;
         case LINKING_EVENT_DIE:
             if (flag & FLAG_SELFKILL_ON_DEATH && pSlave->IsAlive())
-                { pSlave->DealDamage(pSlave, pSlave->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false); }
+                { pSlave->DealDamage(pSlave, pSlave->GetHealth(), nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false); }
             if (flag & FLAG_DESPAWN_ON_DEATH && pSlave->IsAlive())
                 { pSlave->ForcedDespawn(); }
             if (flag & FLAG_RESPAWN_ON_DEATH && !pSlave->IsAlive())
@@ -561,7 +561,7 @@ void CreatureLinkingHolder::ProcessSlave(CreatureLinkingEvent eventType, Creatur
             if (flag & FLAG_RESPAWN_ON_RESPAWN)
             {
                 // Additional check to prevent endless loops (in case whole group respawns on first respawn)
-                if (!pSlave->IsAlive() && pSlave->GetRespawnTime() > time(NULL))
+                if (!pSlave->IsAlive() && pSlave->GetRespawnTime() > time(nullptr))
                     { pSlave->Respawn(); }
             }
             else if (flag & FLAG_DESPAWN_ON_RESPAWN && pSlave->IsAlive())
@@ -632,7 +632,7 @@ bool CreatureLinkingHolder::IsSlaveInRangeOfBoss(Creature const* pBoss, float sX
 bool CreatureLinkingHolder::IsRespawnReady(uint32 dbLowGuid, Map* _map) const
 {
     time_t respawnTime = _map->GetPersistentState()->GetCreatureRespawnTime(dbLowGuid);
-    return (!respawnTime || respawnTime <= time(NULL)) && CanSpawn(dbLowGuid, _map, NULL, 0.0f, 0.0f);
+    return (!respawnTime || respawnTime <= time(nullptr)) && CanSpawn(dbLowGuid, _map, nullptr, 0.0f, 0.0f);
 }
 
 // Function to check if a passive spawning condition is met
@@ -714,7 +714,7 @@ bool CreatureLinkingHolder::TryFollowMaster(Creature* pCreature)
     if (!pInfo || !(pInfo->linkingFlag & FLAG_FOLLOW))
         { return false; }
 
-    Creature* pMaster = NULL;
+    Creature* pMaster = nullptr;
     if (pInfo->mapId != INVALID_MAP_ID)                     // entry case
     {
         BossGuidMapBounds finds = m_masterGuid.equal_range(pInfo->masterId);

@@ -50,7 +50,7 @@ class TargetedMovementGeneratorMedium
             i_recheckDistance(0),
             i_offset(offset), i_angle(angle),
             m_speedChanged(false), i_targetReached(false),
-            i_path(NULL)
+            i_path(nullptr)
         {
         }
         ~TargetedMovementGeneratorMedium() { delete i_path; }

@@ -7,7 +7,7 @@ using namespace ai;
 
 NextAction** GuardStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("guard", 4.0f), NULL);
+    return NextAction::array(0, new NextAction("guard", 4.0f), nullptr);
 }
 
 void GuardStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
