@@ -220,7 +220,7 @@ class Spell
     public:
 
         void EffectEmpty(SpellEffectIndex eff_idx);
-        void Effectnullptr(SpellEffectIndex eff_idx);
+        void EffectNULL(SpellEffectIndex eff_idx);
         void EffectUnused(SpellEffectIndex eff_idx);
         void EffectDistract(SpellEffectIndex eff_idx);
         void EffectPull(SpellEffectIndex eff_idx);

@@ -264,7 +264,7 @@ class Aura
 
     public:
         // aura handlers
-        void Handlenullptr(bool, bool)
+        void HandleNULL(bool, bool)
         {
             // NOT IMPLEMENTED
         }

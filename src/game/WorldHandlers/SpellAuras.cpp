@@ -59,7 +59,7 @@
  */
 pAuraHandler AuraHandler[TOTAL_AURAS] =
 {
-    &Aura::Handlenullptr,                                      //  0 SPELL_AURA_NONE
+    &Aura::HandleNULL,                                      //  0 SPELL_AURA_NONE
     &Aura::HandleBindSight,                                 //  1 SPELL_AURA_BIND_SIGHT
     &Aura::HandleModPossess,                                //  2 SPELL_AURA_MOD_POSSESS
     &Aura::HandlePeriodicDamage,                            //  3 SPELL_AURA_PERIODIC_DAMAGE
@@ -236,7 +236,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS] =
     &Aura::HandleModSpellDamagePercentFromStat,             // 174 SPELL_AURA_MOD_SPELL_DAMAGE_OF_STAT_PERCENT  implemented in Unit::SpellBaseDamageBonusDone (in 1.12.* only spirit)
     &Aura::HandleModSpellHealingPercentFromStat,            // 175 SPELL_AURA_MOD_SPELL_HEALING_OF_STAT_PERCENT implemented in Unit::SpellBaseHealingBonusDone (in 1.12.* only spirit)
     &Aura::HandleSpiritOfRedemption,                        // 176 SPELL_AURA_SPIRIT_OF_REDEMPTION   only for Spirit of Redemption spell, die at aura end
-    &Aura::Handlenullptr,                                      // 177 SPELL_AURA_AOE_CHARM
+    &Aura::HandleNULL,                                      // 177 SPELL_AURA_AOE_CHARM
     &Aura::HandleNoImmediateEffect,                         // 178 SPELL_AURA_MOD_DEBUFF_RESISTANCE          implemented in Unit::MagicSpellHitResult
     &Aura::HandleNoImmediateEffect,                         // 179 SPELL_AURA_MOD_ATTACKER_SPELL_CRIT_CHANCE implemented in Unit::SpellCriticalBonus
     &Aura::HandleNoImmediateEffect,                         // 180 SPELL_AURA_MOD_FLAT_SPELL_DAMAGE_VERSUS   implemented in Unit::SpellDamageBonusDone
