@@ -79,7 +79,7 @@ class Field
          *
          * @return bool
          */
-        bool Isnullptr() const { return mValue == nullptr; }
+        bool IsNULL() const { return mValue == nullptr; }
 
         /**
          * @brief
