@@ -934,7 +934,7 @@ void BattleGround::RewardItem(Player* plr, uint32 item_id, uint32 count)
 {
     ItemPosCountVec dest;
     uint32 no_space_count = 0;
-    uint8 msg = plr->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, item_id, count, &no_space_count);
+    uint8 msg = plr->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item_id, count, &no_space_count);
 
     if (msg == EQUIP_ERR_ITEM_NOT_FOUND)
     {

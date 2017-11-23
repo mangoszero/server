@@ -158,7 +158,7 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
         { return; }                                             // only at cheat
 
     uint16 dest;
-    InventoryResult msg = _player->CanEquipItem(nullptr_SLOT, dest, pSrcItem, !pSrcItem->IsBag());
+    InventoryResult msg = _player->CanEquipItem(NULL_SLOT, dest, pSrcItem, !pSrcItem->IsBag());
     if (msg != EQUIP_ERR_OK)
     {
         _player->SendEquipError(msg, pSrcItem, nullptr);
@@ -195,17 +195,17 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
         {
             msg = _player->CanStoreItem(srcbag, srcslot, sSrc, pDstItem, true);
             if (msg != EQUIP_ERR_OK)
-                { msg = _player->CanStoreItem(srcbag, nullptr_SLOT, sSrc, pDstItem, true); }
+                { msg = _player->CanStoreItem(srcbag, NULL_SLOT, sSrc, pDstItem, true); }
             if (msg != EQUIP_ERR_OK)
-                { msg = _player->CanStoreItem(nullptr_BAG, nullptr_SLOT, sSrc, pDstItem, true); }
+                { msg = _player->CanStoreItem(NULL_BAG, NULL_SLOT, sSrc, pDstItem, true); }
         }
         else if (_player->IsBankPos(src))
         {
             msg = _player->CanBankItem(srcbag, srcslot, sSrc, pDstItem, true);
             if (msg != EQUIP_ERR_OK)
-                { msg = _player->CanBankItem(srcbag, nullptr_SLOT, sSrc, pDstItem, true); }
+                { msg = _player->CanBankItem(srcbag, NULL_SLOT, sSrc, pDstItem, true); }
             if (msg != EQUIP_ERR_OK)
-                { msg = _player->CanBankItem(nullptr_BAG, nullptr_SLOT, sSrc, pDstItem, true); }
+                { msg = _player->CanBankItem(NULL_BAG, NULL_SLOT, sSrc, pDstItem, true); }
         }
         else if (_player->IsEquipmentPos(src))
         {
@@ -697,7 +697,7 @@ void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
         }
 
         ItemPosCountVec dest;
-        InventoryResult msg = _player->CanStoreItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
+        InventoryResult msg = _player->CanStoreItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
         if (msg == EQUIP_ERR_OK)
         {
             _player->ModifyMoney(-(int32)price);
@@ -723,7 +723,7 @@ void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
 
     recv_data >> vendorGuid >> item >> bagGuid >> bagslot >> count;
 
-    uint8 bag = nullptr_BAG;                                   // init for case invalid bagGUID
+    uint8 bag = NULL_BAG;                                   // init for case invalid bagGUID
 
     // find bag slot by bag guid
     if (bagGuid == _player->GetObjectGuid())
@@ -744,7 +744,7 @@ void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
     }
 
     // bag not found, cheating?
-    if (bag == nullptr_BAG)
+    if (bag == NULL_BAG)
         { return; }
 
     GetPlayer()->BuyItemFromVendor(vendorGuid, item, count, bag, bagslot);
@@ -759,7 +759,7 @@ void WorldSession::HandleBuyItemOpcode(WorldPacket& recv_data)
 
     recv_data >> vendorGuid >> item >> count >> unk1;
 
-    GetPlayer()->BuyItemFromVendor(vendorGuid, item, count, nullptr_BAG, nullptr_SLOT);
+    GetPlayer()->BuyItemFromVendor(vendorGuid, item, count, NULL_BAG, NULL_SLOT);
 }
 
 void WorldSession::HandleListInventoryOpcode(WorldPacket& recv_data)
@@ -974,7 +974,7 @@ void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
     if (!pItem)
         { return; }
 
-    if (!_player->IsValidPos(dstbag, nullptr_SLOT, false))     // can be autostore pos
+    if (!_player->IsValidPos(dstbag, NULL_SLOT, false))     // can be autostore pos
     {
         _player->SendEquipError(EQUIP_ERR_ITEM_DOESNT_GO_TO_SLOT, nullptr, nullptr);
         return;
@@ -994,7 +994,7 @@ void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
     }
 
     ItemPosCountVec dest;
-    InventoryResult msg = _player->CanStoreItem(dstbag, nullptr_SLOT, dest, pItem, false);
+    InventoryResult msg = _player->CanStoreItem(dstbag, NULL_SLOT, dest, pItem, false);
     if (msg != EQUIP_ERR_OK)
     {
         _player->SendEquipError(msg, pItem, nullptr);
@@ -1097,7 +1097,7 @@ void WorldSession::HandleAutoBankItemOpcode(WorldPacket& recvPacket)
         { return; }
 
     ItemPosCountVec dest;
-    InventoryResult msg = _player->CanBankItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
+    InventoryResult msg = _player->CanBankItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
     if (msg != EQUIP_ERR_OK)
     {
         _player->SendEquipError(msg, pItem, nullptr);
@@ -1131,7 +1131,7 @@ void WorldSession::HandleAutoStoreBankItemOpcode(WorldPacket& recvPacket)
     if (_player->IsBankPos(srcbag, srcslot))                // moving from bank to inventory
     {
         ItemPosCountVec dest;
-        InventoryResult msg = _player->CanStoreItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
+        InventoryResult msg = _player->CanStoreItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
         if (msg != EQUIP_ERR_OK)
         {
             _player->SendEquipError(msg, pItem, nullptr);
@@ -1144,7 +1144,7 @@ void WorldSession::HandleAutoStoreBankItemOpcode(WorldPacket& recvPacket)
     else                                                    // moving from inventory to bank
     {
         ItemPosCountVec dest;
-        InventoryResult msg = _player->CanBankItem(nullptr_BAG, nullptr_SLOT, dest, pItem, false);
+        InventoryResult msg = _player->CanBankItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
         if (msg != EQUIP_ERR_OK)
         {
             _player->SendEquipError(msg, pItem, nullptr);

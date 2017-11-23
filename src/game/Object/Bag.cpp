@@ -207,7 +207,7 @@ uint8 Bag::GetSlotByItemGUID(ObjectGuid guid) const
             if (m_bagslot[i]->GetObjectGuid() == guid)
                 { return i; }
 
-    return nullptr_SLOT;
+    return NULL_SLOT;
 }
 
 Item* Bag::GetItemByPos(uint8 slot) const

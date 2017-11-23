@@ -131,8 +131,8 @@ void WorldSession::moveItems(Item* myItems[], Item* hisItems[])
     {
         ItemPosCountVec traderDst;
         ItemPosCountVec playerDst;
-        bool traderCanTrade = (myItems[i] == nullptr || trader->CanStoreItem(nullptr_BAG, nullptr_SLOT, traderDst, myItems[i], false) == EQUIP_ERR_OK);
-        bool playerCanTrade = (hisItems[i] == nullptr || _player->CanStoreItem(nullptr_BAG, nullptr_SLOT, playerDst, hisItems[i], false) == EQUIP_ERR_OK);
+        bool traderCanTrade = (myItems[i] == nullptr || trader->CanStoreItem(NULL_BAG, NULL_SLOT, traderDst, myItems[i], false) == EQUIP_ERR_OK);
+        bool playerCanTrade = (hisItems[i] == nullptr || _player->CanStoreItem(NULL_BAG, NULL_SLOT, playerDst, hisItems[i], false) == EQUIP_ERR_OK);
         if (traderCanTrade && playerCanTrade)
         {
             // Ok, if trade item exists and can be stored
@@ -178,7 +178,7 @@ void WorldSession::moveItems(Item* myItems[], Item* hisItems[])
             {
                 if (!traderCanTrade)
                     { sLog.outError("trader can't store item: %s", myItems[i]->GetGuidStr().c_str()); }
-                if (_player->CanStoreItem(nullptr_BAG, nullptr_SLOT, playerDst, myItems[i], false) == EQUIP_ERR_OK)
+                if (_player->CanStoreItem(NULL_BAG, NULL_SLOT, playerDst, myItems[i], false) == EQUIP_ERR_OK)
                     { _player->MoveItemToInventory(playerDst, myItems[i], true, true); }
                 else
                     { sLog.outError("player can't take item back: %s", myItems[i]->GetGuidStr().c_str()); }
@@ -188,7 +188,7 @@ void WorldSession::moveItems(Item* myItems[], Item* hisItems[])
             {
                 if (!playerCanTrade)
                     { sLog.outError("player can't store item: %s", hisItems[i]->GetGuidStr().c_str()); }
-                if (trader->CanStoreItem(nullptr_BAG, nullptr_SLOT, traderDst, hisItems[i], false) == EQUIP_ERR_OK)
+                if (trader->CanStoreItem(NULL_BAG, NULL_SLOT, traderDst, hisItems[i], false) == EQUIP_ERR_OK)
                     { trader->MoveItemToInventory(traderDst, hisItems[i], true, true); }
                 else
                     { sLog.outError("trader can't take item back: %s", hisItems[i]->GetGuidStr().c_str()); }

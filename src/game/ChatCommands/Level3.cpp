@@ -2237,7 +2237,7 @@ bool ChatHandler::HandleAddItemCommand(char* args)
 
     // check space and find places
     ItemPosCountVec dest;
-    uint8 msg = plTarget->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, itemId, count, &noSpaceForCount);
+    uint8 msg = plTarget->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, count, &noSpaceForCount);
     if (msg != EQUIP_ERR_OK)                                // convert to possible store amount
         { count -= noSpaceForCount; }
 
@@ -2301,7 +2301,7 @@ bool ChatHandler::HandleAddItemSetCommand(char* args)
         {
             found = true;
             ItemPosCountVec dest;
-            InventoryResult msg = plTarget->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, pProto->ItemId, 1);
+            InventoryResult msg = plTarget->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, pProto->ItemId, 1);
             if (msg == EQUIP_ERR_OK)
             {
                 Item* item = plTarget->StoreNewItem(dest, pProto->ItemId, true);
@@ -4955,7 +4955,7 @@ bool ChatHandler::HandleQuestCompleteCommand(char* args)
         uint32 curItemCount = player->GetItemCount(id, true);
 
         ItemPosCountVec dest;
-        uint8 msg = player->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, id, count - curItemCount);
+        uint8 msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, id, count - curItemCount);
         if (msg == EQUIP_ERR_OK)
         {
             Item* item = player->StoreNewItem(dest, id, true);

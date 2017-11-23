@@ -167,7 +167,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
         { pItem->SetLootState(ITEM_LOOT_CHANGED); }
 
     ItemPosCountVec dest;
-    InventoryResult msg = player->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, item->itemid, item->count);
+    InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item->itemid, item->count);
     if (msg == EQUIP_ERR_OK)
     {
         Item* newitem = player->StoreNewItem(dest, item->itemid, true, item->randomPropertyId);
@@ -616,7 +616,7 @@ void WorldSession::HandleLootMasterGiveOpcode(WorldPacket& recv_data)
     LootItem& item = pLoot->items[slotid];
 
     ItemPosCountVec dest;
-    InventoryResult msg = target->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, item.itemid, item.count);
+    InventoryResult msg = target->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item.itemid, item.count);
     if (msg != EQUIP_ERR_OK)
     {
         // Assign winner to the item, avoiding other member picks it up.

@@ -51,7 +51,7 @@
 #include "CellImpl.h"
 #include "MapManager.h"
 
-#define nullptr_AURA_SLOT 0xFF
+#define NULL_AURA_SLOT 0xFF
 
 /**
  * An array with all the different handlers for taking care of
@@ -1947,7 +1947,7 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         uint32 count = m_modifier.m_amount;
 
         ItemPosCountVec dest;
-        InventoryResult msg = ((Player*)caster)->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, spellInfo->EffectItemType[m_effIndex], count, &noSpaceForCount);
+        InventoryResult msg = ((Player*)caster)->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, spellInfo->EffectItemType[m_effIndex], count, &noSpaceForCount);
         if (msg != EQUIP_ERR_OK)
         {
             count -= noSpaceForCount;
@@ -4998,7 +4998,7 @@ void SpellAuraHolder::_AddSpellAuraHolder()
         { return; }
 
     // Try find slot for aura
-    uint8 slot = nullptr_AURA_SLOT;
+    uint8 slot = NULL_AURA_SLOT;
     Unit* caster = GetCaster();
 
     // Lookup free slot

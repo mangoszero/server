@@ -781,7 +781,7 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
         {
             uint16 eDest;
             // equip offhand weapon/shield if it attempt equipped before main-hand weapon
-            InventoryResult msg = CanEquipItem(nullptr_SLOT, eDest, pItem, false);
+            InventoryResult msg = CanEquipItem(NULL_SLOT, eDest, pItem, false);
             if (msg == EQUIP_ERR_OK)
             {
                 RemoveItem(INVENTORY_SLOT_BAG_0, i, true);
@@ -791,7 +791,7 @@ bool Player::Create(uint32 guidlow, const std::string& name, uint8 race, uint8 c
             else
             {
                 ItemPosCountVec sDest;
-                msg = CanStoreItem(nullptr_BAG, nullptr_SLOT, sDest, pItem, false);
+                msg = CanStoreItem(NULL_BAG, NULL_SLOT, sDest, pItem, false);
                 if (msg == EQUIP_ERR_OK)
                 {
                     RemoveItem(INVENTORY_SLOT_BAG_0, i, true);
@@ -818,7 +818,7 @@ bool Player::StoreNewItemInBestSlots(uint32 titem_id, uint32 titem_amount)
     while (titem_amount > 0)
     {
         uint16 eDest;
-        uint8 msg = CanEquipNewItem(nullptr_SLOT, eDest, titem_id, false);
+        uint8 msg = CanEquipNewItem(NULL_SLOT, eDest, titem_id, false);
         if (msg != EQUIP_ERR_OK)
             { break; }
 
@@ -833,7 +833,7 @@ bool Player::StoreNewItemInBestSlots(uint32 titem_id, uint32 titem_amount)
     // attempt store
     ItemPosCountVec sDest;
     // store in main bag to simplify second pass (special bags can be not equipped yet at this moment)
-    uint8 msg = CanStoreNewItem(INVENTORY_SLOT_BAG_0, nullptr_SLOT, sDest, titem_id, titem_amount);
+    uint8 msg = CanStoreNewItem(INVENTORY_SLOT_BAG_0, NULL_SLOT, sDest, titem_id, titem_amount);
     if (msg == EQUIP_ERR_OK)
     {
         StoreNewItem(sDest, titem_id, true, Item::GenerateItemRandomPropertyId(titem_id));
@@ -850,7 +850,7 @@ Item* Player::StoreNewItemInInventorySlot(uint32 itemEntry, uint32 amount)
 {
     ItemPosCountVec vDest;
 
-    uint8 msg = CanStoreNewItem(INVENTORY_SLOT_BAG_0, nullptr_SLOT, vDest, itemEntry, amount);
+    uint8 msg = CanStoreNewItem(INVENTORY_SLOT_BAG_0, NULL_SLOT, vDest, itemEntry, amount);
 
     if (msg == EQUIP_ERR_OK)
     {
@@ -7794,10 +7794,10 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
     uint8 pClass = getClass();
 
     uint8 slots[4];
-    slots[0] = nullptr_SLOT;
-    slots[1] = nullptr_SLOT;
-    slots[2] = nullptr_SLOT;
-    slots[3] = nullptr_SLOT;
+    slots[0] = NULL_SLOT;
+    slots[1] = NULL_SLOT;
+    slots[2] = NULL_SLOT;
+    slots[3] = NULL_SLOT;
     switch (proto->InventoryType)
     {
         case INVTYPE_HEAD:
@@ -7911,10 +7911,10 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
             break;
         }
         default :
-            return nullptr_SLOT;
+            return NULL_SLOT;
     }
 
-    if (slot != nullptr_SLOT)
+    if (slot != NULL_SLOT)
     {
         if (swap || !GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
         {
@@ -7930,7 +7930,7 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
         // search free slot at first
         for (int i = 0; i < 4; ++i)
         {
-            if (slots[i] != nullptr_SLOT && !GetItemByPos(INVENTORY_SLOT_BAG_0, slots[i]))
+            if (slots[i] != NULL_SLOT && !GetItemByPos(INVENTORY_SLOT_BAG_0, slots[i]))
             {
                 // in case 2hand equipped weapon offhand slot empty but not free
                 if (slots[i] != EQUIPMENT_SLOT_OFFHAND || !IsTwoHandUsed())
@@ -7941,13 +7941,13 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
         // if not found free and can swap return first appropriate from used
         for (int i = 0; i < 4; ++i)
         {
-            if (slots[i] != nullptr_SLOT && swap)
+            if (slots[i] != NULL_SLOT && swap)
                 { return slots[i]; }
         }
     }
 
     // no free position
-    return nullptr_SLOT;
+    return NULL_SLOT;
 }
 
 
@@ -7964,10 +7964,10 @@ bool Player::ViableEquipSlots(ItemPrototype const* proto, uint8 *viable_slots) c
     }
 
     //DEBUG_LOG("**** [Player::ViableEquipSlots] Initialize return array ****");
-    viable_slots[0] = nullptr_SLOT;
-    viable_slots[1] = nullptr_SLOT;
-    viable_slots[2] = nullptr_SLOT;
-    viable_slots[3] = nullptr_SLOT;
+    viable_slots[0] = NULL_SLOT;
+    viable_slots[1] = NULL_SLOT;
+    viable_slots[2] = NULL_SLOT;
+    viable_slots[3] = NULL_SLOT;
 
     if (CanUseItem(proto) == EQUIP_ERR_OK)
     {
@@ -8143,7 +8143,7 @@ bool Player::ViableEquipSlots(ItemPrototype const* proto, uint8 *viable_slots) c
                 break;
         }
     }
-    return (viable_slots[0] != nullptr_SLOT);
+    return (viable_slots[0] != NULL_SLOT);
 }
 
 InventoryResult Player::CanUnequipItems(uint32 item, uint32 count) const
@@ -8375,7 +8375,7 @@ uint32 Player::GetAttackBySlot(uint8 slot)
 
 bool Player::IsInventoryPos(uint8 bag, uint8 slot)
 {
-    if (bag == INVENTORY_SLOT_BAG_0 && slot == nullptr_SLOT)
+    if (bag == INVENTORY_SLOT_BAG_0 && slot == NULL_SLOT)
         { return true; }
     if (bag == INVENTORY_SLOT_BAG_0 && (slot >= INVENTORY_SLOT_ITEM_START && slot < INVENTORY_SLOT_ITEM_END))
         { return true; }
@@ -8420,13 +8420,13 @@ bool Player::IsBagPos(uint16 pos)
 bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
 {
     // post selected
-    if (bag == nullptr_BAG && !explicit_pos)
+    if (bag == NULL_BAG && !explicit_pos)
         { return true; }
 
     if (bag == INVENTORY_SLOT_BAG_0)
     {
         // any post selected
-        if (slot == nullptr_SLOT && !explicit_pos)
+        if (slot == NULL_SLOT && !explicit_pos)
             { return true; }
 
         // equipment
@@ -8464,7 +8464,7 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
             { return false; }
 
         // any post selected
-        if (slot == nullptr_SLOT && !explicit_pos)
+        if (slot == NULL_SLOT && !explicit_pos)
             { return true; }
 
         return slot < pBag->GetBagSize();
@@ -8478,7 +8478,7 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
             { return false; }
 
         // any post selected
-        if (slot == nullptr_SLOT && !explicit_pos)
+        if (slot == NULL_SLOT && !explicit_pos)
             { return true; }
 
         return slot < pBag->GetBagSize();
@@ -8864,7 +8864,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
     }
 
     // in specific slot
-    if (bag != nullptr_BAG && slot != nullptr_SLOT)
+    if (bag != NULL_BAG && slot != NULL_SLOT)
     {
         res = _CanStoreItem_InSpecificSlot(bag, slot, dest, pProto, count, swap, pItem);
         if (res != EQUIP_ERR_OK)
@@ -8888,7 +8888,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
     // not specific slot or have space for partly store only in specific slot
 
     // in specific bag
-    if (bag != nullptr_BAG)
+    if (bag != NULL_BAG)
     {
         // search stack in bag for merge to
         if (pProto->Stackable > 1)
@@ -8933,10 +8933,10 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
             }
             else                                            // equipped bag
             {
-                // we need check 2 time (specialized/non_specialized), use nullptr_BAG to prevent skipping bag
-                res = _CanStoreItem_InBag(bag, dest, pProto, count, true, false, pItem, nullptr_BAG, slot);
+                // we need check 2 time (specialized/non_specialized), use NULL_BAG to prevent skipping bag
+                res = _CanStoreItem_InBag(bag, dest, pProto, count, true, false, pItem, NULL_BAG, slot);
                 if (res != EQUIP_ERR_OK)
-                    { res = _CanStoreItem_InBag(bag, dest, pProto, count, true, true, pItem, nullptr_BAG, slot); }
+                    { res = _CanStoreItem_InBag(bag, dest, pProto, count, true, true, pItem, NULL_BAG, slot); }
 
                 if (res != EQUIP_ERR_OK)
                 {
@@ -9003,9 +9003,9 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
         }
         else                                                // equipped bag
         {
-            res = _CanStoreItem_InBag(bag, dest, pProto, count, false, false, pItem, nullptr_BAG, slot);
+            res = _CanStoreItem_InBag(bag, dest, pProto, count, false, false, pItem, NULL_BAG, slot);
             if (res != EQUIP_ERR_OK)
-                { res = _CanStoreItem_InBag(bag, dest, pProto, count, false, true, pItem, nullptr_BAG, slot); }
+                { res = _CanStoreItem_InBag(bag, dest, pProto, count, false, true, pItem, NULL_BAG, slot); }
 
             if (res != EQUIP_ERR_OK)
             {
@@ -9482,7 +9482,7 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
             }
 
             uint8 eslot = FindEquipSlot(pProto, slot, swap);
-            if (eslot == nullptr_SLOT)
+            if (eslot == NULL_SLOT)
                 { return EQUIP_ERR_ITEM_CANT_BE_EQUIPPED; }
 
             InventoryResult msg = CanUseItem(pItem , direct_action);
@@ -9492,7 +9492,7 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                 { return EQUIP_ERR_NO_EQUIPMENT_SLOT_AVAILABLE; }
 
             // if swap ignore item (equipped also)
-            if (InventoryResult res2 = CanEquipUniqueItem(pItem, swap ? eslot : uint8(nullptr_SLOT)))
+            if (InventoryResult res2 = CanEquipUniqueItem(pItem, swap ? eslot : uint8(NULL_SLOT)))
                 { return res2; }
 
             // check unique-equipped special item classes
@@ -9545,7 +9545,7 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                 ItemPosCountVec off_dest;
                 if (offItem && (!direct_action ||
                                 CanUnequipItem(uint16(INVENTORY_SLOT_BAG_0) << 8 | EQUIPMENT_SLOT_OFFHAND, false) !=  EQUIP_ERR_OK ||
-                                CanStoreItem(nullptr_BAG, nullptr_SLOT, off_dest, offItem, false) !=  EQUIP_ERR_OK))
+                                CanStoreItem(NULL_BAG, NULL_SLOT, off_dest, offItem, false) !=  EQUIP_ERR_OK))
                     { return swap ? EQUIP_ERR_ITEMS_CANT_BE_SWAPPED : EQUIP_ERR_INVENTORY_FULL; }
             }
             dest = ((INVENTORY_SLOT_BAG_0 << 8) | eslot);
@@ -9621,7 +9621,7 @@ InventoryResult Player::CanBankItem(uint8 bag, uint8 slot, ItemPosCountVec& dest
         { return res; }
 
     // in specific slot
-    if (bag != nullptr_BAG && slot != nullptr_SLOT)
+    if (bag != NULL_BAG && slot != NULL_SLOT)
     {
         if (slot >= BANK_SLOT_BAG_START && slot < BANK_SLOT_BAG_END)
         {
@@ -9647,7 +9647,7 @@ InventoryResult Player::CanBankItem(uint8 bag, uint8 slot, ItemPosCountVec& dest
     // not specific slot or have space for partly store only in specific slot
 
     // in specific bag
-    if (bag != nullptr_BAG)
+    if (bag != NULL_BAG)
     {
         if (pProto->InventoryType == INVTYPE_BAG)
         {
@@ -9670,9 +9670,9 @@ InventoryResult Player::CanBankItem(uint8 bag, uint8 slot, ItemPosCountVec& dest
             }
             else
             {
-                res = _CanStoreItem_InBag(bag, dest, pProto, count, true, false, pItem, nullptr_BAG, slot);
+                res = _CanStoreItem_InBag(bag, dest, pProto, count, true, false, pItem, NULL_BAG, slot);
                 if (res != EQUIP_ERR_OK)
-                    { res = _CanStoreItem_InBag(bag, dest, pProto, count, true, true, pItem, nullptr_BAG, slot); }
+                    { res = _CanStoreItem_InBag(bag, dest, pProto, count, true, true, pItem, NULL_BAG, slot); }
 
                 if (res != EQUIP_ERR_OK)
                     { return res; }
@@ -9694,9 +9694,9 @@ InventoryResult Player::CanBankItem(uint8 bag, uint8 slot, ItemPosCountVec& dest
         }
         else
         {
-            res = _CanStoreItem_InBag(bag, dest, pProto, count, false, false, pItem, nullptr_BAG, slot);
+            res = _CanStoreItem_InBag(bag, dest, pProto, count, false, false, pItem, NULL_BAG, slot);
             if (res != EQUIP_ERR_OK)
-                { res = _CanStoreItem_InBag(bag, dest, pProto, count, false, true, pItem, nullptr_BAG, slot); }
+                { res = _CanStoreItem_InBag(bag, dest, pProto, count, false, true, pItem, NULL_BAG, slot); }
 
             if (res != EQUIP_ERR_OK)
                 { return res; }
@@ -10369,7 +10369,7 @@ void Player::RemoveItem(uint8 bag, uint8 slot, bool update)
         }
         pItem->SetGuidValue(ITEM_FIELD_CONTAINED, ObjectGuid());
         // pItem->SetGuidValue(ITEM_FIELD_OWNER, ObjectGuid()); not clear owner at remove (it will be set at store). This used in mail and auction code
-        pItem->SetSlot(nullptr_SLOT);
+        pItem->SetSlot(NULL_SLOT);
         if (IsInWorld() && update)
             { pItem->SendCreateUpdateToPlayer(this); }
     }
@@ -10481,7 +10481,7 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 
         // pItem->SetOwnerGUID(0);
         pItem->SetGuidValue(ITEM_FIELD_CONTAINED, ObjectGuid());
-        pItem->SetSlot(nullptr_SLOT);
+        pItem->SetSlot(NULL_SLOT);
         pItem->SetState(ITEM_REMOVED, this);
     }
 }
@@ -12579,7 +12579,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
         if (uint32 itemId = pQuest->RewChoiceItemId[reward])
         {
             ItemPosCountVec dest;
-            if (CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, itemId, pQuest->RewChoiceItemCount[reward]) == EQUIP_ERR_OK)
+            if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, pQuest->RewChoiceItemCount[reward]) == EQUIP_ERR_OK)
             {
                 Item* item = StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
                 SendNewItem(item, pQuest->RewChoiceItemCount[reward], true, false);
@@ -12594,7 +12594,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
             if (uint32 itemId = pQuest->RewItemId[i])
             {
                 ItemPosCountVec dest;
-                if (CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, itemId, pQuest->RewItemCount[i]) == EQUIP_ERR_OK)
+                if (CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, pQuest->RewItemCount[i]) == EQUIP_ERR_OK)
                 {
                     Item* item = StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
                     SendNewItem(item, pQuest->RewItemCount[i], true, false);
@@ -13043,10 +13043,10 @@ bool Player::CanGiveQuestSourceItemIfNeed(Quest const* pQuest, ItemPosCountVec* 
         if (!dest)
         {
             ItemPosCountVec destTemp;
-            msg = CanStoreNewItem(nullptr_BAG, nullptr_SLOT, destTemp, srcitem, count);
+            msg = CanStoreNewItem(NULL_BAG, NULL_SLOT, destTemp, srcitem, count);
         }
         else
-            { msg = CanStoreNewItem(nullptr_BAG, nullptr_SLOT, *dest, srcitem, count); }
+            { msg = CanStoreNewItem(NULL_BAG, NULL_SLOT, *dest, srcitem, count); }
 
         if (msg == EQUIP_ERR_OK)
             { return true; }
@@ -14806,7 +14806,7 @@ void Player::_LoadInventory(QueryResult* result, uint32 timediff)
             // the item/bag in a bag
             else
             {
-                item->SetSlot(nullptr_SLOT);
+                item->SetSlot(NULL_SLOT);
                 // the item is in a bag, find the bag
                 std::map<uint32, Bag*>::const_iterator itr = bagMap.find(bag_guid);
                 if (itr != bagMap.end() && slot < itr->second->GetBagSize())
@@ -17471,7 +17471,7 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
 
     Item* pItem = nullptr;
 
-    if ((bag == nullptr_BAG && slot == nullptr_SLOT) || IsInventoryPos(bag, slot))
+    if ((bag == NULL_BAG && slot == NULL_SLOT) || IsInventoryPos(bag, slot))
     {
         ItemPosCountVec dest;
         InventoryResult msg = CanStoreNewItem(bag, slot, dest, item, totalCount);
@@ -18636,7 +18636,7 @@ void Player::AutoUnequipOffhandIfNeed()
         { return; }
 
     ItemPosCountVec off_dest;
-    uint8 off_msg = CanStoreItem(nullptr_BAG, nullptr_SLOT, off_dest, offItem, false);
+    uint8 off_msg = CanStoreItem(NULL_BAG, NULL_SLOT, off_dest, offItem, false);
     if (off_msg == EQUIP_ERR_OK)
     {
         RemoveItem(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND, true);
@@ -19279,10 +19279,10 @@ void Player::AutoStoreLoot(Loot& loot, bool broadcast, uint8 bag, uint8 slot)
 
         ItemPosCountVec dest;
         InventoryResult msg = CanStoreNewItem(bag, slot, dest, lootItem->itemid, lootItem->count);
-        if (msg != EQUIP_ERR_OK && slot != nullptr_SLOT)
-            { msg = CanStoreNewItem(bag, nullptr_SLOT, dest, lootItem->itemid, lootItem->count); }
-        if (msg != EQUIP_ERR_OK && bag != nullptr_BAG)
-            { msg = CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, lootItem->itemid, lootItem->count); }
+        if (msg != EQUIP_ERR_OK && slot != NULL_SLOT)
+            { msg = CanStoreNewItem(bag, NULL_SLOT, dest, lootItem->itemid, lootItem->count); }
+        if (msg != EQUIP_ERR_OK && bag != NULL_BAG)
+            { msg = CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, lootItem->itemid, lootItem->count); }
         if (msg != EQUIP_ERR_OK)
         {
             SendEquipError(msg, nullptr, nullptr, lootItem->itemid);

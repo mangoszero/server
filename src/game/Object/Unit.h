@@ -267,8 +267,8 @@ enum HitInfo
 // i would like to remove this: (it is defined in item.h
 enum InventorySlot
 {
-    nullptr_BAG                   = 0,
-    nullptr_SLOT                  = 255
+    NULL_BAG                   = 0,
+    NULL_SLOT                  = 255
 };
 
 struct FactionTemplateEntry;

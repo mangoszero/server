@@ -1885,7 +1885,7 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
     // can the player store the new item?
     ItemPosCountVec dest;
     uint32 no_space = 0;
-    InventoryResult msg = player->CanStoreNewItem(nullptr_BAG, nullptr_SLOT, dest, newitemid, num_to_add, &no_space);
+    InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, newitemid, num_to_add, &no_space);
     if (msg != EQUIP_ERR_OK)
     {
         // convert to possible store amount
