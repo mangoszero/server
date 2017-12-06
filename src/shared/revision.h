@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 14
-    #define WORLD_DB_CONTENT_NR 67
-    #define WORLD_DB_UPDATE_DESCRIPTION "kodo roundup tidyup"
+    #define WORLD_DB_CONTENT_NR 77
+    #define WORLD_DB_UPDATE_DESCRIPTION "lower_npc_text_id"
 #endif // __REVISION_H__
