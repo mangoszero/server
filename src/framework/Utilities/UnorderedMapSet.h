@@ -40,6 +40,9 @@
 #    include <tr1/unordered_map>
 #    include <tr1/unordered_set>
 #  endif
+#elif COMPILER == COMPILER_INTEL && __INTEL_COMPILER >= 18
+#  include <unordered_map>
+#  include <unordered_set>
 #elif COMPILER == COMPILER_INTEL
 #  include <ext/hash_map>
 #  include <ext/hash_set>
@@ -98,6 +101,13 @@ HASH_NAMESPACE_END
 
 #endif
 
+#elif COMPILER == COMPILER_INTEL && __INTEL_COMPILER >= 18
+#  define UNORDERED_MAP std::unordered_map
+#  define UNORDERED_SET std::unordered_set
+#  define HASH_NAMESPACE_START namespace std {
+#  define HASH_NAMESPACE_END }
+using std::unordered_map;
+using std::unordered_set;
 #elif COMPILER == COMPILER_INTEL
 #  define UNORDERED_MAP std::hash_map
 #  define UNORDERED_SET std::hash_set

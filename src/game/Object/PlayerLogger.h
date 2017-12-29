@@ -25,6 +25,9 @@
 #ifndef MANGOS_H_PLAYERLOGGER
 #define MANGOS_H_PLAYERLOGGER
 
+#include "Common.h"
+#include "Object.h"
+
 enum PlayerLogEntity
 {
     PLAYER_LOG_DAMAGE_GET   = 0,

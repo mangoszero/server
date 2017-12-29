@@ -28,6 +28,7 @@
 #include "Platform/Define.h"
 #include "Dynamic/FactoryHolder.h"
 #include "ObjectGuid.h"
+#include "Creature.h"
 
 class WorldObject;
 class GameObject;

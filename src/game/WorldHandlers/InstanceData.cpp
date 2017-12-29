@@ -25,6 +25,7 @@
 #include "InstanceData.h"
 #include "Database/DatabaseEnv.h"
 #include "Map.h"
+#include "Object/LootMgr.h"
 
 void InstanceData::SaveToDB() const
 {

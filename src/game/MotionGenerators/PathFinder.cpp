@@ -29,6 +29,7 @@
 #include "Creature.h"
 #include "PathFinder.h"
 #include "Log.h"
+#include "WorldHandlers/Map.h"
 
 ////////////////// PathFinder //////////////////
 PathFinder::PathFinder(const Unit* owner) :
