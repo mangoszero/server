@@ -23,7 +23,7 @@ namespace ai
 
             if (sRandomPlayerbotMgr.IsRandomBot(bot))
             {
-                bot->GetPlayerbotAI()->SetMaster(NULL);
+                bot->GetPlayerbotAI()->SetMaster(nullptr);
                 sRandomPlayerbotMgr.ScheduleTeleport(bot->GetGUIDLow());
                 sRandomPlayerbotMgr.SetLootAmount(bot, 0);
             }

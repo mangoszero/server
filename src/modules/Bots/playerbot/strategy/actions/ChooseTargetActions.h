@@ -68,7 +68,7 @@ namespace ai
 
         virtual bool Execute(Event event)
         {
-            context->GetValue<Unit*>("current target")->Set(NULL);
+            context->GetValue<Unit*>("current target")->Set(nullptr);
             bot->SetSelectionGuid(ObjectGuid());
             ai->ChangeEngine(BOT_STATE_NON_COMBAT);
             ai->InterruptSpell();

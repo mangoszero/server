@@ -224,7 +224,7 @@ PoolObject* PoolGroup<T>::RollOne(SpawnedPoolData& spawns, uint32 triggerFrom)
             { return &EqualChanced[index]; }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // Main method to despawn a creature or gameobject in a pool
@@ -415,7 +415,7 @@ void PoolGroup<Creature>::Spawn1Object(MapPersistentState& mapState, PoolObject*
             // for not loaded grid just update respawn time (avoid work for instances until implemented support)
             else if (!instantly)
             {
-                dataMapState->SaveCreatureRespawnTime(obj->guid, time(NULL) + data->spawntimesecs);
+                dataMapState->SaveCreatureRespawnTime(obj->guid, time(nullptr) + data->spawntimesecs);
             }
         }
     }
@@ -464,7 +464,7 @@ void PoolGroup<GameObject>::Spawn1Object(MapPersistentState& mapState, PoolObjec
             {
                 // for spawned by default object only
                 if (data->spawntimesecs >= 0)
-                    { dataMapState->SaveGORespawnTime(obj->guid, time(NULL) + data->spawntimesecs); }
+                    { dataMapState->SaveGORespawnTime(obj->guid, time(nullptr) + data->spawntimesecs); }
             }
         }
     }

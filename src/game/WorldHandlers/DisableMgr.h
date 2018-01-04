@@ -62,7 +62,7 @@ enum SpawnDisableTypes
 namespace DisableMgr
 {
     void LoadDisables();
-    bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit = NULL, uint8 flags = 0, uint32 data = 0);
+    bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit = nullptr, uint8 flags = 0, uint32 data = 0);
     void CheckQuestDisables();
     bool IsVMAPDisabledFor(uint32 entry, uint8 flags);
     bool IsPathfindingEnabled(uint32 mapId);

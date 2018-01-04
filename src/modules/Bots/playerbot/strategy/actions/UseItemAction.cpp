@@ -52,12 +52,12 @@ bool UseItemAction::UseGameObject(ObjectGuid guid)
 
 bool UseItemAction::UseItemAuto(Item* item)
 {
-    return UseItem(item, ObjectGuid(), NULL);
+    return UseItem(item, ObjectGuid(), nullptr);
 }
 
 bool UseItemAction::UseItemOnGameObject(Item* item, ObjectGuid go)
 {
-    return UseItem(item, go, NULL);
+    return UseItem(item, go, nullptr);
 }
 
 bool UseItemAction::UseItemOnItem(Item* item, Item* itemTarget)

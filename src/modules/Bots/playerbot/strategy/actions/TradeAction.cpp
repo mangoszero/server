@@ -41,7 +41,7 @@ bool TradeAction::TradeItem(const Item& item, int8 slot)
     Item* itemPtr = const_cast<Item*>(&item);
 
     TradeData* pTrade = bot->GetTradeData();
-    if ((slot >= 0 && slot < TRADE_SLOT_COUNT) && pTrade->GetItem(TradeSlots(slot)) == NULL)
+    if ((slot >= 0 && slot < TRADE_SLOT_COUNT) && pTrade->GetItem(TradeSlots(slot)) == nullptr)
         tradeSlot = slot;
 
     if (slot == TRADE_SLOT_NONTRADED)
@@ -57,14 +57,14 @@ bool TradeAction::TradeItem(const Item& item, int8 slot)
                 WorldPacket* const packet = new WorldPacket(CMSG_CLEAR_TRADE_ITEM, 1);
                 *packet << (uint8) tradeSlot;
                 bot->GetSession()->QueuePacket(packet);
-                pTrade->SetItem(TradeSlots(i), NULL);
+                pTrade->SetItem(TradeSlots(i), nullptr);
                 return true;
             }
         }
 
         for (uint8 i = 0; i < TRADE_SLOT_TRADED_COUNT && tradeSlot == -1; i++)
         {
-            if (pTrade->GetItem(TradeSlots(i)) == NULL)
+            if (pTrade->GetItem(TradeSlots(i)) == nullptr)
             {
                 pTrade->SetItem(TradeSlots(i), itemPtr);
                 tradeSlot = i;

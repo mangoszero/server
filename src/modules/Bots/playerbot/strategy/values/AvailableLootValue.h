@@ -8,7 +8,7 @@ namespace ai
     class AvailableLootValue : public ManualSetValue<LootObjectStack*>
     {
     public:
-        AvailableLootValue(PlayerbotAI* ai) : ManualSetValue<LootObjectStack*>(ai, NULL) 
+        AvailableLootValue(PlayerbotAI* ai) : ManualSetValue<LootObjectStack*>(ai, nullptr) 
         {
             value = new LootObjectStack(ai->GetBot());
         }

@@ -228,8 +228,8 @@ class TerrainInfo : public Referencable<AtomicLong>
         // TODO: move all terrain/vmaps data info query functions
         // from 'Map' class into this class
         float GetHeightStatic(float x, float y, float z, bool checkVMap = true, float maxSearchDist = DEFAULT_HEIGHT_SEARCH) const;
-        float GetWaterLevel(float x, float y, float z, float* pGround = NULL) const;
-        float GetWaterOrGroundLevel(float x, float y, float z, float* pGround = NULL, bool swim = false) const;
+        float GetWaterLevel(float x, float y, float z, float* pGround = nullptr) const;
+        float GetWaterOrGroundLevel(float x, float y, float z, float* pGround = nullptr, bool swim = false) const;
         bool IsInWater(float x, float y, float z, GridMapLiquidData* data = 0) const;
         bool IsSwimmable(float x, float y, float pZ, float radius = 1.5f, GridMapLiquidData* data = 0) const;
         bool IsUnderWater(float x, float y, float z) const;
@@ -286,7 +286,7 @@ class TerrainInfo : public Referencable<AtomicLong>
 // class for managing TerrainData object and all sort of geometry querying operations
 class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex> >
 {
-        typedef UNORDERED_MAP<uint32,  TerrainInfo*> TerrainDataMap;
+        typedef std::unordered_map<uint32,  TerrainInfo*> TerrainDataMap;
         friend class MaNGOS::OperatorNew<TerrainManager>;
 
     public:

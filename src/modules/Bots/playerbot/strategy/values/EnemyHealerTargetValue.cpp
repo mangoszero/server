@@ -32,5 +32,5 @@ Unit* EnemyHealerTargetValue::Calculate()
             return unit;
     }
 
-    return NULL;
+    return nullptr;
 }

@@ -8,7 +8,7 @@ namespace ai
     public:
         CastBattleMeleeSpellAction(PlayerbotAI* ai, string spell) : CastMeleeSpellAction(ai, spell) {}
         virtual NextAction** getPrerequisites() {
-            return NextAction::merge( NextAction::array(0, new NextAction("battle stance"), NULL), CastMeleeSpellAction::getPrerequisites());
+            return NextAction::merge( NextAction::array(0, new NextAction("battle stance"), nullptr), CastMeleeSpellAction::getPrerequisites());
         }
     };
 
@@ -17,7 +17,7 @@ namespace ai
     public:
         CastDefensiveMeleeSpellAction(PlayerbotAI* ai, string spell) : CastMeleeSpellAction(ai, spell) {}
         virtual NextAction** getPrerequisites() {
-            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastMeleeSpellAction::getPrerequisites());
+            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), nullptr), CastMeleeSpellAction::getPrerequisites());
         }
     };
 
@@ -67,7 +67,7 @@ namespace ai
     public:
         CastTauntAction(PlayerbotAI* ai) : CastSpellAction(ai, "taunt") {}
         virtual NextAction** getPrerequisites() {
-            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
+            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), nullptr), CastSpellAction::getPrerequisites());
         }
     };
 
@@ -76,7 +76,7 @@ namespace ai
     public:
         CastShieldBlockAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "shield block") {}
         virtual NextAction** getPrerequisites() {
-            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
+            return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), nullptr), CastSpellAction::getPrerequisites());
         }
     };
 

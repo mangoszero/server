@@ -12,7 +12,7 @@ namespace ai
             lastMoveToY = 0;
             lastMoveToZ = 0;
             lastMoveToOri = 0;
-            lastFollow = NULL;
+            lastFollow = nullptr;
         }
 
         LastMovement(LastMovement& other)
@@ -39,7 +39,7 @@ namespace ai
             lastMoveToY = y;
             lastMoveToZ = z;
             lastMoveToOri = ori;
-            lastFollow = NULL;
+            lastFollow = nullptr;
         }
 
     public:

@@ -20,44 +20,44 @@ private:
     static ActionNode* survival_instincts(PlayerbotAI* ai)
     {
         return new ActionNode ("survival instincts",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("barskin"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("barskin"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* thorns(PlayerbotAI* ai)
     {
         return new ActionNode ("thorns",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* cure_poison(PlayerbotAI* ai)
     {
         return new ActionNode ("cure poison",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* cure_poison_on_party(PlayerbotAI* ai)
     {
         return new ActionNode ("cure poison on party",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* abolish_poison(PlayerbotAI* ai)
     {
         return new ActionNode ("abolish poison",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* abolish_poison_on_party(PlayerbotAI* ai)
     {
         return new ActionNode ("abolish poison on party",
-            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("caster form"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
 };
 
@@ -73,18 +73,18 @@ void FeralDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "not facing target",
-        NextAction::array(0, new NextAction("set facing", ACTION_NORMAL + 7), NULL)));
+        NextAction::array(0, new NextAction("set facing", ACTION_NORMAL + 7), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "enemy out of melee",
-        NextAction::array(0, new NextAction("reach melee", ACTION_NORMAL + 8), NULL)));
+        NextAction::array(0, new NextAction("reach melee", ACTION_NORMAL + 8), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "enemy too close for melee",
-        NextAction::array(0, new NextAction("move out of enemy contact", ACTION_NORMAL + 8), NULL)));
+        NextAction::array(0, new NextAction("move out of enemy contact", ACTION_NORMAL + 8), nullptr)));
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("survival instincts", ACTION_EMERGENCY + 1), NULL)));
+        NextAction::array(0, new NextAction("survival instincts", ACTION_EMERGENCY + 1), nullptr)));
 }
 

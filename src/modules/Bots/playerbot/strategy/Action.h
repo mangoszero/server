@@ -56,9 +56,9 @@ namespace ai
         virtual bool Execute(Event event) { return true; }
         virtual bool isPossible() { return true; }
         virtual bool isUseful() { return true; }
-        virtual NextAction** getPrerequisites() { return NULL; }
-        virtual NextAction** getAlternatives() { return NULL; }
-        virtual NextAction** getContinuers() { return NULL; }
+        virtual NextAction** getPrerequisites() { return nullptr; }
+        virtual NextAction** getAlternatives() { return nullptr; }
+        virtual NextAction** getContinuers() { return nullptr; }
         virtual ActionThreatType getThreatType() { return ACTION_THREAT_NONE; }
         void Update() {}
         void Reset() {}
@@ -74,9 +74,9 @@ namespace ai
     class ActionNode
     {
     public:
-        ActionNode(string name, NextAction** prerequisites = NULL, NextAction** alternatives = NULL, NextAction** continuers = NULL)
+        ActionNode(string name, NextAction** prerequisites = nullptr, NextAction** alternatives = nullptr, NextAction** continuers = nullptr)
         {
-            this->action = NULL;
+            this->action = nullptr;
             this->name = name;
             this->prerequisites = prerequisites;
             this->alternatives = alternatives;

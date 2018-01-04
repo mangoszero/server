@@ -17,16 +17,16 @@ private:
     static ActionNode* summon_voidwalker(PlayerbotAI* ai)
     {
         return new ActionNode ("summon voidwalker",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("drain soul"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("drain soul"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* summon_felguard(PlayerbotAI* ai)
     {
         return new ActionNode ("summon felguard",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("summon voidwalker"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("summon voidwalker"), nullptr),
+            /*C*/ nullptr);
     }
 };
 
@@ -37,7 +37,7 @@ TankWarlockStrategy::TankWarlockStrategy(PlayerbotAI* ai) : GenericWarlockStrate
 
 NextAction** TankWarlockStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("shoot", 10.0f), NULL);
+    return NextAction::array(0, new NextAction("shoot", 10.0f), nullptr);
 }
 
 void TankWarlockStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
@@ -46,6 +46,6 @@ void TankWarlockStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "no pet",
-        NextAction::array(0, new NextAction("summon felguard", 50.0f), NULL)));
+        NextAction::array(0, new NextAction("summon felguard", 50.0f), nullptr)));
 
 }

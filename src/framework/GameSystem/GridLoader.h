@@ -41,7 +41,7 @@ class ACTIVE_OBJECT,
  *        enters a grid.
  * Unloading is scheduled and might be canceled if an interested object re-enters.
  * GridLoader does not do the actual loading and unloading but implements as a
- * template pattern that delicate its loading and unloading for the actually
+ * template pattern that delegates its loading and unloading for the actually
  * loader and unloader. GridLoader manages the grid (both local and remote).
  *
  */

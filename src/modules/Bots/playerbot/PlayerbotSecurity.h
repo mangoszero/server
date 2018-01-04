@@ -31,7 +31,7 @@ class MANGOS_DLL_SPEC PlayerbotSecurity
         PlayerbotSecurity(Player* const bot);
 
     public:
-        PlayerbotSecurityLevel LevelFor(Player* from, DenyReason* reason = NULL, bool ignoreGroup = false);
+        PlayerbotSecurityLevel LevelFor(Player* from, DenyReason* reason = nullptr, bool ignoreGroup = false);
         bool CheckLevelFor(PlayerbotSecurityLevel level, bool silent, Player* from, bool ignoreGroup = false);
 
     private:

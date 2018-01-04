@@ -38,7 +38,7 @@ namespace ai
     class MinValueCalculator {
     public:
         MinValueCalculator(float def = 0.0f) {
-            param = NULL;
+            param = nullptr;
             minValue = def;
         }
 
@@ -80,7 +80,7 @@ private:
 class ChatCommandHolder
 {
 public:
-    ChatCommandHolder(string command, Player* owner = NULL, uint32 type = CHAT_MSG_WHISPER) : command(command), owner(owner), type(type) {}
+    ChatCommandHolder(string command, Player* owner = nullptr, uint32 type = CHAT_MSG_WHISPER) : command(command), owner(owner), type(type) {}
     ChatCommandHolder(ChatCommandHolder const& other)
     {
         this->command = other.command;

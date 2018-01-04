@@ -29,79 +29,79 @@ private:
     static ActionNode* melee(PlayerbotAI* ai)
     {
         return new ActionNode ("melee",
-            /*P*/ NextAction::array(0, new NextAction("reach melee"), NULL),
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ NextAction::array(0, new NextAction("reach melee"), nullptr),
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* healthstone(PlayerbotAI* ai)
     {
         return new ActionNode ("healthstone",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("healing potion"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("healing potion"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* follow_master_random(PlayerbotAI* ai)
     {
         return new ActionNode ("be near",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("follow master"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("follow master"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* attack_anything(PlayerbotAI* ai)
     {
         return new ActionNode ("attack anything",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* move_random(PlayerbotAI* ai)
     {
         return new ActionNode ("move random",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("stay line"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("stay line"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* move_to_loot(PlayerbotAI* ai)
     {
         return new ActionNode ("move to loot",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* food(PlayerbotAI* ai)
     {
         return new ActionNode ("food",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* drink(PlayerbotAI* ai)
     {
         return new ActionNode ("drink",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
     static ActionNode* mana_potion(PlayerbotAI* ai)
     {
         return new ActionNode ("mana potion",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("drink"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("drink"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* healing_potion(PlayerbotAI* ai)
     {
         return new ActionNode ("healing potion",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("food"), NULL),
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ NextAction::array(0, new NextAction("food"), nullptr),
+            /*C*/ nullptr);
     }
     static ActionNode* flee(PlayerbotAI* ai)
     {
         return new ActionNode ("flee",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NULL);
+            /*P*/ nullptr,
+            /*A*/ nullptr,
+            /*C*/ nullptr);
     }
 };
 

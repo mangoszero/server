@@ -1,6 +1,7 @@
 #ifndef _PLAYERBOTMGR_H
 #define _PLAYERBOTMGR_H
 
+#include <unordered_map>
 #include "Common.h"
 #include "PlayerbotAIBase.h"
 
@@ -10,7 +11,7 @@ class Unit;
 class Object;
 class Item;
 
-typedef UNORDERED_MAP<uint64, Player*> PlayerBotMap;
+typedef std::unordered_map<uint64, Player*> PlayerBotMap;
 
 class MANGOS_DLL_SPEC PlayerbotHolder : public PlayerbotAIBase
 {
@@ -30,7 +31,7 @@ public:
     void LogoutAllBots();
     void OnBotLogin(Player * const bot);
 
-    list<string> HandlePlayerbotCommand(char* args, Player* master = NULL);
+    list<string> HandlePlayerbotCommand(char* args, Player* master = nullptr);
     bool ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId);
     uint32 GetAccountId(string name);
 

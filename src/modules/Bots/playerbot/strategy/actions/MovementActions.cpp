@@ -265,7 +265,7 @@ bool RunAwayAction::Execute(Event event)
 
 bool MoveRandomAction::Execute(Event event)
 {
-    WorldObject* target = NULL;
+    WorldObject* target = nullptr;
 
     if (!(rand() % 3))
     {

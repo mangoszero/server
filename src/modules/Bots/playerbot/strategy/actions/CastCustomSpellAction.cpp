@@ -6,7 +6,7 @@ using namespace ai;
 
 bool CastCustomSpellAction::Execute(Event event)
 {
-    Unit* target = NULL;
+    Unit* target = nullptr;
 
     Player* master = GetMaster();
     if (master && master->GetSelectionGuid())

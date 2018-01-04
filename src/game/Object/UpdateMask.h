@@ -39,7 +39,7 @@ class UpdateMask
             CLIENT_UPDATE_MASK_BITS = sizeof(ClientUpdateMaskType) * 8,
         };
 
-        UpdateMask() : _fieldCount(0), _blockCount(0), _bits(NULL) { }
+        UpdateMask() : _fieldCount(0), _blockCount(0), _bits(nullptr) { }
 
         UpdateMask(UpdateMask const& right)
         {

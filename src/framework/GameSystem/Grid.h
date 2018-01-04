@@ -33,22 +33,18 @@
 // forward declaration
 template<class A, class T, class O> class GridLoader;
 
-template
-<
-class ACTIVE_OBJECT,
-      class WORLD_OBJECT_TYPES,
-      class GRID_OBJECT_TYPES
-      >
 /**
  * @brief Grid is a logical segment of the game world represented inside MaNGOS.
  *
  * Grid is bind at compile time to a particular type of object which
- * we call it the object of interested.  There are many types of loader,
+ * we call it the object of interest.  There are many types of loader,
  * specially, dynamic loader, static loader, or on-demand loader.  There's
  * a subtle difference between dynamic loader and on-demand loader but
  * this is implementation specific to the loader class.  From the
  * Grid's perspective, the loader meets its API requirement is suffice.
  */
+
+template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAINER>
 class Grid
 {
         // allows the GridLoader to access its internals
@@ -56,111 +52,57 @@ class Grid
 
     public:
 
-        /**
-         * @brief destructor to clean up its resources. This includes unloading
-         * the grid if it has not been unload.
-         *
-         */
-        ~Grid() {}
-
         template<class SPECIFIC_OBJECT>
-        /**
-         * @brief an object of interested enters the grid
-         *
-         * @param obj
-         * @return bool
-         */
         bool AddWorldObject(SPECIFIC_OBJECT* obj)
         {
-            return i_objects.template insert<SPECIFIC_OBJECT>(obj);
+            return i_worldContainer.template insert<SPECIFIC_OBJECT>(obj);
         }
 
         template<class SPECIFIC_OBJECT>
-        /**
-         * @brief an object of interested exits the grid
-         *
-         * @param obj
-         * @return bool
-         */
         bool RemoveWorldObject(SPECIFIC_OBJECT* obj)
         {
-            return i_objects.template remove<SPECIFIC_OBJECT>(obj);
-        }
-
-        template<class T>
-        /**
-         * @brief Grid visitor for grid objects
-         *
-         * @param TypeContainerVisitor<T
-         * @param visitor
-         */
-        void Visit(TypeContainerVisitor<T, TypeMapContainer<GRID_OBJECT_TYPES> >& visitor)
-        {
-            visitor.Visit(i_container);
-        }
-
-        template<class T>
-        /**
-         * @brief Grid visitor for world objects
-         *
-         * @param TypeContainerVisitor<T
-         * @param visitor
-         */
-        void Visit(TypeContainerVisitor<T, TypeMapContainer<WORLD_OBJECT_TYPES> >& visitor)
-        {
-            visitor.Visit(i_objects);
-        }
-
-        /**
-         * @brief Returns the number of object within the grid.
-         *
-         * @return uint32
-         */
-        uint32 ActiveObjectsInGrid() const
-        {
-            return m_activeGridObjects.size() + i_objects.template Count<ACTIVE_OBJECT>();
+            return i_worldContainer.template remove<SPECIFIC_OBJECT>(obj);
         }
 
         template<class SPECIFIC_OBJECT>
-        /**
-         * @brief Inserts a container type object into the grid.
-         *
-         * @param obj
-         * @return bool
-         */
         bool AddGridObject(SPECIFIC_OBJECT* obj)
         {
             if (obj->IsActiveObject())
                 { m_activeGridObjects.insert(obj); }
 
-            return i_container.template insert<SPECIFIC_OBJECT>(obj);
+            return i_gridContainer.template insert<SPECIFIC_OBJECT>(obj);
         }
 
         template<class SPECIFIC_OBJECT>
-        /**
-         * @brief Removes a container type object from the grid
-         *
-         * @param obj
-         * @return bool
-         */
         bool RemoveGridObject(SPECIFIC_OBJECT* obj)
         {
             if (obj->IsActiveObject())
                 { m_activeGridObjects.erase(obj); }
 
-            return i_container.template remove<SPECIFIC_OBJECT>(obj);
+            return i_gridContainer.template remove<SPECIFIC_OBJECT>(obj);
+        }
+
+        template<class T>
+        void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
+        {
+            visitor.Visit(i_gridContainer);
+        }
+
+        template<class T>
+        void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
+        {
+            visitor.Visit(i_worldContainer);
+        }
+
+        size_t ActiveObjectsInGrid() const
+        {
+            return m_activeGridObjects.size() + i_worldContainer.template count<ACTIVE_OBJECT>(nullptr);
         }
 
     private:
-
-        TypeMapContainer<GRID_OBJECT_TYPES> i_container; /**< TODO */
-        TypeMapContainer<WORLD_OBJECT_TYPES> i_objects; /**< TODO */
-        /**
-         * @brief
-         *
-         */
-        typedef std::set<void*> ActiveGridObjects;
-        ActiveGridObjects m_activeGridObjects; /**< TODO */
+        GRID_CONTAINER  i_gridContainer;
+        WORLD_CONTAINER i_worldContainer;
+        std::set<void*> m_activeGridObjects;
 };
 
 #endif

@@ -34,11 +34,11 @@ namespace ai
             }
 
             if (creators.find(name) == creators.end())
-                return NULL;
+                return nullptr;
 
             ActionCreator creator = creators[name];
             if (!creator)
-                return NULL;
+                return nullptr;
 
             T *object = (*creator)(ai);
             Qualified *q = dynamic_cast<Qualified *>(object);
@@ -148,7 +148,7 @@ namespace ai
                 T* object = (*i)->create(name, ai);
                 if (object) return object;
             }
-            return NULL;
+            return nullptr;
         }
 
         void Update()
@@ -240,7 +240,7 @@ namespace ai
                 T* object = (*i)->create(name, ai);
                 if (object) return object;
             }
-            return NULL;
+            return nullptr;
         }
 
     private:

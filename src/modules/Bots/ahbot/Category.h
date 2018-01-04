@@ -12,7 +12,7 @@ namespace ahbot
     class Category
     {
     public:
-        Category() : pricingStrategy(NULL) {}
+        Category() : pricingStrategy(nullptr) {}
         virtual ~Category() { if (pricingStrategy) delete pricingStrategy; }
 
     public:

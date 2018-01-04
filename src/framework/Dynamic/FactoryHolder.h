@@ -26,7 +26,6 @@
 #define MANGOS_FACTORY_HOLDER
 
 #include "Platform/Define.h"
-#include "Utilities/TypeList.h"
 #include "ObjectRegistry.h"
 #include "Policies/Singleton.h"
 
@@ -84,7 +83,7 @@ class FactoryHolder
          * @param data
          * @return T
          */
-        virtual T* Create(void* data = NULL) const = 0;
+        virtual T* Create(void* data = nullptr) const = 0;
     private:
         Key i_key; /**< TODO */
 };

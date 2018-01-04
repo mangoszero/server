@@ -8,7 +8,7 @@ namespace ai
     public:
         WorldPacketTrigger(PlayerbotAI* ai, string command) : Trigger(ai, command), triggered(false) {}
 
-        virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL)
+        virtual void ExternalEvent(WorldPacket &packet, Player* owner = nullptr)
         {
             this->packet = packet;
             this->owner = owner;

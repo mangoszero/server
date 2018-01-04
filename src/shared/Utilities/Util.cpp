@@ -292,7 +292,7 @@ bool IsIPAddrInNetwork(ACE_INET_Addr const& net, ACE_INET_Addr const& addr, ACE_
 uint32 CreatePIDFile(const std::string& filename)
 {
     FILE* pid_file = fopen(filename.c_str(), "w");
-    if (pid_file == NULL)
+    if (pid_file == nullptr)
         { return 0; }
 
 #ifdef WIN32
@@ -560,7 +560,7 @@ void HexStrToByteArray(std::string const& str, uint8* out, bool reverse /*= fals
     for (int32 i = init; i != end; i += 2 * op)
     {
         char buffer[3] = { str[i], str[i + 1], '\0' };
-        out[j++] = strtoul(buffer, NULL, 16);
+        out[j++] = strtoul(buffer, nullptr, 16);
     }
 }
 

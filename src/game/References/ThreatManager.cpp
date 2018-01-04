@@ -136,7 +136,7 @@ void HostileReference::updateOnlineStatus()
 
     if (!isValid())
     {
-        if (Unit* target = ObjectAccessor::GetUnit(*getSourceUnit(), getUnitGuid()))
+        if (Unit* target = sObjectAccessor.GetUnit(*getSourceUnit(), getUnitGuid()))
             { link(target, getSource()); }
     }
     // only check for online status if
@@ -224,10 +224,10 @@ void ThreatContainer::clearReferences()
 }
 
 //============================================================
-// Return the HostileReference of NULL, if not found
+// Return the HostileReference of nullptr, if not found
 HostileReference* ThreatContainer::getReferenceByTarget(Unit* pVictim)
 {
-    HostileReference* result = NULL;
+    HostileReference* result = nullptr;
     ObjectGuid guid = pVictim->GetObjectGuid();
     for (ThreatList::const_iterator i = iThreatList.begin(); i != iThreatList.end(); ++i)
     {
@@ -294,7 +294,7 @@ void ThreatContainer::update()
 
 HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, HostileReference* pCurrentVictim)
 {
-    HostileReference* pCurrentRef = NULL;
+    HostileReference* pCurrentRef = nullptr;
     bool found = false;
     bool onlySecondChoiceTargetsFound = false;
     bool checkedCurrentVictim = false;
@@ -325,7 +325,7 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
 
             // current victim is a second choice target, so don't compare threat with it below
             if (pCurrentRef == pCurrentVictim)
-                { pCurrentVictim = NULL; }
+                { pCurrentVictim = nullptr; }
 
             // second choice targets are only handled threat dependend if we have only have second choice targets
             continue;
@@ -382,7 +382,7 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
         ++iter;
     }
     if (!found)
-        { pCurrentRef = NULL; }
+        { pCurrentRef = nullptr; }
 
     return pCurrentRef;
 }
@@ -392,7 +392,7 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
 //============================================================
 
 ThreatManager::ThreatManager(Unit* owner)
-    : iCurrentVictim(NULL), iOwner(owner)
+    : iCurrentVictim(nullptr), iOwner(owner)
 {
 }
 
@@ -402,7 +402,7 @@ void ThreatManager::clearReferences()
 {
     iThreatContainer.clearReferences();
     iThreatOfflineContainer.clearReferences();
-    iCurrentVictim = NULL;
+    iCurrentVictim = nullptr;
 }
 
 //============================================================
@@ -465,7 +465,7 @@ Unit* ThreatManager::getHostileTarget()
     iThreatContainer.update();
     HostileReference* nextVictim = iThreatContainer.selectNextVictim((Creature*) getOwner(), getCurrentVictim());
     setCurrentVictim(nextVictim);
-    return getCurrentVictim() != NULL ? getCurrentVictim()->getTarget() : NULL;
+    return getCurrentVictim() != nullptr ? getCurrentVictim()->getTarget() : nullptr;
 }
 
 //============================================================
@@ -537,7 +537,7 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
             {
                 if (hostileReference == getCurrentVictim())
                 {
-                    setCurrentVictim(NULL);
+                    setCurrentVictim(nullptr);
                     setDirty(true);
                 }
                 iThreatContainer.remove(hostileReference);
@@ -554,7 +554,7 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
         case UEV_THREAT_REF_REMOVE_FROM_LIST:
             if (hostileReference == getCurrentVictim())
             {
-                setCurrentVictim(NULL);
+                setCurrentVictim(nullptr);
                 setDirty(true);
             }
             if (hostileReference->isOnline())

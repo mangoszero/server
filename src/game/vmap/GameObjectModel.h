@@ -62,7 +62,7 @@ class GameObjectModel
         VMAP::WorldModel* iModel;
         GameObject const* iOwner;
 
-        GameObjectModel() : isCollidable(false), iModel(NULL), iOwner(NULL) {}
+        GameObjectModel() : isCollidable(false), iModel(nullptr), iOwner(nullptr) {}
         bool initialize(const GameObject* const pGo, const GameObjectDisplayInfoEntry* info);
 
     public:

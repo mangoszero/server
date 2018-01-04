@@ -151,7 +151,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
             return;
         }
 
-        if (Player* pPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid()))
+        if (Player* pPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid()))
         {
             pPlayer->SendPushToPartyResponse(_player, QUEST_PARTY_MSG_ACCEPT_QUEST);
             _player->ClearDividerGuid();
@@ -165,7 +165,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
             {
                 if (Group* pGroup = _player->GetGroup())
                 {
-                    for (GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
+                    for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
                     {
                         Player* pPlayer = itr->getSource();
 
@@ -362,7 +362,7 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
         if (!pQuest->HasQuestFlag(QUEST_FLAGS_PARTY_ACCEPT))
             { return; }
 
-        Player* pOriginalPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid());
+        Player* pOriginalPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid());
 
         if (!pOriginalPlayer)
             { return; }
@@ -379,7 +379,7 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
         }
 
         if (_player->CanAddQuest(pQuest, true))
-            { _player->AddQuest(pQuest, NULL); }                // NULL, this prevent DB script from duplicate running
+            { _player->AddQuest(pQuest, nullptr); }                // nullptr, this prevent DB script from duplicate running
 
         _player->ClearDividerGuid();
     }
@@ -427,7 +427,7 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
     {
         if (Group* pGroup = _player->GetGroup())
         {
-            for (GroupReference* itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
+            for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
             {
                 Player* pPlayer = itr->getSource();
 
@@ -487,7 +487,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
 
     DEBUG_LOG("WORLD: Received opcode MSG_QUEST_PUSH_RESULT");
 
-    if (Player* pPlayer = ObjectAccessor::FindPlayer(_player->GetDividerGuid()))
+    if (Player* pPlayer = sObjectAccessor.FindPlayer(_player->GetDividerGuid()))
     {
         WorldPacket data(MSG_QUEST_PUSH_RESULT, (8 + 1));
         data << _player->GetObjectGuid();

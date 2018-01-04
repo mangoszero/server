@@ -94,7 +94,7 @@ namespace VMAP
     {
         if (!iIgnoreSpellIds)
             { iIgnoreSpellIds = new Table<unsigned int , bool>(); }
-        if (pSpellIdString != NULL)
+        if (pSpellIdString != nullptr)
         {
             unsigned int pos = 0;
             unsigned int id;
@@ -130,7 +130,7 @@ namespace VMAP
         delete iIgnoreSpellIds;
         delete gVMapManager;
 
-        iIgnoreSpellIds = NULL;
-        gVMapManager = NULL;
+        iIgnoreSpellIds = nullptr;
+        gVMapManager = nullptr;
     }
 }

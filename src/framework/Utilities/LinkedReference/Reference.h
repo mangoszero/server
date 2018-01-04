@@ -68,7 +68,7 @@ class Reference : public LinkedListElement
          *
          */
         Reference()
-            : iRefTo(NULL), iRefFrom(NULL)
+            : iRefTo(nullptr), iRefFrom(nullptr)
         {
         }
 
@@ -86,11 +86,11 @@ class Reference : public LinkedListElement
          */
         void link(TO* toObj, FROM* fromObj)
         {
-            assert(fromObj);                                // fromObj MUST not be NULL
+            assert(fromObj);                                // fromObj MUST not be nullptr
             if (isValid())
                 { unlink(); }
 
-            if (toObj != NULL)
+            if (toObj != nullptr)
             {
                 iRefTo = toObj;
                 iRefFrom = fromObj;
@@ -109,8 +109,8 @@ class Reference : public LinkedListElement
         {
             targetObjectDestroyLink();
             delink();
-            iRefTo = NULL;
-            iRefFrom = NULL;
+            iRefTo = nullptr;
+            iRefFrom = nullptr;
         }
 
         /**
@@ -124,7 +124,7 @@ class Reference : public LinkedListElement
         {
             sourceObjectDestroyLink();
             delink();
-            iRefTo = NULL;
+            iRefTo = nullptr;
         }
 
         /**
@@ -134,7 +134,7 @@ class Reference : public LinkedListElement
          */
         bool isValid() const                                // Only check the iRefTo
         {
-            return iRefTo != NULL;
+            return iRefTo != nullptr;
         }
 
         /**

@@ -6,5 +6,5 @@ using namespace ai;
 
 Unit* DuelTargetValue::Calculate()
 {
-    return bot->duel ? bot->duel->opponent : NULL;
+    return bot->duel ? bot->duel->opponent : nullptr;
 }

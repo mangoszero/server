@@ -60,7 +60,7 @@ bool UseMeetingStoneAction::Execute(Event event)
     MaNGOS::GameObjectListSearcher<MaNGOS::GameObjectByGuidInRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(master, searcher, sPlayerbotAIConfig.sightDistance);
 
-    GameObject* gameObject = NULL;
+    GameObject* gameObject = nullptr;
     for(list<GameObject*>::iterator i = targets.begin(); i != targets.end(); i++)
     {
         GameObject* go = *i;

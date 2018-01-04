@@ -18,7 +18,7 @@ bool TaxiAction::Execute(Event event)
         p1.rpos(0);
         bot->GetSession()->HandleMoveSplineDoneOpcode(p1);
         movement.taxiNodes.clear();
-        movement.Set(NULL);
+        movement.Set(nullptr);
         return true;
     }
 
