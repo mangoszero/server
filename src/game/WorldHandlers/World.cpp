@@ -623,7 +623,7 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
     setConfig(CONFIG_BOOL_INSTANT_TAXI, "InstantFlightPaths", false);
 
-    setConfig(CONFIG_UINT32_MOUNT_COST, "MountCost", 100000);    
+    setConfig(CONFIG_UINT32_MOUNT_COST, "MountCost", 100000);
     setConfigMin(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL, "MinTrainMountLevel", 40, 1);
     setConfig(CONFIG_UINT32_TRAIN_MOUNT_COST, "TrainMountCost", 900000);
     setConfig(CONFIG_UINT32_EPIC_MOUNT_COST, "EpicMountCost", 1000000);
@@ -1254,9 +1254,6 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Skill Fishing base level requirements...");
     sObjectMgr.LoadFishingBaseSkillLevel();
-
-    sLog.outString("Loading Npc Text Id...");
-    sObjectMgr.LoadNpcGossips();                            // must be after load Creature and LoadGossipText
 
     sLog.outString("Loading Gossip scripts...");
     sScriptMgr.LoadDbScripts(DBS_ON_GOSSIP);                 // must be before gossip menu options
@@ -2102,10 +2099,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
     if (time == 0)
     {
         if (!(options & SHUTDOWN_MASK_IDLE) || GetActiveAndQueuedSessionCount() == 0)
-        { 
+        {
                 sObjectAccessor.SaveAllPlayers();        // save all players.
                 m_stopEvent = true;                                // exist code already set
-        }                             
+        }
         else
         {
             m_ShutdownTimer = 1;

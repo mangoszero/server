@@ -270,8 +270,6 @@ bool ChatHandler::HandleReloadAllLootCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadAllNpcCommand(char* args)
 {
-    if (*args != 'a')                                       // will be reloaded from all_gossips
-        { HandleReloadNpcGossipCommand((char*)"a"); }
     HandleReloadNpcTrainerCommand((char*)"a");
     HandleReloadNpcVendorCommand((char*)"a");
     HandleReloadPointsOfInterestCommand((char*)"a");
@@ -342,7 +340,6 @@ bool ChatHandler::HandleReloadAllGossipsCommand(char* args)
     if (*args != 'a')                                       // already reload from all_scripts
         { HandleReloadDBScriptsOnGossipCommand((char*)"a"); }
     HandleReloadGossipMenuCommand((char*)"a");
-    HandleReloadNpcGossipCommand((char*)"a");
     HandleReloadPointsOfInterestCommand((char*)"a");
     return true;
 }
@@ -569,14 +566,6 @@ bool ChatHandler::HandleReloadMangosStringCommand(char* /*args*/)
     sLog.outString("Re-Loading mangos_string Table!");
     sObjectMgr.LoadMangosStrings();
     SendGlobalSysMessage("DB table `mangos_string` reloaded.", SEC_MODERATOR);
-    return true;
-}
-
-bool ChatHandler::HandleReloadNpcGossipCommand(char* /*args*/)
-{
-    sLog.outString("Re-Loading `npc_gossip` Table!");
-    sObjectMgr.LoadNpcGossips();
-    SendGlobalSysMessage("DB table `npc_gossip` reloaded.", SEC_MODERATOR);
     return true;
 }
 
