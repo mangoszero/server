@@ -1261,11 +1261,9 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadGossipMenus();
 
     sLog.outString("Loading Vendors...");
-    sObjectMgr.LoadVendorTemplates();                       // must be after load ItemTemplate
     sObjectMgr.LoadVendors();                               // must be after load CreatureTemplate, VendorTemplate, and ItemTemplate
 
     sLog.outString("Loading Trainers...");
-    sObjectMgr.LoadTrainerTemplates();                      // must be after load CreatureTemplate
     sObjectMgr.LoadTrainers();                              // must be after load CreatureTemplate, TrainerTemplate
 
     sLog.outString("Loading Waypoint scripts...");          // before loading from creature_movement
