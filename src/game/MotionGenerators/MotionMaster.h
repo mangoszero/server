@@ -75,7 +75,7 @@ class MotionMaster : private std::stack<MovementGenerator*>
         typedef std::vector<MovementGenerator*> ExpireList;
 
     public:
-        explicit MotionMaster(Unit* unit) : m_owner(unit), m_expList(NULL), m_cleanFlag(MMCF_NONE) {}
+        explicit MotionMaster(Unit* unit) : m_owner(unit), m_expList(nullptr), m_cleanFlag(MMCF_NONE) {}
         ~MotionMaster();
 
         void Initialize();

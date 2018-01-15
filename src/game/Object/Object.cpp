@@ -54,7 +54,7 @@ Object::Object()
     m_objectTypeId      = TYPEID_OBJECT;
     m_objectType        = TYPEMASK_OBJECT;
 
-    m_uint32Values      = NULL;
+    m_uint32Values      = nullptr;
     m_valuesCount       = 0;
 
     m_inWorld           = false;
@@ -219,7 +219,7 @@ void Object::DestroyForPlayer(Player* target) const
 
 void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
 {
-    Unit const* unit = NULL;
+    Unit const* unit = nullptr;
     uint32 highGuid = 0;
     MovementFlags moveflags = MOVEFLAG_NONE;
 
@@ -825,9 +825,9 @@ void Object::MarkForClientUpdate()
 
 WorldObject::WorldObject() :
 #ifdef ENABLE_ELUNA
-    elunaEvents(NULL),
+    elunaEvents(nullptr),
 #endif /* ENABLE_ELUNA */
-    m_currMap(NULL),
+    m_currMap(nullptr),
     m_mapId(0), m_InstanceId(0),
     m_isActiveObject(false)
 {
@@ -837,7 +837,7 @@ WorldObject::~WorldObject()
 {
 #ifdef ENABLE_ELUNA
     delete elunaEvents;
-    elunaEvents = NULL;
+    elunaEvents = nullptr;
 #endif /* ENABLE_ELUNA */
 }
 
@@ -1169,7 +1169,7 @@ bool WorldObject::IsInBack(WorldObject const* target, float distance, float arc)
     return IsWithinDist(target, distance) && !HasInArc(2 * M_PI_F - arc, target);
 }
 
-void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=NULL*/) const
+void WorldObject::GetRandomPoint(float x, float y, float z, float distance, float& rand_x, float& rand_y, float& rand_z, float minDist /*=0.0f*/, float const* ori /*=nullptr*/) const
 {
     if (distance == 0)
     {
@@ -1208,7 +1208,7 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
         { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
 }
 
-void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
+void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=nullptr*/) const
 {
     if (!atMap)
         atMap = GetMap();
@@ -1442,7 +1442,7 @@ void WorldObject::ResetMap()
 {
 #ifdef ENABLE_ELUNA
     delete elunaEvents;
-    elunaEvents = NULL;
+    elunaEvents = nullptr;
 #endif
 }
 
@@ -1457,7 +1457,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
     if (!cinfo)
     {
         sLog.outErrorDb("WorldObject::SummonCreature: Creature (Entry: %u) not existed for summoner: %s. ", id, GetGuidStr().c_str());
-        return NULL;
+        return nullptr;
     }
 
     TemporarySummon* pCreature = new TemporarySummon(GetObjectGuid());
@@ -1474,7 +1474,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
     if (!pCreature->Create(GetMap()->GenerateLocalLowGuid(cinfo->GetHighGuid()), pos, cinfo, team))
     {
         delete pCreature;
-        return NULL;
+        return nullptr;
     }
 
     pCreature->SetRespawnCoord(pos);
@@ -1510,12 +1510,12 @@ GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, 
     Map *map = GetMap();
 
     if (!map)
-        return NULL;
+        return nullptr;
 
     if (!pGameObj->Create(map->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), id, map, x, y, z, angle))
     {
         delete pGameObj;
-        return NULL;
+        return nullptr;
     }
 
     pGameObj->SetRespawnTime(despwtime/IN_MILLISECONDS);
@@ -1727,7 +1727,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
         { UpdateGroundPositionZ(x, y, z); }
 }
 
-void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= NULL*/) const
+void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= nullptr*/) const
 {
     WorldPacket data(SMSG_PLAY_OBJECT_SOUND, 4 + 8);
     data << uint32(sound_id);
@@ -1738,7 +1738,7 @@ void WorldObject::PlayDistanceSound(uint32 sound_id, Player const* target /*= NU
         { SendMessageToSet(&data, true); }
 }
 
-void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= NULL*/) const
+void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= nullptr*/) const
 {
     WorldPacket data(SMSG_PLAY_SOUND, 4);
     data << uint32(sound_id);
@@ -1748,7 +1748,7 @@ void WorldObject::PlayDirectSound(uint32 sound_id, Player const* target /*= NULL
         { SendMessageToSet(&data, true); }
 }
 
-void WorldObject::PlayMusic(uint32 sound_id, Player const* target /*= NULL*/) const
+void WorldObject::PlayMusic(uint32 sound_id, Player const* target /*= nullptr*/) const
 {
     WorldPacket data(SMSG_PLAY_MUSIC, 4);
     data << uint32(sound_id);

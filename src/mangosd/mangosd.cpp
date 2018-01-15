@@ -454,7 +454,7 @@ int main(int argc, char** argv)
     //************************************************************************************************************************
     // 2. Start the remote access listener thread
     //************************************************************************************************************************
-    RAThread* raThread = NULL;
+    RAThread* raThread = nullptr;
     if (sConfig.GetBoolDefault("Ra.Enable", false))
     {
         port = sConfig.GetIntDefault("Ra.Port", 3443);
@@ -468,7 +468,7 @@ int main(int argc, char** argv)
     // 3. Start the SOAP listener thread, if enabled
     //************************************************************************************************************************
 #ifdef ENABLE_SOAP
-    SoapThread* soapThread = NULL;
+    SoapThread* soapThread = nullptr;
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
     {
         host = sConfig.GetStringDefault("SOAP.IP", "127.0.0.1");
@@ -488,13 +488,13 @@ int main(int argc, char** argv)
     // 4. Start the freeze catcher thread
     //************************************************************************************************************************
     AntiFreezeThread* freezeThread = new AntiFreezeThread(1000 * sConfig.GetIntDefault("MaxCoreStuckTime", 0));
-    freezeThread->open(NULL);
+    freezeThread->open(nullptr);
 
 
     //************************************************************************************************************************
     // 5. Start the console thread
     //************************************************************************************************************************
-    CliThread* cliThread = NULL;
+    CliThread* cliThread = nullptr;
 #ifdef _WIN32
     if (sConfig.GetBoolDefault("Console.Enable", true) && (m_ServiceStatus == -1)/* need disable console in service mode*/)
 #else

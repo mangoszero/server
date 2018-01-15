@@ -77,7 +77,7 @@ void GMTicket::Init(ObjectGuid guid, const std::string& text, const std::string&
 void GMTicket::SetText(const char* text)
 {
     m_text = text ? text : "";
-    m_lastUpdate = time(NULL);
+    m_lastUpdate = time(nullptr);
 
     std::string escapedString = m_text;
     CharacterDatabase.escape_string(escapedString);
@@ -89,7 +89,7 @@ void GMTicket::SetText(const char* text)
 void GMTicket::SetResponseText(const char* text)
 {
     m_responseText = text ? text : "";
-    m_lastUpdate = time(NULL);
+    m_lastUpdate = time(nullptr);
 
     std::string escapedString = m_responseText;
     CharacterDatabase.escape_string(escapedString);
@@ -203,7 +203,7 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
         m_GMTicketIdMap.erase(ticketId);
             
     //Lets reinitialize with new data
-    ticket.Init(guid, text, "", time(NULL), ticketId);
+    ticket.Init(guid, text, "", time(nullptr), ticketId);
     m_GMTicketIdMap[ticketId] = &ticket;
 }
 

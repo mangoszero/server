@@ -97,7 +97,7 @@ bool ChatHandler::HandleNpcTextEmoteCommand(char* args)
         return false;
     }
 
-    pCreature->MonsterTextEmote(args, NULL);
+    pCreature->MonsterTextEmote(args, nullptr);
 
     return true;
 }
@@ -253,7 +253,7 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
     Player* player = m_session->GetPlayer();
     SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
     if (!invisibleAuraInfo || !IsSpellAppliesAura(invisibleAuraInfo))
-        { invisibleAuraInfo = NULL; }
+        { invisibleAuraInfo = nullptr; }
 
     if (value)
     {
@@ -275,7 +275,7 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
 
 bool ChatHandler::HandleGPSCommand(char* args)
 {
-    WorldObject* obj = NULL;
+    WorldObject* obj = nullptr;
     if (*args)
     {
         if (ObjectGuid guid = ExtractGuidFromLink(&args))
@@ -483,7 +483,7 @@ bool ChatHandler::HandleSummonCommand(char* args)
     else
     {
         // check offline security
-        if (HasLowerSecurity(NULL, target_guid))
+        if (HasLowerSecurity(nullptr, target_guid))
             { return false; }
 
         std::string nameLink = playerLink(target_name);
@@ -585,7 +585,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
             {
                 Group* group = _player->GetGroup();
                 // if no bind exists, create a solo bind
-                InstanceGroupBind* gBind = group ? group->GetBoundInstance(target->GetMapId()) : NULL;
+                InstanceGroupBind* gBind = group ? group->GetBoundInstance(target->GetMapId()) : nullptr;
                 // if no bind exists, create a solo bind
                 if (!gBind)
                 {
@@ -623,7 +623,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
     else
     {
         // check offline security
-        if (HasLowerSecurity(NULL, target_guid))
+        if (HasLowerSecurity(nullptr, target_guid))
             { return false; }
 
         std::string nameLink = playerLink(target_name);
@@ -681,7 +681,7 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -719,7 +719,7 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -797,7 +797,7 @@ bool ChatHandler::HandleModifyRageCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -960,7 +960,7 @@ bool ChatHandler::HandleModifyASpeedCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -1007,7 +1007,7 @@ bool ChatHandler::HandleModifySpeedCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -1052,7 +1052,7 @@ bool ChatHandler::HandleModifySwimCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -1097,7 +1097,7 @@ bool ChatHandler::HandleModifyBWalkCommand(char* args)
     }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -1141,7 +1141,7 @@ bool ChatHandler::HandleModifyScaleCommand(char* args)
     }
 
     Unit* target = getSelectedUnit();
-    if (target == NULL)
+    if (target == nullptr)
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         SetSentErrorMessage(true);
@@ -1430,7 +1430,7 @@ bool ChatHandler::HandleModifyMoneyCommand(char* args)
         { return false; }
 
     Player* chr = getSelectedPlayer();
-    if (chr == NULL)
+    if (chr == nullptr)
     {
         SendSysMessage(LANG_NO_CHAR_SELECTED);
         SetSentErrorMessage(true);
@@ -1726,7 +1726,7 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
     else
     {
         // check offline security
-        if (HasLowerSecurity(NULL, target_guid))
+        if (HasLowerSecurity(nullptr, target_guid))
             { return false; }
 
         std::string nameLink = playerLink(target_name);
@@ -1777,7 +1777,7 @@ bool ChatHandler::HandleTeleGroupCommand(char* args)
         return false;
     }
 
-    for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+    for (GroupReference* itr = grp->GetFirstMember(); itr != nullptr; itr = itr->next())
     {
         Player* pl = itr->getSource();
 
@@ -1853,7 +1853,7 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
         return false;
     }
 
-    for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+    for (GroupReference* itr = grp->GetFirstMember(); itr != nullptr; itr = itr->next())
     {
         Player* pl = itr->getSource();
 

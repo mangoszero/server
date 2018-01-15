@@ -443,7 +443,7 @@ class SqlStatement
          *
          * @param index
          */
-        SqlStatement(const SqlStatement& index) : m_index(index.m_index), m_pDB(index.m_pDB), m_pParams(NULL)
+        SqlStatement(const SqlStatement& index) : m_index(index.m_index), m_pDB(index.m_pDB), m_pParams(nullptr)
         {
             if (index.m_pParams)
                 { m_pParams = new SqlStmtParameters(*(index.m_pParams)); }
@@ -643,7 +643,7 @@ class SqlStatement
          * @param index
          * @param db
          */
-        SqlStatement(const SqlStatementID& index, Database& db) : m_index(index), m_pDB(&db), m_pParams(NULL) {}
+        SqlStatement(const SqlStatementID& index, Database& db) : m_index(index), m_pDB(&db), m_pParams(nullptr) {}
 
     private:
 
@@ -668,7 +668,7 @@ class SqlStatement
         SqlStmtParameters* detach()
         {
             SqlStmtParameters* p = m_pParams ? m_pParams : new SqlStmtParameters(0);
-            m_pParams = NULL;
+            m_pParams = nullptr;
             return p;
         }
 

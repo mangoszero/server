@@ -28,7 +28,7 @@
 HMACSHA1::HMACSHA1(uint32 len, uint8 *seed)
 {
     HMAC_CTX_init(&m_ctx);
-    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), NULL);
+    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), nullptr);
 }
 
 HMACSHA1::~HMACSHA1()

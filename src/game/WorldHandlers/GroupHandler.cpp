@@ -783,7 +783,7 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
     ObjectGuid guid;
     recv_data >> guid;
 
-    Player* player = ObjectAccessor::FindPlayer(guid, false);
+    Player* player = sObjectAccessor.FindPlayer(guid, false);
     if (!player)
     {
         WorldPacket data(SMSG_PARTY_MEMBER_STATS_FULL, 3 + 4 + 1);

@@ -180,12 +180,12 @@ class CharacterHandler
 
             PlayerbotHolder* playerbotHolder = lqh->GetPlayerbotHolder();
             uint32 masterAccount = lqh->GetMasterAccountId();
-            WorldSession* masterSession = masterAccount ? sWorld.FindSession(masterAccount) : NULL;
+            WorldSession* masterSession = masterAccount ? sWorld.FindSession(masterAccount) : nullptr;
 
             // The bot's WorldSession is owned by the bot's Player object
             // The bot's WorldSession is deleted by PlayerbotMgr::LogoutPlayerBot
             uint32 botAccountId = lqh->GetAccountId();
-            WorldSession *botSession = new WorldSession(botAccountId, NULL, SEC_PLAYER, 0, LOCALE_enUS);
+            WorldSession *botSession = new WorldSession(botAccountId, nullptr, SEC_PLAYER, 0, LOCALE_enUS);
             botSession->m_Address = "bot";
             botSession->HandlePlayerLogin(lqh); // will delete lqh
             Player* bot = botSession->GetPlayer();
@@ -536,7 +536,7 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket& recv_data)
     ObjectGuid playerGuid;
     recv_data >> playerGuid;
 
-    if (PlayerLoading() || GetPlayer() != NULL)
+    if (PlayerLoading() || GetPlayer() != nullptr)
     {
         sLog.outError("Player tryes to login again, AccountId = %d", GetAccountId());
         return;
@@ -882,7 +882,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     m_clientTimeDelay = 0;
 
     /* Used for looting */
-    pCurrChar->lastTimeLooted = time(NULL);
+    pCurrChar->lastTimeLooted = time(nullptr);
 
     delete holder;
 }
@@ -1004,7 +1004,7 @@ void WorldSession::HandleCharRenameOpcode(WorldPacket& recv_data)
     // and that there is no character with the desired new name
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleChangePlayerNameOpcodeCallBack,
                                   GetAccountId(), newname,
-                                  "SELECT guid, name FROM characters WHERE guid = %u AND account = %u AND (at_login & %u) = %u AND NOT EXISTS (SELECT NULL FROM characters WHERE name = '%s')",
+                                  "SELECT guid, name FROM characters WHERE guid = %u AND account = %u AND (at_login & %u) = %u AND NOT EXISTS (SELECT nullptr FROM characters WHERE name = '%s')",
                                   guid.GetCounter(), GetAccountId(), AT_LOGIN_RENAME, AT_LOGIN_RENAME, escaped_newname.c_str()
                                  );
 }

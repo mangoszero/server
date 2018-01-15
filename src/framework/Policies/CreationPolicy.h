@@ -137,7 +137,7 @@ namespace MaNGOS
                 void* p = malloc(sizeof(T));
 
                 if (!p)
-                    { return NULL; }
+                    { return nullptr; }
 
                 return new(p) T;
             }

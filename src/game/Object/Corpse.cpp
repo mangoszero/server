@@ -32,7 +32,7 @@
 
 Corpse::Corpse(CorpseType type) : WorldObject(),
     loot(this),
-    lootRecipient(NULL),
+    lootRecipient(nullptr),
     lootForBody(false)
 {
     m_objectType |= TYPEMASK_CORPSE;
@@ -43,7 +43,7 @@ Corpse::Corpse(CorpseType type) : WorldObject(),
 
     m_type = type;
 
-    m_time = time(NULL);
+    m_time = time(nullptr);
 }
 
 Corpse::~Corpse()

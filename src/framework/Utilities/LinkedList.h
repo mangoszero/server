@@ -49,7 +49,7 @@ class LinkedListElement
          * @brief
          *
          */
-        LinkedListElement()  { iNext = NULL; iPrev = NULL; }
+        LinkedListElement()  { iNext = nullptr; iPrev = nullptr; }
         /**
          * @brief
          *
@@ -61,44 +61,44 @@ class LinkedListElement
          *
          * @return bool
          */
-        bool hasNext() const  { return (iNext->iNext != NULL); }
+        bool hasNext() const  { return (iNext->iNext != nullptr); }
         /**
          * @brief
          *
          * @return bool
          */
-        bool hasPrev() const  { return (iPrev->iPrev != NULL); }
+        bool hasPrev() const  { return (iPrev->iPrev != nullptr); }
         /**
          * @brief
          *
          * @return bool
          */
-        bool isInList() const { return (iNext != NULL && iPrev != NULL); }
+        bool isInList() const { return (iNext != nullptr && iPrev != nullptr); }
 
         /**
          * @brief
          *
          * @return LinkedListElement
          */
-        LinkedListElement*       next()       { return hasNext() ? iNext : NULL; }
+        LinkedListElement*       next()       { return hasNext() ? iNext : nullptr; }
         /**
          * @brief
          *
          * @return const LinkedListElement
          */
-        LinkedListElement const* next() const { return hasNext() ? iNext : NULL; }
+        LinkedListElement const* next() const { return hasNext() ? iNext : nullptr; }
         /**
          * @brief
          *
          * @return LinkedListElement
          */
-        LinkedListElement*       prev()       { return hasPrev() ? iPrev : NULL; }
+        LinkedListElement*       prev()       { return hasPrev() ? iPrev : nullptr; }
         /**
          * @brief
          *
          * @return const LinkedListElement
          */
-        LinkedListElement const* prev() const { return hasPrev() ? iPrev : NULL; }
+        LinkedListElement const* prev() const { return hasPrev() ? iPrev : nullptr; }
 
         /**
          * @brief
@@ -135,8 +135,8 @@ class LinkedListElement
             {
                 iNext->iPrev = iPrev;
                 iPrev->iNext = iNext;
-                iNext = NULL;
-                iPrev = NULL;
+                iNext = nullptr;
+                iPrev = nullptr;
             }
         }
 
@@ -208,26 +208,26 @@ class LinkedListHead
          *
          * @return LinkedListElement
          */
-        LinkedListElement*       getFirst()       { return (isEmpty() ? NULL : iFirst.iNext); }
+        LinkedListElement*       getFirst()       { return (isEmpty() ? nullptr : iFirst.iNext); }
         /**
          * @brief
          *
          * @return const LinkedListElement
          */
-        LinkedListElement const* getFirst() const { return (isEmpty() ? NULL : iFirst.iNext); }
+        LinkedListElement const* getFirst() const { return (isEmpty() ? nullptr : iFirst.iNext); }
 
         /**
          * @brief
          *
          * @return LinkedListElement
          */
-        LinkedListElement*       getLast()        { return (isEmpty() ? NULL : iLast.iPrev); }
+        LinkedListElement*       getLast()        { return (isEmpty() ? nullptr : iLast.iPrev); }
         /**
          * @brief
          *
          * @return const LinkedListElement
          */
-        LinkedListElement const* getLast() const  { return (isEmpty() ? NULL : iLast.iPrev); }
+        LinkedListElement const* getLast() const  { return (isEmpty() ? nullptr : iLast.iPrev); }
 
         /**
          * @brief

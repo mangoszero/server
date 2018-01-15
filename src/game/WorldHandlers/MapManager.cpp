@@ -100,11 +100,11 @@ void MapManager::InitializeVisibilityDistanceInfo()
 /// @param id - MapId of the to be created map. @param obj WorldObject for which the map is to be created. Must be player for Instancable maps.
 Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, nullptr)
 
     const MapEntry* entry = sMapStore.LookupEntry(id);
     if (!entry)
-        { return NULL; }
+        { return nullptr; }
 
 	Map* m;
 	if (entry->Instanceable())
@@ -113,14 +113,14 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
         // create DungeonMap object
         m = CreateInstance(id, (Player*)obj);
         // Load active objects for this map
-        if (m != NULL)
+        if (m != nullptr)
           { LoadActiveEntities(m); }
     }
     else
     {
         // create regular non-instanceable map
         m = FindMap(id);
-        if (m == NULL)
+        if (m == nullptr)
         {
             m = new WorldMap(id, i_gridCleanUpDelay);
             // add map into container
@@ -140,23 +140,23 @@ Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
 {
     sTerrainMgr.LoadTerrain(mapid);
 
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, nullptr)
     return CreateBattleGroundMap(mapid, sMapMgr.GenerateInstanceId(), bg);
 }
 
 Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 {
-    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
+    ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, nullptr)
 
     MapMapType::const_iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter == i_maps.end())
-        { return NULL; }
+        { return nullptr; }
 
     // this is a small workaround for transports
     if (instanceId == 0 && iter->second->Instanceable())
     {
         assert(false);
-        return NULL;
+        return nullptr;
     }
 
     return iter->second;
@@ -307,8 +307,8 @@ uint32 MapManager::GetNumPlayersInInstances()
 ///// in case of battlegrounds it will only return an existing map, those maps are created by bg-system
 Map* MapManager::CreateInstance(uint32 id, Player* player)
 {
-    Map* map = NULL;
-    Map* pNewMap = NULL;
+    Map* map = nullptr;
+    Map* pNewMap = nullptr;
     uint32 NewInstanceId;                               // instanceId of the resulting map
     const MapEntry* entry = sMapStore.LookupEntry(id);
 
@@ -368,7 +368,7 @@ DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPe
     DungeonMap* map = new DungeonMap(id, i_gridCleanUpDelay, InstanceId);
 
     // Dungeons can have saved instance data
-    bool load_data = save != NULL;
+    bool load_data = save != nullptr;
     map->CreateInstanceData(load_data);
 
     return map;
@@ -395,14 +395,14 @@ BattleGroundMap* MapManager::CreateBattleGroundMap(uint32 id, uint32 InstanceId,
 void MapManager::LoadContinents()
 {
     uint32 continents[] = {0, 1};
-    Map* _map = NULL;
+    Map* _map = nullptr;
 
     for (uint8 i = 0; i < countof(continents); ++i)
     {
         _map = sMapMgr.FindMap(continents[i]);
 
         if (!_map)
-          { _map = sMapMgr.CreateMap(continents[i], NULL); }
+          { _map = sMapMgr.CreateMap(continents[i], nullptr); }
 
         if (!_map)
           { sLog.outError("MapManager::LoadContinents() - Unable to create map %u", continents[i]); }

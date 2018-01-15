@@ -174,13 +174,13 @@ class DBCFileLoader
          * @param id
          * @return uint32
          */
-        uint32 GetOffset(size_t id) const { return (fieldsOffset != NULL && id < fieldCount) ? fieldsOffset[id] : 0; }
+        uint32 GetOffset(size_t id) const { return (fieldsOffset != nullptr && id < fieldCount) ? fieldsOffset[id] : 0; }
         /**
          * @brief
          *
          * @return bool
          */
-        bool IsLoaded() const {return (data != NULL);}
+        bool IsLoaded() const {return (data != nullptr);}
         /**
          * @brief
          *
@@ -205,7 +205,7 @@ class DBCFileLoader
          * @param index_pos
          * @return uint32
          */
-        static uint32 GetFormatRecordSize(const char* format, int32* index_pos = NULL);
+        static uint32 GetFormatRecordSize(const char* format, int32* index_pos = nullptr);
     private:
 
         uint32 recordSize; /**< TODO */
