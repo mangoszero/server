@@ -10,36 +10,32 @@
 if(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
   set(MYSQL_FOUND TRUE)
 else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
+  if(WIN32)
+    SET(PROGRAM_FILES_ARCH_PATH)
+    if(PLATFORM EQUAL 32)
+      SET(PROGRAM_FILES_ARCH_PATH $ENV{ProgramFiles})
+    elseif(PLATFORM EQUAL 64)
+      SET(PROGRAM_FILES_ARCH_PATH $ENV{ProgramW6432})
+    endif()
 
-  SET(PROGRAM_FILES_ARCH_PATH)
-  if(PLATFORM EQUAL 32)
-    SET(PROGRAM_FILES_ARCH_PATH $ENV{ProgramFiles})
-  elseif(PLATFORM EQUAL 64)
-    SET(PROGRAM_FILES_ARCH_PATH $ENV{ProgramW6432})
-  endif()
+    if (${PROGRAM_FILES_ARCH_PATH})
+      STRING(REPLACE "\\\\" "/" PROGRAM_FILES_ARCH_PATH ${PROGRAM_FILES_ARCH_PATH})
+    endif(${PROGRAM_FILES_ARCH_PATH})
 
-  if (${PROGRAM_FILES_ARCH_PATH})
-    STRING(REPLACE "\\\\" "/" PROGRAM_FILES_ARCH_PATH ${PROGRAM_FILES_ARCH_PATH})
-  endif(${PROGRAM_FILES_ARCH_PATH})
-
-  find_path(MYSQL_INCLUDE_DIR mysql.h
-    /usr/include
-    /usr/include/mysql
-    /usr/local/include
-    /usr/local/include/mysql
-    /usr/local/mysql/include
-    /opt/local/include/mysql*/mysql
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.0/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.1/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.2/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.3/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/include"
-    "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.7/include"
-  )
-
-  if(WIN32 AND MSVC)
+    find_path(MYSQL_INCLUDE_DIR mysql.h
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.0/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.1/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.2/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.3/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.4/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.7/include"
+      "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.0/include/mysql"
+      "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.1/include/mysql"
+      "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.2/include/mysql"
+      "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.3/include/mysql"
+    )
     find_library(MYSQL_LIBRARY
       NAMES
         libmysql
@@ -52,8 +48,21 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.5/lib"
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.6/lib"
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.7/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.0/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.1/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.2/lib"
+        "${PROGRAM_FILES_ARCH_PATH}/MariaDB 10.3/lib"
       )
-  else(WIN32 AND MSVC)
+  else(WIN32)
+    find_path(MYSQL_INCLUDE_DIR mysql.h
+      /usr/include
+      /usr/include/mysql
+      /usr/local/include
+      /usr/local/include/mysql
+      /usr/local/mysql/include
+      /opt/local/include/mysql*/mysql
+    )
+
     find_library(MYSQL_LIBRARY
       NAMES
         mysqlclient
@@ -66,7 +75,7 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
         /usr/local/mysql/lib
         /opt/local/lib/mysql*/mysql
       )
-  endif(WIN32 AND MSVC)
+  endif(WIN32)
 
   if(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
     set(MYSQL_FOUND TRUE)

@@ -36,22 +36,19 @@ endif()
 
 if(WIN32)
 include(generate_product_version)
-generate_product_version(
-    VersionFilesOutputVariable
-    NAME "mangosd.exe"
-    ICON ${CMAKE_SOURCE_DIR}/src/mangosd/mangosd.ico
-    VERSION_MAJOR 0
-    VERSION_MINOR 21
-    VERSION_PATH ${BUILD_COUNTER}
-    VERSION_REVISION ${BUILD_REVISION}
-	COMPANY_NAME "getmangos.eu"
-# Do not alter, remove or prevent COMPANY_COPYRIGHT from displaying
-	COMPANY_COPYRIGHT
-	FILE_DESCRIPTION "Mangos Zero Server Daemon"
-)
-endif()
-
-if(WIN32)
+    generate_product_version(
+        VersionFilesOutputVariable
+        NAME "mangosd.exe"
+        ICON ${CMAKE_SOURCE_DIR}/src/mangosd/mangosd.ico
+        VERSION_MAJOR 0
+        VERSION_MINOR 21
+        VERSION_PATH ${BUILD_COUNTER}
+        VERSION_REVISION ${BUILD_REVISION}
+        COMPANY_NAME "getmangos.eu"
+        # Do not alter, remove or prevent COMPANY_COPYRIGHT from displaying
+        COMPANY_COPYRIGHT
+        FILE_DESCRIPTION "Mangos Zero Server Daemon"
+    )
     # add resource file to windows build
     set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} VersionResource.rc)
 endif()
@@ -105,13 +102,6 @@ endif()
 
 add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS})
 
-if(NOT ACE_USE_EXTERNAL)
-    add_dependencies(${EXECUTABLE_NAME} ace)
-    target_link_libraries(${EXECUTABLE_NAME} ace)
-else()
-    target_link_libraries(${EXECUTABLE_NAME} ACE)
-endif()
-
 target_link_libraries(${EXECUTABLE_NAME}
     game
     shared
@@ -119,6 +109,13 @@ target_link_libraries(${EXECUTABLE_NAME}
     g3dlite
     ${OPENSSL_LIBRARIES}
 )
+
+if(NOT ACE_USE_EXTERNAL)
+    add_dependencies(${EXECUTABLE_NAME} ace)
+    target_link_libraries(${EXECUTABLE_NAME} ace)
+else()
+    target_link_libraries(${EXECUTABLE_NAME} ACE)
+endif()
 
 if(POSTGRESQL)
     include_directories(${PostgreSQL_INCLUDE_DIR})
@@ -167,22 +164,4 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist DESTINATION ${CONF_I
 
 if(WIN32 AND MSVC)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/\${BUILD_TYPE}/${EXECUTABLE_NAME}.pdb" DESTINATION "${BIN_DIR}" CONFIGURATIONS Debug)
-    add_custom_command(TARGET ${EXECUTABLE_NAME}
-        POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist" "${CONF_COPY_DIR}"
-    )
-endif()
-
-#Copy dlls to build dir
-if(WIN32)
-    if(MSVC)
-        add_custom_command(TARGET ${EXECUTABLE_NAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY}" "${CMAKE_BINARY_DIR}/bin/$(Configuration)/"
-        )
-    elseif(XCODE)
-        add_custom_command(TARGET ${EXECUTABLE_NAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${MYSQL_LIBRARY}" "${CMAKE_BINARY_DIR}/bin/"
-        )
-    endif()
 endif()

@@ -1,4 +1,4 @@
-# - Try to find the OpenSSL encryption library
+# Try to find the OpenSSL encryption library
 # Once done this will define
 #
 #  OPENSSL_ROOT_DIR - Set this variable to the root installation of OpenSSL
