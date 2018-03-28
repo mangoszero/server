@@ -28,13 +28,13 @@ endif()
 file(GLOB Playerbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/*.h)
     source_group("Player Bot" FILES ${Playerbot_Source})
 
-#file(GLOB AHbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.h)
-#    source_group("AH Bot" FILES ${AHbot_Source})
+file(GLOB AHbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.h)
+    source_group("AH Bot" FILES ${AHbot_Source})
 
 #Define base source library
 set(LIBRARY_SRCS 
     ${Playerbot_Source}
-#    ${AHbot_Source}
+    ${AHbot_Source}
     ${bots_PCH}
 )
 
@@ -112,7 +112,7 @@ file(GLOB Playerbot_Warrior ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/warri
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-#  ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
+  ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
   ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
   ${CMAKE_SOURCE_DIR}/src/game
   ${CMAKE_SOURCE_DIR}/src/game/AuctionHouseBot
