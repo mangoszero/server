@@ -27,14 +27,14 @@ endif()
 #Base files
 file(GLOB Playerbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/*.h)
     source_group("Player Bot" FILES ${Playerbot_Source})
-    
-file(GLOB AHbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.h)
-    source_group("AH Bot" FILES ${AHbot_Source})
-    
+
+#file(GLOB AHbot_Source ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.h)
+#    source_group("AH Bot" FILES ${AHbot_Source})
+
 #Define base source library
 set(LIBRARY_SRCS 
     ${Playerbot_Source}
-    ${AHbot_Source}
+#    ${AHbot_Source}
     ${bots_PCH}
 )
 
@@ -42,17 +42,17 @@ set(LIBRARY_SRCS
 file(GLOB Playerbot_Strategy ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/*.h)
     source_group("Player Bot\\Strategies" FILES ${Playerbot_Strategy})
     LIST(APPEND LIBRARY_SRCS ${Playerbot_Strategy})
-    
+
 #Action files
 file(GLOB Playerbot_Actions ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/actions/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/actions/*.h)
     source_group("Player Bot\\Strategies\\Actions" FILES ${Playerbot_Actions})
     LIST(APPEND LIBRARY_SRCS ${Playerbot_Actions})
-    
+
 #Generic files
 file(GLOB Playerbot_Generic ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/generic/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/generic/*.h)
     source_group("Player Bot\\Strategies\\Generic" FILES ${Playerbot_Generic})
     LIST(APPEND LIBRARY_SRCS ${Playerbot_Generic})
-    
+
 #Trigger files
 file(GLOB Playerbot_Triggers ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/triggers/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/triggers/*.h)
     source_group("Player Bot\\Strategies\\Triggers" FILES ${Playerbot_Triggers})
@@ -112,7 +112,7 @@ file(GLOB Playerbot_Warrior ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/warri
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
+#  ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
   ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
   ${CMAKE_SOURCE_DIR}/src/game
   ${CMAKE_SOURCE_DIR}/src/game/AuctionHouseBot
@@ -167,16 +167,8 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/playerbot/aiplayerbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahbot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
-
-if(WIN32 AND MSVC)
-  add_custom_command(TARGET ${LIBRARY_NAME}
-    POST_BUILD 
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist" "${CONF_COPY_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist" "${CONF_COPY_DIR}"
-  )
-endif()
+#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahbot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist)
+#install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
 
 # Generate PCH
 if(PCH)
