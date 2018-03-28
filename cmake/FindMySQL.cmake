@@ -38,7 +38,7 @@ else(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARY)
     )
     find_library(MYSQL_LIBRARY
       NAMES
-        libmysql
+        libmysql libmariadb
       PATHS
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.0/lib/opt"
         "${PROGRAM_FILES_ARCH_PATH}/MySQL/MySQL Server 5.1/lib/opt"

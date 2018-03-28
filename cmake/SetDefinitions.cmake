@@ -43,6 +43,7 @@ if(WIN32)
     set(LIBS_DIR ${CMAKE_INSTALL_PREFIX}/)
 
     if(MSVC)
+    set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
         if(PLATFORM EQUAL 64)
             # This definition is necessary to work around a bug with Intellisense described
             # here: http://tinyurl.com/2cb428.  Syntax highlighting is important for proper
