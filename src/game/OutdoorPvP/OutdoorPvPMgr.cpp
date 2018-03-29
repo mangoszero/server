@@ -74,7 +74,7 @@ OutdoorPvP* OutdoorPvPMgr::GetScript(uint32 zoneId)
         case ZONE_ID_EASTERN_PLAGUELANDS:
             return m_scripts[OPVP_ID_EP];
         default:
-            return NULL;
+            return nullptr;
     }
 }
 
@@ -90,7 +90,7 @@ OutdoorPvP* OutdoorPvPMgr::GetScriptOfAffectedZone(uint32 zoneId)
         case ZONE_ID_SCHOLOMANCE:
             return m_scripts[OPVP_ID_EP];
         default:
-            return NULL;
+            return nullptr;
     }
 }
 

@@ -31,7 +31,7 @@
 PlayerLogger::PlayerLogger(ObjectGuid guid) : logActiveMask(0), playerGuid(guid.GetCounter())
 {
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
-        data[i] = NULL;
+        data[i] = nullptr;
 }
 
 PlayerLogger::~PlayerLogger()
@@ -90,7 +90,7 @@ void PlayerLogger::Clean(PlayerLogMask mask)
     {
         if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0)    // note that actual data presence is not checked here!
             continue;
-        if (data[i] == NULL)
+        if (data[i] == nullptr)
         {
             sLog.outError("PlayerLogging: flag for logtype %u set but no init was called! Ignored.", i);
             continue;
@@ -106,7 +106,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
     uint64 serverStart = uint64(sWorld.GetStartTime());
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
     {
-        if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0 || data[i] == NULL)
+        if ((mask & CalcLogMask(PlayerLogEntity(i))) == 0 || data[i] == nullptr)
             continue;
 
         if (!insideTransaction)
@@ -234,7 +234,7 @@ void PlayerLogger::StartCombatLogging()
 
 void PlayerLogger::StartLogging(PlayerLogEntity entity)
 {
-    if (data[entity] == NULL)
+    if (data[entity] == nullptr)
     {
         sLog.outError("PlayerLogger: StartLogging without init! Fixing, check your code.");
         Initialize(entity);
@@ -398,9 +398,9 @@ void PlayerLogger::SetLogActiveMask(PlayerLogEntity entity, bool on)
 
 Player* PlayerLogger::GetPlayer() const
 {
-    Player* pl = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
+    Player* pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, playerGuid), true);
     if (!pl)
-        pl = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
+        pl = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_CORPSE, playerGuid), true);
 
     if (!pl)
         sLog.outError("PlayerLogger: cannot get current player! Ignoring the record.");

@@ -3,6 +3,7 @@
 
 #include "Common.h"
 #include "PlayerbotAIBase.h"
+#include <unordered_map>
 
 class WorldPacket;
 class Player;
@@ -10,7 +11,7 @@ class Unit;
 class Object;
 class Item;
 
-typedef UNORDERED_MAP<uint64, Player*> PlayerBotMap;
+typedef std::unordered_map<uint64, Player*> PlayerBotMap;
 
 class MANGOS_DLL_SPEC PlayerbotHolder : public PlayerbotAIBase
 {

@@ -180,7 +180,7 @@ struct BattleGroundObjectInfo
  * @brief
  *
  */
-    BattleGroundObjectInfo() : object(NULL), timer(0), spellid(0) {}
+    BattleGroundObjectInfo() : object(nullptr), timer(0), spellid(0) {}
 
     GameObject*  object; /**< TODO */
     int32       timer; /**< TODO */
@@ -761,7 +761,7 @@ class BattleGround
          * @param sender
          * @param self
          */
-        void SendPacketToTeam(Team team, WorldPacket* packet, Player* sender = NULL, bool self = true);
+        void SendPacketToTeam(Team team, WorldPacket* packet, Player* sender = nullptr, bool self = true);
         /**
          * @brief
          *
@@ -883,7 +883,7 @@ class BattleGround
          * @param type
          * @param source
          */
-        void SendMessageToAll(int32 entry, ChatMsg type, Player const* source = NULL);
+        void SendMessageToAll(int32 entry, ChatMsg type, Player const* source = nullptr);
         /**
          * @brief
          *

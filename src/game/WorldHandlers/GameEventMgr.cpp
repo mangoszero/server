@@ -53,7 +53,7 @@ bool GameEventMgr::CheckOneGameEvent(uint16 entry, time_t currenttime) const
 
 uint32 GameEventMgr::NextCheck(uint16 entry) const
 {
-    time_t currenttime = time(NULL);
+    time_t currenttime = time(nullptr);
 
     // outdated event: we return max
     if (currenttime > mGameEvent[entry].end)
@@ -82,7 +82,7 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
     ApplyNewEvent(event_id, resume);
     if (overwrite)
     {
-        mGameEvent[event_id].start = time(NULL);
+        mGameEvent[event_id].start = time(nullptr);
         if (mGameEvent[event_id].end <= mGameEvent[event_id].start)
             { mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length; }
     }
@@ -97,7 +97,7 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
     UnApplyEvent(event_id);
     if (overwrite)
     {
-        mGameEvent[event_id].start = time(NULL) - mGameEvent[event_id].length * MINUTE;
+        mGameEvent[event_id].start = time(nullptr) - mGameEvent[event_id].length * MINUTE;
         if (mGameEvent[event_id].end <= mGameEvent[event_id].start)
             { mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length; }
     }
@@ -612,9 +612,9 @@ void GameEventMgr::Initialize(MapPersistentState* state)
 }
 
 // return the next event delay in ms
-uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
+uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= nullptr*/)
 {
-    time_t currenttime = time(NULL);
+    time_t currenttime = time(nullptr);
 
     uint32 nextEventDelay = max_ge_check_delay;             // 1 day
     uint32 calcDelay;
@@ -866,13 +866,13 @@ GameEventCreatureData const* GameEventMgr::GetCreatureUpdateDataForActiveEvent(u
     }
 
     if (!event_id)
-        { return NULL; }
+        { return nullptr; }
 
     for (GameEventCreatureDataList::const_iterator itr = mGameEventCreatureData[event_id].begin(); itr != mGameEventCreatureData[event_id].end(); ++itr)
         if (itr->first == lowguid)
             { return &itr->second; }
 
-    return NULL;
+    return nullptr;
 }
 
 struct GameEventUpdateCreatureDataInMapsWorker
@@ -884,9 +884,9 @@ struct GameEventUpdateCreatureDataInMapsWorker
     {
         if (Creature* pCreature = map->GetCreature(i_guid))
         {
-            pCreature->UpdateEntry(i_data->id, TEAM_NONE, i_data, i_activate ? i_event_data : NULL);
+            pCreature->UpdateEntry(i_data->id, TEAM_NONE, i_data, i_activate ? i_event_data : nullptr);
 
-            // spells not casted for event remove case (sent NULL into update), do it
+            // spells not casted for event remove case (sent nullptr into update), do it
             if (!i_activate)
                 { pCreature->ApplyGameEventSpells(i_event_data, false); }
         }
@@ -944,7 +944,7 @@ void GameEventMgr::SendEventMails(int16 event_id)
             ss << "SELECT characters.guid FROM characters, character_queststatus "
                "WHERE (1 << (characters.race - 1)) & "
                << itr->raceMask
-               << " AND characters.deleteDate IS NULL AND character_queststatus.guid = characters.guid AND character_queststatus.quest = "
+               << " AND characters.deleteDate IS nullptr AND character_queststatus.guid = characters.guid AND character_queststatus.quest = "
                << itr->questId
                << " AND character_queststatus.rewarded <> 0";
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());

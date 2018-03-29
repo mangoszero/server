@@ -99,7 +99,7 @@ namespace MaNGOS
     };
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< TODO */
+    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = nullptr; /**< TODO */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
     bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< TODO */
@@ -141,7 +141,7 @@ namespace MaNGOS
     void MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::DestroySingleton()
     {
         CreatePolicy::Destroy(si_instance);
-        si_instance = NULL;
+        si_instance = nullptr;
         si_destroyed = true;
     }
 }

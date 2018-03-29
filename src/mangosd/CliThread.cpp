@@ -36,7 +36,7 @@
   #include <windows.h>
 #endif
 
-static void prompt(void* callback = NULL, bool status = true)
+static void prompt(void* callback = nullptr, bool status = true)
 {
     printf("mangos>");
     fflush(stdout);
@@ -52,7 +52,7 @@ static int kb_hit_return()
     tv.tv_usec = 0;
     FD_ZERO(&fds);
     FD_SET(STDIN_FILENO, &fds);
-    select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+    select(STDIN_FILENO + 1, &fds, nullptr, nullptr, &tv);
     return FD_ISSET(STDIN_FILENO, &fds);
 }
 #endif
@@ -83,7 +83,7 @@ int CliThread::svc()
             { break; }
 #endif
         char* command_str = fgets(buffer_, sizeof(buffer_), stdin);
-        if (command_str != NULL)
+        if (command_str != nullptr)
         {
             for (int x = 0; command_str[x]; ++x)
                 if (command_str[x] == '\r' || command_str[x] == '\n')
@@ -105,7 +105,7 @@ int CliThread::svc()
                 continue;
             }
 
-            sWorld.QueueCliCommand(new CliCommandHolder(0, SEC_CONSOLE, NULL, command.c_str(), &utf8print, &prompt));
+            sWorld.QueueCliCommand(new CliCommandHolder(0, SEC_CONSOLE, nullptr, command.c_str(), &utf8print, &prompt));
         }
 
         else if (feof(stdin))

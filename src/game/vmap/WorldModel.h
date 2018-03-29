@@ -210,7 +210,7 @@ namespace VMAP
              *
              * @param liquid
              */
-            void SetLiquidData(WmoLiquid*& liquid) { iLiquid = liquid; liquid = NULL; }
+            void SetLiquidData(WmoLiquid*& liquid) { iLiquid = liquid; liquid = nullptr; }
             /**
              * @brief
              *

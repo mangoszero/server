@@ -51,7 +51,7 @@ static bool GetValueHelper(ACE_Configuration_Heap* mConf, const char* name, ACE_
 }
 
 Config::Config()
-    : mConf(NULL)
+    : mConf(nullptr)
 {
 }
 
@@ -80,7 +80,7 @@ bool Config::Reload()
     }
 
     delete mConf;
-    mConf = NULL;
+    mConf = nullptr;
     return false;
 }
 

@@ -239,7 +239,7 @@ template<class DerivedLoader, class StorageClass>
  */
 void SQLStorageLoaderBase<DerivedLoader, StorageClass>::Load(StorageClass& store, bool error_at_empty /*= true*/)
 {
-    Field* fields = NULL;
+    Field* fields = nullptr;
     QueryResult* result  = WorldDatabase.PQuery("SELECT MAX(%s) FROM %s", store.EntryFieldName(), store.GetTableName());
     if (!result)
     {
@@ -341,7 +341,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::Load(StorageClass& store
                 case DBC_FF_NA:         storeValue((uint32)0, store, record, x, offset);         ++x; continue;
                 case DBC_FF_NA_BYTE:    storeValue((char)0, store, record, x, offset);           ++x; continue;
                 case DBC_FF_NA_FLOAT:   storeValue((float)0.0f, store, record, x, offset);       ++x; continue;
-                case DBC_FF_NA_POINTER: storeValue((char const*)NULL, store, record, x, offset); ++x; continue;
+                case DBC_FF_NA_POINTER: storeValue((char const*)nullptr, store, record, x, offset); ++x; continue;
                 default:
                     break;
             }

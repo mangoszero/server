@@ -88,12 +88,12 @@ void WorldSession::HandleGuildInviteOpcode(WorldPacket& recvPacket)
     DEBUG_LOG("WORLD: Received opcode CMSG_GUILD_INVITE");
 
     std::string Invitedname, plname;
-    Player* player = NULL;
+    Player* player = nullptr;
 
     recvPacket >> Invitedname;
 
     if (normalizePlayerName(Invitedname))
-        { player = ObjectAccessor::FindPlayerByName(Invitedname.c_str()); }
+        { player = sObjectAccessor.FindPlayerByName(Invitedname.c_str()); }
 
     if (!player)
     {

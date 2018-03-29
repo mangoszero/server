@@ -55,7 +55,7 @@ namespace MaNGOS
             /// <param name="textId">The text id.</param>
             /// <param name="source">The source.</param>
             /// <param name="args">The args.</param>
-            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = NULL)
+            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = nullptr)
                 : i_msgtype(msgtype), i_textId(textId), i_source(source), i_args(args) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
@@ -96,7 +96,7 @@ namespace MaNGOS
             /// <param name="textId">The text id.</param>
             /// <param name="source">The source.</param>
             /// <param name="args">The args.</param>
-            BattleGroundYellBuilder(Language language, int32 textId, Creature const* source, va_list* args = NULL)
+            BattleGroundYellBuilder(Language language, int32 textId, Creature const* source, va_list* args = nullptr)
                 : i_language(language), i_textId(textId), i_source(source), i_args(args) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
@@ -199,7 +199,7 @@ template<class Do>
 void BattleGround::BroadcastWorker(Do& _do)
 {
     for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-        if (Player* plr = ObjectAccessor::FindPlayer(itr->first))
+        if (Player* plr = sObjectAccessor.FindPlayer(itr->first))
             { _do(plr); }
 }
 
@@ -226,7 +226,7 @@ BattleGround::BattleGround()
     m_MinPlayers        = 0;
 
     m_MapId             = 0;
-    m_Map               = NULL;
+    m_Map               = nullptr;
 
     m_validStartPositionTimer              = 0;
 
@@ -242,8 +242,8 @@ BattleGround::BattleGround()
     m_TeamStartLocO[TEAM_INDEX_ALLIANCE]   = 0;
     m_TeamStartLocO[TEAM_INDEX_HORDE]      = 0;
 
-    m_BgRaids[TEAM_INDEX_ALLIANCE]         = NULL;
-    m_BgRaids[TEAM_INDEX_HORDE]            = NULL;
+    m_BgRaids[TEAM_INDEX_ALLIANCE]         = nullptr;
+    m_BgRaids[TEAM_INDEX_HORDE]            = nullptr;
 
     m_PlayersCount[TEAM_INDEX_ALLIANCE]    = 0;
     m_PlayersCount[TEAM_INDEX_HORDE]       = 0;
@@ -361,13 +361,13 @@ void BattleGround::Update(uint32 diff)
             if (newtime > (MINUTE * IN_MILLISECONDS))
             {
                 if (newtime / (MINUTE * IN_MILLISECONDS) != m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS))
-                    { PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING, CHAT_MSG_SYSTEM, NULL, (uint32)(m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS))); }
+                    { PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING, CHAT_MSG_SYSTEM, nullptr, (uint32)(m_PrematureCountDownTimer / (MINUTE * IN_MILLISECONDS))); }
             }
             else
             {
                 // announce every 15 seconds
                 if (newtime / (15 * IN_MILLISECONDS) != m_PrematureCountDownTimer / (15 * IN_MILLISECONDS))
-                    { PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING_SECS, CHAT_MSG_SYSTEM, NULL, (uint32)(m_PrematureCountDownTimer / IN_MILLISECONDS)); }
+                    { PSendMessageToAll(LANG_BATTLEGROUND_PREMATURE_FINISH_WARNING_SECS, CHAT_MSG_SYSTEM, nullptr, (uint32)(m_PrematureCountDownTimer / IN_MILLISECONDS)); }
             }
             m_PrematureCountDownTimer = newtime;
         }
@@ -1095,7 +1095,7 @@ void BattleGround::RemovePlayerAtLeave(ObjectGuid guid, bool Transport, bool Sen
         {
             if (!group->RemoveMember(guid, 0))              // group was disbanded
             {
-                SetBgRaid(team, NULL);
+                SetBgRaid(team, nullptr);
                 delete group;
             }
         }
@@ -1809,7 +1809,7 @@ void BattleGround::SetBgRaid(Team team, Group* bg_raid)
     Group*& old_raid = m_BgRaids[GetTeamIndexByTeamId(team)];
 
     if (old_raid)
-        { old_raid->SetBattlegroundGroup(NULL); }
+        { old_raid->SetBattlegroundGroup(nullptr); }
 
     if (bg_raid)
         { bg_raid->SetBattlegroundGroup(this); }

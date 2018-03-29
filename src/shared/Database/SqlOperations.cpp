@@ -105,7 +105,7 @@ bool SqlQuery::Execute(SqlConnection* conn)
 void SqlResultQueue::Update()
 {
     /// execute the callbacks waiting in the synchronization queue
-    MaNGOS::IQueryCallback* callback = NULL;
+    MaNGOS::IQueryCallback* callback = nullptr;
     while (next(callback))
     {
         callback->Execute();
@@ -133,7 +133,7 @@ bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
         return false;
     }
 
-    if (m_queries[index].first != NULL)
+    if (m_queries[index].first != nullptr)
     {
         sLog.outError("Attempt assign query to holder index (" SIZEFMTD ") where other query stored (Old: [%s] New: [%s])",
                       index, m_queries[index].first, sql);
@@ -141,7 +141,7 @@ bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
     }
 
     /// not executed yet, just stored (it's not called a holder for nothing)
-    m_queries[index] = SqlResultPair(mangos_strdup(sql), (QueryResult*)NULL);
+    m_queries[index] = SqlResultPair(mangos_strdup(sql), (QueryResult*)nullptr);
     return true;
 }
 
@@ -173,16 +173,16 @@ QueryResult* SqlQueryHolder::GetResult(size_t index)
     if (index < m_queries.size())
     {
         /// the query strings are freed on the first GetResult or in the destructor
-        if (m_queries[index].first != NULL)
+        if (m_queries[index].first != nullptr)
         {
             delete[](const_cast<char*>(m_queries[index].first));
-            m_queries[index].first = NULL;
+            m_queries[index].first = nullptr;
         }
         /// when you get a result aways remember to delete it!
         return m_queries[index].second;
     }
     else
-        { return NULL; }
+        { return nullptr; }
 }
 
 void SqlQueryHolder::SetResult(size_t index, QueryResult* result)
@@ -198,7 +198,7 @@ SqlQueryHolder::~SqlQueryHolder()
     {
         /// if the result was never used, free the resources
         /// results used already (getresult called) are expected to be deleted
-        if (m_queries[i].first != NULL)
+        if (m_queries[i].first != nullptr)
         {
             delete[](const_cast<char*>(m_queries[i].first));
             delete m_queries[i].second;

@@ -37,7 +37,7 @@ class SoapThread: public ACE_Task_Base
     enum { SOAP_THREADS = 1 }; //TODO: configure in mangosd.conf
 
     public:
-        SoapThread(uint16 port, const char* host) : host_(host), port_(port), pool_(NULL) {}
+        SoapThread(uint16 port, const char* host) : host_(host), port_(port), pool_(nullptr) {}
         virtual ~SoapThread();
 
         virtual int svc() override;

@@ -178,7 +178,7 @@ LocalTransport::~LocalTransport()
 
 bool LocalTransport::Initialize(uint32 guid, Map* m)
 {
-    if (m == NULL)
+    if (m == nullptr)
       { return false; }
 
     GameObjectData const* gdata = sObjectMgr.GetGOData(guid);
@@ -286,7 +286,7 @@ bool GlobalTransport::Initialize(uint32 entry, uint32 period, std::string const&
         return false;
     }
     Map* m = sMapMgr.CreateMap(mapid, this);
-    if (m == NULL)
+    if (m == nullptr)
     {
         return false;
     }

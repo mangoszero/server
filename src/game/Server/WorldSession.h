@@ -243,7 +243,7 @@ class WorldSession
         void SendTabardVendorActivate(ObjectGuid guid);
         void SendSpiritResurrect();
         void SendBindPoint(Creature* npc);
-        void SendGMTicketGetTicket(uint32 status, GMTicket* ticket = NULL);
+        void SendGMTicketGetTicket(uint32 status, GMTicket* ticket = nullptr);
 
         void SendAttackStop(Unit const* enemy);
 
@@ -754,7 +754,7 @@ class WorldSession
         uint32 _accountId;
 
         // Warden
-        Warden* _warden;                                    // Remains NULL if Warden system is not enabled by config
+        Warden* _warden;                                    // Remains nullptr if Warden system is not enabled by config
         uint16 _build;                                      // connected client build
 
         time_t _logoutTime;
