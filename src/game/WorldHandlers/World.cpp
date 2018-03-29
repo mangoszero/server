@@ -72,6 +72,7 @@
 #include "DisableMgr.h"
 #include "Language.h"
 #include "revision.h"
+#include "ProgressBar.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"

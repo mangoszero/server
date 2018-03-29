@@ -27,6 +27,7 @@
 
 #include "Common.h"
 #include "ObjectGuid.h"
+#include "LootMgr.h"
 
 class Map;
 class Unit;

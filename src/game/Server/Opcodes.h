@@ -29,6 +29,8 @@
 #ifndef MANGOS_H_OPCODES
 #define MANGOS_H_OPCODES
 
+#include "Policies/Singleton.h"
+
 #include "Common.h"
 
 // Note: this include need for be sure have full definition of class WorldSession

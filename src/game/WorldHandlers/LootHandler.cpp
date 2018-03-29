@@ -33,6 +33,7 @@
 #include "Object.h"
 #include "Group.h"
 #include "World.h"
+#include "GameObject.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"

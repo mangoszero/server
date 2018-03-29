@@ -24,6 +24,7 @@
 #include "Player.h"
 #include "World.h"
 #include "BattleGroundMgr.h"
+#include "ProgressBar.h"
 
 namespace DisableMgr
 {
