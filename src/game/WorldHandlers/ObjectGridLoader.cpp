@@ -114,7 +114,7 @@ template<> void addUnitState(Creature* obj, CellPair const& cell_pair)
 template <class T>
 void LoadHelper(CellGuidSet const& guid_set, CellPair& cell, GridRefManager<T>& /*m*/, uint32& count, Map* map, GridType& grid)
 {
-    BattleGround* bg = map->IsBattleGround() ? ((BattleGroundMap*)map)->GetBG() : NULL;
+    BattleGround* bg = map->IsBattleGround() ? ((BattleGroundMap*)map)->GetBG() : nullptr;
 
     for (CellGuidSet::const_iterator i_guid = guid_set.begin(); i_guid != guid_set.end(); ++i_guid)
     {
@@ -237,13 +237,14 @@ void ObjectGridLoader::LoadN(void)
 {
     i_gameObjects = 0; i_creatures = 0; i_corpses = 0;
     i_cell.data.Part.cell_y = 0;
+    GridLoaderType loader;
+
     for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
     {
         i_cell.data.Part.cell_x = x;
         for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
         {
             i_cell.data.Part.cell_y = y;
-            GridLoader<Player, AllWorldObjectTypes, AllGridObjectTypes> loader;
             loader.Load(i_grid(x, y), *this);
         }
     }

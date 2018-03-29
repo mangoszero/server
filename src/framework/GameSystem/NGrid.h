@@ -151,7 +151,7 @@ class NGrid
          * @brief
          *
          */
-        typedef Grid<ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES> GridType;
+        using GridType = Grid<ACTIVE_OBJECT, WORLD_OBJECT_TYPES, GRID_OBJECT_TYPES>;
 
         /**
          * @brief
@@ -339,7 +339,7 @@ class NGrid
          * @param TypeContainerVisitor<T
          * @param visitor
          */
-        void Visit(TypeContainerVisitor<T, TypeMapContainer<TT> >& visitor)
+        void Visit(TypeContainerVisitor<T, TT>& visitor)
         {
             for (uint32 x = 0; x < N; ++x)
                 for (uint32 y = 0; y < N; ++y)
@@ -355,7 +355,7 @@ class NGrid
          * @param TypeContainerVisitor<T
          * @param visitor
          */
-        void Visit(const uint32& x, const uint32& y, TypeContainerVisitor<T, TypeMapContainer<TT> >& visitor)
+        void Visit(const uint32& x, const uint32& y, TypeContainerVisitor<T, TT>& visitor)
         {
             getGridType(x, y).Visit(visitor);
         }
