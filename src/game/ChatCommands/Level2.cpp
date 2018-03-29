@@ -897,7 +897,7 @@ bool ChatHandler::HandleGameObjectDeleteCommand(char* args)
 
     if (ObjectGuid ownerGuid = obj->GetOwnerGuid())
     {
-        Unit* owner = ObjectAccessor::GetUnit(*m_session->GetPlayer(), ownerGuid);
+        Unit* owner = sObjectAccessor.GetUnit(*m_session->GetPlayer(), ownerGuid);
         if (!owner || !ownerGuid.IsPlayer())
         {
             PSendSysMessage(LANG_COMMAND_DELOBJREFERCREATURE, obj->GetGUIDLow(), ownerGuid.GetString().c_str());
@@ -2157,7 +2157,7 @@ bool ChatHandler::HandleNpcNameCommand(char* /*args*/)
         return true;
     }
 
-    Creature* pCreature = ObjectAccessor::GetCreature(*m_session->GetPlayer(), guid);
+    Creature* pCreature = sObjectAccessor.GetCreature(*m_session->GetPlayer(), guid);
 
     if (!pCreature)
     {
@@ -2204,7 +2204,7 @@ bool ChatHandler::HandleNpcSubNameCommand(char* /*args*/)
         return true;
     }
 
-    Creature* pCreature = ObjectAccessor::GetCreature(*m_session->GetPlayer(), guid);
+    Creature* pCreature = sObjectAccessor.GetCreature(*m_session->GetPlayer(), guid);
 
     if (!pCreature)
     {

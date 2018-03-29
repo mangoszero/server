@@ -3803,7 +3803,7 @@ bool ChatHandler::HandleNpcAddWeaponCommand(char* /*args*/)
         return true;
     }
 
-    Creature *pCreature = ObjectAccessor::GetCreature(*m_session->GetPlayer(), guid);
+    Creature *pCreature = sObjectAccessor.GetCreature(*m_session->GetPlayer(), guid);
 
     if(!pCreature)
     {
@@ -4609,10 +4609,7 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     }
 
     CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE (at_login & '%u') = '0'", atLogin, atLogin);
-    HashMapHolder<Player>::MapType const& plist = sObjectAccessor.GetPlayers();
-    for (HashMapHolder<Player>::MapType::const_iterator itr = plist.begin(); itr != plist.end(); ++itr)
-        { itr->second->SetAtLoginFlag(atLogin); }
-
+    sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr){ plr->SetAtLoginFlag(atLogin); });
     return true;
 }
 

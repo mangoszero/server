@@ -170,7 +170,7 @@ void Totem::SetOwner(Unit* owner)
 Unit* Totem::GetOwner()
 {
     if (ObjectGuid ownerGuid = GetOwnerGuid())
-        { return ObjectAccessor::GetUnit(*this, ownerGuid); }
+        { return sObjectAccessor.GetUnit(*this, ownerGuid); }
 
     return NULL;
 }

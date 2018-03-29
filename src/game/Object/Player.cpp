@@ -17920,7 +17920,7 @@ void Player::InitPrimaryProfessions()
 
 void Player::SetComboPoints()
 {
-    Unit* combotarget = ObjectAccessor::GetUnit(*this, m_comboTargetGuid);
+    Unit* combotarget = sObjectAccessor.GetUnit(*this, m_comboTargetGuid);
     if (combotarget)
     {
         SetGuidValue(PLAYER_FIELD_COMBO_TARGET, combotarget->GetObjectGuid());
@@ -17950,7 +17950,7 @@ void Player::AddComboPoints(Unit* target, int8 count)
     else
     {
         if (m_comboTargetGuid)
-            if (Unit* target2 = ObjectAccessor::GetUnit(*this, m_comboTargetGuid))
+            if (Unit* target2 = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
                 { target2->RemoveComboPointHolder(GetGUIDLow()); }
 
         m_comboTargetGuid = target->GetObjectGuid();
@@ -17977,7 +17977,7 @@ void Player::ClearComboPoints()
 
     SetComboPoints();
 
-    if (Unit* target = ObjectAccessor::GetUnit(*this, m_comboTargetGuid))
+    if (Unit* target = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
         { target->RemoveComboPointHolder(GetGUIDLow()); }
 
     m_comboTargetGuid.Clear();
@@ -19780,7 +19780,7 @@ Object* Player::GetObjectByTypeMask(ObjectGuid guid, TypeMask typemask)
             if (GetObjectGuid() == guid)
                 { return this; }
             if ((typemask & TYPEMASK_PLAYER) && IsInWorld())
-                { return ObjectAccessor::FindPlayer(guid); }
+                { return sObjectAccessor.FindPlayer(guid); }
             break;
         case HIGHGUID_GAMEOBJECT:
             if ((typemask & TYPEMASK_GAMEOBJECT) && IsInWorld())

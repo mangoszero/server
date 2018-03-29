@@ -254,7 +254,7 @@ class Guild
         void BroadcastWorker(Do& _do, Player* except = NULL)
         {
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
-                if (Player* player = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
+                if (Player* player = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
                     if (player != except)
                         { _do(player); }
         }
