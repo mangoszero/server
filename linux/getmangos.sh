@@ -815,9 +815,9 @@ function GetBuildOptions()
   fi
 
   if [[ $OPTIONS == *9* ]]; then
-    P_PBOTS="1"
+    P_BOTS="1"
   else
-    P_PBOTS="0"
+    P_BOTS="0"
   fi 
 
   # Verify that at least one scripting library is enabled
