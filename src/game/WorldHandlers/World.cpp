@@ -2007,11 +2007,15 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
         }
 
         if (WorldSession* sess = FindSession(account))
+        {
             if (std::string(sess->GetPlayerName()) != author)
             {
+                sess->LogoutPlayer(true);
                 sess->KickPlayer();
             }
-    } while (resultAccounts->NextRow());
+        }
+    }
+    while (resultAccounts->NextRow());
 
     delete resultAccounts;
     return BAN_SUCCESS;
