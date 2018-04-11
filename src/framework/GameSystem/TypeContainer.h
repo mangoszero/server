@@ -127,7 +127,7 @@ class TypeUnorderedMapContainer
             }
             else
             {
-                assert(i->second == object && "Object with certain key already in but objects are different!");
+                assert(_element[handle] == object && "Object with certain key already in but objects are different!");
                 return false;
             }
         }
