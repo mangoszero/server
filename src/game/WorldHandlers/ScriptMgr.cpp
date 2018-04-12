@@ -1512,7 +1512,7 @@ bool ScriptAction::HandleScriptStep()
                 if (m_script->playSound.flags & 2)
                     { pSource->PlayDistanceSound(m_script->playSound.soundId, pSoundTarget); }
                 else if (m_script->playSound.flags & (4 | 8))
-                    { m_map->PlayDirectSoundToMap(m_script->playSound.soundId, (m_script->playSound.flags & 8) ? pSource->GetZoneId() : 0); }
+                    { m_map->PlayDirectSoundToMap(m_script->playSound.soundId, m_script->playSound.flags & 8 ? pSource->GetZoneId() : 0); }
                 else
                     { pSource->PlayDirectSound(m_script->playSound.soundId, pSoundTarget); }
             }

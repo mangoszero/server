@@ -2595,6 +2595,8 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
 
 bool ChatHandler::HandleTicketInfoCommand(char *args)
 {
+    char* px = ExtractLiteralArg(&args);
+
     size_t count = sTicketMgr.GetTicketCount();
 
     if (m_session)

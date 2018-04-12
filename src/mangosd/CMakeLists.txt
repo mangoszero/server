@@ -137,6 +137,7 @@ endif()
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE_NAME}
+        ${OPENSSL_EXTRA_LIBRARIES}
         ${ZLIB_LIBRARIES}
     )
 endif()
