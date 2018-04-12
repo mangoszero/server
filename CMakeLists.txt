@@ -73,7 +73,7 @@ message(
 message("")
 
 # Search for and set up the needed packages
-set(OPENSSL_EXPECTED_VERSION 1.0.0)
+set(OPENSSL_EXPECTED_VERSION 1.1.0)
 
 find_package(Platform REQUIRED)
 find_package(Git)

@@ -27,13 +27,13 @@
 
 HMACSHA1::HMACSHA1(uint32 len, uint8 *seed)
 {
-    HMAC_CTX_init(&m_ctx);
-    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), NULL);
+    m_ctx = HMAC_CTX_new();
+    HMAC_Init_ex(m_ctx, seed, len, EVP_sha1(), NULL);
 }
 
 HMACSHA1::~HMACSHA1()
 {
-    HMAC_CTX_cleanup(&m_ctx);
+    HMAC_CTX_free(m_ctx);
 }
 
 void HMACSHA1::UpdateBigNumber(BigNumber *bn)
@@ -43,7 +43,7 @@ void HMACSHA1::UpdateBigNumber(BigNumber *bn)
 
 void HMACSHA1::UpdateData(const uint8 *data, int length)
 {
-    HMAC_Update(&m_ctx, data, length);
+    HMAC_Update(m_ctx, data, length);
 }
 
 void HMACSHA1::UpdateData(const std::string &str)
@@ -54,13 +54,13 @@ void HMACSHA1::UpdateData(const std::string &str)
 void HMACSHA1::Finalize()
 {
     uint32 length = 0;
-    HMAC_Final(&m_ctx, (uint8*)m_digest, &length);
+    HMAC_Final(m_ctx, (uint8*)m_digest, &length);
     MANGOS_ASSERT(length == SHA_DIGEST_LENGTH);
 }
 
 uint8 *HMACSHA1::ComputeHash(BigNumber *bn)
 {
-    HMAC_Update(&m_ctx, bn->AsByteArray(), bn->GetNumBytes());
+    HMAC_Update(m_ctx, bn->AsByteArray(), bn->GetNumBytes());
     Finalize();
     return (uint8*)m_digest;
 }

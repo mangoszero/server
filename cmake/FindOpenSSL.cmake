@@ -25,20 +25,19 @@
 
 # http://www.slproweb.com/products/Win32OpenSSL.html
 
-SET(_OPENSSL_ROOT_HINTS
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;Inno Setup: App Path]"
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;Inno Setup: App Path]"
-  )
-
 IF(PLATFORM EQUAL 64)
   SET(_OPENSSL_ROOT_PATHS
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;InstallLocation]"
+    "C:/OpenSSL-Win64-v11/"
     "C:/OpenSSL-Win64/"
     "C:/OpenSSL/"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;InstallLocation]"
     "/usr/local/opt/openssl/"
   )
 ELSE()
   SET(_OPENSSL_ROOT_PATHS
+    "C:/OpenSSL-Win32-v11/"
+    "C:/OpenSSL-Win32/"
+    "C:/OpenSSL/"
     "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
     "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
     "C:/OpenSSL/"
@@ -49,8 +48,6 @@ ENDIF()
 FIND_PATH(OPENSSL_ROOT_DIR
   NAMES
     include/openssl/ssl.h
-  HINTS
-    ${_OPENSSL_ROOT_HINTS}
   PATHS
     ${_OPENSSL_ROOT_PATHS}
 )
@@ -81,28 +78,28 @@ IF(WIN32 AND NOT CYGWIN)
 
     FIND_LIBRARY(LIB_EAY_DEBUG
       NAMES
-        libeay32MDd libeay32
+        libeay32MDd libeay32 libcrypto32MDd libcrypto32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(LIB_EAY_RELEASE
       NAMES
-        libeay32MD libeay32
+        libeay32MD libeay32 libcrypto32MD libcrypto32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(SSL_EAY_DEBUG
       NAMES
-        ssleay32MDd ssleay32 ssl
+        ssleay32MDd ssleay32 ssl libssl32MDd libssl32 libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(SSL_EAY_RELEASE
       NAMES
-        ssleay32MD ssleay32 ssl
+        ssleay32MD ssleay32 ssl libssl32MD libssl32 libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
@@ -125,14 +122,14 @@ IF(WIN32 AND NOT CYGWIN)
     # same player, for MingW
     FIND_LIBRARY(LIB_EAY
       NAMES
-        libeay32
+        libeay32 libcrypto32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/MinGW
     )
 
     FIND_LIBRARY(SSL_EAY NAMES
       NAMES
-        ssleay32
+        ssleay32 libssl32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/MinGW
     )
@@ -147,7 +144,7 @@ IF(WIN32 AND NOT CYGWIN)
     # Not sure what to pick for -say- intel, let's use the toplevel ones and hope someone report issues:
     FIND_LIBRARY(LIB_EAY
       NAMES
-        libeay32
+        libeay32 libcrypto32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib
         ${OPENSSL_ROOT_DIR}/lib/VC
@@ -155,7 +152,7 @@ IF(WIN32 AND NOT CYGWIN)
 
     FIND_LIBRARY(SSL_EAY
       NAMES
-        ssleay32
+        ssleay32 libssl32
       PATHS
         ${OPENSSL_ROOT_DIR}/lib
         ${OPENSSL_ROOT_DIR}/lib/VC
