@@ -908,9 +908,9 @@ bool ChatHandler::HandleGetValueHelper(Object* target, uint32 field, char* typeS
                 // starting 0 if need as required bitstring format
                 std::string res;
                 res.reserve(1 + 32 + 1);
-                res = iValue & (1 << (32 - 1)) ? "0" : " ";
+                res = (iValue & (1 << (32 - 1))) ? "0" : " ";
                 for (int i = 32; i > 0; --i)
-                    { res += iValue & (1 << (i - 1)) ? "1" : "0"; }
+                    { res += (iValue & (1 << (i - 1))) ? "1" : "0"; }
                 DEBUG_LOG(GetMangosString(LANG_GET_BITSTR), guid.GetString().c_str(), field, res.c_str());
                 PSendSysMessage(LANG_GET_BITSTR_FIELD, guid.GetString().c_str(), field, res.c_str());
                 break;
