@@ -25,32 +25,19 @@
 
 # http://www.slproweb.com/products/Win32OpenSSL.html
 
-SET(_OPENSSL_ROOT_HINTS
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;Inno Setup: App Path]"
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;Inno Setup: App Path]"
-  )
 
-IF(PLATFORM EQUAL 64)
-  SET(_OPENSSL_ROOT_PATHS
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (64-bit)_is1;InstallLocation]"
-    "C:/OpenSSL-Win64/"
-    "C:/OpenSSL/"
-    "/usr/local/opt/openssl/"
-  )
-ELSE()
-  SET(_OPENSSL_ROOT_PATHS
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
-    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (32-bit)_is1;InstallLocation]"
-    "C:/OpenSSL/"
-    "/usr/local/opt/openssl/"
-  )
-ENDIF()
+SET(_OPENSSL_ROOT_PATHS
+  "C:/OpenSSL-Win${PLATFORM}-v11/"
+  "C:/OpenSSL-Win${PLATFORM}/"
+  "C:/OpenSSL/"
+  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (${PLATFORM}-bit)_is1;InstallLocation]"
+  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\OpenSSL (${PLATFORM}-bit)_is1;InstallLocation]"
+  "/usr/local/opt/openssl/"
+)
 
 FIND_PATH(OPENSSL_ROOT_DIR
   NAMES
     include/openssl/ssl.h
-  HINTS
-    ${_OPENSSL_ROOT_HINTS}
   PATHS
     ${_OPENSSL_ROOT_PATHS}
 )
@@ -81,28 +68,28 @@ IF(WIN32 AND NOT CYGWIN)
 
     FIND_LIBRARY(LIB_EAY_DEBUG
       NAMES
-        libeay32MDd libeay32
+        libeay32MDd libeay32 libcrypto${PLATFORM}MDd libcrypto${PLATFORM}
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(LIB_EAY_RELEASE
       NAMES
-        libeay32MD libeay32
+        libeay32MD libeay32 libcrypto${PLATFORM}MD libcrypto${PLATFORM}
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(SSL_EAY_DEBUG
       NAMES
-        ssleay32MDd ssleay32 ssl
+        ssleay32MDd ssleay32 ssl libssl${PLATFORM}MDd libssl${PLATFORM} libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
 
     FIND_LIBRARY(SSL_EAY_RELEASE
       NAMES
-        ssleay32MD ssleay32 ssl
+        ssleay32MD ssleay32 ssl libssl${PLATFORM}MD libssl${PLATFORM} libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/VC
     )
@@ -125,14 +112,14 @@ IF(WIN32 AND NOT CYGWIN)
     # same player, for MingW
     FIND_LIBRARY(LIB_EAY
       NAMES
-        libeay32
+        libeay32 libcrypto
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/MinGW
     )
 
     FIND_LIBRARY(SSL_EAY NAMES
       NAMES
-        ssleay32
+        ssleay32 libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib/MinGW
     )
@@ -147,7 +134,7 @@ IF(WIN32 AND NOT CYGWIN)
     # Not sure what to pick for -say- intel, let's use the toplevel ones and hope someone report issues:
     FIND_LIBRARY(LIB_EAY
       NAMES
-        libeay32
+        libeay32 libcrypto
       PATHS
         ${OPENSSL_ROOT_DIR}/lib
         ${OPENSSL_ROOT_DIR}/lib/VC
@@ -155,7 +142,7 @@ IF(WIN32 AND NOT CYGWIN)
 
     FIND_LIBRARY(SSL_EAY
       NAMES
-        ssleay32
+        ssleay32 libssl
       PATHS
         ${OPENSSL_ROOT_DIR}/lib
         ${OPENSSL_ROOT_DIR}/lib/VC
@@ -182,8 +169,6 @@ if (NOT OPENSSL_INCLUDE_DIR)
 endif()
 
 if (OPENSSL_INCLUDE_DIR)
-  message( STATUS "Found OpenSSL library: ${OPENSSL_LIBRARIES}")
-  message( STATUS "Found OpenSSL headers: ${OPENSSL_INCLUDE_DIR}")
   if (_OPENSSL_VERSION)
     set(OPENSSL_VERSION "${_OPENSSL_VERSION}")
   else (_OPENSSL_VERSION)
@@ -218,6 +203,11 @@ if (OPENSSL_INCLUDE_DIR)
 
     set(OPENSSL_VERSION "${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR}.${OPENSSL_VERSION_FIX}${OPENSSL_VERSION_PATCH_STRING}")
   endif (_OPENSSL_VERSION)
+
+  message( STATUS "OpenSSL library: ${OPENSSL_LIBRARIES}")
+  message( STATUS "OpenSSL headers: ${OPENSSL_INCLUDE_DIR}")
+  message( STATUS "OpenSSL version: ${OPENSSL_VERSION}")
+
 endif (OPENSSL_INCLUDE_DIR)
 
 MARK_AS_ADVANCED(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES)

@@ -14,7 +14,7 @@ set (GenerateProductVersionCurrentDir ${CMAKE_CURRENT_LIST_DIR})
 #     ICON ${PATH_TO_APP_ICON}
 #     VERSION_MAJOR 2
 #     VERSION_MINOR 3
-#     VERSION_PATH ${BUILD_COUNTER}
+#     VERSION_PATCH ${BUILD_COUNTER}
 #     VERSION_REVISION ${BUILD_REVISION}
 #   )
 # where BUILD_COUNTER and BUILD_REVISION could be values from your CI server.
