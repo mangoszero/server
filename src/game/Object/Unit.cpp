@@ -357,7 +357,10 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
     // update abilities available only for fraction of time
     UpdateReactives(update_diff);
 
-    ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
+    if (IsAlive())
+    {
+        ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth() * 0.20f);
+    }
     UpdateSplineMovement(p_time);
     i_motionMaster.UpdateMotion(p_time);
 }
@@ -5577,7 +5580,7 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_SPELL_BONUS_DAMAGE, coeff);
         coeff /= 100.0f;
      }
- 
+
     total += int32(benefit * coeff * LvlPenalty);
 
      return total;
@@ -6633,8 +6636,8 @@ int32 Unit::ModifyHealth(int32 dVal)
 
     int32 maxHealth = (int32)GetMaxHealth();
 
-	int32 gain;
-	if (val < maxHealth)
+    int32 gain;
+    if (val < maxHealth)
     {
         SetHealth(val);
         gain = val - curHealth;
@@ -6664,7 +6667,7 @@ int32 Unit::ModifyPower(Powers power, int32 dVal)
 
     int32 maxPower = (int32)GetMaxPower(power);
 
-	int32 gain;
+    int32 gain;
     if (val < maxPower)
     {
         SetPower(power, val);
@@ -7063,7 +7066,7 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
         };
 
         const SpeedOpcodePair& speedOpcodes = SetSpeed2Opc_table[mtype];
-        
+
         if (forced && GetTypeId() == TYPEID_PLAYER)
         {
             // register forced speed changes for WorldSession::HandleForceSpeedChangeAck
@@ -7606,7 +7609,7 @@ bool Unit::HandleStatModifier(UnitMods unitMod, UnitModifierType modifierType, f
         return false;
     }
 
-	float val;
+    float val;
 
     switch (modifierType)
     {
@@ -8787,8 +8790,8 @@ bool Unit::IsStandState() const
 
 bool Unit::IsSeatedState() const
 {
-	uint8 standState = getStandState();
-	return standState != UNIT_STAND_STATE_SLEEP && standState != UNIT_STAND_STATE_STAND;
+    uint8 standState = getStandState();
+    return standState != UNIT_STAND_STATE_SLEEP && standState != UNIT_STAND_STATE_STAND;
 }
 
 void Unit::SetStandState(uint8 state)
