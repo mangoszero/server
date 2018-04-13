@@ -304,7 +304,7 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         { m_currentBasePoints[i] = m_spellInfo->CalculateSimpleValue(SpellEffectIndex(i)); }
 
-    m_spellState = SPELL_STATE_PREPARING;
+    m_spellState = SPELL_STATE_CREATED;
 
     m_castPositionX = m_castPositionY = m_castPositionZ = 0;
     m_TriggerSpells.clear();
@@ -2550,8 +2550,6 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
 {
     m_targets = *targets;
 
-    m_spellState = SPELL_STATE_PREPARING;
-
     m_castPositionX = m_caster->GetPositionX();
     m_castPositionY = m_caster->GetPositionY();
     m_castPositionZ = m_caster->GetPositionZ();
@@ -2594,6 +2592,8 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
         finish(false);
         return;
     }
+
+    m_spellState = SPELL_STATE_PREPARING;
 
     // Prepare data for triggers
     prepareDataForTriggerSystem();
@@ -4930,7 +4930,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     { return SPELL_FAILED_SKILL_NOT_HIGH_ENOUGH; }
 
                 // chance for fail at orange skinning attempt
-                if ((m_selfContainer && (*m_selfContainer) == this) &&
+                if (m_spellState != SPELL_STATE_CREATED &&
                     skillValue < sWorld.GetConfigMaxSkillValue() &&
                     (ReqValue < 0 ? 0 : ReqValue) > irand(skillValue - 25, skillValue + 37))
                     { return SPELL_FAILED_TRY_AGAIN; }
@@ -4994,7 +4994,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 // chance for fail at orange mining/herb/LockPicking gathering attempt
                 // second check prevent fail at rechecks
                 // Check must be executed at the end of  the cast.
-                if (m_executedCurrently && skillId != SKILL_NONE)
+                if (m_spellState != SPELL_STATE_CREATED && skillId != SKILL_NONE)
                 {
                     bool canFailAtMax = skillId != SKILL_HERBALISM && skillId != SKILL_MINING;
 
