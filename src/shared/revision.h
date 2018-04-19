@@ -24,20 +24,20 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "21014"
+    #define REVISION_NR "2114081"
 
     #define REALMD_DB_VERSION_NR 21
     #define REALMD_DB_STRUCTURE_NR 1
-    #define REALMD_DB_CONTENT_NR 3
-    #define REALMD_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
+    #define REALMD_DB_CONTENT_NR 4
+    #define REALMD_DB_UPDATE_DESCRIPTION "Remove dbDocs"
 
     #define CHAR_DB_VERSION_NR 21
     #define CHAR_DB_STRUCTURE_NR 5
-    #define CHAR_DB_CONTENT_NR 3
-    #define CHAR_DB_UPDATE_DESCRIPTION "Remove field from dbDocs"
+    #define CHAR_DB_CONTENT_NR 4
+    #define CHAR_DB_UPDATE_DESCRIPTION "Remove dbDocs"
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 14
-    #define WORLD_DB_CONTENT_NR 77
-    #define WORLD_DB_UPDATE_DESCRIPTION "lower_npc_text_id"
+    #define WORLD_DB_CONTENT_NR 81
+    #define WORLD_DB_UPDATE_DESCRIPTION "NPC_12481_model_update"
 #endif // __REVISION_H__
