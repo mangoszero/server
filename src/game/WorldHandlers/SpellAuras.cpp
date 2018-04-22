@@ -40,7 +40,7 @@
 #include "ObjectAccessor.h"
 #include "Policies/Singleton.h"
 #include "Totem.h"
-#include "Creature.h"
+#include "TemporarySummon.h"
 #include "BattleGround/BattleGround.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "CreatureAI.h"
@@ -1244,6 +1244,21 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
         switch (GetId())
         {
+            case 126:                                       // Eye of Killrog
+            {
+                Unit* caster = GetCaster();
+                if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
+                  { return; }
+                TemporarySummon* eye = static_cast<TemporarySummon*>(caster->GetCharm());
+                if (eye)
+                {
+                    if (eye->GetUInt32Value(UNIT_CREATED_BY_SPELL) == GetId())
+                    {
+                        eye->UnSummon();
+                    }
+                }
+                return;
+            }
             case 10255:                                     // Stoned
             {
                 if (Unit* caster = GetCaster())

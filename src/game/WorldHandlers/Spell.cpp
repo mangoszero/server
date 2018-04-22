@@ -3120,7 +3120,19 @@ void Spell::update(uint32 difftime)
 
                     // check if player has turned if flag is set
                     if (m_spellInfo->ChannelInterruptFlags & CHANNEL_FLAG_TURNING && m_castOrientation != m_caster->GetOrientation())
-                        { cancel(); }
+                    {
+                        if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                        {
+                            if (static_cast<Player*>(m_caster)->GetMover()->GetObjectGuid() == m_caster->GetObjectGuid())
+                            {
+                                cancel();
+                            }
+                        }
+                        else
+                        {
+                            cancel();
+                        }
+                    }
                 }
 
                 // check if there are alive targets left

@@ -183,10 +183,22 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
             m_timer -= update_diff;
             break;
         }
-        default:
-            UnSummon();
-            sLog.outError("Temporary summoned creature (entry: %u) have unknown type %u of ", GetEntry(), m_type);
-            break;
+    }
+
+    switch (m_deathState)
+    {
+        case ALIVE:
+        {
+            if (GetCharmerGuid())
+            {
+                Unit* charmer = GetCharmer();
+                if (!charmer || !IsWithinDistInMap(charmer, GetMap()->GetVisibilityDistance()))
+                {
+                    UnSummon();
+                    return;
+                }
+            }
+        }
     }
 
     Creature::Update(update_diff, diff);
@@ -204,8 +216,6 @@ void TemporarySummon::Summon(TempSummonType type, uint32 lifetime)
 
 void TemporarySummon::UnSummon()
 {
-    CombatStop();
-
     if (GetSummonerGuid().IsCreature())
         if (Creature* sum = GetMap()->GetCreature(GetSummonerGuid()))
             if (sum->AI())
@@ -216,6 +226,30 @@ void TemporarySummon::UnSummon()
 
 void TemporarySummon::SaveToDB()
 {
+}
+
+void TemporarySummon::RemoveFromWorld()
+{
+    if (IsInWorld())
+    {
+        Unit* charmer = GetCharmer();
+        if (charmer && charmer->GetCharmGuid() == GetObjectGuid())
+        {
+            charmer->Uncharm();
+            if (charmer->GetCharmGuid() == GetObjectGuid() && charmer->GetTypeId() == TYPEID_PLAYER)
+            {
+                Player* player = (Player*)charmer;
+                Camera& camera = player->GetCamera();
+                player->InterruptSpell(CURRENT_CHANNELED_SPELL);
+
+                player->SetClientControl(player, 1);
+                player->SetMover(NULL);
+                camera.ResetView();
+                player->RemovePetActionBar();
+            }
+        }
+    }
+    Creature::RemoveFromWorld();
 }
 
 TemporarySummonWaypoint::TemporarySummonWaypoint(ObjectGuid summoner, uint32 waypoint_id, int32 path_id, uint32 pathOrigin) :
