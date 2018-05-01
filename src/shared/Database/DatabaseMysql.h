@@ -96,7 +96,7 @@ class MySqlPreparedStatement : public SqlPreparedStatement
          * @param bUnsigned
          * @return enum_field_types
          */
-        static enum_field_types ToMySQLType(const SqlStmtFieldData& data, my_bool& bUnsigned);
+        static enum_field_types ToMySQLType(const SqlStmtFieldData& data, bool& bUnsigned);
 
     private:
         /**
