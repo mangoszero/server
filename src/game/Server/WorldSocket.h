@@ -102,7 +102,6 @@ class WorldSocket : protected WorldHandler
 
         /// Mutex type used for various synchronizations.
         typedef ACE_Thread_Mutex LockType;
-        typedef ACE_Guard<LockType> GuardType;
 
         /// Queue for storing packets for which there is no space.
         typedef ACE_Unbounded_Queue< WorldPacket* > PacketQueueT;

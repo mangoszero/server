@@ -596,6 +596,7 @@ SqlStatement Database::CreateStatement(SqlStatementID& index, const char* fmt)
         int nParams = std::count(szFmt.begin(), szFmt.end(), '?');
         // find existing or add a new record in registry
         LOCK_GUARD _guard(m_stmtGuard);
+        MANGOS_ASSERT(_guard.locked());
         PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.find(szFmt);
         if (iter == m_stmtRegistry.end())
         {
@@ -614,18 +615,19 @@ SqlStatement Database::CreateStatement(SqlStatementID& index, const char* fmt)
 
 std::string Database::GetStmtString(const int stmtId) const
 {
-    LOCK_GUARD _guard(m_stmtGuard);
-
     if (stmtId == -1 || stmtId > m_iStmtIndex)
         { return std::string(); }
 
-    PreparedStmtRegistry::const_iterator iter_last = m_stmtRegistry.end();
-    for (PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.begin(); iter != iter_last; ++iter)
+    LOCK_GUARD _guard(m_stmtGuard);
+    if (_guard.locked())
     {
-        if (iter->second == stmtId)
-            { return iter->first; }
+        PreparedStmtRegistry::const_iterator iter_last = m_stmtRegistry.end();
+        for (PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.begin(); iter != iter_last; ++iter)
+        {
+            if (iter->second == stmtId)
+                { return iter->first; }
+        }
     }
-
     return std::string();
 }
 
