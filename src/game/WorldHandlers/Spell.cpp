@@ -4979,9 +4979,9 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (!lockId)
                         { return SPELL_FAILED_ALREADY_OPEN; }
 
-					// Is the lock within the spell max range?
-					if (!IsLockInRange(go))
-						{ return SPELL_FAILED_OUT_OF_RANGE; }
+                    // Is the lock within the spell max range?
+                    if (!IsLockInRange(go))
+                        { return SPELL_FAILED_OUT_OF_RANGE; }
                 }
                 else if (Item* item = m_targets.getItemTarget())
                 {
@@ -5004,7 +5004,6 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 // check lock compatibility
                 SpellCastResult res = CanOpenLock(SpellEffectIndex(i), lockId, skillId, reqSkillValue, skillValue);
-
                 if (res != SPELL_CAST_OK)
                     { return res; }
 
@@ -6520,15 +6519,15 @@ bool SpellEvent::IsDeletable() const
 
 bool Spell::IsLockInRange(GameObject* go)
 {
-	const SpellRangeEntry* srange = sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex);
+    const SpellRangeEntry* srange = sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex);
 
 	
-	// This check is not related to bounding radius
-	float dx = m_caster->GetPositionX() - go->GetPositionX();
-	float dy = m_caster->GetPositionY() - go->GetPositionY();
-	float dz = m_caster->GetPositionZ() - go->GetPositionZ();
+    // This check is not related to bounding radius
+    float dx = m_caster->GetPositionX() - go->GetPositionX();
+    float dy = m_caster->GetPositionY() - go->GetPositionY();
+    float dz = m_caster->GetPositionZ() - go->GetPositionZ();
 
-	return (dx * dx + dy * dy + dz * dz < srange->maxRange);
+    return (dx * dx + dy * dy + dz * dz < srange->maxRange);
 }
 
 SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, SkillType& skillId, int32& reqSkillValue, int32& skillValue)
