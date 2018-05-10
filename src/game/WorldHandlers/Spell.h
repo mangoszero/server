@@ -578,6 +578,7 @@ class Spell
         void DoAllEffectOnTarget(ItemTargetInfo* target);
         bool IsAliveUnitPresentInTargetList();
         SpellCastResult CanOpenLock(SpellEffectIndex effIndex, uint32 lockid, SkillType& skillid, int32& reqSkillValue, int32& skillValue);
+		bool IsLockInRange(GameObject* go);
         SpellCastResult CanTameUnit(bool isGM = false);
         // -------------------------------------------
 
