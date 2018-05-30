@@ -1767,43 +1767,28 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
     DealDamage(pVictim, damageInfo->damage, &cleanDamage, DIRECT_DAMAGE, SpellSchoolMask(damageInfo->damageSchoolMask), NULL, durabilityLoss);
 
     // If this is a creature and it attacks from behind it has a probability to daze it's victim
-	if ((damageInfo->hitOutCome == MELEE_HIT_CRIT || damageInfo->hitOutCome == MELEE_HIT_CRUSHING || damageInfo->hitOutCome == MELEE_HIT_NORMAL || damageInfo->hitOutCome == MELEE_HIT_GLANCING) &&
-		GetTypeId() != TYPEID_PLAYER && !((Creature*)this)->GetCharmerOrOwnerGuid() && !pVictim->HasInArc(M_PI_F, this))
-	{
-		// -probability is between 0% and 40%
-		// 20% base chance
-		float Probability = 20.0f;
+    if ((damageInfo->hitOutCome == MELEE_HIT_CRIT || damageInfo->hitOutCome == MELEE_HIT_CRUSHING || damageInfo->hitOutCome == MELEE_HIT_NORMAL || damageInfo->hitOutCome == MELEE_HIT_GLANCING) &&
+        GetTypeId() != TYPEID_PLAYER && !((Creature*)this)->GetCharmerOrOwnerGuid() && !pVictim->HasInArc(M_PI_F, this))
+    {
+        // -probability is between 0% and 40%
+        // 20% base chance
+        float Probability = 20.0f;
 
-		// Probability is 0 if they absorb
-		if (damageInfo->absorb)
-		{
-			Probability = 0.0f;
-		}
-		else
-		{
-			// there is a newbie protection, at level 10 just 7% base chance; assuming linear function
-			if (pVictim->getLevel() < 30)
-			{
-				Probability = 0.65f * pVictim->getLevel() + 0.5f;
-			}
+        // there is a newbie protection, at level 10 just 7% base chance; assuming linear function
+        if (pVictim->getLevel() < 30)
+            { Probability = 0.65f * pVictim->getLevel() + 0.5f; }
 
-			uint32 VictimDefense = pVictim->GetDefenseSkillValue();
-			uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
+        uint32 VictimDefense = pVictim->GetDefenseSkillValue();
+        uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
 
-			Probability *= AttackerMeleeSkill / (float)VictimDefense;
+        Probability *= AttackerMeleeSkill / (float)VictimDefense;
 
-			if (Probability > 40.0f)
-			{
-				Probability = 40.0f;
-			}
+        if (Probability > 40.0f)
+            { Probability = 40.0f; }
 
-			if (roll_chance_f(Probability))
-			{
-				CastSpell(pVictim, 1604, true);
-			}
-
-		}
-	}
+        if (roll_chance_f(Probability))
+            { CastSpell(pVictim, 1604, true); }
+    }
 
     // update at damage Judgement aura duration that applied by attacker at victim
     if (damageInfo->damage)
