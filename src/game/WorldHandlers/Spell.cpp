@@ -4974,7 +4974,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         { return SPELL_FAILED_ALREADY_OPEN; }
 
                     // Is the lock within the spell max range?
-                    if (!IsLockInRange(go))
+                    if (!IsLockInRange(go) && (go->GetGoType() != GAMEOBJECT_TYPE_DOOR || GAMEOBJECT_TYPE_BUTTON || GAMEOBJECT_TYPE_QUESTGIVER || GAMEOBJECT_TYPE_CHEST || GAMEOBJECT_TYPE_GOOBER || GAMEOBJECT_TYPE_FLAGSTAND || GAMEOBJECT_TYPE_FLAGDROP))
                         { return SPELL_FAILED_OUT_OF_RANGE; }
                 }
                 else if (Item* item = m_targets.getItemTarget())
