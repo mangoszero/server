@@ -1575,17 +1575,11 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     Cell::VisitAllObjects(m_caster, searcher, max_range);
                     break;
                 }
+				case TARGET_RANDOM_UNIT_CHAIN_IN_AREA: // This works the same as Target_random_friend_chain_in_area but is named differently for some reason
                 case TARGET_RANDOM_FRIEND_CHAIN_IN_AREA:
                 {
                     MaNGOS::AnyFriendlyUnitInObjectRangeCheck u_check(m_caster, max_range);
                     MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(tempTargetUnitMap, u_check);
-                    Cell::VisitAllObjects(m_caster, searcher, max_range);
-                    break;
-                }
-                case TARGET_RANDOM_UNIT_CHAIN_IN_AREA:
-                {
-                    MaNGOS::AnyUnitInObjectRangeCheck u_check(m_caster, max_range);
-                    MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck> searcher(tempTargetUnitMap, u_check);
                     Cell::VisitAllObjects(m_caster, searcher, max_range);
                     break;
                 }
@@ -4980,7 +4974,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         { return SPELL_FAILED_ALREADY_OPEN; }
 
                     // Is the lock within the spell max range?
-                    if (!IsLockInRange(go))
+                    if (!IsLockInRange(go) && go->GetGoType() == GAMEOBJECT_TYPE_TRAP)
                         { return SPELL_FAILED_OUT_OF_RANGE; }
                 }
                 else if (Item* item = m_targets.getItemTarget())
