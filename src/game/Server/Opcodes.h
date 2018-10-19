@@ -30,6 +30,7 @@
 #define MANGOS_H_OPCODES
 
 #include "Common.h"
+#include "Policies/Singleton.h"
 
 // Note: this include need for be sure have full definition of class WorldSession
 //       if this class definition not complite then VS for x64 release use different size for

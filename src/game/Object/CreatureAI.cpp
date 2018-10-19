@@ -41,6 +41,11 @@ CreatureAI::~CreatureAI()
 {
 }
 
+void CreatureAI::EnterEvadeMode()
+{
+    m_creature->ResetPlayerDamageReq();
+}
+
 void CreatureAI::AttackedBy(Unit* attacker)
 {
     if (!m_creature->getVictim())

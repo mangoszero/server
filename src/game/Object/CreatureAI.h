@@ -28,6 +28,7 @@
 #include "Platform/Define.h"
 #include "Dynamic/FactoryHolder.h"
 #include "ObjectGuid.h"
+#include "SharedDefines.h"
 
 class WorldObject;
 class GameObject;
@@ -137,7 +138,7 @@ class CreatureAI
          * Called for reaction at stopping attack at no attackers or targets
          * This is called usually in Unit::SelectHostileTarget, if no more target exists
          */
-        virtual void EnterEvadeMode() { m_creature->ResetPlayerDamageReq(); }
+        virtual void EnterEvadeMode();
 
         /**
          * Called at reaching home after MoveTargetedHome

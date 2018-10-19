@@ -22,6 +22,7 @@
 #include "OutdoorPvPMgr.h"
 #include "SpellMgr.h"
 #include "Player.h"
+#include "ProgressBar.h"
 #include "World.h"
 #include "BattleGroundMgr.h"
 

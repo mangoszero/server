@@ -28,6 +28,7 @@
 #include "WorldSession.h"
 #include "Log.h"
 #include "Opcodes.h"
+#include "Player.h"
 #include "ByteBuffer.h"
 #include <openssl/sha.h>
 #include "World.h"

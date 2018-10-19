@@ -25,6 +25,11 @@
 #ifndef MANGOS_H_PLAYERLOGGER
 #define MANGOS_H_PLAYERLOGGER
 
+#include "Platform/Define.h"
+#include <vector>
+class Player;
+class ObjectGuid;
+
 enum PlayerLogEntity
 {
     PLAYER_LOG_DAMAGE_GET   = 0,
@@ -147,7 +152,7 @@ struct PlayerLogProgress : public PlayerLogPosition // 18+4=22 bytes
 class PlayerLogger
 {
 public:
-    PlayerLogger(ObjectGuid);
+    PlayerLogger(ObjectGuid const & guid);
     ~PlayerLogger();
 
     static inline PlayerLogMask CalcLogMask(PlayerLogEntity entity) { return PlayerLogMask(1 << entity); }
@@ -178,10 +183,10 @@ public:
     void CheckAndTruncate(PlayerLogMask, uint32 maxRecords);
 
     // logging itself
-    void LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid unitGuid, uint16 spell);
-    void LogLooting(LootSourceType type, ObjectGuid droppedBy, ObjectGuid itemGuid, uint32 id);
-    void LogTrading(bool aquire, ObjectGuid partner, ObjectGuid itemGuid);
-    void LogKilling(bool killedEnemy, ObjectGuid unitGuid);
+    void LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid const & unitGuid, uint16 spell);
+    void LogLooting(LootSourceType type, ObjectGuid const & droppedBy, ObjectGuid const & itemGuid, uint32 id);
+    void LogTrading(bool aquire, ObjectGuid const & partner, ObjectGuid const & itemGuid);
+    void LogKilling(bool killedEnemy, ObjectGuid const & unitGuid);
     void LogPosition();
     void LogProgress(ProgressType type, uint8 achieve, uint16 misc = 0);
 
