@@ -3,7 +3,7 @@
 # MaNGOS Build Automation Script                                              #
 # Written By: Ryan Ashley                                                     #
 # Updated By: Cedric Servais                                                  #
-# Copyright (c) 2014-2018 MaNGOS Project                                      #
+# Copyright (c) 2014-2019 MaNGOS Project                                      #
 # https://getmangos.eu/                                                       #
 #                                                                             #
 # This program is free software; you can redistribute it and/or modify        #
