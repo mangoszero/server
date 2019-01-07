@@ -706,10 +706,12 @@ class ObjectMgr
 
         void LoadGossipMenus();
 
+        void LoadVendorTemplates();
         void LoadVendors()
         {
             LoadVendors("npc_vendor", false);
         }
+        void LoadTrainerTemplates();
         void LoadTrainers()
         {
             LoadTrainers("npc_trainer", false);

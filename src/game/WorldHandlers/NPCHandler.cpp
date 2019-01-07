@@ -288,12 +288,17 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
 
     // check present spell in trainer spell list
     TrainerSpellData const* cSpells = unit->GetTrainerSpells();
+    TrainerSpellData const* tSpells = unit->GetTrainerTemplateSpells();
 
-    if (!cSpells)
+    if (!cSpells && !tSpells)
         { return; }
 
     // Try find spell in npc_trainer
     TrainerSpell const* trainer_spell = cSpells ? cSpells->Find(spellId) : NULL;
+
+    // Not found, try find in npc_trainer_template
+    if (!trainer_spell && tSpells)
+        { trainer_spell = tSpells->Find(spellId); }
 
     // Not found anywhere, cheating?
     if (!trainer_spell)

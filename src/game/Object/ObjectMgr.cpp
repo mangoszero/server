@@ -792,7 +792,7 @@ void ObjectMgr::LoadCreatureItemTemplates()
     }
 
     sLog.outString(">> Loaded %u creature item template", sEquipmentStorageItem.GetRecordCount());
-    sLog.outString();
+    sLog.outString();    
 }
 
 void ObjectMgr::LoadCreatureClassLvlStats()
@@ -7994,6 +7994,41 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
     sLog.outString();
 }
 
+void ObjectMgr::LoadTrainerTemplates()
+{
+    LoadTrainers("npc_trainer_template", true);
+
+    // post loading check
+    std::set<uint32> trainer_ids;
+    bool hasErrored = false;
+
+    for (CacheTrainerSpellMap::const_iterator tItr = m_mCacheTrainerTemplateSpellMap.begin(); tItr != m_mCacheTrainerTemplateSpellMap.end(); ++tItr)
+        { trainer_ids.insert(tItr->first); }
+
+    for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
+    {
+        if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
+        {
+            if (cInfo->TrainerTemplateId)
+            {
+                if (m_mCacheTrainerTemplateSpellMap.find(cInfo->TrainerTemplateId) != m_mCacheTrainerTemplateSpellMap.end())
+                    { trainer_ids.erase(cInfo->TrainerTemplateId); }
+                else
+                {
+                    sLog.outErrorDb("Creature (Entry: %u) has TrainerTemplateId = %u for nonexistent trainer template", cInfo->Entry, cInfo->TrainerTemplateId);
+                    hasErrored = true;
+                }
+            }
+        }
+    }
+
+    for (std::set<uint32>::const_iterator tItr = trainer_ids.begin(); tItr != trainer_ids.end(); ++tItr)
+        { sLog.outErrorDb("Table `npc_trainer_template` has trainer template %u not used by any trainers ", *tItr); }
+
+    if (hasErrored || !trainer_ids.empty())                 // Append extra line in case of reported errors
+        { sLog.outString(); }
+}
+
 void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
 {
     CacheVendorItemMap& vendorList = isTemplates ? m_mCacheVendorTemplateItemMap : m_mCacheVendorItemMap;
@@ -8046,6 +8081,34 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
     sLog.outString();
 }
 
+
+void ObjectMgr::LoadVendorTemplates()
+{
+    LoadVendors("npc_vendor_template", true);
+
+    // post loading check
+    std::set<uint32> vendor_ids;
+
+    for (CacheVendorItemMap::const_iterator vItr = m_mCacheVendorTemplateItemMap.begin(); vItr != m_mCacheVendorTemplateItemMap.end(); ++vItr)
+        { vendor_ids.insert(vItr->first); }
+
+    for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
+    {
+        if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
+        {
+            if (cInfo->VendorTemplateId)
+            {
+                if (m_mCacheVendorTemplateItemMap.find(cInfo->VendorTemplateId) !=  m_mCacheVendorTemplateItemMap.end())
+                    { vendor_ids.erase(cInfo->VendorTemplateId); }
+                else
+                    sLog.outErrorDb("Creature (Entry: %u) has VendorTemplateId = %u for nonexistent vendor template", cInfo->Entry, cInfo->VendorTemplateId);
+            }
+        }
+    }
+
+    for (std::set<uint32>::const_iterator vItr = vendor_ids.begin(); vItr != vendor_ids.end(); ++vItr)
+        { sLog.outErrorDb("Table `npc_vendor_template` has vendor template %u not used by any vendors ", *vItr); }
+}
 
 void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
 {
