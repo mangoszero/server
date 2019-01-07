@@ -407,7 +407,7 @@ function GetRelease()
       ;;
     5)
       SRCPATH="$ROOTPATH/five/src"
-      INSTPATH="$ROOTPATH/fice"
+      INSTPATH="$ROOTPATH/five"
       DB_PREFIX="five"
       ;;
     *)
