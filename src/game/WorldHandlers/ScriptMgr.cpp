@@ -1334,7 +1334,7 @@ bool ScriptAction::HandleScriptStep()
         }
         case SCRIPT_COMMAND_RESPAWN_GO:                     // 9
         {
-			GameObject* pGo;
+            GameObject* pGo;
             if (m_script->respawnGo.goGuid)
             {
                 GameObjectData const* goData = sObjectMgr.GetGOData(m_script->respawnGo.goGuid);
@@ -1367,8 +1367,8 @@ bool ScriptAction::HandleScriptStep()
 
             if (pGo->isSpawned())
                 { break; }                                      // gameobject already spawned
-			
-			uint32 time_to_despawn = m_script->respawnGo.despawnDelay < 5 ? 5 : m_script->respawnGo.despawnDelay;
+            
+            uint32 time_to_despawn = m_script->respawnGo.despawnDelay < 5 ? 5 : m_script->respawnGo.despawnDelay;
 
             pGo->SetLootState(GO_READY);
             pGo->SetRespawnTime(time_to_despawn);           // despawn object in ? seconds

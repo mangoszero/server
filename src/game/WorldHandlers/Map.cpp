@@ -2340,7 +2340,7 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
     float i_y = y;
     float i_z = z;
 
-	bool isFlying;
+    bool isFlying;
     bool isSwimming = true;
     switch (unit->GetTypeId())
     {
@@ -2362,8 +2362,8 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
         return false;
     }
 
-	bool newDestAssigned;
-	if (isFlying)
+    bool newDestAssigned;
+    if (isFlying)
     {
         newDestAssigned = GetRandomPointInTheAir(i_x, i_y, i_z, radius);
     }

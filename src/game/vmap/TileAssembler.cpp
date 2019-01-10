@@ -328,7 +328,7 @@ namespace VMAP
             model.SetGroupModels(groupsArray);
         }
 
-		return model.WriteFile(iDestDir + "/" + pModelFilename + ".vmo");
+        return model.WriteFile(iDestDir + "/" + pModelFilename + ".vmo");
     }
 
     void TileAssembler::exportGameobjectModels(const char *RAW_VMAP_MAGIC)

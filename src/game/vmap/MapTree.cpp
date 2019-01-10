@@ -211,8 +211,8 @@ namespace VMAP
                 pResultHitPos = pResultHitPos + dir * pModifyDist;
             }
         }
-		pResultHitPos = pPos2;
-		return false;
+        pResultHitPos = pPos2;
+        return false;
     }
 
     //=========================================================

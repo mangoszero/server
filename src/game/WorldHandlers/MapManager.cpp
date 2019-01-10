@@ -106,8 +106,8 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
     if (!entry)
         { return NULL; }
 
-	Map* m;
-	if (entry->Instanceable())
+    Map* m;
+    if (entry->Instanceable())
     {
         MANGOS_ASSERT(obj && obj->GetTypeId() == TYPEID_PLAYER);
         // create DungeonMap object

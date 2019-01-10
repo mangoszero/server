@@ -1977,8 +1977,8 @@ bool ChatHandler::HandleNpcSpawnDistCommand(char* args)
 
     Creature* pCreature = getSelectedCreature();
 
-	if (!pCreature)
-		{ return false; }
+    if (!pCreature)
+        { return false; }
 
     pCreature->SetRespawnRadius((float)option);
     pCreature->SetDefaultMovementType(mtype);
