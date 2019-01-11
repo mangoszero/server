@@ -58,8 +58,8 @@ const char ItemPrototypedstfmt[] = "iiisiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 const char PageTextfmt[] = "isi";
 const char InstanceTemplatesrcfmt[] = "iiiiiiiff";
 const char InstanceTemplatedstfmt[] = "iiiiiiiff";
-const char ConditionsSrcFmt[] = "iiii";
-const char ConditionsDstFmt[] = "iiii";
+const char ConditionsSrcFmt[] = "iiiix";
+const char ConditionsDstFmt[] = "iiiix";
 const char CreatureTemplateSpellsFmt[] = "iiiii";
 const char SpellScriptTargetFmt[] = "iiii";
 
