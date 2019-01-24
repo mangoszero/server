@@ -1,0 +1,759 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style>
+.AlignLeft { text-align: left; }
+.AlignCenter { text-align: center; }
+.AlignRight { text-align: right; }
+body { font-family: sans-serif; font-size: 11pt; }
+td { vertical-align: top; padding-left: 4px; padding-right: 4px; }
+
+tr.SectionGap td { font-size: 4px; border-left: none; border-top: none; border-bottom: 1px solid Black; border-right: 1px solid Black; }
+tr.SectionAll td { border-left: none; border-top: none; border-bottom: 1px solid Black; border-right: 1px solid Black; }
+tr.SectionBegin td { border-left: none; border-top: none; border-right: 1px solid Black; }
+tr.SectionEnd td { border-left: none; border-top: none; border-bottom: 1px solid Black; border-right: 1px solid Black; }
+tr.SectionMiddle td { border-left: none; border-top: none; border-right: 1px solid Black; }
+tr.SubsectionAll td { border-left: none; border-top: none; border-bottom: 1px solid Gray; border-right: 1px solid Black; }
+tr.SubsectionEnd td { border-left: none; border-top: none; border-bottom: 1px solid Gray; border-right: 1px solid Black; }
+table.fc { border-top: 1px solid Black; border-left: 1px solid Black; width: 100%; font-family: monospace; font-size: 10pt; }
+td.TextItemInsigAdd { color: #000000; background-color: #FFF9D7; font-weight: bold; }
+td.TextItemInsigDel { color: #000000; background-color: #FFF9D7; font-weight: bold; text-decoration: line-through; }
+td.TextItemInsigDiffMod { color: #000000; background-color: #FFF9D7; font-weight: bold; }
+td.TextItemInsigLeftMod { color: #000000; background-color: #E9F9F5; font-weight: bold; }
+td.TextItemInsigRightMod { color: #000000; background-color: #FDEBFF; font-weight: bold; }
+td.TextItemNum { color: #827357; background-color: #F2F2F2; }
+td.TextItemSame { color: #000000; background-color: #FFFFFF; font-weight: bold; }
+td.TextItemSigAdd { color: #000000; background-color: #FFE3E3; font-weight: bold; }
+td.TextItemSigDel { color: #000000; background-color: #FFE3E3; font-weight: bold; text-decoration: line-through; }
+td.TextItemSigDiffMod { color: #000000; background-color: #FFE3E3; font-weight: bold; }
+td.TextItemSigLeftMod { color: #000000; background-color: #DCF6F6; font-weight: bold; }
+td.TextItemSigRightMod { color: #000000; background-color: #F8E3FF; font-weight: bold; }
+.TextSegInsigDiff { color: #0000FF; }
+.TextSegReplacedDiff { color: #0000FF; font-style: italic; }
+.TextSegSigDiff { color: #FF0000; }
+.TextSegElementKeyword { font-weight: bold; }
+.TextSegElementIdentifier { }
+.TextSegElementString { color: #3A7726; }
+.TextSegElementComment { color: #786A41; }
+.TextSegElementOperator { }
+</style>
+<title>Error -All</title>
+</head>
+<body>
+Error -All<br/>
+Produced: 24/01/2019 08:38:15<br/>
+&nbsp; &nbsp;
+<br/>
+Mode:&nbsp; Differences, With Context &nbsp;
+<br/>
+Left file: S:\repos\serverZero_rel21\src\game\ChatCommands\Level3.cpp &nbsp;
+<br/>
+Right file: S:\repos\serverZero_Ant\src\game\ChatCommands\Level3.cpp &nbsp;
+<br/>
+<table class="fc" cellspacing="0" cellpadding="0">
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">261</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">261</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">262</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">262</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">263</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadAllLootCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">263</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadAllLootCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">264</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">264</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">265</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">sLog</span><span class="TextSegElementOperator">.</span><span class="TextSegElementIdentifier">outString</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Re-Loading Loot Tables...&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">265</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">sLog</span><span class="TextSegElementOperator">.</span><span class="TextSegElementIdentifier">outString</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Re-Loading Loot Tables...&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">266</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTables</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">266</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTables</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">267</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table<span class="TextSegSigDiff">s</span> `<span class="TextSegSigDiff">*_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">267</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">268</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">268</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">269</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">269</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">270</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">270</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">271</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadAllNpcCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementIdentifier">args</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">271</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadAllNpcCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementIdentifier">args</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">272</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">272</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">273</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">HandleReloadNpcTrainerCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span><span class="TextSegElementOperator">)</span><span class="TextSegElementString">&quot;a&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">273</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">HandleReloadNpcTrainerCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span><span class="TextSegElementOperator">)</span><span class="TextSegElementString">&quot;a&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionGap"><td colspan="5">&nbsp;</td></tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">480</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">SendGlobalSysMessage</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Data GameObjects for quests reloaded.&quot;</span><span class="TextSegElementOperator">,</span> <span class="TextSegElementIdentifier">SEC_MODERATOR</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">480</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">SendGlobalSysMessage</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Data GameObjects for quests reloaded.&quot;</span><span class="TextSegElementOperator">,</span> <span class="TextSegElementIdentifier">SEC_MODERATOR</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">481</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">481</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">482</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">482</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">483</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">483</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">484</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesCreatureCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">484</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesCreatureCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">485</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">485</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">486</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">creature_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">486</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Creature </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 1</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">487</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Creature</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">487</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Creature</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">488</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Creature.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">488</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Creature.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_CREATURE</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">489</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">creature_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">489</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Creatures</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">490</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">490</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">491</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">491</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">492</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">492</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">493</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesDisenchantCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">493</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesDisenchantCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">494</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">494</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">495</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">disenchant_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">495</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Disenchant </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 2</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">496</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Disenchant</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">496</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Disenchant</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">497</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Disenchant.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">497</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Disenchant.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_DISENCHANT</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">498</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">disenchant_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">498</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Disenchantment</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">499</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">499</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">500</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">500</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">501</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">501</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">502</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesFishingCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">502</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesFishingCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">503</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">503</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">504</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">fishing_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">504</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Fishing </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 3</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">505</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Fishing</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">505</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Fishing</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">506</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Fishing.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">506</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Fishing.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_FISHING</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">507</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">fishing_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">507</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Fishing</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">508</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">508</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">509</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">509</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">510</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">510</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">511</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesGameobjectCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">511</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesGameobjectCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">512</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">512</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">513</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">gameobject_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">513</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">GameObject </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 4</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">514</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Gameobject</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">514</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Gameobject</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">515</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Gameobject.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">515</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Gameobject.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_GAMEOBJECT</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">516</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">gameobject_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">516</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for GameObjects</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">517</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">517</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">518</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">518</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">519</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">519</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">520</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesItemCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">520</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesItemCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">521</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">521</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">522</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">item_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">522</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Item </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 5</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">523</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Item</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">523</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Item</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">524</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Item.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">524</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Item.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_ITEM</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">525</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">item_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">525</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Items</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">526</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">526</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">527</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">527</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">528</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">528</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">529</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesPickpocketingCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">529</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesPickpocketingCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">530</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">530</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">531</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">pickpocketing_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">531</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Pickpocketing </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 8</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">532</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Pickpocketing</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">532</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Pickpocketing</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">533</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Pickpocketing.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">533</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Pickpocketing.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_PICKPOCKETING</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">534</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">pickpocketing_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">534</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Pickpocketing</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">535</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">535</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">536</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">536</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">537</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">537</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">538</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesMailCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">538</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesMailCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">539</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">539</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">540</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">mail_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">540</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Mail </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 6</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">541</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Mail</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">541</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Mail</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">542</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Mail.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">542</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Mail.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_MAIL</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">543</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">mail_l</span>oot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">543</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">l</span>oot_template` reloaded<span class="TextSegSigDiff"> for Mail</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">544</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">544</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">545</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">545</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">546</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">546</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">547</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesReferenceCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">547</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesReferenceCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">548</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">548</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">549</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">reference_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">549</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Reference </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 10</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">550</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Reference</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">550</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Reference</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">551</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">reference_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">551</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Reference</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">552</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">552</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">553</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">553</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">554</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">554</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">555</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesSkinningCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">555</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadLootTemplatesSkinningCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">556</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">556</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">557</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading Loot Table<span class="TextSegSigDiff">s</span>... (`<span class="TextSegSigDiff">skinning_</span>loot_template`)&quot;);</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">557</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; sLog.outString(&quot;Re-Loading <span class="TextSegSigDiff">Skinning </span>Loot Table... (`loot_template`<span class="TextSegSigDiff"> LootType 11</span>)&quot;);</td>
+</tr>
+<tr class="SectionAll">
+<td class="TextItemNum AlignRight">558</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Skinning</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">558</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">LoadLootTemplates_Skinning</span><span class="TextSegElementOperator">(</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">559</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Skinning.CheckLootRefs();</td>
+<td class="AlignCenter">&lt;&gt;</td>
+<td class="TextItemNum AlignRight">559</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; LootTemplates_Skinning.CheckLootRefs(<span class="TextSegSigDiff">LOOT_TYPE_SKINNING</span>);</td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">560</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `<span class="TextSegSigDiff">skinning_</span>loot_template` reloaded.&quot;, SEC_MODERATOR);</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">560</td>
+<td class="TextItemSigDiffMod">&nbsp; &nbsp; SendGlobalSysMessage(&quot;DB table `loot_template` reloaded<span class="TextSegSigDiff"> for Skinning</span>.&quot;, SEC_MODERATOR);</td>
+</tr>
+<tr class="SectionBegin">
+<td class="TextItemNum AlignRight">561</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">=</td>
+<td class="TextItemNum AlignRight">561</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementKeyword">return</span> <span class="TextSegElementKeyword">true</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">562</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">562</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">}</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">563</td>
+<td class="TextItemSame">&nbsp;</td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">563</td>
+<td class="TextItemSame">&nbsp;</td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">564</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadMangosStringCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">564</td>
+<td class="TextItemSame"><span class="TextSegElementKeyword">bool</span> <span class="TextSegElementIdentifier">ChatHandler</span><span class="TextSegElementOperator">:</span><span class="TextSegElementOperator">:</span><span class="TextSegElementIdentifier">HandleReloadMangosStringCommand</span><span class="TextSegElementOperator">(</span><span class="TextSegElementKeyword">char</span><span class="TextSegElementOperator">*</span> <span class="TextSegElementComment">/*args*/</span><span class="TextSegElementOperator">)</span></td>
+</tr>
+<tr class="SectionMiddle">
+<td class="TextItemNum AlignRight">565</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">565</td>
+<td class="TextItemSame"><span class="TextSegElementOperator">{</span></td>
+</tr>
+<tr class="SectionEnd">
+<td class="TextItemNum AlignRight">566</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">sLog</span><span class="TextSegElementOperator">.</span><span class="TextSegElementIdentifier">outString</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Re-Loading mangos_string Table!&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+<td class="AlignCenter">&nbsp;</td>
+<td class="TextItemNum AlignRight">566</td>
+<td class="TextItemSame">&nbsp; &nbsp; <span class="TextSegElementIdentifier">sLog</span><span class="TextSegElementOperator">.</span><span class="TextSegElementIdentifier">outString</span><span class="TextSegElementOperator">(</span><span class="TextSegElementString">&quot;Re-Loading mangos_string Table!&quot;</span><span class="TextSegElementOperator">)</span><span class="TextSegElementOperator">;</span></td>
+</tr>
+</table>
+<br/>
+</body>
+</html>
