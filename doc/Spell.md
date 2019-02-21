@@ -1,7 +1,7 @@
 # Spells                                 {#spells} #
 
 Spells consist of a whole lot of information, the most usual way to access them is via their ID. A good
-tool to use when examining spells and looking into what they will do is [QSW](https://bitbucket.org/sidsukana/qsw) which will show you alot of the information available about a spell.
+tool to use when examining spells and looking into what they will do is [QSW](https://github.com/sidsukana/QSpellWork) which will show you alot of the information available about a spell.
 
 A spell is made up of a lot of parts, on of these are the effects that a spell has, without them spells
 wouldn't do much at all since the effects apply different kinds of `Aura`s that do different things
