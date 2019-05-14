@@ -51,13 +51,6 @@
  */
 typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 
-#define MANGOS_SCRIPT_NAME "mangosscript"
-#define MANGOS_SCRIPT_SUFFIX ACE_DLL_SUFFIX
-#define MANGOS_SCRIPT_PREFIX ACE_DLL_PREFIX
-#define MANGOS_LOAD_LIBRARY(libname)    ACE_OS::dlopen(libname)
-#define MANGOS_CLOSE_LIBRARY(hlib)      ACE_OS::dlclose(hlib)
-#define MANGOS_GET_PROC_ADDR(hlib,name) ACE_OS::dlsym(hlib,name)
-
 #define MANGOS_PATH_MAX PATH_MAX                            // ace/os_include/os_limits.h -> ace/Basic_Types.h
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -88,15 +81,6 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #  define DECLSPEC_NORETURN
 #endif // PLATFORM
 
-#if !defined(DEBUG)
-#  define MANGOS_INLINE inline
-#else // DEBUG
-#  if !defined(MANGOS_DEBUG)
-#    define MANGOS_DEBUG
-#  endif // MANGOS_DEBUG
-#  define MANGOS_INLINE
-#endif //!DEBUG
-
 #if COMPILER == COMPILER_GNU || COMPILER == COMPILER_CLANG
 #  define ATTR_NORETURN __attribute__((noreturn))
 #  define ATTR_PRINTF(F, V) __attribute__ ((format (printf, F, V)))
@@ -107,13 +91,8 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #  define ATTR_DEPRECATED
 #endif //COMPILER == COMPILER_GNU
 
-#if COMPILER_HAS_CPP11_SUPPORT
-#  define OVERRIDE override
-#  define FINAL final
-#else
-#  define OVERRIDE
-#  define FINAL
-#endif //COMPILER_HAS_CPP11_SUPPORT
+#define OVERRIDE override
+#define FINAL final
 
 /**
  * @brief A signed integer of 64 bits

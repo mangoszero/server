@@ -656,9 +656,9 @@ class Database
          *
          */
         Database() :
-            m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
+            m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
             m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
-            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0), m_TransStorage(NULL)
+            m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0)
         {
             m_nQueryCounter = -1;
         }

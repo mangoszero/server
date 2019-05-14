@@ -40,7 +40,7 @@ class DelayExecutor : protected ACE_Task_Base
 
         int execute(ACE_Method_Request* new_req);
 
-        int activate(int num_threads = 1);
+        int _activate(int num_threads = 1);
 
         int deactivate();
 

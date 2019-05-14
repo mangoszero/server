@@ -21,13 +21,3 @@
 if(SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
 endif()
-
-# Build the Eluna library if enabled
-if(SCRIPT_LIB_ELUNA)
-    add_subdirectory(Eluna)
-endif()
-
-# Include Player Bots if enabled
-if(PLAYERBOTS)
-    add_subdirectory(Bots)
-endif()

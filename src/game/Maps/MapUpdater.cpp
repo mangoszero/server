@@ -65,7 +65,7 @@ MapUpdater::~MapUpdater()
 
 int MapUpdater::activate(size_t num_threads)
 {
-    return m_executor.activate((int)num_threads);
+    return m_executor._activate((int)num_threads);
 }
 
 int MapUpdater::deactivate()

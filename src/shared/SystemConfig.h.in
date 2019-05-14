@@ -25,27 +25,28 @@
 #ifndef MANGOS_SYSTEMCONFIG_H
 #define MANGOS_SYSTEMCONFIG_H
 
-#ifndef MANGOS_PACKAGENAME
-#define MANGOS_PACKAGENAME "MaNGOS Zero"
-#endif
-
 #include "Platform/Define.h"
 
-#ifndef MANGOS_VERSION
-#if PLATFORM == PLATFORM_WINDOWS
-# define MANGOS_VERSION(REVD,REVT,REVN,REVH) "0.21.0" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
-#else
-# define MANGOS_VERSION(REVD,REVT,REVN,REVH) "@VERSION@" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
+#ifndef MANGOS_PACKAGENAME
+#define MANGOS_PACKAGENAME "@MANGOS_PKG@"
 #endif
+
+#ifndef MANGOS_VERSION
+# define MANGOS_VERSION(REVD,REVT,REVN,REVH) "@PROJECT_VERSION@" " (" REVD " " REVT " Revision " REVN " - " REVH ")"
 #endif
 
 // Format is YYYYMMDDRR where RR is the change in the conf file
 // for that day.
 #ifndef MANGOSD_CONFIG_VERSION
-# define MANGOSD_CONFIG_VERSION 2017021100
+# define MANGOSD_CONFIG_VERSION @MANGOS_WORLD_VER@
 #endif
+
 #ifndef REALMD_CONFIG_VERSION
-# define REALMD_CONFIG_VERSION 2010062001
+# define REALMD_CONFIG_VERSION @MANGOS_REALM_VER@
+#endif
+
+#ifndef AHBOT_CONFIG_VERSION
+# define AHBOT_CONFIG_VERSION @MANGOS_AHBOT_VER@
 #endif
 
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
@@ -89,17 +90,7 @@
 #endif
 
 
-// The path to config files, only the prepared sln's have PREPARED_SLN defined
-// as cmake replaces the CONF_xxx during the build process
-#ifndef SYSCONFDIR
-#  ifdef PREPARED_SLN
-#    define SYSCONFDIR ""
-#  elif PLATFORM == PLATFORM_WINDOWS
-#    define SYSCONFDIR "${CONF_DIR}"
-#  else
-#    define SYSCONFDIR "../${CONF_DIR}"
-#  endif
-#endif
+#define SYSCONFDIR "@CONF_INSTALL_DIR@/"
 
 
 #define REALMD_CONFIG_NAME             "realmd.conf"

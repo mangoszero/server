@@ -25,13 +25,13 @@
 #ifndef MANGOS_H_TILEASSEMBLER
 #define MANGOS_H_TILEASSEMBLER
 
-#include <map>
-#include <set>
-
 #include "ModelInstance.h"
 #include "WorldModel.h"
 #include <G3D/Vector3.h>
 #include <G3D/Matrix3.h>
+
+#include <map>
+#include <set>
 
 namespace VMAP
 {

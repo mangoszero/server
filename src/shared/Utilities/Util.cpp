@@ -25,7 +25,7 @@
 #include "Util.h"
 #include "Timer.h"
 
-#include "utf8cpp/utf8.h"
+#include "utf8.h"
 #include "RNGen.h"
 #include <ace/TSS_T.h>
 #include <ace/INET_Addr.h>

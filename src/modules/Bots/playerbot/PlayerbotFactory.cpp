@@ -1,13 +1,14 @@
-#include "../botpch.h"
+#include "botpch.h"
 #include "playerbot.h"
+#include "ahbot/AhBot.h"
 #include "PlayerbotFactory.h"
 #include "SQLStorages.h"
 #include "ItemPrototype.h"
 #include "PlayerbotAIConfig.h"
 #include "AccountMgr.h"
-#include "DBCStore.h"
+#include "Datastores/DBCStore.h"
 #include "SharedDefines.h"
-#include "ahbot/AhBot.h"
+
 
 using namespace ai;
 using namespace std;

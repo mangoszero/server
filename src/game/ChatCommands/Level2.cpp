@@ -415,10 +415,10 @@ bool ChatHandler::HandleGoTriggerCommand(char* args)
             return false;
         }
 
-        return HandleGoHelper(_player, at->target_mapId, at->target_X, at->target_Y, &at->target_Z);
+        return HandleGoHelper(_player, at->target_mapId, at->target_X, at->target_Y, at->target_Z);
     }
     else
-        { return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, &atEntry->z); }
+        { return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, atEntry->z); }
 }
 
 bool ChatHandler::HandleGoGraveyardCommand(char* args)
@@ -437,7 +437,7 @@ bool ChatHandler::HandleGoGraveyardCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, gy->map_id, gy->x, gy->y, &gy->z);
+    return HandleGoHelper(_player, gy->map_id, gy->x, gy->y, gy->z);
 }
 
 enum CreatureLinkType
@@ -596,7 +596,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
         }
     }
 
-    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, &data->posZ);
+    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
 }
 
 enum GameobjectLinkType
@@ -744,7 +744,7 @@ bool ChatHandler::HandleGoObjectCommand(char* args)
         }
     }
 
-    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, &data->posZ);
+    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
 }
 
 bool ChatHandler::HandleGameObjectTargetCommand(char* args)

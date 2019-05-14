@@ -1,7 +1,8 @@
 #include "botpch.h"
-#include "../../playerbot.h"
+#include "playerbot.h"
+#include "ahbot/AhBot.h"
 #include "QueryItemUsageAction.h"
-#include "../../../ahbot/AhBot.h"
+
 #include "../values/ItemUsageValue.h"
 #include "../../RandomPlayerbotMgr.h"
 

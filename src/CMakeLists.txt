@@ -17,51 +17,30 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-# Needs to link against mangos_world.lib
-if(WIN32)
-    if(BUILD_MANGOSD OR BUILD_TOOLS)
-        link_directories("${CMAKE_BINARY_DIR}/src/mangosd/${CMAKE_CFG_INTDIR}")
-        include_directories(${CMAKE_SOURCE_DIR}/dep/include)
-    endif()
-endif()
-
-# Build the mangos framework library
-add_subdirectory(framework)
-
-# Build the mangos shared library
 add_subdirectory(shared)
 
-if(BUILD_MANGOSD)
-    # Build the mangos game library
+if(BUILD_MANGOSD OR BUILD_TOOLS)
     add_subdirectory(game)
+endif()
 
-    # Build the mangos world server
+if(BUILD_MANGOSD)
     add_subdirectory(mangosd)
-
-    # Build the selected modules
     add_subdirectory(modules)
 endif()
 
-# Build the mangos realm authentication server
 if(BUILD_REALMD)
     add_subdirectory(realmd)
 endif()
 
-# If we want the tools for map/vmap/mmap extraction
 if(BUILD_TOOLS)
     add_subdirectory(tools)
 endif()
 
 if (BUILD_MANGOSD OR BUILD_REALMD)
-if(WIN32 AND MSVC)
-  get_filename_component(MYSQL_LIB_DIR ${MYSQL_LIBRARY} DIRECTORY)
-  get_filename_component(MYSQL_LIB_DLL ${MYSQL_LIBRARY} NAME)
-  STRING(REPLACE ".lib" ".dll" MYSQL_LIB_DLL ${MYSQL_LIB_DLL})
-  install(FILES ${MYSQL_LIB_DIR}/${MYSQL_LIB_DLL} DESTINATION ${BIN_DIR})
-  if (OPENSSL_VERSION VERSION_EQUAL "1.1")
-    install(FILES ${OPENSSL_ROOT_DIR}/libcrypto-1_1.dll DESTINATION ${BIN_DIR} OPTIONAL)
-  else()
-    install(FILES ${OPENSSL_ROOT_DIR}/libeay32.dll DESTINATION ${BIN_DIR} OPTIONAL)
-  endif()
-endif()
+    if(WIN32)
+        get_filename_component(MYSQL_LIB_DIR ${MySQL_LIBRARIES} DIRECTORY)
+        get_filename_component(MYSQL_LIB_DLL ${MySQL_LIBRARIES} NAME)
+        STRING(REPLACE ".lib" ".dll" MYSQL_LIB_DLL ${MYSQL_LIB_DLL})
+        install(FILES ${MYSQL_LIB_DIR}/${MYSQL_LIB_DLL} DESTINATION ${BIN_DIR})
+    endif()
 endif()

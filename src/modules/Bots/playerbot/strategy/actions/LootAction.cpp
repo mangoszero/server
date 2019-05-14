@@ -1,12 +1,13 @@
 #include "botpch.h"
-#include "../../playerbot.h"
+#include "playerbot.h"
+#include "ahbot/AhBot.h"
 #include "LootAction.h"
 
-#include "../../LootObjectStack.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../../ahbot/AhBot.h"
-#include "../../RandomPlayerbotMgr.h"
-#include "../values/ItemUsageValue.h"
+#include "LootObjectStack.h"
+#include "PlayerbotAIConfig.h"
+
+#include "RandomPlayerbotMgr.h"
+#include "strategy/values/ItemUsageValue.h"
 
 using namespace ai;
 

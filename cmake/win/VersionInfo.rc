@@ -1,5 +1,5 @@
-#include "VersionInfo.h"
 #include "winres.h"
+#include "VersionInfo.h"
 
 IDI_ICON1               ICON                    PRODUCT_ICON
 
@@ -22,15 +22,10 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", PRODUCT_COMMENTS
-            VALUE "CompanyName", PRODUCT_COMPANY_NAME
-            VALUE "FileDescription", PRODUCT_FILE_DESCRIPTION
-            VALUE "FileVersion", FILE_VERSION_RESOURCE_STR
-            VALUE "InternalName", PRODUCT_INTERNAL_NAME
-            VALUE "LegalCopyright", PRODUCT_COMPANY_COPYRIGHT
-            VALUE "OriginalFilename", PRODUCT_ORIGINAL_FILENAME
             VALUE "ProductName", PRODUCT_BUNDLE
             VALUE "ProductVersion", PRODUCT_VERSION_RESOURCE_STR
+            VALUE "FileDescription", PRODUCT_FILE_DESCRIPTION
+            VALUE "LegalCopyright", "(c)2005-2019 MaNGOS"
         END
     END
     BLOCK "VarFileInfo"

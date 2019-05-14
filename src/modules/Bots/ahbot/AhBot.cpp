@@ -1,3 +1,4 @@
+#include "ace/Task.h"
 #include "Category.h"
 #include "ItemBag.h"
 #include "AhBot.h"
@@ -14,7 +15,7 @@
 #include "playerbot/PlayerbotAIConfig.h"
 #include "AccountMgr.h"
 #include "playerbot/playerbot.h"
-#include "Player.h"
+
 
 using namespace ahbot;
 

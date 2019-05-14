@@ -17,48 +17,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-set(LIBRARY_NAME game)
-
-add_definitions(-DDT_POLYREF64)
-
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot
-    ${CMAKE_CURRENT_SOURCE_DIR}/BattleGround
-    ${CMAKE_CURRENT_SOURCE_DIR}/ChatCommands
-    ${CMAKE_CURRENT_SOURCE_DIR}/Maps
-    ${CMAKE_CURRENT_SOURCE_DIR}/MotionGenerators
-    ${CMAKE_CURRENT_SOURCE_DIR}/Object
-    ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
-    ${CMAKE_CURRENT_SOURCE_DIR}/References
-    ${CMAKE_CURRENT_SOURCE_DIR}/Server
-    ${CMAKE_CURRENT_SOURCE_DIR}/Tools
-    ${CMAKE_CURRENT_SOURCE_DIR}/vmap
-    ${CMAKE_CURRENT_SOURCE_DIR}/Warden
-    ${CMAKE_CURRENT_SOURCE_DIR}/Warden/Modules
-    ${CMAKE_CURRENT_SOURCE_DIR}/WorldHandlers
-    ${CMAKE_SOURCE_DIR}/dep/g3dlite
-    ${CMAKE_SOURCE_DIR}/dep/zlib
-    ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour/Include
-    ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour
-    ${CMAKE_SOURCE_DIR}/dep/recastnavigation
-    ${CMAKE_SOURCE_DIR}/dep/include
-    ${CMAKE_SOURCE_DIR}/src/shared
-    ${CMAKE_SOURCE_DIR}/src/shared/Auth
-    ${CMAKE_SOURCE_DIR}/src/shared/Config
-    ${CMAKE_SOURCE_DIR}/src/shared/Common
-    ${CMAKE_SOURCE_DIR}/src/shared/Database
-    ${CMAKE_SOURCE_DIR}/src/shared/DataStores
-    ${CMAKE_SOURCE_DIR}/src/shared/Utilities
-    ${CMAKE_SOURCE_DIR}/src/shared/Log
-    ${CMAKE_SOURCE_DIR}/src/shared/Threading
-    ${CMAKE_SOURCE_DIR}/src/framework
-    ${CMAKE_BINARY_DIR}/src/shared
-    ${MYSQL_INCLUDE_DIR}
-    ${OPENSSL_INCLUDE_DIR}
-    ${ACE_INCLUDE_DIR}
-)
-
 #AH Bot group
 file(GLOB SRC_GRP_AHBOT AuctionHouseBot/*.cpp AuctionHouseBot/*.h)
 source_group("AhBot" FILES ${SRC_GRP_AHBOT})
@@ -117,9 +75,140 @@ source_group("Warden\\Modules" FILES ${SRC_GRP_WARDEN_MODULES})
 
 #World and Handlers group
 file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
-source_group("World/Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
+source_group("World\\Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
 
-set(LIBRARY_SRCS
+# Build the Eluna library if enabled
+if(SCRIPT_LIB_ELUNA)
+    file(GLOB SRC_GRP_ELUNA ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.h)
+    source_group("Eluna" FILES ${SRC_GRP_ELUNA})
+endif()
+
+if(PLAYERBOTS)
+
+#Base files
+file(GLOB Playerbot_Source ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/*.h)
+source_group("Player Bot" FILES ${Playerbot_Source})
+file(GLOB AHbot_Source ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.h)
+source_group("AH Bot" FILES ${AHbot_Source})
+
+set(SRC_GRP_BOTS 
+    ${Playerbot_Source}
+    ${AHbot_Source}
+)
+#Strategy files
+file(GLOB Playerbot_Strategy ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/*.h)
+source_group("Player Bot\\Strategies" FILES ${Playerbot_Strategy})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Strategy})
+
+#Action files
+file(GLOB Playerbot_Actions ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/actions/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/actions/*.h)
+source_group("Player Bot\\Strategies\\Actions" FILES ${Playerbot_Actions})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Actions})
+
+#Generic files
+file(GLOB Playerbot_Generic ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/generic/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/generic/*.h)
+source_group("Player Bot\\Strategies\\Generic" FILES ${Playerbot_Generic})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Generic})
+
+#Trigger files
+file(GLOB Playerbot_Triggers ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/triggers/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/triggers/*.h)
+source_group("Player Bot\\Strategies\\Triggers" FILES ${Playerbot_Triggers})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Triggers})
+   
+
+#Value files
+file(GLOB Playerbot_Values ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/values/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/values/*.h)
+source_group("Player Bot\\Strategies\\Values" FILES ${Playerbot_Values})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Values})
+
+## Class files
+#Druid AI
+file(GLOB Playerbot_Druid ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/druid/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/druid/*.h)
+source_group("Player Bot\\Strategies\\Druid" FILES ${Playerbot_Druid})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Druid})
+
+#Hunter AI
+file(GLOB Playerbot_Hunter ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/hunter/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/hunter/*.h)
+source_group("Player Bot\\Strategies\\Hunter" FILES ${Playerbot_Hunter})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Hunter})
+
+#Mage AI
+file(GLOB Playerbot_Mage ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/mage/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/mage/*.h)
+source_group("Player Bot\\Strategies\\Mage" FILES ${Playerbot_Mage})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Mage})
+
+#Paladin AI
+file(GLOB Playerbot_Paladin ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/paladin/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/paladin/*.h)
+source_group("Player Bot\\Strategies\\Paladin" FILES ${Playerbot_Paladin})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Paladin})
+
+#Priest AI
+file(GLOB Playerbot_Priest ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/priest/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/priest/*.h)
+source_group("Player Bot\\Strategies\\Priest" FILES ${Playerbot_Priest})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Priest})
+
+#Rogue AI
+file(GLOB Playerbot_Rogue ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/rogue/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/rogue/*.h)
+source_group("Player Bot\\Strategies\\Rogue" FILES ${Playerbot_Rogue})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Rogue})
+
+#Shaman AI
+file(GLOB Playerbot_Shaman ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/shaman/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/shaman/*.h)
+source_group("Player Bot\\Strategies\\Shaman" FILES ${Playerbot_Shaman})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Shaman})
+
+#Warlock AI
+file(GLOB Playerbot_Warlock ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/warlock/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/warlock/*.h)
+source_group("Player Bot\\Strategies\\Warlock" FILES ${Playerbot_Warlock})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Warlock})
+
+#Warrior AI
+file(GLOB Playerbot_Warrior ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/warrior/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/warrior/*.h)
+source_group("Player Bot\\Strategies\\Warrior" FILES ${Playerbot_Warrior})
+LIST(APPEND SRC_GRP_BOTS ${Playerbot_Warrior})
+
+configure_file(${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/aiplayerbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist)
+
+endif()
+
+configure_file(AuctionHouseBot/ahbot.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist)
+
+if(BUILD_TOOLS)
+add_library(vmap2 STATIC
+    vmap/BIH.cpp
+    vmap/VMapManager2.cpp
+    vmap/MapTree.cpp
+    vmap/TileAssembler.cpp
+    vmap/WorldModel.cpp
+    vmap/ModelInstance.cpp
+    vmap/BIH.h
+    vmap/VMapManager2.h
+    vmap/MapTree.h
+    vmap/TileAssembler.h
+    vmap/WorldModel.h
+    vmap/ModelInstance.h
+)
+
+target_include_directories(vmap2
+    PUBLIC
+        vmap
+        WorldHandlers
+)
+
+target_compile_definitions(vmap2
+    PUBLIC
+        MMAP_GENERATOR
+        NO_CORE_FUNCS
+)
+target_link_libraries(vmap2
+    PUBLIC
+        shared
+        g3dlite
+        RecastNavigation::Detour
+)
+endif()
+
+add_library(game STATIC
     ${SRC_GRP_AHBOT}
     ${SRC_GRP_BATTLEGROUND}
     ${SRC_GRP_CHAT_COMMANDS}
@@ -135,57 +224,71 @@ set(LIBRARY_SRCS
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
-    pchdef.cpp
-    pchdef.h
+    $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>    
+    $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>    
 )
 
-add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
+target_include_directories(game
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        AuctionHouseBot
+        BattleGround
+        ChatCommands
+        Maps
+        MotionGenerators
+        Object
+        OutdoorPvP
+        References
+        Server
+        Tools
+        vmap
+        Warden
+        Warden/Modules
+        WorldHandlers
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${CMAKE_SOURCE_DIR}/src/modules/Eluna>
+        $<$<BOOL:${PLAYERBOTS}>:
+            ${CMAKE_SOURCE_DIR}/src/modules/Bots
+            ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot
+            ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot
+        >
+)
+
+target_compile_definitions(game
+    PUBLIC
+        $<$<BOOL:${SOAP}>:ENABLE_SOAP>
+        $<$<BOOL:${SCRIPT_LIB_SD3}>:ENABLE_SD3>
+        $<$<BOOL:${PLAYERBOTS}>:ENABLE_PLAYERBOTS>
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA>
+)
+
+target_link_libraries(game
+    PUBLIC
+        shared
+        RecastNavigation::Detour
+        ZLIB::ZLIB
+        g3dlite
+        $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:lualib>
+)
 
 # Generate precompiled header
 if(PCH)
-    ADD_CXX_PCH(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
+    ADD_CXX_PCH(game pchdef.h pchdef.cpp)
 endif()
 
-target_link_libraries(${LIBRARY_NAME} shared detour)
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist
+    DESTINATION ${CONF_INSTALL_DIR}
+)
 
-if(UNIX)
-    # Both systems don't have libdl and don't need them
-    if (NOT (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "NetBSD"))
-        target_link_libraries(${LIBRARY_NAME} dl)
-    endif()
-endif()
-
-if(NOT ACE_USE_EXTERNAL)
-    add_dependencies(${LIBRARY_NAME} ace)
+if(SCRIPT_LIB_ELUNA)
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/src/modules/Eluna/extensions
+    DESTINATION ${BIN_DIR}/lua_scripts
+)
 endif()
 
 if(PLAYERBOTS)
-    include_directories(
-        ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot
-        ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot
-    )
-    target_link_libraries(${LIBRARY_NAME} Bots)
-    add_dependencies(${LIBRARY_NAME} Bots)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist
+    DESTINATION ${CONF_INSTALL_DIR})
 endif()
-
-if(SCRIPT_LIB_SD3)
-    include_directories(${CMAKE_SOURCE_DIR}/src/modules/SD3)
-    target_link_libraries(${LIBRARY_NAME} mangosscript)
-    add_dependencies(${LIBRARY_NAME} mangosscript)
-endif()
-
-if(SCRIPT_LIB_ELUNA)
-    include_directories(
-        ${CMAKE_SOURCE_DIR}/dep/lualib
-        ${CMAKE_SOURCE_DIR}/src/modules/Eluna
-    )
-    list(APPEND LIBRARY_SRCS ${SRC_GRP_LUAENGINE})
-    target_link_libraries(${LIBRARY_NAME} LuaEngine)
-    target_link_libraries(${LIBRARY_NAME} lualib)
-    add_dependencies(${LIBRARY_NAME} LuaEngine)
-    add_dependencies(${LIBRARY_NAME} lualib)
-endif()
-
-#AH Bot Config
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot/ahbot.conf.dist.in" "${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist")
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AuctionHouseBot/ahbot.conf.dist" DESTINATION "${CONF_INSTALL_DIR}")

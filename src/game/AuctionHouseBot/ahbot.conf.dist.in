@@ -3,7 +3,7 @@
 ################################################################################
 
 [AhbotConf]
-ConfVersion=2010102201
+ConfVersion=@MANGOS_AHBOT_VER@
 
 ################################################################################
 # AUCTION HOUSE BOT SETTINGS
@@ -150,6 +150,7 @@ ConfVersion=2010102201
 #    Default ""
 #
 ################################################################################
+
 AuctionHouseBot.CharacterName  = ""
 AuctionHouseBot.Seller.Enabled = 0
 AuctionHouseBot.DEBUG.Seller   = 0

@@ -44,7 +44,7 @@
 
 WorldSocketMgr::WorldSocketMgr()
   : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
-    acceptor_(NULL),reactor_(NULL)
+    reactor_(NULL), acceptor_(NULL)
 {
 }
 

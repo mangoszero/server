@@ -36,13 +36,6 @@
  * \file
  */
 
-
-/**
- * Format is YYYYMMDDRR where RR is the change in the conf file
- * for that day.
- */
-#define AUCTIONHOUSEBOT_CONF_VERSION    2010102201
-
 #include "Policies/Singleton.h"
 
 struct BuyerAuctionEval
@@ -488,7 +481,7 @@ void AuctionBotConfig::setConfig(AuctionBotConfigBoolValues index, char const* f
 void AuctionBotConfig::GetConfigFromFile()
 {
     // Check config file version
-    if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AUCTIONHOUSEBOT_CONF_VERSION)
+    if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AHBOT_CONFIG_VERSION)
         { sLog.outError("AHBot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing."); }
 
     setConfigMax(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO , "AuctionHouseBot.Alliance.Items.Amount.Ratio" , 100, 10000);

@@ -637,7 +637,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
         if (!Player::LoadPositionFromDB(target_guid, map, x, y, z, o, in_flight))
             { return false; }
 
-        return HandleGoHelper(_player, map, x, y, &z);
+        return HandleGoHelper(_player, map, x, y, z);
     }
 
     return true;
@@ -661,7 +661,7 @@ bool ChatHandler::HandleRecallCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(target, target->m_recallMap, target->m_recallX, target->m_recallY, &target->m_recallZ, &target->m_recallO);
+    return HandleGoHelper(target, target->m_recallMap, target->m_recallX, target->m_recallY, target->m_recallZ, target->m_recallO);
 }
 
 // Edit Player HP
@@ -1503,7 +1503,7 @@ bool ChatHandler::HandleTeleCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, tele->mapId, tele->position_x, tele->position_y, &tele->position_z, &tele->orientation);
+    return HandleGoHelper(_player, tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
 }
 
 bool ChatHandler::HandleLookupAreaCommand(char* args)
@@ -1721,7 +1721,7 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
         if (needReportToTarget(target))
             { ChatHandler(target).PSendSysMessage(LANG_TELEPORTED_TO_BY, GetNameLink().c_str()); }
 
-        return HandleGoHelper(target, tele->mapId, tele->position_x, tele->position_y, &tele->position_z, &tele->orientation);
+        return HandleGoHelper(target, tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
     }
     else
     {
@@ -1909,17 +1909,17 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
     return true;
 }
 
-bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const* zPtr, float const* ortPtr)
+bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y, float const zPtr, float const ortPtr)
 {
     float z;
     float ort = player->GetOrientation();
 
-    if (zPtr)
+    if (zPtr > 0.0f)
     {
-        z = *zPtr;
+        z = zPtr;
 
-        if (ortPtr)
-            { ort = *ortPtr; }
+        if (ortPtr > 0.0f)
+            { ort = ortPtr; }
 
         // check full provided coordinates
         if (!MapManager::IsValidMapCoord(mapid, x, y, z, ort))
@@ -1981,7 +1981,7 @@ bool ChatHandler::HandleGoTaxinodeCommand(char* args)
         return false;
     }
 
-    return HandleGoHelper(_player, node->map_id, node->x, node->y, &node->z);
+    return HandleGoHelper(_player, node->map_id, node->x, node->y, node->z);
 }
 
 bool ChatHandler::HandleGoCommand(char* args)
@@ -2010,7 +2010,7 @@ bool ChatHandler::HandleGoCommand(char* args)
     else if (!ExtractLocationFromLink(&args, mapid, x, y, z))
         { return false; }
 
-    return HandleGoHelper(_player, mapid, x, y, &z);
+    return HandleGoHelper(_player, mapid, x, y, z);
 }
 
 
@@ -2056,7 +2056,7 @@ bool ChatHandler::HandleGoXYZCommand(char* args)
     if (!ExtractOptUInt32(&args, mapid, _player->GetMapId()))
         { return false; }
 
-    return HandleGoHelper(_player, mapid, x, y, &z);
+    return HandleGoHelper(_player, mapid, x, y, z);
 }
 
 // teleport at coordinates

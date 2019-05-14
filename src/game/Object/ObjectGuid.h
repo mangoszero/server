@@ -251,7 +251,7 @@ inline PackedGuid ObjectGuid::WriteAsPacked() const { return PackedGuid(*this); 
 HASH_NAMESPACE_START
 
 template<>
-class hash<ObjectGuid>
+struct hash<ObjectGuid>
 {
     public:
 

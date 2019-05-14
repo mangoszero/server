@@ -5,7 +5,7 @@
 #include "PlayerbotFactory.h"
 #include "AccountMgr.h"
 #include "ObjectMgr.h"
-#include "DatabaseEnv.h"
+#include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
 #include "Player.h"
 #include "RandomPlayerbotFactory.h"

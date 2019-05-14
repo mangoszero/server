@@ -17,164 +17,97 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-project(MaNGOS)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-set(MANGOS_VERSION 0.21)
-set(MANGOS_EXP "CLASSIC")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Set the correct macro directory path
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+cmake_policy(SET CMP0028 NEW)
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0048 NEW)
+cmake_policy(SET CMP0063 NEW)
 
+set(CMAKE_CXX_STANDARD          11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS        OFF)
+
+set_property(GLOBAL
+    PROPERTY USE_FOLDERS ON
+)
+
+#==================================================================================
 # Define available cmake options below
-if(WIN32)
-    set(CONF_DIR "" CACHE STRING "Path to the configs, can be absolute or relative.")
-else()
-    set(CONF_DIR "etc/" CACHE STRING "Path to the configs, can be absolute or relative.")
-endif()
-option(DEBUG                "Debug mode (strict compile, all warnings)"     OFF)
-option(ACE_USE_EXTERNAL     "Use external ACE"                              OFF)
-option(POSTGRESQL           "Use PostgreSQL instead of MySQL"               OFF)
 option(BUILD_MANGOSD        "Build the main server"                         ON)
 option(BUILD_REALMD         "Build the login server"                        ON)
 option(BUILD_TOOLS          "Build the map/vmap/mmap extractors"            ON)
+option(USE_STORMLIB         "Use StormLib for reading MPQs"                 OFF)
 option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
 option(PLAYERBOTS           "Enable Player Bots"                            OFF)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
-# Hidden option to enable/disable PCH. DEV ONLY!
-set(PCH ON)
-
-# Print CLI helper message
+option(PCH                  "Enable precompiled headers"                    OFF)
+option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
+#==================================================================================
 message("")
 message(
   "This script builds the MaNGOS server.
   Options that can be used in order to configure the process:
    General:
     CMAKE_INSTALL_PREFIX    Path where the server should be installed to
-    CONF_DIR                Path to the configs, can be absolute or relative.
-    DEBUG                   Debug mode (strict compile, all warnings)
-    ACE_USE_EXTERNAL        Use external ACE
     BUILD_MANGOSD           Build the main server
     BUILD_REALMD            Build the login server
     BUILD_TOOLS             Build the map/vmap/mmap extractors
+    USE_STORMLIB            Use StormLib for reading MPQs
     SOAP                    Enable remote access via SOAP
+    PCH                     Enable use of precompiled headers
+    DEBUG                   Debug build, only for systems without IDE (Linux, *BSD)
    Scripting engines:
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
     SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
    Modules:
     PLAYERBOTS              Enable Player Bots
-  To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
-  Also, you can specify the generator with -G. see 'cmake --help' for more details
-  For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos
 
-  Note: On UNIX systems, CONF_DIR is relative to the bin folder."
+  To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
+  Also, you can specify the generator with -G. See 'cmake --help' for more details
+  For example: cmake .. -DCMAKE_INSTALL_PREFIX=/opt/mangos -DSCRIPT_LIB_SD3=0"
 )
 message("")
+#==================================================================================#
 
-# Search for and set up the needed packages
-set(OPENSSL_EXPECTED_VERSION 1.1.0)
+project(MaNGOS VERSION 0.22.0)
 
-find_package(Platform REQUIRED)
-find_package(Git)
-find_package(PCHSupport)
-find_package(OpenSSL REQUIRED)
-
-if(ACE_USE_EXTERNAL)
-    find_package(ACE)
-    if(NOT ACE_FOUND)
-        message(FATAL_ERROR
-            "This project requires ACE installed when ACE_USE_EXTERNAL is set. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
-        )
-    endif()
+if(DEBUG)
+  set(CMAKE_BUILD_TYPE Debug)
 else()
-    include(cmake/ImportACE.cmake)
-endif()
-
-if(POSTGRESQL)
-    find_package(PostgreSQL REQUIRED)
-else()
-    find_package(MySQL REQUIRED)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 if(UNIX)
-    find_package(ZLIB)
-    find_package(BZip2)
+    set(BIN_DIR          ${CMAKE_INSTALL_PREFIX}/bin)
+    set(CONF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/etc)
+else()
+    set(BIN_DIR          ${CMAKE_INSTALL_PREFIX})
+    set(CONF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
-#Include platform/compiler-specific definitions
+
+find_package(Threads REQUIRED)
+find_package(MySQL   REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(DL      REQUIRED)
+
+find_package(ZLIB  QUIET)
+find_package(BZip2 QUIET)
+
+include(${CMAKE_SOURCE_DIR}/cmake/MangosParams.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
 
-add_definitions(-DCLASSIC)
-
-message(STATUS "Install server to     : ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "Install configs to    : ${CONF_INSTALL_DIR}")
-if("${CONF_DIR}" STREQUAL "")
-    message(STATUS "Search configs from   : binary directory (default)")
-else()
-    message(STATUS "Search configs from   : ${CONF_DIR}")
+if(PCH)
+    include(${CMAKE_SOURCE_DIR}/cmake/PCHSupport.cmake)
 endif()
 
-if(SOAP)
-    message(STATUS "Support for SOAP      : Yes")
-    add_definitions(-DENABLE_SOAP)
-else()
-    message(STATUS "Support for SOAP      : No (default)")
-endif()
-
-if(SCRIPT_LIB_ELUNA)
-    message(STATUS "Script engine Eluna   : Yes (default)")
-    add_definitions(-DENABLE_ELUNA)
-else()
-    message(STATUS "Script engine Eluna   : No")
-endif()
-
-if(SCRIPT_LIB_SD3)
-    message(STATUS "Script engine SD3     : Yes (default)")
-    add_definitions(-DENABLE_SD3)
-else()
-    message(STATUS "Script engine SD3     : No")
-endif()
-
-if(PLAYERBOTS)
-    message(STATUS "Enable Player Bots    : Yes (default)")
-    add_definitions(-DENABLE_PLAYERBOTS)
-else()
-    message(STATUS "Enable Player Bots    : No")
-endif()
-
-if(BUILD_MANGOSD)
-    message(STATUS "Build main server     : Yes (default)")
-else()
-    message(STATUS "Build main server     : No")
-endif()
-
-if(BUILD_REALMD)
-    message(STATUS "Build login server    : Yes (default)")
-else()
-    message(STATUS "Build login server    : No")
-endif()
-
-if(BUILD_TOOLS)
-    message(STATUS "Build tools           : Yes (default)")
-else()
-    message(STATUS "Build tools           : No")
-endif()
-
-if(DEBUG)
-    set(CMAKE_BUILD_TYPE Debug)
-    message(STATUS "Build in debug-mode   : Yes")
-else()
-    set(CMAKE_BUILD_TYPE Release)
-    message(STATUS "Build in debug-mode   : No  (default)")
-endif()
-
-# Add dependency path
-if(BUILD_MANGOSD OR BUILD_TOOLS)
-    add_subdirectory(dep)
-else()
-    add_subdirectory(dep/acelite)
-endif()
-
-# Add source path
+add_subdirectory(dep)
 add_subdirectory(src)
+
+include(${CMAKE_SOURCE_DIR}/cmake/StatusInfo.cmake)
+
