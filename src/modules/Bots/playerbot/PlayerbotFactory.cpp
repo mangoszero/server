@@ -6,7 +6,7 @@
 #include "ItemPrototype.h"
 #include "PlayerbotAIConfig.h"
 #include "AccountMgr.h"
-#include "Datastores/DBCStore.h"
+#include "DBCStore.h"
 #include "SharedDefines.h"
 
 

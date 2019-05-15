@@ -45,7 +45,7 @@ option(SCRIPT_LIB_ELUNA     "Compile with support for Eluna scripts"        ON)
 option(SCRIPT_LIB_SD3       "Compile with support for ScriptDev3 scripts"   ON)
 option(PLAYERBOTS           "Enable Player Bots"                            OFF)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
-option(PCH                  "Enable precompiled headers"                    OFF)
+option(PCH                  "Enable precompiled headers"                    ON)
 option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
 #==================================================================================
 message("")

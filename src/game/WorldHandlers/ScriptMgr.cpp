@@ -44,6 +44,7 @@
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
+
 #ifdef ENABLE_SD3
 #include "system/ScriptDevMgr.h"
 #endif

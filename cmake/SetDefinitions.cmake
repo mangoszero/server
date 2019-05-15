@@ -78,6 +78,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /Gw           #whole program global optimization
         /GS-          #no buffer security check
         /GF           #string pooling
+        >
+
         /wd4996
         /wd4267
         /wd4244
@@ -91,7 +93,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /wd4127
         /wd4100
         /wd4389
-        >
     )
 endif ()
 
@@ -116,6 +117,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
           $<$<COMPILE_LANGUAGE:C>:
             --no-warnings
           >
+
           $<$<COMPILE_LANGUAGE:CXX>:
             --no-warnings
             -Wno-narrowing
@@ -127,6 +129,12 @@ endif ()
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(DEFAULT_COMPILE_OPTS ${DEFAULT_COMPILE_OPTS}
+        $<$<CONFIG:Release>:
+            -Wno-c++11-narrowing
+            -Wno-inconsistent-missing-override
+            -Wno-deprecated-register
+            -Wno-switch
+        >
         $<$<CONFIG:Debug>:
             -W
             -Wall

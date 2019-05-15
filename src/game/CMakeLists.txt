@@ -224,8 +224,8 @@ add_library(game STATIC
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
-    $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>    
-    $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>    
+    $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>
+    $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>
 )
 
 target_include_directories(game
@@ -273,7 +273,7 @@ target_link_libraries(game
 
 # Generate precompiled header
 if(PCH)
-    ADD_CXX_PCH(game pchdef.h pchdef.cpp)
+    ADD_CXX_PCH(game ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
 endif()
 
 install(
