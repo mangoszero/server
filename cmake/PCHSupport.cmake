@@ -77,7 +77,7 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         endif()
 
         # Create and set output directory.
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${CMAKE_BUILD_TYPE}_${SFX}")
         set(OUTPUT_NAME "${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME}.${SFX}")
 
         make_directory(${OUTPUT_DIR})

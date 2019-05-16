@@ -226,6 +226,10 @@ add_library(game STATIC
     ${SRC_GRP_WORLD_HANDLERS}
     $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>
     $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>
+    $<$<BOOL:${PCH}>:
+        pchdef.h
+        pchdef.cpp
+    >
 )
 
 target_include_directories(game
