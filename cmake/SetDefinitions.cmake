@@ -79,7 +79,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /GS-          #no buffer security check
         /GF           #string pooling
         >
-        
+        $<$<CONFIG:Debug>:
+        /bigobj
+        >
+
         /wd4996
         /wd4267
         /wd4244
