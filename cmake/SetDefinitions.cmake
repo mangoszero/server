@@ -79,7 +79,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /GS-          #no buffer security check
         /GF           #string pooling
         >
-
+        
         /wd4996
         /wd4267
         /wd4244
@@ -93,10 +93,20 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /wd4127
         /wd4100
         /wd4389
+        /wd4189
+        /wd4701
+        /wd4706
+        /wd4703
+        /wd4702
+        /wd4302
+        /wd4305
+        /wd4018
+        /wd4840
+        /wd4101
     )
 endif ()
 
-# GCC and Clang compiler options
+# GCC compiler options
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     set(DEFAULT_COMPILE_OPTS ${DEFAULT_COMPILE_OPTS}
         $<$<EQUAL:${PLATFORM},32>:
@@ -119,6 +129,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     )
 endif ()
 
+#Clang compiler options
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     set(DEFAULT_COMPILE_OPTS ${DEFAULT_COMPILE_OPTS}
         $<$<CONFIG:Release>:

@@ -18,56 +18,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
 # SOFTWARE.
 #
-# ADD_CXX_PCH
+# ADD_CXX_PCH(TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
 #
 # Sets a precompiled header for a given target
-# Args:
+#
 # TARGET_NAME - Name of the target. Only valid after add_library or add_executable
 # PRECOMPILED_HEADER - Header file to precompile
 # PRECOMPILED_SOURCE - MSVC specific source to do the actual precompilation. Ignored on other platforms
+#
 
 function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
-
     get_filename_component(PRECOMPILED_HEADER_NAME ${PRECOMPILED_HEADER} NAME)
 
     if(MSVC)
-        get_filename_component(PRECOMPILED_HEADER_PATH ${PRECOMPILED_HEADER} DIRECTORY)
-        target_include_directories(${TARGET_NAME} PRIVATE ${PRECOMPILED_HEADER_PATH}) # fixes occasional IntelliSense glitches
-
-        get_filename_component(PRECOMPILED_HEADER_WE ${PRECOMPILED_HEADER} NAME_WE)
-        set(PRECOMPILED_BINARY "$(IntDir)/${PRECOMPILED_HEADER_WE}.pch")
-
-        get_target_property(SOURCE_FILES ${TARGET_NAME} SOURCES)
-        set(SOURCE_FILE_FOUND FALSE)
-        foreach(SOURCE_FILE ${SOURCE_FILES})
-            if(SOURCE_FILE MATCHES \\.\(cc|cxx|cpp\)$)
-                if(${PRECOMPILED_SOURCE} MATCHES ${SOURCE_FILE})
-                    # Set source file to generate header
-                    set_source_files_properties(
-                        ${SOURCE_FILE}
-                        PROPERTIES
-                        COMPILE_FLAGS "/Yc\"${PRECOMPILED_HEADER_NAME}\" /Fp\"${PRECOMPILED_BINARY}\""
-                        OBJECT_OUTPUTS "${PRECOMPILED_BINARY}")
-                    set(SOURCE_FILE_FOUND TRUE)
-                else()
-                    # Set and automatically include precompiled header
-                    set_source_files_properties(
-                        ${SOURCE_FILE}
-                        PROPERTIES
-                        COMPILE_FLAGS "/Yu\"${PRECOMPILED_HEADER_NAME}\" /Fp\"${PRECOMPILED_BINARY}\" /FI\"${PRECOMPILED_HEADER_NAME}\""
-                        OBJECT_DEPENDS "${PRECOMPILED_BINARY}")
-                endif()
-            endif()
-        endforeach()
-        if(NOT SOURCE_FILE_FOUND)
-            message(FATAL_ERROR "A source file for ${PRECOMPILED_HEADER} was not found. Required for MSVC builds.")
-        endif(NOT SOURCE_FILE_FOUND)
+        target_compile_options(${TARGET_NAME}
+            PRIVATE
+                /FI${PRECOMPILED_HEADER_NAME}
+                /Yu${PRECOMPILED_HEADER_NAME}
+        )
+        SET_SOURCE_FILES_PROPERTIES(${PRECOMPILED_SOURCE}
+            PROPERTIES
+                COMPILE_FLAGS /Yc${PRECOMPILED_HEADER_NAME}
+        )
     elseif(CMAKE_GENERATOR STREQUAL Xcode)
         set_target_properties(
             ${TARGET_NAME}
             PROPERTIES
-            XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${PRECOMPILED_HEADER}"
-            XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
+                XCODE_ATTRIBUTE_GCC_PREFIX_HEADER "${PRECOMPILED_HEADER}"
+                XCODE_ATTRIBUTE_GCC_PRECOMPILE_PREFIX_HEADER "YES"
             )
     elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(CMAKE_COMPILER_IS_GNUCC)
@@ -92,7 +70,9 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         set(_compile_definitions "$<$<BOOL:${_compile_definitions}>:-D$<JOIN:${_compile_definitions},\n-D>\n>")
         set(_compile_flags "$<$<BOOL:${_compile_flags}>:$<JOIN:${_compile_flags},\n>\n>")
         set(_compile_options "$<$<BOOL:${_compile_options}>:$<JOIN:${_compile_options},\n>\n>")
-        file(GENERATE OUTPUT "${PCH_FLAGS_FILE}" CONTENT "${_compile_definitions}${_include_directories}${_compile_flags}${_compile_options}\n")
+
+        file(GENERATE OUTPUT ${PCH_FLAGS_FILE} CONTENT "${_compile_definitions}${_include_directories}${_compile_flags}${_compile_options}\n")
+        file(GENERATE OUTPUT ${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME} CONTENT "")
 
         # Gather global compiler options, definitions, etc.
         string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" CXX_FLAGS)
@@ -110,14 +90,10 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         add_custom_target(${TARGET_NAME}_${SFX} DEPENDS ${OUTPUT_NAME})
         add_dependencies(${TARGET_NAME} ${TARGET_NAME}_${SFX})
 
-        get_target_property(SOURCE_FILES ${TARGET_NAME} SOURCES)
-
-        foreach(SOURCE_FILE ${SOURCE_FILES})
-            if(SOURCE_FILE MATCHES \\.\(cc|cxx|cpp\)$)
-                set_source_files_properties(${SOURCE_FILE} PROPERTIES
-                   COMPILE_FLAGS "-include ${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME} -Winvalid-pch"
-                )
-            endif()
-        endforeach()
+        target_compile_options(${TARGET_NAME}
+            PRIVATE
+                -include ${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME}
+                -Winvalid-pch
+        )
     endif()
 endfunction()

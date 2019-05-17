@@ -32,6 +32,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cctype>
 
 /**
  * @brief
@@ -555,7 +556,7 @@ inline bool isEastAsianString(const std::wstring &wstr, bool numericOrSpace)
  */
 inline void strToUpper(std::string& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::toupper(c); });
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return toupper(c); });
 }
 
 /**
@@ -565,7 +566,7 @@ inline void strToUpper(std::string& str)
  */
 inline void strToLower(std::string& str)
 {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return tolower(c); });
 }
 
 /**

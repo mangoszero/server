@@ -26,6 +26,7 @@
 #define GAME_PCH_H
 
 #include "Common.h"
+#include "Map.h"
 #include "Log.h"
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
