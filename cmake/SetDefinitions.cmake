@@ -114,15 +114,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         >
 
         $<$<CONFIG:Release>:
-          $<$<COMPILE_LANGUAGE:C>:
-            --no-warnings
-          >
-
-          $<$<COMPILE_LANGUAGE:CXX>:
-            --no-warnings
-            -Wno-narrowing
-            -Wno-deprecated-register
-            >
+          --no-warnings
         >
     )
 endif ()

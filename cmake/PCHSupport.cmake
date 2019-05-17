@@ -40,7 +40,7 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         get_target_property(SOURCE_FILES ${TARGET_NAME} SOURCES)
         set(SOURCE_FILE_FOUND FALSE)
         foreach(SOURCE_FILE ${SOURCE_FILES})
-            if(SOURCE_FILE MATCHES \\.\(c|cc|cxx|cpp\)$)
+            if(SOURCE_FILE MATCHES \\.\(cc|cxx|cpp\)$)
                 if(${PRECOMPILED_SOURCE} MATCHES ${SOURCE_FILE})
                     # Set source file to generate header
                     set_source_files_properties(
@@ -77,7 +77,7 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         endif()
 
         # Create and set output directory.
-        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${CMAKE_BUILD_TYPE}_${SFX}")
+        set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}_${SFX}")
         set(OUTPUT_NAME "${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME}.${SFX}")
 
         make_directory(${OUTPUT_DIR})
@@ -113,7 +113,7 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         get_target_property(SOURCE_FILES ${TARGET_NAME} SOURCES)
 
         foreach(SOURCE_FILE ${SOURCE_FILES})
-            if(SOURCE_FILE MATCHES \\.\(cxx|cpp\)$)
+            if(SOURCE_FILE MATCHES \\.\(cc|cxx|cpp\)$)
                 set_source_files_properties(${SOURCE_FILE} PROPERTIES
                    COMPILE_FLAGS "-include ${OUTPUT_DIR}/${PRECOMPILED_HEADER_NAME} -Winvalid-pch"
                 )

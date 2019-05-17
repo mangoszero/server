@@ -277,6 +277,7 @@ target_link_libraries(game
 
 # Generate precompiled header
 if(PCH)
+    add_dependencies(vmap2 game)
     ADD_CXX_PCH(game ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
 endif()
 
