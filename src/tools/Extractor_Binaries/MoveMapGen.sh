@@ -169,7 +169,7 @@ createMMaps()
         continue 2
       fi
     done
-    ./movemap-generator $PARAMS $OFFMESH $i | tee -a $DETAIL_LOG_FILE
+    ./mmap-extractor $PARAMS $OFFMESH $i | tee -a $DETAIL_LOG_FILE
     echo "`date`: (Re)created map $i" | tee -a $LOG_FILE
   done
 }
@@ -281,7 +281,7 @@ case "$1" in
     echo "Recreate offmeshs from file $OFFMESH_FILE" | tee -a $DETAIL_LOG_FILE
     while read map tile line
     do
-      ./movemap-generator $PARAMS $OFFMESH $map --tile $tile | tee -a $DETAIL_LOG_FILE
+      ./mmap-extractor $PARAMS $OFFMESH $map --tile $tile | tee -a $DETAIL_LOG_FILE
       echo "`date`: Recreated $map $tile from $OFFMESH_FILE" | tee -a $LOG_FILE
     done < $OFFMESH_FILE &
     ;;
