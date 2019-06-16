@@ -75,9 +75,11 @@ message("")
 #==================================================================================#
 
 project(MaNGOS VERSION 0.22.0)
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/install CACHE PATH "Default install directory" FORCE)
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "Default install directory" FORCE)
 endif()
+
 if(DEBUG)
   set(CMAKE_BUILD_TYPE Debug)
 else()
@@ -85,11 +87,15 @@ else()
 endif()
 
 if(UNIX)
-    set(BIN_DIR          ${CMAKE_INSTALL_PREFIX}/bin)
-    set(CONF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/etc)
+    set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/bin)
+    if (NOT CONF_INSTALL_DIR)
+        set(CONF_INSTALL_DIR ../etc)
+    endif()
 else()
-    set(BIN_DIR          ${CMAKE_INSTALL_PREFIX})
-    set(CONF_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+    set(BIN_DIR ${CMAKE_INSTALL_PREFIX})
+    if (NOT CONF_INSTALL_DIR)
+        set(CONF_INSTALL_DIR .)
+    endif()
 endif()
 
 
@@ -112,4 +118,3 @@ add_subdirectory(dep)
 add_subdirectory(src)
 
 include(${CMAKE_SOURCE_DIR}/cmake/StatusInfo.cmake)
-

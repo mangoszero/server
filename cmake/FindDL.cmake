@@ -22,7 +22,6 @@ find_package_handle_standard_args(DL
     FOUND_VAR
         DL_FOUND
     REQUIRED_VARS
-        DL_LIBRARY
         DL_INCLUDE_DIR
 )
 
