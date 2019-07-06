@@ -1416,10 +1416,10 @@ function ExtractResources
 
         Log "Copying MMaps extractor" 0
         rm -f "$GAMEPATH/MoveMapGen.sh"
-        cp "$INSTPATH/bin/tools/MoveMapGen.sh" "$GAMEPATH"
+        cp "$INSTPATH/bin/MoveMapGen.sh" "$GAMEPATH"
         cp "$INSTPATH/bin/offmesh.txt" "$GAMEPATH"
         cp "$INSTPATH/bin/mmap_excluded.txt" "$GAMEPATH"
-        cp "$INSTPATH/bin/mmap-extractor" "$GAMEPATH"
+        cp "$INSTPATH/bin/tools/mmap-extractor" "$GAMEPATH"
 
         CPU=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Please provide the number of CPU to be used to generate MMaps (1-4)" \
          --inputbox "Default: 1" 8 80 3>&2 2>&1 1>&3)
@@ -1472,10 +1472,10 @@ function ExtractResources
     else
 	Log "Copying MMaps extractor" 0
         rm -f "$GAMEPATH/MoveMapGen.sh"
-        cp "$INSTPATH/bin/tools/MoveMapGen.sh" "$GAMEPATH"
+        cp "$INSTPATH/bin/MoveMapGen.sh" "$GAMEPATH"
         cp "$INSTPATH/bin/offmesh.txt" "$GAMEPATH"
         cp "$INSTPATH/bin/mmap_excluded.txt" "$GAMEPATH"
-        cp "$INSTPATH/bin/mmap-extractor" "$GAMEPATH"
+        cp "$INSTPATH/bin/tools/mmap-extractor" "$GAMEPATH"
 	CPU=$($DLGAPP --backtitle "MaNGOS Linux Build Configuration" --title "Please provide the number of CPU to be used to generate MMaps (1-4)" \
          --inputbox "Default: 1" 8 80 3>&2 2>&1 1>&3)
 
