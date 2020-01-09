@@ -25,7 +25,7 @@ BEGIN
             VALUE "ProductName", PRODUCT_BUNDLE
             VALUE "ProductVersion", PRODUCT_VERSION_RESOURCE_STR
             VALUE "FileDescription", PRODUCT_FILE_DESCRIPTION
-            VALUE "LegalCopyright", "(c)2005-2019 MaNGOS"
+            VALUE "LegalCopyright", "(C) 2005-2020 MaNGOS"
         END
     END
     BLOCK "VarFileInfo"
