@@ -63,7 +63,6 @@ enum GuildRankRights
     GR_RIGHT_EPNOTE             = 0x00002040,
     GR_RIGHT_VIEWOFFNOTE        = 0x00004040,
     GR_RIGHT_EOFFNOTE           = 0x00008040,
-    // [-ZERO] tbc enumerations [?]
     GR_RIGHT_MODIFY_GUILD_INFO  = 0x00010040,
     GR_RIGHT_ALL                = 0x000FF1FF
 };
@@ -76,7 +75,6 @@ enum Typecommand
     GUILD_FOUNDER_S = 0x0E,
     GUILD_UNK19     = 0x13,
     GUILD_UNK20     = 0x14
-    // [ZERO] in SMSG_GUILD_COMMAND_RESULT: 2,4-13,15-18 no effect for no error
 };
 
 enum CommandErrors
@@ -97,7 +95,6 @@ enum CommandErrors
     ERR_GUILD_NOT_ALLIED            = 0x0C,
     ERR_GUILD_RANK_TOO_HIGH_S       = 0x0D,
     ERR_GUILD_RANK_TOO_LOW_S        = 0x0E,
-    // [ZERO] 0x0F, 0x10 unused
     ERR_GUILD_RANKS_LOCKED          = 0x11,
     ERR_GUILD_RANK_IN_USE           = 0x12,
     ERR_GUILD_IGNORING_YOU_S        = 0x13,

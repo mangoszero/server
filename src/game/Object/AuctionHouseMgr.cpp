@@ -741,12 +741,7 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     data << uint32(pItem->GetEntry());
 
     // [-ZERO] no other infos about enchantment in 1.12 [?]
-    // for (uint8 i = 0; i < MAX_INSPECTED_ENCHANTMENT_SLOT; ++i)
-    //{
     data << uint32(pItem->GetEnchantmentId(EnchantmentSlot(PERM_ENCHANTMENT_SLOT)));
-    //    data << uint32(pItem->GetEnchantmentDuration(EnchantmentSlot(i)));
-    //    data << uint32(pItem->GetEnchantmentCharges(EnchantmentSlot(i)));
-    //}
 
     data << uint32(pItem->GetItemRandomPropertyId());       // random item property id
     data << uint32(pItem->GetItemSuffixFactor());           // SuffixFactor

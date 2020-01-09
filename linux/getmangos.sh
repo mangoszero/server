@@ -256,10 +256,10 @@ function GetPrerequisites()
 	  # Ubuntu 17.10
 	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
 	  ;;
- "bionic")
+    "bionic")
 	  # Ubuntu 18.04 LTS
 	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
-"disco")
+    "disco")
 	  # Ubuntu 19.04
 	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
 	  ;;

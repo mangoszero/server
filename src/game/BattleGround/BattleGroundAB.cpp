@@ -213,10 +213,7 @@ bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
             else
                 { source->LeaveBattleground(); }
             break;
-            // break;
         default:
-            // sLog.outError("WARNING: Unhandled AreaTrigger in Battleground: %u", trigger);
-            // source->GetSession()->SendAreaTriggerMessage("Warning: Unhandled AreaTrigger in Battleground: %u", trigger);
             return false;
     }
     return true;

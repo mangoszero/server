@@ -277,7 +277,9 @@ bool WaypointMovementGenerator<Creature>::CanMove(int32 diff, Creature& u)
 {
     i_nextMoveTime.Update(diff);
     if (i_nextMoveTime.Passed() && u.hasUnitState(UNIT_STAT_WAYPOINT_PAUSED))
-        { i_nextMoveTime.Reset(1); }
+    {
+        i_nextMoveTime.Reset(1);
+    }
 
     return i_nextMoveTime.Passed() && !u.hasUnitState(UNIT_STAT_WAYPOINT_PAUSED);
 }

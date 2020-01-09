@@ -119,8 +119,7 @@ void AggressorAI::EnterEvadeMode()
     m_creature->SetLootRecipient(NULL);
 }
 
-void
-AggressorAI::UpdateAI(const uint32 /*diff*/)
+void AggressorAI::UpdateAI(const uint32 /*diff*/)
 {
     // update i_victimGuid if m_creature->getVictim() !=0 and changed
     if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -131,15 +130,13 @@ AggressorAI::UpdateAI(const uint32 /*diff*/)
     DoMeleeAttackIfReady();
 }
 
-bool
-AggressorAI::IsVisible(Unit* pl) const
+bool AggressorAI::IsVisible(Unit* pl) const
 {
     return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER))
            && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
-void
-AggressorAI::AttackStart(Unit* u)
+void AggressorAI::AttackStart(Unit* u)
 {
     if (!u)
         { return; }

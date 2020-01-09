@@ -365,9 +365,7 @@ bool BattleGroundAV::HandleAreaTrigger(Player* source, uint32 trigger)
             else
                 { source->LeaveBattleground(); }
             break;
-            // source->Unmount();
         default:
-//            source->GetSession()->SendAreaTriggerMessage("Warning: Unhandled AreaTrigger in Battleground: %u", trigger);
             return false;
     }
     return true;

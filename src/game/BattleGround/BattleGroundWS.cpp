@@ -459,8 +459,6 @@ bool BattleGroundWS::HandleAreaTrigger(Player* source, uint32 trigger)
     if (GetStatus() != STATUS_IN_PROGRESS)
         { return false; }
 
-    // uint32 SpellId = 0;
-    // uint64 buff_guid = 0;
     switch (trigger)
     {
         case 3646:                                          // Alliance Flag spawn

@@ -265,8 +265,8 @@ struct CreatureModelInfo
     float bounding_radius;
     float combat_reach;
     uint8 gender;
-    uint32 modelid_other_gender;                            // The oposite gender for this modelid (male/female)
-    uint32 modelid_other_team;                              // The oposite team. Generally for alliance totem
+    uint32 modelid_other_gender;                            // The opposite gender for this modelid (male/female)
+    uint32 modelid_other_team;                              // The opposite team. Generally for alliance totem
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
@@ -867,7 +867,7 @@ class Creature : public Unit
 
     private:
         GridReference<Creature> m_gridRef;
-        CreatureInfo const* m_creatureInfo;
+        CreatureInfo const* m_creatureInfo;                 // in difficulty mode > 0 can different from ObjMgr::GetCreatureTemplate(GetEntry())
 };
 
 class ForcedDespawnDelayEvent : public BasicEvent

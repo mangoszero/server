@@ -213,6 +213,7 @@ namespace Movement
      * @param z
      * @param generatePath
      * @param forceDestination
+     * @param maxPathRange
      */
     inline void MoveSplineInit::MoveTo(float x, float y, float z, bool generatePath, bool forceDestination, float maxPathRange)
     {
@@ -226,6 +227,7 @@ namespace Movement
      * @param dest
      * @param generatePath
      * @param forceDestination
+     * @param maxPathRange
      */
     inline void MoveSplineInit::MoveTo(const Vector3& dest, bool generatePath, bool forceDestination, float maxPathRange)
     {

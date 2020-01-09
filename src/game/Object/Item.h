@@ -43,7 +43,6 @@ struct ItemSetEffect
     SpellEntry const* spells[8];
 };
 
-// [-ZERO] Need fix, possible uptodate in mangos-0.6
 enum InventoryResult
 {
     EQUIP_ERR_OK                                 = 0,
@@ -159,7 +158,7 @@ enum EnchantmentOffset
 {
     ENCHANTMENT_ID_OFFSET       = 0,
     ENCHANTMENT_DURATION_OFFSET = 1,
-    ENCHANTMENT_CHARGES_OFFSET  = 2
+    ENCHANTMENT_CHARGES_OFFSET  = 2                         // now here not only charges, but something new in wotlk
 };
 
 #define MAX_ENCHANTMENT_OFFSET    3

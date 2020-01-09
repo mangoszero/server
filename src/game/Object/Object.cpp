@@ -305,9 +305,6 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
         { return; }
 
     bool IsActivateToQuest = false;
-    //bool IsPerCasterAuraState = false;
-
-    // this is called for UPDATETYPE_CREATE_OBJECT, UPDATETYPE_CREATE_OBJECT2, UPDATETYPE_VALUES only
     if (isType(TYPEMASK_GAMEOBJECT) && !((GameObject*)this)->IsTransport())
     {
         IsActivateToQuest = ((GameObject*)this)->ActivateToQuest(target) || target->isGameMaster();
@@ -1205,13 +1202,13 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
 {
     float new_z = GetMap()->GetHeight(x, y, z);
     if (new_z > INVALID_HEIGHT)
-        { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
+    { z = new_z + 0.05f; }                                  // just to be sure that we are not a few pixel under the surface
 }
 
 void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap /*=NULL*/) const
 {
     if (!atMap)
-        atMap = GetMap();
+    { atMap = GetMap(); }
 
     switch (GetTypeId())
     {
@@ -1479,7 +1476,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
     pCreature->SetRespawnCoord(pos);
 
-    // Set run/walk mode
+    // Set run or walk before any other movement starts
     pCreature->SetWalk(!setRun);
 
     // Active state set before added to map

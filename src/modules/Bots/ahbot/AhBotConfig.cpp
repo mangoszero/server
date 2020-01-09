@@ -54,7 +54,7 @@ bool AhBotConfig::Initialize()
         underPriceProbability = config.GetFloatDefault("AhBot.UnderPriceProbability", 0.05f);
         LoadSet<set<uint32> >(config.GetStringDefault("AhBot.IgnoreItemIds", "49283,52200,8494,6345,6891,2460,37164,34835"), ignoreItemIds);
     }
-	else
+    else
     {
         sLog.outString("AhBot is Disabled in ahbot.conf");
     }

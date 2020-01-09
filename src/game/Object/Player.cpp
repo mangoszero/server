@@ -14833,11 +14833,11 @@ void Player::_LoadInventory(QueryResult* result, uint32 timediff)
         // send by mail problematic items
         while (!problematicItems.empty())
         {
-			std::string subject = "Item could not be loaded to inventory.";
-			std::string content = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
+            std::string subject = "Item could not be loaded to inventory.";
+            std::string content = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
             // fill mail
             MailDraft draft(subject);
-			draft.SetSubjectAndBody(subject,content); 
+            draft.SetSubjectAndBody(subject,content); 
             for (int i = 0; !problematicItems.empty() && i < MAX_MAIL_ITEMS; ++i)
             {
                 Item* item = problematicItems.front();

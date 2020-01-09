@@ -319,7 +319,6 @@ enum ItemSubclassPermanent
 enum ItemSubclassJunk
 {
     ITEM_SUBCLASS_JUNK                          = 0
-
 };
 
 #define MAX_ITEM_SUBCLASS_JUNK                    1

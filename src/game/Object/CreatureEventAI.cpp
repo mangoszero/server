@@ -100,7 +100,9 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
             // Debug check
 #ifndef MANGOS_DEBUG
             if (i->event_flags & EFLAG_DEBUG_ONLY)
+            {
                 continue;
+            }
 #endif
 
             ++events_count;
@@ -116,18 +118,21 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
                 // Debug check
 #ifndef MANGOS_DEBUG
                 if (i->event_flags & EFLAG_DEBUG_ONLY)
-                    { continue; }
+                { continue; }
 #endif
                 m_CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
                 // Cache for fast use
                 if (i->event_type == EVENT_T_OOC_LOS)
-                    { m_HasOOCLoSEvent = true; }
+                {
+                    m_HasOOCLoSEvent = true;
+                }
             }
         }
     }
     else
-        { sLog.outErrorEventAI("EventMap for Creature %u is empty but creature is using CreatureEventAI.", m_creature->GetEntry()); }
-
+    {
+        sLog.outErrorEventAI("EventMap for Creature %u is empty but creature is using CreatureEventAI.", m_creature->GetEntry());
+    }
     // Handle Spawned Events, also calls Reset()
     JustRespawned();
 }
@@ -376,7 +381,7 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
         case EVENT_T_AURA:
         {
             if (!m_creature->IsInCombat())
-                { return false; }
+            { return false; }
 
             SpellAuraHolder* holder = m_creature->GetSpellAuraHolder(event.buffed.spellId);
             if (!holder || holder->GetStackAmount() < event.buffed.amount)
@@ -404,7 +409,7 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
         case EVENT_T_MISSING_AURA:
         {
             if (!m_creature->IsInCombat())
-                { return false; }
+            { return false; }
 
             SpellAuraHolder* holder = m_creature->GetSpellAuraHolder(event.buffed.spellId);
             if (holder && holder->GetStackAmount() >= event.buffed.amount)
@@ -530,19 +535,19 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             if (action.type == ACTION_T_TEXT)
             {
                 if (action.text.TextId[1] && action.text.TextId[2])
-                    { textId = action.text.TextId[rnd % 3]; }
+                { textId = action.text.TextId[rnd % 3]; }
                 else if (action.text.TextId[1] && (rnd % 2))
-                    { textId = action.text.TextId[1]; }
+                { textId = action.text.TextId[1]; }
                 else
-                    { textId = action.text.TextId[0]; }
+                { textId = action.text.TextId[0]; }
             }
             // ACTION_T_CHANCED_TEXT, chance hits
             else if ((rnd % 100) < action.chanced_text.chance)
             {
                 if (action.chanced_text.TextId[0] && action.chanced_text.TextId[1])
-                    { textId = action.chanced_text.TextId[rnd % 2]; }
+                { textId = action.chanced_text.TextId[rnd % 2]; }
                 else
-                    { textId = action.chanced_text.TextId[0]; }
+                { textId = action.chanced_text.TextId[0]; }
             }
 
             if (textId)
@@ -730,16 +735,16 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         {
             // ignore no affect case
             if ((GetCombatMovementFlags() & CM_SCRIPT) == (action.combat_movement.state != 0))
-                return;
+                { return; }
 
             SetCombatMovement(action.combat_movement.state != 0, true);
 
             if (m_creature->IsInCombat() && m_creature->getVictim())
             {
                 if (IsCombatMovement() && action.combat_movement.melee)
-                    m_creature->SendMeleeAttackStart(m_creature->getVictim());
+                { m_creature->SendMeleeAttackStart(m_creature->getVictim()); }
                 else if (action.combat_movement.melee)
-                    m_creature->SendMeleeAttackStop(m_creature->getVictim());
+                { m_creature->SendMeleeAttackStop(m_creature->getVictim()); }
             }
             break;
         }
@@ -829,9 +834,9 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
             Creature* pCreature;
             if (i->second.SpawnTimeSecs)
-                { pCreature = m_creature->SummonCreature(action.summon_id.creatureId, i->second.position_x, i->second.position_y, i->second.position_z, i->second.orientation, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, i->second.SpawnTimeSecs); }
+            { pCreature = m_creature->SummonCreature(action.summon_id.creatureId, i->second.position_x, i->second.position_y, i->second.position_z, i->second.orientation, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, i->second.SpawnTimeSecs); }
             else
-                { pCreature = m_creature->SummonCreature(action.summon_id.creatureId, i->second.position_x, i->second.position_y, i->second.position_z, i->second.orientation, TEMPSUMMON_TIMED_OOC_DESPAWN, 0); }
+            { pCreature = m_creature->SummonCreature(action.summon_id.creatureId, i->second.position_x, i->second.position_y, i->second.position_z, i->second.orientation, TEMPSUMMON_TIMED_OOC_DESPAWN, 0); }
 
             if (!pCreature)
                 { sLog.outErrorEventAI("failed to spawn creature %u. EventId %d.Creature %d", action.summon_id.creatureId, EventId, m_creature->GetEntry()); }
@@ -1206,7 +1211,7 @@ void CreatureEventAI::EnterCombat(Unit* enemy)
                 // Reset all in combat timers
             case EVENT_T_TIMER_IN_COMBAT:
                 if (i->UpdateRepeatTimer(m_creature, event.timer.initialMin, event.timer.initialMax))
-                    { i->Enabled = true; }
+                { i->Enabled = true; }
                 break;
                 // All normal events need to be re-enabled and their time set to 0
             default:
@@ -1256,7 +1261,7 @@ void CreatureEventAI::MoveInLineOfSight(Unit* who)
                 {
                     // if range is ok and we are actually in LOS
                     if (m_creature->IsWithinDistInMap(who, fMaxAllowedRange) && m_creature->IsWithinLOSInMap(who))
-                        { ProcessEvent(*itr, who); }
+                    { ProcessEvent(*itr, who); }
                 }
             }
         }
@@ -1474,7 +1479,7 @@ void CreatureEventAI::ReceiveEmote(Player* pPlayer, uint32 text_emote)
         if (itr->Event.event_type == EVENT_T_RECEIVE_EMOTE)
         {
             if (itr->Event.receive_emote.emoteId != text_emote)
-                { continue; }
+            { continue; }
 
             PlayerCondition pcon(0, itr->Event.receive_emote.condition, itr->Event.receive_emote.conditionValue1, itr->Event.receive_emote.conditionValue2);
             if (pcon.Meets(pPlayer, m_creature->GetMap(), m_creature, CONDITION_FROM_EVENTAI))
@@ -1569,7 +1574,7 @@ bool CreatureEventAI::SpawnedEventConditionsCheck(CreatureEventAI_Event const& e
 void CreatureEventAI::OnSpellCastChange(const SpellEntry* pSpell, SpellCastResult reason)
 {
     //sLog.outError("Received reason %u for %s, spell %u (curSpell = %u)", reason, m_creature->GetGuidStr().c_str(), pSpell->Id, m_currSpell);
-    
+
     if (!pSpell || pSpell->Id != m_currSpell)
         return;
 

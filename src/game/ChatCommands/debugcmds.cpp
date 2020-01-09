@@ -273,7 +273,9 @@ bool ChatHandler::HandleDebugSendOpcodeCommand(char* /*args*/)
             data << value;
         }
         else if (type == "pguid")
-            { data << unit->GetPackGUID(); }
+        {
+            data << unit->GetPackGUID();
+        }
         else if (type == "guid")
             { data << unit->GetObjectGuid(); }
         else if(type == "mypguid")

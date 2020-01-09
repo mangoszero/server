@@ -451,8 +451,6 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
     for (uint32 i = 0; i < pointCount; ++i)
         { m_pathPoints[i] = Vector3(pathPoints[i * VERTEX_SIZE + 2], pathPoints[i * VERTEX_SIZE], pathPoints[i * VERTEX_SIZE + 1]); }
 
-    //NormalizePath(pointCount);
-
     // first point is always our current location - we need the next one
     setActualEndPosition(m_pathPoints[pointCount - 1]);
 
@@ -493,8 +491,6 @@ void PathFinder::BuildShortcut()
     // set start and a default next position
     m_pathPoints[0] = getStartPosition();
     m_pathPoints[1] = getActualEndPosition();
-
-    //NormalizePath(size);
 
     m_type = PATHFIND_SHORTCUT;
 }

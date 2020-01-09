@@ -842,10 +842,6 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
                     visibleDistance = GetGOInfo()->trap.radius + INTERACTION_DISTANCE;
             }
         }
-
-        // [-ZERO] Smuggled Mana Cell required 10 invisibility type detection/state
-        //if (GetEntry() == 187039 && ((u->m_detectInvisibilityMask | u->m_invisibilityMask) & (1 << 10)) == 0)
-        //    { return false; }
     }
 
     // check distance
@@ -2291,7 +2287,7 @@ float GameObject::GetInteractionDistance() const
     switch (GetGoType())
     {
         // TODO: find out how the client calculates the maximal usage distance to spellless working
-        // gameobjects like mailboxes - 10.0 is a just an abitrary choosen number
+        // gameobjects like mailboxes - 10.0 is a just an abitrary chosen number
         case GAMEOBJECT_TYPE_MAILBOX:
             maxdist = 10.0f;
             break;

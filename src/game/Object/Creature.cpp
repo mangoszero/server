@@ -394,7 +394,7 @@ bool Creature::InitEntry(uint32 Entry, Team team, CreatureData const* data /*=NU
 bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=NULL*/, GameEventCreatureData const* eventData /*=NULL*/, bool preserveHPAndPower /*=true*/)
 {
     if (!InitEntry(Entry, team, data, eventData))
-        return false;
+    { return false; }
 
     // creatures always have melee weapon ready if any
     SetSheath(SHEATH_STATE_MELEE);
@@ -410,9 +410,13 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
         SelectLevel();
 
     if (team == HORDE)
+    {
         setFaction(GetCreatureInfo()->FactionHorde);
+    }
     else
+    {
         setFaction(GetCreatureInfo()->FactionAlliance);
+    }
 
     SetUInt32Value(UNIT_NPC_FLAGS, GetCreatureInfo()->NpcFlags);
 
@@ -426,12 +430,18 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
 
     // we may need to append or remove additional flags
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT))
+    {
         unitFlags |= UNIT_FLAG_IN_COMBAT;
+    }
 
     if (m_movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) && (GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_HAVE_NO_SWIM_ANIMATION) == 0)
+    {
         unitFlags |= UNIT_FLAG_UNK_15;
+    }
     else
+    {
         unitFlags &= ~UNIT_FLAG_UNK_15;
+    }
 
     SetUInt32Value(UNIT_FIELD_FLAGS, unitFlags);
 
@@ -454,23 +464,35 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
     if (FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(GetCreatureInfo()->FactionAlliance))
     {
         if (factionTemplate->factionFlags & FACTION_TEMPLATE_FLAG_PVP)
+        {
             SetPvP(true);
+        }
         else
+        {
             if (!IsRacialLeader())
+            {
                 SetPvP(false);
+            }
+        }
     }
 
     // Try difficulty dependend version before falling back to base entry
     CreatureTemplateSpells const* templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetCreatureInfo()->Entry);
     if (!templateSpells)
+    {
         templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetEntry());
+    }
     if (templateSpells)
         for (int i = 0; i < CREATURE_MAX_SPELLS; ++i)
+        {
             m_spells[i] = templateSpells->spells[i];
+        }
 
     // if eventData set then event active and need apply spell_start
     if (eventData)
+    {
         ApplyGameEventSpells(eventData, true);
+    }
 
     return true;
 }
@@ -479,7 +501,9 @@ uint32 Creature::ChooseDisplayId(const CreatureInfo* cinfo, const CreatureData* 
 {
     // Use creature event model explicit, override any other static models
     if (eventData && eventData->modelid)
-        { return eventData->modelid; }
+    {
+        return eventData->modelid;
+    }
 
     // Use creature model explicit, override template (creature.modelid)
     if (data && data->modelid_override)
@@ -490,13 +514,21 @@ uint32 Creature::ChooseDisplayId(const CreatureInfo* cinfo, const CreatureData* 
 
     // model selected here may be replaced with other_gender using own function
     if (!cinfo->ModelId[1])
-        { display_id = cinfo->ModelId[0]; }
+    {
+        display_id = cinfo->ModelId[0];
+    }
     else if (!cinfo->ModelId[2])
-        { display_id = cinfo->ModelId[urand(0, 1)]; }
+    {
+        display_id = cinfo->ModelId[urand(0, 1)];
+    }
     else if (!cinfo->ModelId[3])
-        { display_id = cinfo->ModelId[urand(0, 2)]; }
+    {
+        display_id = cinfo->ModelId[urand(0, 2)];
+    }
     else
-        { display_id = cinfo->ModelId[urand(0, 3)]; }
+    {
+        display_id = cinfo->ModelId[urand(0, 3)];
+    }
 
     // fail safe, we use creature entry 1 and make error
     if (!display_id)
@@ -735,7 +767,9 @@ void Creature::RegeneratePower()
     {
         Modifier const* modifier = (*i)->GetModifier();
         if (modifier->m_miscvalue == int32(powerType))
-            { addValue += modifier->m_amount; }
+        {
+            addValue += modifier->m_amount;
+        }
     }
 
     AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
@@ -743,7 +777,9 @@ void Creature::RegeneratePower()
     {
         Modifier const* modifier = (*i)->GetModifier();
         if (modifier->m_miscvalue == int32(powerType))
-            { addValue *= (modifier->m_amount + 100) / 100.0f; }
+        {
+            addValue *= (modifier->m_amount + 100) / 100.0f;
+        }
     }
 
     ModifyPower(powerType, int32(addValue));
@@ -1014,12 +1050,12 @@ void Creature::PrepareBodyLootState()
     // if have normal loot then prepare it access
     if (!lootForBody)
     {
-      // have normal loot
-      if (GetCreatureInfo()->MaxLootGold > 0 || GetCreatureInfo()->LootId || (GetCreatureType() != CREATURE_TYPE_CRITTER && (GetCreatureInfo()->SkinningLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))))
-      {
-           SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-           return;
-      }
+        // have normal loot
+        if (GetCreatureInfo()->MaxLootGold > 0 || GetCreatureInfo()->LootId || (GetCreatureType() != CREATURE_TYPE_CRITTER && (GetCreatureInfo()->SkinningLootId && sWorld.getConfig(CONFIG_BOOL_CORPSE_EMPTY_LOOT_SHOW))))
+        {
+            SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+            return;
+        }
     }
 
     lootForBody = true; // pass this loot mode
@@ -1154,6 +1190,8 @@ void Creature::SaveToDB(uint32 mapid)
     CreatureInfo const* cinfo = GetCreatureInfo();
     if (cinfo)
     {
+        // The following if-else assumes that there are 4 model fields and needs updating if this is changed.
+
         if (displayId != cinfo->ModelId[0] && displayId != cinfo->ModelId[1] &&
             displayId != cinfo->ModelId[2] && displayId != cinfo->ModelId[3])
         {
@@ -1761,7 +1799,7 @@ bool Creature::IsImmuneToSpell(SpellEntry const* spellInfo, bool castOnSelf)
     {
         if (GetCreatureInfo()->MechanicImmuneMask & (1 << (spellInfo->Mechanic - 1)))
             { return true; }
-        
+
         if (GetCreatureInfo()->SchoolImmuneMask & (1 << spellInfo->School))
             { return true; }
     }
@@ -2006,16 +2044,24 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
 bool Creature::CanInitiateAttack()
 {
     if (hasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_DIED))
-        { return false; }
+    {
+        return false;
+    }
 
     if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
-        { return false; }
+    {
+        return false;
+    }
 
     if (isPassiveToHostile())
-        { return false; }
+    {
+        return false;
+    }
 
     if (m_aggroDelay != 0)
+    {
         return false;
+    }
 
     return true;
 }
@@ -2296,7 +2342,9 @@ bool Creature::HasCategoryCooldown(uint32 spell_id) const
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id);
     if (!spellInfo)
-        { return false; }
+    {
+        return false;
+    }
 
     CreatureSpellCooldowns::const_iterator itr = m_CreatureCategoryCooldowns.find(spellInfo->Category);
     return (itr != m_CreatureCategoryCooldowns.end() && time_t(itr->second + (spellInfo->CategoryRecoveryTime / IN_MILLISECONDS)) > time(NULL));
@@ -2438,8 +2486,8 @@ VendorItemData const* Creature::GetVendorItems() const
 
 VendorItemData const* Creature::GetVendorTemplateItems() const
 {
-    uint32 vendorId = GetCreatureInfo()->VendorTemplateId;
-    return vendorId ? sObjectMgr.GetNpcVendorTemplateItemList(vendorId) : NULL;
+    uint32 VendorTemplateId = GetCreatureInfo()->VendorTemplateId;
+    return VendorTemplateId ? sObjectMgr.GetNpcVendorTemplateItemList(VendorTemplateId) : NULL;
 }
 
 uint32 Creature::GetVendorItemCurrentCount(VendorItem const* vItem)
@@ -2516,8 +2564,8 @@ uint32 Creature::UpdateVendorItemCurrentCount(VendorItem const* vItem, uint32 us
 
 TrainerSpellData const* Creature::GetTrainerTemplateSpells() const
 {
-    uint32 trainerId = GetCreatureInfo()->TrainerTemplateId;
-    return trainerId ? sObjectMgr.GetNpcTrainerTemplateSpells(trainerId) : NULL;
+    uint32 TrainerTemplateId = GetCreatureInfo()->TrainerTemplateId;
+    return TrainerTemplateId ? sObjectMgr.GetNpcTrainerTemplateSpells(TrainerTemplateId) : NULL;
 }
 
 TrainerSpellData const* Creature::GetTrainerSpells() const
@@ -2748,14 +2796,6 @@ void Creature::SetSwim(bool enable)
 void Creature::SetCanFly(bool /*enable*/)
 {
 //     TODO: check if there is something similar for 1.12.x (dragons and other flying NPCs)
-//     if (enable)
-//         m_movementInfo.AddMovementFlag(MOVEFLAG_CAN_FLY);
-//     else
-//         m_movementInfo.RemoveMovementFlag(MOVEFLAG_CAN_FLY);
-// 
-//     WorldPacket data(enable ? SMSG_SPLINE_MOVE_SET_FLYING : SMSG_SPLINE_MOVE_UNSET_FLYING, 9);
-//     data << GetPackGUID();
-//     SendMessageToSet(&data, true);
 }
 
 void Creature::SetFeatherFall(bool enable)
@@ -2785,9 +2825,9 @@ void Creature::SetHover(bool enable)
 void Creature::SetRoot(bool enable)
 {
     if (enable)
-        m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
+        { m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT); }
     else
-        m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT);
+        { m_movementInfo.RemoveMovementFlag(MOVEFLAG_ROOT); }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_ROOT : SMSG_SPLINE_MOVE_UNROOT, 9);
     data << GetPackGUID();
