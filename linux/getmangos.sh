@@ -140,7 +140,8 @@ function GetPrerequisites()
     Log "apt-get isn't the installer by default" 1
   else
     installer=1
-	apt-get -y install git lsb-release curl
+  # On a fresh OS boot (EC2) libace was not found without first updating 
+	apt-get update -y && apt-get -y install git lsb-release curl
   fi
 
   which yum
@@ -233,35 +234,34 @@ function GetPrerequisites()
       case ${VER} in
         "precise")
           # Ubuntu 12.04 LTS
-          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "trusty")
           # Ubuntu 14.04 LTS
-          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "xenial")
           # Ubuntu 16.04 LTS
-          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
         "yakkety")
           # Ubuntu 16.10
-          su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
           ;;
 	"zesty")
 	  # Ubuntu 17.04
-	  su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
 	  ;;
 	"artful")
 	  # Ubuntu 17.10
-	  su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
 	  ;;
-        "bionic")
-	  # Ubuntu 18.04
-	  su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
-	  ;;        
-	"disco")
+ "bionic")
+	  # Ubuntu 18.04 LTS
+	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+"disco")
 	  # Ubuntu 19.04
-	  su -c "apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+	  su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
 	  ;;
         *)
           OS_VER=0
