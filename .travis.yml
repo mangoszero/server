@@ -37,7 +37,7 @@ addons:
 before_install:
   - bash .travis.sh
   - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$CC" = "gcc" ] ; then export CC=gcc-4.8 CXX=g++-4.8 ; fi
-
+  - if [ "$TRAVIS_OS_NAME" = "osx" ] ; then cmake -DOPENSSL_ROOT_DIR=/usr/local/ssl -DOPENSSL_LIBRARIES=/usr/local/ssl/lib ; fi
 script:
   - test -d _build || mkdir _build
   - test -d _install || mkdir _install
