@@ -332,11 +332,6 @@ enum RaidGroupError
 {
     ERR_RAID_GROUP_REQUIRED = 1,
     ERR_RAID_GROUP_FULL     = 2
-    //ERR_RAID_GROUP_NONE                 = 0,
-    //ERR_RAID_GROUP_LOWLEVEL             = 1,
-    //ERR_RAID_GROUP_ONLY                 = 2,
-    //ERR_RAID_GROUP_FULL                 = 3,
-    //ERR_RAID_GROUP_REQUIREMENTS_UNMATCH = 4
 };
 
 enum DrunkenState

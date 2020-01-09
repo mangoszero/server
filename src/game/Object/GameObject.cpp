@@ -475,22 +475,22 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                             if (visualGO)
                                 visualGO->SetLootState(GO_JUST_DEACTIVATED);
                         }
-                        
+
                         if (!trapEntry)
                             break;
                         GameObjectInfo const* trapInfo = sGOStorage.LookupEntry<GameObjectInfo>(trapEntry);
                         if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
                             break;
-                        
+
                         float range = 0.5f;
-                        
+
                         GameObject* trapGO = NULL;
 
                         MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, trapEntry, range);
                         MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(trapGO, go_check);
 
                         Cell::VisitGridObjects(this, checker, range);
-                        
+
                         // found correct GO
                         if (trapGO)
                             trapGO->SetLootState(GO_JUST_DEACTIVATED);
@@ -1167,7 +1167,7 @@ void GameObject::Use(Unit* user)
 
             // FIXME: when GO casting will be implemented trap must cast spell to target
             if (goInfo->trap.spellId)
-                { caster->CastSpell(user, goInfo->trap.spellId, true, NULL, NULL, GetObjectGuid()); }
+            { caster->CastSpell(user, goInfo->trap.spellId, true, NULL, NULL, GetObjectGuid()); }
             // use template cooldown if provided
             m_cooldownTime = time(NULL) + (goInfo->trap.cooldown ? goInfo->trap.cooldown : uint32(4));
 
@@ -1874,7 +1874,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
 
         default: //default case for copper or not listet special veins
             entrynew = entry;
-    }   
+    }
         return entrynew;
 }
 

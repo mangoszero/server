@@ -124,8 +124,6 @@ enum PetTalk
     PET_TALK_ATTACK         = 1
 };
 
-
-// [-ZERO] Need recheck and drop not existed cases
 enum PetNameInvalidReason
 {
     // custom, not send

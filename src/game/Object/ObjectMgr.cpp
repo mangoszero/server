@@ -186,10 +186,10 @@ ObjectMgr::~ObjectMgr()
         { delete[] playerClassInfo[class_].levelInfo; }
 
     for (int race = 0; race < MAX_RACES; ++race)
-        {
-            for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
-                { delete[] playerInfo[race][class_].levelInfo; }
-        }
+    {
+        for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
+            { delete[] playerInfo[race][class_].levelInfo; }
+    }
 
     // free objects
     for (GroupMap::iterator itr = mGroupMap.begin(); itr != mGroupMap.end(); ++itr)
@@ -1212,10 +1212,10 @@ void ObjectMgr::LoadCreatures()
         }
 
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
-            { AddCreatureToGrid(guid, &data); }
+        { AddCreatureToGrid(guid, &data); }
 
         if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
-            { m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid)); }
+        { m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid)); }
 
         ++count;
     }
@@ -1705,8 +1705,6 @@ void ObjectMgr::LoadItemPrototypes()
             if (proto->RequiredReputationRank == MIN_REPUTATION_RANK)
                 { sLog.outErrorDb("Item (Entry: %u) has min. reputation rank in RequiredReputationRank (0) but RequiredReputationFaction > 0, faction setting is useless.", i); }
         }
-        // else if(proto->RequiredReputationRank > MIN_REPUTATION_RANK)
-        //    sLog.outErrorDb("Item (Entry: %u) has RequiredReputationFaction ==0 but RequiredReputationRank > 0, rank setting is useless.",i);
 
         if (proto->Stackable == 0)
         {
@@ -8276,7 +8274,6 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
         gMenuItem.action_poi_id         = fields[7].GetUInt32();
         gMenuItem.action_script_id      = fields[8].GetUInt32();
         gMenuItem.box_coded             = fields[9].GetUInt8() != 0;
-        // gMenuItem.box_money             = fields[10].GetUInt32();
         gMenuItem.box_text              = fields[11].GetCppString();
 
         gMenuItem.conditionId           = fields[12].GetUInt16();

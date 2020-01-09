@@ -171,7 +171,6 @@ class BattleGroundQueue
          * @param bgTypeId
          * @param bracketId
          * @param isPremade
-         * @return GroupQueueInfo
          */
         GroupQueueInfo* AddGroup(Player* leader, Group* group, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracketId, bool isPremade);
         /**
@@ -540,6 +539,7 @@ class BattleGroundMgr
          * @param Team2StartLocY
          * @param Team2StartLocZ
          * @param Team2StartLocO
+         * @param StartMaxDist
          * @return uint32
          */
         uint32 CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 MinPlayersPerTeam, uint32 MaxPlayersPerTeam, uint32 LevelMin, uint32 LevelMax, char const* BattleGroundName, uint32 MapID, float Team1StartLocX, float Team1StartLocY, float Team1StartLocZ, float Team1StartLocO, float Team2StartLocX, float Team2StartLocY, float Team2StartLocZ, float Team2StartLocO, float StartMaxDist);

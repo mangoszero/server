@@ -816,14 +816,6 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                     if (spellproto->HasAttribute(SPELL_ATTR_UNK26) && effIndex == EFFECT_INDEX_0)
                         { return false; }
                     break;
-//                case SPELL_AURA_TRANSFORM:
-//                    // some spells negative
-//                    switch (spellproto->Id)
-//                    {
-//                        default
-//                            break;
-//                    }
-//                    break;
                 case SPELL_AURA_MOD_SCALE:
                     // some spells negative
                     switch (spellproto->Id)
@@ -1678,7 +1670,7 @@ void SpellMgr::LoadSpellLinked()
     delete result;
 
     sLog.outString();
-    sLog.outString(">> Loaded %u spell linked definitions",  count);
+    sLog.outString(">> Loaded %u spell linked definitions", count);
 }
 
 SpellLinkedSet SpellMgr::GetSpellLinked(uint32 spell_id, SpellLinkedType type) const
@@ -1692,7 +1684,9 @@ SpellLinkedSet SpellMgr::GetSpellLinked(uint32 spell_id, SpellLinkedType type) c
         for (SpellLinkedMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             if (itr->second.type == type)
-                { result.insert(itr->second.linkedId); }
+            {
+                result.insert(itr->second.linkedId);
+            }
         }
     }
     return result;

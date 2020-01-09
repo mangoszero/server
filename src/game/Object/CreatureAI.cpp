@@ -169,7 +169,7 @@ void CreatureAI::SetCombatMovementFlag(uint8 flag, bool setFlag)
     {
         m_combatMovement &= ~flag;
         if (m_combatMovement == 0)
-            m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
+        { m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
     }
 }
 
@@ -205,7 +205,7 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 {
     MotionMaster* creatureMotion = m_creature->GetMotionMaster();
     MovementGeneratorType mmgen = creatureMotion->GetCurrentMovementGeneratorType();
-    
+
     if (IsCombatMovement())
       { creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle); }
 

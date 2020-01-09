@@ -41,7 +41,6 @@
 INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Recursive_Thread_Mutex);
 
-
 ObjectAccessor::ObjectAccessor() : i_playerMap(), i_corpseMap(), i_corpseGuard()
 {
 }

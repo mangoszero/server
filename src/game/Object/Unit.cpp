@@ -1774,28 +1774,28 @@ void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
         // 20% base chance
         float Probability = 20.0f;
 
-            // there is a newbie protection, at level 10 just 7% base chance; assuming linear function
-            if (pVictim->getLevel() < 30)
-            {
-                Probability = 0.65f * pVictim->getLevel() + 0.5f;
-            }
-
-            uint32 VictimDefense = pVictim->GetDefenseSkillValue();
-            uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
-
-            Probability *= AttackerMeleeSkill / (float)VictimDefense;
-
-            if (Probability > 40.0f)
-            {
-                Probability = 40.0f;
-            }
-
-            if (roll_chance_f(Probability))
-            {
-                CastSpell(pVictim, 1604, true);
-            }
-
+        // there is a newbie protection, at level 10 just 7% base chance; assuming linear function
+        if (pVictim->getLevel() < 30)
+        {
+            Probability = 0.65f * pVictim->getLevel() + 0.5f;
         }
+
+        uint32 VictimDefense = pVictim->GetDefenseSkillValue();
+        uint32 AttackerMeleeSkill = GetUnitMeleeSkill();
+
+        Probability *= AttackerMeleeSkill / (float)VictimDefense;
+
+        if (Probability > 40.0f)
+        {
+            Probability = 40.0f;
+        }
+
+        if (roll_chance_f(Probability))
+        {
+            CastSpell(pVictim, 1604, true);
+        }
+
+    }
 
     // update at damage Judgement aura duration that applied by attacker at victim
     if (damageInfo->damage)
@@ -1964,7 +1964,6 @@ void Unit::CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolM
         if (!(mod->m_miscvalue & schoolMask))
             { continue; }
 
-        //SpellEntry const* spellProto = (*i)->GetSpellProto();
 
         // Max Amount can be absorbed by this aura
         int32  currentAbsorb = mod->m_amount;
@@ -4212,16 +4211,6 @@ void Unit::RemoveAllAurasOnEvade()
     // Linked and flying auras should not be removed on evade
     for (SpellAuraHolderMap::iterator iter = m_spellAuraHolders.begin(); iter != m_spellAuraHolders.end();)
     {
-        // Note: for the moment this part of the function is used as a placeholder to keep in sync with master branch
-        /*SpellEntry const* proto = iter->second->GetSpellProto();
-        if (!IsSpellHaveAura(proto, SPELL_AURA_CONTROL_VEHICLE))
-        {
-            RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
-            iter = m_spellAuraHolders.begin();
-        }
-        else
-            ++iter;*/
-
         RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
         iter = m_spellAuraHolders.begin();
     }
@@ -4549,30 +4538,30 @@ void Unit::SendPeriodicAuraLog(SpellPeriodicAuraLogInfo* pInfo)
     data << uint32(mod->m_auraname);                        // auraId
     switch (mod->m_auraname)
     {
-    case SPELL_AURA_PERIODIC_DAMAGE:
-    case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-        data << uint32(pInfo->damage);                  // damage
-        data << uint32(aura->GetSpellProto()->School);
-        data << uint32(pInfo->absorb);                  // absorb
-        data << uint32(pInfo->resist);                  // resist
-        break;
-    case SPELL_AURA_PERIODIC_HEAL:
-    case SPELL_AURA_OBS_MOD_HEALTH:
-        data << uint32(pInfo->damage);                  // damage
-        break;
-    case SPELL_AURA_OBS_MOD_MANA:
-    case SPELL_AURA_PERIODIC_ENERGIZE:
-        data << uint32(mod->m_miscvalue);               // power type
-        data << uint32(pInfo->damage);                  // damage
-        break;
-    case SPELL_AURA_PERIODIC_MANA_LEECH:
-        data << uint32(mod->m_miscvalue);               // power type
-        data << uint32(pInfo->damage);                  // amount
-        data << float(pInfo->multiplier);               // gain multiplier
-        break;
-    default:
-        sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
-        return;
+        case SPELL_AURA_PERIODIC_DAMAGE:
+        case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
+            data << uint32(pInfo->damage);                  // damage
+            data << uint32(aura->GetSpellProto()->School);
+            data << uint32(pInfo->absorb);                  // absorb
+            data << uint32(pInfo->resist);                  // resist
+            break;
+        case SPELL_AURA_PERIODIC_HEAL:
+        case SPELL_AURA_OBS_MOD_HEALTH:
+            data << uint32(pInfo->damage);                  // damage
+            break;
+        case SPELL_AURA_OBS_MOD_MANA:
+        case SPELL_AURA_PERIODIC_ENERGIZE:
+            data << uint32(mod->m_miscvalue);               // power type
+            data << uint32(pInfo->damage);                  // damage
+            break;
+        case SPELL_AURA_PERIODIC_MANA_LEECH:
+            data << uint32(mod->m_miscvalue);               // power type
+            data << uint32(pInfo->damage);                  // amount
+            data << float(pInfo->multiplier);               // gain multiplier
+            break;
+        default:
+            sLog.outError("Unit::SendPeriodicAuraLog: unknown aura %u", uint32(mod->m_auraname));
+            return;
     }
 
     aura->GetTarget()->SendMessageToSet(&data, true);
@@ -4632,13 +4621,6 @@ void Unit::SendAttackStateUpdate(CalcDamageInfo* damageInfo)
     data << uint32(0);                                      // spell id, seen with heroic strike and disarm as examples.
     // HITINFO_NOACTION normally set if spell
     data << uint32(damageInfo->blocked_amount);
-    //if (damageInfo->HitInfo & HITINFO_UNK0)
-    //{
-    //    data << uint32(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0) << float(0);
-    //    for (int i = 0; i < 4; ++i)
-    //        data << float(0) << float(0);
-    //    data << uint32(0);
-    //}
     SendMessageToSet(&data, true);  /**/
 }
 
@@ -5434,7 +5416,6 @@ void Unit::SendHealSpellLog(Unit* pVictim, uint32 SpellID, uint32 Damage, bool c
     data << uint32(SpellID);
     data << uint32(Damage);
     data << uint8(critical ? 1 : 0);
-    // data << uint8(0);                                       // [-ZERO]
     SendMessageToSet(&data, true);
 }
 
@@ -6953,6 +6934,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
         case MOVE_WALK:
             break;
         case MOVE_RUN:
+        {
             if (IsMounted()) // Use on mount auras
             {
                 main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
@@ -6966,11 +6948,14 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                 non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
             }
             break;
+        }
         case MOVE_RUN_BACK:
             return;
         case MOVE_SWIM:
+        {
             main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
             break;
+        }
         case MOVE_SWIM_BACK:
             return;
         default:
@@ -6986,6 +6971,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     {
         case MOVE_RUN:
         case MOVE_SWIM:
+        {
             // Normalize speed by 191 aura SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED if need
             // TODO: possible affect only on MOVE_RUN
             if (int32 normalization = GetMaxPositiveAuraModifier(SPELL_AURA_USE_NORMAL_MOVEMENT_SPEED))
@@ -6996,6 +6982,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                     { speed = max_speed; }
             }
             break;
+        }
         default:
             break;
     }
@@ -7452,7 +7439,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
 
     switch (randomPoints)
     {
-        case 0:
+        case 0:                                             // not used
         case 1: basePoints += baseDice; break;              // range 1..1
         default:
         {
@@ -8389,6 +8376,7 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, 
             { continue; }
 
         SpellProcEventEntry const* spellProcEvent = NULL;
+        // check if that aura is triggered by proc event (then it will be managed by proc handler)
         if (!IsTriggeredAtSpellProcEvent(pTarget, itr->second, procSpell, procFlag, procExtra, attType, isVictim, spellProcEvent))
             { continue; }
 
@@ -8806,7 +8794,7 @@ void Unit::SetStandState(uint8 state)
     SetByteValue(UNIT_FIELD_BYTES_1, 0, state);
 
     if (!IsSeatedState())
-        RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED);
+        { RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_NOT_SEATED); }
 
     if (GetTypeId() == TYPEID_PLAYER)
     {

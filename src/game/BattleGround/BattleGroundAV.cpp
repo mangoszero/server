@@ -812,6 +812,9 @@ void BattleGroundAV::Reset()
     InitNode(BG_AV_NODES_SNOWFALL_GRAVE, BG_AV_TEAM_NEUTRAL, false);                            // give snowfall neutral owner
 }
 
+/// <summary>
+/// Gets the premature finish winning team.
+/// </summary>
 Team BattleGroundAV::GetPrematureWinner()
 {
     int32 hordeScore = m_TeamScores[TEAM_INDEX_HORDE];

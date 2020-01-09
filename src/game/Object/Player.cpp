@@ -89,7 +89,6 @@
 #define SKILL_PERM_BONUS(x)    int16(PAIR32_HIPART(x))
 #define MAKE_SKILL_BONUS(t, p) MAKE_PAIR32(t,p)
 
-// [-ZERO] need recheck, some values known not existed in 1.12.1
 enum CharacterFlags
 {
     CHARACTER_FLAG_NONE                 = 0x00000000,
@@ -2728,11 +2727,6 @@ void Player::SendMailResult(uint32 mailId, MailResponseType mailAction, MailResp
     data << (uint32) mailError;
     if (mailError == MAIL_ERR_EQUIP_ERROR)
         { data << (uint32) equipError; }
-    //else if (mailAction == MAIL_ITEM_TAKEN)   // [-ZERO]
-    //{
-    //    data << (uint32) item_guid;                         // item guid low?
-    //    data << (uint32) item_count;                        // item count?
-    //}
     GetSession()->SendPacket(&data);
 }
 
@@ -3622,7 +3616,6 @@ void Player::InitVisibleBits()
     updateVisualBits.SetBit(UNIT_FIELD_FACTIONTEMPLATE);
     updateVisualBits.SetBit(UNIT_FIELD_BYTES_0);
     updateVisualBits.SetBit(UNIT_FIELD_FLAGS);
-    //[-ZERO] updateVisualBits.SetBit(UNIT_FIELD_FLAGS_2);
     for (uint16 i = UNIT_FIELD_AURA; i < UNIT_FIELD_AURASTATE; ++i)
         { updateVisualBits.SetBit(i); }
     updateVisualBits.SetBit(UNIT_FIELD_AURASTATE);
@@ -3772,7 +3765,6 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
     SpellEntry const* spell = sSpellStore.LookupEntry(trainer_spell->spell);
     SpellEntry const* TriggerSpell = sSpellStore.LookupEntry(spell->EffectTriggerSpell[0]);
 
-
     // known spell
     if (HasSpell(TriggerSpell->Id))
         { return TRAINER_SPELL_GRAY; }
@@ -3805,7 +3797,6 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
             { return TRAINER_SPELL_RED; }
 
     // exist, already checked at loading
-    // SpellEntry const* spell = sSpellStore.LookupEntry(trainer_spell->spell);
 
     // secondary prof. or not prof. spell
     uint32 skill = spell->EffectMiscValue[1];
@@ -4126,20 +4117,7 @@ void Player::SetLevitate(bool /*enable*/)
 void Player::SetCanFly(bool /*enable*/)
 {
 //     TODO: check if there is something similar for 1.12.x (99% chance there is not)
-//     WorldPacket data;
-//     if (enable)
-//         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
-//     else
-//         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-//
-//     data << GetPackGUID();
-//     data << uint32(0);                                      // unk
-//     SendMessageToSet(&data, true);
-//
-//     data.Initialize(MSG_MOVE_UPDATE_CAN_FLY, 64);
-//     data << GetPackGUID();
-//     m_movementInfo.Write(data);
-//     SendMessageToSet(&data, false);
+
 }
 
 void Player::SetFeatherFall(bool enable)
@@ -8599,31 +8577,7 @@ InventoryResult Player::_CanTakeMoreSimilarItems(uint32 entry, uint32 count, Ite
 
 bool Player::HasItemTotemCategory(uint32 /*TotemCategory*/) const
 {
-    /*[-ZERO] Item *pItem;
-     for(uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
-     {
-         pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-         if( pItem && IsTotemCategoryCompatiableWith(pItem->GetProto()->TotemCategory,TotemCategory ))
-             return true;
-     }
-     for(uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
-     {
-         pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-         if( pItem && IsTotemCategoryCompatiableWith(pItem->GetProto()->TotemCategory,TotemCategory ))
-             return true;
-     }
-     for(uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-     {
-         if(Bag *pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
-         {
-             for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
-             {
-                 pItem = GetItemByPos( i, j );
-                 if( pItem && IsTotemCategoryCompatiableWith(pItem->GetProto()->TotemCategory,TotemCategory ))
-                     return true;
-             }
-         }
-     } */
+
     return false;
 }
 
@@ -10288,7 +10242,7 @@ void Player::VisualizeItem(uint8 slot, Item* pItem)
     // check also  BIND_WHEN_PICKED_UP and BIND_QUEST_ITEM for .additem or .additemset case by GM (not binded at adding to inventory)
     ItemPrototype const* itemProto = pItem->GetProto();
     if (itemProto->Bonding == BIND_WHEN_EQUIPPED || itemProto->Bonding == BIND_WHEN_PICKED_UP || itemProto->Bonding == BIND_QUEST_ITEM)
-        pItem->SetBinding(true);
+    { pItem->SetBinding(true); }
 
     DEBUG_LOG("STORAGE: EquipItem slot = %u, item = %u", slot, pItem->GetEntry());
 
@@ -11207,8 +11161,6 @@ void Player::SendBuyError(BuyResult msg, Creature* pCreature, uint32 item, uint3
     WorldPacket data(SMSG_BUY_FAILED, (8 + 4 + 1));
     data << (pCreature ? pCreature->GetObjectGuid() : ObjectGuid());
     data << uint32(item);
-    //if (param > 0)
-    //    { data << uint32(param); }    // [-ZERO]
     data << uint8(msg);
     GetSession()->SendPacket(&data);
 }
@@ -11219,8 +11171,6 @@ void Player::SendSellError(SellResult msg, Creature* pCreature, ObjectGuid itemG
     WorldPacket data(SMSG_SELL_ITEM, (8 + 8 + /*(param ? 4 : 0) +*/ 1)); // last check [ZERO]
     data << (pCreature ? pCreature->GetObjectGuid() : ObjectGuid());
     data << ObjectGuid(itemGuid);
-    //if (param > 0)
-    //    { data << uint32(param); }    // [-ZERO]
     data << uint8(msg);
     GetSession()->SendPacket(&data);
 }
@@ -11566,7 +11516,6 @@ void Player::SendNewItem(Item* item, uint32 count, bool received, bool created, 
     data << uint32(item->GetItemSuffixFactor());            // SuffixFactor
     data << uint32(item->GetItemRandomPropertyId());        // random item property id
     data << uint32(count);                                  // count of items
-    //data << uint32(GetItemCount(item->GetEntry()));         // [-ZERO] count of items in inventory
 
     if (broadcast && GetGroup())
         { GetGroup()->BroadcastPacket(&data, true); }
@@ -15202,7 +15151,6 @@ void Player::_LoadBoundInstances(QueryResult* result)
 
 InstancePlayerBind* Player::GetBoundInstance(uint32 mapid)
 {
-    //const MapEntry* entry = sMapStore.LookupEntry(mapid);
 
     BoundInstancesMap::iterator itr = m_boundInstances.find(mapid);
     if (itr != m_boundInstances.end())
@@ -15305,7 +15253,6 @@ void Player::SendRaidInfo()
     size_t p_counter = data.wpos();
     data << uint32(counter);                                // placeholder
 
-    //time_t now = time(NULL);
 
     for (BoundInstancesMap::const_iterator itr = m_boundInstances.begin(); itr != m_boundInstances.end(); ++itr)
     {
@@ -17824,7 +17771,6 @@ inline void BeforeVisibilityDestroy(WorldObject* o, Player* p)
     }
 }
 
-//2 params version (2p)
 void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target)
 {
     if (HaveAtClient(target))
@@ -17990,7 +17936,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
     WorldPacket data(SMSG_SET_REST_START, 4);
-    data << uint32(0);                                      // rest state time
+    data << uint32(0);                                      // unknown, may be rest state time or experience
     GetSession()->SendPacket(&data);
 
     /* Send information about player's home binding */
@@ -18034,7 +17980,7 @@ void Player::SendInitialPacketsAfterAddToMap()
     UpdateZone(newzone, newarea);                           // This calls SendInitWorldStates
 
     /* Login effect spell */
-    CastSpell(this, 836, true);
+    CastSpell(this, 836, true);                             // LOGINEFFECT
 
     /* Sets aura effects that need to be sent after the player is added to the map
      * We use SendMessageToSet so that it's sent to everyone, including the player
@@ -18548,19 +18494,14 @@ void Player::UpdateForQuestWorldObjects()
     if (m_clientGUIDs.empty())
         { return; }
 
-    // UpdateData udata;
-    // WorldPacket packet;
     for (GuidSet::const_iterator itr = m_clientGUIDs.begin(); itr != m_clientGUIDs.end(); ++itr)
     {
         if (itr->IsGameObject())
         {
             if (GameObject* obj = GetMap()->GetGameObject(*itr))
-                // obj->BuildValuesUpdateBlockForPlayer(&udata,this);
                 { obj->SendCreateUpdateToPlayer(this); } //[-ZERO] we must send create packet because of GAMEOBJECT_FLAGS change (not dynamic) - probably incorrect
         }
     }
-    // udata.BuildPacket(&packet);
-    // GetSession()->SendPacket(&packet);
 }
 
 void Player::SummonIfPossible(bool agree)
@@ -18691,9 +18632,6 @@ bool Player::HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item cons
 bool Player::CanNoReagentCast(SpellEntry const* /*spellInfo*/) const
 {
     // don't take reagents for spells with SPELL_ATTR_EX5_NO_REAGENT_WHILE_PREP
-//[-ZERO]    if (spellInfo->AttributesEx5 & SPELL_ATTR_EX5_NO_REAGENT_WHILE_PREP &&
-//        HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PREPARATION))
-//        return true;
 
     return false;
 }

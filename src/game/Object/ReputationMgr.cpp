@@ -244,7 +244,7 @@ bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
 #endif /* ENABLE_ELUNA */
 
     bool res = false;
-    // if spillover definition exists in DB
+    // if spillover definition exists in DB, override DBC
     if (const RepSpilloverTemplate* repTemplate = sObjectMgr.GetRepSpilloverTemplate(factionEntry->ID))
     {
         for (uint32 i = 0; i < MAX_SPILLOVER_FACTIONS; ++i)
@@ -369,11 +369,6 @@ void ReputationMgr::SetAtWar(FactionState* faction, bool atWar)
         { faction->Flags |= FACTION_FLAG_AT_WAR; }
     else
         { faction->Flags &= ~FACTION_FLAG_AT_WAR; }
-
-    //WorldPacket data(SMSG_SET_FACTION_ATWAR, 4 + 1);
-    //data << uint32(faction->ID);
-    //data << uint8(faction->Flags & FACTION_FLAG_AT_WAR);    // the client tests only FACTION_FLAG_AT_WAR
-    //m_player->SendDirectMessage(&data);
 
     faction->needSend = true;
     faction->needSave = true;
