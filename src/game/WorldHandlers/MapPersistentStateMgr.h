@@ -85,7 +85,9 @@ class MapPersistentState
         {
             m_usedByMap = map;
             if (!map)
-                { UnloadIfEmpty(); }
+            {
+                UnloadIfEmpty();
+            }
         }
 
         time_t GetCreatureRespawnTime(uint32 loguid) const
@@ -392,14 +394,18 @@ inline void MapPersistentStateManager::DoForAllStatesWithMapId(uint32 mapId, Do&
 {
     MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
     if (!mapEntry)
-        { return; }
+    {
+        return;
+    }
 
     if (mapEntry->Instanceable())
     {
         for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end();)
         {
             if (itr->second->GetMapId() == mapId)
-                { _do((itr++)->second); }
+            {
+                _do((itr++)->second);
+            }
             else
                 { ++itr; }
         }
@@ -407,7 +413,9 @@ inline void MapPersistentStateManager::DoForAllStatesWithMapId(uint32 mapId, Do&
     else
     {
         if (MapPersistentState* state = GetPersistentState(mapId, 0))
-            { _do(state); }
+        {
+            _do(state);
+        }
     }
 }
 

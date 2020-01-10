@@ -263,7 +263,9 @@ class Channel
         {
             PlayerList::const_iterator p_itr = m_players.find(guid);
             if (p_itr == m_players.end())
-                { return 0; }
+            {
+                return 0;
+            }
 
             return p_itr->second.flags;
         }

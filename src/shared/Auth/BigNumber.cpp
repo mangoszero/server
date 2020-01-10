@@ -180,7 +180,9 @@ uint8* BigNumber::AsByteArray(int minSize)
 
     // If we need more bytes than length of BigNumber set the rest to 0
     if (length > GetNumBytes())
-        { memset((void*)_array, 0, length); }
+    {
+        memset((void*)_array, 0, length);
+    }
 
     BN_bn2bin(_bn, (unsigned char*)_array);
 

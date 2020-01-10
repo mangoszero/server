@@ -615,7 +615,9 @@ class BattleGround
         uint32 GetInvitedCount(Team team) const
         {
             if (team == ALLIANCE)
-                { return m_InvitedAlliance; }
+            {
+                return m_InvitedAlliance;
+            }
             else
                 { return m_InvitedHorde; }
         }
@@ -978,7 +980,9 @@ class BattleGround
         void UpdatePlayersCountByTeam(Team team, bool remove)
         {
             if (remove)
-                { --m_PlayersCount[GetTeamIndexByTeamId(team)]; }
+            {
+                --m_PlayersCount[GetTeamIndexByTeamId(team)];
+            }
             else
                 { ++m_PlayersCount[GetTeamIndexByTeamId(team)]; }
         }
@@ -1128,7 +1132,9 @@ class BattleGround
         bool IsActiveEvent(uint8 event1, uint8 event2)
         {
             if (m_ActiveEvents.find(event1) == m_ActiveEvents.end())
-                { return false; }
+            {
+                return false;
+            }
             return m_ActiveEvents[event1] == event2;
         }
         /**

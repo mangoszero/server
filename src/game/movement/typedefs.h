@@ -84,7 +84,9 @@ namespace Movement
             void Increase()
             {
                 if (m_counter == limit)
-                    { init(); }
+                {
+                    init();
+                }
                 else
                     { ++m_counter; }
             }

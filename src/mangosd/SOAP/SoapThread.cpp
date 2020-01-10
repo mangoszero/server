@@ -197,7 +197,9 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
     }
 
     if (!command || !*command)
-        { return soap_sender_fault(soap, "Command mustn't be empty", "The supplied command was an empty string"); }
+    {
+        return soap_sender_fault(soap, "Command mustn't be empty", "The supplied command was an empty string");
+    }
 
     DEBUG_LOG("MaNGOSsoap: got command '%s'", command);
     SOAPCommand connection;

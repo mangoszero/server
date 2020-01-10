@@ -35,7 +35,9 @@ template<class T>
 void PointMovementGenerator<T>::Initialize(T& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
-        { return; }
+    {
+        return;
+    }
 
     unit.StopMoving();
 
@@ -51,7 +53,9 @@ void PointMovementGenerator<T>::Finalize(T& unit)
     unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 
     if (unit.movespline->Finalized())
-        { MovementInform(unit); }
+    {
+        MovementInform(unit);
+    }
 }
 
 template<class T>
@@ -78,7 +82,9 @@ bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
     }
 
     if (!unit.hasUnitState(UNIT_STAT_ROAMING_MOVE) && unit.movespline->Finalized())
-        { Initialize(unit); }
+    {
+        Initialize(unit);
+    }
 
     return !unit.movespline->Finalized();
 }
@@ -92,7 +98,9 @@ template <>
 void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
 {
     if (unit.AI())
-        { unit.AI()->MovementInform(POINT_MOTION_TYPE, id); }
+    {
+        unit.AI()->MovementInform(POINT_MOTION_TYPE, id);
+    }
 
     if (unit.IsTemporarySummon())
     {
@@ -100,7 +108,9 @@ void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
         if (pSummon->GetSummonerGuid().IsCreature())
             if (Creature* pSummoner = unit.GetMap()->GetCreature(pSummon->GetSummonerGuid()))
                 if (pSummoner->AI())
-                    { pSummoner->AI()->SummonedMovementInform(&unit, POINT_MOTION_TYPE, id); }
+                {
+                    pSummoner->AI()->SummonedMovementInform(&unit, POINT_MOTION_TYPE, id);
+                }
     }
 }
 
@@ -119,10 +129,14 @@ template bool PointMovementGenerator<Creature>::Update(Creature&, const uint32& 
 void AssistanceMovementGenerator::Initialize(Unit& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
-        { return; }
+    {
+        return;
+    }
 
     if (!unit.IsStopped())
-        { unit.StopMoving(); }
+    {
+        unit.StopMoving();
+    }
 
     unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     Movement::MoveSplineInit init(unit);
@@ -141,7 +155,9 @@ void AssistanceMovementGenerator::Finalize(Unit& unit)
     ((Creature*)&unit)->SetNoCallAssistance(false);
     ((Creature*)&unit)->CallAssistance();
     if (unit.IsAlive())
-        { unit.GetMotionMaster()->MoveSeekAssistanceDistract(sWorld.getConfig(CONFIG_UINT32_CREATURE_FAMILY_ASSISTANCE_DELAY)); }
+    {
+        unit.GetMotionMaster()->MoveSeekAssistanceDistract(sWorld.getConfig(CONFIG_UINT32_CREATURE_FAMILY_ASSISTANCE_DELAY));
+    }
 }
 
 bool EffectMovementGenerator::Update(Unit& unit, const uint32&)
@@ -152,15 +168,21 @@ bool EffectMovementGenerator::Update(Unit& unit, const uint32&)
 void EffectMovementGenerator::Finalize(Unit& unit)
 {
     if (unit.GetTypeId() != TYPEID_UNIT)
-        { return; }
+    {
+        return;
+    }
 
     if (((Creature&)unit).AI() && unit.movespline->Finalized())
-        { ((Creature&)unit).AI()->MovementInform(EFFECT_MOTION_TYPE, m_Id); }
+    {
+        ((Creature&)unit).AI()->MovementInform(EFFECT_MOTION_TYPE, m_Id);
+    }
     // Need restore previous movement since we have no proper states system
     if (unit.IsAlive() && !unit.hasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING | UNIT_STAT_NO_COMBAT_MOVEMENT))
     {
         if (Unit* victim = unit.getVictim())
-            { unit.GetMotionMaster()->MoveChase(victim); }
+        {
+            unit.GetMotionMaster()->MoveChase(victim);
+        }
         else
             { unit.GetMotionMaster()->Initialize(); }
     }
@@ -169,7 +191,9 @@ void EffectMovementGenerator::Finalize(Unit& unit)
 void FlyOrLandMovementGenerator::Initialize(Unit& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
-        { return; }
+    {
+        return;
+    }
 
     unit.StopMoving();
 

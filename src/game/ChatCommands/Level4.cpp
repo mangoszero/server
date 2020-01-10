@@ -44,18 +44,24 @@
 bool ChatHandler::HandleAccountDeleteCommand(char* args)
 {
     if (!*args)
-        { return false; }
+    {
+        return false;
+    }
 
     std::string account_name;
     uint32 account_id = ExtractAccountId(&args, &account_name);
     if (!account_id)
-        { return false; }
+    {
+        return false;
+    }
 
     /// Commands not recommended call from chat, but support anyway
     /// can delete only for account with less security
     /// This is also reject self apply in fact
     if (HasLowerSecurityAccount(NULL, account_id, true))
-        { return false; }
+    {
+        return false;
+    }
 
     AccountOpResult result = sAccountMgr.DeleteAccount(account_id);
     switch (result)
@@ -94,12 +100,16 @@ bool ChatHandler::GetDeletedCharacterInfoList(DeletedInfoList& foundList, std::s
     {
         // search by GUID
         if (isNumeric(searchString))
-            { resultChar = CharacterDatabase.PQuery("SELECT guid, deleteInfos_Name, deleteInfos_Account, deleteDate FROM characters WHERE deleteDate IS NOT NULL AND guid = %u", uint32(atoi(searchString.c_str()))); }
+        {
+            resultChar = CharacterDatabase.PQuery("SELECT guid, deleteInfos_Name, deleteInfos_Account, deleteDate FROM characters WHERE deleteDate IS NOT NULL AND guid = %u", uint32(atoi(searchString.c_str())));
+        }
         // search by name
         else
         {
             if (!normalizePlayerName(searchString))
-                { return false; }
+            {
+                return false;
+            }
 
             resultChar = CharacterDatabase.PQuery("SELECT guid, deleteInfos_Name, deleteInfos_Account, deleteDate FROM characters WHERE deleteDate IS NOT NULL AND deleteInfos_Name " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'"), searchString.c_str());
         }
@@ -157,7 +167,9 @@ std::string ChatHandler::GenerateDeletedCharacterGUIDsWhereStr(DeletedInfoList::
 
         DeletedInfoList::const_iterator itr2 = itr;
         if (++itr2 != itr_end)
-            { wherestr << "','"; }
+        {
+            wherestr << "','";
+        }
     }
     wherestr << "')";
     return wherestr.str();
@@ -197,7 +209,9 @@ void ChatHandler::HandleCharacterDeletedListHelper(DeletedInfoList const& foundL
     }
 
     if (!m_session)
-        { SendSysMessage(LANG_CHARACTER_DELETED_LIST_BAR); }
+    {
+        SendSysMessage(LANG_CHARACTER_DELETED_LIST_BAR);
+    }
 }
 
 /**
@@ -214,7 +228,9 @@ bool ChatHandler::HandleCharacterDeletedListCommand(char* args)
 {
     DeletedInfoList foundList;
     if (!GetDeletedCharacterInfoList(foundList, args))
-        { return false; }
+    {
+        return false;
+    }
 
     // if no characters have been found, output a warning
     if (foundList.empty())
@@ -278,7 +294,9 @@ bool ChatHandler::HandleCharacterDeletedRestoreCommand(char* args)
 {
     // It is required to submit at least one argument
     if (!*args)
-        { return false; }
+    {
+        return false;
+    }
 
     std::string searchString;
     std::string newCharName;
@@ -290,7 +308,9 @@ bool ChatHandler::HandleCharacterDeletedRestoreCommand(char* args)
 
     DeletedInfoList foundList;
     if (!GetDeletedCharacterInfoList(foundList, searchString))
-        { return false; }
+    {
+        return false;
+    }
 
     if (foundList.empty())
     {
@@ -343,11 +363,15 @@ bool ChatHandler::HandleCharacterDeletedDeleteCommand(char* args)
 {
     // It is required to submit at least one argument
     if (!*args)
-        { return false; }
+    {
+        return false;
+    }
 
     DeletedInfoList foundList;
     if (!GetDeletedCharacterInfoList(foundList, args))
-        { return false; }
+    {
+        return false;
+    }
 
     if (foundList.empty())
     {
@@ -381,10 +405,14 @@ bool ChatHandler::HandleCharacterDeletedOldCommand(char* args)
     int32 keepDays = sWorld.getConfig(CONFIG_UINT32_CHARDELETE_KEEP_DAYS);
 
     if (!ExtractOptInt32(&args, keepDays, sWorld.getConfig(CONFIG_UINT32_CHARDELETE_KEEP_DAYS)))
-        { return false; }
+    {
+        return false;
+    }
 
     if (keepDays < 0)
-        { return false; }
+    {
+        return false;
+    }
 
     Player::DeleteOldCharacters((uint32)keepDays);
     return true;
@@ -394,13 +422,17 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
 {
     char* nameStr = ExtractLiteralArg(&args);
     if (!nameStr)
-        { return false; }
+    {
+        return false;
+    }
 
     Player* target;
     ObjectGuid target_guid;
     std::string target_name;
     if (!ExtractPlayerTarget(&nameStr, &target, &target_guid, &target_name))
-        { return false; }
+    {
+        return false;
+    }
 
     uint32 account_id;
 
@@ -441,7 +473,9 @@ bool ChatHandler::HandleAccountOnlineListCommand(char* args)
 {
     uint32 limit;
     if (!ExtractOptUInt32(&args, limit, 100))
-        { return false; }
+    {
+        return false;
+    }
 
     ///- Get the list of accounts ID logged to the realm
     //                                                 0   1         2        3        4
@@ -457,7 +491,9 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     char* szAcc = ExtractQuotedOrLiteralArg(&args);
     char* szPassword = ExtractQuotedOrLiteralArg(&args);
     if (!szAcc || !szPassword)
-        { return false; }
+    {
+        return false;
+    }
 
     // normalized in accmgr.CreateAccount
     std::string account_name = szAcc;
@@ -499,13 +535,17 @@ bool ChatHandler::HandleServerLogFilterCommand(char* args)
         SendSysMessage(LANG_LOG_FILTERS_STATE_HEADER);
         for (int i = 0; i < LOG_FILTER_COUNT; ++i)
             if (*logFilterData[i].name)
-                { PSendSysMessage("  %-20s = %s", logFilterData[i].name, GetOnOffStr(sLog.HasLogFilter(1 << i))); }
+            {
+                PSendSysMessage("  %-20s = %s", logFilterData[i].name, GetOnOffStr(sLog.HasLogFilter(1 << i)));
+            }
         return true;
     }
 
     char* filtername = ExtractLiteralArg(&args);
     if (!filtername)
-        { return false; }
+    {
+        return false;
+    }
 
     bool value;
     if (!ExtractOnOff(&args, value))
@@ -525,7 +565,9 @@ bool ChatHandler::HandleServerLogFilterCommand(char* args)
     for (int i = 0; i < LOG_FILTER_COUNT; ++i)
     {
         if (!*logFilterData[i].name)
-            { continue; }
+        {
+            continue;
+        }
 
         if (!strncmp(filtername, logFilterData[i].name, strlen(filtername)))
         {

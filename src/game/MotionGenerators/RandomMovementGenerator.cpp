@@ -84,7 +84,9 @@ void RandomMovementGenerator<Creature>::Initialize(Creature& creature)
     creature.addUnitState(UNIT_STAT_ROAMING);               // _MOVE set in _setRandomLocation
 
     if (!creature.IsAlive() || creature.hasUnitState(UNIT_STAT_NOT_MOVE))
-        { return; }
+    {
+        return;
+    }
 
     _setRandomLocation(creature);
 }
@@ -124,7 +126,9 @@ bool RandomMovementGenerator<Creature>::Update(Creature& creature, const uint32&
     {
         i_nextMoveTime.Update(diff);
         if (i_nextMoveTime.Passed())
-            { _setRandomLocation(creature); }
+        {
+            _setRandomLocation(creature);
+        }
     }
     return true;
 }

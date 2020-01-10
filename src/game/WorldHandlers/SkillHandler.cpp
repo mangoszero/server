@@ -38,7 +38,9 @@ void WorldSession::HandleLearnTalentOpcode(WorldPacket& recv_data)
 
     // if player has a pet, update owner talent auras
     if (_player->GetPet())
-        { _player->GetPet()->CastOwnerTalentAuras(); }
+    {
+        _player->GetPet()->CastOwnerTalentAuras();
+    }
 }
 
 void WorldSession::HandleTalentWipeConfirmOpcode(WorldPacket& recv_data)
@@ -55,11 +57,15 @@ void WorldSession::HandleTalentWipeConfirmOpcode(WorldPacket& recv_data)
     }
 
     if (!unit->CanTrainAndResetTalentsOf(_player))
-        { return; }
+    {
+        return;
+    }
 
     // remove fake death
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
-        { GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH); }
+    {
+        GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+    }
 
     if (!(_player->resetTalents()))
     {
@@ -73,7 +79,9 @@ void WorldSession::HandleTalentWipeConfirmOpcode(WorldPacket& recv_data)
     unit->CastSpell(_player, 14867, true);                  // spell: "Untalent Visual Effect"
 
     if (_player->GetPet())
-        { _player->GetPet()->CastOwnerTalentAuras(); }
+    {
+        _player->GetPet()->CastOwnerTalentAuras();
+    }
 }
 
 void WorldSession::HandleUnlearnSkillOpcode(WorldPacket& recv_data)

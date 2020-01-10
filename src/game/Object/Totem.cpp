@@ -48,22 +48,30 @@ bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* 
     Team team = owner->GetTypeId() == TYPEID_PLAYER ? ((Player*)owner)->GetTeam() : TEAM_NONE;
 
     if (!CreateFromProto(guidlow, cinfo, team))
-        { return false; }
+    {
+        return false;
+    }
 
     cPos.SelectFinalPoint(this);
 
     // totem must be at same Z in case swimming caster and etc.
     if (fabs(cPos.m_pos.z - owner->GetPositionZ()) > 5.0f)
-        { cPos.m_pos.z = owner->GetPositionZ(); }
+    {
+        cPos.m_pos.z = owner->GetPositionZ();
+    }
 
     if (!cPos.Relocate(this))
-        { return false; }
+    {
+        return false;
+    }
 
     // Notify the map's instance data.
     // Only works if you create the object in it, not if it is moves to that map.
     // Normally non-players do not teleport to other maps.
     if (InstanceData* iData = GetMap()->GetInstanceData())
-        { iData->OnCreatureCreate(this); }
+    {
+        iData->OnCreatureCreate(this);
+    }
 
     LoadCreatureAddon(false);
 
@@ -100,14 +108,18 @@ void Totem::Summon(Unit* owner)
     SendMessageToSet(&data, true);
 
     if (owner->GetTypeId() == TYPEID_UNIT && ((Creature*)owner)->AI())
-        { ((Creature*)owner)->AI()->JustSummoned((Creature*)this); }
+    {
+        ((Creature*)owner)->AI()->JustSummoned((Creature*)this);
+    }
 #ifdef ENABLE_ELUNA
     sEluna->OnSummoned(this, owner);
 #endif /* ENABLE_ELUNA */
 
     // there are some totems, which exist just for their visual appeareance
     if (!GetSpell())
-        { return; }
+    {
+        return;
+    }
 
     switch (m_type)
     {
@@ -143,18 +155,24 @@ void Totem::UnSummon()
                 {
                     Player* Target = itr->getSource();
                     if (Target && pGroup->SameSubGroup((Player*)owner, Target))
-                        { Target->RemoveAurasDueToSpell(GetSpell()); }
+                    {
+                        Target->RemoveAurasDueToSpell(GetSpell());
+                    }
                 }
             }
         }
 
         if (owner->GetTypeId() == TYPEID_UNIT && ((Creature*)owner)->AI())
-            { ((Creature*)owner)->AI()->SummonedCreatureDespawn((Creature*)this); }
+        {
+            ((Creature*)owner)->AI()->SummonedCreatureDespawn((Creature*)this);
+        }
     }
 
     // any totem unsummon look like as totem kill, req. for proper animation
     if (IsAlive())
-        { SetDeathState(DEAD); }
+    {
+        SetDeathState(DEAD);
+    }
 
     AddObjectToRemoveList();
 }
@@ -170,7 +188,9 @@ void Totem::SetOwner(Unit* owner)
 Unit* Totem::GetOwner()
 {
     if (ObjectGuid ownerGuid = GetOwnerGuid())
-        { return sObjectAccessor.GetUnit(*this, ownerGuid); }
+    {
+        return sObjectAccessor.GetUnit(*this, ownerGuid);
+    }
 
     return NULL;
 }
@@ -183,7 +203,9 @@ void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)
     {
         // If spell have cast time -> so its active totem
         if (GetSpellCastTime(totemSpell))
-            { m_type = TOTEM_ACTIVE; }
+        {
+            m_type = TOTEM_ACTIVE;
+        }
     }
     if (spellProto->SpellIconID == 2056)
         { m_type = TOTEM_STATUE; }                              // Jewelery statue
@@ -214,13 +236,17 @@ bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex 
     {
         // immune to all negative auras
         if (IsAuraApplyEffect(spellInfo, index))
-            { return true; }
+        {
+            return true;
+        }
     }
     else
     {
         // immune to any type of regeneration auras hp/mana etc.
         if (IsPeriodicRegenerateEffect(spellInfo, index))
-            { return true; }
+        {
+            return true;
+        }
     }
 
     return Creature::IsImmuneToSpellEffect(spellInfo, index, castOnSelf);

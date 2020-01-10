@@ -99,7 +99,9 @@ WorldSocket::~WorldSocket(void)
     delete m_RecvWPct;
 
     if (m_OutBuffer)
-        { m_OutBuffer->release(); }
+    {
+        m_OutBuffer->release();
+    }
 
     closing_ = true;
 
@@ -120,7 +122,9 @@ void WorldSocket::CloseSocket(void)
     ACE_GUARD(LockType, Guard, m_OutBufferLock);
 
     if (closing_)
-      { return; }
+    {
+        return;
+    }
 
     closing_ = true;
     peer().close_writer();
@@ -138,7 +142,9 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
 
     if (closing_)
-        { return -1; }
+    {
+        return -1;
+    }
 
     WorldPacket pct = pkt;
 
@@ -183,11 +189,15 @@ int WorldSocket::open(void* a)
 
     // Prevent double call to this func.
     if (m_OutBuffer)
-        { return -1; }
+    {
+        return -1;
+    }
 
     // Hook for the manager.
     if (sWorldSocketMgr->OnSocketOpen(this) == -1)
-        { return -1; }
+    {
+        return -1;
+    }
 
     // Allocate the buffer.
     ACE_NEW_RETURN(m_OutBuffer, ACE_Message_Block(m_OutBufferSize), -1);
@@ -234,7 +244,9 @@ int WorldSocket::close(u_long)
 int WorldSocket::handle_input(ACE_HANDLE)
 {
     if (closing_)
-        { return -1; }
+    {
+        return -1;
+    }
 
     switch (handle_input_missing_data())
     {
@@ -262,7 +274,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
 
     if (closing_)
-        { return -1; }
+    {
+        return -1;
+    }
 
     const size_t send_len = m_OutBuffer->length();
 
@@ -323,7 +337,9 @@ int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
         closing_ = true;
 
         if (h == ACE_INVALID_HANDLE)
-            { peer().close_writer(); }
+        {
+            peer().close_writer();
+        }
     }
 
     m_Session = NULL;
@@ -390,7 +406,9 @@ int WorldSocket::handle_input_payload(void)
     m_Header.reset();
 
     if (ret == -1)
-        { errno = EINVAL; }
+    {
+        errno = EINVAL;
+    }
 
     return ret;
 }
@@ -417,7 +435,9 @@ int WorldSocket::handle_input_missing_data(void)
                                   recv_size);
 
     if (n <= 0)
-        { return (int)n; }
+    {
+        return (int)n;
+    }
 
     message_block.wr_ptr(n);
 
@@ -500,7 +520,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     }
 
     if (closing_)
-        { return -1; }
+    {
+        return -1;
+    }
 
     // Dump received packet.
     sLog.outWorldPacketDump(uint32(get_handle()), new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
@@ -680,7 +702,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     id = fields[0].GetUInt32();
     security = fields[1].GetUInt16();
     if (security > SEC_ADMINISTRATOR)                       // prevent invalid security settings in DB
-        { security = SEC_ADMINISTRATOR; }
+    {
+        security = SEC_ADMINISTRATOR;
+    }
 
     K.SetHexStr(fields[2].GetString());
 
@@ -688,7 +712,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     uint8 tmpLoc = fields[8].GetUInt8();
     if (tmpLoc >= MAX_LOCALE)
-        { locale = LOCALE_enUS; }
+    {
+        locale = LOCALE_enUS;
+    }
     else
         { locale = LocaleConstant(tmpLoc); }
 
@@ -797,7 +823,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Create and send the Addon packet
     if (sAddOnHandler.BuildAddonPacket(&recvPacket, &SendAddonPacked))
-        { SendPacket(SendAddonPacked); }
+    {
+        SendPacket(SendAddonPacked);
+    }
 
     return 0;
 }
@@ -881,11 +909,15 @@ int WorldSocket::iSendPacket(const WorldPacket& pct)
     m_Crypt.EncryptSend((uint8*) & header, sizeof(header));
 
     if (m_OutBuffer->copy((char*) & header, sizeof(header)) == -1)
-        { ACE_ASSERT(false); }
+    {
+        ACE_ASSERT(false);
+    }
 
     if (!pct.empty())
         if (m_OutBuffer->copy((char*) pct.contents(), pct.size()) == -1)
-            { ACE_ASSERT(false); }
+        {
+            ACE_ASSERT(false);
+        }
 
     return 0;
 }

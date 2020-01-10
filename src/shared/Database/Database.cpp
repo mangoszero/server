@@ -71,7 +71,9 @@ SqlPreparedStatement* SqlConnection::GetStmt(uint32 nIndex)
 {
     // resize stmt container
     if (m_holder.size() <= nIndex)
-        { m_holder.resize(nIndex + 1, NULL); }
+    {
+        m_holder.resize(nIndex + 1, NULL);
+    }
 
     SqlPreparedStatement* pStmt = NULL;
 
@@ -102,7 +104,9 @@ SqlPreparedStatement* SqlConnection::GetStmt(uint32 nIndex)
 bool SqlConnection::ExecuteStmt(int nIndex, const SqlStmtParameters& id)
 {
     if (nIndex == -1)
-        { return false; }
+    {
+        return false;
+    }
 
     // get prepared statement object
     SqlPreparedStatement* pStmt = GetStmt(nIndex);
@@ -127,7 +131,9 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
-            { m_logsDir.append("/"); }
+        {
+            m_logsDir.append("/");
+        }
     }
 
     m_pingIntervallms = sConfig.GetIntDefault("MaxPingTime", 30) * (MINUTE * 1000);
@@ -136,7 +142,9 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
 
     // setup connection pool size
     if (nConns < MIN_CONNECTION_POOL_SIZE)
-        { m_nQueryConnPoolSize = MIN_CONNECTION_POOL_SIZE; }
+    {
+        m_nQueryConnPoolSize = MIN_CONNECTION_POOL_SIZE;
+    }
     else if (nConns > MAX_CONNECTION_POOL_SIZE)
         { m_nQueryConnPoolSize = MAX_CONNECTION_POOL_SIZE; }
     else
@@ -158,7 +166,9 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
     // create and initialize connection for async requests
     m_pAsyncConn = CreateConnection();
     if (!m_pAsyncConn->Initialize(infoString))
-        { return false; }
+    {
+        return false;
+    }
 
     m_pResultQueue = new SqlResultQueue;
 
@@ -222,13 +232,17 @@ void Database::ThreadEnd()
 void Database::ProcessResultQueue()
 {
     if (m_pResultQueue)
-        { m_pResultQueue->Update(); }
+    {
+        m_pResultQueue->Update();
+    }
 }
 
 void Database::escape_string(std::string& str)
 {
     if (str.empty())
-        { return; }
+    {
+        return;
+    }
 
     char* buf = new char[str.size() * 2 + 1];
     // we don't care what connection to use - escape string will be the same
@@ -242,7 +256,9 @@ SqlConnection* Database::getQueryConnection()
     int nCount = 0;
 
     if (m_nQueryCounter == long(1 << 31))
-        { m_nQueryCounter = 0; }
+    {
+        m_nQueryCounter = 0;
+    }
     else
         { nCount = ++m_nQueryCounter; }
 
@@ -268,7 +284,9 @@ void Database::Ping()
 bool Database::PExecuteLog(const char* format, ...)
 {
     if (!format)
-        { return false; }
+    {
+        return false;
+    }
 
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
@@ -350,7 +368,9 @@ QueryNamedResult* Database::PQueryNamed(const char* format, ...)
 bool Database::Execute(const char* sql)
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     SqlTransaction* pTrans = (*m_TransStorage)->get();
     if (pTrans)
@@ -362,7 +382,9 @@ bool Database::Execute(const char* sql)
     {
         // if async execution is not available
         if (!m_bAllowAsyncTransactions)
-            { return DirectExecute(sql); }
+        {
+            return DirectExecute(sql);
+        }
 
         // Simple sql statement
         m_threadBody->Delay(new SqlPlainRequest(sql));
@@ -374,7 +396,9 @@ bool Database::Execute(const char* sql)
 bool Database::PExecute(const char* format, ...)
 {
     if (!format)
-        { return false; }
+    {
+        return false;
+    }
 
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
@@ -394,7 +418,9 @@ bool Database::PExecute(const char* format, ...)
 bool Database::DirectPExecute(const char* format, ...)
 {
     if (!format)
-        { return false; }
+    {
+        return false;
+    }
 
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
@@ -414,7 +440,9 @@ bool Database::DirectPExecute(const char* format, ...)
 bool Database::BeginTransaction()
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     // initiate transaction on current thread
     // currently we do not support queued transactions
@@ -425,15 +453,21 @@ bool Database::BeginTransaction()
 bool Database::CommitTransaction()
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     // check if we have pending transaction
     if (!(*m_TransStorage)->get())
-        { return false; }
+    {
+        return false;
+    }
 
     // if async execution is not available
     if (!m_bAllowAsyncTransactions)
-        { return CommitTransactionDirect(); }
+    {
+        return CommitTransactionDirect();
+    }
 
     // add SqlTransaction to the async queue
     m_threadBody->Delay((*m_TransStorage)->detach());
@@ -443,11 +477,15 @@ bool Database::CommitTransaction()
 bool Database::CommitTransactionDirect()
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     // check if we have pending transaction
     if (!(*m_TransStorage)->get())
-        { return false; }
+    {
+        return false;
+    }
 
     // directly execute SqlTransaction
     SqlTransaction* pTrans = (*m_TransStorage)->detach();
@@ -460,10 +498,14 @@ bool Database::CommitTransactionDirect()
 bool Database::RollbackTransaction()
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     if (!(*m_TransStorage)->get())
-        { return false; }
+    {
+        return false;
+    }
 
     // remove scheduled transaction
     (*m_TransStorage)->reset();
@@ -554,7 +596,9 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
 bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
 {
     if (!m_pAsyncConn)
-        { return false; }
+    {
+        return false;
+    }
 
     SqlTransaction* pTrans = (*m_TransStorage)->get();
     if (pTrans)
@@ -566,7 +610,9 @@ bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
     {
         // if async execution is not available
         if (!m_bAllowAsyncTransactions)
-            { return DirectExecuteStmt(id, params); }
+        {
+            return DirectExecuteStmt(id, params);
+        }
 
         // Simple sql statement
         m_threadBody->Delay(new SqlPreparedRequest(id.ID(), params));
@@ -616,7 +662,9 @@ SqlStatement Database::CreateStatement(SqlStatementID& index, const char* fmt)
 std::string Database::GetStmtString(const int stmtId) const
 {
     if (stmtId == -1 || stmtId > m_iStmtIndex)
-        { return std::string(); }
+    {
+        return std::string();
+    }
 
     LOCK_GUARD _guard(m_stmtGuard);
     if (_guard.locked())
@@ -625,7 +673,9 @@ std::string Database::GetStmtString(const int stmtId) const
         for (PreparedStmtRegistry::const_iterator iter = m_stmtRegistry.begin(); iter != iter_last; ++iter)
         {
             if (iter->second == stmtId)
-                { return iter->first; }
+            {
+                return iter->first;
+            }
         }
     }
     return std::string();

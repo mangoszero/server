@@ -93,7 +93,9 @@ namespace VMAP
     void VMapFactory::preventSpellsFromBeingTestedForLoS(const char* pSpellIdString)
     {
         if (!iIgnoreSpellIds)
-            { iIgnoreSpellIds = new Table<unsigned int , bool>(); }
+        {
+            iIgnoreSpellIds = new Table<unsigned int , bool>();
+        }
         if (pSpellIdString != NULL)
         {
             unsigned int pos = 0;

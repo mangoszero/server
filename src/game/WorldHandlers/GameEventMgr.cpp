@@ -57,11 +57,15 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
 
     // outdated event: we return max
     if (currenttime > mGameEvent[entry].end)
-        { return max_ge_check_delay; }
+    {
+        return max_ge_check_delay;
+    }
 
     // never started event, we return delay before start
     if (mGameEvent[entry].start > currenttime)
-        { return uint32(mGameEvent[entry].start - currenttime); }
+    {
+        return uint32(mGameEvent[entry].start - currenttime);
+    }
 
     uint32 delay;
     // in event, we return the end of it
@@ -72,7 +76,9 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
         { delay = (mGameEvent[entry].occurence * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)); }
     // In case the end is before next check
     if (mGameEvent[entry].end  < time_t(currenttime + delay))
-        { return uint32(mGameEvent[entry].end - currenttime); }
+    {
+        return uint32(mGameEvent[entry].end - currenttime);
+    }
     else
         { return delay; }
 }
@@ -84,7 +90,9 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
     {
         mGameEvent[event_id].start = time(NULL);
         if (mGameEvent[event_id].end <= mGameEvent[event_id].start)
-            { mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length; }
+        {
+            mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length;
+        }
     }
 #ifdef ENABLE_ELUNA
     if (IsActiveEvent(event_id))
@@ -99,7 +107,9 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
     {
         mGameEvent[event_id].start = time(NULL) - mGameEvent[event_id].length * MINUTE;
         if (mGameEvent[event_id].end <= mGameEvent[event_id].start)
-            { mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length; }
+        {
+            mGameEvent[event_id].end = mGameEvent[event_id].start + mGameEvent[event_id].length;
+        }
     }
 #ifdef ENABLE_ELUNA
     if (!IsActiveEvent(event_id))
@@ -244,7 +254,9 @@ void GameEventMgr::LoadFromDB()
                     if (eventRef != 0)
                     {
                         if (eventRef != event_id)
-                            { sLog.outErrorDb("`game_event_creature` have creature (GUID: %u) for event %i from pool or subpool of pool (ID: %u) but pool have already content from event %i. Pool don't must have content for different events!", guid, event_id, topPoolId, eventRef); }
+                        {
+                            sLog.outErrorDb("`game_event_creature` have creature (GUID: %u) for event %i from pool or subpool of pool (ID: %u) but pool have already content from event %i. Pool don't must have content for different events!", guid, event_id, topPoolId, eventRef);
+                        }
                     }
                     else
                     {
@@ -321,7 +333,9 @@ void GameEventMgr::LoadFromDB()
                     if (eventRef != 0)
                     {
                         if (eventRef != event_id)
-                            { sLog.outErrorDb("`game_event_gameobject` have gameobject (GUID: %u) for event %i from pool or subpool of pool (ID: %u) but pool have already content from event %i. Pool don't must have content for different events!", guid, event_id, topPoolId, eventRef); }
+                        {
+                            sLog.outErrorDb("`game_event_gameobject` have gameobject (GUID: %u) for event %i from pool or subpool of pool (ID: %u) but pool have already content from event %i. Pool don't must have content for different events!", guid, event_id, topPoolId, eventRef);
+                        }
                     }
                     else
                     {
@@ -634,7 +648,9 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
         {
             // DEBUG_LOG("GameEvent %u is not active",itr->first);
             if (IsActiveEvent(itr))
-                { StopEvent(itr); }
+            {
+                StopEvent(itr);
+            }
             else
             {
                 if (!m_IsGameEventsInit)
@@ -647,7 +663,9 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
         }
         calcDelay = NextCheck(itr);
         if (calcDelay < nextEventDelay)
-            { nextEventDelay = calcDelay; }
+        {
+            nextEventDelay = calcDelay;
+        }
     }
     BASIC_LOG("Next game event check in %u seconds.", nextEventDelay + 1);
     return (nextEventDelay + 1) * IN_MILLISECONDS;          // Add 1 second to be sure event has started/stopped at next call
@@ -677,7 +695,9 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
     CharacterDatabase.PExecute("INSERT INTO game_event_status (event) VALUES (%u)", event_id);
 
     if (sWorld.getConfig(CONFIG_BOOL_EVENT_ANNOUNCE))
-        { sWorld.SendWorldText(LANG_EVENTMESSAGE, mGameEvent[event_id].description.c_str()); }
+    {
+        sWorld.SendWorldText(LANG_EVENTMESSAGE, mGameEvent[event_id].description.c_str());
+    }
 
     sLog.outString("GameEvent %u \"%s\" started.", event_id, mGameEvent[event_id].description.c_str());
     // spawn positive event tagget objects
@@ -692,7 +712,9 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
 
     // Not send mails at game event startup, if game event just resume after server shutdown (has been active at server before shutdown)
     if (!resume)
-        { SendEventMails(event_id); }
+    {
+        SendEventMails(event_id);
+    }
 }
 
 void GameEventMgr::GameEventSpawn(int16 event_id)
@@ -866,11 +888,15 @@ GameEventCreatureData const* GameEventMgr::GetCreatureUpdateDataForActiveEvent(u
     }
 
     if (!event_id)
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     for (GameEventCreatureDataList::const_iterator itr = mGameEventCreatureData[event_id].begin(); itr != mGameEventCreatureData[event_id].end(); ++itr)
         if (itr->first == lowguid)
-            { return &itr->second; }
+        {
+            return &itr->second;
+        }
 
     return NULL;
 }
@@ -888,7 +914,9 @@ struct GameEventUpdateCreatureDataInMapsWorker
 
             // spells not casted for event remove case (sent NULL into update), do it
             if (!i_activate)
-                { pCreature->ApplyGameEventSpells(i_event_data, false); }
+            {
+                pCreature->ApplyGameEventSpells(i_event_data, false);
+            }
         }
     }
 
@@ -905,7 +933,9 @@ void GameEventMgr::UpdateCreatureData(int16 event_id, bool activate)
         // Remove the creature from grid
         CreatureData const* data = sObjectMgr.GetCreatureData(itr->first);
         if (!data)
-            { continue; }
+        {
+            continue;
+        }
 
         // Update if spawned
         GameEventUpdateCreatureDataInMapsWorker worker(data->GetObjectGuid(itr->first), data, &itr->second, activate);
@@ -983,7 +1013,9 @@ int16 GameEventMgr::GetGameEventId<Pool>(uint32 guid_or_poolid)
     for (uint16 i = 0; i < mGameEventSpawnPoolIds.size(); ++i)
         for (IdList::const_iterator itr = mGameEventSpawnPoolIds[i].begin(); itr != mGameEventSpawnPoolIds[i].end(); ++itr)
             if (*itr == guid_or_poolid)
-                { return i; }
+            {
+                return i;
+            }
     return 0;
 }
 
@@ -995,11 +1027,15 @@ GameEventMgr::GameEventMgr()
 bool GameEventMgr::IsActiveHoliday(HolidayIds id)
 {
     if (id == HOLIDAY_NONE)
-        { return false; }
+    {
+        return false;
+    }
 
     for (GameEventMgr::ActiveEvents::const_iterator itr = m_ActiveEvents.begin(); itr != m_ActiveEvents.end(); ++itr)
         if (mGameEvent[*itr].holiday_id == id)
-            { return true; }
+        {
+            return true;
+        }
 
     return false;
 }

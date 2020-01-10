@@ -68,7 +68,9 @@ void WorldSession::HandleGMTicketGetTicketOpcode(WorldPacket& /*recv_data*/)
 
     GMTicket* ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid());
     if (ticket)
-        { SendGMTicketGetTicket(0x06, ticket); }
+    {
+        SendGMTicketGetTicket(0x06, ticket);
+    }
     else
         { SendGMTicketGetTicket(0x0A); }
 }
@@ -151,7 +153,9 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
     sObjectAccessor.DoForAllPlayers([this](Player* player)
         {
         if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-            { ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName()); }
+        {
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName());
+        }
         });
 }
 

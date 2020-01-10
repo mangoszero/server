@@ -40,7 +40,9 @@
 void WorldSession::SendNameQueryOpcode(Player* p)
 {
     if (!p)
-        { return; }
+    {
+        return;
+    }
 
     // guess size
     WorldPacket data(SMSG_NAME_QUERY_RESPONSE, (8 + 25 + 1 + 4 + 4 + 4));   // guess size
@@ -66,7 +68,9 @@ void WorldSession::SendNameQueryOpcodeFromDB(ObjectGuid guid)
 void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32 accountId)
 {
     if (!result)
-        { return; }
+    {
+        return;
+    }
 
     WorldSession* session = sWorld.FindSession(accountId);
     if (!session)
@@ -108,7 +112,9 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
     Player* pChar = sObjectMgr.GetPlayer(guid);
 
     if (pChar)
-        { SendNameQueryOpcode(pChar); }
+    {
+        SendNameQueryOpcode(pChar);
+    }
     else
         { SendNameQueryOpcodeFromDB(guid); }
 }
@@ -199,7 +205,9 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
             if (gl)
             {
                 if (gl->Name.size() > size_t(loc_idx) && !gl->Name[loc_idx].empty())
-                    { Name = gl->Name[loc_idx]; }
+                {
+                    Name = gl->Name[loc_idx];
+                }
             }
         }
         DETAIL_LOG("WORLD: CMSG_GAMEOBJECT_QUERY '%s' - Entry: %u. ", info->name, entryID);
@@ -327,12 +335,16 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
             data << pGossip->Options[i].Probability;
 
             if (Text_0[i].empty())
-                { data << Text_1[i]; }
+            {
+                data << Text_1[i];
+            }
             else
                 { data << Text_0[i]; }
 
             if (Text_1[i].empty())
-                { data << Text_0[i]; }
+            {
+                data << Text_0[i];
+            }
             else
                 { data << Text_1[i]; }
 
@@ -383,7 +395,9 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
                 if (pl)
                 {
                     if (pl->Text.size() > size_t(loc_idx) && !pl->Text[loc_idx].empty())
-                        { Text = pl->Text[loc_idx]; }
+                    {
+                        Text = pl->Text[loc_idx];
+                    }
                 }
             }
 

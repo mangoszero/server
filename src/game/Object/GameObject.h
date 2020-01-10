@@ -612,7 +612,9 @@ class GameObject : public WorldObject
         {
             time_t now = time(NULL);
             if (m_respawnTime > now)
-                { return m_respawnTime; }
+            {
+                return m_respawnTime;
+            }
             else
                 { return now; }
         }

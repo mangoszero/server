@@ -35,9 +35,13 @@ ChannelMgr* channelMgr(Team team)
         { return &MaNGOS::Singleton<AllianceChannelMgr>::Instance(); }        // cross-faction
 
     if (team == ALLIANCE)
-        { return &MaNGOS::Singleton<AllianceChannelMgr>::Instance(); }
+    {
+        return &MaNGOS::Singleton<AllianceChannelMgr>::Instance();
+    }
     if (team == HORDE)
-        { return &MaNGOS::Singleton<HordeChannelMgr>::Instance(); }
+    {
+        return &MaNGOS::Singleton<HordeChannelMgr>::Instance();
+    }
 
     return NULL;
 }
@@ -98,7 +102,9 @@ void ChannelMgr::LeftChannel(const std::string &name)
     ChannelMap::const_iterator i = channels.find(wname);
 
     if (i == channels.end())
-        { return; }
+    {
+        return;
+    }
 
     Channel* channel = i->second;
 

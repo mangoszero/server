@@ -167,7 +167,9 @@ bool WinServiceUninstall()
     if (QueryServiceStatus(service, &serviceStatus2))
     {
         if (serviceStatus2.dwCurrentState == SERVICE_STOPPED)
-            { DeleteService(service); }
+        {
+            DeleteService(service);
+        }
     }
 
     CloseServiceHandle(service);

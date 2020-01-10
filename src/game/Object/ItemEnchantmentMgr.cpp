@@ -70,7 +70,9 @@ void LoadRandomEnchantmentsTable()
             float chance = fields[2].GetFloat();
 
             if (chance > 0.000001f && chance <= 100.0f)
-                { RandomItemEnch[entry].push_back(EnchStoreItem(ench, chance)); }
+            {
+                RandomItemEnch[entry].push_back(EnchStoreItem(ench, chance));
+            }
 
             ++count;
         }

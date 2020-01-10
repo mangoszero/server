@@ -44,7 +44,9 @@ BarGoLink::BarGoLink(int row_count)
 BarGoLink::~BarGoLink()
 {
     if (!m_showOutput)
-        { return; }
+    {
+        return;
+    }
 
     printf("\n");
     fflush(stdout);
@@ -58,7 +60,9 @@ void BarGoLink::init(int row_count)
     num_rec   = row_count;
 
     if (!m_showOutput)
-        { return; }
+    {
+        return;
+    }
 
 #ifdef _WIN32
     printf("\x3D");
@@ -77,7 +81,9 @@ void BarGoLink::init(int row_count)
 void BarGoLink::step()
 {
     if (!m_showOutput)
-        { return; }
+    {
+        return;
+    }
 
     int i, n;
 

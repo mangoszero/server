@@ -68,13 +68,17 @@ bool AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target)
 
     // broken addon packet, can't be received from real client
     if (Source->rpos() + 4 > Source->size())
-        { return false; }
+    {
+        return false;
+    }
 
     *Source >> TempValue;                                   // get real size of the packed structure
 
     // empty addon packet, nothing process, can't be received from real client
     if (!TempValue)
-        { return false; }
+    {
+        return false;
+    }
 
     if (TempValue > 0xFFFFF)
     {
@@ -113,7 +117,9 @@ bool AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target)
                 uint8 unk2 = crc != UI64LIT(0x1c776d01);    // If addon is Standard addon CRC
                 *Target << (uint8)unk2;
                 if (unk2)
-                    { Target->append(tdata, sizeof(tdata)); }
+                {
+                    Target->append(tdata, sizeof(tdata));
+                }
 
                 *Target << (uint32)0;
             }

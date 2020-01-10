@@ -75,10 +75,14 @@ namespace VMAP
 
         // M2 files don't contain area info, only WMO files
         if (flags & MOD_M2)
-            { return; }
+        {
+            return;
+        }
 
         if (!iBound.contains(p))
-            { return; }
+        {
+            return;
+        }
 
         // child bounds are defined in object space:
         Vector3 pModel = iInvRot * (p - iPos) * iInvScale;
@@ -106,10 +110,14 @@ namespace VMAP
 
         // M2 files don't contain area info, only WMO files
         if (flags & MOD_M2)
-            { return false; }
+        {
+            return false;
+        }
 
         if (!iBound.contains(p))
-            { return false; }
+        {
+            return false;
+        }
 
         // child bounds are defined in object space:
         Vector3 pModel = iInvRot * (p - iPos) * iInvScale;
@@ -158,7 +166,9 @@ namespace VMAP
         if (!check)
         {
             if (ferror(rf))
-                { ERROR_LOG("Error reading ModelSpawn!"); }
+            {
+                ERROR_LOG("Error reading ModelSpawn!");
+            }
             return false;
         }
         check += fread(&spawn.adtId, sizeof(uint16), 1, rf);

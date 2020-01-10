@@ -153,7 +153,9 @@ class PoolManager
             if (uint16 pool_id = IsPartOfAPool<T>(db_guid_or_pool_id))
             {
                 if (uint16 top_pool_id = IsPartOfTopPool<Pool>(pool_id))
-                    { return top_pool_id; }
+                {
+                    return top_pool_id;
+                }
 
                 return pool_id;
             }
@@ -221,7 +223,9 @@ inline uint16 PoolManager::IsPartOfAPool<Creature>(uint32 db_guid) const
 {
     SearchMap::const_iterator itr = mCreatureSearchMap.find(db_guid);
     if (itr != mCreatureSearchMap.end())
-        { return itr->second; }
+    {
+        return itr->second;
+    }
 
     return 0;
 }
@@ -232,7 +236,9 @@ inline uint16 PoolManager::IsPartOfAPool<GameObject>(uint32 db_guid) const
 {
     SearchMap::const_iterator itr = mGameobjectSearchMap.find(db_guid);
     if (itr != mGameobjectSearchMap.end())
-        { return itr->second; }
+    {
+        return itr->second;
+    }
 
     return 0;
 }
@@ -243,7 +249,9 @@ inline uint16 PoolManager::IsPartOfAPool<Pool>(uint32 pool_id) const
 {
     SearchMap::const_iterator itr = mPoolSearchMap.find(pool_id);
     if (itr != mPoolSearchMap.end())
-        { return itr->second; }
+    {
+        return itr->second;
+    }
 
     return 0;
 }

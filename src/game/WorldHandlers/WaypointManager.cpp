@@ -36,11 +36,15 @@ INSTANTIATE_SINGLETON_1(WaypointManager);
 bool WaypointBehavior::isEmpty()
 {
     if (emote || spell || model1 || model2)
-        { return false; }
+    {
+        return false;
+    }
 
     for (int i = 0; i < MAX_WAYPOINT_TEXT; ++i)
         if (textid[i])
-            { return false; }
+        {
+            return false;
+        }
 
     return true;
 }
@@ -126,7 +130,9 @@ void WaypointManager::Load()
             }
 
             if (cData->movementType != WAYPOINT_MOTION_TYPE)
-                { creatureNoMoveType.insert(id); }
+            {
+                creatureNoMoveType.insert(id);
+            }
 
             WaypointPath& path  = m_pathMap[id];
             WaypointNode& node  = path[point];
@@ -203,7 +209,9 @@ void WaypointManager::Load()
             if (be.emote)
             {
                 if (!sEmotesStore.LookupEntry(be.emote))
-                    { sLog.outErrorDb("Waypoint path %u (Point %u) are using emote %u, but emote does not exist.", id, point, be.emote); }
+                {
+                    sLog.outErrorDb("Waypoint path %u (Point %u) are using emote %u, but emote does not exist.", id, point, be.emote);
+                }
             }
 
             // save memory by not storing empty behaviors
@@ -227,7 +235,9 @@ void WaypointManager::Load()
                 ERROR_DB_STRICT_LOG("Table creature_movement has waypoint for creature guid %u (entry %u), but MovementType is not WAYPOINT_MOTION_TYPE(2). Make sure that this is actually used in a script!", *itr, cData->id);
 
                 if (cInfo->MovementType == WAYPOINT_MOTION_TYPE)
-                    { sLog.outErrorDb("    creature_template for this entry has MovementType WAYPOINT_MOTION_TYPE(2), did you intend to use creature_movement_template ?"); }
+                {
+                    sLog.outErrorDb("    creature_template for this entry has MovementType WAYPOINT_MOTION_TYPE(2), did you intend to use creature_movement_template ?");
+                }
             }
         }
 
@@ -356,7 +366,9 @@ void WaypointManager::Load()
             if (be.emote)
             {
                 if (!sEmotesStore.LookupEntry(be.emote))
-                    { sLog.outErrorDb("Waypoint template path %u (point %u) are using emote %u, but emote does not exist.", entry, point, be.emote); }
+                {
+                    sLog.outErrorDb("Waypoint template path %u (point %u) are using emote %u, but emote does not exist.", entry, point, be.emote);
+                }
             }
 
             // save memory by not storing empty behaviors
@@ -499,7 +511,9 @@ void WaypointManager::DeletePath(uint32 id)
     WorldDatabase.PExecuteLog("DELETE FROM creature_movement WHERE id=%u", id);
     WaypointPathMap::iterator itr = m_pathMap.find(id);
     if (itr != m_pathMap.end())
-        { _clearPath(itr->second); }
+    {
+        _clearPath(itr->second);
+    }
     // the path is not removed from the map, just cleared
     // WMGs have pointers to the path, so deleting them would crash
     // this wastes some memory, but these functions are
@@ -510,11 +524,15 @@ void WaypointManager::SetNodePosition(uint32 entry, uint32 dbGuid, uint32 point,
 {
     // Support only normal movement tables
     if (wpOrigin != PATH_FROM_GUID && wpOrigin != PATH_FROM_ENTRY)
-        { return; }
+    {
+        return;
+    }
 
     WaypointPath* path = GetPathFromOrigin(entry, dbGuid, pathId, wpOrigin);
     if (!path)
-        { return; }
+    {
+        return;
+    }
 
     char const* const table     = wpOrigin == PATH_FROM_GUID ? "creature_movement" : "creature_movement_template";
     char const* const key_field = wpOrigin == PATH_FROM_GUID ? "id" : "entry";
@@ -633,13 +651,17 @@ void WaypointManager::CheckTextsExistance(std::set<int32>& ids)
     {
         for (WaypointPath::const_iterator pItr = pmItr->second.begin(); pItr != pmItr->second.end(); ++pItr)
             if (pItr->second.behavior)
-                { CheckWPText(false, pmItr->first, pItr->first, pItr->second.behavior, ids); }
+            {
+                CheckWPText(false, pmItr->first, pItr->first, pItr->second.behavior, ids);
+            }
     }
 
     for (WaypointPathMap::const_iterator pmItr = m_pathTemplateMap.begin(); pmItr != m_pathTemplateMap.end(); ++pmItr)
     {
         for (WaypointPath::const_iterator pItr = pmItr->second.begin(); pItr != pmItr->second.end(); ++pItr)
             if (pItr->second.behavior)
-                { CheckWPText(true, pmItr->first, pItr->first, pItr->second.behavior, ids); }
+            {
+                CheckWPText(true, pmItr->first, pItr->first, pItr->second.behavior, ids);
+            }
     }
 }

@@ -983,10 +983,6 @@ void BattleGround::RewardMark(Player* plr, uint32 count)
                 RewardSpellCast(plr, SPELL_AB_MARK_LOSER);
             }
             break;
-        }
-        case BATTLEGROUND_EY:
-            RewardItem(plr, ITEM_EY_MARK_OF_HONOR, count);
-            break;
         default:
             break;
     }

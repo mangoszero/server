@@ -1032,7 +1032,9 @@ class Opcodes
         {
             OpcodeMap::const_iterator itr = mOpcodeMap.find(id);
             if (itr != mOpcodeMap.end())
-                { return &itr->second; }
+            {
+                return &itr->second;
+            }
             return NULL;
         }
 
@@ -1042,7 +1044,9 @@ class Opcodes
         {
             OpcodeMap::const_iterator itr = mOpcodeMap.find(id);
             if (itr != mOpcodeMap.end())
-                { return itr->second; }
+            {
+                return itr->second;
+            }
             return emptyHandler;
         }
 
@@ -1057,7 +1061,9 @@ class Opcodes
 inline const char* LookupOpcodeName(uint16 id)
 {
     if (OpcodeHandler const* op = opcodeTable.LookupOpcode(id))
-        { return op->name; }
+    {
+        return op->name;
+    }
     return "Received unknown opcode, it's more than max!";
 }
 #endif

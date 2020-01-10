@@ -33,11 +33,15 @@ ObjectPosSelector::ObjectPosSelector(float x, float y, float dist, float searche
 {
     // if size == 0, m_anglestep will become 0 -> freeze
     if (searchedForSize == 0.0f)
-        { searchedForSize = DEFAULT_WORLD_OBJECT_SIZE; }
+    {
+        searchedForSize = DEFAULT_WORLD_OBJECT_SIZE;
+    }
 
     // undefined behaviour
     if (m_searcherDist == 0.0f)
-        { m_searcherDist = DEFAULT_WORLD_OBJECT_SIZE; }
+    {
+        m_searcherDist = DEFAULT_WORLD_OBJECT_SIZE;
+    }
 
     m_searchedForReqHAngle = atan(OCCUPY_POS_ANGLE_ATAN_FACTOR * searchedForSize / m_searcherDist);
 
@@ -64,13 +68,17 @@ void ObjectPosSelector::AddUsedArea(WorldObject const* obj, float angle, float d
 
     // skip some unexpected results.
     if (dist == 0.0f)
-        { return; }
+    {
+        return;
+    }
 
     // (half) angle that obj occupies
     float sr_angle = atan(OCCUPY_POS_ANGLE_ATAN_FACTOR * obj->GetObjectBoundingRadius() / dist);
 
     if (angle >= 0)
-        { m_UsedAreaLists[USED_POS_PLUS].insert(UsedArea(angle, OccupiedArea(sr_angle, obj))); }
+    {
+        m_UsedAreaLists[USED_POS_PLUS].insert(UsedArea(angle, OccupiedArea(sr_angle, obj)));
+    }
     else
         { m_UsedAreaLists[USED_POS_MINUS].insert(UsedArea(-angle, OccupiedArea(sr_angle, obj))); }
 }
@@ -149,13 +157,17 @@ bool ObjectPosSelector::NextAngle(float& angle)
         if (m_stepAngle[USED_POS_PLUS] < M_PI_F && m_stepAngle[USED_POS_PLUS] <= m_stepAngle[USED_POS_MINUS])
         {
             if (NextSideAngle(USED_POS_PLUS, angle))
-                { return true; }
+            {
+                return true;
+            }
         }
         // -- direction less updated
         else if (m_stepAngle[USED_POS_MINUS] < M_PI_F)
         {
             if (NextSideAngle(USED_POS_MINUS, angle))
-                { return true; }
+            {
+                return true;
+            }
         }
         // both sides finishes
         else
@@ -182,7 +194,9 @@ bool ObjectPosSelector::NextSideAngle(UsedAreaSide side, float& angle)
 
     // prevent jump to another side
     if (m_stepAngle[side] > M_PI_F)
-        { return false; }
+    {
+        return false;
+    }
 
     // no used area anymore on this side
     if (m_nextUsedAreaItr[side] == m_UsedAreaLists[side].end())

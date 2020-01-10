@@ -100,7 +100,9 @@ class DBCStorage
             DBCFileLoader dbc;
             // Check if load was sucessful, only then continue
             if (!dbc.Load(fn, fmt))
-                { return false; }
+            {
+                return false;
+            }
 
             fieldCount = dbc.GetCols();
 
@@ -140,12 +142,16 @@ class DBCStorage
         {
             // DBC must be already loaded using Load
             if (!indexTable)
-                { return false; }
+            {
+                return false;
+            }
 
             DBCFileLoader dbc;
             // Check if load was successful, only then continue
             if (!dbc.Load(fn, fmt))
-                { return false; }
+            {
+                return false;
+            }
 
             // load strings from another locale dbc data
             m_stringPoolList.push_back(dbc.AutoProduceStrings(fmt, (char*)m_dataTable));
@@ -166,7 +172,9 @@ class DBCStorage
             }
 
             if (!indexTable)
-                { return; }
+            {
+                return;
+            }
 
             delete[]((char*)indexTable);
             indexTable = NULL;

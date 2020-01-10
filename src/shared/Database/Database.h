@@ -296,7 +296,9 @@ class Database
         inline bool DirectExecute(const char* sql)
         {
             if (!m_pAsyncConn)
-                { return false; }
+            {
+                return false;
+            }
 
             SqlConnection::Lock guard(m_pAsyncConn);
             return guard->Execute(sql);

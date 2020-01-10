@@ -176,7 +176,9 @@ class QueryNamedResult
             for (size_t idx = 0; idx < mFieldNames.size(); ++idx)
             {
                 if (mFieldNames[idx] == name)
-                    { return idx; }
+                {
+                    return idx;
+                }
             }
             MANGOS_ASSERT(false && "unknown field name");
             return uint32(-1);

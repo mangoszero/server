@@ -57,7 +57,9 @@ void OutdoorPvPSI::HandlePlayerEnterZone(Player* player, bool isMainZone)
 
     // buff the player if same team is controlling the zone
     if (player->GetTeam() == m_zoneOwner)
-        { player->CastSpell(player, SPELL_CENARION_FAVOR, true); }
+    {
+        player->CastSpell(player, SPELL_CENARION_FAVOR, true);
+    }
 }
 
 // Remove buffs when player leaves zone
@@ -73,13 +75,17 @@ void OutdoorPvPSI::HandlePlayerLeaveZone(Player* player, bool isMainZone)
 bool OutdoorPvPSI::HandleAreaTrigger(Player* player, uint32 triggerId)
 {
     if (player->isGameMaster() || player->IsDead())
-        { return false; }
+    {
+        return false;
+    }
 
     switch (triggerId)
     {
         case AREATRIGGER_SILITHUS_ALLIANCE:
             if (player->GetTeam() != ALLIANCE || !player->HasAura(SPELL_SILITHYST))
-                { return false; }
+            {
+                return false;
+            }
 
             // update counter
             ++ m_resourcesAlliance;
@@ -105,11 +111,15 @@ bool OutdoorPvPSI::HandleAreaTrigger(Player* player, uint32 triggerId)
 
             // give quest credit if necessary
             if (player->GetQuestStatus(QUEST_SCOURING_DESERT_ALLIANCE) == QUEST_STATUS_INCOMPLETE)
-                { player->KilledMonsterCredit(NPC_SILITHUS_DUST_QUEST_ALLIANCE); }
+            {
+                player->KilledMonsterCredit(NPC_SILITHUS_DUST_QUEST_ALLIANCE);
+            }
             break;
         case AREATRIGGER_SILITHUS_HORDE:
             if (player->GetTeam() != HORDE || !player->HasAura(SPELL_SILITHYST))
-                { return false; }
+            {
+                return false;
+            }
 
             // update counter
             ++ m_resourcesHorde;
@@ -135,7 +145,9 @@ bool OutdoorPvPSI::HandleAreaTrigger(Player* player, uint32 triggerId)
 
             // give quest credit if necessary
             if (player->GetQuestStatus(QUEST_SCOURING_DESERT_HORDE) == QUEST_STATUS_INCOMPLETE)
-                { player->KilledMonsterCredit(NPC_SILITHUS_DUST_QUEST_HORDE); }
+            {
+                player->KilledMonsterCredit(NPC_SILITHUS_DUST_QUEST_HORDE);
+            }
             break;
         default:
             return false;
@@ -168,7 +180,9 @@ static SilithusSpawnLocation silithusFlagDropLocations[2] =
 bool OutdoorPvPSI::HandleDropFlag(Player* player, uint32 spellId)
 {
     if (spellId != SPELL_SILITHYST)
-        { return false; }
+    {
+        return false;
+    }
 
     // don't drop flag at area trigger
     // we are checking distance from the AT hard-coded coordinates because it's much faster than checking the area trigger store
@@ -176,11 +190,15 @@ bool OutdoorPvPSI::HandleDropFlag(Player* player, uint32 spellId)
     {
         case ALLIANCE:
             if (player->IsWithinDist3d(silithusFlagDropLocations[0].x, silithusFlagDropLocations[0].y, silithusFlagDropLocations[0].z, 5.0f))
-                { return false; }
+            {
+                return false;
+            }
             break;
         case HORDE:
             if (player->IsWithinDist3d(silithusFlagDropLocations[1].x, silithusFlagDropLocations[1].y, silithusFlagDropLocations[1].z, 5.0f))
-                { return false; }
+            {
+                return false;
+            }
             break;
         default:
             break;

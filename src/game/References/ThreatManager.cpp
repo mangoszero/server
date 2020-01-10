@@ -40,18 +40,26 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, Unit* /*pHatingUnit*/, floa
 {
     // all flat mods applied early
     if (!threat)
-        { return 0.0f; }
+    {
+        return 0.0f;
+    }
 
     if (pThreatSpell)
     {
         if (pThreatSpell->HasAttribute(SPELL_ATTR_EX_NO_THREAT))
-            { return 0.0f; }
+        {
+            return 0.0f;
+        }
 
         if (Player* modOwner = pHatedUnit->GetSpellModOwner())
-            { modOwner->ApplySpellMod(pThreatSpell->Id, SPELLMOD_THREAT, threat); }
+        {
+            modOwner->ApplySpellMod(pThreatSpell->Id, SPELLMOD_THREAT, threat);
+        }
 
         if (crit)
-            { threat *= pHatedUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_CRITICAL_THREAT, schoolMask); }
+        {
+            threat *= pHatedUnit->GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_CRITICAL_THREAT, schoolMask);
+        }
     }
 
     threat = pHatedUnit->ApplyTotalThreatModifier(threat, schoolMask);
@@ -100,7 +108,9 @@ void HostileReference::sourceObjectDestroyLink()
 void HostileReference::fireStatusChanged(ThreatRefStatusChangeEvent& pThreatRefStatusChangeEvent)
 {
     if (getSource())
-        { getSource()->processThreatEvent(&pThreatRefStatusChangeEvent); }
+    {
+        getSource()->processThreatEvent(&pThreatRefStatusChangeEvent);
+    }
 }
 
 //============================================================
@@ -111,7 +121,9 @@ void HostileReference::addThreat(float pMod)
     // the threat is changed. Source and target unit have to be availabe
     // if the link was cut before relink it again
     if (!isOnline())
-        { updateOnlineStatus(); }
+    {
+        updateOnlineStatus();
+    }
     if (pMod != 0.0f)
     {
         ThreatRefStatusChangeEvent event(UEV_THREAT_REF_THREAT_CHANGE, this, pMod);
@@ -137,7 +149,9 @@ void HostileReference::updateOnlineStatus()
     if (!isValid())
     {
         if (Unit* target = sObjectAccessor.GetUnit(*getSourceUnit(), getUnitGuid()))
-            { link(target, getSource()); }
+        {
+            link(target, getSource());
+        }
     }
     // only check for online status if
     // ref is valid
@@ -248,7 +262,9 @@ HostileReference* ThreatContainer::addThreat(Unit* pVictim, float pThreat)
 {
     HostileReference* ref = getReferenceByTarget(pVictim);
     if (ref)
-        { ref->addThreat(pThreat); }
+    {
+        ref->addThreat(pThreat);
+    }
     return ref;
 }
 
@@ -315,7 +331,9 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
         if (!onlySecondChoiceTargetsFound && pAttacker->IsSecondChoiceTarget(pTarget, pCurrentRef == pCurrentVictim))
         {
             if (iter != lastRef)
-                { ++iter; }
+            {
+                ++iter;
+            }
             else
             {
                 // if we reached to this point, everyone in the threatlist is a second choice target. In such a situation the target with the highest threat should be attacked.
@@ -325,7 +343,9 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
 
             // current victim is a second choice target, so don't compare threat with it below
             if (pCurrentRef == pCurrentVictim)
-                { pCurrentVictim = NULL; }
+            {
+                pCurrentVictim = NULL;
+            }
 
             // second choice targets are only handled threat dependend if we have only have second choice targets
             continue;
@@ -382,7 +402,9 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
         ++iter;
     }
     if (!found)
-        { pCurrentRef = NULL; }
+    {
+        pCurrentRef = NULL;
+    }
 
     return pCurrentRef;
 }
@@ -416,15 +438,21 @@ void ThreatManager::addThreat(Unit* pVictim, float pThreat, bool crit, SpellScho
 
     // not to self
     if (pVictim == getOwner())
-        { return; }
+    {
+        return;
+    }
 
     // not to GM
     if (!pVictim || (pVictim->GetTypeId() == TYPEID_PLAYER && ((Player*)pVictim)->isGameMaster()))
-        { return; }
+    {
+        return;
+    }
 
     // not to dead and not for dead
     if (!pVictim->IsAlive() || !getOwner()->IsAlive())
-        { return; }
+    {
+        return;
+    }
 
     MANGOS_ASSERT(getOwner()->GetTypeId() == TYPEID_UNIT);
 
@@ -438,7 +466,9 @@ void ThreatManager::addThreatDirectly(Unit* pVictim, float threat)
     HostileReference* ref = iThreatContainer.addThreat(pVictim, threat);
     // Ref is not in the online refs, search the offline refs next
     if (!ref)
-        { ref = iThreatOfflineContainer.addThreat(pVictim, threat); }
+    {
+        ref = iThreatOfflineContainer.addThreat(pVictim, threat);
+    }
 
     if (!ref)                                               // there was no ref => create a new one
     {
@@ -475,9 +505,13 @@ float ThreatManager::getThreat(Unit* pVictim, bool pAlsoSearchOfflineList)
     float threat = 0.0f;
     HostileReference* ref = iThreatContainer.getReferenceByTarget(pVictim);
     if (!ref && pAlsoSearchOfflineList)
-        { ref = iThreatOfflineContainer.getReferenceByTarget(pVictim); }
+    {
+        ref = iThreatOfflineContainer.getReferenceByTarget(pVictim);
+    }
     if (ref)
-        { threat = ref->getThreat(); }
+    {
+        threat = ref->getThreat();
+    }
     return threat;
 }
 
@@ -546,7 +580,9 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
             else
             {
                 if (getCurrentVictim() && hostileReference->getThreat() > (1.1f * getCurrentVictim()->getThreat()))
-                    { setDirty(true); }
+                {
+                    setDirty(true);
+                }
                 iThreatContainer.addReference(hostileReference);
                 iThreatOfflineContainer.remove(hostileReference);
             }

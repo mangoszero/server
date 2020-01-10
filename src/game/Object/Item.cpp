@@ -47,7 +47,9 @@ void AddItemsSetItem(Player* player, Item* item)
     }
 
     if (set->required_skill_id && player->GetSkillValue(set->required_skill_id) < set->required_skill_value)
-        { return; }
+    {
+        return;
+    }
 
     ItemSetEffect* eff = NULL;
 
@@ -69,10 +71,14 @@ void AddItemsSetItem(Player* player, Item* item)
         size_t x = 0;
         for (; x < player->ItemSetEff.size(); ++x)
             if (!player->ItemSetEff[x])
-                { break; }
+            {
+                break;
+            }
 
         if (x < player->ItemSetEff.size())
-            { player->ItemSetEff[x] = eff; }
+        {
+            player->ItemSetEff[x] = eff;
+        }
         else
             { player->ItemSetEff.push_back(eff); }
     }
@@ -82,18 +88,26 @@ void AddItemsSetItem(Player* player, Item* item)
     for (uint32 x = 0; x < 8; ++x)
     {
         if (!set->spells[x])
-            { continue; }
+        {
+            continue;
+        }
         // not enough for  spell
         if (set->items_to_triggerspell[x] > eff->item_count)
-            { continue; }
+        {
+            continue;
+        }
 
         uint32 z = 0;
         for (; z < 8; ++z)
             if (eff->spells[z] && eff->spells[z]->Id == set->spells[x])
-                { break; }
+            {
+                break;
+            }
 
         if (z < 8)
-            { continue; }
+        {
+            continue;
+        }
 
         // new spell
         for (uint32 y = 0; y < 8; ++y)
@@ -141,18 +155,24 @@ void RemoveItemsSetItem(Player* player, ItemPrototype const* proto)
 
     // can be in case now enough skill requirement for set appling but set has been appliend when skill requirement not enough
     if (!eff)
-        { return; }
+    {
+        return;
+    }
 
     --eff->item_count;
 
     for (uint32 x = 0; x < 8; ++x)
     {
         if (!set->spells[x])
-            { continue; }
+        {
+            continue;
+        }
 
         // enough for spell
         if (set->items_to_triggerspell[x] <= eff->item_count)
-            { continue; }
+        {
+            continue;
+        }
 
         for (uint32 z = 0; z < 8; ++z)
         {
@@ -177,7 +197,9 @@ void RemoveItemsSetItem(Player* player, ItemPrototype const* proto)
 bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProto)
 {
     if (!pProto || !pBagProto)
-        { return false; }
+    {
+        return false;
+    }
 
     switch (pBagProto->Class)
     {
@@ -188,19 +210,27 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
                     return true;
                 case ITEM_SUBCLASS_SOUL_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_SOUL_SHARDS)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_HERB_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_HERBS)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_ENCHANTING_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_ENCHANTING_SUPP)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_ENGINEERING_CONTAINER:
                     if (pProto->BagFamily != BAG_FAMILY_ENGINEERING_SUPP)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 default:
                     return false;
@@ -210,11 +240,15 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
             {
                 case ITEM_SUBCLASS_QUIVER:
                     if (pProto->BagFamily != BAG_FAMILY_ARROWS)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 case ITEM_SUBCLASS_AMMO_POUCH:
                     if (pProto->BagFamily != BAG_FAMILY_BULLETS)
-                        { return false; }
+                    {
+                        return false;
+                    }
                     return true;
                 default:
                     return false;
@@ -255,7 +289,9 @@ bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
 
     ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(itemid);
     if (!itemProto)
-        { return false; }
+    {
+        return false;
+    }
 
     SetUInt32Value(ITEM_FIELD_STACK_COUNT, 1);
     SetUInt32Value(ITEM_FIELD_MAXDURABILITY, itemProto->MaxDurability);
@@ -279,7 +315,9 @@ bool Item::IsNotEmptyBag() const
 void Item::UpdateDuration(Player* owner, uint32 diff)
 {
     if (!GetUInt32Value(ITEM_FIELD_DURATION))
-        { return; }
+    {
+        return;
+    }
 
     // DEBUG_LOG("Item::UpdateDuration Item (Entry: %u Duration %u Diff %u)", GetEntry(), GetUInt32Value(ITEM_FIELD_DURATION), diff);
 
@@ -402,11 +440,15 @@ void Item::SaveToDB()
 
                 LootItem* item = loot.LootItemInSlot(i, owner, &qitem);
                 if (!item)
-                    { continue; }
+                {
+                    continue;
+                }
 
                 // questitems use the blocked field for other purposes
                 if (!qitem && item->is_blocked)
-                    { continue; }
+                {
+                    continue;
+                }
 
                 stmt.addUInt32(GetGUIDLow());
                 stmt.addUInt32(owner->GetGUIDLow());
@@ -420,7 +462,9 @@ void Item::SaveToDB()
     }
 
     if (m_lootState != ITEM_LOOT_NONE && m_lootState != ITEM_LOOT_TEMPORARY)
-        { SetLootState(ITEM_LOOT_UNCHANGED); }
+    {
+        SetLootState(ITEM_LOOT_UNCHANGED);
+    }
 
     SetState(ITEM_UNCHANGED);
 }
@@ -449,14 +493,18 @@ bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
 
     ItemPrototype const* proto = GetProto();
     if (!proto)
-        { return false; }
+    {
+        return false;
+    }
 
     // update max durability (and durability) if need
     if (proto->MaxDurability != GetUInt32Value(ITEM_FIELD_MAXDURABILITY))
     {
         SetUInt32Value(ITEM_FIELD_MAXDURABILITY, proto->MaxDurability);
         if (GetUInt32Value(ITEM_FIELD_DURABILITY) > proto->MaxDurability)
-            { SetUInt32Value(ITEM_FIELD_DURABILITY, proto->MaxDurability); }
+        {
+            SetUInt32Value(ITEM_FIELD_DURABILITY, proto->MaxDurability);
+        }
 
         need_save = true;
     }
@@ -596,13 +644,17 @@ uint32 Item::GetSkill()
     {
         case ITEM_CLASS_WEAPON:
             if (proto->SubClass >= MAX_ITEM_SUBCLASS_WEAPON)
-                { return 0; }
+            {
+                return 0;
+            }
             else
                 { return item_weapon_skills[proto->SubClass]; }
 
         case ITEM_CLASS_ARMOR:
             if (proto->SubClass >= MAX_ITEM_SUBCLASS_ARMOR)
-                { return 0; }
+            {
+                return 0;
+            }
             else
                 { return item_armor_skills[proto->SubClass]; }
 
@@ -656,7 +708,9 @@ int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
     ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(item_id);
 
     if (!itemProto)
-        { return 0; }
+    {
+        return 0;
+    }
 
     // Random Property case
     if (itemProto->RandomProperty)
@@ -678,7 +732,9 @@ int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
 void Item::SetItemRandomProperties(int32 randomPropId)
 {
     if (!randomPropId)
-        { return; }
+    {
+        return;
+    }
 
     if (randomPropId > 0)
     {
@@ -702,7 +758,9 @@ void Item::SetState(ItemUpdateState state, Player* forplayer)
     {
         // pretend the item never existed
         if (forplayer || GetOwnerGuid())
-            { RemoveFromUpdateQueueOf(forplayer); }
+        {
+            RemoveFromUpdateQueueOf(forplayer);
+        }
         delete this;
         return;
     }
@@ -713,7 +771,9 @@ void Item::SetState(ItemUpdateState state, Player* forplayer)
         if (uState != ITEM_NEW) { uState = state; }
 
         if (forplayer || GetOwnerGuid())
-            { AddToUpdateQueueOf(forplayer); }
+        {
+            AddToUpdateQueueOf(forplayer);
+        }
     }
     else
     {
@@ -727,7 +787,9 @@ void Item::SetState(ItemUpdateState state, Player* forplayer)
 void Item::AddToUpdateQueueOf(Player* player)
 {
     if (IsInUpdateQueue())
-        { return; }
+    {
+        return;
+    }
 
     if (!player)
     {
@@ -748,7 +810,9 @@ void Item::AddToUpdateQueueOf(Player* player)
     }
 
     if (player->m_itemUpdateQueueBlocked)
-        { return; }
+    {
+        return;
+    }
 
     player->m_itemUpdateQueue.push_back(this);
     uQueuePos = player->m_itemUpdateQueue.size() - 1;
@@ -757,7 +821,9 @@ void Item::AddToUpdateQueueOf(Player* player)
 void Item::RemoveFromUpdateQueueOf(Player* player)
 {
     if (!IsInUpdateQueue())
-        { return; }
+    {
+        return;
+    }
 
     if (!player)
     {
@@ -778,7 +844,9 @@ void Item::RemoveFromUpdateQueueOf(Player* player)
     }
 
     if (player->m_itemUpdateQueueBlocked)
-        { return; }
+    {
+        return;
+    }
 
     player->m_itemUpdateQueue[uQueuePos] = NULL;
     uQueuePos = -1;
@@ -797,23 +865,35 @@ bool Item::IsEquipped() const
 bool Item::CanBeTraded() const
 {
     if (IsSoulBound())
-        { return false; }
+    {
+        return false;
+    }
     if (IsBag() && (Player::IsBagPos(GetPos()) || !((Bag const*)this)->IsEmpty()))
-        { return false; }
+    {
+        return false;
+    }
 
     if (Player* owner = GetOwner())
     {
         if (owner->CanUnequipItem(GetPos(), false) !=  EQUIP_ERR_OK)
-            { return false; }
+        {
+            return false;
+        }
         if (owner->GetLootGuid() == GetObjectGuid())
-            { return false; }
+        {
+            return false;
+        }
     }
 
     if (HasGeneratedLoot())
-        { return false; }
+    {
+        return false;
+    }
 
     if (IsBoundByEnchant())
-        { return false; }
+    {
+        return false;
+    }
 
     return true;
 }
@@ -825,14 +905,20 @@ bool Item::IsBoundByEnchant() const
     {
         uint32 enchant_id = GetEnchantmentId(EnchantmentSlot(enchant_slot));
         if (!enchant_id)
-            { continue; }
+        {
+            continue;
+        }
 
         SpellItemEnchantmentEntry const* enchantEntry = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if (!enchantEntry)
-            { continue; }
+        {
+            continue;
+        }
 
         if (enchantEntry->slot & ENCHANTMENT_CAN_SOULBOUND)
-            { return true; }
+        {
+            return true;
+        }
     }
     return false;
 }
@@ -844,7 +930,9 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     if (spellInfo->EquippedItemClass != -1)                 // -1 == any item class
     {
         if (spellInfo->Id == 13419 && 4 == int32(proto->Class))      // Special case for Enchant cloak minor Agility dbc file is wrong
-            { return true; }
+        {
+            return true;
+        }
 
         if (spellInfo->EquippedItemClass != int32(proto->Class))
             { return false; }                                   //  wrong item class
@@ -873,14 +961,20 @@ bool Item::IsTargetValidForItemUse(Unit* pUnitTarget)
     ItemRequiredTargetMapBounds bounds = sObjectMgr.GetItemRequiredTargetMapBounds(GetProto()->ItemId);
 
     if (bounds.first == bounds.second)
-        { return true; }
+    {
+        return true;
+    }
 
     if (!pUnitTarget)
-        { return false; }
+    {
+        return false;
+    }
 
     for (ItemRequiredTargetMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         if (itr->second.IsFitToRequirements(pUnitTarget))
-            { return true; }
+        {
+            return true;
+        }
 
     return false;
 }
@@ -889,7 +983,9 @@ void Item::SetEnchantment(EnchantmentSlot slot, uint32 id, uint32 duration, uint
 {
     // Better lost small time at check in comparison lost time at item save to DB.
     if ((GetEnchantmentId(slot) == id) && (GetEnchantmentDuration(slot) == duration) && (GetEnchantmentCharges(slot) == charges))
-        { return; }
+    {
+        return;
+    }
 
     SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_ID_OFFSET, id);
     SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_DURATION_OFFSET, duration);
@@ -900,7 +996,9 @@ void Item::SetEnchantment(EnchantmentSlot slot, uint32 id, uint32 duration, uint
 void Item::SetEnchantmentDuration(EnchantmentSlot slot, uint32 duration)
 {
     if (GetEnchantmentDuration(slot) == duration)
-        { return; }
+    {
+        return;
+    }
 
     SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_DURATION_OFFSET, duration);
     SetState(ITEM_CHANGED);
@@ -909,7 +1007,9 @@ void Item::SetEnchantmentDuration(EnchantmentSlot slot, uint32 duration)
 void Item::SetEnchantmentCharges(EnchantmentSlot slot, uint32 charges)
 {
     if (GetEnchantmentCharges(slot) == charges)
-        { return; }
+    {
+        return;
+    }
 
     SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + ENCHANTMENT_CHARGES_OFFSET, charges);
     SetState(ITEM_CHANGED);
@@ -918,7 +1018,9 @@ void Item::SetEnchantmentCharges(EnchantmentSlot slot, uint32 charges)
 void Item::ClearEnchantment(EnchantmentSlot slot)
 {
     if (!GetEnchantmentId(slot))
-        { return; }
+    {
+        return;
+    }
 
     for (uint8 x = 0; x < 3; ++x)
         { SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + x, 0); }
@@ -943,7 +1045,9 @@ void Item::SendTimeUpdate(Player* owner)
 
     uint32 duration = GetUInt32Value(ITEM_FIELD_DURATION);
     if (!duration)
-        { return; }
+    {
+        return;
+    }
 
     WorldPacket data(SMSG_ITEM_TIME_UPDATE, (8 + 4));
     data << ObjectGuid(GetObjectGuid());
@@ -959,7 +1063,9 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 r
     if (ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item))
     {
         if (count > pProto->GetMaxStackSize())
-            { count = pProto->GetMaxStackSize(); }
+        {
+            count = pProto->GetMaxStackSize();
+        }
 
         MANGOS_ASSERT(count != 0);                              // count != 0 && pProto->Stackable == 0 but checked at loading already
 
@@ -968,7 +1074,9 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 r
         {
             pItem->SetCount(count);
             if (uint32 randId = randomPropertyId ? randomPropertyId : Item::GenerateItemRandomPropertyId(item))
-                { pItem->SetItemRandomProperties(randId); }
+            {
+                pItem->SetItemRandomProperties(randId);
+            }
 
             return pItem;
         }
@@ -982,7 +1090,9 @@ Item* Item::CloneItem(uint32 count, Player const* player) const
 {
     Item* newItem = CreateItem(GetEntry(), count, player, GetItemRandomPropertyId());
     if (!newItem)
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     newItem->SetGuidValue(ITEM_FIELD_CREATOR,     GetGuidValue(ITEM_FIELD_CREATOR));
     newItem->SetGuidValue(ITEM_FIELD_GIFTCREATOR, GetGuidValue(ITEM_FIELD_GIFTCREATOR));
@@ -995,15 +1105,21 @@ bool Item::IsBindedNotWith(Player const* player) const
 {
     // own item
     if (GetOwnerGuid() == player->GetObjectGuid())
-        { return false; }
+    {
+        return false;
+    }
 
     // has loot with diff owner
     if (HasGeneratedLoot())
-        { return true; }
+    {
+        return true;
+    }
 
     // not binded item
     if (!IsSoulBound())
-        { return false; }
+    {
+        return false;
+    }
 
     return true;
 }
@@ -1011,19 +1127,25 @@ bool Item::IsBindedNotWith(Player const* player) const
 void Item::AddToClientUpdateList()
 {
     if (Player* pl = GetOwner())
-        { pl->GetMap()->AddUpdateObject(this); }
+    {
+        pl->GetMap()->AddUpdateObject(this);
+    }
 }
 
 void Item::RemoveFromClientUpdateList()
 {
     if (Player* pl = GetOwner())
-        { pl->GetMap()->RemoveUpdateObject(this); }
+    {
+        pl->GetMap()->RemoveUpdateObject(this);
+    }
 }
 
 void Item::BuildUpdateData(UpdateDataMapType& update_players)
 {
     if (Player* pl = GetOwner())
-        { BuildUpdateDataForPlayer(pl, update_players); }
+    {
+        BuildUpdateDataForPlayer(pl, update_players);
+    }
 
     ClearUpdateMask(false);
 }
@@ -1032,15 +1154,21 @@ InventoryResult Item::CanBeMergedPartlyWith(ItemPrototype const* proto) const
 {
     // check item type
     if (GetEntry() != proto->ItemId)
-        { return EQUIP_ERR_ITEM_CANT_STACK; }
+    {
+        return EQUIP_ERR_ITEM_CANT_STACK;
+    }
 
     // check free space (full stacks can't be target of merge
     if (GetCount() >= proto->GetMaxStackSize())
-        { return EQUIP_ERR_ITEM_CANT_STACK; }
+    {
+        return EQUIP_ERR_ITEM_CANT_STACK;
+    }
 
     // not allow merge looting currently items
     if (HasGeneratedLoot())
-        { return EQUIP_ERR_ALREADY_LOOTED; }
+    {
+        return EQUIP_ERR_ALREADY_LOOTED;
+    }
 
     return EQUIP_ERR_OK;
 }
@@ -1048,10 +1176,14 @@ InventoryResult Item::CanBeMergedPartlyWith(ItemPrototype const* proto) const
 bool ItemRequiredTarget::IsFitToRequirements(Unit* pUnitTarget) const
 {
     if (pUnitTarget->GetTypeId() != TYPEID_UNIT)
-        { return false; }
+    {
+        return false;
+    }
 
     if (pUnitTarget->GetEntry() != m_uiTargetEntry)
-        { return false; }
+    {
+        return false;
+    }
 
     switch (m_uiType)
     {
@@ -1082,12 +1214,16 @@ void Item::SetLootState(ItemLootUpdateState state)
         case ITEM_LOOT_CHANGED:
             // new loot must stay in new state until saved, temporary must stay until remove
             if (m_lootState != ITEM_LOOT_NEW && m_lootState != ITEM_LOOT_TEMPORARY)
-                { m_lootState = m_lootState == ITEM_LOOT_NONE ? ITEM_LOOT_NEW : state; }
+            {
+                m_lootState = m_lootState == ITEM_LOOT_NONE ? ITEM_LOOT_NEW : state;
+            }
             break;
         case ITEM_LOOT_UNCHANGED:
             // expected that called after DB update or load
             if (m_lootState == ITEM_LOOT_REMOVED)
-                { m_lootState = ITEM_LOOT_NONE; }
+            {
+                m_lootState = ITEM_LOOT_NONE;
+            }
             // temporary must stay until remove (ignore any changes)
             else if (m_lootState != ITEM_LOOT_TEMPORARY)
                 { m_lootState = ITEM_LOOT_UNCHANGED; }
@@ -1105,7 +1241,9 @@ void Item::SetLootState(ItemLootUpdateState state)
     }
 
     if (m_lootState != ITEM_LOOT_NONE && m_lootState != ITEM_LOOT_UNCHANGED && m_lootState != ITEM_LOOT_TEMPORARY)
-        { SetState(ITEM_CHANGED); }
+    {
+        SetState(ITEM_CHANGED);
+    }
 }
 
 uint32 Item::GetScriptId() const

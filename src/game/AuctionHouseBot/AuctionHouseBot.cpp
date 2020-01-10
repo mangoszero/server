@@ -137,7 +137,9 @@ class AHB_Seller_Config
         uint32 GetMinTime() const
         {
             if (m_minTime < 1)
-                { return 1; }
+            {
+                return 1;
+            }
             else if ((m_maxTime) && (m_minTime > m_maxTime))
                 { return m_maxTime; }
             else
@@ -154,7 +156,9 @@ class AHB_Seller_Config
         void        SetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass, uint32 found)
         {
             if (m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems > found)
-                { m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems - found; }
+            {
+                m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems - found;
+            }
             else
                 { m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = 0; }
         }
@@ -415,10 +419,14 @@ bool AuctionBotConfig::Initialize()
         return false;
     }
     if ((getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO) == 0) && (getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO) == 0) && (getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO) == 0))
-        { sLog.outString("AuctionHouseBot SELLER is disabled! (If you want to use it please set config in 'ahbot.conf')"); }
+    {
+        sLog.outString("AuctionHouseBot SELLER is disabled! (If you want to use it please set config in 'ahbot.conf')");
+    }
 
     if (!getConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED) && !getConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED) && !getConfig(CONFIG_BOOL_AHBOT_BUYER_NEUTRAL_ENABLED))
-        { sLog.outString("AuctionHouseBot BUYER is disabled! (If you want to use it please set config in 'ahbot.conf')"); }
+    {
+        sLog.outString("AuctionHouseBot BUYER is disabled! (If you want to use it please set config in 'ahbot.conf')");
+    }
 
     m_ItemsPerCycleBoost = getConfig(CONFIG_UINT32_AHBOT_ITEMS_PER_CYCLE_BOOST);
     m_ItemsPerCycleNormal = getConfig(CONFIG_UINT32_AHBOT_ITEMS_PER_CYCLE_NORMAL);
@@ -433,7 +441,9 @@ void AuctionBotConfig::SetAHBotId(const std::string& BotCharName)
     {
         m_BotId = sObjectMgr.GetPlayerGuidByName(BotCharName.c_str()).GetCounter();
         if (!m_BotId)
-          { sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str()); }
+        {
+            sLog.outError("AHBot uses an invalid character name `%s`", BotCharName.c_str());
+        }
     }
 }
 
@@ -482,7 +492,9 @@ void AuctionBotConfig::GetConfigFromFile()
 {
     // Check config file version
     if (m_AhBotCfg.GetIntDefault("ConfVersion", 0) != AHBOT_CONFIG_VERSION)
-        { sLog.outError("AHBot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing."); }
+    {
+        sLog.outError("AHBot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing.");
+    }
 
     setConfigMax(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO , "AuctionHouseBot.Alliance.Items.Amount.Ratio" , 100, 10000);
     setConfigMax(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO    , "AuctionHouseBot.Horde.Items.Amount.Ratio"    , 100, 10000);
@@ -651,7 +663,9 @@ bool AuctionBotBuyer::Initialize()
         }
     }
     if (!active_house)
-        { return false; }
+    {
+        return false;
+    }
 
     // load Check interval
     m_CheckInterval = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_RECHECK_INTERVAL) * MINUTE;
@@ -687,7 +701,9 @@ void AuctionBotBuyer::LoadConfig()
     {
         m_HouseConfig[i].BuyerEnabled = sAuctionBotConfig.getConfigBuyerEnabled(AuctionHouseType(i));
         if (m_HouseConfig[i].BuyerEnabled)
-            { LoadBuyerValues(m_HouseConfig[i]); }
+        {
+            LoadBuyerValues(m_HouseConfig[i]);
+        }
     }
 }
 
@@ -714,12 +730,16 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
                 if (Aentry->buyout != 0)
                 {
                     if (Aentry->buyout / item->GetCount() < buyerItem.MinBuyPrice)
-                        { buyerItem.MinBuyPrice = Aentry->buyout / item->GetCount(); }
+                    {
+                        buyerItem.MinBuyPrice = Aentry->buyout / item->GetCount();
+                    }
                     else if (buyerItem.MinBuyPrice == 0)
                         { buyerItem.MinBuyPrice = Aentry->buyout / item->GetCount(); }
                 }
                 if (Aentry->startbid / item->GetCount() < buyerItem.MinBidPrice)
-                    { buyerItem.MinBidPrice = Aentry->startbid / item->GetCount(); }
+                {
+                    buyerItem.MinBidPrice = Aentry->startbid / item->GetCount();
+                }
                 else if (buyerItem.MinBidPrice == 0)
                     { buyerItem.MinBidPrice = Aentry->startbid / item->GetCount(); }
 
@@ -766,7 +786,9 @@ void AuctionBotBuyer::PrepareListOfEntry(AHB_Buyer_Config& config)
     for (CheckEntryMap::iterator itr = config.CheckedEntry.begin(); itr != config.CheckedEntry.end();)
     {
         if (itr->second.LastExist  < (Now - 5))
-            { config.CheckedEntry.erase(itr++); }
+        {
+            config.CheckedEntry.erase(itr++);
+        }
         else
             { ++itr; }
     }
@@ -781,14 +803,18 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
     if (buyoutPrice <= MinBuyPrice)
     {
         if (buyoutPrice <= MaxBuyablePrice)
-            { Chance = MaxChance; }
+        {
+            Chance = MaxChance;
+        }
         else
         {
             if ((buyoutPrice > 0) && (MaxBuyablePrice > 0))
             {
                 double ratio = buyoutPrice / MaxBuyablePrice;
                 if (ratio < 10)
-                    { Chance = MaxChance - (ratio * (MaxChance / 10)); }
+                {
+                    Chance = MaxChance - (ratio * (MaxChance / 10));
+                }
                 else { Chance = 1; }
             }
         }
@@ -796,14 +822,18 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
     else if (buyoutPrice <= InGame_BuyPrice)
     {
         if (buyoutPrice <= MaxBuyablePrice)
-            { Chance = MaxChance / 5; }
+        {
+            Chance = MaxChance / 5;
+        }
         else
         {
             if ((buyoutPrice > 0) && (MaxBuyablePrice > 0))
             {
                 double ratio = buyoutPrice / MaxBuyablePrice;
                 if (ratio < 10)
-                    { Chance = (MaxChance / 5) - (ratio * (MaxChance / 50)); }
+                {
+                    Chance = (MaxChance / 5) - (ratio * (MaxChance / 50));
+                }
                 else { Chance = 1; }
             }
         }
@@ -816,7 +846,9 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
         {
             double ratio = buyoutPrice / MaxBuyablePrice;
             if (ratio < 10)
-                { Chance = (MaxChance / 5) - (ratio * (MaxChance / 50)); }
+            {
+                Chance = (MaxChance / 5) - (ratio * (MaxChance / 50));
+            }
             else { Chance = 0; }
         }
         else { Chance = 0; }
@@ -839,14 +871,18 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
     if (bidPrice <= MinBidPrice)
     {
         if ((InGame_BuyPrice != 0) && (bidPrice < (InGame_BuyPrice - (InGame_BuyPrice / 30))))
-            { Chance = MaxChance; }
+        {
+            Chance = MaxChance;
+        }
         else
         {
             if (bidPrice < MaxBidablePrice)
             {
                 double ratio = MaxBidablePrice / bidPrice;
                 if (ratio < 3)
-                    { Chance = ((MaxChance / 500) * ratio); }
+                {
+                    Chance = ((MaxChance / 500) * ratio);
+                }
                 else
                     { Chance = (MaxChance / 500); }
             }
@@ -860,7 +896,9 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
         {
             double ratio = MaxBidablePrice / bidPrice;
             if (ratio < 4)
-                { Chance = ((MaxChance / 1000) * ratio); }
+            {
+                Chance = ((MaxChance / 1000) * ratio);
+            }
             else
                 { Chance = (MaxChance / 1000); }
         }
@@ -927,7 +965,9 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
         }
 
         if (BuyCycles == 0)
-            { break; }
+        {
+            break;
+        }
 
         uint32 MaxChance = 5000;
 
@@ -1011,12 +1051,16 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
             else
             {
                 if (IsBidableEntry(bidPriceByItem, InGame_BuyPrice, MaxBidablePrice, minBidPrice, MaxChance / 2, config.FactionChance))
-                    { PlaceBidToEntry(auction, bidPrice); }
+                {
+                    PlaceBidToEntry(auction, bidPrice);
+                }
             }
         }
         else // buyout = 0 mean only bid are possible
             if (IsBidableEntry(bidPriceByItem, InGame_BuyPrice, MaxBidablePrice, minBidPrice, MaxChance, config.FactionChance))
-                { PlaceBidToEntry(auction, bidPrice); }
+            {
+                PlaceBidToEntry(auction, bidPrice);
+            }
 
         auctionEval.LastChecked = Now;
         --BuyCycles;
@@ -1031,7 +1075,9 @@ bool AuctionBotBuyer::Update(AuctionHouseType houseType)
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: %s buying ...", AuctionBotConfig::GetHouseTypeName(houseType));
         if (GetBuyableEntry(m_HouseConfig[houseType]) > 0)
-            { addNewAuctionBuyerBotBid(m_HouseConfig[houseType]); }
+        {
+            addNewAuctionBuyerBotBid(m_HouseConfig[houseType]);
+        }
         return true;
     }
     else { return false; }
@@ -1116,7 +1162,9 @@ bool AuctionBotSeller::Initialize()
 
             uint32 entry = fields[0].GetUInt32();
             if (!entry)
-                { continue; }
+            {
+                continue;
+            }
 
             lootItems.push_back(fields[0].GetUInt32());
         }
@@ -1143,25 +1191,35 @@ bool AuctionBotSeller::Initialize()
         bar.step();
 
         if (!prototype)
-            { continue; }
+        {
+            continue;
+        }
 
         // skip items with too high quality (code can't propertly work with its)
         if (prototype->Quality >= MAX_AUCTION_QUALITY)
-            { continue; }
+        {
+            continue;
+        }
 
         // forced exclude filter
         bool isExcludeItem = false;
         for (size_t i = 0; (i < excludeItems.size() && (!isExcludeItem)); ++i)
             if (itemID == excludeItems[i])
-                { isExcludeItem = true; }
+            {
+                isExcludeItem = true;
+            }
         if (isExcludeItem)
-            { continue; }
+        {
+            continue;
+        }
 
         // forced include filter
         bool isForcedIncludeItem = false;
         for (size_t i = 0; (i < includeItems.size() && (!isForcedIncludeItem)); ++i)
             if (itemID == includeItems[i])
-                { isForcedIncludeItem = true; }
+            {
+                isForcedIncludeItem = true;
+            }
 
         if (isForcedIncludeItem)
         {
@@ -1175,23 +1233,33 @@ bool AuctionBotSeller::Initialize()
         {
             case NO_BIND:
                 if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_NO))
-                    { continue; }
+                {
+                    continue;
+                }
                 break;
             case BIND_WHEN_PICKED_UP:
                 if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_PICKUP))
-                    { continue; }
+                {
+                    continue;
+                }
                 break;
             case BIND_WHEN_EQUIPPED:
                 if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_EQUIP))
-                    { continue; }
+                {
+                    continue;
+                }
                 break;
             case BIND_WHEN_USE:
                 if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_USE))
-                    { continue; }
+                {
+                    continue;
+                }
                 break;
             case BIND_QUEST_ITEM:
                 if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_QUEST))
-                    { continue; }
+                {
+                    continue;
+                }
                 break;
             default:
                 continue;
@@ -1201,12 +1269,16 @@ bool AuctionBotSeller::Initialize()
         if (sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BUYPRICE_SELLER))
         {
             if (prototype->BuyPrice == 0)
-                { continue; }
+            {
+                continue;
+            }
         }
         else
         {
             if (prototype->SellPrice == 0)
-                { continue; }
+            {
+                continue;
+            }
         }
 
         // vendor filter
@@ -1215,10 +1287,14 @@ bool AuctionBotSeller::Initialize()
             bool IsVendorItem = false;
             for (size_t i = 0; (i < npcItems.size()) && (!IsVendorItem); ++i)
                 if (itemID == npcItems[i])
-                    { IsVendorItem = true; }
+                {
+                    IsVendorItem = true;
+                }
 
             if (IsVendorItem)
-                { continue; }
+            {
+                continue;
+            }
         }
 
         // loot filter
@@ -1227,9 +1303,13 @@ bool AuctionBotSeller::Initialize()
             bool isLootItem = false;
             for (size_t i = 0; (i < lootItems.size()) && (!isLootItem); ++i)
                 if (itemID == lootItems[i])
-                    { isLootItem = true; }
+                {
+                    isLootItem = true;
+                }
             if (isLootItem)
-                { continue; }
+            {
+                continue;
+            }
         }
 
         // not vendor/loot filter
@@ -1240,14 +1320,20 @@ bool AuctionBotSeller::Initialize()
 
             for (size_t i = 0; (i < npcItems.size()) && (!IsVendorItem); ++i)
                 if (itemID == npcItems[i])
-                    { IsVendorItem = true; }
+                {
+                    IsVendorItem = true;
+                }
 
             for (size_t i = 0; (i < lootItems.size()) && (!isLootItem); ++i)
                 if (itemID == lootItems[i])
-                    { isLootItem = true; }
+                {
+                    isLootItem = true;
+                }
 
             if ((!isLootItem) && (!IsVendorItem))
-                { continue; }
+            {
+                continue;
+            }
         }
 
         // item class/subclass specific filters
@@ -1259,32 +1345,44 @@ bool AuctionBotSeller::Initialize()
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_ITEM_LEVEL))
                 {
                     if (prototype->ItemLevel < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_ITEM_LEVEL))
                 {
                     if (prototype->ItemLevel > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
                 {
                     if (prototype->RequiredLevel < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
                 {
                     if (prototype->RequiredLevel > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
                 {
                     if (prototype->RequiredSkillRank < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
                 {
                     if (prototype->RequiredSkillRank > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 break;
             }
@@ -1295,22 +1393,30 @@ bool AuctionBotSeller::Initialize()
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
                 {
                     if (prototype->RequiredLevel < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
                 {
                     if (prototype->RequiredLevel > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
                 {
                     if (prototype->RequiredSkillRank < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
                 {
                     if (prototype->RequiredSkillRank > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
                 break;
             }
@@ -1319,10 +1425,14 @@ bool AuctionBotSeller::Initialize()
                 {
                     // skip any not locked lootable items (mostly quest specific or reward cases)
                     if (!prototype->LockID)
-                        { continue; }
+                    {
+                        continue;
+                    }
 
                     if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_LOCKBOX_ENABLED))
-                        { continue; }
+                    {
+                        continue;
+                    }
                 }
 
                 break;
@@ -1330,10 +1440,14 @@ bool AuctionBotSeller::Initialize()
             {
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MIN_ITEM_LEVEL))
                     if (prototype->ItemLevel < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MAX_ITEM_LEVEL))
                     if (prototype->ItemLevel > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 break;
             }
             case ITEM_CLASS_CONTAINER:
@@ -1341,10 +1455,14 @@ bool AuctionBotSeller::Initialize()
             {
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MIN_ITEM_LEVEL))
                     if (prototype->ItemLevel < value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MAX_ITEM_LEVEL))
                     if (prototype->ItemLevel > value)
-                        { continue; }
+                    {
+                        continue;
+                    }
                 break;
             }
 
@@ -1388,7 +1506,9 @@ void AuctionBotSeller::LoadConfig()
 {
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
         if (sAuctionBotConfig.getConfigItemAmountRatio(AuctionHouseType(i)))
-            { LoadSellerValues(m_HouseConfig[i]); }
+        {
+            LoadSellerValues(m_HouseConfig[i]);
+        }
 }
 
 void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
@@ -1652,7 +1772,9 @@ void AuctionBotSeller::SetItemsRatio(uint32 al, uint32 ho, uint32 ne)
 void AuctionBotSeller::SetItemsRatioForHouse(AuctionHouseType house, uint32 val)
 {
     if (val > 10000)                                        // apply same upper limit as used for config load
-        { val = 10000; }
+    {
+        val = 10000;
+    }
 
     switch (house)
     {
@@ -1762,7 +1884,9 @@ void AuctionBotSeller::addNewAuctions(AHB_Seller_Config& config)
         uint32 bidPrice = 0;
         // Not sure if i will keep the next test
         if (sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BUYPRICE_SELLER))
-            { buyoutPrice  = prototype->BuyPrice * item->GetCount(); }
+        {
+            buyoutPrice  = prototype->BuyPrice * item->GetCount();
+        }
         else
             { buyoutPrice  = prototype->SellPrice * item->GetCount(); }
         // Price of items are set here
@@ -1778,7 +1902,9 @@ bool AuctionBotSeller::Update(AuctionHouseType houseType)
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_SELLER, "AHBot: %s selling ...", AuctionBotConfig::GetHouseTypeName(houseType));
         if (SetStat(m_HouseConfig[houseType]))
-            { addNewAuctions(m_HouseConfig[houseType]); }
+        {
+            addNewAuctions(m_HouseConfig[houseType]);
+        }
         return true;
     }
     else
@@ -1832,25 +1958,33 @@ void AuctionHouseBot::Initialize()
 void AuctionHouseBot::SetItemsRatio(uint32 al, uint32 ho, uint32 ne)
 {
     if (AuctionBotSeller* seller = dynamic_cast<AuctionBotSeller*>(m_Seller))
-        { seller->SetItemsRatio(al, ho, ne); }
+    {
+        seller->SetItemsRatio(al, ho, ne);
+    }
 }
 
 void AuctionHouseBot::SetItemsRatioForHouse(AuctionHouseType house, uint32 val)
 {
     if (AuctionBotSeller* seller = dynamic_cast<AuctionBotSeller*>(m_Seller))
-        { seller->SetItemsRatioForHouse(house, val); }
+    {
+        seller->SetItemsRatioForHouse(house, val);
+    }
 }
 
 void AuctionHouseBot::SetItemsAmount(uint32(&vals) [MAX_AUCTION_QUALITY])
 {
     if (AuctionBotSeller* seller = dynamic_cast<AuctionBotSeller*>(m_Seller))
-        { seller->SetItemsAmount(vals); }
+    {
+        seller->SetItemsAmount(vals);
+    }
 }
 
 void AuctionHouseBot::SetItemsAmountForQuality(AuctionQuality quality, uint32 val)
 {
     if (AuctionBotSeller* seller = dynamic_cast<AuctionBotSeller*>(m_Seller))
-        { seller->SetItemsAmountForQuality(quality, val); }
+    {
+        seller->SetItemsAmountForQuality(quality, val);
+    }
 }
 
 bool AuctionHouseBot::ReloadAllConfig()
@@ -1884,7 +2018,9 @@ void AuctionHouseBot::PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo)
                 if (Aentry->owner == sAuctionBotConfig.GetAHBotId())                          // Add only ahbot items
                 {
                     if (prototype->Quality < MAX_AUCTION_QUALITY)
-                        { ++statusInfo[i].QualityInfo[prototype->Quality]; }
+                    {
+                        ++statusInfo[i].QualityInfo[prototype->Quality];
+                    }
 
                     ++statusInfo[i].ItemsCount;
                 }
@@ -1913,7 +2049,9 @@ void AuctionHouseBot::Update()
 {
     // nothing do...
     if (!m_Buyer && !m_Seller)
-        { return; }
+    {
+        return;
+    }
 
     // scan all possible update cases until first success
     for (uint32 count = 0; count < 2 * MAX_AUCTION_HOUSE_TYPE; ++count)
@@ -1923,21 +2061,29 @@ void AuctionHouseBot::Update()
         if (m_OperationSelector < MAX_AUCTION_HOUSE_TYPE)
         {
             if (m_Seller)
-                { successStep = m_Seller->Update(AuctionHouseType(m_OperationSelector)); }
+            {
+                successStep = m_Seller->Update(AuctionHouseType(m_OperationSelector));
+            }
         }
         else
         {
             if (m_Buyer)
-                { successStep = m_Buyer->Update(AuctionHouseType(m_OperationSelector - MAX_AUCTION_HOUSE_TYPE)); }
+            {
+                successStep = m_Buyer->Update(AuctionHouseType(m_OperationSelector - MAX_AUCTION_HOUSE_TYPE));
+            }
         }
 
         ++m_OperationSelector;
         if (m_OperationSelector >= 2 * MAX_AUCTION_HOUSE_TYPE)
-            { m_OperationSelector = 0; }
+        {
+            m_OperationSelector = 0;
+        }
 
         // one success update per call
         if (successStep)
-            { break; }
+        {
+            break;
+        }
     }
 }
 /** @} */

@@ -68,7 +68,9 @@ inline void
 Cell::Visit(const CellPair& standing_cell, TypeContainerVisitor<T, CONTAINER> &visitor, Map& m, float x, float y, float radius) const
 {
     if (standing_cell.x_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP || standing_cell.y_coord >= TOTAL_NUMBER_OF_CELLS_PER_MAP)
-        { return; }
+    {
+        return;
+    }
 
     // no jokes here... Actually placing ASSERT() here was good idea, but
     // we had some problems with DynamicObjects, which pass radius = 0.0f (DB issue?)
@@ -80,7 +82,9 @@ Cell::Visit(const CellPair& standing_cell, TypeContainerVisitor<T, CONTAINER> &v
     }
     // lets limit the upper value for search radius
     if (radius > 333.0f)
-        { radius = 333.0f; }
+    {
+        radius = 333.0f;
+    }
 
     // lets calculate object coord offsets from cell borders.
     CellArea area = Cell::CalculateCellArea(x, y, radius);
@@ -149,7 +153,9 @@ Cell::VisitCircle(TypeContainerVisitor<T, CONTAINER> &visitor, Map& m, const Cel
     // if x_shift == 0 then we have too small cell area, which were already
     // visited at previous step, so just return from procedure...
     if (x_shift == 0)
-        { return; }
+    {
+        return;
+    }
 
     uint32 y_start = end_cell.y_coord;
     uint32 y_end = begin_cell.y_coord;
@@ -183,7 +189,9 @@ inline void Cell::VisitGridObjects(const WorldObject* center_obj, T& visitor, fl
     CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     cell.Visit(p, gnotifier, *center_obj->GetMap(), *center_obj, radius);
 }
@@ -194,7 +202,9 @@ inline void Cell::VisitWorldObjects(const WorldObject* center_obj, T& visitor, f
     CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, WorldTypeMapContainer > gnotifier(visitor);
     cell.Visit(p, gnotifier, *center_obj->GetMap(), *center_obj, radius);
 }
@@ -205,7 +215,9 @@ inline void Cell::VisitAllObjects(const WorldObject* center_obj, T& visitor, flo
     CellPair p(MaNGOS::ComputeCellPair(center_obj->GetPositionX(), center_obj->GetPositionY()));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     TypeContainerVisitor<T, WorldTypeMapContainer > wnotifier(visitor);
     cell.Visit(p, gnotifier, *center_obj->GetMap(), *center_obj, radius);
@@ -218,7 +230,9 @@ inline void Cell::VisitGridObjects(float x, float y, Map* map, T& visitor, float
     CellPair p(MaNGOS::ComputeCellPair(x, y));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     cell.Visit(p, gnotifier, *map, x, y, radius);
 }
@@ -229,7 +243,9 @@ inline void Cell::VisitWorldObjects(float x, float y, Map* map, T& visitor, floa
     CellPair p(MaNGOS::ComputeCellPair(x, y));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, WorldTypeMapContainer > gnotifier(visitor);
     cell.Visit(p , gnotifier, *map, x, y, radius);
 }
@@ -240,7 +256,9 @@ inline void Cell::VisitAllObjects(float x, float y, Map* map, T& visitor, float 
     CellPair p(MaNGOS::ComputeCellPair(x, y));
     Cell cell(p);
     if (dont_load)
-        { cell.SetNoCreate(); }
+    {
+        cell.SetNoCreate();
+    }
     TypeContainerVisitor<T, GridTypeMapContainer > gnotifier(visitor);
     TypeContainerVisitor<T, WorldTypeMapContainer > wnotifier(visitor);
     cell.Visit(p, gnotifier, *map, x, y, radius);

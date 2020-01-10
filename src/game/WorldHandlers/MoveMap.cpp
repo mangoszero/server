@@ -40,7 +40,9 @@ namespace MMAP
     MMapManager* MMapFactory::createOrGetMMapManager()
     {
         if (g_MMapManager == NULL)
-            { g_MMapManager = new MMapManager(); }
+        {
+            g_MMapManager = new MMapManager();
+        }
 
         return g_MMapManager;
     }
@@ -48,7 +50,9 @@ namespace MMAP
     void MMapFactory::preventPathfindingOnMaps(const char* ignoreMapIds)
     {
         if (!g_mmapDisabledIds)
-            { g_mmapDisabledIds = new std::set<uint32>(); }
+        {
+            g_mmapDisabledIds = new std::set<uint32>();
+        }
 
         uint32 strLenght = strlen(ignoreMapIds) + 1;
         char* mapList = new char[strLenght];
@@ -73,13 +77,19 @@ namespace MMAP
         {
             // always use mmaps for players
             if (unit->GetTypeId() == TYPEID_PLAYER)
-                { return true; }
+            {
+                return true;
+            }
 
             if (IsPathfindingForceDisabled(unit))
-                { return false; }
+            {
+                return false;
+            }
 
             if (IsPathfindingForceEnabled(unit))
-                { return true; }
+            {
+                return true;
+            }
 
             // always use mmaps for pets of players (can still be disabled by extra-flag for pet creature)
             if (unit->GetTypeId() == TYPEID_UNIT && ((Creature*)unit)->IsPet() && unit->GetOwner() &&
@@ -106,7 +116,9 @@ namespace MMAP
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
                 if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_ENABLE)
-                    { return true; }
+                {
+                    return true;
+                }
             }
         }
 
@@ -120,7 +132,9 @@ namespace MMAP
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
                 if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_DISABLE)
-                    { return true; }
+                {
+                    return true;
+                }
             }
         }
 
@@ -141,7 +155,9 @@ namespace MMAP
     {
         // we already have this map loaded?
         if (loadedMMaps.find(mapId) != loadedMMaps.end())
-            { return true; }
+        {
+            return true;
+        }
 
         // load and init dtNavMesh - read parameters from file
         uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%03i.mmap") + 1;
@@ -152,7 +168,9 @@ namespace MMAP
         if (!file)
         {
             if (MMapFactory::IsPathfindingEnabled(mapId))
-                { sLog.outError("MMAP:loadMapData: Error: Could not open mmap file '%s'", fileName); }
+            {
+                sLog.outError("MMAP:loadMapData: Error: Could not open mmap file '%s'", fileName);
+            }
             delete[] fileName;
             return false;
         }
@@ -200,7 +218,9 @@ namespace MMAP
     {
         // make sure the mmap is loaded and ready to load tiles
         if (!loadMapData(mapId))
-            { return false; }
+        {
+            return false;
+        }
 
         // get this mmap data
         MMapData* mmap = loadedMMaps[mapId];
@@ -346,7 +366,9 @@ namespace MMAP
             uint32 y = (i->first & 0x0000FFFF);
             dtStatus dtResult = mmap->navMesh->removeTile(i->second, NULL, NULL);
             if (dtStatusFailed(dtResult))
-                { sLog.outError("MMAP:unloadMap: Could not unload %03u%02i%02i.mmtile from navmesh", mapId, x, y); }
+            {
+                sLog.outError("MMAP:unloadMap: Could not unload %03u%02i%02i.mmtile from navmesh", mapId, x, y);
+            }
             else
             {
                 --loadedTiles;
@@ -390,7 +412,9 @@ namespace MMAP
     dtNavMesh const* MMapManager::GetNavMesh(uint32 mapId)
     {
         if (loadedMMaps.find(mapId) == loadedMMaps.end())
-            { return NULL; }
+        {
+            return NULL;
+        }
 
         return loadedMMaps[mapId]->navMesh;
     }
@@ -398,7 +422,9 @@ namespace MMAP
     dtNavMeshQuery const* MMapManager::GetNavMeshQuery(uint32 mapId, uint32 instanceId)
     {
         if (loadedMMaps.find(mapId) == loadedMMaps.end())
-            { return NULL; }
+        {
+            return NULL;
+        }
 
         MMapData* mmap = loadedMMaps[mapId];
         if (mmap->navMeshQueries.find(instanceId) == mmap->navMeshQueries.end())

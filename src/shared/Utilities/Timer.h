@@ -129,7 +129,9 @@ class IntervalTimer
         {
             _current += diff;
             if (_current < 0)
-                { _current = 0; }
+            {
+                _current = 0;
+            }
         }
         /**
          * @brief
@@ -144,7 +146,9 @@ class IntervalTimer
         void Reset()
         {
             if (_current >= _interval)
-                { _current -= _interval; }
+            {
+                _current -= _interval;
+            }
         }
 
         /**
@@ -213,7 +217,9 @@ class ShortIntervalTimer
         void Reset()
         {
             if (_current >= _interval)
-                { _current -= _interval; }
+            {
+                _current -= _interval;
+            }
         }
 
         /**

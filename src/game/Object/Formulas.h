@@ -60,7 +60,9 @@ namespace MaNGOS
                 int8 rank = prk.positive ? prk.rank - NEGATIVE_HONOR_RANK_COUNT - 1 : prk.rank - NEGATIVE_HONOR_RANK_COUNT;
                 prk.maxRP = (rank) * 5000.00f;
                 if (prk.maxRP < 0) // in negative rank case
-                    { prk.maxRP *= -1; }
+                {
+                    prk.maxRP *= -1;
+                }
                 prk.minRP = prk.maxRP > 5000.0f ? prk.maxRP  - 5000.00f : 2000.00f;
 
                 prk.visualRank = prk.rank > NEGATIVE_HONOR_RANK_COUNT ? prk.rank - NEGATIVE_HONOR_RANK_COUNT : prk.rank * -1;
@@ -79,21 +81,29 @@ namespace MaNGOS
 
             // rank none
             if (honor_points == 0)
-                { return prk; }
+            {
+                return prk;
+            }
 
             prk.positive = honor_points > 0;
             if (!prk.positive)
-                { honor_points *= -1; }
+            {
+                honor_points *= -1;
+            }
 
             uint8 rCount = prk.positive ? POSITIVE_HONOR_RANK_COUNT - 2 : NEGATIVE_HONOR_RANK_COUNT;
             uint8 firstRank = prk.positive ? NEGATIVE_HONOR_RANK_COUNT + 1 : 1;
 
             if (honor_points < 2000.00f)
-                { prk.rank = prk.positive ? firstRank : NEGATIVE_HONOR_RANK_COUNT; }
+            {
+                prk.rank = prk.positive ? firstRank : NEGATIVE_HONOR_RANK_COUNT;
+            }
             else
             {
                 if (honor_points > (rCount - 1) * 5000.00f)
-                    { prk.rank = prk.positive ? HONOR_RANK_COUNT - 1 : firstRank; }
+                {
+                    prk.rank = prk.positive ? HONOR_RANK_COUNT - 1 : firstRank;
+                }
                 else
                 {
                     prk.rank = uint32(honor_points / 5000.00f) + firstRank;
@@ -161,7 +171,9 @@ namespace MaNGOS
                     honor += tempSt->honorPoints;
                     tempSt = sObjectMgr.GetHonorStandingByPosition(sc.BRK[i] + 1, team);
                     if (tempSt)
-                        { honor += tempSt->honorPoints; }
+                    {
+                        honor += tempSt->honorPoints;
+                    }
                 }
 
                 sc.FX[i] = honor ? honor / 2 : 0;
@@ -204,15 +216,25 @@ namespace MaNGOS
         {
             float result = 10;
             if (level >= 30 && level <= 35)
-                { result = result + 1.5 * (level - 29); }
+            {
+                result = result + 1.5 * (level - 29);
+            }
             if (level >= 36 && level <= 41)
-                { result = result + 9 + 2 * (level - 35); }
+            {
+                result = result + 9 + 2 * (level - 35);
+            }
             if (level >= 42 && level <= 50)
-                { result = result + 21 + 3.2 * (level - 41); }
+            {
+                result = result + 21 + 3.2 * (level - 41);
+            }
             if (level >= 51)
-                { result = result + 50 + 4 * (level - 50); }
+            {
+                result = result + 50 + 4 * (level - 50);
+            }
             if (result > 100)
-                { return 100.0; }
+            {
+                return 100.0;
+            }
             else
                 { return result; }
         }
@@ -220,7 +242,9 @@ namespace MaNGOS
         inline float HonorableKillPoints(Player* killer, Player* victim, uint32 groupsize)
         {
             if (!killer || !victim || !groupsize)
-                { return 0.0; }
+            {
+                return 0.0;
+            }
 
             uint32 today = sWorld.GetDateToday();
 
@@ -246,7 +270,9 @@ namespace MaNGOS
         inline uint32 GetGrayLevel(uint32 pl_level)
         {
             if (pl_level <= 5)
-                { return 0; }
+            {
+                return 0;
+            }
             else if (pl_level <= 39)
                 { return pl_level - 5 - pl_level / 10; }
             else if (pl_level == 60)
@@ -258,7 +284,9 @@ namespace MaNGOS
         inline XPColorChar GetColorCode(uint32 pl_level, uint32 mob_level)
         {
             if (mob_level >= pl_level + 5)
-                { return RED; }
+            {
+                return RED;
+            }
             else if (mob_level >= pl_level + 3)
                 { return ORANGE; }
             else if (mob_level >= pl_level - 2)
@@ -292,7 +320,9 @@ namespace MaNGOS
             {
                 uint32 nLevelDiff = mob_level - pl_level;
                 if (nLevelDiff > 4)
-                    { nLevelDiff = 4; }
+                {
+                    nLevelDiff = 4;
+                }
                 return ((pl_level * 5 + nBaseExp) * (20 + nLevelDiff) / 10 + 1) / 2;
             }
             else
@@ -316,10 +346,14 @@ namespace MaNGOS
 
             uint32 xp_gain = BaseGain(pl->getLevel(), u->getLevel());
             if (xp_gain == 0)
-                { return 0; }
+            {
+                return 0;
+            }
 
             if (u->GetTypeId() == TYPEID_UNIT && ((Creature*)u)->IsElite())
-                { xp_gain *= 2; }
+            {
+                xp_gain *= 2;
+            }
 
             return (uint32)(xp_gain * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_KILL));
         }

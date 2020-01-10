@@ -104,12 +104,16 @@ void OutdoorPvPMgr::HandlePlayerEnterZone(Player* player, uint32 zoneId)
 {
     OutdoorPvP* script = GetScript(zoneId);
     if (script)
-        { script->HandlePlayerEnterZone(player, true); }
+    {
+        script->HandlePlayerEnterZone(player, true);
+    }
     else
     {
         script = GetScriptOfAffectedZone(zoneId);
         if (script)
-            { script->HandlePlayerEnterZone(player, false); }
+        {
+            script->HandlePlayerEnterZone(player, false);
+        }
     }
 }
 
@@ -124,12 +128,16 @@ void OutdoorPvPMgr::HandlePlayerLeaveZone(Player* player, uint32 zoneId)
     // teleport: called once from Player::CleanupsBeforeDelete, once from Player::UpdateZone
     OutdoorPvP* script = GetScript(zoneId);
     if (script)
-        { script->HandlePlayerLeaveZone(player, true); }
+    {
+        script->HandlePlayerLeaveZone(player, true);
+    }
     else 
     {
         script = GetScriptOfAffectedZone(zoneId);
         if (script)
-            { script->HandlePlayerLeaveZone(player, false); }
+        {
+            script->HandlePlayerLeaveZone(player, false);
+        }
     }
 }
 
@@ -137,11 +145,15 @@ void OutdoorPvPMgr::Update(uint32 diff)
 {
     m_updateTimer.Update(diff);
     if (!m_updateTimer.Passed())
-        { return; }
+    {
+        return;
+    }
 
     for (uint8 i = 0; i < MAX_OPVP_ID; ++i)
         if (m_scripts[i])
-            { m_scripts[i]->Update(m_updateTimer.GetCurrent()); }
+        {
+            m_scripts[i]->Update(m_updateTimer.GetCurrent());
+        }
 
     m_updateTimer.Reset();
 }

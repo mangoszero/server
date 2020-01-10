@@ -75,7 +75,9 @@ class Bag : public Item
 inline Item* NewItemOrBag(ItemPrototype const* proto)
 {
     if (proto->InventoryType == INVTYPE_BAG)
-        { return new Bag; }
+    {
+        return new Bag;
+    }
 
     return new Item;
 }

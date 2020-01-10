@@ -30,7 +30,9 @@
 int GuardAI::Permissible(const Creature* creature)
 {
     if (creature->IsGuard())
-        { return PERMIT_BASE_SPECIAL; }
+    {
+        return PERMIT_BASE_SPECIAL;
+    }
 
     return PERMIT_BASE_NO;
 }
@@ -43,7 +45,9 @@ void GuardAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
     if (!m_creature->CanFly() && m_creature->GetDistanceZ(u) > CREATURE_Z_ATTACK_RANGE)
-        { return; }
+    {
+        return;
+    }
 
     if (!m_creature->getVictim() && u->IsTargetableForAttack() &&
         (u->IsHostileToPlayers() || m_creature->IsHostileTo(u) /*|| u->getVictim() && m_creature->IsFriendlyTo(u->getVictim())*/) &&
@@ -105,14 +109,18 @@ void GuardAI::EnterEvadeMode()
 
     // Remove ChaseMovementGenerator from MotionMaster stack list, and add HomeMovementGenerator instead
     if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
-        { m_creature->GetMotionMaster()->MoveTargetedHome(); }
+    {
+        m_creature->GetMotionMaster()->MoveTargetedHome();
+    }
 }
 
 void GuardAI::UpdateAI(const uint32 /*diff*/)
 {
     // update i_victimGuid if i_creature.getVictim() !=0 and changed
     if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
-        { return; }
+    {
+        return;
+    }
 
     i_victimGuid = m_creature->getVictim()->GetObjectGuid();
 
@@ -128,7 +136,9 @@ bool GuardAI::IsVisible(Unit* pl) const
 void GuardAI::AttackStart(Unit* u)
 {
     if (!u)
-        { return; }
+    {
+        return;
+    }
 
     if (m_creature->Attack(u, true))
     {
@@ -144,5 +154,7 @@ void GuardAI::AttackStart(Unit* u)
 void GuardAI::JustDied(Unit* killer)
 {
     if (Player* pkiller = killer->GetCharmerOrOwnerPlayerOrPlayerItself())
-        { m_creature->SendZoneUnderAttackMessage(pkiller); }
+    {
+        m_creature->SendZoneUnderAttackMessage(pkiller);
+    }
 }

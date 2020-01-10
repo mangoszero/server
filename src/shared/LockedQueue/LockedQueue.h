@@ -63,7 +63,9 @@ namespace ACE_Based
                 ACE_GUARD_RETURN(LockType, g, this->_lock, false);
 
                 if (_queue.empty())
-                    { return false; }
+                {
+                    return false;
+                }
 
                 result = _queue.front();
                 _queue.pop_front();
@@ -77,11 +79,15 @@ namespace ACE_Based
                 ACE_GUARD_RETURN(LockType, g, this->_lock, false);
 
                 if (_queue.empty())
-                    { return false; }
+                {
+                    return false;
+                }
 
                 result = _queue.front();
                 if (!check.Process(result))
-                    { return false; }
+                {
+                    return false;
+                }
 
                 _queue.pop_front();
                 return true;

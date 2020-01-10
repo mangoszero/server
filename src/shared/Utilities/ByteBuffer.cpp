@@ -46,13 +46,17 @@ void ByteBufferException::PrintPosError() const
 void ByteBuffer::print_storage() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output
-        { return; }
+    {
+        return;
+    }
 
     std::ostringstream ss;
     ss <<  "STORAGE_SIZE: " << size() << "\n";
 
     if (sLog.IsIncludeTime())
-        { ss << "         "; }
+    {
+        ss << "         ";
+    }
 
     for (size_t i = 0; i < size(); ++i)
         { ss << uint32(read<uint8>(i)) << " - "; }
@@ -63,13 +67,17 @@ void ByteBuffer::print_storage() const
 void ByteBuffer::textlike() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output
-        { return; }
+    {
+        return;
+    }
 
     std::ostringstream ss;
     ss <<  "STORAGE_SIZE: " << size() << "\n";
 
     if (sLog.IsIncludeTime())
-        { ss << "         "; }
+    {
+        ss << "         ";
+    }
 
     for (size_t i = 0; i < size(); ++i)
         { ss << read<uint8>(i); }
@@ -80,13 +88,17 @@ void ByteBuffer::textlike() const
 void ByteBuffer::hexlike() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output
-        { return; }
+    {
+        return;
+    }
 
     std::ostringstream ss;
     ss <<  "STORAGE_SIZE: " << size() << "\n";
 
     if (sLog.IsIncludeTime())
-        { ss << "         "; }
+    {
+        ss << "         ";
+    }
 
     size_t j = 1, k = 1;
 
@@ -102,7 +114,9 @@ void ByteBuffer::hexlike() const
             ss << "\n";
 
             if (sLog.IsIncludeTime())
-                { ss << "         "; }
+            {
+                ss << "         ";
+            }
 
             ++k;
             ++j;

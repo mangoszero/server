@@ -30,16 +30,22 @@ void InstanceData::SaveToDB() const
 {
     // no reason to save BGs/Arenas
     if (instance->IsBattleGround())
-        { return; }
+    {
+        return;
+    }
 
     if (!Save())
-        { return; }
+    {
+        return;
+    }
 
     std::string data = Save();
     CharacterDatabase.escape_string(data);
 
     if (instance->Instanceable())
-        { CharacterDatabase.PExecute("UPDATE instance SET data = '%s' WHERE id = '%u'", data.c_str(), instance->GetInstanceId()); }
+    {
+        CharacterDatabase.PExecute("UPDATE instance SET data = '%s' WHERE id = '%u'", data.c_str(), instance->GetInstanceId());
+    }
     else
         { CharacterDatabase.PExecute("UPDATE world SET data = '%s' WHERE map = '%u'", data.c_str(), instance->GetId()); }
 }

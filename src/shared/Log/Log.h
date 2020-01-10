@@ -130,19 +130,27 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         ~Log()
         {
             if (logfile != NULL)
-                { fclose(logfile); }
+            {
+                fclose(logfile);
+            }
             logfile = NULL;
 
             if (gmLogfile != NULL)
-                { fclose(gmLogfile); }
+            {
+                fclose(gmLogfile);
+            }
             gmLogfile = NULL;
 
             if (charLogfile != NULL)
-                { fclose(charLogfile); }
+            {
+                fclose(charLogfile);
+            }
             charLogfile = NULL;
 
             if (dberLogfile != NULL)
-                { fclose(dberLogfile); }
+            {
+                fclose(dberLogfile);
+            }
             dberLogfile = NULL;
 
 #ifdef ENABLE_ELUNA
@@ -152,19 +160,27 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
 #endif /* ENABLE_ELUNA */
 
             if (eventAiErLogfile != NULL)
-                { fclose(eventAiErLogfile); }
+            {
+                fclose(eventAiErLogfile);
+            }
             eventAiErLogfile = NULL;
 
             if (scriptErrLogFile != NULL)
-                { fclose(scriptErrLogFile); }
+            {
+                fclose(scriptErrLogFile);
+            }
             scriptErrLogFile = NULL;
 
             if (raLogfile != NULL)
-                { fclose(raLogfile); }
+            {
+                fclose(raLogfile);
+            }
             raLogfile = NULL;
 
             if (worldLogfile != NULL)
-                { fclose(worldLogfile); }
+            {
+                fclose(worldLogfile);
+            }
             worldLogfile = NULL;
 
             if (wardenLogfile != NULL)

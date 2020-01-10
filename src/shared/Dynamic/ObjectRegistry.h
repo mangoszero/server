@@ -73,7 +73,9 @@ class ObjectRegistry
             if (iter != i_registeredObjects.end())
             {
                 if (!replace)
-                    { return false; }
+                {
+                    return false;
+                }
                 delete iter->second;
                 i_registeredObjects.erase(iter);
             }
@@ -94,7 +96,9 @@ class ObjectRegistry
             if (iter != i_registeredObjects.end())
             {
                 if (delete_object)
-                    { delete iter->second; }
+                {
+                    delete iter->second;
+                }
                 i_registeredObjects.erase(iter);
             }
         }

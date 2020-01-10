@@ -35,7 +35,9 @@ int
 TotemAI::Permissible(const Creature* creature)
 {
     if (creature->IsTotem())
-        { return PERMIT_BASE_PROACTIVE; }
+    {
+        return PERMIT_BASE_PROACTIVE;
+    }
 
     return PERMIT_BASE_NO;
 }
@@ -58,15 +60,21 @@ void
 TotemAI::UpdateAI(const uint32 /*diff*/)
 {
     if (getTotem().GetTotemType() != TOTEM_ACTIVE)
-        { return; }
+    {
+        return;
+    }
 
     if (!m_creature->IsAlive() || m_creature->IsNonMeleeSpellCasted(false))
-        { return; }
+    {
+        return;
+    }
 
     // Search spell
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(getTotem().GetSpell());
     if (!spellInfo)
-        { return; }
+    {
+        return;
+    }
 
     // Get spell rangy
     SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);

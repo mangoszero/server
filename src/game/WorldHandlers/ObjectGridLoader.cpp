@@ -134,12 +134,16 @@ void LoadHelper(CellGuidSet const& guid_set, CellPair& cell, GridRefManager<T>& 
         obj->SetMap(map);
         obj->AddToWorld();
         if (obj->IsActiveObject())
-            { map->AddToActive(obj); }
+        {
+            map->AddToActive(obj);
+        }
 
         obj->GetViewPoint().Event_AddedToWorld(&grid);
 
         if (bg)
-            { bg->OnObjectDBLoad(obj); }
+        {
+            bg->OnObjectDBLoad(obj);
+        }
 
         ++count;
     }
@@ -148,18 +152,24 @@ void LoadHelper(CellGuidSet const& guid_set, CellPair& cell, GridRefManager<T>& 
 void LoadHelper(CellCorpseSet const& cell_corpses, CellPair& cell, CorpseMapType& /*m*/, uint32& count, Map* map, GridType& grid)
 {
     if (cell_corpses.empty())
-        { return; }
+    {
+        return;
+    }
 
     for (CellCorpseSet::const_iterator itr = cell_corpses.begin(); itr != cell_corpses.end(); ++itr)
     {
         if (itr->second != map->GetInstanceId())
-            { continue; }
+        {
+            continue;
+        }
 
         uint32 player_lowguid = itr->first;
 
         Corpse* obj = sObjectAccessor.GetCorpseForPlayerGUID(ObjectGuid(HIGHGUID_PLAYER, player_lowguid));
         if (!obj)
-            { continue; }
+        {
+            continue;
+        }
 
         grid.AddWorldObject(obj);
 
@@ -167,7 +177,9 @@ void LoadHelper(CellCorpseSet const& cell_corpses, CellPair& cell, CorpseMapType
         obj->SetMap(map);
         obj->AddToWorld();
         if (obj->IsActiveObject())
-            { map->AddToActive(obj); }
+        {
+            map->AddToActive(obj);
+        }
 
         ++count;
     }
@@ -283,7 +295,9 @@ ObjectGridUnloader::Visit(GridRefManager<T>& m)
         T* obj = m.getFirst()->getSource();
         // if option set then object already saved at this moment
         if (!sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATELY))
-            { obj->SaveRespawnTime(); }
+        {
+            obj->SaveRespawnTime();
+        }
         ///- object must be out of world before delete
         obj->RemoveFromWorld();
         ///- object will get delinked from the manager when deleted

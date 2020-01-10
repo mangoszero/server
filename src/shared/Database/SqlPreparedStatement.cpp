@@ -28,7 +28,9 @@ SqlStmtParameters::SqlStmtParameters(uint32 nParams)
 {
     // reserve memory if needed
     if (nParams > 0)
-        { m_params.reserve(nParams); }
+    {
+        m_params.reserve(nParams);
+    }
 }
 
 void SqlStmtParameters::reset(const SqlStatement& stmt)
@@ -36,7 +38,9 @@ void SqlStmtParameters::reset(const SqlStatement& stmt)
     m_params.clear();
     // reserve memory if needed
     if (stmt.arguments() > 0)
-        { m_params.reserve(stmt.arguments()); }
+    {
+        m_params.reserve(stmt.arguments());
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -51,7 +55,9 @@ SqlStatement& SqlStatement::operator=(const SqlStatement& index)
         m_pParams = NULL;
 
         if (index.m_pParams)
-            { m_pParams = new SqlStmtParameters(*(index.m_pParams)); }
+        {
+            m_pParams = new SqlStmtParameters(*(index.m_pParams));
+        }
     }
 
     return *this;
@@ -132,7 +138,9 @@ void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)
 bool SqlPlainPreparedStatement::execute()
 {
     if (m_szPlainRequest.empty())
-        { return false; }
+    {
+        return false;
+    }
 
     return m_pConn.Execute(m_szPlainRequest.c_str());
 }

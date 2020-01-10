@@ -80,7 +80,9 @@ bool Weather::Update(uint32 diff, Map const* _map)
         {
             ///- Weather will be removed if not updated (no players in zone anymore)
             if (!SendWeatherForPlayersInZone(_map))
-                { return false; }
+            {
+                return false;
+            }
         }
     }
     return true;
@@ -112,7 +114,9 @@ bool Weather::ReGenerate()
     uint32 u = urand(0, 99);
 
     if (u < 30)
-        { return false; }
+    {
+        return false;
+    }
 
     // 78 days between January 1st and March 20nd; 365/4=91 days by season
     // season source http://aa.usno.navy.mil/data/docs/EarthSeasons.html
@@ -178,7 +182,9 @@ bool Weather::ReGenerate()
 
     uint32 rnd = urand(1, 100);
     if (rnd <= chance1)
-        { m_type = WEATHER_TYPE_RAIN; }
+    {
+        m_type = WEATHER_TYPE_RAIN;
+    }
     else if (rnd <= chance2)
         { m_type = WEATHER_TYPE_SNOW; }
     else if (rnd <= chance3)
@@ -205,7 +211,9 @@ bool Weather::ReGenerate()
         // Severe change, but how severe?
         rnd = urand(0, 99);
         if (rnd < 50)
-            { m_grade = rand_norm_f() * 0.3333f + 0.3334f; }
+        {
+            m_grade = rand_norm_f() * 0.3333f + 0.3334f;
+        }
         else
             { m_grade = rand_norm_f() * 0.3333f + 0.6667f; }
     }
@@ -304,7 +312,9 @@ WeatherState Weather::GetWeatherState() const
 void Weather::NormalizeGrade()
 {
     if (m_grade >= 1)
-        { m_grade = 0.9999f; }
+    {
+        m_grade = 0.9999f;
+    }
     else if (m_grade < 0)
         { m_grade = 0.0001f; }
 }
@@ -406,7 +416,9 @@ uint32 Weather::GetSound()
     {
         case WEATHER_TYPE_RAIN:                             // rain
             if (m_grade < 0.40f)
-                { sound = WEATHER_RAINLIGHT; }
+            {
+                sound = WEATHER_RAINLIGHT;
+            }
             else if (m_grade < 0.70f)
                 { sound = WEATHER_RAINMEDIUM; }
             else
@@ -414,7 +426,9 @@ uint32 Weather::GetSound()
             break;
         case WEATHER_TYPE_SNOW:                             // snow
             if (m_grade < 0.40f)
-                { sound = WEATHER_SNOWLIGHT; }
+            {
+                sound = WEATHER_SNOWLIGHT;
+            }
             else if (m_grade < 0.70f)
                 { sound = WEATHER_SNOWMEDIUM; }
             else
@@ -422,7 +436,9 @@ uint32 Weather::GetSound()
             break;
         case WEATHER_TYPE_STORM:                            // storm
             if (m_grade < 0.40f)
-                { sound = WEATHER_SANDSTORMLIGHT; }
+            {
+                sound = WEATHER_SANDSTORMLIGHT;
+            }
             else if (m_grade < 0.70f)
                 { sound = WEATHER_SANDSTORMMEDIUM; }
             else

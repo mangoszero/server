@@ -41,7 +41,9 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
 
     FILE* f = fopen(filename, "rb");
     if (!f)
-        { return false; }
+    {
+        return false;
+    }
 
     if (fread(&header, 4, 1, f) != 1)                       // Number of records
     {
@@ -94,7 +96,9 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
     {
         fieldsOffset[i] = fieldsOffset[i - 1];
         if (fmt[i - 1] == 'b' || fmt[i - 1] == 'X')         // byte fields
-            { fieldsOffset[i] += 1; }
+        {
+            fieldsOffset[i] += 1;
+        }
         else                                                // 4 byte fields (int32/float/strings)
             { fieldsOffset[i] += 4; }
     }
@@ -164,7 +168,9 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
     }
 
     if (index_pos)
-        { *index_pos = i; }
+    {
+        *index_pos = i;
+    }
 
     return recordsize;
 }
@@ -184,7 +190,9 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
 
     typedef char* ptr;
     if (strlen(format) != fieldCount)
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     // get struct size and index pos
     int32 i;
@@ -198,7 +206,9 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
         {
             uint32 ind = getRecord(y).getUInt(i);
             if (ind > maxi)
-                { maxi = ind; }
+            {
+                maxi = ind;
+            }
         }
 
         ++maxi;
@@ -266,7 +276,9 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
 char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
 {
     if (strlen(format) != fieldCount)
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     char* stringPool = new char[stringSize];
     memcpy(stringPool, stringTable, stringSize);

@@ -85,7 +85,9 @@ namespace VMAP
         if (isMapLoadingEnabled())
         {
             if (_loadMap(pMapId, pBasePath, x, y))
-                { result = VMAP_LOAD_RESULT_OK; }
+            {
+                result = VMAP_LOAD_RESULT_OK;
+            }
             else
                 { result = VMAP_LOAD_RESULT_ERROR; }
         }
@@ -103,7 +105,9 @@ namespace VMAP
             std::string mapFileName = getMapFileName(pMapId);
             StaticMapTree* newTree = new StaticMapTree(pMapId, basePath);
             if (!newTree->InitMap(mapFileName, this))
-                { return false; }
+            {
+                return false;
+            }
             instanceTree = iInstanceMapTrees.insert(InstanceTreeMap::value_type(pMapId, newTree)).first;
         }
         return instanceTree->second->LoadMapTile(tileX, tileY, this);

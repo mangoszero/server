@@ -53,7 +53,9 @@ void Camera::UpdateForCurrentViewPoint()
     m_gridRef.unlink();
 
     if (GridType* grid = m_source->GetViewPoint().m_grid)
-        { grid->AddWorldObject(this); }
+    {
+        grid->AddWorldObject(this);
+    }
 
     UpdateVisibilityForOwner();
 }
@@ -63,7 +65,9 @@ void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
     MANGOS_ASSERT(obj);
 
     if (m_source == obj)
-        { return; }
+    {
+        return;
+    }
 
     if (!m_owner.IsInMap(obj))
     {
@@ -80,17 +84,23 @@ void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
     // detach and deregister from active objects if there are no more reasons to be active
     m_source->GetViewPoint().Detach(this);
     if (!m_source->IsActiveObject())
-        { m_source->GetMap()->RemoveFromActive(m_source); }
+    {
+        m_source->GetMap()->RemoveFromActive(m_source);
+    }
 
     m_source = obj;
 
     if (!m_source->IsActiveObject())
-        { m_source->GetMap()->AddToActive(m_source); }
+    {
+        m_source->GetMap()->AddToActive(m_source);
+    }
 
     m_source->GetViewPoint().Attach(this);
 
     if (update_far_sight_field)
-        { m_owner.SetGuidValue(PLAYER_FARSIGHT, (m_source == &m_owner ? ObjectGuid() : m_source->GetObjectGuid())); }
+    {
+        m_owner.SetGuidValue(PLAYER_FARSIGHT, (m_source == &m_owner ? ObjectGuid() : m_source->GetObjectGuid()));
+    }
 
     UpdateForCurrentViewPoint();
 }
@@ -98,7 +108,9 @@ void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
 void Camera::Event_ViewPointVisibilityChanged()
 {
     if (!m_owner.HaveAtClient(m_source))
-        { ResetView(); }
+    {
+        ResetView();
+    }
 }
 
 void Camera::ResetView(bool update_far_sight_field /*= true*/)

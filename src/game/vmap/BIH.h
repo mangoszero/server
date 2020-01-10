@@ -153,7 +153,9 @@ class BIH
             BuildStats stats;
             buildHierarchy(tempTree, dat, stats);
             if (printStats)
-                { stats.printStats(); }
+            {
+                stats.printStats();
+            }
 
             objects.resize(dat.numPrims);
             for (uint32 i = 0; i < dat.numPrims; ++i)
@@ -194,20 +196,30 @@ class BIH
                     float t1 = (bounds.low()[i]  - org[i]) * invDir[i];
                     float t2 = (bounds.high()[i] - org[i]) * invDir[i];
                     if (t1 > t2)
-                        { std::swap(t1, t2); }
+                    {
+                        std::swap(t1, t2);
+                    }
                     if (t1 > intervalMin)
-                        { intervalMin = t1; }
+                    {
+                        intervalMin = t1;
+                    }
                     if (t2 < intervalMax || intervalMax < 0.f)
-                        { intervalMax = t2; }
+                    {
+                        intervalMax = t2;
+                    }
                     // intervalMax can only become smaller for other axis,
                     //  and intervalMin only larger respectively, so stop early
                     if (intervalMax <= 0 || intervalMin >= maxDist)
-                        { return; }
+                    {
+                        return;
+                    }
                 }
             }
 
             if (intervalMin > intervalMax)
-                { return; }
+            {
+                return;
+            }
             intervalMin = std::max(intervalMin, 0.f);
             intervalMax = std::min(intervalMax, maxDist);
 
@@ -250,7 +262,9 @@ class BIH
                             float tb = (intBitsToFloat(tree[node + offsetBack[axis]]) - org[axis]) * invDir[axis];
                             // ray passes between clip zones
                             if (tf < intervalMin && tb > intervalMax)
-                                { break; }
+                            {
+                                break;
+                            }
                             int back = offset + offsetBack3[axis];
                             node = back;
                             // ray passes through far node only
@@ -300,7 +314,9 @@ class BIH
                         intervalMin = (tf >= intervalMin) ? tf : intervalMin;
                         intervalMax = (tb <= intervalMax) ? tb : intervalMax;
                         if (intervalMin > intervalMax)
-                            { break; }
+                        {
+                            break;
+                        }
                         continue;
                     }
                 } // traversal loop
@@ -308,12 +324,16 @@ class BIH
                 {
                     // stack is empty?
                     if (stackPos == 0)
-                        { return; }
+                    {
+                        return;
+                    }
                     // move back up the stack
                     --stackPos;
                     intervalMin = stack[stackPos].tnear;
                     if (maxDist < intervalMin)
-                        { continue; }
+                    {
+                        continue;
+                    }
                     node = stack[stackPos].node;
                     intervalMax = stack[stackPos].tfar;
                     break;
@@ -332,7 +352,9 @@ class BIH
         void intersectPoint(const Vector3& p, IsectCallback& intersectCallback) const
         {
             if (!bounds.contains(p))
-                { return; }
+            {
+                return;
+            }
 
             StackNode stack[MAX_STACK_SIZE];
             int stackPos = 0;
@@ -355,7 +377,9 @@ class BIH
                             float tr = intBitsToFloat(tree[node + 2]);
                             // point is between clip zones
                             if (tl < p[axis] && tr > p[axis])
-                                { break; }
+                            {
+                                break;
+                            }
                             int right = offset + 3;
                             node = right;
                             // point is in right node only
@@ -396,14 +420,18 @@ class BIH
                         float tr = intBitsToFloat(tree[node + 2]);
                         node = offset;
                         if (tl > p[axis] || tr < p[axis])
-                            { break; }
+                        {
+                            break;
+                        }
                         continue;
                     }
                 } // traversal loop
 
                 // stack is empty?
                 if (stackPos == 0)
-                    { return; }
+                {
+                    return;
+                }
                 // move back up the stack
                 --stackPos;
                 node = stack[stackPos].node;

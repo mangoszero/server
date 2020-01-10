@@ -57,7 +57,9 @@ class GridReference : public Reference<GridRefManager<OBJECT>, OBJECT>
         {
             // called from unlink()
             if (this->isValid())
-                { this->getTarget()->decSize(); }
+            {
+                this->getTarget()->decSize();
+            }
         }
 
         /**

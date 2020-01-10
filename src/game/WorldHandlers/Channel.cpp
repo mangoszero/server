@@ -41,13 +41,19 @@ Channel::Channel(const std::string& name)
         m_flags |= CHANNEL_FLAG_GENERAL;                    // for all built-in channels
 
         if (ch->flags & CHANNEL_DBC_FLAG_TRADE)             // for trade channel
-            { m_flags |= CHANNEL_FLAG_TRADE; }
+        {
+            m_flags |= CHANNEL_FLAG_TRADE;
+        }
 
         if (ch->flags & CHANNEL_DBC_FLAG_CITY_ONLY2)        // for city only channels
-            { m_flags |= CHANNEL_FLAG_CITY; }
+        {
+            m_flags |= CHANNEL_FLAG_CITY;
+        }
 
         if (ch->flags & CHANNEL_DBC_FLAG_LFG)               // for LFG channel
-            { m_flags |= CHANNEL_FLAG_LFG; }
+        {
+            m_flags |= CHANNEL_FLAG_LFG;
+        }
         else                                                // for all other channels
             { m_flags |= CHANNEL_FLAG_NOT_LFG; }
     }
@@ -678,7 +684,9 @@ void Channel::SetOwner(ObjectGuid guid, bool exclaim)
         // [] will re-add player after it possible removed
         PlayerList::iterator p_itr = m_players.find(m_ownerGuid);
         if (p_itr != m_players.end())
-            { p_itr->second.SetOwner(false); }
+        {
+            p_itr->second.SetOwner(false);
+        }
     }
 
     m_ownerGuid = guid;
@@ -717,7 +725,9 @@ void Channel::SendToAll(WorldPacket* data, ObjectGuid guid)
 void Channel::SendToOne(WorldPacket* data, ObjectGuid who)
 {
     if (Player* plr = ObjectMgr::GetPlayer(who))
-        { plr->GetSession()->SendPacket(data); }
+    {
+        plr->GetSession()->SendPacket(data);
+    }
 }
 
 void Channel::Voice(ObjectGuid /*guid1*/, ObjectGuid /*guid2*/)
@@ -809,7 +819,9 @@ void Channel::MakeChannelOwner(WorldPacket* data)
     std::string name = "";
 
     if (!sObjectMgr.GetPlayerNameByGUID(m_ownerGuid, name) || name.empty())
-        { name = "PLAYER_NOT_FOUND"; }
+    {
+        name = "PLAYER_NOT_FOUND";
+    }
 
     MakeNotifyPacket(data, CHAT_CHANNEL_OWNER_NOTICE);
     *data << ((IsConstant() || !m_ownerGuid) ? "Nobody" : name);

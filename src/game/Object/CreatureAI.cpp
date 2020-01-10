@@ -49,7 +49,9 @@ void CreatureAI::EnterEvadeMode()
 void CreatureAI::AttackedBy(Unit* attacker)
 {
     if (!m_creature->getVictim())
-        { AttackStart(attacker); }
+    {
+        AttackStart(attacker);
+    }
 }
 
 CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, bool isTriggered)
@@ -59,21 +61,31 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
     {
         // State does not allow
         if (m_creature->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
-            { return CAST_FAIL_STATE; }
+        {
+            return CAST_FAIL_STATE;
+        }
 
         if (pSpell->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
-            { return CAST_FAIL_SILENCED; }
+        {
+            return CAST_FAIL_SILENCED;
+        }
 
         if (pSpell->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
-            { return CAST_FAIL_STATE; }
+        {
+            return CAST_FAIL_STATE;
+        }
 
         // Check for power (also done by Spell::CheckCast())
         if (m_creature->GetPower((Powers)pSpell->powerType) < Spell::CalculatePowerCost(pSpell, m_creature))
-            { return CAST_FAIL_POWER; }
+        {
+            return CAST_FAIL_POWER;
+        }
     }
 
     if (!m_creature->IsWithinLOSInMap(pTarget))
-        { return CAST_FAIL_NO_LOS; }
+    {
+        return CAST_FAIL_NO_LOS;
+    }
 
     if (const SpellRangeEntry* pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
     {
@@ -83,12 +95,16 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
             float fDistance = m_creature->GetCombatDistance(pTarget, pSpell->rangeIndex == SPELL_RANGE_IDX_COMBAT);
 
             if (fDistance > pSpellRange->maxRange)
-                { return CAST_FAIL_TOO_FAR; }
+            {
+                return CAST_FAIL_TOO_FAR;
+            }
 
             float fMinRange = pSpellRange->minRange;
 
             if (fMinRange && fDistance < fMinRange)
-                { return CAST_FAIL_TOO_CLOSE; }
+            {
+                return CAST_FAIL_TOO_CLOSE;
+            }
         }
 
         return CAST_OK;
@@ -102,7 +118,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
     Unit* pCaster = m_creature;
 
     if (uiCastFlags & CAST_FORCE_TARGET_SELF)
-        { pCaster = pTarget; }
+    {
+        pCaster = pTarget;
+    }
 
     if (!pCaster->IsNonMeleeSpellCasted(false) || (uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS)))
     {
@@ -112,7 +130,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
             if (uiCastFlags & CAST_AURA_NOT_PRESENT)
             {
                 if (pTarget->HasAura(uiSpell))
-                    { return CAST_FAIL_TARGET_AURA; }
+                {
+                    return CAST_FAIL_TARGET_AURA;
+                }
             }
 
             // Check if can not cast spell
@@ -169,7 +189,9 @@ void CreatureAI::SetCombatMovementFlag(uint8 flag, bool setFlag)
     {
         m_combatMovement &= ~flag;
         if (m_combatMovement == 0)
-        { m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT); }
+        {
+            m_creature->addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
+        }
     }
 }
 
@@ -207,7 +229,9 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
     MovementGeneratorType mmgen = creatureMotion->GetCurrentMovementGeneratorType();
 
     if (IsCombatMovement())
-      { creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle); }
+    {
+        creatureMotion->MoveChase(victim, m_attackDistance, m_attackAngle);
+    }
 
     // TODO - adapt this to only stop OOC-MMGens when MotionMaster rewrite is finished
     else if (mmgen == WAYPOINT_MOTION_TYPE || mmgen == RANDOM_MOTION_TYPE)

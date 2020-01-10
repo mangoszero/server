@@ -136,7 +136,9 @@ namespace VMAP
     WmoLiquid& WmoLiquid::operator=(const WmoLiquid& other)
     {
         if (this == &other)
-            { return *this; }
+        {
+            return *this;
+        }
 
         iTilesX = other.iTilesX;
         iTilesY = other.iTilesY;
@@ -168,16 +170,22 @@ namespace VMAP
         float tx_f = (pos.x - iCorner.x) / LIQUID_TILE_SIZE;
         uint32 tx = uint32(tx_f);
         if (tx_f < 0.0f || tx >= iTilesX)
-            { return false; }
+        {
+            return false;
+        }
         float ty_f = (pos.y - iCorner.y) / LIQUID_TILE_SIZE;
         uint32 ty = uint32(ty_f);
         if (ty_f < 0.0f || ty >= iTilesY)
-            { return false; }
+        {
+            return false;
+        }
 
         // check if tile shall be used for liquid level
         // checking for 0x08 *might* be enough, but disabled tiles always are 0x?F:
         if ((iFlags[tx + ty * iTilesX] & 0x0F) == 0x0F)
-            { return false; }
+        {
+            return false;
+        }
 
         // (dx, dy) coordinates inside tile, in [0,1]^2
         float dx = tx_f - (float)tx;
@@ -265,7 +273,9 @@ namespace VMAP
         vertices(other.vertices), triangles(other.triangles), meshTree(other.meshTree), iLiquid(0)
     {
         if (other.iLiquid)
-            { iLiquid = new WmoLiquid(*other.iLiquid); }
+        {
+            iLiquid = new WmoLiquid(*other.iLiquid);
+        }
     }
 
     void GroupModel::SetMeshData(std::vector<Vector3>& vert, std::vector<MeshTriangle>& tri)
@@ -292,7 +302,9 @@ namespace VMAP
         if (result && fwrite(&chunkSize, sizeof(uint32), 1, wf) != 1) { result = false; }
         if (result && fwrite(&count, sizeof(uint32), 1, wf) != 1) { result = false; }
         if (!count) // models without (collision) geometry end here, unsure if they are useful
-            { return result; }
+        {
+            return result;
+        }
         if (result && fwrite(&vertices[0], sizeof(Vector3), count, wf) != count) { result = false; }
 
         // write triangle mesh
@@ -338,7 +350,9 @@ namespace VMAP
         if (result && fread(&chunkSize, sizeof(uint32), 1, rf) != 1) { result = false; }
         if (result && fread(&count, sizeof(uint32), 1, rf) != 1) { result = false; }
         if (!count) // models without (collision) geometry end here, unsure if they are useful
-            { return result; }
+        {
+            return result;
+        }
         if (result) { vertices.resize(count); }
         if (result && fread(&vertices[0], sizeof(Vector3), count, rf) != count) { result = false; }
 
@@ -360,7 +374,9 @@ namespace VMAP
         if (result && !readChunk(rf, chunk, "LIQU", 4)) { result = false; }
         if (result && fread(&chunkSize, sizeof(uint32), 1, rf) != 1) { result = false; }
         if (result && chunkSize > 0)
-            { result = WmoLiquid::ReadFromFile(rf, iLiquid); }
+        {
+            result = WmoLiquid::ReadFromFile(rf, iLiquid);
+        }
         return result;
     }
 
@@ -382,7 +398,9 @@ namespace VMAP
     bool GroupModel::IntersectRay(const G3D::Ray& ray, float& distance, bool stopAtFirstHit) const
     {
         if (triangles.empty())
-            { return false; }
+        {
+            return false;
+        }
 
         GModelRayCallback callback(triangles, vertices);
         meshTree.intersectRay(ray, callback, distance, stopAtFirstHit);
@@ -392,28 +410,36 @@ namespace VMAP
     bool GroupModel::IsInsideObject(const Vector3& pos, const Vector3& down, float& z_dist) const
     {
         if (triangles.empty() || !iBound.contains(pos))
-            { return false; }
+        {
+            return false;
+        }
 
         Vector3 rPos = pos - 0.1f * down;
         float dist = G3D::inf();
         G3D::Ray ray(rPos, down);
         bool hit = IntersectRay(ray, dist, false);
         if (hit)
-            { z_dist = dist - 0.1f; }
+        {
+            z_dist = dist - 0.1f;
+        }
         return hit;
     }
 
     bool GroupModel::GetLiquidLevel(const Vector3& pos, float& liqHeight) const
     {
         if (iLiquid)
-            { return iLiquid->GetLiquidHeight(pos, liqHeight); }
+        {
+            return iLiquid->GetLiquidHeight(pos, liqHeight);
+        }
         return false;
     }
 
     uint32 GroupModel::GetLiquidType() const
     {
         if (iLiquid)
-            { return iLiquid->GetType(); }
+        {
+            return iLiquid->GetType();
+        }
         return 0;
     }
 
@@ -476,7 +502,9 @@ namespace VMAP
     bool WorldModel::GetAreaInfo(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, AreaInfo& info) const
     {
         if (groupModels.empty())
-            { return false; }
+        {
+            return false;
+        }
 
         WModelAreaCallback callback(groupModels, down);
         groupTree.intersectPoint(p, callback);
@@ -495,7 +523,9 @@ namespace VMAP
     bool WorldModel::GetLocationInfo(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, LocationInfo& info) const
     {
         if (groupModels.empty())
-            { return false; }
+        {
+            return false;
+        }
 
         WModelAreaCallback callback(groupModels, down);
         groupTree.intersectPoint(p, callback);
@@ -511,7 +541,9 @@ namespace VMAP
     bool WorldModel::GetContactPoint(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist) const
     {
         if (groupModels.empty())
-            { return false; }
+        {
+            return false;
+        }
 
         WModelAreaCallback callback(groupModels, dir);
         groupTree.intersectPoint(point, callback);
@@ -528,7 +560,9 @@ namespace VMAP
     {
         FILE* wf = fopen(filename.c_str(), "wb");
         if (!wf)
-            { return false; }
+        {
+            return false;
+        }
 
         uint32 chunkSize, count;
         bool result = fwrite(VMAP_MAGIC, 1, 8, wf) == 8;
@@ -561,7 +595,9 @@ namespace VMAP
     {
         FILE* rf = fopen(filename.c_str(), "rb");
         if (!rf)
-            { return false; }
+        {
+            return false;
+        }
 
         bool result = true;
         uint32 chunkSize = 0;

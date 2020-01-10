@@ -78,7 +78,9 @@ namespace VMAP
     {
         bool success = readMapSpawns();
         if (!success)
-            { return false; }
+        {
+            return false;
+        }
 
         // export Map data
         for (MapData::iterator map_iter = mapData.begin(); map_iter != mapData.end() && success; ++map_iter)
@@ -93,7 +95,9 @@ namespace VMAP
                 if (entry->second.flags & MOD_M2)
                 {
                     if (!calculateTransformedBound(entry->second, RAW_VMAP_MAGIC))
-                        { break; }
+                    {
+                        break;
+                    }
                 }
                 else if (entry->second.flags & MOD_WORLDSPAWN) // WMO maps and terrain maps use different origin, so we need to adapt :/
                 {
@@ -153,7 +157,9 @@ namespace VMAP
             {
                 const ModelSpawn& spawn = map_iter->second->UniqueEntries[tile->second];
                 if (spawn.flags & MOD_WORLDSPAWN)           // WDT spawn, saved as tile 65/65 currently...
-                    { continue; }
+                {
+                    continue;
+                }
                 uint32 nSpawns = tileEntries.count(tile->first);
                 std::stringstream tilefilename;
                 tilefilename.fill('0');
@@ -170,7 +176,9 @@ namespace VMAP
                 for (uint32 s = 0; s < nSpawns; ++s)
                 {
                     if (s && tile != tileEntries.end())
-                        { ++tile; }
+                    {
+                        ++tile;
+                    }
                     const ModelSpawn& spawn2 = map_iter->second->UniqueEntries[tile->second];
                     success = success && ModelSpawn::writeToFile(tilefile, spawn2);
                     // MapTree nodes to update when loading tile:
@@ -224,11 +232,15 @@ namespace VMAP
             // read mapID, tileX, tileY, Flags, adtID, ID, Pos, Rot, Scale, Bound_lo, Bound_hi, name
             uint32 check = fread(&mapID, sizeof(uint32), 1, dirf);
             if (check == 0) // EoF...
-                { break; }
+            {
+                break;
+            }
             check += fread(&tileX, sizeof(uint32), 1, dirf);
             check += fread(&tileY, sizeof(uint32), 1, dirf);
             if (!ModelSpawn::readFromFile(dirf, spawn))
-                { break; }
+            {
+                break;
+            }
 
             MapSpawns* current;
             MapData::iterator map_iter = mapData.find(mapID);
@@ -256,11 +268,15 @@ namespace VMAP
 
         WorldModel_Raw raw_model;
         if (!raw_model.Read(modelFilename.c_str(), RAW_VMAP_MAGIC))
-            { return false; }
+        {
+            return false;
+        }
 
         uint32 groups = raw_model.groupsArray.size();
         if (groups != 1)
-            { printf("Warning: '%s' does not seem to be a M2 model!\n", modelFilename.c_str()); }
+        {
+            printf("Warning: '%s' does not seem to be a M2 model!\n", modelFilename.c_str());
+        }
 
         AABox modelBound;
         bool boundEmpty = true;
@@ -279,7 +295,9 @@ namespace VMAP
             {
                 Vector3 v = modelPosition.transform(vertices[i]);
                 if (boundEmpty)
-                    { modelBound = AABox(v, v), boundEmpty = false; }
+                {
+                    modelBound = AABox(v, v), boundEmpty = false;
+                }
                 else
                     { modelBound.merge(v); }
             }
@@ -302,12 +320,16 @@ namespace VMAP
     {
         std::string filename = iSrcDir;
         if (filename.length() > 0)
-            { filename.append("/"); }
+        {
+            filename.append("/");
+        }
         filename.append(pModelFilename);
 
         WorldModel_Raw raw_model;
         if (!raw_model.Read(filename.c_str(), RAW_VMAP_MAGIC))
-            { return false; }
+        {
+            return false;
+        }
 
         // write WorldModel
         WorldModel model;
@@ -335,7 +357,9 @@ namespace VMAP
     {
         FILE* model_list = fopen((iSrcDir + "/" + GAMEOBJECT_MODELS).c_str(), "rb");
         if (!model_list)
-            { return; }
+        {
+            return;
+        }
 
         FILE* model_list_copy = fopen((iDestDir + "/" + GAMEOBJECT_MODELS).c_str(), "wb");
         if (!model_list_copy)
@@ -375,7 +399,9 @@ namespace VMAP
 
             WorldModel_Raw raw_model;
             if (!raw_model.Read((iSrcDir + "/" + model_name).c_str(), RAW_VMAP_MAGIC))
-                { continue; }
+            {
+                continue;
+            }
 
             spawnedModelFiles.insert(model_name);
 
@@ -390,7 +416,9 @@ namespace VMAP
                 {
                     Vector3& v = vertices[i];
                     if (boundEmpty)
-                        { bounds = AABox(v, v), boundEmpty = false; }
+                    {
+                        bounds = AABox(v, v), boundEmpty = false;
+                    }
                     else
                         { bounds.merge(v); }
                 }

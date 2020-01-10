@@ -144,7 +144,9 @@ class TypeUnorderedMapContainer
             auto&& _element = std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
             auto&& iter = _element.find(handle);
             if (iter == _element.end())
-              { return nullptr; }
+            {
+                return nullptr;
+            }
             else
               { return iter->second; }
         }

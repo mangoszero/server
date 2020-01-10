@@ -233,7 +233,9 @@ namespace Movement
         // first and last two indexes are space for special 'virtual points'
         // these points are required for proper C_Evaluate and C_Evaluate_Derivative methtod work
         if (cyclic)
-            { points[count] = controls[cyclic_point]; }
+        {
+            points[count] = controls[cyclic_point];
+        }
         else
             { points[count] = controls[count - 1]; }
 
@@ -257,7 +259,9 @@ namespace Movement
         if (cyclic)
         {
             if (cyclic_point == 0)
-                { points[0] = controls[count - 1]; }
+            {
+                points[0] = controls[count - 1];
+            }
             else
                 { points[0] = controls[0].lerp(controls[1], -1); }
 

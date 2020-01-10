@@ -253,7 +253,9 @@ class Guild
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
                 if (Player* player = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
                     if (player != except)
-                        { _do(player); }
+                    {
+                        _do(player);
+                    }
         }
 
         void CreateRank(std::string name, uint32 rights);
@@ -285,7 +287,9 @@ class Guild
         {
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
                 if (itr->second.Name == name)
-                    { return &itr->second; }
+                {
+                    return &itr->second;
+                }
 
             return NULL;
         }

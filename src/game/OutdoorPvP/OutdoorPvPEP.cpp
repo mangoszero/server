@@ -75,11 +75,15 @@ void OutdoorPvPEP::HandlePlayerEnterZone(Player* player, bool isMainZone)
     {
         case ALLIANCE:
             if (m_towersAlliance > 0)
-                { player->CastSpell(player, plaguelandsTowerBuffs[m_towersAlliance - 1].spellIdAlliance, true); }
+            {
+                player->CastSpell(player, plaguelandsTowerBuffs[m_towersAlliance - 1].spellIdAlliance, true);
+            }
             break;
         case HORDE:
             if (m_towersHorde > 0)
-                { player->CastSpell(player, plaguelandsTowerBuffs[m_towersHorde - 1].spellIdHorde, true); }
+            {
+                player->CastSpell(player, plaguelandsTowerBuffs[m_towersHorde - 1].spellIdHorde, true);
+            }
             break;
         default:
             break;
@@ -134,7 +138,9 @@ void OutdoorPvPEP::HandleGameObjectCreate(GameObject* go)
         case GO_TOWER_BANNER:
             // sort banners
             if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_NORTHPASS][0], plaguelandsTowerLocations[TOWER_ID_NORTHPASS][1], 50.0f))
-                { InitBanner(go, TOWER_ID_NORTHPASS); }
+            {
+                InitBanner(go, TOWER_ID_NORTHPASS);
+            }
             else if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_CROWNGUARD][0], plaguelandsTowerLocations[TOWER_ID_CROWNGUARD][1], 50.0f))
                 { InitBanner(go, TOWER_ID_CROWNGUARD); }
             else if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_EASTWALL][0], plaguelandsTowerLocations[TOWER_ID_EASTWALL][1], 50.0f))
@@ -202,7 +208,9 @@ bool OutdoorPvPEP::HandleEvent(uint32 eventId, GameObject* go)
                     if (plaguelandsTowerEvents[i][j].team != m_towerOwner[i])
                     {
                         if (plaguelandsTowerEvents[i][j].defenseMessage)
-                            { sWorld.SendDefenseMessage(ZONE_ID_EASTERN_PLAGUELANDS, plaguelandsTowerEvents[i][j].defenseMessage); }
+                        {
+                            sWorld.SendDefenseMessage(ZONE_ID_EASTERN_PLAGUELANDS, plaguelandsTowerEvents[i][j].defenseMessage);
+                        }
 
                         return ProcessCaptureEvent(go, i, plaguelandsTowerEvents[i][j].team, plaguelandsTowerEvents[i][j].worldState);
                     }
@@ -259,7 +267,9 @@ bool OutdoorPvPEP::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team
             SendUpdateWorldState(WORLD_STATE_EP_TOWER_COUNT_ALLIANCE, m_towersAlliance);
 
             if (m_towersAlliance == 0)
-                { BuffTeam(ALLIANCE, plaguelandsTowerBuffs[0].spellIdAlliance, true); }
+            {
+                BuffTeam(ALLIANCE, plaguelandsTowerBuffs[0].spellIdAlliance, true);
+            }
         }
         else
         {
@@ -268,7 +278,9 @@ bool OutdoorPvPEP::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team
             SendUpdateWorldState(WORLD_STATE_EP_TOWER_COUNT_HORDE, m_towersHorde);
 
             if (m_towersHorde == 0)
-                { BuffTeam(HORDE, plaguelandsTowerBuffs[0].spellIdHorde, true); }
+            {
+                BuffTeam(HORDE, plaguelandsTowerBuffs[0].spellIdHorde, true);
+            }
         }
     }
 
@@ -291,7 +303,9 @@ bool OutdoorPvPEP::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team
             case TOWER_ID_EASTWALL:
                 // Return false - allow the DB to handle summons
                 if (m_towerOwner[TOWER_ID_NORTHPASS] != team)
-                    { eventHandled = false; }
+                {
+                    eventHandled = false;
+                }
                 break;
             case TOWER_ID_PLAGUEWOOD:
                 // Return false - allow the DB to handle summons
@@ -335,7 +349,9 @@ bool OutdoorPvPEP::HandleGameObjectUse(Player* /*player*/, GameObject* go)
 {
     // prevent despawning after go use
     if (go->GetEntry() == GO_LORDAERON_SHRINE_ALLIANCE || go->GetEntry() == GO_LORDAERON_SHRINE_HORDE)
-        { go->SetRespawnTime(0); }
+    {
+        go->SetRespawnTime(0);
+    }
 
     return false;
 }
@@ -350,7 +366,9 @@ void OutdoorPvPEP::InitBanner(GameObject* go, uint32 towerId)
 void OutdoorPvPEP::UnsummonFlightMaster(const WorldObject* objRef)
 {
     if (Creature* flightMaster = objRef->GetMap()->GetCreature(m_flightMaster))
-        { flightMaster->ForcedDespawn(); }
+    {
+        flightMaster->ForcedDespawn();
+    }
 }
 
 // Handle the unsummon of the soldiers when the Eastwall tower is lost
@@ -359,7 +377,9 @@ void OutdoorPvPEP::UnsummonSoldiers(const WorldObject* objRef)
     for (GuidList::const_iterator itr = m_soldiers.begin(); itr != m_soldiers.end(); ++itr)
     {
         if (Creature* soldier = objRef->GetMap()->GetCreature(*itr))
-            { soldier->ForcedDespawn(); }
+        {
+            soldier->ForcedDespawn();
+        }
     }
 
     m_soldiers.clear();

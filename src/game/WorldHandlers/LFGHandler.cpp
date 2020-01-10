@@ -48,12 +48,16 @@ void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
 
     // ignore for remote control state
     if (!_player->IsSelfMover())
-        { return; }
+    {
+        return;
+    }
 
     GameObject *obj = GetPlayer()->GetMap()->GetGameObject(guid);
 
     if (!obj)
-        { return; }
+    {
+        return;
+    }
 
     // Never expect this opcode for some type GO's
     if (obj->GetGoType() != GAMEOBJECT_TYPE_MEETINGSTONE)

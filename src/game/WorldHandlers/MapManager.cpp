@@ -104,7 +104,9 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
 
     const MapEntry* entry = sMapStore.LookupEntry(id);
     if (!entry)
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     Map* m;
     if (entry->Instanceable())
@@ -114,7 +116,9 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
         m = CreateInstance(id, (Player*)obj);
         // Load active objects for this map
         if (m != NULL)
-          { LoadActiveEntities(m); }
+        {
+            LoadActiveEntities(m);
+        }
     }
     else
     {
@@ -150,7 +154,9 @@ Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 
     MapMapType::const_iterator iter = i_maps.find(MapID(mapid, instanceId));
     if (iter == i_maps.end())
-        { return NULL; }
+    {
+        return NULL;
+    }
 
     // this is a small workaround for transports
     if (instanceId == 0 && iter->second->Instanceable())
@@ -184,7 +190,9 @@ void MapManager::Update(uint32 diff)
 {
     i_timer.Update(diff);
     if (!i_timer.Passed())
-        { return; }
+    {
+        return;
+    }
 
     for (MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
     {
@@ -327,7 +335,9 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
         map = FindMap(id, NewInstanceId);
         // it is possible that the save exists but the map doesn't
         if (!map)
-            { pNewMap = CreateDungeonMap(id, NewInstanceId, pSave); }
+        {
+            pNewMap = CreateDungeonMap(id, NewInstanceId, pSave);
+        }
     }
     else
     {
@@ -402,10 +412,14 @@ void MapManager::LoadContinents()
         _map = sMapMgr.FindMap(continents[i]);
 
         if (!_map)
-          { _map = sMapMgr.CreateMap(continents[i], NULL); }
+        {
+            _map = sMapMgr.CreateMap(continents[i], NULL);
+        }
 
         if (!_map)
-          { sLog.outError("MapManager::LoadContinents() - Unable to create map %u", continents[i]); }
+        {
+            sLog.outError("MapManager::LoadContinents() - Unable to create map %u", continents[i]);
+        }
     }
 
     return;

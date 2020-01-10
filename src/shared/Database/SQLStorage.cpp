@@ -75,7 +75,9 @@ void SQLStorageBase::prepareToLoad(uint32 maxEntry, uint32 recordCount, uint32 r
 void SQLStorageBase::Free()
 {
     if (!m_data)
-        { return; }
+    {
+        return;
+    }
 
     uint32 offset = 0;
     for (uint32 x = 0; x < m_dstFieldCount; ++x)
@@ -193,7 +195,9 @@ void SQLHashStorage::EraseEntry(uint32 id)
     // do not erase from m_records
     RecordMap::iterator find = m_indexMap.find(id);
     if (find != m_indexMap.end())
-        { find->second = NULL; }
+    {
+        find->second = NULL;
+    }
 }
 
 SQLHashStorage::SQLHashStorage(const char* fmt, const char* _entry_field, const char* sqlname)

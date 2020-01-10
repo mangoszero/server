@@ -47,7 +47,9 @@ bool QueryResultMysql::NextRow()
     MYSQL_ROW row;
 
     if (!mResult)
-        { return false; }
+    {
+        return false;
+    }
 
     row = mysql_fetch_row(mResult);
     if (!row)

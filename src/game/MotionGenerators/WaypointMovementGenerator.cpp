@@ -62,7 +62,9 @@ void WaypointMovementGenerator<Creature>::LoadPath(Creature& creature, int32 pat
     }
 
     if (i_path->empty())
-        { return; }
+    {
+        return;
+    }
     // Initialize the i_currentNode to point to the first node
     i_currentNode = i_path->begin()->first;
     m_lastReachedWaypoint = 0;
@@ -104,12 +106,16 @@ void WaypointMovementGenerator<Creature>::Reset(Creature& creature)
 void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
 {
     if (!i_path || i_path->empty())
-        { return; }
+    {
+        return;
+    }
 
     m_lastReachedWaypoint = i_currentNode;
 
     if (m_isArrivalDone)
-        { return; }
+    {
+        return;
+    }
 
     creature.clearUnitState(UNIT_STAT_ROAMING_MOVE);
     m_isArrivalDone = true;
@@ -128,13 +134,19 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
     if (WaypointBehavior* behavior = node.behavior)
     {
         if (behavior->emote != 0)
-            { creature.HandleEmote(behavior->emote); }
+        {
+            creature.HandleEmote(behavior->emote);
+        }
 
         if (behavior->spell != 0)
-            { creature.CastSpell(&creature, behavior->spell, false); }
+        {
+            creature.CastSpell(&creature, behavior->spell, false);
+        }
 
         if (behavior->model1 != 0)
-            { creature.SetDisplayId(behavior->model1); }
+        {
+            creature.SetDisplayId(behavior->model1);
+        }
 
         if (behavior->textid[0])
         {
@@ -147,14 +159,18 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
                 for (; i < MAX_WAYPOINT_TEXT; ++i)
                 {
                     if (!behavior->textid[i])
-                        { break; }
+                    {
+                        break;
+                    }
                 }
 
                 textId = behavior->textid[urand(0, i - 1)];
             }
 
             if (MangosStringLocale const* textData = sObjectMgr.GetMangosStringLocale(textId))
-                { creature.MonsterText(textData, NULL); }
+            {
+                creature.MonsterText(textData, NULL);
+            }
             else
                 { sLog.outErrorDb("%s reached waypoint %u, attempted to do text %i, but required text-data could not be found", creature.GetGuidStr().c_str(), i_currentNode, textId); }
         }
@@ -176,13 +192,19 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
 void WaypointMovementGenerator<Creature>::StartMove(Creature& creature)
 {
     if (!i_path || i_path->empty())
-        { return; }
+    {
+        return;
+    }
 
     if (Stopped(creature))
-        { return; }
+    {
+        return;
+    }
 
     if (!creature.IsAlive() || creature.hasUnitState(UNIT_STAT_NOT_MOVE))
-        { return; }
+    {
+        return;
+    }
 
     WaypointPath::const_iterator currPoint = i_path->find(i_currentNode);
     MANGOS_ASSERT(currPoint != i_path->end());
@@ -190,7 +212,9 @@ void WaypointMovementGenerator<Creature>::StartMove(Creature& creature)
     if (WaypointBehavior* behavior = currPoint->second.behavior)
     {
         if (behavior->model2 != 0)
-            { creature.SetDisplayId(behavior->model2); }
+        {
+            creature.SetDisplayId(behavior->model2);
+        }
         creature.SetUInt32Value(UNIT_NPC_EMOTESTATE, 0);
     }
 
@@ -228,7 +252,9 @@ void WaypointMovementGenerator<Creature>::StartMove(Creature& creature)
     init.MoveTo(nextNode.x, nextNode.y, nextNode.z, true);
 
     if (nextNode.orientation != 100 && nextNode.delay != 0)
-        { init.SetFacing(nextNode.orientation); }
+    {
+        init.SetFacing(nextNode.orientation);
+    }
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE) && !creature.IsLevitating(), false);
     init.Launch();
 }
@@ -253,12 +279,16 @@ bool WaypointMovementGenerator<Creature>::Update(Creature& creature, const uint3
     if (Stopped(creature))
     {
         if (CanMove(diff, creature))
-            { StartMove(creature); }
+        {
+            StartMove(creature);
+        }
     }
     else
     {
         if (creature.IsStopped())
-            { Stop(STOP_TIME_FOR_PLAYER); }
+        {
+            Stop(STOP_TIME_FOR_PLAYER);
+        }
         else if (creature.movespline->Finalized())
         {
             OnArrived(creature);
@@ -288,12 +318,16 @@ bool WaypointMovementGenerator<Creature>::GetResetPosition(Creature&, float& x, 
 {
     // prevent a crash at empty waypoint path.
     if (!i_path || i_path->empty())
-        { return false; }
+    {
+        return false;
+    }
 
     WaypointPath::const_iterator lastPoint = i_path->find(m_lastReachedWaypoint);
     // Special case: Before the first waypoint is reached, m_lastReachedWaypoint is set to 0 (which may not be contained in i_path)
     if (!m_lastReachedWaypoint && lastPoint == i_path->end())
-        { return false; }
+    {
+        return false;
+    }
 
     MANGOS_ASSERT(lastPoint != i_path->end());
 
@@ -366,14 +400,18 @@ bool WaypointMovementGenerator<Creature>::SetNextWaypoint(uint32 pointId)
 uint32 FlightPathMovementGenerator::GetPathAtMapEnd() const
 {
     if (i_currentNode >= i_path->size())
-        { return i_path->size(); }
+    {
+        return i_path->size();
+    }
 
     uint32 curMapId = (*i_path)[i_currentNode].mapid;
 
     for (uint32 i = i_currentNode; i < i_path->size(); ++i)
     {
         if ((*i_path)[i].mapid != curMapId)
-            { return i; }
+        {
+            return i;
+        }
     }
 
     return i_path->size();
@@ -396,7 +434,9 @@ void FlightPathMovementGenerator::Finalize(Player& player)
     {
         player.GetHostileRefManager().setOnlineOfflineState(true);
         if (player.pvpInfo.inHostileArea)
-            { player.CastSpell(&player, 2479, true); }
+        {
+            player.CastSpell(&player, 2479, true);
+        }
 
         // update z position to ground and orientation for landing point
         // this prevent cheating with landing  point at lags
@@ -440,7 +480,9 @@ bool FlightPathMovementGenerator::Update(Player& player, const uint32& /*diff*/)
         do
         {
             if (pointId == i_currentNode)
-                { break; }
+            {
+                break;
+            }
             i_currentNode += (uint32)departureEvent;
             departureEvent = !departureEvent;
         }
@@ -453,7 +495,9 @@ bool FlightPathMovementGenerator::Update(Player& player, const uint32& /*diff*/)
 void FlightPathMovementGenerator::SetCurrentNodeAfterTeleport()
 {
     if (i_path->empty())
-        { return; }
+    {
+        return;
+    }
 
     uint32 map0 = (*i_path)[0].mapid;
 
