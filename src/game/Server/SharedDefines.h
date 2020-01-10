@@ -491,7 +491,6 @@ enum CharacterSlot
     SLOT_EMPTY                         = 19
 };
 
-// from Languages.dbc (checked for 1.12.1)
 enum Language
 {
     LANG_UNIVERSAL      = 0,
@@ -2034,30 +2033,6 @@ enum SkillCategory
     SKILL_CATEGORY_PROFESSION    = 11,                      // primary professions
     SKILL_CATEGORY_GENERIC       = 12
 };
-/*[-ZERO]
-enum TotemCategory
-{
-    TC_SKINNING_SKIFE              = 1,
-    TC_EARTH_TOTEM                 = 2,
-    TC_AIR_TOTEM                   = 3,
-    TC_FIRE_TOTEM                  = 4,
-    TC_WATER_TOTEM                 = 5,
-    TC_COPPER_ROD                  = 6,
-    TC_SILVER_ROD                  = 7,
-    TC_GOLDEN_ROD                  = 8,
-    TC_TRUESILVER_ROD              = 9,
-    TC_ARCANITE_ROD                = 10,
-    TC_MINING_PICK                 = 11,
-    TC_PHILOSOPHERS_STONE          = 12,
-    TC_BLACKSMITH_HAMMER           = 13,
-    TC_ARCLIGHT_SPANNER            = 14,
-    TC_GYROMATIC_MA                = 15,
-    TC_MASTER_TOTEM                = 21,
-    TC_FEL_IRON_ROD                = 41,
-    TC_ADAMANTITE_ROD              = 62,
-    TC_ETERNIUM_ROD                = 63
-};
-*/
 
 enum UnitDynFlags
 {

@@ -74,6 +74,7 @@ struct CapturePointSlider
     bool IsLocked;
 };
 
+// forward declaration
 class Player;
 class GameObject;
 class Creature;

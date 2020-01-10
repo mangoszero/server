@@ -572,13 +572,11 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
             speakInWorldDef = true;
         }
         
+        // Only Applicable for Vanilla
         HonorRankInfo honorInfo = plr->GetHonorRankInfo();
         //We can speak in local defense if we're above this rank (see .h file)
         if (honorInfo.rank >= SPEAK_IN_LOCALDEFENSE_RANK)
             speakInLocalDef = true;
-        // Are we not allowed to speak in WorldDefense at all?
-        // if (honorInfo.rank >= SPEAK_IN_WORLDDEFENSE_RANK)
-        //     speakInWorldDef = true;
     }
     
     if (!IsOn(guid))
@@ -588,7 +586,6 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         SendToOne(&data, guid);
         return;
     }
-
     else if (m_players[guid].IsMuted() ||
              (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
              (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
@@ -761,8 +758,6 @@ void Channel::MakeYouJoined(WorldPacket* data)
 void Channel::MakeYouLeft(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_YOU_LEFT_NOTICE);
-    //*data << uint32(GetChannelId());                        //[-ZERO]
-    //*data << uint8(0);                                      //[-ZERO] can be 0x00 and 0x01 (bool)
 }
 
 void Channel::MakeWrongPassword(WorldPacket* data)

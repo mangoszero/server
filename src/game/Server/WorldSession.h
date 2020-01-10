@@ -733,6 +733,7 @@ class WorldSession
         // for Warden
         uint16 GetClientBuild() const { return _build; }
 
+
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);
