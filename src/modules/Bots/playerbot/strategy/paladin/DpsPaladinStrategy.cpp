@@ -60,7 +60,7 @@ NextAction** DpsPaladinStrategy::getDefaultActions()
 void DpsPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
-    
+
     triggers.push_back(new TriggerNode(
         "low health",
         NextAction::array(0, new NextAction("divine shield", ACTION_CRITICAL_HEAL + 2), new NextAction("holy light", ACTION_CRITICAL_HEAL + 2), NULL)));

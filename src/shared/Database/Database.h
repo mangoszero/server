@@ -625,7 +625,7 @@ class Database
         /**
         * @brief Function to check that the database version matches expected core version
         *
-        * @param DatabaseTypes 
+        * @param DatabaseTypes
         * @return bool
         */
         bool CheckDatabaseVersion(DatabaseTypes database);

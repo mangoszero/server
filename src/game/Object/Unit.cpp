@@ -1691,8 +1691,14 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
     // Disable parry or dodge for ranged attack
     if (damageInfo->attackType == RANGED_ATTACK)
     {
-        if (damageInfo->hitOutCome == MELEE_HIT_PARRY) { damageInfo->hitOutCome = MELEE_HIT_NORMAL; }
-        if (damageInfo->hitOutCome == MELEE_HIT_DODGE) { damageInfo->hitOutCome = MELEE_HIT_MISS; }
+        if (damageInfo->hitOutCome == MELEE_HIT_PARRY)
+        {
+            damageInfo->hitOutCome = MELEE_HIT_NORMAL;
+        }
+        if (damageInfo->hitOutCome == MELEE_HIT_DODGE)
+        {
+            damageInfo->hitOutCome = MELEE_HIT_MISS;
+        }
     }
 
     switch (damageInfo->hitOutCome)
@@ -1870,7 +1876,10 @@ void Unit::CalculateMeleeDamage(Unit* pVictim, CalcDamageInfo* damageInfo, Weapo
 
 void Unit::DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss)
 {
-    if (damageInfo == 0) { return; }
+    if (damageInfo == 0)
+    {
+        return;
+    }
     Unit* pVictim = damageInfo->target;
 
     if (!pVictim)
@@ -2419,13 +2428,13 @@ void Unit::AttackerStateUpdate(Unit* pVictim, WeaponAttackType attType, bool ext
     DEBUG_FILTER_LOG(LOG_FILTER_COMBAT, "AttackerStateUpdate: %s attacked %s for %u dmg, absorbed %u, blocked %u, resisted %u.",
                      GetGuidStr().c_str(), pVictim->GetGuidStr().c_str(), damageInfo.damage, damageInfo.absorb, damageInfo.blocked_amount, damageInfo.resist);
 
-    // Owner of pet enters combat upon pet attack 
-    if (Unit* owner = GetOwner()) 
-    { 
-        owner->AddThreat(pVictim); 
-        owner->SetInCombatWith(pVictim); 
-        pVictim->SetInCombatWith(owner); 
-    } 
+    // Owner of pet enters combat upon pet attack
+    if (Unit* owner = GetOwner())
+    {
+        owner->AddThreat(pVictim);
+        owner->SetInCombatWith(pVictim);
+        pVictim->SetInCombatWith(owner);
+    }
 
     // if damage pVictim call AI reaction
     pVictim->AttackedBy(this);
@@ -2990,8 +2999,14 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit* pVictim, SpellEntry const* spell)
     // Increase hit chance from attacker SPELL_AURA_MOD_SPELL_HIT_CHANCE and attacker ratings
     HitChance += int32(m_modSpellHitChance * 100.0f);
 
-    if (HitChance <  100) { HitChance =  100; }
-    if (HitChance > 9900) { HitChance = 9900; }
+    if (HitChance <  100)
+    {
+        HitChance =  100;
+    }
+    if (HitChance > 9900)
+    {
+        HitChance = 9900;
+    }
 
     int32 tmp = spell->HasAttribute(SPELL_ATTR_EX3_CANT_MISS) ? 0 : (10000 - HitChance);
 
@@ -3435,7 +3450,10 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
 
     CurrentSpellTypes CSpellType = pSpell->GetCurrentContainer();
 
-    if (pSpell == m_currentSpells[CSpellType]) { return; }      // avoid breaking self
+    if (pSpell == m_currentSpells[CSpellType])
+    {
+        return;       // avoid breaking self
+    }
 
     // break same type spell if it is not delayed
     InterruptSpell(CSpellType, false);
@@ -3501,7 +3519,7 @@ void Unit::SetCurrentCastedSpell(Spell* pSpell)
     m_currentSpells[CSpellType] = pSpell;
     pSpell->SetReferencedFromCurrent(true);
 
-    pSpell->SetSelfContainer(&(m_currentSpells[pSpell->GetCurrentContainer()])); 
+    pSpell->SetSelfContainer(&(m_currentSpells[pSpell->GetCurrentContainer()]));
     // previous and faulty version of the following code. If the above proves to work, then delete this instruction
     //   pSpell->m_selfContainer = &(m_currentSpells[pSpell->GetCurrentContainer()]);
 }
@@ -4133,7 +4151,10 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
     {
         next = i;
         ++next;
-        if (!(*i).second) { continue; }
+        if (!(*i).second)
+        {
+            continue;
+        }
 
         SpellEntry const* i_spellProto = (*i).second->GetSpellProto();
 
@@ -4160,7 +4181,10 @@ bool Unit::RemoveNoStackAurasDueToAuraHolder(SpellAuraHolder* holder)
             }
         }
 
-        if (i_spellId == spellId) { continue; }
+        if (i_spellId == spellId)
+        {
+            continue;
+        }
 
         bool is_triggered_by_spell = false;
         // prevent triggering aura of removing aura that triggered it
@@ -5187,12 +5211,12 @@ void Unit::SetPowerType(Powers new_powertype)
         if (new_powertype == POWER_RAGE)
             curValue = 0;
 
-        // set power (except for mana) 
-        if (new_powertype != POWER_MANA) 
-        { 
-            SetMaxPower(new_powertype, maxValue); 
-            SetPower(new_powertype, curValue); 
-        } 
+        // set power (except for mana)
+        if (new_powertype != POWER_MANA)
+        {
+            SetMaxPower(new_powertype, maxValue);
+            SetPower(new_powertype, curValue);
+        }
     }
 }
 
@@ -5782,9 +5806,15 @@ void Unit::ModifyAuraState(AuraState flag, bool apply)
                 const PlayerSpellMap& sp_list = ((Player*)this)->GetSpellMap();
                 for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
                 {
-                    if (itr->second.state == PLAYERSPELL_REMOVED) { continue; }
+                if (itr->second.state == PLAYERSPELL_REMOVED)
+                {
+                    continue;
+                }
                     SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
-                    if (!spellInfo || !IsPassiveSpell(spellInfo)) { continue; }
+                    if (!spellInfo || !IsPassiveSpell(spellInfo))
+                    {
+                        continue;
+                    }
                     if (AuraState(spellInfo->CasterAuraState) == flag)
                     {
                         CastSpell(this, itr->first, true, NULL);
@@ -6110,7 +6140,7 @@ void Unit::EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers 
  * If benefit is 0, this function won't do anything. If pCaster isn't player, the default coefficient 1.0 will be used.
  * The spell_bonus_data table of the database is used here to define custom spell coefficients based on damage type.
  *
- * The spell bonus coefficient are always chosen by this priority: 
+ * The spell bonus coefficient are always chosen by this priority:
  * For Donepart : weapon_done > direct_done > direct
  * For Takenpart : weapon_taken > direct_taken > direct
  *
@@ -6161,13 +6191,13 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
                             switch (item->GetProto()->InventoryType)
                             {
                                 case INVTYPE_2HWEAPON:
-                                    coeff = (bonus->two_hand_direct_damage_done ? bonus->two_hand_direct_damage_done : 
+                                    coeff = (bonus->two_hand_direct_damage_done ? bonus->two_hand_direct_damage_done :
                                         ( bonus->two_hand_direct_damage ? bonus->two_hand_direct_damage : bonus->direct_damage_done ));
                                     break;
                                 case INVTYPE_WEAPON:
                                 case INVTYPE_WEAPONMAINHAND:
                                 case INVTYPE_WEAPONOFFHAND:
-                                    coeff = (bonus->one_hand_direct_damage_done ? bonus->one_hand_direct_damage_done : 
+                                    coeff = (bonus->one_hand_direct_damage_done ? bonus->one_hand_direct_damage_done :
                                         ( bonus->one_hand_direct_damage ? bonus->one_hand_direct_damage : bonus->direct_damage_done ));
                                 break;
                             }
@@ -6188,13 +6218,13 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
                             switch (item->GetProto()->InventoryType)
                             {
                                 case INVTYPE_2HWEAPON:
-                                    coeff = (bonus->two_hand_direct_damage_taken ? bonus->two_hand_direct_damage_taken : 
+                                    coeff = (bonus->two_hand_direct_damage_taken ? bonus->two_hand_direct_damage_taken :
                                         ( bonus->two_hand_direct_damage ? bonus->two_hand_direct_damage : bonus->direct_damage_taken ));
                                     break;
                                 case INVTYPE_WEAPON:
                                 case INVTYPE_WEAPONMAINHAND:
                                 case INVTYPE_WEAPONOFFHAND:
-                                    coeff = (bonus->one_hand_direct_damage_taken ? bonus->one_hand_direct_damage_taken : 
+                                    coeff = (bonus->one_hand_direct_damage_taken ? bonus->one_hand_direct_damage_taken :
                                         ( bonus->one_hand_direct_damage ? bonus->one_hand_direct_damage : bonus->direct_damage_taken ));
                                     break;
                             }
@@ -6222,7 +6252,7 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
         }
     }
     // Default calculation
-    else 
+    else
         { coeff = CalculateDefaultCoefficient(spellProto, damagetype); }
 
     float LvlPenalty = CalculateLevelPenalty(spellProto);
@@ -6627,7 +6657,10 @@ uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, 
 
     // done scripted mod (take it from owner)
     Unit* owner = GetOwner();
-    if (!owner) { owner = this; }
+    if (!owner)
+    {
+        owner = this;
+    }
     AuraList const& mOverrideClassScript = owner->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
     for (AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
     {

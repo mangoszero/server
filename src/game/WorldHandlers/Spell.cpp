@@ -1090,7 +1090,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
     else                                                    // in 1.12.1 we need explicit miss info
     {
         if (real_caster)
-        { 
+        {
             // Warrior's execute must be returned as 20647 spell result since the client only displays info when receiving this id.
             // Done here because must be based on MeleeSpellHitResult of spell id's 5308/20658/20660/20661/20662.
             if(m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && m_spellInfo->IsFitToFamilyMask(0x0000000020000000))
@@ -1818,7 +1818,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_PET:
         {
             Pet* tmpUnit = m_caster->GetPet();
-            if (!tmpUnit) { break; }
+            if (!tmpUnit)
+            {
+                break;
+            }
             targetUnitMap.push_back(tmpUnit);
             break;
         }
@@ -2769,7 +2772,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         {
             next = itr;
             ++next;
-            if (!*itr) { continue; }
+            if (!*itr)
+            {
+                continue;
+            }
             if ((*itr) == m_targets.getUnitTarget())
             {
                 targetUnitMap.erase(itr);
@@ -2783,7 +2789,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             uint32 poz = urand(0, targetUnitMap.size() - 1);
             for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end(); ++itr, --poz)
             {
-                if (!*itr) { continue; }
+                if (!*itr)
+                {
+                    continue;
+                }
 
                 if (!poz)
                 {
@@ -2808,7 +2817,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             {
                 next = itr;
                 ++next;
-                if (!*itr) { continue; }
+                if (!*itr)
+                {
+                    continue;
+                }
                 if ((*itr) == m_targets.getGOTarget())
                 {
                     tempTargetGOList.erase(itr);
@@ -2822,7 +2834,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 uint32 poz = urand(0, tempTargetGOList.size() - 1);
                 for (std::list<GameObject*>::iterator itr = tempTargetGOList.begin(); itr != tempTargetGOList.end(); ++itr, --poz)
                 {
-                    if (!*itr) { continue; }
+                    if (!*itr)
+                    {
+                        continue;
+                    }
 
                     if (!poz)
                     {
@@ -3064,7 +3079,7 @@ void Spell::cast(bool skipCheck)
         }
         case SPELLFAMILY_ROGUE:
                 {
-                // exit stealth on sap when improved sap is not skilled 
+                // exit stealth on sap when improved sap is not skilled
                 if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000080) && m_caster->GetTypeId() == TYPEID_PLAYER && (!m_caster->GetAura(14076, SpellEffectIndex(0)) && !m_caster->GetAura(14094, SpellEffectIndex(0)) && !m_caster->GetAura(14095, SpellEffectIndex(0))))
                 m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
                 }
@@ -4696,7 +4711,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             // Fill possible dispel list
             bool isDispell = false;
             bool isEmpty = true;
-        
+
             // As of Patch 1.10.0, dispel effects now check if there is something to dispel first
             for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
             {
@@ -4749,7 +4764,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
 
             // Ok if exist some buffs for dispel try dispel it
-            if (isDispell && 
+            if (isDispell &&
                 isEmpty)
             {
                 return SPELL_FAILED_NOTHING_TO_DISPEL;
@@ -4768,7 +4783,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             && ((Creature*)target)->IsTotem())
             { return SPELL_FAILED_IMMUNE; }
 
-        // Power Infusion: As of patch 1.10, this is no longer usable if the target 
+        // Power Infusion: As of patch 1.10, this is no longer usable if the target
         // has Arcane Power aura from mage.
         if (m_spellInfo->Id == 10060)    // 10060 = Power Infusion
         {
@@ -4777,7 +4792,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 return SPELL_FAILED_MORE_POWERFUL_SPELL_ACTIVE;
             }
         }
-        
+
         bool non_caster_target = target != m_caster && !IsSpellWithCasterSourceTargetsOnly(m_spellInfo);
 
         if (non_caster_target)
@@ -4982,8 +4997,8 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_TARGET_AFFECTING_COMBAT;
         }
 
-        // check if target is affected by Spirit of Redemption (Aura: 27827)  
-        if (target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))  
+        // check if target is affected by Spirit of Redemption (Aura: 27827)
+        if (target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
         {
             return SPELL_FAILED_BAD_TARGETS;
         }
@@ -5990,8 +6005,8 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (expectedTarget->GetTypeId() == TYPEID_PLAYER)
                 {
                     Player const* player = static_cast<Player const*>(expectedTarget);
-                    
-                    // Player is not allowed to cast water walk on shapeshifted/mounted player 
+
+                    // Player is not allowed to cast water walk on shapeshifted/mounted player
                     if (player->GetShapeshiftForm() != FORM_NONE || player->IsMounted())
                     {
                         return SPELL_FAILED_BAD_TARGETS;
@@ -6346,7 +6361,7 @@ SpellCastResult Spell::CheckRange(bool strict)
             }
         }
         break;
-    }        
+    }
     }
 
     // add radius of caster and ~5 yds "give" for non stricred (landing) check
@@ -6877,7 +6892,10 @@ SpellCastResult Spell::CheckItems()
             case SPELL_EFFECT_WEAPON_DAMAGE:
             case SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL:
             {
-                if (m_caster->GetTypeId() != TYPEID_PLAYER) { return SPELL_FAILED_TARGET_NOT_PLAYER; }
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)
+                {
+                    return SPELL_FAILED_TARGET_NOT_PLAYER;
+                }
                 if (m_attackType != RANGED_ATTACK)
                 {
                     break;
@@ -7391,7 +7409,7 @@ bool Spell::IsLockInRange(GameObject* go)
 {
     const SpellRangeEntry* srange = sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex);
 
-    
+
     // This check is not related to bounding radius
     float dx = m_caster->GetPositionX() - go->GetPositionX();
     float dy = m_caster->GetPositionY() - go->GetPositionY();

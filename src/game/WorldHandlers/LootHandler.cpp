@@ -467,8 +467,8 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             }
             else
                 // not fully looted object
-            { 
-                go->SetLootState(GO_ACTIVATED); 
+            {
+                go->SetLootState(GO_ACTIVATED);
             }
 
             go->SetGoState(GO_STATE_READY);
@@ -548,7 +548,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
 
             /* Update for other players. */
             if(!loot->isLooted())
-            { 
+            {
                 Group const* group = pCreature->GetGroupLootRecipient();
                 if (group && !pCreature->hasBeenLootedOnce)
                 {
@@ -572,7 +572,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
                     }
                     pCreature->MarkFlagUpdateForClient(UNIT_DYNAMIC_FLAGS);
                 }
-            }            
+            }
 
             /* We've completely looted the creature, mark it as available for skinning */
             if (loot->isLooted() && !pCreature->IsAlive())

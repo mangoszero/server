@@ -167,7 +167,7 @@ class TypeMapContainer
 
     public:
         template <typename T>
-        size_t count(T*) const 
+        size_t count(T*) const
         {
             return std::get<Meta::IndexOf<T,Tuple>::value>(i_container).getSize();
         }

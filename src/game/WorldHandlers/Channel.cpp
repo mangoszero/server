@@ -577,14 +577,14 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
             speakInLocalDef = true;
             speakInWorldDef = true;
         }
-        
+
         // Only Applicable for Vanilla
         HonorRankInfo honorInfo = plr->GetHonorRankInfo();
         //We can speak in local defense if we're above this rank (see .h file)
         if (honorInfo.rank >= SPEAK_IN_LOCALDEFENSE_RANK)
             speakInLocalDef = true;
     }
-    
+
     if (!IsOn(guid))
     {
         WorldPacket data;

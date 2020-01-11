@@ -120,7 +120,10 @@ Tokens StrSplit(const std::string& src, const std::string& sep)
     {
         if (sep.find(*i) != std::string::npos)
         {
-            if (s.length()) { r.push_back(s); }
+            if (s.length())
+            {
+                r.push_back(s);
+            }
             s = "";
         }
         else
@@ -128,7 +131,10 @@ Tokens StrSplit(const std::string& src, const std::string& sep)
             s += *i;
         }
     }
-    if (s.length()) { r.push_back(s); }
+    if (s.length())
+    {
+        r.push_back(s);
+    }
     return r;
 }
 

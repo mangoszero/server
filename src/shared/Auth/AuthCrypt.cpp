@@ -41,7 +41,10 @@ void AuthCrypt::DecryptRecv(uint8* data, size_t len)
         {
             return;
         }
-    if (len < CRYPTED_RECV_LEN) { return; }
+        if (len < CRYPTED_RECV_LEN)
+        {
+            return;
+        }
 
     for (size_t t = 0; t < CRYPTED_RECV_LEN; t++)
     {
@@ -60,7 +63,10 @@ void AuthCrypt::EncryptSend(uint8* data, size_t len)
             return;
         }
 
-    if (len < CRYPTED_SEND_LEN) { return; }
+    if (len < CRYPTED_SEND_LEN)
+    {
+        return;
+    }
 
     for (size_t t = 0; t < CRYPTED_SEND_LEN; t++)
     {

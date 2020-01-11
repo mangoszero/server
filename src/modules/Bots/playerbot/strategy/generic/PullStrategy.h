@@ -7,7 +7,7 @@ namespace ai
     class PullStrategy : public RangedCombatStrategy
     {
     public:
-        PullStrategy(PlayerbotAI* ai, string action) : RangedCombatStrategy(ai) 
+        PullStrategy(PlayerbotAI* ai, string action) : RangedCombatStrategy(ai)
         {
             this->action = action;
         }

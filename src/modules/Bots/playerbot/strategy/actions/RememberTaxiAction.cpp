@@ -7,7 +7,7 @@ using namespace ai;
 
 bool RememberTaxiAction::Execute(Event event)
 {
-    
+
 
     WorldPacket p(event.getPacket());
     p.rpos(0);

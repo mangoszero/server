@@ -210,7 +210,10 @@ void Database::InitDelayThread()
 
 void Database::HaltDelayThread()
 {
-    if (!m_threadBody || !m_delayThread) { return; }
+    if (!m_threadBody || !m_delayThread)
+    {
+        return;
+    }
 
     m_threadBody->Stop();                                   // Stop event
     m_delayThread->wait();                                  // Wait for flush to DB
@@ -329,7 +332,10 @@ bool Database::PExecuteLog(const char* format, ...)
 
 QueryResult* Database::PQuery(const char* format, ...)
 {
-    if (!format) { return NULL; }
+    if (!format)
+    {
+        return NULL;
+    }
 
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
@@ -348,7 +354,10 @@ QueryResult* Database::PQuery(const char* format, ...)
 
 QueryNamedResult* Database::PQueryNamed(const char* format, ...)
 {
-    if (!format) { return NULL; }
+    if (!format)
+    {
+        return NULL;
+    }
 
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
@@ -522,7 +531,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
 
     // db_version table does not exist or is empty
     if (!result)
-    { 
+    {
         sLog.outErrorDb("The table `db_version` in your [%s] database is missing or corrupt.", dbversion.dbname.c_str());
         sLog.outErrorDb();
         sLog.outErrorDb("  [A] You have database Version: MaNGOS can not verify your database version or its existence!");
@@ -571,7 +580,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb("Current DB content is %u, core expects %u", content, dbversion.expected_content);
         sLog.outErrorDb("This is ok for now but should not last long.");
     }
-    else if (content != dbversion.expected_content) 
+    else if (content != dbversion.expected_content)
     {
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected version!", dbversion.dbname.c_str());
         sLog.outErrorDb();

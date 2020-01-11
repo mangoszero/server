@@ -554,7 +554,10 @@ inline uint32 GetDispellMask(DispelType dispel)
 inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
 {
     SpellEntry const* spellproto = sSpellStore.LookupEntry(spellId);
-    if (!spellproto) { return false; }
+    if (!spellproto)
+    {
+        return false;
+    }
 
     for (int i = 0; i < 3; i++)
         if (spellproto->EffectApplyAuraName[i] == auraType)

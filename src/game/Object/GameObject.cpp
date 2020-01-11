@@ -835,7 +835,10 @@ bool GameObject::IsTransport() const
 {
     // If something is marked as a transport, don't transmit an out of range packet for it.
     GameObjectInfo const* gInfo = GetGOInfo();
-    if (!gInfo) { return false; }
+    if (!gInfo)
+    {
+        return false;
+    }
     return gInfo->type == GAMEOBJECT_TYPE_TRANSPORT || gInfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT;
 }
 
@@ -2047,7 +2050,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
                 entry = 1732;
                 break;
             case 2040: // Mithril can spawn Iron
-                entry = 1735; 
+                entry = 1735;
                 break;
             case 123310: // Ooze covered mithril can spawn ooze covered iron
                 entry = 73939;
@@ -2085,7 +2088,7 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
                 break;
         case 2040: // Mithril can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
-                entrynew = 2047; 
+                entrynew = 2047;
                 break;
         case 123310: // Ooze covered mithril can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))

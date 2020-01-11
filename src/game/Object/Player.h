@@ -1029,8 +1029,14 @@ class Player : public Unit
         void SetGMVisible(bool on);
         void SetPvPDeath(bool on)
         {
-            if (on) { m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH; }
-            else { m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH; }
+            if (on)
+            {
+                m_ExtraFlags |= PLAYER_EXTRA_PVP_DEATH;
+            }
+            else
+            {
+                m_ExtraFlags &= ~PLAYER_EXTRA_PVP_DEATH;
+            }
         }
 
         // 0 = own auction, -1 = enemy auction, 1 = goblin auction
@@ -2662,7 +2668,10 @@ void RemoveItemsSetItem(Player* player, ItemPrototype const* proto);
 template <class T> T Player::ApplySpellMod(uint32 spellId, SpellModOp op, T& basevalue, Spell const* spell)
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
-    if (!spellInfo) { return 0; }
+    if (!spellInfo)
+    {
+        return 0;
+    }
     int32 totalpct = 0;
     int32 totalflat = 0;
     for (SpellModList::iterator itr = m_spellMods[op].begin(); itr != m_spellMods[op].end(); ++itr)

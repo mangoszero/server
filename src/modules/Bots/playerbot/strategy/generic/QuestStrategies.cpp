@@ -60,7 +60,7 @@ void AcceptAllQuestsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "complete quest",
-        NextAction::array(0, 
+        NextAction::array(0,
             new NextAction("talk to quest giver", relevance), new NextAction("accept all quests", relevance), NULL)));
 }
 

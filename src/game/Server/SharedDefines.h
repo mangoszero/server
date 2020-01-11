@@ -2587,7 +2587,7 @@ enum GMTicketStatus
  * string for this in the config file is LogWhispers, the config enum is
  * \ref eConfigUInt32Values::CONFIG_UINT32_LOG_WHISPERS and the default value is 1, ie: we only
  * log whispers related to tickets.
- * 
+ *
  * The database table that everything is logged to is character.character_whispers
  * \see Player::LogWhisper
  */

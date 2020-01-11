@@ -109,8 +109,14 @@ class Map : public GridRefManager<NGridType>
         // currently unused for normal maps
         bool CanUnload(uint32 diff)
         {
-            if (!m_unloadTimer) { return false; }
-            if (m_unloadTimer <= diff) { return true; }
+            if (!m_unloadTimer)
+            {
+                return false;
+            }
+            if (m_unloadTimer <= diff)
+            {
+                return true;
+            }
             m_unloadTimer -= diff;
             return false;
         }
@@ -321,7 +327,7 @@ class Map : public GridRefManager<NGridType>
         }
 
         void VisitNearbyCellsOf(WorldObject* obj,
-                                TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor, 
+                                TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor,
                                 TypeContainerVisitor<MaNGOS::ObjectUpdater, WorldTypeMapContainer> &worldVisitor);
 
         bool isGridObjectDataLoaded(uint32 x, uint32 y) const { return getNGrid(x, y)->isGridObjectDataLoaded(); }

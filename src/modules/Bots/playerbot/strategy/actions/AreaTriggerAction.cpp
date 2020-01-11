@@ -33,7 +33,7 @@ bool ReachAreaTriggerAction::Execute(Event event)
         ai->TellMaster("I won't follow: I don't meet the conditions");
         return false;
     }
-    
+
     if (bot->GetMapId() != atEntry->mapid || bot->GetDistance(atEntry->x, atEntry->y, atEntry->z) > sPlayerbotAIConfig.sightDistance)
     {
         ai->TellMaster("I won't follow: too far away");

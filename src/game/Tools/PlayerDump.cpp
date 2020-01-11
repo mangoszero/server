@@ -481,7 +481,10 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
             guid = sObjectMgr.m_CharGuids.GetNextAfterMaxUsed();
             delete result;
         }
-        else { incHighest = false; }
+        else
+        {
+            incHighest = false;
+        }
     }
     else
         { guid = sObjectMgr.m_CharGuids.GetNextAfterMaxUsed(); }
@@ -526,7 +529,10 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
     {
         if (!fgets(buf, 32000, fin))
         {
-            if (feof(fin)) { break; }
+            if (feof(fin))
+            {
+                break;
+            }
             ROLLBACK(DUMP_FILE_BROKEN);
         }
 

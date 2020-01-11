@@ -22,9 +22,9 @@ public:
         if (proto->Class != ITEM_CLASS_CONSUMABLE)
             return true;
 
-        if (proto->SubClass != ITEM_SUBCLASS_ELIXIR && 
+        if (proto->SubClass != ITEM_SUBCLASS_ELIXIR &&
             proto->SubClass != ITEM_SUBCLASS_FLASK &&
-            proto->SubClass != ITEM_SUBCLASS_SCROLL && 
+            proto->SubClass != ITEM_SUBCLASS_SCROLL &&
             proto->SubClass != ITEM_SUBCLASS_FOOD &&
             proto->SubClass != ITEM_SUBCLASS_CONSUMABLE_OTHER &&
             proto->SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
@@ -42,7 +42,7 @@ public:
             Item* itemForSpell = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<Item*>("item for spell", spellId);
             if (itemForSpell && itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
                 return true;
-        
+
             if (items.find(proto->SubClass) == items.end())
                 items[proto->SubClass] = list<Item*>();
 
@@ -113,6 +113,6 @@ bool BuffAction::Execute(Event event)
             ai->TellMaster(out);
         }
     }
-    
+
     return true;
 }

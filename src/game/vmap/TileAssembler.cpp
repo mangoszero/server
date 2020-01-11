@@ -46,7 +46,10 @@ namespace VMAP
 {
     bool readChunk(FILE* rf, char* dest, const char* compare, uint32 len)
     {
-        if (fread(dest, sizeof(char), len, rf) != len) { return false; }
+        if (fread(dest, sizeof(char), len, rf) != len)
+        {
+            return false;
+        }
         return memcmp(dest, compare, len) == 0;
     }
 
@@ -130,16 +133,31 @@ namespace VMAP
             }
 
             // general info
-            if (success && fwrite(VMAP_MAGIC, 1, 8, mapfile) != 8) { success = false; }
+            if (success && fwrite(VMAP_MAGIC, 1, 8, mapfile) != 8)
+            {
+                success = false;
+            }
             uint32 globalTileID = StaticMapTree::packTileID(65, 65);
             pair<TileMap::iterator, TileMap::iterator> globalRange = map_iter->second->TileEntries.equal_range(globalTileID);
             char isTiled = globalRange.first == globalRange.second; // only maps without terrain (tiles) have global WMO
-            if (success && fwrite(&isTiled, sizeof(char), 1, mapfile) != 1) { success = false; }
+            if (success && fwrite(&isTiled, sizeof(char), 1, mapfile) != 1)
+            {
+                success = false;
+            }
             // Nodes
-            if (success && fwrite("NODE", 4, 1, mapfile) != 1) { success = false; }
-            if (success) { success = pTree.writeToFile(mapfile); }
+            if (success && fwrite("NODE", 4, 1, mapfile) != 1)
+            {
+                success = false;
+            }
+            if (success)
+            {
+                success = pTree.writeToFile(mapfile);
+            }
             // global map spawns (WDT), if any (most instances)
-            if (success && fwrite("GOBJ", 4, 1, mapfile) != 1) { success = false; }
+            if (success && fwrite("GOBJ", 4, 1, mapfile) != 1)
+            {
+                success = false;
+            }
 
             for (TileMap::iterator glob = globalRange.first; glob != globalRange.second && success; ++glob)
             {
@@ -169,9 +187,15 @@ namespace VMAP
                 tilefilename << std::setw(2) << x << "_" << std::setw(2) << y << ".vmtile";
                 FILE* tilefile = fopen(tilefilename.str().c_str(), "wb");
                 // file header
-                if (success && fwrite(VMAP_MAGIC, 1, 8, tilefile) != 8) { success = false; }
+                if (success && fwrite(VMAP_MAGIC, 1, 8, tilefile) != 8)
+                {
+                    success = false;
+                }
                 // write number of tile spawns
-                if (success && fwrite(&nSpawns, sizeof(uint32), 1, tilefile) != 1) { success = false; }
+                if (success && fwrite(&nSpawns, sizeof(uint32), 1, tilefile) != 1)
+                {
+                    success = false;
+                }
                 // write tile spawns
                 for (uint32 s = 0; s < nSpawns; ++s)
                 {
@@ -183,7 +207,10 @@ namespace VMAP
                     success = success && ModelSpawn::writeToFile(tilefile, spawn2);
                     // MapTree nodes to update when loading tile:
                     std::map<uint32, uint32>::iterator nIdx = modelNodeIdx.find(spawn2.ID);
-                    if (success && fwrite(&nIdx->second, sizeof(uint32), 1, tilefile) != 1) { success = false; }
+                    if (success && fwrite(&nIdx->second, sizeof(uint32), 1, tilefile) != 1)
+                    {
+                        success = false;
+                    }
                 }
                 fclose(tilefile);
             }
@@ -249,7 +276,10 @@ namespace VMAP
                 printf("spawning Map %d\n", mapID);
                 mapData[mapID] = current = new MapSpawns();
             }
-            else { current = (*map_iter).second; }
+            else
+            {
+                current = (*map_iter).second;
+            }
             current->UniqueEntries.insert(pair<uint32, ModelSpawn>(spawn.ID, spawn));
             current->TileEntries.insert(pair<uint32, uint32>(StaticMapTree::packTileID(tileX, tileY), spawn.ID));
         }

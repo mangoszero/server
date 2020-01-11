@@ -40,7 +40,10 @@ class MapReference : public Reference<Map, Player>
         void targetObjectDestroyLink() override
         {
             // called from unlink()
-            if (isValid()) { getTarget()->m_mapRefManager.decSize(); }
+            if (isValid())
+            {
+                getTarget()->m_mapRefManager.decSize();
+            }
         }
         void sourceObjectDestroyLink() override
         {

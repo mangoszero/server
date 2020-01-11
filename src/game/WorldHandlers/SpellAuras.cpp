@@ -3518,7 +3518,10 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                     {
                         uint8 cp = ((Player*)caster)->GetComboPoints();
 
-                        if (cp > 4) { cp = 4; }
+                        if (cp > 4)
+                        {
+                            cp = 4;
+                        }
                         m_modifier.m_amount += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * cp / 100);
                     }
                 }
@@ -3535,7 +3538,10 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                     }
                     // Dmg/tick = $AP*min(0.01*$cp, 0.03) [Like Rip: only the first three CP increase the contribution from AP]
                     uint8 cp = ((Player*)caster)->GetComboPoints();
-                    if (cp > 3) { cp = 3; }
+                    if (cp > 3)
+                    {
+                        cp = 3;
+                    }
                     m_modifier.m_amount += int32(caster->GetTotalAttackPowerValue(BASE_ATTACK) * cp / 100);
                 }
                 break;
@@ -4197,7 +4203,7 @@ void Aura::HandleModSpellCritChanceShool(bool /*apply*/, bool Real)
 void Aura::HandleModCastingSpeed(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, amount);
@@ -4208,7 +4214,7 @@ void Aura::HandleModCastingSpeed(bool apply, bool /*Real*/)
 void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, amount);
@@ -4219,7 +4225,7 @@ void Aura::HandleModAttackSpeed(bool apply, bool /*Real*/)
 void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, amount);
@@ -4232,7 +4238,7 @@ void Aura::HandleModMeleeSpeedPct(bool apply, bool /*Real*/)
 void Aura::HandleAuraModRangedHaste(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_HASTE, amount);
@@ -4246,7 +4252,7 @@ void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
     {
         return;
     }
-        
+
     float amount = m_modifier.m_amount;
 
     if (Unit* caster = GetCaster())
@@ -4263,7 +4269,7 @@ void Aura::HandleRangedAmmoHaste(bool apply, bool /*Real*/)
 void Aura::HandleAuraModAttackPower(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, amount);
@@ -4277,9 +4283,9 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
     {
         return;
     }
-        
+
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, amount);
@@ -4290,7 +4296,7 @@ void Aura::HandleAuraModRangedAttackPower(bool apply, bool /*Real*/)
 void Aura::HandleAuraModAttackPowerPercent(bool apply, bool /*Real*/)
 {
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, amount);
@@ -4307,7 +4313,7 @@ void Aura::HandleAuraModRangedAttackPowerPercent(bool apply, bool /*Real*/)
     }
 
     float amount = m_modifier.m_amount;
-    
+
     if (Unit* caster = GetCaster())
         if (Player* modOwner = caster->GetSpellModOwner())
             modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_ATTACK_POWER, amount);
@@ -4611,8 +4617,14 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             const PlayerSpellMap& sp_list = ((Player*)target)->GetSpellMap();
             for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
             {
-                if (itr->second.state == PLAYERSPELL_REMOVED) { continue; }
-                if (itr->first == spellId1 || itr->first == spellId2) { continue; }
+            if (itr->second.state == PLAYERSPELL_REMOVED)
+            {
+                continue;
+            }
+            if (itr->first == spellId1 || itr->first == spellId2)
+            {
+                continue;
+            }
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
                 if (!spellInfo || !IsNeedCastSpellAtFormApply(spellInfo, form))
                 {
@@ -4798,15 +4810,15 @@ void Aura::HandleSpiritOfRedemption(bool apply, bool Real)
             }
         }
 
-        // interrupt casting when entering Spirit of Redemption  
-        if (target->IsNonMeleeSpellCasted(false))  
+        // interrupt casting when entering Spirit of Redemption
+        if (target->IsNonMeleeSpellCasted(false))
         {
             target->InterruptNonMeleeSpells(false);
         }
-   
-        // set health and mana to maximum  
-        target->SetHealth(target->GetMaxHealth());  
-        target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));  
+
+        // set health and mana to maximum
+        target->SetHealth(target->GetMaxHealth());
+        target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));
     }
     // die at aura end
     else

@@ -301,20 +301,35 @@ namespace VMAP
         {
             char chunk[8];
             // general info
-            if (!readChunk(rf, chunk, VMAP_MAGIC, 8)) { success = false; }
+            if (!readChunk(rf, chunk, VMAP_MAGIC, 8))
+            {
+                success = false;
+            }
             char tiled=0;
-            if (success && fread(&tiled, sizeof(char), 1, rf) != 1) { success = false; }
+            if (success && fread(&tiled, sizeof(char), 1, rf) != 1)
+            {
+                success = false;
+            }
             iIsTiled = bool(tiled);
             // Nodes
-            if (success && !readChunk(rf, chunk, "NODE", 4)) { success = false; }
-            if (success) { success = iTree.readFromFile(rf); }
+            if (success && !readChunk(rf, chunk, "NODE", 4))
+            {
+                success = false;
+            }
+            if (success)
+            {
+                success = iTree.readFromFile(rf);
+            }
             if (success)
             {
                 iNTreeValues = iTree.primCount();
                 iTreeValues = new ModelInstance[iNTreeValues];
             }
 
-            if (success && !readChunk(rf, chunk, "GOBJ", 4)) { success = false; }
+            if (success && !readChunk(rf, chunk, "GOBJ", 4))
+            {
+                success = false;
+            }
             // global model spawns
             // only non-tiled maps have them, and if so exactly one (so far at least...)
             ModelSpawn spawn;

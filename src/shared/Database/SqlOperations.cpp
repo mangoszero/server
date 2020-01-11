@@ -234,7 +234,10 @@ bool SqlQueryHolderEx::Execute(SqlConnection* conn)
     {
         /// execute all queries in the holder and pass the results
         char const* sql = queries[i].first;
-        if (sql) { m_holder->SetResult(i, conn->Query(sql)); }
+        if (sql)
+        {
+            m_holder->SetResult(i, conn->Query(sql));
+        }
     }
 
     /// sync with the caller thread

@@ -1444,7 +1444,7 @@ bool ScriptAction::HandleScriptStep()
 
             if (pGo->isSpawned())
                 { break; }                                      // gameobject already spawned
-            
+
             uint32 time_to_despawn = m_script->respawnGo.despawnDelay < 5 ? 5 : m_script->respawnGo.despawnDelay;
 
             pGo->SetLootState(GO_READY);
@@ -2668,7 +2668,7 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
     return false;
 #endif
 }
-  
+
 bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna
@@ -2683,7 +2683,7 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
     return false;
 #endif
 }
-  
+
 bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Item* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna

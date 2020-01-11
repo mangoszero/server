@@ -174,7 +174,7 @@ void WorldSession::HandleGMTicketSurveySubmitOpcode(WorldPacket& recv_data)
     if (!ticket)
         //Should we send GM_TICKET_STATUS_CLOSE here aswell?
         return;
-    
+
     ticket->SaveSurveyData(recv_data);
     //Here something needs to be done to inform the client that the ticket is closed
 }

@@ -429,7 +429,7 @@ struct CreatureEventAI_Action
             uint32 creatureId;
             uint32 target;
             uint32 spawnId;
-        } summon_unique;        
+        } summon_unique;
         // ACTION_T_EMOTE_TARGET                            = 50
         struct
         {
@@ -596,7 +596,7 @@ struct CreatureEventAI_Event
             int positionX;
             int positionY;
             int positionZ;
-            int distance;                                   // Distance from the waypoint 
+            int distance;                                   // Distance from the waypoint
         } reached_waypoint;
         // RAW
         struct

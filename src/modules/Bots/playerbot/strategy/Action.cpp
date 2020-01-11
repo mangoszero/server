@@ -11,7 +11,7 @@ int NextAction::size(NextAction** actions)
         return 0;
 
     int size;
-    for (size=0; size<10 && actions[size]; ) 
+    for (size=0; size<10 && actions[size]; )
         size++;
     return size;
 }
@@ -52,10 +52,10 @@ NextAction** NextAction::array(uint8 _nil, ...)
 {
     va_list vl;
     va_start(vl, _nil);
-    
+
     int size = 0;
     NextAction* cur = NULL;
-    do 
+    do
     {
         cur = va_arg(vl, NextAction*);
         size++;

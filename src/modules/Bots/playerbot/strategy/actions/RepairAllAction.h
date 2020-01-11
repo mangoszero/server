@@ -4,7 +4,7 @@
 
 namespace ai
 {
-    class RepairAllAction : public Action 
+    class RepairAllAction : public Action
     {
     public:
         RepairAllAction(PlayerbotAI* ai) : Action(ai, "repair") {}

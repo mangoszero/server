@@ -66,7 +66,7 @@ class BIHWrap
              */
             bool operator()(const Ray& r, uint32 Idx, float& MaxDist, bool /*stopAtFirst*/)
             {
-                if (Idx >= objects_size) 
+                if (Idx >= objects_size)
                 {
                     return false;
                 }
@@ -86,7 +86,7 @@ class BIHWrap
              */
             void operator()(const Vector3& p, uint32 Idx)
             {
-                if (Idx >= objects_size) 
+                if (Idx >= objects_size)
                 {
                     return;
                 }

@@ -897,15 +897,27 @@ int32 Pet::GetTPForSpell(uint32 spellid)
 
 uint32 Pet::GetMaxLoyaltyPoints(uint32 level)
 {
-    if (level < 1) { level = 1; } // prevent SIGSEGV (out of range)
-    if (level > 6) { level = 6; } // prevent SIGSEGV (out of range)
+    if (level < 1)
+    {
+        level = 1;  // prevent SIGSEGV (out of range)
+    }
+    if (level > 6)
+    {
+        level = 6;  // prevent SIGSEGV (out of range)
+    }
     return LevelUpLoyalty[level - 1];
 }
 
 uint32 Pet::GetStartLoyaltyPoints(uint32 level)
 {
-    if (level < 1) { level = 1; } // prevent SIGSEGV (out of range)
-    if (level > 6) { level = 6; } // prevent SIGSEGV (out of range)
+    if (level < 1)
+    {
+        level = 1;  // prevent SIGSEGV (out of range)
+    }
+    if (level > 6)
+    {
+        level = 6;  // prevent SIGSEGV (out of range)
+    }
     return LevelStartLoyalty[level - 1];
 }
 

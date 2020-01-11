@@ -514,7 +514,10 @@ void Object::ClearUpdateMask(bool remove)
 
 bool Object::LoadValues(const char* data)
 {
-    if (!m_uint32Values) { _InitValues(); }
+    if (!m_uint32Values)
+    {
+        _InitValues();
+    }
 
     Tokens tokens = StrSplit(data, " ");
 
@@ -1039,7 +1042,10 @@ bool WorldObject::_IsWithinDist(WorldObject const* obj, float dist2compare, bool
 
 bool WorldObject::IsWithinLOSInMap(const WorldObject* obj) const
 {
-    if (!IsInMap(obj)) { return false; }
+    if (!IsInMap(obj))
+    {
+        return false;
+    }
     float ox, oy, oz;
     obj->GetPosition(ox, oy, oz);
     return(IsWithinLOS(ox, oy, oz));

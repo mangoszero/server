@@ -21,6 +21,6 @@ bool ChangeChatAction::Execute(Event event)
         ostringstream out; out << "Chat set to " << chat->formatChat(parsed);
         ai->TellMaster(out);
     }
-    
+
     return true;
 }

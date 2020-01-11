@@ -13,7 +13,7 @@ namespace ai
     private:
         static LootStrategy String2LootStrategy(string strategy);
         static string LootStrategy2string(LootStrategy lootStrategy);
-   
+
     };
 
 }

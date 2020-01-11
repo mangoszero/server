@@ -4,7 +4,7 @@
 
 namespace ai
 {
-   
+
     class DpsTargetValue : public TargetValue
     {
     public:

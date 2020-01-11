@@ -141,7 +141,7 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
                 CanCastResult castResult = CanCastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED);
 
                 if (castResult != CAST_OK)
-                { 
+                {
                     return castResult;
                 }
             }

@@ -3682,14 +3682,14 @@ void ChatHandler::BuildChatPacket(WorldPacket& data, ChatMsg msgtype, char const
             data << senderName;
             data << ObjectGuid(targetGuid);                         // Unit Target
             break;
-    
+
         case CHAT_MSG_SAY:
         case CHAT_MSG_PARTY:
         case CHAT_MSG_YELL:
             data << ObjectGuid(senderGuid);
             data << ObjectGuid(senderGuid);
             break;
-    
+
         case CHAT_MSG_MONSTER_SAY:
         case CHAT_MSG_MONSTER_YELL:
             MANGOS_ASSERT(senderName);
@@ -3698,14 +3698,14 @@ void ChatHandler::BuildChatPacket(WorldPacket& data, ChatMsg msgtype, char const
             data << senderName;
             data << ObjectGuid(targetGuid);                         // Unit Target
             break;
-    
+
         case CHAT_MSG_CHANNEL:
             MANGOS_ASSERT(channelName);
             data << channelName;
             data << uint32(playerRank);
             data << ObjectGuid(senderGuid);
             break;
-    
+
         default:
             data << ObjectGuid(senderGuid);
             break;

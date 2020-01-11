@@ -238,7 +238,10 @@ void WINAPI ServiceMain(DWORD argc, char* argv[])
 
         for (i = 0; i < std::strlen(path); ++i)
         {
-            if (path[i] == '\\') { last_slash = i; }
+            if (path[i] == '\\')
+            {
+                last_slash = i;
+            }
         }
 
         path[last_slash] = 0;

@@ -125,7 +125,7 @@ enum GroupUpdateFlags
     GROUP_UPDATE_FLAG_PET_MAX_POWER     = 0x00040000,       // uint16 pet max power
     GROUP_UPDATE_FLAG_PET_AURAS         = 0x00080000,       // uint32 mask, for each bit set uint16 spellid, pet auras...
     GROUP_UPDATE_FLAG_PET_AURAS_2       = 0x00100000,       // uint16 above mask continuation, giving max total of 48 auras possible
-    GROUP_UPDATE_MODE_OFFLINE           = 0x10000000,       // 
+    GROUP_UPDATE_MODE_OFFLINE           = 0x10000000,       //
 
     GROUP_UPDATE_PLAYER                 = 0x000007FF,
     GROUP_UPDATE_PET                    = 0x001FF800,       // all pet flags

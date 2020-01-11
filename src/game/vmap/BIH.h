@@ -297,7 +297,10 @@ class BIH
                             while (n > 0)
                             {
                                 bool hit = intersectCallback(r, objects[offset], maxDist, stopAtFirst);
-                                if (stopAtFirst && hit) { return; }
+                                if (stopAtFirst && hit)
+                                {
+                                    return;
+                                }
                                 --n;
                                 ++offset;
                             }

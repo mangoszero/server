@@ -8,7 +8,7 @@ namespace ai
     public:
         ChangeChatAction(PlayerbotAI* ai) : Action(ai, "chat") {}
         virtual bool Execute(Event event);
-   
+
     };
 
 }

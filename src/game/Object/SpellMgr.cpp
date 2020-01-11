@@ -187,8 +187,14 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
 {
     uint32 CastingTime = !IsChanneledSpell(spellProto) ? GetSpellCastTime(spellProto) : GetSpellDuration(spellProto);
 
-    if (CastingTime > 7000) { CastingTime = 7000; }
-    if (CastingTime < 1500) { CastingTime = 1500; }
+    if (CastingTime > 7000)
+    {
+        CastingTime = 7000;
+    }
+    if (CastingTime < 1500)
+    {
+        CastingTime = 1500;
+    }
 
     if (damagetype == DOT && !IsChanneledSpell(spellProto))
     {
@@ -256,8 +262,14 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
     {
         // mainly for DoTs which are 3500 here otherwise
         uint32 OriginalCastTime = GetSpellCastTime(spellProto);
-        if (OriginalCastTime > 7000) { OriginalCastTime = 7000; }
-        if (OriginalCastTime < 1500) { OriginalCastTime = 1500; }
+        if (OriginalCastTime > 7000)
+        {
+            OriginalCastTime = 7000;
+        }
+        if (OriginalCastTime < 1500)
+        {
+            OriginalCastTime = 1500;
+        }
         // Portion to Over Time
         float PtOT = (overTime / 15000.0f) / ((overTime / 15000.0f) + (OriginalCastTime / 3500.0f));
 
@@ -412,8 +424,14 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2)
 {
     SpellEntry const* spellInfo_1 = sSpellStore.LookupEntry(spellId_1);
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return false; }
-    if (spellInfo_1->Id == spellId_2) { return false; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return false;
+    }
+    if (spellInfo_1->Id == spellId_2)
+    {
+        return false;
+    }
 
     // Mighty Rage Potion + Elixir of giants
     if((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405)){
@@ -441,8 +459,14 @@ int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2)
 {
     SpellEntry const* spellInfo_1 = sSpellStore.LookupEntry(spellId_1);
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return 0; }
-    if (spellId_1 == spellId_2) { return 0; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return 0;
+    }
+    if (spellId_1 == spellId_2)
+    {
+        return 0;
+    }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
@@ -453,7 +477,10 @@ int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2)
             {
                 return -diff;
             }
-            else { return diff; }
+            else
+            {
+                return diff;
+            }
         }
     }
     return 0;
@@ -1580,7 +1607,7 @@ void SpellMgr::LoadSpellBonuses()
 {
     mSpellBonusMap.clear();                             // need for reload case
     uint32 count = 0;
-    
+
     QueryResult* result = WorldDatabase.Query("SELECT entry, direct_bonus, one_hand_direct_bonus, two_hand_direct_bonus, \
         direct_bonus_done, one_hand_direct_bonus_done, two_hand_direct_bonus_done, \
         direct_bonus_taken, one_hand_direct_bonus_taken, two_hand_direct_bonus_taken, \
@@ -2109,7 +2136,7 @@ void SpellMgr::ModDBCSpellAttributes()
             // If MeleeSpellHitResult method is executed for this spell id, it means that the spellId sent by the client for execute did already passed.
             case 20647:
                 spellInfo->Attributes |= SPELL_ATTR_IMPOSSIBLE_DODGE_PARRY_BLOCK;
-                spellInfo->AttributesEx3 |= SPELL_ATTR_EX3_CANT_MISS;                
+                spellInfo->AttributesEx3 |= SPELL_ATTR_EX3_CANT_MISS;
                 break;
             case 16870:
                 spellInfo->procFlags = PROC_FLAG_NONE;
@@ -2121,8 +2148,14 @@ void SpellMgr::ModDBCSpellAttributes()
 bool SpellMgr::IsRankSpellDueToSpell(SpellEntry const* spellInfo_1, uint32 spellId_2) const
 {
     SpellEntry const* spellInfo_2 = sSpellStore.LookupEntry(spellId_2);
-    if (!spellInfo_1 || !spellInfo_2) { return false; }
-    if (spellInfo_1->Id == spellId_2) { return false; }
+    if (!spellInfo_1 || !spellInfo_2)
+    {
+        return false;
+    }
+    if (spellInfo_1->Id == spellId_2)
+    {
+        return false;
+    }
 
     return GetFirstSpellInChain(spellInfo_1->Id) == GetFirstSpellInChain(spellId_2);
 }
@@ -2187,7 +2220,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
     {
         return false;
     }
-    
+
     // Gnomish Death Ray
     if (spellInfo_1->Id == 13278 || spellInfo_2->Id == 13278)
     {
@@ -2614,7 +2647,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Icon overload
                     // Warrior Battle Shout and All Generic Spell with SpellIconID 456.
-                    // 
+                    //
                     if(spellInfo_1->IsFitToFamilyMask(0x0000000000010000) && spellInfo_2->SpellIconID==456)
                     {
                         return false;
@@ -2622,7 +2655,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Icon overload
                     // Warrior Rend and All Generic Spell with SpellIconID 245.
-                    // 
+                    //
                     if(spellInfo_1->IsFitToFamilyMask(0x0000000000000020) && spellInfo_2->SpellIconID==245)
                     {
                         return false;
@@ -2630,7 +2663,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Icon overload
                     // Warrior Recklessness and All Generic Spell with SpellIconID 138.
-                    // 
+                    //
                     if(spellInfo_1->IsFitToFamilyMask(0x0000000000000010) && spellInfo_2->SpellIconID==138)
                     {
                         return false;
@@ -2713,7 +2746,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         ((spellInfo_2->SpellFamilyFlags & UI64LIT(0x200000)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x8000))))
                         { return false; }
                     break;
-                
+
                 case SPELLFAMILY_WARLOCK:
                     // Icon overload
                     // Sacrifice demoniac effect and Psychic scream.
@@ -2965,7 +2998,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         return false;
                     }
                     break;
-                
+
                 case SPELLFAMILY_DRUID:
                     // Holy Power (Pal T3 (6)) -- Tank buff
                     // Blessing of kings.
@@ -2996,7 +3029,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         { return false; }
                 break;
             }
-            
+
             break;
         default:
             break;

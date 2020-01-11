@@ -8,14 +8,14 @@ using namespace ai;
 void HunterBuffDpsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "aspect of the hawk", 
+        "aspect of the hawk",
         NextAction::array(0, new NextAction("aspect of the hawk", 90.0f), NULL)));
 }
 
 void HunterNatureResistanceStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "aspect of the wild", 
+        "aspect of the wild",
         NextAction::array(0, new NextAction("aspect of the wild", 90.0f), NULL)));
 }
 

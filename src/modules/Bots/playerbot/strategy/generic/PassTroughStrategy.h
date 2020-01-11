@@ -14,7 +14,7 @@ namespace ai
                 string s = i->c_str();
 
                 triggers.push_back(new TriggerNode(
-                    s, 
+                    s,
                     NextAction::array(0, new NextAction(s, relevance), NULL)));
             }
         }

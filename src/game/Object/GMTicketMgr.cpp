@@ -39,7 +39,7 @@ void GMTicket::SaveSurveyData(WorldPacket& recvData) const
     uint32 x;
     recvData >> x;                                         // answer range? (6 = 0-5?)
     DEBUG_LOG("SURVEY: X = %u", x);
-    
+
     uint8 result[10];
     memset(result, 0, sizeof(result));
     for (int i = 0; i < 10; ++i)
@@ -48,20 +48,20 @@ void GMTicket::SaveSurveyData(WorldPacket& recvData) const
         recvData >> questionID;                            // GMSurveyQuestions.dbc
         if (!questionID)
             break;
-        
+
         uint8 value;
         std::string unk_text;
         recvData >> value;                                 // answer
         recvData >> unk_text;                              // always empty?
-        
+
         result[i] = value;
         DEBUG_LOG("SURVEY: ID %u, value %u, text %s", questionID, value, unk_text.c_str());
     }
-    
+
     std::string comment;
     recvData >> comment;                                   // addional comment
     DEBUG_LOG("SURVEY: comment %s", comment.c_str());
-    
+
     // TODO: chart this data in some way in DB
 }
 
@@ -116,12 +116,12 @@ void GMTicket::Close() const
 void GMTicket::_Close(GMTicketStatus statusCode) const
 {
     Player* pPlayer = sObjectMgr.GetPlayer(m_guid);
-    
+
     CharacterDatabase.PExecute("UPDATE character_ticket "
                                "SET resolved = 1 "
                                "WHERE guid = %u AND resolved = 0",
                                m_guid.GetCounter());
-    
+
     if (pPlayer && statusCode != GM_TICKET_STATUS_DO_NOTHING)
     {
         pPlayer->GetSession()->SendGMTicketStatusUpdate(statusCode);
@@ -138,7 +138,7 @@ void GMTicketMgr::LoadGMTickets()
     "FROM character_ticket "
     "WHERE resolved = 0 "
     "ORDER BY ticket_id ASC");
-    
+
     if (!result)
     {
         BarGoLink bar(1);
@@ -164,7 +164,7 @@ void GMTicketMgr::LoadGMTickets()
 
         ObjectGuid guid = ObjectGuid(HIGHGUID_PLAYER, guidlow);
         GMTicket& ticket = m_GMTicketMap[guid];
-        
+
         ticket.Init(guid, fields[1].GetCppString(), fields[2].GetCppString(), time_t(fields[3].GetUInt64()), fields[4].GetUInt32());
         m_GMTicketIdMap[ticket.GetId()] = &ticket;
     }
@@ -186,26 +186,26 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
                                      "VALUES "
                                      "(%u,   '%s')",
                                      guid.GetCounter(), escapedText.c_str());
-    
+
     //Get the id of the ticket, needed for logging whispers
     QueryResult* result = CharacterDatabase.PQuery("SELECT ticket_id, guid, resolved "
                                                    "FROM character_ticket "
                                                    "WHERE guid = %u AND resolved = 0;",
                                                    guid.GetCounter());
-    
+
     CharacterDatabase.CommitTransaction();
-    
+
     if (!result)
         return;
-    
+
     Field* fields = result->Fetch();
     uint32 ticketId = fields[0].GetUInt32();
-    
+
     //This implicitly creates a new instance since we're using operator[]
     GMTicket& ticket = m_GMTicketMap[guid];
     if (ticket.GetPlayerGuid())
         m_GMTicketIdMap.erase(ticketId);
-            
+
     //Lets reinitialize with new data
     ticket.Init(guid, text, "", time(NULL), ticketId);
     m_GMTicketIdMap[ticketId] = &ticket;

@@ -72,9 +72,9 @@ enum LogType
 const int LogType_count = int(LogError) + 1;
 
 Log::Log() :
-    raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL), 
+    raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
 #ifdef ENABLE_ELUNA
-    elunaErrLogfile(NULL), 
+    elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
     eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)

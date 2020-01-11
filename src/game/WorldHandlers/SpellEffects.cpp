@@ -1601,7 +1601,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
                 {
                     m_caster->CastSpell(unitTarget, triggered_spell_id, true);
                 }
-            return;  
+            return;
 
         // just skip
         case 23770:                                         // Sayge's Dark Fortune of *
@@ -4218,16 +4218,16 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     unitTarget->CastSpell(unitTarget, 27699, true);
                     return;
                 }
-                case 28352:                                 // Breath of Sargeras  
-                {  
-                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)  
+                case 28352:                                 // Breath of Sargeras
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
                     {
                         return;
                     }
-  
-                    unitTarget->CastSpell(unitTarget, 28342, true);  
-                    return;  
-                }  
+
+                    unitTarget->CastSpell(unitTarget, 28342, true);
+                    return;
+                }
 
                 case 28374:                                 // Decimate (Naxxramas: Gluth)
                 {

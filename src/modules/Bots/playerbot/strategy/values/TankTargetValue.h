@@ -4,7 +4,7 @@
 
 namespace ai
 {
-   
+
     class TankTargetValue : public TargetValue
     {
     public:

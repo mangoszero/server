@@ -1152,7 +1152,10 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*m_creature, action.summon_unique.creatureId, true, false, 100, true);
             MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreature, u_check);
             Cell::VisitGridObjects(m_creature, searcher, 100);
-            if (pCreature) { return; }
+            if (pCreature)
+            {
+                return;
+            }
 
             Unit* target = GetTargetByType(action.summon_unique.target, pActionInvoker, pAIEventSender, reportTargetError);
             if (!target && reportTargetError)

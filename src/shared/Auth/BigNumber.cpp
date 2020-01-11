@@ -48,7 +48,10 @@ BigNumber::BigNumber(uint32 val)
 BigNumber::~BigNumber()
 {
     BN_free(_bn);
-    if (_array) { delete[] _array; }
+    if (_array)
+    {
+        delete[] _array;
+    }
 }
 
 void BigNumber::SetDword(uint32 val)

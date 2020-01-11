@@ -145,7 +145,10 @@ class CharacterHandler
         }
         void HandlePlayerLoginCallback(QueryResult * /*dummy*/, SqlQueryHolder* holder)
         {
-            if (!holder) { return; }
+            if (!holder)
+            {
+                return;
+            }
             WorldSession* session = sWorld.FindSession(((LoginQueryHolder*)holder)->GetAccountId());
             if (!session)
             {

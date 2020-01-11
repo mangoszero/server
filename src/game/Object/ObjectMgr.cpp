@@ -854,7 +854,7 @@ void ObjectMgr::LoadCreatureItemTemplates()
     }
 
     sLog.outString(">> Loaded %u creature item template", sEquipmentStorageItem.GetRecordCount());
-    sLog.outString();    
+    sLog.outString();
 }
 
 void ObjectMgr::LoadCreatureClassLvlStats()

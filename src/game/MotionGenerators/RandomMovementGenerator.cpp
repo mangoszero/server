@@ -30,7 +30,7 @@
 #include "movement/MoveSpline.h"
 
 template<>
-RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ) : 
+RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ) :
     i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ)
 {
     if (radius < 0.1f)

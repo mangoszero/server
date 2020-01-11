@@ -10,7 +10,7 @@ namespace ai
         ListSpellsAction(PlayerbotAI* ai) : Action(ai, "spells") {}
 
         virtual bool Execute(Event event);
-  
+
     };
 
 }

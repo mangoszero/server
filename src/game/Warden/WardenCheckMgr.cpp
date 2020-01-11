@@ -177,7 +177,7 @@ void WardenCheckMgr::LoadWardenOverrides()
         // Check if action value is in range (0-2, see WardenActions enum)
         if (action > WARDEN_ACTION_BAN)
             sLog.outWarden("Warden check override action out of range (ID: %u, action: %u)", checkId, action);
-        else 
+        else
         {
             bool found = false;
             for (CheckMap::iterator it = CheckStore.begin(); it != CheckStore.end(); ++it)

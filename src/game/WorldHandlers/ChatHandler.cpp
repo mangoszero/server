@@ -713,7 +713,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     }
                     sRandomPlayerbotMgr.HandleCommand(type, msg, *_player);
 #endif /* ENABLE_PLAYERBOTS */
-                    chn->Say(_player, msg.c_str(), lang); 
+                    chn->Say(_player, msg.c_str(), lang);
                 }
             }
 

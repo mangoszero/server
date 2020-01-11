@@ -333,7 +333,7 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     {
         reason = 2;                                         // FIXME - Need the correct value
     }
-    
+
     if (reason)
     {
         WorldPacket data(SMSG_LOGOUT_RESPONSE, 1+4);

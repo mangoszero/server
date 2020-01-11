@@ -27,5 +27,5 @@ Value<Unit*>* CastEntanglingRootsCcAction::GetTargetValue()
 
 bool CastEntanglingRootsCcAction::Execute(Event event)
 {
-    return ai->CastSpell("entangling roots", GetTarget()); 
+    return ai->CastSpell("entangling roots", GetTarget());
 }

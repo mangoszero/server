@@ -178,8 +178,8 @@ bool ChatHandler::HandleGMCommand(char* args)
     if (!*args)
     {
         if (m_session->GetPlayer()->isGameMaster())
-        { 
-            m_session->SendNotification(LANG_GM_ON); 
+        {
+            m_session->SendNotification(LANG_GM_ON);
         }
         else
         {
@@ -369,7 +369,10 @@ bool ChatHandler::HandleGPSCommand(char* args)
         else
             { PSendSysMessage("You are INdoor"); }
     }
-    else { PSendSysMessage("no VMAP available for area info"); }
+    else
+    {
+        PSendSysMessage("no VMAP available for area info");
+    }
 
     PSendSysMessage(LANG_MAP_POSITION,
                     obj->GetMapId(), (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
@@ -2390,7 +2393,10 @@ bool ChatHandler::HandleGoGridCommand(char* args)
 
 bool ChatHandler::HandleModifyDrunkCommand(char* args)
 {
-    if (!*args)    { return false; }
+    if (!*args)
+    {
+        return false;
+    }
 
     uint32 drunklevel = (uint32)atoi(args);
     if (drunklevel > 100)

@@ -324,7 +324,7 @@ struct Loot
         void NotifyMoneyRemoved();
         void AddLooter(ObjectGuid guid) { m_playersLooting.insert(guid); }
         void RemoveLooter(ObjectGuid guid) { m_playersLooting.erase(guid); }
-        
+
         /**
         * function IsWinner returns whether the player won at least one item during a roll.
         * \param player Pointer indicating the player who may have won a loot.

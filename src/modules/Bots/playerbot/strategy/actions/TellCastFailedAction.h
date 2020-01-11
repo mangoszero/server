@@ -12,7 +12,7 @@ namespace ai
         virtual bool Execute(Event event);
     };
 
-    class TellCastFailedAction : public Action 
+    class TellCastFailedAction : public Action
     {
     public:
         TellCastFailedAction(PlayerbotAI* ai) : Action(ai, "tell cast failed") {}

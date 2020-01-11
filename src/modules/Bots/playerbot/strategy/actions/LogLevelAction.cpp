@@ -10,7 +10,7 @@ bool LogLevelAction::Execute(Event event)
     string param = event.getParam();
     Value<LogLevel> *value = ai->GetAiObjectContext()->GetValue<LogLevel>("log level");
 
-    ostringstream out; 
+    ostringstream out;
     if (param != "?")
     {
         value->Set(string2logLevel(param));
@@ -21,12 +21,12 @@ bool LogLevelAction::Execute(Event event)
         out << "My log level is " << logLevel2string(value->Get());
     }
     ai->TellMaster(out);
-    return true;    
+    return true;
 }
 
 string LogLevelAction::logLevel2string(LogLevel level)
 {
-    switch (level) 
+    switch (level)
     {
     case LOG_LVL_BASIC:
         return "basic";
@@ -46,6 +46,6 @@ LogLevel LogLevelAction::string2logLevel(string level)
         return LOG_LVL_MINIMAL;
     else if (level == "detail")
         return LOG_LVL_DETAIL;
-    else 
+    else
         return LOG_LVL_BASIC;
 }

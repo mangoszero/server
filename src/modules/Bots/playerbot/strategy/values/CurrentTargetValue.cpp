@@ -6,7 +6,7 @@ using namespace ai;
 
 Unit* CurrentTargetValue::Get()
 {
-    
+
 
     if (selection.IsEmpty())
         return NULL;
@@ -20,5 +20,5 @@ Unit* CurrentTargetValue::Get()
 
 void CurrentTargetValue::Set(Unit* target)
 {
-    selection = target ? target->GetObjectGuid() : ObjectGuid(); 
+    selection = target ? target->GetObjectGuid() : ObjectGuid();
 }

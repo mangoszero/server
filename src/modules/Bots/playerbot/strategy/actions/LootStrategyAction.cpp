@@ -9,7 +9,7 @@ using namespace ai;
 bool LootStrategyAction::Execute(Event event)
 {
     string strategy = event.getParam();
-    
+
     LootObjectStack* lootItems = AI_VALUE(LootObjectStack*, "available loot");
     set<uint32>& alwaysLootItems = AI_VALUE(set<uint32>&, "always loot list");
     Value<LootStrategy>* lootStrategy = context->GetValue<LootStrategy>("loot strategy");
@@ -53,7 +53,7 @@ bool LootStrategyAction::Execute(Event event)
                 set<uint32>::iterator j = alwaysLootItems.find(itemid);
                 if (j != alwaysLootItems.end())
                     alwaysLootItems.erase(j);
-                
+
                 ai->TellMaster("Item(s) removed from always loot list");
             }
             else
@@ -62,7 +62,7 @@ bool LootStrategyAction::Execute(Event event)
                 ai->TellMaster("Item(s) added to always loot list");
             }
         }
-    }    
+    }
 
     return true;
 }
@@ -78,7 +78,7 @@ LootStrategy LootStrategyAction::String2LootStrategy(string strategy)
         return LOOTSTRATEGY_SKILL;
     else if (strategy == "g" || strategy == "gray")
         return LOOTSTRATEGY_GRAY;
-    else 
+    else
         return LOOTSTRATEGY_NORMAL;
 }
 

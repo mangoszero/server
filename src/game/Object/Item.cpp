@@ -768,7 +768,10 @@ void Item::SetState(ItemUpdateState state, Player* forplayer)
     if (state != ITEM_UNCHANGED)
     {
         // new items must stay in new state until saved
-        if (uState != ITEM_NEW) { uState = state; }
+        if (uState != ITEM_NEW)
+        {
+            uState = state;
+        }
 
         if (forplayer || GetOwnerGuid())
         {

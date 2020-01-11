@@ -53,10 +53,10 @@ namespace Movement
              * @return int32 duration - estimated travel time
              */
             int32 Launch();
-            
+
             /**
              * @brief Stop any creature movement
-             * 
+             *
              */
             void Stop();
 
@@ -95,7 +95,7 @@ namespace Movement
              * @param destination
              * @param generatePath
              * @param forceDestination
-             * @param maxPathRange 
+             * @param maxPathRange
              */
             void MoveTo(const Vector3& destination, bool generatePath = false, bool forceDestination = false, float maxPathRange = 0.0f);
             /**

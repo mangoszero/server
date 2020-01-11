@@ -50,8 +50,14 @@ uint32 SpellIdValue::Calculate()
         // if we already found a spell
         bool useThisSpell = true;
         if (foundSpellId > 0) {
-            if (usesNoReagents && !foundMatchUsesNoReagents) {}
-            else if (spellId > foundSpellId) {}
+            if (usesNoReagents && !foundMatchUsesNoReagents)
+            {
+
+            }
+            else if (spellId > foundSpellId)
+            {
+
+            }
             else
                 useThisSpell = false;
         }

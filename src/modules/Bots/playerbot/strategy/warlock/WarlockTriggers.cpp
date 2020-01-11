@@ -5,7 +5,7 @@
 
 using namespace ai;
 
-bool DemonArmorTrigger::IsActive() 
+bool DemonArmorTrigger::IsActive()
 {
     Unit* target = GetTarget();
     return !ai->HasAura("demon skin", target) &&
@@ -13,7 +13,7 @@ bool DemonArmorTrigger::IsActive()
         !ai->HasAura("fel armor", target);
 }
 
-bool SpellstoneTrigger::IsActive() 
+bool SpellstoneTrigger::IsActive()
 {
     return BuffTrigger::IsActive() && AI_VALUE2(uint8, "item count", getName()) > 0;
 }

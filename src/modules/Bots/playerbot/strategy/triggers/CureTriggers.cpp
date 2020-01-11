@@ -5,7 +5,7 @@
 
 using namespace ai;
 
-bool NeedCureTrigger::IsActive() 
+bool NeedCureTrigger::IsActive()
 {
     Unit* target = GetTarget();
     return target && ai->HasAuraToDispel(target, dispelType);

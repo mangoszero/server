@@ -10,5 +10,5 @@ using namespace ai;
 void GenericRogueNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     NonCombatStrategy::InitTriggers(triggers);
-        
+
 }

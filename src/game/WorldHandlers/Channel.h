@@ -142,20 +142,38 @@ class Channel
             bool IsOwner() { return flags & MEMBER_FLAG_OWNER; }
             void SetOwner(bool state)
             {
-                if (state) { flags |= MEMBER_FLAG_OWNER; }
-                else { flags &= ~MEMBER_FLAG_OWNER; }
+                if (state)
+                {
+                    flags |= MEMBER_FLAG_OWNER;
+                }
+                else
+                {
+                    flags &= ~MEMBER_FLAG_OWNER;
+                }
             }
             bool IsModerator() { return flags & MEMBER_FLAG_MODERATOR; }
             void SetModerator(bool state)
             {
-                if (state) { flags |= MEMBER_FLAG_MODERATOR; }
-                else { flags &= ~MEMBER_FLAG_MODERATOR; }
+                if (state)
+                {
+                    flags |= MEMBER_FLAG_MODERATOR;
+                }
+                else
+                {
+                    flags &= ~MEMBER_FLAG_MODERATOR;
+                }
             }
             bool IsMuted() { return flags & MEMBER_FLAG_MUTED; }
             void SetMuted(bool state)
             {
-                if (state) { flags |= MEMBER_FLAG_MUTED; }
-                else { flags &= ~MEMBER_FLAG_MUTED; }
+                if (state)
+                {
+                    flags |= MEMBER_FLAG_MUTED;
+                }
+                else
+                {
+                    flags &= ~MEMBER_FLAG_MUTED;
+                }
             }
         };
 
@@ -204,13 +222,13 @@ class Channel
          * it makes it the "real" rank 9 in the client, if we hadn't added that it would've been rank
          * 5 in the client.
          * \see HonorRankInfo
-         */ 
+         */
         static const uint8 SPEAK_IN_LOCALDEFENSE_RANK = 4 + 9;
         /**
          * This denotes the PvP rank needed to speak in world defense, see
          * \ref Channel::SPEAK_IN_LOCALDEFENSE_RANK for more info on the 4 added.
          */
-        static const uint8 SPEAK_IN_WORLDDEFENSE_RANK = 4 + 10; 
+        static const uint8 SPEAK_IN_WORLDDEFENSE_RANK = 4 + 10;
         /**
         * This creates the packet informing client that the player is not on requested \ref name channel.
         * See also \ref MakeNotMember for non-static version.
