@@ -110,7 +110,9 @@ bool Config::GetBoolDefault(const char* name, bool def)
         strcmp(str, "1") == 0)
         { return true; }
     else
-        { return false; }
+    {
+        return false;
+    }
 }
 
 int32 Config::GetIntDefault(const char* name, int32 def)

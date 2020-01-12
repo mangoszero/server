@@ -119,13 +119,17 @@ class WaypointManager
                     break;
                 case PATH_FROM_ENTRY:
                     if (pathId >= 0xFF || pathId < 0)
+                    {
                         return NULL;
+                    }
                     key = (entry << 8) + pathId;
                     wpMap = &m_pathTemplateMap;
                     break;
                 case PATH_FROM_EXTERNAL:
                     if (pathId >= 0xFF || pathId < 0)
+                    {
                         return NULL;
+                    }
                     key = (entry << 8) + pathId;
                     wpMap = &m_externalPathTemplateMap;
                     break;

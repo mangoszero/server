@@ -1510,7 +1510,9 @@ void BattleGround::DoorClose(ObjectGuid guid)
         }
     }
     else
-        { sLog.outError("BattleGround: Door %s not found (can not close doors)", guid.GetString().c_str()); }
+    {
+        sLog.outError("BattleGround: Door %s not found (can not close doors)", guid.GetString().c_str());
+    }
 }
 
 /// <summary>

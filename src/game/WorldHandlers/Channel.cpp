@@ -55,7 +55,9 @@ Channel::Channel(const std::string& name)
             m_flags |= CHANNEL_FLAG_LFG;
         }
         else                                                // for all other channels
-            { m_flags |= CHANNEL_FLAG_NOT_LFG; }
+        {
+            m_flags |= CHANNEL_FLAG_NOT_LFG;
+        }
     }
     else                                                    // it's custom channel
     {
@@ -94,7 +96,9 @@ void Channel::Join(Player* player, const char* password)
     }
 
     if (player->GetGuildId() && (GetFlags() == 0x38))
+    {
         return;
+    }
 
     // join channel
     player->JoinedChannel(this);
@@ -343,7 +347,9 @@ void Channel::SetMode(Player* player, const char* targetName, bool moderator, bo
 
     ObjectGuid targetGuid = target->GetObjectGuid();
     if (moderator && guid == m_ownerGuid && targetGuid == m_ownerGuid)
+    {
         return;
+    }
 
     if (!IsOn(targetGuid))
     {
@@ -564,7 +570,9 @@ void Channel::Moderate(Player* player)
 void Channel::Say(Player* player, const char* text, uint32 lang)
 {
     if (!text)
+    {
         return;
+    }
 
     ObjectGuid guid = player->GetObjectGuid();
     Player* plr = sObjectMgr.GetPlayer(guid);

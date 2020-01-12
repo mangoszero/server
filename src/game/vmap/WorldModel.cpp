@@ -153,14 +153,18 @@ namespace VMAP
             memcpy(iHeight, other.iHeight, (iTilesX + 1) * (iTilesY + 1) * sizeof(float));
         }
         else
-            { iHeight = NULL; }
+        {
+            iHeight = NULL;
+        }
         if (other.iFlags)
         {
             iFlags = new uint8[iTilesX * iTilesY];
             memcpy(iFlags, other.iFlags, iTilesX * iTilesY * sizeof(uint8));
         }
         else
-            { iFlags = NULL; }
+        {
+            iFlags = NULL;
+        }
 
         return *this;
     }

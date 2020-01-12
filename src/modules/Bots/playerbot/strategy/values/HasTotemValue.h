@@ -25,7 +25,9 @@ namespace ai
                     continue;
 
                 if (strstri(creature->GetName(), qualifier.c_str()) && bot->GetDistance(creature) <= sPlayerbotAIConfig.spellDistance)
+                {
                     return true;
+                }
             }
 
             return false;

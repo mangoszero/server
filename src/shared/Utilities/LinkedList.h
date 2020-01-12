@@ -270,7 +270,9 @@ class LinkedListHead
                 return result;
             }
             else
-                { return iSize; }
+            {
+                return iSize;
+            }
         }
 
         /**

@@ -196,7 +196,9 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
     CharacterDatabase.CommitTransaction();
 
     if (!result)
+    {
         return;
+    }
 
     Field* fields = result->Fetch();
     uint32 ticketId = fields[0].GetUInt32();

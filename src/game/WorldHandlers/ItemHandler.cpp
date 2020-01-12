@@ -255,9 +255,13 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
             _player->StoreItem(sSrc, pDstItem, true);
         }
         else if (_player->IsBankPos(src))
-            { _player->BankItem(sSrc, pDstItem, true); }
+        {
+            _player->BankItem(sSrc, pDstItem, true);
+        }
         else if (_player->IsEquipmentPos(src))
-            { _player->EquipItem(eSrc, pDstItem, true); }
+        {
+            _player->EquipItem(eSrc, pDstItem, true);
+        }
 
         _player->AutoUnequipOffhandIfNeed();
     }
@@ -304,7 +308,9 @@ void WorldSession::HandleDestroyItemOpcode(WorldPacket& recv_data)
         _player->DestroyItemCount(pItem, i_count, true);
     }
     else
-        { _player->DestroyItem(bag, slot, true); }
+    {
+        _player->DestroyItem(bag, slot, true);
+    }
 }
 
 // Only _static_ data send in this packet !!!
@@ -560,7 +566,9 @@ void WorldSession::HandleReadItemOpcode(WorldPacket& recv_data)
         SendPacket(&data);
     }
     else
-        { _player->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, NULL, NULL); }
+    {
+        _player->SendEquipError(EQUIP_ERR_ITEM_NOT_FOUND, NULL, NULL);
+    }
 }
 
 void WorldSession::HandlePageQuerySkippedOpcode(WorldPacket& recv_data)
@@ -690,7 +698,9 @@ void WorldSession::HandleSellItemOpcode(WorldPacket& recv_data)
                 _player->ModifyMoney(money);
             }
             else
-                { _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0); }
+            {
+                _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0);
+            }
             return;
         }
     }
@@ -740,11 +750,15 @@ void WorldSession::HandleBuybackItem(WorldPacket& recv_data)
             _player->StoreItem(dest, pItem, true);
         }
         else
-            { _player->SendEquipError(msg, pItem, NULL); }
+        {
+            _player->SendEquipError(msg, pItem, NULL);
+        }
         return;
     }
     else
-        { _player->SendBuyError(BUY_ERR_CANT_FIND_ITEM, pCreature, 0, 0); }
+    {
+        _player->SendBuyError(BUY_ERR_CANT_FIND_ITEM, pCreature, 0, 0);
+    }
 }
 
 void WorldSession::HandleBuyItemInSlotOpcode(WorldPacket& recv_data)
@@ -1228,7 +1242,9 @@ void WorldSession::HandleSetAmmoOpcode(WorldPacket& recv_data)
         GetPlayer()->RemoveAmmo();
     }
     else
-        { GetPlayer()->SetAmmo(item); }
+    {
+        GetPlayer()->SetAmmo(item);
+    }
 }
 
 void WorldSession::SendEnchantmentLog(ObjectGuid targetGuid, ObjectGuid casterGuid, uint32 itemId, uint32 spellId)
@@ -1276,7 +1292,9 @@ void WorldSession::HandleItemNameQueryOpcode(WorldPacket& recv_data)
         return;
     }
     else
-        { sLog.outError("WORLD: CMSG_ITEM_NAME_QUERY for item %u failed (unknown item)", itemid); }
+    {
+        sLog.outError("WORLD: CMSG_ITEM_NAME_QUERY for item %u failed (unknown item)", itemid);
+    }
 }
 
 void WorldSession::HandleWrapItemOpcode(WorldPacket& recv_data)

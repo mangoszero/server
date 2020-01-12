@@ -189,30 +189,50 @@ uint32 Quest::XPValue(Player* pPlayer) const
                 fullxp = RewMoneyMaxLevel / 6.0f;
             }
             else if (qLevel == 64)
-                { fullxp = RewMoneyMaxLevel / 4.8f; }
+            {
+                fullxp = RewMoneyMaxLevel / 4.8f;
+            }
             else if (qLevel == 63)
-                { fullxp = RewMoneyMaxLevel / 3.6f; }
+            {
+                fullxp = RewMoneyMaxLevel / 3.6f;
+            }
             else if (qLevel == 62)
-                { fullxp = RewMoneyMaxLevel / 2.4f; }
+            {
+                fullxp = RewMoneyMaxLevel / 2.4f;
+            }
             else if (qLevel == 61)
-                { fullxp = RewMoneyMaxLevel / 1.2f; }
+            {
+                fullxp = RewMoneyMaxLevel / 1.2f;
+            }
             else if (qLevel > 0 && qLevel <= 60)
-                { fullxp = RewMoneyMaxLevel / 0.6f; }
+            {
+                fullxp = RewMoneyMaxLevel / 0.6f;
+            }
 
             if (pLevel <= qLevel +  5)
             {
                 return uint32(ceilf(fullxp));
             }
             else if (pLevel == qLevel +  6)
-                { return uint32(ceilf(fullxp * 0.8f)); }
+            {
+                return uint32(ceilf(fullxp * 0.8f));
+            }
             else if (pLevel == qLevel +  7)
-                { return uint32(ceilf(fullxp * 0.6f)); }
+            {
+                return uint32(ceilf(fullxp * 0.6f));
+            }
             else if (pLevel == qLevel +  8)
-                { return uint32(ceilf(fullxp * 0.4f)); }
+            {
+                return uint32(ceilf(fullxp * 0.4f));
+            }
             else if (pLevel == qLevel +  9)
-                { return uint32(ceilf(fullxp * 0.2f)); }
+            {
+                return uint32(ceilf(fullxp * 0.2f));
+            }
             else
-                { return uint32(ceilf(fullxp * 0.1f)); }
+            {
+                return uint32(ceilf(fullxp * 0.1f));
+            }
         }
     }
 

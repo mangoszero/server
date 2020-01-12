@@ -17,7 +17,9 @@ public:
     bool operator()(GameObject* u)
     {
         if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo())
+        {
             return true;
+        }
 
         return false;
     }

@@ -934,7 +934,9 @@ struct SpellEntry
         {
             for (uint8 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; ++i)
                 if (Effect[i] == effect)
+                {
                     return true;
+                }
             return false;
         }
     private:

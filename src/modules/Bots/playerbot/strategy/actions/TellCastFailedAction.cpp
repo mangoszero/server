@@ -15,7 +15,9 @@ bool TellCastFailedAction::Execute(Event event)
     ai->SpellInterrupted(spellId);
 
     if (result == SPELL_CAST_OK)
+    {
         return false;
+    }
 
     const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
     ostringstream out; out << chat->formatSpell(pSpellInfo) << ": ";
@@ -55,11 +57,15 @@ bool TellSpellAction::Execute(Event event)
     string spell = event.getParam();
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     if (!spellId)
+    {
         return false;
+    }
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId );
     if (!spellInfo)
+    {
         return false;
+    }
 
     ostringstream out; out << chat->formatSpell(spellInfo);
     ai->TellMaster(out);

@@ -169,7 +169,9 @@ void HostileReference::updateOnlineStatus()
                 { online = true; }                              // not accessable but stays online
         }
         else
-            { accessible = true; }
+        {
+            accessible = true;
+        }
     }
     setAccessibleState(accessible);
     setOnlineOfflineState(online);
@@ -280,7 +282,9 @@ void ThreatContainer::modifyThreatPercent(Unit* pVictim, int32 pPercent)
             delete ref;
         }
         else
-            { ref->addThreatPercent(pPercent); }
+        {
+            ref->addThreatPercent(pPercent);
+        }
     }
 }
 
@@ -598,7 +602,9 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
                 iThreatContainer.remove(hostileReference);
             }
             else
-                { iThreatOfflineContainer.remove(hostileReference); }
+            {
+                iThreatOfflineContainer.remove(hostileReference);
+            }
             break;
     }
 }

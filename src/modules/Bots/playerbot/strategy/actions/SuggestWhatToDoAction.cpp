@@ -28,7 +28,9 @@ bool SuggestWhatToDoAction::Execute(Event event)
     }
 
     if (bot->GetInstanceId() || suggested)
+    {
         return false;
+    }
 
     int index = rand() % suggestions.size();
     (this->*suggestions[index])();
@@ -89,7 +91,9 @@ void SuggestWhatToDoAction::specificQuest()
 {
     vector<uint32> quests = GetIncompletedQuests();
     if (quests.empty())
+    {
         return;
+    }
 
     int index = rand() % quests.size();
 
@@ -108,7 +112,9 @@ void SuggestWhatToDoAction::newQuest()
 void SuggestWhatToDoAction::grindMaterials()
 {
     if (bot->getLevel() <= 5)
+    {
         return;
+    }
 
     switch (urand(0, 5))
     {
@@ -151,7 +157,9 @@ public:
     {
         ItemPrototype const* proto = item->GetProto();
         if (proto->Quality != quality)
+        {
             return true;
+        }
 
         if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
         {
@@ -177,7 +185,9 @@ private:
 void SuggestWhatToDoAction::trade()
 {
     if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+    {
         return;
+    }
 
     uint32 quality = urand(0, 100);
     if (quality > 90)
@@ -217,15 +227,21 @@ void SuggestWhatToDoAction::trade()
     }
 
     if (!item || !count)
+    {
         return;
+    }
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(item);
     if (!proto)
+    {
         return;
+    }
 
     uint32 price = auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * count;
     if (!price)
+    {
         return;
+    }
 
     ostringstream out; out << "Selling " << chat->formatItem(proto, count) << " for " << chat->formatMoney(price);
     spam(out.str());
@@ -235,10 +251,14 @@ void SuggestWhatToDoAction::spam(string msg)
 {
     Player* player = sRandomPlayerbotMgr.GetRandomPlayer();
     if (!player || !player->IsInWorld())
+    {
         return;
+    }
 
     if (!ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_TALK, true, player))
+    {
         return;
+    }
 
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
             player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&

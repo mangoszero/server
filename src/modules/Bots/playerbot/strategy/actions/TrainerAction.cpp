@@ -7,7 +7,9 @@ using namespace ai;
 void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, ostringstream& msg)
 {
     if (bot->GetMoney() < cost)
+    {
         return;
+    }
 
     bot->ModifyMoney(-int32(cost));
     bot->CastSpell(bot, tSpell->spell, true);
@@ -69,11 +71,15 @@ bool TrainerAction::Execute(Event event)
 
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     Creature *creature = ai->GetCreature(master->GetSelectionGuid());
     if (!creature)
+    {
         return false;
+    }
 
     if (!creature->IsTrainerOf(bot, false))
     {

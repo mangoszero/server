@@ -619,7 +619,9 @@ class BattleGround
                 return m_InvitedAlliance;
             }
             else
-                { return m_InvitedHorde; }
+            {
+                return m_InvitedHorde;
+            }
         }
         /**
          * @brief
@@ -984,7 +986,9 @@ class BattleGround
                 --m_PlayersCount[GetTeamIndexByTeamId(team)];
             }
             else
-                { ++m_PlayersCount[GetTeamIndexByTeamId(team)]; }
+            {
+                ++m_PlayersCount[GetTeamIndexByTeamId(team)];
+            }
         }
 
         /* Triggers handle */

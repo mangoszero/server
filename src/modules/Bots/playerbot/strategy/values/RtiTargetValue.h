@@ -21,28 +21,38 @@ namespace ai
             else if(rti == "square") index = 5;
             else if(rti == "cross") index = 6;
             else if(rti == "skull") index = 7;
-            return index;
+            {
+                return index;
+            }
         }
 
         Unit *Calculate()
         {
             Group *group = bot->GetGroup();
             if(!group)
+            {
                 return NULL;
+            }
 
             string rti = AI_VALUE(string, "rti");
             int index = GetRtiIndex(rti);
 
             if (index == -1)
+            {
                 return NULL;
+            }
 
             ObjectGuid guid = group->GetTargetIcon(index);
             if (!guid)
+            {
                 return NULL;
+            }
 
             Unit* unit = ai->GetUnit(guid);
             if (!unit || unit->IsDead())
+            {
                 return NULL;
+            }
 
             return unit;
         }

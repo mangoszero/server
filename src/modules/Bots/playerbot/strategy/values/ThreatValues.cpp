@@ -32,14 +32,20 @@ uint8 ThreatValue::Calculate()
 uint8 ThreatValue::Calculate(Unit* target)
 {
     if (!target)
+    {
         return 0;
+    }
 
     if (target->GetObjectGuid().IsPlayer())
+    {
         return 0;
+    }
 
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return 0;
+    }
 
     float botThreat = target->GetThreatManager().getThreat(bot);
     float maxThreat = 0;
@@ -57,7 +63,9 @@ uint8 ThreatValue::Calculate(Unit* target)
     }
 
     if (maxThreat <= 0)
+    {
         return 0;
+    }
 
     return botThreat * 100 / maxThreat;
 }

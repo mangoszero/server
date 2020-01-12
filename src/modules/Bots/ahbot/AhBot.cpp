@@ -27,7 +27,9 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
         //                                        0     1           2           3           4    5          6          7
         result = CharacterDatabase.PQuery("SELECT name, position_x, position_y, position_z, map, totaltime, leveltime, at_login FROM characters WHERE guid = '%u'",guid);
         if (!result)
+        {
             return false;
+        }
     }
     else
         delete_result = false;
@@ -76,7 +78,9 @@ void AhBot::Init()
     sLog.outString("Initializing AhBot by ike3");
 
     if (!sAhBotConfig.Initialize())
+    {
         return;
+    }
 
     factions[1] = 1;
     factions[2] = 1;
@@ -114,10 +118,14 @@ void AhBot::Update()
     time_t now = time(0);
 
     if (now < nextAICheckTime)
+    {
         return;
+    }
 
     if (updating)
+    {
         return;
+    }
 
     nextAICheckTime = time(0) + sAhBotConfig.updateInterval;
 
@@ -128,10 +136,14 @@ void AhBot::Update()
 void AhBot::ForceUpdate()
 {
     if (!sAhBotConfig.enabled)
+    {
         return;
+    }
 
     if (updating)
+    {
         return;
+    }
 
     sLog.outString("AhBot is now checking auctions");
     updating = true;
@@ -173,7 +185,9 @@ struct SortByPricePredicate
     bool operator()(AuctionEntry* const & a, AuctionEntry* const & b) const
     {
         if (a->startbid == b->startbid)
+        {
             return a->buyout < b->buyout;
+        }
 
         return a->startbid < b->startbid;
     }
@@ -246,7 +260,9 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
 {
     const AuctionHouseEntry* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
     if (!ahEntry)
+    {
         return 0;
+    }
 
     int answered = 0;
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
@@ -389,7 +405,9 @@ uint32 AhBot::GetTime(string category, uint32 id, uint32 auctionHouse, uint32 ty
         id, type, factions[auctionHouse], category.c_str());
 
     if (!results)
+    {
         return 0;
+    }
 
     Field* fields = results->Fetch();
     uint32 result = fields[0].GetUInt32();
@@ -413,7 +431,9 @@ uint32 AhBot::GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Categ
 {
     uint32 entryTime = GetTime("entry", entry, auctionHouse, AHBOT_WON_DELAY);
     if (entryTime > time(0))
+    {
         return entryTime;
+    }
 
     uint32 result = entryTime;
 
@@ -443,7 +463,9 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
     uint32 itemTime = max(itemSellTime, itemBuyTime);
 
     if (itemTime > time(0))
+    {
         return itemTime;
+    }
 
     uint32 result = itemTime;
 
@@ -472,7 +494,9 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
 
     int32 maxAllowedAuctionCount = categoryMaxAuctionCount[category->GetName()];
     if (inAuctionItems->GetCount(category) >= maxAllowedAuctionCount)
+    {
         return 0;
+    }
 
     int added = 0;
     vector<uint32> available = availableItems.Get(category);
@@ -521,7 +545,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     uint32 stackCount = category->GetStackCount(proto);
     if (!price || !stackCount)
+    {
         return 0;
+    }
 
     if (urand(0, 100) <= sAhBotConfig.underPriceProbability * 100)
         price = price * 100 / urand(100, 200);
@@ -531,7 +557,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     Item* item = Item::CreateItem(proto->ItemId, stackCount);
     if (!item)
+    {
         return 0;
+    }
 
     uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(proto->ItemId);
     if (randomPropertyId)
@@ -539,7 +567,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
     if(!ahEntry)
+    {
         return 0;
+    }
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
 
@@ -579,7 +609,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 void AhBot::HandleCommand(string command)
 {
     if (!sAhBotConfig.enabled)
+    {
         return;
+    }
 
     if (command == "expire")
     {
@@ -616,7 +648,9 @@ void AhBot::HandleCommand(string command)
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
     if (!proto)
+    {
         return;
+    }
 
     for (int i=0; i<CategoryList::instance.size(); i++)
     {
@@ -656,11 +690,15 @@ void AhBot::HandleCommand(string command)
 void AhBot::Expire(int auction)
 {
     if (!sAhBotConfig.enabled)
+    {
         return;
+    }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
     if(!ahEntry)
+    {
         return;
+    }
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
 
@@ -686,11 +724,15 @@ void AhBot::Expire(int auction)
 void AhBot::PrintStats(int auction)
 {
     if (!sAhBotConfig.enabled)
+    {
         return;
+    }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
     if(!ahEntry)
+    {
         return;
+    }
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
     AuctionHouseObject::AuctionEntryMap const& auctions = auctionHouse->GetAuctions();
@@ -701,14 +743,20 @@ void AhBot::PrintStats(int auction)
 void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
 {
     if (!sAhBotConfig.enabled || !entry)
+    {
         return;
+    }
 
     if (!IsBotAuction(entry->owner) && !IsBotAuction(entry->bidder))
+    {
         return;
+    }
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(entry->itemTemplate);
     if (!proto)
+    {
         return;
+    }
 
     string category = "";
     for (int i = 0; i < CategoryList::instance.size(); i++)
@@ -883,7 +931,9 @@ uint32 AhBot::GetRandomBidder(uint32 auctionHouse)
 {
     vector<uint32> guids = bidders[factions[auctionHouse]];
     if (guids.empty())
+    {
         return 0;
+    }
 
     int index = urand(0, guids.size() - 1);
     return guids[index];
@@ -930,7 +980,9 @@ void AhBot::LoadRandomBots()
 int32 AhBot::GetSellPrice(ItemPrototype const* proto)
 {
     if (!sAhBotConfig.enabled)
+    {
         return 0;
+    }
 
     int32 maxPrice = 0;
     for (int i=0; i<CategoryList::instance.size(); i++)
@@ -956,7 +1008,9 @@ int32 AhBot::GetSellPrice(ItemPrototype const* proto)
 int32 AhBot::GetBuyPrice(ItemPrototype const* proto)
 {
     if (!sAhBotConfig.enabled)
+    {
         return 0;
+    }
 
     int32 maxPrice = 0;
     for (int i=0; i<CategoryList::instance.size(); i++)
@@ -982,7 +1036,9 @@ int32 AhBot::GetBuyPrice(ItemPrototype const* proto)
 double AhBot::GetRarityPriceMultiplier(const ItemPrototype* proto)
 {
     if (!sAhBotConfig.enabled)
+    {
         return 1.0;
+    }
 
     for (int i=0; i<CategoryList::instance.size(); i++)
     {

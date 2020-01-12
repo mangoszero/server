@@ -125,11 +125,15 @@ void PlayerbotFactory::InitPet()
     if (!pet)
     {
         if (bot->getClass() != CLASS_HUNTER)
+        {
             return;
+        }
 
         Map* map = bot->GetMap();
         if (!map)
+        {
             return;
+        }
 
         vector<uint32> ids;
         for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
@@ -265,14 +269,20 @@ private:
     bool CanKeep(uint32 id)
     {
         if (keep.find(id) != keep.end())
+        {
             return false;
+        }
 
         if (sPlayerbotAIConfig.IsInRandomQuestItemList(id))
+        {
             return true;
+        }
 
         ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(id);
         if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK)
+        {
             return true;
+        }
 
         return false;
     }
@@ -286,26 +296,36 @@ private:
 bool PlayerbotFactory::CanEquipArmor(ItemPrototype const* proto)
 {
     if (bot->HasSkill(SKILL_SHIELD) && proto->SubClass == ITEM_SUBCLASS_ARMOR_SHIELD)
+    {
         return true;
+    }
 
     if (bot->HasSkill(SKILL_PLATE_MAIL))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_PLATE)
+        {
             return false;
+        }
     }
     else if (bot->HasSkill(SKILL_MAIL))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_MAIL)
+        {
             return false;
+        }
     }
     else if (bot->HasSkill(SKILL_LEATHER))
     {
         if (proto->SubClass != ITEM_SUBCLASS_ARMOR_LEATHER)
+        {
             return false;
+        }
     }
 
     if (proto->Quality <= ITEM_QUALITY_NORMAL)
+    {
         return true;
+    }
 
     uint8 sp = 0, ap = 0, tank = 0;
     for (int j = 0; j < MAX_ITEM_PROTO_STATS; ++j)
@@ -328,17 +348,23 @@ bool PlayerbotFactory::CheckItemStats(uint8 sp, uint8 ap, uint8 tank)
     case CLASS_MAGE:
     case CLASS_WARLOCK:
         if (!sp || ap > sp || tank > sp)
+        {
             return false;
+        }
         break;
     case CLASS_PALADIN:
     case CLASS_WARRIOR:
         if ((!ap && !tank) || sp > ap || sp > tank)
+        {
             return false;
+        }
         break;
     case CLASS_HUNTER:
     case CLASS_ROGUE:
         if (!ap || sp > ap || sp > tank)
+        {
             return false;
+        }
         break;
     }
 
@@ -496,20 +522,30 @@ bool PlayerbotFactory::CanEquipWeapon(ItemPrototype const* proto)
 bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQuality)
 {
     if (proto->Duration & 0x80000000)
+    {
         return false;
+    }
 
     if (proto->Quality != desiredQuality)
+    {
         return false;
+    }
 
     if (proto->Bonding == BIND_QUEST_ITEM || proto->Bonding == BIND_WHEN_USE)
+    {
         return false;
+    }
 
     if (proto->Class == ITEM_CLASS_CONTAINER)
+    {
         return true;
+    }
 
     uint32 requiredLevel = proto->RequiredLevel;
     if (!requiredLevel)
+    {
         return false;
+    }
 
     uint32 level = bot->getLevel();
     uint32 delta = 2;
@@ -535,7 +571,9 @@ bool PlayerbotFactory::CanEquipItem(ItemPrototype const* proto, uint32 desiredQu
     for (uint32 gap = 60; gap <= 80; gap += 10)
     {
         if (level > gap && requiredLevel <= gap)
+        {
             return false;
+        }
     }
 
     return true;
@@ -646,7 +684,9 @@ void PlayerbotFactory::InitEquipment(bool incremental)
 bool PlayerbotFactory::IsDesiredReplacement(Item* item)
 {
     if (!item)
+    {
         return true;
+    }
 
     ItemPrototype const* proto = item->GetProto();
     int delta = 1 + (80 - bot->getLevel()) / 10;
@@ -656,7 +696,9 @@ bool PlayerbotFactory::IsDesiredReplacement(Item* item)
 void PlayerbotFactory::InitSecondEquipmentSet()
 {
     if (bot->getClass() == CLASS_MAGE || bot->getClass() == CLASS_WARLOCK || bot->getClass() == CLASS_PRIEST)
+    {
         return;
+    }
 
     map<uint32, vector<uint32> > items;
 
@@ -794,10 +836,14 @@ void PlayerbotFactory::InitBags()
 void PlayerbotFactory::EnchantItem(Item* item)
 {
     if (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance)
+    {
         return;
+    }
 
     if (bot->getLevel() < urand(40, 50))
+    {
         return;
+    }
 
     ItemPrototype const* proto = item->GetProto();
     int32 itemLevel = proto->ItemLevel;
@@ -863,7 +909,9 @@ void PlayerbotFactory::EnchantItem(Item* item)
 
     SpellItemEnchantmentEntry const* enchant = sSpellItemEnchantmentStore.LookupEntry(id);
     if (!enchant)
+    {
         return;
+    }
 
     bot->ApplyEnchantment(item, PERM_ENCHANTMENT_SLOT, false);
     item->SetEnchantment(PERM_ENCHANTMENT_SLOT, id, 0, 0);
@@ -1132,7 +1180,9 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
     }
 
     if (guids.empty())
+    {
         return ObjectGuid();
+    }
 
     int index = urand(0, guids.size() - 1);
     return guids[index];
@@ -1143,7 +1193,9 @@ void PlayerbotFactory::InitQuests()
     QueryResult *results = WorldDatabase.PQuery("SELECT entry, RequiredClasses, RequiredRaces FROM quest_template where QuestLevel = -1 and MinLevel <= '%u'",
             bot->getLevel());
     if (!results)
+    {
         return;
+    }
 
     list<uint32> ids;
     do
@@ -1191,11 +1243,15 @@ void PlayerbotFactory::ClearInventory()
 void PlayerbotFactory::InitAmmo()
 {
     if (bot->getClass() != CLASS_HUNTER && bot->getClass() != CLASS_ROGUE && bot->getClass() != CLASS_WARRIOR)
+    {
         return;
+    }
 
     Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
     if (!pItem)
+    {
         return;
+    }
 
     uint32 subClass = 0;
     switch (pItem->GetProto()->SubClass)
@@ -1210,12 +1266,16 @@ void PlayerbotFactory::InitAmmo()
     }
 
     if (!subClass)
+    {
         return;
+    }
 
     QueryResult *results = WorldDatabase.PQuery("select max(entry), max(RequiredLevel) from item_template where class = '%u' and subclass = '%u' and RequiredLevel <= '%u'",
             ITEM_CLASS_PROJECTILE, subClass, bot->getLevel());
     if (!results)
+    {
         return;
+    }
 
     Field* fields = results->Fetch();
     if (fields)
@@ -1451,12 +1511,16 @@ void PlayerbotFactory::InitInventoryTrade()
 
     uint32 index = urand(0, ids.size() - 1);
     if (index >= ids.size())
+    {
         return;
+    }
 
     uint32 itemId = ids[index];
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
     if (!proto)
+    {
         return;
+    }
 
     uint32 count = 1, stacks = 1;
     switch (proto->Quality)

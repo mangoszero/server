@@ -405,7 +405,9 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
         }
     }
     else if (!m_items.empty())
-        { deleteIncludedItems(); }
+    {
+        deleteIncludedItems();
+    }
 }
 
 /**

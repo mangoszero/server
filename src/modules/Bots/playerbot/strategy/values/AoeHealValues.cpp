@@ -9,7 +9,9 @@ uint8 AoeHealValue::Calculate()
 {
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return 0;
+    }
 
     float range = 0;
     if (qualifier == "low")

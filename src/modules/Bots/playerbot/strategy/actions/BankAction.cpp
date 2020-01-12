@@ -47,7 +47,9 @@ bool BankAction::Execute(string text, Unit* bank)
     {
         list<Item*> found = parseItems(text);
         if (found.empty())
+        {
             return false;
+        }
 
         for (list<Item*>::iterator i = found.begin(); i != found.end(); i++)
         {
@@ -66,7 +68,9 @@ bool BankAction::Withdraw(const uint32 itemid)
 {
     Item* pItem = FindItemInBank(itemid);
     if (!pItem)
+    {
         return false;
+    }
 
     ItemPosCountVec dest;
     InventoryResult msg = bot->CanStoreItem(NULL_BAG, NULL_SLOT, dest, pItem, false);
@@ -142,7 +146,9 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
                 continue;
 
             if (pItemProto->ItemId == ItemId)   // have required item
+            {
                 return pItem;
+            }
         }
     }
 
@@ -160,7 +166,9 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
                         continue;
 
                     if (pItemProto->ItemId == ItemId)
+                    {
                         return pItem;
+                    }
                 }
             }
     }

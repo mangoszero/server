@@ -37,7 +37,9 @@ bool TellAttackersAction::Execute(Event event)
     ai->TellMaster("--- Threat ---");
     HostileReference *ref = bot->GetHostileRefManager().getFirst();
     if (!ref)
+    {
         return true;
+    }
 
     while( ref )
     {

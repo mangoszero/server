@@ -850,7 +850,9 @@ class ObjectMgr
                 return itr->second;
             }
             else
-                { return "There is no info for this item"; }
+            {
+                return "There is no info for this item";
+            }
         }
 
         CreatureDataMap const* GetCreatureDataMap() const { return &mCreatureDataMap; }

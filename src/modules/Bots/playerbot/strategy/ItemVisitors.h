@@ -19,7 +19,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (!Accept(item->GetProto()))
+            {
                 return true;
+            }
 
             result.push_back(item);
             return true;
@@ -51,7 +53,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (bot->CanUseItem(item->GetProto()) == EQUIP_ERR_OK)
+            {
                 return FindItemVisitor::Visit(item);
+            }
 
             return true;
         }
@@ -73,10 +77,14 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->GetProto()->Quality != quality)
+            {
                 return true;
+            }
 
             if (result.size() >= (size_t)count)
+            {
                 return false;
+            }
 
             result.push_back(item);
             return true;
@@ -101,7 +109,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->IsSoulBound())
+            {
                 return true;
+            }
 
             return FindItemsByQualityVisitor::Visit(item);
         }
@@ -116,13 +126,19 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->IsSoulBound())
+            {
                 return true;
+            }
 
             if (item->GetProto()->Class != itemClass || item->GetProto()->SubClass != itemSubClass)
+            {
                 return true;
+            }
 
             if (result.size() >= (size_t)count)
+            {
                 return false;
+            }
 
             result.push_back(item);
             return true;

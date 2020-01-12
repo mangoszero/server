@@ -14,11 +14,15 @@ namespace ai
 
             Group* grp = bot->GetGroupInvite();
             if (!grp)
+            {
                 return false;
+            }
 
             Player* inviter = sObjectMgr.GetPlayer(grp->GetLeaderGuid());
             if (!inviter)
+            {
                 return false;
+            }
 
             if (!ai->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, false, inviter))
             {

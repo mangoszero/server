@@ -188,7 +188,9 @@ void ChatHandler::ShowTriggerTargetListHelper(uint32 id, AreaTrigger const* at, 
             snprintf(dist_buf, 50, GetMangosString(LANG_TRIGGER_DIST), dist);
         }
         else
-            { dist_buf[0] = '\0'; }
+        {
+            dist_buf[0] = '\0';
+        }
 
         PSendSysMessage(LANG_TRIGGER_TARGET_LIST_CHAT,
                         subpart ? " -> " : "", id, id, at->target_mapId, at->target_X, at->target_Y, at->target_Z, dist_buf);
@@ -486,7 +488,9 @@ bool ChatHandler::HandleGoTriggerCommand(char* args)
         return HandleGoHelper(_player, at->target_mapId, at->target_X, at->target_Y, at->target_Z);
     }
     else
-        { return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, atEntry->z); }
+    {
+        return HandleGoHelper(_player, atEntry->mapid, atEntry->x, atEntry->y, atEntry->z);
+    }
 }
 
 bool ChatHandler::HandleGoGraveyardCommand(char* args)
@@ -887,7 +891,9 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
                 initString = false;
             }
             else
-                { eventFilter << "," << *itr; }
+            {
+                eventFilter << "," << *itr;
+            }
         }
 
         if (!initString)
@@ -895,7 +901,9 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
             eventFilter << "))";
         }
         else
-            { eventFilter << ")"; }
+        {
+            eventFilter << ")";
+        }
 
         result = WorldDatabase.PQuery("SELECT gameobject.guid, id, position_x, position_y, position_z, orientation, map, "
                                       "(POW(position_x - %f, 2) + POW(position_y - %f, 2) + POW(position_z - %f, 2)) AS order_ FROM gameobject "
@@ -972,7 +980,9 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
             PSendSysMessage(LANG_COMMAND_GO_STATUS_DOOR, target->GetGoState(), target->getLootState(), GetOnOffStr(target->IsCollisionEnabled()), goI->door.startOpen ? "open" : "closed");
         }
         else
-            { PSendSysMessage(LANG_COMMAND_GO_STATUS, target->GetGoState(), target->getLootState(), GetOnOffStr(target->IsCollisionEnabled())); }
+        {
+            PSendSysMessage(LANG_COMMAND_GO_STATUS, target->GetGoState(), target->getLootState(), GetOnOffStr(target->IsCollisionEnabled()));
+        }
     }
     return true;
 }
@@ -1277,15 +1287,21 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
 {
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
+    {
         return false;
+    }
 
     int type;
     if (!ExtractInt32(&args, type))
+    {
         return false;
+    }
 
     GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
     if (!goData)
+    {
         return false;
+    }
 
     if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
     {
@@ -1302,7 +1318,9 @@ bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
 {
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
+    {
         return false;
+    }
 
     int32 type;
     if (!ExtractInt32(&args, type))
@@ -1310,7 +1328,9 @@ bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
 
     GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
     if (!goData)
+    {
         return false;
+    }
 
     if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
     {
@@ -1327,7 +1347,9 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
 {
     uint32 lowguid;
     if (!ExtractUInt32(&args, lowguid))
+    {
         return false;
+    }
 
     int32 type;
     if (!ExtractInt32(&args, type))
@@ -1335,7 +1357,9 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
 
     GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
     if (!goData)
+    {
         return false;
+    }
 
     if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
     {
@@ -1423,7 +1447,9 @@ void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, Locale
         ss << factionEntry->ID << " - |cffffffff|Hfaction:" << factionEntry->ID << "|h[" << name << " " << localeNames[loc] << "]|h|r";
     }
     else
-        { ss << factionEntry->ID << " - " << name << " " << localeNames[loc]; }
+    {
+        ss << factionEntry->ID << " - " << name << " " << localeNames[loc];
+    }
 
     if (repState)                               // and then target!=NULL also
     {
@@ -1458,7 +1484,9 @@ void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, Locale
         }
     }
     else if (target)
-        { ss << GetMangosString(LANG_FACTION_NOREPUTATION); }
+    {
+        ss << GetMangosString(LANG_FACTION_NOREPUTATION);
+    }
 
     SendSysMessage(ss.str().c_str());
 }
@@ -1907,7 +1935,9 @@ bool ChatHandler::HandleNpcDeleteCommand(char* args)
         }
     }
     else
-        { unit = getSelectedCreature(); }
+    {
+        unit = getSelectedCreature();
+    }
 
     if (!unit)
     {
@@ -1927,7 +1957,9 @@ bool ChatHandler::HandleNpcDeleteCommand(char* args)
                 Creature::DeleteFromDB(unit->GetGUIDLow(), data);
             }
             else
-                { unit->AddObjectToRemoveList(); }
+            {
+                unit->AddObjectToRemoveList();
+            }
             break;
         }
         case CREATURE_SUBTYPE_PET:
@@ -1981,7 +2013,9 @@ bool ChatHandler::HandleNpcMoveCommand(char* args)
         pCreature = player->GetMap()->GetCreature(data->GetObjectGuid(lowguid));
     }
     else
-        { lowguid = pCreature->GetGUIDLow(); }
+    {
+        lowguid = pCreature->GetGUIDLow();
+    }
 
     float x = player->GetPositionX();
     float y = player->GetPositionY();
@@ -2078,11 +2112,17 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(char* args)
         move_type = IDLE_MOTION_TYPE;
     }
     else if (strncmp(type_str, "random", strlen(type_str)) == 0)
-        { move_type = RANDOM_MOTION_TYPE; }
+    {
+        move_type = RANDOM_MOTION_TYPE;
+    }
     else if (strncmp(type_str, "way", strlen(type_str)) == 0)
-        { move_type = WAYPOINT_MOTION_TYPE; }
+    {
+        move_type = WAYPOINT_MOTION_TYPE;
+    }
     else
-        { return false; }
+    {
+        return false;
+    }
 
     bool doNotDelete = ExtractLiteralArg(&args, "NODEL") != NULL;
     if (!doNotDelete && *args)                              // need fail if false in result wrong literal
@@ -2116,7 +2156,9 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(char* args)
         PSendSysMessage(LANG_MOVE_TYPE_SET_NODEL, type_str);
     }
     else
-        { PSendSysMessage(LANG_MOVE_TYPE_SET, type_str); }
+    {
+        PSendSysMessage(LANG_MOVE_TYPE_SET, type_str);
+    }
 
     return true;
 }
@@ -2363,7 +2405,9 @@ bool ChatHandler::HandleNpcSetDeathStateCommand(char* args)
         pCreature->SetDeadByDefault(true);
     }
     else
-        { pCreature->SetDeadByDefault(false); }
+    {
+        pCreature->SetDeadByDefault(false);
+    }
 
     pCreature->SaveToDB();
     pCreature->Respawn();
@@ -2377,7 +2421,9 @@ bool ChatHandler::HandleNpcNameCommand(char* /*args*/)
 {
     /* Temp. disabled
     if (!*args)
+    {
         return false;
+    }
 
     if (strlen((char*)args)>75)
     {
@@ -2525,7 +2571,9 @@ bool ChatHandler::HandleDeMorphCommand(char* /*args*/)
 
     // check online security
     else if (target->GetTypeId() == TYPEID_PLAYER && HasLowerSecurity((Player*)target))
-        { return false; }
+    {
+        return false;
+    }
 
     target->DeMorph();
 
@@ -2558,7 +2606,9 @@ bool ChatHandler::HandleModifyMorphCommand(char* args)
 
     // check online security
     else if (target->GetTypeId() == TYPEID_PLAYER && HasLowerSecurity((Player*)target))
-        { return false; }
+    {
+        return false;
+    }
 
     target->SetDisplayId(display_id);
 
@@ -2744,7 +2794,9 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
         SendSysMessage(LANG_COMMAND_TICKETS_SYSTEM_OFF);
     }
     else
-        { return false; }
+    {
+        return false;
+    }
 
     return true;
 }
@@ -2894,7 +2946,9 @@ bool ChatHandler::HandleTicketInfoCommand(char *args)
         PSendSysMessage(LANG_COMMAND_TICKETCOUNT, count, GetOnOffStr(m_session->GetPlayer()->isAcceptTickets()));
     }
     else
-        { PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count); }
+    {
+        PSendSysMessage(LANG_COMMAND_TICKETCOUNT_CONSOLE, count);
+    }
 
     return true;
 }
@@ -2963,7 +3017,9 @@ bool ChatHandler::HandleTicketMeAcceptCommand(char* args)
         SendSysMessage(LANG_COMMAND_TICKETOFF);
     }
     else
-        { return false; }
+    {
+        return false;
+    }
 
     return true;
 }
@@ -3209,7 +3265,9 @@ bool ChatHandler::HandleWpAddCommand(char* args)
 
     CreatureInfo const* waypointInfo = ObjectMgr::GetCreatureTemplate(VISUAL_WAYPOINT);
     if (!waypointInfo || waypointInfo->GetHighGuid() != HIGHGUID_UNIT)
+    {
         return false;                                       // must exist as normal creature in mangos.sql 'creature_template'
+    }
 
     Creature* targetCreature = getSelectedCreature();
     WaypointPathOrigin wpDestination = PATH_NO_PATH;        ///< into which storage
@@ -3560,7 +3618,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     {
         uint32 waittime;
         if (!ExtractUInt32(&args, waittime))
+        {
             return false;
+        }
 
         sWaypointMgr.SetNodeWaittime(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpId, wpPathId, wpSource, waittime);
     }
@@ -3568,7 +3628,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     {
         uint32 scriptId;
         if (!ExtractUInt32(&args, scriptId))
+        {
             return false;
+        }
 
         if (!sWaypointMgr.SetNodeScriptId(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpId, wpPathId, wpSource, scriptId))
             PSendSysMessage(LANG_WAYPOINT_INFO_UNK_SCRIPTID, scriptId);
@@ -3577,7 +3639,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     {
         float ori;
         if (!ExtractFloat(&args, ori))
+        {
             return false;
+        }
 
         sWaypointMgr.SetNodeOrientation(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpId, wpPathId, wpSource, ori);
     }
@@ -3618,7 +3682,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
 
     char* subCmd_str = ExtractLiteralArg(&args);
     if (!subCmd_str)
+    {
         return false;
+    }
     std::string subCmd = subCmd_str;                        ///< info, on, off, first, last
 
     uint32 dbGuid = 0;
@@ -3639,7 +3705,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
     else    // Guid must be provided
     {
         if (!ExtractUInt32(&args, dbGuid))                  // No creature selected and no dbGuid provided
+        {
             return false;
+        }
 
         if (ExtractOptInt32(&args, wpPathId, 0))            // Fill path-id and source
         {
@@ -3815,7 +3883,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
 bool ChatHandler::HandleWpExportCommand(char* args)
 {
     if (!*args)
+    {
         return false;
+    }
 
     Creature* wpOwner;
     WaypointPathOrigin wpOrigin = PATH_NO_PATH;
@@ -4252,25 +4322,45 @@ bool ChatHandler::HandleModifyHonorCommand(char* args)
         target->SetByteValue(PLAYER_BYTES_3, 3, amount);
     }
     else if (hasStringAbbr(field, "todaykills"))
-        { target->SetUInt16Value(PLAYER_FIELD_SESSION_KILLS, 0, (uint32)amount); }
+    {
+        target->SetUInt16Value(PLAYER_FIELD_SESSION_KILLS, 0, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "yesterdaykills"))
-        { target->SetUInt32Value(PLAYER_FIELD_YESTERDAY_KILLS, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_YESTERDAY_KILLS, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "yesterdayhonor"))
-        { target->SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "thisweekkills"))
-        { target->SetUInt32Value(PLAYER_FIELD_THIS_WEEK_KILLS, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_THIS_WEEK_KILLS, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "thisweekhonor"))
-        { target->SetUInt32Value(PLAYER_FIELD_THIS_WEEK_CONTRIBUTION, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_THIS_WEEK_CONTRIBUTION, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "lastweekkills"))
-        { target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_KILLS, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_KILLS, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "lastweekhonor"))
-        { target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_CONTRIBUTION, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_CONTRIBUTION, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "lastweekstanding"))
-        { target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_RANK, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_LAST_WEEK_RANK, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "lifetimedishonorablekills"))
-        { target->SetUInt32Value(PLAYER_FIELD_LIFETIME_DISHONORABLE_KILLS, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_LIFETIME_DISHONORABLE_KILLS, (uint32)amount);
+    }
     else if (hasStringAbbr(field, "lifetimehonorablekills"))
-        { target->SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, (uint32)amount); }
+    {
+        target->SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORABLE_KILLS, (uint32)amount);
+    }
 
     PSendSysMessage(LANG_COMMAND_MODIFY_HONOR, field, target->GetName(), hasStringAbbr(field, "rank") ? amount : (uint32)amount);
 
@@ -4323,7 +4413,9 @@ bool ChatHandler::HandleLookupEventCommand(char* args)
                 PSendSysMessage(LANG_EVENT_ENTRY_LIST_CHAT, id, id, eventData.description.c_str(), active);
             }
             else
-                { PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, id, eventData.description.c_str(), active); }
+            {
+                PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, id, eventData.description.c_str(), active);
+            }
 
             ++counter;
         }
@@ -4369,7 +4461,9 @@ bool ChatHandler::HandleEventListCommand(char* args)
             state = inactive;
         }
         else
-            { state = active; }
+        {
+            state = active;
+        }
 
         GameEventData const& eventData = events[event_id];
 
@@ -4378,7 +4472,9 @@ bool ChatHandler::HandleEventListCommand(char* args)
             PSendSysMessage(LANG_EVENT_ENTRY_LIST_CHAT, event_id, event_id, eventData.description.c_str(), state);
         }
         else
-            { PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, event_id, eventData.description.c_str(), state); }
+        {
+            PSendSysMessage(LANG_EVENT_ENTRY_LIST_CONSOLE, event_id, eventData.description.c_str(), state);
+        }
 
         ++counter;
     }
@@ -4946,7 +5042,9 @@ bool ChatHandler::LookupPlayerSearchCommand(QueryResult* result, uint32* limit)
                 ShowPlayerListHelper(chars, limit, true, false);
             }
             else
-                { delete chars; }
+            {
+                delete chars;
+            }
         }
     }
     while (result->NextRow());
@@ -5486,7 +5584,9 @@ bool ChatHandler::HandleMmapLocCommand(char* /*args*/)
             PSendSysMessage("Dt     [%02i,%02i]", tile->header->x, tile->header->y);
         }
         else
-            { PSendSysMessage("Dt     [??,??] (no tile loaded)"); }
+        {
+            PSendSysMessage("Dt     [??,??] (no tile loaded)");
+        }
     }
 
     return true;

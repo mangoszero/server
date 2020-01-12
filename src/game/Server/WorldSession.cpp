@@ -267,7 +267,9 @@ bool WorldSession::Update(PacketFilter& updater)
                         }
                     }
                     else if (_player->IsInWorld())
-                        { ExecuteOpcode(opHandle, packet); }
+                    {
+                        ExecuteOpcode(opHandle, packet);
+                    }
 
                     // lag can cause STATUS_LOGGEDIN opcodes to arrive after the player started a transfer
 
@@ -291,9 +293,13 @@ bool WorldSession::Update(PacketFilter& updater)
                         LogUnexpectedOpcode(packet, "the player has not logged in yet");
                     }
                     else if (_player->IsInWorld())
-                        { LogUnexpectedOpcode(packet, "the player is still in world"); }
+                    {
+                        LogUnexpectedOpcode(packet, "the player is still in world");
+                    }
                     else
-                        { ExecuteOpcode(opHandle, packet); }
+                    {
+                        ExecuteOpcode(opHandle, packet);
+                    }
                     break;
                 case STATUS_AUTHED:
                     // prevent cheating with skip queue wait
@@ -456,7 +462,9 @@ void WorldSession::LogoutPlayer(bool Save)
                     }
                 }
                 else if ((*itr)->GetTypeId() == TYPEID_PLAYER)
-                    { aset.insert((Player*)(*itr)); }
+                {
+                    aset.insert((Player*)(*itr));
+                }
             }
 
             _player->SetPvPDeath(!aset.empty());
@@ -824,7 +832,9 @@ void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* pac
 {
 #ifdef ENABLE_ELUNA
     if (!sEluna->OnPacketReceive(this, *packet))
+    {
         return;
+    }
 #endif /* ENABLE_ELUNA */
 
     // need prevent do internal far teleports in handlers because some handlers do lot steps

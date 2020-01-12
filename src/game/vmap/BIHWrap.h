@@ -144,7 +144,9 @@ class BIHWrap
                 m_objects[Idx] = NULL;
             }
             else
-                { m_objects_to_push.remove(&obj); }
+            {
+                m_objects_to_push.remove(&obj);
+            }
         }
 
         /**

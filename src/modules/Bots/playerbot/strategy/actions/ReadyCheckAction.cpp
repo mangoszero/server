@@ -14,7 +14,9 @@ bool ReadyCheckAction::Execute(Event event)
         p >> player;
 
     if (player == bot->GetObjectGuid())
+    {
         return false;
+    }
 
     return ReadyCheck();
 }

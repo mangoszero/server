@@ -236,7 +236,9 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         ((BattleGroundMap*)map)->GetBG()->HandleGameObjectCreate(this);
     }
     else if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript(GetZoneId()))
-        { outdoorPvP->HandleGameObjectCreate(this); }
+    {
+        outdoorPvP->HandleGameObjectCreate(this);
+    }
 
     // Notify the map's instance data.
     // Only works if you create the object in it, not if it is moves to that map.
@@ -559,7 +561,9 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     SetUInt32Value(GAMEOBJECT_FLAGS, (GetGOInfo()->flags & ~(GO_FLAG_LOCKED | GO_FLAG_INTERACT_COND | GO_FLAG_NO_INTERACT)) | currentLockOrInteractFlags);
                 }
                 else
-                    { SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags); }
+                {
+                    SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags);
+                }
             }
 
             loot.clear();
@@ -640,7 +644,9 @@ void GameObject::Delete()
         sPoolMgr.UpdatePool<GameObject>(*GetMap()->GetPersistentState(), poolid, GetGUIDLow());
     }
     else
-        { AddObjectToRemoveList(); }
+    {
+        AddObjectToRemoveList();
+    }
 }
 
 void GameObject::SaveToDB()
@@ -892,7 +898,9 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
                 if (u->GetMaxPositiveAuraModifierByMiscValue(SPELL_AURA_MOD_INVISIBILITY_DETECTION, 8) < 200)
                 {
                     if (u->getClass() != CLASS_ROGUE)
+                    {
                         return false;       // a wild or enemy trap cannot be seen by non-rogues without proper invis detection
+                    }
                     visibleDistance = 0.0f; // minimal detection distance, will be normalized below
                 }
 
@@ -1168,14 +1176,18 @@ void GameObject::SwitchDoorOrButton(bool activate, bool alternative /* = false *
         SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE);
     }
     else
-        { RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE); }
+    {
+        RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE);
+    }
 
     if (GetGoState() == GO_STATE_READY)                     // if closed -> open
     {
         SetGoState(alternative ? GO_STATE_ACTIVE_ALTERNATIVE : GO_STATE_ACTIVE);
     }
     else                                                    // if open -> close
-        { SetGoState(GO_STATE_READY); }
+    {
+        SetGoState(GO_STATE_READY);
+    }
 }
 
 void GameObject::Use(Unit* user)
@@ -1426,7 +1438,9 @@ void GameObject::Use(Unit* user)
                 SendGameObjectCustomAnim();
             }
             else
-                { SetGoState(GO_STATE_ACTIVE); }
+            {
+                SetGoState(GO_STATE_ACTIVE);
+            }
 
             m_cooldownTime = time(NULL) + info->GetAutoCloseTime();
 
@@ -1474,7 +1488,9 @@ void GameObject::Use(Unit* user)
                 GetMap()->ScriptsStart(DBS_ON_GO_USE, GetGUIDLow(), spellCaster, this);
             }
             else
-                { return; }
+            {
+                return;
+            }
 
             // cast this spell later if provided
             spellId = info->goober.spellId;
@@ -1591,7 +1607,9 @@ void GameObject::Use(Unit* user)
                             SetLootState(GO_JUST_DEACTIVATED);
                         }
                         else
-                            { player->SendLoot(GetObjectGuid(), success ? LOOT_FISHING : LOOT_FISHING_FAIL); }
+                        {
+                            player->SendLoot(GetObjectGuid(), success ? LOOT_FISHING : LOOT_FISHING_FAIL);
+                        }
                     }
                     else
                     {
@@ -1665,7 +1683,9 @@ void GameObject::Use(Unit* user)
                         }
                     }
                     else
-                        { return; }
+                    {
+                        return;
+                    }
                 }
 
                 spellCaster = player;
@@ -1713,7 +1733,9 @@ void GameObject::Use(Unit* user)
             }
             // reset ritual for this GO
             else
-                { ClearAllUsesData(); }
+            {
+                ClearAllUsesData();
+            }
 
             // go to end function to spell casting
             break;
@@ -2356,13 +2378,21 @@ void GameObject::SetCapturePointSlider(float value, bool isLocked)
         m_captureState = CAPTURE_STATE_WIN_ALLIANCE;
     }
     else if ((int)m_captureSlider == CAPTURE_SLIDER_HORDE)
-        { m_captureState = CAPTURE_STATE_WIN_HORDE; }
+    {
+        m_captureState = CAPTURE_STATE_WIN_HORDE;
+    }
     else if (m_captureSlider > CAPTURE_SLIDER_MIDDLE + info->capturePoint.neutralPercent * 0.5f)
-        { m_captureState = CAPTURE_STATE_PROGRESS_ALLIANCE; }
+    {
+        m_captureState = CAPTURE_STATE_PROGRESS_ALLIANCE;
+    }
     else if (m_captureSlider < CAPTURE_SLIDER_MIDDLE - info->capturePoint.neutralPercent * 0.5f)
-        { m_captureState = CAPTURE_STATE_PROGRESS_HORDE; }
+    {
+        m_captureState = CAPTURE_STATE_PROGRESS_HORDE;
+    }
     else
-        { m_captureState = CAPTURE_STATE_NEUTRAL; }
+    {
+        m_captureState = CAPTURE_STATE_NEUTRAL;
+    }
 }
 
 void GameObject::TickCapturePoint()
@@ -2390,7 +2420,9 @@ void GameObject::TickCapturePoint()
             ++rangePlayers;
         }
         else
-            { --rangePlayers; }
+        {
+            --rangePlayers;
+        }
 
         ObjectGuid guid = (*itr)->GetObjectGuid();
         if (!tempUsers.erase(guid))
@@ -2439,7 +2471,9 @@ void GameObject::TickCapturePoint()
         rangePlayers = maxSuperiority;
     }
     else if (rangePlayers < -maxSuperiority)
-        { rangePlayers = -maxSuperiority; }
+    {
+        rangePlayers = -maxSuperiority;
+    }
 
     // time to capture from 0% to 100% is maxTime for minSuperiority amount of players and minTime for maxSuperiority amount of players (linear function: y = dy/dx*x+d)
     float deltaSlider = info->capturePoint.minTime;

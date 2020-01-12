@@ -148,7 +148,9 @@ class TypeUnorderedMapContainer
                 return nullptr;
             }
             else
-              { return iter->second; }
+            {
+                return iter->second;
+            }
         }
 
     private:

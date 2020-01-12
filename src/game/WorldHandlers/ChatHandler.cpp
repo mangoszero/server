@@ -215,7 +215,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             {
 #ifdef ENABLE_ELUNA
                 if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                {
                     return;
+                }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->Say(msg, lang);
             }
@@ -223,7 +225,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             {
 #ifdef ENABLE_ELUNA
                 if (!sEluna->OnChat(GetPlayer(), type, LANG_UNIVERSAL, msg))
+                {
                     return;
+                }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->TextEmote(msg);
             }
@@ -231,7 +235,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             {
 #ifdef ENABLE_ELUNA
                 if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                {
                     return;
+                }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->Yell(msg, lang);
             }
@@ -285,7 +291,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, player))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
             if (player->GetPlayerbotAI())
@@ -338,7 +346,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_PLAYERBOTS
@@ -391,7 +401,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
                     if (!sEluna->OnChat(GetPlayer(), type, lang, msg, guild))
+                    {
                         return;
+                    }
 #endif /* ENABLE_ELUNA */
 
                     guild->BroadcastToGuild(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
@@ -443,7 +455,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
                     if (!sEluna->OnChat(GetPlayer(), type, lang, msg, guild))
+                    {
                         return;
+                    }
 #endif /* ENABLE_ELUNA */
 
                     guild->BroadcastToOfficers(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
@@ -490,7 +504,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_PLAYERBOTS
@@ -549,7 +565,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_PLAYERBOTS
@@ -593,7 +611,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_PLAYERBOTS
@@ -640,7 +660,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
             WorldPacket data;
@@ -673,7 +695,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
             WorldPacket data;
@@ -704,7 +728,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
                     if (!sEluna->OnChat(GetPlayer(), type, lang, msg, chn))
+                    {
                         return;
+                    }
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
                     if (_player->GetPlayerbotMgr() && chn->GetFlags() & 0x18)
@@ -747,7 +773,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 // Used by Eluna
 #ifdef ENABLE_ELUNA
                 if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                {
                     return;
+                }
 #endif /* ENABLE_ELUNA */
             }
             break;
@@ -778,7 +806,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+            {
                 return;
+            }
 #endif /* ENABLE_ELUNA */
 
             break;
@@ -830,7 +860,9 @@ namespace MaNGOS
                     data.append(nam, namlen);
                 }
                 else
-                    { data << uint8(0x00); }
+                {
+                    data << uint8(0x00);
+                }
             }
 
         private:

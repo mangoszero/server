@@ -89,7 +89,9 @@ class UpdateMask
         UpdateMask& operator=(UpdateMask const& right)
         {
             if (this == &right)
+            {
                 return *this;
+            }
 
             SetCount(right.GetCount());
             memcpy(_bits, right._bits, sizeof(uint8) * _blockCount * CLIENT_UPDATE_MASK_BITS);

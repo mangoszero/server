@@ -124,7 +124,9 @@ void Player::UpdateResistances(uint32 school)
         SetResistance(SpellSchools(school), int32(value));
     }
     else
-        { UpdateArmor(); }
+    {
+        UpdateArmor();
+    }
 }
 
 void Player::UpdateArmor()
@@ -598,7 +600,9 @@ void Creature::UpdateResistances(uint32 school)
         SetResistance(SpellSchools(school), int32(value));
     }
     else
-        { UpdateArmor(); }
+    {
+        UpdateArmor();
+    }
 }
 
 void Creature::UpdateArmor()
@@ -734,7 +738,9 @@ void Pet::UpdateResistances(uint32 school)
         SetResistance(SpellSchools(school), int32(value));
     }
     else
-        { UpdateArmor(); }
+    {
+        UpdateArmor();
+    }
 }
 
 void Pet::UpdateArmor()
@@ -793,7 +799,9 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
         val = GetStat(STAT_STRENGTH) - 10.0f;
     }
     else
-        { val = 2 * GetStat(STAT_STRENGTH) - 20.0f; }
+    {
+        val = 2 * GetStat(STAT_STRENGTH) - 20.0f;
+    }
 
     SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, val);
     // in BASE_VALUE of UNIT_MOD_ATTACK_POWER for creatures we store data of meleeattackpower field in DB

@@ -195,7 +195,9 @@ class Pet : public Creature
                 return 0;
             }
             else
-                { return m_autospells[pos]; }
+            {
+                return m_autospells[pos];
+            }
         }
 
         virtual bool CanSwim() const override
@@ -206,7 +208,9 @@ class Pet : public Creature
                 return owner->GetTypeId() == TYPEID_PLAYER ? true : ((Creature const*)owner)->CanSwim();
             }
             else
-                { return Creature::CanSwim(); }
+            {
+                return Creature::CanSwim();
+            }
         }
 
         virtual bool CanFly() const override { return false; } // pet are not able to fly. TODO: check if this is right

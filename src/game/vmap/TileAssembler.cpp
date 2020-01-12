@@ -329,7 +329,9 @@ namespace VMAP
                     modelBound = AABox(v, v), boundEmpty = false;
                 }
                 else
-                    { modelBound.merge(v); }
+                {
+                    modelBound.merge(v);
+                }
             }
         }
         spawn.iBound = modelBound + spawn.iPos;
@@ -450,7 +452,9 @@ namespace VMAP
                         bounds = AABox(v, v), boundEmpty = false;
                     }
                     else
-                        { bounds.merge(v); }
+                    {
+                        bounds.merge(v);
+                    }
                 }
             }
 

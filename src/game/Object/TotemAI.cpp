@@ -108,7 +108,9 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
         m_creature->CastSpell(victim, getTotem().GetSpell(), false);
     }
     else
-        { i_victimGuid.Clear(); }
+    {
+        i_victimGuid.Clear();
+    }
 }
 
 bool

@@ -9,7 +9,9 @@ using namespace std;
 string ChatFilter::Filter(string message)
 {
     if (message.find("@") == string::npos)
+    {
         return message;
+    }
 
     return message.substr(message.find(" ") + 1);
 }
@@ -25,18 +27,26 @@ public:
 
         bool tank = message.find("@tank") == 0;
         if (tank && !ai->IsTank(bot))
+        {
             return "";
+        }
 
         bool dps = message.find("@dps") == 0;
         if (dps && ai->IsTank(bot))
+        {
             return "";
+        }
 
         bool heal = message.find("@heal") == 0;
         if (heal && !ai->IsHeal(bot))
+        {
             return "";
+        }
 
         if (tank || dps)
+        {
             return ChatFilter::Filter(message);
+        }
 
         return message;
     }
@@ -52,7 +62,9 @@ public:
         Player* bot = ai->GetBot();
 
         if (message[0] != '@')
+        {
             return message;
+        }
 
         if (message.find("-") != string::npos)
         {
@@ -60,14 +72,18 @@ public:
             int toLevel = atoi(message.substr(message.find("-") + 1, message.find(" ")).c_str());
 
             if (bot->getLevel() >= fromLevel && bot->getLevel() <= toLevel)
+            {
                 return ChatFilter::Filter(message);
+            }
 
             return message;
         }
 
         int level = atoi(message.substr(message.find("@") + 1, message.find(" ")).c_str());
         if (bot->getLevel() == level)
+        {
             return ChatFilter::Filter(message);
+        }
 
         return message;
     }
@@ -86,7 +102,9 @@ public:
         bool ranged = message.find("@ranged") == 0;
 
         if (!melee && !ranged)
+        {
             return message;
+        }
 
         switch (bot->getClass())
         {
@@ -95,7 +113,9 @@ public:
             case CLASS_ROGUE:
             /*case CLASS_DEATH_KNIGHT:
                 if (ranged)
+                {
                     return "";
+                }
                 break;*/
 
             case CLASS_HUNTER:
@@ -103,21 +123,31 @@ public:
             case CLASS_MAGE:
             case CLASS_WARLOCK:
                 if (melee)
+                {
                     return "";
+                }
                 break;
 
             case CLASS_DRUID:
                 if (ranged && ai->IsTank(bot))
+                {
                     return "";
+                }
                 if (melee && !ai->IsTank(bot))
+                {
                     return "";
+                }
                 break;
 
             case CLASS_SHAMAN:
                 if (melee && ai->IsHeal(bot))
+                {
                     return "";
+                }
                 if (ranged && !ai->IsHeal(bot))
+                {
                     return "";
+                }
                 break;
         }
 
@@ -145,7 +175,9 @@ public:
         Player* bot = ai->GetBot();
         Group *group = bot->GetGroup();
         if(!group)
+        {
             return message;
+        }
 
         bool found = false;
         for (list<string>::iterator i = rtis.begin(); i != rtis.end(); i++)
@@ -158,21 +190,29 @@ public:
 
             ObjectGuid rtiTarget = group->GetTargetIcon(RtiTargetValue::GetRtiIndex(rti.substr(1)));
             if (bot->GetObjectGuid() == rtiTarget)
+            {
                 return ChatFilter::Filter(message);
+            }
 
             Unit* target = *ai->GetAiObjectContext()->GetValue<Unit*>("current target");
             if (!target)
+            {
                 return "";
+            }
 
             if (target->GetObjectGuid() != rtiTarget)
+            {
                 return "";
+            }
 
             if (found |= isRti)
                 break;
         }
 
         if (found)
+        {
             return ChatFilter::Filter(message);
+        }
 
         return message;
     }
@@ -207,14 +247,18 @@ public:
         {
             bool isClass = message.find(i->first) == 0;
             if (isClass && bot->getClass() != i->second)
+            {
                 return "";
+            }
 
             if (found |= isClass)
                 break;
         }
 
         if (found)
+        {
             return ChatFilter::Filter(message);
+        }
 
         return message;
     }

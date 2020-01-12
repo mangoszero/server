@@ -805,7 +805,9 @@ namespace MaNGOS
                     && i_obj->IsWithinDistInMap(u, i_range))
                     { return true; }
                 else
-                    { return false; }
+                {
+                    return false;
+                }
             }
         private:
             WorldObject const* i_obj;
@@ -844,7 +846,9 @@ namespace MaNGOS
                     return true;
                 }
                 else
-                    { return false; }
+                {
+                    return false;
+                }
             }
         private:
             WorldObject const* i_obj;

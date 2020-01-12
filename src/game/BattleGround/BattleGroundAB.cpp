@@ -150,7 +150,9 @@ void BattleGroundAB::Update(uint32 diff)
                         SendMessageToAll(LANG_BG_AB_A_NEAR_VICTORY, CHAT_MSG_BG_SYSTEM_NEUTRAL);
                     }
                     else
-                        { SendMessageToAll(LANG_BG_AB_H_NEAR_VICTORY, CHAT_MSG_BG_SYSTEM_NEUTRAL); }
+                    {
+                        SendMessageToAll(LANG_BG_AB_H_NEAR_VICTORY, CHAT_MSG_BG_SYSTEM_NEUTRAL);
+                    }
                     PlaySoundToAll(BG_AB_SOUND_NEAR_VICTORY);
                     m_IsInformedNearVictory = true;
                 }
@@ -227,7 +229,9 @@ bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
                 source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_ALLIANCE_USE);
             }
             else
-                { source->LeaveBattleground(); }
+            {
+                source->LeaveBattleground();
+            }
             break;
         case 3949:                                          // Arathi Basin Horde Exit.
             if (source->GetTeam() != HORDE)
@@ -235,7 +239,9 @@ bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
                 source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_HORDE_USE);
             }
             else
-                { source->LeaveBattleground(); }
+            {
+                source->LeaveBattleground();
+            }
             break;
         default:
             return false;
@@ -317,7 +323,9 @@ void BattleGroundAB::FillInitialWorldStates(WorldPacket& data, uint32& count)
             ++ally;
         }
         else if (m_Nodes[node] == BG_AB_NODE_STATUS_HORDE_OCCUPIED)
-            { ++horde; }
+        {
+            ++horde;
+        }
 
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
@@ -346,7 +354,9 @@ void BattleGroundAB::_SendNodeUpdate(uint8 node)
         UpdateWorldState(BG_AB_OP_NODESTATES[node] + plusArray[m_prevNodes[node]], WORLD_STATE_REMOVE);
     }
     else
-        { UpdateWorldState(BG_AB_OP_NODEICONS[node], WORLD_STATE_REMOVE); }
+    {
+        UpdateWorldState(BG_AB_OP_NODEICONS[node], WORLD_STATE_REMOVE);
+    }
 
     UpdateWorldState(BG_AB_OP_NODESTATES[node] + plusArray[m_Nodes[node]], WORLD_STATE_ADD);
 
@@ -358,7 +368,9 @@ void BattleGroundAB::_SendNodeUpdate(uint8 node)
             ++ally;
         }
         else if (m_Nodes[i] == BG_AB_NODE_STATUS_HORDE_OCCUPIED)
-            { ++horde; }
+        {
+            ++horde;
+        }
 
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
@@ -438,7 +450,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player* source, GameObject* target
             SendMessage2ToAll(LANG_BG_AB_NODE_CLAIMED, CHAT_MSG_BG_SYSTEM_ALLIANCE, source, _GetNodeNameId(node), LANG_BG_ALLY);
         }
         else
-            { SendMessage2ToAll(LANG_BG_AB_NODE_CLAIMED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node), LANG_BG_HORDE); }
+        {
+            SendMessage2ToAll(LANG_BG_AB_NODE_CLAIMED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node), LANG_BG_HORDE);
+        }
 
         sound = BG_AB_SOUND_NODE_CLAIMED;
     }
@@ -461,7 +475,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player* source, GameObject* target
                 SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_ALLIANCE, source, _GetNodeNameId(node));
             }
             else
-                { SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node)); }
+            {
+                SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node));
+            }
         }
         // If contested, change back to occupied
         else
@@ -480,7 +496,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player* source, GameObject* target
                 SendMessage2ToAll(LANG_BG_AB_NODE_DEFENDED, CHAT_MSG_BG_SYSTEM_ALLIANCE, source, _GetNodeNameId(node));
             }
             else
-                { SendMessage2ToAll(LANG_BG_AB_NODE_DEFENDED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node)); }
+            {
+                SendMessage2ToAll(LANG_BG_AB_NODE_DEFENDED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node));
+            }
         }
         sound = (teamIndex == TEAM_INDEX_ALLIANCE) ? BG_AB_SOUND_NODE_ASSAULTED_ALLIANCE : BG_AB_SOUND_NODE_ASSAULTED_HORDE;
     }
@@ -500,7 +518,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player* source, GameObject* target
             SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_ALLIANCE, source, _GetNodeNameId(node));
         }
         else
-            { SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node)); }
+        {
+            SendMessage2ToAll(LANG_BG_AB_NODE_ASSAULTED, CHAT_MSG_BG_SYSTEM_HORDE, source, _GetNodeNameId(node));
+        }
 
         sound = (teamIndex == TEAM_INDEX_ALLIANCE) ? BG_AB_SOUND_NODE_ASSAULTED_ALLIANCE : BG_AB_SOUND_NODE_ASSAULTED_HORDE;
     }
@@ -513,7 +533,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player* source, GameObject* target
             SendMessage2ToAll(LANG_BG_AB_NODE_TAKEN, CHAT_MSG_BG_SYSTEM_ALLIANCE, NULL, LANG_BG_ALLY, _GetNodeNameId(node));
         }
         else
-            { SendMessage2ToAll(LANG_BG_AB_NODE_TAKEN, CHAT_MSG_BG_SYSTEM_HORDE, NULL, LANG_BG_HORDE, _GetNodeNameId(node)); }
+        {
+            SendMessage2ToAll(LANG_BG_AB_NODE_TAKEN, CHAT_MSG_BG_SYSTEM_HORDE, NULL, LANG_BG_HORDE, _GetNodeNameId(node));
+        }
     }
     PlaySoundToAll(sound);
 }

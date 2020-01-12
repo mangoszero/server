@@ -96,7 +96,9 @@ SqlPreparedStatement* SqlConnection::GetStmt(uint32 nIndex)
         m_holder[nIndex] = pStmt;
     }
     else
-        { pStmt = m_holder[nIndex]; }
+    {
+        pStmt = m_holder[nIndex];
+    }
 
     return pStmt;
 }
@@ -146,9 +148,13 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
         m_nQueryConnPoolSize = MIN_CONNECTION_POOL_SIZE;
     }
     else if (nConns > MAX_CONNECTION_POOL_SIZE)
-        { m_nQueryConnPoolSize = MAX_CONNECTION_POOL_SIZE; }
+    {
+        m_nQueryConnPoolSize = MAX_CONNECTION_POOL_SIZE;
+    }
     else
-        { m_nQueryConnPoolSize = nConns; }
+    {
+        m_nQueryConnPoolSize = nConns;
+    }
 
     // create connection pool for sync requests
     for (int i = 0; i < m_nQueryConnPoolSize; ++i)
@@ -263,7 +269,9 @@ SqlConnection* Database::getQueryConnection()
         m_nQueryCounter = 0;
     }
     else
-        { nCount = ++m_nQueryCounter; }
+    {
+        nCount = ++m_nQueryCounter;
+    }
 
     return m_pQueryConnections[nCount % m_nQueryConnPoolSize];
 }
@@ -659,7 +667,9 @@ SqlStatement Database::CreateStatement(SqlStatementID& index, const char* fmt)
             m_stmtRegistry[szFmt] = nId;
         }
         else
-            { nId = iter->second; }
+        {
+            nId = iter->second;
+        }
 
         // save initialized statement index info
         index.init(nId, nParams);

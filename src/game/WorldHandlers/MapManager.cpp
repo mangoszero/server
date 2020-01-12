@@ -225,7 +225,9 @@ void MapManager::Update(uint32 diff)
             i_maps.erase(iter++);
         }
         else
-            { ++iter; }
+        {
+            ++iter;
+        }
     }
 
     i_timer.SetCurrent(0);

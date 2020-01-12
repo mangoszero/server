@@ -285,9 +285,13 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
                 item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
             }
             else if (attType == OFF_ATTACK)
-                { item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND); }
+            {
+                item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
+            }
             else
-                { item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED); }
+            {
+                item = ((Player*)this)->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
+            }
 
             if (!CanUseEquippedWeapon(attType))
             {
@@ -402,7 +406,9 @@ SpellAuraProcResult Unit::HandleHasteAuraProc(Unit* pVictim, uint32 damage, Aura
         CastCustomSpell(target, triggered_spell_id, &basepoints0, NULL, NULL, true, castItem, triggeredByAura);
     }
     else
-        { CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura); }
+    {
+        CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura);
+    }
 
     if (cooldown && GetTypeId() == TYPEID_PLAYER)
     {
@@ -954,7 +960,9 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                         basepoints[EFFECT_INDEX_2] ? &basepoints[EFFECT_INDEX_2] : NULL,
                         true, castItem, triggeredByAura);
     else
-        { CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura); }
+    {
+        CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura);
+    }
 
     if (cooldown && GetTypeId() == TYPEID_PLAYER)
     {
@@ -1052,7 +1060,9 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
                     weaponDamage = (GetFloatValue(UNIT_FIELD_MINOFFHANDDAMAGE) + GetFloatValue(UNIT_FIELD_MAXOFFHANDDAMAGE)) / 2;
                 }
                 else
-                    { weaponDamage = (GetFloatValue(UNIT_FIELD_MINDAMAGE) + GetFloatValue(UNIT_FIELD_MAXDAMAGE)) / 2; }
+                {
+                    weaponDamage = (GetFloatValue(UNIT_FIELD_MINDAMAGE) + GetFloatValue(UNIT_FIELD_MAXDAMAGE)) / 2;
+                }
 
                 switch (auraSpellInfo->Id)
                 {
@@ -1091,9 +1101,13 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
                 }
                 // Rain of Fire have 4 tick
                 else if (procSpell->SpellFamilyFlags & UI64LIT(0x0000000000000020))
-                    { tick = 4; }
+                {
+                    tick = 4;
+                }
                 else
-                    { return SPELL_AURA_PROC_FAILED; }
+                {
+                    return SPELL_AURA_PROC_FAILED;
+                }
 
                 // Calculate chance = baseChance / tick
                 float chance = 0;
@@ -1252,7 +1266,9 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
             }
             // Damage from Lightning Shield (The Ten Storms set)
             else if (auraSpellInfo->Id == 23552)
-                { trigger_spell_id = 27635; }
+            {
+                trigger_spell_id = 27635;
+            }
             // Mana Surge (The Earthfury set)
             else if (auraSpellInfo->Id == 23572)
             {
@@ -1365,7 +1381,9 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
                         basepoints[EFFECT_INDEX_2] ? &basepoints[EFFECT_INDEX_2] : NULL,
                         true, castItem, triggeredByAura);
     else
-        { CastSpell(target, trigger_spell_id, true, castItem, triggeredByAura); }
+    {
+        CastSpell(target, trigger_spell_id, true, castItem, triggeredByAura);
+    }
 
     if (cooldown && GetTypeId() == TYPEID_PLAYER)
     {
@@ -1572,7 +1590,9 @@ SpellAuraProcResult Unit::HandleRemoveByDamageChanceProc(Unit* pVictim, uint32 d
 SpellAuraProcResult Unit::HandleInvisibilityAuraProc(Unit* pVictim, uint32 damage, Aura* triggeredByAura, SpellEntry const *procSpell, uint32 procFlag, uint32 procEx, uint32 cooldown)
 {
     if (triggeredByAura->GetSpellProto()->HasAttribute(SPELL_ATTR_PASSIVE) || triggeredByAura->GetSpellProto()->HasAttribute(SPELL_ATTR_EX_NEGATIVE))
+    {
         return SPELL_AURA_PROC_FAILED;
+    }
 
     RemoveAurasDueToSpell(triggeredByAura->GetId());
     return SPELL_AURA_PROC_OK;

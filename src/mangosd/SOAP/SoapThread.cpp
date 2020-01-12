@@ -220,7 +220,9 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
         return SOAP_OK;
     }
     else
-        { return soap_sender_fault(soap, printBuffer, printBuffer); }
+    {
+        return soap_sender_fault(soap, printBuffer, printBuffer);
+    }
 }
 
 void SOAPCommand::commandFinished(void* soapconnection, bool success)

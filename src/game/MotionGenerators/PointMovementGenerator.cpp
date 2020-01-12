@@ -184,7 +184,9 @@ void EffectMovementGenerator::Finalize(Unit& unit)
             unit.GetMotionMaster()->MoveChase(victim);
         }
         else
-            { unit.GetMotionMaster()->Initialize(); }
+        {
+            unit.GetMotionMaster()->Initialize();
+        }
     }
 }
 

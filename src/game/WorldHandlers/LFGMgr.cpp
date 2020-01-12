@@ -42,7 +42,9 @@
 void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
 {
     if(!leader)
+    {
         return;
+    }
 
     if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(queAreaID))
     {
@@ -96,7 +98,9 @@ void LFGQueue::RestoreOfflinePlayer(ObjectGuid plrGuid)
 
     // Should not happen, but there's always chance of quick disconnection
     if(!plr)
+    {
         return;
+    }
 
     QueuedPlayersMap::iterator offlinePlr = m_OfflinePlayers.find(plrGuid);
 
@@ -200,7 +204,9 @@ void LFGQueue::UpdateGroup(uint32 groupId)
 void LFGQueue::Update(uint32 diff)
 {
     if(m_QueuedGroups.empty() && m_QueuedPlayers.empty())
+    {
         return;
+    }
 
     // Iterate over QueuedPlayersMap to update players timers and remove offline/disconnected players.
     for(QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.begin(); qPlayer != m_QueuedPlayers.end(); ++qPlayer)
@@ -233,7 +239,9 @@ void LFGQueue::Update(uint32 diff)
 
             // Safe check
             if(!grp)
+            {
                 return;
+            }
 
             // Remove group from Queue if it's full
             if(grp->IsFull())
@@ -344,7 +352,9 @@ void LFGQueue::Update(uint32 diff)
                         if(newQueueGroup->Create(leader->GetObjectGuid(), leader->GetName()))
                             sObjectMgr.AddGroup(newQueueGroup);
                         else
+                        {
                             return;
+                        }
                     }
 
                     WorldPacket data;
@@ -371,7 +381,9 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
 {
     // Safe check
     if(!plr || !grp)
+    {
         return false;
+    }
 
     QueuedGroupsMap::iterator qGroup = m_QueuedGroups.find(grp->GetId());
     QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.find(plr->GetObjectGuid());
@@ -529,7 +541,9 @@ void LFGQueue::RemovePlayerFromQueue(ObjectGuid plrGuid, PlayerLeaveMethod leave
     Player * plr = sObjectMgr.GetPlayer(plrGuid);
 
     if(!plr)
+    {
         return;
+    }
 
     QueuedPlayersMap::iterator qPlayer;
     qPlayer = m_QueuedPlayers.find(plrGuid);
@@ -552,7 +566,9 @@ void LFGQueue::RemoveGroupFromQueue(uint32 groupId, GroupLeaveMethod leaveMethod
     Group* grp = sObjectMgr.GetGroupById(groupId);
 
     if(!grp)
+    {
         return;
+    }
 
     QueuedGroupsMap::iterator qGroup;
     qGroup = m_QueuedGroups.find(groupId);

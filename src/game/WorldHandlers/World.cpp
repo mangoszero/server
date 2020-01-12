@@ -2540,7 +2540,9 @@ void World::InvalidatePlayerDataToAllClient(ObjectGuid guid)
 void World::LoadBroadcastStrings()
 {
     if (!m_broadcastEnable)
-    return;
+    {
+        return;
+    }
 
     std::string queryStr = "SELECT `autobroadcast`.`id`, `autobroadcast`.`content`,`autobroadcast`.`ratio` FROM `autobroadcast`";
 

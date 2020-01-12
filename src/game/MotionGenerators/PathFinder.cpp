@@ -196,10 +196,14 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
                 (endPoly == INVALID_POLYREF && m_sourceUnit->GetMap()->GetTerrain()->IsUnderWater(endPos.x, endPos.y, endPos.z)))
                 { m_type = m_sourceUnit->ToCreature()->CanSwim() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
             else
-                { m_type = m_sourceUnit->ToCreature()->CanFly() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH; }
+            {
+                m_type = m_sourceUnit->ToCreature()->CanFly() ? PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH) : PATHFIND_NOPATH;
+            }
         }
         else
-            { m_type = PATHFIND_NOPATH; }
+        {
+            m_type = PATHFIND_NOPATH;
+        }
 
         return;
     }
@@ -416,7 +420,9 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         m_type = PATHFIND_NORMAL;
     }
     else
-        { m_type = PATHFIND_INCOMPLETE; }
+    {
+        m_type = PATHFIND_INCOMPLETE;
+    }
 
     // generate the point-path out of our up-to-date poly-path
     BuildPointPath(startPoint, endPoint);
@@ -730,7 +736,9 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
             len = 1.0f;
         }
         else
-            { len = SMOOTH_PATH_STEP_SIZE / len; }
+        {
+            len = SMOOTH_PATH_STEP_SIZE / len;
+        }
 
         float moveTgt[VERTEX_SIZE];
         dtVmad(moveTgt, iterPos, delta, len);

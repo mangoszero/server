@@ -10,7 +10,9 @@ void FleeManager::calculateDistanceToPlayers(FleePoint *point)
 {
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return;
+    }
 
     for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
     {
@@ -132,7 +134,9 @@ FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
     if (byAll && byCreatures)
     {
         if (byAll->isBetterByCreatures(byCreatures))
+        {
             return byAll;
+        }
     }
 
     return byCreatures;

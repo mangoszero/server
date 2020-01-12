@@ -245,7 +245,9 @@ void WorldSession::HandleOpenItemOpcode(WorldPacket& recvPacket)
         stmt.PExecute(pItem->GetGUIDLow());
     }
     else
-        { pUser->SendLoot(pItem->GetObjectGuid(), LOOT_CORPSE); }
+    {
+        pUser->SendLoot(pItem->GetObjectGuid(), LOOT_CORPSE);
+    }
 }
 
 void WorldSession::HandleGameObjectUseOpcode(WorldPacket& recv_data)
@@ -427,7 +429,9 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
             }
         }
         else
-            { return; }
+        {
+            return;
+        }
     }
 
     // channeled spell case (it currently casted then)

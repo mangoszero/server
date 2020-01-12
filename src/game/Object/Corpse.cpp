@@ -277,7 +277,9 @@ bool Corpse::IsHostileTo(Unit const* unit) const
         return owner->IsHostileTo(unit);
     }
     else
-        { return false; }
+    {
+        return false;
+    }
 }
 
 bool Corpse::IsFriendlyTo(Unit const* unit) const
@@ -287,7 +289,9 @@ bool Corpse::IsFriendlyTo(Unit const* unit) const
         return owner->IsFriendlyTo(unit);
     }
     else
-        { return true; }
+    {
+        return true;
+    }
 }
 
 bool Corpse::IsExpired(time_t t) const
@@ -297,5 +301,7 @@ bool Corpse::IsExpired(time_t t) const
         return m_time < t - 60 * MINUTE;
     }
     else
-        { return m_time < t - 3 * DAY; }
+    {
+        return m_time < t - 3 * DAY;
+    }
 }

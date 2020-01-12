@@ -20,7 +20,9 @@ bool LootRollAction::Execute(Event event)
 
     Group* group = bot->GetGroup();
     if(!group)
+    {
         return false;
+    }
 
     RollVote vote = ROLL_PASS;
 

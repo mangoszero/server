@@ -12,7 +12,9 @@ bool AttackAction::Execute(Event event)
     Unit* target = GetTarget();
 
     if (!target)
+    {
         return false;
+    }
 
     return Attack(target);
 }
@@ -21,13 +23,17 @@ bool AttackMyTargetAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ObjectGuid guid = master->GetSelectionGuid();
     if (!guid)
     {
         if (verbose) ai->TellMaster("You have no target");
-        return false;
+        {
+            return false;
+        }
     }
 
     return Attack(ai->GetUnit(guid));
@@ -39,13 +45,17 @@ bool AttackAction::Attack(Unit* target)
     if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsTaxiFlying())
     {
         if (verbose) ai->TellMaster("I cannot attack in flight");
-        return false;
+        {
+            return false;
+        }
     }
 
     if (!target)
     {
         if (verbose) ai->TellMaster("I have no target");
-        return false;
+        {
+            return false;
+        }
     }
 
     ostringstream msg;
@@ -54,13 +64,17 @@ bool AttackAction::Attack(Unit* target)
     {
         msg << " is friendly to me";
         if (verbose) ai->TellMaster(msg.str());
-        return false;
+        {
+            return false;
+        }
     }
     if (!bot->IsWithinLOSInMap(target))
     {
         msg << " is not on my sight";
         if (verbose) ai->TellMaster(msg.str());
-        return false;
+        {
+            return false;
+        }
     }
 
     if (bot->IsMounted())

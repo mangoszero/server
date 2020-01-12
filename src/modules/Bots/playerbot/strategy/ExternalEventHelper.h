@@ -11,7 +11,9 @@ namespace ai
         bool ParseChatCommand(string command, Player* owner = NULL)
         {
             if (HandleCommand(command, "", owner))
+            {
                 return true;
+            }
 
             size_t i = string::npos;
             while (true)
@@ -26,11 +28,15 @@ namespace ai
                 i = found - 1;
 
                 if (HandleCommand(name, param, owner))
+                {
                     return true;
+                }
             }
 
             if (!ChatHelper::parseable(command))
+            {
                 return false;
+            }
 
             HandleCommand("q", command, owner);
             HandleCommand("c", command, owner);
@@ -43,11 +49,15 @@ namespace ai
             uint16 opcode = packet.GetOpcode();
             string name = handlers[opcode];
             if (name.empty())
+            {
                 return;
+            }
 
             Trigger* trigger = aiObjectContext->GetTrigger(name);
             if (!trigger)
+            {
                 return;
+            }
 
             WorldPacket p(packet);
             trigger->ExternalEvent(p, owner);
@@ -57,7 +67,9 @@ namespace ai
         {
             Trigger* trigger = aiObjectContext->GetTrigger(name);
             if (!trigger)
+            {
                 return false;
+            }
 
             trigger->ExternalEvent(param, owner);
             return true;

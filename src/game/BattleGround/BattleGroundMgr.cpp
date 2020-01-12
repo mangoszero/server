@@ -107,7 +107,9 @@ bool BattleGroundQueue::SelectionPool::KickGroup(uint32 size)
             found = true;
         }
         else if (!found && (*itr)->Players.size() >= (*groupToKick)->Players.size())
-            { groupToKick = itr; }
+        {
+            groupToKick = itr;
+        }
     }
     // if pool is empty, do nothing
     if (GetPlayerCount())
@@ -1392,7 +1394,9 @@ void BattleGroundMgr::ToggleTesting()
         sWorld.SendWorldText(LANG_DEBUG_BG_ON);
     }
     else
-        { sWorld.SendWorldText(LANG_DEBUG_BG_OFF); }
+    {
+        sWorld.SendWorldText(LANG_DEBUG_BG_OFF);
+    }
 }
 
 void BattleGroundMgr::ScheduleQueueUpdate(BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
@@ -1595,7 +1599,9 @@ void BattleGroundMgr::LoadBattleEventIndexes()
             m_GameObjectBattleEventIndexMap[dbTableGuidLow] = events;
         }
         else
-            { m_CreatureBattleEventIndexMap[dbTableGuidLow] = events; }
+        {
+            m_CreatureBattleEventIndexMap[dbTableGuidLow] = events;
+        }
 
         ++count;
     }

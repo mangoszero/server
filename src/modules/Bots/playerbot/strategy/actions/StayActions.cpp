@@ -12,7 +12,9 @@ void StayActionBase::Stay()
 
     MotionMaster &mm = *bot->GetMotionMaster();
     if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsTaxiFlying())
+    {
         return;
+    }
 
     mm.Clear();
     mm.MoveIdle();
@@ -45,7 +47,9 @@ bool StayActionBase::StayLine(vector<Player*> line, float diff, float cx, float 
 
         bool ok = StaySingleLine(singleLine, diff, x, y, cz, orientation, range);
         if (ok)
+        {
             return true;
+        }
     }
 
     return false;
@@ -103,7 +107,9 @@ if (!target)
  target = master;
 
 if (!target)
- return false;
+{
+    return false;
+}
 
 switch (bot->getClass())
  {
@@ -135,13 +141,17 @@ bool StayLineAction::Execute(Event event)
  {
 Group* group = bot->GetGroup();
 if (!group)
- return false;
+{
+    return false;
+}
 
 float range = 2.0f;
 
 Player* master = GetMaster();
 if (!master)
- return false;
+{
+    return false;
+}
 
 float x = master->GetPositionX();
 float y = master->GetPositionY();
@@ -168,13 +178,17 @@ bool StayCombatAction::Execute(Event event)
  {
 Group* group = bot->GetGroup();
 if (!group)
- return false;
+{
+    return false;
+}
 
 float range = 2.0f;
 
 Player* master = GetMaster();
 if (!master)
- return false;
+{
+    return false;
+}
 
 float x = master->GetPositionX();
 float y = master->GetPositionY();

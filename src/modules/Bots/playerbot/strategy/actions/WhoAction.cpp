@@ -22,14 +22,18 @@ bool WhoAction::Execute(Event event)
 {
     Player* owner = event.getOwner();
     if (!owner)
+    {
         return false;
+    }
 
     string tell = "";
     string text = event.getParam();
     if (!text.empty())
     {
         if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+        {
             return false;
+        }
 
         tell = QuerySkill(text);
         if (tell.empty())
@@ -43,7 +47,9 @@ bool WhoAction::Execute(Event event)
     }
 
     if (tell.empty())
+    {
         return false;
+    }
 
     // ignore random bot chat filter
     bot->Whisper(tell, LANG_UNIVERSAL, owner->GetObjectGuid());
@@ -140,7 +146,9 @@ string WhoAction::QuerySpec(string text)
 void WhoAction::InitSkills()
 {
     if (!skills.empty())
+    {
         return;
+    }
 
     skills[SKILL_ALCHEMY] = "Alchemy";
     skills[SKILL_ENCHANTING] = "Enchanting";

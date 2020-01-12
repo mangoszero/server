@@ -89,7 +89,9 @@ namespace VMAP
                 result = VMAP_LOAD_RESULT_OK;
             }
             else
-                { result = VMAP_LOAD_RESULT_ERROR; }
+            {
+                result = VMAP_LOAD_RESULT_ERROR;
+            }
         }
         return result;
     }

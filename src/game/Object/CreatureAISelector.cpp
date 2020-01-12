@@ -59,7 +59,9 @@ namespace FactorySelector
              ((owner = creature->GetOwner()) && owner->GetTypeId() == TYPEID_PLAYER)) || creature->IsCharmed())
             { ai_factory = ai_registry.GetRegistryItem("PetAI"); }
         else if (creature->IsTotem())
-            { ai_factory = ai_registry.GetRegistryItem("TotemAI"); }
+        {
+            ai_factory = ai_registry.GetRegistryItem("TotemAI");
+        }
 
         // select by script name
         if (!ai_factory && !ainame.empty())

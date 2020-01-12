@@ -14,7 +14,9 @@ using namespace ai;
 bool LootAction::Execute(Event event)
 {
     if (!AI_VALUE(bool, "has available loot"))
+    {
         return false;
+    }
 
     LootObject const& lootObject = AI_VALUE(LootObjectStack*, "available loot")->GetLoot(sPlayerbotAIConfig.lootDistance);
     context->GetValue<LootObject>("loot target")->Set(lootObject);
@@ -53,11 +55,15 @@ bool OpenLootAction::Execute(Event event)
 bool OpenLootAction::DoLoot(LootObject& lootObject)
 {
     if (lootObject.IsEmpty())
+    {
         return false;
+    }
 
     Creature* creature = ai->GetCreature(lootObject.guid);
     if (creature && bot->GetDistance(creature) > INTERACTION_DISTANCE)
+    {
         return false;
+    }
 
     if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
     {
@@ -72,7 +78,9 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     {
         SkillType skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
         if (!CanOpenLock(skill, lootObject.reqSkillValue))
+        {
             return false;
+        }
 
         bot->GetMotionMaster()->Clear();
         switch (skill)
@@ -90,18 +98,26 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
 
     GameObject* go = ai->GetGameObject(lootObject.guid);
     if (go && bot->GetDistance(go) > INTERACTION_DISTANCE)
+    {
         return false;
+    }
 
     bot->GetMotionMaster()->Clear();
     if (lootObject.skillId == SKILL_MINING)
+    {
         return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(MINING, bot) : false;
+    }
 
     if (lootObject.skillId == SKILL_HERBALISM)
+    {
         return bot->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(HERB_GATHERING, bot) : false;
+    }
 
     uint32 spellId = GetOpeningSpell(lootObject);
     if (!spellId)
+    {
         return false;
+    }
 
     return ai->CastSpell(spellId, bot);
 }
@@ -110,7 +126,9 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject)
 {
     GameObject* go = ai->GetGameObject(lootObject.guid);
     if (go && go->isSpawned())
+    {
         return GetOpeningSpell(lootObject, go);
+    }
 
     return 0;
 }
@@ -132,7 +150,9 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
             continue;
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
+        {
             return spellId;
+        }
     }
 
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
@@ -145,7 +165,9 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
             continue;
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
+        {
             return spellId;
+        }
     }
 
     return 0; //Spell 3365 = Opening?
@@ -156,15 +178,21 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
     for (int effIndex = 0; effIndex < MAX_EFFECT_INDEX; effIndex++)
     {
         if (pSpellInfo->Effect[effIndex] != SPELL_EFFECT_OPEN_LOCK && pSpellInfo->Effect[effIndex] != SPELL_EFFECT_SKINNING)
+        {
             return false;
+        }
 
         uint32 lockId = go->GetGOInfo()->GetLockId();
         if (!lockId)
+        {
             return false;
+        }
 
         LockEntry const *lockInfo = sLockStore.LookupEntry(lockId);
         if (!lockInfo)
+        {
             return false;
+        }
 
         bool reqKey = false;                                    // some locks not have reqs
 
@@ -183,10 +211,14 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
 
                     uint32 skillId = SkillByLockType(LockType(lockInfo->Index[j]));
                     if (skillId == SKILL_NONE)
+                    {
                         return true;
+                    }
 
                     if (CanOpenLock(skillId, lockInfo->Skill[j]))
+                    {
                         return true;
+                    }
                 }
             }
         }
@@ -280,19 +312,27 @@ bool StoreLootAction::IsLootAllowed(uint32 itemid)
     LootStrategy lootStrategy = AI_VALUE(LootStrategy, "loot strategy");
 
     if (lootStrategy == LOOTSTRATEGY_ALL)
+    {
         return true;
+    }
 
     set<uint32>& lootItems = AI_VALUE(set<uint32>&, "always loot list");
     if (lootItems.find(itemid) != lootItems.end())
+    {
         return true;
+    }
 
     ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemid);
     if (!proto)
+    {
         return false;
+    }
 
     uint32 max = proto->MaxCount;
     if (max > 0 && bot->HasItemCount(itemid, max, true))
+    {
         return false;
+    }
 
     if (proto->StartQuest ||
         proto->Bonding == BIND_QUEST_ITEM ||
@@ -301,24 +341,36 @@ bool StoreLootAction::IsLootAllowed(uint32 itemid)
         return true;
 
     if (lootStrategy == LOOTSTRATEGY_QUEST)
+    {
         return false;
+    }
 
     ostringstream out; out << itemid;
     ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
     if (usage == ITEM_USAGE_SKILL || usage == ITEM_USAGE_USE)
+    {
         return true;
+    }
 
     if (lootStrategy == LOOTSTRATEGY_SKILL)
+    {
         return false;
+    }
 
     if (proto->Quality == ITEM_QUALITY_POOR)
+    {
         return true;
+    }
 
     if (lootStrategy == LOOTSTRATEGY_GRAY)
+    {
         return true;
+    }
 
     if (proto->Bonding == BIND_WHEN_PICKED_UP)
+    {
         return false;
+    }
 
     return true;
 }

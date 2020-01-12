@@ -186,11 +186,17 @@ bool Weather::ReGenerate()
         m_type = WEATHER_TYPE_RAIN;
     }
     else if (rnd <= chance2)
-        { m_type = WEATHER_TYPE_SNOW; }
+    {
+        m_type = WEATHER_TYPE_SNOW;
+    }
     else if (rnd <= chance3)
-        { m_type = WEATHER_TYPE_STORM; }
+    {
+        m_type = WEATHER_TYPE_STORM;
+    }
     else
-        { m_type = WEATHER_TYPE_FINE; }
+    {
+        m_type = WEATHER_TYPE_FINE;
+    }
 
     /// New weather statistics (if not fine):
     ///- 85% light
@@ -215,7 +221,9 @@ bool Weather::ReGenerate()
             m_grade = rand_norm_f() * 0.3333f + 0.3334f;
         }
         else
-            { m_grade = rand_norm_f() * 0.3333f + 0.6667f; }
+        {
+            m_grade = rand_norm_f() * 0.3333f + 0.6667f;
+        }
     }
 
     NormalizeGrade();
@@ -316,7 +324,9 @@ void Weather::NormalizeGrade()
         m_grade = 0.9999f;
     }
     else if (m_grade < 0)
-        { m_grade = 0.0001f; }
+    {
+        m_grade = 0.0001f;
+    }
 }
 
 // Helper to log recent state
@@ -420,9 +430,13 @@ uint32 Weather::GetSound()
                 sound = WEATHER_RAINLIGHT;
             }
             else if (m_grade < 0.70f)
-                { sound = WEATHER_RAINMEDIUM; }
+            {
+                sound = WEATHER_RAINMEDIUM;
+            }
             else
-                { sound = WEATHER_RAINHEAVY; }
+            {
+                sound = WEATHER_RAINHEAVY;
+            }
             break;
         case WEATHER_TYPE_SNOW:                             // snow
             if (m_grade < 0.40f)
@@ -430,9 +444,13 @@ uint32 Weather::GetSound()
                 sound = WEATHER_SNOWLIGHT;
             }
             else if (m_grade < 0.70f)
-                { sound = WEATHER_SNOWMEDIUM; }
+            {
+                sound = WEATHER_SNOWMEDIUM;
+            }
             else
-                { sound = WEATHER_SNOWHEAVY; }
+            {
+                sound = WEATHER_SNOWHEAVY;
+            }
             break;
         case WEATHER_TYPE_STORM:                            // storm
             if (m_grade < 0.40f)
@@ -440,9 +458,13 @@ uint32 Weather::GetSound()
                 sound = WEATHER_SANDSTORMLIGHT;
             }
             else if (m_grade < 0.70f)
-                { sound = WEATHER_SANDSTORMMEDIUM; }
+            {
+                sound = WEATHER_SANDSTORMMEDIUM;
+            }
             else
-                { sound = WEATHER_SANDSTORMHEAVY; }
+            {
+                sound = WEATHER_SANDSTORMHEAVY;
+            }
             break;
         case WEATHER_TYPE_FINE:                             // fine
         default:

@@ -43,7 +43,9 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
     list<ObjectGuid> targets = *context->GetValue<list<ObjectGuid> >("possible targets");
 
     if(targets.empty())
+    {
         return NULL;
+    }
 
     float distance = 0;
     Unit* result = NULL;
@@ -105,7 +107,9 @@ int GrindTargetValue::GetTargetingPlayerCount( Unit* unit )
 {
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return 0;
+    }
 
     int count = 0;
     Group::MemberSlotList const& groupSlot = group->GetMemberSlots();

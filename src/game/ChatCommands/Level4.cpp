@@ -115,7 +115,9 @@ bool ChatHandler::GetDeletedCharacterInfoList(DeletedInfoList& foundList, std::s
         }
     }
     else
-        { resultChar = CharacterDatabase.Query("SELECT guid, deleteInfos_Name, deleteInfos_Account, deleteDate FROM characters WHERE deleteDate IS NOT NULL"); }
+    {
+        resultChar = CharacterDatabase.Query("SELECT guid, deleteInfos_Name, deleteInfos_Account, deleteDate FROM characters WHERE deleteDate IS NOT NULL");
+    }
 
     if (resultChar)
     {
@@ -344,7 +346,9 @@ bool ChatHandler::HandleCharacterDeletedRestoreCommand(char* args)
         HandleCharacterDeletedRestoreHelper(delInfo);
     }
     else
-        { SendSysMessage(LANG_CHARACTER_DELETED_ERR_RENAME); }
+    {
+        SendSysMessage(LANG_CHARACTER_DELETED_ERR_RENAME);
+    }
 
     return true;
 }
@@ -442,7 +446,9 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
         target->GetSession()->KickPlayer();
     }
     else
-        { account_id = sObjectMgr.GetPlayerAccountIdByGUID(target_guid); }
+    {
+        account_id = sObjectMgr.GetPlayerAccountIdByGUID(target_guid);
+    }
 
     std::string account_name;
     sAccountMgr.GetName(account_id, account_name);

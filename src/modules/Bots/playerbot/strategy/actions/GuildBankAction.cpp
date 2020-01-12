@@ -11,7 +11,9 @@ using namespace ai;
 {
     string text = event.getParam();
     if (text.empty())
+    {
         return false;
+    }
 
     list<ObjectGuid> gos = AI_VALUE(list<ObjectGuid>, "nearest game objects");
     for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
@@ -33,7 +35,9 @@ bool GuildBankAction::Execute(string text, GameObject* bank)
 
     list<Item*> found = parseItems(text);
     if (found.empty())
+    {
         return false;
+    }
 
     for (list<Item*>::iterator i = found.begin(); i != found.end(); i++)
     {

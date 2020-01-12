@@ -82,7 +82,9 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
                 i_gridCleanUpDelay = MIN_GRID_DELAY;
             }
             else
-                { i_gridCleanUpDelay = t; }
+            {
+                i_gridCleanUpDelay = t;
+            }
         }
 
         void SetMapUpdateInterval(uint32 t)

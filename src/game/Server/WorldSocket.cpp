@@ -542,7 +542,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 
 #ifdef ENABLE_ELUNA
                 if (!sEluna->OnPacketReceive(m_Session, *new_pct))
+                {
                     return 0;
+                }
 #endif /* ENABLE_ELUNA */
                 return HandleAuthSession(*new_pct);
             case CMSG_KEEP_ALIVE:
@@ -587,7 +589,9 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
             return -1;
         }
         else
-            { return 0; }
+        {
+            return 0;
+        }
     }
 
     ACE_NOTREACHED(return 0);
@@ -716,7 +720,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         locale = LOCALE_enUS;
     }
     else
-        { locale = LocaleConstant(tmpLoc); }
+    {
+        locale = LocaleConstant(tmpLoc);
+    }
 
     os = fields[9].GetString();
 
@@ -867,7 +873,9 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
             }
         }
         else
-            { m_OverSpeedPings = 0; }
+        {
+            m_OverSpeedPings = 0;
+        }
     }
 
     if (m_Session)

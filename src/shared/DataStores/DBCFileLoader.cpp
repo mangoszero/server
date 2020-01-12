@@ -100,7 +100,9 @@ bool DBCFileLoader::Load(const char* filename, const char* fmt)
             fieldsOffset[i] += 1;
         }
         else                                                // 4 byte fields (int32/float/strings)
-            { fieldsOffset[i] += 4; }
+        {
+            fieldsOffset[i] += 4;
+        }
     }
 
     data = new unsigned char[recordSize * recordCount + stringSize];
@@ -233,7 +235,9 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
             indexTable[getRecord(y).getUInt(i)] = &dataTable[offset];
         }
         else
-            { indexTable[y] = &dataTable[offset]; }
+        {
+            indexTable[y] = &dataTable[offset];
+        }
 
         for (uint32 x = 0; x < fieldCount; ++x)
         {

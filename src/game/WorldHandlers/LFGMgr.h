@@ -102,7 +102,9 @@ class LFGQueue
         ClassRoles canPerformRole(ClassRoles playerRole, ClassRoles requiredRole)
         {
             if ((playerRole & requiredRole) == requiredRole)
+            {
                 return requiredRole;
+            }
 
             return playerRole;
         }

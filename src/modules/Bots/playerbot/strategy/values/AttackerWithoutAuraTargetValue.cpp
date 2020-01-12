@@ -19,7 +19,9 @@ Unit* AttackerWithoutAuraTargetValue::Calculate()
             continue;
 
         if (!ai->HasAura(qualifier, unit))
+        {
             return unit;
+        }
     }
 
     return NULL;

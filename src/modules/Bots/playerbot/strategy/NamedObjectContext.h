@@ -34,11 +34,15 @@ namespace ai
             }
 
             if (creators.find(name) == creators.end())
+            {
                 return NULL;
+            }
 
             ActionCreator creator = creators[name];
             if (!creator)
+            {
                 return NULL;
+            }
 
             T *object = (*creator)(ai);
             Qualified *q = dynamic_cast<Qualified *>(object);
@@ -67,7 +71,9 @@ namespace ai
         T* create(string name, PlayerbotAI* ai)
         {
             if (created.find(name) == created.end())
+            {
                 return created[name] = NamedObjectFactory<T>::create(name, ai);
+            }
 
             return created[name];
         }

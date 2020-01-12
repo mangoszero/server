@@ -187,7 +187,9 @@ bool MySQLConnection::Initialize(const char* infoString)
         DETAIL_LOG("AUTOCOMMIT SUCCESSFULLY SET TO 1");
     }
     else
-        { DETAIL_LOG("AUTOCOMMIT NOT SET TO 1"); }
+    {
+        DETAIL_LOG("AUTOCOMMIT NOT SET TO 1");
+    }
     /*-------------------------------------*/
 
     // set connection properties to UTF8 to properly handle locales for different

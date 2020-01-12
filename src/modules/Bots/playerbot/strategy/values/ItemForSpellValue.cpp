@@ -16,11 +16,15 @@ Item* ItemForSpellValue::Calculate()
 {
     uint32 spellid = atoi(qualifier.c_str());
     if (!spellid)
+    {
         return NULL;
+    }
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid );
     if (!spellInfo)
+    {
         return NULL;
+    }
 
     Item* itemForSpell = NULL;
     Player* trader = bot->GetTrader();
@@ -28,7 +32,9 @@ Item* ItemForSpellValue::Calculate()
     {
         itemForSpell = trader->GetTradeData()->GetItem(TRADE_SLOT_NONTRADED);
         if (itemForSpell && itemForSpell->IsFitToSpellRequirements(spellInfo))
+        {
             return itemForSpell;
+        }
     }
 
     // Workaround as some spells have no item mask (e.g. shaman weapon enhancements)
@@ -40,11 +46,15 @@ Item* ItemForSpellValue::Calculate()
     {
         itemForSpell = GetItemFitsToSpellRequirements(EQUIPMENT_SLOT_MAINHAND, spellInfo);
         if (itemForSpell && itemForSpell->GetProto()->Class == ITEM_CLASS_WEAPON)
+        {
             return itemForSpell;
+        }
 
         itemForSpell = GetItemFitsToSpellRequirements(EQUIPMENT_SLOT_OFFHAND, spellInfo);
         if (itemForSpell && itemForSpell->GetProto()->Class == ITEM_CLASS_WEAPON)
+        {
             return itemForSpell;
+        }
 
         return NULL;
     }
@@ -52,7 +62,9 @@ Item* ItemForSpellValue::Calculate()
     for( uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++ ) {
         itemForSpell = GetItemFitsToSpellRequirements(slot, spellInfo);
         if (itemForSpell)
+        {
             return itemForSpell;
+        }
     }
     return NULL;
 }
@@ -61,10 +73,14 @@ Item* ItemForSpellValue::GetItemFitsToSpellRequirements(uint8 slot, SpellEntry c
 {
     Item* const itemForSpell = bot->GetItemByPos( INVENTORY_SLOT_BAG_0, slot );
     if (!itemForSpell || itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+    {
         return NULL;
+    }
 
     if (itemForSpell->IsFitToSpellRequirements(spellInfo))
+    {
         return itemForSpell;
+    }
 
     return NULL;
 }

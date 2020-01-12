@@ -71,15 +71,25 @@ bool LootStrategyAction::Execute(Event event)
 LootStrategy LootStrategyAction::String2LootStrategy(string strategy)
 {
     if (strategy == "*" || strategy == "all")
+    {
         return LOOTSTRATEGY_ALL;
+    }
     else if (strategy == "q" || strategy == "quest")
+    {
         return LOOTSTRATEGY_QUEST;
+    }
     else if (strategy == "s" || strategy == "skill")
+    {
         return LOOTSTRATEGY_SKILL;
+    }
     else if (strategy == "g" || strategy == "gray")
+    {
         return LOOTSTRATEGY_GRAY;
+    }
     else
+    {
         return LOOTSTRATEGY_NORMAL;
+    }
 }
 
 string LootStrategyAction::LootStrategy2string(LootStrategy lootStrategy)

@@ -340,7 +340,9 @@ bool Guild::CheckGuildStructure()
             { return false; }                                   // guild will disbanded and deleted in caller
     }
     else if (GM_rights != GR_GUILDMASTER)
-        { SetLeader(m_LeaderGuid); }
+    {
+        SetLeader(m_LeaderGuid);
+    }
 
     // Allow only 1 guildmaster, set other to officer
     for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
@@ -866,7 +868,9 @@ void Guild::Roster(WorldSession* session /*= NULL*/)
         session->SendPacket(&data);
     }
     else
-        { BroadcastPacket(&data); }
+    {
+        BroadcastPacket(&data);
+    }
     DEBUG_LOG("WORLD: Sent (SMSG_GUILD_ROSTER)");
 }
 
@@ -1047,7 +1051,9 @@ void Guild::BroadcastEvent(GuildEvents event, ObjectGuid guid, char const* str1 
         data << str2;
     }
     else if (str1)
-        { data << str1; }
+    {
+        data << str1;
+    }
 
     if (!guid.IsEmpty())
     {

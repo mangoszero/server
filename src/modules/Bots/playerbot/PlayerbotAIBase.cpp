@@ -17,7 +17,9 @@ void PlayerbotAIBase::UpdateAI(uint32 elapsed)
         nextAICheckDelay = 0;
 
     if (!CanUpdateAI())
+    {
         return;
+    }
 
     UpdateAIInternal(elapsed);
     YieldThread();

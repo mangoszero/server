@@ -205,7 +205,9 @@ bool Engine::DoNextAction(Unit* unit, int depth)
         lastRelevance = 0.0f;
         PushDefaultActions();
         if (queue.Peek() && depth < 2)
+        {
             return DoNextAction(unit, depth + 1);
+        }
     }
 
     if (time(0) - currentTime > 1) {
@@ -225,7 +227,9 @@ ActionNode* Engine::CreateActionNode(string name)
         Strategy* strategy = i->second;
         ActionNode* node = strategy->GetAction(name);
         if (node)
+        {
             return node;
+        }
     }
     return new ActionNode (name,
         /*P*/ NULL,
@@ -275,11 +279,15 @@ ActionResult Engine::ExecuteAction(string name)
 
     ActionNode *actionNode = CreateActionNode(name);
     if (!actionNode)
+    {
         return ACTION_RESULT_UNKNOWN;
+    }
 
     Action* action = InitializeAction(actionNode);
     if (!action)
+    {
         return ACTION_RESULT_UNKNOWN;
+    }
 
     if (!action->isPossible())
     {
@@ -341,7 +349,9 @@ bool Engine::removeStrategy(string name)
 {
     map<string, Strategy*>::iterator i = strategies.find(name);
     if (i == strategies.end())
+    {
         return false;
+    }
 
     LogAction("S:-%s", name.c_str());
     strategies.erase(i);
@@ -416,7 +426,9 @@ string Engine::ListStrategies()
     string s = "Strategies: ";
 
     if (strategies.empty())
+    {
         return s;
+    }
 
     for (map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); i++)
     {
@@ -441,7 +453,9 @@ bool Engine::ContainsStrategy(StrategyType type)
     {
         Strategy* strategy = i->second;
         if (strategy->GetType() & type)
+        {
             return true;
+        }
     }
     return false;
 }
@@ -492,7 +506,9 @@ void Engine::LogAction(const char* format, ...)
     {
         Player* bot = ai->GetBot();
         if (sPlayerbotAIConfig.logInGroupOnly && !bot->GetGroup())
+        {
             return;
+        }
 
         sLog.outDebug("%s %s", bot->GetName(), buf);
     }
@@ -525,11 +541,15 @@ void Engine::ChangeStrategy(string names)
 void Engine::LogValues()
 {
     if (testMode)
+    {
         return;
+    }
 
     Player* bot = ai->GetBot();
     if (sPlayerbotAIConfig.logInGroupOnly && !bot->GetGroup())
+    {
         return;
+    }
 
     string text = ai->GetAiObjectContext()->FormatValues();
     sLog.outDebug("Values for %s: %s", bot->GetName(), text.c_str());

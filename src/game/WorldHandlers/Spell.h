@@ -702,7 +702,9 @@ namespace MaNGOS
                         i_spell.m_targets.getSource(i_centerX, i_centerY, i_centerZ);
                     }
                     else
-                        { i_spell.m_targets.getDestination(i_centerX, i_centerY, i_centerZ); }
+                    {
+                        i_spell.m_targets.getDestination(i_centerX, i_centerY, i_centerZ);
+                    }
                     break;
                 case PUSH_TARGET_CENTER:
                     if (Unit* target = i_spell.m_targets.getUnitTarget())

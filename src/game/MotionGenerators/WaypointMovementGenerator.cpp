@@ -172,7 +172,9 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
                 creature.MonsterText(textData, NULL);
             }
             else
-                { sLog.outErrorDb("%s reached waypoint %u, attempted to do text %i, but required text-data could not be found", creature.GetGuidStr().c_str(), i_currentNode, textId); }
+            {
+                sLog.outErrorDb("%s reached waypoint %u, attempted to do text %i, but required text-data could not be found", creature.GetGuidStr().c_str(), i_currentNode, textId);
+            }
         }
     }
 
@@ -237,7 +239,9 @@ void WaypointMovementGenerator<Creature>::StartMove(Creature& creature)
                 creature.AI()->MovementInform(EXTERNAL_WAYPOINT_FINISHED_LAST + m_pathId, currPoint->first);
 
             if (creature.IsDead() || !creature.IsInWorld()) // Might have happened with above calls
+            {
                 return;
+            }
         }
 
         i_currentNode = currPoint->first;
@@ -379,11 +383,15 @@ void WaypointMovementGenerator<Creature>::AddToWaypointPauseTime(int32 waitTimeD
 bool WaypointMovementGenerator<Creature>::SetNextWaypoint(uint32 pointId)
 {
     if (!i_path || i_path->empty())
+    {
         return false;
+    }
 
     WaypointPath::const_iterator currPoint = i_path->find(pointId);
     if (currPoint == i_path->end())
+    {
         return false;
+    }
 
     // Allow Moving with next tick
     // Handle allow movement this way to not interact with PAUSED state.

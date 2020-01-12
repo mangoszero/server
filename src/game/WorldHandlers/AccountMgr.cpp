@@ -211,7 +211,9 @@ uint32 AccountMgr::GetCharactersCount(uint32 acc_id)
         return charcount;
     }
     else
-        { return 0; }
+    {
+        return 0;
+    }
 }
 
 bool AccountMgr::CheckPassword(uint32 accid, std::string passwd)

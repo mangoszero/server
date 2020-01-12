@@ -22,12 +22,16 @@ public:
             {
                 const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
                 if (!spellInfo)
+                {
                     return false;
+                }
 
                 for (int i = 0 ; i < 3; i++)
                 {
                     if (spellInfo->Effect[i] == effectId)
+                    {
                         return true;
+                    }
                 }
             }
         }
@@ -71,14 +75,18 @@ void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
     for(int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
         if (Item *pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             if (!visitor->Visit(pItem))
+            {
                 return;
+            }
 
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
         if (Bag *pBag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
                 if (Item* pItem = pBag->GetItemByPos(j))
                     if (!visitor->Visit(pItem))
+                    {
                         return;
+                    }
 }
 
 void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
@@ -90,23 +98,33 @@ void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
             continue;
 
         if (!visitor->Visit(pItem))
+        {
             return;
+        }
     }
 }
 
 bool compare_items(const ItemPrototype *proto1, const ItemPrototype *proto2)
 {
     if (proto1->Class != proto2->Class)
+    {
         return proto1->Class > proto2->Class;
+    }
 
     if (proto1->SubClass != proto2->SubClass)
+    {
         return proto1->SubClass < proto2->SubClass;
+    }
 
     if (proto1->Quality != proto2->Quality)
+    {
         return proto1->Quality < proto2->Quality;
+    }
 
     if (proto1->ItemLevel != proto2->ItemLevel)
+    {
         return proto1->ItemLevel > proto2->ItemLevel;
+    }
 
     return false;
 }

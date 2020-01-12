@@ -162,7 +162,9 @@ void OutdoorPvP::BuffTeam(Team team, uint32 spellId, bool remove /*= false*/)
                 player->RemoveAurasDueToSpell(spellId);
             }
             else
-                { player->CastSpell(player, spellId, true); }
+            {
+                player->CastSpell(player, spellId, true);
+            }
         }
     }
 }
@@ -206,6 +208,8 @@ void OutdoorPvP::RespawnGO(const WorldObject* objRef, ObjectGuid goGuid, bool re
             go->Refresh();
         }
         else if (go->isSpawned())
-            { go->SetLootState(GO_JUST_DEACTIVATED); }
+        {
+            go->SetLootState(GO_JUST_DEACTIVATED);
+        }
     }
 }

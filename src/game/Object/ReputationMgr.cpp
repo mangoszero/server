@@ -110,7 +110,9 @@ void ReputationMgr::ApplyForceReaction(uint32 faction_id, ReputationRank rank, b
         m_forcedReactions[faction_id] = rank;
     }
     else
-        { m_forcedReactions.erase(faction_id); }
+    {
+        m_forcedReactions.erase(faction_id);
+    }
 }
 
 uint32 ReputationMgr::GetDefaultStateFlags(FactionEntry const* factionEntry) const
@@ -303,7 +305,9 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
             standing = Reputation_Cap;
         }
         else if (standing < Reputation_Bottom)
-            { standing = Reputation_Bottom; }
+        {
+            standing = Reputation_Bottom;
+        }
 
         faction.Standing = standing - BaseRep;
         faction.needSend = true;
@@ -408,7 +412,9 @@ void ReputationMgr::SetAtWar(FactionState* faction, bool atWar)
         faction->Flags |= FACTION_FLAG_AT_WAR;
     }
     else
-        { faction->Flags &= ~FACTION_FLAG_AT_WAR; }
+    {
+        faction->Flags &= ~FACTION_FLAG_AT_WAR;
+    }
 
     faction->needSend = true;
     faction->needSave = true;
@@ -444,7 +450,9 @@ void ReputationMgr::SetInactive(FactionState* faction, bool inactive)
         faction->Flags |= FACTION_FLAG_INACTIVE;
     }
     else
-        { faction->Flags &= ~FACTION_FLAG_INACTIVE; }
+    {
+        faction->Flags &= ~FACTION_FLAG_INACTIVE;
+    }
 
     faction->needSend = true;
     faction->needSave = true;
@@ -498,7 +506,9 @@ void ReputationMgr::LoadFromDB(QueryResult* result)
                     }
                 }
                 else if (GetRank(factionEntry) <= REP_HOSTILE)
-                    { SetAtWar(faction, true); }
+                {
+                    SetAtWar(faction, true);
+                }
 
                 // reset changed flag if values similar to saved in DB
                 if (faction->Flags == dbFactionFlags)

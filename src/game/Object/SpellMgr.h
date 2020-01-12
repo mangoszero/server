@@ -548,7 +548,9 @@ inline uint32 GetDispellMask(DispelType dispel)
         return DISPEL_ALL_MASK;
     }
     else
-        { return (1 << dispel); }
+    {
+        return (1 << dispel);
+    }
 }
 
 inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
@@ -808,7 +810,9 @@ class PetAura
                     return itr2->second;
                 }
                 else
-                    { return 0; }
+                {
+                    return 0;
+                }
             }
         }
 
@@ -964,9 +968,13 @@ class SpellMgr
                 return SPELL_FLASK_ELIXIR;
             }
             else if (mask & ELIXIR_WELL_FED)
-                { return SPELL_WELL_FED; }
+            {
+                return SPELL_WELL_FED;
+            }
             else
-                { return SPELL_NORMAL; }
+            {
+                return SPELL_NORMAL;
+            }
         }
 
         SpellThreatEntry const* GetSpellThreatEntry(uint32 spellid) const
@@ -1152,7 +1160,9 @@ class SpellMgr
                 return &itr->second;
             }
             else
-                { return NULL; }
+            {
+                return NULL;
+            }
         }
 
         bool IsSpellLearnSpell(uint32 spell_id) const
@@ -1204,7 +1214,9 @@ class SpellMgr
                 return &itr->second;
             }
             else
-                { return NULL; }
+            {
+                return NULL;
+            }
         }
 
         SpellCastResult GetSpellAllowedInLocationError(SpellEntry const* spellInfo, uint32 map_id, uint32 zone_id, uint32 area_id, Player const* player = NULL);

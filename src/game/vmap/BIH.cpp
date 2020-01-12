@@ -232,7 +232,9 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
         tempTree.push_back(0);
     }
     else
-        { nextIndex -= 3; }
+    {
+        nextIndex -= 3;
+    }
     // allocate right node
     if (nr > 0)
     {
@@ -257,13 +259,17 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
         subdivide(left, right, tempTree, dat, gridBoxL, nodeBoxL, nextIndex, depth + 1, stats);
     }
     else
-        { stats.updateLeaf(depth + 1, 0); }
+    {
+        stats.updateLeaf(depth + 1, 0);
+    }
     if (nr > 0)
     {
         subdivide(right + 1, rightOrig, tempTree, dat, gridBoxR, nodeBoxR, nextIndex + 3, depth + 1, stats);
     }
     else
-        { stats.updateLeaf(depth + 1, 0); }
+    {
+        stats.updateLeaf(depth + 1, 0);
+    }
 }
 
 bool BIH::writeToFile(FILE* wf) const

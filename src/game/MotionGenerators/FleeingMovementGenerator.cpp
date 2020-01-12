@@ -81,7 +81,9 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
             angle_to_caster = fright->GetAngle(&owner);
         }
         else
-            { angle_to_caster = frand(0, 2 * M_PI_F); }
+        {
+            angle_to_caster = frand(0, 2 * M_PI_F);
+        }
     }
     else
     {

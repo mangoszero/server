@@ -117,10 +117,14 @@ namespace Movement
                 WriteCatmullRomCyclicPath(spline, data);
             }
             else
-                { WriteCatmullRomPath(spline, data); }
+            {
+                WriteCatmullRomPath(spline, data);
+            }
         }
         else
-            { WriteLinearPath(spline, data); }
+        {
+            WriteLinearPath(spline, data);
+        }
     }
 
     void PacketBuilder::WriteCreate(const MoveSpline& move_spline, ByteBuffer& data)

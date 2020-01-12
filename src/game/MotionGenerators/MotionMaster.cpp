@@ -66,7 +66,9 @@ void MotionMaster::Initialize()
             (static_cast<WaypointMovementGenerator<Creature>*>(top()))->InitializeWaypointPath(*((Creature*)(m_owner)), 0, PATH_NO_PATH, 0, 0);
     }
     else
-        { push(&si_idleMovement); }
+    {
+        push(&si_idleMovement);
+    }
 }
 
 MotionMaster::~MotionMaster()
@@ -99,7 +101,9 @@ void MotionMaster::UpdateMotion(uint32 diff)
         MovementExpired();
     }
     else
-        { m_cleanFlag &= ~MMCF_UPDATE; }
+    {
+        m_cleanFlag &= ~MMCF_UPDATE;
+    }
 
     if (m_expList)
     {
@@ -156,7 +160,9 @@ void MotionMaster::DelayedClean(bool reset, bool all)
         m_cleanFlag |= MMCF_RESET;
     }
     else
-        { m_cleanFlag &= ~MMCF_RESET; }
+    {
+        m_cleanFlag &= ~MMCF_RESET;
+    }
 
     if (empty() || (!all && size() == 1))
     {
@@ -229,7 +235,9 @@ void MotionMaster::DelayedExpire(bool reset)
         m_cleanFlag |= MMCF_RESET;
     }
     else
-        { m_cleanFlag &= ~MMCF_RESET; }
+    {
+        m_cleanFlag &= ~MMCF_RESET;
+    }
 
     if (empty() || size() == 1)
     {
@@ -317,7 +325,9 @@ void MotionMaster::MoveTargetedHome()
         }
     }
     else
-        { sLog.outError("%s attempt targeted home", m_owner->GetGuidStr().c_str()); }
+    {
+        sLog.outError("%s attempt targeted home", m_owner->GetGuidStr().c_str());
+    }
 }
 
 void MotionMaster::MoveConfused()
@@ -329,7 +339,9 @@ void MotionMaster::MoveConfused()
         Mutate(new ConfusedMovementGenerator<Player>());
     }
     else
-        { Mutate(new ConfusedMovementGenerator<Creature>()); }
+    {
+        Mutate(new ConfusedMovementGenerator<Creature>());
+    }
 }
 
 void MotionMaster::MoveChase(Unit* target, float dist, float angle)
@@ -347,7 +359,9 @@ void MotionMaster::MoveChase(Unit* target, float dist, float angle)
         Mutate(new ChaseMovementGenerator<Player>(*target, dist, angle));
     }
     else
-        { Mutate(new ChaseMovementGenerator<Creature>(*target, dist, angle)); }
+    {
+        Mutate(new ChaseMovementGenerator<Creature>(*target, dist, angle));
+    }
 }
 
 void MotionMaster::MoveFollow(Unit* target, float dist, float angle)
@@ -372,7 +386,9 @@ void MotionMaster::MoveFollow(Unit* target, float dist, float angle)
         Mutate(new FollowMovementGenerator<Player>(*target, dist, angle));
     }
     else
-        { Mutate(new FollowMovementGenerator<Creature>(*target, dist, angle)); }
+    {
+        Mutate(new FollowMovementGenerator<Creature>(*target, dist, angle));
+    }
 }
 
 void MotionMaster::MovePoint(uint32 id, float x, float y, float z, bool generatePath)
@@ -384,7 +400,9 @@ void MotionMaster::MovePoint(uint32 id, float x, float y, float z, bool generate
         Mutate(new PointMovementGenerator<Player>(id, x, y, z, generatePath));
     }
     else
-        { Mutate(new PointMovementGenerator<Creature>(id, x, y, z, generatePath)); }
+    {
+        Mutate(new PointMovementGenerator<Creature>(id, x, y, z, generatePath));
+    }
 }
 
 void MotionMaster::MoveSeekAssistance(float x, float y, float z)
@@ -435,7 +453,9 @@ void MotionMaster::MoveFleeing(Unit* enemy, uint32 time)
             Mutate(new TimedFleeingMovementGenerator(enemy->GetObjectGuid(), time));
         }
         else
-            { Mutate(new FleeingMovementGenerator<Creature>(enemy->GetObjectGuid())); }
+        {
+            Mutate(new FleeingMovementGenerator<Creature>(enemy->GetObjectGuid()));
+        }
     }
 }
 
@@ -542,7 +562,9 @@ bool MotionMaster::SetNextWaypoint(uint32 pointId)
     for (Impl::container_type::reverse_iterator rItr = Impl::c.rbegin(); rItr != Impl::c.rend(); ++rItr)
     {
         if ((*rItr)->GetMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+        {
             return (static_cast<WaypointMovementGenerator<Creature>*>(*rItr))->SetNextWaypoint(pointId);
+        }
     }
     return false;
 }

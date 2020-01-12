@@ -295,7 +295,9 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recv_data)
             }
         }
         else
-            { _player->PlayerTalkClass->SendQuestGiverOfferReward(pQuest, guid, true); }
+        {
+            _player->PlayerTalkClass->SendQuestGiverOfferReward(pQuest, guid, true);
+        }
     }
 }
 
@@ -456,10 +458,14 @@ void WorldSession::HandleQuestgiverCompleteQuest(WorldPacket& recv_data)
                 _player->PlayerTalkClass->SendQuestGiverRequestItems(pQuest, guid, _player->CanCompleteRepeatableQuest(pQuest), false);
             }
             else
-                { _player->PlayerTalkClass->SendQuestGiverRequestItems(pQuest, guid, _player->CanRewardQuest(pQuest, false), false); }
+            {
+                _player->PlayerTalkClass->SendQuestGiverRequestItems(pQuest, guid, _player->CanRewardQuest(pQuest, false), false);
+            }
         }
         else
-            { _player->PlayerTalkClass->SendQuestGiverRequestItems(pQuest, guid, _player->CanRewardQuest(pQuest, false), false); }
+        {
+            _player->PlayerTalkClass->SendQuestGiverRequestItems(pQuest, guid, _player->CanRewardQuest(pQuest, false), false);
+        }
     }
 }
 
@@ -608,10 +614,14 @@ uint32 WorldSession::getDialogStatus(Player* pPlayer, Object* questgiver, uint32
                 dialogStatusNew = DIALOG_STATUS_REWARD_REP;
             }
             else
-                { dialogStatusNew = DIALOG_STATUS_REWARD2; }
+            {
+                dialogStatusNew = DIALOG_STATUS_REWARD2;
+            }
         }
         else if (status == QUEST_STATUS_INCOMPLETE)
-            { dialogStatusNew = DIALOG_STATUS_INCOMPLETE; }
+        {
+            dialogStatusNew = DIALOG_STATUS_INCOMPLETE;
+        }
 
         if (dialogStatusNew > dialogStatus)
         {
@@ -649,10 +659,14 @@ uint32 WorldSession::getDialogStatus(Player* pPlayer, Object* questgiver, uint32
                         dialogStatusNew = DIALOG_STATUS_AVAILABLE;
                     }
                     else
-                        { dialogStatusNew = DIALOG_STATUS_CHAT; }
+                    {
+                        dialogStatusNew = DIALOG_STATUS_CHAT;
+                    }
                 }
                 else
-                    { dialogStatusNew = DIALOG_STATUS_UNAVAILABLE; }
+                {
+                    dialogStatusNew = DIALOG_STATUS_UNAVAILABLE;
+                }
             }
         }
 

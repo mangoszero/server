@@ -25,7 +25,9 @@ bool ShamanWeaponTrigger::IsActive()
             continue;
 
         if (AI_VALUE2(Item*, "item for spell", spellId))
+        {
             return true;
+        }
     }
 
     return false;

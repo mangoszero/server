@@ -39,7 +39,9 @@ uint32 PricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint32 auctionHo
     double marketPrice = GetMarketPrice(proto->ItemId, auctionHouse);
 
     if (marketPrice > 0)
+    {
         return marketPrice;
+    }
 
     uint32 untilTime = time(0) - 3600 * 12;
     double price = sAhBotConfig.GetItemPriceMultiplier(proto->Name1) *
@@ -177,7 +179,9 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
 uint32 PricingStrategy::ApplyQualityMultiplier(ItemPrototype const* proto, uint32 price)
 {
     if (proto->Quality == ITEM_QUALITY_POOR)
+    {
         return price;
+    }
 
     return (uint32)(price * sqrt((double)proto->Quality) * sAhBotConfig.priceQualityMultiplier);
 }
@@ -221,7 +225,9 @@ uint32 PricingStrategy::GetDefaultSellPrice(ItemPrototype const* proto)
 uint32 BuyOnlyRarePricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint32 auctionHouse)
 {
     if (proto->Quality < ITEM_QUALITY_RARE)
+    {
         return 0;
+    }
 
     return PricingStrategy::GetBuyPrice(proto, auctionHouse);
 }

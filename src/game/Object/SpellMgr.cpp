@@ -278,9 +278,13 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
             CastingTime = uint32(CastingTime * PtOT);
         }
         else if (PtOT < 1.0f)
-            { CastingTime  = uint32(CastingTime * (1 - PtOT)); }
+        {
+            CastingTime  = uint32(CastingTime * (1 - PtOT));
+        }
         else
-            { CastingTime = 0; }
+        {
+            CastingTime = 0;
+        }
     }
 
     // Area Effect Spells receive only half of bonus
@@ -435,7 +439,9 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2)
 
     // Mighty Rage Potion + Elixir of giants
     if((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405)){
+    {
         return false;
+    }
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
@@ -533,9 +539,13 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
                     return SPELL_FOOD_AND_DRINK;
                 }
                 else if (food)
-                    { return SPELL_FOOD; }
+                {
+                    return SPELL_FOOD;
+                }
                 else if (drink)
-                    { return SPELL_DRINK; }
+                {
+                    return SPELL_DRINK;
+                }
             }
             else
             {
@@ -1167,7 +1177,9 @@ SpellCastResult GetErrorAtShapeshiftedCast(SpellEntry const* spellInfo, uint32 f
             return SPELL_FAILED_NOT_SHAPESHIFT;
         }
         else if (spellInfo->Stances != 0)                   // needs other shapeshift
-            { return SPELL_FAILED_ONLY_SHAPESHIFT; }
+        {
+            return SPELL_FAILED_ONLY_SHAPESHIFT;
+        }
     }
     else
     {
@@ -1416,7 +1428,9 @@ struct DoSpellProcEvent
                 sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same proc flags as in spell.dbc, field value redundant", spell->Id);
             }
             else
-                { isCustom = true; }
+            {
+                isCustom = true;
+            }
         }
 
         if (spe.customChance == 0)
@@ -1433,7 +1447,9 @@ struct DoSpellProcEvent
                 sLog.outErrorDb("Spell %u listed in `spell_proc_event` has exactly same custom chance as in spell.dbc, field value redundant", spell->Id);
             }
             else
-                { isCustom = true; }
+            {
+                isCustom = true;
+            }
         }
 
         // totally redundant record
@@ -1460,7 +1476,9 @@ struct DoSpellProcEvent
             ++customProc;
         }
         else
-            { ++count; }
+        {
+            ++count;
+        }
     }
 
     bool HasEntry(uint32 spellId) { return spe_map.find(spellId) != spe_map.end(); }
@@ -1746,9 +1764,13 @@ void SpellMgr::LoadSpellBonuses()
             sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not needed (data from table: %f, calculated %f, difference of %f) and direct also not used",
                             entry, sbe.dot_damage, dot_calc, dot_diff);
         else if (!need_direct && sbe.direct_damage)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry);
+        }
         else if (!need_dot && sbe.dot_damage)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not used (spell not have periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `dot_bonus` not used (spell not have periodic affects)", entry);
+        }
 
         // direct bonus done
         if (direct_done_diff < 0.02f && !need_dot && !sbe.ap_bonus && !sbe.ap_dot_bonus)
@@ -1762,7 +1784,9 @@ void SpellMgr::LoadSpellBonuses()
                             sbe.dot_damage, dot_calc, dot_diff);
         }
         else if (!need_direct && sbe.direct_damage_done)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry);
+        }
 
         // direct bonus taken
         if (direct_taken_diff < 0.02f && !need_dot && !sbe.ap_bonus && !sbe.ap_dot_bonus)
@@ -1776,14 +1800,18 @@ void SpellMgr::LoadSpellBonuses()
                             sbe.dot_damage, dot_calc, dot_diff);
         }
         else if (!need_direct && sbe.direct_damage_taken)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `direct_bonus` not used (spell not have non-periodic affects)", entry);
+        }
 
         if (!need_direct && sbe.ap_bonus)
         {
             sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_bonus` not used (spell not have non-periodic affects)", entry);
         }
         else if (!need_dot && sbe.ap_dot_bonus)
-            { sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_dot_bonus` not used (spell not have periodic affects)", entry); }
+        {
+            sLog.outErrorDb("`spell_bonus_data` entry for spell %u `ap_dot_bonus` not used (spell not have periodic affects)", entry);
+        }
 
         mSpellBonusMap[entry] = sbe;
 
@@ -3692,7 +3720,9 @@ void SpellMgr::LoadSpellLearnSkills()
                     dbc_node.value = 1;
                 }
                 else
-                    { dbc_node.value = dbc_node.step * 75; }
+                {
+                    dbc_node.value = dbc_node.step * 75;
+                }
                 dbc_node.maxvalue = dbc_node.step * 75;
 
                 mSpellLearnSkills[spell] = dbc_node;
@@ -4056,7 +4086,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                             ChatHandler(pl).PSendSysMessage("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]);
                         }
                         else
-                            { sLog.outErrorDb("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]); }
+                        {
+                            sLog.outErrorDb("Craft spell %u create item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->EffectItemType[i]);
+                        }
                     }
                     return false;
                 }
@@ -4076,7 +4108,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                             ChatHandler(pl).PSendSysMessage("Spell %u learn to broken spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]);
                         }
                         else
-                            { sLog.outErrorDb("Spell %u learn to invalid spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]); }
+                        {
+                            sLog.outErrorDb("Spell %u learn to invalid spell %u, and then...", spellInfo->Id, spellInfo->EffectTriggerSpell[i]);
+                        }
                     }
                     return false;
                 }
@@ -4098,7 +4132,9 @@ bool SpellMgr::IsSpellValid(SpellEntry const* spellInfo, Player* pl, bool msg)
                         ChatHandler(pl).PSendSysMessage("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]);
                     }
                     else
-                        { sLog.outErrorDb("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]); }
+                    {
+                        sLog.outErrorDb("Craft spell %u requires reagent item (Entry: %u) but item does not exist in item_template.", spellInfo->Id, spellInfo->Reagent[j]);
+                    }
                 }
                 return false;
             }
@@ -4734,7 +4770,9 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
             }
             // Blind
             else if (spellproto->IsFitToFamilyMask(UI64LIT(0x00001000000)))
-                { return DIMINISHING_BLIND; }
+            {
+                return DIMINISHING_BLIND;
+            }
             break;
         }
         case SPELLFAMILY_HUNTER:
@@ -4899,7 +4937,9 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
     }
 
     if (!player)    //all following checks require valid player
+    {
         return false;
+    }
 
     if (conditionId)
     {
@@ -4973,7 +5013,9 @@ void SpellArea::ApplyOrRemoveSpellIfCan(Player* player, uint32 newZone, uint32 n
         }
     }
     else if (!onlyApply && player->HasAura(spellId))
-        { player->RemoveAurasDueToSpell(spellId); }
+    {
+        player->RemoveAurasDueToSpell(spellId);
+    }
 }
 
 void SpellMgr::LoadSpellAffects()

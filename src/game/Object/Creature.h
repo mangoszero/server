@@ -165,7 +165,9 @@ struct CreatureInfo
             return SKILL_HERBALISM;
         }
         else if (CreatureTypeFlags & CREATURE_TYPEFLAGS_MININGLOOT)
-            { return SKILL_MINING; }
+        {
+            return SKILL_MINING;
+        }
         else
             { return SKILL_SKINNING; }                          // normal case
     }
@@ -799,7 +801,9 @@ class Creature : public Unit
                 return 0;
             }
             else
-                { return m_charmInfo->GetCharmSpell(pos)->GetAction(); }
+            {
+                return m_charmInfo->GetCharmSpell(pos)->GetAction();
+            }
         }
 
         void SetCombatStartPosition(float x, float y, float z) { m_combatStartX = x; m_combatStartY = y; m_combatStartZ = z; }

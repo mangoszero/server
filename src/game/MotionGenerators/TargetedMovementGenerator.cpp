@@ -204,7 +204,9 @@ bool TargetedMovementGeneratorMedium<T, D>::RequiresNewPosition(T& owner, float 
         return !i_target->IsWithinDist3d(x, y, z, this->GetDynamicTargetDistance(owner, true));
     }
     else
-        { return !i_target->IsWithinDist2d(x, y, this->GetDynamicTargetDistance(owner, true)); }
+    {
+        return !i_target->IsWithinDist2d(x, y, this->GetDynamicTargetDistance(owner, true));
+    }
 }
 
 //-----------------------------------------------//

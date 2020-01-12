@@ -317,7 +317,9 @@ void PlayerLogger::CheckAndTruncate(PlayerLogMask mask, uint32 maxRecords)
 void PlayerLogger::LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid const & unitGuid, uint16 spell)
 {
     if (!IsLoggingActive(done ? PLAYER_LOGMASK_DAMAGE_DONE : PLAYER_LOGMASK_DAMAGE_GET))
+    {
         return;
+    }
     PlayerLogDamage log = PlayerLogDamage(sWorld.GetUptime());
     log.dmgUnit = (unitGuid.GetCounter() == playerGuid) ? 0 : (unitGuid.IsPlayer() ? unitGuid.GetCounter() : unitGuid.GetEntry());
     log.SetCreature(unitGuid.IsCreatureOrPet());
@@ -329,7 +331,9 @@ void PlayerLogger::LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid c
 void PlayerLogger::LogLooting(LootSourceType type, ObjectGuid const & droppedBy, ObjectGuid const & itemGuid, uint32 id)
 {
     if (!IsLoggingActive(PLAYER_LOGMASK_LOOTING))
+    {
         return;
+    }
     PlayerLogLooting log = PlayerLogLooting(sWorld.GetUptime());
     log.itemEntry = itemGuid.GetEntry();
     log.SetLootSourceType(type);
@@ -341,7 +345,9 @@ void PlayerLogger::LogLooting(LootSourceType type, ObjectGuid const & droppedBy,
 void PlayerLogger::LogTrading(bool aquire, ObjectGuid const & partner, ObjectGuid const & itemGuid)
 {
     if (!IsLoggingActive(PLAYER_LOGMASK_TRADE))
+    {
         return;
+    }
     PlayerLogTrading log = PlayerLogTrading(sWorld.GetUptime());
     log.itemEntry = itemGuid.GetEntry();
     log.SetItemAquired(aquire);
@@ -353,7 +359,9 @@ void PlayerLogger::LogTrading(bool aquire, ObjectGuid const & partner, ObjectGui
 void PlayerLogger::LogKilling(bool killedEnemy, ObjectGuid const & unitGuid)
 {
     if (!IsLoggingActive(PLAYER_LOGMASK_KILL))
+    {
         return;
+    }
     PlayerLogKilling log = PlayerLogKilling(sWorld.GetUptime());
     log.unitEntry = unitGuid.GetEntry();
     log.SetKill(killedEnemy);
@@ -364,7 +372,9 @@ void PlayerLogger::LogKilling(bool killedEnemy, ObjectGuid const & unitGuid)
 void PlayerLogger::LogPosition()
 {
     if (!IsLoggingActive(PLAYER_LOGMASK_POSITION))
+    {
         return;
+    }
     if (Player* pl = GetPlayer())
     {
         PlayerLogPosition log = PlayerLogPosition(sWorld.GetUptime());
@@ -376,7 +386,9 @@ void PlayerLogger::LogPosition()
 void PlayerLogger::LogProgress(ProgressType type, uint8 achieve, uint16 misc)
 {
     if (!IsLoggingActive(PLAYER_LOGMASK_PROGRESS))
+    {
         return;
+    }
     if (Player* pl = GetPlayer())
     {
         PlayerLogProgress log = PlayerLogProgress(sWorld.GetUptime());

@@ -116,7 +116,9 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
         SendNameQueryOpcode(pChar);
     }
     else
-        { SendNameQueryOpcodeFromDB(guid); }
+    {
+        SendNameQueryOpcodeFromDB(guid);
+    }
 }
 
 void WorldSession::HandleQueryTimeOpcode(WorldPacket& /*recv_data*/)
@@ -158,7 +160,9 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         if (unit)
             { data << uint32(((unit->IsPet()) ? 0 : ci->CreatureType)); } // CreatureType.dbc   wdbFeild8
         else
-            { data << uint32(ci->CreatureType); }
+        {
+            data << uint32(ci->CreatureType);
+        }
 
         data << uint32(ci->Family);                         // CreatureFamily.dbc
         data << uint32(ci->Rank);                           // Creature Rank (elite, boss, etc)
@@ -339,14 +343,18 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
                 data << Text_1[i];
             }
             else
-                { data << Text_0[i]; }
+            {
+                data << Text_0[i];
+            }
 
             if (Text_1[i].empty())
             {
                 data << Text_0[i];
             }
             else
-                { data << Text_1[i]; }
+            {
+                data << Text_1[i];
+            }
 
             data << pGossip->Options[i].Language;
 

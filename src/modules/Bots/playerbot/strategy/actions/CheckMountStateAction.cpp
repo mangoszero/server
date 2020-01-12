@@ -10,10 +10,14 @@ bool CheckMountStateAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!bot->GetGroup() || !master)
+    {
         return false;
+    }
 
     if (bot->IsTaxiFlying())
+    {
         return false;
+    }
 
     if (master->IsMounted() && !bot->IsMounted())
     {

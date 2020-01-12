@@ -378,7 +378,9 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
         spell = new Spell(_player, proto, false);
     }
     else
-        { spell = new Spell(unit, proto, false); }
+    {
+        spell = new Spell(unit, proto, false);
+    }
 
     SpellCastTargets targets;
     targets.setUnitTarget(_player);
@@ -786,7 +788,9 @@ void WorldSession::HandleStablePet(WorldPacket& recv_data)
         SendStableResult(STABLE_SUCCESS_STABLE);
     }
     else
-        { SendStableResult(STABLE_ERR_STABLE); }
+    {
+        SendStableResult(STABLE_ERR_STABLE);
+    }
 }
 
 void WorldSession::HandleUnstablePet(WorldPacket& recv_data)
@@ -889,10 +893,14 @@ void WorldSession::HandleBuyStableSlot(WorldPacket& recv_data)
             SendStableResult(STABLE_SUCCESS_BUY_SLOT);
         }
         else
-            { SendStableResult(STABLE_ERR_MONEY); }
+        {
+            SendStableResult(STABLE_ERR_MONEY);
+        }
     }
     else
-        { SendStableResult(STABLE_ERR_STABLE); }
+    {
+        SendStableResult(STABLE_ERR_STABLE);
+    }
 }
 
 void WorldSession::HandleStableRevivePet(WorldPacket& /* recv_data */)
@@ -968,7 +976,9 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
         SendStableResult(STABLE_ERR_STABLE);
     }
     else
-        { SendStableResult(STABLE_SUCCESS_UNSTABLE); }
+    {
+        SendStableResult(STABLE_SUCCESS_UNSTABLE);
+    }
 }
 
 void WorldSession::HandleRepairItemOpcode(WorldPacket& recv_data)

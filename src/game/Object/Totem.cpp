@@ -93,7 +93,9 @@ void Totem::Update(uint32 update_diff, uint32 time)
         return;
     }
     else
-        { m_duration -= update_diff; }
+    {
+        m_duration -= update_diff;
+    }
 
     Creature::Update(update_diff, time);
 }

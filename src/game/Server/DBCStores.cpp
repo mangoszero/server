@@ -209,7 +209,9 @@ inline void LoadDBC(uint32& availableDbcLocales, BarGoLink& bar, StoreProblemLis
             fclose(f);
         }
         else
-            { errlist.push_back(dbc_filename); }
+        {
+            errlist.push_back(dbc_filename);
+        }
     }
 }
 
@@ -656,7 +658,9 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
                 {
                     // area_flag found but it lets test map_id too
                     if (AreaEntry->mapid == map_id)
+                    {
                         return AreaEntry; // area_flag and map_id are ok so we can return value
+                    }
                     // not same map_id so we store this entry and continue searching another better one
                     aEntry = AreaEntry;
                 }
@@ -683,7 +687,9 @@ uint32 GetAreaFlagByMapId(uint32 mapid)
         return 0;
     }
     else
-        { return i->second; }
+    {
+        return i->second;
+    }
 }
 
 
@@ -719,7 +725,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
                 entryName.replace(removeString, 2, "");
 
             if (name.find(entryName) != std::string::npos)
+            {
                 return ch;
+            }
         }
     }
 
@@ -735,7 +743,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
     }
 
     if (compare)
+    {
         return &worldCh;
+    }
 
     return NULL;
 }

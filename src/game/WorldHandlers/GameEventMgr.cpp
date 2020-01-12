@@ -48,7 +48,9 @@ bool GameEventMgr::CheckOneGameEvent(uint16 entry, time_t currenttime) const
         ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)) < (mGameEvent[entry].length * MINUTE))
         { return true; }
     else
-        { return false; }
+    {
+        return false;
+    }
 }
 
 uint32 GameEventMgr::NextCheck(uint16 entry) const
@@ -73,14 +75,18 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
         // we return the delay before it ends
         { delay = (mGameEvent[entry].length * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)); }
     else                                                    // not in window, we return the delay before next start
-        { delay = (mGameEvent[entry].occurence * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)); }
+    {
+        delay = (mGameEvent[entry].occurence * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE));
+    }
     // In case the end is before next check
     if (mGameEvent[entry].end  < time_t(currenttime + delay))
     {
         return uint32(mGameEvent[entry].end - currenttime);
     }
     else
-        { return delay; }
+    {
+        return delay;
+    }
 }
 
 void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool resume /*=false*/)
@@ -980,7 +986,9 @@ void GameEventMgr::SendEventMails(int16 event_id)
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());
         }
         else
-            { sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), itr->raceMask); }
+        {
+            sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), itr->raceMask);
+        }
     }
 }
 

@@ -80,7 +80,9 @@ void ObjectPosSelector::AddUsedArea(WorldObject const* obj, float angle, float d
         m_UsedAreaLists[USED_POS_PLUS].insert(UsedArea(angle, OccupiedArea(sr_angle, obj)));
     }
     else
-        { m_UsedAreaLists[USED_POS_MINUS].insert(UsedArea(-angle, OccupiedArea(sr_angle, obj))); }
+    {
+        m_UsedAreaLists[USED_POS_MINUS].insert(UsedArea(-angle, OccupiedArea(sr_angle, obj)));
+    }
 }
 
 /**
@@ -135,7 +137,9 @@ void ObjectPosSelector::InitializeAngle(UsedAreaSide side)
         m_stepAngle[side] = std::max(m_searchedForReqHAngle + otherArea.second.angleOffset - otherArea.first, 0.0f);
     }
     else                                                    // Other side empty. start from 0
-        { m_stepAngle[side] = 0.0f; }
+    {
+        m_stepAngle[side] = 0.0f;
+    }
 
     // As m_stepAngle will be incremented first in ::NextSideAngle
     m_stepAngle[side] -= m_searchedForReqHAngle;
@@ -171,7 +175,9 @@ bool ObjectPosSelector::NextAngle(float& angle)
         }
         // both sides finishes
         else
-            { break; }
+        {
+            break;
+        }
     }
 
     // no angles

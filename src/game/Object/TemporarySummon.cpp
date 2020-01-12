@@ -61,7 +61,9 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
                 m_timer -= update_diff;
             }
             else if (m_timer != m_lifetime)
-                { m_timer = m_lifetime; }
+            {
+                m_timer = m_lifetime;
+            }
 
             break;
         }
@@ -122,10 +124,14 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
                     return;
                 }
                 else
-                    { m_timer -= update_diff; }
+                {
+                    m_timer -= update_diff;
+                }
             }
             else if (m_timer != m_lifetime)
-                { m_timer = m_lifetime; }
+            {
+                m_timer = m_lifetime;
+            }
             break;
         }
         case TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN:
@@ -145,10 +151,14 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
                     return;
                 }
                 else
-                    { m_timer -= update_diff; }
+                {
+                    m_timer -= update_diff;
+                }
             }
             else if (m_timer != m_lifetime)
-                { m_timer = m_lifetime; }
+            {
+                m_timer = m_lifetime;
+            }
             break;
         }
         case TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN:

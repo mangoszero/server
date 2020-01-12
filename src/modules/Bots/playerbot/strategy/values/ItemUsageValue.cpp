@@ -8,14 +8,20 @@ ItemUsage ItemUsageValue::Calculate()
 {
     uint32 itemId = atoi(qualifier.c_str());
     if (!itemId)
+    {
         return ITEM_USAGE_NONE;
+    }
 
     const ItemPrototype* proto = sObjectMgr.GetItemPrototype(itemId);
     if (!proto)
+    {
         return ITEM_USAGE_NONE;
+    }
 
     if (IsItemUsefulForSkill(proto))
+    {
         return ITEM_USAGE_SKILL;
+    }
 
     switch (proto->Class)
     {
@@ -30,14 +36,20 @@ ItemUsage ItemUsageValue::Calculate()
 ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
 {
     if (bot->CanUseItem(item) != EQUIP_ERR_OK)
+    {
         return ITEM_USAGE_NONE;
+    }
 
     if (item->InventoryType == INVTYPE_NON_EQUIP)
+    {
         return ITEM_USAGE_NONE;
+    }
 
     Item *pItem = Item::CreateItem(item->ItemId, 1, bot);
     if (!pItem)
+    {
         return ITEM_USAGE_NONE;
+    }
 
     uint16 dest;
     InventoryResult result = bot->CanEquipItem(NULL_SLOT, dest, pItem, true, false);
@@ -45,11 +57,15 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
     delete pItem;
 
     if( result != EQUIP_ERR_OK )
+    {
         return ITEM_USAGE_NONE;
+    }
 
     Item* existingItem = bot->GetItemByPos(dest);
     if (!existingItem)
+    {
         return ITEM_USAGE_EQUIP;
+    }
 
     const ItemPrototype* oldItem = existingItem->GetProto();
     if (oldItem->ItemLevel < item->ItemLevel && oldItem->ItemId != item->ItemId)
@@ -58,7 +74,9 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
         {
         case ITEM_CLASS_ARMOR:
             if (oldItem->SubClass <= item->SubClass) {
+            {
                 return ITEM_USAGE_REPLACE;
+            }
             }
             break;
         default:

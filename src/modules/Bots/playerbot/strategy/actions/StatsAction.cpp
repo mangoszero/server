@@ -105,11 +105,15 @@ uint32 StatsAction::EstRepair(uint16 pos)
 
     uint32 TotalCost = 0;
     if(!item)
+    {
         return TotalCost;
+    }
 
     uint32 maxDurability = item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
     if(!maxDurability)
+    {
         return TotalCost;
+    }
 
     uint32 curDurability = item->GetUInt32Value(ITEM_FIELD_DURABILITY);
 

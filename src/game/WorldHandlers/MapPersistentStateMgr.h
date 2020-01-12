@@ -407,7 +407,9 @@ inline void MapPersistentStateManager::DoForAllStatesWithMapId(uint32 mapId, Do&
                 _do((itr++)->second);
             }
             else
-                { ++itr; }
+            {
+                ++itr;
+            }
         }
     }
     else

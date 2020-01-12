@@ -38,7 +38,9 @@ namespace Movement
                 return MOVE_SWIM_BACK;
             }
             else
-                { return MOVE_SWIM; }
+            {
+                return MOVE_SWIM;
+            }
         }
         else if (moveFlags & MOVEFLAG_WALK_MODE)
         {
@@ -46,7 +48,9 @@ namespace Movement
             return MOVE_WALK;
         }
         else if (moveFlags & MOVEFLAG_BACKWARD /*&& speed_obj.run >= speed_obj.run_back*/)
-            { return MOVE_RUN_BACK; }
+        {
+            return MOVE_RUN_BACK;
+        }
 
         return MOVE_RUN;
     }
@@ -77,7 +81,9 @@ namespace Movement
             moveFlags &= ~MOVEFLAG_WALK_MODE;
         }
         else
-            { moveFlags |= MOVEFLAG_WALK_MODE; }
+        {
+            moveFlags |= MOVEFLAG_WALK_MODE;
+        }
 
         moveFlags |= (MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD);
 
@@ -108,7 +114,9 @@ namespace Movement
 
         // No need to stop if we are not moving
         if (move_spline.Finalized())
+        {
             return;
+        }
 
 
         Location real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ(), unit.GetOrientation());

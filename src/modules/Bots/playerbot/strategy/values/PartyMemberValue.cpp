@@ -16,11 +16,15 @@ Unit* PartyMemberValue::FindPartyMember(list<Player*>* party, FindPlayerPredicat
             continue;
 
         if (Check(player) && predicate.Check(player))
+        {
             return player;
+        }
 
         Pet* pet = player->GetPet();
         if (pet && Check(pet) && predicate.Check(pet))
+        {
             return pet;
+        }
     }
 
     return NULL;
@@ -31,7 +35,9 @@ Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
     Player* master = GetMaster();
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return NULL;
+    }
 
     list<Player*> healers, tanks, others, masters;
     masters.push_back(master);
@@ -58,7 +64,9 @@ Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
         list<Player*>* party = *i;
         Unit* target = FindPartyMember(party, predicate);
         if (target)
+        {
             return target;
+        }
     }
 
     return NULL;
@@ -93,11 +101,15 @@ bool PartyMemberValue::IsTargetOfSpellCast(Player* target, SpellEntryPredicate &
                 if (spell && predicate.Check(spell->m_spellInfo)) {
                     ObjectGuid unitTarget = spell->m_targets.getUnitTargetGuid();
                     if (unitTarget == targetGuid)
+                    {
                         return true;
+                    }
 
                     ObjectGuid corpseTarget = spell->m_targets.getCorpseTargetGuid();
                     if (corpseTarget == corpseGuid)
+                    {
                         return true;
+                    }
                 }
             }
         }

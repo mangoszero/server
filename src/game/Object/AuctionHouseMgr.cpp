@@ -148,7 +148,9 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
         }
     }
     else if (!bidder)
-        { bidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(bidder_guid); }
+    {
+        bidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(bidder_guid);
+    }
 
     // receiver exist
     if (bidder || bidder_accId)

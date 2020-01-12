@@ -119,7 +119,9 @@ LONG WINAPI WheatyExceptionReport::WheatyUnhandledExceptionFilter(
         return m_previousFilter(pExceptionInfo);
     }
     else
-        { return EXCEPTION_EXECUTE_HANDLER/*EXCEPTION_CONTINUE_SEARCH*/; }
+    {
+        return EXCEPTION_EXECUTE_HANDLER/*EXCEPTION_CONTINUE_SEARCH*/;
+    }
 }
 
 BOOL WheatyExceptionReport::_GetProcessorName(TCHAR* sProcessorName, DWORD maxcount)
@@ -186,7 +188,9 @@ BOOL WheatyExceptionReport::_GetWindowsVersion(TCHAR* szVersion, DWORD cntMax)
                         _tcsncat(szVersion, _T("Windows 8 "), cntMax);
                     }
                     else
-                        { _tcsncat(szVersion, _T("Windows Server 2012 "), cntMax); }
+                    {
+                        _tcsncat(szVersion, _T("Windows Server 2012 "), cntMax);
+                    }
                     break;
                 case 1:
                     if (osvi.wProductType == VER_NT_WORKSTATION)
@@ -194,7 +198,9 @@ BOOL WheatyExceptionReport::_GetWindowsVersion(TCHAR* szVersion, DWORD cntMax)
                         _tcsncat(szVersion, _T("Windows 7 "), cntMax);
                     }
                     else
-                        { _tcsncat(szVersion, _T("Windows Server 2008 R2 "), cntMax); }
+                    {
+                        _tcsncat(szVersion, _T("Windows Server 2008 R2 "), cntMax);
+                    }
                     break;
                 case 0:
                     if (osvi.wProductType == VER_NT_WORKSTATION)
@@ -202,7 +208,9 @@ BOOL WheatyExceptionReport::_GetWindowsVersion(TCHAR* szVersion, DWORD cntMax)
                         _tcsncat(szVersion, _T("Windows Vista "), cntMax);
                     }
                     else
-                        { _tcsncat(szVersion, _T("Windows Server 2008 "), cntMax); }
+                    {
+                        _tcsncat(szVersion, _T("Windows Server 2008 "), cntMax);
+                    }
                     break;
             }
             break;
@@ -260,7 +268,9 @@ void WheatyExceptionReport::PrintSystemInfo()
         _tprintf(_T("\r\n*** Operation System ***\r\n%s\r\n"), sString);
     }
     else
-        { _tprintf(_T("\r\n*** Operation System:\r\n<unknown>\r\n")); }
+    {
+        _tprintf(_T("\r\n*** Operation System:\r\n<unknown>\r\n"));
+    }
 }
 
 //===========================================================================
@@ -701,7 +711,9 @@ bool WheatyExceptionReport::FormatSymbolValue(
         pszCurrBuffer += sprintf(pszCurrBuffer, "Parameter ");
     }
     else if (pSym->Flags & IMAGEHLP_SYMBOL_INFO_LOCAL)
-        { pszCurrBuffer += sprintf(pszCurrBuffer, "Local "); }
+    {
+        pszCurrBuffer += sprintf(pszCurrBuffer, "Local ");
+    }
 
     // If it's a function, don't do anything.
     if (pSym->Tag == 5)                                     // SymTagFunction from CVCONST.H from the DIA SDK
@@ -879,7 +891,9 @@ char* WheatyExceptionReport::FormatOutputValue(char* pszCurrBuffer,
         pszCurrBuffer += sprintf(pszCurrBuffer, " = %X", *(PBYTE)pAddress);
     }
     else if (length == 2)
-        { pszCurrBuffer += sprintf(pszCurrBuffer, " = %X", *(PWORD)pAddress); }
+    {
+        pszCurrBuffer += sprintf(pszCurrBuffer, " = %X", *(PWORD)pAddress);
+    }
     else if (length == 4)
     {
         if (basicType == btFloat)
@@ -898,7 +912,9 @@ char* WheatyExceptionReport::FormatOutputValue(char* pszCurrBuffer,
                                          *(PDWORD)pAddress);
         }
         else
-            { pszCurrBuffer += sprintf(pszCurrBuffer, " = %X", *(PDWORD)pAddress); }
+        {
+            pszCurrBuffer += sprintf(pszCurrBuffer, " = %X", *(PDWORD)pAddress);
+        }
     }
     else if (length == 8)
     {

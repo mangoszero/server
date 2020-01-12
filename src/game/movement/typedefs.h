@@ -88,7 +88,9 @@ namespace Movement
                     init();
                 }
                 else
-                    { ++m_counter; }
+                {
+                    ++m_counter;
+                }
             }
 
             /**

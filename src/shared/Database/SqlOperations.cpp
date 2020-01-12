@@ -188,7 +188,9 @@ QueryResult* SqlQueryHolder::GetResult(size_t index)
         return m_queries[index].second;
     }
     else
-        { return NULL; }
+    {
+        return NULL;
+    }
 }
 
 void SqlQueryHolder::SetResult(size_t index, QueryResult* result)

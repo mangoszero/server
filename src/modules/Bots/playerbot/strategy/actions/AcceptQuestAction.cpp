@@ -14,7 +14,9 @@ bool AcceptQuestAction::Execute(Event event)
     Player* master = GetMaster();
 
     if (!master)
+    {
         return false;
+    }
 
     Player *bot = ai->GetBot();
     uint64 guid;
@@ -43,11 +45,15 @@ bool AcceptQuestAction::Execute(Event event)
         return QuestAction::Execute(event);
     }
     else
+    {
         return false;
+    }
 
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
     if (!qInfo)
+    {
         return false;
+    }
 
     return AcceptQuest(qInfo, guid);
 }
@@ -64,7 +70,9 @@ bool AcceptQuestShareAction::Execute(Event event)
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
 
     if (!qInfo || !bot->GetDividerGuid())
+    {
         return false;
+    }
 
     quest = qInfo->GetQuestId();
     if( !bot->CanTakeQuest( qInfo, false ) )

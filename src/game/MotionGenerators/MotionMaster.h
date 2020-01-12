@@ -97,7 +97,9 @@ class MotionMaster : private std::stack<MovementGenerator*>
                 DelayedClean(reset, all);
             }
             else
-                { DirectClean(reset, all); }
+            {
+                DirectClean(reset, all);
+            }
         }
         void MovementExpired(bool reset = true)
         {
@@ -106,7 +108,9 @@ class MotionMaster : private std::stack<MovementGenerator*>
                 DelayedExpire(reset);
             }
             else
-                { DirectExpire(reset); }
+            {
+                DirectExpire(reset);
+            }
         }
 
         void MoveIdle();

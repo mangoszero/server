@@ -22,7 +22,9 @@ static bool substrContainsInMap(string searchTerm, map<string, T> searchIn)
     {
         string term = i->first;
         if (term.size() > 1 && searchTerm.find(term) != string::npos)
+        {
             return true;
+        }
     }
 
     return false;
@@ -270,7 +272,9 @@ string ChatHelper::formatItem(ItemPrototype const * proto, int count)
 ChatMsg ChatHelper::parseChat(string& text)
 {
     if (chats.find(text) != chats.end())
+    {
         return chats[text];
+    }
 
     return CHAT_MSG_SYSTEM;
 }
@@ -352,7 +356,9 @@ string ChatHelper::formatQuestObjective(string name, int available, int required
 uint32 ChatHelper::parseItemQuality(string text)
 {
     if (itemQualities.find(text) == itemQualities.end())
+    {
         return MAX_ITEM_QUALITY;
+    }
 
     return itemQualities[text];
 }
@@ -386,7 +392,9 @@ bool ChatHelper::parseItemClass(string text, uint32 *itemClass, uint32 *itemSubC
 uint32 ChatHelper::parseSlot(string text)
 {
     if (slots.find(text) != slots.end())
+    {
         return slots[text];
+    }
 
     return EQUIPMENT_SLOT_END;
 }

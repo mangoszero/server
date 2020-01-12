@@ -158,7 +158,9 @@ void PoolGroup<T>::AddEntry(PoolObject& poolitem, uint32 maxentries)
         ExplicitlyChanced.push_back(poolitem);
     }
     else
-        { EqualChanced.push_back(poolitem); }
+    {
+        EqualChanced.push_back(poolitem);
+    }
 }
 
 // Method to check the chances are proper in this object pool
@@ -367,7 +369,9 @@ void PoolGroup<T>::SpawnObject(MapPersistentState& mapState, uint32 limit, uint3
             ++count;
         }
         else
-            { triggerFrom = 0; }
+        {
+            triggerFrom = 0;
+        }
     }
 
     // This will try to spawn the rest of pool, not guaranteed
@@ -1297,7 +1301,9 @@ void PoolManager::UpdatePool(MapPersistentState& mapState, uint16 pool_id, uint3
         SpawnPoolGroup<Pool>(mapState, motherpoolid, pool_id, false);
     }
     else
-        { SpawnPoolGroup<T>(mapState, pool_id, db_guid_or_pool_id, false); }
+    {
+        SpawnPoolGroup<T>(mapState, pool_id, db_guid_or_pool_id, false);
+    }
 }
 
 template void PoolManager::UpdatePool<Pool>(MapPersistentState& mapState, uint16 pool_id, uint32 db_guid_or_pool_id);

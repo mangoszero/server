@@ -20,7 +20,9 @@ bool QueryItemUsageAction::Execute(Event event)
         ObjectGuid guid;
         data >> guid;
         if (guid != bot->GetObjectGuid())
+        {
             return false;
+        }
 
         uint32 received, created, isShowChatMessage, notUsed, itemId,
             suffixFactor, itemRandomPropertyId, count, invCount;
@@ -39,7 +41,9 @@ bool QueryItemUsageAction::Execute(Event event)
 
         ItemPrototype const *item = sItemStorage.LookupEntry<ItemPrototype>(itemId);
         if (!item)
+        {
             return false;
+        }
 
         ostringstream out; out << chat->formatItem(item, count);
         if (created)
@@ -86,10 +90,14 @@ bool QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
 void QueryItemUsageAction::QueryItemPrice(ItemPrototype const *item)
 {
     if (!sRandomPlayerbotMgr.IsRandomBot(bot))
+    {
         return;
+    }
 
     if (item->Bonding == BIND_WHEN_PICKED_UP)
+    {
         return;
+    }
 
     list<Item*> items = InventoryAction::parseItems(item->Name1);
     if (!items.empty())
@@ -107,7 +115,9 @@ void QueryItemUsageAction::QueryItemPrice(ItemPrototype const *item)
     ostringstream out; out << item->ItemId;
     ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
     if (usage == ITEM_USAGE_NONE)
+    {
         return;
+    }
 
     int32 buyPrice = auctionbot.GetBuyPrice(item) * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
     if (buyPrice)

@@ -11,13 +11,17 @@ bool QuestAction::Execute(Event event)
 
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (!guid)
         guid = master->GetSelectionGuid();
 
     if (!guid)
+    {
         return false;
+    }
 
     return ProcessQuests(guid);
 }
@@ -26,11 +30,15 @@ bool QuestAction::ProcessQuests(ObjectGuid questGiver)
 {
     GameObject *gameObject = ai->GetGameObject(questGiver);
     if (gameObject && gameObject->GetGoType() == GAMEOBJECT_TYPE_QUESTGIVER)
+    {
         return ProcessQuests(gameObject);
+    }
 
     Creature* creature = ai->GetCreature(questGiver);
     if (creature)
+    {
         return ProcessQuests(creature);
+    }
 
     return false;
 }

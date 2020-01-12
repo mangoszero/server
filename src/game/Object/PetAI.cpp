@@ -151,7 +151,9 @@ void PetAI::UpdateAI(const uint32 diff)
         // UpdateAllies self set update timer
         { UpdateAllies(); }
     else
-        { m_updateAlliesTimer -= diff; }
+    {
+        m_updateAlliesTimer -= diff;
+    }
 
     if (inCombat && (!m_creature->getVictim() || (m_creature->IsPet() && ((Pet*)m_creature)->GetModeFlags() & PET_MODE_DISABLE_ACTIONS)))
     {
@@ -180,7 +182,9 @@ void PetAI::UpdateAI(const uint32 diff)
                     m_creature->InterruptNonMeleeSpells(false);
                 }
                 else
-                    { return; }
+                {
+                    return;
+                }
             }
             // not required to be stopped case
             else if (DoMeleeAttackIfReady())
@@ -378,7 +382,9 @@ void PetAI::UpdateAllies()
         return;
     }
     else if (owner->GetTypeId() == TYPEID_PLAYER)
-        { pGroup = ((Player*)owner)->GetGroup(); }
+    {
+        pGroup = ((Player*)owner)->GetGroup();
+    }
 
     // only pet and owner/not in group->ok
     if (m_AllySet.size() == 2 && !pGroup)
@@ -412,7 +418,9 @@ void PetAI::UpdateAllies()
         }
     }
     else                                                    // remove group
-        { m_AllySet.insert(owner->GetObjectGuid()); }
+    {
+        m_AllySet.insert(owner->GetObjectGuid());
+    }
 }
 
 void PetAI::AttackedBy(Unit* attacker)

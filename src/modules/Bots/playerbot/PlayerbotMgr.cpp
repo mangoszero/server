@@ -123,18 +123,24 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
 bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin, uint32 masterAccountId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
+    {
         return false;
+    }
 
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(guid);
     bool isRandomAccount = sPlayerbotAIConfig.IsInRandomAccountList(sObjectMgr.GetPlayerAccountIdByGUID(guid));
 
     if (isRandomAccount && !isRandomBot && !admin)
+    {
         return false;
+    }
 
     if (cmd == "add" || cmd == "login")
     {
         if (sObjectMgr.GetPlayer(guid))
+        {
             return false;
+        }
 
         AddPlayerBot(guid.GetRawValue(), masterAccountId);
         return true;
@@ -142,7 +148,9 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {
         if (!GetPlayerBot(guid.GetRawValue()))
+        {
             return false;
+        }
 
         LogoutPlayerBot(guid.GetRawValue());
         return true;
@@ -152,7 +160,9 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
     {
         Player* bot = GetPlayerBot(guid.GetRawValue());
         if (!bot)
+        {
             return false;
+        }
 
         Player* master = bot->GetPlayerbotAI()->GetMaster();
         if (master)
@@ -226,7 +236,9 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
 
     list<string> messages = mgr->HandlePlayerbotCommand(args, player);
     if (messages.empty())
+    {
         return true;
+    }
 
     for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
     {
@@ -377,7 +389,9 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
 {
     Player *master = GetMaster();
     if (!master)
+    {
         return;
+    }
 
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {

@@ -20,7 +20,9 @@ bool QueryQuestAction::Execute(Event event)
     PlayerbotChatHandler ch(bot);
     uint32 questId = ch.extractQuestId(text);
     if (!questId)
+    {
         return false;
+    }
 
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {

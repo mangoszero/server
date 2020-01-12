@@ -47,7 +47,9 @@ void AttackersValue::AddAttackersOf(Group* group, set<Unit*>& targets)
 void AttackersValue::AddAttackersOf(Player* player, set<Unit*>& targets)
 {
     if (player->IsBeingTeleported())
+    {
         return;
+    }
 
     list<Unit*> units;
     MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(player, sPlayerbotAIConfig.sightDistance);

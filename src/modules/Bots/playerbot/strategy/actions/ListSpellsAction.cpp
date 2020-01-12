@@ -9,7 +9,9 @@ bool ListSpellsAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     int loc = master->GetSession()->GetSessionDbcLocale();
 

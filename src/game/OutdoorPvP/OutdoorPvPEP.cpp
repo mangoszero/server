@@ -142,11 +142,17 @@ void OutdoorPvPEP::HandleGameObjectCreate(GameObject* go)
                 InitBanner(go, TOWER_ID_NORTHPASS);
             }
             else if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_CROWNGUARD][0], plaguelandsTowerLocations[TOWER_ID_CROWNGUARD][1], 50.0f))
-                { InitBanner(go, TOWER_ID_CROWNGUARD); }
+            {
+                InitBanner(go, TOWER_ID_CROWNGUARD);
+            }
             else if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_EASTWALL][0], plaguelandsTowerLocations[TOWER_ID_EASTWALL][1], 50.0f))
-                { InitBanner(go, TOWER_ID_EASTWALL); }
+            {
+                InitBanner(go, TOWER_ID_EASTWALL);
+            }
             else if (go->IsWithinDist2d(plaguelandsTowerLocations[TOWER_ID_PLAGUEWOOD][0], plaguelandsTowerLocations[TOWER_ID_PLAGUEWOOD][1], 50.0f))
-                { InitBanner(go, TOWER_ID_PLAGUEWOOD); }
+            {
+                InitBanner(go, TOWER_ID_PLAGUEWOOD);
+            }
             break;
         case GO_LORDAERON_SHRINE_ALLIANCE:
             m_lordaeronShrineAlliance = go->GetObjectGuid();

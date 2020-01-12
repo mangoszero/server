@@ -25,7 +25,9 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     SetNextCheckDelay(sPlayerbotAIConfig.randomBotUpdateInterval * 1000);
 
     if (!sPlayerbotAIConfig.randomBotAutologin || !sPlayerbotAIConfig.enabled)
+    {
         return;
+    }
 
     sLog.outBasic("Processing random bots...");
 
@@ -86,7 +88,9 @@ uint32 RandomPlayerbotMgr::AddRandomBot(bool alliance)
 {
     vector<uint32> bots = GetFreeBots(alliance);
     if (bots.size() == 0)
+    {
         return 0;
+    }
 
     int index = urand(0, bots.size() - 1);
     uint32 bot = bots[index];
@@ -135,11 +139,15 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
     Player* player = GetPlayerBot(bot);
     if (!player)
+    {
         return false;
+    }
 
     PlayerbotAI* ai = player->GetPlayerbotAI();
     if (!ai)
+    {
         return false;
+    }
 
     if (player->GetGroup())
     {
@@ -204,7 +212,9 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs)
 {
     if (bot->IsBeingTeleported())
+    {
         return;
+    }
 
     if (locs.empty())
     {
@@ -344,7 +354,9 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 
         index = urand(0, locs.size() - 1);
         if (index >= locs.size())
+        {
             return;
+        }
         GameTele const* tele = locs[index];
         uint32 level = GetZoneLevel(tele->mapId, tele->position_x, tele->position_y, tele->position_z);
         if (level > maxLevel + 5)
@@ -696,7 +708,9 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
 Player* RandomPlayerbotMgr::GetRandomPlayer()
 {
     if (players.empty())
+    {
         return NULL;
+    }
 
     uint32 index = urand(0, players.size() - 1);
     return players[index];

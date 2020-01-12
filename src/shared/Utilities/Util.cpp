@@ -181,7 +181,9 @@ void stripLineInvisibleChars(std::string& str)
                 str[wpos++] = str[pos];
             }
             else
-                { ++wpos; }
+            {
+                ++wpos;
+            }
             space = false;
         }
     }
@@ -535,7 +537,9 @@ void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result)
                 encodedNibble = '0' + nibble;
             }
             else
-                { encodedNibble = 'A' + nibble - 0x0A; }
+            {
+                encodedNibble = 'A' + nibble - 0x0A;
+            }
             ss << encodedNibble;
         }
     }

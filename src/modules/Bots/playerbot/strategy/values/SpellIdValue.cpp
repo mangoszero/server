@@ -16,7 +16,9 @@ uint32 SpellIdValue::Calculate()
     wstring wnamepart;
 
     if (!Utf8toWStr(namepart, wnamepart))
+    {
         return 0;
+    }
 
     wstrToLower(wnamepart);
     char firstSymbol = tolower(qualifier[0]);

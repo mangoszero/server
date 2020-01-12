@@ -138,7 +138,9 @@ void DynamicObject::Update(uint32 /*update_diff*/, uint32 p_time)
         m_aliveDuration -= p_time;
     }
     else
-        { deleteThis = true; }
+    {
+        deleteThis = true;
+    }
 
     // have radius and work as persistent effect
     if (m_radius)
@@ -196,7 +198,9 @@ void DynamicObject::Delay(int32 delaytime)
             ++iter;
         }
         else
-            { m_affected.erase(iter++); }
+        {
+            m_affected.erase(iter++);
+        }
     }
 }
 
@@ -224,7 +228,9 @@ bool DynamicObject::IsHostileTo(Unit const* unit) const
         return owner->IsHostileTo(unit);
     }
     else
-        { return false; }
+    {
+        return false;
+    }
 }
 
 bool DynamicObject::IsFriendlyTo(Unit const* unit) const
@@ -234,5 +240,7 @@ bool DynamicObject::IsFriendlyTo(Unit const* unit) const
         return owner->IsFriendlyTo(unit);
     }
     else
-        { return true; }
+    {
+        return true;
+    }
 }

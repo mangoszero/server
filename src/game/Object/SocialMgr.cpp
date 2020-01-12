@@ -144,7 +144,9 @@ void PlayerSocial::SendFriendList()
 {
     Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, m_playerLowGuid));
     if (!plr)
+    {
         return;
+    }
 
     uint32 size = GetNumberOfSocialsWithFlag(SOCIAL_FLAG_FRIEND);
 
@@ -312,7 +314,9 @@ void SocialMgr::SendFriendStatus(Player* player, FriendsResult result, ObjectGui
         BroadcastToFriendListers(player, &data);
     }
     else
-        { player->GetSession()->SendPacket(&data); }
+    {
+        player->GetSession()->SendPacket(&data);
+    }
 }
 
 void SocialMgr::BroadcastToFriendListers(Player* player, WorldPacket* packet)
@@ -384,7 +388,9 @@ PlayerSocial* SocialMgr::LoadFromDB(QueryResult* result, ObjectGuid guid)
             ++ignoreCounter;
         }
         else
-            { ++friendCounter; }
+        {
+            ++friendCounter;
+        }
     }
     while (result->NextRow());
     delete result;

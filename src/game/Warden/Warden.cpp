@@ -295,7 +295,9 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
 void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
 {
     if (!_warden || recvData.empty())
+    {
         return;
+    }
 
     _warden->DecryptData(const_cast<uint8*>(recvData.contents()), recvData.size());
     uint8 opcode;
@@ -343,10 +345,14 @@ void Warden::HandleData(ByteBuffer& /*buff*/)
 void Warden::LogPositiveToDB(WardenCheck* check)
 {
     if (!check || !_session)
+    {
         return;
+    }
 
     if (uint32(check->Action) < sWorld.getConfig(CONFIG_UINT32_WARDEN_DB_LOGLEVEL))
+    {
         return;
+    }
 
     static SqlStatementID insWardenPositive;
 

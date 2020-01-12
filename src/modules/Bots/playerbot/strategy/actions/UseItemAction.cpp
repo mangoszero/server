@@ -24,14 +24,20 @@ bool UseItemAction::Execute(Event event)
             return UseItemOnItem(item, itemTarget);
         }
         else if (!items.empty())
+        {
             return UseItemAuto(*items.begin());
+        }
     }
     else
     {
         if (items.empty())
+        {
             return UseGameObject(*gos.begin());
+        }
         else
+        {
             return UseItemOnGameObject(*items.begin(), *gos.begin());
+        }
     }
 
     ai->TellMaster("No items (or game objects) available");
@@ -42,7 +48,9 @@ bool UseItemAction::UseGameObject(ObjectGuid guid)
 {
     GameObject* go = ai->GetGameObject(guid);
     if (!go || !go->isSpawned())
+    {
         return false;
+    }
 
     go->Use(bot);
     ostringstream out; out << "Using " << chat->formatGameobject(go);
@@ -68,10 +76,14 @@ bool UseItemAction::UseItemOnItem(Item* item, Item* itemTarget)
 bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 {
     if (bot->CanUseItem(item) != EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     if (bot->IsNonMeleeSpellCasted(true))
+    {
         return false;
+    }
 
     if (bot->IsInCombat())
     {
@@ -79,7 +91,9 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         {
             SpellEntry const *spellInfo = sSpellStore.LookupEntry(item->GetProto()->Spells[i].SpellId);
             if (spellInfo && IsNonCombatSpell(spellInfo))
+            {
                 return false;
+            }
         }
     }
 
@@ -156,7 +170,9 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     bot->clearUnitState( UNIT_STAT_FOLLOW );
 
     if (bot->isMoving())
+    {
         return false;
+    }
 
     for (int i=0; i<MAX_ITEM_PROTO_SPELLS; i++)
     {
@@ -180,7 +196,9 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
             if (bot->GetTrader())
             {
                 if (selfOnly)
+                {
                     return false;
+                }
 
                 *packet << TARGET_FLAG_TRADE_ITEM << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
                 targetSelected = true;
@@ -206,12 +224,16 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     }
 
     if (!targetSelected)
+    {
         return false;
+    }
 
     if (item->GetProto()->Class == ITEM_CLASS_CONSUMABLE && item->GetProto()->SubClass == ITEM_SUBCLASS_FOOD)
     {
         if (bot->IsInCombat())
+        {
             return false;
+        }
 
         ai->InterruptSpell();
         ai->SetNextCheckDelay(30000);

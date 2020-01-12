@@ -15,18 +15,24 @@ PlayerbotSecurity::PlayerbotSecurity(Player* const bot) : bot(bot)
 PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* reason, bool ignoreGroup)
 {
     if (from->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
+    {
         return PLAYERBOT_SECURITY_ALLOW_ALL;
+    }
 
     if (from->GetPlayerbotAI())
     {
         if (reason) *reason = PLAYERBOT_DENY_IS_BOT;
-        return PLAYERBOT_SECURITY_DENY_ALL;
+        {
+            return PLAYERBOT_SECURITY_DENY_ALL;
+        }
     }
 
     if (bot->GetPlayerbotAI()->IsOpposing(from))
     {
         if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
-        return PLAYERBOT_SECURITY_DENY_ALL;
+        {
+            return PLAYERBOT_SECURITY_DENY_ALL;
+        }
     }
 
     if (sPlayerbotAIConfig.IsInRandomAccountList(account))
@@ -34,7 +40,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (bot->GetPlayerbotAI()->IsOpposing(from))
         {
             if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
-            return PLAYERBOT_SECURITY_DENY_ALL;
+            {
+                return PLAYERBOT_SECURITY_DENY_ALL;
+            }
         }
 
         Group* group = from->GetGroup();
@@ -44,14 +52,18 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
             {
                 Player* player = gref->getSource();
                 if (player == bot && !ignoreGroup)
+                {
                     return PLAYERBOT_SECURITY_ALLOW_ALL;
+                }
             }
         }
 
         if ((int)bot->getLevel() - (int)from->getLevel() > 5)
         {
             if (reason) *reason = PLAYERBOT_DENY_LOW_LEVEL;
-            return PLAYERBOT_SECURITY_TALK;
+            {
+                return PLAYERBOT_SECURITY_TALK;
+            }
         }
 
         if (bot->GetMapId() != from->GetMapId() || bot->GetDistance(from) > sPlayerbotAIConfig.whisperDistance)
@@ -59,38 +71,50 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
             if (!bot->GetGuildId() || bot->GetGuildId() != from->GetGuildId())
             {
                 if (reason) *reason = PLAYERBOT_DENY_FAR;
-                return PLAYERBOT_SECURITY_TALK;
+                {
+                    return PLAYERBOT_SECURITY_TALK;
+                }
             }
         }
 
         if (bot->IsDead())
         {
             if (reason) *reason = PLAYERBOT_DENY_DEAD;
-            return PLAYERBOT_SECURITY_TALK;
+            {
+                return PLAYERBOT_SECURITY_TALK;
+            }
         }
 
         group = bot->GetGroup();
         if (!group)
         {
             if (reason) *reason = PLAYERBOT_DENY_INVITE;
-            return PLAYERBOT_SECURITY_INVITE;
+            {
+                return PLAYERBOT_SECURITY_INVITE;
+            }
         }
 
         for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
         {
             Player* player = gref->getSource();
             if (player == from)
+            {
                 return PLAYERBOT_SECURITY_ALLOW_ALL;
+            }
         }
 
         if (group->IsFull())
         {
             if (reason) *reason = PLAYERBOT_DENY_FULL_GROUP;
-            return PLAYERBOT_SECURITY_TALK;
+            {
+                return PLAYERBOT_SECURITY_TALK;
+            }
         }
 
         if (reason) *reason = PLAYERBOT_DENY_INVITE;
-        return PLAYERBOT_SECURITY_INVITE;
+        {
+            return PLAYERBOT_SECURITY_INVITE;
+        }
     }
 
     return PLAYERBOT_SECURITY_ALLOW_ALL;
@@ -101,14 +125,20 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     DenyReason reason = PLAYERBOT_DENY_NONE;
     PlayerbotSecurityLevel realLevel = LevelFor(from, &reason, ignoreGroup);
     if (realLevel >= level)
+    {
         return true;
+    }
 
     if (silent || from->GetPlayerbotAI())
+    {
         return false;
+    }
 
     Player* master = bot->GetPlayerbotAI()->GetMaster();
     if (master && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->IsOpposing(master) && master->GetSession()->GetSecurity() < SEC_GAMEMASTER)
+    {
         return false;
+    }
 
     ostringstream out;
     switch (realLevel)

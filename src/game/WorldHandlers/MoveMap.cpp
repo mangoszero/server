@@ -71,7 +71,9 @@ namespace MMAP
     bool MMapFactory::IsPathfindingEnabled(uint32 mapId, const Unit* unit = NULL)
     {
         if (!sWorld.getConfig(CONFIG_BOOL_MMAP_ENABLED))
+        {
             return false;
+        }
 
         if (unit)
         {

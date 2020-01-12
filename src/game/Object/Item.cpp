@@ -80,7 +80,9 @@ void AddItemsSetItem(Player* player, Item* item)
             player->ItemSetEff[x] = eff;
         }
         else
-            { player->ItemSetEff.push_back(eff); }
+        {
+            player->ItemSetEff.push_back(eff);
+        }
     }
 
     ++eff->item_count;
@@ -648,7 +650,9 @@ uint32 Item::GetSkill()
                 return 0;
             }
             else
-                { return item_weapon_skills[proto->SubClass]; }
+            {
+                return item_weapon_skills[proto->SubClass];
+            }
 
         case ITEM_CLASS_ARMOR:
             if (proto->SubClass >= MAX_ITEM_SUBCLASS_ARMOR)
@@ -656,7 +660,9 @@ uint32 Item::GetSkill()
                 return 0;
             }
             else
-                { return item_armor_skills[proto->SubClass]; }
+            {
+                return item_armor_skills[proto->SubClass];
+            }
 
         default:
             return 0;
@@ -1084,7 +1090,9 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 r
             return pItem;
         }
         else
-            { delete pItem; }
+        {
+            delete pItem;
+        }
     }
     return NULL;
 }
@@ -1229,7 +1237,9 @@ void Item::SetLootState(ItemLootUpdateState state)
             }
             // temporary must stay until remove (ignore any changes)
             else if (m_lootState != ITEM_LOOT_TEMPORARY)
-                { m_lootState = ITEM_LOOT_UNCHANGED; }
+            {
+                m_lootState = ITEM_LOOT_UNCHANGED;
+            }
             break;
         case ITEM_LOOT_REMOVED:
             // if loot not saved then it existence in past can be just ignored

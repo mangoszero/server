@@ -10,7 +10,9 @@ bool SetHomeAction::Execute(Event event)
 {
     Player* master = ai->GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ObjectGuid selection = master->GetSelectionGuid();
     if (selection)

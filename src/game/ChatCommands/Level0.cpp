@@ -116,10 +116,14 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
             PSendSysMessage(LANG_USING_SCRIPT_LIB, ver);
         }
         else
-            { SendSysMessage(LANG_USING_SCRIPT_LIB_UNKNOWN); }
+        {
+            SendSysMessage(LANG_USING_SCRIPT_LIB_UNKNOWN);
+        }
     }
     else
-        { SendSysMessage(LANG_USING_SCRIPT_LIB_NONE); }
+    {
+        SendSysMessage(LANG_USING_SCRIPT_LIB_NONE);
+    }
 
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
@@ -194,7 +198,9 @@ bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
             { PSendSysMessage("%s - %s", iter->first.c_str(), iter->second ? accepts : not_accept); }
     }
     else
-        { SendSysMessage(LANG_GMS_NOT_LOGGED); }
+    {
+        SendSysMessage(LANG_GMS_NOT_LOGGED);
+    }
 
     return true;
 }

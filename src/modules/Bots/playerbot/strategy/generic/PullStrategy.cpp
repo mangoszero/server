@@ -23,7 +23,9 @@ private:
 float MagePullMultiplier::GetValue(Action* action)
 {
     if (!action)
+    {
         return 1.0f;
+    }
 
     string name = action->getName();
     if (this->action == name ||

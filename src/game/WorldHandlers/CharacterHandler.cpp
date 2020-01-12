@@ -172,7 +172,9 @@ class CharacterHandler
         void HandlePlayerBotLoginCallback(QueryResult * dummy, SqlQueryHolder * holder)
         {
             if (!holder)
+            {
                 return;
+            }
 
             PlayerbotLoginQueryHolder* lqh = (PlayerbotLoginQueryHolder*)holder;
             if (sObjectMgr.GetPlayer(lqh->GetGuid()))
@@ -193,7 +195,9 @@ class CharacterHandler
             botSession->HandlePlayerLogin(lqh); // will delete lqh
             Player* bot = botSession->GetPlayer();
             if (!bot)
+            {
                 return;
+            }
 
             bool allowed = false;
             if (botAccountId == masterAccount)
@@ -220,11 +224,15 @@ void PlayerbotHolder::AddPlayerBot(uint64 playerGuid, uint32 masterAccountId)
 {
     // has bot already been added?
     if (sObjectMgr.GetPlayer(ObjectGuid(playerGuid)))
+    {
         return;
+    }
 
     uint32 accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(playerGuid));
     if (accountId == 0)
+    {
         return;
+    }
 
     PlayerbotLoginQueryHolder *holder = new PlayerbotLoginQueryHolder(this, masterAccountId, accountId, ObjectGuid(playerGuid));
     if (!holder->Initialize())

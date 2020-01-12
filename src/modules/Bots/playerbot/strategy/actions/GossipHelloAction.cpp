@@ -23,7 +23,9 @@ bool GossipHelloAction::Execute(Event event)
     }
 
     if (!guid)
+    {
         return false;
+    }
 
     Creature *pCreature = bot->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
     if (!pCreature)
@@ -34,7 +36,9 @@ bool GossipHelloAction::Execute(Event event)
 
     GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
     if (pMenuItemBounds.first == pMenuItemBounds.second)
+    {
         return false;
+    }
 
     WorldPacket p1;
     p1 << guid;

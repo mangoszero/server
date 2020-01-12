@@ -237,7 +237,9 @@ namespace Movement
             points[count] = controls[cyclic_point];
         }
         else
-            { points[count] = controls[count - 1]; }
+        {
+            points[count] = controls[count - 1];
+        }
 
         index_lo = 0;
         index_hi = cyclic ? count : (count - 1);
@@ -263,7 +265,9 @@ namespace Movement
                 points[0] = controls[count - 1];
             }
             else
-                { points[0] = controls[0].lerp(controls[1], -1); }
+            {
+                points[0] = controls[0].lerp(controls[1], -1);
+            }
 
             points[high_index + 1] = controls[cyclic_point];
             points[high_index + 2] = controls[cyclic_point + 1];

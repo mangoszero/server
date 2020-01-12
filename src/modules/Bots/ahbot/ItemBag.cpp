@@ -103,16 +103,24 @@ bool ItemBag::Add(ItemPrototype const* proto)
         return false;
 
     if (proto->RequiredLevel > sAhBotConfig.maxRequiredLevel || proto->ItemLevel > sAhBotConfig.maxItemLevel)
+    {
         return false;
+    }
 
     if (proto->Duration & 0x80000000)
+    {
         return false;
+    }
 
     if (sAhBotConfig.ignoreItemIds.find(proto->ItemId) != sAhBotConfig.ignoreItemIds.end())
+    {
         return false;
+    }
 
     if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated"))
+    {
         return false;
+    }
 
     for (int i = 0; i < CategoryList::instance.size(); i++)
     {
@@ -156,7 +164,9 @@ void InAuctionItemsBag::Load()
 {
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionId);
     if(!ahEntry)
+    {
         return;
+    }
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
     AuctionHouseObject::AuctionEntryMap const& auctionEntryMap = auctionHouse->GetAuctions();
