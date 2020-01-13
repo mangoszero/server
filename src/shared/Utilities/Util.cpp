@@ -295,7 +295,9 @@ bool IsIPAddrInNetwork(ACE_INET_Addr const& net, ACE_INET_Addr const& addr, ACE_
 {
     uint32 mask = subnetMask.get_ip_address();
     if ((net.get_ip_address() & mask) == (addr.get_ip_address() & mask))
+    {
         return true;
+    }
     return false;
 }
 
@@ -574,7 +576,9 @@ void HexStrToByteArray(std::string const& str, uint8* out, bool reverse /*= fals
 {
     // string must have even number of characters
     if (str.length() & 1)
+    {
         return;
+    }
 
     int32 init = 0;
     int32 end = str.length();

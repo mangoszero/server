@@ -48,7 +48,7 @@ DatabaseMysql::DatabaseMysql()
     // before first connection
     if (db_count++ == 0)
     {
-        //Mysql Library Init
+        // Mysql Library Init
         if(mysql_library_init(-1, NULL, NULL))
         {
             sLog.outError("Could not initialize MySQL client library\n");
@@ -69,9 +69,9 @@ DatabaseMysql::~DatabaseMysql()
 
     // Free Mysql library pointers for last ~DB
     if (--db_count == 0)
-        {
-            mysql_library_end();
-        }
+    {
+        mysql_library_end();
+    }
 }
 
 SqlConnection* DatabaseMysql::CreateConnection()

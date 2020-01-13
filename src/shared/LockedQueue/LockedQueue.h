@@ -44,20 +44,41 @@ namespace ACE_Based
             StorageType _queue; /**< Storage backing the queue. */
 
         public:
-            LockedQueue(): _lock(), _queue()
+
+            /**
+             * @brief Create a LockedQueue.
+             *
+             */
+            LockedQueue()
+                : _lock(), _queue()
             {
             }
 
+            /**
+             * @brief Destroy a LockedQueue.
+             *
+             */
             virtual ~LockedQueue()
             {
             }
 
+            /**
+             * @brief Adds an item to the queue.
+             *
+             * @param item
+             */
             void add(const T& item)
             {
                 ACE_GUARD (LockType, g, this->_lock);
                 _queue.push_back(item);
             }
 
+            /**
+             * @brief Gets the next result in the queue, if any.
+             *
+             * @param result
+             * @return bool
+             */
             bool next(T& result)
             {
                 ACE_GUARD_RETURN(LockType, g, this->_lock, false);
@@ -74,6 +95,13 @@ namespace ACE_Based
             }
 
             template<class Checker>
+            /**
+             * @brief
+             *
+             * @param result
+             * @param check
+             * @return bool
+             */
             bool next(T& result, Checker& check)
             {
                 ACE_GUARD_RETURN(LockType, g, this->_lock, false);
@@ -93,6 +121,12 @@ namespace ACE_Based
                 return true;
             }
 
+
+            /**
+             * @brief Checks if we're empty or not with locks held
+             *
+             * @return bool
+             */
             bool empty()
             {
                 ACE_GUARD_RETURN (LockType, g, this->_lock, false);
