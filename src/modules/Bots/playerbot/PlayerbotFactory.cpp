@@ -229,7 +229,9 @@ void PlayerbotFactory::ClearSpells()
 void PlayerbotFactory::InitSpells()
 {
     for (int i = 0; i < 15; i++)
+    {
         InitAvailableSpells();
+    }
 }
 
 void PlayerbotFactory::InitTalents()
@@ -1540,7 +1542,9 @@ void PlayerbotFactory::InitInventoryTrade()
     }
 
     for (uint32 i = 0; i < stacks; i++)
+    {
         StoreItem(itemId, count);
+    }
 }
 
 void PlayerbotFactory::InitInventoryEquip()

@@ -1011,9 +1011,6 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading Script Names...");
     sScriptMgr.LoadScriptNames();
 
-    //sLog.outString("Loading WorldTemplate...");
-    //sObjectMgr.LoadWorldTemplate();
-
     sLog.outString("Loading InstanceTemplate...");
     sObjectMgr.LoadInstanceTemplate();
 
@@ -1564,7 +1561,9 @@ void World::showFooter()
 
     std::string sModules;
     for (std::set<std::string>::const_iterator it = modules_.begin(); it != modules_.end(); ++it)
+    {
         sModules = sModules + " \n" + *it;
+    }
 
     sLog.outString("\n"
         "_______________________________________________________\n"

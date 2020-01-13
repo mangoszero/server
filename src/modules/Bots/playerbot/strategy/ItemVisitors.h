@@ -259,7 +259,9 @@ namespace ai
         ItemCountByQuality() : IterateItemsVisitor()
         {
             for (uint32 i = 0; i < MAX_ITEM_QUALITY; ++i)
+            {
                 count[i] = 0;
+            }
         }
 
         virtual bool Visit(Item* item)

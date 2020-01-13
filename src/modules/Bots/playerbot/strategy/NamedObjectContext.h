@@ -56,7 +56,9 @@ namespace ai
         {
             set<string> keys;
             for (typename map<string, ActionCreator>::iterator it = creators.begin(); it != creators.end(); it++)
+            {
                 keys.insert(it->first);
+            }
             return keys;
         }
     };
@@ -119,7 +121,9 @@ namespace ai
         {
             set<string> keys;
             for (typename map<string, T*>::iterator it = created.begin(); it != created.end(); it++)
+            {
                 keys.insert(it->first);
+            }
             return keys;
         }
 
@@ -202,7 +206,9 @@ namespace ai
                 set<string> supported = (*i)->supports();
 
                 for (set<string>::iterator j = supported.begin(); j != supported.end(); j++)
+                {
                     result.insert(*j);
+                }
             }
             return result;
         }
@@ -216,7 +222,9 @@ namespace ai
                 set<string> createdKeys = (*i)->GetCreated();
 
                 for (set<string>::iterator j = createdKeys.begin(); j != createdKeys.end(); j++)
+                {
                     result.insert(*j);
+                }
             }
             return result;
         }
@@ -231,7 +239,9 @@ namespace ai
         virtual ~NamedObjectFactoryList()
         {
             for (typename list<NamedObjectFactory<T>*>::iterator i = factories.begin(); i != factories.end(); i++)
+            {
                 delete *i;
+            }
         }
 
         void Add(NamedObjectFactory<T>* context)

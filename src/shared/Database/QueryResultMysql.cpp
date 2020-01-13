@@ -34,7 +34,9 @@ QueryResultMysql::QueryResultMysql(MYSQL_RES* result, MYSQL_FIELD* fields, uint6
     MANGOS_ASSERT(mCurrentRow);
 
     for (uint32 i = 0; i < mFieldCount; ++i)
+    {
         mCurrentRow[i].SetType(fields[i].type);
+    }
 }
 
 QueryResultMysql::~QueryResultMysql()

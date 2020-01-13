@@ -898,9 +898,8 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
             m_MeleeEnabled = action.auto_attack.state != 0;
             break;
         case ACTION_T_COMBAT_MOVEMENT:      //21
-        {
             // ignore no affect case
-            if ((GetCombatMovementFlags() & CM_SCRIPT) == (action.combat_movement.state != 0))
+            if ((GetCombatMovementFlags() & COMBAT_MOVEMENT_SCRIPT) == (action.combat_movement.state != 0))
             {
                 return;
             }
@@ -919,7 +918,6 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 }
             }
             break;
-        }
         case ACTION_T_SET_PHASE:            //22
             m_Phase = action.set_phase.phase;
             DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: ACTION_T_SET_PHASE - script %u for %s, phase is now %u", EventId, m_creature->GetGuidStr().c_str(), m_Phase);

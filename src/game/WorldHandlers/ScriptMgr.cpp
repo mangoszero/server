@@ -62,7 +62,9 @@ ScriptMgr::ScriptMgr() : m_scheduledScripts(0), m_lock(0)
     ScriptChainMap emptyMap;
 
     for (int t = DBS_START; t < DBS_END; ++t)
+    {
         m_dbScripts[t] = emptyMap;
+    }
 }
 
 ScriptMgr::~ScriptMgr()
@@ -791,7 +793,6 @@ void ScriptMgr::LoadScripts(DBScriptType type)
 
 void ScriptMgr::LoadDbScripts(DBScriptType t)
 {
-
     std::set<uint32> eventIds;                              // Store possible event ids
 
     if (t == DBS_ON_EVENT)
@@ -2229,7 +2230,9 @@ void ScriptMgr::LoadScriptBinding()
 {
 #ifdef ENABLE_SD3
     for (int i = 0; i < SCRIPTED_MAX_TYPE; ++i)
+    {
         m_scriptBind[i].clear();
+    }
 
     QueryResult* result = WorldDatabase.PQuery("SELECT type, bind, ScriptName, data FROM script_binding");
     uint32 count = 0;
@@ -2654,6 +2657,7 @@ bool ScriptMgr::OnQuestRewarded(Player* pPlayer, GameObject* pGameObject, Quest 
 
 uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, Creature* pCreature)
 {
+    // Used by Eluna
 #ifdef ENABLE_ELUNA
     sEluna->GetDialogStatus(pPlayer, pCreature);
 #endif /* ENABLE_ELUNA */
@@ -2667,6 +2671,7 @@ uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, Creature* pCreature)
 
 uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, GameObject* pGameObject)
 {
+    // Used by Eluna
 #ifdef ENABLE_ELUNA
     sEluna->GetDialogStatus(pPlayer, pGameObject);
 #endif /* ENABLE_ELUNA */

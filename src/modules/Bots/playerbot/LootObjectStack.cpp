@@ -200,7 +200,9 @@ bool LootObjectStack::Add(ObjectGuid guid)
 
     vector<LootObject> ordered = OrderByDistance();
     for (size_t i = MAX_LOOT_OBJECT_COUNT; i < ordered.size(); i++)
+    {
         Remove(ordered[i].guid);
+    }
 
     return true;
 }
@@ -249,7 +251,9 @@ vector<LootObject> LootObjectStack::OrderByDistance(float maxDistance)
 
     vector<LootObject> result;
     for (map<float, LootObject>::iterator i = sortedMap.begin(); i != sortedMap.end(); i++)
+    {
         result.push_back(i->second);
+    }
     return result;
 }
 

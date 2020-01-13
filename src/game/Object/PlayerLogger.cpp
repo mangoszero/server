@@ -31,7 +31,9 @@
 PlayerLogger::PlayerLogger(ObjectGuid const & guid) : logActiveMask(0), playerGuid(guid.GetCounter())
 {
     for (uint8 i = 0; i < MAX_PLAYER_LOG_ENTITIES; ++i)
+    {
         data[i] = NULL;
+    }
 }
 
 PlayerLogger::~PlayerLogger()

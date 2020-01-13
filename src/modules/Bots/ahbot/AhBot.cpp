@@ -53,7 +53,9 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
         delete result;
 
     for (int i = 0; i < PLAYER_SLOTS_COUNT; ++i)
+    {
         m_items[i] = NULL;
+    }
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
         m_deathState = DEAD;
@@ -616,7 +618,9 @@ void AhBot::HandleCommand(string command)
     if (command == "expire")
     {
         for (int i = 0; i < MAX_AUCTIONS; i++)
+        {
             Expire(i);
+        }
 
         return;
     }
@@ -624,7 +628,9 @@ void AhBot::HandleCommand(string command)
     if (command == "stats")
     {
         for (int i = 0; i < MAX_AUCTIONS; i++)
+        {
             PrintStats(i);
+        }
 
         return;
     }

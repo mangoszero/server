@@ -833,7 +833,9 @@ void Guild::Roster(WorldSession* session /*= NULL*/)
 
     data << uint32(m_Ranks.size());
     for (RankList::const_iterator ritr = m_Ranks.begin(); ritr != m_Ranks.end(); ++ritr)
-        { data << uint32(ritr->Rights); }
+    {
+        data << uint32(ritr->Rights);
+    }
 
     for (MemberList::const_iterator itr = members.begin(); itr != members.end(); ++itr)
     {

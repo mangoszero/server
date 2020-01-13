@@ -102,7 +102,9 @@ class UpdateMask
         {
             MANGOS_ASSERT(right.GetCount() <= GetCount());
             for (uint32 i = 0; i < _fieldCount; ++i)
+            {
                 _bits[i] &= right._bits[i];
+            }
 
             return *this;
         }
@@ -111,7 +113,9 @@ class UpdateMask
         {
             MANGOS_ASSERT(right.GetCount() <= GetCount());
             for (uint32 i = 0; i < _fieldCount; ++i)
+            {
                 _bits[i] |= right._bits[i];
+            }
 
             return *this;
         }

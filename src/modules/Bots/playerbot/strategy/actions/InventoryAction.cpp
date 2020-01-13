@@ -276,7 +276,9 @@ list<Item*> InventoryAction::parseItems(string text)
 
     list<Item*> result;
     for (set<Item*>::iterator i = found.begin(); i != found.end(); ++i)
+    {
         result.push_back(*i);
+    }
 
     result.sort(compare_items_by_level);
 

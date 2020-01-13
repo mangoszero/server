@@ -318,7 +318,9 @@ void Engine::addStrategy(string name)
     {
         set<string> siblings = aiObjectContext->GetSiblingStrategy(name);
         for (set<string>::iterator i = siblings.begin(); i != siblings.end(); i++)
+        {
             removeStrategy(*i);
+        }
 
         LogAction("S:+%s", strategy->getName().c_str());
         strategies[strategy->getName()] = strategy;

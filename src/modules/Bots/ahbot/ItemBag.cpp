@@ -44,13 +44,17 @@ CategoryList::CategoryList()
 void CategoryList::Add(Category* category)
 {
     for (uint32 quality = ITEM_QUALITY_NORMAL; quality <= ITEM_QUALITY_EPIC; ++quality)
+    {
         categories.push_back(new QualityCategoryWrapper(category, quality));
+    }
 }
 
 CategoryList::~CategoryList()
 {
     for (vector<Category*>::const_iterator i = categories.begin(); i != categories.end(); ++i)
+    {
         delete *i;
+    }
 }
 
 ItemBag::ItemBag()

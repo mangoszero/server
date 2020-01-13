@@ -31,7 +31,9 @@ public:
     virtual bool Visit(Item* item)
     {
         if (item->GetProto()->Quality != ITEM_QUALITY_POOR)
+        {
             return true;
+        }
 
         return SellItemsVisitor::Visit(item);
     }
@@ -42,7 +44,9 @@ bool SellAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     string text = event.getParam();
 
@@ -70,7 +74,9 @@ void SellAction::Sell(FindItemVisitor* visitor)
     IterateItems(visitor);
     list<Item*> items = visitor->GetResult();
     for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
+    {
         Sell(*i);
+    }
 }
 
 void SellAction::Sell(Item* item)

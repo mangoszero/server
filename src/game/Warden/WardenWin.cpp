@@ -308,7 +308,9 @@ void WardenWin::RequestData()
     std::stringstream stream;
     stream << "Sent check id's: ";
     for (std::list<uint16>::iterator itr = _currentChecks.begin(); itr != _currentChecks.end(); ++itr)
+    {
         stream << *itr << " ";
+    }
 
     sLog.outWarden("%s", stream.str().c_str());
 

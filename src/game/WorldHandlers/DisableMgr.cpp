@@ -51,7 +51,9 @@ void LoadDisables()
 {
     // reload case
     for (DisableMap::iterator itr = m_DisableMap.begin(); itr != m_DisableMap.end(); ++itr)
+    {
         itr->second.clear();
+    }
 
     m_DisableMap.clear();
 

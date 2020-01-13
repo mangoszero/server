@@ -37,10 +37,14 @@ WardenCheckMgr::WardenCheckMgr() : m_lock(0), CheckStore(), CheckResultStore() {
 WardenCheckMgr::~WardenCheckMgr()
 {
     for (CheckMap::iterator it = CheckStore.begin(); it != CheckStore.end(); ++it)
+    {
         delete it->second;
+    }
 
     for (CheckResultMap::iterator it = CheckResultStore.begin(); it != CheckResultStore.end(); ++it)
+    {
         delete it->second;
+    }
 
     CheckStore.clear();
     CheckResultStore.clear();

@@ -742,7 +742,6 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     chn->Say(_player, msg.c_str(), lang);
                 }
             }
-
         } break;
 
         case CHAT_MSG_AFK:

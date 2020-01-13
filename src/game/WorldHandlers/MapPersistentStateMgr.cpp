@@ -956,7 +956,9 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
                 unbindList.push_back((DungeonPersistentState*)itr->second);
 
         for (std::vector<DungeonPersistentState*>::const_iterator it = unbindList.begin(); it != unbindList.end(); ++it)
-                (*it)->UnbindThisState();
+        {
+            (*it)->UnbindThisState();
+        }
 
         // reset maps, teleport player automaticaly to their homebinds and unload maps
         MapPersistantStateResetWorker worker;

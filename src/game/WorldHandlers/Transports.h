@@ -36,7 +36,6 @@ typedef std::set<Unit*> UnitSet;
 class Transport : public GameObject
 {
     public:
-
         explicit Transport();
         virtual ~Transport();
 

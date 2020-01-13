@@ -57,7 +57,9 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
     currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    {
         engines[i] = NULL;
+    }
 }
 
 PlayerbotAI::PlayerbotAI(Player* bot) :
@@ -544,7 +546,9 @@ bool PlayerbotAI::HasStrategy(string name, BotState type)
 void PlayerbotAI::ResetStrategies()
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    {
         engines[i]->removeAllStrategies();
+    }
 
     AiFactory::AddDefaultCombatStrategies(bot, this, engines[BOT_STATE_COMBAT]);
     AiFactory::AddDefaultNonCombatStrategies(bot, this, engines[BOT_STATE_NON_COMBAT]);

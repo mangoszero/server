@@ -327,7 +327,9 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
             }
         }
         else
+        {
             player->ModifyMoney(pLoot->gold);
+        }
 
         // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -337,7 +339,9 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
         pLoot->gold = 0;
 
         if (pItem)
+        {
             pItem->SetLootState(ITEM_LOOT_CHANGED);
+        }
     }
 }
 

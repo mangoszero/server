@@ -13,7 +13,9 @@ class CharacterHandler;
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
+    {
         sSpellStore.LookupEntry(spellId);
+    }
 }
 
 PlayerbotHolder::~PlayerbotHolder()

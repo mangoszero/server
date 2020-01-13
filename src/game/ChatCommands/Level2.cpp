@@ -3820,7 +3820,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
             PSendSysMessage(" Emote: %u", behaviour->emote);
             PSendSysMessage(" Spell: %u", behaviour->spell);
             for (int i = 0;  i < MAX_WAYPOINT_TEXT; ++i)
+            {
                 PSendSysMessage(" TextId%i: %i \'%s\'", i + 1, behaviour->textid[i], (behaviour->textid[i] ? GetMangosString(behaviour->textid[i]) : ""));
+            }
         }
 
         return true;

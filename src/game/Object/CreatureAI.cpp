@@ -32,7 +32,7 @@
 
 static_assert(MAXIMAL_AI_EVENT_EVENTAI <= 32, "Maximal 32 AI_EVENTs supported with EventAI");
 
-CreatureAI::CreatureAI(Creature* creature) : m_creature(creature), m_combatMovement(CM_SCRIPT),
+CreatureAI::CreatureAI(Creature* creature) : m_creature(creature), m_combatMovement(COMBAT_MOVEMENT_SCRIPT),
                                              m_attackDistance(0.0f), m_attackAngle(0.0f)
 {
 }
@@ -149,8 +149,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
             }
 
             if ( (uiCastFlags & CAST_INTERRUPT_PREVIOUS) && pCaster->IsNonMeleeSpellCasted(false))
+            {
                 pCaster->CastStop();
-
+            }
             pCaster->StopMoving();
 
             pCaster->CastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED, NULL, NULL, uiOriginalCasterGUID);
@@ -173,7 +174,7 @@ bool CreatureAI::DoMeleeAttackIfReady()
 
 void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=false*/)
 {
-    SetCombatMovementFlag(CM_SCRIPT, enable);
+    SetCombatMovementFlag(COMBAT_MOVEMENT_SCRIPT, enable);
 
     if (stopOrStartMovement)     // Only change current movement while in combat
         SetChase(enable);

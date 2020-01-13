@@ -57,7 +57,9 @@ void Map::LoadLocalTransports()
 /*
     sLog.outString();
     for (std::set<Transport*>::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
+    {
         sLog.outString(">>>%s initialized", (*i)->GetGuidStr().c_str());
+    }
 */
     sLog.outString(">> Loaded " SIZEFMTD " local transports for map %u", i_transports.size(), GetId());
 
@@ -128,7 +130,9 @@ void MapManager::LoadTransports()
 
     sLog.outString();
     for (std::set<Transport*>::const_iterator i = m_Transports.begin(); i != m_Transports.end(); ++i)
+    {
         sLog.outString(">>>Global transporter %s (id = %u) initialized", (*i)->GetName(), (*i)->GetEntry());
+    }
 
     sLog.outString(">> Loaded %u global transports", count);
 }

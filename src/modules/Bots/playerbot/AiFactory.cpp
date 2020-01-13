@@ -73,7 +73,9 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
 {
     map<uint32, int32> tabs;
     for (uint32 i = 0; i < uint32(3); i++)
+    {
         tabs[i] = 0;
+    }
 
     uint32 classMask = bot->getClassMask();
     for (uint32 i = 0; i < sTalentStore.GetNumRows() && bot->GetFreeTalentPoints(); ++i)

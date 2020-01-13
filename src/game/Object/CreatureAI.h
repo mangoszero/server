@@ -67,7 +67,7 @@ enum CastFlags
 
 enum CombatMovementFlags
 {
-    CM_SCRIPT = 0x01,
+    COMBAT_MOVEMENT_SCRIPT      = 0x01,                      // Combat movement enforced by script
     CM_SPELL  = 0x02,
 };
 
@@ -351,7 +351,7 @@ class CreatureAI
         virtual void ReceiveAIEvent(AIEventType /*eventType*/, Creature* /*pSender*/, Unit* /*pInvoker*/, uint32 /*miscValue*/) {}
 
         // Reset should be defined here, as it is called from out the AI ctor now
-        virtual void Reset() { m_combatMovement = CM_SCRIPT; }
+        virtual void Reset() { m_combatMovement = COMBAT_MOVEMENT_SCRIPT; }
 
     protected:
         void HandleMovementOnAttackStart(Unit* victim);

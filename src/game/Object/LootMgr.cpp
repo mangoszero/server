@@ -280,7 +280,9 @@ void LootStore::ReportUnusedIds(LootIdSet const& ids_set) const
     if (!ids_set.empty())
     {
         for (LootIdSet::const_iterator itr = ids_set.begin(); itr != ids_set.end(); ++itr)
+        {
             sLog.outErrorDb("Table '%s' entry %d isn't %s and not referenced from loot, and then useless.", GetName(), *itr, GetEntryName());
+        }
         sLog.outString();
     }
 }

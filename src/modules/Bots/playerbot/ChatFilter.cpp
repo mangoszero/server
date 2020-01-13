@@ -281,7 +281,9 @@ CompositeChatFilter::CompositeChatFilter(PlayerbotAI* ai) : ChatFilter(ai)
 CompositeChatFilter::~CompositeChatFilter()
 {
     for (list<ChatFilter*>::iterator i = filters.begin(); i != filters.end(); i++)
+    {
         delete (*i);
+    }
 }
 
 string CompositeChatFilter::Filter(string message)
