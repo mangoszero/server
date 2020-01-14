@@ -552,7 +552,9 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest)
     EndText = pQuest->GetEndText();
 
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
-        { ObjectiveText[i] = pQuest->ObjectiveText[i]; }
+    {
+        ObjectiveText[i] = pQuest->ObjectiveText[i];
+    }
 
     int loc_idx = GetMenuSession()->GetSessionDbLocaleIndex();
     if (loc_idx >= 0)
@@ -619,9 +621,13 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest)
     if (pQuest->HasQuestFlag(QUEST_FLAGS_HIDDEN_REWARDS))
     {
         for (iI = 0; iI < QUEST_REWARDS_COUNT; ++iI)
-            { data << uint32(0) << uint32(0); }
+        {
+            data << uint32(0) << uint32(0);
+        }
         for (iI = 0; iI < QUEST_REWARD_CHOICES_COUNT; ++iI)
-            { data << uint32(0) << uint32(0); }
+        {
+            data << uint32(0) << uint32(0);
+        }
     }
     else
     {
@@ -664,7 +670,9 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest)
     }
 
     for (iI = 0; iI < QUEST_OBJECTIVES_COUNT; ++iI)
-        { data << ObjectiveText[iI]; }
+    {
+        data << ObjectiveText[iI];
+    }
 
     GetMenuSession()->SendPacket(&data);
 

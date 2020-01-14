@@ -567,7 +567,9 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
     if (!(pHolder.Event.event_flags & EFLAG_RANDOM_ACTION))
     {
         for (uint32 j = 0; j < MAX_ACTIONS; ++j)
-            { ProcessAction(pHolder.Event.action[j], rnd, pHolder.Event.event_id, pActionInvoker, pAIEventSender); }
+        {
+            ProcessAction(pHolder.Event.action[j], rnd, pHolder.Event.event_id, pActionInvoker, pAIEventSender);
+        }
     }
     // Process actions, random case
     else

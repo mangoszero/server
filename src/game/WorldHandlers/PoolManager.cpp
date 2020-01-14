@@ -171,7 +171,9 @@ bool PoolGroup<T>::CheckPool() const
     {
         float chance = 0;
         for (uint32 i = 0; i < ExplicitlyChanced.size(); ++i)
-            { chance += ExplicitlyChanced[i].chance; }
+        {
+            chance += ExplicitlyChanced[i].chance;
+        }
         if (chance != 100 && chance != 0)
         {
             return false;
@@ -185,10 +187,14 @@ template <class T>
 void PoolGroup<T>::CheckEventLinkAndReport(int16 event_id, std::map<uint32, int16> const& creature2event, std::map<uint32, int16> const& go2event) const
 {
     for (uint32 i = 0; i < EqualChanced.size(); ++i)
-        { EqualChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event); }
+    {
+        EqualChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
+    }
 
     for (uint32 i = 0; i < ExplicitlyChanced.size(); ++i)
-        { ExplicitlyChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event); }
+    {
+        ExplicitlyChanced[i].template CheckEventLinkAndReport<T>(poolId, event_id, creature2event, go2event);
+    }
 }
 
 template <class T>
@@ -1038,7 +1044,9 @@ void PoolManager::LoadFromDB()
                     std::ostringstream ss;
                     ss << "The pool(s) ";
                     for (std::set<uint16>::const_iterator itr = checkedPools.begin(); itr != checkedPools.end(); ++itr)
-                        { ss << *itr << " "; }
+                    {
+                        ss << *itr << " ";
+                    }
                     ss << "create(s) a circular reference, which can cause the server to freeze.\nRemoving the last link between mother pool "
                        << poolItr->first << " and child pool " << poolItr->second;
                     sLog.outErrorDb("%s", ss.str().c_str());

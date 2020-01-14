@@ -159,7 +159,9 @@ class BIH
 
             objects.resize(dat.numPrims);
             for (uint32 i = 0; i < dat.numPrims; ++i)
-                { objects[i] = dat.indices[i]; }
+            {
+                objects[i] = dat.indices[i];
+            }
             // nObjects = dat.numPrims;
             tree = tempTree;
             delete[] dat.primBound;
@@ -511,7 +513,10 @@ class BIH
                     maxObjects(0xFFFFFFFF), sumDepth(0), minDepth(0x0FFFFFFF),
                     maxDepth(0xFFFFFFFF), numBVH2(0)
                 {
-                    for (int i = 0; i < 6; ++i) { numLeavesN[i] = 0; }
+                    for (int i = 0; i < 6; ++i)
+                    {
+                        numLeavesN[i] = 0;
+                    }
                 }
 
                 /**

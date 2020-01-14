@@ -56,7 +56,9 @@ AuctionHouseMgr::AuctionHouseMgr()
 AuctionHouseMgr::~AuctionHouseMgr()
 {
     for (ItemMap::const_iterator itr = mAitems.begin(); itr != mAitems.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
 }
 
 AuctionHouseObject* AuctionHouseMgr::GetAuctionsMap(AuctionHouseEntry const* house)
@@ -475,7 +477,9 @@ bool AuctionHouseMgr::RemoveAItem(uint32 id)
 void AuctionHouseMgr::Update()
 {
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
-        { mAuctions[i].Update(); }
+    {
+        mAuctions[i].Update();
+    }
 }
 
 uint32 AuctionHouseMgr::GetAuctionHouseTeam(AuctionHouseEntry const* house)

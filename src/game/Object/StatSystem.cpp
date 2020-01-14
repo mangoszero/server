@@ -86,7 +86,9 @@ void Player::UpdateSpellDamageAndHealingBonus()
     // Get healing bonus for all schools
     // Get damage bonus for all schools
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-        { SetStatInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, SpellBaseDamageBonusDone(GetSchoolMask(i))); }
+    {
+        SetStatInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + i, SpellBaseDamageBonusDone(GetSchoolMask(i)));
+    }
 }
 
 bool Player::UpdateAllStats()
@@ -103,7 +105,9 @@ bool Player::UpdateAllStats()
     UpdateMaxHealth();
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
-        { UpdateMaxPower(Powers(i)); }
+    {
+        UpdateMaxPower(Powers(i));
+    }
 
     UpdateAllCritPercentages();
     UpdateAllSpellCritChances();
@@ -111,7 +115,9 @@ bool Player::UpdateAllStats()
     UpdateSpellDamageAndHealingBonus();
     UpdateManaRegen();
     for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
-        { UpdateResistances(i); }
+    {
+        UpdateResistances(i);
+    }
 
     return true;
 }
@@ -518,7 +524,9 @@ void Player::UpdateSpellCritChance(uint32 school)
 void Player::UpdateAllSpellCritChances()
 {
     for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
-        { UpdateSpellCritChance(i); }
+    {
+        UpdateSpellCritChance(i);
+    }
 }
 
 void Player::UpdateManaRegen()
@@ -584,10 +592,14 @@ bool Creature::UpdateAllStats()
     UpdateAttackPowerAndDamage();
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
-        { UpdateMaxPower(Powers(i)); }
+    {
+        UpdateMaxPower(Powers(i));
+    }
 
     for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
-        { UpdateResistances(i); }
+    {
+        UpdateResistances(i);
+    }
 
     return true;
 }
@@ -719,13 +731,19 @@ bool Pet::UpdateStats(Stats stat)
 bool Pet::UpdateAllStats()
 {
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
-        { UpdateStats(Stats(i)); }
+    {
+        UpdateStats(Stats(i));
+    }
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
-        { UpdateMaxPower(Powers(i)); }
+    {
+        UpdateMaxPower(Powers(i));
+    }
 
     for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
-        { UpdateResistances(i); }
+    {
+        UpdateResistances(i);
+    }
 
     return true;
 }

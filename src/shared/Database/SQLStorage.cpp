@@ -90,7 +90,9 @@ void SQLStorageBase::Free()
             case DBC_FF_STRING:
             {
                 for (uint32 recordItr = 0; recordItr < m_recordCount; ++recordItr)
-                    { delete[] *(char**)((char*)(m_data + (recordItr * m_recordSize)) + offset); }
+                {
+                    delete[] *(char**)((char*)(m_data + (recordItr * m_recordSize)) + offset);
+                }
 
                 offset += sizeof(char*);
                 break;

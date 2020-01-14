@@ -62,7 +62,9 @@ void SqlConnection::FreePreparedStatements()
 
     size_t nStmts = m_holder.size();
     for (size_t i = 0; i < nStmts; ++i)
-        { delete m_holder[i]; }
+    {
+        delete m_holder[i];
+    }
 
     m_holder.clear();
 }
@@ -193,7 +195,9 @@ void Database::StopServer()
     m_pAsyncConn = NULL;
 
     for (size_t i = 0; i < m_pQueryConnections.size(); ++i)
-        { delete m_pQueryConnections[i]; }
+    {
+        delete m_pQueryConnections[i];
+    }
 
     m_pQueryConnections.clear();
 }

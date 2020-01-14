@@ -830,7 +830,9 @@ char* WheatyExceptionReport::DumpTypeIndex(
     {
         // Add appropriate indentation level (since this routine is recursive)
         for (unsigned j = 0; j <= nestingLevel + 1; ++j)
-            { pszCurrBuffer += sprintf(pszCurrBuffer, "\t"); }
+        {
+            pszCurrBuffer += sprintf(pszCurrBuffer, "\t");
+        }
 
         // Recurse for each of the child types
         bool bHandled2;

@@ -152,7 +152,9 @@ void GameObjectModel::UpdateRotation(G3D::Quat const& q)
     G3D::AABox rotated_bounds;
 
     for (int i = 0; i < 8; ++i)
-        { rotated_bounds.merge((iQuat * G3D::Quat(mdl_box.corner(i)) * iQuat.conj()).imag()); }
+    {
+        rotated_bounds.merge((iQuat * G3D::Quat(mdl_box.corner(i)) * iQuat.conj()).imag());
+    }
 
     iBound = rotated_bounds + iPos;
 }

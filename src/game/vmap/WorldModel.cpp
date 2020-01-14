@@ -740,7 +740,9 @@ namespace VMAP
                 result = false;
             }
             for (uint32 i = 0; i < groupModels.size() && result; ++i)
-                { result = groupModels[i].WriteToFile(wf); }
+            {
+                result = groupModels[i].WriteToFile(wf);
+            }
 
             // write group BIH
             if (result && fwrite("GBIH", 1, 4, wf) != 4)
@@ -802,7 +804,9 @@ namespace VMAP
             }
             // if (result && fread(&groupModels[0], sizeof(GroupModel), count, rf) != count) result = false;
             for (uint32 i = 0; i < count && result; ++i)
-                { result = groupModels[i].ReadFromFile(rf); }
+            {
+                result = groupModels[i].ReadFromFile(rf);
+            }
 
             // read group BIH
             if (result && !readChunk(rf, chunk, "GBIH", 4))

@@ -830,7 +830,9 @@ TerrainInfo::~TerrainInfo()
 {
     for (int k = 0; k < MAX_NUMBER_OF_GRIDS; ++k)
         for (int i = 0; i < MAX_NUMBER_OF_GRIDS; ++i)
-            { delete m_GridMaps[i][k]; }
+        {
+            delete m_GridMaps[i][k];
+        }
 
     VMAP::VMapFactory::createOrGetVMapManager()->unloadMap(m_mapId);
     MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
@@ -1364,7 +1366,9 @@ TerrainManager::TerrainManager() : m_mutex()
 TerrainManager::~TerrainManager()
 {
     for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
-        { delete it->second; }
+    {
+        delete it->second;
+    }
 }
 
 TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
@@ -1407,13 +1411,17 @@ void TerrainManager::Update(const uint32 diff)
 {
     // global garbage collection for GridMap objects and VMaps
     for (TerrainDataMap::iterator iter = i_TerrainMap.begin(); iter != i_TerrainMap.end(); ++iter)
-        { iter->second->CleanUpGrids(diff); }
+    {
+        iter->second->CleanUpGrids(diff);
+    }
 }
 
 void TerrainManager::UnloadAll()
 {
     for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
-        { delete it->second; }
+    {
+        delete it->second;
+    }
 
     i_TerrainMap.clear();
 }

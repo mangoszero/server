@@ -2514,7 +2514,9 @@ void GameObject::TickCapturePoint()
 
     // on retail this is also sent to newly added players even though they already received a slider value
     for (std::list<Player*>::iterator itr = capturingPlayers.begin(); itr != capturingPlayers.end(); ++itr)
-        { (*itr)->SendUpdateWorldState(info->capturePoint.worldState2, (uint32)m_captureSlider); }
+    {
+        (*itr)->SendUpdateWorldState(info->capturePoint.worldState2, (uint32)m_captureSlider);
+    }
 
     // send capture point events
     uint32 eventId = 0;

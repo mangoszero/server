@@ -1607,7 +1607,9 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             target->GetZoneAndAreaId(zone, area);
 
             for (SpellAreaForAreaMap::const_iterator itr = saBounds.first; itr != saBounds.second; ++itr)
-                { itr->second->ApplyOrRemoveSpellIfCan((Player*)target, zone, area, false); }
+            {
+                itr->second->ApplyOrRemoveSpellIfCan((Player*)target, zone, area, false);
+            }
         }
     }
 
@@ -2963,7 +2965,9 @@ void Aura::HandleInvisibility(bool apply, bool Real)
         target->m_invisibilityMask = 0;
         Unit::AuraList const& auras = target->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY);
         for (Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
-            { target->m_invisibilityMask |= (1 << (*itr)->GetModifier()->m_miscvalue); }
+        {
+            target->m_invisibilityMask |= (1 << (*itr)->GetModifier()->m_miscvalue);
+        }
 
         // only at real aura remove and if not have different invisibility auras.
         if (Real && target->m_invisibilityMask == 0)
@@ -3001,7 +3005,9 @@ void Aura::HandleInvisibilityDetect(bool apply, bool Real)
         target->m_detectInvisibilityMask = 0;
         Unit::AuraList const& auras = target->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY_DETECTION);
         for (Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
-            { target->m_detectInvisibilityMask |= (1 << (*itr)->GetModifier()->m_miscvalue); }
+        {
+            target->m_detectInvisibilityMask |= (1 << (*itr)->GetModifier()->m_miscvalue);
+        }
     }
     if (Real && target->GetTypeId() == TYPEID_PLAYER)
     {
@@ -4561,7 +4567,9 @@ void Aura::HandleModDamagePercentDone(bool apply, bool Real)
     // Send info to client
     if (target->GetTypeId() == TYPEID_PLAYER)
         for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-            { target->ApplyModSignedFloatValue(PLAYER_FIELD_MOD_DAMAGE_DONE_PCT + i, m_modifier.m_amount / 100.0f, apply); }
+        {
+            target->ApplyModSignedFloatValue(PLAYER_FIELD_MOD_DAMAGE_DONE_PCT + i, m_modifier.m_amount / 100.0f, apply);
+        }
 }
 
 void Aura::HandleModOffhandDamagePercent(bool apply, bool Real)
@@ -5727,7 +5735,9 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
         && caster->GetTypeId() == TYPEID_PLAYER && target->GetTypeId() == TYPEID_PLAYER && !IsChanneledSpell(m_spellProto);
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-        { m_auras[i] = NULL; }
+    {
+        m_auras[i] = NULL;
+    }
 }
 
 void SpellAuraHolder::AddAura(Aura* aura, SpellEffectIndex index)
@@ -6152,7 +6162,9 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
         if (linkedSet.size() > 0)
         {
             for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
-                { m_target->CastSpell(m_target, *itr, true, NULL, NULL, GetCasterGuid()); }
+            {
+                m_target->CastSpell(m_target, *itr, true, NULL, NULL, GetCasterGuid());
+            }
         }
 
         // Linked spells (RemoveOnRemove chain)
@@ -6160,7 +6172,9 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
         if (linkedSet.size() > 0)
         {
             for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
-                { m_target->RemoveAurasByCasterSpell(*itr, GetCasterGuid()); }
+            {
+                m_target->RemoveAurasByCasterSpell(*itr, GetCasterGuid());
+            }
         }
     }
 

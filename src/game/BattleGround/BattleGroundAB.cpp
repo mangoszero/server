@@ -308,12 +308,16 @@ void BattleGroundAB::FillInitialWorldStates(WorldPacket& data, uint32& count)
 
     // Node icons
     for (uint8 node = 0; node < BG_AB_NODES_MAX; ++node)
-        { FillInitialWorldState(data, count, BG_AB_OP_NODEICONS[node], m_Nodes[node] == 0); }
+    {
+        FillInitialWorldState(data, count, BG_AB_OP_NODEICONS[node], m_Nodes[node] == 0);
+    }
 
     // Node occupied states
     for (uint8 node = 0; node < BG_AB_NODES_MAX; ++node)
         for (uint8 i = 1; i < BG_AB_NODES_MAX; ++i)
-            { FillInitialWorldState(data, count, BG_AB_OP_NODESTATES[node] + plusArray[i], m_Nodes[node] == i); }
+        {
+            FillInitialWorldState(data, count, BG_AB_OP_NODESTATES[node] + plusArray[i], m_Nodes[node] == i);
+        }
 
     // How many bases each team owns
     uint8 ally = 0, horde = 0;

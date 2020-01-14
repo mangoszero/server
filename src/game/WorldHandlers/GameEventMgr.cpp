@@ -628,7 +628,9 @@ void GameEventMgr::Initialize(MapPersistentState* state)
     // other data is global and will be auto-apply
     for (GameEventMgr::ActiveEvents::const_iterator event_itr = m_ActiveEvents.begin(); event_itr != m_ActiveEvents.end(); ++event_itr)
         for (IdList::iterator pool_itr = mGameEventSpawnPoolIds[*event_itr].begin(); pool_itr != mGameEventSpawnPoolIds[*event_itr].end(); ++pool_itr)
-            { sPoolMgr.InitSpawnPool(*state, *pool_itr); }
+        {
+            sPoolMgr.InitSpawnPool(*state, *pool_itr);
+        }
 }
 
 // return the next event delay in ms
@@ -796,7 +798,9 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
         }
 
         for (IdList::iterator itr = mGameEventSpawnPoolIds[event_id].begin(); itr != mGameEventSpawnPoolIds[event_id].end(); ++itr)
-            { sPoolMgr.SpawnPoolInMaps(*itr, true); }
+        {
+            sPoolMgr.SpawnPoolInMaps(*itr, true);
+        }
     }
 }
 

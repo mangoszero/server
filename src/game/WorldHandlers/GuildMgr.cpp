@@ -40,7 +40,9 @@ GuildMgr::GuildMgr()
 GuildMgr::~GuildMgr()
 {
     for (GuildMap::iterator itr = m_GuildMap.begin(); itr != m_GuildMap.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
 }
 
 void GuildMgr::AddGuild(Guild* guild)

@@ -49,7 +49,9 @@ ChannelMgr* channelMgr(Team team)
 ChannelMgr::~ChannelMgr()
 {
     for (ChannelMap::iterator itr = channels.begin(); itr != channels.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
 
     channels.clear();
 }

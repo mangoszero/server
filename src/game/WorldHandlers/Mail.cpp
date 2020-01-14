@@ -401,7 +401,9 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
         if (!m_items.empty())
         {
             for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
-                { pReceiver->AddMItem(mailItemIter->second); }
+            {
+                pReceiver->AddMItem(mailItemIter->second);
+            }
         }
     }
     else if (!m_items.empty())

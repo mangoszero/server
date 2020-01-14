@@ -142,7 +142,9 @@ void MassMailMgr::GetStatistic(uint32& tasks, uint32& mails, uint32& needTime) c
 
     uint32 mailsCount = 0;
     for (MassMailList::const_iterator mailItr = m_massMails.begin(); mailItr != m_massMails.end(); ++mailItr)
-        { mailsCount += mailItr->m_receivers.size(); }
+    {
+        mailsCount += mailItr->m_receivers.size();
+    }
 
     mails = mailsCount;
 

@@ -306,7 +306,9 @@ uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType d
 
     // -5% of total per any additional effect (multiplicative)
     for (int i = 0; i < effects; ++i)
-        { CastingTime *= 0.95f; }
+    {
+        CastingTime *= 0.95f;
+    }
 
     return CastingTime;
 }
@@ -1522,7 +1524,9 @@ void SpellMgr::LoadSpellProcEvents()
         spe.spellFamilyName = fields[2].GetUInt32();
 
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
-            { spe.spellFamilyMask[i] = ClassFamilyMask(fields[3 + i].GetUInt64()); }
+        {
+            spe.spellFamilyMask[i] = ClassFamilyMask(fields[3 + i].GetUInt64());
+        }
 
         spe.procFlags       = fields[6].GetUInt32();
         spe.procEx          = fields[7].GetUInt32();

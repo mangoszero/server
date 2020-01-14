@@ -511,7 +511,9 @@ class Group
             memset((void*)m_subGroupsCounts, 0, MAX_RAID_SUBGROUPS * sizeof(uint8));
 
             for (member_citerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
-                { ++m_subGroupsCounts[itr->group]; }
+            {
+                ++m_subGroupsCounts[itr->group];
+            }
         }
 
         member_citerator _getMemberCSlot(ObjectGuid guid) const

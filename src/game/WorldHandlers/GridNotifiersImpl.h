@@ -238,14 +238,18 @@ template<>
 inline void MaNGOS::DynamicObjectUpdater::Visit(CreatureMapType&  m)
 {
     for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-        { VisitHelper(itr->getSource()); }
+    {
+        VisitHelper(itr->getSource());
+    }
 }
 
 template<>
 inline void MaNGOS::DynamicObjectUpdater::Visit(PlayerMapType&  m)
 {
     for (PlayerMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-        { VisitHelper(itr->getSource()); }
+    {
+        VisitHelper(itr->getSource());
+    }
 }
 
 // SEARCHERS & LIST SEARCHERS & WORKERS
@@ -715,7 +719,9 @@ void MaNGOS::LocalizedPacketListDo<Builder>::operator()(Player* p)
     }
 
     for (size_t i = 0; i < data_list->size(); ++i)
-        { p->SendDirectMessage((*data_list)[i]); }
+    {
+        p->SendDirectMessage((*data_list)[i]);
+    }
 }
 
 #endif                                                      // MANGOS_GRIDNOTIFIERSIMPL_H

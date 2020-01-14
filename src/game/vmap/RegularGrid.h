@@ -106,7 +106,9 @@ class RegularGrid2D
         {
             for (int x = 0; x < CELL_NUMBER; ++x)
                 for (int y = 0; y < CELL_NUMBER; ++y)
-                    { delete nodes[x][y]; }
+                {
+                    delete nodes[x][y];
+                }
         }
 
         /**

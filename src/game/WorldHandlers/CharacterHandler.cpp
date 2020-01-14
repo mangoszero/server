@@ -616,7 +616,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     data.Initialize(SMSG_ACCOUNT_DATA_TIMES, 128);
     for (int i = 0; i < 32; ++i)
-        { data << uint32(0); }
+    {
+        data << uint32(0);
+    }
     SendPacket(&data);
 
     /* 1.12.1 does not have SMSG_MOTD, so we send a server message */
@@ -952,13 +954,17 @@ void WorldSession::HandleTutorialFlagOpcode(WorldPacket& recv_data)
 void WorldSession::HandleTutorialClearOpcode(WorldPacket & /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)
-        { SetTutorialInt(i, 0xFFFFFFFF); }
+    {
+        SetTutorialInt(i, 0xFFFFFFFF);
+    }
 }
 
 void WorldSession::HandleTutorialResetOpcode(WorldPacket & /*recv_data*/)
 {
     for (int i = 0; i < 8; ++i)
-        { SetTutorialInt(i, 0x00000000); }
+    {
+        SetTutorialInt(i, 0x00000000);
+    }
 }
 
 void WorldSession::HandleSetWatchedFactionOpcode(WorldPacket& recv_data)

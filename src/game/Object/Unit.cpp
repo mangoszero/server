@@ -210,7 +210,9 @@ Unit::Unit() :
     m_deathState = ALIVE;
 
     for (uint32 i = 0; i < CURRENT_MAX_SPELL; ++i)
-        { m_currentSpells[i] = NULL; }
+    {
+        m_currentSpells[i] = NULL;
+    }
 
     m_castCounter = 0;
 
@@ -229,7 +231,9 @@ Unit::Unit() :
     m_canModifyStats = false;
 
     for (int i = 0; i < MAX_SPELL_IMMUNITY; ++i)
-        { m_spellImmune[i].clear(); }
+    {
+        m_spellImmune[i].clear();
+    }
     for (int i = 0; i < UNIT_MOD_END; ++i)
     {
         m_auraModifiersGroup[i][BASE_VALUE] = 0.0f;
@@ -247,7 +251,9 @@ Unit::Unit() :
         m_weaponDamage[i][MAXDAMAGE] = BASE_MAXDAMAGE;
     }
     for (int i = 0; i < MAX_STATS; ++i)
-        { m_createStats[i] = 0.0f; }
+    {
+        m_createStats[i] = 0.0f;
+    }
 
     m_attacking = NULL;
     m_modMeleeHitChance = 0.0f;
@@ -260,14 +266,20 @@ Unit::Unit() :
 
     // m_victimThreat = 0.0f;
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
-        { m_threatModifier[i] = 1.0f; }
+    {
+        m_threatModifier[i] = 1.0f;
+    }
     m_isSorted = true;
     for (int i = 0; i < MAX_MOVE_TYPE; ++i)
-        { m_speed_rate[i] = 1.0f; }
+    {
+        m_speed_rate[i] = 1.0f;
+    }
 
     // remove aurastates allowing special moves
     for (int i = 0; i < MAX_REACTIVE; ++i)
-        { m_reactiveTimer[i] = 0; }
+    {
+        m_reactiveTimer[i] = 0;
+    }
 
     m_isCreatureLinkingTrigger = false;
     m_isSpawningLinked = false;
@@ -1295,7 +1307,9 @@ void Unit::CastSpell(Unit* Victim, SpellEntry const* spellInfo, bool triggered, 
     if (linkedSet.size() > 0)
     {
         for (SpellLinkedSet::const_iterator itr = linkedSet.begin(); itr != linkedSet.end(); ++itr)
-            { Victim->RemoveAurasDueToSpell(*itr); }
+        {
+            Victim->RemoveAurasDueToSpell(*itr);
+        }
     }
 }
 
@@ -3758,7 +3772,9 @@ int32 Unit::GetTotalAuraModifier(AuraType auratype) const
 
     AuraList const& mTotalAuraList = GetAurasByType(auratype);
     for (AuraList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
-        { modifier += (*i)->GetModifier()->m_amount; }
+    {
+        modifier += (*i)->GetModifier()->m_amount;
+    }
 
     return modifier;
 }
@@ -3769,7 +3785,9 @@ float Unit::GetTotalAuraMultiplier(AuraType auratype) const
 
     AuraList const& mTotalAuraList = GetAurasByType(auratype);
     for (AuraList::const_iterator i = mTotalAuraList.begin(); i != mTotalAuraList.end(); ++i)
-        { multiplier *= (100.0f + (*i)->GetModifier()->m_amount) / 100.0f; }
+    {
+        multiplier *= (100.0f + (*i)->GetModifier()->m_amount) / 100.0f;
+    }
 
     return multiplier;
 }
@@ -6793,7 +6811,9 @@ uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, 
     // Healing done percent
     AuraList const& mHealingDonePct = GetAurasByType(SPELL_AURA_MOD_HEALING_DONE_PERCENT);
     for (AuraList::const_iterator i = mHealingDonePct.begin(); i != mHealingDonePct.end(); ++i)
-        { DoneTotalMod *= (100.0f + (*i)->GetModifier()->m_amount) / 100.0f; }
+    {
+        DoneTotalMod *= (100.0f + (*i)->GetModifier()->m_amount) / 100.0f;
+    }
 
     // done scripted mod (take it from owner)
     Unit* owner = GetOwner();
@@ -9274,28 +9294,38 @@ CharmInfo::CharmInfo(Unit* unit)
     : m_unit(unit), m_CommandState(COMMAND_FOLLOW), m_reactState(REACT_PASSIVE), m_petnumber(0)
 {
     for (int i = 0; i < CREATURE_MAX_SPELLS; ++i)
-        { m_charmspells[i].SetActionAndType(0, ACT_DISABLED); }
+    {
+        m_charmspells[i].SetActionAndType(0, ACT_DISABLED);
+    }
 }
 
 void CharmInfo::InitPetActionBar()
 {
     // the first 3 SpellOrActions are attack, follow and stay
     for (uint32 i = 0; i < ACTION_BAR_INDEX_PET_SPELL_START - ACTION_BAR_INDEX_START; ++i)
-        { SetActionBar(ACTION_BAR_INDEX_START + i, COMMAND_ATTACK - i, ACT_COMMAND); }
+    {
+        SetActionBar(ACTION_BAR_INDEX_START + i, COMMAND_ATTACK - i, ACT_COMMAND);
+    }
 
     // middle 4 SpellOrActions are spells/special attacks/abilities
     for (uint32 i = 0; i < ACTION_BAR_INDEX_PET_SPELL_END - ACTION_BAR_INDEX_PET_SPELL_START; ++i)
-        { SetActionBar(ACTION_BAR_INDEX_PET_SPELL_START + i, 0, ACT_DISABLED); }
+    {
+        SetActionBar(ACTION_BAR_INDEX_PET_SPELL_START + i, 0, ACT_DISABLED);
+    }
 
     // last 3 SpellOrActions are reactions
     for (uint32 i = 0; i < ACTION_BAR_INDEX_END - ACTION_BAR_INDEX_PET_SPELL_END; ++i)
-        { SetActionBar(ACTION_BAR_INDEX_PET_SPELL_END + i, COMMAND_ATTACK - i, ACT_REACTION); }
+    {
+        SetActionBar(ACTION_BAR_INDEX_PET_SPELL_END + i, COMMAND_ATTACK - i, ACT_REACTION);
+    }
 }
 
 void CharmInfo::InitEmptyActionBar()
 {
     for (uint32 x = ACTION_BAR_INDEX_START + 1; x < ACTION_BAR_INDEX_END; ++x)
-        { SetActionBar(x, 0, ACT_PASSIVE); }
+    {
+        SetActionBar(x, 0, ACT_PASSIVE);
+    }
 }
 
 void CharmInfo::InitPossessCreateSpells()
@@ -9483,7 +9513,9 @@ void CharmInfo::LoadPetActionBar(const std::string& data)
 void CharmInfo::BuildActionBar(WorldPacket* data)
 {
     for (uint32 i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
-        { *data << uint32(PetActionBar[i].packedData); }
+    {
+        *data << uint32(PetActionBar[i].packedData);
+    }
 }
 
 void CharmInfo::SetSpellAutocast(uint32 spell_id, bool state)
@@ -9751,7 +9783,9 @@ void Unit::ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, 
         removedSpells.unique();
         // Remove auras from removedAuras
         for (RemoveSpellList::const_iterator i = removedSpells.begin(); i != removedSpells.end(); ++i)
-            { RemoveAurasDueToSpell(*i); }
+        {
+            RemoveAurasDueToSpell(*i);
+        }
     }
 }
 
@@ -10213,7 +10247,9 @@ void Unit::ClearComboPointHolders()
 void Unit::ClearAllReactives()
 {
     for (int i = 0; i < MAX_REACTIVE; ++i)
-        { m_reactiveTimer[i] = 0; }
+    {
+        m_reactiveTimer[i] = 0;
+    }
 
     if (HasAuraState(AURA_STATE_DEFENSE))
     {
@@ -10315,7 +10351,9 @@ Unit* Unit::SelectRandomUnfriendlyTarget(Unit* except /*= NULL*/, float radius /
     uint32 rIdx = urand(0, targets.size() - 1);
     std::list<Unit*>::const_iterator tcIter = targets.begin();
     for (uint32 i = 0; i < rIdx; ++i)
-        { ++tcIter; }
+    {
+        ++tcIter;
+    }
 
     return *tcIter;
 }
@@ -10360,7 +10398,9 @@ Unit* Unit::SelectRandomFriendlyTarget(Unit* except /*= NULL*/, float radius /*=
     uint32 rIdx = urand(0, targets.size() - 1);
     std::list<Unit*>::const_iterator tcIter = targets.begin();
     for (uint32 i = 0; i < rIdx; ++i)
-        { ++tcIter; }
+    {
+        ++tcIter;
+    }
 
     return *tcIter;
 }
@@ -10661,12 +10701,16 @@ void Unit::StopAttackFaction(uint32 faction_id)
 void Unit::CleanupDeletedAuras()
 {
     for (SpellAuraHolderList::const_iterator iter = m_deletedHolders.begin(); iter != m_deletedHolders.end(); ++iter)
-        { delete *iter; }
+    {
+        delete *iter;
+    }
     m_deletedHolders.clear();
 
     // really delete auras "deleted" while processing its ApplyModify code
     for (AuraList::const_iterator itr = m_deletedAuras.begin(); itr != m_deletedAuras.end(); ++itr)
-        { delete *itr; }
+    {
+        delete *itr;
+    }
     m_deletedAuras.clear();
 }
 

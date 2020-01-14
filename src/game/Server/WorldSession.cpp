@@ -474,7 +474,9 @@ void WorldSession::LogoutPlayer(bool Save)
 
             // give honor to all attackers from set like group case
             for (std::set<Player*>::const_iterator itr = aset.begin(); itr != aset.end(); ++itr)
-                { (*itr)->RewardHonor(_player, aset.size()); }
+            {
+                (*itr)->RewardHonor(_player, aset.size());
+            }
 
             // give bg rewards and update counters like kill by first from attackers
             // this can't be called for all attackers.
@@ -752,7 +754,9 @@ void WorldSession::SendAuthWaitQue(uint32 position)
 void WorldSession::LoadTutorialsData()
 {
     for (int aX = 0 ; aX < 8 ; ++aX)
-        { m_Tutorials[ aX ] = 0; }
+    {
+        m_Tutorials[ aX ] = 0;
+    }
 
     QueryResult* result = CharacterDatabase.PQuery("SELECT tut0,tut1,tut2,tut3,tut4,tut5,tut6,tut7 FROM character_tutorial WHERE account = '%u'", GetAccountId());
 
@@ -767,7 +771,9 @@ void WorldSession::LoadTutorialsData()
         Field* fields = result->Fetch();
 
         for (int iI = 0; iI < 8; ++iI)
-            { m_Tutorials[iI] = fields[iI].GetUInt32(); }
+        {
+            m_Tutorials[iI] = fields[iI].GetUInt32();
+        }
     }
     while (result->NextRow());
 
@@ -780,7 +786,9 @@ void WorldSession::SendTutorialsData()
 {
     WorldPacket data(SMSG_TUTORIAL_FLAGS, 4 * 8);
     for (uint32 i = 0; i < 8; ++i)
-        { data << m_Tutorials[i]; }
+    {
+        data << m_Tutorials[i];
+    }
     SendPacket(&data);
 }
 
@@ -795,7 +803,9 @@ void WorldSession::SaveTutorialsData()
         {
             SqlStatement stmt = CharacterDatabase.CreateStatement(updTutorial, "UPDATE character_tutorial SET tut0=?, tut1=?, tut2=?, tut3=?, tut4=?, tut5=?, tut6=?, tut7=? WHERE account = ?");
             for (int i = 0; i < 8; ++i)
-                { stmt.addUInt32(m_Tutorials[i]); }
+            {
+                stmt.addUInt32(m_Tutorials[i]);
+            }
 
             stmt.addUInt32(GetAccountId());
             stmt.Execute();
@@ -808,7 +818,9 @@ void WorldSession::SaveTutorialsData()
 
             stmt.addUInt32(GetAccountId());
             for (int i = 0; i < 8; ++i)
-                { stmt.addUInt32(m_Tutorials[i]); }
+            {
+                stmt.addUInt32(m_Tutorials[i]);
+            }
 
             stmt.Execute();
         }

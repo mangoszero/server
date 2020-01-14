@@ -119,7 +119,9 @@ namespace VMAP
             // ===> possibly move this code to StaticMapTree class
             std::map<uint32, uint32> modelNodeIdx;
             for (uint32 i = 0; i < mapSpawns.size(); ++i)
-                { modelNodeIdx.insert(pair<uint32, uint32>(mapSpawns[i]->ID, i)); }
+            {
+                modelNodeIdx.insert(pair<uint32, uint32>(mapSpawns[i]->ID, i));
+            }
 
             // write map tree file
             std::stringstream mapfilename;
@@ -602,7 +604,9 @@ namespace VMAP
         groupsArray.resize(groups);
         bool succeed = true;
         for (uint32 g = 0; g < groups && succeed; ++g)
-            { succeed = groupsArray[g].Read(rf); }
+        {
+            succeed = groupsArray[g].Read(rf);
+        }
 
         fclose(rf);
         return succeed;

@@ -72,7 +72,10 @@ static bool findtoknth(std::string& str, int n, std::string::size_type& s, std::
 {
     int i; s = e = 0;
     std::string::size_type size = str.size();
-    for (i = 1; s < size && i < n; ++s) if (str[s] == ' ') { ++i; }
+    for (i = 1; s < size && i < n; ++s) if (str[s] == ' ')
+    {
+        ++i;
+    }
     if (i < n)
     {
         return false;
@@ -437,7 +440,9 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
     }
 
     for (DumpTable* itr = &dumpTables[0]; itr->isValid(); ++itr)
-        { DumpTableContent(dump, guid, itr->name, itr->name, itr->type); }
+    {
+        DumpTableContent(dump, guid, itr->name, itr->name, itr->type);
+    }
 
     // TODO: Add instance/group..
     // TODO: Add a dump level option to skip some non-important tables

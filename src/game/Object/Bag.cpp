@@ -40,7 +40,9 @@ Bag::Bag(): Item()
 Bag::~Bag()
 {
     for (int i = 0; i < MAX_BAG_SIZE; ++i)
-        { delete m_bagslot[i]; }
+    {
+        delete m_bagslot[i];
+    }
 }
 
 void Bag::AddToWorld()

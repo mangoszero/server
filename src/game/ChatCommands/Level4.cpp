@@ -327,7 +327,9 @@ bool ChatHandler::HandleCharacterDeletedRestoreCommand(char* args)
     {
         // Drop nonexistent account cases
         for (DeletedInfoList::iterator itr = foundList.begin(); itr != foundList.end(); ++itr)
-            { HandleCharacterDeletedRestoreHelper(*itr); }
+        {
+            HandleCharacterDeletedRestoreHelper(*itr);
+        }
     }
     else if (foundList.size() == 1 && normalizePlayerName(newCharName))
     {
@@ -388,7 +390,9 @@ bool ChatHandler::HandleCharacterDeletedDeleteCommand(char* args)
 
     // Call the appropriate function to delete them (current account for deleted characters is 0)
     for (DeletedInfoList::const_iterator itr = foundList.begin(); itr != foundList.end(); ++itr)
-        { Player::DeleteFromDB(ObjectGuid(HIGHGUID_PLAYER, itr->lowguid), 0, false, true); }
+    {
+        Player::DeleteFromDB(ObjectGuid(HIGHGUID_PLAYER, itr->lowguid), 0, false, true);
+    }
 
     return true;
 }

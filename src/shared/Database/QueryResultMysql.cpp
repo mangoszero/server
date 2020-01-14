@@ -61,7 +61,9 @@ bool QueryResultMysql::NextRow()
     }
 
     for (uint32 i = 0; i < mFieldCount; ++i)
-        { mCurrentRow[i].SetValue(row[i]); }
+    {
+        mCurrentRow[i].SetValue(row[i]);
+    }
 
     return true;
 }

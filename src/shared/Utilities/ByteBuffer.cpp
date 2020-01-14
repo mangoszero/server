@@ -59,7 +59,9 @@ void ByteBuffer::print_storage() const
     }
 
     for (size_t i = 0; i < size(); ++i)
-        { ss << uint32(read<uint8>(i)) << " - "; }
+    {
+        ss << uint32(read<uint8>(i)) << " - ";
+    }
 
     sLog.outDebug("%s", ss.str().c_str());
 }
@@ -80,7 +82,9 @@ void ByteBuffer::textlike() const
     }
 
     for (size_t i = 0; i < size(); ++i)
-        { ss << read<uint8>(i); }
+    {
+        ss << read<uint8>(i);
+    }
 
     sLog.outDebug("%s", ss.str().c_str());
 }

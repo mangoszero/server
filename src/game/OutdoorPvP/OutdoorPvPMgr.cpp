@@ -42,7 +42,9 @@ OutdoorPvPMgr::OutdoorPvPMgr()
 OutdoorPvPMgr::~OutdoorPvPMgr()
 {
     for (uint8 i = 0; i < MAX_OPVP_ID; ++i)
-        { delete m_scripts[i]; }
+    {
+        delete m_scripts[i];
+    }
 }
 
 #define LOAD_OPVP_ZONE(a)                                           \

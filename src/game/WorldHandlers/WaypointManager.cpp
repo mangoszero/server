@@ -56,7 +56,9 @@ WaypointBehavior::WaypointBehavior(const WaypointBehavior& b)
     model1 = b.model1;
     model2 = b.model2;
     for (int i = 0; i < MAX_WAYPOINT_TEXT; ++i)
-        { textid[i] = b.textid[i]; }
+    {
+        textid[i] = b.textid[i];
+    }
 }
 
 void WaypointManager::Load()
@@ -74,7 +76,9 @@ void WaypointManager::Load()
     std::set<uint32> movementScriptSet;
 
     for (ScriptChainMap::const_iterator itr = scm->begin(); itr != scm->end(); ++itr)
-        { movementScriptSet.insert(itr->first); }
+    {
+        movementScriptSet.insert(itr->first);
+    }
 
     // /////////////////////////////////////////////////////
     // creature_movement
@@ -397,7 +401,9 @@ void WaypointManager::Load()
     if (!movementScriptSet.empty())
     {
         for (std::set<uint32>::const_iterator itr = movementScriptSet.begin(); itr != movementScriptSet.end(); ++itr)
-            { sLog.outErrorDb("Table `dbscripts_on_creature_movement` contain unused script, id %u.", *itr); }
+        {
+            sLog.outErrorDb("Table `dbscripts_on_creature_movement` contain unused script, id %u.", *itr);
+        }
         sLog.outString();
     }
 }
@@ -405,15 +411,21 @@ void WaypointManager::Load()
 void WaypointManager::Unload()
 {
     for (WaypointPathMap::iterator itr = m_pathMap.begin(); itr != m_pathMap.end(); ++itr)
-        { _clearPath(itr->second); }
+    {
+        _clearPath(itr->second);
+    }
     m_pathMap.clear();
 
     for (WaypointPathMap::iterator itr = m_pathTemplateMap.begin(); itr != m_pathTemplateMap.end(); ++itr)
-        { _clearPath(itr->second); }
+    {
+        _clearPath(itr->second);
+    }
     m_pathTemplateMap.clear();
 
     for (WaypointPathMap::iterator itr = m_externalPathTemplateMap.begin(); itr != m_externalPathTemplateMap.end(); ++itr)
-        { _clearPath(itr->second); }
+    {
+        _clearPath(itr->second);
+    }
     m_externalPathTemplateMap.clear();
 
 }
@@ -421,7 +433,9 @@ void WaypointManager::Unload()
 void WaypointManager::_clearPath(WaypointPath& path)
 {
     for (WaypointPath::const_iterator itr = path.begin(); itr != path.end(); ++itr)
-        { delete itr->second.behavior; }
+    {
+        delete itr->second.behavior;
+    }
     path.clear();
 }
 

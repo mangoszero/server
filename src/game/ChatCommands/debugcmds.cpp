@@ -891,7 +891,9 @@ bool ChatHandler::HandleDebugSetAuraStateCommand(char* args)
     {
         // reset all states
         for (int i = 1; i <= 32; ++i)
-            { unit->ModifyAuraState(AuraState(i), false); }
+        {
+            unit->ModifyAuraState(AuraState(i), false);
+        }
         return true;
     }
 
@@ -1079,7 +1081,9 @@ bool ChatHandler::HandleGetValueHelper(Object* target, uint32 field, char* typeS
                 res.reserve(1 + 32 + 1);
                 res = (iValue & (1 << (32 - 1))) ? "0" : " ";
                 for (int i = 32; i > 0; --i)
-                    { res += (iValue & (1 << (i - 1))) ? "1" : "0"; }
+                {
+                    res += (iValue & (1 << (i - 1))) ? "1" : "0";
+                }
                 DEBUG_LOG(GetMangosString(LANG_GET_BITSTR), guid.GetString().c_str(), field, res.c_str());
                 PSendSysMessage(LANG_GET_BITSTR_FIELD, guid.GetString().c_str(), field, res.c_str());
                 break;

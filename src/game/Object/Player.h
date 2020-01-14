@@ -246,7 +246,10 @@ struct PlayerLevelInfo
 {
     PlayerLevelInfo()
     {
-        for (int i = 0; i < MAX_STATS; ++i) { stats[i] = 0; }
+        for (int i = 0; i < MAX_STATS; ++i)
+        {
+            stats[i] = 0;
+        }
     }
 
     uint8 stats[MAX_STATS];
@@ -2025,8 +2028,14 @@ class Player : public Unit
         // in 0.12 and later in Unit
         void InitStatBuffMods()
         {
-            for (int i = STAT_STRENGTH; i < MAX_STATS; ++i) { SetFloatValue(PLAYER_FIELD_POSSTAT0 + i, 0); }
-            for (int i = STAT_STRENGTH; i < MAX_STATS; ++i) { SetFloatValue(PLAYER_FIELD_NEGSTAT0 + i, 0); }
+            for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+            {
+                SetFloatValue(PLAYER_FIELD_POSSTAT0 + i, 0);
+            }
+            for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+            {
+                SetFloatValue(PLAYER_FIELD_NEGSTAT0 + i, 0);
+            }
         }
         void ApplyStatBuffMod(Stats stat, float val, bool apply) { ApplyModSignedFloatValue((val > 0 ? PLAYER_FIELD_POSSTAT0 + stat : PLAYER_FIELD_NEGSTAT0 + stat), val, apply); }
         void ApplyStatPercentBuffMod(Stats stat, float val, bool apply)

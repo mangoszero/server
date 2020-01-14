@@ -163,7 +163,9 @@ std::string AcceptableClientBuildsListStr()
     std::ostringstream data;
     int accepted_versions[] = EXPECTED_MANGOSD_CLIENT_BUILD;
     for (int i = 0; accepted_versions[i]; ++i)
-        { data << accepted_versions[i] << " "; }
+    {
+        data << accepted_versions[i] << " ";
+    }
     return data.str();
 }
 
@@ -415,7 +417,10 @@ void LoadDBCStores(const std::string& dataPath)
 
             // store class talent tab pages
             uint32 cls = 1;
-            for (uint32 m = 1; !(m & talentTabInfo->ClassMask) && cls < MAX_CLASSES; m <<= 1, ++cls) {}
+            for (uint32 m = 1; !(m & talentTabInfo->ClassMask) && cls < MAX_CLASSES; m <<= 1, ++cls)
+            {
+                // TODO: WHAT, WHY... surely this is a mistake
+            }
 
             sTalentTabPages[cls][talentTabInfo->tabpage] = talentTabId;
 
@@ -467,7 +472,9 @@ void LoadDBCStores(const std::string& dataPath)
     // Set path length
     sTaxiPathNodesByPath.resize(pathCount);                 // 0 and some other indexes not used
     for (uint32 i = 1; i < sTaxiPathNodesByPath.size(); ++i)
-        { sTaxiPathNodesByPath[i].resize(pathLength[i]); }
+    {
+        sTaxiPathNodesByPath[i].resize(pathLength[i]);
+    }
     // fill data (pointers to sTaxiPathNodeStore elements
     for (uint32 i = 1; i < sTaxiPathNodeStore.GetNumRows(); ++i)
         if (TaxiPathNodeEntry const* entry = sTaxiPathNodeStore.LookupEntry(i))
@@ -546,7 +553,9 @@ void LoadDBCStores(const std::string& dataPath)
     {
         std::string str;
         for (std::list<std::string>::iterator i = bad_dbc_files.begin(); i != bad_dbc_files.end(); ++i)
-            { str += *i + "\n"; }
+        {
+            str += *i + "\n";
+        }
 
         sLog.outError("\nSome required *.dbc files (%u from %d) not found or not compatible:\n%s", (uint32)bad_dbc_files.size(), DBCFilesCount, str.c_str());
         Log::WaitBeforeContinueIfNeed();

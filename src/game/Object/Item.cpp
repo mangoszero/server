@@ -300,7 +300,9 @@ bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
     SetUInt32Value(ITEM_FIELD_DURABILITY, itemProto->MaxDurability);
 
     for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
-        { SetSpellCharges(i, itemProto->Spells[i].SpellCharges); }
+    {
+        SetSpellCharges(i, itemProto->Spells[i].SpellCharges);
+    }
 
     SetUInt32Value(ITEM_FIELD_DURATION, itemProto->Duration);
 
@@ -354,7 +356,9 @@ void Item::SaveToDB()
 
             std::ostringstream ss;
             for (uint16 i = 0; i < m_valuesCount; ++i)
-                { ss << GetUInt32Value(i) << " "; }
+            {
+                ss << GetUInt32Value(i) << " ";
+            }
 
             stmt = CharacterDatabase.CreateStatement(insItem, "INSERT INTO item_instance (guid,owner_guid,data) VALUES (?, ?, ?)");
             stmt.PExecute(guid, GetOwnerGuid().GetCounter(), ss.str().c_str());
@@ -368,7 +372,9 @@ void Item::SaveToDB()
 
             std::ostringstream ss;
             for (uint16 i = 0; i < m_valuesCount; ++i)
-                { ss << GetUInt32Value(i) << " "; }
+            {
+                ss << GetUInt32Value(i) << " ";
+            }
 
             stmt.PExecute(ss.str().c_str(), GetOwnerGuid().GetCounter(), guid);
 
@@ -559,7 +565,9 @@ bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
 
         std::ostringstream ss;
         for (uint16 i = 0; i < m_valuesCount; ++i)
-            { ss << GetUInt32Value(i) << " "; }
+        {
+            ss << GetUInt32Value(i) << " ";
+        }
 
         stmt.addString(ss);
         stmt.addUInt32(GetOwnerGuid().GetCounter());
@@ -755,7 +763,9 @@ void Item::SetItemRandomProperties(int32 randomPropId)
                 SetState(ITEM_CHANGED);
             }
             for (uint32 i = PROP_ENCHANTMENT_SLOT_0; i < PROP_ENCHANTMENT_SLOT_0 + 3; ++i)
-                { SetEnchantment(EnchantmentSlot(i), item_rand->enchant_id[i - PROP_ENCHANTMENT_SLOT_0], 0, 0); }
+            {
+                SetEnchantment(EnchantmentSlot(i), item_rand->enchant_id[i - PROP_ENCHANTMENT_SLOT_0], 0, 0);
+            }
         }
     }
 }
@@ -1034,7 +1044,9 @@ void Item::ClearEnchantment(EnchantmentSlot slot)
     }
 
     for (uint8 x = 0; x < 3; ++x)
-        { SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + x, 0); }
+    {
+        SetUInt32Value(ITEM_FIELD_ENCHANTMENT + slot * MAX_ENCHANTMENT_OFFSET + x, 0);
+    }
     SetState(ITEM_CHANGED);
 }
 

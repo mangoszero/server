@@ -260,7 +260,9 @@ ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
         bones->Create(corpse->GetGUIDLow());
 
         for (int i = 3; i < CORPSE_END; ++i)                // don't overwrite guid and object type
-            { bones->SetUInt32Value(i, corpse->GetUInt32Value(i)); }
+        {
+            bones->SetUInt32Value(i, corpse->GetUInt32Value(i));
+        }
 
         bones->SetGrid(corpse->GetGrid());
         // bones->m_time = m_time;                          // don't overwrite time

@@ -110,7 +110,9 @@ void Log::InitColors(const std::string& str)
     }
 
     for (int i = 0; i < LogType_count; ++i)
-        { m_colors[i] = Color(color[i]); }
+    {
+        m_colors[i] = Color(color[i]);
+    }
 
     m_colored = true;
 }
@@ -1170,7 +1172,9 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
     while (p < packet->size())
     {
         for (size_t j = 0; j < 16 && p < packet->size(); ++j)
-            { fprintf(worldLogfile, "%.2X ", (*packet)[p++]); }
+        {
+            fprintf(worldLogfile, "%.2X ", (*packet)[p++]);
+        }
 
         fprintf(worldLogfile, "\n");
     }

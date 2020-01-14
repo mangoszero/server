@@ -886,7 +886,9 @@ void BattleGroundAV::Reset()
     for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
     {
         for (uint8 j = 0; j < 9; ++j)                       // 9 quests getting tracked
-            { m_Team_QuestStatus[i][j] = 0; }
+        {
+            m_Team_QuestStatus[i][j] = 0;
+        }
         m_TeamScores[i]         = BG_AV_SCORE_INITIAL_POINTS;
         m_IsInformedNearLose[i] = false;
         m_ActiveEvents[BG_AV_NodeEventCaptainDead_A + i] = BG_EVENT_NONE;
@@ -907,17 +909,27 @@ void BattleGroundAV::Reset()
     m_ActiveEvents[BG_AV_BOSS_A] = 0;
     m_ActiveEvents[BG_AV_BOSS_H] = 0;
     for (BG_AV_Nodes i = BG_AV_NODES_DUNBALDAR_SOUTH; i <= BG_AV_NODES_FROSTWOLF_WTOWER; ++i)  // towers
-        { m_ActiveEvents[BG_AV_MARSHAL_A_SOUTH + i - BG_AV_NODES_DUNBALDAR_SOUTH] = 0; }
+    {
+        m_ActiveEvents[BG_AV_MARSHAL_A_SOUTH + i - BG_AV_NODES_DUNBALDAR_SOUTH] = 0;
+    }
 
     for (BG_AV_Nodes i = BG_AV_NODES_FIRSTAID_STATION; i <= BG_AV_NODES_STONEHEART_GRAVE; ++i)  // alliance graves
-        { InitNode(i, BG_AV_TEAM_ALLIANCE, false); }
+    {
+        InitNode(i, BG_AV_TEAM_ALLIANCE, false);
+    }
     for (BG_AV_Nodes i = BG_AV_NODES_DUNBALDAR_SOUTH; i <= BG_AV_NODES_STONEHEART_BUNKER; ++i)  // alliance towers
-        { InitNode(i, BG_AV_TEAM_ALLIANCE, true); }
+    {
+        InitNode(i, BG_AV_TEAM_ALLIANCE, true);
+    }
 
     for (BG_AV_Nodes i = BG_AV_NODES_ICEBLOOD_GRAVE; i <= BG_AV_NODES_FROSTWOLF_HUT; ++i)       // horde graves
-        { InitNode(i, BG_AV_TEAM_HORDE, false); }
+    {
+        InitNode(i, BG_AV_TEAM_HORDE, false);
+    }
     for (BG_AV_Nodes i = BG_AV_NODES_ICEBLOOD_TOWER; i <= BG_AV_NODES_FROSTWOLF_WTOWER; ++i)    // horde towers
-        { InitNode(i, BG_AV_TEAM_HORDE, true); }
+    {
+        InitNode(i, BG_AV_TEAM_HORDE, true);
+    }
 
     InitNode(BG_AV_NODES_SNOWFALL_GRAVE, BG_AV_TEAM_NEUTRAL, false);                            // give snowfall neutral owner
 }

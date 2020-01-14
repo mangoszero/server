@@ -883,7 +883,9 @@ void ScriptMgr::LoadDbScriptStrings()
     sWaypointMgr.CheckTextsExistance(ids);
 
     for (std::set<int32>::const_iterator itr = ids.begin(); itr != ids.end(); ++itr)
-        { sLog.outErrorDb("Table `db_script_string` has unused string id %u", *itr); }
+    {
+        sLog.outErrorDb("Table `db_script_string` has unused string id %u", *itr);
+    }
 }
 
 void ScriptMgr::CheckScriptTexts(std::set<int32>& ids)

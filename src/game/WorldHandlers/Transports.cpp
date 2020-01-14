@@ -100,7 +100,9 @@ void MapManager::LoadTransports()
         }
 
         for (std::set<uint32>::const_iterator i = t->GetMapsUsed()->begin(); i != t->GetMapsUsed()->end(); ++i)
-            { m_TransportsByMap[*i].insert(t); }
+        {
+            m_TransportsByMap[*i].insert(t);
+        }
 
         m_Transports.insert(t);
 

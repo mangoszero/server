@@ -499,7 +499,9 @@ void Object::ClearUpdateMask(bool remove)
     if (m_uint32Values)
     {
         for (uint16 index = 0; index < m_valuesCount; ++index)
-            { m_changedValues[index] = false; }
+        {
+            m_changedValues[index] = false;
+        }
     }
 
     if (m_objectUpdated)

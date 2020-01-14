@@ -271,7 +271,9 @@ QueryNamedResult* MySQLConnection::QueryNamed(const char* sql)
 
     QueryFieldNames names(fieldCount);
     for (uint32 i = 0; i < fieldCount; ++i)
-        { names[i] = fields[i].name; }
+    {
+        names[i] = fields[i].name;
+    }
 
     QueryResultMysql* queryResult = new QueryResultMysql(result, fields, rowCount, fieldCount);
 

@@ -74,7 +74,9 @@ bool normalizePlayerName(std::string& name)
 
     wstr_buf[0] = wcharToUpper(wstr_buf[0]);
     for (size_t i = 1; i < wstr_len; ++i)
-        { wstr_buf[i] = wcharToLower(wstr_buf[i]); }
+    {
+        wstr_buf[i] = wcharToLower(wstr_buf[i]);
+    }
 
     if (!WStrToUtf8(wstr_buf, wstr_len, name))
     {
@@ -190,33 +192,49 @@ ObjectMgr::ObjectMgr() :
 ObjectMgr::~ObjectMgr()
 {
     for (QuestMap::iterator i = mQuestTemplates.begin(); i != mQuestTemplates.end(); ++i)
-        { delete i->second; }
+    {
+        delete i->second;
+    }
 
     for (PetLevelInfoMap::iterator i = petInfo.begin(); i != petInfo.end(); ++i)
-        { delete[] i->second; }
+    {
+        delete[] i->second;
+    }
 
     // free only if loaded
     for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
-        { delete[] playerClassInfo[class_].levelInfo; }
+    {
+        delete[] playerClassInfo[class_].levelInfo;
+    }
 
     for (int race = 0; race < MAX_RACES; ++race)
     {
         for (int class_ = 0; class_ < MAX_CLASSES; ++class_)
-            { delete[] playerInfo[race][class_].levelInfo; }
+        {
+            delete[] playerInfo[race][class_].levelInfo;
+        }
     }
 
     // free objects
     for (GroupMap::iterator itr = mGroupMap.begin(); itr != mGroupMap.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
 
     for (CacheVendorItemMap::iterator itr = m_mCacheVendorTemplateItemMap.begin(); itr != m_mCacheVendorTemplateItemMap.end(); ++itr)
-        { itr->second.Clear(); }
+    {
+        itr->second.Clear();
+    }
 
     for (CacheVendorItemMap::iterator itr = m_mCacheVendorItemMap.begin(); itr != m_mCacheVendorItemMap.end(); ++itr)
-        { itr->second.Clear(); }
+    {
+        itr->second.Clear();
+    }
 
     for (CacheTrainerSpellMap::iterator itr = m_mCacheTrainerSpellMap.begin(); itr != m_mCacheTrainerSpellMap.end(); ++itr)
-        { itr->second.Clear(); }
+    {
+        itr->second.Clear();
+    }
 }
 
 Group* ObjectMgr::GetGroupById(uint32 id) const
@@ -2051,7 +2069,9 @@ void ObjectMgr::LoadItemPrototypes()
     }
 
     for (std::set<uint32>::const_iterator itr = notFoundOutfit.begin(); itr != notFoundOutfit.end(); ++itr)
-        { sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr); }
+    {
+        sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr);
+    }
 
     sLog.outString(">> Loaded %u item prototypes", sItemStorage.GetRecordCount());
     sLog.outString();
@@ -2741,7 +2761,9 @@ void ObjectMgr::LoadPlayerInfo()
             PlayerLevelInfo* pLevelInfo = &pInfo->levelInfo[current_level - 1];
 
             for (int i = 0; i < MAX_STATS; ++i)
-                { pLevelInfo->stats[i] = fields[i + 3].GetUInt8(); }
+            {
+                pLevelInfo->stats[i] = fields[i + 3].GetUInt8();
+            }
 
             bar.step();
             ++count;
@@ -2803,7 +2825,9 @@ void ObjectMgr::LoadPlayerInfo()
     {
         mPlayerXPperLevel.resize(sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL));
         for (uint32 level = 0; level < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL); ++level)
-            { mPlayerXPperLevel[level] = 0; }
+        {
+            mPlayerXPperLevel[level] = 0;
+        }
 
         //                                                 0    1
         QueryResult* result  = WorldDatabase.Query("SELECT lvl, xp_for_next_level FROM player_xp_for_level");
@@ -3428,7 +3452,9 @@ void ObjectMgr::LoadQuests()
 {
     // For reload case
     for (QuestMap::const_iterator itr = mQuestTemplates.begin(); itr != mQuestTemplates.end(); ++itr)
-        { delete itr->second; }
+    {
+        delete itr->second;
+    }
 
     mQuestTemplates.clear();
 
@@ -4471,7 +4497,9 @@ void ObjectMgr::LoadPageTexts()
                 std::ostringstream ss;
                 ss << "The text page(s) ";
                 for (std::set<uint32>::iterator itr = checkedPages.begin(); itr != checkedPages.end(); ++itr)
-                    { ss << *itr << " "; }
+                {
+                    ss << *itr << " ";
+                }
                 ss << "create(s) a circular reference, which can cause the server to freeze. Changing Next_Page of page "
                    << pageItr->Page_ID << " to 0";
                 sLog.outErrorDb("%s", ss.str().c_str());
@@ -4904,7 +4932,9 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
             {
                 // mail open and then not returned
                 for (MailItemInfoVec::iterator itr2 = m->items.begin(); itr2 != m->items.end(); ++itr2)
-                    { CharacterDatabase.PExecute("DELETE FROM item_instance WHERE guid = '%u'", itr2->item_guid); }
+                {
+                    CharacterDatabase.PExecute("DELETE FROM item_instance WHERE guid = '%u'", itr2->item_guid);
+                }
             }
             else
             {
@@ -8419,7 +8449,9 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
 
     // For reload case
     for (CacheTrainerSpellMap::iterator itr = trainerList.begin(); itr != trainerList.end(); ++itr)
-        { itr->second.Clear(); }
+    {
+        itr->second.Clear();
+    }
     trainerList.clear();
 
     std::set<uint32> skip_trainers;
@@ -8565,7 +8597,9 @@ void ObjectMgr::LoadTrainerTemplates()
     bool hasErrored = false;
 
     for (CacheTrainerSpellMap::const_iterator tItr = m_mCacheTrainerTemplateSpellMap.begin(); tItr != m_mCacheTrainerTemplateSpellMap.end(); ++tItr)
-        { trainer_ids.insert(tItr->first); }
+    {
+        trainer_ids.insert(tItr->first);
+    }
 
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
     {
@@ -8587,7 +8621,9 @@ void ObjectMgr::LoadTrainerTemplates()
     }
 
     for (std::set<uint32>::const_iterator tItr = trainer_ids.begin(); tItr != trainer_ids.end(); ++tItr)
-        { sLog.outErrorDb("Table `npc_trainer_template` has trainer template %u not used by any trainers ", *tItr); }
+    {
+        sLog.outErrorDb("Table `npc_trainer_template` has trainer template %u not used by any trainers ", *tItr);
+    }
 
     if (hasErrored || !trainer_ids.empty())                 // Append extra line in case of reported errors
     {
@@ -8601,7 +8637,9 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
 
     // For reload case
     for (CacheVendorItemMap::iterator itr = vendorList.begin(); itr != vendorList.end(); ++itr)
-        { itr->second.Clear(); }
+    {
+        itr->second.Clear();
+    }
     vendorList.clear();
 
     std::set<uint32> skip_vendors;
@@ -8658,7 +8696,9 @@ void ObjectMgr::LoadVendorTemplates()
     std::set<uint32> vendor_ids;
 
     for (CacheVendorItemMap::const_iterator vItr = m_mCacheVendorTemplateItemMap.begin(); vItr != m_mCacheVendorTemplateItemMap.end(); ++vItr)
-        { vendor_ids.insert(vItr->first); }
+    {
+        vendor_ids.insert(vItr->first);
+    }
 
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
     {
@@ -8677,7 +8717,9 @@ void ObjectMgr::LoadVendorTemplates()
     }
 
     for (std::set<uint32>::const_iterator vItr = vendor_ids.begin(); vItr != vendor_ids.end(); ++vItr)
-        { sLog.outErrorDb("Table `npc_vendor_template` has vendor template %u not used by any vendors ", *vItr); }
+    {
+        sLog.outErrorDb("Table `npc_vendor_template` has vendor template %u not used by any vendors ", *vItr);
+    }
 }
 
 void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
@@ -8961,7 +9003,9 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
     if (!sLog.HasLogFilter(LOG_FILTER_DB_STRICTED_CHECK))
     {
         for (std::set<uint32>::const_iterator itr = menu_ids.begin(); itr != menu_ids.end(); ++itr)
-            { sLog.outErrorDb("Table `gossip_menu` contain unused (in creature or GO or menu options) menu id %u.", *itr); }
+        {
+            sLog.outErrorDb("Table `gossip_menu` contain unused (in creature or GO or menu options) menu id %u.", *itr);
+        }
     }
 
     sLog.outString(">> Loaded %u gossip_menu_option entries", count);
@@ -8979,7 +9023,9 @@ void ObjectMgr::LoadGossipMenus()
     // Check which script-ids in db_scripts type DBS_ON_GOSSIP are not used
     std::set<uint32> gossipScriptSet;
     for (ScriptChainMap::const_iterator itr = scm->begin(); itr != scm->end(); ++itr)
-        { gossipScriptSet.insert(itr->first); }
+    {
+        gossipScriptSet.insert(itr->first);
+    }
 
     // Load gossip_menu and gossip_menu_option data
     sLog.outString("(Re)Loading Gossip menus...");
@@ -8988,7 +9034,9 @@ void ObjectMgr::LoadGossipMenus()
     LoadGossipMenuItems(gossipScriptSet);
 
     for (std::set<uint32>::const_iterator itr = gossipScriptSet.begin(); itr != gossipScriptSet.end(); ++itr)
-        { sLog.outErrorDb("Table `db_scripts [type = %d]` contains unused script, id %u.", DBS_ON_GOSSIP, *itr); }
+    {
+        sLog.outErrorDb("Table `db_scripts [type = %d]` contains unused script, id %u.", DBS_ON_GOSSIP, *itr);
+    }
 }
 
 void ObjectMgr::AddVendorItem(uint32 entry, uint32 item, uint32 maxcount, uint32 incrtime)

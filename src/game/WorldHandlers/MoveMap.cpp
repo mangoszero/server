@@ -147,7 +147,9 @@ namespace MMAP
     MMapManager::~MMapManager()
     {
         for (MMapDataSet::iterator i = loadedMMaps.begin(); i != loadedMMaps.end(); ++i)
-            { delete i->second; }
+        {
+            delete i->second;
+        }
 
         // by now we should not have maps loaded
         // if we had, tiles in MMapData->mmapLoadedTiles, their actual data is lost!

@@ -506,9 +506,13 @@ void Pet::SavePetToDB(PetSaveMode mode)
         {
             int i = 0;
             for (TeachSpellMap::const_iterator itr = m_teachspells.begin(); i < 4 && itr != m_teachspells.end(); ++i, ++itr)
-                { ss << itr->first << " " << itr->second << " "; }
+            {
+                ss << itr->first << " " << itr->second << " ";
+            }
             for (; i < 4; ++i)
-                { ss << uint32(0) << " " << uint32(0) << " "; }
+            {
+                ss << uint32(0) << " " << uint32(0) << " ";
+            }
         }
         savePet.addString(ss);
 
@@ -1392,7 +1396,9 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
     }
 
     for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-        { SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, float(createResistance[i])); }
+    {
+        SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, float(createResistance[i]));
+    }
 
     UpdateAllStats();
 
@@ -1596,7 +1602,9 @@ void Pet::_LoadAuras(uint32 timediff)
 
     // all aura related fields
     for (int i = UNIT_FIELD_AURA; i <= UNIT_FIELD_AURASTATE; ++i)
-        { SetUInt32Value(i, 0); }
+    {
+        SetUInt32Value(i, 0);
+    }
 
     QueryResult* result = CharacterDatabase.PQuery("SELECT caster_guid,item_guid,spell,stackcount,remaincharges,basepoints0,basepoints1,basepoints2,periodictime0,periodictime1,periodictime2,maxduration,remaintime,effIndexMask FROM pet_aura WHERE guid = '%u'", m_charmInfo->GetPetNumber());
 
@@ -1775,10 +1783,14 @@ void Pet::_SaveAuras()
             stmt.addUInt8(holder->GetAuraCharges());
 
             for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-                { stmt.addInt32(damage[i]); }
+            {
+                stmt.addInt32(damage[i]);
+            }
 
             for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-                { stmt.addUInt32(periodicTime[i]); }
+            {
+                stmt.addUInt32(periodicTime[i]);
+            }
 
             stmt.addInt32(holder->GetAuraMaxDuration());
             stmt.addInt32(holder->GetAuraDuration());
@@ -2250,7 +2262,9 @@ void Pet::LearnPetPassives()
     if (petStore != sPetFamilySpellsStore.end())
     {
         for (PetFamilySpellsSet::const_iterator petSet = petStore->second.begin(); petSet != petStore->second.end(); ++petSet)
-            { addSpell(*petSet, ACT_DECIDE, PETSPELL_NEW, PETSPELL_FAMILY); }
+        {
+            addSpell(*petSet, ACT_DECIDE, PETSPELL_NEW, PETSPELL_FAMILY);
+        }
     }
 }
 

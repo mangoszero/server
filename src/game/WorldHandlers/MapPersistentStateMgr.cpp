@@ -623,9 +623,13 @@ MapPersistentStateManager::~MapPersistentStateManager()
     // so we must be prepared for both cases
     lock_instLists = true;
     for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end(); ++itr)
-        { delete  itr->second; }
+    {
+        delete  itr->second;
+    }
     for (PersistentStateMap::iterator itr = m_instanceSaveByMapId.begin(); itr != m_instanceSaveByMapId.end(); ++itr)
-        { delete  itr->second; }
+    {
+        delete  itr->second;
+    }
 }
 
 /*

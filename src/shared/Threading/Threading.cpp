@@ -33,7 +33,9 @@ using namespace ACE_Based;
 ThreadPriority::ThreadPriority()
 {
     for (int i = Idle; i < MAXPRIORITYNUM; ++i)
-        { m_priority[i] = ACE_THR_PRI_OTHER_DEF; }
+    {
+        m_priority[i] = ACE_THR_PRI_OTHER_DEF;
+    }
 
     m_priority[Idle] = ACE_Sched_Params::priority_min(ACE_SCHED_OTHER);
     m_priority[Realtime] = ACE_Sched_Params::priority_max(ACE_SCHED_OTHER);
