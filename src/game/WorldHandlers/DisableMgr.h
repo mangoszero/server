@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 MaNGOS project <http://getmangos.eu>
+ * Copyright (C) 2015-2020 MaNGOS project <https://getmangos.eu>
  * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *

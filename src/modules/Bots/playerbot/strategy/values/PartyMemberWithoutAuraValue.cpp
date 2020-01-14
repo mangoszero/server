@@ -15,7 +15,9 @@ public:
     {
         Pet* pet = dynamic_cast<Pet*>(unit);
         if (pet && (pet->getPetType() == MINI_PET || pet->getPetType() == SUMMON_PET))
+        {
             return false;
+        }
 
         return unit->IsAlive() && !ai->HasAura(aura, unit);
     }

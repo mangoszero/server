@@ -14,15 +14,21 @@ namespace ai
 
             LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
             if (!movement.lastAreaTrigger)
+            {
                 return false;
+            }
 
             AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(movement.lastAreaTrigger);
             if(!atEntry)
+            {
                 return false;
+            }
 
             AreaTrigger const* at = sObjectMgr.GetAreaTrigger(movement.lastAreaTrigger);
             if (!at)
+            {
                 return false;
+            }
 
             return IsPointInAreaTriggerZone(atEntry, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), 0.5f);
         }

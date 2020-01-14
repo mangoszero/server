@@ -214,7 +214,9 @@ class GMTicketMgr
         {
             GMTicketIdMap::iterator itr = m_GMTicketIdMap.find(id);
             if (itr == m_GMTicketIdMap.end())
+            {
                 return NULL;
+            }
             return itr->second;
         }
 

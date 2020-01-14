@@ -9,15 +9,11 @@ bool SpellCastUsefulValue::Calculate()
 {
     uint32 spellid = AI_VALUE2(uint32, "spell id", qualifier);
     if (!spellid)
-    {
         return true; // there can be known alternatives
-    }
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
     if (!spellInfo)
-    {
         return true; // there can be known alternatives
-    }
 
     if (spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_1 ||
         spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_2)

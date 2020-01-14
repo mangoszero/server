@@ -15,7 +15,9 @@ bool ReachAreaTriggerAction::Execute(Event event)
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(triggerId);
     if(!atEntry)
+    {
         return false;
+    }
 
     AreaTrigger const* at = sObjectMgr.GetAreaTrigger(triggerId);
     if (!at)
@@ -65,11 +67,15 @@ bool AreaTriggerAction::Execute(Event event)
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(triggerId);
     if(!atEntry)
+    {
         return false;
+    }
 
     AreaTrigger const* at = sObjectMgr.GetAreaTrigger(triggerId);
     if (!at)
+    {
         return true;
+    }
 
     ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
 

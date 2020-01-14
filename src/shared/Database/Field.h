@@ -160,7 +160,9 @@ class Field
         {
             int64 value = 0;
             if (!mValue || sscanf(mValue, SI64FMTD, &value) == -1)
+            {
                 return 0;
+            }
 
             return value;
         }

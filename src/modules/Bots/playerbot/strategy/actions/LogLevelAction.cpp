@@ -41,11 +41,19 @@ string LogLevelAction::logLevel2string(LogLevel level)
 LogLevel LogLevelAction::string2logLevel(string level)
 {
     if (level == "debug")
+    {
         return LOG_LVL_DEBUG;
+    }
     else if (level == "minimal")
+    {
         return LOG_LVL_MINIMAL;
+    }
     else if (level == "detail")
+    {
         return LOG_LVL_DETAIL;
+    }
     else
+    {
         return LOG_LVL_BASIC;
+    }
 }

@@ -12,7 +12,9 @@ namespace ai
         {
             Unit* target = AI_VALUE(Unit*, qualifier);
             if (!target)
+            {
                 return false;
+            }
 
 
             float targetOrientation = target->GetOrientation();

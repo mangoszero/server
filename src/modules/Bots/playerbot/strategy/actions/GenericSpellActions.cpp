@@ -12,7 +12,9 @@ bool CastSpellAction::Execute(Event event)
 bool CastSpellAction::isPossible()
 {
     if (AI_VALUE2(float, "distance", GetTargetName()) > range)
+    {
         return false;
+    }
 
     return ai->CanCastSpell(spell, GetTarget());
 }
@@ -30,7 +32,9 @@ bool CastAuraSpellAction::isUseful()
 bool CastEnchantItemAction::isUseful()
 {
     if (!CastSpellAction::isUseful())
+    {
         return false;
+    }
 
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     return spellId && AI_VALUE2(Item*, "item for spell", spellId);

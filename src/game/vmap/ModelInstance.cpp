@@ -71,7 +71,9 @@ namespace VMAP
     void ModelInstance::GetAreaInfo(const G3D::Vector3& p, AreaInfo& info) const
     {
         if (!iModel)
+        {
             return;
+        }
 
         // M2 files don't contain area info, only WMO files
         if (flags & MOD_M2)
@@ -106,7 +108,9 @@ namespace VMAP
     bool ModelInstance::GetLocationInfo(const G3D::Vector3& p, LocationInfo& info) const
     {
         if (!iModel)
+        {
             return false;
+        }
 
         // M2 files don't contain area info, only WMO files
         if (flags & MOD_M2)
