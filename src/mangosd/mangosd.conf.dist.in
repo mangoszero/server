@@ -207,6 +207,10 @@ BindIP                       = "0.0.0.0"
 #        Default: 1 (Enable)
 #                 0 (Disabled)
 #
+#    MaxWhoListReturns
+#        Set the max number of players returned in the /who list and interface (0 means unlimited)
+#        Default:     49 - (stable)
+#
 ################################################################################
 
 UseProcessors                     = 0
@@ -236,6 +240,7 @@ UpdateUptimeInterval              = 10
 MaxCoreStuckTime                  = 0
 AddonChannel                      = 1
 CleanCharacterDB                  = 1
+MaxWhoListReturns                 = 49
 
 ################################################################################
 # SERVER LOGGING
