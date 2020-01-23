@@ -3453,6 +3453,10 @@ class Unit : public WorldObject
         float GetWeaponDamageRange(WeaponAttackType attType , WeaponDamageRange type) const;
         void SetBaseWeaponDamage(WeaponAttackType attType , WeaponDamageRange damageRange, float value) { m_weaponDamage[attType][damageRange] = value; }
 
+        SpellSchools GetWeaponDamageSchool(WeaponAttackType attType, uint8 index = 0) const { return m_weaponDamageInfo.weapon[attType].damage[index].school; }
+        void SetWeaponDamageSchool(WeaponAttackType attType, SpellSchools school, uint8 index = 0) { m_weaponDamageInfo.weapon[attType].damage[index].school = school; }
+
+
         // Visibility system
         UnitVisibility GetVisibility() const { return m_Visibility; }
         void SetVisibility(UnitVisibility x);
@@ -3700,7 +3704,24 @@ class Unit : public WorldObject
         virtual bool CanSwim() const = 0;
         virtual bool CanFly() const = 0;
 
-    protected:
+protected:
+        struct WeaponDamageInfo
+        {
+            struct Weapon
+            {
+                struct Damage
+                {
+                    SpellSchools school = SPELL_SCHOOL_NORMAL;
+                    float value[2] = { BASE_MINDAMAGE, BASE_MAXDAMAGE };
+                };
+
+                uint32 lines = 1;
+                Damage damage[MAX_ITEM_PROTO_DAMAGES];
+            };
+
+            Weapon weapon[MAX_ATTACK];
+        };
+
         explicit Unit();
 
         void _UpdateSpells(uint32 time);
@@ -3736,6 +3757,8 @@ class Unit : public WorldObject
         AuraList m_modAuras[TOTAL_AURAS];
         float m_auraModifiersGroup[UNIT_MOD_END][MODIFIER_TYPE_END];
         float m_weaponDamage[MAX_ATTACK][2];
+        WeaponDamageInfo m_weaponDamageInfo;
+
         bool m_canModifyStats;
         // std::list< spellEffectPair > AuraSpells[TOTAL_AURAS];  // TODO: use this if ok for mem
 
@@ -3756,7 +3779,8 @@ class Unit : public WorldObject
         bool m_isSpawningLinked;
 
     private:
-        void CleanupDeletedAuras();
+
+    void CleanupDeletedAuras();
         void UpdateSplineMovement(uint32 t_diff);
 
         Unit* _GetTotem(TotemSlot slot) const;              // for templated function without include need
