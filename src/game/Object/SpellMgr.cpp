@@ -810,7 +810,10 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
     {
         case 13003:
         case 13010:
-        case 23182:  // Mark of Frost
+        case 13139: // net-o-matic special effect
+        case 23182: // Mark of Frost
+        case 23445: // evil twin
+        case 25040: // Mark of Nature
             return false;
         default:
             break;
