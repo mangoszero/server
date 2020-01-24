@@ -196,7 +196,9 @@ inline void LoadDBC(uint32& availableDbcLocales, BarGoLink& bar, StoreProblemLis
 
             std::string dbc_filename_loc = dbc_path + fullLocaleNameList[i].name + "/" + filename;
             if (!storage.LoadStringsFrom(dbc_filename_loc.c_str()))
-                { availableDbcLocales &= ~(1 << i); }           // mark as not available for speedup next checks
+            {
+                availableDbcLocales &= ~(1 << i); // mark as not available for speedup next checks
+            }
         }
     }
     else
@@ -410,14 +412,14 @@ void LoadDBCStores(const std::string& dataPath)
             }
 
             // prevent memory corruption; otherwise cls will become 12 below
-            if (! talentTabInfo->ClassMask & CLASSMASK_ALL_PLAYABLE)
+            if (!talentTabInfo->ClassMask & CLASSMASK_ALL_PLAYABLE)
             {
                 continue;
             }
 
             // store class talent tab pages
             uint32 cls = 1;
-            for (uint32 m = 1; !(m & talentTabInfo->ClassMask) && cls < 12 /*MAX_CLASSES*/; m << = 1, ++cls)
+            for (uint32 m = 1; !(m & talentTabInfo->ClassMask) && cls < 12 /*MAX_CLASSES*/; m <<= 1, ++cls)
             {
                 // TODO: WHAT, WHY... surely this is a mistake
             }
