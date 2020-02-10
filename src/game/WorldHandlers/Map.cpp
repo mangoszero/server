@@ -1770,7 +1770,7 @@ DungeonPersistentState* DungeonMap::GetPersistanceState() const
 BattleGroundMap::BattleGroundMap(uint32 id, time_t expiry, uint32 InstanceId)
     : Map(id, expiry, InstanceId)
 {
-    // lets initialize visibility distance for BG
+    // lets initialize visibility distance for BG/Arenas
     BattleGroundMap::InitVisibilityDistance();
 }
 
@@ -1793,8 +1793,8 @@ BattleGroundPersistentState* BattleGroundMap::GetPersistanceState() const
 
 void BattleGroundMap::InitVisibilityDistance()
 {
-    // init visibility distance for BG
-    m_VisibleDistance = World::GetMaxVisibleDistanceInBG();
+    // init visibility distance for BG/Arenas
+    m_VisibleDistance = World::GetMaxVisibleDistanceInBGArenas();
 }
 
 bool BattleGroundMap::CanEnter(Player* player)
