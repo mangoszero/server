@@ -126,7 +126,9 @@ class DBCStorage
                 {
                     T const* node = LookupEntry(i);
                     if (!node)
+                    {
                         continue;
+                    }
                     data[i] = node;
                 }
                 loaded = true;

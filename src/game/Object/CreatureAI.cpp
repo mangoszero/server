@@ -186,7 +186,9 @@ void CreatureAI::SetCombatMovementFlag(uint8 flag, bool setFlag)
     {
         m_combatMovement |= flag;
         if (m_combatMovement)
+        {
             m_creature->clearUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
+        }
     }
     else
     {
@@ -221,7 +223,9 @@ void CreatureAI::SetChase(bool chase)
         {
             m_creature->StopMoving();
             if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+            {
                 m_creature->SendMeleeAttackStop(m_creature->getVictim());
+            }
         }
     }
 }

@@ -485,13 +485,29 @@ struct ItemPrototype
         return false;
     }
 
-    uint32 GetMaxStackSize() const { return Stackable; }
+    uint32 GetMaxStackSize() const
+    {
+        return Stackable;
+    }
 
-    bool IsPotion() const { return Class == ITEM_CLASS_CONSUMABLE && SubClass == ITEM_SUBCLASS_POTION; }
-    bool IsConjuredConsumable() const { return Class == ITEM_CLASS_CONSUMABLE && (Flags & ITEM_FLAG_CONJURED); }
+    bool IsPotion() const
+    {
+        return Class == ITEM_CLASS_CONSUMABLE && SubClass == ITEM_SUBCLASS_POTION;
+    }
 
-    bool IsWeaponVellum() const { return Class == ITEM_CLASS_TRADE_GOODS; }
-    bool IsArmorVellum() const { return Class == ITEM_CLASS_TRADE_GOODS; }
+    bool IsConjuredConsumable() const
+    {
+        return Class == ITEM_CLASS_CONSUMABLE && (Flags & ITEM_FLAG_CONJURED);
+    }
+
+    bool IsWeaponVellum() const
+    {
+        return Class == ITEM_CLASS_TRADE_GOODS;
+    }
+    bool IsArmorVellum() const
+    {
+        return Class == ITEM_CLASS_TRADE_GOODS;
+    }
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform

@@ -112,28 +112,43 @@ class GMTicket
          * Gets the \ref Player s \ref ObjectGuid which asked the question and created the ticket
          * @return the \ref ObjectGuid for the \ref Player that asked the question
          */
-        ObjectGuid const& GetPlayerGuid() const { return m_guid; }
+        ObjectGuid const& GetPlayerGuid() const
+        {
+            return m_guid;
+        }
         /**
          * Get the tickets question
          * @return the question this ticket had
          */
-        const char* GetText() const { return m_text.c_str(); }
+        const char* GetText() const
+        {
+            return m_text.c_str();
+        }
         /**
          * Get the response given to this ticket, if any
          * @return the response that was made to this tickets question
          */
-        const char* GetResponse() const { return m_responseText.c_str(); }
+        const char* GetResponse() const
+        {
+            return m_responseText.c_str();
+        }
         /**
          * Tells us when the last update was done as a UNIX timestamp.
          * @return Time since last update in seconds since UNIX epoch
          */
-        uint64 GetLastUpdate() const { return m_lastUpdate; }
+        uint64 GetLastUpdate() const
+        {
+            return m_lastUpdate;
+        }
         /**
          * Gets the id for this \ref GMTicket, as represented in the database
          * table characters.character_ticket
          * @return id for this ticket in the database
          */
-        uint32 GetId() const { return m_ticketId; }
+        uint32 GetId() const
+        {
+            return m_ticketId;
+        }
 
         /**
          * Changes the tickets question text.

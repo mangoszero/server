@@ -50,20 +50,23 @@ void Bag::AddToWorld()
     Item::AddToWorld();
 
     for (uint32 i = 0;  i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
         {
             m_bagslot[i]->AddToWorld();
         }
+    }
 }
 
 void Bag::RemoveFromWorld()
 {
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
         {
             m_bagslot[i]->RemoveFromWorld();
         }
-
+    }
     Item::RemoveFromWorld();
 }
 
@@ -128,11 +131,12 @@ bool Bag::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
 void Bag::DeleteFromDB()
 {
     for (int i = 0; i < MAX_BAG_SIZE; ++i)
+    {
         if (m_bagslot[i])
         {
             m_bagslot[i]->DeleteFromDB();
         }
-
+    }
     Item::DeleteFromDB();
 }
 
@@ -140,11 +144,12 @@ uint32 Bag::GetFreeSlots() const
 {
     uint32 slots = 0;
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (!m_bagslot[i])
         {
             ++slots;
         }
-
+    }
     return slots;
 }
 
@@ -227,12 +232,15 @@ uint32 Bag::GetItemCount(uint32 item, Item* eItem) const
 uint8 Bag::GetSlotByItemGUID(ObjectGuid guid) const
 {
     for (uint32 i = 0; i < GetBagSize(); ++i)
+    {
         if (m_bagslot[i])
+        {
             if (m_bagslot[i]->GetObjectGuid() == guid)
             {
                 return i;
             }
-
+        }
+    }
     return NULL_SLOT;
 }
 

@@ -41,13 +41,19 @@ struct SOAPCommand
 {
     public:
         void appendToPrintBuffer(const char* msg)
-          { m_printBuffer += msg; }
+        {
+            m_printBuffer += msg;
+        }
 
         void setCommandSuccess(bool val)
-         { m_success = val; }
+        {
+            m_success = val;
+        }
 
         bool hasCommandSucceeded()
-          { return m_success; }
+        {
+            return m_success;
+        }
 
         static void print(void* callbackArg, const char* msg)
         {
@@ -100,8 +106,10 @@ class SoapPool : public ACE_Task<ACE_MT_SYNCH>
 
 SoapThread::~SoapThread()
 {
-  if(pool_)
-      delete pool_;
+    if(pool_)
+    {
+        delete pool_;
+    }
 }
 
 int SoapThread::open(void* unused)

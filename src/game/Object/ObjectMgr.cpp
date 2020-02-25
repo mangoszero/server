@@ -560,7 +560,7 @@ void ObjectMgr::LoadCreatureTemplates()
 
         if (!displayScaleEntry)
         {
-            sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid in modelid_1/modelid_2", cInfo->Entry);
+            sLog.outErrorDb("Creature (Entry: %u) has nonexistent modelid in modelid_1/modelid_2/modelid_3/modelid_4", cInfo->Entry);
         }
 
         if (!cInfo->MinLevel)
@@ -639,7 +639,7 @@ void ObjectMgr::LoadCreatureTemplates()
 
         if (cInfo->InhabitType <= 0 || cInfo->InhabitType > INHABIT_ANYWHERE)
         {
-            sLog.outErrorDb("Creature (Entry: %u) has wrong value (%u) in `InhabitType`, creature will not correctly walk/swim", cInfo->Entry, cInfo->InhabitType);
+            sLog.outErrorDb("Creature (Entry: %u) has wrong value (%u) in `InhabitType`, creature will not correctly walk/swim/fly", cInfo->Entry, cInfo->InhabitType);
             const_cast<CreatureInfo*>(cInfo)->InhabitType = INHABIT_ANYWHERE;
         }
 
@@ -3041,7 +3041,9 @@ void ObjectMgr::FlushRankPoints(uint32 dateTop)
         delete result;
     }
     else
+    {
         CharacterDatabase.PExecute("DELETE FROM character_honor_cp WHERE date <= %u AND used=1", dateTop - 7);
+    }
 
     sLog.outString();
     sLog.outString(">> Flushed all ranking points");
@@ -3068,7 +3070,9 @@ void ObjectMgr::DistributeRankPoints(uint32 team, uint32 dateBegin , bool flush 
         RP = 0;
         result = CharacterDatabase.PQuery("SELECT stored_honor_rating,stored_honorable_kills FROM characters WHERE guid = %u ", itr->guid);
         if (!result)
-            { continue; } // not cleaned table?
+        {
+            continue; // not cleaned table?
+        }
 
         fields = result->Fetch();
         RP = fields[0].GetFloat();
@@ -3530,7 +3534,9 @@ void ObjectMgr::LoadQuests()
     {
         // skip post-loading checks for disabled quests
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, iter->first))
+        {
             continue;
+        }
 
         Quest* qinfo = iter->second;
 
@@ -3932,9 +3938,10 @@ void ObjectMgr::LoadQuests()
             if (qinfo->RewRepFaction[j])
             {
                 if (!qinfo->RewRepValue[j])
+                {
                     sLog.outErrorDb("Quest %u has `RewRepFaction%d` = %u but `RewRepValue%d` = 0, quest will not reward this reputation.",
                                     qinfo->GetQuestId(), j + 1, qinfo->RewRepValue[j], j + 1);
-
+                }
                 if (!sFactionStore.LookupEntry(qinfo->RewRepFaction[j]))
                 {
                     sLog.outErrorDb("Quest %u has `RewRepFaction%d` = %u but raw faction (faction.dbc) %u does not exist, quest will not reward reputation for this faction.",
@@ -5998,7 +6005,9 @@ void ObjectMgr::LoadGameobjectInfo()
                 }
                 /* disable check for while, too many nonexistent spells
                 if (goInfo->trap.spellId)                   // spell
+                {
                     CheckGOSpellId(goInfo,goInfo->trap.spellId,3);
+                }
                 */
                 break;
             }
@@ -6037,7 +6046,9 @@ void ObjectMgr::LoadGameobjectInfo()
                 }
                 /* disable check for while, too many nonexistent spells
                 if (goInfo->goober.spellId)                 // spell
+                {
                     CheckGOSpellId(goInfo,goInfo->goober.spellId,10);
+                }
                 */
                 CheckGONoDamageImmuneId(goInfo, goInfo->goober.noDamageImmune, 11);
                 if (goInfo->goober.linkedTrapId)            // linked trap
@@ -8133,7 +8144,7 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
 
             if (bounds.first == bounds.second)
             {
-                sLog.outErrorDb("Learnable ability conditon (entry %u, type %u) has spell id %u defined, but this spell is not listed in SkillLineAbility and can not be used, skipping.", entry, condition, value1);
+                sLog.outErrorDb("Learnable ability condition (entry %u, type %u) has spell id %u defined, but this spell is not listed in SkillLineAbility and can not be used, skipping.", entry, condition, value1);
                 return false;
             }
 
@@ -8142,7 +8153,7 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
                 ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value2);
                 if (!proto)
                 {
-                    sLog.outErrorDb("Learnable ability conditon (entry %u, type %u) has item entry %u defined but item does not exist, skipping.", entry, condition, value2);
+                    sLog.outErrorDb("Learnable ability condition (entry %u, type %u) has item entry %u defined but item does not exist, skipping.", entry, condition, value2);
                     return false;
                 }
             }
@@ -8768,7 +8779,9 @@ void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
         {
             ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_GOSSIP);
             if (!scm)
+            {
                 continue;
+            }
 
             if (scm->find(gMenu.script_id) == scm->end())
             {
@@ -8802,19 +8815,29 @@ void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
     {
         if (CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i))
+        {
             if (cInfo->GossipMenuId)
+            {
                 if (m_mGossipMenusMap.find(cInfo->GossipMenuId) == m_mGossipMenusMap.end())
+                {
                     sLog.outErrorDb("Creature (Entry: %u) has GossipMenuId = %u for nonexistent menu", cInfo->Entry, cInfo->GossipMenuId);
+                }
+            }
+        }
     }
 
     if (!sLog.HasLogFilter(LOG_FILTER_DB_STRICTED_CHECK))
     {
         for (SQLStorageBase::SQLSIterator<GameObjectInfo> itr = sGOStorage.getDataBegin<GameObjectInfo>(); itr < sGOStorage.getDataEnd<GameObjectInfo>(); ++itr)
+        {
             if (uint32 menuid = itr->GetGossipMenuId())
+            {
                 if (m_mGossipMenusMap.find(menuid) == m_mGossipMenusMap.end())
                 {
                     sLog.outErrorDb("Gameobject (Entry: %u) has gossip_menu_id = %u for nonexistent menu", itr->id, menuid);
                 }
+            }
+        }
     }
 
     sLog.outString(">> Loaded %u gossip_menu entries", count);
@@ -8957,7 +8980,9 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
             }
 
             if (found_menu_uses && !found_flags_uses)
+            {
                 sLog.outErrorDb("Table gossip_menu_option for menu %u, id %u has `npc_option_npcflag` = %u but creatures using this menu does not have corresponding `NpcFlags`. Option will not accessible in game.", gMenuItem.menu_id, gMenuItem.id, gMenuItem.npc_option_npcflag);
+            }
         }
 
         if (gMenuItem.action_poi_id && !GetPointOfInterest(gMenuItem.action_poi_id))
@@ -8970,7 +8995,9 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
         {
             ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_GOSSIP);
             if (!scm)
+            {
                 continue;
+            }
 
             if (scm->find(gMenuItem.action_script_id) == scm->end())
             {
@@ -9152,7 +9179,9 @@ bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32
     VendorItemData const* tItems = isTemplate ? NULL : GetNpcVendorTemplateItemList(vendor_entry);
 
     if (!vItems && !tItems)
-        { return true; }                                        // later checks for non-empty lists
+    {
+        return true;                                        // later checks for non-empty lists
+    }
 
     if (vItems && vItems->FindItem(item_id))
     {
@@ -9161,8 +9190,10 @@ bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32
             ChatHandler(pl).PSendSysMessage(LANG_ITEM_ALREADY_IN_LIST, item_id);
         }
         else
+        {
             sLog.outErrorDb("Table `%s` has duplicate items %u for %s %u, ignoring",
                             tableName, item_id, idStr, vendor_entry);
+        }
         return false;
     }
 

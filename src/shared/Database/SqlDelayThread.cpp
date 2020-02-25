@@ -65,6 +65,7 @@ void SqlDelayThread::run()
 #ifndef DO_POSTGRESQL
     mysql_thread_end();
 #endif
+
 }
 
 void SqlDelayThread::Stop()

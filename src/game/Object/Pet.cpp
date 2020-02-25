@@ -428,7 +428,9 @@ void Pet::SavePetToDB(PetSaveMode mode)
         if (getPetType() != HUNTER_PET)
         {
             if (curhealth < 1)
-              curhealth = 1;
+            {
+                curhealth = 1;
+            }
         }
 
         uint32 curpower = GetPower(GetPowerType());
@@ -984,7 +986,9 @@ void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
             // not save secondary permanent pet as current
             if (mode == PET_SAVE_AS_CURRENT && p_owner->GetTemporaryUnsummonedPetNumber() &&
                 p_owner->GetTemporaryUnsummonedPetNumber() != GetCharmInfo()->GetPetNumber())
-                { mode = PET_SAVE_NOT_IN_SLOT; }
+                {
+                    mode = PET_SAVE_NOT_IN_SLOT;
+                }
 
             if (mode == PET_SAVE_REAGENTS)
             {
@@ -1451,7 +1455,9 @@ uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)
     }
     // -15 or less
     else
-        { return 0; }                                           // food too low level
+    {
+        return 0;                                           // food too low level
+    }
 }
 
 void Pet::_LoadSpellCooldowns()
@@ -2148,7 +2154,9 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     if (apply)
     {
         for (i = 0; i < m_autospells.size() && m_autospells[i] != spellid; ++i)
-            { ; }                                               // just search
+        {
+            ;                                                // just search
+        }
 
         if (i == m_autospells.size())
         {
@@ -2168,7 +2176,9 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     {
         AutoSpellList::iterator itr2 = m_autospells.begin();
         for (i = 0; i < m_autospells.size() && m_autospells[i] != spellid; ++i, ++itr2)
-            { ; }                                               // just search
+        {
+            ;                                                // just search
+        }
 
         if (i < m_autospells.size())
         {
@@ -2398,11 +2408,17 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             {
                 AuraList const& auras = GetAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
                 for (AuraList::const_iterator it = auras.begin(); it != auras.end(); ++it)
+                {
                     if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
+                    {
                         main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
+                    }
+                }
             }
             else
+            {
                 main_speed_mod = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SPEED);
+            }
 
             stack_bonus     = GetTotalAuraMultiplier(SPELL_AURA_MOD_SPEED_ALWAYS);
             non_stack_bonus = (100.0f + GetMaxPositiveAuraModifier(SPELL_AURA_MOD_SPEED_NOT_STACK)) / 100.0f;
@@ -2435,7 +2451,9 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     float speed = std::max(non_stack_bonus, stack_bonus) * ownerSpeed;
 
     if (main_speed_mod)
-      speed = speed * (100.0f + main_speed_mod) / 100.0f;
+    {
+        speed = speed * (100.0f + main_speed_mod) / 100.0f;
+    }
 
     switch (mtype)
     {
@@ -2467,7 +2485,9 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     }
 
     if (mtype == MOVE_RUN)
-            speed *= 1.14286f;
+    {
+        speed *= 1.14286f;
+    }
 
     SetSpeedRate(mtype, speed * ratio, forced);
 }
@@ -2508,9 +2528,13 @@ PetDatabaseStatus Pet::GetStatusFromDB(Player* owner)
     uint32 savedHP = fields[13].GetUInt32();
     delete result;
     if (savedHP > 0)
+    {
         status = PET_DB_ALIVE;
+    }
     else
+    {
         status = PET_DB_DEAD;
+    }
 
     return status;
 }

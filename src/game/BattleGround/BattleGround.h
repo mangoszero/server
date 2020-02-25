@@ -92,7 +92,7 @@ enum BattleGroundMarks
     SPELL_AB_MARK_LOSER             = 24952,
     SPELL_AB_MARK_WINNER            = 24953,
     SPELL_AV_MARK_LOSER             = 24954,
-    SPELL_AV_MARK_WINNER            = 24955
+    SPELL_AV_MARK_WINNER            = 24955,
 };
 
 /**
@@ -131,7 +131,7 @@ enum BattleGroundStartTimeIntervals
     BG_START_DELAY_2M               = 120000,               // ms (2 minutes)
     BG_START_DELAY_1M               = 60000,                // ms (1 minute)
     BG_START_DELAY_30S              = 30000,                // ms (30 seconds)
-    BG_START_DELAY_NONE             = 0                     // ms
+    BG_START_DELAY_NONE             = 0,                    // ms
 };
 
 /**
@@ -196,7 +196,7 @@ enum BattleGroundQueueTypeId
     BATTLEGROUND_QUEUE_NONE     = 0,
     BATTLEGROUND_QUEUE_AV       = 1,
     BATTLEGROUND_QUEUE_WS       = 2,
-    BATTLEGROUND_QUEUE_AB       = 3
+    BATTLEGROUND_QUEUE_AB       = 3,
 };
 #define MAX_BATTLEGROUND_QUEUE_TYPES 4
 
@@ -378,7 +378,10 @@ class BattleGround
          *
          * @return BattleGroundTypeId
          */
-        BattleGroundTypeId GetTypeID() const { return m_TypeID; }
+        BattleGroundTypeId GetTypeID() const
+        {
+            return m_TypeID;
+        }
         /**
          * @brief
          *
@@ -1240,7 +1243,7 @@ class BattleGround
         bool IsPlayerInBattleGround(ObjectGuid guid);
 
         /* virtual score-array - get's used in bg-subclasses */
-        int32 m_TeamScores[PVP_TEAM_COUNT];
+        int32 m_TeamScores[PVP_TEAM_COUNT]; /**< TODO */
 
         /**
          * @brief

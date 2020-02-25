@@ -210,7 +210,9 @@ void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)
         }
     }
     if (spellProto->SpellIconID == 2056)
-        { m_type = TOTEM_STATUE; }                              // Jewelery statue
+    {
+        m_type = TOTEM_STATUE; // Jewelery statue
+    }
 }
 
 bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const

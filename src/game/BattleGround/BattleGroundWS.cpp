@@ -496,9 +496,13 @@ void BattleGroundWS::UpdateFlagState(Team team, uint32 value)
 void BattleGroundWS::UpdateTeamScore(Team team)
 {
     if (team == ALLIANCE)
+    {
         UpdateWorldState(BG_WS_FLAG_CAPTURES_ALLIANCE, m_TeamScores[TEAM_INDEX_ALLIANCE]);
+    }
     else
+    {
         UpdateWorldState(BG_WS_FLAG_CAPTURES_HORDE, m_TeamScores[TEAM_INDEX_HORDE]);
+    }
 }
 
 bool BattleGroundWS::HandleAreaTrigger(Player* source, uint32 trigger)

@@ -152,7 +152,9 @@ BOOL WheatyExceptionReport::_GetProcessorName(TCHAR* sProcessorName, DWORD maxco
     // Skip spaces
     TCHAR* psz = szTmp;
     while (iswspace(*psz))
-        { ++psz; }
+    {
+        ++psz;
+    }
     _tcsncpy(sProcessorName, psz, maxcount);
     return TRUE;
 }
@@ -359,6 +361,7 @@ void WheatyExceptionReport::GenerateExceptionReport(
              pExceptionRecord->ExceptionAddress,
              section, offset, szFaultingModule);
 #endif
+
 #ifdef _M_X64
     _tprintf(_T("Fault address:  %016I64X %02X:%016I64X %s\r\n"),
              pExceptionRecord->ExceptionAddress,
@@ -514,9 +517,7 @@ BOOL WheatyExceptionReport::GetLogicalAddress(
 
     // Iterate through the section table, looking for the one that encompasses
     // the linear address.
-    for (unsigned i = 0;
-         i < pNtHdr->FileHeader.NumberOfSections;
-         ++i, ++pSection)
+    for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; ++i, ++pSection)
     {
         DWORD_PTR sectionStart = pSection->VirtualAddress;
         DWORD_PTR sectionEnd = sectionStart
@@ -600,12 +601,17 @@ void WheatyExceptionReport::WriteStackDetails(
                           SymFunctionTableAccess64,
                           SymGetModuleBase64,
                           0))
-            { break; }
+        {
+            break;
+        }
         if (0 == sf.AddrFrame.Offset)                       // Basic sanity check to make sure
-            { break; }                                          // the frame is OK.  Bail if not.
+        {
+            break;                                           // the frame is OK.  Bail if not.
+        }
 #ifdef _M_IX86
         _tprintf(_T("%08X  %08X  "), sf.AddrPC.Offset, sf.AddrFrame.Offset);
 #endif
+
 #ifdef _M_X64
         _tprintf(_T("%016I64X  %016I64X  "), sf.AddrPC.Offset, sf.AddrFrame.Offset);
 #endif
@@ -634,9 +640,11 @@ void WheatyExceptionReport::WriteStackDetails(
 #ifdef _M_IX86
             _tprintf(_T("%04X:%08X %s"), section, offset, szModule);
 #endif
+
 #ifdef _M_X64
             _tprintf(_T("%04X:%016I64X %s"), section, offset, szModule);
 #endif
+
         }
 
         // Get the source line for this stack frame entry
@@ -682,7 +690,9 @@ WheatyExceptionReport::EnumerateSymbolsCallback(
     {
         if (FormatSymbolValue(pSymInfo, (STACKFRAME*)UserContext,
         szBuffer, sizeof(szBuffer)))
-            { _tprintf(_T("\t%s\r\n"), szBuffer); }
+        {
+            _tprintf(_T("\t%s\r\n"), szBuffer);
+        }
     }
     __except(1)
     {

@@ -122,9 +122,12 @@ void ObjectAccessor::SaveAllPlayers()
 {
    SessionMap const& smap = sWorld.GetAllSessions();
    SessionMap::const_iterator iter;
-   for (iter = smap.begin(); iter != smap.end(); ++iter){
-       if (Player* player = iter->second->GetPlayer()){
-           if (player->IsInWorld()){
+   for (iter = smap.begin(); iter != smap.end(); ++iter)
+   {
+       if (Player* player = iter->second->GetPlayer())
+       {
+           if (player->IsInWorld())
+           {
                player->SaveToDB();
            }
        }
@@ -157,8 +160,7 @@ ObjectAccessor::GetCorpseForPlayerGUID(ObjectGuid guid)
     return iter->second;
 }
 
-void
-ObjectAccessor::RemoveCorpse(Corpse* corpse)
+void ObjectAccessor::RemoveCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
 
@@ -180,8 +182,7 @@ ObjectAccessor::RemoveCorpse(Corpse* corpse)
     i_player2corpse.erase(iter);
 }
 
-void
-ObjectAccessor::AddCorpse(Corpse* corpse)
+void ObjectAccessor::AddCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
 
@@ -220,8 +221,7 @@ ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, Map* 
       }
 }
 
-Corpse*
-ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
+Corpse* ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
 {
     Corpse* corpse = GetCorpseForPlayerGUID(player_guid);
     if (!corpse)

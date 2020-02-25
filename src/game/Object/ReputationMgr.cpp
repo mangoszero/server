@@ -482,18 +482,26 @@ void ReputationMgr::LoadFromDB(QueryResult* result)
                 uint32 dbFactionFlags = fields[2].GetUInt32();
 
                 if (dbFactionFlags & FACTION_FLAG_VISIBLE)
-                    { SetVisible(faction); }                    // have internal checks for forced invisibility
+                {
+                    SetVisible(faction); // have internal checks for forced invisibility
+                }
 
                 if (dbFactionFlags & FACTION_FLAG_INACTIVE)
-                    { SetInactive(faction, true); }             // have internal checks for visibility requirement
+                {
+                    SetInactive(faction, true); // have internal checks for visibility requirement
+                }
 
                 if (dbFactionFlags & FACTION_FLAG_AT_WAR)   // DB at war
-                    { SetAtWar(faction, true); }                // have internal checks for FACTION_FLAG_PEACE_FORCED
+                {
+                    SetAtWar(faction, true); // have internal checks for FACTION_FLAG_PEACE_FORCED
+                }
                 else                                        // DB not at war
                 {
                     // allow remove if visible (and then not FACTION_FLAG_INVISIBLE_FORCED or FACTION_FLAG_HIDDEN)
                     if (faction->Flags & FACTION_FLAG_VISIBLE)
-                        { SetAtWar(faction, false); }           // have internal checks for FACTION_FLAG_PEACE_FORCED
+                    {
+                        SetAtWar(faction, false); // have internal checks for FACTION_FLAG_PEACE_FORCED
+                    }
                 }
 
                 // set atWar for hostile

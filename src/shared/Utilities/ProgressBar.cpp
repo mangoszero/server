@@ -69,6 +69,7 @@ void BarGoLink::init(int row_count)
 #else
     printf("[");
 #endif
+
     for (int i = 0; i < indic_len; ++i)
     {
         printf(empty);
@@ -78,6 +79,7 @@ void BarGoLink::init(int row_count)
 #else
     printf("] 0%%\r[");
 #endif
+
     fflush(stdout);
 }
 
@@ -103,6 +105,7 @@ void BarGoLink::step()
 #else
         printf("\r[");
 #endif
+
         for (i = 0; i < n; ++i)
         {
             printf(full);
@@ -117,6 +120,7 @@ void BarGoLink::step()
 #else
         printf("] %i%%  \r[", (int)percent);
 #endif
+
         fflush(stdout);
 
         rec_pos = n;

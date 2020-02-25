@@ -233,6 +233,7 @@ void Thread::setPriority(Priority type)
     // remove this ASSERT in case you don't want to know is thread priority change was successful or not
     MANGOS_ASSERT(_ok == 0);
 #endif
+
 }
 
 void Thread::Sleep(unsigned long msecs)

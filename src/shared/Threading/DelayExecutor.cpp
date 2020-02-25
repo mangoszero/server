@@ -64,7 +64,9 @@ int DelayExecutor::svc()
         ACE_Method_Request* rq = queue_.dequeue();
 
         if (!rq)
+        {
             break;
+        }
 
         rq->call();
         delete rq;

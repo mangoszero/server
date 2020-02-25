@@ -67,7 +67,7 @@ enum LogFilters
     LOG_FILTER_AHBOT_BUYER        = 0x008000,               // 15 Auction House Bot buyer part
     LOG_FILTER_PATHFINDING        = 0x010000,               // 16 Pathfinding
     LOG_FILTER_MAP_LOADING        = 0x020000,               // 17 Map loading/unloading (MAP, VMAPS, MMAP)
-    LOG_FILTER_EVENT_AI_DEV       = 0x040000                // 18 Event AI actions
+    LOG_FILTER_EVENT_AI_DEV       = 0x040000,               // 18 Event AI actions
 };
 
 #define LOG_FILTER_COUNT            19
@@ -155,7 +155,9 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
 
 #ifdef ENABLE_ELUNA
             if (elunaErrLogfile != NULL)
+            {
                 fclose(elunaErrLogfile);
+            }
             elunaErrLogfile = NULL;
 #endif /* ENABLE_ELUNA */
 
@@ -455,6 +457,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
 #ifdef ENABLE_ELUNA
         FILE* elunaErrLogfile; /**< TODO */
 #endif /* ENABLE_ELUNA */
+
         FILE* eventAiErLogfile; /**< TODO */
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
@@ -485,46 +488,72 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
 #define sLog MaNGOS::Singleton<Log>::Instance()
 
 #define BASIC_LOG(...)                                  \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC))    \
+        {                                               \
             sLog.outBasic(__VA_ARGS__);                 \
+        }                                               \
     } while(0)
 
 #define BASIC_FILTER_LOG(F,...)                         \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC) && !sLog.HasLogFilter(F)) \
+        {                                               \
             sLog.outBasic(__VA_ARGS__);                 \
+        }                                               \
     } while(0)
 
 #define DETAIL_LOG(...)                                 \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL))   \
+        {                                               \
             sLog.outDetail(__VA_ARGS__);                \
-    } while(0)
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define DETAIL_FILTER_LOG(F,...)                        \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL) && !sLog.HasLogFilter(F)) \
+        {                                               \
             sLog.outDetail(__VA_ARGS__);                \
-    } while(0)
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define DEBUG_LOG(...)                                  \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))    \
+        {                                               \
             sLog.outDebug(__VA_ARGS__);                 \
-    } while(0)
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define DEBUG_FILTER_LOG(F,...)                         \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG) && !sLog.HasLogFilter(F)) \
+        {                                               \
             sLog.outDebug(__VA_ARGS__);                 \
-    } while(0)
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define ERROR_DB_FILTER_LOG(F,...)                      \
-    do {                                                \
+    do                                                  \
+    {                                                   \
         if (!sLog.HasLogFilter(F))                      \
+        {                                               \
             sLog.outErrorDb(__VA_ARGS__);               \
-    } while(0)
+        }                                               \
+    }                                                   \
+    while(0)
 
 #define ERROR_DB_STRICT_LOG(...) \
     ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)

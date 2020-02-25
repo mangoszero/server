@@ -30,6 +30,10 @@
 
 namespace Movement
 {
+    /**
+     * @brief
+     *
+     */
     enum MonsterMoveType
     {
         MonsterMoveNormal = 0,
@@ -39,6 +43,10 @@ namespace Movement
         MonsterMoveFacingAngle = 4
     };
 
+    /**
+     * @brief
+     *
+     */
     struct Location : public Vector3
     {
         /**
@@ -221,7 +229,9 @@ namespace Movement
             {
                 MANGOS_ASSERT(Initialized());
                 do
-                    { handler(_updateState(difftime)); }
+                {
+                    handler(_updateState(difftime));
+                }
                 while (difftime > 0);
             }
 

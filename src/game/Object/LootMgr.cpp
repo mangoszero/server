@@ -919,7 +919,9 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
     b << uint8(0);                                          // item count placeholder
 
     if (lv.permission == NONE_PERMISSION)
-        { return b; }                                           // nothing output more
+    {
+        return b; // nothing output more
+    }
 
 
     for (uint8 i = 0; i < l.items.size(); ++i)
@@ -1229,7 +1231,9 @@ void LootTemplate::AddEntry(LootStoreItem& item)
     if (item.group > 0 && item.mincountOrRef > 0)           // Group
     {
         if (item.group >= Groups.size())
-            { Groups.resize(item.group); }                      // Adds new group the the loot template if needed
+        {
+            Groups.resize(item.group); // Adds new group the the loot template if needed
+        }
         Groups[item.group - 1].AddEntry(item);              // Adds new entry to the group
     }
     else                                                    // Non-grouped entries and references are stored together
@@ -1244,7 +1248,9 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
     if (groupId)                                            // Group reference uses own processing of the group
     {
         if (groupId > Groups.size())
-            { return; }                                         // Error message already printed at loading stage
+        {
+            return; // Error message already printed at loading stage
+        }
 
         Groups[groupId - 1].Process(loot);
         return;
@@ -1254,14 +1260,18 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
     for (LootStoreItemList::const_iterator i = Entries.begin() ; i != Entries.end() ; ++i)
     {
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_ITEM_DROP, i->itemid) || !i->Roll(rate))
-            { continue; }                                       // Bad luck for the entry
+        {
+            continue; // Bad luck for the entry
+        }
 
         if (i->mincountOrRef < 0)                           // References processing
         {
             LootTemplate const* Referenced = LootTemplates_Reference.GetLootFor(-i->mincountOrRef);
 
             if (!Referenced)
-                { continue; }                                   // Error message already printed at loading stage
+            {
+                continue; // Error message already printed at loading stage
+            }
 
             // Check condition
             if (i->conditionId && !sObjectMgr.IsPlayerMeetToCondition(i->conditionId, NULL, NULL, loot.GetLootTarget(), CONDITION_FROM_REFERING_LOOT))
@@ -1275,7 +1285,9 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
             }
         }
         else                                                // Plain entries (not a reference, not grouped)
-            { loot.AddItem(*i); }                               // Chance is already checked, just add
+        {
+            loot.AddItem(*i); // Chance is already checked, just add
+        }
     }
 
     // Now processing groups
@@ -1291,7 +1303,9 @@ bool LootTemplate::HasQuestDrop(LootTemplateMap const& store, uint8 groupId) con
     if (groupId)                                            // Group reference
     {
         if (groupId > Groups.size())
-            { return false; }                                   // Error message [should be] already printed at loading stage
+        {
+            return false; // Error message [should be] already printed at loading stage
+        }
         return Groups[groupId - 1].HasQuestDrop();
     }
 
@@ -1301,14 +1315,18 @@ bool LootTemplate::HasQuestDrop(LootTemplateMap const& store, uint8 groupId) con
         {
             LootTemplateMap::const_iterator Referenced = store.find(-i->mincountOrRef);
             if (Referenced == store.end())
-                { continue; }                                   // Error message [should be] already printed at loading stage
+            {
+                continue; // Error message [should be] already printed at loading stage
+            }
             if (Referenced->second->HasQuestDrop(store, i->group))
             {
                 return true;
             }
         }
         else if (i->needs_quest)
-            { return true; }                                    // quest drop found
+        {
+            return true; // quest drop found
+        }
     }
 
     // Now processing groups
@@ -1327,7 +1345,9 @@ bool LootTemplate::HasQuestDropForPlayer(LootTemplateMap const& store, Player co
     if (groupId)                                            // Group reference
     {
         if (groupId > Groups.size())
-            { return false; }                                   // Error message already printed at loading stage
+        {
+            return false; // Error message already printed at loading stage
+        }
         return Groups[groupId - 1].HasQuestDropForPlayer(player);
     }
 
@@ -1338,14 +1358,18 @@ bool LootTemplate::HasQuestDropForPlayer(LootTemplateMap const& store, Player co
         {
             LootTemplateMap::const_iterator Referenced = store.find(-i->mincountOrRef);
             if (Referenced == store.end())
-                { continue; }                                   // Error message already printed at loading stage
+            {
+                continue; // Error message already printed at loading stage
+            }
             if (Referenced->second->HasQuestDropForPlayer(store, player, i->group))
             {
                 return true;
             }
         }
         else if (player->HasQuestForItem(i->itemid))
-            { return true; }                                    // active quest drop found
+        {
+            return true; // active quest drop found
+        }
     }
 
     // Now checking groups
@@ -1363,7 +1387,9 @@ bool LootTemplate::HasSharedQuestDropForPlayer(LootTemplateMap const& store, Pla
     if (groupId)                                            // Group reference
     {
         if (groupId > Groups.size())
-            { return false; }                                   // Error message already printed at loading stage
+        {
+            return false; // Error message already printed at loading stage
+        }
         return Groups[groupId - 1].HasSharedQuestDropForPlayer(player);
     }
 
@@ -1376,14 +1402,18 @@ bool LootTemplate::HasSharedQuestDropForPlayer(LootTemplateMap const& store, Pla
         {
             LootTemplateMap::const_iterator Referenced = store.find(-i->mincountOrRef);
             if (Referenced == store.end())
-                { continue; }                                   // Error message already printed at loading stage
+            {
+                continue; // Error message already printed at loading stage
+            }
             if (Referenced->second->HasSharedQuestDropForPlayer(store, player, i->group))
             {
                 return true;
             }
         }
         else if (player->HasQuestForItem(i->itemid) && proto && (player->GetItemCount(i->itemid, true) < proto->MaxCount) && (proto->Flags & ITEM_FLAG_PARTY_LOOT))
-            { return true; }                                    // active quest drop found
+        {
+            return true; // active quest drop found
+        }
     }
 
     // Now checking groups
@@ -1401,7 +1431,9 @@ bool LootTemplate::HasStartingQuestDropForPlayer(LootTemplateMap const& store, P
     if (groupId)                                            // Group reference
     {
         if (groupId > Groups.size())
-            { return false; }                                   // Error message already printed at loading stage
+        {
+            return false; // Error message already printed at loading stage
+        }
         return Groups[groupId - 1].HasStartingQuestDropForPlayer(player);
     }
 
@@ -1414,16 +1446,22 @@ bool LootTemplate::HasStartingQuestDropForPlayer(LootTemplateMap const& store, P
         {
             LootTemplateMap::const_iterator Referenced = store.find(-i->mincountOrRef);
             if (Referenced == store.end())
-                { continue; }                                   // Error message already printed at loading stage
+            {
+                continue; // Error message already printed at loading stage
+            }
             if (Referenced->second->HasStartingQuestDropForPlayer(store, player, i->group))
             {
                 return true;
             }
         }
         else if (i->conditionId && !sObjectMgr.IsPlayerMeetToCondition(i->conditionId, player, player->GetMap(), NULL, CONDITION_FROM_LOOT))
-            { return false;    } // player doesn't respect the conditions.
+        {
+            return false; // player doesn't respect the conditions.
+        }
         else if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
-            { return true; } // starting quest drop found.
+        {
+            return true; // starting quest drop found.
+        }
     }
 
     // Now checking groups

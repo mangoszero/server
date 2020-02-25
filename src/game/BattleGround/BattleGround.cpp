@@ -55,7 +55,7 @@ namespace MaNGOS
             /// <param name="textId">The text id.</param>
             /// <param name="source">The source.</param>
             /// <param name="args">The args.</param>
-            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = NULL)
+            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = nullptr)
                 : i_msgtype(msgtype), i_textId(textId), i_source(source), i_args(args) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
@@ -418,7 +418,9 @@ void BattleGround::Update(uint32 diff)
                 m_validStartPositionTimer = CHECK_PLAYER_POSITION_INVERVAL;
             }
             else
+            {
                 m_validStartPositionTimer -= diff;
+            }
        }
 
         ModifyStartDelayTime(diff);
@@ -2005,15 +2007,15 @@ WorldSafeLocsEntry const* BattleGround::GetClosestGraveYard(Player* player)
 /// <returns>The winner team</returns>
 Team BattleGround::GetPrematureWinner()
 {
-    uint32 hPlayers = GetPlayersCountByTeam(HORDE);
-    uint32 aPlayers = GetPlayersCountByTeam(ALLIANCE);
+    uint32 hordePlayers = GetPlayersCountByTeam(HORDE);
+    uint32 alliancePlayers = GetPlayersCountByTeam(ALLIANCE);
 
-    if (aPlayers > hPlayers)
+    if (alliancePlayers > hordePlayers)
     {
         return ALLIANCE;
     }
 
-    if (hPlayers > aPlayers)
+    if (hordePlayers > alliancePlayers)
     {
         return HORDE;
     }

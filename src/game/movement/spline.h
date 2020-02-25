@@ -468,7 +468,9 @@ namespace Movement
                     new_length = cacher(*this, i);
 
                     if (new_length < 0)         // length overflowed, assign to max positive value (stop case only?)
+                    {
                         new_length = std::numeric_limits<length_type>::max();
+                    }
 
                     lengths[++i] = new_length;
 

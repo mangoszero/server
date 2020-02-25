@@ -218,7 +218,9 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
         //                                                     0    1     2     3    4
         QueryResult* result = CharacterDatabase.PQuery("SELECT name,level,class,zone,account FROM characters WHERE guid = '%u'", lowguid);
         if (!result)
-            { return false; }                                   // player doesn't exist
+        {
+            return false; // player doesn't exist
+        }
 
         Field* fields    = result->Fetch();
         newmember.Name   = fields[0].GetCppString();
@@ -337,7 +339,9 @@ bool Guild::CheckGuildStructure()
     if (GM_rights == -1)
     {
         if (DelMember(m_LeaderGuid))
-            { return false; }                                   // guild will disbanded and deleted in caller
+        {
+            return false; // guild will disbanded and deleted in caller
+        }
     }
     else if (GM_rights != GR_GUILDMASTER)
     {
@@ -468,7 +472,9 @@ bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
 
         if (guildId > m_Id)
             // we loaded all members for this guild already, break cycle
-            { break; }
+        {
+            break;
+        }
 
         MemberSlot newmember;
         uint32 lowguid = fields[1].GetUInt32();
@@ -890,7 +896,9 @@ void Guild::Query(WorldSession* session)
             data << m_Ranks[i].Name;
         }
         else
-            { data << uint8(0); }                               // null string
+        {
+            data << uint8(0); // null string
+        }
     }
 
     data << uint32(m_EmblemStyle);

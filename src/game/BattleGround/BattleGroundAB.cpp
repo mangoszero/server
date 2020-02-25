@@ -30,7 +30,8 @@
 #include "BattleGroundMgr.h"
 #include "Language.h"
 #include "WorldPacket.h"
-#include "DBCStores.h"                                   // TODO REMOVE this when graveyard handling for pvp is updated
+// TODO REMOVE this when graveyard handling for pvp is updated
+#include "DBCStores.h"
 
 /// <summary>
 /// Initializes a new instance of the <see cref="BattleGroundAB"/> class.

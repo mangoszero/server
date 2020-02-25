@@ -194,7 +194,9 @@ namespace MaNGOS
             // search the function for the two points that bound the given CP
             uint8 i = 0;
             while (i < 14 && sc.BRK[i] > 0 && sc.FX[i] <= CP)
-                { i++; }
+            {
+                i++;
+            }
 
             // we now have i such that FX[i] > CP >= FX[i-1]
             // so interpolate
@@ -395,7 +397,9 @@ namespace MaNGOS
             if (u->GetTypeId() == TYPEID_UNIT && (
                     ((Creature*)u)->IsTotem() || ((Creature*)u)->IsPet() ||
                     (((Creature*)u)->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_XP_AT_KILL)))
-                { return 0; }
+                    {
+                        return 0;
+                    }
 
             uint32 xp_gain = BaseGain(pl->getLevel(), u->getLevel());
             if (xp_gain == 0)

@@ -181,12 +181,15 @@ bool ChatHandler::HandleSaveCommand(char* /*args*/)
 bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 {
     std::list< std::pair<std::string, bool> > names;
-    sObjectAccessor.DoForAllPlayers([&names, this](Player *player){
-            AccountTypes security = player->GetSession()->GetSecurity();
-            if ((player->isGameMaster() || (security > SEC_PLAYER && security <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
-                (!m_session || player->IsVisibleGloballyFor(m_session->GetPlayer())))
-                { names.push_back(std::make_pair<std::string, bool>(GetNameLink(player), player->isAcceptWhispers())); }
-        });
+    sObjectAccessor.DoForAllPlayers([&names, this](Player *player)
+    {
+        AccountTypes security = player->GetSession()->GetSecurity();
+        if ((player->isGameMaster() || (security > SEC_PLAYER && security <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
+            (!m_session || player->IsVisibleGloballyFor(m_session->GetPlayer())))
+        {
+            names.push_back(std::make_pair<std::string, bool>(GetNameLink(player), player->isAcceptWhispers()));
+        }
+    });
 
     if (!names.empty())
     {

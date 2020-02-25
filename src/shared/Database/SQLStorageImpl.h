@@ -48,6 +48,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert(uint32 /*field_p
     }
     else
 #endif
+
     dst = D(src);
 }
 
@@ -108,6 +109,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::convert_from_str(uint32 
     }
     else
 #endif
+
     dst = 0;
 }
 
@@ -130,6 +132,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::default_fill(uint32 /*fi
     }
     else
 #endif
+
     dst = D(src);
 }
 

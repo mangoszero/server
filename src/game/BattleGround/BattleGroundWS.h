@@ -71,7 +71,7 @@ enum BG_WS_WorldStates
     BG_WS_FLAG_CAPTURES_HORDE     = 1582,
     BG_WS_FLAG_CAPTURES_MAX       = 1601,
     BG_WS_FLAG_STATE_HORDE        = 2338,
-    BG_WS_FLAG_STATE_ALLIANCE     = 2339
+    BG_WS_FLAG_STATE_ALLIANCE     = 2339,
 };
 
 /**

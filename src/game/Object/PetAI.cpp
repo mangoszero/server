@@ -149,7 +149,9 @@ void PetAI::UpdateAI(const uint32 diff)
 
     if (m_updateAlliesTimer <= diff)
         // UpdateAllies self set update timer
-        { UpdateAllies(); }
+    {
+        UpdateAllies();
+    }
     else
     {
         m_updateAlliesTimer -= diff;
@@ -430,5 +432,7 @@ void PetAI::AttackedBy(Unit* attacker)
     // when attacked, fight back in case 1)no victim already AND 2)not set to passive AND 3)not set to stay, unless can it can reach attacker with melee attack anyway
     if (!m_creature->getVictim() && m_creature->GetCharmInfo() && !m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) &&
         (!m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY) || m_creature->CanReachWithMeleeAttack(attacker)))
-        { AttackStart(attacker); }
+    {
+        AttackStart(attacker);
+    }
 }

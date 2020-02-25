@@ -210,15 +210,20 @@ void Creature::AddToWorld()
 
 #ifdef ENABLE_ELUNA
     if (!inWorld)
+    {
         sEluna->OnAddToWorld(this);
+    }
 #endif /* ENABLE_ELUNA */
+
 }
 
 void Creature::RemoveFromWorld()
 {
 #ifdef ENABLE_ELUNA
     if (IsInWorld())
+    {
         sEluna->OnRemoveFromWorld(this);
+    }
 #endif /* ENABLE_ELUNA */
 
     ///- Remove the creature from the accessor
@@ -278,7 +283,9 @@ void Creature::RemoveCorpse(bool inPlace)
     }
 
     if (m_isCreatureLinkingTrigger)
+    {
         GetMap()->GetCreatureLinkingHolder()->DoCreatureLinkingEvent(LINKING_EVENT_DESPAWN, this);
+    }
 
     if (InstanceData* mapInstance = GetInstanceData())
     {
@@ -439,7 +446,9 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
         SetHealthPercent(healthPercent);
     }
     else
+    {
         SelectLevel();
+    }
 
     if (team == HORDE)
     {
@@ -688,9 +697,13 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                 }
             }
             if (m_aggroDelay <= update_diff)
+            {
                 m_aggroDelay = 0;
+            }
             else
+            {
                 m_aggroDelay -= update_diff;
+            }
 
             if (m_IsDeadByDefault)
             {
@@ -818,7 +831,9 @@ void Creature::RegeneratePower()
                 }
             }
             else
+            {
                 addValue = maxValue / 3.0f;
+            }
             break;
         case POWER_ENERGY:
             // ToDo: for vehicle this is different - NEEDS TO BE FIXED!
@@ -1314,12 +1329,18 @@ void Creature::SaveToDB(uint32 mapid)
             displayId != cinfo->ModelId[2] && displayId != cinfo->ModelId[3])
         {
             for (int i = 0; i < MAX_CREATURE_MODEL && displayId; ++i)
+            {
                 if (cinfo->ModelId[i])
+                {
                     if (CreatureModelInfo const* minfo = sObjectMgr.GetCreatureModelInfo(cinfo->ModelId[i]))
+                    {
                         if (displayId == minfo->modelid_other_gender)
                         {
                             displayId = 0;
                         }
+                    }
+                }
+            }
         }
         else
         {
@@ -1392,7 +1413,9 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
     uint32 const maxlevel = cinfo->MaxLevel;
 
     if (level == USE_DEFAULT_DATABASE_LEVEL)
+    {
         level = minlevel == maxlevel ? minlevel : urand(minlevel, maxlevel);
+    }
 
     SetLevel(level);
 
@@ -1443,7 +1466,9 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
     health *= _GetHealthMod(rank); // Apply custom config setting
     if (health < 1)
+    {
         health = 1;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     // Set values
@@ -1463,22 +1488,26 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
 
         switch (i)
         {
-        case POWER_MANA:        maxValue = mana; break;
-        case POWER_RAGE:        maxValue = 0; break;
-        case POWER_FOCUS:       maxValue = POWER_FOCUS_DEFAULT; break;
-        case POWER_ENERGY:      maxValue = POWER_ENERGY_DEFAULT * cinfo->PowerMultiplier; break;
-        case POWER_HAPPINESS:   maxValue = POWER_HAPPINESS_DEFAULT; break;
+            case POWER_MANA:        maxValue = mana; break;
+            case POWER_RAGE:        maxValue = 0; break;
+            case POWER_FOCUS:       maxValue = POWER_FOCUS_DEFAULT; break;
+            case POWER_ENERGY:      maxValue = POWER_ENERGY_DEFAULT * cinfo->PowerMultiplier; break;
+            case POWER_HAPPINESS:   maxValue = POWER_HAPPINESS_DEFAULT; break;
         }
 
         uint32 value = maxValue;
 
         // For non regenerating powers set 0
         if ((i == POWER_ENERGY || i == POWER_MANA) && !IsRegeneratingPower())
+        {
             value = 0;
+        }
 
         // Mana requires an extra field to be set
         if (i == POWER_MANA)
+        {
             SetCreateMana(value);
+        }
 
         SetMaxPower(Powers(i), maxValue);
         SetPower(Powers(i), value);
@@ -1541,7 +1570,9 @@ float Creature::_GetDamageMod(int32 Rank)
 void Creature::LowerPlayerDamageReq(uint32 unDamage)
 {
     if (m_PlayerDamageReq)
+    {
         m_PlayerDamageReq > unDamage ? m_PlayerDamageReq -= unDamage : m_PlayerDamageReq = 0;
+    }
 }
 
 float Creature::_GetSpellDamageMod(int32 Rank)
@@ -3166,9 +3197,13 @@ void Creature::SetLevitate(bool enable)
 void Creature::SetSwim(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_SWIMMING);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_SWIMMING);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_START_SWIM : SMSG_SPLINE_MOVE_STOP_SWIM);
     data << GetPackGUID();
@@ -3183,9 +3218,13 @@ void Creature::SetCanFly(bool /*enable*/)
 void Creature::SetFeatherFall(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_SAFE_FALL);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_SAFE_FALL);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_FEATHER_FALL : SMSG_SPLINE_MOVE_NORMAL_FALL);
     data << GetPackGUID();
@@ -3195,9 +3234,13 @@ void Creature::SetFeatherFall(bool enable)
 void Creature::SetHover(bool enable)
 {
     if (enable)
+    {
         m_movementInfo.AddMovementFlag(MOVEFLAG_HOVER);
+    }
     else
+    {
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_HOVER);
+    }
 
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_SET_HOVER : SMSG_SPLINE_MOVE_UNSET_HOVER, 9);
     data << GetPackGUID();

@@ -47,7 +47,7 @@ struct SpellModifier;
 enum SpellCategories
 {
     SPELLCATEGORY_HEALTH_MANA_POTIONS = 4,
-    SPELLCATEGORY_DEVOUR_MAGIC        = 12
+    SPELLCATEGORY_DEVOUR_MAGIC        = 12,
 };
 
 /**
@@ -88,8 +88,14 @@ inline float GetSpellRadius(SpellRadiusEntry const* radius) { return (radius ? r
 uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell = NULL);
 uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType damagetype);
 float CalculateDefaultCoefficient(SpellEntry const* spellProto, DamageEffectType const damagetype);
-inline float GetSpellMinRange(SpellRangeEntry const* range) { return (range ? range->minRange : 0); }
-inline float GetSpellMaxRange(SpellRangeEntry const* range) { return (range ? range->maxRange : 0); }
+inline float GetSpellMinRange(SpellRangeEntry const* range)
+{
+    return (range ? range->minRange : 0);
+}
+inline float GetSpellMaxRange(SpellRangeEntry const* range)
+{
+    return (range ? range->maxRange : 0);
+}
 inline uint32 GetSpellRecoveryTime(SpellEntry const* spellInfo) { return spellInfo->RecoveryTime > spellInfo->CategoryRecoveryTime ? spellInfo->RecoveryTime : spellInfo->CategoryRecoveryTime; }
 int32 GetSpellDuration(SpellEntry const* spellInfo);
 int32 GetSpellMaxDuration(SpellEntry const* spellInfo);
@@ -375,7 +381,9 @@ inline bool IsAreaAuraEffect(uint32 effect)
 {
     if (effect == SPELL_EFFECT_APPLY_AREA_AURA_PARTY    ||
         effect == SPELL_EFFECT_APPLY_AREA_AURA_PET)
-        { return true; }
+    {
+        return true;
+    }
     return false;
 }
 
@@ -672,7 +680,7 @@ enum ProcFlagsEx
     /// If set trigger always but only one time (not used)
     PROC_EX_EX_ONE_TIME_TRIGGER = 0x0020000,
     /// For periodic heal
-    PROC_EX_PERIODIC_POSITIVE   = 0x0040000
+    PROC_EX_PERIODIC_POSITIVE   = 0x0040000,
 };
 
 struct SpellProcEventEntry

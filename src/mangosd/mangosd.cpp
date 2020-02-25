@@ -545,8 +545,8 @@ int main(int argc, char** argv)
     WorldDatabase.HaltDelayThread();
     LoginDatabase.HaltDelayThread();
 
-    // This is done to make sure that we cleanup our so file before it's 
-    // unloaded automatically, since the ~ScriptMgr() is called to late 
+    // This is done to make sure that we cleanup our so file before it's
+    // unloaded automatically, since the ~ScriptMgr() is called to late
     // as it's allocated with static storage.
     sScriptMgr.UnloadScriptLibrary();
 

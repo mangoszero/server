@@ -60,7 +60,9 @@ class UpdateMask
                 ClientUpdateMaskType maskPart = 0;
                 for (uint32 j = 0; j < CLIENT_UPDATE_MASK_BITS; ++j)
                     if (_bits[CLIENT_UPDATE_MASK_BITS * i + j])
+                    {
                         maskPart |= 1 << j;
+                    }
 
                 *data << maskPart;
             }
@@ -83,7 +85,9 @@ class UpdateMask
         void Clear()
         {
             if (_bits)
+            {
                 memset(_bits, 0, sizeof(uint8) * _blockCount * CLIENT_UPDATE_MASK_BITS);
+            }
         }
 
         UpdateMask& operator=(UpdateMask const& right)

@@ -169,7 +169,9 @@ struct CreatureInfo
             return SKILL_MINING;
         }
         else
-            { return SKILL_SKINNING; }                          // normal case
+        {
+            return SKILL_SKINNING; // normal case
+        }
     }
 
     bool isTameable() const
@@ -230,7 +232,10 @@ struct CreatureData
     uint8 movementType;
 
     // helper function
-    ObjectGuid GetObjectGuid(uint32 lowguid) const { return ObjectGuid(CreatureInfo::GetHighGuid(), id, lowguid); }
+    ObjectGuid GetObjectGuid(uint32 lowguid) const
+    {
+        return ObjectGuid(CreatureInfo::GetHighGuid(), id, lowguid);
+    }
 };
 
 enum SplineFlags

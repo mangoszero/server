@@ -547,6 +547,7 @@ class ByteBuffer
 #else
             T val = *((T const*)&_storage[pos]);
 #endif
+
             EndianConvert(val);
             return val;
         }

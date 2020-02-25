@@ -172,10 +172,14 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
     // compute index (if group is premade or joined a rated match) to queues
     uint32 index = 0;
     if (!isPremade)
-        { index += PVP_TEAM_COUNT; }                            // BG_QUEUE_PREMADE_* -> BG_QUEUE_NORMAL_*
+    {
+        index += PVP_TEAM_COUNT;                             // BG_QUEUE_PREMADE_* -> BG_QUEUE_NORMAL_*
+    }
 
     if (ginfo->GroupTeam == HORDE)
-        { ++index; }                                            // BG_QUEUE_*_ALLIANCE -> BG_QUEUE_*_HORDE
+    {
+        ++index; // BG_QUEUE_*_ALLIANCE -> BG_QUEUE_*_HORDE
+    }
 
     DEBUG_LOG("Adding Group to BattleGroundQueue bgTypeId : %u, bracket_id : %u, index : %u", BgTypeId, bracketId, index);
 
@@ -190,7 +194,9 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
             {
                 Player* member = itr->getSource();
                 if (!member)
-                    { continue; }   // this should never happen
+                {
+                    continue; // this should never happen
+                }
                 PlayerQueueInfo& pl_info = m_QueuedPlayers[member->GetObjectGuid()];
                 pl_info.LastOnlineTime   = lastOnlineTime;
                 pl_info.GroupInfo        = ginfo;
@@ -284,7 +290,9 @@ uint32 BattleGroundQueue::GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleG
     }
     else
         // if there aren't enough values return 0 - not available
-        { return 0; }
+    {
+        return 0;
+    }
 }
 
 // remove player from queue and from group info, if group info is empty then remove it too
@@ -616,7 +624,7 @@ bool BattleGroundQueue::CheckPremadeMatch(BattleGroundBracketId bracket_id, uint
     return false;
 }
 
-// this method tries to create battleground with MinPlayersPerTeam against MinPlayersPerTeam
+// this method tries to create battleground or arena with MinPlayersPerTeam against MinPlayersPerTeam
 bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint32 minPlayers, uint32 maxPlayers)
 {
     GroupsQueueType::const_iterator itr_team[PVP_TEAM_COUNT];
@@ -682,7 +690,9 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
         m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].empty() &&
         m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE].empty() &&
         m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_HORDE].empty())
-        { return; }
+    {
+        return;
+    }
 
     // battleground with free slot for player should be always in the beggining of the queue
     // maybe it would be better to create bgfreeslotqueue for each bracket_id
@@ -848,8 +858,10 @@ bool BGQueueRemoveEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 {
     Player* plr = sObjectMgr.GetPlayer(m_PlayerGuid);
     if (!plr)
+    {
         // player logged off (we should do nothing, he is correctly removed from queue in another procedure)
-        { return true; }
+        return true;
+    }
 
     BattleGround* bg = sBattleGroundMgr.GetBattleGround(m_BgInstanceGUID, m_BgTypeId);
     // battleground can be deleted already when we are removing queue info
@@ -1288,7 +1300,7 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         }
         else
         {
-            sLog.outErrorDb("Table `battleground_template` for id %u have non-existed WorldSafeLocs.dbc id %u in field `HordeStartLoc`. BG not created.", bgTypeID, start2);
+            sLog.outErrorDb("Table `battleground_template` for id %u refers to a non-existing WorldSafeLocs.dbc id %u in field `HordeStartLoc`. BG not created.", bgTypeID, start2);
             continue;
         }
 
@@ -1577,7 +1589,9 @@ void BattleGroundMgr::LoadBattleEventIndexes()
         bar.step();
         Field* fields = result->Fetch();
         if (fields[2].GetUInt8() == BG_EVENT_NONE || fields[3].GetUInt8() == BG_EVENT_NONE)
-            { continue; }                                       // we don't need to add those to the eventmap
+        {
+            continue; // we don't need to add those to the eventmap
+        }
 
         bool gameobject         = (fields[0].GetUInt8() == 1);
         uint32 dbTableGuidLow   = fields[1].GetUInt32();

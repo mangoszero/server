@@ -124,10 +124,12 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
         {
             ACE_READ_GUARD(HashMapHolder<Player>::LockType, g, i_playerMap.GetLock())
             for (auto& iter : i_playerMap.GetContainer())
+            {
                 if(iter.second != nullptr)
                 {
                     std::forward<F>(f)(iter.second);
                 }
+            }
         }
 
     private:

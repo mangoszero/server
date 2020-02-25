@@ -30,7 +30,8 @@
 #include "GameObject.h"
 #include "Language.h"
 #include "WorldPacket.h"
-#include "DBCStores.h"                                   // TODO REMOVE this when graveyard handling for pvp is updated
+// TODO REMOVE this when graveyard handling for pvp is updated
+#include "DBCStores.h"
 
 BattleGroundAV::BattleGroundAV()
 {
@@ -235,6 +236,7 @@ void BattleGroundAV::HandleQuestComplete(uint32 questid, Player* player)
         default:
             DEBUG_LOG("BattleGroundAV: Quest %i completed but is not interesting for us", questid);
             return;
+            break;
     }
     if (reputation)
     {
@@ -810,7 +812,9 @@ uint32 BattleGroundAV::GetNodeName(BG_AV_Nodes node) const
         case BG_AV_NODES_FROSTWOLF_ETOWER:  return LANG_BG_AV_NODE_TOWER_FROST_E;
         case BG_AV_NODES_FROSTWOLF_WTOWER:  return LANG_BG_AV_NODE_TOWER_FROST_W;
         case BG_AV_NODES_FROSTWOLF_HUT:     return LANG_BG_AV_NODE_GRAVE_FROST_HUT;
-        default: return 0;
+        default:
+            return 0;
+            break;
     }
 }
 

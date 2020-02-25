@@ -106,8 +106,11 @@ void GameObject::AddToWorld()
 
 #ifdef ENABLE_ELUNA
     if (!inWorld)
+    {
         sEluna->OnAddToWorld(this);
+    }
 #endif /* ENABLE_ELUNA */
+
 }
 
 void GameObject::RemoveFromWorld()
@@ -155,7 +158,8 @@ void GameObject::CleanupsBeforeDelete()
     WorldObject::CleanupsBeforeDelete();
 }
 
-bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang, float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
+bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map,float x, float y, float z, float ang,
+                        float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
     if (!map)
     {
@@ -511,14 +515,20 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                             Cell::VisitGridObjects(this, checker, range);
 
                             if (visualGO)
+                            {
                                 visualGO->SetLootState(GO_JUST_DEACTIVATED);
+                            }
                         }
 
                         if (!trapEntry)
+                        {
                             break;
+                        }
                         GameObjectInfo const* trapInfo = sGOStorage.LookupEntry<GameObjectInfo>(trapEntry);
                         if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
+                        {
                             break;
+                        }
 
                         float range = 0.5f;
 
@@ -531,7 +541,9 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
                         // found correct GO
                         if (trapGO)
+                        {
                             trapGO->SetLootState(GO_JUST_DEACTIVATED);
+                        }
                     }
 
                 default:
@@ -920,9 +932,13 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
 
                 // normalize visible distance
                 if (visibleDistance > MAX_PLAYER_STEALTH_DETECT_RANGE)
+                {
                     visibleDistance = MAX_PLAYER_STEALTH_DETECT_RANGE;
+                }
                 else if (visibleDistance < GetGOInfo()->trap.radius + INTERACTION_DISTANCE)
+                {
                     visibleDistance = GetGOInfo()->trap.radius + INTERACTION_DISTANCE;
+                }
             }
         }
     }
@@ -980,7 +996,9 @@ bool GameObject::ActivateToQuest(Player* pTarget) const
             {
                 if ((pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_INCOMPLETE || pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_COMPLETE)
                     && !pTarget->GetQuestRewardStatus(itr->second))
-                    { return true; }
+                {
+                    return true;
+                }
             }
 
             break;
@@ -1587,7 +1605,9 @@ void GameObject::Use(Unit* user)
                     // just search fishhole for success case
                     else
                         // TODO: find reasonable value for fishing hole search
-                        { fishingHole = LookupFishingHoleAround(20.0f + CONTACT_DISTANCE); }
+                    {
+                        fishingHole = LookupFishingHoleAround(20.0f + CONTACT_DISTANCE);
+                    }
 
                     if (success || sWorld.getConfig(CONFIG_BOOL_SKILL_FAIL_GAIN_FISHING))
                     {
@@ -2060,7 +2080,9 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
     if ((GetZoneId() == 46) || (GetZoneId() == 51)) // each node in searing gorge or burning steppes is able to spawn dark iron
         {
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_DARKIRON))
-            entrynew = 165658;
+            {
+                entrynew = 165658;
+            }
             return entrynew;
         }
 
@@ -2098,39 +2120,57 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
     {
         case 1732: // Tin can spawn Silver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 1733;
+            }
                 break;
         case 1735: // Iron can spawn Gold
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 1734;
+            }
                 break;
         case 73939: // Ooze covered iron can spawn ooze covered gold
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 73941;
+            }
                 break;
         case 2040: // Mithril can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 2047;
+            }
                 break;
         case 123310: // Ooze covered mithril can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 123309;
+            }
                 break;
         case 324: // small thorium Vein can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 2047;
+            }
                 break;
         case 123848: // ooze covered thorium Vein can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 123309;
+            }
                 break;
         case 175404: // Rich thorium Vein can spawn truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 2047;
+            }
                 break;
         case 177388: // ooze covered Rich thorium Vein can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
+            {
                 entrynew = 123309;
+            }
                 break;
 
         default: //default case for copper or not listet special veins

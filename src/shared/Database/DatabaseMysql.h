@@ -266,4 +266,5 @@ class DatabaseMysql : public Database
 };
 
 #endif
+
 #endif

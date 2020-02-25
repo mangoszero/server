@@ -70,9 +70,13 @@ namespace Movement
             while ((lengths[i] > length) || (lengths[i + 1] <= length))
             {
                 if (lengths[i] > length)
+                {
                     hi = i - 1; // too big
+                }
                 else if (lengths[i + 1] <= length)
+                {
                     lo = i + 1; // too small
+                }
 
                 i = (hi + lo) / 2;
             }*/
@@ -80,7 +84,9 @@ namespace Movement
         index_type i = index_lo;
         index_type N = index_hi;
         while (i + 1 < N && lengths[i + 1] < length_)
-            { ++i; }
+        {
+            ++i;
+        }
 
         return i;
     }

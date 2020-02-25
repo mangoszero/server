@@ -53,18 +53,36 @@ class Grid
     public:
 
         template<class SPECIFIC_OBJECT>
+        /**
+         * @brief an object of interested enters the grid
+         *
+         * @param obj
+         * @return bool
+         */
         bool AddWorldObject(SPECIFIC_OBJECT* obj)
         {
             return i_worldContainer.template insert<SPECIFIC_OBJECT>(obj);
         }
 
         template<class SPECIFIC_OBJECT>
+        /**
+         * @brief an object of interested exits the grid
+         *
+         * @param obj
+         * @return bool
+         */
         bool RemoveWorldObject(SPECIFIC_OBJECT* obj)
         {
             return i_worldContainer.template remove<SPECIFIC_OBJECT>(obj);
         }
 
         template<class SPECIFIC_OBJECT>
+        /**
+         * @brief Inserts a container type object into the grid.
+         *
+         * @param obj
+         * @return bool
+         */
         bool AddGridObject(SPECIFIC_OBJECT* obj)
         {
             if (obj->IsActiveObject())
@@ -76,6 +94,12 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+        /**
+         * @brief Removes a container type object from the grid
+         *
+         * @param obj
+         * @return bool
+         */
         bool RemoveGridObject(SPECIFIC_OBJECT* obj)
         {
             if (obj->IsActiveObject())

@@ -526,9 +526,13 @@ class WorldObject : public Object
         float GetPositionY() const { return m_position.y; }
         float GetPositionZ() const { return m_position.z; }
         void GetPosition(float& x, float& y, float& z) const
-        { x = m_position.x; y = m_position.y; z = m_position.z; }
+        {
+            x = m_position.x; y = m_position.y; z = m_position.z;
+        }
         void GetPosition(WorldLocation& loc) const
-        { loc.mapid = m_mapId; GetPosition(loc.coord_x, loc.coord_y, loc.coord_z); loc.orientation = GetOrientation(); }
+        {
+            loc.mapid = m_mapId; GetPosition(loc.coord_x, loc.coord_y, loc.coord_z); loc.orientation = GetOrientation();
+        }
         float GetOrientation() const { return m_position.o; }
 
         /// Gives a 2d-point in distance distance2d in direction absAngle around the current position (point-to-point)

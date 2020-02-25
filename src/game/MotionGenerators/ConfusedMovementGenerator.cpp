@@ -109,7 +109,9 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
                 i_nextMoveTime.Reset(urand(800, 1000));             // Keep a short wait time
             }
             else
+            {
                 i_nextMoveTime.Reset(50);                           // Retry later
+            }
         }
     }
 

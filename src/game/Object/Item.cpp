@@ -956,12 +956,16 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
         }
 
         if (spellInfo->EquippedItemClass != int32(proto->Class))
-            { return false; }                                   //  wrong item class
+        {
+            return false; //  wrong item class
+        }
 
         if (spellInfo->EquippedItemSubClassMask != 0)       // 0 == any subclass
         {
             if ((spellInfo->EquippedItemSubClassMask & (1 << proto->SubClass)) == 0)
-                { return false; }                               // subclass not present in mask
+            {
+                return false; // subclass not present in mask
+            }
         }
     }
 
@@ -971,7 +975,9 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     if (spellInfo->EquippedItemInventoryTypeMask != 0 && (spellInfo->Targets & TARGET_FLAG_ITEM))    // 0 == any inventory type
     {
         if ((spellInfo->EquippedItemInventoryTypeMask  & (1 << proto->InventoryType)) == 0)
-            { return false; }                                   // inventory type not present in mask
+        {
+            return false; // inventory type not present in mask
+        }
     }
 
     return true;
@@ -1083,7 +1089,9 @@ void Item::SendTimeUpdate(Player* owner)
 Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 randomPropertyId)
 {
     if (count < 1)
-        { return NULL; }                                        // don't create item at zero count
+    {
+        return NULL; // don't create item at zero count
+    }
 
     if (ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item))
     {

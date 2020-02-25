@@ -57,7 +57,9 @@ public:
         for (uint32 i = 0; i < sz; ++i)
         {
             if (taken == 20)
+            {
                 FillUp();
+            }
 
             buf[i] = o0[taken];
             taken++;

@@ -199,11 +199,11 @@ class DBCFileLoader
          */
         char* AutoProduceStrings(const char* fmt, char* dataTable);
         /**
-         * @brief
+         * Calculate and return the total amount of memory required by the types specified within the format string
          *
-         * @param format
+         * @param format the format string passed to it (see DBCfmt.h)
          * @param index_pos
-         * @return uint32
+         * @return uint32 the total amount of memory required for all the data types
          */
         static uint32 GetFormatRecordSize(const char* format, int32* index_pos = NULL);
     private:

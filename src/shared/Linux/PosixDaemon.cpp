@@ -90,11 +90,17 @@ void startDaemon(uint32_t timeout)
     }
 
     if (!freopen("/dev/null", "rt", stdin))
+    {
         exit(EXIT_FAILURE);
+    }
     if (!freopen("/dev/null", "wt", stdout))
+    {
         exit(EXIT_FAILURE);
+    }
     if (!freopen("/dev/null", "wt", stderr))
+    {
         exit(EXIT_FAILURE);
+    }
 }
 
 void stopDaemon()

@@ -47,7 +47,9 @@ void GMTicket::SaveSurveyData(WorldPacket& recvData) const
         uint32 questionID;
         recvData >> questionID;                            // GMSurveyQuestions.dbc
         if (!questionID)
+        {
             break;
+        }
 
         uint8 value;
         std::string unk_text;
@@ -206,7 +208,9 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
     //This implicitly creates a new instance since we're using operator[]
     GMTicket& ticket = m_GMTicketMap[guid];
     if (ticket.GetPlayerGuid())
+    {
         m_GMTicketIdMap.erase(ticketId);
+    }
 
     //Lets reinitialize with new data
     ticket.Init(guid, text, "", time(NULL), ticketId);

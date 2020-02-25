@@ -163,8 +163,10 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
         }
         // check if already in queue
         if (_player->GetBattleGroundQueueIndex(bgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
+        {
             // player is already in this queue
-            { return; }
+            return;
+        }
         // check if has free queue slots
         if (!_player->HasFreeBattleGroundQueueId())
         {
@@ -201,7 +203,9 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
         {
             Player* member = itr->getSource();
             if (!member)
-                { continue; }                                   // this should never happen
+            {
+                continue; // this should never happen
+            }
 
             uint32 queueSlot = member->AddBattleGroundQueueId(bgQueueTypeId);           // add to queue
 
@@ -417,7 +421,9 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
     {
         case 1:                                         // port to battleground
             if (!_player->IsInvitedForBattleGroundQueueType(bgQueueTypeId))
-                { return; }                                 // cheating?
+            {
+                return; // cheating?
+            }
 
             // resurrect the player
             if (!_player->IsAlive())
@@ -473,9 +479,8 @@ void WorldSession::HandleLeaveBattlefieldOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Received opcode CMSG_LEAVE_BATTLEFIELD");
 
     recv_data.read_skip<uint8>();                           // unk1
-    recv_data.read_skip<uint8>();                           // BattleGroundTypeId-1 ?
+    recv_data.read_skip<uint8>();                           // BattleGroundTypeId-1 ? - Classic Only
     recv_data.read_skip<uint16>();                          // unk2 0
-
 
     // not allow leave battleground in combat
     if (_player->IsInCombat())

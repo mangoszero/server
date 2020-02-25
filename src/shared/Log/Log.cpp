@@ -76,6 +76,7 @@ Log::Log() :
 #ifdef ENABLE_ELUNA
     elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
+
     eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
@@ -185,6 +186,7 @@ void Log::SetColor(bool stdout_stream, Color color)
 
     fprintf((stdout_stream ? stdout : stderr), "\x1b[%d%sm", UnixColorFG[color], (color >= YELLOW && color < Color_count ? ";1" : ""));
 #endif
+
 }
 
 void Log::ResetColor(bool stdout_stream)
@@ -195,6 +197,7 @@ void Log::ResetColor(bool stdout_stream)
 #else
     fprintf((stdout_stream ? stdout : stderr), "\x1b[0m");
 #endif
+
 }
 
 void Log::SetLogLevel(char* level)
@@ -292,6 +295,7 @@ void Log::Initialize()
 #ifdef ENABLE_ELUNA
     elunaErrLogfile = openLogFile("ElunaErrorLogFile", NULL, "a");
 #endif /* ENABLE_ELUNA */
+
     eventAiErLogfile = openLogFile("EventAIErrorLogFile", NULL, "a");
     raLogfile = openLogFile("RaLogFile", NULL, "a");
     worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
@@ -588,7 +592,9 @@ void Log::outErrorDb(const char* err, ...)
 void Log::outErrorEluna()
 {
     if (m_includeTime)
+    {
         outTime();
+    }
 
     fprintf(stderr, "\n");
 
@@ -622,10 +628,14 @@ void Log::outErrorEluna(const char* err, ...)
     }
 
     if (m_colored)
+    {
         SetColor(false, m_colors[LogError]);
+    }
 
     if (m_includeTime)
+    {
         outTime();
+    }
 
     va_list ap;
 
@@ -634,7 +644,9 @@ void Log::outErrorEluna(const char* err, ...)
     va_end(ap);
 
     if (m_colored)
+    {
         ResetColor(false);
+    }
 
     fprintf(stderr, "\n");
 

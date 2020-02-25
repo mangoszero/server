@@ -168,6 +168,7 @@ typedef uint32      DWORD;
 #    define static_assert(a, b) STATIC_ASSERT_WORKAROUND(a, b)
 #  endif
 #endif
+
 #endif
 
 /**

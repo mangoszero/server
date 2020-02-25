@@ -239,7 +239,9 @@ bool ObjectPosSelector::NextUsedAngle(float& angle)
 {
     if (m_nextUsedAreaItr[USED_POS_PLUS] == m_UsedAreaLists[USED_POS_PLUS].end() &&
         m_nextUsedAreaItr[USED_POS_MINUS] == m_UsedAreaLists[USED_POS_MINUS].end())
-        { return false; }
+    {
+        return false;
+    }
 
     // ++ direction less updated
     if (m_nextUsedAreaItr[USED_POS_PLUS] != m_UsedAreaLists[USED_POS_PLUS].end() &&

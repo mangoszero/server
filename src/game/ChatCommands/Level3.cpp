@@ -662,9 +662,13 @@ bool ChatHandler::HandleReloadScriptBindingCommand(char* /*args*/)
 {
     sLog.outString("Trying to re-load `script_binding` Table!");
     if (sScriptMgr.ReloadScriptBinding())
+    {
         SendGlobalSysMessage("DB table `script_binding` reloaded.", SEC_MODERATOR);
+    }
     else
+    {
         SendSysMessage("DENIED: DB table `script_binding` is reloadable only in Debug build.");
+    }
     return true;
 }
 
@@ -862,7 +866,9 @@ bool ChatHandler::HandleReloadDBScriptsOnGossipCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_GOSSIP);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_GOSSIP]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -884,7 +890,9 @@ bool ChatHandler::HandleReloadDBScriptsOnSpellCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_SPELL);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_SPELL]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -906,7 +914,9 @@ bool ChatHandler::HandleReloadDBScriptsOnQuestStartCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_QUEST_START);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_QUEST_START]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -928,7 +938,9 @@ bool ChatHandler::HandleReloadDBScriptsOnQuestEndCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_QUEST_END);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_QUEST_END]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -950,7 +962,9 @@ bool ChatHandler::HandleReloadDBScriptsOnEventCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_EVENT);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_EVENT]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -973,7 +987,9 @@ bool ChatHandler::HandleReloadDBScriptsOnGoUseCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_GOT_USE);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_GO[_TEMPLATE]_USE]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -995,7 +1011,9 @@ bool ChatHandler::HandleReloadDBScriptsOnCreatureDeathCommand(char* args)
     sScriptMgr.LoadDbScripts(DBS_ON_CREATURE_DEATH);
 
     if (*args != 'a')
+    {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_CREATURE_DEATH]` reloaded.", SEC_MODERATOR);
+    }
 
     return true;
 }
@@ -3903,9 +3921,10 @@ bool ChatHandler::HandleReviveCommand(char* args)
         target->ResurrectPlayer(0.5f);
         target->SpawnCorpseBones();
     }
-    else
-        // will resurrected at login without corpse
-        { sObjectAccessor.ConvertCorpseForPlayer(target_guid); }
+    else // will resurrected at login without corpse
+    {
+        sObjectAccessor.ConvertCorpseForPlayer(target_guid);
+    }
 
     return true;
 }
@@ -4316,7 +4335,9 @@ bool ChatHandler::HandleNpcAddWeaponCommand(char* /*args*/)
         }
 
         if(added)
+        {
             PSendSysMessage(LANG_ITEM_ADDED_TO_SLOT,ItemID,tmpItem->Name1,SlotID);
+        }
     }
     else
     {
@@ -4448,7 +4469,9 @@ bool ChatHandler::HandleCharacterLevelCommand(char* args)
     }
 
     if (newlevel < 1)
-        { return false; }                                       // invalid level
+    {
+        return false; // invalid level
+    }
 
     if (newlevel > STRONG_MAX_LEVEL)                        // hardcoded maximum level
     {
@@ -4775,9 +4798,13 @@ bool ChatHandler::HandleChangeWeatherCommand(char* args)
 
     // clamp grade from 0 to 1
     if (grade < 0.0f)
+    {
         grade = 0.0f;
+    }
     else if (grade > 1.0f)
+    {
         grade = 1.0f;
+    }
 
     Player* player = m_session->GetPlayer();
     uint32 zoneId = player->GetZoneId();
@@ -7479,18 +7506,24 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
     float radius = 0.0f;
     ExtractFloat(&args, radius);
     if (radius > 40.0f)
+    {
         radius = 40.0f;
+    }
 
     Unit* unit = getSelectedUnit();
 
     Player* player = m_session->GetPlayer();
     if (!unit)
+    {
         unit = player;
+    }
 
     if (unit->GetTypeId() == TYPEID_UNIT)
     {
         if (radius < 0.1f)
+        {
             radius = static_cast<Creature*>(unit)->GetRespawnRadius();
+        }
     }
     else
     {
@@ -7523,7 +7556,9 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
             unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
             ++successes;
             if (successes >= 100)
+            {
                 break;
+            }
         }
     }
     uint32 genTime = WorldTimer::getMSTimeDiff(startTime, WorldTimer::getMSTime());

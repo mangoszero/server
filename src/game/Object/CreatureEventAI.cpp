@@ -138,11 +138,13 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
                     continue;
                 }
 #endif
-                m_CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
-                // Cache for fast use
-                if (i->event_type == EVENT_T_OOC_LOS)
                 {
-                    m_HasOOCLoSEvent = true;
+                    m_CreatureEventAIList.push_back(CreatureEventAIHolder(*i));
+                    // Cache for fast use
+                    if (i->event_type == EVENT_T_OOC_LOS)
+                    {
+                        m_HasOOCLoSEvent = true;
+                    }
                 }
             }
         }
@@ -788,7 +790,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 sLog.outErrorEventAI("Event %u - NULL target for ACTION_T_SUMMON(%u), target-type %u", EventId, action.type, action.summon.target);
             }
 
-            Creature* pCreature;
+            Creature* pCreature = NULL;
 
             if (action.summon.duration)
             {
@@ -1020,7 +1022,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 return;
             }
 
-            Creature* pCreature;
+            Creature* pCreature = NULL;
             if (i->second.SpawnTimeSecs)
             {
                 pCreature = m_creature->SummonCreature(action.summon_id.creatureId, i->second.position_x, i->second.position_y, i->second.position_z, i->second.orientation, TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, i->second.SpawnTimeSecs);
@@ -1306,7 +1308,9 @@ void CreatureEventAI::Reset()
             case EVENT_T_TIMER_OOC:
             {
                 if (i->UpdateRepeatTimer(m_creature, event.timer.initialMin, event.timer.initialMax))
+                {
                     i->Enabled = true;
+                }
                 break;
             }
             default:
@@ -1443,7 +1447,9 @@ void CreatureEventAI::ReceiveAIEvent(AIEventType eventType, Creature* pSender, U
     {
         if (itr->Event.event_type == EVENT_T_RECEIVE_AI_EVENT &&
             itr->Event.receiveAIEvent.eventType == eventType && (!itr->Event.receiveAIEvent.senderEntry || itr->Event.receiveAIEvent.senderEntry == pSender->GetEntry()))
-            { ProcessEvent(*itr, pInvoker, pSender); }
+            {
+                ProcessEvent(*itr, pInvoker, pSender);
+            }
     }
 }
 
@@ -1559,13 +1565,19 @@ void CreatureEventAI::MoveInLineOfSight(Unit* who)
 void CreatureEventAI::SpellHit(Unit* pUnit, const SpellEntry* pSpell)
 {
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
+    {
         if (i->Event.event_type == EVENT_T_SPELLHIT)
+        {
             // If spell id matches (or no spell id) & if spell school matches (or no spell school)
             if (!i->Event.spell_hit.spellId || pSpell->Id == i->Event.spell_hit.spellId)
+            {
                 if (GetSchoolMask(pSpell->School) & i->Event.spell_hit.schoolMask)
                 {
                     ProcessEvent(*i, pUnit);
                 }
+            }
+        }
+    }
 }
 
 void CreatureEventAI::UpdateAI(const uint32 diff)
@@ -1588,18 +1600,26 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
                 {
                     // Do not decrement timers if event cannot trigger in this phase
                     if (!(i->Event.event_inverse_phase_mask & (1 << m_Phase)))
+                    {
                         i->Time -= m_EventDiff;
+                    }
                 }
                 else
+                {
                     i->Time = 0;
+                }
             }
 
             // Skip processing of events that have time remaining or are disabled
             if (!(i->Enabled) || i->Time)
+            {
                 continue;
+            }
 
             if (IsTimerBasedEvent(i->Event.event_type))
+            {
                 ProcessEvent(*i);
+            }
         }
 
         m_EventDiff = 0;
@@ -1805,7 +1825,9 @@ void CreatureEventAI::DamageTaken(Unit* dealer, uint32& damage)
         AIEventType sendEvent[HEALTH_STEPS] = { AI_EVENT_LOST_SOME_HEALTH, AI_EVENT_LOST_HEALTH, AI_EVENT_CRITICAL_HEALTH };
 
         if (newHealthPercent > healthSteps[step])
-            { return; }                                         // Not reached the next mark
+        {
+            return; // Not reached the next mark
+        }
 
         // search for highest reached mark (with actual event attached)
         for (uint32 i = HEALTH_STEPS - 1; i > step; --i)

@@ -110,7 +110,7 @@ enum FriendsResult
 };
 
 #define SOCIALMGR_FRIEND_LIMIT  50
-#define SOCIALMGR_IGNORE_LIMIT  25                          // checked max for 1.12.1, list tail not show if more
+#define SOCIALMGR_IGNORE_LIMIT  25                          // checked max for 1.12.x, 2.4.3, list tail not show if more
 
 class PlayerSocial
 {

@@ -1308,7 +1308,9 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
         if (type < 0)
             go->SendObjectDeSpawnAnim(go->GetObjectGuid());
         else
+        {
             go->SendGameObjectCustomAnim(uint32(type));
+        }
         return true;
     }
     return false;
@@ -1353,7 +1355,9 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
 
     int32 type;
     if (!ExtractInt32(&args, type))
+    {
         type = -1;
+    }
 
     GameObjectData const *goData = sObjectMgr.GetGOData(lowguid);
     if (!goData)
@@ -1364,9 +1368,13 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
     if (GameObject *go = GetGameObjectWithGuid(lowguid, goData->id))
     {
         if (type < 0)
+        {
             PSendSysMessage(LANG_GET_GAMEOBJECT_STATE, lowguid, go->GetGoState());
+        }
         else
+        {
             go->SetGoState(GOState(type));  // no check for max value of "type" is intended here
+        }
         return true;
     }
     return false;
@@ -2470,7 +2478,9 @@ bool ChatHandler::HandleNpcSubNameCommand(char* /*args*/)
     /* Temp. disabled
 
     if (!*args)
+    {
         args = "";
+    }
 
     if (strlen((char*)args)>75)
     {
@@ -2908,7 +2918,9 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
             PSendSysMessage(LANG_COMMAND_TICKETPLAYERDEL, GetNameLink(pl).c_str());
         }
         else
+        {
             PSendSysMessage(LANG_COMMAND_TICKETDEL);
+        }
 
         return true;
     }
@@ -3080,7 +3092,9 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
         pl->GetSession()->SendGMTicketGetTicket(0x06, ticket);
         //How should we error here?
         if (m_session)
+        {
             m_session->GetPlayer()->Whisper(args, LANG_UNIVERSAL, pl->GetObjectGuid());
+        }
     }
 
     return true;
@@ -3230,14 +3244,20 @@ inline void UnsummonVisualWaypoints(Player const* player, ObjectGuid ownerGuid)
     for (std::list<Creature*>::iterator itr = waypoints.begin(); itr != waypoints.end(); ++itr)
     {
         if ((*itr)->GetSubtype() != CREATURE_SUBTYPE_TEMPORARY_SUMMON)
+        {
             continue;
+        }
 
         TemporarySummonWaypoint* wpTarget = dynamic_cast<TemporarySummonWaypoint*>(*itr);
         if (!wpTarget)
+        {
             continue;
+        }
 
         if (wpTarget->GetSummonerGuid() == ownerGuid)
+        {
             wpTarget->UnSummon();
+        }
     }
 }
 
@@ -3301,7 +3321,9 @@ bool ChatHandler::HandleWpAddCommand(char* args)
             wpPointId = wpTarget->GetWaypointId() + 1;      // Insert as next waypoint
         }
         else // normal creature selected
+        {
             wpOwner = targetCreature;
+        }
     }
     else //!targetCreature - first argument must be dbGuid
     {
@@ -3343,20 +3365,27 @@ bool ChatHandler::HandleWpAddCommand(char* args)
         {
             uint32 src = (uint32)PATH_NO_PATH;
             if (ExtractOptUInt32(&args, src, src))
+            {
                 wpDestination = (WaypointPathOrigin)src;
+            }
             else // pathId provided but no destination
             {
                 if (wpPathId != 0)
+                {
                     wpDestination = PATH_FROM_ENTRY;        // Multiple Paths must only be assigned by entry
+                }
             }
         }
 
         if (wpDestination == PATH_NO_PATH)                  // No overwrite params. Do best estimate
         {
             if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+            {
                 if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+                {
                     wpMMGen->GetPathInformation(wpPathId, wpDestination);
-
+                }
+            }
             // Get information about default path if no current path. If no default path, prepare data dependendy on uniqueness
             if (wpDestination == PATH_NO_PATH && !sWaypointMgr.GetDefaultPath(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), &wpDestination))
             {
@@ -3365,7 +3394,9 @@ bool ChatHandler::HandleWpAddCommand(char* args)
                 {
                     QueryResult* result = WorldDatabase.PQuery("SELECT COUNT(id) FROM creature WHERE id = %u", wpOwner->GetEntry());
                     if (result && result->Fetch()[0].GetUInt32() != 1)
+                    {
                         wpDestination = PATH_FROM_GUID;
+                    }
                     delete result;
                 }
             }
@@ -3448,7 +3479,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
 
     CreatureInfo const* waypointInfo = ObjectMgr::GetCreatureTemplate(VISUAL_WAYPOINT);
     if (!waypointInfo || waypointInfo->GetHighGuid() != HIGHGUID_UNIT)
-        { return false; }                                       // must exist as normal creature in mangos.sql 'creature_template'
+    {
+        return false; // must exist as normal creature in mangos.sql 'creature_template'
+    }
 
     // first arg: add del text emote spell waittime move
     char* subCmd_str = ExtractLiteralArg(&args);
@@ -3544,11 +3577,16 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
     if (wpSource == PATH_NO_PATH)                           // No waypoint selected
     {
         if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+        {
             if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+            {
                 wpMMGen->GetPathInformation(wpPathId, wpSource);
-
+            }
+        }
         if (wpSource == PATH_NO_PATH)
+        {
             sWaypointMgr.GetDefaultPath(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), &wpSource);
+        }
     }
 
     WaypointPath const* wpPath = sWaypointMgr.GetPathFromOrigin(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpPathId, wpSource);
@@ -3584,7 +3622,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
         sWaypointMgr.DeleteNode(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpId, wpPathId, wpSource);
 
         if (TemporarySummonWaypoint* wpCreature = dynamic_cast<TemporarySummonWaypoint*>(targetCreature))
+        {
             wpCreature->UnSummon();
+        }
 
         if (wpPath->empty())
         {
@@ -3633,7 +3673,9 @@ bool ChatHandler::HandleWpModifyCommand(char* args)
         }
 
         if (!sWaypointMgr.SetNodeScriptId(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpId, wpPathId, wpSource, scriptId))
+        {
             PSendSysMessage(LANG_WAYPOINT_INFO_UNK_SCRIPTID, scriptId);
+        }
     }
     else if (subCmd == "orientation")
     {
@@ -3676,7 +3718,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
 
     CreatureInfo const* waypointInfo = ObjectMgr::GetCreatureTemplate(VISUAL_WAYPOINT);
     if (!waypointInfo || waypointInfo->GetHighGuid() != HIGHGUID_UNIT)
-        { return false; }                                       // must exist as normal creature in mangos.sql 'creature_template'
+    {
+        return false; // must exist as normal creature in mangos.sql 'creature_template'
+    }
 
     // first arg: info, on, off, first, last
 
@@ -3699,7 +3743,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
         {
             uint32 src;
             if (ExtractOptUInt32(&args, src, (uint32)PATH_NO_PATH))
+            {
                 wpOrigin = (WaypointPathOrigin)src;
+            }
         }
     }
     else    // Guid must be provided
@@ -3713,7 +3759,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
         {
             uint32 src = (uint32)PATH_NO_PATH;
             if (ExtractOptUInt32(&args, src, src))
+            {
                 wpOrigin = (WaypointPathOrigin)src;
+            }
         }
 
         // Params now parsed, check them
@@ -3769,23 +3817,30 @@ bool ChatHandler::HandleWpShowCommand(char* args)
         wpPathId = wpTarget->GetPathId();
     }
     else
+    {
         wpOwner = targetCreature;
+    }
 
     // Get the path
     WaypointPath* wpPath = NULL;
     if (wpOrigin != PATH_NO_PATH)                           // Might have been provided by param
+    {
         wpPath = sWaypointMgr.GetPathFromOrigin(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpPathId, wpOrigin);
+    }
     else
     {
         if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+        {
             if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
             {
                 wpMMGen->GetPathInformation(wpPathId, wpOrigin);
                 wpPath = sWaypointMgr.GetPathFromOrigin(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), wpPathId, wpOrigin);
             }
-
+        }
         if (wpOrigin == PATH_NO_PATH)
+        {
             wpPath = sWaypointMgr.GetDefaultPath(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), &wpOrigin);
+        }
     }
 
     if (!wpPath || wpPath->empty())
@@ -3812,7 +3867,9 @@ bool ChatHandler::HandleWpShowCommand(char* args)
         PSendSysMessage(LANG_WAYPOINT_INFO_ORI, point->second.orientation);
         PSendSysMessage(LANG_WAYPOINT_INFO_SCRIPTID, point->second.script_id);
         if (wpOrigin == PATH_FROM_EXTERNAL)
+        {
             PSendSysMessage(LANG_WAYPOINT_INFO_AISCRIPT, wpOwner->GetScriptName().c_str());
+        }
         if (WaypointBehavior* behaviour = point->second.behavior)
         {
             PSendSysMessage(" ModelId1: %u", behaviour->model1);
@@ -3918,7 +3975,9 @@ bool ChatHandler::HandleWpExportCommand(char* args)
             wpPathId = wpTarget->GetPathId();
         }
         else // normal creature selected
+        {
             wpOwner = targetCreature;
+        }
     }
     else
     {
@@ -3969,11 +4028,15 @@ bool ChatHandler::HandleWpExportCommand(char* args)
         {
             uint32 src = (uint32)PATH_NO_PATH;
             if (ExtractOptUInt32(&args, src, src))
+            {
                 wpOrigin = (WaypointPathOrigin)src;
+            }
             else // pathId provided but no destination
             {
                 if (wpPathId != 0)
+                {
                     wpOrigin = PATH_FROM_ENTRY;             // Multiple Paths must only be assigned by entry
+                }
             }
         }
 
@@ -3981,9 +4044,13 @@ bool ChatHandler::HandleWpExportCommand(char* args)
         {
             if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
                 if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
+                {
                     wpMMGen->GetPathInformation(wpPathId, wpOrigin);
+                }
             if (wpOrigin == PATH_NO_PATH)
+            {
                 sWaypointMgr.GetDefaultPath(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), &wpOrigin);
+            }
         }
     }
 
@@ -4012,9 +4079,13 @@ bool ChatHandler::HandleWpExportCommand(char* args)
 
     outfile << "DELETE FROM " << table << " WHERE " << key_field << "=" << key << ";\n";
     if (wpOrigin != PATH_FROM_EXTERNAL)
+    {
         outfile << "INSERT INTO " << table << " (" << key_field << ", point, position_x, position_y, position_z, orientation, waittime, script_id) VALUES\n";
+    }
     else
+    {
         outfile << "INSERT INTO " << table << " (" << key_field << ", point, position_x, position_y, position_z, orientation, waittime) VALUES\n";
+    }
 
     WaypointPath::const_iterator itr = wpPath->begin();
     uint32 countDown = wpPath->size();
@@ -4028,11 +4099,17 @@ bool ChatHandler::HandleWpExportCommand(char* args)
         outfile << itr->second.orientation << ",";
         outfile << itr->second.delay << ",";
         if (wpOrigin != PATH_FROM_EXTERNAL)                 // Only for normal waypoints
+        {
             outfile << itr->second.script_id << ")";
+        }
         if (countDown > 1)
+        {
             outfile << ",\n";
+        }
         else
+        {
             outfile << ";\n";
+        }
     }
 
     PSendSysMessage(LANG_WAYPOINT_EXPORTED);
@@ -4752,7 +4829,9 @@ bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
 
         if (skillInfo->categoryId != SKILL_CATEGORY_PROFESSION &&
             skillInfo->categoryId != SKILL_CATEGORY_SECONDARY)
-            { continue; }
+        {
+            continue;
+        }
 
         int loc = GetSessionDbcLocale();
         name = skillInfo->name[loc];
@@ -5420,9 +5499,13 @@ bool ChatHandler::HandleWaterwalkCommand(char* args)
     }
 
     if (value)
-        { player->SetWaterWalk(true); }                         // ON
+    {
+        player->SetWaterWalk(true); // ON
+    }
     else
-        { player->SetWaterWalk(false); }                        // OFF
+    {
+        player->SetWaterWalk(false); // OFF
+    }
 
     PSendSysMessage(LANG_YOU_SET_WATERWALK, args, GetNameLink(player).c_str());
     if (needReportToTarget(player))
@@ -5463,12 +5546,18 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
             followPath = true;
             para = strtok(NULL, " ");
             if (para && strcmp(para, "straight") == 0)
+            {
                 useStraightPath = true;
+            }
         }
         else if (strcmp(para, "straight") == 0)
+        {
             useStraightPath = true;
+        }
         else if (strcmp(para, "to_me") == 0)
+        {
             unitToPlayer = true;
+        }
         else
         {
             PSendSysMessage("Use '.mmap path go' to move on target.");

@@ -163,7 +163,7 @@ enum UnitStandStateType
     UNIT_STAND_STATE_SIT_MEDIUM_CHAIR  = 5,
     UNIT_STAND_STATE_SIT_HIGH_CHAIR    = 6,
     UNIT_STAND_STATE_DEAD              = 7,
-    UNIT_STAND_STATE_KNEEL             = 8
+    UNIT_STAND_STATE_KNEEL             = 8,
 };
 
 #define MAX_UNIT_STAND_STATE             9
@@ -485,7 +485,7 @@ extern float baseMoveSpeed[MAX_MOVE_TYPE];
 /// internal used flags for marking special auras - for example some dummy-auras
 enum UnitAuraFlags
 {
-    UNIT_AURAFLAG_ALIVE_INVISIBLE   = 0x1                   // aura which makes unit invisible for alive
+    UNIT_AURAFLAG_ALIVE_INVISIBLE   = 0x1,                  // aura which makes unit invisible for alive
 };
 
 enum UnitVisibility

@@ -83,4 +83,5 @@ class QueryResultMysql : public QueryResult
         MYSQL_RES* mResult; /**< TODO */
 };
 #endif
+
 #endif
