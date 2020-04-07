@@ -24,7 +24,7 @@ double PricingStrategy::GetMarketPrice(uint32 itemId, uint32 auctionHouse)
 {
     double marketPrice = 0;
 
-    QueryResult* results = CharacterDatabase.PQuery("SELECT price FROM ahbot_price WHERE item = '%u' AND auction_house = '%u'", itemId, auctionHouse);
+    QueryResult* results = CharacterDatabase.PQuery("SELECT `price` FROM `ahbot_price` WHERE `item` = '%u' AND `auction_house` = '%u'", itemId, auctionHouse);
     if (results)
     {
         marketPrice = results->Fetch()[0].GetFloat();
@@ -96,19 +96,19 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
     double result = 1.0;
 
     QueryResult* results = WorldDatabase.PQuery(
-        "select max(ChanceOrQuestChance) from ( "
-        "select ChanceOrQuestChance from gameobject_loot_template where item = '%u' "
+        "SELECT MAX(`ChanceOrQuestChance`) FROM ( "
+        "SELECT `ChanceOrQuestChance` FROM `gameobject_loot_template` WHERE `item` = '%u' "
         //"union select ChanceOrQuestChance from spell_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from disenchant_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from fishing_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from item_loot_template where item = '%u' "
-        //"union select ChanceOrQuestChance from milling_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from pickpocketing_loot_template where item = '%u' "
-        //"union select ChanceOrQuestChance from prospecting_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from reference_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from skinning_loot_template where item = '%u' "
-        "union select ChanceOrQuestChance from creature_loot_template where item = '%u' "
-        "union select 0 "
+        "UNION SELECT `ChanceOrQuestChance` FROM `disenchant_loot_template` WHERE `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `fishing_loot_template` WHERE `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `item_loot_template` WHERE `item` = '%u' "
+        //"union select ChanceOrQuestChance from milling_loot_template where `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `pickpocketing_loot_template` WHERE `item` = '%u' "
+        //"union select ChanceOrQuestChance from prospecting_loot_template where `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `reference_loot_template` WHERE `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `skinning_loot_template` WHERE `item` = '%u' "
+        "UNION SELECT `ChanceOrQuestChance` FROM `creature_loot_template` WHERE `item` = '%u' "
+        "UNION SELECT 0 "
         ") a",
         itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId);
 
@@ -132,7 +132,7 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
     double result = 1.0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT count(*) FROM (SELECT round(buytime/3600/24/5) as days FROM ahbot_history WHERE category = '%s' AND won = '1' AND buytime <= '%u' AND auction_house = '%u' group by days) q",
+        "SELECT COUNT(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS days FROM `ahbot_history` WHERE `category` = '%s' AND `won` = '1' AND `buytime` <= '%u' AND `auction_house` = '%u' `group` BY `days`) q",
         category->GetName().c_str(), untilTime, AhBot::factions[auctionHouse]);
     if (results)
     {
@@ -160,7 +160,7 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
     double result = 1.0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT count(*) FROM (SELECT round(buytime/3600/24/5) as days FROM ahbot_history WHERE won = '1' AND item = '%u' AND buytime <= '%u' AND auction_house = '%u' group by days) q",
+        "SELECT count(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS `days` FROM `ahbot_history` WHERE `won` = '1' AND `item` = '%u' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
         proto->ItemId, untilTime, AhBot::factions[auctionHouse]);
     if (results)
     {
@@ -201,7 +201,7 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
         double result = 1.0;
 
         QueryResult* results = WorldDatabase.PQuery(
-            "select max(QuestLevel), max(MinLevel) from quest_template where ReqItemId1 = %u or ReqItemId2 = %u or ReqItemId3 = %u or ReqItemId4 = %u",
+            "SELECT MAX(`QuestLevel`), MAX(`MinLevel`) FROM `quest_template` WHERE `ReqItemId1` = %u OR `ReqItemId2` = %u OR `ReqItemId3` = %u OR `ReqItemId4` = %u",
             proto->ItemId, proto->ItemId, proto->ItemId, proto->ItemId);
         if (results)
         {

@@ -90,12 +90,12 @@ void MapPersistentState::SaveCreatureRespawnTime(uint32 loguid, time_t t)
     static SqlStatementID delSpawnTime ;
     static SqlStatementID insSpawnTime ;
 
-    SqlStatement stmt = CharacterDatabase.CreateStatement(delSpawnTime, "DELETE FROM creature_respawn WHERE guid = ? AND instance = ?");
+    SqlStatement stmt = CharacterDatabase.CreateStatement(delSpawnTime, "DELETE FROM `creature_respawn` WHERE `guid` = ? AND `instance` = ?");
     stmt.PExecute(loguid, m_instanceid);
 
     if (t > sWorld.GetGameTime())
     {
-        stmt = CharacterDatabase.CreateStatement(insSpawnTime, "INSERT INTO creature_respawn VALUES ( ?, ?, ? )");
+        stmt = CharacterDatabase.CreateStatement(insSpawnTime, "INSERT INTO `creature_respawn` VALUES ( ?, ?, ? )");
         stmt.PExecute(loguid, uint64(t), m_instanceid);
     }
 
@@ -117,12 +117,12 @@ void MapPersistentState::SaveGORespawnTime(uint32 loguid, time_t t)
     static SqlStatementID delSpawnTime ;
     static SqlStatementID insSpawnTime ;
 
-    SqlStatement stmt = CharacterDatabase.CreateStatement(delSpawnTime, "DELETE FROM gameobject_respawn WHERE guid = ? AND instance = ?");
+    SqlStatement stmt = CharacterDatabase.CreateStatement(delSpawnTime, "DELETE FROM `gameobject_respawn` WHERE `guid` = ? AND `instance` = ?");
     stmt.PExecute(loguid, m_instanceid);
 
     if (t > sWorld.GetGameTime())
     {
-        stmt = CharacterDatabase.CreateStatement(insSpawnTime, "INSERT INTO gameobject_respawn VALUES ( ?, ?, ? )");
+        stmt = CharacterDatabase.CreateStatement(insSpawnTime, "INSERT INTO `gameobject_respawn` VALUES ( ?, ?, ? )");
         stmt.PExecute(loguid, uint64(t), m_instanceid);
     }
 
@@ -270,14 +270,14 @@ void DungeonPersistentState::SaveToDB()
         }
     }
 
-    CharacterDatabase.PExecute("INSERT INTO instance VALUES ('%u', '%u', '" UI64FMTD "', '%s')", GetInstanceId(), GetMapId(), (uint64)GetResetTimeForDB(), data.c_str());
+    CharacterDatabase.PExecute("INSERT INTO `instance` VALUES ('%u', '%u', '" UI64FMTD "', '%s')", GetInstanceId(), GetMapId(), (uint64)GetResetTimeForDB(), data.c_str());
 }
 
 void DungeonPersistentState::DeleteRespawnTimes()
 {
     CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("DELETE FROM creature_respawn WHERE instance = '%u'", GetInstanceId());
-    CharacterDatabase.PExecute("DELETE FROM gameobject_respawn WHERE instance = '%u'", GetInstanceId());
+    CharacterDatabase.PExecute("DELETE FROM `creature_respawn` WHERE `instance` = '%u'", GetInstanceId());
+    CharacterDatabase.PExecute("DELETE FROM `gameobject_respawn` WHERE `instance` = '%u'", GetInstanceId());
     CharacterDatabase.CommitTransaction();
 
     ClearRespawnTimes();                                    // state can be deleted at call if only respawn data prevent unload
@@ -350,7 +350,7 @@ void DungeonResetScheduler::LoadResetTimes()
     typedef std::map<uint32, std::pair<uint32, time_t> > ResetTimeMapType;
     ResetTimeMapType InstResetTime;
 
-    QueryResult* result = CharacterDatabase.Query("SELECT id, map, resettime FROM instance WHERE resettime > 0");
+    QueryResult* result = CharacterDatabase.Query("SELECT `id`, `map`, `resettime` FROM `instance` WHERE `resettime` > 0");
     if (result)
     {
         do
@@ -375,7 +375,7 @@ void DungeonResetScheduler::LoadResetTimes()
         delete result;
 
         // update reset time for normal instances with the max creature respawn time + X hours
-        result = CharacterDatabase.Query("SELECT MAX(respawntime), instance FROM creature_respawn WHERE instance > 0 GROUP BY instance");
+        result = CharacterDatabase.Query("SELECT MAX(`respawntime`), `instance` FROM `creature_respawn` WHERE `instance` > 0 GROUP BY `instance`");
         if (result)
         {
             do
@@ -388,7 +388,7 @@ void DungeonResetScheduler::LoadResetTimes()
                 ResetTimeMapType::iterator itr = InstResetTime.find(instance);
                 if (itr != InstResetTime.end() && itr->second.second != resettime)
                 {
-                    CharacterDatabase.DirectPExecute("UPDATE instance SET resettime = '" UI64FMTD "' WHERE id = '%u'", uint64(resettime), instance);
+                    CharacterDatabase.DirectPExecute("UPDATE `instance` SET `resettime` = '" UI64FMTD "' WHERE `id` = '%u'", uint64(resettime), instance);
                     itr->second.second = resettime;
                 }
             }
@@ -407,7 +407,7 @@ void DungeonResetScheduler::LoadResetTimes()
     // load the global respawn times for raid instances
     uint32 diff = sWorld.getConfig(CONFIG_UINT32_INSTANCE_RESET_TIME_HOUR) * HOUR;
     m_resetTimeByMapId.resize(sMapStore.GetNumRows() + 1);
-    result = CharacterDatabase.Query("SELECT mapid, resettime FROM instance_reset");
+    result = CharacterDatabase.Query("SELECT `mapid`, `resettime` FROM `instance_reset`");
     if (result)
     {
         do
@@ -421,7 +421,7 @@ void DungeonResetScheduler::LoadResetTimes()
             if (!mapEntry || !mapEntry->IsDungeon() || !ObjectMgr::GetInstanceTemplate(mapid))
             {
                 sLog.outError("MapPersistentStateManager::LoadResetTimes: invalid mapid %u in instance_reset!", mapid);
-                CharacterDatabase.DirectPExecute("DELETE FROM instance_reset WHERE mapid = '%u'", mapid);
+                CharacterDatabase.DirectPExecute("DELETE FROM `instance_reset` WHERE `mapid` = '%u'", mapid);
                 continue;
             }
 
@@ -430,7 +430,7 @@ void DungeonResetScheduler::LoadResetTimes()
             uint64 newresettime = (oldresettime / DAY) * DAY + diff;
             if (oldresettime != newresettime)
             {
-                CharacterDatabase.DirectPExecute("UPDATE instance_reset SET resettime = '" UI64FMTD "' WHERE mapid = '%u'", newresettime, mapid);
+                CharacterDatabase.DirectPExecute("UPDATE `instance_reset` SET `resettime` = '" UI64FMTD "' WHERE `mapid` = '%u'", newresettime, mapid);
             }
 
             SetResetTimeFor(mapid, newresettime);
@@ -466,7 +466,7 @@ void DungeonResetScheduler::LoadResetTimes()
         {
             // initialize the reset time
             t = today + period + diff;
-            CharacterDatabase.DirectPExecute("INSERT INTO instance_reset VALUES ('%u','" UI64FMTD "')", temp->map, (uint64)t);
+            CharacterDatabase.DirectPExecute("INSERT INTO `instance_reset` VALUES ('%u','" UI64FMTD "')", temp->map, (uint64)t);
         }
 
         if (t < now || t > nextWeek)
@@ -475,7 +475,7 @@ void DungeonResetScheduler::LoadResetTimes()
             // calculate the next reset time
             t = (t / DAY) * DAY;
             t += ((today - t) / period + 1) * period + diff;
-            CharacterDatabase.DirectPExecute("UPDATE instance_reset SET resettime = '" UI64FMTD "' WHERE mapid = '%u'", (uint64)t, temp->map);
+            CharacterDatabase.DirectPExecute("UPDATE `instance_reset` SET `resettime` = '" UI64FMTD "' WHERE `mapid` = '%u'", (uint64)t, temp->map);
         }
 
         SetResetTimeFor(temp->map, t);
@@ -565,7 +565,7 @@ void DungeonResetScheduler::Update()
 
                 time_t next_reset = DungeonResetScheduler::CalculateNextResetTime(instanceTemplate, resetTime);
 
-                CharacterDatabase.DirectPExecute("UPDATE instance_reset SET resettime = '" UI64FMTD "' WHERE mapid = '%u'", uint64(next_reset), uint32(event.mapid));
+                CharacterDatabase.DirectPExecute("UPDATE `instance_reset` SET `resettime` = '" UI64FMTD "' WHERE `mapid` = '%u'", uint64(next_reset), uint32(event.mapid));
 
                 SetResetTimeFor(event.mapid, next_reset);
 
@@ -719,11 +719,11 @@ void MapPersistentStateManager::DeleteInstanceFromDB(uint32 instanceid)
     if (instanceid)
     {
         CharacterDatabase.BeginTransaction();
-        CharacterDatabase.PExecute("DELETE FROM instance WHERE id = '%u'", instanceid);
-        CharacterDatabase.PExecute("DELETE FROM character_instance WHERE instance = '%u'", instanceid);
-        CharacterDatabase.PExecute("DELETE FROM group_instance WHERE instance = '%u'", instanceid);
-        CharacterDatabase.PExecute("DELETE FROM creature_respawn WHERE instance = '%u'", instanceid);
-        CharacterDatabase.PExecute("DELETE FROM gameobject_respawn WHERE instance = '%u'", instanceid);
+        CharacterDatabase.PExecute("DELETE FROM `instance` WHERE `id` = '%u'", instanceid);
+        CharacterDatabase.PExecute("DELETE FROM `character_instance` WHERE `instance` = '%u'", instanceid);
+        CharacterDatabase.PExecute("DELETE FROM `group_instance` WHERE `instance` = '%u'", instanceid);
+        CharacterDatabase.PExecute("DELETE FROM `creature_respawn` WHERE `instance` = '%u'", instanceid);
+        CharacterDatabase.PExecute("DELETE FROM `gameobject_respawn` WHERE `instance` = '%u'", instanceid);
         CharacterDatabase.CommitTransaction();
     }
 }
@@ -744,7 +744,7 @@ void MapPersistentStateManager::RemovePersistentState(uint32 mapId, uint32 insta
             if (itr->second->GetMapEntry()->IsDungeon())
                 if (time_t resettime = ((DungeonPersistentState*)itr->second)->GetResetTimeForDB())
                 {
-                    CharacterDatabase.PExecute("UPDATE instance SET resettime = '" UI64FMTD "' WHERE id = '%u'", (uint64)resettime, instanceId);
+                    CharacterDatabase.PExecute("UPDATE `instance` SET `resettime` = '" UI64FMTD "' WHERE `id` = '%u'", (uint64)resettime, instanceId);
                 }
 
             _ResetSave(m_instanceSaveByInstanceId, itr);
@@ -784,7 +784,7 @@ void MapPersistentStateManager::_DelHelper(DatabaseType& db, const char* fields,
                 db.escape_string(fieldValue);
                 ss << (i != 0 ? " AND " : "") << fieldTokens[i] << " = '" << fieldValue << "'";
             }
-            db.PExecute("DELETE FROM %s WHERE %s", table, ss.str().c_str());
+            db.PExecute("DELETE FROM `%s` WHERE %s", table, ss.str().c_str());
         }
         while (result->NextRow());
         delete result;
@@ -801,19 +801,19 @@ void MapPersistentStateManager::CleanupInstances()
 
     CharacterDatabase.BeginTransaction();
     // clean character/group - instance binds with invalid group/characters
-    _DelHelper(CharacterDatabase, "character_instance.guid, instance", "character_instance", "LEFT JOIN characters ON character_instance.guid = characters.guid WHERE characters.guid IS NULL");
-    _DelHelper(CharacterDatabase, "group_instance.leaderGuid, instance", "group_instance", "LEFT JOIN characters ON group_instance.leaderGuid = characters.guid LEFT JOIN groups ON group_instance.leaderGuid = groups.leaderGuid WHERE characters.guid IS NULL OR groups.leaderGuid IS NULL");
+    _DelHelper(CharacterDatabase, "`character_instance`.`guid`, `instance`", "`character_instance`", "LEFT JOIN `characters` ON `character_instance`.`guid` = `characters`.`guid` WHERE `characters`.`guid` IS NULL");
+    _DelHelper(CharacterDatabase, "`group_instance`.`leaderGuid`, `instance`", "`group_instance`", "LEFT JOIN `characters` ON `group_instance`.`leaderGuid` = `characters`.`guid` LEFT JOIN `groups` ON `group_instance`.`leaderGuid` = `groups`.`leaderGuid` WHERE `characters`.`guid` IS NULL OR `groups`.`leaderGuid` IS NULL");
 
     // clean instances that do not have any players or groups bound to them
-    _DelHelper(CharacterDatabase, "id, map", "instance", "LEFT JOIN character_instance ON character_instance.instance = id LEFT JOIN group_instance ON group_instance.instance = id WHERE character_instance.instance IS NULL AND group_instance.instance IS NULL");
+    _DelHelper(CharacterDatabase, "`id`, `map`", "`instance`", "LEFT JOIN `character_instance` ON `character_instance`.`instance` = `id` LEFT JOIN `group_instance` ON `group_instance`.`instance` = `id` WHERE `character_instance`.`instance` IS NULL AND `group_instance`.`instance` IS NULL");
 
     // clean invalid instance references in other tables
-    _DelHelper(CharacterDatabase, "character_instance.guid, instance", "character_instance", "LEFT JOIN instance ON character_instance.instance = instance.id WHERE instance.id IS NULL");
-    _DelHelper(CharacterDatabase, "group_instance.leaderGuid, instance", "group_instance", "LEFT JOIN instance ON group_instance.instance = instance.id WHERE instance.id IS NULL");
+    _DelHelper(CharacterDatabase, "`character_instance`.`guid`, `instance`", "`character_instance`", "LEFT JOIN `instance` ON `character_instance`.`instance` = `instance`.`id` WHERE `instance`.`id` IS NULL");
+    _DelHelper(CharacterDatabase, "`group_instance`.`leaderGuid`, `instance`", "`group_instance`", "LEFT JOIN `instance` ON `group_instance`.`instance` = `instance`.`id` WHERE `instance`.`id` IS NULL");
 
     // clean unused respawn data
-    CharacterDatabase.Execute("DELETE FROM creature_respawn WHERE instance <> 0 AND instance NOT IN (SELECT id FROM instance)");
-    CharacterDatabase.Execute("DELETE FROM gameobject_respawn WHERE instance <> 0 AND instance NOT IN (SELECT id FROM instance)");
+    CharacterDatabase.Execute("DELETE FROM `creature_respawn` WHERE `instance` <> 0 AND `instance` NOT IN (SELECT `id` FROM `instance`)");
+    CharacterDatabase.Execute("DELETE FROM `gameobject_respawn` WHERE `instance` <> 0 AND `instance` NOT IN (SELECT `id` FROM `instance`)");
     // execute transaction directly
     CharacterDatabase.CommitTransaction();
 
@@ -834,7 +834,7 @@ void MapPersistentStateManager::PackInstances()
     // all valid ids are in the instance table
     // any associations to ids not in this table are assumed to be
     // cleaned already in CleanupInstances
-    QueryResult* result = CharacterDatabase.Query("SELECT id FROM instance");
+    QueryResult* result = CharacterDatabase.Query("SELECT `id` FROM `instance`");
     if (result)
     {
         do
@@ -857,12 +857,12 @@ void MapPersistentStateManager::PackInstances()
         {
             CharacterDatabase.BeginTransaction();
             // remap instance id
-            CharacterDatabase.PExecute("UPDATE creature_respawn SET instance = '%u' WHERE instance = '%u'", InstanceNumber, *i);
-            CharacterDatabase.PExecute("UPDATE gameobject_respawn SET instance = '%u' WHERE instance = '%u'", InstanceNumber, *i);
-            CharacterDatabase.PExecute("UPDATE corpse SET instance = '%u' WHERE instance = '%u'", InstanceNumber, *i);
-            CharacterDatabase.PExecute("UPDATE character_instance SET instance = '%u' WHERE instance = '%u'", InstanceNumber, *i);
-            CharacterDatabase.PExecute("UPDATE instance SET id = '%u' WHERE id = '%u'", InstanceNumber, *i);
-            CharacterDatabase.PExecute("UPDATE group_instance SET instance = '%u' WHERE instance = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `creature_respawn` SET `instance` = '%u' WHERE `instance` = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `gameobject_respawn` SET `instance` = '%u' WHERE `instance` = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `corpse` SET `instance` = '%u' WHERE `instance` = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `character_instance` SET `instance` = '%u' WHERE `instance` = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `instance` SET `id` = '%u' WHERE `id` = '%u'", InstanceNumber, *i);
+            CharacterDatabase.PExecute("UPDATE `group_instance` SET `instance` = '%u' WHERE `instance` = '%u'", InstanceNumber, *i);
             // execute transaction synchronously
             CharacterDatabase.CommitTransaction();
         }
@@ -970,15 +970,15 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
 
         // delete them from the DB, even if not loaded
         CharacterDatabase.BeginTransaction();
-        CharacterDatabase.PExecute("DELETE FROM character_instance USING character_instance LEFT JOIN instance ON character_instance.instance = id WHERE map = '%u'", mapid);
-        CharacterDatabase.PExecute("DELETE FROM group_instance USING group_instance LEFT JOIN instance ON group_instance.instance = id WHERE map = '%u'", mapid);
-        CharacterDatabase.PExecute("DELETE FROM instance WHERE map = '%u'", mapid);
+        CharacterDatabase.PExecute("DELETE FROM `character_instance` USING `character_instance` LEFT JOIN `instance` ON `character_instance`.`instance` = `id` WHERE `map` = '%u'", mapid);
+        CharacterDatabase.PExecute("DELETE FROM `group_instance` USING `group_instance` LEFT JOIN `instance` ON `group_instance`.`instance` = `id` WHERE `map` = '%u'", mapid);
+        CharacterDatabase.PExecute("DELETE FROM `instance` WHERE `map` = '%u'", mapid);
         CharacterDatabase.CommitTransaction();
 
         // calculate the next reset time
         time_t next_reset = DungeonResetScheduler::CalculateNextResetTime(temp, now + timeLeft);
         // update it in the DB
-        CharacterDatabase.PExecute("UPDATE instance_reset SET resettime = '" UI64FMTD "' WHERE mapid = '%u'", (uint64)next_reset, mapid);
+        CharacterDatabase.PExecute("UPDATE `instance_reset` SET `resettime` = '" UI64FMTD "' WHERE `mapid` = '%u'", (uint64)next_reset, mapid);
         return;
     }
 
@@ -1032,12 +1032,12 @@ void MapPersistentStateManager::InitWorldMaps()
 void MapPersistentStateManager::LoadCreatureRespawnTimes()
 {
     // remove outdated data
-    CharacterDatabase.DirectExecute("DELETE FROM creature_respawn WHERE respawntime <= UNIX_TIMESTAMP(NOW())");
+    CharacterDatabase.DirectExecute("DELETE FROM `creature_respawn` WHERE `respawntime` <= UNIX_TIMESTAMP(NOW())");
 
     uint32 count = 0;
 
     //
-    QueryResult* result = CharacterDatabase.Query("SELECT guid, respawntime, map, instance, resettime FROM creature_respawn LEFT JOIN instance ON instance = id");
+    QueryResult* result = CharacterDatabase.Query("SELECT `guid`, `respawntime`, `map`, `instance`, `resettime` FROM `creature_respawn` LEFT JOIN `instance` ON `instance` = `id`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -1093,12 +1093,12 @@ void MapPersistentStateManager::LoadCreatureRespawnTimes()
 void MapPersistentStateManager::LoadGameobjectRespawnTimes()
 {
     // remove outdated data
-    CharacterDatabase.DirectExecute("DELETE FROM gameobject_respawn WHERE respawntime <= UNIX_TIMESTAMP(NOW())");
+    CharacterDatabase.DirectExecute("DELETE FROM `gameobject_respawn` WHERE `respawntime` <= UNIX_TIMESTAMP(NOW())");
 
     uint32 count = 0;
 
     //
-    QueryResult* result = CharacterDatabase.Query("SELECT guid, respawntime, map, instance, resettime FROM gameobject_respawn LEFT JOIN instance ON instance = id");
+    QueryResult* result = CharacterDatabase.Query("SELECT `guid`, `respawntime`, `map`, `instance`, `resettime` FROM `gameobject_respawn` LEFT JOIN `instance` ON `instance` = `id`");
 
     if (!result)
     {

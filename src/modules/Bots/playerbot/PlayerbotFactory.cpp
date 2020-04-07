@@ -1166,7 +1166,7 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
         if (!sAccountMgr.GetCharactersCount(accountId))
             continue;
 
-        QueryResult *result = CharacterDatabase.PQuery("SELECT guid FROM characters WHERE account = '%u'", accountId);
+        QueryResult *result = CharacterDatabase.PQuery("SELECT `guid` FROM `characters` WHERE `account` = '%u'", accountId);
         if (!result)
             continue;
 
@@ -1192,7 +1192,7 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
 
 void PlayerbotFactory::InitQuests()
 {
-    QueryResult *results = WorldDatabase.PQuery("SELECT entry, RequiredClasses, RequiredRaces FROM quest_template where QuestLevel = -1 and MinLevel <= '%u'",
+    QueryResult *results = WorldDatabase.PQuery("SELECT `entry`, `RequiredClasses`, `RequiredRaces` FROM `quest_template` WHERE `QuestLevel` = -1 and `MinLevel` <= '%u'",
             bot->getLevel());
     if (!results)
     {

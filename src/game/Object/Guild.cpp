@@ -59,7 +59,7 @@ void MemberSlot::SetPNOTE(std::string pnote)
 
     // pnote now can be used for encoding to DB
     CharacterDatabase.escape_string(pnote);
-    CharacterDatabase.PExecute("UPDATE guild_member SET pnote = '%s' WHERE guid = '%u'", pnote.c_str(), guid.GetCounter());
+    CharacterDatabase.PExecute("UPDATE `guild_member` SET `pnote` = '%s' WHERE `guid` = '%u'", pnote.c_str(), guid.GetCounter());
 }
 
 void MemberSlot::SetOFFNOTE(std::string offnote)
@@ -68,7 +68,7 @@ void MemberSlot::SetOFFNOTE(std::string offnote)
 
     // offnote now can be used for encoding to DB
     CharacterDatabase.escape_string(offnote);
-    CharacterDatabase.PExecute("UPDATE guild_member SET offnote = '%s' WHERE guid = '%u'", offnote.c_str(), guid.GetCounter());
+    CharacterDatabase.PExecute("UPDATE `guild_member` SET `offnote` = '%s' WHERE `guid` = '%u'", offnote.c_str(), guid.GetCounter());
 }
 
 void MemberSlot::ChangeRank(uint32 newRank)
@@ -82,7 +82,7 @@ void MemberSlot::ChangeRank(uint32 newRank)
         player->SetRank(newRank);
     }
 
-    CharacterDatabase.PExecute("UPDATE guild_member SET rank='%u' WHERE guid='%u'", newRank, guid.GetCounter());
+    CharacterDatabase.PExecute("UPDATE `guild_member` SET `rank`='%u' WHERE `guid`='%u'", newRank, guid.GetCounter());
 }
 
 //// Guild /////////////////////////////////////////////////
@@ -148,9 +148,9 @@ bool Guild::Create(Player* leader, std::string gname)
     CharacterDatabase.escape_string(dbMOTD);
 
     CharacterDatabase.BeginTransaction();
-    // CharacterDatabase.PExecute("DELETE FROM guild WHERE guildid='%u'", Id); - MAX(guildid)+1 not exist
-    CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guildid='%u'", m_Id);
-    CharacterDatabase.PExecute("INSERT INTO guild (guildid,name,leaderguid,info,motd,createdate,EmblemStyle,EmblemColor,BorderStyle,BorderColor,BackgroundColor) "
+    // CharacterDatabase.PExecute("DELETE FROM `guild` WHERE `guildid`='%u'", Id); - MAX(guildid)+1 not exist
+    CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guildid`='%u'", m_Id);
+    CharacterDatabase.PExecute("INSERT INTO `guild` (`guildid`,`name`,`leaderguid`,`info`,`motd`,`createdate`,`EmblemStyle`,`EmblemColor`,`BorderStyle`,`BorderColor`,`BackgroundColor`) "
                                "VALUES('%u','%s','%u', '%s', '%s','" UI64FMTD "','%u','%u','%u','%u','%u')",
                                m_Id, gname.c_str(), m_LeaderGuid.GetCounter(), dbGINFO.c_str(), dbMOTD.c_str(), uint64(now), m_EmblemStyle, m_EmblemColor, m_BorderStyle, m_BorderColor, m_BackgroundColor);
     CharacterDatabase.CommitTransaction();
@@ -167,7 +167,7 @@ bool Guild::Create(Player* leader, std::string gname)
 
 void Guild::CreateDefaultGuildRanks(int locale_idx)
 {
-    CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid='%u'", m_Id);
+    CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `guildid`='%u'", m_Id);
 
     CreateRank(sObjectMgr.GetMangosString(LANG_GUILD_MASTER, locale_idx),   GR_RIGHT_ALL);
     CreateRank(sObjectMgr.GetMangosString(LANG_GUILD_OFFICER, locale_idx),  GR_RIGHT_ALL);
@@ -216,7 +216,7 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
     else
     {
         //                                                     0    1     2     3    4
-        QueryResult* result = CharacterDatabase.PQuery("SELECT name,level,class,zone,account FROM characters WHERE guid = '%u'", lowguid);
+        QueryResult* result = CharacterDatabase.PQuery("SELECT `name`,`level`,`class`,`zone`,`account` FROM `characters` WHERE `guid` = '%u'", lowguid);
         if (!result)
         {
             return false; // player doesn't exist
@@ -249,7 +249,7 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
     CharacterDatabase.escape_string(dbPnote);
     CharacterDatabase.escape_string(dbOFFnote);
 
-    CharacterDatabase.PExecute("INSERT INTO guild_member (guildid,guid,rank,pnote,offnote) VALUES ('%u', '%u', '%u','%s','%s')",
+    CharacterDatabase.PExecute("INSERT INTO `guild_member` (`guildid`,`guid`,`rank`,`pnote`,`offnote`) VALUES ('%u', '%u', '%u','%s','%s')",
                                m_Id, lowguid, newmember.RankId, dbPnote.c_str(), dbOFFnote.c_str());
 
     // If player not in game data in data field will be loaded from guild tables, no need to update it!!
@@ -276,7 +276,7 @@ void Guild::SetMOTD(std::string motd)
 
     // motd now can be used for encoding to DB
     CharacterDatabase.escape_string(motd);
-    CharacterDatabase.PExecute("UPDATE guild SET motd='%s' WHERE guildid='%u'", motd.c_str(), m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild` SET `motd`='%s' WHERE `guildid`='%u'", motd.c_str(), m_Id);
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -290,7 +290,7 @@ void Guild::SetGINFO(std::string ginfo)
 
     // ginfo now can be used for encoding to DB
     CharacterDatabase.escape_string(ginfo);
-    CharacterDatabase.PExecute("UPDATE guild SET info='%s' WHERE guildid='%u'", ginfo.c_str(), m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild` SET `info`='%s' WHERE `guildid`='%u'", ginfo.c_str(), m_Id);
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -392,7 +392,7 @@ bool Guild::LoadRanksFromDB(QueryResult* guildRanksResult)
         {
             // there is in table guild_rank record which doesn't have guildid in guild table, report error
             sLog.outErrorDb("Guild %u does not exist but it has a record in guild_rank table, deleting it!", guildId);
-            CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid = '%u'", guildId);
+            CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `guildid` = '%u'", guildId);
             continue;
         }
 
@@ -432,13 +432,13 @@ bool Guild::LoadRanksFromDB(QueryResult* guildRanksResult)
     {
         sLog.outError("Guild %u has broken `guild_rank` data, repairing...", m_Id);
         CharacterDatabase.BeginTransaction();
-        CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid='%u'", m_Id);
+        CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `guildid`='%u'", m_Id);
         for (size_t i = 0; i < m_Ranks.size(); ++i)
         {
             std::string name = m_Ranks[i].Name;
             uint32 rights = m_Ranks[i].Rights;
             CharacterDatabase.escape_string(name);
-            CharacterDatabase.PExecute("INSERT INTO guild_rank (guildid,rid,rname,rights) VALUES ('%u', '%u', '%s', '%u')", m_Id, uint32(i), name.c_str(), rights);
+            CharacterDatabase.PExecute("INSERT INTO `guild_rank` (`guildid`,`rid`,`rname`,`rights`) VALUES ('%u', '%u', '%s', '%u')", m_Id, uint32(i), name.c_str(), rights);
         }
         CharacterDatabase.CommitTransaction();
     }
@@ -466,7 +466,7 @@ bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
         {
             // there is in table guild_member record which doesn't have guildid in guild table, report error
             sLog.outErrorDb("Guild %u does not exist but it has a record in guild_member table, deleting it!", guildId);
-            CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guildid = '%u'", guildId);
+            CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guildid` = '%u'", guildId);
             continue;
         }
 
@@ -500,7 +500,7 @@ bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
         if (newmember.Level < 1 || newmember.Level > STRONG_MAX_LEVEL) // can be at broken `data` field
         {
             sLog.outError("%s has a broken data in field `characters`.`data`, deleting him from guild!", newmember.guid.GetString().c_str());
-            CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", lowguid);
+            CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guid` = '%u'", lowguid);
             continue;
         }
         if (!newmember.ZoneId)
@@ -513,7 +513,7 @@ bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
         if (!((1 << (newmember.Class - 1)) & CLASSMASK_ALL_PLAYABLE)) // can be at broken `class` field
         {
             sLog.outError("%s has a broken data in field `characters`.`class`, deleting him from guild!", newmember.guid.GetString().c_str());
-            CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", lowguid);
+            CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guid` = '%u'", lowguid);
             continue;
         }
 
@@ -542,7 +542,7 @@ void Guild::SetLeader(ObjectGuid guid)
     m_LeaderGuid = guid;
     slot->ChangeRank(GR_GUILDMASTER);
 
-    CharacterDatabase.PExecute("UPDATE guild SET leaderguid='%u' WHERE guildid='%u'", guid.GetCounter(), m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild` SET `leaderguid`='%u' WHERE `guildid`='%u'", guid.GetCounter(), m_Id);
 }
 
 /**
@@ -610,7 +610,7 @@ bool Guild::DelMember(ObjectGuid guid, bool isDisbanding)
         player->SetRank(0);
     }
 
-    CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", lowguid);
+    CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guid` = '%u'", lowguid);
 
     if (!isDisbanding)
     {
@@ -731,7 +731,7 @@ void Guild::CreateRank(std::string name_, uint32 rights)
 
     // name now can be used for encoding to DB
     CharacterDatabase.escape_string(name_);
-    CharacterDatabase.PExecute("INSERT INTO guild_rank (guildid,rid,rname,rights) VALUES ('%u', '%u', '%s', '%u')", m_Id, new_rank_id, name_.c_str(), rights);
+    CharacterDatabase.PExecute("INSERT INTO `guild_rank` (`guildid`,`rid`,`rname`,`rights`) VALUES ('%u', '%u', '%s', '%u')", m_Id, new_rank_id, name_.c_str(), rights);
 }
 
 void Guild::AddRank(const std::string& name_, uint32 rights)
@@ -749,7 +749,7 @@ void Guild::DelRank()
 
     // delete lowest guild_rank
     uint32 rank = GetLowestRank();
-    CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE rid>='%u' AND guildid='%u'", rank, m_Id);
+    CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `rid`>='%u' AND `guildid`='%u'", rank, m_Id);
 
     m_Ranks.pop_back();
 }
@@ -785,7 +785,7 @@ void Guild::SetRankName(uint32 rankId, std::string name_)
 
     // name now can be used for encoding to DB
     CharacterDatabase.escape_string(name_);
-    CharacterDatabase.PExecute("UPDATE guild_rank SET rname='%s' WHERE rid='%u' AND guildid='%u'", name_.c_str(), rankId, m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild_rank` SET `rname`='%s' WHERE `rid`='%u' AND `guildid`='%u'", name_.c_str(), rankId, m_Id);
 }
 
 void Guild::SetRankRights(uint32 rankId, uint32 rights)
@@ -797,7 +797,7 @@ void Guild::SetRankRights(uint32 rankId, uint32 rights)
 
     m_Ranks[rankId].Rights = rights;
 
-    CharacterDatabase.PExecute("UPDATE guild_rank SET rights='%u' WHERE rid='%u' AND guildid='%u'", rights, rankId, m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild_rank` SET `rights`='%u' WHERE `rid`='%u' AND `guildid`='%u'", rights, rankId, m_Id);
 }
 
 /**
@@ -816,9 +816,9 @@ void Guild::Disband()
     }
 
     CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("DELETE FROM guild WHERE guildid = '%u'", m_Id);
-    CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid = '%u'", m_Id);
-    CharacterDatabase.PExecute("DELETE FROM guild_eventlog WHERE guildid = '%u'", m_Id);
+    CharacterDatabase.PExecute("DELETE FROM `guild` WHERE `guildid` = '%u'", m_Id);
+    CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `guildid` = '%u'", m_Id);
+    CharacterDatabase.PExecute("DELETE FROM `guild_eventlog` WHERE `guildid` = '%u'", m_Id);
     CharacterDatabase.CommitTransaction();
 
     // Used by Eluna
@@ -919,7 +919,7 @@ void Guild::SetEmblem(uint32 emblemStyle, uint32 emblemColor, uint32 borderStyle
     m_BorderColor = borderColor;
     m_BackgroundColor = backgroundColor;
 
-    CharacterDatabase.PExecute("UPDATE guild SET EmblemStyle=%u, EmblemColor=%u, BorderStyle=%u, BorderColor=%u, BackgroundColor=%u WHERE guildid = %u", m_EmblemStyle, m_EmblemColor, m_BorderStyle, m_BorderColor, m_BackgroundColor, m_Id);
+    CharacterDatabase.PExecute("UPDATE `guild` SET `EmblemStyle`=%u, `EmblemColor`=%u, `BorderStyle`=%u, `BorderColor`=%u, `BackgroundColor`=%u WHERE `guildid` = %u", m_EmblemStyle, m_EmblemColor, m_BorderStyle, m_BorderColor, m_BackgroundColor, m_Id);
 }
 
 /**
@@ -983,7 +983,7 @@ void Guild::DisplayGuildEventLog(WorldSession* session)
 void Guild::LoadGuildEventLogFromDB()
 {
     //                                                     0        1          2            3            4        5
-    QueryResult* result = CharacterDatabase.PQuery("SELECT LogGuid, EventType, PlayerGuid1, PlayerGuid2, NewRank, TimeStamp FROM guild_eventlog WHERE guildid=%u ORDER BY TimeStamp DESC,LogGuid DESC LIMIT %u", m_Id, GUILD_EVENTLOG_MAX_RECORDS);
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `LogGuid`, `EventType`, `PlayerGuid1`, `PlayerGuid2`, `NewRank`, `TimeStamp` FROM `guild_eventlog` WHERE `guildid`=%u ORDER BY `TimeStamp` DESC,`LogGuid` DESC LIMIT %u", m_Id, GUILD_EVENTLOG_MAX_RECORDS);
     if (!result)
     {
         return;
@@ -1038,8 +1038,8 @@ void Guild::LogGuildEvent(uint8 EventType, ObjectGuid playerGuid1, ObjectGuid pl
     // Add event to list
     m_GuildEventLog.push_back(NewEvent);
     // Save event to DB
-    CharacterDatabase.PExecute("DELETE FROM guild_eventlog WHERE guildid='%u' AND LogGuid='%u'", m_Id, m_GuildEventLogNextGuid);
-    CharacterDatabase.PExecute("INSERT INTO guild_eventlog (guildid, LogGuid, EventType, PlayerGuid1, PlayerGuid2, NewRank, TimeStamp) VALUES ('%u','%u','%u','%u','%u','%u','" UI64FMTD "')",
+    CharacterDatabase.PExecute("DELETE FROM `guild_eventlog` WHERE `guildid`='%u' AND `LogGuid`='%u'", m_Id, m_GuildEventLogNextGuid);
+    CharacterDatabase.PExecute("INSERT INTO `guild_eventlog` (`guildid`, `LogGuid`, `EventType`, `PlayerGuid1`, `PlayerGuid2`, `NewRank`, `TimeStamp`) VALUES ('%u','%u','%u','%u','%u','%u','" UI64FMTD "')",
                                m_Id, m_GuildEventLogNextGuid, uint32(NewEvent.EventType), NewEvent.PlayerGuid1, NewEvent.PlayerGuid2, uint32(NewEvent.NewRank), NewEvent.TimeStamp);
 }
 

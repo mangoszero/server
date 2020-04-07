@@ -267,7 +267,7 @@ template<class DerivedLoader, class StorageClass>
 void SQLStorageLoaderBase<DerivedLoader, StorageClass>::Load(StorageClass& store, bool error_at_empty /*= true*/)
 {
     Field* fields = NULL;
-    QueryResult* result  = WorldDatabase.PQuery("SELECT MAX(%s) FROM %s", store.EntryFieldName(), store.GetTableName());
+    QueryResult* result  = WorldDatabase.PQuery("SELECT MAX(`%s`) FROM `%s`", store.EntryFieldName(), store.GetTableName());
     if (!result)
     {
         sLog.outError("Error loading %s table (not exist?)\n", store.GetTableName());
@@ -280,7 +280,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::Load(StorageClass& store
     uint32 recordsize = 0;
     delete result;
 
-    result = WorldDatabase.PQuery("SELECT COUNT(*) FROM %s", store.GetTableName());
+    result = WorldDatabase.PQuery("SELECT COUNT(*) FROM `%s`", store.GetTableName());
     if (result)
     {
         fields = result->Fetch();
@@ -288,7 +288,7 @@ void SQLStorageLoaderBase<DerivedLoader, StorageClass>::Load(StorageClass& store
         delete result;
     }
 
-    result = WorldDatabase.PQuery("SELECT * FROM %s", store.GetTableName());
+    result = WorldDatabase.PQuery("SELECT * FROM `%s`", store.GetTableName());
 
     if (!result)
     {

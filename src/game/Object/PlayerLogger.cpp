@@ -132,7 +132,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
                 static SqlStatementID dmgGetStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgGetStmt, "INSERT INTO playerlog_damage_get SET guid = ?, `time` = ?, aggressor = ?, isPlayer = ?, damage = ?, spell = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgGetStmt, "INSERT INTO `playerlog_damage_get` SET `guid` = ?, `time` = ?, `aggressor` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt32(info.GetId());
@@ -146,7 +146,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
                 static SqlStatementID dmgDoneStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgDoneStmt, "INSERT INTO playerlog_damage_done SET guid = ?, `time` = ?, victim = ?, isPlayer = ?, damage = ?, spell = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgDoneStmt, "INSERT INTO `playerlog_damage_done` SET `guid` = ?, `time` = ?, `victim` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt32(info.GetId());
@@ -160,7 +160,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogLooting info = *(PlayerLogLooting*)(&data[i]->at(id));
                 static SqlStatementID lootStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(lootStmt, "INSERT INTO playerlog_looting SET guid = ?, `time`= ?, item = ?, sourceType = ?, sourceEntry = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(lootStmt, "INSERT INTO `playerlog_looting` SET `guid` = ?, `time`= ?, `item` = ?, `sourceType` = ?, `sourceEntry` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt32(info.GetItemEntry());
@@ -173,7 +173,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogTrading info = *(PlayerLogTrading*)(&data[i]->at(id));
                 static SqlStatementID tradeStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(tradeStmt, "INSERT INTO playerlog_trading SET guid = ?, `time`= ?, itemEntry = ?, itemGuid = ?, aquired = ?, partner = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(tradeStmt, "INSERT INTO `playerlog_trading` SET `guid` = ?, `time`= ?, `itemEntry` = ?, `itemGuid` = ?, `aquired` = ?, `partner` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt32(info.GetItemEntry());
@@ -187,7 +187,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogKilling info = *(PlayerLogKilling*)(&data[i]->at(id));
                 static SqlStatementID killStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(killStmt, "INSERT INTO playerlog_killing SET guid = ?, `time`= ?, iskill = ?, entry = ?, victimGuid = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(killStmt, "INSERT INTO `playerlog_killing` SET `guid` = ?, `time`= ?, `iskill` = ?, `entry` = ?, `victimGuid` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addBool(info.IsKill());
@@ -200,7 +200,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogPosition info = *(PlayerLogPosition*)(&data[i]->at(id));
                 static SqlStatementID posStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(posStmt, "INSERT INTO playerlog_position SET guid = ?, `time`= ?, map = ?, posx = ?, posy = ?, posz = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(posStmt, "INSERT INTO `playerlog_position` SET `guid` = ?, `time`= ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt16(info.map);
@@ -214,7 +214,7 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
                 {
                 PlayerLogProgress info = *(PlayerLogProgress*)(&data[i]->at(id));
                 static SqlStatementID progStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(progStmt, "INSERT INTO playerlog_progress SET guid = ?, `time` = ?, type = ?, level = ?, data = ?, map = ?, posx = ?, posy = ?, posz = ?");
+                SqlStatement stmt = CharacterDatabase.CreateStatement(progStmt, "INSERT INTO `playerlog_progress` SET `guid` = ?, `time` = ?, `type` = ?, `level` = ?, `data` = ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
                 stmt.addUInt32(playerGuid);
                 stmt.addUInt64(info.timestamp + serverStart);
                 stmt.addUInt8(info.progressType);

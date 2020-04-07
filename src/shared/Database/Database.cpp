@@ -539,7 +539,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     const DBVersion& dbversion = databaseVersions[database];
 
     // Fetch the database version table information
-    QueryResult* result = Query("SELECT version, structure, content, description FROM db_version ORDER BY version DESC, structure DESC, content DESC LIMIT 1");
+    QueryResult* result = Query("SELECT `version`, `structure`, `content`, `description` FROM `db_version` ORDER BY `version` DESC, `structure` DESC, `content` DESC LIMIT 1");
 
     // db_version table does not exist or is empty
     if (!result)

@@ -299,7 +299,7 @@ World::AddSession_(WorldSession* s)
 
         static SqlStatementID id;
 
-        SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE realmlist SET population = ? WHERE id = ?");
+        SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE `realmlist` SET `population` = ? WHERE `id` = ?");
         stmt.PExecute(popu, realmID);
 
         DETAIL_LOG("Server Population (%f).", popu);
@@ -997,10 +997,10 @@ void World::SetInitialWorldSettings()
     // not send custom type REALM_FFA_PVP to realm list
     uint32 server_type = IsFFAPvPRealm() ? uint32(REALM_TYPE_PVP) : getConfig(CONFIG_UINT32_GAME_TYPE);
     uint32 realm_zone = getConfig(CONFIG_UINT32_REALM_ZONE);
-    LoginDatabase.PExecute("UPDATE realmlist SET icon = %u, timezone = %u WHERE id = '%u'", server_type, realm_zone, realmID);
+    LoginDatabase.PExecute("UPDATE `realmlist` SET `icon` = %u, `timezone` = %u WHERE `id` = '%u'", server_type, realm_zone, realmID);
 
     ///- Remove the bones (they should not exist in DB though) and old corpses after a restart
-    CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
+    CharacterDatabase.PExecute("DELETE FROM `corpse` WHERE `corpse_type` = '0' OR `time` < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
 
     ///- Load the DBC files
     sLog.outString("Initialize DBC data stores...");
@@ -1382,7 +1382,7 @@ void World::SetInitialWorldSettings()
     sprintf(isoDate, "%04d-%02d-%02d %02d:%02d:%02d",
             local.tm_year + 1900, local.tm_mon + 1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
 
-    LoginDatabase.PExecute("INSERT INTO uptime (realmid, starttime, startstring, uptime) VALUES('%u', " UI64FMTD ", '%s', 0)",
+    LoginDatabase.PExecute("INSERT INTO `uptime` (`realmid`, `starttime`, `startstring`, `uptime`) VALUES('%u', " UI64FMTD ", '%s', 0)",
                            realmID, uint64(m_startTime), isoDate);
 
     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE * IN_MILLISECONDS);
@@ -1447,7 +1447,7 @@ void World::SetInitialWorldSettings()
     sLog.outString();
 
     sLog.outString("Deleting expired bans...");
-    LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate<=UNIX_TIMESTAMP() AND unbandate<>bandate");
+    LoginDatabase.Execute("DELETE FROM `ip_banned` WHERE `unbandate`<=UNIX_TIMESTAMP() AND `unbandate`<>`bandate`");
     sLog.outString();
 
     sLog.outString("Starting server Maintenance system...");
@@ -1707,7 +1707,7 @@ void World::Update(uint32 diff)
         uint32 maxClientsNum = GetMaxActiveSessionCount();
 
         m_timers[WUPDATE_UPTIME].Reset();
-        LoginDatabase.PExecute("UPDATE uptime SET uptime = %u, maxplayers = %u WHERE realmid = %u AND starttime = " UI64FMTD, tmpDiff, maxClientsNum, realmID, uint64(m_startTime));
+        LoginDatabase.PExecute("UPDATE `uptime` SET `uptime` = %u, `maxplayers` = %u WHERE `realmid` = %u AND `starttime` = " UI64FMTD, tmpDiff, maxClientsNum, realmID, uint64(m_startTime));
     }
 
     /// <li> Handle all other objects
@@ -1968,16 +1968,16 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
     {
         case BAN_IP:
             // No SQL injection as strings are escaped
-            resultAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE last_ip = '%s'", nameOrIP.c_str());
-            LoginDatabase.PExecute("INSERT INTO ip_banned VALUES ('%s',UNIX_TIMESTAMP(),UNIX_TIMESTAMP()+%u,'%s','%s')", nameOrIP.c_str(), duration_secs, safe_author.c_str(), reason.c_str());
+            resultAccounts = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `last_ip` = '%s'", nameOrIP.c_str());
+            LoginDatabase.PExecute("INSERT INTO `ip_banned` VALUES ('%s',UNIX_TIMESTAMP(),UNIX_TIMESTAMP()+%u,'%s','%s')", nameOrIP.c_str(), duration_secs, safe_author.c_str(), reason.c_str());
             break;
         case BAN_ACCOUNT:
             // No SQL injection as string is escaped
-            resultAccounts = LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", nameOrIP.c_str());
+            resultAccounts = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", nameOrIP.c_str());
             break;
         case BAN_CHARACTER:
             // No SQL injection as string is escaped
-            resultAccounts = CharacterDatabase.PQuery("SELECT account FROM characters WHERE name = '%s'", nameOrIP.c_str());
+            resultAccounts = CharacterDatabase.PQuery("SELECT `account` FROM `characters` WHERE `name` = '%s'", nameOrIP.c_str());
             break;
         default:
             return BAN_SYNTAX_ERROR;
@@ -2004,7 +2004,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
         if (mode != BAN_IP)
         {
             // No SQL injection as strings are escaped
-            LoginDatabase.PExecute("INSERT INTO account_banned VALUES ('%u', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+%u, '%s', '%s', '1')",
+            LoginDatabase.PExecute("INSERT INTO `account_banned` VALUES ('%u', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+%u, '%s', '%s', '1')",
                                    account, duration_secs, safe_author.c_str(), reason.c_str());
         }
 
@@ -2029,7 +2029,7 @@ bool World::RemoveBanAccount(BanMode mode, std::string nameOrIP)
     if (mode == BAN_IP)
     {
         LoginDatabase.escape_string(nameOrIP);
-        LoginDatabase.PExecute("DELETE FROM ip_banned WHERE ip = '%s'", nameOrIP.c_str());
+        LoginDatabase.PExecute("DELETE FROM `ip_banned` WHERE `ip` = '%s'", nameOrIP.c_str());
     }
     else
     {
@@ -2049,7 +2049,7 @@ bool World::RemoveBanAccount(BanMode mode, std::string nameOrIP)
         }
 
         // NO SQL injection as account is uint32
-        LoginDatabase.PExecute("UPDATE account_banned SET active = '0' WHERE id = '%u'", account);
+        LoginDatabase.PExecute("UPDATE `account_banned` SET `active` = '0' WHERE `id` = '%u'", account);
     }
     return true;
 }
@@ -2226,18 +2226,18 @@ void World::ServerMaintenanceStart()
             itr->second->GetPlayer()->SaveToDB();
         }
 
-    CharacterDatabase.PExecute("UPDATE saved_variables SET NextMaintenanceDate = '" UI64FMTD "'", uint64(m_NextMaintenanceDate));
+    CharacterDatabase.PExecute("UPDATE `saved_variables` SET `NextMaintenanceDate` = '" UI64FMTD "'", uint64(m_NextMaintenanceDate));
 }
 
 void World::InitServerMaintenanceCheck()
 {
-    QueryResult* result = CharacterDatabase.Query("SELECT NextMaintenanceDate FROM saved_variables");
+    QueryResult* result = CharacterDatabase.Query("SELECT `NextMaintenanceDate` FROM `saved_variables`");
     if (!result)
     {
         DEBUG_LOG("Maintenance date not found in SavedVariables, reseting it now.");
         uint32 mDate = GetDateLastMaintenanceDay();
         m_NextMaintenanceDate = mDate == GetDateToday() ?  mDate : mDate + 7;
-        CharacterDatabase.PExecute("INSERT INTO saved_variables (NextMaintenanceDate) VALUES ('" UI64FMTD "')", uint64(m_NextMaintenanceDate));
+        CharacterDatabase.PExecute("INSERT INTO `saved_variables` (`NextMaintenanceDate`) VALUES ('" UI64FMTD "')", uint64(m_NextMaintenanceDate));
     }
     else
     {
@@ -2289,7 +2289,7 @@ void World::UpdateResultQueue()
 void World::UpdateRealmCharCount(uint32 accountId)
 {
     CharacterDatabase.AsyncPQuery(this, &World::_UpdateRealmCharCount, accountId,
-                                  "SELECT COUNT(guid) FROM characters WHERE account = '%u'", accountId);
+                                  "SELECT COUNT(`guid`) FROM `characters` WHERE `account` = '%u'", accountId);
 }
 
 void World::_UpdateRealmCharCount(QueryResult* resultCharCount, uint32 accountId)
@@ -2301,8 +2301,8 @@ void World::_UpdateRealmCharCount(QueryResult* resultCharCount, uint32 accountId
         delete resultCharCount;
 
         LoginDatabase.BeginTransaction();
-        LoginDatabase.PExecute("DELETE FROM realmcharacters WHERE acctid= '%u' AND realmid = '%u'", accountId, realmID);
-        LoginDatabase.PExecute("INSERT INTO realmcharacters (numchars, acctid, realmid) VALUES (%u, %u, %u)", charCount, accountId, realmID);
+        LoginDatabase.PExecute("DELETE FROM `realmcharacters` WHERE `acctid`= '%u' AND `realmid` = '%u'", accountId, realmID);
+        LoginDatabase.PExecute("INSERT INTO `realmcharacters` (`numchars`, `acctid`, `realmid`) VALUES (%u, %u, %u)", charCount, accountId, realmID);
         LoginDatabase.CommitTransaction();
     }
 }
@@ -2320,7 +2320,7 @@ void World::SetPlayerLimit(int32 limit, bool needUpdate)
     m_playerLimit = limit;
 
     if (db_update_need)
-        LoginDatabase.PExecute("UPDATE realmlist SET allowedSecurityLevel = '%u' WHERE id = '%u'",
+        LoginDatabase.PExecute("UPDATE `realmlist` SET `allowedSecurityLevel` = '%u' WHERE `id` = '%u'",
                                uint32(GetPlayerSecurityLimit()), realmID);
 }
 
@@ -2332,7 +2332,7 @@ void World::UpdateMaxSessionCounters()
 
 void World::LoadDBVersion()
 {
-    QueryResult* result = WorldDatabase.Query("SELECT version, structure, content FROM db_version ORDER BY version DESC, structure DESC, content DESC LIMIT 1");
+    QueryResult* result = WorldDatabase.Query("SELECT `version`, `structure`, `content` FROM `db_version` ORDER BY `version` DESC, `structure` DESC, `content` DESC LIMIT 1");
     if (result)
     {
         Field* fields = result->Fetch();

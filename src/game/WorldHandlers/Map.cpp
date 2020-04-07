@@ -1391,11 +1391,11 @@ void Map::CreateInstanceData(bool load)
 
         if (Instanceable())
         {
-            result = CharacterDatabase.PQuery("SELECT data FROM instance WHERE id = '%u'", i_InstanceId);
+            result = CharacterDatabase.PQuery("SELECT `data` FROM `instance` WHERE `id` = '%u'", i_InstanceId);
         }
         else
         {
-            result = CharacterDatabase.PQuery("SELECT data FROM world WHERE map = '%u'", GetId());
+            result = CharacterDatabase.PQuery("SELECT `data` FROM `world` WHERE `map` = '%u'", GetId());
         }
 
         if (result)
@@ -1414,7 +1414,7 @@ void Map::CreateInstanceData(bool load)
             // for non-instanceable map always add data to table if not found, later code expected that for map in `word` exist always after load
             if (!Instanceable())
             {
-                CharacterDatabase.PExecute("INSERT INTO world VALUES ('%u', '')", GetId());
+                CharacterDatabase.PExecute("INSERT INTO `world` VALUES ('%u', '')", GetId());
             }
         }
     }

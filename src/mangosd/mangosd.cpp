@@ -81,12 +81,12 @@ static void clear_online_accounts()
 {
     // Cleanup online status for characters hosted at current realm
     /// \todo Only accounts with characters logged on *this* realm should have online status reset. Move the online column from 'account' to 'realmcharacters'?
-    LoginDatabase.PExecute("UPDATE account SET active_realm_id = 0, os = ''  WHERE active_realm_id = '%u'", realmID);
+    LoginDatabase.PExecute("UPDATE `account` SET `active_realm_id` = 0, `os` = ''  WHERE `active_realm_id` = '%u'", realmID);
 
-    CharacterDatabase.Execute("UPDATE characters SET online = 0 WHERE online<>0");
+    CharacterDatabase.Execute("UPDATE `characters` SET `online` = 0 WHERE `online`<>0");
 
     // Battleground instance ids reset at server restart
-    CharacterDatabase.Execute("UPDATE character_battleground_data SET instance_id = 0");
+    CharacterDatabase.Execute("UPDATE `character_battleground_data` SET `instance_id` = 0");
 }
 
 
@@ -411,7 +411,7 @@ int main(int argc, char** argv)
     }
 
     ///- Set Realm to Offline, if crash happens. Only used once.
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags | %u WHERE id = '%u'", REALM_FLAG_OFFLINE, realmID);
+    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
 
     ///- Initialize the World
     sWorld.SetInitialWorldSettings();
@@ -423,7 +423,7 @@ int main(int argc, char** argv)
     // set realmbuilds depend on mangosd expected builds, and set server online
     std::string builds = AcceptableClientBuildsListStr();
     LoginDatabase.escape_string(builds);
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags & ~(%u), population = 0, realmbuilds = '%s'  WHERE id = '%u'", REALM_FLAG_OFFLINE, builds.c_str(), realmID);
+    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` & ~(%u), `population` = 0, `realmbuilds` = '%s'  WHERE `id` = '%u'", REALM_FLAG_OFFLINE, builds.c_str(), realmID);
 
     // server loaded successfully => enable async DB requests
     // this is done to forbid any async transactions during server startup!
@@ -532,7 +532,7 @@ int main(int argc, char** argv)
     unhook_signals();
 
     ///- Set server offline in realmlist
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET realmflags = realmflags | %u WHERE id = '%u'", REALM_FLAG_OFFLINE, realmID);
+    LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
 
     ///- Clean account database before leaving
     clear_online_accounts();

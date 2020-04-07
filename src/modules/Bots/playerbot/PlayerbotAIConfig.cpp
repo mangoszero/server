@@ -225,7 +225,7 @@ void PlayerbotAIConfig::CreateRandomBots()
     if (config.GetBoolDefault("AiPlayerbot.DeleteRandomBotAccounts", false))
     {
         sLog.outBasic("Deleting random bot accounts...");
-        QueryResult *results = LoginDatabase.PQuery("SELECT id FROM account where username like '%s%%'", randomBotAccountPrefix.c_str());
+        QueryResult *results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` LIKE '%s%%'", randomBotAccountPrefix.c_str());
         if (results)
         {
             do
@@ -237,7 +237,7 @@ void PlayerbotAIConfig::CreateRandomBots()
             delete results;
         }
 
-        CharacterDatabase.Execute("DELETE FROM ai_playerbot_random_bots");
+        CharacterDatabase.Execute("DELETE FROM `ai_playerbot_random_bots`");
         sLog.outBasic("Random bot accounts deleted");
     }
 
@@ -245,7 +245,7 @@ void PlayerbotAIConfig::CreateRandomBots()
     {
         ostringstream out; out << randomBotAccountPrefix << accountNumber;
         string accountName = out.str();
-        QueryResult *results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        QueryResult *results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", accountName.c_str());
         if (results)
         {
             delete results;
@@ -262,7 +262,7 @@ void PlayerbotAIConfig::CreateRandomBots()
         sLog.outDetail("Account %s created for random bots", accountName.c_str());
     }
 
-    LoginDatabase.PExecute("UPDATE account SET expansion = '%u', playerbot = %u where username like '%s%%'", 0,true, randomBotAccountPrefix.c_str());
+    LoginDatabase.PExecute("UPDATE `account` SET `expansion` = '%u', `playerbot` = %u WHERE `username` LIKE '%s%%'", 0,true, randomBotAccountPrefix.c_str());
 
     int totalRandomBotChars = 0;
     for (int accountNumber = 0; accountNumber < randomBotAccountCount; ++accountNumber)
@@ -270,7 +270,7 @@ void PlayerbotAIConfig::CreateRandomBots()
         ostringstream out; out << randomBotAccountPrefix << accountNumber;
         string accountName = out.str();
 
-        QueryResult *results = LoginDatabase.PQuery("SELECT id FROM account where username = '%s'", accountName.c_str());
+        QueryResult *results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", accountName.c_str());
         if (!results)
             continue;
 

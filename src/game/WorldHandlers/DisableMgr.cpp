@@ -57,7 +57,7 @@ void LoadDisables()
 
     m_DisableMap.clear();
 
-    QueryResult* result = WorldDatabase.Query("SELECT sourceType, entry, flags, data FROM disables");
+    QueryResult* result = WorldDatabase.Query("SELECT `sourceType`, `entry`, `flags`, `data` FROM `disables`");
 
     uint32 total_count = 0;
 

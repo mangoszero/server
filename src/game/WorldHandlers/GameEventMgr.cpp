@@ -126,7 +126,7 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
 void GameEventMgr::LoadFromDB()
 {
     {
-        QueryResult* result = WorldDatabase.Query("SELECT MAX(entry) FROM game_event");
+        QueryResult* result = WorldDatabase.Query("SELECT MAX(`entry`) FROM `game_event`");
         if (!result)
         {
             sLog.outString(">> Table game_event is empty.");
@@ -142,7 +142,7 @@ void GameEventMgr::LoadFromDB()
         mGameEvent.resize(max_event_id + 1);
     }
 
-    QueryResult* result = WorldDatabase.Query("SELECT entry,UNIX_TIMESTAMP(start_time),UNIX_TIMESTAMP(end_time),occurence,length,holiday,description FROM game_event");
+    QueryResult* result = WorldDatabase.Query("SELECT `entry`,UNIX_TIMESTAMP(`start_time`),UNIX_TIMESTAMP(`end_time`),`occurence`,`length`,`holiday`,`description` FROM `game_event`");
     if (!result)
     {
         mGameEvent.clear();
@@ -208,8 +208,8 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventCreatureGuids.resize(mGameEvent.size() * 2 - 1);
     //                                   1              2
-    result = WorldDatabase.Query("SELECT creature.guid, game_event_creature.event "
-                                 "FROM creature JOIN game_event_creature ON creature.guid = game_event_creature.guid");
+    result = WorldDatabase.Query("SELECT `creature`.`guid`, `game_event_creature`.`event` "
+                                 "FROM `creature` JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid`");
 
     count = 0;
     if (!result)
@@ -287,8 +287,8 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventGameobjectGuids.resize(mGameEvent.size() * 2 - 1);
     //                                   1                2
-    result = WorldDatabase.Query("SELECT gameobject.guid, game_event_gameobject.event "
-                                 "FROM gameobject JOIN game_event_gameobject ON gameobject.guid=game_event_gameobject.guid");
+    result = WorldDatabase.Query("SELECT `gameobject`.`guid`, `game_event_gameobject`.`event` "
+                                 "FROM `gameobject` JOIN `game_event_gameobject` ON `gameobject`.`guid`=`game_event_gameobject`.`guid`");
 
     count = 0;
     if (!result)
@@ -375,12 +375,12 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventCreatureData.resize(mGameEvent.size());
     //                                   0              1                             2
-    result = WorldDatabase.Query("SELECT creature.guid, game_event_creature_data.event, game_event_creature_data.modelid,"
+    result = WorldDatabase.Query("SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
                                  //   3                                      4
-                                 "game_event_creature_data.equipment_id, game_event_creature_data.entry_id, "
+                                 "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
                                  //   5                                     6
-                                 "game_event_creature_data.spell_start, game_event_creature_data.spell_end "
-                                 "FROM creature JOIN game_event_creature_data ON creature.guid=game_event_creature_data.guid");
+                                 "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
+                                 "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
 
     count = 0;
     if (!result)
@@ -459,7 +459,7 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventQuests.resize(mGameEvent.size());
 
-    result = WorldDatabase.Query("SELECT quest, event FROM game_event_quest");
+    result = WorldDatabase.Query("SELECT `quest`, `event` FROM `game_event_quest`");
 
     count = 0;
     if (!result)
@@ -518,7 +518,7 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventMails.resize(mGameEvent.size() * 2 - 1);
 
-    result = WorldDatabase.Query("SELECT event, raceMask, quest, mailTemplateId, senderEntry FROM game_event_mail");
+    result = WorldDatabase.Query("SELECT `event`, `raceMask`, `quest`, `mailTemplateId`, `senderEntry` FROM `game_event_mail`");
 
     count = 0;
     if (!result)
@@ -602,7 +602,7 @@ uint32 GameEventMgr::Initialize()                           // return the next e
 
     ActiveEvents activeAtShutdown;
 
-    if (QueryResult* result = CharacterDatabase.Query("SELECT event FROM game_event_status"))
+    if (QueryResult* result = CharacterDatabase.Query("SELECT `event` FROM `game_event_status`"))
     {
         do
         {
@@ -682,7 +682,7 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
 void GameEventMgr::UnApplyEvent(uint16 event_id)
 {
     m_ActiveEvents.erase(event_id);
-    CharacterDatabase.PExecute("DELETE FROM game_event_status WHERE event = %u", event_id);
+    CharacterDatabase.PExecute("DELETE FROM `game_event_status` WHERE `event` = %u", event_id);
 
     sLog.outString("GameEvent %u \"%s\" removed.", event_id, mGameEvent[event_id].description.c_str());
     // un-spawn positive event tagged objects
@@ -700,7 +700,7 @@ void GameEventMgr::UnApplyEvent(uint16 event_id)
 void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
 {
     m_ActiveEvents.insert(event_id);
-    CharacterDatabase.PExecute("INSERT INTO game_event_status (event) VALUES (%u)", event_id);
+    CharacterDatabase.PExecute("INSERT INTO `game_event_status` (`event`) VALUES (%u)", event_id);
 
     if (sWorld.getConfig(CONFIG_BOOL_EVENT_ANNOUNCE))
     {
@@ -981,12 +981,12 @@ void GameEventMgr::SendEventMails(int16 event_id)
         {
             // need special query
             std::ostringstream ss;
-            ss << "SELECT characters.guid FROM characters, character_queststatus "
-               "WHERE (1 << (characters.race - 1)) & "
+            ss << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
+               "WHERE (1 << (`characters`.`race` - 1)) & "
                << itr->raceMask
-               << " AND characters.deleteDate IS NULL AND character_queststatus.guid = characters.guid AND character_queststatus.quest = "
+               << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
                << itr->questId
-               << " AND character_queststatus.rewarded <> 0";
+               << " AND `character_queststatus`.`rewarded` <> 0";
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());
         }
         else

@@ -155,7 +155,7 @@ void ScriptMgr::LoadScripts(DBScriptType type)
     m_dbScripts[type].clear();                                 // need for reload support
 
     //                                                 0   1      2        3         4          5            6              7           8        9         10        11        12 13 14 15
-    QueryResult* result = WorldDatabase.PQuery("SELECT id, delay, command, datalong, datalong2, buddy_entry, search_radius, data_flags, dataint, dataint2, dataint3, dataint4, x, y, z, o FROM db_scripts WHERE script_type = %d ORDER BY script_guid ASC", type);
+    QueryResult* result = WorldDatabase.PQuery("SELECT `id`, `delay`, `command`, `datalong`, `datalong2`, `buddy_entry`, `search_radius`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o` FROM `db_scripts` WHERE `script_type` = %d ORDER BY `script_guid` ASC", type);
 
     uint32 count = 0;
 
@@ -2236,7 +2236,7 @@ void ScriptMgr::LoadScriptBinding()
         m_scriptBind[i].clear();
     }
 
-    QueryResult* result = WorldDatabase.PQuery("SELECT type, bind, ScriptName, data FROM script_binding");
+    QueryResult* result = WorldDatabase.PQuery("SELECT `type`, `bind`, `ScriptName`, `data` FROM `script_binding`");
     uint32 count = 0;
 
     if (!result)
@@ -2365,7 +2365,7 @@ bool ScriptMgr::ReloadScriptBinding()
 void ScriptMgr::LoadScriptNames()
 {
     m_scriptNames.push_back("");
-    QueryResult* result = WorldDatabase.Query("SELECT DISTINCT(ScriptName) FROM script_binding");
+    QueryResult* result = WorldDatabase.Query("SELECT DISTINCT(`ScriptName`) FROM `script_binding`");
 
     if (!result)
     {

@@ -192,7 +192,7 @@ void MailDraft::deleteIncludedItems(bool inDB /**= false*/)
 
         if (inDB)
         {
-            CharacterDatabase.PExecute("DELETE FROM item_instance WHERE guid='%u'", item->GetGUIDLow());
+            CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", item->GetGUIDLow());
         }
 
         delete item;
@@ -271,7 +271,7 @@ void MailDraft::SendReturnToSender(uint32 sender_acc, ObjectGuid sender_guid, Ob
             Item* item = mailItemIter->second;
             item->SaveToDB();                               // item not in inventory and can be save standalone
             // owner in data will set at mail receive and item extracting
-            CharacterDatabase.PExecute("UPDATE item_instance SET owner_guid = '%u' WHERE guid='%u'", receiver_guid.GetCounter(), item->GetGUIDLow());
+            CharacterDatabase.PExecute("UPDATE `item_instance` SET `owner_guid` = '%u' WHERE `guid`='%u'", receiver_guid.GetCounter(), item->GetGUIDLow());
         }
         CharacterDatabase.CommitTransaction();
     }
@@ -356,14 +356,14 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
 
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.escape_string(safe_subject);
-    CharacterDatabase.PExecute("INSERT INTO mail (id,messageType,stationery,mailTemplateId,sender,receiver,subject,itemTextId,has_items,expire_time,deliver_time,money,cod,checked) "
+    CharacterDatabase.PExecute("INSERT INTO `mail` (`id`,`messageType`,`stationery`,`mailTemplateId`,`sender`,`receiver`,`subject`,`itemTextId`,`has_items`,`expire_time`,`deliver_time`,`money`,`cod`,`checked`) "
                                "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '%s', '%u', '%u', '" UI64FMTD "','" UI64FMTD "', '%u', '%u', '%u')",
                                mailId, sender.GetMailMessageType(), sender.GetStationery(), GetMailTemplateId(), sender.GetSenderId(), receiver.GetPlayerGuid().GetCounter(), safe_subject.c_str(), GetBodyId(), (has_items ? 1 : 0), (uint64)expire_time, (uint64)deliver_time, m_money, m_COD, checked);
 
     for (MailItemMap::const_iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
     {
         Item* item = mailItemIter->second;
-        CharacterDatabase.PExecute("INSERT INTO mail_items (mail_id,item_guid,item_template,receiver) VALUES ('%u', '%u', '%u','%u')",
+        CharacterDatabase.PExecute("INSERT INTO `mail_items` (`mail_id`,`item_guid`,`item_template`,`receiver`) VALUES ('%u', '%u', '%u','%u')",
                                    mailId, item->GetGUIDLow(), item->GetEntry(), receiver.GetPlayerGuid().GetCounter());
     }
     CharacterDatabase.CommitTransaction();
@@ -433,7 +433,7 @@ void Mail::prepareTemplateItems(Player* receiver)
     mailLoot.FillLoot(mailTemplateId, LootTemplates_Mail, receiver, true, true);
 
     CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("UPDATE mail SET has_items = 1 WHERE id = %u", messageID);
+    CharacterDatabase.PExecute("UPDATE `mail` SET `has_items` = 1 WHERE `id` = %u", messageID);
 
     uint32 max_slot = mailLoot.GetMaxSlotInLootFor(receiver);
     for (uint32 i = 0; items.size() < MAX_MAIL_ITEMS && i < max_slot; ++i)
@@ -448,7 +448,7 @@ void Mail::prepareTemplateItems(Player* receiver)
 
                 receiver->AddMItem(item);
 
-                CharacterDatabase.PExecute("INSERT INTO mail_items (mail_id,item_guid,item_template,receiver) VALUES ('%u', '%u', '%u','%u')",
+                CharacterDatabase.PExecute("INSERT INTO `mail_items` (`mail_id`,`item_guid`,`item_template`,`receiver`) VALUES ('%u', '%u', '%u','%u')",
                                            messageID, item->GetGUIDLow(), item->GetEntry(), receiver->GetGUIDLow());
             }
         }

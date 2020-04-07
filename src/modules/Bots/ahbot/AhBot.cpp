@@ -25,7 +25,7 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
     if (!result)
     {
         //                                        0     1           2           3           4    5          6          7
-        result = CharacterDatabase.PQuery("SELECT name, position_x, position_y, position_z, map, totaltime, leveltime, at_login FROM characters WHERE guid = '%u'",guid);
+        result = CharacterDatabase.PQuery("SELECT `name`, `position_x`, `position_y`, `position_z`, `map`, `totaltime`, `leveltime`, `at_login` FROM `characters` WHERE `guid` = '%u'",guid);
         if (!result)
         {
             return false;
@@ -387,12 +387,12 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
             sLog.outDetail("AhBot %d placed bid %d for %s (x%d) in auction %d",
                     bidder, entry->bid, item->GetProto()->Name1, item->GetCount(), auctionIds[auction]);
 
-            CharacterDatabase.PExecute("UPDATE auction SET buyguid = '%u',lastbid = '%u' WHERE id = '%u'",
+            CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u',`lastbid` = '%u' WHERE `id` = '%u'",
                 entry->bidder, entry->bid, entry->Id);
             AddToHistory(entry, AHBOT_WON_BID);
         }
 
-        CharacterDatabase.PExecute("DELETE FROM ahbot_history WHERE item = '%u' AND won = 4 AND auction_house = '%u' ",
+        CharacterDatabase.PExecute("DELETE FROM `ahbot_history` WHERE `item` = '%u' AND `won` = 4 AND `auction_house` = '%u' ",
                 proto->ItemId, factions[auctionIds[auction]]);
 
         answered++;
@@ -403,7 +403,7 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
 
 uint32 AhBot::GetTime(string category, uint32 id, uint32 auctionHouse, uint32 type)
 {
-    QueryResult* results = CharacterDatabase.PQuery("SELECT MAX(buytime) FROM ahbot_history WHERE item = '%u' AND won = '%u' AND auction_house = '%u' AND category = '%s'",
+    QueryResult* results = CharacterDatabase.PQuery("SELECT MAX(`buytime`) FROM `ahbot_history` WHERE `item` = '%u' AND `won` = '%u' AND `auction_house` = '%u' AND `category` = '%s'",
         id, type, factions[auctionHouse], category.c_str());
 
     if (!results)
@@ -420,10 +420,10 @@ uint32 AhBot::GetTime(string category, uint32 id, uint32 auctionHouse, uint32 ty
 
 void AhBot::SetTime(string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value)
 {
-    CharacterDatabase.PExecute("DELETE FROM ahbot_history WHERE item = '%u' AND won = '%u' AND auction_house = '%u' AND category = '%s'",
+    CharacterDatabase.PExecute("DELETE FROM `ahbot_history` WHERE `item` = '%u' AND `won` = '%u' AND `auction_house` = '%u' AND `category` = '%s'",
         id, type, factions[auctionHouse], category.c_str());
 
-    CharacterDatabase.PExecute("INSERT INTO ahbot_history (buytime, item, bid, buyout, category, won, auction_house) "
+    CharacterDatabase.PExecute("INSERT INTO `ahbot_history` (`buytime`, `item`, `bid`, `buyout`, `category`, `won`, `auction_house`) "
         "VALUES ('%u', '%u', '%u', '%u', '%s', '%u', '%u')",
         value, id, 0, 0,
         category.c_str(), type, factions[auctionHouse]);
@@ -723,7 +723,7 @@ void AhBot::Expire(int auction)
         ++itr;
     }
 
-    CharacterDatabase.PExecute("DELETE FROM ahbot_category");
+    CharacterDatabase.PExecute("DELETE FROM `ahbot_category`");
     sLog.outString("%d auctions marked as expired in auction %d", count, auctionIds[auction]);
 }
 
@@ -786,7 +786,7 @@ void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
     updateMarketPrice(proto->ItemId, entry->buyout / count, entry->auctionHouseEntry->houseId);
 
     uint32 now = time(0);
-    CharacterDatabase.PExecute("INSERT INTO ahbot_history (buytime, item, bid, buyout, category, won, auction_house) "
+    CharacterDatabase.PExecute("INSERT INTO `ahbot_history` (`buytime`, `item`, `bid`, `buyout`, `category`, `won`, `auction_house`) "
         "VALUES ('%u', '%u', '%u', '%u', '%s', '%u', '%u')",
         now, entry->itemTemplate, entry->bid ? entry->bid : entry->startbid, entry->buyout,
         category.c_str(), won, factions[entry->auctionHouseEntry->houseId]);
@@ -796,8 +796,8 @@ uint32 AhBot::GetAnswerCount(uint32 itemId, uint32 auctionHouse, uint32 withinTi
 {
     uint32 count = 0;
 
-    QueryResult* results = CharacterDatabase.PQuery("SELECT COUNT(*) FROM ahbot_history WHERE "
-        "item = '%u' AND won in (2, 3) AND auction_house = '%u' AND buytime > '%u'",
+    QueryResult* results = CharacterDatabase.PQuery("SELECT COUNT(*) FROM `ahbot_history` WHERE "
+        "`item` = '%u' AND `won` in (2, 3) AND `auction_house` = '%u' AND `buytime` > '%u'",
         itemId, factions[auctionHouse], time(0) - withinTime);
     if (results)
     {
@@ -816,7 +816,7 @@ uint32 AhBot::GetAnswerCount(uint32 itemId, uint32 auctionHouse, uint32 withinTi
 void AhBot::CleanupHistory()
 {
     uint32 when = time(0) - 3600 * 24 * sAhBotConfig.historyDays;
-    CharacterDatabase.PExecute("DELETE FROM ahbot_history WHERE buytime < '%u'", when);
+    CharacterDatabase.PExecute("DELETE FROM `ahbot_history` WHERE `buytime` < '%u'", when);
 }
 
 uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
@@ -829,7 +829,7 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
 
     const AuctionHouseEntry* ahEntry = sAuctionHouseStore.LookupEntry(auctionHouse);
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT won, SUM(bid) FROM ahbot_history WHERE auction_house = '%u' GROUP BY won HAVING won > 0 ORDER BY won",
+        "SELECT `won`, SUM(`bid`) FROM `ahbot_history` WHERE `auction_house` = '%u' GROUP BY `won` HAVING `won` > 0 ORDER BY `won`",
         factions[auctionHouse]);
     if (results)
     {
@@ -844,7 +844,7 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
     }
 
     results = CharacterDatabase.PQuery(
-        "SELECT max(buytime) FROM ahbot_history WHERE auction_house = '%u' AND won = '2'",
+        "SELECT max(`buytime`) FROM `ahbot_history` WHERE `auction_house` = '%u' AND `won` = '2'",
         factions[auctionHouse]);
     if (results)
     {
@@ -873,7 +873,7 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
 
 void AhBot::CheckCategoryMultipliers()
 {
-    QueryResult* results = CharacterDatabase.PQuery("SELECT category, multiplier, max_auction_count, expire_time FROM ahbot_category");
+    QueryResult* results = CharacterDatabase.PQuery("SELECT `category`, `multiplier`, `max_auction_count`, `expire_time` FROM `ahbot_category`");
     if (results)
     {
         do
@@ -888,7 +888,7 @@ void AhBot::CheckCategoryMultipliers()
         delete results;
     }
 
-    CharacterDatabase.PExecute("DELETE FROM ahbot_category");
+    CharacterDatabase.PExecute("DELETE FROM `ahbot_category`");
 
     for (int i = 0; i < CategoryList::instance.size(); i++)
     {
@@ -901,7 +901,7 @@ void AhBot::CheckCategoryMultipliers()
             categoryMultiplierExpireTimes[name] = time(0) + urand(4, 7) * 3600 * 24;
         }
 
-        CharacterDatabase.PExecute("INSERT INTO ahbot_category (category, multiplier, max_auction_count, expire_time) "
+        CharacterDatabase.PExecute("INSERT INTO `ahbot_category` (`category`, `multiplier`, `max_auction_count`, `expire_time`) "
                 "VALUES ('%s', '%f', '%u', '%u')",
                 name.c_str(), categoryMultipliers[name], categoryMaxAuctionCount[name], categoryMultiplierExpireTimes[name]);
     }
@@ -912,7 +912,7 @@ void AhBot::updateMarketPrice(uint32 itemId, double price, uint32 auctionHouse)
 {
     double marketPrice = 0;
 
-    QueryResult* results = CharacterDatabase.PQuery("SELECT price FROM ahbot_price WHERE item = '%u' AND auction_house = '%u'", itemId, auctionHouse);
+    QueryResult* results = CharacterDatabase.PQuery("SELECT `price` FROM `ahbot_price` WHERE `item` = '%u' AND `auction_house` = '%u'", itemId, auctionHouse);
     if (results)
     {
         marketPrice = results->Fetch()[0].GetFloat();
@@ -924,8 +924,8 @@ void AhBot::updateMarketPrice(uint32 itemId, double price, uint32 auctionHouse)
     else
         marketPrice = price;
 
-    CharacterDatabase.PExecute("DELETE FROM ahbot_price WHERE item = '%u' AND auction_house = '%u'", itemId, auctionHouse);
-    CharacterDatabase.PExecute("INSERT INTO ahbot_price (item, price, auction_house) VALUES ('%u', '%lf', '%u')", itemId, marketPrice, auctionHouse);
+    CharacterDatabase.PExecute("DELETE FROM `ahbot_price` WHERE `item` = '%u' AND `auction_house` = '%u'", itemId, auctionHouse);
+    CharacterDatabase.PExecute("INSERT INTO `ahbot_price` (`item`, `price`, `auction_house`) VALUES ('%u', '%lf', '%u')", itemId, marketPrice, auctionHouse);
 }
 
 bool AhBot::IsBotAuction(uint32 bidder)
@@ -953,7 +953,7 @@ void AhBot::LoadRandomBots()
         if (!sAccountMgr.GetCharactersCount(accountId))
             continue;
 
-        QueryResult *result = CharacterDatabase.PQuery("SELECT guid, race FROM characters WHERE account = '%u'", accountId);
+        QueryResult *result = CharacterDatabase.PQuery("SELECT `guid`, `race` FROM `characters` WHERE `account` = '%u'", accountId);
         if (!result)
             continue;
 

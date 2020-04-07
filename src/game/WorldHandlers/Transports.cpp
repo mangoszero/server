@@ -67,7 +67,7 @@ void Map::LoadLocalTransports()
 
 void MapManager::LoadTransports()
 {
-    QueryResult* result = WorldDatabase.Query("SELECT entry, name, period FROM transports");
+    QueryResult* result = WorldDatabase.Query("SELECT `entry`, `name`, `period` FROM `transports`");
 
     uint32 count = 0;
 
@@ -113,7 +113,7 @@ void MapManager::LoadTransports()
     delete result;
 
     // check transport data DB integrity
-    result = WorldDatabase.Query("SELECT gameobject.guid,gameobject.id,transports.name FROM gameobject,transports WHERE gameobject.id = transports.entry");
+    result = WorldDatabase.Query("SELECT `gameobject`.`guid`,`gameobject`.`id`,`transports`.`name` FROM `gameobject`,`transports` WHERE `gameobject`.`id` = `transports`.`entry`");
     if (result)                                             // wrong data found
     {
         do

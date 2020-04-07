@@ -118,7 +118,7 @@ void Corpse::SaveToDB()
     DeleteFromDB();
 
     std::ostringstream ss;
-    ss  << "INSERT INTO corpse (guid,player,position_x,position_y,position_z,orientation,map,time,corpse_type,instance) VALUES ("
+    ss  << "INSERT INTO `corpse` (`guid`,`player`,`position_x`,`position_y`,`position_z`,`orientation`,`map`,`time`,`corpse_type`,`instance`) VALUES ("
         << GetGUIDLow() << ", "
         << GetOwnerGuid().GetCounter() << ", "
         << GetPositionX() << ", "
@@ -155,7 +155,7 @@ void Corpse::DeleteFromDB()
     // all corpses (not bones)
     static SqlStatementID id;
 
-    SqlStatement stmt = CharacterDatabase.CreateStatement(id, "DELETE FROM corpse WHERE player = ? AND corpse_type <> '0'");
+    SqlStatement stmt = CharacterDatabase.CreateStatement(id, "DELETE FROM `corpse` WHERE `player` = ? AND `corpse_type` <> '0'");
     stmt.PExecute(GetOwnerGuid().GetCounter());
 }
 

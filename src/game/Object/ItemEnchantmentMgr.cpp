@@ -54,7 +54,7 @@ void LoadRandomEnchantmentsTable()
     RandomItemEnch.clear();                                 // for reload case
 
     uint32 count = 0;
-    QueryResult* result = WorldDatabase.Query("SELECT entry, ench, chance FROM item_enchantment_template");
+    QueryResult* result = WorldDatabase.Query("SELECT `entry`, `ench`, `chance` FROM `item_enchantment_template`");
 
     if (result)
     {
