@@ -408,7 +408,7 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
     dump += "IMPORTANT NOTE: NOT APPLY ITS DIRECTLY to character DB or you will DAMAGE and CORRUPT character DB\n\n";
 
     // revision check guard
-    QueryNamedResult* result = CharacterDatabase.QueryNamed("SELECT * FROM `character_db_version` LIMIT 1");
+    QueryNamedResult* result = CharacterDatabase.QueryNamed("SELECT * FROM `db_version` LIMIT 1");
     if (result)
     {
         QueryFieldNames const& namesMap = result->GetFieldNames();
@@ -425,18 +425,18 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
         if (!reqName.empty())
         {
             // this will fail at wrong character DB version
-            dump += "UPDATE `character_db_version` SET `" + reqName + "` = 1 WHERE FALSE;\n\n";
+            dump += "UPDATE `version` SET `" + reqName + "` = 1 WHERE FALSE;\n\n";
         }
         else
         {
-            sLog.outError("Table 'character_db_version' not have revision guard field, revision guard query not added to pdump.");
+            sLog.outError("Character DB Table 'db_version'  does not have revision guard field, revision guard query not added to pdump.");
         }
 
         delete result;
     }
     else
     {
-        sLog.outError("Character DB not have 'character_db_version' table, revision guard query not added to pdump.");
+        sLog.outError("Character DB not have 'db_version' table, revision guard query not added to pdump.");
     }
 
     for (DumpTable* itr = &dumpTables[0]; itr->isValid(); ++itr)
@@ -571,7 +571,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
         }
 
         // add required_ check
-        if (line.substr(nw_pos, 41) == "UPDATE `character_db_version` SET `required_`")
+        if (line.substr(nw_pos, 41) == "UPDATE `db_version` SET `required_`")
         {
             if (!CharacterDatabase.Execute(line.c_str()))
             {

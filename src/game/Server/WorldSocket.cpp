@@ -643,7 +643,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // No SQL injection, username escaped.
 
     QueryResult* result =
-        LoginDatabase.PQuery("`SELECT` "
+        LoginDatabase.PQuery("SELECT "
                              "`id`, "                      // 0
                              "`gmlevel`, "                 // 1
                              "`sessionkey`, "              // 2
