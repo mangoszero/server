@@ -18,7 +18,7 @@ notifications:
 # build on both Linux and OSX
 os:
   - linux
-  - osx
+#  - osx
 
 # build with both gcc and clang to ensure compatibility
 compiler:
