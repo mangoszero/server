@@ -364,7 +364,7 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             wherestr = GenerateWhereStr(fieldname, guid);
         }
 
-        QueryResult* result = CharacterDatabase.PQuery("SELECT * FROM %s WHERE %s", tableFrom, wherestr.c_str());
+        QueryResult* result = CharacterDatabase.PQuery("SELECT * FROM `%s` WHERE `%s`", tableFrom, wherestr.c_str());
         if (!result)
         {
             return;
@@ -408,7 +408,7 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
     dump += "IMPORTANT NOTE: NOT APPLY ITS DIRECTLY to character DB or you will DAMAGE and CORRUPT character DB\n\n";
 
     // revision check guard
-    QueryNamedResult* result = CharacterDatabase.QueryNamed("SELECT * FROM character_db_version LIMIT 1");
+    QueryNamedResult* result = CharacterDatabase.QueryNamed("SELECT * FROM `db_version` LIMIT 1");
     if (result)
     {
         QueryFieldNames const& namesMap = result->GetFieldNames();
@@ -425,18 +425,18 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
         if (!reqName.empty())
         {
             // this will fail at wrong character DB version
-            dump += "UPDATE character_db_version SET " + reqName + " = 1 WHERE FALSE;\n\n";
+            dump += "UPDATE `version` SET `" + reqName + "` = 1 WHERE FALSE;\n\n";
         }
         else
         {
-            sLog.outError("Table 'character_db_version' not have revision guard field, revision guard query not added to pdump.");
+            sLog.outError("Character DB Table 'db_version'  does not have revision guard field, revision guard query not added to pdump.");
         }
 
         delete result;
     }
     else
     {
-        sLog.outError("Character DB not have 'character_db_version' table, revision guard query not added to pdump.");
+        sLog.outError("Character DB not have 'db_version' table, revision guard query not added to pdump.");
     }
 
     for (DumpTable* itr = &dumpTables[0]; itr->isValid(); ++itr)
@@ -490,7 +490,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
     bool incHighest = true;
     if (guid != 0 && guid < sObjectMgr.m_CharGuids.GetNextAfterMaxUsed())
     {
-        result = CharacterDatabase.PQuery("SELECT * FROM characters WHERE guid = '%u'", guid);
+        result = CharacterDatabase.PQuery("SELECT * FROM `characters` WHERE `guid` = '%u'", guid);
         if (result)
         {
             guid = sObjectMgr.m_CharGuids.GetNextAfterMaxUsed();
@@ -515,7 +515,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
     if (ObjectMgr::CheckPlayerName(name, true) == CHAR_NAME_SUCCESS)
     {
         CharacterDatabase.escape_string(name);              // for safe, we use name only for sql quearies anyway
-        result = CharacterDatabase.PQuery("SELECT * FROM characters WHERE name = '%s'", name.c_str());
+        result = CharacterDatabase.PQuery("SELECT * FROM `characters` WHERE `name` = '%s'", name.c_str());
         if (result)
         {
             name.clear();                                      // use the one from the dump
@@ -571,7 +571,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
         }
 
         // add required_ check
-        if (line.substr(nw_pos, 41) == "UPDATE character_db_version SET required_")
+        if (line.substr(nw_pos, 41) == "UPDATE `db_version` SET `required_`")
         {
             if (!CharacterDatabase.Execute(line.c_str()))
             {
@@ -634,7 +634,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                     name = getnth(line, 3);                 // characters.name
                     CharacterDatabase.escape_string(name);
 
-                    result = CharacterDatabase.PQuery("SELECT * FROM characters WHERE name = '%s'", name.c_str());
+                    result = CharacterDatabase.PQuery("SELECT * FROM `characters` WHERE `name` = '%s'", name.c_str());
                     if (result)
                     {
                         delete result;

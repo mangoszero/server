@@ -463,7 +463,7 @@ void ReputationMgr::LoadFromDB(QueryResult* result)
     // Set initial reputations (so everything is nifty before DB data load)
     Initialize();
 
-    // QueryResult *result = CharacterDatabase.PQuery("SELECT faction,standing,flags FROM character_reputation WHERE guid = '%u'",GetGUIDLow());
+    // QueryResult *result = CharacterDatabase.PQuery("SELECT `faction`,`standing`,`flags` FROM character_reputation WHERE guid = '%u'",GetGUIDLow());
 
     if (result)
     {
@@ -537,8 +537,8 @@ void ReputationMgr::SaveToDB()
     static SqlStatementID delRep ;
     static SqlStatementID insRep ;
 
-    SqlStatement stmtDel = CharacterDatabase.CreateStatement(delRep, "DELETE FROM character_reputation WHERE guid = ? AND faction=?");
-    SqlStatement stmtIns = CharacterDatabase.CreateStatement(insRep, "INSERT INTO character_reputation (guid,faction,standing,flags) VALUES (?, ?, ?, ?)");
+    SqlStatement stmtDel = CharacterDatabase.CreateStatement(delRep, "DELETE FROM `character_reputation` WHERE `guid` = ? AND `faction`=?");
+    SqlStatement stmtIns = CharacterDatabase.CreateStatement(insRep, "INSERT INTO `character_reputation` (`guid`,`faction`,`standing`,`flags`) VALUES (?, ?, ?, ?)");
 
     for (FactionStateList::iterator itr = m_factions.begin(); itr != m_factions.end(); ++itr)
     {

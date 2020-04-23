@@ -105,7 +105,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
     m_CreatureEventAI_Summon_Map.clear();
 
     // Gather additional data for EventAI
-    QueryResult* result = WorldDatabase.Query("SELECT id, position_x, position_y, position_z, orientation, spawntimesecs FROM creature_ai_summons");
+    QueryResult* result = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs` FROM `creature_ai_summons`");
     if (result)
     {
         BarGoLink bar(result->GetRowCount());
@@ -274,12 +274,12 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
     std::set<int32> usedTextIds;
 
     // Gather event data
-    QueryResult* result = WorldDatabase.Query("SELECT id, creature_id, event_type, event_inverse_phase_mask, event_chance, event_flags, "
-                          "event_param1, event_param2, event_param3, event_param4, "
-                          "action1_type, action1_param1, action1_param2, action1_param3, "
-                          "action2_type, action2_param1, action2_param2, action2_param3, "
-                          "action3_type, action3_param1, action3_param2, action3_param3 "
-                          "FROM creature_ai_scripts");
+    QueryResult* result = WorldDatabase.Query("SELECT `id`, `creature_id`, `event_type`, `event_inverse_phase_mask`, `event_chance`, `event_flags`, "
+                          "`event_param1`, `event_param2`, `event_param3`, `event_param4`, "
+                          "`action1_type`, `action1_param1`, `action1_param2`, `action1_param3`, "
+                          "`action2_type`, `action2_param1`, `action2_param2`, `action2_param3`, "
+                          "`action3_type`, `action3_param1`, `action3_param2`, `action3_param3` "
+                          "FROM `creature_ai_scripts`");
     if (result)
     {
         BarGoLink bar(result->GetRowCount());

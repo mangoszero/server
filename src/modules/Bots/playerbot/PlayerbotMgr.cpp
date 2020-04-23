@@ -318,7 +318,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         }
 
         QueryResult* results = CharacterDatabase.PQuery(
-            "SELECT name FROM characters WHERE account = '%u'",
+            "SELECT `name` FROM `characters` WHERE `account` = '%u'",
             accountId);
         if (results)
         {
@@ -361,7 +361,7 @@ uint32 PlayerbotHolder::GetAccountId(string name)
 {
     uint32 accountId = 0;
 
-    QueryResult *results = LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", name.c_str());
+    QueryResult *results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", name.c_str());
     if(results)
     {
         Field* fields = results->Fetch();

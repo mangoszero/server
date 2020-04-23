@@ -808,13 +808,13 @@ void BattleGround::EndBattleGround(Team winner)
         static SqlStatementID insPvPstatsBattleground;
         QueryResult* result;
 
-        SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsBattleground, "INSERT INTO pvpstats_battlegrounds (id, winner_team, bracket_id, type, date) VALUES (?, ?, ?, ?, NOW())");
+        SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsBattleground, "INSERT INTO `pvpstats_battlegrounds` (`id`, `winner_team`, `bracket_id`, `type`, `date`) VALUES (?, ?, ?, ?, NOW())");
 
         uint8 battleground_bracket = GetMinLevel() / 10;
         uint8 battleground_type = (uint8)GetTypeID();
 
         // query next id
-        result = CharacterDatabase.Query("SELECT MAX(id) FROM pvpstats_battlegrounds");
+        result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `pvpstats_battlegrounds`");
         if (result)
         {
             Field* fields = result->Fetch();
@@ -873,7 +873,7 @@ void BattleGround::EndBattleGround(Team winner)
         {
             static SqlStatementID insPvPstatsPlayer;
             BattleGroundScoreMap::iterator score = m_PlayerScores.find(itr->first);
-            SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsPlayer, "INSERT INTO pvpstats_players (battleground_id, character_guid, score_killing_blows, score_deaths, score_honorable_kills, score_bonus_honor, score_damage_done, score_healing_done, attr_1, attr_2, attr_3, attr_4, attr_5) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(insPvPstatsPlayer, "INSERT INTO `pvpstats_players` (`battleground_id`, `character_guid`, `score_killing_blows`, `score_deaths`, `score_honorable_kills`, `score_bonus_honor`, `score_damage_done`, `score_healing_done`, `attr_1`, `attr_2`, `attr_3`, `attr_4`, `attr_5`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             stmt.addUInt32(battleground_id);
             stmt.addUInt32(plr->GetGUIDLow());

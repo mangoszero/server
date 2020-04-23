@@ -358,7 +358,7 @@ void Warden::LogPositiveToDB(WardenCheck* check)
 
     static SqlStatementID insWardenPositive;
 
-    SqlStatement stmt = LoginDatabase.CreateStatement(insWardenPositive, "INSERT INTO warden_log (`check`, `action`, `account`, `guid`, `map`, `position_x`, `position_y`, `position_z`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    SqlStatement stmt = LoginDatabase.CreateStatement(insWardenPositive, "INSERT INTO `warden_log` (`check`, `action`, `account`, `guid`, `map`, `position_x`, `position_y`, `position_z`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
     stmt.addUInt16(check->CheckId);
     stmt.addInt8(check->Action);

@@ -139,9 +139,11 @@ static void SendTrainerSpellHelper(WorldPacket& data, TrainerSpell const* tSpell
 
     // alter the cost of riding spells with the setting from the configuration file while preserving faction discounts
     switch (tSpell->spell) {
+        case 33388: // Apprentice Riding
         case 33389: // Apprentice Riding
             data << uint32(floor(AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRAIN_MOUNT_COST)) * fDiscountMod));
             break;
+        case 33391: // Journeyman Riding
         case 33392: // Journeyman Riding
             data << uint32(floor(AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRAIN_EPIC_MOUNT_COST)) * fDiscountMod));
             break;
@@ -231,9 +233,11 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
 
             // for riding spells, override the levels with the levels from the configuration file
             switch (tSpell->spell) {
+		case 33388:
                 case 33389: // Apprentice Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
                     break;
+		case 33391:
                 case 33392: // Journeyman Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
                     break;
@@ -663,7 +667,7 @@ void WorldSession::SendStablePet(ObjectGuid guid)
     }
 
     //                                                     0      1     2   3      4      5        6
-    QueryResult* result = CharacterDatabase.PQuery("SELECT owner, slot, id, entry, level, loyalty, name FROM character_pet WHERE owner = '%u' AND slot >= '%u' AND slot <= '%u' ORDER BY slot",
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `owner`, `slot`, `id`, `entry`, `level`, `loyalty`, `name` FROM `character_pet` WHERE `owner` = '%u' AND `slot` >= '%u' AND `slot` <= '%u' ORDER BY `slot`",
                           _player->GetGUIDLow(), PET_SAVE_FIRST_STABLE_SLOT, PET_SAVE_LAST_STABLE_SLOT);
 
     if (result)
@@ -758,7 +762,7 @@ void WorldSession::HandleStablePet(WorldPacket& recv_data)
 
     uint32 free_slot = 1;
 
-    QueryResult* result = CharacterDatabase.PQuery("SELECT owner,slot,id FROM character_pet WHERE owner = '%u'  AND slot >= '%u' AND slot <= '%u' ORDER BY slot ",
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `owner`,`slot`,`id` FROM `character_pet` WHERE `owner` = '%u' AND `slot` >= '%u' AND `slot` <= '%u' ORDER BY `slot`",
                           _player->GetGUIDLow(), PET_SAVE_FIRST_STABLE_SLOT, PET_SAVE_LAST_STABLE_SLOT);
     if (result)
     {
@@ -816,7 +820,7 @@ void WorldSession::HandleUnstablePet(WorldPacket& recv_data)
     uint32 creature_id = 0;
 
     {
-        QueryResult* result = CharacterDatabase.PQuery("SELECT entry FROM character_pet WHERE owner = '%u' AND id = '%u' AND slot >='%u' AND slot <= '%u'",
+        QueryResult* result = CharacterDatabase.PQuery("SELECT `entry` FROM `character_pet` WHERE `owner` = '%u' AND `id` = '%u' AND `slot` >='%u' AND `slot` <= '%u'",
                               _player->GetGUIDLow(), petnumber, PET_SAVE_FIRST_STABLE_SLOT, PET_SAVE_LAST_STABLE_SLOT);
         if (result)
         {
@@ -938,7 +942,7 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
     }
 
     // find swapped pet slot in stable
-    QueryResult* result = CharacterDatabase.PQuery("SELECT slot,entry FROM character_pet WHERE owner = '%u' AND id = '%u'",
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `slot`,`entry` FROM `character_pet` WHERE `owner` = '%u' AND `id` = '%u'",
                           _player->GetGUIDLow(), pet_number);
     if (!result)
     {

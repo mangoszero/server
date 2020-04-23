@@ -644,18 +644,18 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     QueryResult* result =
         LoginDatabase.PQuery("SELECT "
-                             "id, "                      // 0
-                             "gmlevel, "                 // 1
-                             "sessionkey, "              // 2
-                             "last_ip, "                 // 3
-                             "locked, "                  // 4
-                             "v, "                       // 5
-                             "s, "                       // 6
-                             "mutetime, "                // 7
-                             "locale, "                   // 8
-                             "os "                        // 9
-                             "FROM account "
-                             "WHERE username = '%s'",
+                             "`id`, "                      // 0
+                             "`gmlevel`, "                 // 1
+                             "`sessionkey`, "              // 2
+                             "`last_ip`, "                 // 3
+                             "`locked`, "                  // 4
+                             "`v`, "                       // 5
+                             "`s`, "                       // 6
+                             "`mutetime`, "                // 7
+                             "`locale`, "                   // 8
+                             "`os` "                        // 9
+                             "FROM `account` "
+                             "WHERE `username` = '%s'",
                              safe_account.c_str());
 
     // Stop if the account is not found
@@ -730,9 +730,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Re-check account ban (same check as in realmd)
     QueryResult* banresult =
-        LoginDatabase.PQuery("SELECT 1 FROM account_banned WHERE id = %u AND active = 1 AND (unbandate > UNIX_TIMESTAMP() OR unbandate = bandate)"
+        LoginDatabase.PQuery("SELECT 1 FROM `account_banned` WHERE `id` = %u AND `active` = 1 AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`)"
                              "UNION "
-                             "SELECT 1 FROM ip_banned WHERE (unbandate = bandate OR unbandate > UNIX_TIMESTAMP()) AND ip = '%s'",
+                             "SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s'",
                              id, GetRemoteAddress().c_str());
 
     if (banresult) // if account banned
@@ -807,7 +807,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // No SQL injection, username escaped.
     static SqlStatementID updAccount;
 
-    SqlStatement stmt = LoginDatabase.CreateStatement(updAccount, "UPDATE account SET last_ip = ? WHERE username = ?");
+    SqlStatement stmt = LoginDatabase.CreateStatement(updAccount, "UPDATE `account` SET `last_ip` = ? WHERE `username` = ?");
     stmt.PExecute(address.c_str(), account.c_str());
 
     // NOTE ATM the socket is single-threaded, have this in mind ...

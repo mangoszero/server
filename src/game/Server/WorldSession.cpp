@@ -533,14 +533,14 @@ void WorldSession::LogoutPlayer(bool Save)
             // playerbot mod
             if (!_player->GetPlayerbotAI())
             {
-                SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE account SET active_realm_id = ? WHERE id = ?");
+                SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE `account` SET `active_realm_id` = ? WHERE `id` = ?");
                 stmt.PExecute(uint32(0), GetAccountId());
             }
         }
 #else
         static SqlStatementID id;
 
-        SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE account SET active_realm_id = ? WHERE id = ?");
+        SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE `account` SET `active_realm_id` = ? WHERE `id` = ?");
         stmt.PExecute(uint32(0), GetAccountId());
 #endif
         ///- If the player is in a guild, update the guild roster and broadcast a logout message to other guild members
@@ -623,9 +623,9 @@ void WorldSession::LogoutPlayer(bool Save)
 
         static SqlStatementID updChars;
 #ifdef ENABLE_PLAYERBOTS
-        SqlStatement stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
+        SqlStatement stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE `characters` SET `online` = 0 WHERE `account` = ?");
 #else
-        stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE characters SET online = 0 WHERE account = ?");
+        stmt = CharacterDatabase.CreateStatement(updChars, "UPDATE `characters` SET `online` = 0 WHERE `account` = ?");
 #endif
         stmt.PExecute(GetAccountId());
 
@@ -758,7 +758,7 @@ void WorldSession::LoadTutorialsData()
         m_Tutorials[ aX ] = 0;
     }
 
-    QueryResult* result = CharacterDatabase.PQuery("SELECT tut0,tut1,tut2,tut3,tut4,tut5,tut6,tut7 FROM character_tutorial WHERE account = '%u'", GetAccountId());
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `tut0`,`tut1`,`tut2`,`tut3`,`tut4`,`tut5`,`tut6`,`tut7` FROM `character_tutorial` WHERE `account` = '%u'", GetAccountId());
 
     if (!result)
     {
@@ -801,7 +801,7 @@ void WorldSession::SaveTutorialsData()
     {
         case TUTORIALDATA_CHANGED:
         {
-            SqlStatement stmt = CharacterDatabase.CreateStatement(updTutorial, "UPDATE character_tutorial SET tut0=?, tut1=?, tut2=?, tut3=?, tut4=?, tut5=?, tut6=?, tut7=? WHERE account = ?");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(updTutorial, "UPDATE `character_tutorial` SET `tut0`=?, `tut1`=?, `tut2`=?, `tut3`=?, `tut4`=?, `tut5`=?, `tut6`=?, `tut7`=? WHERE `account` = ?");
             for (int i = 0; i < 8; ++i)
             {
                 stmt.addUInt32(m_Tutorials[i]);
@@ -814,7 +814,7 @@ void WorldSession::SaveTutorialsData()
 
         case TUTORIALDATA_NEW:
         {
-            SqlStatement stmt = CharacterDatabase.CreateStatement(insTutorial, "INSERT INTO character_tutorial (account,tut0,tut1,tut2,tut3,tut4,tut5,tut6,tut7) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(insTutorial, "INSERT INTO `character_tutorial` (`account`,`tut0`,`tut1`,`tut2`,`tut3`,`tut4`,`tut5`,`tut6`,`tut7`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             stmt.addUInt32(GetAccountId());
             for (int i = 0; i < 8; ++i)

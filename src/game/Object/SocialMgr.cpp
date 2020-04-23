@@ -90,12 +90,12 @@ bool PlayerSocial::AddToSocialList(ObjectGuid friend_guid, bool ignore)
     PlayerSocialMap::const_iterator itr = m_playerSocialMap.find(friend_guid.GetCounter());
     if (itr != m_playerSocialMap.end())
     {
-        CharacterDatabase.PExecute("UPDATE character_social SET flags = (flags | %u) WHERE guid = '%u' AND friend = '%u'", flag, m_playerLowGuid, friend_guid.GetCounter());
+        CharacterDatabase.PExecute("UPDATE `character_social` SET `flags` = (`flags` | %u) WHERE `guid` = '%u' AND `friend` = '%u'", flag, m_playerLowGuid, friend_guid.GetCounter());
         m_playerSocialMap[friend_guid.GetCounter()].Flags |= flag;
     }
     else
     {
-        CharacterDatabase.PExecute("INSERT INTO character_social (guid, friend, flags) VALUES ('%u', '%u', '%u')", m_playerLowGuid, friend_guid.GetCounter(), flag);
+        CharacterDatabase.PExecute("INSERT INTO `character_social` (`guid`, `friend`, `flags`) VALUES ('%u', '%u', '%u')", m_playerLowGuid, friend_guid.GetCounter(), flag);
         FriendInfo fi;
         fi.Flags |= flag;
         m_playerSocialMap[friend_guid.GetCounter()] = fi;
@@ -120,12 +120,12 @@ void PlayerSocial::RemoveFromSocialList(ObjectGuid friend_guid, bool ignore)
     itr->second.Flags &= ~flag;
     if (itr->second.Flags == 0)
     {
-        CharacterDatabase.PExecute("DELETE FROM character_social WHERE guid = '%u' AND friend = '%u'", m_playerLowGuid, friend_guid.GetCounter());
+        CharacterDatabase.PExecute("DELETE FROM `character_social` WHERE `guid` = '%u' AND `friend` = '%u'", m_playerLowGuid, friend_guid.GetCounter());
         m_playerSocialMap.erase(itr);
     }
     else
     {
-        CharacterDatabase.PExecute("UPDATE character_social SET flags = (flags & ~%u) WHERE guid = '%u' AND friend = '%u'", flag, m_playerLowGuid, friend_guid.GetCounter());
+        CharacterDatabase.PExecute("UPDATE `character_social` SET `flags` = (`flags` & ~%u) WHERE `guid` = '%u' AND `friend` = '%u'", flag, m_playerLowGuid, friend_guid.GetCounter());
     }
 }
 

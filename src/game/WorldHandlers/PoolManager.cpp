@@ -621,7 +621,7 @@ struct PoolMapChecker
 
 void PoolManager::LoadFromDB()
 {
-    QueryResult* result = WorldDatabase.Query("SELECT MAX(entry) FROM pool_template");
+    QueryResult* result = WorldDatabase.Query("SELECT MAX(`entry`) FROM `pool_template`");
     if (!result)
     {
         sLog.outString(">> Table pool_template is empty.");
@@ -637,7 +637,7 @@ void PoolManager::LoadFromDB()
 
     mPoolTemplate.resize(max_pool_id + 1);
 
-    result = WorldDatabase.Query("SELECT entry, max_limit, description FROM pool_template");
+    result = WorldDatabase.Query("SELECT `entry`, `max_limit`, `description` FROM `pool_template`");
     if (!result)
     {
         mPoolTemplate.clear();
@@ -676,7 +676,7 @@ void PoolManager::LoadFromDB()
     mPoolCreatureGroups.resize(max_pool_id + 1);
     mCreatureSearchMap.clear();
     //                                   1     2           3
-    result = WorldDatabase.Query("SELECT guid, pool_entry, chance FROM pool_creature");
+    result = WorldDatabase.Query("SELECT `guid`, `pool_entry`, `chance` FROM `pool_creature`");
 
     count = 0;
     if (!result)
@@ -739,7 +739,7 @@ void PoolManager::LoadFromDB()
         delete result;
     }
 
-    result = WorldDatabase.Query("SELECT guid, pool_entry, chance, pool_creature_template.id FROM pool_creature_template LEFT JOIN creature ON creature.id = pool_creature_template.id");
+    result = WorldDatabase.Query("SELECT `guid`, `pool_entry`, `chance`, `pool_creature_template`.`id` FROM `pool_creature_template` LEFT JOIN `creature` ON `creature`.`id` = `pool_creature_template`.`id`");
 
     count = 0;
     if (!result)
@@ -818,7 +818,7 @@ void PoolManager::LoadFromDB()
     mPoolGameobjectGroups.resize(max_pool_id + 1);
     mGameobjectSearchMap.clear();
     //                                   1     2           3
-    result = WorldDatabase.Query("SELECT guid, pool_entry, chance FROM pool_gameobject");
+    result = WorldDatabase.Query("SELECT `guid`, `pool_entry`, `chance` FROM `pool_gameobject`");
 
     count = 0;
     if (!result)
@@ -882,7 +882,7 @@ void PoolManager::LoadFromDB()
     }
 
     //                                   1     2           3
-    result = WorldDatabase.Query("SELECT guid, pool_entry, chance, pool_gameobject_template.id FROM pool_gameobject_template LEFT JOIN gameobject ON gameobject.id = pool_gameobject_template.id");
+    result = WorldDatabase.Query("SELECT `guid`, `pool_entry`, `chance`, `pool_gameobject_template`.`id` FROM `pool_gameobject_template` LEFT JOIN `gameobject` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
 
     count = 0;
     if (!result)
@@ -959,7 +959,7 @@ void PoolManager::LoadFromDB()
     // Pool of pools
     mPoolPoolGroups.resize(max_pool_id + 1);
     //                                   1        2            3
-    result = WorldDatabase.Query("SELECT pool_id, mother_pool, chance FROM pool_pool");
+    result = WorldDatabase.Query("SELECT `pool_id`, `mother_pool`, `chance` FROM `pool_pool`");
 
     count = 0;
     if (!result)
@@ -1098,12 +1098,12 @@ void PoolManager::LoadFromDB()
         count = 0;
 
         //                                                0               1   2    3           4              5
-        result = WorldDatabase.Query("SELECT gameobject.guid, gameobject.id, map, position_x, position_y, position_z,"
+        result = WorldDatabase.Query("SELECT `gameobject`.`guid`, `gameobject`.`id`, `map`, `position_x`, `position_y`, `position_z`,"
                                                        //   6                          7
-                              "pool_gameobject.pool_entry, pool_gameobject_template.pool_entry "
-                              "FROM gameobject "
-                              "LEFT OUTER JOIN pool_gameobject ON gameobject.guid = pool_gameobject.guid "
-                              "LEFT OUTER JOIN pool_gameobject_template ON gameobject.id = pool_gameobject_template.id");
+                              "`pool_gameobject`.`pool_entry`, `pool_gameobject_template`.`pool_entry` "
+                              "FROM `gameobject` "
+                              "LEFT OUTER JOIN `pool_gameobject` ON `gameobject`.`guid` = `pool_gameobject`.`guid` "
+                              "LEFT OUTER JOIN `pool_gameobject_template` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
 
         if (!result)
         {
@@ -1175,7 +1175,7 @@ void PoolManager::LoadFromDB()
 
             ++count;
 
-            //sLog.outErrorDb("UPDATE gameobject SET zone_id=%u, area_id=%u WHERE guid=%u;", zoneId, areaId, guid);
+            //sLog.outErrorDb("UPDATE `gameobject` SET `zone_id`=%u, `area_id`=%u WHERE `guid`=%u;", zoneId, areaId, guid);
 
             }
         }

@@ -59,7 +59,7 @@ void WardenCheckMgr::LoadWardenChecks()
         return;
     }
                                                   //  0   1      2     3     4       5        6       7    8
-    QueryResult *result = WorldDatabase.Query("SELECT id, build, type, data, result, address, length, str, comment FROM warden ORDER BY build ASC, id ASC");
+    QueryResult *result = WorldDatabase.Query("SELECT `id`, `build`, `type`, `data`, `result`, `address`, `length`, `str`, `comment` FROM `warden` ORDER BY `build` ASC, `id` ASC");
 
     if (!result)
     {
@@ -159,7 +159,7 @@ void WardenCheckMgr::LoadWardenOverrides()
     }
 
     //                                                    0         1
-    QueryResult* result = CharacterDatabase.Query("SELECT wardenId, action FROM warden_action");
+    QueryResult* result = CharacterDatabase.Query("SELECT `wardenId`, `action` FROM `warden_action`");
 
     if (!result)
     {

@@ -168,7 +168,7 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
 
         // set owner to bidder (to prevent delete item with sender char deleting)
         // owner in `data` will set at mail receive and item extracting
-        CharacterDatabase.PExecute("UPDATE item_instance SET owner_guid = '%u' WHERE guid='%u'", auction->bidder, auction->itemGuidLow);
+        CharacterDatabase.PExecute("UPDATE `item_instance` SET `owner_guid` = '%u' WHERE `guid`='%u'", auction->bidder, auction->itemGuidLow);
 
         if (bidder)
         {
@@ -186,7 +186,7 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
     // receiver not exist
     else
     {
-        CharacterDatabase.PExecute("DELETE FROM item_instance WHERE guid='%u'", auction->itemGuidLow);
+        CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", auction->itemGuidLow);
         RemoveAItem(auction->itemGuidLow);                  // we have to remove the item, before we delete it !!
         auction->itemGuidLow = 0;
         delete pItem;
@@ -277,7 +277,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
     // owner not found
     else
     {
-        CharacterDatabase.PExecute("DELETE FROM item_instance WHERE guid='%u'", auction->itemGuidLow);
+        CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", auction->itemGuidLow);
         RemoveAItem(auction->itemGuidLow);                  // we have to remove the item, before we delete it !!
         auction->itemGuidLow = 0;
         delete pItem;
@@ -287,7 +287,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
 void AuctionHouseMgr::LoadAuctionItems()
 {
     // data needs to be at first place for Item::LoadFromDB 0  1        2
-    QueryResult* result = CharacterDatabase.Query("SELECT data,itemguid,item_template FROM auction JOIN item_instance ON itemguid = guid");
+    QueryResult* result = CharacterDatabase.Query("SELECT `data`,`itemguid`,`item_template` FROM `auction` JOIN `item_instance` ON `itemguid` = `guid`");
 
     if (!result)
     {
@@ -338,7 +338,7 @@ void AuctionHouseMgr::LoadAuctionItems()
 
 void AuctionHouseMgr::LoadAuctions()
 {
-    QueryResult* result = CharacterDatabase.Query("SELECT COUNT(*) FROM auction");
+    QueryResult* result = CharacterDatabase.Query("SELECT COUNT(*) FROM `auction`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -360,7 +360,7 @@ void AuctionHouseMgr::LoadAuctions()
     }
 
     //                                       0  1       2        3             4          5                     6         7           8    9       10      11       12
-    result = CharacterDatabase.Query("SELECT id,houseid,itemguid,item_template,item_count,item_randompropertyid,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit FROM auction");
+    result = CharacterDatabase.Query("SELECT `id`,`houseid`,`itemguid`,`item_template`,`item_count`,`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,`lastbid`,`startbid`,`deposit` FROM `auction`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -415,7 +415,7 @@ void AuctionHouseMgr::LoadAuctions()
             auction->itemRandomPropertyId = pItem->GetItemRandomPropertyId();
 
             // No SQL injection (no strings)
-            CharacterDatabase.PExecute("UPDATE auction SET item_template = %u, item_count = %u, item_randompropertyid = %i WHERE itemguid = %u",
+            CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, `item_count` = %u, `item_randompropertyid` = %i WHERE `itemguid` = %u",
                                        auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
         }
 
@@ -836,13 +836,13 @@ uint32 AuctionEntry::GetAuctionOutBid() const
 void AuctionEntry::DeleteFromDB() const
 {
     // No SQL injection (Id is integer)
-    CharacterDatabase.PExecute("DELETE FROM auction WHERE id = '%u'", Id);
+    CharacterDatabase.PExecute("DELETE FROM `auction` WHERE `id` = '%u'", Id);
 }
 
 void AuctionEntry::SaveToDB() const
 {
     // No SQL injection (no strings)
-    CharacterDatabase.PExecute("INSERT INTO auction (id,houseid,itemguid,item_template,item_count,item_randompropertyid,itemowner,buyoutprice,time,buyguid,lastbid,startbid,deposit) "
+    CharacterDatabase.PExecute("INSERT INTO `auction` (`id`,`houseid`,`itemguid`,`item_template`,`item_count`,`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,`lastbid`,`startbid`,`deposit`) "
                                "VALUES ('%u', '%u', '%u', '%u', '%u', '%i', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u')",
                                Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
 }
@@ -900,7 +900,7 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
     {
         // after this update we should save player's money ...
         CharacterDatabase.BeginTransaction();
-        CharacterDatabase.PExecute("UPDATE auction SET buyguid = '%u', lastbid = '%u' WHERE id = '%u'", bidder, bid, Id);
+        CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u', `lastbid` = '%u' WHERE `id` = '%u'", bidder, bid, Id);
         if (newbidder)
         {
             newbidder->SaveInventoryAndGoldToDB();

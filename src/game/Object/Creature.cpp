@@ -1371,10 +1371,10 @@ void Creature::SaveToDB(uint32 mapid)
     // updated in DB
     WorldDatabase.BeginTransaction();
 
-    WorldDatabase.PExecuteLog("DELETE FROM creature WHERE guid=%u", GetGUIDLow());
+    WorldDatabase.PExecuteLog("DELETE FROM `creature` WHERE `guid`=%u", GetGUIDLow());
 
     std::ostringstream ss;
-    ss << "INSERT INTO creature VALUES ("
+    ss << "INSERT INTO `creature` VALUES ("
        << GetGUIDLow() << ","
        << data.id << ","
        << data.mapid << ","
@@ -1824,13 +1824,13 @@ void Creature::DeleteFromDB(uint32 lowguid, CreatureData const* data)
     sObjectMgr.DeleteCreatureData(lowguid);
 
     WorldDatabase.BeginTransaction();
-    WorldDatabase.PExecuteLog("DELETE FROM creature WHERE guid=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM creature_addon WHERE guid=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM creature_movement WHERE id=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM game_event_creature WHERE guid=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM game_event_creature_data WHERE guid=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM creature_battleground WHERE guid=%u", lowguid);
-    WorldDatabase.PExecuteLog("DELETE FROM creature_linking WHERE guid=%u OR master_guid=%u", lowguid, lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `creature` WHERE `guid`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `creature_addon` WHERE `guid`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `creature_movement` WHERE `id`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `game_event_creature` WHERE `guid`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `game_event_creature_data` WHERE `guid`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `creature_battleground` WHERE `guid`=%u", lowguid);
+    WorldDatabase.PExecuteLog("DELETE FROM `creature_linking` WHERE `guid`=%u OR `master_guid`=%u", lowguid, lowguid);
     WorldDatabase.CommitTransaction();
 }
 

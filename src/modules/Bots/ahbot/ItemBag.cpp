@@ -142,7 +142,7 @@ void AvailableItemsBag::Load()
 {
     set<uint32> vendorItems;
 
-      QueryResult* results = WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0");
+      QueryResult* results = WorldDatabase.PQuery("SELECT `item` FROM `npc_vendor` WHERE `maxcount` = 0");
       if (results != NULL)
       {
           do
