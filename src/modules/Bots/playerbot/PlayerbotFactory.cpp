@@ -1272,7 +1272,7 @@ void PlayerbotFactory::InitAmmo()
         return;
     }
 
-    QueryResult *results = WorldDatabase.PQuery("select max(entry), max(RequiredLevel) from item_template where class = '%u' and subclass = '%u' and RequiredLevel <= '%u'",
+    QueryResult *results = WorldDatabase.PQuery("select max(`entry`), max(`RequiredLevel`) from `item_template` where `class` = '%u' and `subclass` = '%u' and `RequiredLevel` <= '%u'",
             ITEM_CLASS_PROJECTILE, subClass, bot->getLevel());
     if (!results)
     {
