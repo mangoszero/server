@@ -771,6 +771,7 @@ void MapPersistentStateManager::_DelHelper(DatabaseType& db, const char* fields,
     vsnprintf(szQueryTail, MAX_QUERY_LEN, queryTail, ap);
     va_end(ap);
 
+    // query is delimited in input
     QueryResult* result = db.PQuery("SELECT %s FROM %s %s", fields, table, szQueryTail);
     if (result)
     {

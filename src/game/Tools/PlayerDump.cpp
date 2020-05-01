@@ -134,7 +134,7 @@ bool findnth(std::string& str, int n, std::string::size_type& s, std::string::si
 std::string gettablename(std::string& str)
 {
     std::string::size_type s = 13;
-    std::string::size_type e = str.find(_TABLE_SIM_, s);
+    std::string::size_type e = str.find('`', s);
     if (e == std::string::npos)
     {
         return "";
@@ -244,7 +244,7 @@ std::string CreateDumpString(char const* tableName, QueryResult* result)
     }
 
     std::ostringstream ss;
-    ss << "INSERT INTO " << _TABLE_SIM_ << tableName << _TABLE_SIM_ << " VALUES (";
+    ss << "INSERT INTO `" << tableName << "` VALUES (";
     Field* fields = result->Fetch();
     for (uint32 i = 0; i < result->GetFieldCount(); ++i)
     {
