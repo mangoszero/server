@@ -38,6 +38,6 @@
 
     #define WORLD_DB_VERSION_NR 21
     #define WORLD_DB_STRUCTURE_NR 16
-    #define WORLD_DB_CONTENT_NR 016
-    #define WORLD_DB_UPDATE_DESCRIPTION "Fix typo in quest 5064"
+    #define WORLD_DB_CONTENT_NR 49
+    #define WORLD_DB_UPDATE_DESCRIPTION "Go 300131 rename"
 #endif // __REVISION_H__
