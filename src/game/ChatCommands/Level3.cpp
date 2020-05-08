@@ -6161,10 +6161,8 @@ bool ChatHandler::HandleGMFlyCommand(char* args)
     }
 
     // [-ZERO] Need reimplement in another way
-    {
-        SendSysMessage(LANG_USE_BOL);
-        return false;
-    }
+    // GM fly wil be achieved with the swimming moveflag
+    // Warning : Still buggy when Jump
     target->SetCanFly(value);
     PSendSysMessage(LANG_COMMAND_FLYMODE_STATUS, GetNameLink(target).c_str(), args);
     return true;

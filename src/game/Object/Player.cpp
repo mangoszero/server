@@ -4671,10 +4671,19 @@ void Player::SetLevitate(bool /*enable*/)
     // SendMessageToSet(&data, false);
 }
 
-void Player::SetCanFly(bool /*enable*/)
+void Player::SetCanFly(bool enable)
 {
-//     TODO: check if there is something similar for 1.12.x (99% chance there is not)
-
+    //     TODO: check if there is something similar for 1.12.x (99% chance there is not)
+    if (enable) 
+    {
+        m_movementInfo.SetMovementFlags((MovementFlags)(MOVEFLAG_LEVITATING | MOVEFLAG_SWIMMING | MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING));
+    }
+    else
+    {
+        m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
+    }
+    
+    SendHeartBeat();
 }
 
 void Player::SetFeatherFall(bool enable)
