@@ -93,6 +93,7 @@ class ChatHandler
         void SendSysMessage(int32     entry);
         void PSendSysMessage(const char* format, ...) ATTR_PRINTF(2, 3);
         void PSendSysMessage(int32     entry, ...);
+        void PSendSysMessageMultiline(int32 entry, ...);
 
         bool ParseCommands(const char* text);
         ChatCommand const* FindCommand(char const* text);

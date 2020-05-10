@@ -1006,6 +1006,45 @@ void ChatHandler::PSendSysMessage(int32 entry, ...)
     SendSysMessage(str);
 }
 
+void  ChatHandler::PSendSysMessageMultiline(int32 entry, ...)
+{
+    uint32 linecount = 0;
+
+    const char* format = GetMangosString(entry);
+    va_list ap;
+    char str[2048];
+    va_start(ap, entry);
+    vsnprintf(str, 2048, format, ap);
+    va_end(ap);
+
+    std::string mangosString(str);
+    
+    /* Used for tracking our position within the string while iterating through it */
+    std::string::size_type pos = 0, nextpos;
+
+    /* Find the next occurance of @ in the string
+     * This is how newlines are represented */
+    while ((nextpos = mangosString.find("@@", pos)) != std::string::npos)
+    {
+        /* If these are not equal, it means a '@@' was found
+         * These are used to represent newlines in the string
+         * It is set by the code above here */
+        if (nextpos != pos)
+        {
+            /* Send the player a system message containing the substring from pos to nextpos - pos */
+            PSendSysMessage("%s", mangosString.substr(pos, nextpos - pos).c_str());
+            ++linecount;
+        }
+        pos = nextpos + 2; // +2 because there are two @ as delimiter
+    }
+
+    /* There are no more newlines in our mangosString, so we send whatever is left */
+    if (pos < mangosString.length())
+    {
+        PSendSysMessage("%s", mangosString.substr(pos).c_str());
+    }
+}
+
 void ChatHandler::PSendSysMessage(const char* format, ...)
 {
     va_list ap;

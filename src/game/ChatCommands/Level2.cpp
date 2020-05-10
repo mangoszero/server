@@ -46,6 +46,7 @@
 #include "GMTicketMgr.h"
 #include "WaypointManager.h"
 #include "DBCStores.h"
+#include "Mail.h"
 #include "Util.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -2852,7 +2853,16 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         }
     }
 
-    Player* pPlayer = sObjectMgr.GetPlayer(ticket->GetPlayerGuid());
+    ObjectGuid target_guid = ticket->GetPlayerGuid();
+
+    // Get Player 
+    // Can be nullptr if player is offline
+    Player* pPlayer = sObjectMgr.GetPlayer(target_guid);
+
+    // Get Player name
+    std::string target_name;
+    sObjectMgr.GetPlayerNameByGUID(target_guid, target_name);
+
 
     if (!pPlayer && !sWorld.getConfig(CONFIG_BOOL_GM_TICKET_OFFLINE_CLOSING))
     {
@@ -2860,12 +2870,29 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         return false;
     }
 
+    // Set reponse text if not existing
+    if (!*ticket->GetResponse())
+    {
+        const char* format = "[System Message] This ticket was closed by <GM>%s without any mail response, perhaps it was resolved by direct chat.";
+        const uint32 responseBufferSize = 256;
+        char response[responseBufferSize];
+        const char* buffer;
+        snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
+        ticket->SetResponseText(response);
+    }
+
     ticket->Close();
+
+    // Define ticketId variable because we need ticket id after deleting it from TicketMgr
+    uint32 ticketId = ticket->GetId(); 
 
     //This logic feels misplaced, but you can't have it in GMTicket?
     sTicketMgr.Delete(ticket->GetPlayerGuid()); // here, ticket become invalidated and should not be used below
 
-    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer ? pPlayer->GetName() : "an offline player");
+    // Send system message to current GM
+    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session->GetPlayer()->GetName());
+
+    // TODO : Send system Message to All Connected GMs to informe them the ticket has been closed
 
     return true;
 }
@@ -3085,17 +3112,64 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
         return false;
     }
 
+    // Set the response text to the ticket
     ticket->SetResponseText(args);
 
-    if (Player* pl = sObjectMgr.GetPlayer(ticket->GetPlayerGuid()))
-    {
-        pl->GetSession()->SendGMTicketGetTicket(0x06, ticket);
-        //How should we error here?
-        if (m_session)
-        {
-            m_session->GetPlayer()->Whisper(args, LANG_UNIVERSAL, pl->GetObjectGuid());
-        }
+    // Send in-game email with ticket answer
+    MailDraft draft;
+
+    const char * signatureFormat = GetMangosString(LANG_COMMAND_TICKET_RESPOND_MAIL_SIGNATURE);
+    const uint32 signatureBufferSize = 256;
+    char signature[signatureBufferSize];
+    snprintf(signature, signatureBufferSize, signatureFormat, m_session->GetPlayer()->GetName());
+    
+    std::string  mailText = args ;
+    mailText = mailText + signature;
+
+    draft.SetSubjectAndBody(GetMangosString(LANG_COMMAND_TICKET_RESPOND_MAIL_SUBJECT), mailText);
+   
+    MailSender sender(MAIL_NORMAL, m_session->GetPlayer()->GetGUIDLow(), MAIL_STATIONERY_GM);
+
+    ObjectGuid target_guid = ticket->GetPlayerGuid();
+
+    // Get Player 
+    // Can be nullptr if player is offline
+    Player* target = sObjectMgr.GetPlayer(target_guid);
+
+    // Get Player name
+    std::string target_name;
+    sObjectMgr.GetPlayerNameByGUID(target_guid, target_name);
+
+    // Find player to send, hopefully we have his guid if target is nullpt
+    // Todo set MailDraft sent by GM and handle 90 day delay
+    draft.SendMailTo(MailReceiver(target, target_guid), sender);
+
+    // If player is online, notify with a system message  that the ticket was handled.
+    if (target && target->IsInWorld())
+    {        
+        ChatHandler(target).PSendSysMessageMultiline(LANG_COMMAND_TICKETCLOSED_PLAYER_NOTIF, m_session->GetPlayer()->GetName());
     }
+
+    // Define ticketId variable because we need ticket id after deleting it from TicketMgr in notification formated string
+    uint32 ticketId = ticket->GetId();
+
+    // Close the ticket
+    ticket->Close();
+
+   
+    // Remove ticket from ticket manager
+    // Otherwise ticket will reappear in player UI if teleported or logout/login !
+    sTicketMgr.Delete(ticket->GetPlayerGuid());
+    
+    // Send system Message to All Connected GMs to informe them the ticket has been closed
+    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
+        {
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session->GetPlayer()->GetName());
+        }
+    });
+
 
     return true;
 }
