@@ -4966,7 +4966,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 
         // deletemail = true;
         // delmails << m->messageID << ", ";
-        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE id` = '%u'", m->messageID);
+        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE `id` = '%u'", m->messageID);
         delete m;
         ++count;
     }
