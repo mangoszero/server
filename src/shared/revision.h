@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 17
+    #define WORLD_DB_STRUCTURE_NR 18
     #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "GM_tickets_handling_fixes_pt1"
+    #define WORLD_DB_UPDATE_DESCRIPTION "UBRS_equip_models_add"
 #endif // __REVISION_H__
