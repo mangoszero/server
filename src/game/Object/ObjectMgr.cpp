@@ -5697,6 +5697,13 @@ void ObjectMgr::SetHighestGuids()
         delete result;
     }
 
+    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `item_text`");
+    if (result)
+    {
+        m_ItemTextGuids.Set((*result)[0].GetUInt32() + 1);
+        delete result;
+    }
+
     // Cleanup other tables from nonexistent guids (>=m_hiItemGuid)
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute("DELETE FROM `character_inventory` WHERE `item` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());

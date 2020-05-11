@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 16
-    #define WORLD_DB_CONTENT_NR 016
-    #define WORLD_DB_UPDATE_DESCRIPTION "Fix typo in quest 5064"
+    #define WORLD_DB_STRUCTURE_NR 17
+    #define WORLD_DB_CONTENT_NR 053
+    #define WORLD_DB_UPDATE_DESCRIPTION "GM_tickets_handling_fixes_pt1"
 #endif // __REVISION_H__

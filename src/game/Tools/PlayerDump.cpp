@@ -821,6 +821,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
 
     // FIXME: current code with post-updating guids not safe for future per-map threads
     sObjectMgr.m_ItemGuids.Set(sObjectMgr.m_ItemGuids.GetNextAfterMaxUsed() + items.size());
+    sObjectMgr.m_ItemTextGuids.Set(sObjectMgr.m_ItemTextGuids.GetNextAfterMaxUsed() + itemTexts.size());
     sObjectMgr.m_MailIds.Set(sObjectMgr.m_MailIds.GetNextAfterMaxUsed() +  mails.size());
     sObjectMgr.m_ItemTextIds.Set(sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed() + itemTexts.size());
 

@@ -84,20 +84,25 @@ void GMTicket::SetText(const char* text)
     std::string escapedString = m_text;
     CharacterDatabase.escape_string(escapedString);
     CharacterDatabase.PExecute("UPDATE `character_ticket` SET `ticket_text` = '%s' "
-                               "WHERE `guid` = '%u'",
-                               escapedString.c_str(), m_guid.GetCounter());
+                               "WHERE `guid` = '%u' AND `ticket_id` = %u",
+                               escapedString.c_str(), m_guid.GetCounter(), m_ticketId);
 }
 
 void GMTicket::SetResponseText(const char* text)
 {
     m_responseText = text ? text : "";
-    m_lastUpdate = time(NULL);
+    
+    // Perform action in DB only if text is not empty
+    if (m_responseText != "")
+    {
+        m_lastUpdate = time(NULL);
 
-    std::string escapedString = m_responseText;
-    CharacterDatabase.escape_string(escapedString);
-    CharacterDatabase.PExecute("UPDATE `character_ticket` SET `response_text` = '%s' "
-                               "WHERE `guid` = '%u'",
-                               escapedString.c_str(), m_guid.GetCounter());
+        std::string escapedString = m_responseText;
+        CharacterDatabase.escape_string(escapedString);
+        CharacterDatabase.PExecute("UPDATE `character_ticket` SET `response_text` = '%s' "
+            "WHERE `guid` = '%u' and `ticket_id` = %u",
+            escapedString.c_str(), m_guid.GetCounter(), m_ticketId);
+    }   
 }
 
 void GMTicket::CloseWithSurvey() const
@@ -189,10 +194,12 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
                                      "(%u,   '%s')",
                                      guid.GetCounter(), escapedText.c_str());
 
-    //Get the id of the ticket, needed for logging whispers
+    // Get the id of the ticket, needed for logging whispers
+    // Limiting to the the most recent ticket of the player and avoid potential multiple returns 
+    // if there is inconsistent data in table (e.g : more than 1 ticket unsolved for the same player (should never happen but..who knows..)
     QueryResult* result = CharacterDatabase.PQuery("SELECT `ticket_id`, `guid`, `resolved` "
                                                    "FROM `character_ticket` "
-                                                   "WHERE `guid` = %u AND `resolved` = 0;",
+                                                   "WHERE `guid` = %u AND `resolved` = 0 ORDER BY `ticket_id` DESC LIMIT 1;",
                                                    guid.GetCounter());
 
     CharacterDatabase.CommitTransaction();

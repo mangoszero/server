@@ -35,7 +35,8 @@ void WorldSession::SendGMTicketGetTicket(uint32 status, GMTicket* ticket /*= NUL
 {
     std::string text = ticket ? ticket->GetText() : "";
 
-    if (ticket && ticket->HasResponse())
+    // Removed : Was adding ticket response to ticket text !
+    /*if (ticket && ticket->HasResponse())
     {
         text += "\n\n";
 
@@ -44,7 +45,7 @@ void WorldSession::SendGMTicketGetTicket(uint32 status, GMTicket* ticket /*= NUL
         snprintf(textBuf, 1024, textFormat.c_str(), ticket->GetResponse());
 
         text += textBuf;
-    }
+    }*/
 
     int len = text.size() + 1;
     WorldPacket data(SMSG_GMTICKET_GETTICKET, (4 + len + 1 + 4 + 2 + 4 + 4));

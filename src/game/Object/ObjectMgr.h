@@ -826,7 +826,7 @@ class ObjectMgr
         }
         uint32 GenerateItemTextID()
         {
-            return m_ItemGuids.Generate();
+            return m_ItemTextGuids.Generate();
         }
         uint32 GenerateMailID()
         {
@@ -1232,6 +1232,7 @@ class ObjectMgr
         // first free low guid for selected guid type
         ObjectGuidGenerator<HIGHGUID_PLAYER>     m_CharGuids;
         ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemGuids;
+        ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemTextGuids;
         ObjectGuidGenerator<HIGHGUID_CORPSE>     m_CorpseGuids;
 
         QuestMap            mQuestTemplates;
