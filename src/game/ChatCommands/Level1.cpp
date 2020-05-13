@@ -1862,6 +1862,11 @@ bool ChatHandler::HandleSaveAllCommand(char* /*args*/)
 // Send mail by command
 bool ChatHandler::HandleSendMailCommand(char* args)
 {
+    if (!*args)
+    {
+        return false;
+    }
+
     // format: name "subject text" "mail text"
     Player* target;
     ObjectGuid target_guid;
@@ -1873,14 +1878,23 @@ bool ChatHandler::HandleSendMailCommand(char* args)
 
     MailDraft draft;
 
-    // fill draft
-    if (!HandleSendMailHelper(draft, args))
+    // Subject and content should not be empty : 
+    if (!*args)
     {
         return false;
     }
+    else
+    {
+        // fill draft
+        if (!HandleSendMailHelper(draft, args))
+        {
+            return false;
+        }
+    }
 
+    
     // GM mail
-    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetGUIDLow() : (uint32)0, MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(target, target_guid), sender);
 
