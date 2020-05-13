@@ -7041,14 +7041,14 @@ bool ChatHandler::HandleAccountSetAddonCommand(char* args)
 bool ChatHandler::HandleSendMailHelper(MailDraft& draft, char* args)
 {
     // format: "subject text" "mail text"
-    std::string msgSubject = ExtractQuotedArg(&args);
-    if (msgSubject.empty())
+    char* msgSubject = ExtractQuotedArg(&args);
+    if (!msgSubject)
     {
         return false;
     }
 
-    std::string msgText = ExtractQuotedArg(&args);
-    if (msgText.empty())
+    char* msgText = ExtractQuotedArg(&args);
+    if (!msgText)
     {
         return false;
     }
@@ -7094,14 +7094,14 @@ bool ChatHandler::HandleSendMassMailCommand(char* args)
 bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
 {
     // format: "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
-    std::string msgSubject = ExtractQuotedArg(&args);
-    if (msgSubject.empty())
+    char * msgSubject = ExtractQuotedArg(&args);
+    if (!msgSubject)
     {
         return false;
     }
 
-    std::string msgText = ExtractQuotedArg(&args);
-    if (msgText.empty())
+    char * msgText = ExtractQuotedArg(&args);
+    if (!msgText)
     {
         return false;
     }
@@ -7195,7 +7195,7 @@ bool ChatHandler::HandleSendItemsCommand(char* args)
         return false;
     }
 
-    MailSender sender(MAIL_NORMAL, (uint32)0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetGUIDLow() : (uint32)0, MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(receiver, receiver_guid), sender);
 
@@ -7239,8 +7239,8 @@ bool ChatHandler::HandleSendMoneyHelper(MailDraft& draft, char* args)
 {
     /// format: "subject text" "mail text" money
 
-    std::string  msgSubject = ExtractQuotedArg(&args);
-    if (msgSubject.empty())
+    char * msgSubject = ExtractQuotedArg(&args);
+    if (!msgSubject)
     {
         return false;
     }
