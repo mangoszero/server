@@ -2873,11 +2873,20 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     // Set reponse text if not existing
     if (!*ticket->GetResponse())
     {
-        const char* format = "[System Message] This ticket was closed by <GM>%s without any mail response, perhaps it was resolved by direct chat.";
         const uint32 responseBufferSize = 256;
         char response[responseBufferSize];
-        const char* buffer;
-        snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
+
+        if (m_session)
+        {
+            const char* format = "[System Message] This ticket was closed by <GM>%s without any mail response, perhaps it was resolved by direct chat.";
+            const char* buffer;
+            snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
+        }
+        else 
+        {
+            strcpy(response, "[System Message] this ticket was closed using CLI console.");
+        }
+       
         ticket->SetResponseText(response);
     }
 
@@ -2887,12 +2896,26 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     uint32 ticketId = ticket->GetId(); 
 
     //This logic feels misplaced, but you can't have it in GMTicket?
-    sTicketMgr.Delete(ticket->GetPlayerGuid()); // here, ticket become invalidated and should not be used below
+    // here, ticket become invalidated and should not be used below
+    sTicketMgr.Delete(ticket->GetPlayerGuid());
 
-    // Send system message to current GM
-    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session->GetPlayer()->GetName());
+    const char* gmNameReplacementWhenUsingCLI = "ADMIN";
 
-    // TODO : Send system Message to All Connected GMs to informe them the ticket has been closed
+
+    // Send system Message to All Connected GMs to inform them the ticket has been closed
+    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
+        {
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
+        }
+    });
+
+    if (!m_session)
+    {
+        // In order to have message in CLI otherwise above code will only display to connected gms but not in console
+        PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), gmNameReplacementWhenUsingCLI);
+    }
 
     return true;
 }
@@ -3121,14 +3144,30 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     const char * signatureFormat = GetMangosString(LANG_COMMAND_TICKET_RESPOND_MAIL_SIGNATURE);
     const uint32 signatureBufferSize = 256;
     char signature[signatureBufferSize];
-    snprintf(signature, signatureBufferSize, signatureFormat, m_session->GetPlayer()->GetName());
+
+    if (m_session)
+    {
+        snprintf(signature, signatureBufferSize, signatureFormat, m_session->GetPlayer()->GetName());
+    }
+    else
+    {
+        // Used when the command is used via CLI console
+         strcpy(signature, "$B$BBest regards, $B$BThe Server Admin");
+    }
+
     
     std::string  mailText = args ;
     mailText = mailText + signature;
 
     draft.SetSubjectAndBody(GetMangosString(LANG_COMMAND_TICKET_RESPOND_MAIL_SUBJECT), mailText);
    
-    MailSender sender(MAIL_NORMAL, m_session->GetPlayer()->GetGUIDLow(), MAIL_STATIONERY_GM);
+    uint32 senderGuidLow = 0;
+    if (m_session)
+    {
+        senderGuidLow = m_session->GetPlayer()->GetGUIDLow();
+    }
+
+    MailSender sender(MAIL_NORMAL, senderGuidLow, MAIL_STATIONERY_GM);
 
     ObjectGuid target_guid = ticket->GetPlayerGuid();
 
@@ -3144,10 +3183,12 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     // Todo set MailDraft sent by GM and handle 90 day delay
     draft.SendMailTo(MailReceiver(target, target_guid), sender);
 
+    const char* gmNameReplacementWhenUsingCLI = "ADMIN";
+
     // If player is online, notify with a system message  that the ticket was handled.
     if (target && target->IsInWorld())
     {        
-        ChatHandler(target).PSendSysMessageMultiline(LANG_COMMAND_TICKETCLOSED_PLAYER_NOTIF, m_session->GetPlayer()->GetName());
+        ChatHandler(target).PSendSysMessageMultiline(LANG_COMMAND_TICKETCLOSED_PLAYER_NOTIF, m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
     }
 
     // Define ticketId variable because we need ticket id after deleting it from TicketMgr in notification formated string
@@ -3166,10 +3207,16 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     {
         if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
         {
-            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session->GetPlayer()->GetName());
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
         }
     });
 
+
+    if (!m_session)
+    {
+        // In order to have message in CLI otherwise above code will only display to connected gms but not in console
+        PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), gmNameReplacementWhenUsingCLI);
+    }
 
     return true;
 }

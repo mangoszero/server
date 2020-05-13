@@ -97,6 +97,19 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
     WorldPacket data(SMSG_GMTICKET_UPDATETEXT, 4);
     data << uint32(responce);
     SendPacket(&data);
+
+    GMTicket * ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid());
+
+    // Notify all GM that the ticket has been changed 
+    sObjectAccessor.DoForAllPlayers([ticket, this](Player* player)
+        {
+            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
+            {
+                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETUPDATED, GetPlayer()->GetName(), ticket->GetId());
+
+            }
+        }
+    );
 }
 
 //A statusCode of 3 would mean that the client should show the survey now
@@ -153,14 +166,16 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
     data << uint32(GMTICKET_RESPONSE_CREATE_SUCCESS);       // 2 - nothing appears (3-error creating, 5-error updating)
     SendPacket(&data);
 
-    // TODO: Guard player map
-    sObjectAccessor.DoForAllPlayers([this](Player* player)
-    {
-    if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-    {
-        ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName());
-    }
-    });
+    GMTicket * ticket = sTicketMgr.GetGMTicket(_player->GetObjectGuid());
+
+    sObjectAccessor.DoForAllPlayers([ticket, this](Player* player)
+        {
+            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
+            {
+                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName(), ticket->GetId());
+            }
+        }
+    );
 }
 
 void WorldSession::HandleGMTicketSystemStatusOpcode(WorldPacket& /*recv_data*/)

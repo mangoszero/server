@@ -1012,7 +1012,9 @@ enum MangosStrings
     LANG_HONOR_THIS_WEEK                = 1437,
     LANG_HONOR_LAST_WEEK                = 1438,
     LANG_HONOR_LIFE                     = 1439,
-    // Room for old clients 1.x           1440-1499 not used
+    LANG_COMMAND_TICKETUPDATED          = 1440,
+    // Room for old clients 1.x           1441499 not used
+
 
     // Level 2 (continue)
     LANG_POOL_CHANCE_POOL_LIST_CONSOLE  = 1500,
