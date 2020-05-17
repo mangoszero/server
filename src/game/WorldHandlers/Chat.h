@@ -28,6 +28,7 @@
 #include "Common.h"
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
+#include "Language.h"
 
 struct AreaTrigger;
 struct AreaTriggerEntry;
@@ -74,6 +75,12 @@ enum PlayerChatTag
     CHAT_TAG_GM                 = 3,
 };
 typedef uint32 ChatTagFlags;
+
+static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
+{
+    LANG_REP_HATED,    LANG_REP_HOSTILE, LANG_REP_UNFRIENDLY, LANG_REP_NEUTRAL,
+    LANG_REP_FRIENDLY, LANG_REP_HONORED, LANG_REP_REVERED,    LANG_REP_EXALTED
+};
 
 class ChatHandler
 {
