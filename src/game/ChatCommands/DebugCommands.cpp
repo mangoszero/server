@@ -38,6 +38,10 @@
 #include "ObjectGuid.h"
 #include "SpellMgr.h"
 
+/**********************************************************************
+     CommandTable : debugCommandTable
+/***********************************************************************/
+
 bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
 {
     if (!*args)
