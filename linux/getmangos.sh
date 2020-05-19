@@ -273,11 +273,11 @@ function GetPrerequisites()
       case ${VER} in
         "jessie")
           # Debian 8.0 "current"
-          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev default-libmysqlclient-dev libtool" root
           ;;
         "stretch")
           # Debian Next
-          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+          su -c "aptitude -y install curl build-essential autoconf automake cmake libbz2-dev libace-dev libssl-dev default-libmysqlclient-dev libtool" root
           ;;
         *)
           OS_VER=0
