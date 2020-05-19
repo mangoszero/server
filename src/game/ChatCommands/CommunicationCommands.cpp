@@ -209,39 +209,39 @@ bool ChatHandler::HandleWhispersCommand(char* args)
 // Enables or disables hiding of the staff badge
 bool ChatHandler::HandleGMChatCommand(char* args)
 {
-	if (!*args)
-	{
-		if (m_session->GetPlayer()->isGMChat())
-		{
-			m_session->SendNotification(LANG_GM_CHAT_ON);
-		}
-		else
-		{
-			m_session->SendNotification(LANG_GM_CHAT_OFF);
-		}
-		return true;
-	}
+    if (!*args)
+    {
+        if (m_session->GetPlayer()->isGMChat())
+        {
+            m_session->SendNotification(LANG_GM_CHAT_ON);
+        }
+        else
+        {
+            m_session->SendNotification(LANG_GM_CHAT_OFF);
+        }
+        return true;
+    }
 
-	bool value;
-	if (!ExtractOnOff(&args, value))
-	{
-		SendSysMessage(LANG_USE_BOL);
-		SetSentErrorMessage(true);
-		return false;
-	}
+    bool value;
+    if (!ExtractOnOff(&args, value))
+    {
+        SendSysMessage(LANG_USE_BOL);
+        SetSentErrorMessage(true);
+        return false;
+    }
 
-	if (value)
-	{
-		m_session->GetPlayer()->SetGMChat(true);
-		m_session->SendNotification(LANG_GM_CHAT_ON);
-	}
-	else
-	{
-		m_session->GetPlayer()->SetGMChat(false);
-		m_session->SendNotification(LANG_GM_CHAT_OFF);
-	}
+    if (value)
+    {
+        m_session->GetPlayer()->SetGMChat(true);
+        m_session->SendNotification(LANG_GM_CHAT_ON);
+    }
+    else
+    {
+        m_session->GetPlayer()->SetGMChat(false);
+        m_session->SendNotification(LANG_GM_CHAT_OFF);
+    }
 
-	return true;
+    return true;
 }
 
 

@@ -78,7 +78,8 @@ bool ChatHandler::LookupPlayerSearchCommand(QueryResult* result, uint32* limit)
                 delete chars;
             }
         }
-    } while (result->NextRow());
+    }
+    while (result->NextRow());
 
     delete result;
 
@@ -555,11 +556,12 @@ bool ChatHandler::ShowAccountListHelper(QueryResult* result, uint32* limit, bool
 
         if (m_session)
             PSendSysMessage(LANG_ACCOUNT_LIST_LINE_CHAT,
-                account, fields[1].GetString(), char_name, fields[2].GetString(), fields[3].GetUInt32(), fields[4].GetUInt32());
+                            account, fields[1].GetString(), char_name, fields[2].GetString(), fields[3].GetUInt32(), fields[4].GetUInt32());
         else
             PSendSysMessage(LANG_ACCOUNT_LIST_LINE_CONSOLE,
-                account, fields[1].GetString(), char_name, fields[2].GetString(), fields[3].GetUInt32(), fields[4].GetUInt32());
-    } while (result->NextRow());
+                            account, fields[1].GetString(), char_name, fields[2].GetString(), fields[3].GetUInt32(), fields[4].GetUInt32());
+    }
+    while (result->NextRow());
 
     delete result;
 
@@ -1228,10 +1230,10 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(char* args)
                 // send taxinode in "id - [name] (Map:m X:x Y:y Z:z)" format
                 if (m_session)
                     PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CHAT, id, id, name.c_str(), localeNames[loc],
-                        nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
+                                    nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
                 else
                     PSendSysMessage(LANG_TAXINODE_ENTRY_LIST_CONSOLE, id, name.c_str(), localeNames[loc],
-                        nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
+                                    nodeEntry->map_id, nodeEntry->x, nodeEntry->y, nodeEntry->z);
                 ++counter;
             }
         }
@@ -1242,6 +1244,3 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(char* args)
     }
     return true;
 }
-
-
-

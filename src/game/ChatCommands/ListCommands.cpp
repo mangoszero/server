@@ -66,18 +66,18 @@ bool ChatHandler::HandleListAurasCommand(char* /*args*/)
                 ss_name << "|cffffffff|Hspell:" << itr->second->GetId() << "|h[" << name << "]|h|r";
 
                 PSendSysMessage(LANG_COMMAND_TARGET_AURADETAIL, holder->GetId(), aur->GetEffIndex(),
-                    aur->GetModifier()->m_auraname, aur->GetAuraDuration(), aur->GetAuraMaxDuration(),
-                    ss_name.str().c_str(),
-                    (holder->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
-                    holder->GetCasterGuid().GetString().c_str(), aur->GetStackAmount());
+                                aur->GetModifier()->m_auraname, aur->GetAuraDuration(), aur->GetAuraMaxDuration(),
+                                ss_name.str().c_str(),
+                                (holder->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
+                                holder->GetCasterGuid().GetString().c_str(), aur->GetStackAmount());
             }
             else
             {
                 PSendSysMessage(LANG_COMMAND_TARGET_AURADETAIL, holder->GetId(), aur->GetEffIndex(),
-                    aur->GetModifier()->m_auraname, aur->GetAuraDuration(), aur->GetAuraMaxDuration(),
-                    name,
-                    (holder->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
-                    holder->GetCasterGuid().GetString().c_str(), aur->GetStackAmount());
+                                aur->GetModifier()->m_auraname, aur->GetAuraDuration(), aur->GetAuraMaxDuration(),
+                                name,
+                                (holder->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
+                                holder->GetCasterGuid().GetString().c_str(), aur->GetStackAmount());
             }
         }
     }
@@ -101,14 +101,14 @@ bool ChatHandler::HandleListAurasCommand(char* /*args*/)
                 ss_name << "|cffffffff|Hspell:" << (*itr)->GetId() << "|h[" << name << "]|h|r";
 
                 PSendSysMessage(LANG_COMMAND_TARGET_AURASIMPLE, (*itr)->GetId(), (*itr)->GetEffIndex(),
-                    ss_name.str().c_str(), ((*itr)->GetHolder()->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
-                    (*itr)->GetCasterGuid().GetString().c_str());
+                                ss_name.str().c_str(), ((*itr)->GetHolder()->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
+                                (*itr)->GetCasterGuid().GetString().c_str());
             }
             else
             {
                 PSendSysMessage(LANG_COMMAND_TARGET_AURASIMPLE, (*itr)->GetId(), (*itr)->GetEffIndex(),
-                    name, ((*itr)->GetHolder()->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
-                    (*itr)->GetCasterGuid().GetString().c_str());
+                                name, ((*itr)->GetHolder()->IsPassive() ? passiveStr : ""), (talent ? talentStr : ""),
+                                (*itr)->GetCasterGuid().GetString().c_str());
             }
         }
     }
@@ -199,11 +199,11 @@ bool ChatHandler::HandleListItemCommand(char* args)
     }
 
     result = CharacterDatabase.PQuery(
-        //          0        1             2             3        4                  5
-        "SELECT `ci`.`item`, `cibag`.`slot` AS bag, `ci`.`slot`, `ci`.`guid`, `characters`.`account`,`characters`.`name` "
-        "FROM `character_inventory` AS `ci` LEFT JOIN `character_inventory` AS cibag ON (`cibag`.`item`=`ci`.`bag`),`characters` "
-        "WHERE `ci`.`item_template`='%u' AND `ci`.`guid` = `characters`.`guid` LIMIT %u ",
-        item_id, uint32(count));
+                 //          0        1             2             3        4                  5
+                 "SELECT `ci`.`item`, `cibag`.`slot` AS bag, `ci`.`slot`, `ci`.`guid`, `characters`.`account`,`characters`.`name` "
+                 "FROM `character_inventory` AS `ci` LEFT JOIN `character_inventory` AS cibag ON (`cibag`.`item`=`ci`.`bag`),`characters` "
+                 "WHERE `ci`.`item_template`='%u' AND `ci`.`guid` = `characters`.`guid` LIMIT %u ",
+                 item_id, uint32(count));
 
     if (result)
     {
@@ -236,8 +236,9 @@ bool ChatHandler::HandleListItemCommand(char* args)
             }
 
             PSendSysMessage(LANG_ITEMLIST_SLOT,
-                item_guid, owner_name.c_str(), owner_guid, owner_acc, item_pos);
-        } while (result->NextRow());
+                            item_guid, owner_name.c_str(), owner_guid, owner_acc, item_pos);
+        }
+        while (result->NextRow());
 
         uint32 res_count = uint32(result->GetRowCount());
 
@@ -265,11 +266,11 @@ bool ChatHandler::HandleListItemCommand(char* args)
     if (count > 0)
     {
         result = CharacterDatabase.PQuery(
-            //          0                     1            2              3               4            5               6
-            "SELECT `mail_items`.`item_guid`, `mail`.`sender`, `mail`.`receiver`, `char_s`.`account`, `char_s`.`name`, `char_r`.`account`, `char_r`.`name` "
-            "FROM `mail`,`mail_items`,`characters` as char_s,`characters` as char_r "
-            "WHERE `mail_items`.`item_template`='%u' AND `char_s`.`guid` = `mail`.`sender` AND `char_r`.`guid` = `mail`.`receiver` AND `mail`.`id`=`mail_items`.`mail_id` LIMIT %u",
-            item_id, uint32(count));
+                     //          0                     1            2              3               4            5               6
+                     "SELECT `mail_items`.`item_guid`, `mail`.`sender`, `mail`.`receiver`, `char_s`.`account`, `char_s`.`name`, `char_r`.`account`, `char_r`.`name` "
+                     "FROM `mail`,`mail_items`,`characters` as char_s,`characters` as char_r "
+                     "WHERE `mail_items`.`item_template`='%u' AND `char_s`.`guid` = `mail`.`sender` AND `char_r`.`guid` = `mail`.`receiver` AND `mail`.`id`=`mail_items`.`mail_id` LIMIT %u",
+                     item_id, uint32(count));
     }
     else
     {
@@ -292,8 +293,9 @@ bool ChatHandler::HandleListItemCommand(char* args)
             char const* item_pos = "[in mail]";
 
             PSendSysMessage(LANG_ITEMLIST_MAIL,
-                item_guid, item_s_name.c_str(), item_s, item_s_acc, item_r_name.c_str(), item_r, item_r_acc, item_pos);
-        } while (result->NextRow());
+                            item_guid, item_s_name.c_str(), item_s, item_s_acc, item_r_name.c_str(), item_r, item_r_acc, item_pos);
+        }
+        while (result->NextRow());
 
         uint32 res_count = uint32(result->GetRowCount());
 
@@ -321,10 +323,10 @@ bool ChatHandler::HandleListItemCommand(char* args)
     if (count > 0)
     {
         result = CharacterDatabase.PQuery(
-            //           0                      1                       2                   3
-            "SELECT  `auction`.`itemguid`, `auction`.`itemowner`, `characters`.`account`, `characters`.`name` "
-            "FROM `auction`,`characters` WHERE `auction`.`item_template`='%u' AND `characters`.`guid` = `auction`.`itemowner` LIMIT %u",
-            item_id, uint32(count));
+                     //           0                      1                       2                   3
+                     "SELECT  `auction`.`itemguid`, `auction`.`itemowner`, `characters`.`account`, `characters`.`name` "
+                     "FROM `auction`,`characters` WHERE `auction`.`item_template`='%u' AND `characters`.`guid` = `auction`.`itemowner` LIMIT %u",
+                     item_id, uint32(count));
     }
     else
     {
@@ -344,7 +346,8 @@ bool ChatHandler::HandleListItemCommand(char* args)
             char const* item_pos = "[in auction]";
 
             PSendSysMessage(LANG_ITEMLIST_AUCTION, item_guid, owner_name.c_str(), owner, owner_acc, item_pos);
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
 
         delete result;
     }
@@ -405,11 +408,11 @@ bool ChatHandler::HandleListObjectCommand(char* args)
     {
         Player* pl = m_session->GetPlayer();
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map`, (POW(`position_x` - '%f', 2) + POW(`position_y` - '%f', 2) + POW(`position_z` - '%f', 2)) AS order_ FROM `gameobject` WHERE `id` = '%u' ORDER BY `order_` ASC LIMIT %u",
-            pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), go_id, uint32(count));
+                                      pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), go_id, uint32(count));
     }
     else
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map` FROM `gameobject` WHERE `id` = '%u' LIMIT %u",
-            go_id, uint32(count));
+                                      go_id, uint32(count));
 
     if (result)
     {
@@ -430,7 +433,8 @@ bool ChatHandler::HandleListObjectCommand(char* args)
             {
                 PSendSysMessage(LANG_GO_LIST_CONSOLE, guid, PrepareStringNpcOrGoSpawnInformation<GameObject>(guid).c_str(), gInfo->name, x, y, z, mapid);
             }
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
 
         delete result;
     }
@@ -483,11 +487,11 @@ bool ChatHandler::HandleListCreatureCommand(char* args)
     {
         Player* pl = m_session->GetPlayer();
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map`, (POW(`position_x` - '%f', 2) + POW(`position_y` - '%f', 2) + POW(`position_z` - '%f', 2)) AS order_ FROM `creature` WHERE `id` = '%u' ORDER BY `order_` ASC LIMIT %u",
-            pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), cr_id, uint32(count));
+                                      pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), cr_id, uint32(count));
     }
     else
         result = WorldDatabase.PQuery("SELECT `guid`, `position_x`, `position_y`, `position_z`, `map` FROM `creature` WHERE `id` = '%u' LIMIT %u",
-            cr_id, uint32(count));
+                                      cr_id, uint32(count));
 
     if (result)
     {
@@ -508,7 +512,8 @@ bool ChatHandler::HandleListCreatureCommand(char* args)
             {
                 PSendSysMessage(LANG_CREATURE_LIST_CONSOLE, guid, PrepareStringNpcOrGoSpawnInformation<Creature>(guid).c_str(), cInfo->Name, x, y, z, mapid);
             }
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
 
         delete result;
     }

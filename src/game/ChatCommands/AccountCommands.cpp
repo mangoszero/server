@@ -23,7 +23,7 @@
  */
 
 /*
-*   Account related commands    
+*   Account related commands
 */
 
 #include "World.h"
@@ -91,18 +91,18 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
 
     switch (result)
     {
-    case AOR_OK:
-        SendSysMessage(LANG_COMMAND_PASSWORD);
-        break;
-    case AOR_PASS_TOO_LONG:
-        SendSysMessage(LANG_PASSWORD_TOO_LONG);
-        SetSentErrorMessage(true);
-        return false;
-    case AOR_NAME_NOT_EXIST:                            // not possible case, don't want get account name for output
-    default:
-        SendSysMessage(LANG_COMMAND_NOTCHANGEPASSWORD);
-        SetSentErrorMessage(true);
-        return false;
+        case AOR_OK:
+            SendSysMessage(LANG_COMMAND_PASSWORD);
+            break;
+        case AOR_PASS_TOO_LONG:
+            SendSysMessage(LANG_PASSWORD_TOO_LONG);
+            SetSentErrorMessage(true);
+            return false;
+        case AOR_NAME_NOT_EXIST:                            // not possible case, don't want get account name for output
+        default:
+            SendSysMessage(LANG_COMMAND_NOTCHANGEPASSWORD);
+            SetSentErrorMessage(true);
+            return false;
     }
 
     // OK, but avoid normal report for hide passwords, but log use command for anyone
@@ -186,21 +186,21 @@ bool ChatHandler::HandleAccountDeleteCommand(char* args)
     AccountOpResult result = sAccountMgr.DeleteAccount(account_id);
     switch (result)
     {
-    case AOR_OK:
-        PSendSysMessage(LANG_ACCOUNT_DELETED, account_name.c_str());
-        break;
-    case AOR_NAME_NOT_EXIST:
-        PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
-    case AOR_DB_INTERNAL_ERROR:
-        PSendSysMessage(LANG_ACCOUNT_NOT_DELETED_SQL_ERROR, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
-    default:
-        PSendSysMessage(LANG_ACCOUNT_NOT_DELETED, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
+        case AOR_OK:
+            PSendSysMessage(LANG_ACCOUNT_DELETED, account_name.c_str());
+            break;
+        case AOR_NAME_NOT_EXIST:
+            PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        case AOR_DB_INTERNAL_ERROR:
+            PSendSysMessage(LANG_ACCOUNT_NOT_DELETED_SQL_ERROR, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        default:
+            PSendSysMessage(LANG_ACCOUNT_NOT_DELETED, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
     }
 
     return true;
@@ -225,25 +225,25 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     result = sAccountMgr.CreateAccount(account_name, password);
     switch (result)
     {
-    case AOR_OK:
-        PSendSysMessage(LANG_ACCOUNT_CREATED, account_name.c_str());
-        break;
-    case AOR_NAME_TOO_LONG:
-        SendSysMessage(LANG_ACCOUNT_TOO_LONG);
-        SetSentErrorMessage(true);
-        return false;
-    case AOR_NAME_ALREADY_EXIST:
-        SendSysMessage(LANG_ACCOUNT_ALREADY_EXIST);
-        SetSentErrorMessage(true);
-        return false;
-    case AOR_DB_INTERNAL_ERROR:
-        PSendSysMessage(LANG_ACCOUNT_NOT_CREATED_SQL_ERROR, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
-    default:
-        PSendSysMessage(LANG_ACCOUNT_NOT_CREATED, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
+        case AOR_OK:
+            PSendSysMessage(LANG_ACCOUNT_CREATED, account_name.c_str());
+            break;
+        case AOR_NAME_TOO_LONG:
+            SendSysMessage(LANG_ACCOUNT_TOO_LONG);
+            SetSentErrorMessage(true);
+            return false;
+        case AOR_NAME_ALREADY_EXIST:
+            SendSysMessage(LANG_ACCOUNT_ALREADY_EXIST);
+            SetSentErrorMessage(true);
+            return false;
+        case AOR_DB_INTERNAL_ERROR:
+            PSendSysMessage(LANG_ACCOUNT_NOT_CREATED_SQL_ERROR, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        default:
+            PSendSysMessage(LANG_ACCOUNT_NOT_CREATED, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
     }
 
     return true;
@@ -286,8 +286,7 @@ bool ChatHandler::HandleAccountSetAddonCommand(char* args)
 
     // Let set addon state only for lesser (strong) security level
     // or to self account
-    if (GetAccountId() && GetAccountId() != account_id &&
-        HasLowerSecurityAccount(NULL, account_id, true))
+    if (GetAccountId() && GetAccountId() != account_id && HasLowerSecurityAccount(NULL, account_id, true))
     {
         return false;
     }
@@ -400,21 +399,21 @@ bool ChatHandler::HandleAccountSetPasswordCommand(char* args)
 
     switch (result)
     {
-    case AOR_OK:
-        SendSysMessage(LANG_COMMAND_PASSWORD);
-        break;
-    case AOR_NAME_NOT_EXIST:
-        PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
-        SetSentErrorMessage(true);
-        return false;
-    case AOR_PASS_TOO_LONG:
-        SendSysMessage(LANG_PASSWORD_TOO_LONG);
-        SetSentErrorMessage(true);
-        return false;
-    default:
-        SendSysMessage(LANG_COMMAND_NOTCHANGEPASSWORD);
-        SetSentErrorMessage(true);
-        return false;
+        case AOR_OK:
+            SendSysMessage(LANG_COMMAND_PASSWORD);
+            break;
+        case AOR_NAME_NOT_EXIST:
+            PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
+            SetSentErrorMessage(true);
+            return false;
+        case AOR_PASS_TOO_LONG:
+            SendSysMessage(LANG_PASSWORD_TOO_LONG);
+            SetSentErrorMessage(true);
+            return false;
+        default:
+            SendSysMessage(LANG_COMMAND_NOTCHANGEPASSWORD);
+            SetSentErrorMessage(true);
+            return false;
     }
 
     // OK, but avoid normal report for hide passwords, but log use command for anyone

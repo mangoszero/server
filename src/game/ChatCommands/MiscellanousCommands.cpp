@@ -79,19 +79,19 @@ bool ChatHandler::HandleLoadScriptsCommand(char* args)
 
     switch (sScriptMgr.LoadScriptLibrary(args))
     {
-    case SCRIPT_LOAD_OK:
-        sWorld.SendWorldText(LANG_SCRIPTS_RELOADED_ANNOUNCE);
-        SendSysMessage(LANG_SCRIPTS_RELOADED_OK);
-        break;
-    case SCRIPT_LOAD_ERR_NOT_FOUND:
-        SendSysMessage(LANG_SCRIPTS_NOT_FOUND);
-        break;
-    case SCRIPT_LOAD_ERR_WRONG_API:
-        SendSysMessage(LANG_SCRIPTS_WRONG_API);
-        break;
-    case SCRIPT_LOAD_ERR_OUTDATED:
-        SendSysMessage(LANG_SCRIPTS_OUTDATED);
-        break;
+        case SCRIPT_LOAD_OK:
+            sWorld.SendWorldText(LANG_SCRIPTS_RELOADED_ANNOUNCE);
+            SendSysMessage(LANG_SCRIPTS_RELOADED_OK);
+            break;
+        case SCRIPT_LOAD_ERR_NOT_FOUND:
+            SendSysMessage(LANG_SCRIPTS_NOT_FOUND);
+            break;
+        case SCRIPT_LOAD_ERR_WRONG_API:
+            SendSysMessage(LANG_SCRIPTS_WRONG_API);
+            break;
+        case SCRIPT_LOAD_ERR_OUTDATED:
+            SendSysMessage(LANG_SCRIPTS_OUTDATED);
+            break;
     }
 
     return true;
@@ -162,25 +162,25 @@ bool ChatHandler::HandlePDumpLoadCommand(char* args)
 
     switch (PlayerDumpReader().LoadDump(file, account_id, name, lowguid))
     {
-    case DUMP_SUCCESS:
-        PSendSysMessage(LANG_COMMAND_IMPORT_SUCCESS);
-        break;
-    case DUMP_FILE_OPEN_ERROR:
-        PSendSysMessage(LANG_FILE_OPEN_FAIL, file);
-        SetSentErrorMessage(true);
-        return false;
-    case DUMP_FILE_BROKEN:
-        PSendSysMessage(LANG_DUMP_BROKEN, file);
-        SetSentErrorMessage(true);
-        return false;
-    case DUMP_TOO_MANY_CHARS:
-        PSendSysMessage(LANG_ACCOUNT_CHARACTER_LIST_FULL, account_name.c_str(), account_id);
-        SetSentErrorMessage(true);
-        return false;
-    default:
-        PSendSysMessage(LANG_COMMAND_IMPORT_FAILED);
-        SetSentErrorMessage(true);
-        return false;
+        case DUMP_SUCCESS:
+            PSendSysMessage(LANG_COMMAND_IMPORT_SUCCESS);
+            break;
+        case DUMP_FILE_OPEN_ERROR:
+            PSendSysMessage(LANG_FILE_OPEN_FAIL, file);
+            SetSentErrorMessage(true);
+            return false;
+        case DUMP_FILE_BROKEN:
+            PSendSysMessage(LANG_DUMP_BROKEN, file);
+            SetSentErrorMessage(true);
+            return false;
+        case DUMP_TOO_MANY_CHARS:
+            PSendSysMessage(LANG_ACCOUNT_CHARACTER_LIST_FULL, account_name.c_str(), account_id);
+            SetSentErrorMessage(true);
+            return false;
+        default:
+            PSendSysMessage(LANG_COMMAND_IMPORT_FAILED);
+            SetSentErrorMessage(true);
+            return false;
     }
 
     return true;
@@ -238,22 +238,18 @@ bool ChatHandler::HandlePDumpWriteCommand(char* args)
 
     switch (PlayerDumpWriter().WriteDump(file, lowguid))
     {
-    case DUMP_SUCCESS:
-        PSendSysMessage(LANG_COMMAND_EXPORT_SUCCESS);
-        break;
-    case DUMP_FILE_OPEN_ERROR:
-        PSendSysMessage(LANG_FILE_OPEN_FAIL, file);
-        SetSentErrorMessage(true);
-        return false;
-    default:
-        PSendSysMessage(LANG_COMMAND_EXPORT_FAILED);
-        SetSentErrorMessage(true);
-        return false;
+        case DUMP_SUCCESS:
+            PSendSysMessage(LANG_COMMAND_EXPORT_SUCCESS);
+            break;
+        case DUMP_FILE_OPEN_ERROR:
+            PSendSysMessage(LANG_FILE_OPEN_FAIL, file);
+            SetSentErrorMessage(true);
+            return false;
+        default:
+            PSendSysMessage(LANG_COMMAND_EXPORT_FAILED);
+            SetSentErrorMessage(true);
+            return false;
     }
 
     return true;
 }
-
-
-
-

@@ -422,11 +422,11 @@ bool ChatHandler::HandleServerPLimitCommand(char* args)
     char const* secName;
     switch (allowedAccountType)
     {
-    case SEC_PLAYER:        secName = "Player";        break;
-    case SEC_MODERATOR:     secName = "Moderator";     break;
-    case SEC_GAMEMASTER:    secName = "Gamemaster";    break;
-    case SEC_ADMINISTRATOR: secName = "Administrator"; break;
-    default:                secName = "<unknown>";     break;
+        case SEC_PLAYER:        secName = "Player";        break;
+        case SEC_MODERATOR:     secName = "Moderator";     break;
+        case SEC_GAMEMASTER:    secName = "Gamemaster";    break;
+        case SEC_ADMINISTRATOR: secName = "Administrator"; break;
+        default:                secName = "<unknown>";     break;
     }
 
     PSendSysMessage("Player limits: amount %u, min. security level %s.", pLimit, secName);

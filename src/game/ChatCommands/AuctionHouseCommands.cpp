@@ -146,7 +146,8 @@ bool ChatHandler::HandleAuctionItemCommand(char* args)
         MANGOS_ASSERT(newItem);
 
         auctionHouse->AddAuction(auctionHouseEntry, newItem, etime, price, buyout);
-    } while (item_count);
+    }
+    while (item_count);
 
     return true;
 }

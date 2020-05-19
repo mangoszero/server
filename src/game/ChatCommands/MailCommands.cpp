@@ -49,7 +49,7 @@ bool ChatHandler::HandleSendMailCommand(char* args)
 
     MailDraft draft;
 
-    // Subject and content should not be empty : 
+    // Subject and content should not be empty :
     if (!*args)
     {
         return false;
@@ -152,11 +152,12 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
         uint32 item_id = 0;
         uint32 item_count = 1;
         if (sscanf(itemStr, "%u:%u", &item_id, &item_count) != 2)
+        {
             if (sscanf(itemStr, "%u", &item_id) != 1)
             {
                 return false;
             }
-
+        }
         if (!item_id)
         {
             PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, item_id);

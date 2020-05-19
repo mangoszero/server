@@ -51,7 +51,8 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                 PSendSysMessage("%s", fields2[0].GetString());
                 delete banresult;
             }
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
     }
     // Console wide output
     else
@@ -91,22 +92,24 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                            account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                            fields2[2].GetString(), fields2[3].GetString());
+                                        account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                        fields2[2].GetString(), fields2[3].GetString());
                     }
                     else
                     {
                         time_t t_unban = fields2[1].GetUInt64();
                         tm* aTm_unban = localtime(&t_unban);
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                            account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                            aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
-                            fields2[2].GetString(), fields2[3].GetString());
+                                        account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                        aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
+                                        fields2[2].GetString(), fields2[3].GetString());
                     }
-                } while (banInfo->NextRow());
+                }
+                while (banInfo->NextRow());
                 delete banInfo;
             }
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
         SendSysMessage("===============================================================================");
     }
 
@@ -145,59 +148,59 @@ bool ChatHandler::HandleBanHelper(BanMode mode, char* args)
 
     switch (mode)
     {
-    case BAN_ACCOUNT:
-        if (!AccountMgr::normalizeString(nameOrIP))
-        {
-            PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    case BAN_CHARACTER:
-        if (!normalizePlayerName(nameOrIP))
-        {
-            SendSysMessage(LANG_PLAYER_NOT_FOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    case BAN_IP:
-        if (!IsIPAddress(nameOrIP.c_str()))
-        {
-            return false;
-        }
-        break;
+        case BAN_ACCOUNT:
+            if (!AccountMgr::normalizeString(nameOrIP))
+            {
+                PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        case BAN_CHARACTER:
+            if (!normalizePlayerName(nameOrIP))
+            {
+                SendSysMessage(LANG_PLAYER_NOT_FOUND);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        case BAN_IP:
+            if (!IsIPAddress(nameOrIP.c_str()))
+            {
+                return false;
+            }
+            break;
     }
 
     switch (sWorld.BanAccount(mode, nameOrIP, duration_secs, reason, m_session ? m_session->GetPlayerName() : ""))
     {
-    case BAN_SUCCESS:
-        if (duration_secs > 0)
-        {
-            PSendSysMessage(LANG_BAN_YOUBANNED, nameOrIP.c_str(), secsToTimeString(duration_secs, true).c_str(), reason);
-        }
-        else
-        {
-            PSendSysMessage(LANG_BAN_YOUPERMBANNED, nameOrIP.c_str(), reason);
-        }
-        break;
-    case BAN_SYNTAX_ERROR:
-        return false;
-    case BAN_NOTFOUND:
-        switch (mode)
-        {
-        default:
-            PSendSysMessage(LANG_BAN_NOTFOUND, "account", nameOrIP.c_str());
+        case BAN_SUCCESS:
+            if (duration_secs > 0)
+            {
+                PSendSysMessage(LANG_BAN_YOUBANNED, nameOrIP.c_str(), secsToTimeString(duration_secs, true).c_str(), reason);
+            }
+            else
+            {
+                PSendSysMessage(LANG_BAN_YOUPERMBANNED, nameOrIP.c_str(), reason);
+            }
             break;
-        case BAN_CHARACTER:
-            PSendSysMessage(LANG_BAN_NOTFOUND, "character", nameOrIP.c_str());
-            break;
-        case BAN_IP:
-            PSendSysMessage(LANG_BAN_NOTFOUND, "ip", nameOrIP.c_str());
-            break;
-        }
-        SetSentErrorMessage(true);
-        return false;
+        case BAN_SYNTAX_ERROR:
+            return false;
+        case BAN_NOTFOUND:
+            switch (mode)
+            {
+                default:
+                    PSendSysMessage(LANG_BAN_NOTFOUND, "account", nameOrIP.c_str());
+                    break;
+                case BAN_CHARACTER:
+                    PSendSysMessage(LANG_BAN_NOTFOUND, "character", nameOrIP.c_str());
+                    break;
+                case BAN_IP:
+                    PSendSysMessage(LANG_BAN_NOTFOUND, "ip", nameOrIP.c_str());
+                    break;
+            }
+            SetSentErrorMessage(true);
+            return false;
     }
 
     return true;
@@ -245,8 +248,9 @@ bool ChatHandler::HandleBanInfoHelper(uint32 accountid, char const* accountname)
         bool permanent = (fields[1].GetUInt64() == (uint64)0);
         std::string bantime = permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[1].GetUInt64(), true);
         PSendSysMessage(LANG_BANINFO_HISTORYENTRY,
-            fields[0].GetString(), bantime.c_str(), active ? GetMangosString(LANG_BANINFO_YES) : GetMangosString(LANG_BANINFO_NO), fields[4].GetString(), fields[5].GetString());
-    } while (result->NextRow());
+                        fields[0].GetString(), bantime.c_str(), active ? GetMangosString(LANG_BANINFO_YES) : GetMangosString(LANG_BANINFO_NO), fields[4].GetString(), fields[5].GetString());
+    }
+    while (result->NextRow());
 
     delete result;
     return true;
@@ -283,8 +287,8 @@ bool ChatHandler::HandleBanInfoIPCommand(char* args)
     Field* fields = result->Fetch();
     bool permanent = !fields[6].GetUInt64();
     PSendSysMessage(LANG_BANINFO_IPENTRY,
-        fields[0].GetString(), fields[1].GetString(), permanent ? GetMangosString(LANG_BANINFO_NEVER) : fields[2].GetString(),
-        permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[3].GetUInt64(), true).c_str(), fields[4].GetString(), fields[5].GetString());
+                    fields[0].GetString(), fields[1].GetString(), permanent ? GetMangosString(LANG_BANINFO_NEVER) : fields[2].GetString(),
+                    permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[3].GetUInt64(), true).c_str(), fields[4].GetString(), fields[5].GetString());
     delete result;
     return true;
 }
@@ -344,14 +348,14 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
     if (filter.empty())
     {
         result = LoginDatabase.Query("SELECT `ip`,`bandate`,`unbandate`,`bannedby`,`banreason` FROM `ip_banned`"
-            " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP())"
-            " ORDER BY `unbandate`");
+                                     " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP())"
+                                     " ORDER BY `unbandate`");
     }
     else
     {
         result = LoginDatabase.PQuery("SELECT `ip`,`bandate`,`unbandate`,`bannedby`,`banreason` FROM `ip_banned`"
-            " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP()) AND `ip` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")
-            " ORDER BY `unbandate`", filter.c_str());
+                                      " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP()) AND `ip` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")
+                                      " ORDER BY `unbandate`", filter.c_str());
     }
 
     if (!result)
@@ -368,7 +372,8 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
         {
             Field* fields = result->Fetch();
             PSendSysMessage("%s", fields[0].GetString());
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
     }
     // Console wide output
     else
@@ -385,19 +390,20 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
             if (fields[1].GetUInt64() == fields[2].GetUInt64())
             {
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                    fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                    fields[3].GetString(), fields[4].GetString());
+                                fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                fields[3].GetString(), fields[4].GetString());
             }
             else
             {
                 time_t t_unban = fields[2].GetUInt64();
                 tm* aTm_unban = localtime(&t_unban);
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                    fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                    aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
-                    fields[3].GetString(), fields[4].GetString());
+                                fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
+                                fields[3].GetString(), fields[4].GetString());
             }
-        } while (result->NextRow());
+        }
+        while (result->NextRow());
         SendSysMessage("===============================================================================");
     }
 
@@ -440,13 +446,13 @@ bool ChatHandler::HandleBanListAccountCommand(char* args)
     if (filter.empty())
     {
         result = LoginDatabase.Query("SELECT `account`.`id`, `username` FROM `account`, `account_banned`"
-            " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 GROUP BY `account`.`id`");
+                                     " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 GROUP BY `account`.`id`");
     }
     else
     {
         result = LoginDatabase.PQuery("SELECT `account`.`id`, `username` FROM `account`, `account_banned`"
-            " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 AND `username` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" GROUP BY `account`.`id`",
-            filter.c_str());
+                                      " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 AND `username` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" GROUP BY `account`.`id`",
+                                      filter.c_str());
     }
 
     if (!result)
@@ -479,28 +485,28 @@ bool ChatHandler::HandleUnBanHelper(BanMode mode, char* args)
 
     switch (mode)
     {
-    case BAN_ACCOUNT:
-        if (!AccountMgr::normalizeString(nameOrIP))
-        {
-            PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    case BAN_CHARACTER:
-        if (!normalizePlayerName(nameOrIP))
-        {
-            SendSysMessage(LANG_PLAYER_NOT_FOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    case BAN_IP:
-        if (!IsIPAddress(nameOrIP.c_str()))
-        {
-            return false;
-        }
-        break;
+        case BAN_ACCOUNT:
+            if (!AccountMgr::normalizeString(nameOrIP))
+            {
+                PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        case BAN_CHARACTER:
+            if (!normalizePlayerName(nameOrIP))
+            {
+                SendSysMessage(LANG_PLAYER_NOT_FOUND);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        case BAN_IP:
+            if (!IsIPAddress(nameOrIP.c_str()))
+            {
+                return false;
+            }
+            break;
     }
 
     if (sWorld.RemoveBanAccount(mode, nameOrIP))

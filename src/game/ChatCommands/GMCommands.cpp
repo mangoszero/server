@@ -183,177 +183,180 @@ bool ChatHandler::HandleWaterwalkCommand(char* args)
 // Enable\Dissable GM Mode
 bool ChatHandler::HandleGMCommand(char* args)
 {
-	if (!*args)
-	{
-		if (m_session->GetPlayer()->isGameMaster())
-		{
-			m_session->SendNotification(LANG_GM_ON);
-		}
-		else
-		{
-			m_session->SendNotification(LANG_GM_OFF);
-		}
-		return true;
-	}
+    if (!*args)
+    {
+        if (m_session->GetPlayer()->isGameMaster())
+        {
+            m_session->SendNotification(LANG_GM_ON);
+        }
+        else
+        {
+            m_session->SendNotification(LANG_GM_OFF);
+        }
+        return true;
+    }
 
-	std::string argstr = (char*)args;
+    std::string argstr = (char*)args;
 
-	if (argstr == "on")
-	{
-		m_session->GetPlayer()->SetGameMaster(true);
-		m_session->SendNotification(LANG_GM_ON);
+    if (argstr == "on")
+    {
+        m_session->GetPlayer()->SetGameMaster(true);
+        m_session->SendNotification(LANG_GM_ON);
 #ifdef _DEBUG_VMAPS
-		VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-		vMapManager->processCommand("stoplog");
+        VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
+        vMapManager->processCommand("stoplog");
 #endif
-		return true;
-	}
 
-	if (argstr == "off")
-	{
-		m_session->GetPlayer()->SetGameMaster(false);
-		m_session->SendNotification(LANG_GM_OFF);
+        return true;
+    }
+
+    if (argstr == "off")
+    {
+        m_session->GetPlayer()->SetGameMaster(false);
+        m_session->SendNotification(LANG_GM_OFF);
 #ifdef _DEBUG_VMAPS
-		VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-		vMapManager->processCommand("startlog");
+        VMAP::IVMapManager *vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
+        vMapManager->processCommand("startlog");
 #endif
-		return true;
-	}
 
-	SendSysMessage(LANG_USE_BOL);
-	SetSentErrorMessage(true);
-	return false;
+        return true;
+    }
+
+    SendSysMessage(LANG_USE_BOL);
+    SetSentErrorMessage(true);
+    return false;
 }
 
 // Enable\Dissable Invisible mode
 bool ChatHandler::HandleGMVisibleCommand(char* args)
 {
-	if (!*args)
-	{
-		PSendSysMessage(LANG_YOU_ARE, m_session->GetPlayer()->isGMVisible() ? GetMangosString(LANG_VISIBLE) : GetMangosString(LANG_INVISIBLE));
-		return true;
-	}
+    if (!*args)
+    {
+        PSendSysMessage(LANG_YOU_ARE, m_session->GetPlayer()->isGMVisible() ?  GetMangosString(LANG_VISIBLE) : GetMangosString(LANG_INVISIBLE));
+        return true;
+    }
 
-	bool value;
-	if (!ExtractOnOff(&args, value))
-	{
-		SendSysMessage(LANG_USE_BOL);
-		SetSentErrorMessage(true);
-		return false;
-	}
+    bool value;
+    if (!ExtractOnOff(&args, value))
+    {
+        SendSysMessage(LANG_USE_BOL);
+        SetSentErrorMessage(true);
+        return false;
+    }
 
-	Player* player = m_session->GetPlayer();
-	SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
-	if (!invisibleAuraInfo || !IsSpellAppliesAura(invisibleAuraInfo))
-	{
-		invisibleAuraInfo = NULL;
-	}
+    Player* player = m_session->GetPlayer();
+    SpellEntry const* invisibleAuraInfo = sSpellStore.LookupEntry(sWorld.getConfig(CONFIG_UINT32_GM_INVISIBLE_AURA));
+    if (!invisibleAuraInfo || !IsSpellAppliesAura(invisibleAuraInfo))
+    {
+        invisibleAuraInfo = NULL;
+    }
 
-	if (value)
-	{
-		player->SetGMVisible(true);
-		m_session->SendNotification(LANG_INVISIBLE_VISIBLE);
-		if (invisibleAuraInfo)
-		{
-			player->RemoveAurasDueToSpell(invisibleAuraInfo->Id);
-		}
-	}
-	else
-	{
-		m_session->SendNotification(LANG_INVISIBLE_INVISIBLE);
-		player->SetGMVisible(false);
-		if (invisibleAuraInfo)
-		{
-			player->CastSpell(player, invisibleAuraInfo, true);
-		}
-	}
+    if (value)
+    {
+        player->SetGMVisible(true);
+        m_session->SendNotification(LANG_INVISIBLE_VISIBLE);
+        if (invisibleAuraInfo)
+        {
+            player->RemoveAurasDueToSpell(invisibleAuraInfo->Id);
+        }
+    }
+    else
+    {
+        m_session->SendNotification(LANG_INVISIBLE_INVISIBLE);
+        player->SetGMVisible(false);
+        if (invisibleAuraInfo)
+        {
+            player->CastSpell(player, invisibleAuraInfo, true);
+        }
+    }
 
-	return true;
+    return true;
 }
 
 bool ChatHandler::HandleGMFlyCommand(char* args)
 {
-	bool value;
-	if (!ExtractOnOff(&args, value))
-	{
-		SendSysMessage(LANG_USE_BOL);
-		SetSentErrorMessage(true);
-		return false;
-	}
+    bool value;
+    if (!ExtractOnOff(&args, value))
+    {
+        SendSysMessage(LANG_USE_BOL);
+        SetSentErrorMessage(true);
+        return false;
+    }
 
-	Player* target = getSelectedPlayer();
-	if (!target)
-	{
-		target = m_session->GetPlayer();
-	}
+    Player* target = getSelectedPlayer();
+    if (!target)
+    {
+        target = m_session->GetPlayer();
+    }
 
-	// [-ZERO] Need reimplement in another way
-	// GM fly wil be achieved with the swimming moveflag
-	// Warning : Still buggy when Jump
-	target->SetCanFly(value);
-	PSendSysMessage(LANG_COMMAND_FLYMODE_STATUS, GetNameLink(target).c_str(), args);
-	return true;
+    // [-ZERO] Need reimplement in another way
+    // GM fly wil be achieved with the swimming moveflag
+    // Warning : Still buggy when Jump
+    target->SetCanFly(value);
+    PSendSysMessage(LANG_COMMAND_FLYMODE_STATUS, GetNameLink(target).c_str(), args);
+    return true;
 }
 
 bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 {
-	std::list< std::pair<std::string, bool> > names;
-	sObjectAccessor.DoForAllPlayers([&names, this](Player *player)
-	{
-		AccountTypes security = player->GetSession()->GetSecurity();
-		if ((player->isGameMaster() || (security > SEC_PLAYER && security <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
-			(!m_session || player->IsVisibleGloballyFor(m_session->GetPlayer())))
-		{
-			names.push_back(std::make_pair<std::string, bool>(GetNameLink(player), player->isAcceptWhispers()));
-		}
-	});
+    std::list< std::pair<std::string, bool> > names;
+    sObjectAccessor.DoForAllPlayers([&names, this](Player *player)
+    {
+        AccountTypes security = player->GetSession()->GetSecurity();
+        if ((player->isGameMaster() || (security > SEC_PLAYER && security <= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_GM_LEVEL_IN_GM_LIST))) &&
+            (!m_session || player->IsVisibleGloballyFor(m_session->GetPlayer())))
+        {
+            names.push_back(std::make_pair<std::string, bool>(GetNameLink(player), player->isAcceptWhispers()));
+        }
+    });
 
-	if (!names.empty())
-	{
-		SendSysMessage(LANG_GMS_ON_SRV);
+    if (!names.empty())
+    {
+        SendSysMessage(LANG_GMS_ON_SRV);
 
-		char const* accepts = GetMangosString(LANG_GM_ACCEPTS_WHISPER);
-		char const* not_accept = GetMangosString(LANG_GM_NO_WHISPER);
-		for (std::list<std::pair< std::string, bool> >::const_iterator iter = names.begin(); iter != names.end(); ++iter)
-		{
-			PSendSysMessage("%s - %s", iter->first.c_str(), iter->second ? accepts : not_accept);
-		}
-	}
-	else
-	{
-		SendSysMessage(LANG_GMS_NOT_LOGGED);
-	}
+        char const* accepts = GetMangosString(LANG_GM_ACCEPTS_WHISPER);
+        char const* not_accept = GetMangosString(LANG_GM_NO_WHISPER);
+        for (std::list<std::pair< std::string, bool> >::const_iterator iter = names.begin(); iter != names.end(); ++iter)
+        {
+            PSendSysMessage("%s - %s", iter->first.c_str(), iter->second ? accepts : not_accept);
+        }
+    }
+    else
+    {
+        SendSysMessage(LANG_GMS_NOT_LOGGED);
+    }
 
-	return true;
+    return true;
 }
 
 /// Display the list of GMs
 bool ChatHandler::HandleGMListFullCommand(char* /*args*/)
 {
-	///- Get the accounts with GM Level >0
-	QueryResult* result = LoginDatabase.Query("SELECT `username`,`gmlevel` FROM `account` WHERE `gmlevel` > 0");
-	if (result)
-	{
-		SendSysMessage(LANG_GMLIST);
-		SendSysMessage("========================");
-		SendSysMessage(LANG_GMLIST_HEADER);
-		SendSysMessage("========================");
+    ///- Get the accounts with GM Level >0
+    QueryResult* result = LoginDatabase.Query("SELECT `username`,`gmlevel` FROM `account` WHERE `gmlevel` > 0");
+    if (result)
+    {
+        SendSysMessage(LANG_GMLIST);
+        SendSysMessage("========================");
+        SendSysMessage(LANG_GMLIST_HEADER);
+        SendSysMessage("========================");
 
-		///- Circle through them. Display username and GM level
-		do
-		{
-			Field* fields = result->Fetch();
-			PSendSysMessage("|%15s|%6s|", fields[0].GetString(), fields[1].GetString());
-		} while (result->NextRow());
+        ///- Circle through them. Display username and GM level
+        do
+        {
+            Field* fields = result->Fetch();
+            PSendSysMessage("|%15s|%6s|", fields[0].GetString(), fields[1].GetString());
+        }
+        while (result->NextRow());
 
-		PSendSysMessage("========================");
-		delete result;
-	}
-	else
-	{
-		PSendSysMessage(LANG_GMLIST_EMPTY);
-	}
-	return true;
+        PSendSysMessage("========================");
+        delete result;
+    }
+    else
+    {
+        PSendSysMessage(LANG_GMLIST_EMPTY);
+    }
+    return true;
 }
 
 // change standstate
@@ -425,5 +428,3 @@ bool ChatHandler::HandleChangeWeatherCommand(char* args)
 
     return true;
 }
-
-

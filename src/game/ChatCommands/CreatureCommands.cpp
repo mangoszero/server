@@ -28,10 +28,10 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
-#include "TemporarySummon.h"                      
-#include "WaypointManager.h"  
+#include "TemporarySummon.h"
+#include "WaypointManager.h"
 #include "PathFinder.h"                                     // for mmap commands
-#include "Totem.h"                      
+#include "Totem.h"
 
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"
@@ -315,9 +315,9 @@ bool ChatHandler::HandleNpcAIInfoCommand(char* /*args*/)
     char const* cstrAIClass = pTarget->AI() ? typeid(*pTarget->AI()).name() : " - ";
 
     PSendSysMessage(LANG_NPC_AI_NAMES,
-        strAI.empty() ? " - " : strAI.c_str(),
-        cstrAIClass ? cstrAIClass : " - ",
-        strScript.empty() ? " - " : strScript.c_str());
+                    strAI.empty() ? " - " : strAI.c_str(),
+                    cstrAIClass ? cstrAIClass : " - ",
+                    strScript.empty() ? " - " : strScript.c_str());
 
     if (pTarget->AI())
     {
@@ -435,31 +435,31 @@ bool ChatHandler::HandleNpcDeleteCommand(char* args)
 
     switch (unit->GetSubtype())
     {
-    case CREATURE_SUBTYPE_GENERIC:
-    {
-        unit->CombatStop();
-        if (CreatureData const* data = sObjectMgr.GetCreatureData(unit->GetGUIDLow()))
+        case CREATURE_SUBTYPE_GENERIC:
         {
-            Creature::AddToRemoveListInMaps(unit->GetGUIDLow(), data);
-            Creature::DeleteFromDB(unit->GetGUIDLow(), data);
+            unit->CombatStop();
+            if (CreatureData const* data = sObjectMgr.GetCreatureData(unit->GetGUIDLow()))
+            {
+                Creature::AddToRemoveListInMaps(unit->GetGUIDLow(), data);
+                Creature::DeleteFromDB(unit->GetGUIDLow(), data);
+            }
+            else
+            {
+                unit->AddObjectToRemoveList();
+            }
+            break;
         }
-        else
-        {
-            unit->AddObjectToRemoveList();
-        }
-        break;
-    }
-    case CREATURE_SUBTYPE_PET:
-        ((Pet*)unit)->Unsummon(PET_SAVE_AS_CURRENT);
-        break;
-    case CREATURE_SUBTYPE_TOTEM:
-        ((Totem*)unit)->UnSummon();
-        break;
-    case CREATURE_SUBTYPE_TEMPORARY_SUMMON:
-        ((TemporarySummon*)unit)->UnSummon();
-        break;
-    default:
-        return false;
+        case CREATURE_SUBTYPE_PET:
+            ((Pet*)unit)->Unsummon(PET_SAVE_AS_CURRENT);
+            break;
+        case CREATURE_SUBTYPE_TOTEM:
+            ((Totem*)unit)->UnSummon();
+            break;
+        case CREATURE_SUBTYPE_TEMPORARY_SUMMON:
+            ((TemporarySummon*)unit)->UnSummon();
+            break;
+        default:
+            return false;
     }
 
     SendSysMessage(LANG_COMMAND_DELCREATMESSAGE);

@@ -107,22 +107,22 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
     uint32 fmtId = m_session ? LANG_AHBOT_STATUS_FORMAT_CHAT : LANG_AHBOT_STATUS_FORMAT_CONSOLE;
 
     PSendSysMessage(fmtId, GetMangosString(LANG_AHBOT_STATUS_ITEM_COUNT),
-        statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount,
-        statusInfo[AUCTION_HOUSE_HORDE].ItemsCount,
-        statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount,
-        statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount +
-        statusInfo[AUCTION_HOUSE_HORDE].ItemsCount +
-        statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount);
+                    statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount,
+                    statusInfo[AUCTION_HOUSE_HORDE].ItemsCount,
+                    statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount,
+                    statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount +
+                    statusInfo[AUCTION_HOUSE_HORDE].ItemsCount +
+                    statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount);
 
     if (all)
     {
         PSendSysMessage(fmtId, GetMangosString(LANG_AHBOT_STATUS_ITEM_RATIO),
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO),
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO),
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO),
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO) +
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO) +
-            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO));
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO),
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO),
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO),
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO) +
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO) +
+                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO));
 
         if (!m_session)
         {
@@ -137,10 +137,10 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
 
         for (int i = 0; i < MAX_AUCTION_QUALITY; ++i)
             PSendSysMessage(fmtId, GetMangosString(ahbotQualityIds[i]),
-                statusInfo[AUCTION_HOUSE_ALLIANCE].QualityInfo[i],
-                statusInfo[AUCTION_HOUSE_HORDE].QualityInfo[i],
-                statusInfo[AUCTION_HOUSE_NEUTRAL].QualityInfo[i],
-                sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i)));
+                            statusInfo[AUCTION_HOUSE_ALLIANCE].QualityInfo[i],
+                            statusInfo[AUCTION_HOUSE_HORDE].QualityInfo[i],
+                            statusInfo[AUCTION_HOUSE_NEUTRAL].QualityInfo[i],
+                            sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i)));
     }
 
     if (!m_session)
@@ -184,7 +184,7 @@ bool ChatHandler::HandleAHBotItemsAmountQualityCommand(char* args)
     }
     sAuctionBot.SetItemsAmountForQuality(AuctionQuality(Q), qVal);
     PSendSysMessage(LANG_AHBOT_ITEMS_AMOUNT, GetMangosString(ahbotQualityIds[Q]),
-        sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(Q)));
+                    sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(Q)));
     return true;
 }
 
