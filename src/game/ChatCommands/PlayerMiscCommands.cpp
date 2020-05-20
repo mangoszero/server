@@ -250,5 +250,3 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr) { plr->SetAtLoginFlag(atLogin); });
     return true;
 }
-
-

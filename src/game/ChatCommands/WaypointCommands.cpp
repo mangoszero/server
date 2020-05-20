@@ -27,7 +27,7 @@
 #include "PointMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
 #include "TemporarySummon.h"
-#include "MoveMap.h"                
+#include "MoveMap.h"
 #include "PathFinder.h" // for mmap manager
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -37,7 +37,7 @@
 #include <map>
 #include <typeinfo>
 
- /// Helper function
+/// Helper function
 inline Creature* Helper_CreateWaypointFor(Creature* wpOwner, WaypointPathOrigin wpOrigin, int32 pathId, uint32 wpId, WaypointNode const* wpNode, CreatureInfo const* waypointInfo)
 {
     TemporarySummonWaypoint* wpCreature = new TemporarySummonWaypoint(wpOwner->GetObjectGuid(), wpId, pathId, (uint32)wpOrigin);
@@ -895,11 +895,11 @@ bool ChatHandler::HandleWpExportCommand(char* args)
     uint32 key;
     switch (wpOrigin)
     {
-    case PATH_FROM_ENTRY: key = wpOwner->GetEntry();    key_field = "entry";    table = "creature_movement_template"; break;
-    case PATH_FROM_GUID: key = wpOwner->GetGUIDLow();   key_field = "id";       table = "creature_movement"; break;
-    case PATH_FROM_EXTERNAL: key = wpOwner->GetEntry(); key_field = "entry";    table = sWaypointMgr.GetExternalWPTable(); break;
-    case PATH_NO_PATH:
-        return false;
+        case PATH_FROM_ENTRY: key = wpOwner->GetEntry();    key_field = "entry";    table = "creature_movement_template"; break;
+        case PATH_FROM_GUID: key = wpOwner->GetGUIDLow();   key_field = "id";       table = "creature_movement"; break;
+        case PATH_FROM_EXTERNAL: key = wpOwner->GetEntry(); key_field = "entry";    table = sWaypointMgr.GetExternalWPTable(); break;
+        case PATH_NO_PATH:
+            return false;
     }
 
     outfile << "DELETE FROM `" << table << "` WHERE `" << key_field << "`=" << key << ";\n";

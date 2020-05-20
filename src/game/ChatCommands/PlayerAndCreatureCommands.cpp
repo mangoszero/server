@@ -34,7 +34,7 @@
       CommandTable : commandTable
  /***********************************************************************/
 
-  // demorph player or unit
+// demorph player or unit
 bool ChatHandler::HandleDeMorphCommand(char* /*args*/)
 {
     Unit* target = getSelectedUnit();
@@ -235,85 +235,85 @@ bool ChatHandler::HandleMovegensCommand(char* /*args*/)
     {
         switch ((*itr)->GetMovementGeneratorType())
         {
-        case IDLE_MOTION_TYPE:          SendSysMessage(LANG_MOVEGENS_IDLE);          break;
-        case RANDOM_MOTION_TYPE:        SendSysMessage(LANG_MOVEGENS_RANDOM);        break;
-        case WAYPOINT_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_WAYPOINT);      break;
-        case CONFUSED_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_CONFUSED);      break;
+            case IDLE_MOTION_TYPE:          SendSysMessage(LANG_MOVEGENS_IDLE);          break;
+            case RANDOM_MOTION_TYPE:        SendSysMessage(LANG_MOVEGENS_RANDOM);        break;
+            case WAYPOINT_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_WAYPOINT);      break;
+            case CONFUSED_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_CONFUSED);      break;
 
-        case CHASE_MOTION_TYPE:
-        {
-            Unit* target;
-            if (unit->GetTypeId() == TYPEID_PLAYER)
+            case CHASE_MOTION_TYPE:
             {
-                target = static_cast<ChaseMovementGenerator<Player> const*>(*itr)->GetTarget();
-            }
-            else
-            {
-                target = static_cast<ChaseMovementGenerator<Creature> const*>(*itr)->GetTarget();
-            }
+                Unit* target;
+                if (unit->GetTypeId() == TYPEID_PLAYER)
+                {
+                    target = static_cast<ChaseMovementGenerator<Player> const*>(*itr)->GetTarget();
+                }
+                else
+                {
+                    target = static_cast<ChaseMovementGenerator<Creature> const*>(*itr)->GetTarget();
+                }
 
-            if (!target)
-            {
-                SendSysMessage(LANG_MOVEGENS_CHASE_NULL);
+                if (!target)
+                {
+                    SendSysMessage(LANG_MOVEGENS_CHASE_NULL);
+                }
+                else if (target->GetTypeId() == TYPEID_PLAYER)
+                {
+                    PSendSysMessage(LANG_MOVEGENS_CHASE_PLAYER, target->GetName(), target->GetGUIDLow());
+                }
+                else
+                {
+                    PSendSysMessage(LANG_MOVEGENS_CHASE_CREATURE, target->GetName(), target->GetGUIDLow());
+                }
+                break;
             }
-            else if (target->GetTypeId() == TYPEID_PLAYER)
+            case FOLLOW_MOTION_TYPE:
             {
-                PSendSysMessage(LANG_MOVEGENS_CHASE_PLAYER, target->GetName(), target->GetGUIDLow());
-            }
-            else
-            {
-                PSendSysMessage(LANG_MOVEGENS_CHASE_CREATURE, target->GetName(), target->GetGUIDLow());
-            }
-            break;
-        }
-        case FOLLOW_MOTION_TYPE:
-        {
-            Unit* target;
-            if (unit->GetTypeId() == TYPEID_PLAYER)
-            {
-                target = static_cast<FollowMovementGenerator<Player> const*>(*itr)->GetTarget();
-            }
-            else
-            {
-                target = static_cast<FollowMovementGenerator<Creature> const*>(*itr)->GetTarget();
-            }
+                Unit* target;
+                if (unit->GetTypeId() == TYPEID_PLAYER)
+                {
+                    target = static_cast<FollowMovementGenerator<Player> const*>(*itr)->GetTarget();
+                }
+                else
+                {
+                    target = static_cast<FollowMovementGenerator<Creature> const*>(*itr)->GetTarget();
+                }
 
-            if (!target)
-            {
-                SendSysMessage(LANG_MOVEGENS_FOLLOW_NULL);
+                if (!target)
+                {
+                    SendSysMessage(LANG_MOVEGENS_FOLLOW_NULL);
+                }
+                else if (target->GetTypeId() == TYPEID_PLAYER)
+                {
+                    PSendSysMessage(LANG_MOVEGENS_FOLLOW_PLAYER, target->GetName(), target->GetGUIDLow());
+                }
+                else
+                {
+                    PSendSysMessage(LANG_MOVEGENS_FOLLOW_CREATURE, target->GetName(), target->GetGUIDLow());
+                }
+                break;
             }
-            else if (target->GetTypeId() == TYPEID_PLAYER)
+            case HOME_MOTION_TYPE:
+                if (unit->GetTypeId() == TYPEID_UNIT)
+                {
+                    PSendSysMessage(LANG_MOVEGENS_HOME_CREATURE, x, y, z);
+                }
+                else
+                {
+                    SendSysMessage(LANG_MOVEGENS_HOME_PLAYER);
+                }
+                break;
+            case FLIGHT_MOTION_TYPE:   SendSysMessage(LANG_MOVEGENS_FLIGHT);  break;
+            case POINT_MOTION_TYPE:
             {
-                PSendSysMessage(LANG_MOVEGENS_FOLLOW_PLAYER, target->GetName(), target->GetGUIDLow());
+                PSendSysMessage(LANG_MOVEGENS_POINT, x, y, z);
+                break;
             }
-            else
-            {
-                PSendSysMessage(LANG_MOVEGENS_FOLLOW_CREATURE, target->GetName(), target->GetGUIDLow());
-            }
-            break;
-        }
-        case HOME_MOTION_TYPE:
-            if (unit->GetTypeId() == TYPEID_UNIT)
-            {
-                PSendSysMessage(LANG_MOVEGENS_HOME_CREATURE, x, y, z);
-            }
-            else
-            {
-                SendSysMessage(LANG_MOVEGENS_HOME_PLAYER);
-            }
-            break;
-        case FLIGHT_MOTION_TYPE:   SendSysMessage(LANG_MOVEGENS_FLIGHT);  break;
-        case POINT_MOTION_TYPE:
-        {
-            PSendSysMessage(LANG_MOVEGENS_POINT, x, y, z);
-            break;
-        }
-        case FLEEING_MOTION_TYPE:  SendSysMessage(LANG_MOVEGENS_FEAR);    break;
-        case DISTRACT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_DISTRACT);  break;
-        case EFFECT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_EFFECT);  break;
-        default:
-            PSendSysMessage(LANG_MOVEGENS_UNKNOWN, (*itr)->GetMovementGeneratorType());
-            break;
+            case FLEEING_MOTION_TYPE:  SendSysMessage(LANG_MOVEGENS_FEAR);    break;
+            case DISTRACT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_DISTRACT);  break;
+            case EFFECT_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_EFFECT);  break;
+            default:
+                PSendSysMessage(LANG_MOVEGENS_UNKNOWN, (*itr)->GetMovementGeneratorType());
+                break;
         }
     }
     return true;
@@ -321,18 +321,16 @@ bool ChatHandler::HandleMovegensCommand(char* /*args*/)
 
 bool ChatHandler::HandleSetViewCommand(char* /*args*/)
 {
-	if (Unit* unit = getSelectedUnit())
-	{
-		m_session->GetPlayer()->GetCamera().SetView(unit);
-	}
-	else
-	{
-		PSendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
-		SetSentErrorMessage(true);
-		return false;
-	}
+    if (Unit* unit = getSelectedUnit())
+    {
+        m_session->GetPlayer()->GetCamera().SetView(unit);
+    }
+    else
+    {
+        PSendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
+        SetSentErrorMessage(true);
+        return false;
+    }
 
-	return true;
+    return true;
 }
-
-

@@ -611,7 +611,6 @@ bool ChatHandler::HandleReloadBattleEventCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadEventAITextsCommand(char* /*args*/)
 {
-
     sLog.outString("Re-Loading Texts from `creature_ai_texts`...");
     sEventAIMgr.LoadCreatureEventAI_Texts(true);
     SendGlobalSysMessage("DB table `creature_ai_texts` reloaded.", SEC_MODERATOR);
@@ -814,22 +813,16 @@ bool ChatHandler::HandleReloadDBScriptsOnCreatureDeathCommand(char* args)
 bool ChatHandler::HandleReloadGameGraveyardZoneCommand(char* /*args*/)
 {
     sLog.outString("Re-Loading Graveyard-zone links...");
-
     sObjectMgr.LoadGraveyardZones();
-
     SendGlobalSysMessage("DB table `game_graveyard_zone` reloaded.", SEC_MODERATOR);
-
     return true;
 }
 
 bool ChatHandler::HandleReloadGameTeleCommand(char* /*args*/)
 {
     sLog.outString("Re-Loading Game Tele coordinates...");
-
     sObjectMgr.LoadGameTele();
-
     SendGlobalSysMessage("DB table `game_tele` reloaded.", SEC_MODERATOR);
-
     return true;
 }
 

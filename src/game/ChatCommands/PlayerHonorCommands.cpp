@@ -164,6 +164,7 @@ bool ChatHandler::HandleHonorAddKillCommand(char* /*args*/)
         return false;
     }
 
+    // check online security
     if (target == m_session->GetPlayer())
     {
         return false;

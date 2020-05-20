@@ -207,8 +207,8 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
             // we are in instance, and can summon only player in our group with us as lead
             if (!player->GetGroup() || !target->GetGroup() ||
-                (target->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()) ||
-                (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()))
+                    (target->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()) ||
+                    (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()))
                 // the last check is a bit excessive, but let it be, just in case
             {
                 PSendSysMessage(LANG_CANNOT_SUMMON_TO_INST, nameLink.c_str());
@@ -254,11 +254,11 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
         // in point where GM stay
         Player::SavePositionInDB(target_guid, player->GetMapId(),
-            player->GetPositionX(),
-            player->GetPositionY(),
-            player->GetPositionZ(),
-            player->GetOrientation(),
-            player->GetZoneId());
+                                 player->GetPositionX(),
+                                 player->GetPositionY(),
+                                 player->GetPositionZ(),
+                                 player->GetOrientation(),
+                                 player->GetZoneId());
     }
 
     return true;
@@ -455,8 +455,8 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
 
     // we are in instance, and can summon only player in our group with us as lead
     if (to_instance && (
-        !player->GetGroup() || (grp->GetLeaderGuid() != player->GetObjectGuid()) ||
-        (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid())))
+                !player->GetGroup() || (grp->GetLeaderGuid() != player->GetObjectGuid()) ||
+                (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid())))
         // the last check is a bit excessive, but let it be, just in case
     {
         SendSysMessage(LANG_CANNOT_SUMMON_TO_INST);
@@ -631,25 +631,25 @@ bool ChatHandler::HandleGPSCommand(char* args)
     }
 
     PSendSysMessage(LANG_MAP_POSITION,
-        obj->GetMapId(), (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
-        zone_id, (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
-        area_id, (areaEntry ? areaEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
-        obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-        cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
-        zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
+                    obj->GetMapId(), (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+                    zone_id, (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
+                    area_id, (areaEntry ? areaEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
+                    obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+                    cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+                    zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     DEBUG_LOG("Player %s GPS call for %s '%s' (%s: %u):",
-        m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
-        (obj->GetTypeId() == TYPEID_PLAYER ? "player" : "creature"), obj->GetName(),
-        (obj->GetTypeId() == TYPEID_PLAYER ? "GUID" : "Entry"), (obj->GetTypeId() == TYPEID_PLAYER ? obj->GetGUIDLow() : obj->GetEntry()));
+              m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
+              (obj->GetTypeId() == TYPEID_PLAYER ? "player" : "creature"), obj->GetName(),
+              (obj->GetTypeId() == TYPEID_PLAYER ? "GUID" : "Entry"), (obj->GetTypeId() == TYPEID_PLAYER ? obj->GetGUIDLow() : obj->GetEntry()));
 
     DEBUG_LOG(GetMangosString(LANG_MAP_POSITION),
-        obj->GetMapId(), (mapEntry ? mapEntry->name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-        zone_id, (zoneEntry ? zoneEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-        area_id, (areaEntry ? areaEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-        obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-        cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
-        zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
+              obj->GetMapId(), (mapEntry ? mapEntry->name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+              zone_id, (zoneEntry ? zoneEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+              area_id, (areaEntry ? areaEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+              obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+              cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+              zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     GridMapLiquidData liquid_status;
     GridMapLiquidStatus res = terrain->getLiquidStatus(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status);
@@ -982,7 +982,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     if (mapEntry->Instanceable())
     {
         PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
-            mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
+                        mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
     }
@@ -990,7 +990,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     if (!Zone2MapCoordinates(x, y, zoneEntry->ID))
     {
         PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
-            mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
+                        mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
     }
@@ -1073,101 +1073,29 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
 
     switch (crType)
     {
-    case CREATURE_LINK_ENTRY:
-    {
-        uint32 tEntry;
-        if (!ExtractUInt32(&pParam1, tEntry))
+        case CREATURE_LINK_ENTRY:
         {
-            return false;
-        }
-
-        if (!tEntry)
-        {
-            return false;
-        }
-
-        if (!ObjectMgr::GetCreatureTemplate(tEntry))
-        {
-            SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-
-        FindCreatureData worker(tEntry, m_session ? m_session->GetPlayer() : NULL);
-
-        sObjectMgr.DoCreatureData(worker);
-
-        CreatureDataPair const* dataPair = worker.GetResult();
-        if (!dataPair)
-        {
-            SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-
-        data = &dataPair->second;
-        break;
-    }
-    case CREATURE_LINK_GUID:
-    {
-        uint32 lowguid;
-        if (!ExtractUInt32(&pParam1, lowguid))
-        {
-            return false;
-        }
-
-        data = sObjectMgr.GetCreatureData(lowguid);
-        if (!data)
-        {
-            SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    }
-    case CREATURE_LINK_RAW:
-    {
-        uint32 lowguid;
-        if (ExtractUInt32(&pParam1, lowguid))
-        {
-            data = sObjectMgr.GetCreatureData(lowguid);
-            if (!data)
+            uint32 tEntry;
+            if (!ExtractUInt32(&pParam1, tEntry))
             {
-                SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
-                SetSentErrorMessage(true);
                 return false;
             }
-        }
-        // Number is invalid - maybe the user specified the mob's name
-        else
-        {
-            std::string name = pParam1;
-            WorldDatabase.escape_string(name);
-            QueryResult* result = WorldDatabase.PQuery("SELECT `guid` FROM `creature`, `creature_template` WHERE `creature`.`id` = `creature_template`.`entry` AND `creature_template`.`name` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'"), name.c_str());
-            if (!result)
+
+            if (!tEntry)
+            {
+                return false;
+            }
+
+            if (!ObjectMgr::GetCreatureTemplate(tEntry))
             {
                 SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
                 SetSentErrorMessage(true);
                 return false;
             }
 
-            FindCreatureData worker(0, m_session ? m_session->GetPlayer() : NULL);
+            FindCreatureData worker(tEntry, m_session ? m_session->GetPlayer() : NULL);
 
-            do
-            {
-                Field* fields = result->Fetch();
-                uint32 guid = fields[0].GetUInt32();
-
-                CreatureDataPair const* cr_data = sObjectMgr.GetCreatureDataPair(guid);
-                if (!cr_data)
-                {
-                    continue;
-                }
-
-                worker(*cr_data);
-            } while (result->NextRow());
-
-            delete result;
+            sObjectMgr.DoCreatureData(worker);
 
             CreatureDataPair const* dataPair = worker.GetResult();
             if (!dataPair)
@@ -1178,9 +1106,82 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
             }
 
             data = &dataPair->second;
+            break;
         }
-        break;
-    }
+        case CREATURE_LINK_GUID:
+        {
+            uint32 lowguid;
+            if (!ExtractUInt32(&pParam1, lowguid))
+            {
+                return false;
+            }
+
+            data = sObjectMgr.GetCreatureData(lowguid);
+            if (!data)
+            {
+                SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        }
+        case CREATURE_LINK_RAW:
+        {
+            uint32 lowguid;
+            if (ExtractUInt32(&pParam1, lowguid))
+            {
+                data = sObjectMgr.GetCreatureData(lowguid);
+                if (!data)
+                {
+                    SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+            }
+            // Number is invalid - maybe the user specified the mob's name
+            else
+            {
+                std::string name = pParam1;
+                WorldDatabase.escape_string(name);
+                QueryResult* result = WorldDatabase.PQuery("SELECT `guid` FROM `creature`, `creature_template` WHERE `creature`.`id` = `creature_template`.`entry` AND `creature_template`.`name` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'"), name.c_str());
+                if (!result)
+                {
+                    SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+
+                FindCreatureData worker(0, m_session ? m_session->GetPlayer() : NULL);
+
+                do
+                {
+                    Field* fields = result->Fetch();
+                    uint32 guid = fields[0].GetUInt32();
+
+                    CreatureDataPair const* cr_data = sObjectMgr.GetCreatureDataPair(guid);
+                    if (!cr_data)
+                    {
+                        continue;
+                    }
+
+                    worker(*cr_data);
+                }
+                while (result->NextRow());
+
+                delete result;
+
+                CreatureDataPair const* dataPair = worker.GetResult();
+                if (!dataPair)
+                {
+                    SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+
+                data = &dataPair->second;
+            }
+            break;
+        }
     }
 
     return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
@@ -1216,105 +1217,32 @@ bool ChatHandler::HandleGoObjectCommand(char* args)
 
     switch (goType)
     {
-    case CREATURE_LINK_ENTRY:
-    {
-        uint32 tEntry;
-        if (!ExtractUInt32(&pParam1, tEntry))
+        case CREATURE_LINK_ENTRY:
         {
-            return false;
-        }
-
-        if (!tEntry)
-        {
-            return false;
-        }
-
-        if (!ObjectMgr::GetGameObjectInfo(tEntry))
-        {
-            SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-
-        FindGOData worker(tEntry, m_session ? m_session->GetPlayer() : NULL);
-
-        sObjectMgr.DoGOData(worker);
-
-        GameObjectDataPair const* dataPair = worker.GetResult();
-
-        if (!dataPair)
-        {
-            SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-
-        data = &dataPair->second;
-        break;
-    }
-    case GAMEOBJECT_LINK_GUID:
-    {
-        uint32 lowguid;
-        if (!ExtractUInt32(&pParam1, lowguid))
-        {
-            return false;
-        }
-
-        // by DB guid
-        data = sObjectMgr.GetGOData(lowguid);
-        if (!data)
-        {
-            SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
-            SetSentErrorMessage(true);
-            return false;
-        }
-        break;
-    }
-    case GAMEOBJECT_LINK_RAW:
-    {
-        uint32 lowguid;
-        if (ExtractUInt32(&pParam1, lowguid))
-        {
-            // by DB guid
-            data = sObjectMgr.GetGOData(lowguid);
-            if (!data)
+            uint32 tEntry;
+            if (!ExtractUInt32(&pParam1, tEntry))
             {
-                SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
-                SetSentErrorMessage(true);
                 return false;
             }
-        }
-        else
-        {
-            std::string name = pParam1;
-            WorldDatabase.escape_string(name);
-            QueryResult* result = WorldDatabase.PQuery("SELECT `guid` FROM `gameobject`, `gameobject_template` WHERE `gameobject`.`id` = `gameobject_template`.`entry` AND `gameobject_template`.`name `" _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'"), name.c_str());
-            if (!result)
+
+            if (!tEntry)
+            {
+                return false;
+            }
+
+            if (!ObjectMgr::GetGameObjectInfo(tEntry))
             {
                 SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
                 SetSentErrorMessage(true);
                 return false;
             }
 
-            FindGOData worker(0, m_session ? m_session->GetPlayer() : NULL);
+            FindGOData worker(tEntry, m_session ? m_session->GetPlayer() : NULL);
 
-            do
-            {
-                Field* fields = result->Fetch();
-                uint32 guid = fields[0].GetUInt32();
-
-                GameObjectDataPair const* go_data = sObjectMgr.GetGODataPair(guid);
-                if (!go_data)
-                {
-                    continue;
-                }
-
-                worker(*go_data);
-            } while (result->NextRow());
-
-            delete result;
+            sObjectMgr.DoGOData(worker);
 
             GameObjectDataPair const* dataPair = worker.GetResult();
+
             if (!dataPair)
             {
                 SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
@@ -1323,9 +1251,83 @@ bool ChatHandler::HandleGoObjectCommand(char* args)
             }
 
             data = &dataPair->second;
+            break;
         }
-        break;
-    }
+        case GAMEOBJECT_LINK_GUID:
+        {
+            uint32 lowguid;
+            if (!ExtractUInt32(&pParam1, lowguid))
+            {
+                return false;
+            }
+
+            // by DB guid
+            data = sObjectMgr.GetGOData(lowguid);
+            if (!data)
+            {
+                SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            break;
+        }
+        case GAMEOBJECT_LINK_RAW:
+        {
+            uint32 lowguid;
+            if (ExtractUInt32(&pParam1, lowguid))
+            {
+                // by DB guid
+                data = sObjectMgr.GetGOData(lowguid);
+                if (!data)
+                {
+                    SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+            }
+            else
+            {
+                std::string name = pParam1;
+                WorldDatabase.escape_string(name);
+                QueryResult* result = WorldDatabase.PQuery("SELECT `guid` FROM `gameobject`, `gameobject_template` WHERE `gameobject`.`id` = `gameobject_template`.`entry` AND `gameobject_template`.`name `" _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'"), name.c_str());
+                if (!result)
+                {
+                    SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+
+                FindGOData worker(0, m_session ? m_session->GetPlayer() : NULL);
+
+                do
+                {
+                    Field* fields = result->Fetch();
+                    uint32 guid = fields[0].GetUInt32();
+
+                    GameObjectDataPair const* go_data = sObjectMgr.GetGODataPair(guid);
+                    if (!go_data)
+                    {
+                        continue;
+                    }
+
+                    worker(*go_data);
+                }
+                while (result->NextRow());
+
+                delete result;
+
+                GameObjectDataPair const* dataPair = worker.GetResult();
+                if (!dataPair)
+                {
+                    SendSysMessage(LANG_COMMAND_GOOBJNOTFOUND);
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+
+                data = &dataPair->second;
+            }
+            break;
+        }
     }
 
     return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
@@ -1533,8 +1535,8 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
 
         PSendSysMessage(LANG_TELEPORTING_TO, nameLink.c_str(), GetMangosString(LANG_OFFLINE), tele->name.c_str());
         Player::SavePositionInDB(target_guid, tele->mapId,
-            tele->position_x, tele->position_y, tele->position_z, tele->orientation,
-            sTerrainMgr.GetZoneId(tele->mapId, tele->position_x, tele->position_y, tele->position_z));
+                                 tele->position_x, tele->position_y, tele->position_z, tele->orientation,
+                                 sTerrainMgr.GetZoneId(tele->mapId, tele->position_x, tele->position_y, tele->position_z));
     }
 
     return true;
