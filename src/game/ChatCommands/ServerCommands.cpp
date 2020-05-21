@@ -433,5 +433,3 @@ bool ChatHandler::HandleServerPLimitCommand(char* args)
 
     return true;
 }
-
-
