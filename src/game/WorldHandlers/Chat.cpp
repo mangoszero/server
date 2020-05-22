@@ -40,6 +40,7 @@
 #include "PoolManager.h"
 #include "GameEventMgr.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
+#include "CommandMgr.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -532,6 +533,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "locales_page_text",           SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesPageTextCommand,         "", NULL },
         { "locales_points_of_interest",  SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesPointsOfInterestCommand, "", NULL },
         { "locales_quest",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesQuestCommand,            "", NULL },
+        { "locales_command",             SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLocalesCommandHelpCommand,            "", NULL },
         { "mail_loot_template",          SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadLootTemplatesMailCommand,       "", NULL },
         { "mangos_string",               SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadMangosStringCommand,            "", NULL },
         { "npc_text",                    SEC_ADMINISTRATOR, true,  &ChatHandler::HandleReloadNpcTextCommand,                 "", NULL },
@@ -807,15 +809,15 @@ ChatCommand* ChatHandler::getCommandTable()
         // check hardcoded part integrity
         CheckIntegrity(commandTable, NULL);
 
-        QueryResult* result = WorldDatabase.Query("SELECT `name`,`security`,`help` FROM `command`");
+        QueryResult* result = WorldDatabase.Query("SELECT `id`, `command_text`,`security`,`help_text` FROM `command`");
         if (result)
         {
             do
             {
                 Field* fields = result->Fetch();
-                std::string name = fields[0].GetCppString();
-
-                SetDataForCommandInTable(commandTable, name.c_str(), fields[1].GetUInt16(), fields[2].GetCppString());
+                uint32 id = fields[0].GetUInt32();
+                std::string name = fields[1].GetCppString();
+                SetDataForCommandInTable(commandTable, id, name.c_str(), fields[2].GetUInt16(), fields[3].GetCppString());
             }
             while (result->NextRow());
             delete result;
@@ -1305,7 +1307,16 @@ void ChatHandler::ExecuteCommand(const char* text)
             {
                 if (!command->Help.empty())
                 {
-                    SendSysMessage(command->Help.c_str());
+                    std::string helpText = command->Help;
+
+                    // Attemp to localize help text if not in CLI mode
+                    if (m_session)
+                    {
+                        int loc_idx = m_session->GetSessionDbLocaleIndex();
+                        sCommandMgr.GetCommandHelpLocaleString(command->Id, loc_idx, &helpText);
+                    }
+                   
+                    SendSysMessage(helpText.c_str());
                 }
                 else
                 {
@@ -1362,7 +1373,7 @@ void ChatHandler::ExecuteCommand(const char* text)
  *
  * All problems found while command search and updated output as to DB errors log
  */
-bool ChatHandler::SetDataForCommandInTable(ChatCommand* commandTable, const char* text, uint32 security, std::string const& help)
+bool ChatHandler::SetDataForCommandInTable(ChatCommand* commandTable, uint32 id, const char* text, uint32 security, std::string const& help)
 {
     std::string fullcommand = text;                         // original `text` can't be used. It content destroyed in command code processing.
 
@@ -1379,6 +1390,7 @@ bool ChatHandler::SetDataForCommandInTable(ChatCommand* commandTable, const char
                 DETAIL_LOG("Table `command` overwrite for command '%s' default security (%u) by %u",
                            fullcommand.c_str(), command->SecurityLevel, security);
 
+            command->Id = id;
             command->SecurityLevel = security;
             command->Help          = help;
             return true;
@@ -1534,9 +1546,18 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand* table, const char* cmd)
             break;
     }
 
-    if (command && !command->Help.empty())
+    if (!command->Help.empty())
     {
-        SendSysMessage(command->Help.c_str());
+        std::string helpText = command->Help;
+
+        // Attemp to localize help text if not in CLI mode
+        if (m_session)
+        {
+            int loc_idx = m_session->GetSessionDbLocaleIndex();
+            sCommandMgr.GetCommandHelpLocaleString(command->Id, loc_idx, &helpText);
+        }
+
+        SendSysMessage(helpText.c_str());
     }
 
     if (childCommands)
