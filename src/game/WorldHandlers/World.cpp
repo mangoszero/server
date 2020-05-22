@@ -72,6 +72,7 @@
 #include "LFGMgr.h"
 #include "DisableMgr.h"
 #include "Language.h"
+#include "CommandMgr.h"
 #include "revision.h"
 
 #ifdef ENABLE_ELUNA
@@ -1301,6 +1302,7 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadPageTextLocales();                       // must be after PageText loading
     sObjectMgr.LoadGossipMenuItemsLocales();                // must be after gossip menu items loading
     sObjectMgr.LoadPointOfInterestLocales();                // must be after POI loading
+    sCommandMgr.LoadCommandHelpLocale();
     sLog.outString(">>> Localization strings loaded");
     sLog.outString();
 
