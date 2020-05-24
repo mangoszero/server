@@ -1,0 +1,28 @@
+#Build image
+FROM ubuntu:18.04 as build-step
+
+RUN apt-get -y update
+RUN apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential
+
+COPY . /mangoserver
+RUN mkdir /mangoserver/build
+WORKDIR /mangoserver/build
+
+#Install mangos
+RUN cmake .. -DCMAKE_INSTALL_PREFIX=/mangos -DBUILD_MANGOSD=0 -DBUILD_REALMD=1 -DBUILD_TOOLS=0
+RUN make -j4
+RUN make install
+
+#Runtime image
+FROM ubuntu:18.04 as runtime
+
+RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get -y install libmysqlclient20 openssl
+
+COPY --from=build-step /mangos /mangos
+WORKDIR /mangos/bin
+RUN cp ../etc/realmd.conf.dist ../etc/realmd.conf
+RUN chmod +x realmd
+
+EXPOSE 3724
+ENTRYPOINT [ "./realmd" ]
