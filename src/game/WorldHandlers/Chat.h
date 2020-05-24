@@ -51,32 +51,32 @@ class Unit;
 
 class ChatCommand
 {
-public:
-    uint32             Id;
-    const char* Name;
-    uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
-    bool               AllowConsole;
-    bool (ChatHandler::* Handler)(char* args);
-    std::string        Help;
-    ChatCommand* ChildCommands;
+    public:
+        uint32             Id;
+        const char* Name;
+        uint32             SecurityLevel;                   // function pointer required correct align (use uint32)
+        bool               AllowConsole;
+        bool (ChatHandler::* Handler)(char* args);
+        std::string        Help;
+        ChatCommand* ChildCommands;
 
-      ChatCommand(
+        ChatCommand(
           const char* pName,
           uint32 pSecurityLevel,
           bool pAllowConsole,
           bool (ChatHandler::* pHandler)(char* args),
           std::string pHelp,
           ChatCommand* pChildCommands
-      )
+        )
          : Id(-1)
-      {
+        {
           Name = pName;
           SecurityLevel = pSecurityLevel;
           AllowConsole = pAllowConsole;
           Handler = pHandler;
           Help = pHelp;
           ChildCommands = pChildCommands;
-      }
+        }
 };
 
 enum ChatCommandSearchResult

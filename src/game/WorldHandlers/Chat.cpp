@@ -1021,7 +1021,7 @@ void  ChatHandler::PSendSysMessageMultiline(int32 entry, ...)
     va_end(ap);
 
     std::string mangosString(str);
-    
+
     /* Used for tracking our position within the string while iterating through it */
     std::string::size_type pos = 0, nextpos;
 
@@ -1315,7 +1315,7 @@ void ChatHandler::ExecuteCommand(const char* text)
                         int loc_idx = m_session->GetSessionDbLocaleIndex();
                         sCommandMgr.GetCommandHelpLocaleString(command->Id, loc_idx, &helpText);
                     }
-                   
+
                     SendSysMessage(helpText.c_str());
                 }
                 else

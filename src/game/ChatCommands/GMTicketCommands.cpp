@@ -125,7 +125,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
 
     ObjectGuid target_guid = ticket->GetPlayerGuid();
 
-    // Get Player 
+    // Get Player
     // Can be nullptr if player is offline
     Player* pPlayer = sObjectMgr.GetPlayer(target_guid);
 
@@ -441,7 +441,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
 
     ObjectGuid target_guid = ticket->GetPlayerGuid();
 
-    // Get Player 
+    // Get Player
     // Can be nullptr if player is offline
     Player* target = sObjectMgr.GetPlayer(target_guid);
 

@@ -30,7 +30,7 @@
  /**********************************************************************
       CommandTable : mailCommandTable
  /***********************************************************************/
- // Send mail by command
+// Send mail by command
 bool ChatHandler::HandleSendMailCommand(char* args)
 {
     if (!*args)

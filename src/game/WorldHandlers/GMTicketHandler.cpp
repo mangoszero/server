@@ -88,7 +88,7 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
 
     GMTicket * ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid());
 
-    // Notify all GM that the ticket has been changed 
+    // Notify all GM that the ticket has been changed
     sObjectAccessor.DoForAllPlayers([ticket, this](Player* player)
         {
             if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
