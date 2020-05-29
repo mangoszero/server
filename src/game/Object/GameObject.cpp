@@ -49,6 +49,7 @@
 #include "CreatureAISelector.h"
 #include "SQLStorages.h"
 #include "GameObjectAI.h"
+#include <memory>
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
