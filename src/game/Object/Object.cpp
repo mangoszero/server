@@ -723,6 +723,16 @@ void Object::MarkFlagUpdateForClient(uint16 index)
     MarkForClientUpdate();
 }
 
+void Object::ForceValuesUpdateAtIndex(uint16 index)
+{
+    m_changedValues[index] = true;
+    if (m_inWorld && !m_objectUpdated)
+    {
+        AddToClientUpdateList();
+        m_objectUpdated = true;
+    }
+}
+
 void Object::SetFlag(uint16 index, uint32 newFlag)
 {
     MANGOS_ASSERT(index < m_valuesCount || PrintIndexError(index, true));
@@ -1638,6 +1648,7 @@ GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, 
     pGameObj->SetRespawnTime(despwtime/IN_MILLISECONDS);
 
     map->Add(pGameObj);
+    pGameObj->AIM_Initialize();
 
     return pGameObj;
 }

@@ -103,6 +103,10 @@ class GameEventMgr
         void UpdateCreatureData(int16 event_id, bool activate);
         void UpdateEventQuests(uint16 event_id, bool activate);
         void SendEventMails(int16 event_id);
+       // To implement for GameObjectAI - see code in CMangos
+       // void OnEventHappened(uint16 event_id, bool activate, bool resume);
+       // void ComputeEventStartAndEndTime(GameEventData& data);
+
     protected:
         typedef std::list<uint32> GuidList;
         typedef std::list<uint16> IdList;
