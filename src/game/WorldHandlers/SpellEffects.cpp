@@ -3904,6 +3904,7 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
 
     // Wild object not have owner and check clickable by players
     map->Add(pGameObj);
+    pGameObj->AIM_Initialize();
 
     if (pGameObj->GetGoType() == GAMEOBJECT_TYPE_FLAGDROP && m_caster->GetTypeId() == TYPEID_PLAYER)
     {
@@ -3960,6 +3961,16 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if (unitTarget->GetTypeId() == TYPEID_PLAYER)
                     {
                         ((Player*)unitTarget)->SetGameMaster(true);
+                    }
+                    break;
+                }
+
+                case 5249:                                  // Ice Lock
+                {
+                    if (unitTarget)
+                    {
+                        m_caster->CastSpell(unitTarget, 22856, true);
+                        sLog.outString("EffectScriptEffect : %s target of spell 5249", unitTarget->GetName());                        
                     }
                     break;
                 }
@@ -4598,6 +4609,7 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
 
     m_caster->AddGameObject(pGameObj);
     map->Add(pGameObj);
+    pGameObj->AIM_Initialize();
     // END
 
     // Send request
@@ -5131,6 +5143,7 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
     m_caster->AddGameObject(pGameObj);
 
     map->Add(pGameObj);
+    pGameObj->AIM_Initialize();
     WorldPacket data(SMSG_GAMEOBJECT_SPAWN_ANIM_OBSOLETE, 8);
     data << ObjectGuid(pGameObj->GetObjectGuid());
     m_caster->SendMessageToSet(&data, true);

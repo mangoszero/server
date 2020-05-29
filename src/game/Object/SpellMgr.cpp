@@ -1026,6 +1026,15 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
             }
             break;
         }
+        case SPELL_EFFECT_SCRIPT_EFFECT:
+        {
+            if (spellproto->Id == 5249)
+            {
+                return false;
+            }
+            break;
+        }
+
         default:
             break;
     }
