@@ -103,6 +103,9 @@ class InstanceData
         // called on creature despawn
         virtual void OnCreatureDespawn(Creature* /*creature*/) {}
 
+        // called on game event
+        virtual void OnEventHappened(uint16 /*event_id*/, bool /*activate*/, bool /*resume*/) {}
+
         // called on creature looted
         virtual void OnCreatureLooted(Creature* /*creature*/, LootType) {}
 

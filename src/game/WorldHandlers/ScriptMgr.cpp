@@ -739,7 +739,24 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_SET_FLY:                      // 39
+                break;
             case SCRIPT_COMMAND_DESPAWN_GO:                   // 40
+            {
+                if (!tmp.despawnGo.goGuid)
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` has no gameobject defined in SCRIPT_COMMAND_DESPAWN_GO for script id %u", type, tmp.id);
+                    continue;
+                }
+
+                GameObjectData const* data = sObjectMgr.GetGOData(tmp.despawnGo.goGuid);
+                if (!data)
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` has invalid gameobject (GUID: %u) in SCRIPT_COMMAND_RESPAWN_GO for script id %u", type, tmp.despawnGo.goGuid, tmp.id);
+                    continue;
+                }
+
+                break;
+            }
             case SCRIPT_COMMAND_RESPAWN:                      // 41
                 break;
             case SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS:          // 42
@@ -2132,11 +2149,27 @@ bool ScriptAction::HandleScriptStep()
         }
         case SCRIPT_COMMAND_DESPAWN_GO:                     // 40
         {
-            if (LogIfNotGameObject(pTarget))
+
+            uint32 goEntry;
+            GameObject* pGo;
+            if (!m_script->despawnGo.goGuid)
             {
+                sLog.outErrorDb("Table `db_scripts [type = %d]` has no gameobject defined in SCRIPT_COMMAND_DESPAWN_GO for script id %u", m_type, m_script->id);
                 break;
             }
-            ((GameObject*)pTarget)->SetLootState(GO_JUST_DEACTIVATED);
+            
+            GameObjectData const* goData = sObjectMgr.GetGOData(m_script->despawnGo.goGuid);
+            if (!goData)
+            {
+                sLog.outErrorDb("Table `db_scripts [type = %d]` has invalid gameobject (GUID: %u) in SCRIPT_COMMAND_RESPAWN_GO for script id %u", m_type, m_script->despawnGo.goGuid, m_script->id);
+                break;
+            }
+            
+            pGo = m_map->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, goData->id, m_script->despawnGo.goGuid));
+
+            pGo->SetRespawnTime(m_script->despawnGo.respawnTime);
+            pGo->SetLootState(GO_JUST_DEACTIVATED);
+
             break;
         }
         case SCRIPT_COMMAND_RESPAWN:                        // 41
@@ -2460,6 +2493,16 @@ CreatureAI* ScriptMgr::GetCreatureAI(Creature* pCreature)
 #endif
 }
 
+GameObjectAI* ScriptMgr::GetGameObjectAI(GameObject* pGo)
+{
+    // TODO - expose in ELuna
+    #ifdef ENABLE_SD3
+        return SD3::GetGameObjectAI(pGo);
+    #else
+        return NULL;
+    #endif
+}
+
 InstanceData* ScriptMgr::CreateInstanceData(Map* pMap)
 {
 #ifdef ENABLE_SD3
@@ -2696,6 +2739,17 @@ bool ScriptMgr::OnGameObjectUse(Player* pPlayer, GameObject* pGameObject)
 
 #ifdef ENABLE_SD3
     return SD3::GOUse(pPlayer, pGameObject);
+#else
+    return false;
+#endif
+}
+
+bool ScriptMgr::OnGameObjectUse(Unit* pUnit, GameObject* pGameObject)
+{
+ // TODO Add Eluna support
+
+#ifdef ENABLE_SD3
+    return SD3::GOUse(pUnit, pGameObject);
 #else
     return false;
 #endif
