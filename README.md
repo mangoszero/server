@@ -57,7 +57,7 @@ Compilers
 ---------
 Building *Mangos* is currently possible with these compilers:
 
-* **Microsoft Visual Studio 32 bit and 64 bit. All editions of [Visual Studio][31]
+* **Microsoft Visual Studio 32 bit and 64 bit.** All editions of [Visual Studio][31]
   are supported. Only Visual Studio 2015 and above are now officially supported.
 
 * **Clang**, 32 bit and 64 bit. The [Clang compiler][33] can be used on any
