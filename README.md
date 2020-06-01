@@ -17,7 +17,7 @@ VANILLA WOW BRANCH
 ### A World of Warcraft server for Vanilla WoW  
 ----
 *Mangos* is open source project, built in [C++][7], it's fast, runs on multiple
-platforms, can store game data in [MySQL][40] and [PostgreSQL][42]. It also has
+platforms, can store game data in [MySQL][40] and [MariaDB][41]. It also has
 optional support for SOAP, and aims to be 100% compatible with [World of Warcraft][2]
 in its vanilla versions, namely [patch 1.12.1][5] and [patch 1.12.2][6].
 
@@ -48,8 +48,7 @@ Currently we support running *Mangos* on these operating systems:
 * **Windows**, 32 bit and 64 bit. [Windows][20] Server 2008 (or newer) or Windows 7 (or newer) is recommended.
 * **Linux**, 32 bit and 64 bit. [Debian 7][21] and [Ubuntu 12.04 LTS][22] are
   recommended. Other distributions with similar package versions will work, too.
-* **BSD**, 32 bit and 64 bit. [FreeBSD][23], [NetBSD][24], [OpenBSD][25] and
-  [DragonFly][26] are recommended.
+* **BSD**, 32 bit and 64 bit. [FreeBSD][23], [NetBSD][24], [OpenBSD][25] are recommended.
 
 Of course, newer versions should work, too. In the case of Windows, matching
 server versions will work, too.
@@ -58,13 +57,9 @@ Compilers
 ---------
 Building *Mangos* is currently possible with these compilers:
 
-* **Microsoft Visual Studio (Express[^1])**, 32 bit and 64 bit. Both
-  [Visual Studio][30] and the Express editions of [Visual Studio][31] are
-  supported. Only Visual Studio 2012 and above are now officially supported.
+* **Microsoft Visual Studio 32 bit and 64 bit. All editions of [Visual Studio][31]
+  are supported. Only Visual Studio 2015 and above are now officially supported.
 
-* **Microsoft Windows SDK**, 32 bit and 64 bit. The [Windows 7 SDK][32] is
-  recommended, as older versions lack compiler features required to build
-  the server.
 * **Clang**, 32 bit and 64 bit. The [Clang compiler][33] can be used on any
   supported operating system.[^2]
 
@@ -77,8 +72,8 @@ inventing the wheel again.
 *Please note that Linux and Mac OS X users should install packages using
 their systems package management instead of source packages.*
 
-* **MySQL** / **PostgreSQL**: to store content, and user data, we rely on
-  [MySQL][40]/[MariaDB][41] and [PostgreSQL][42] to handle data.
+* **MySQL** / **MariaDB**: to store content, and user data, we rely on
+  [MySQL][40]/[MariaDB][41] to handle data.
 * **ACE**: the [ADAPTIVE Communication Environment][43] aka. *ACE* provides us
   with a solid cross-platform framework for abstracting operating system
   specific details.
@@ -143,8 +138,6 @@ the linked executables. You must obey the GNU General Public License in all
 respects for all of the code used other than [OpenSSL][48].
 
 
-[^1]: Visual Studio Express versions prior to the 2012 release can only
-      build 32 bit applications, unless you install the Windows SDK.
 [^2]: Clang support for Windows is experimental. Failure to compile Mangos
       may also relate to the experimental state of the port.
 
@@ -157,24 +150,20 @@ respects for all of the code used other than [OpenSSL][48].
 [7]: http://www.cppreference.com/ "C / C++ reference"
 
 [10]: https://getmangos.eu/ "mangos · project site"
-[12]: http://github.com/mangoszero "MaNGOS Zero · github organization"
-[13]: http://github.com/mangoszero/server "MaNGOS Zero · server repository"
-[15]: http://github.com/mangoszero/database "MaNGOS Zero · content database repository"
+[12]: https://github.com/mangoszero "MaNGOS Zero · github organization"
+[13]: https://github.com/mangoszero/server "MaNGOS Zero · server repository"
+[15]: https://github.com/mangoszero/database "MaNGOS Zero · content database repository"
 [16]: https://travis-ci.org/mangoszero/server "Travis CI . MaNGOS Zero build status"
 [17]: https://scan.coverity.com/ "Coverity Scan · Static Code Analysis"
 
 [19]: http://www.cmake.org/ "CMake · Cross Platform Make"
-[20]: http://windows.microsoft.com/ "Microsoft Windows · that OS, yes."
+[20]: http://windows.microsoft.com/ "Microsoft Windows"
 [21]: http://www.debian.org/ "Debian · The Universal Operating System"
 [22]: http://www.ubuntu.com/ "Ubuntu · The world's most popular free OS"
 [23]: http://www.freebsd.org/ "FreeBSD · The Power To Serve"
 [24]: http://www.netbsd.org/ "NetBSD · The NetBSD Project"
 [25]: http://www.openbsd.org/ "OpenBSD · Free, functional and secure"
-[26]: http://www.dragonflybsd.org/ "DragonFlyBSD"
-
-[30]: http://www.microsoft.com/visualstudio/eng/ "Visual Studio 2012"
-[31]: http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-products "Visual Studio Express 2012 for Windows Desktop"
-[32]: http://www.microsoft.com/en-us/download/details.aspx?id=8279 "Windows SDK for Windows 7 and .NET Framework 4"
+[31]: https://visualstudio.microsoft.com/vs/older-downloads/ "Visual Studio Downloads"
 [33]: http://clang.llvm.org/ "clang · a C language family frontend for LLVM"
 [34]: http://git-scm.com/ "Git · Distributed version control system"
 [35]: http://windows.github.com/ "github · windows client"
@@ -182,7 +171,6 @@ respects for all of the code used other than [OpenSSL][48].
 
 [40]: http://www.mysql.com/ "MySQL · The world's most popular open source database"
 [41]: http://www.mariadb.org/ "MariaDB · An enhanced, drop-in replacement for MySQL"
-[42]: http://www.postgresql.org/ "PostgreSQL · The world's most advanced open source database"
 [43]: http://www.cs.wustl.edu/~schmidt/ACE.html "ACE · The ADAPTIVE Communication Environment"
 [44]: http://github.com/memononen/recastnavigation "Recast · Navigation-mesh Toolset for Games"
 [45]: http://sourceforge.net/projects/g3d/ "G3D · G3D Innovation Engine"
