@@ -552,7 +552,7 @@ enum EquipmentSlots                                         // 19 slots
 enum InventorySlots                                         // 4 slots
 {
     INVENTORY_SLOT_BAG_START    = 19,
-    INVENTORY_SLOT_BAG_END      = 23
+    INVENTORY_SLOT_BAG_END      = 23         
 };
 
 enum InventoryPackSlots                                     // 16 slots

@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 20
+    #define WORLD_DB_STRUCTURE_NR 21
     #define WORLD_DB_CONTENT_NR 001
-    #define WORLD_DB_UPDATE_DESCRIPTION "GM_Commands_localization"
+    #define WORLD_DB_UPDATE_DESCRIPTION "Reset_item_command"
 #endif // __REVISION_H__

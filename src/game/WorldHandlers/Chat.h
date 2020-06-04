@@ -101,6 +101,36 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
     LANG_REP_FRIENDLY, LANG_REP_HONORED, LANG_REP_REVERED,    LANG_REP_EXALTED
 };
 
+#define RESET_ITEMS_COMMAND_ARG_OPTION_EQUIPED "equiped"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_BAGS "bags"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_BANK "bank"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_KEYRING "keyring"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_BUYBACK "buyback"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_ALL "all"
+#define RESET_ITEMS_COMMAND_ARG_OPTION_ALL_BAGS "allbags"
+
+#define BITMASK_AND_SWITCH(x) \
+    for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
+
+enum  ResetItemCommandArgFlags
+{
+    RESET_ITEMS_COMMAND_FLAG_OPTION_NONE       = 0x00,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED    = 0x01,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS       = 0x02,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_BANK       = 0x04,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING    = 0x08,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK    = 0x10,
+    RESET_ITEMS_COMMAND_FLAG_OPTION_ALL        = 
+     (
+        RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED 
+      | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
+      | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
+      | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
+      | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
+      ),
+    RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS = RESET_ITEMS_COMMAND_FLAG_OPTION_ALL << 1 | 1, // Will also delete bank bags and equiped bags
+};
+
 class ChatHandler
 {
     public:
@@ -509,6 +539,7 @@ class ChatHandler
         bool HandleResetSpellsCommand(char* args);
         bool HandleResetStatsCommand(char* args);
         bool HandleResetTalentsCommand(char* args);
+        bool HandleResetItemsCommand(char* args);
 
         bool HandleSendItemsCommand(char* args);
         bool HandleSendMailCommand(char* args);

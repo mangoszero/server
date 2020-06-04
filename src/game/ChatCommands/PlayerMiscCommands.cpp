@@ -30,6 +30,11 @@
      CommandTable : commandTable
  /***********************************************************************/
 
+enum
+{
+    EARTH_STONE_ITEM = 6948,
+};
+
 bool ChatHandler::HandleBankCommand(char* /*args*/)
 {
     m_session->SendShowBank(m_session->GetPlayer()->GetObjectGuid());
@@ -248,5 +253,281 @@ bool ChatHandler::HandleResetAllCommand(char* args)
 
     CharacterDatabase.PExecute("UPDATE `characters` SET `at_login` = `at_login` | '%u' WHERE (`at_login` & '%u') = '0'", atLogin, atLogin);
     sObjectAccessor.DoForAllPlayers([&atLogin](Player* plr) { plr->SetAtLoginFlag(atLogin); });
+    return true;
+}
+
+int GetResetItemsBitMask(char* args)
+{
+    int optionsBitMask = RESET_ITEMS_COMMAND_FLAG_OPTION_NONE;
+    
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_EQUIPED, strlen(args)) == 0)
+    {
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED;
+        return optionsBitMask;
+    }
+
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_BAGS, strlen(args)) == 0)
+    {
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS;
+        return optionsBitMask;
+    }
+
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_BANK, strlen(args)) == 0)
+    {
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_BANK;
+        return optionsBitMask;
+    }
+
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_KEYRING, strlen(args)) == 0)
+    {
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING;
+        return optionsBitMask;
+    }
+
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_BUYBACK, strlen(args)) == 0)
+    {
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK;
+        return optionsBitMask;
+    }
+
+    // now handle "all" or "allbags"
+    // Make all yhen try to test allbags
+    if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_ALL, strlen(RESET_ITEMS_COMMAND_ARG_OPTION_ALL)) == 0)
+    {
+        // here we have at least "all" but the string is perhaps greater and indicats "allbags"
+        optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_ALL;
+
+        if(strlen(args) > strlen(RESET_ITEMS_COMMAND_ARG_OPTION_ALL))
+        {
+            if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_ALL_BAGS, strlen(args)) == 0)
+            {
+                optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS;
+            }
+            else 
+            {
+                return RESET_ITEMS_COMMAND_FLAG_OPTION_NONE;
+            }
+        }
+       
+        return optionsBitMask;
+    }
+
+    return optionsBitMask;
+}
+
+bool ChatHandler::HandleResetItemsCommand(char* args)
+{
+    if (!*args)
+    {
+        return false;
+    }
+
+    // Define all boolean by analysing args
+    int optionBitMask = GetResetItemsBitMask(args);
+    
+    if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_NONE)
+    {
+        return false;
+    }
+
+    // Get Select player Or if no selection, use Current player
+    Player * player = getSelectedPlayer();
+
+    if(!player)
+    {
+        player = m_session->GetPlayer();
+    }
+
+    // Do not change swicth order because it can lead to non-empty bag deletion
+    BITMASK_AND_SWITCH(optionBitMask)
+    {
+        case RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED:
+        {
+            uint32 count = 0;
+            for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+            {
+                if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {   
+                    if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                    {
+                        // Do not delete earthstone
+                        continue;
+                    }
+                    player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                    ++count;
+                }
+            }
+
+            PSendSysMessage(LANG_COMMAND_RESET_ITEMS_EQUIPED, count, player->GetName());
+            break;
+        }
+
+        case RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS:
+        {
+            uint32 count = 0;
+            // default bagpack :
+            for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+            {
+                if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                    {
+                        // Do not delete earthstone
+                        continue;
+                    }
+                    player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                    ++count;
+                }
+            }
+
+            // bagslots
+            for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+            {
+                if (Bag* pBag = (Bag*)player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                    {
+                        if (Item* pItem = pBag->GetItemByPos(j))
+                        {
+                            if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                            {
+                                // Do not delete earthstone
+                                continue;
+                            }
+                            player->DestroyItem(i, j, true);
+                            ++count;
+                        }
+                    }
+                }
+            }
+            PSendSysMessage(LANG_COMMAND_RESET_ITEMS_BAGS, count, player->GetName());
+            break;
+        }
+
+        case RESET_ITEMS_COMMAND_FLAG_OPTION_BANK:
+        {
+            uint32 count = 0;
+            // Normal bank slot
+            for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+            {
+                if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                    {
+                        // Do not delete earthstone
+                        continue;
+                    }
+                    player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                    ++count;
+                }
+            }
+
+            // Bak bagslots
+            for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+            {
+                if (Bag* pBag = (Bag*)player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                    {
+                        if (Item* pItem = pBag->GetItemByPos(j))
+                        {
+                            if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                            {
+                                // Do not delete earthstone
+                                continue;
+                            }
+                            player->DestroyItem(i, j, true);
+                            ++count;
+                        }
+                    }
+                }
+            }
+
+            PSendSysMessage(LANG_COMMAND_RESET_ITEMS_BANK,count, player->GetName());
+            break;
+        }
+
+        case RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING:
+        {
+            uint32 count = 0;
+            for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+            {
+                if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                    {
+                        // Do not delete earthstone
+                        continue;
+                    }
+                    player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                    ++count;
+                }
+            }
+
+            PSendSysMessage(LANG_COMMAND_RESET_ITEMS_KEYRING, count, player->GetName());
+            break;
+        }
+
+        case RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK:
+        {
+            uint32 count = 0;
+            for (int i = BUYBACK_SLOT_START; i < BUYBACK_SLOT_END; ++i)
+            {
+                if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
+                    if (pItem->GetEntry() == EARTH_STONE_ITEM)
+                    {
+                        // Do not delete earthstone
+                        continue;
+                    }
+                    player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                    ++count;
+                }               
+            }
+
+            PSendSysMessage(LANG_COMMAND_RESET_ITEMS_BUYBACK, count, player->GetName());
+
+            break;
+        }        
+
+        // Perhaps check if we have deleted earthstone if, so then re-add it 
+    }
+
+    // Since bitmaskorepation is "AND" we have to manually test the last cases 
+    if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_ALL)
+    {
+        // Just text display
+        PSendSysMessage(LANG_COMMAND_RESET_ITEMS_ALL, player->GetName());
+    }
+
+    if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS)
+    {
+        uint32 equipedBagsCount = 0;
+        for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        {
+            if (Bag* pBag = (Bag*)player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                ++equipedBagsCount;
+            }
+        }
+
+        uint32 bankBagscount = 0;
+        // Bak bagslots
+        for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+        {
+            if (Bag* pBag = (Bag*)player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                // prevent no empty ?
+                player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+                ++bankBagscount;
+            }
+        }
+
+        // Just text display
+        PSendSysMessage(LANG_COMMAND_RESET_ITEMS_ALLBAGS, equipedBagsCount, bankBagscount,player->GetName());
+    }
+
+
     return true;
 }
