@@ -1047,6 +1047,12 @@ enum MangosStrings
     LANG_COMMAND_RESET_ITEMS_ALL        = 1527,
     LANG_COMMAND_RESET_ITEMS_ALLBAGS    = 1528,
 
+    LANG_COMMAND_RESET_MAIL_COD          = 1529,
+    LANG_COMMAND_RESET_MAIL_GM           = 1530,
+    LANG_COMMAND_RESET_MAIL_FROM         = 1531,
+    LANG_COMMAND_RESET_MAIL_PLAYER_NOTIF = 1532,
+    LANG_COMMAND_RESET_MAIL_RECAP        = 1533,
+
     // Room for more Level 2              1522-1599 not used
 
     // Outdoor PvP

@@ -2393,7 +2393,7 @@ class Player : public Unit
         void SetBotDeathTimer() { m_deathTimer = 0; }
         //PlayerTalentMap& GetTalentMap(uint8 spec) { return m_talents[spec]; }
 #endif
-
+        void SaveMail();
     protected:
 
         uint32 m_contestedPvPTimer;
@@ -2453,7 +2453,7 @@ class Player : public Unit
         void _SaveAuras();
         void _SaveInventory();
         void _SaveHonorCP();
-        void _SaveMail();
+        
         void _SaveQuestStatus();
         void _SaveSkills();
         void _SaveSpells();

@@ -18065,7 +18065,7 @@ void Player::SaveToDB()
 
     if (m_mailsUpdated)                                     // save mails only when needed
     {
-        _SaveMail();
+        SaveMail();
     }
 
     _SaveBGData();
@@ -18394,14 +18394,14 @@ void Player::_SaveHonorCP()
     tempList.clear();
 }
 
-void Player::_SaveMail()
+void Player::SaveMail()
 {
     static SqlStatementID updateMail ;
     static SqlStatementID deleteMailItems ;
 
     static SqlStatementID deleteItem ;
     static SqlStatementID deleteItemText;
-    static SqlStatementID deleteMain ;
+    static SqlStatementID deleteMail ;
     static SqlStatementID deleteItems ;
 
     for (PlayerMails::iterator itr = m_mail.begin(); itr != m_mail.end(); ++itr)
@@ -18450,7 +18450,7 @@ void Player::_SaveMail()
                 stmt.PExecute(m->itemTextId);
             }
 
-            SqlStatement stmt = CharacterDatabase.CreateStatement(deleteMain, "DELETE FROM `mail` WHERE `id` = ?");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(deleteMail, "DELETE FROM `mail` WHERE `id` = ?");
             stmt.PExecute(m->messageID);
 
             stmt = CharacterDatabase.CreateStatement(deleteItems, "DELETE FROM `mail_items` WHERE `mail_id` = ?");

@@ -25,6 +25,7 @@
 #include "Chat.h"
 #include "Language.h"
 #include "World.h"
+#include "Mail.h"
 
  /**********************************************************************
      CommandTable : commandTable
@@ -528,6 +529,203 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
         PSendSysMessage(LANG_COMMAND_RESET_ITEMS_ALLBAGS, equipedBagsCount, bankBagscount,player->GetName());
     }
 
+
+    return true;
+}
+
+int GetResetMailBitMask(char* args)
+{
+    int optionBitMask = RESET_MAIL_COMMAND_FLAG_OPTION_NONE;
+
+    if (args == NULL)
+    {
+        return optionBitMask;
+    }   
+
+    if (strncmp(args, RESET_MAIL_COMMAND_ARG_OPTION_COD, strlen(args)) == 0)
+    {
+        optionBitMask |= RESET_MAIL_COMMAND_FLAG_OPTION_COD;
+        return optionBitMask;
+    }
+
+    if (strncmp(args, RESET_MAIL_COMMAND_ARG_OPTION_GM, strlen(args)) == 0)
+    {
+        optionBitMask |= RESET_MAIL_COMMAND_FLAG_OPTION_GM;
+        return optionBitMask;
+    }
+
+    //Specific case for "from XXX"
+    if (strncmp(args, RESET_MAIL_COMMAND_ARG_OPTION_FROM, strlen(RESET_MAIL_COMMAND_ARG_OPTION_FROM)) == 0)
+    {
+        optionBitMask |= RESET_MAIL_COMMAND_FLAG_OPTION_FROM;
+        return optionBitMask;
+    }
+
+    if (strncmp(args, RESET_MAIL_COMMAND_ARG_OPTION_ALL, strlen(args)) == 0)
+    {
+        optionBitMask |= RESET_MAIL_COMMAND_FLAG_OPTION_ALL;
+        return optionBitMask;
+    }
+
+    return optionBitMask;
+}
+
+/* 
+        HandleResetMailCommand 
+        Default behaviour :
+       -------------------
+        - delete checked mails (even if its is GM stationery and if it contains items in it, but not deleted COD)
+
+       Options :
+       ---------
+        - cod : delete only cod mail (even if it is unchecked)
+            TODO -> to improve => return cod to sender instead of delete
+        - gm : delete only GM stationery emails (even if it is unchecked)
+        - all : delete all mails (even if it is unchecked)
+        - from XXXX : delete all mails from specific sender in the slected player mailbox, name or guid
+          TODO  -> to improve, if unchecked return letter to sender to inform it was not read and purged by GM for tech. reason.
+
+        TODO : future => handle reset mail for Offline char ?
+*/
+bool ChatHandler::HandleResetMailCommand(char* args)
+{
+    char* firstArg = ExtractArg(&args);
+
+    int optionBitMask = GetResetMailBitMask(firstArg);
+
+    // Get Select player Or if no selection, use Current player
+    Player* player = getSelectedPlayer();
+
+    if (!player)
+    {
+        player = m_session->GetPlayer();
+    }
+
+    uint8 totalDeletedMailCount = 0;
+    uint8 deletedGMMailCount = 0;
+    uint8 deletedCODMailCount = 0;
+    uint8 deletedFromMailCount = 0;
+
+    // Special chack if amil delete "from" 
+    // in order to retrieve player
+    uint32 senderGuid = -1;
+    std::string from_sender_name;
+
+    if (optionBitMask & RESET_MAIL_COMMAND_FLAG_OPTION_FROM)
+    {
+        // Check if arg after "from" is player guid or playerName and if so check guid
+        // Extract Uint32 from remaining arg text
+        uint32  playerGuid = 0;
+        Player* sender;
+        ObjectGuid from_sender_guid;
+       
+        if (!ExtractPlayerTarget(&args, &sender, &from_sender_guid, &from_sender_name))
+        {
+            SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            return false;
+        }
+
+        senderGuid = from_sender_guid;
+    }
+
+    for (PlayerMails::iterator itr = player->GetMailBegin(); itr != player->GetMailEnd(); ++itr)
+    {
+        // Flag the mail as "deleted"
+        Mail* m = (*itr);
+        
+        bool deleteMail = false;
+
+        // DO not use the swith because it begins at 1 
+        if (optionBitMask == RESET_MAIL_COMMAND_FLAG_OPTION_NONE)
+        {
+            if (m->checked && !m->COD && m->state != MAIL_STATE_DELETED)
+            {
+                deleteMail = true;
+            }
+        }
+
+        BITMASK_AND_SWITCH(optionBitMask)
+        {
+            case RESET_MAIL_COMMAND_FLAG_OPTION_COD:
+            {
+                if (m->COD && m->state != MAIL_STATE_DELETED)
+                {
+                    deleteMail = true;
+                    ++deletedCODMailCount;
+                }
+                break;
+            }
+
+            case RESET_MAIL_COMMAND_FLAG_OPTION_GM:
+            {
+                if (m->stationery == MAIL_STATIONERY_GM && m->state != MAIL_STATE_DELETED)
+                {
+                    deleteMail = true;
+                    ++deletedGMMailCount;
+                }
+                break;
+            }
+
+            case RESET_MAIL_COMMAND_FLAG_OPTION_FROM:
+            {
+                if (senderGuid != -1 && (m->sender == senderGuid) && m->state != MAIL_STATE_DELETED)
+                {
+                    deleteMail = true;
+                    ++deletedFromMailCount;
+                }
+                break;
+            }
+        }
+
+        if (deleteMail)
+        {
+            m->checked = m->checked | MAIL_CHECK_MASK_READ ;
+            m->state = MAIL_STATE_DELETED;
+            player->SendMailResult(m->messageID, MAIL_DELETED, MAIL_OK);
+            ++totalDeletedMailCount;
+        }
+    }
+
+    if (totalDeletedMailCount > 0)
+    {
+        player->m_mailsUpdated = true;
+    }
+
+    // Notification
+     Player * gm = m_session->GetPlayer();
+
+     BITMASK_AND_SWITCH(optionBitMask)
+     {
+            case RESET_MAIL_COMMAND_FLAG_OPTION_NONE:
+            {
+                // Nothing specific to display
+                break;
+            }
+
+            case RESET_MAIL_COMMAND_FLAG_OPTION_COD:
+            {
+                PSendSysMessage(LANG_COMMAND_RESET_MAIL_COD, deletedCODMailCount, player->GetName());
+                break;
+            }
+
+            case RESET_MAIL_COMMAND_FLAG_OPTION_GM:
+            {
+                PSendSysMessage(LANG_COMMAND_RESET_MAIL_GM, deletedGMMailCount, player->GetName());
+                break;
+            }
+
+            case RESET_MAIL_COMMAND_FLAG_OPTION_FROM:
+            {
+                PSendSysMessage(LANG_COMMAND_RESET_MAIL_FROM, deletedFromMailCount, from_sender_name.c_str(), player->GetName());
+                break;
+            }
+     }
+
+     if (gm != player)
+     {
+         ChatHandler(player).PSendSysMessage(LANG_COMMAND_RESET_MAIL_PLAYER_NOTIF, m_session->GetPlayer()->GetName(), totalDeletedMailCount);
+     }     
+     PSendSysMessage(LANG_COMMAND_RESET_MAIL_RECAP, totalDeletedMailCount, player->GetName());
 
     return true;
 }
