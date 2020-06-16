@@ -132,7 +132,7 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
     double result = 1.0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT COUNT(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS days FROM `ahbot_history` WHERE `category` = '%s' AND `won` = '1' AND `buytime` <= '%u' AND `auction_house` = '%u' `group` BY `days`) q",
+        "SELECT COUNT(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS days FROM `ahbot_history` WHERE `category` = '%s' AND `won` = '1' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
         category->GetName().c_str(), untilTime, AhBot::factions[auctionHouse]);
     if (results)
     {
