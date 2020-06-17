@@ -574,6 +574,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "stats",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleResetStatsCommand,          "", NULL },
         { "talents",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleResetTalentsCommand,        "", NULL },
         { "items",          SEC_ADMINISTRATOR,  false,  &ChatHandler::HandleResetItemsCommand,         "", NULL },
+        { "mail",          SEC_ADMINISTRATOR,  false,  &ChatHandler::HandleResetMailCommand,           "", NULL },
         { "all",            SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleResetAllCommand,            "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };

@@ -513,7 +513,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket& recv_data)
 
         CharacterDatabase.BeginTransaction();
         pl->SaveInventoryAndGoldToDB();
-        pl->_SaveMail();
+        pl->SaveMail();
         CharacterDatabase.CommitTransaction();
 
         pl->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_OK, 0, itemId, count);
@@ -557,7 +557,7 @@ void WorldSession::HandleMailTakeMoney(WorldPacket& recv_data)
     // save money and mail to prevent cheating
     CharacterDatabase.BeginTransaction();
     pl->SaveGoldToDB();
-    pl->_SaveMail();
+    pl->SaveMail();
     CharacterDatabase.CommitTransaction();
 }
 

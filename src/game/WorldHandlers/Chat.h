@@ -109,6 +109,12 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 #define RESET_ITEMS_COMMAND_ARG_OPTION_ALL "all"
 #define RESET_ITEMS_COMMAND_ARG_OPTION_ALL_BAGS "allbags"
 
+#define RESET_MAIL_COMMAND_ARG_OPTION_COD  "cod"
+#define RESET_MAIL_COMMAND_ARG_OPTION_GM   "gm"
+#define RESET_MAIL_COMMAND_ARG_OPTION_ALL  "all"
+#define RESET_MAIL_COMMAND_ARG_OPTION_FROM "from"
+
+
 #define BITMASK_AND_SWITCH(x) \
     for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 
@@ -129,6 +135,15 @@ enum  ResetItemCommandArgFlags
       | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
       ),
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS = RESET_ITEMS_COMMAND_FLAG_OPTION_ALL << 1 | 1, // Will also delete bank bags and equiped bags
+};
+
+enum ResetMailCommandArgFlags
+{
+    RESET_MAIL_COMMAND_FLAG_OPTION_NONE    = 0x00,
+    RESET_MAIL_COMMAND_FLAG_OPTION_COD     = 0x01,
+    RESET_MAIL_COMMAND_FLAG_OPTION_GM      = 0x02,
+    RESET_MAIL_COMMAND_FLAG_OPTION_ALL     = ( RESET_MAIL_COMMAND_FLAG_OPTION_COD | RESET_MAIL_COMMAND_FLAG_OPTION_GM ),
+    RESET_MAIL_COMMAND_FLAG_OPTION_FROM    = 0x04,
 };
 
 class ChatHandler
@@ -540,6 +555,7 @@ class ChatHandler
         bool HandleResetStatsCommand(char* args);
         bool HandleResetTalentsCommand(char* args);
         bool HandleResetItemsCommand(char* args);
+        bool HandleResetMailCommand(char* args);
 
         bool HandleSendItemsCommand(char* args);
         bool HandleSendMailCommand(char* args);
