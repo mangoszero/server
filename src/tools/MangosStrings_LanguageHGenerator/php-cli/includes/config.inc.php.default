@@ -1,0 +1,55 @@
+<?php
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2020 MaNGOS <https://getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
+ 
+ /* Generator Initiated by By Elmsroth */
+ 
+ /*
+    DATABASE CONFIG
+ */
+ define("DB_HOST","localhost");
+ define("DB_PORT", 3306);
+ // The user should be granted access to all mangos schemas for all core DBs you might have
+ define("DB_USER", "mangos_zero");
+ define("DB_PASS", "passWQiopword1xG2196qsdOUdqs");
+ define("SHARED_CONFIGS", 
+ [
+    0 => ["DB"=> "world0", "TPL_PREFIX" => "MangosZero_", "OUT_DIR_IF_EMPTY" =>"../out/MangosZero/"],
+    1 => ["DB"=> "world1", "TPL_PREFIX" => "MangosOne_", "OUT_DIR_IF_EMPTY" =>"../out/MangosOne/"],
+    2 => ["DB"=> "world2", "TPL_PREFIX" => "MangosTwo_", "OUT_DIR_IF_EMPTY" =>"../out/MangosTwo/"],
+    3 => ["DB"=> "world3", "TPL_PREFIX" => "MangosThree_", "OUT_DIR_IF_EMPTY" =>"../out/MangosThree/"],
+    4 => ["DB"=> "world4", "TPL_PREFIX" => "MangosFour_", "OUT_DIR_IF_EMPTY" =>"../out/MangosFour/"]
+ ]
+);
+
+ /* OUTPUT Directory for generated files
+    It is a good idea to set the output directory
+    to be the one where the original source file is located.
+    If empty, the file will be generated in the "out" folder in the root fodler of this project
+ */
+ 
+ // /!\ WARNING  NEVER PUT DOUBLE QUOTES FOR VALUE
+ define("OUTPUT_DIR", '');
+
+?>
