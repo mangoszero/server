@@ -743,6 +743,8 @@ ChatCommand* ChatHandler::getCommandTable()
         { "appear",         SEC_MODERATOR,      false, &ChatHandler::HandleAppearCommand,              "", NULL },
         { "summon",         SEC_MODERATOR,      false, &ChatHandler::HandleSummonCommand,              "", NULL },
         { "groupgo",        SEC_MODERATOR,      false, &ChatHandler::HandleGroupgoCommand,             "", NULL },
+        { "auragroup",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAuraGroupCommand,             "", NULL },
+        { "unauragroup",    SEC_ADMINISTRATOR,  false, &ChatHandler::HandleUnAuraGroupCommand,             "", NULL },
         { "commands",       SEC_PLAYER,         true,  &ChatHandler::HandleCommandsCommand,            "", NULL },
         { "demorph",        SEC_GAMEMASTER,     false, &ChatHandler::HandleDeMorphCommand,             "", NULL },
         { "die",            SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDieCommand,                 "", NULL },

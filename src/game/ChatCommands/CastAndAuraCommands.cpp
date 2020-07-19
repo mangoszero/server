@@ -31,6 +31,8 @@
     CommandTable : castCommandTable
 /***********************************************************************/
 
+bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
+
 bool ChatHandler::HandleCastCommand(char* args)
 {
     if (!*args)
@@ -272,26 +274,7 @@ bool ChatHandler::HandleAuraCommand(char* args)
         return false;
     }
 
-    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, m_session->GetPlayer());
-
-    for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-    {
-        uint8 eff = spellInfo->Effect[i];
-        if (eff >= TOTAL_SPELL_EFFECTS)
-        {
-            continue;
-        }
-        if (IsAreaAuraEffect(eff) ||
-            eff == SPELL_EFFECT_APPLY_AURA ||
-            eff == SPELL_EFFECT_PERSISTENT_AREA_AURA)
-        {
-            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), NULL, holder, target);
-            holder->AddAura(aur, SpellEffectIndex(i));
-        }
-    }
-    target->AddSpellAuraHolder(holder);
-
-    return true;
+    return AddAuraToPlayer(spellInfo, target, m_session->GetPlayer());
 }
 
 bool ChatHandler::HandleUnAuraCommand(char* args)
@@ -319,6 +302,248 @@ bool ChatHandler::HandleUnAuraCommand(char* args)
     }
 
     target->RemoveAurasDueToSpell(spellID);
+
+    return true;
+}
+
+/**********************************************************************
+    CommandTable : Main Command table
+/***********************************************************************/
+
+bool ChatHandler::HandleAuraGroupCommand(char* args)
+{
+    // number or [name] Shift-click form |color|Hspell:spell_id|h[name]|h|r or Htalent form
+    uint32 spellID = ExtractSpellIdFromLink(&args);
+
+    SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellID);
+    if (!spellInfo)
+    {
+        PSendSysMessage("Spell %u does not exists", spellID);
+        return false;
+    }
+
+    if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
+        !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
+    {
+        PSendSysMessage(LANG_SPELL_NO_HAVE_AURAS, spellID);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    Unit* rawTarget = getSelectedUnit();
+    Player* playerTarget ;
+
+    if (rawTarget)
+    {
+        if (rawTarget->GetTypeId() == TYPEID_UNIT)
+        {
+            SendSysMessage(LANG_NO_CHAR_SELECTED);
+            SetSentErrorMessage(true);
+            return false;
+        }
+
+        playerTarget = (Player*)rawTarget;
+    }
+    else
+    {
+        playerTarget = m_session->GetPlayer();
+    }
+
+
+    Group* grp = playerTarget->GetGroup();
+
+    if (!grp)
+    {
+        std::string nameLink = GetNameLink(playerTarget);
+
+        if (playerTarget->IsDead())
+        {
+            PSendSysMessage(LANG_COMMAND_AURAGROUP_CANNOT_APPLY_AURA_PLAYER_IS_DEAD, nameLink.c_str());
+            return false;
+        }
+        else
+        {
+            AddAuraToPlayer(spellInfo, playerTarget, m_session->GetPlayer());
+            PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_APPLIED, spellInfo->Id, nameLink.c_str());
+            return true;
+        }
+    }
+    else 
+    {
+        // Apply to all members of the group
+        for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+        {
+            Player* pl = itr->getSource();
+
+            //Skip if player is not found
+            if (!pl || !pl->GetSession())
+            {
+                continue;
+            }
+
+            std::string nameLink = GetNameLink(pl);
+
+            //skip if player is dead
+            if (pl->IsDead())
+            {
+                PSendSysMessage(LANG_COMMAND_AURAGROUP_CANNOT_APPLY_AURA_PLAYER_IS_DEAD, nameLink.c_str());
+                continue;
+            }
+
+            AddAuraToPlayer(spellInfo, pl, m_session->GetPlayer());
+            PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_APPLIED, spellInfo->Id, nameLink.c_str());
+
+         }
+
+         return true;
+    }
+}
+
+bool ChatHandler::HandleUnAuraGroupCommand(char* args)
+{
+    // Must have args : spellId or "all" 
+    if(!*args)
+    { 
+        return false;
+    }
+
+    bool removeAll = false;
+
+    std::string argstr = args;
+    if (argstr == "all")
+    {
+        removeAll = true;
+    }
+
+    uint32 spellIdToRemove;
+
+    if (!removeAll)
+    {
+        spellIdToRemove = ExtractSpellIdFromLink(&args);
+        if (!spellIdToRemove)
+        {
+            return false;
+        }
+    }
+
+    // Now remove the aura(s)
+    Unit* rawTarget = getSelectedUnit();
+    Player* playerTarget;
+
+    if (rawTarget)
+    {
+        if (rawTarget->GetTypeId() == TYPEID_UNIT)
+        {
+            SendSysMessage(LANG_NO_CHAR_SELECTED);
+            SetSentErrorMessage(true);
+            return false;
+        }
+
+        playerTarget = (Player*)rawTarget;
+    }
+    else
+    {
+        playerTarget = m_session->GetPlayer();
+    }
+
+
+    Group* grp = playerTarget->GetGroup();
+
+    if (!grp)
+    {
+        std::string nameLink = GetNameLink(playerTarget);
+
+        //security : avoid to remove ghost form if player is dead
+        if (playerTarget->IsDead())
+        {
+            PSendSysMessage(LANG_COMMAND_AURAGROUP_CANNOT_UNAURA_DEAD_PLAYER, nameLink.c_str());
+            return false;
+        }
+        else
+        {
+            if (removeAll)
+            {
+                playerTarget->RemoveAllAuras();
+                PSendSysMessage(LANG_COMMAND_AURAGROUP_ALL_AURA_REMOVED, nameLink.c_str());
+            }
+            else
+            {
+                playerTarget->RemoveAurasDueToSpell(spellIdToRemove);
+                PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_REMOVED_FOR_SPELL, spellIdToRemove, nameLink.c_str());
+            }
+            
+            return true;
+        }
+    }
+    else
+    {
+        // Apply to all members of the group
+        for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
+        {
+            Player* pl = itr->getSource();
+
+            if (!pl || !pl->GetSession())
+            {
+                continue;
+            }
+
+            std::string nameLink = GetNameLink(pl);
+            if (pl->IsDead())
+            {
+                PSendSysMessage(LANG_COMMAND_AURAGROUP_CANNOT_UNAURA_DEAD_PLAYER, nameLink.c_str());
+                continue;
+            }
+            else
+            {
+                if (removeAll)
+                {
+                    pl->RemoveAllAuras();
+                    PSendSysMessage(LANG_COMMAND_AURAGROUP_ALL_AURA_REMOVED, nameLink.c_str());
+                }
+                else
+                {
+                    pl->RemoveAurasDueToSpell(spellIdToRemove);
+                    PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_REMOVED_FOR_SPELL, spellIdToRemove, nameLink.c_str());
+                }
+
+            }
+
+        }
+
+        return true;
+    }
+}
+
+bool AddAuraToPlayer(const SpellEntry * spellInfo,Unit * target, WorldObject * caster)
+{
+    // We assume the spellInfo has been checked and teh spell has aura effects
+    /*
+        if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
+        !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
+    */
+    if (!spellInfo)
+    {
+        return false;
+    }
+
+    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, caster);
+
+    for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        uint8 eff = spellInfo->Effect[i];
+        if (eff >= TOTAL_SPELL_EFFECTS)
+        {
+            continue;
+        }
+        if (IsAreaAuraEffect(eff) ||
+            eff == SPELL_EFFECT_APPLY_AURA ||
+            eff == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+        {
+            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), NULL, holder, target);
+            holder->AddAura(aur, SpellEffectIndex(i));
+        }
+    }
+    target->AddSpellAuraHolder(holder);
 
     return true;
 }
