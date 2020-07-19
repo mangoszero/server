@@ -609,6 +609,8 @@ class ChatHandler
         bool HandleSummonCommand(char* args);
         bool HandleAppearCommand(char* args);
         bool HandleGroupgoCommand(char* args);
+        bool HandleAuraGroupCommand(char* args);
+        bool HandleUnAuraGroupCommand(char* args);
         bool HandleRecallCommand(char* args);
         bool HandleAnnounceCommand(char* args);
         bool HandleNotifyCommand(char* args);
