@@ -63,6 +63,7 @@ enum DumpReturn
     DUMP_TOO_MANY_CHARS,
     DUMP_UNEXPECTED_END,
     DUMP_FILE_BROKEN,
+    DUMP_DB_VERSION_MISMATCH
 };
 
 class PlayerDump
