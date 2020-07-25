@@ -236,7 +236,7 @@ bool changetokGuid(std::string& str, int n, std::map<uint32, uint32>& guidMap, u
     return changetoknth(str, n, chritem, false, nonzero);
 }
 
-std::string CreateDumpString(char const* tableName, QueryResult* result)
+std::string CreateDumpString(char const* tableName, char const* tableColumnNamesAsChars, QueryResult* result)
 {
     if (!tableName || !result)
     {
@@ -244,7 +244,7 @@ std::string CreateDumpString(char const* tableName, QueryResult* result)
     }
 
     std::ostringstream ss;
-    ss << "INSERT INTO `" << tableName << "` VALUES (";
+    ss << "INSERT INTO `" << tableName << "` ("<< tableColumnNamesAsChars  <<") VALUES (";
     Field* fields = result->Fetch();
     for (uint32 i = 0; i < result->GetFieldCount(); ++i)
     {
@@ -364,7 +364,26 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             wherestr = GenerateWhereStr(fieldname, guid);
         }
 
-        QueryResult* result = CharacterDatabase.PQuery("SELECT * FROM `%s` WHERE `%s`", tableFrom, wherestr.c_str());
+        //fetch table columns 
+        std::string tableColumnNamesStr = "";
+        QueryNamedResult* resNames = CharacterDatabase.PQueryNamed("SELECT * FROM `%s` LIMIT 1", tableFrom);
+        if (!resNames)
+        {
+            return;
+        }
+        // There will be a result since if not teh code does not hit lines before... so no check needed
+        QueryFieldNames const& namesMap = resNames->GetFieldNames();
+
+        for (QueryFieldNames::const_iterator itr = namesMap.begin(); itr != namesMap.end(); ++itr)
+        {
+            tableColumnNamesStr += "`" + *itr  +"`,";
+        }
+        // remove last character of tableColumnNamesStr = ","
+        tableColumnNamesStr.pop_back();
+        namesMap.empty();
+
+        // fetch results of the table
+        QueryResult* result = CharacterDatabase.PQuery("SELECT %s FROM `%s` WHERE %s", tableColumnNamesStr.c_str(), tableFrom, wherestr.c_str());
         if (!result)
         {
             return;
@@ -390,7 +409,7 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
                 default:                       break;
             }
 
-            dump += CreateDumpString(tableTo, result);
+            dump += CreateDumpString(tableTo, tableColumnNamesStr.c_str(), result);
             dump += "\n";
         }
         while (result->NextRow());
@@ -405,38 +424,29 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
     std::string dump;
 
     dump += "IMPORTANT NOTE: This sql queries not created for apply directly, use '.pdump load' command in console or client chat instead.\n";
-    dump += "IMPORTANT NOTE: NOT APPLY ITS DIRECTLY to character DB or you will DAMAGE and CORRUPT character DB\n\n";
+    dump += "IMPORTANT NOTE: NOT APPLY ITS DIRECTLY to character DB or you will DAMAGE and CORRUPT character DB\n";
 
     // revision check guard
-    QueryNamedResult* result = CharacterDatabase.QueryNamed("SELECT * FROM `db_version` LIMIT 1");
+    // Check the revision of character DB which will be the first  line of the whole version/structure set 
+    QueryResult* result = CharacterDatabase.Query("SELECT `version`, `structure`, `description`, `comment` FROM `db_version` ORDER BY `version` DESC, `structure` DESC, `content` ASC LIMIT 1");
+   
     if (result)
     {
-        QueryFieldNames const& namesMap = result->GetFieldNames();
-        std::string reqName;
-        for (QueryFieldNames::const_iterator itr = namesMap.begin(); itr != namesMap.end(); ++itr)
-        {
-            if (itr->substr(0, 9) == "required_")
-            {
-                reqName = *itr;
-                break;
-            }
-        }
-
-        if (!reqName.empty())
-        {
-            // this will fail at wrong character DB version
-            dump += "UPDATE `version` SET `" + reqName + "` = 1 WHERE FALSE;\n\n";
-        }
-        else
-        {
-            sLog.outError("Character DB Table 'db_version'  does not have revision guard field, revision guard query not added to pdump.");
-        }
+        Field* fields = result->Fetch();
+        
+        dump += "DUMPED_WITH:"+std::to_string(fields[0].GetInt16()) 
+        + "." + std::to_string(fields[1].GetInt16()) + ".X "
+        +" CHAR. DB VERSION ( " 
+        + fields[2].GetCppString() + " / "
+        + fields[3].GetCppString()  +
+         ")\n\n"
+        ;
 
         delete result;
     }
     else
     {
-        sLog.outError("Character DB not have 'db_version' table, revision guard query not added to pdump.");
+        sLog.outError("Character DB not have 'db_version' table");
     }
 
     for (DumpTable* itr = &dumpTables[0]; itr->isValid(); ++itr)
@@ -570,16 +580,38 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
             continue;
         }
 
-        // add required_ check
-        if (line.substr(nw_pos, 41) == "UPDATE `db_version` SET `required_`")
-        {
-            if (!CharacterDatabase.Execute(line.c_str()))
-            {
-                ROLLBACK(DUMP_FILE_BROKEN);
-            }
+        // Check db version corresp.
+        std::string dbVersionLinePrefix = line.substr(nw_pos, 12);
 
-            continue;
+        if (dbVersionLinePrefix =="DUMPED_WITH:")
+        {
+            QueryResult* result = CharacterDatabase.Query("SELECT `version`, `structure`, `description`, `comment` FROM `db_version` ORDER BY `version` DESC, `structure` DESC, `content` ASC LIMIT 1");
+
+            if (result)
+            {
+                Field* fields = result->Fetch();
+                // Only version / structure is needed
+                std::string dbversion = std::to_string(fields[0].GetInt16()) + "." + std::to_string(fields[1].GetInt16())+".X";
+                size_t dbversionLen = dbversion.size();
+
+                std::string dbversionInDumpFile = line.substr(nw_pos+12, dbversionLen);
+               
+               delete result;
+
+                if (dbversionInDumpFile != dbversion)
+                {
+                    sLog.outError("LoadPlayerDump: Cannot load player dump - file version is %s, DB needs %s", dbversionInDumpFile.c_str(), dbversion.c_str());
+                    ROLLBACK(DUMP_DB_VERSION_MISMATCH);
+                }
+                else 
+                {
+                    continue;
+                }
+
+
+            }
         }
+        
 
         // determine table name and load type
         std::string tn = gettablename(line);
