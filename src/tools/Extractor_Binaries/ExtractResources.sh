@@ -98,6 +98,14 @@ else
     fi
 fi
 
+# Ensure bins are marked executable
+for bin in ./map-extractor ./mmap-extractor ./vmap-extractor; do
+    if [ -f "$bin" ]; then
+        echo "Marking $bin executable"
+        chmod +x "$bin"
+    fi
+done
+
 ## Special case: Only reextract offmesh tiles
 if [ "$USE_MMAPS_OFFMESH" = "1" ]
 then
