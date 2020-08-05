@@ -171,7 +171,7 @@ respects for all of the code used other than [OpenSSL][48].
 
 [40]: http://www.mysql.com/ "MySQL · The world's most popular open source database"
 [41]: http://www.mariadb.org/ "MariaDB · An enhanced, drop-in replacement for MySQL"
-[43]: http://www.cs.wustl.edu/~schmidt/ACE.html "ACE · The ADAPTIVE Communication Environment"
+[43]: http://www.dre.vanderbilt.edu/~schmidt/ACE.html "ACE · The ADAPTIVE Communication Environment"
 [44]: http://github.com/memononen/recastnavigation "Recast · Navigation-mesh Toolset for Games"
 [45]: http://sourceforge.net/projects/g3d/ "G3D · G3D Innovation Engine"
 [46]: http://github.com/ge0rg/libmpq "libmpq · A library for reading data from MPQ archives"
