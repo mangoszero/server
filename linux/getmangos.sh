@@ -1284,15 +1284,15 @@ function ExtractResources
       # Check the user's answer
       if [ $? -eq 0 ]; then
         Log "Deleting DBC and Maps previously generated." 1
-        rm -rf $GAMEPATH/dbc
-        rm -rf $GAMEPATH/maps
+        rm -rf "$GAMEPATH/dbc"
+        rm -rf "$GAMEPATH/maps"
 
         Log "Copying DBC and Maps extractor" 0
         rm -f "$GAMEPATH/map-extractor"
         cp "$INSTPATH/bin/tools/map-extractor" "$GAMEPATH"
 
         Log "Extracting DBC and Maps" 0
-        cd $GAMEPATH
+        cd "$GAMEPATH"
         ./map-extractor
 
         if [ $? -eq 0 ]; then
@@ -1316,11 +1316,11 @@ function ExtractResources
         cp -R "$GAMEPATH/maps" "$INSTPATH/bin"
       fi
     else
-	rm -rf $GAMEPATH/map-extractor
+	rm -rf "$GAMEPATH/map-extractor"
 	cp "$INSTPATH/bin/tools/map-extractor" "$GAMEPATH"
 
 	Log "Extracting DBC and Maps" 0
-	cd $GAMEPATH
+	cd "$GAMEPATH"
 	./map-extractor
 
 	if [ $? -eq 0 ]; then
