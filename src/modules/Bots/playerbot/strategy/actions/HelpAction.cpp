@@ -47,7 +47,9 @@ string HelpAction::CombineSupported(set<string> commands)
     {
         out << *i;
         if (++i != commands.end())
+        {
             out << ", ";
+        }
     }
 
     return out.str();

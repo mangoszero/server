@@ -93,7 +93,9 @@ int32 ItemBag::GetCount(Category* category, uint32 item)
     for (vector<uint32>::iterator i = items.begin(); i != items.end(); ++i)
     {
         if (*i == item)
+        {
             count++;
+        }
     }
 
     return count;
@@ -157,7 +159,9 @@ void AvailableItemsBag::Load()
       for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
       {
           if (vendorItems.find(itemId) != vendorItems.end())
+          {
               continue;
+          }
 
         Add(sObjectMgr.GetItemPrototype(itemId));
     }
@@ -178,7 +182,9 @@ void InAuctionItemsBag::Load()
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itr->second->itemTemplate);
         if (!proto)
+        {
             continue;
+        }
 
         Add(proto);
     }

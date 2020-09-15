@@ -19,7 +19,9 @@ void LoadSet(string value, T &res)
     {
         uint32 id = atoi((*i).c_str());
         if (!id)
+        {
             continue;
+        }
 
         res.insert(id);
     }

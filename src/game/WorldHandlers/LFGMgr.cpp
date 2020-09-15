@@ -89,7 +89,9 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
         leader->GetSession()->SendMeetingstoneSetqueue(queAreaID, MEETINGSTONE_STATUS_JOINED_QUEUE);
     }
     else                                                    // Player is in group, but it's not leader
+    {
         MANGOS_ASSERT(false && "LFGQueue::AddToQueue called while player is not leader and in group.");
+    }
 }
 
 void LFGQueue::RestoreOfflinePlayer(ObjectGuid plrGuid)
@@ -338,7 +340,9 @@ void LFGQueue::Update(uint32 diff)
             for(QueuedPlayersMap::iterator nPlayer2 = m_QueuedPlayers.begin(); nPlayer2 != m_QueuedPlayers.end(); ++nPlayer2)
             {
                 if(nPlayer1->first == nPlayer2->first)
+                {
                     continue;
+                }
 
                 if(nPlayer1->second.team == nPlayer2->second.team &&
                     nPlayer1->second.areaId == nPlayer2->second.areaId)
@@ -350,7 +354,9 @@ void LFGQueue::Update(uint32 diff)
                     if(!newQueueGroup->IsCreated())
                     {
                         if(newQueueGroup->Create(leader->GetObjectGuid(), leader->GetName()))
+                        {
                             sObjectMgr.AddGroup(newQueueGroup);
+                        }
                         else
                         {
                             return;
@@ -398,10 +404,14 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
             for (QueuedPlayersMap::iterator qPlayer_loop = m_QueuedPlayers.begin(); qPlayer_loop != m_QueuedPlayers.end(); ++qPlayer_loop)
             {
                 if (qPlayer->first == qPlayer_loop->first)
+                {
                     continue;
+                }
 
                 if(qPlayer->second.timeInLFG > qPlayer_loop->second.timeInLFG)
+                {
                     hasBeenLongerInQueue = true;
+                }
             }
 
             if(hasBeenLongerInQueue)
@@ -431,7 +441,9 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
 
                             // Remove dps flag if there is enough dps in group.
                             if(qGroup->second.dpsCount >= 3)
+                            {
                                 qGroup->second.availableRoles &= ~LFG_ROLE_DPS;
+                            }
                         }
                         break;
                     }
@@ -465,16 +477,22 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
             for (QueuedPlayersMap::iterator qPlayer_loop = m_QueuedPlayers.begin(); qPlayer_loop != m_QueuedPlayers.end(); ++qPlayer_loop)
             {
                 if (qPlayer->first == qPlayer_loop->first)
+                {
                     continue;
+                }
 
                 Player* m_loopMember = sObjectMgr.GetPlayer(qPlayer_loop->first);
 
                 // If there is anyone in group for class with higher priority then ignore current member.
                 if (getPriority((Classes)plr->getClass(), role) < getPriority((Classes)m_loopMember->getClass(), role))
+                {
                     hasFoundPriority = true;
+                }
 
                 if(qPlayer->second.timeInLFG > qPlayer_loop->second.timeInLFG)
+                {
                     hasBeenLongerInQueue = true;
+                }
             }
 
             // If there were no one in group for role with higher priority add this member to group
@@ -505,7 +523,9 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
 
                             // Remove dps flag if there is enough dps in group.
                             if(qGroup->second.dpsCount >= 3)
+                            {
                                 qGroup->second.availableRoles &= ~LFG_ROLE_DPS;
+                            }
                         }
                         break;
                     }

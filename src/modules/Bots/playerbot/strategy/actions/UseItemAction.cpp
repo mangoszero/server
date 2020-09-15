@@ -9,7 +9,9 @@ bool UseItemAction::Execute(Event event)
 {
     string name = event.getParam();
     if (name.empty())
+    {
         name = getName();
+    }
 
     list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", name);
     list<ObjectGuid> gos = chat->parseGameobjects(name);
@@ -114,9 +116,13 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     {
         uint32 count = item->GetCount();
         if (count > 1)
+        {
             out << " (" << count << " available) ";
+        }
         else
+        {
             out << " (the last one!)";
+        }
     }
 
     if (goGuid)
@@ -178,20 +184,28 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     {
         uint32 spellId = item->GetProto()->Spells[i].SpellId;
         if (!spellId)
+        {
             continue;
+        }
 
         if (!ai->CanCastSpell(spellId, bot, false))
+        {
             continue;
+        }
 
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (pSpellInfo->Targets & TARGET_FLAG_ITEM)
         {
             Item* itemForSpell = AI_VALUE2(Item*, "item for spell", spellId);
             if (!itemForSpell)
+            {
                 continue;
+            }
 
             if (itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+            {
                 continue;
+            }
 
             if (bot->GetTrader())
             {

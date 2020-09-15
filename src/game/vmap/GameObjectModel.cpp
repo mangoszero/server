@@ -207,9 +207,13 @@ bool GameObjectModel::GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vecto
 {
     G3D::Vector3 p;
     if (absolute)
+    {
         p = (iQuat.conj() * G3D::Quat((srcPoint - iPos) * iInvScale) * iQuat).imag();
+    }
     else
+    {
         p = srcPoint;
+    }
 
     float dist;
     bool hit = iModel->GetContactPoint(p, G3D::Vector3(0.0f, 0.0f, -1.0f), dist);

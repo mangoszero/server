@@ -13,7 +13,9 @@ Unit* PartyMemberValue::FindPartyMember(list<Player*>* party, FindPlayerPredicat
         Player* player = *i;
 
         if (!player)
+        {
             continue;
+        }
 
         if (Check(player) && predicate.Check(player))
         {
@@ -46,11 +48,17 @@ Unit* PartyMemberValue::FindPartyMember(FindPlayerPredicate &predicate)
         Player* player = gref->getSource();
 
         if (ai->IsHeal(player))
+        {
             healers.push_back(player);
+        }
         else if (ai->IsTank(player))
+        {
             tanks.push_back(player);
+        }
         else if (player != master)
+        {
             others.push_back(player);
+        }
     }
 
     list<list<Player*>* > lists;
@@ -92,13 +100,17 @@ bool PartyMemberValue::IsTargetOfSpellCast(Player* target, SpellEntryPredicate &
     {
         Player* player = gref->getSource();
         if (player == bot)
+        {
             continue;
+        }
 
         if (player->IsNonMeleeSpellCasted(true))
         {
-            for (int type = CURRENT_GENERIC_SPELL; type < CURRENT_MAX_SPELL; type++) {
+            for (int type = CURRENT_GENERIC_SPELL; type < CURRENT_MAX_SPELL; type++)
+            {
                 Spell* spell = player->GetCurrentSpell((CurrentSpellTypes)type);
-                if (spell && predicate.Check(spell->m_spellInfo)) {
+                if (spell && predicate.Check(spell->m_spellInfo))
+                {
                     ObjectGuid unitTarget = spell->m_targets.getUnitTargetGuid();
                     if (unitTarget == targetGuid)
                     {

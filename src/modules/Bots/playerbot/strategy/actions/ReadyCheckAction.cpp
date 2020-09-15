@@ -11,7 +11,9 @@ bool ReadyCheckAction::Execute(Event event)
     ObjectGuid player;
     p.rpos(0);
     if (!p.empty())
+    {
         p >> player;
+    }
 
     if (player == bot->GetObjectGuid())
     {

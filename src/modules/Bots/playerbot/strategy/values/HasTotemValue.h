@@ -18,11 +18,15 @@ namespace ai
             {
                 Unit* unit = ai->GetUnit(*i);
                 if (!unit)
+                {
                     continue;
+                }
 
                 Creature* creature = dynamic_cast<Creature*>(unit);
                 if (!creature || !creature->IsTotem())
+                {
                     continue;
+                }
 
                 if (strstri(creature->GetName(), qualifier.c_str()) && bot->GetDistance(creature) <= sPlayerbotAIConfig.spellDistance)
                 {

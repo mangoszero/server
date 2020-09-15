@@ -42,7 +42,9 @@ namespace ai
 
         bool needCheck() {
             if (++ticksElapsed >= checkInterval) {
+            {
                 ticksElapsed = 0;
+            }
                 return true;
             }
             return false;

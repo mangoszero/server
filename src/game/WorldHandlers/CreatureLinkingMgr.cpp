@@ -424,7 +424,9 @@ void CreatureLinkingHolder::AddMasterToHolder(Creature* pCreature)
     BossGuidMapBounds bounds = m_masterGuid.equal_range(pCreature->GetEntry());
     for (BossGuidMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         if (itr->second == pCreature->GetObjectGuid())
-            { return; }                                         // Already added
+        {
+            return;                                          // Already added
+        }
 
     m_masterGuid.insert(BossGuidMap::value_type(pCreature->GetEntry(), pCreature->GetObjectGuid()));
 }
@@ -643,7 +645,9 @@ void CreatureLinkingHolder::ProcessSlave(CreatureLinkingEvent eventType, Creatur
             break;
         case LINKING_EVENT_DESPAWN:
             if (flag & FLAG_DESPAWN_ON_DESPAWN && !pSlave->IsDespawned())
+            {
                 pSlave->ForcedDespawn();
+            }
 
             break;
     }
@@ -760,7 +764,9 @@ bool CreatureLinkingHolder::CanSpawn(uint32 lowGuid, Map* _map, CreatureLinkingI
     if (pInfo->searchRange == 0)                            // Map wide case
     {
         if (!pInfo->masterDBGuid)
-            { return false; }                                   // This should never happen
+        {
+            return false;                                    // This should never happen
+        }
 
         if (pInfo->linkingFlag & FLAG_CANT_SPAWN_IF_BOSS_DEAD)
         {

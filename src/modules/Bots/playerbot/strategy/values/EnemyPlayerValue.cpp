@@ -20,7 +20,9 @@ public:
         {
             Player* enemy = dynamic_cast<Player*>(attacker);
             if (enemy && ai->IsOpposing(enemy) && enemy->IsPvP())
+            {
                 result = attacker;
+            }
         }
     }
 

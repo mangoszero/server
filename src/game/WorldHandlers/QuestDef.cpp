@@ -148,7 +148,9 @@ Quest::Quest(Field* questRecord)
     {
         DetailsEmote[i] = questRecord[105 + i].GetUInt32();
         if (DetailsEmote[i] != 0)
+        {
             m_detailsemotecount = i + 1;
+        }
     }
 
     for (int i = 0; i < QUEST_EMOTE_COUNT; ++i)

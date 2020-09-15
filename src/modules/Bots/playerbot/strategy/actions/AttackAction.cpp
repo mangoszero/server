@@ -97,7 +97,9 @@ bool AttackAction::Attack(Unit* target)
     {
         CreatureAI* creatureAI = ((Creature*)pet)->AI();
         if (creatureAI)
+        {
             creatureAI->AttackStart(target);
+        }
     }
 
     bot->Attack(target, true);

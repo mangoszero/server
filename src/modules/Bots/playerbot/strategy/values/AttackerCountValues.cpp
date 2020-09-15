@@ -48,11 +48,15 @@ uint8 AttackerCountValue::Calculate()
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !unit->IsAlive())
+        {
             continue;
+        }
 
         float distance = bot->GetDistance(unit);
         if (distance <= range)
+        {
             count++;
+        }
     }
 
     return count;
@@ -71,7 +75,9 @@ uint8 BalancePercentValue::Calculate()
         {
             Player *player = sObjectMgr.GetPlayer(itr->guid);
             if( !player || !player->IsAlive())
+            {
                 continue;
+            }
 
             playerLevel += player->getLevel();
         }
@@ -83,7 +89,9 @@ uint8 BalancePercentValue::Calculate()
     {
         Creature* creature = ai->GetCreature((*i));
         if (!creature || !creature->IsAlive())
+        {
             continue;
+        }
 
         uint32 level = creature->getLevel();
 

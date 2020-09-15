@@ -444,7 +444,9 @@ void WeatherSystem::UpdateWeathers(uint32 diff)
             m_weathers.erase(itr++);
         }
         else
+        {
             ++itr;
+        }
     }
 }
 

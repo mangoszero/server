@@ -12,7 +12,9 @@ Unit* TargetValue::FindTarget(FindTargetStrategy* strategy)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit)
+        {
             continue;
+        }
 
         ThreatManager &threatManager = unit->GetThreatManager();
         strategy->CheckAttacker(unit, &threatManager);
@@ -39,16 +41,24 @@ void FindTargetStrategy::GetPlayerCount(Unit* creature, int* tankCount, int* dps
     {
         Unit* attacker = *i;
         if (!attacker || !attacker->IsAlive() || attacker == bot)
+        {
             continue;
+        }
 
         Player* player = dynamic_cast<Player*>(attacker);
         if (!player)
+        {
             continue;
+        }
 
         if (ai->IsTank(player))
+        {
             (*tankCount)++;
+        }
         else
+        {
             (*dpsCount)++;
+        }
     }
 
     tankCountCache[creature] = *tankCount;

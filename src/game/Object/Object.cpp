@@ -285,7 +285,9 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         *data << float(unit->GetSpeed(MOVE_TURN_RATE));
 
         if (unit->m_movementInfo.HasMovementFlag(MOVEFLAG_SPLINE_ENABLED))
+        {
             Movement::PacketBuilder::WriteCreate(*unit->movespline, *data);
+        }
     }
     else if (updateFlags & UPDATEFLAG_HAS_POSITION)
     {
@@ -296,17 +298,25 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     }
 
     if (updateFlags & UPDATEFLAG_HIGHGUID)
+    {
         *data << highGuid;
+    }
 
     if (updateFlags & UPDATEFLAG_ALL)
+    {
         *data << (uint32)0x1;
+    }
 
     if (updateFlags & UPDATEFLAG_FULLGUID)
     {
         if (unit && unit->getVictim())
+        {
             *data << unit->getVictim()->GetPackGUID();
+        }
         else
+        {
             data->appendPackGUID(0);
+        }
     }
 
     // 0x2
@@ -330,7 +340,9 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
         updateMask->SetBit(GAMEOBJECT_DYN_FLAGS);
         if (updatetype == UPDATETYPE_VALUES)
+        {
             updateMask->SetBit(GAMEOBJECT_ANIMPROGRESS);
+        }
     }
 
     MANGOS_ASSERT(updateMask && updateMask->GetCount() == m_valuesCount);
@@ -435,10 +447,14 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     {
                         bIsEmpathy = true; // Empathy by aura set
                         if ((*itr)->GetCasterGuid() == target->GetObjectGuid())
-                        bIsCaster = true; // target is the caster of an empathy aura
+                        {
+                            bIsCaster = true; // target is the caster of an empathy aura
+                        }
                     }
                 if (bIsEmpathy && !bIsCaster) // Empathy by aura, but target is not the caster
+                {
                     send_value &= ~UNIT_DYNFLAG_SPECIALINFO;
+                }
                 }
 
                     *data << send_value;

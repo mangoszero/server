@@ -61,13 +61,21 @@ string SaveManaAction::format(double value)
 {
     ostringstream out;
     if (value <= 1.0)
+    {
         out << "|cFF808080";
+    }
     else if (value <= 5.0)
+    {
         out << "|cFF00FF00";
+    }
     else if (value <= 7.0)
+    {
         out << "|cFFFFFF00";
+    }
     else
+    {
         out << "|cFFFF0000";
+    }
     out << value << "|cffffffff";
     return out.str();
 }

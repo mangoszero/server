@@ -512,7 +512,9 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
     {
         if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
             !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-            { return; }
+            {
+                return;
+            }
 
         ObjectGuid guid;
         recv_data >> guid;
@@ -568,7 +570,9 @@ void WorldSession::HandleGroupChangeSubGroupOpcode(WorldPacket& recv_data)
     /** error handling **/
     if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
         !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-        { return; }
+        {
+            return;
+        }
 
     if (!group->HasFreeSlotSubGroup(groupNr))
     {
@@ -665,7 +669,9 @@ void WorldSession::HandleRaidReadyCheckOpcode(WorldPacket& recv_data)
         /** error handling **/
         if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
             !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-            { return; }
+            {
+                return;
+            }
         /********************/
 
         // everything is fine, do it
@@ -943,7 +949,9 @@ void WorldSession::HandleRequestPartyMemberStatsOpcode(WorldPacket& recv_data)
     //uint32 mask1 = 0x00040BFF;                              // common mask, real flags used 0x000040BFF
     uint32 mask1 = GROUP_UPDATE_PLAYER;                     // actually, 0x000007FF
     if (pet)
-        { mask1 |= GROUP_UPDATE_PET; }                      // for hunters and other classes with pets
+    {
+        mask1 |= GROUP_UPDATE_PET;                       // for hunters and other classes with pets
+    }
 
     Powers powerType = player->GetPowerType();
     data << uint32(mask1);                                  // group update mask

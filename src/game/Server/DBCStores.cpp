@@ -680,7 +680,9 @@ AreaTableEntry const* GetAreaEntryByAreaFlagAndMap(uint32 area_flag, uint32 map_
     }
 
     if (aEntry)
-        { return aEntry; } // return last entry found if exist (not same map_id but it seem ok in some places)
+    {
+        return aEntry;  // return last entry found if exist (not same map_id but it seem ok in some places)
+    }
 
     if (MapEntry const* mapEntry = sMapStore.LookupEntry(map_id))
     {
@@ -733,7 +735,9 @@ ChatChannelsEntry const* GetChannelEntryFor(const std::string& name)
             std::size_t removeString = entryName.find("%s");
 
             if (removeString != std::string::npos)
+            {
                 entryName.replace(removeString, 2, "");
+            }
 
             if (name.find(entryName) != std::string::npos)
             {

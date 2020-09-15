@@ -298,7 +298,9 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
         {
             // Pickpocket case
             if (player->getClass() == CLASS_ROGUE && GetPlayer()->GetMap()->GetCreature(guid)->lootForPickPocketed)
+            {
                 player->ModifyMoney(pLoot->gold);
+            }
             else
             {
                 Group* group = player->GetGroup();
@@ -308,9 +310,13 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
                 {
                     Player* playerGroup = itr->getSource();
                     if (!playerGroup)
+                    {
                         continue;
+                    }
                     if (player->IsWithinDistInMap(playerGroup, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+                    {
                         playersNear.push_back(playerGroup);
+                    }
                 }
 
                 uint32 money_per_player = uint32((pLoot->gold) / (playersNear.size()));
@@ -530,7 +536,9 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
                 case LOOT_DISENCHANTING:
                 {
                     if (!pItem->loot.isLooted())
-                        { player->AutoStoreLoot(pItem->loot); } // can be lost if no space
+                    {
+                        player->AutoStoreLoot(pItem->loot);  // can be lost if no space
+                    }
                     pItem->loot.clear();
                     pItem->SetLootState(ITEM_LOOT_REMOVED);
                     player->DestroyItem(pItem->GetBagSlot(), pItem->GetSlot(), true);

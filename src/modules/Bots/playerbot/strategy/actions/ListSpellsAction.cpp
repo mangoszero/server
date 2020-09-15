@@ -23,15 +23,20 @@ bool ListSpellsAction::Execute(Event event)
     const std::string ignoreList = ",Opening,Closing,Stuck,Remove Insignia,Opening - No Text,Grovel,Duel,Honorless Target,";
     std::string alreadySeenList = ",";
 
-    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr) {
+    for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
+    {
         const uint32 spellId = itr->first;
-
+    
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         //|| name.find("Teleport") != -1
 
@@ -40,10 +45,14 @@ bool ListSpellsAction::Execute(Event event)
         comp.append(",");
 
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
+        {
             continue;
+        }
 
         if (!filter.empty() && !strstri(pSpellInfo->SpellName[loc], filter.c_str()))
+        {
             continue;
+        }
 
         alreadySeenList += pSpellInfo->SpellName[loc];
         alreadySeenList += ",";

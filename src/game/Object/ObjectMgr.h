@@ -1149,7 +1149,9 @@ class ObjectMgr
         static inline void GetLocaleString(const StringVector& data, int loc_idx, std::string& value)
         {
             if (data.size() > size_t(loc_idx) && !data[loc_idx].empty())
+            {
                 value = data[loc_idx];
+            }
         }
 
         int GetOrNewIndexForLocale(LocaleConstant loc);

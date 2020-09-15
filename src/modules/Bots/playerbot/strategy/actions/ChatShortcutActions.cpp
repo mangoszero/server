@@ -9,7 +9,9 @@ bool FollowChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("+follow master,-passive", BOT_STATE_NON_COMBAT);
@@ -27,7 +29,9 @@ bool StayChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("+stay,-passive", BOT_STATE_NON_COMBAT);
@@ -40,7 +44,9 @@ bool FleeChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("+follow master,+passive", BOT_STATE_NON_COMBAT);
@@ -58,7 +64,9 @@ bool GoawayChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("+runaway", BOT_STATE_NON_COMBAT);
@@ -71,7 +79,9 @@ bool GrindChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("+grind,-passive", BOT_STATE_NON_COMBAT);
@@ -83,10 +93,14 @@ bool TankAttackChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (!ai->IsTank(bot))
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("-passive", BOT_STATE_NON_COMBAT);
@@ -99,7 +113,9 @@ bool MaxDpsChatShortcutAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     ai->Reset();
     ai->ChangeStrategy("-threat,-conserve mana,-cast time,+dps debuff", BOT_STATE_COMBAT);

@@ -168,7 +168,9 @@ namespace ai
         virtual bool Visit(Item* item)
         {
             if (item->GetProto()->ItemId == itemId)
+            {
                 count += item->GetCount();
+            }
 
             return true;
         }
@@ -193,7 +195,9 @@ namespace ai
         {
             const ItemPrototype* proto = item->GetProto();
             if (proto && proto->Name1 && strstri(proto->Name1, name.c_str()))
+            {
                 count += item->GetCount();
+            }
 
             return true;
         }
@@ -246,7 +250,9 @@ namespace ai
             uint32 id = item->GetProto()->ItemId;
 
             if (items.find(id) == items.end())
+            {
                 items[id] = 0;
+            }
 
             items[id] += item->GetCount();
             return true;

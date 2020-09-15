@@ -32,7 +32,9 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
         }
     }
     else
+    {
         delete_result = false;
+    }
 
     Field *fields = result->Fetch();
 
@@ -50,7 +52,9 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
     m_atLoginFlags = fields[7].GetUInt32();
 
     if (delete_result)
+    {
         delete result;
+    }
 
     for (int i = 0; i < PLAYER_SLOTS_COUNT; ++i)
     {
@@ -58,7 +62,9 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
     }
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
+    {
         m_deathState = DEAD;
+    }
 
     return true;
 }
@@ -151,7 +157,9 @@ void AhBot::ForceUpdate()
     updating = true;
 
     if (!allBidders.size())
+    {
         LoadRandomBots();
+    }
 
     if (!allBidders.size())
     {
@@ -199,19 +207,24 @@ vector<AuctionEntry*> AhBot::LoadAuctions(const AuctionHouseObject::AuctionEntry
         Category*& category, int& auction)
 {
     vector<AuctionEntry*> entries;
-    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin();
-            itr != auctionEntryMap.end(); ++itr)
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin(); itr != auctionEntryMap.end(); ++itr)
     {
         AuctionEntry *entry = itr->second;
         if (IsBotAuction(entry->owner) || IsBotAuction(entry->bidder))
+        {
             continue;
+        }
 
         Item *item = sAuctionMgr.GetAItem(entry->itemGuidLow);
         if (!item)
+        {
             continue;
+        }
 
         if (!category->Contains(item->GetProto()))
+        {
             continue;
+        }
 
         uint32 price = category->GetPricingStrategy()->GetBuyPrice(item->GetProto(), auctionIds[auction]);
         if (!price || !item->GetCount())
@@ -232,29 +245,38 @@ void AhBot::FindMinPrice(const AuctionHouseObject::AuctionEntryMap& auctionEntry
 {
     *minBid = 0;
     *minBuyout = 0;
-    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin();
-            itr != auctionEntryMap.end(); ++itr)
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin(); itr != auctionEntryMap.end(); ++itr)
     {
         AuctionEntry *other = itr->second;
         if (other->owner == entry->owner)
+        {
             continue;
+        }
 
         Item *otherItem = sAuctionMgr.GetAItem(other->itemGuidLow);
         if (!otherItem || !otherItem->GetCount() || otherItem->GetProto()->ItemId != item->GetProto()->ItemId)
+        {
             continue;
+        }
 
         uint32 startbid = other->startbid / otherItem->GetCount() * item->GetCount();
         uint32 bid = other->bid / otherItem->GetCount() * item->GetCount();
         uint32 buyout = other->buyout / otherItem->GetCount() * item->GetCount();
 
         if (!bid && startbid && (!*minBid || *minBid > startbid))
+        {
             *minBid = startbid;
+        }
 
         if (bid && (*minBid || *minBid > bid))
+        {
             *minBid = bid;
+        }
 
         if (buyout && (!*minBuyout || *minBuyout > buyout))
+        {
             *minBuyout = buyout;
+        }
     }
 }
 
@@ -278,7 +300,9 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
 
         Item *item = sAuctionMgr.GetAItem(entry->itemGuidLow);
         if (!item || !item->GetCount())
+        {
             continue;
+        }
 
         const ItemPrototype* proto = item->GetProto();
         vector<uint32> items = availableItems.Get(category);
@@ -318,7 +342,9 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
 
         uint32 curPrice = entry->bid;
         if (!curPrice) curPrice = entry->startbid;
-        if (!curPrice) curPrice = entry->buyout;
+        {
+            if (!curPrice) curPrice = entry->buyout;
+        }
 
         if (curPrice > buyoutPrice)
         {
@@ -444,7 +470,9 @@ uint32 AhBot::GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Categ
     uint32 itemTime = GetTime("item", itemId, auctionHouse, AHBOT_WON_DELAY);
 
     if (categoryTime < time(0)) categoryTime = time(0);
-    if (itemTime < time(0)) itemTime = time(0);
+    {
+        if (itemTime < time(0)) itemTime = time(0);
+    }
 
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);
     categoryTime += urand(sAhBotConfig.itemBuyMinInterval, sAhBotConfig.itemBuyMaxInterval) * priceLevel;
@@ -477,7 +505,9 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
     uint32 categoryTime = max(categorySellTime, categoryBuyTime);
 
     if (categoryTime < time(0)) categoryTime = time(0);
-    if (itemTime < time(0)) itemTime = time(0);
+    {
+        if (itemTime < time(0)) itemTime = time(0);
+    }
 
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);
     categoryTime += urand(sAhBotConfig.itemSellMinInterval, sAhBotConfig.itemSellMaxInterval);
@@ -509,11 +539,15 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
 
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
             continue;
+        }
 
         int32 maxAllowedItems = category->GetMaxAllowedItemAuctionCount(proto);
         if (maxAllowedItems && inAuctionItems->GetCount(category, proto->ItemId) >= maxAllowedItems)
+        {
             continue;
+        }
 
         uint32 sellTime = GetSellTime(proto->ItemId, auctionIds[auction], category);
         if (time(0) < sellTime)
@@ -552,7 +586,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     }
 
     if (urand(0, 100) <= sAhBotConfig.underPriceProbability * 100)
+    {
         price = price * 100 / urand(100, 200);
+    }
 
     uint32 bidPrice = stackCount * price;
     uint32 buyoutPrice = stackCount * urand(price, 4 * price / 3);
@@ -565,7 +601,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     uint32 randomPropertyId = Item::GenerateItemRandomPropertyId(proto->ItemId);
     if (randomPropertyId)
+    {
         item->SetItemRandomProperties(randomPropertyId);
+    }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
     if(!ahEntry)
@@ -665,7 +703,9 @@ void AhBot::HandleCommand(string command)
         {
             vector<uint32> items = availableItems.Get(category);
             if (find(items.begin(), items.end(), proto->ItemId) == items.end())
+            {
                 continue;
+            }
 
             ostringstream out;
             out << proto->Name1 << " (" << category->GetDisplayName() << "), "
@@ -778,7 +818,9 @@ void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
     {
         won = AHBOT_WON_PLAYER;
         if (IsBotAuction(entry->bidder))
+        {
             won = AHBOT_WON_SELF;
+        }
     }
 
     sLog.outDebug("AddToHistory: market price adjust");
@@ -852,7 +894,9 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
         uint32 lastBuyTime = fields[0].GetUInt32();
         uint32 now = time(0);
         if (lastBuyTime && now > lastBuyTime)
-        result += (now - lastBuyTime) / 3600 / 24 * sAhBotConfig.alwaysAvailableMoney;
+        {
+            result += (now - lastBuyTime) / 3600 / 24 * sAhBotConfig.alwaysAvailableMoney;
+        }
 
         delete results;
     }
@@ -862,7 +906,9 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
     {
         AuctionEntry *entry = itr->second;
         if (!IsBotAuction(entry->bidder))
+        {
             continue;
+        }
 
         result -= entry->bid;
     }
@@ -920,9 +966,13 @@ void AhBot::updateMarketPrice(uint32 itemId, double price, uint32 auctionHouse)
     }
 
     if (marketPrice > 0)
+    {
         marketPrice = (marketPrice + price) / 2;
+    }
     else
+    {
         marketPrice = price;
+    }
 
     CharacterDatabase.PExecute("DELETE FROM `ahbot_price` WHERE `item` = '%u' AND `auction_house` = '%u'", itemId, auctionHouse);
     CharacterDatabase.PExecute("INSERT INTO `ahbot_price` (`item`, `price`, `auction_house`) VALUES ('%u', '%lf', '%u')", itemId, marketPrice, auctionHouse);
@@ -951,11 +1001,15 @@ void AhBot::LoadRandomBots()
     {
         uint32 accountId = *i;
         if (!sAccountMgr.GetCharactersCount(accountId))
+        {
             continue;
+        }
 
         QueryResult *result = CharacterDatabase.PQuery("SELECT `guid`, `race` FROM `characters` WHERE `account` = '%u'", accountId);
         if (!result)
+        {
             continue;
+        }
 
         do
         {
@@ -995,16 +1049,22 @@ int32 AhBot::GetSellPrice(ItemPrototype const* proto)
     {
         Category* category = CategoryList::instance[i];
         if (!category->Contains(proto))
+        {
             continue;
+        }
 
         for (int auction = 0; auction < MAX_AUCTIONS; auction++)
         {
             int32 price = (int32)category->GetPricingStrategy()->GetSellPrice(proto, auctionIds[auction]);
             if (!price)
+            {
                 price = (int32)category->GetPricingStrategy()->GetBuyPrice(proto, auctionIds[auction]);
+            }
 
             if (price > maxPrice)
+            {
                 maxPrice = price;
+            }
         }
     }
 
@@ -1023,16 +1083,22 @@ int32 AhBot::GetBuyPrice(ItemPrototype const* proto)
     {
         Category* category = CategoryList::instance[i];
         if (!category->Contains(proto))
+        {
             continue;
+        }
 
         for (int auction = 0; auction < MAX_AUCTIONS; auction++)
         {
             int32 price = (int32)category->GetPricingStrategy()->GetBuyPrice(proto, auctionIds[auction]);
             if (!price)
+            {
                 continue;
+            }
 
             if (price > maxPrice)
+            {
                 maxPrice = price;
+            }
         }
     }
 
@@ -1050,7 +1116,9 @@ double AhBot::GetRarityPriceMultiplier(const ItemPrototype* proto)
     {
         Category* category = CategoryList::instance[i];
         if (!category->Contains(proto))
+        {
             continue;
+        }
 
         return category->GetPricingStrategy()->GetRarityPriceMultiplier(proto->ItemId);
     }

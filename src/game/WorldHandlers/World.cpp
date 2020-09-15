@@ -945,7 +945,9 @@ void World::LoadConfigSettings(bool reload)
 
 #ifdef ENABLE_ELUNA
     if (reload)
+    {
         sEluna->OnConfigLoad(reload);
+    }
 #endif /* ENABLE_ELUNA */
     sLog.outString();
 }
@@ -1863,7 +1865,9 @@ void World::SendGlobalMessage(WorldPacket* packet, AccountTypes minSec)
         if (WorldSession* session = itr->second)
         {
             if (session->GetSecurity() < minSec)
+            {
                 continue;
+            }
             Player* player = session->GetPlayer();
             if (player && player->IsInWorld())
             {
@@ -2570,7 +2574,9 @@ void World::LoadBroadcastStrings()
 
         uint32 ratio = fields[2].GetUInt32();
         if (ratio == 0)
-          continue;
+        {
+            continue;
+        }
 
         m_broadcastWeight += ratio;
 
@@ -2605,7 +2611,9 @@ void World::AutoBroadcast()
         for (it = m_broadcastList.begin(); it != m_broadcastList.end(); ++it)
         {
             if (rn <= it->freq)
-            break;
+            {
+                break;
+            }
         }
         SendWorldText(LANG_AUTOBROADCAST, it->text.c_str());
     }

@@ -39,7 +39,9 @@ namespace ai
             bot->GetSession()->HandleGroupAcceptOpcode(p);
 
             if (sRandomPlayerbotMgr.IsRandomBot(bot))
+            {
                 bot->GetPlayerbotAI()->SetMaster(inviter);
+            }
 
             ai->ResetStrategies();
             ai->TellMaster("Hello");

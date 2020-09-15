@@ -263,7 +263,9 @@ void BattleGroundQueue::PlayerInvitedToBGUpdateAverageWaitTime(GroupQueueInfo* g
     uint8 team_index = TEAM_INDEX_ALLIANCE;                    // default set to BG_TEAM_ALLIANCE - or non rated arenas!
 
     if (ginfo->GroupTeam == HORDE)
+    {
         team_index = TEAM_INDEX_HORDE;
+    }
 
     // store pointer to arrayindex of player that was added first
     uint32* lastPlayerAddedPointer = &(m_WaitTimeLastPlayer[team_index][bracket_id]);
@@ -282,7 +284,9 @@ uint32 BattleGroundQueue::GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleG
 {
     uint8 team_index = TEAM_INDEX_ALLIANCE;                    // default set to BG_TEAM_ALLIANCE - or non rated arenas!
     if (ginfo->GroupTeam == HORDE)
+    {
         team_index = TEAM_INDEX_HORDE;
+    }
     // check if there is enought values(we always add values > 0)
     if (m_WaitTimes[team_index][bracket_id][COUNT_OF_PLAYERS_TO_AVERAGE_WAIT_TIME - 1])
     {
@@ -1260,7 +1264,9 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
         uint32 bgTypeID_ = fields[0].GetUInt32();
 
         if (DisableMgr::IsDisabledFor(DISABLE_TYPE_BATTLEGROUND, bgTypeID_))
+        {
             continue;
+        }
 
         BattleGroundTypeId bgTypeID = BattleGroundTypeId(bgTypeID_);
 

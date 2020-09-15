@@ -64,10 +64,14 @@ private:
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
 {
     if (mask & ITERATE_ITEMS_IN_BAGS)
+    {
         IterateItemsInBags(visitor);
+    }
 
     if (mask & ITERATE_ITEMS_IN_EQUIP)
+    {
         IterateItemsInEquip(visitor);
+    }
 }
 
 void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
@@ -80,13 +84,21 @@ void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
             }
 
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
         if (Bag *pBag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
                 if (Item* pItem = pBag->GetItemByPos(j))
+                {
                     if (!visitor->Visit(pItem))
                     {
                         return;
                     }
+                }
+            }
+        }
+    }
 }
 
 void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
@@ -95,7 +107,9 @@ void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
     {
         Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         if(!pItem)
+        {
             continue;
+        }
 
         if (!visitor->Visit(pItem))
         {
@@ -207,8 +221,14 @@ list<Item*> InventoryAction::parseItems(string text)
     set<Item*> found;
     size_t pos = text.find(" ");
     int count = pos!=string::npos ? atoi(text.substr(pos + 1).c_str()) : TRADE_SLOT_TRADED_COUNT;
-    if (count < 1) count = 1;
-    else if (count > TRADE_SLOT_TRADED_COUNT) count = TRADE_SLOT_TRADED_COUNT;
+    if (count < 1)
+    {
+        count = 1;
+    }
+    else if (count > TRADE_SLOT_TRADED_COUNT)
+    {
+        count = TRADE_SLOT_TRADED_COUNT;
+    }
 
     if (text == "food")
     {
@@ -263,7 +283,9 @@ list<Item*> InventoryAction::parseItems(string text)
     {
         Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, fromSlot);
         if (item)
+        {
             found.insert(item);
+        }
     }
 
     ItemIds ids = chat->parseItems(text);

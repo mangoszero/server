@@ -40,9 +40,13 @@ void LootTargetList::shrink(time_t fromTime)
     for (set<LootTarget>::iterator i = begin(); i != end(); )
     {
         if (i->asOfTime <= fromTime)
+        {
             erase(i++);
+        }
         else
+        {
             ++i;
+        }
     }
 }
 
@@ -64,7 +68,9 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid)
     if (creature && creature->GetDeathState() == CORPSE)
     {
         if (creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE))
+        {
             this->guid = guid;
+        }
 
         if (creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
         {
@@ -72,7 +78,9 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid)
             uint32 targetLevel = creature->getLevel();
             reqSkillValue = targetLevel < 10 ? 0 : targetLevel < 20 ? (targetLevel - 10) * 10 : targetLevel * 5;
             if (bot->HasSkill(skillId) && bot->GetSkillValue(skillId) >= reqSkillValue)
+            {
                 this->guid = guid;
+            }
         }
 
         return;
@@ -211,7 +219,9 @@ void LootObjectStack::Remove(ObjectGuid guid)
 {
     LootTargetList::iterator i = availableLoot.find(guid);
     if (i != availableLoot.end())
+    {
         availableLoot.erase(i);
+    }
 }
 
 void LootObjectStack::Clear()
@@ -242,11 +252,15 @@ vector<LootObject> LootObjectStack::OrderByDistance(float maxDistance)
         ObjectGuid guid = i->guid;
         LootObject lootObject(bot, guid);
         if (!lootObject.IsLootPossible(bot))
+        {
             continue;
+        }
 
         float distance = bot->GetDistance(lootObject.GetWorldObject(bot));
         if (!maxDistance || distance <= maxDistance)
+        {
             sortedMap[distance] = lootObject;
+        }
     }
 
     vector<LootObject> result;

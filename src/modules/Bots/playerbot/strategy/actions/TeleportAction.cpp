@@ -12,16 +12,22 @@ bool TeleportAction::Execute(Event event)
     {
         GameObject* go = ai->GetGameObject(*i);
         if (!go)
+        {
             continue;
+        }
 
         GameObjectInfo const *goInfo = go->GetGOInfo();
         if (goInfo->type != GAMEOBJECT_TYPE_SPELLCASTER)
+        {
             continue;
+        }
 
         uint32 spellId = goInfo->spellcaster.spellId;
         const SpellEntry* const pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (pSpellInfo->Effect[0] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[1] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[2] != SPELL_EFFECT_TELEPORT_UNITS)
+        {
             continue;
+        }
 
         ostringstream out; out << "Teleporting using " << goInfo->name;
         ai->TellMasterNoFacing(out.str());

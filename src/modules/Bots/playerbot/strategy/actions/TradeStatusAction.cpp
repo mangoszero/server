@@ -67,7 +67,9 @@ bool TradeStatusAction::Execute(Event event)
     else if (status == TRADE_STATUS_BEGIN_TRADE)
     {
         if (!bot->IsInFront(trader, sPlayerbotAIConfig.sightDistance, M_PI / 2))
+        {
             bot->SetFacingToObject(trader);
+        }
         BeginTrade();
         return true;
     }
@@ -193,11 +195,15 @@ int32 TradeStatusAction::CalculateCost(TradeData* data, bool sell)
     {
         Item* item = data->GetItem((TradeSlots)slot);
         if (!item)
+        {
             continue;
+        }
 
         ItemPrototype const* proto = item->GetProto();
         if (!proto)
+        {
             continue;
+        }
 
         if (proto->Quality < ITEM_QUALITY_NORMAL)
         {

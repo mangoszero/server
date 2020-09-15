@@ -155,15 +155,21 @@ bool HasAuraTrigger::IsActive()
 bool TankAoeTrigger::IsActive()
 {
     if (!AI_VALUE(uint8, "attacker count"))
+    {
         return false;
+    }
 
     Unit* currentTarget = AI_VALUE(Unit*, "current target");
     if (!currentTarget)
+    {
         return true;
+    }
 
     Unit* tankTarget = AI_VALUE(Unit*, "tank target");
     if (!tankTarget || currentTarget == tankTarget)
+    {
         return false;
+    }
 
     return currentTarget->getVictim() == AI_VALUE(Unit*, "self target");
 }

@@ -15,11 +15,15 @@ uint8 ThreatValue::Calculate()
         {
             Unit* unit = ai->GetUnit(*i);
             if (!unit || !unit->IsAlive())
+            {
                 continue;
+            }
 
             uint8 threat = Calculate(unit);
             if (!maxThreat || threat > maxThreat)
+            {
                 maxThreat = threat;
+            }
         }
 
         return maxThreat;
@@ -55,11 +59,15 @@ uint8 ThreatValue::Calculate(Unit* target)
     {
         Player *player = sObjectMgr.GetPlayer(itr->guid);
         if( !player || !player->IsAlive() || player == bot)
+        {
             continue;
+        }
 
         float threat = target->GetThreatManager().getThreat(player);
         if (maxThreat < threat)
+        {
             maxThreat = threat;
+        }
     }
 
     if (maxThreat <= 0)

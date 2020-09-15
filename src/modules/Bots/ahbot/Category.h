@@ -96,10 +96,14 @@ namespace ahbot
 
             uint32 maxStackSize = proto->GetMaxStackSize();
             if (proto->Quality == ITEM_QUALITY_UNCOMMON && maxStackSize > 10)
+            {
                 maxStackSize = urand(1, 10);
+            }
 
             if (maxStackSize > 20)
+            {
                 maxStackSize = urand(1, 20);
+            }
 
             return maxStackSize;
         }

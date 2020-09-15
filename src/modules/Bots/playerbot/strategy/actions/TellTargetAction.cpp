@@ -29,7 +29,9 @@ bool TellAttackersAction::Execute(Event event)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !unit->IsAlive())
+        {
             continue;
+        }
 
         ai->TellMaster(unit->GetName());
     }

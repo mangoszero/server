@@ -9,7 +9,9 @@ bool GuildAcceptAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     bool accept = true;
     uint32 guildId = master->GetGuildId();

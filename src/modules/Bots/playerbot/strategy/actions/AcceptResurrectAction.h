@@ -11,7 +11,9 @@ namespace ai
         virtual bool Execute(Event event)
         {
             if (bot->IsAlive())
+            {
                 return false;
+            }
 
             WorldPacket p(event.getPacket());
             p.rpos(0);

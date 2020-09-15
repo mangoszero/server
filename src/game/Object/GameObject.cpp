@@ -501,9 +501,13 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     if (true)
                     {
                         if (!loot.empty())
+                        {
                             m_despawnTimer = time(nullptr) + 5 * MINUTE; // TODO:: need to add a define?
+                        }
                         else if (m_despawnTimer != 0 && m_despawnTimer <= time(nullptr))
+                        {
                             m_lootState = GO_JUST_DEACTIVATED;
+                        }
 
                         // TODO : Missing Loot::Update() method found in CMangos
                     }
@@ -1055,7 +1059,9 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
 
         // Smuggled Mana Cell required 10 invisibility type detection/state
         if (GetEntry() == 187039 && ((u->m_detectInvisibilityMask | u->m_invisibilityMask) & (1 << 10)) == 0)
+        {
             return false;
+        }
     }
 
     // check distance

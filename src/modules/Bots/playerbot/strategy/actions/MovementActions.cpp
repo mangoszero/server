@@ -54,7 +54,9 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z)
         WaitForReach(distance);
 
         if (bot->IsSitState())
+        {
             bot->SetStandState(UNIT_STAND_STATE_STAND);
+        }
 
         if (bot->IsNonMeleeSpellCasted(true))
         {
@@ -94,9 +96,13 @@ bool MovementAction::MoveTo(Unit* target, float distance)
 
     float maxDistance = sPlayerbotAIConfig.spellDistance;
     if (needToGo > 0 && needToGo > maxDistance)
+    {
         needToGo = maxDistance;
+    }
     else if (needToGo < 0 && needToGo < -maxDistance)
+    {
         needToGo = -maxDistance;
+    }
 
     float dx = cos(angle) * needToGo + bx;
     float dy = sin(angle) * needToGo + by;
@@ -117,7 +123,9 @@ float MovementAction::GetFollowAngle()
     for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
     {
         if( ref->getSource() == master)
+        {
             continue;
+        }
 
         if( ref->getSource() == bot)
         {
@@ -212,7 +220,9 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     }
 
     if (target->IsFriendlyTo(bot) && bot->IsMounted() && AI_VALUE(list<ObjectGuid>, "possible targets").empty())
+    {
         distance += angle;
+    }
 
     if (bot->GetDistance(target) <= sPlayerbotAIConfig.followDistance)
     {
@@ -220,7 +230,9 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     }
 
     if (bot->IsSitState())
+    {
         bot->SetStandState(UNIT_STAND_STATE_STAND);
+    }
 
     if (bot->IsNonMeleeSpellCasted(true))
     {
@@ -239,12 +251,16 @@ void MovementAction::WaitForReach(float distance)
     float delay = 1000.0f * distance / bot->GetSpeed(MOVE_RUN) + sPlayerbotAIConfig.reactDelay;
 
     if (delay > sPlayerbotAIConfig.maxWaitForMove)
+    {
         delay = sPlayerbotAIConfig.maxWaitForMove;
+    }
 
     Unit* target = *ai->GetAiObjectContext()->GetValue<Unit*>("current target");
     Unit* player = *ai->GetAiObjectContext()->GetValue<Unit*>("enemy player target");
     if ((player || target) && delay > sPlayerbotAIConfig.globalCoolDown)
+    {
         delay = sPlayerbotAIConfig.globalCoolDown;
+    }
 
     ai->SetNextCheckDelay((uint32)delay);
 }
@@ -253,7 +269,9 @@ bool MovementAction::Flee(Unit *target)
 {
     Player* master = GetMaster();
     if (!target)
+    {
         target = master;
+    }
 
     if (!target)
     {
@@ -309,7 +327,9 @@ bool MoveRandomAction::Execute(Event event)
             target = ai->GetUnit(*i);
 
             if (target && bot->GetDistance(target) > sPlayerbotAIConfig.tooCloseDistance)
+            {
                 break;
+            }
         }
     }
 
@@ -321,7 +341,9 @@ bool MoveRandomAction::Execute(Event event)
             target = ai->GetGameObject(*i);
 
             if (target && bot->GetDistance(target) > sPlayerbotAIConfig.tooCloseDistance)
+            {
                 break;
+            }
         }
     }
 

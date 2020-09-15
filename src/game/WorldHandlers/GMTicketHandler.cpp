@@ -113,7 +113,9 @@ void WorldSession::HandleGMTicketDeleteTicketOpcode(WorldPacket& /*recv_data*/)
     //Some housekeeping, this could be cleaner
     GMTicket *ticket = sTicketMgr.GetGMTicket(_player->GetObjectGuid());
     if (ticket)
+    {
         ticket->CloseByClient();
+    }
     sTicketMgr.Delete(GetPlayer()->GetObjectGuid());
 
     WorldPacket data(SMSG_GMTICKET_DELETETICKET, 4);
@@ -145,7 +147,9 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
         recv_data >> chatDataSizeInflated;
 
         if (size_t chatDataSizeDeflated = (recv_data.size() - recv_data.rpos()))
+        {
             recv_data.read_skip(chatDataSizeDeflated);          // Compressed chat data
+        }
     }
 
 

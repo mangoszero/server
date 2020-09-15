@@ -312,7 +312,9 @@ class BIH
                     else
                     {
                         if (axis > 2)
-                            { return; } // should not happen
+                        {
+                            return;  // should not happen
+                        }
                         float tf = (intBitsToFloat(tree[node + offsetFront[axis]]) - org[axis]) * invDir[axis];
                         float tb = (intBitsToFloat(tree[node + offsetBack[axis]]) - org[axis]) * invDir[axis];
                         node = offset;
@@ -420,7 +422,9 @@ class BIH
                     else // BVH2 node (empty space cut off left and right)
                     {
                         if (axis > 2)
-                            { return; } // should not happen
+                        {
+                            return;  // should not happen
+                        }
                         float tl = intBitsToFloat(tree[node + 1]);
                         float tr = intBitsToFloat(tree[node + 2]);
                         node = offset;

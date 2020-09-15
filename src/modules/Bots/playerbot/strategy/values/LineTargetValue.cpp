@@ -24,7 +24,9 @@ Unit* LineTargetValue::Calculate()
     {
         Player *player = sObjectMgr.GetPlayer(itr->guid);
         if( !player || !player->IsAlive() || player == master)
+        {
             continue;
+        }
 
         if (player == bot)
         {

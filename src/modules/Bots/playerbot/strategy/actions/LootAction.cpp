@@ -140,14 +140,20 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
         uint32 spellId = itr->first;
 
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         if (spellId == MINING || spellId == HERB_GATHERING)
+        {
             continue;
+        }
 
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
         {
@@ -158,11 +164,15 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
     {
         if (spellId == MINING || spellId == HERB_GATHERING)
+        {
             continue;
+        }
 
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         if (CanOpenLock(lootObject, pSpellInfo, go))
         {
@@ -207,7 +217,9 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
             case LOCK_KEY_SKILL:
                 {
                     if(uint32(pSpellInfo->EffectMiscValue[effIndex]) != lockInfo->Index[j])
+                    {
                         continue;
+                    }
 
                     uint32 skillId = SkillByLockType(LockType(lockInfo->Index[j]));
                     if (skillId == SKILL_NONE)
@@ -270,10 +282,14 @@ bool StoreLootAction::Execute(Event event)
         p >> lootslot_type;     // 0 = can get, 1 = look only, 2 = master get
 
         if (lootslot_type != LOOT_SLOT_NORMAL)
+        {
             continue;
+        }
 
         if (loot_type != LOOT_SKINNING && !IsLootAllowed(itemid))
+        {
             continue;
+        }
 
         if (sRandomPlayerbotMgr.IsRandomBot(bot))
         {

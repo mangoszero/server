@@ -12,7 +12,9 @@ bool InventoryChangeFailureAction::Execute(Event event)
     uint8 err;
     p >> err;
     if (err == EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     switch (err)
     {

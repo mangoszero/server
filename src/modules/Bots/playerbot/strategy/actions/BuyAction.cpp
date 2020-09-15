@@ -12,16 +12,22 @@ bool BuyAction::Execute(Event event)
 
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
+    {
         return false;
+    }
 
     Player* master = GetMaster();
 
     if (!master)
+    {
         return false;
+    }
 
     ObjectGuid vendorguid = master->GetSelectionGuid();
     if (!vendorguid)
+    {
         return false;
+    }
 
     Creature *pCreature = bot->GetNPCIfCanInteractWith(vendorguid,UNIT_NPC_FLAG_VENDOR);
     if (!pCreature)

@@ -17,17 +17,23 @@ namespace ai
             {
                 LootObject loot = AI_VALUE(LootObject, qualifier);
                 if (loot.IsEmpty())
+                {
                     return 0.0f;
+                }
 
                 WorldObject* obj = loot.GetWorldObject(bot);
                 if (!obj)
+                {
                     return 0.0f;
+                }
 
                 return ai->GetBot()->GetDistance(obj);
             }
             Unit* target = AI_VALUE(Unit*, qualifier);
             if (!target || !target->IsInWorld())
+            {
                 return 0.0f;
+            }
 
             return ai->GetBot()->GetDistance(target);
         }

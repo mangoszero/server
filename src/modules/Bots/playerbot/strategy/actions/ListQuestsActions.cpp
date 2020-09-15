@@ -32,11 +32,15 @@ void ListQuestsAction::ListQuests(QuestListFilter filter)
     bool showCompleted = filter & QUEST_LIST_FILTER_COMPLETED;
 
     if (showIncompleted)
+    {
         ai->TellMaster("--- Incomplete quests ---");
+    }
     int incompleteCount = ListQuests(false, !showIncompleted);
 
     if (showCompleted)
+    {
         ai->TellMaster("--- Complete quests ---");
+    }
     int completeCount = ListQuests(true, !showCompleted);
 
     ai->TellMaster("--- Summary ---");
@@ -52,17 +56,23 @@ int ListQuestsAction::ListQuests(bool completed, bool silent)
     {
         uint32 questId = bot->GetQuestSlotQuestId(slot);
         if (!questId)
+        {
             continue;
+        }
 
         Quest const* pQuest = sObjectMgr.GetQuestTemplate(questId);
         bool isCompletedQuest = bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE;
         if (completed != isCompletedQuest)
+        {
             continue;
+        }
 
         count++;
 
         if (silent)
+        {
             continue;
+        }
 
         ai->TellMaster(chat->formatQuest(pQuest));
     }

@@ -21,7 +21,9 @@ namespace ai
             {
                 Unit* unit = *i;
                 if(bot->IsWithinLOSInMap(unit) && AcceptUnit(unit))
+                {
                     results.push_back(unit->GetObjectGuid());
+                }
             }
             return results;
         }

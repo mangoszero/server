@@ -16,7 +16,9 @@ namespace ai
         virtual ~AvailableLootValue()
         {
             if (value)
+            {
                 delete value;
+            }
         }
     };
 

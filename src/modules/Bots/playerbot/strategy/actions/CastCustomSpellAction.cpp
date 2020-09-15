@@ -10,10 +10,14 @@ bool CastCustomSpellAction::Execute(Event event)
 
     Player* master = GetMaster();
     if (master && master->GetSelectionGuid())
+    {
         target = ai->GetUnit(master->GetSelectionGuid());
+    }
 
     if (!target)
+    {
         target = bot;
+    }
 
     string text = event.getParam();
 
@@ -29,9 +33,13 @@ bool CastCustomSpellAction::Execute(Event event)
 
     bool result = false;
     if (spell)
+    {
         result = ai->CastSpell(spell, target);
+    }
     else
+    {
         ai->CastSpell(text, target);
+    }
 
     if (result)
     {

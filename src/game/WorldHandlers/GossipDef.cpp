@@ -605,9 +605,13 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest)
     data << uint32(pQuest->GetNextQuestInChain());          // client will request this quest from NPC, if not 0
 
     if (pQuest->HasQuestFlag(QUEST_FLAGS_HIDDEN_REWARDS))
-        { data << uint32(0); }                                  // Hide money rewarded
+    {
+        data << uint32(0);                                   // Hide money rewarded
+    }
     else
-        { data << uint32(pQuest->GetRewOrReqMoney()); }     // reward money (below max lvl)
+    {
+        data << uint32(pQuest->GetRewOrReqMoney());      // reward money (below max lvl)
+    }
 
     data << uint32(pQuest->GetRewMoneyMaxLevel());          // used in XP calculation at client
 
@@ -816,7 +820,9 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
     data << uint32(0x00);                                   // emote delay
 
     if (Completable)
-        { data << pQuest->GetCompleteEmote(); }                 // emote id
+    {
+        data << pQuest->GetCompleteEmote();                  // emote id
+    }
     else
     {
         data << pQuest->GetIncompleteEmote();
@@ -824,7 +830,9 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
 
     // Close Window after cancel
     if (CloseOnCancel)
-        { data << uint32(0x01); }                               // auto finish
+    {
+        data << uint32(0x01);                                // auto finish
+    }
     else
     {
         data << uint32(0x00);
@@ -858,7 +866,9 @@ void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcG
     data << uint32(0x02);
 
     if (!Completable)                                       // Completable = flags1 && flags2 && flags3 && flags4
-        { data << uint32(0x00); }                               // flags1
+    {
+        data << uint32(0x00);                                // flags1
+    }
     else
     {
         data << uint32(0x03);

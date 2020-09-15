@@ -45,15 +45,21 @@ bool CheckMountStateAction::Mount()
     {
         uint32 spellId = itr->first;
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
         if (!spellInfo || spellInfo->EffectApplyAuraName[0] != SPELL_AURA_MOUNTED)
+        {
             continue;
+        }
 
         int32 effect = max(spellInfo->EffectBasePoints[1], spellInfo->EffectBasePoints[2]);
         if (effect < masterSpeed)
+        {
             continue;
+        }
 
         spells[effect].push_back(spellId);
     }
@@ -63,7 +69,9 @@ bool CheckMountStateAction::Mount()
         vector<uint32>& ids = i->second;
         int index = urand(0, ids.size() - 1);
         if (index >= ids.size())
+        {
             continue;
+        }
 
         ai->CastSpell(ids[index], bot);
         return true;

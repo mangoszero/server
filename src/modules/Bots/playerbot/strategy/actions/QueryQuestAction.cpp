@@ -27,7 +27,9 @@ bool QueryQuestAction::Execute(Event event)
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
         if(questId != bot->GetQuestSlotQuestId(slot))
+        {
             continue;
+        }
 
         ostringstream out;
         out << "--- " << chat->formatQuest(sObjectMgr.GetQuestTemplate(questId)) << " ";
@@ -57,7 +59,9 @@ void QueryQuestAction::TellObjectives(uint32 questId)
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
     {
         if (!questTemplate->ObjectiveText[i].empty())
+        {
             ai->TellMaster(questTemplate->ObjectiveText[i]);
+        }
 
         if (questTemplate->ReqItemId[i])
         {
@@ -76,14 +80,18 @@ void QueryQuestAction::TellObjectives(uint32 questId)
             {
                 GameObjectInfo const* info = sObjectMgr.GetGameObjectInfo(-questTemplate->ReqCreatureOrGOId[i]);
                 if (info)
+                {
                     TellObjective(info->name, available, required);
+                }
             }
             else
             {
 
                 CreatureInfo const* info = sObjectMgr.GetCreatureTemplate(questTemplate->ReqCreatureOrGOId[i]);
                 if (info)
+                {
                     TellObjective(info->Name, available, required);
+                }
             }
         }
     }

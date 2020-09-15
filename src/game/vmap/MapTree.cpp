@@ -164,7 +164,9 @@ namespace VMAP
         // return false if distance is over max float, in case of cheater teleporting to the end of the universe
         if (maxDist == std::numeric_limits<float>::max() ||
             maxDist == std::numeric_limits<float>::infinity())
-            { return false; }
+            {
+                return false;
+            }
 
         // valid map coords should *never ever* produce float overflow, but this would produce NaNs too:
         MANGOS_ASSERT(maxDist < std::numeric_limits<float>::max());

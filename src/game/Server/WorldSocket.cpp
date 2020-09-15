@@ -109,7 +109,9 @@ WorldSocket::~WorldSocket(void)
 
     WorldPacket* pct;
     while (m_PacketQueue.dequeue_head(pct) == 0)
-      { delete pct; }
+    {
+        delete pct;
+    }
 }
 
 bool WorldSocket::IsClosed(void) const
@@ -823,7 +825,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     // Initialize Warden system only if it is enabled by config
     if (wardenActive)
+    {
         m_Session->InitWarden(uint16(BuiltNumberClient), &K, os);
+    }
 
     sWorld.AddSession(m_Session);
 
@@ -846,7 +850,9 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
     recvPacket >> latency;
 
     if (m_LastPingTime == ACE_Time_Value::zero)
-        { m_LastPingTime = ACE_OS::gettimeofday(); }            // for 1st ping
+    {
+        m_LastPingTime = ACE_OS::gettimeofday();             // for 1st ping
+    }
     else
     {
         ACE_Time_Value cur_time = ACE_OS::gettimeofday();

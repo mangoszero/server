@@ -103,7 +103,9 @@ bool ItemUsageValue::IsItemUsefulForSkill(ItemPrototype const * proto)
     case ITEM_CLASS_RECIPE:
         {
             if (bot->HasSpell(proto->Spells[2].SpellId))
+            {
                 break;
+            }
 
             switch (proto->SubClass)
             {

@@ -955,7 +955,9 @@ float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=tr
             // this prevent case when original Z "too high above ground and vmap height search fail"
             // this will not affect most normal cases (no map in instance, or stay at ground at continent)
             if (mapHeight > INVALID_HEIGHT && z2 - mapHeight > maxSearchDist)
-                { maxSearchDist = z2 - mapHeight + 1.0f; }      // 1.0 make sure that we not fail for case when map height near but above for vamp height
+            {
+                maxSearchDist = z2 - mapHeight + 1.0f;       // 1.0 make sure that we not fail for case when map height near but above for vamp height
+            }
 
             // look from a bit higher pos to find the floor
             vmapHeight = vmgr->getHeight(GetMapId(), x, y, z2, maxSearchDist);
@@ -988,10 +990,14 @@ float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=tr
                 return vmapHeight;
             }
             else
-                { return mapHeight; }                           // better use .map surface height
+            {
+                return mapHeight;                            // better use .map surface height
+            }
         }
         else
-            { return vmapHeight; }                              // we have only vmapHeight (if have)
+        {
+            return vmapHeight;                               // we have only vmapHeight (if have)
+        }
     }
 
     return mapHeight;

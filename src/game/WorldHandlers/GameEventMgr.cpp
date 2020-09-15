@@ -46,7 +46,9 @@ bool GameEventMgr::CheckOneGameEvent(uint16 entry, time_t currenttime) const
     // Get the event information
     if (mGameEvent[entry].start < currenttime && currenttime < mGameEvent[entry].end &&
         ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)) < (mGameEvent[entry].length * MINUTE))
-        { return true; }
+    {
+        return true;
+    }
     else
     {
         return false;
@@ -73,7 +75,9 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
     // in event, we return the end of it
     if ((((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * 60)) < (mGameEvent[entry].length * 60)))
         // we return the delay before it ends
-        { delay = (mGameEvent[entry].length * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE)); }
+    {
+        delay = (mGameEvent[entry].length * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE));
+    }
     else                                                    // not in window, we return the delay before next start
     {
         delay = (mGameEvent[entry].occurence * MINUTE) - ((currenttime - mGameEvent[entry].start) % (mGameEvent[entry].occurence * MINUTE));
@@ -102,7 +106,9 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
     }
 #ifdef ENABLE_ELUNA
     if (IsActiveEvent(event_id))
+    {
         sEluna->OnGameEventStart(event_id);
+    }
 #endif /* ENABLE_ELUNA */
 }
 
@@ -119,7 +125,9 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
     }
 #ifdef ENABLE_ELUNA
     if (!IsActiveEvent(event_id))
+    {
         sEluna->OnGameEventStop(event_id);
+    }
 #endif /* ENABLE_ELUNA */
 }
 
@@ -1003,7 +1011,9 @@ int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
     for (uint16 i = 0; i < mGameEventCreatureGuids.size(); ++i) // 0 <= i <= 2*(S := mGameEvent.size()) - 2
         for (GuidList::const_iterator itr = mGameEventCreatureGuids[i].begin(); itr != mGameEventCreatureGuids[i].end(); ++itr)
             if (*itr == guid_or_poolid)
-                { return i + 1 - mGameEvent.size(); }       // -S *1 + 1 <= . <= 1*S - 1
+            {
+                return i + 1 - mGameEvent.size();        // -S *1 + 1 <= . <= 1*S - 1
+            }
     return 0;
 }
 
@@ -1014,7 +1024,9 @@ int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
     for (uint16 i = 0; i < mGameEventGameobjectGuids.size(); ++i)
         for (GuidList::const_iterator itr = mGameEventGameobjectGuids[i].begin(); itr != mGameEventGameobjectGuids[i].end(); ++itr)
             if (*itr == guid_or_poolid)
-                { return i + 1 - mGameEvent.size(); }       // -S *1 + 1 <= . <= 1*S - 1
+            {
+                return i + 1 - mGameEvent.size();        // -S *1 + 1 <= . <= 1*S - 1
+            }
     return 0;
 }
 

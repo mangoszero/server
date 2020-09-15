@@ -47,9 +47,13 @@ bool QueryItemUsageAction::Execute(Event event)
 
         ostringstream out; out << chat->formatItem(item, count);
         if (created)
+        {
             out << " created";
+        }
         else if (received)
+        {
             out << " received";
+        }
         ai->TellMaster(out);
 
         QueryItemUsage(item);
@@ -147,7 +151,9 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId)
     {
         const Quest *questTemplate = sObjectMgr.GetQuestTemplate( i->first );
         if( !questTemplate )
+        {
             continue;
+        }
 
         uint32 questId = questTemplate->GetQuestId();
         QuestStatus status = bot->GetQuestStatus(questId);
@@ -165,13 +171,17 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTempl
     for (int i = 0; i < QUEST_OBJECTIVES_COUNT; i++)
     {
         if (questTemplate->ReqItemId[i] != itemId)
+        {
             continue;
+        }
 
         int required = questTemplate->ReqItemCount[i];
         int available = questStatus->m_itemcount[i];
 
         if (!required)
+        {
             continue;
+        }
 
         ai->TellMaster(chat->formatQuestObjective(chat->formatQuest(questTemplate), available, required));
     }

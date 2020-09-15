@@ -12,7 +12,9 @@ namespace ai
         {
             Unit* target = AI_VALUE(Unit*, qualifier);
             if (!target)
+            {
                 return false;
+            }
 
             return bot->IsInFront(target, sPlayerbotAIConfig.sightDistance, M_PI_F / 3.0f);
         }

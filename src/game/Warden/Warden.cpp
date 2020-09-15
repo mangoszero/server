@@ -260,9 +260,13 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
     WardenActions action;
 
     if (check)
+    {
         action = check->Action;
+    }
     else
+    {
         action = WardenActions(sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION));
+    }
 
     switch (action)
     {
@@ -282,7 +286,9 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
             banReason << "Warden Anticheat Violation";
             // Check can be NULL, for example if the client sent a wrong signature in the warden packet (CHECKSUM FAIL)
             if (check)
+            {
                 banReason << ": " << (check->Comment.empty() ? std::string("Undocumented Check") : check->Comment) << " (CheckId: " << check->CheckId << ")";
+            }
 
             sWorld.BanAccount(BAN_ACCOUNT, accountName, sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_BAN_DURATION), banReason.str(), "Warden");
 

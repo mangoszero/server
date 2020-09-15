@@ -20,7 +20,9 @@ using namespace ai;
     {
         GameObject* go = ai->GetGameObject(*i);
         if (!go || !bot->GetGameObjectIfCanInteractWith(go->GetObjectGuid(), GAMEOBJECT_TYPE_GUILD_BANK))
+        {
             continue;
+        }
 
         return Execute(text, go);
     }
@@ -43,7 +45,9 @@ bool GuildBankAction::Execute(string text, GameObject* bank)
     {
         Item* item = *i;
         if (item)
+        {
             result &= MoveFromCharToBank(item, bank);
+        }
     }
 
     return result;

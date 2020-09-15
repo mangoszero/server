@@ -18,7 +18,9 @@ public:
     virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager)
     {
         if (!result || result->GetHealth() > attacker->GetHealth())
+        {
             result = attacker;
+        }
     }
 
 protected:

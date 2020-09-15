@@ -51,7 +51,9 @@ void WorldSession::HandleSplitItemOpcode(WorldPacket& recv_data)
     }
 
     if (count == 0)
-        { return; }                                             // check count - if zero it's fake packet
+    {
+        return;                                              // check count - if zero it's fake packet
+    }
 
     if (!_player->IsValidPos(srcbag, srcslot, true))
     {
@@ -165,7 +167,9 @@ void WorldSession::HandleAutoEquipItemOpcode(WorldPacket& recv_data)
 
     Item* pSrcItem  = _player->GetItemByPos(srcbag, srcslot);
     if (!pSrcItem)
-        { return; }                                             // only at cheat
+    {
+        return;                                              // only at cheat
+    }
 
     uint16 dest;
     InventoryResult msg = _player->CanEquipItem(NULL_SLOT, dest, pSrcItem, !pSrcItem->IsBag());
@@ -905,7 +909,9 @@ void WorldSession::SendListInventory(ObjectGuid vendorguid)
                     // when no faction required but rank > 0 will be used faction id from the vendor faction template to compare the rank
                     if (!pProto->RequiredReputationFaction && pProto->RequiredReputationRank > 0 &&
                         ReputationRank(pProto->RequiredReputationRank) > _player->GetReputationRank(pCreature->getFactionTemplateEntry()->faction))
-                        { continue; }
+                        {
+                            continue;
+                        }
 
                     if (crItem->conditionId && !sObjectMgr.IsPlayerMeetToCondition(crItem->conditionId, _player, pCreature->GetMap(), pCreature, CONDITION_FROM_VENDOR))
                     {

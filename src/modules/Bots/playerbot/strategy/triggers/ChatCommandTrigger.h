@@ -18,7 +18,9 @@ namespace ai
         virtual Event Check()
         {
             if (!triggered)
+            {
                 return Event();
+            }
 
             return Event(getName(), param, owner);
         }

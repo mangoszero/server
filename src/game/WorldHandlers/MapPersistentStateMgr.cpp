@@ -962,7 +962,9 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
 
         for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end(); ++itr)
             if (itr->second->GetMapId() == mapid)
+            {
                 unbindList.push_back((DungeonPersistentState*)itr->second);
+            }
 
         for (std::vector<DungeonPersistentState*>::const_iterator it = unbindList.begin(); it != unbindList.end(); ++it)
         {

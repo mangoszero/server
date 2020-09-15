@@ -49,7 +49,9 @@ void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
 void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 {
     if (handlers.find(packet.GetOpcode()) != handlers.end())
+    {
         queue.push(WorldPacket(packet));
+    }
 }
 
 
@@ -119,11 +121,15 @@ PlayerbotAI::~PlayerbotAI()
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
         if (engines[i])
+        {
             delete engines[i];
+        }
     }
 
     if (aiObjectContext)
+    {
         delete aiObjectContext;
+    }
 }
 
 void PlayerbotAI::UpdateAI(uint32 elapsed)
@@ -189,7 +195,9 @@ void PlayerbotAI::HandleTeleportAck()
         bot->GetSession()->HandleMoveTeleportAckOpcode(p);
     }
     else if (bot->IsBeingTeleportedFar())
+    {
         bot->GetSession()->HandleMoveWorldportAckOpcode();
+    }
 }
 
 void PlayerbotAI::Reset()
@@ -329,7 +337,9 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         uint32 delaytime;
         p >> delaytime;
         if (delaytime <= 1000)
+        {
             IncreaseNextCheckDelay(delaytime);
+        }
         return;
     }
     default:
@@ -357,9 +367,13 @@ void PlayerbotAI::SpellInterrupted(uint32 spellid)
 
     uint32 globalCooldown = CalculateGlobalCooldown(lastSpell.id);
     if (castTimeSpent < globalCooldown)
+    {
         SetNextCheckDelay(globalCooldown - castTimeSpent);
+    }
     else
+    {
         SetNextCheckDelay(0);
+    }
 
     lastSpell.id = 0;
 }
@@ -453,10 +467,14 @@ void PlayerbotAI::DoNextAction()
     }
 
     if (currentEngine != engines[BOT_STATE_DEAD] && !bot->IsAlive())
+    {
         ChangeEngine(BOT_STATE_DEAD);
+    }
 
     if (currentEngine == engines[BOT_STATE_DEAD] && bot->IsAlive())
+    {
         ChangeEngine(BOT_STATE_NON_COMBAT);
+    }
 
     Group *group = bot->GetGroup();
     if (!master && group)
@@ -761,7 +779,9 @@ bool PlayerbotAI::TellMaster(string text, PlayerbotSecurityLevel securityLevel)
     if (!bot->isMoving() && !bot->IsInCombat() && bot->GetMapId() == master->GetMapId())
     {
         if (!bot->IsInFront(master, sPlayerbotAIConfig.sightDistance, M_PI / 2))
+        {
             bot->SetFacingTo(bot->GetAngle(master));
+        }
 
         bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
     }
@@ -823,11 +843,15 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
         {
             Aura* aura = *i;
             if (!aura)
+            {
                 continue;
+            }
 
             const string auraName = aura->GetSpellProto()->SpellName[0];
             if (auraName.empty() || auraName.length() != wnamepart.length() || !Utf8FitTo(auraName, wnamepart))
+            {
                 continue;
+            }
 
             if (IsRealAura(bot, aura, unit))
             {
@@ -873,7 +897,9 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
     do {
         cur = va_arg(vl, const char*);
         if (cur && HasAura(cur, player)) {
+        {
             va_end(vl);
+        }
             return true;
         }
     }
@@ -896,7 +922,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
     }
 
     if (!target)
+    {
         target = bot;
+    }
 
     if (checkHasSpell && !bot->HasSpell(spellid))
     {
@@ -982,7 +1010,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     }
 
     if (!target)
+    {
         target = bot;
+    }
 
     Pet* pet = bot->GetPet();
     if (pet && pet->HasSpell(spellId))
@@ -1081,14 +1111,18 @@ void PlayerbotAI::WaitForSpellCast(uint32 spellId)
     {
         int32 duration = GetSpellDuration(pSpellInfo);
         if (duration > 0)
+        {
             castTime += duration;
+        }
     }
 
     castTime = ceil(castTime);
 
     uint32 globalCooldown = CalculateGlobalCooldown(spellId);
     if (castTime < globalCooldown)
+    {
         castTime = globalCooldown;
+    }
 
     SetNextCheckDelay(castTime);
 }
@@ -1106,7 +1140,9 @@ void PlayerbotAI::InterruptSpell()
     {
         Spell* spell = bot->GetCurrentSpell((CurrentSpellTypes)type);
         if (!spell)
+        {
             continue;
+        }
 
         bot->InterruptSpell((CurrentSpellTypes)type);
 
@@ -1135,7 +1171,9 @@ void PlayerbotAI::RemoveAura(string name)
 {
     uint32 spellid = aiObjectContext->GetValue<uint32>("spell id", name)->Get();
     if (spellid && HasAura(spellid, bot))
+    {
         bot->RemoveAurasDueToSpell(spellid);
+    }
 }
 
 bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
@@ -1185,10 +1223,14 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 
             bool isPositiveSpell = IsPositiveSpell(spellId);
             if (isPositiveSpell && bot->IsFriendlyTo(target))
+            {
                 continue;
+            }
 
             if (!isPositiveSpell && bot->IsHostileTo(target))
+            {
                 continue;
+            }
 
             if (canDispel(entry, dispelType))
             {
@@ -1204,7 +1246,9 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    return *s1 - *s2;
+    {
+        return *s1 - *s2;
+    }
 }
 #endif
 

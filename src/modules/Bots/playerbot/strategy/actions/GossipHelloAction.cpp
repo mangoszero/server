@@ -14,7 +14,9 @@ bool GossipHelloAction::Execute(Event event)
     {
         Player* master = GetMaster();
         if (master)
+        {
             guid = master->GetSelectionGuid();
+        }
     }
     else
     {

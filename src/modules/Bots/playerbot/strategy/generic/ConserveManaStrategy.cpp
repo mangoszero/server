@@ -86,7 +86,9 @@ float SaveManaMultiplier::GetValue(Action* action)
 
     int32 cost = spellInfo->manaCost;
     if (spellInfo->ManaCostPercentage)
+    {
         cost += spellInfo->ManaCostPercentage * bot->GetCreateMana() / 100;
+    }
 
     uint32 mana = bot->GetMaxPower(POWER_MANA);
     double percent = (double)cost / (double)mana * 100.0f;

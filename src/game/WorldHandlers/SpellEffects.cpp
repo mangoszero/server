@@ -571,9 +571,13 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         }
                     }
                     else if (roll < 25) // 20% positive backfire
-                        { m_caster->CastSpell(m_caster, 13004, true, m_CastItem); }   // +250AP + grow caster's party
+                    {
+                        m_caster->CastSpell(m_caster, 13004, true, m_CastItem);    // +250AP + grow caster's party
+                    }
                     else
-                        { m_caster->CastSpell(unitTarget, 13003, true, m_CastItem); } // -250AP + shrink victim
+                    {
+                        m_caster->CastSpell(unitTarget, 13003, true, m_CastItem);  // -250AP + shrink victim
+                    }
 
                     return;
                 }
@@ -682,7 +686,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                         if (spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE &&
                             spellInfo->Id != m_spellInfo->Id && GetSpellRecoveryTime(spellInfo) > 0)
-                            { ((Player*)m_caster)->RemoveSpellCooldown((itr++)->first, true); }
+                            {
+                                ((Player*)m_caster)->RemoveSpellCooldown((itr++)->first, true);
+                            }
                         else
                         {
                             ++itr;
@@ -865,7 +871,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         SpellEntry const* spell = itr->second->GetSpellProto();
                         if (spell->SpellFamilyName == SPELLFAMILY_SHAMAN &&
                             (spell->SpellFamilyFlags & UI64LIT(0x0000000000000400)))
-                            { return; }
+                        {
+                            return;
+                        }
                     }
                     unitTarget->RemoveAurasDueToSpell(28820);
                     return;
@@ -1104,10 +1112,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     // 5 different spells used depending on mounted speed
                     if (speed >= 2.0f)
-                        { m_caster->CastSpell(m_caster, 25859, true); } // 100% ground Reindeer
+                    {
+                        m_caster->CastSpell(m_caster, 25859, true);  // 100% ground Reindeer
+                    }
                     else
                         // Reindeer
-                        { m_caster->CastSpell(m_caster, 25858, true); } // 60% ground Reindeer
+                    {
+                        m_caster->CastSpell(m_caster, 25858, true);  // 60% ground Reindeer
+                    }
 
                     return;
                 }
@@ -1128,7 +1140,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 {
                     if (unitTarget && unitTarget->GetTypeId() == TYPEID_PLAYER)
                         // Naxxramas Entry Flag Effect DND
-                        { m_caster->CastSpell(unitTarget, 29294, true); }
+                    {
+                        m_caster->CastSpell(unitTarget, 29294, true);
+                    }
 
                     return;
                 }
@@ -1359,7 +1373,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     default: break;
                 }
                 if (spellid != 0)
-                m_caster->CastSpell(unitTarget, spellid, true, NULL);
+                {
+                    m_caster->CastSpell(unitTarget, spellid, true, NULL);
+                }
             }
             break;
         }
@@ -1861,7 +1877,9 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
     // ghost spell check, allow apply any auras at player loading in ghost mode (will be cleanup after load)
     if ((!unitTarget->IsAlive() && !(IsDeathOnlySpell(m_spellInfo) || IsDeathPersistentSpell(m_spellInfo))) &&
         (unitTarget->GetTypeId() != TYPEID_PLAYER || !((Player*)unitTarget)->GetSession()->PlayerLoading()))
-        { return; }
+    {
+        return;
+    }
 
     Unit* caster = GetAffectiveCaster();
     if (!caster)
@@ -2457,7 +2475,9 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
                 // Allow one skill-up until respawned
                 if (!gameObjTarget->IsInSkillupList(player) &&
                     player->UpdateGatherSkill(skillId, pureSkillValue, reqSkillValue))
-                    { gameObjTarget->AddToSkillupList(player); }
+                    {
+                        gameObjTarget->AddToSkillupList(player);
+                    }
             }
             else if (itemTarget)
             {
@@ -2650,10 +2670,14 @@ void Spell::EffectSummon(SpellEffectIndex eff_idx)
     }
 #ifdef ENABLE_ELUNA
     if (Unit* summoner = m_caster->ToUnit())
+    {
         sEluna->OnSummoned(spawnCreature, summoner);
+    }
     else if (m_originalCaster)
         if (Unit* summoner = m_originalCaster->ToUnit())
+        {
             sEluna->OnSummoned(spawnCreature, summoner);
+        }
 #endif /* ENABLE_ELUNA */
 }
 
@@ -2695,7 +2719,9 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
     // Shield Slam 50% chance dispel
     if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000100000000)) &&
         !roll_chance_i(50))
-        { return; }
+        {
+            return;
+        }
 
     // Fill possible dispel list
     std::list <std::pair<SpellAuraHolder* , uint32> > dispel_list;
@@ -2844,7 +2870,9 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
             data << unitTarget->GetObjectGuid();            // Victim GUID
             data << uint32(m_spellInfo->Id);                // Dispel spell id
             for (std::list< uint32 >::iterator j = fail_list.begin(); j != fail_list.end(); ++j)
-                { data << uint32(*j); }                         // Spell Id
+            {
+                data << uint32(*j);                          // Spell Id
+            }
             m_caster->SendMessageToSet(&data, true);
         }
     }
@@ -3034,7 +3062,9 @@ void Spell::EffectSummonWild(SpellEffectIndex eff_idx)
 #ifdef ENABLE_ELUNA
             if (m_originalCaster)
                 if (Unit* summoner = m_originalCaster->ToUnit())
+                {
                     sEluna->OnSummoned(summon, summoner);
+                }
 #endif /* ENABLE_ELUNA */
         }
     }
@@ -3063,7 +3093,9 @@ void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
     //        so this code hack in fact
     if (m_caster->GetTypeId() == TYPEID_PLAYER && (duration <= 0 || GetSpellRecoveryTime(m_spellInfo) == 0))
         if (m_caster->FindGuardianWithEntry(pet_entry))
-            { return; }                                         // find old guardian, ignore summon
+        {
+            return;                                          // find old guardian, ignore summon
+        }
 
     // in another case summon new
     uint32 level = m_caster->getLevel();
@@ -3160,10 +3192,14 @@ void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
         }
 #ifdef ENABLE_ELUNA
         if (Unit* summoner = m_caster->ToUnit())
+        {
             sEluna->OnSummoned(spawnCreature, summoner);
+        }
         if (m_originalCaster)
             if (Unit* summoner = m_originalCaster->ToUnit())
+            {
                 sEluna->OnSummoned(spawnCreature, summoner);
+            }
 #endif /* ENABLE_ELUNA */
     }
 }
@@ -3324,19 +3360,29 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
 
     // shaman family enchantments
     if (m_spellInfo->Attributes == (SPELL_ATTR_UNK9 | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_UNK18))
-        { duration = 300; }                                     // 5 mins
+    {
+        duration = 300;                                      // 5 mins
+    }
     // imbue enchantments except Imbue Weapon - Beastslayer
     else if (m_spellInfo->SpellIconID == 241 && m_spellInfo->Id != 7434)
-        { duration = 3600; }                                    // 1 hour
+    {
+        duration = 3600;                                     // 1 hour
+    }
     // Consecrated Weapon and Blessed Wizard Oil
     else if (m_spellInfo->Id == 28891 && m_spellInfo->Id == 28898)
-        { duration = 3600; }                                    // 1 hour
+    {
+        duration = 3600;                                     // 1 hour
+    }
     // some fishing pole bonuses
     else if (m_spellInfo->HasAttribute(SPELL_ATTR_HIDE_SPELL))
-        { duration = 600; }                                     // 10 mins
+    {
+        duration = 600;                                      // 10 mins
+    }
     // default case
     else
-        { duration = 1800; }                                    // 30 mins
+    {
+        duration = 1800;                                     // 30 mins
+    }
 
     // item can be in trade slot and have owner diff. from caster
     Player* item_owner = itemTarget->GetOwner();
@@ -4937,7 +4983,9 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
     }
 #ifdef ENABLE_ELUNA
     if (Unit* summoner = m_originalCaster->ToUnit())
+    {
         sEluna->OnSummoned(spawnCreature, summoner);
+    }
 #endif /* ENABLE_ELUNA */
 }
 
@@ -4968,9 +5016,13 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
         uint32 enchant_id = m_spellInfo->EffectMiscValue[eff_idx];
         int32 duration = GetSpellDuration(m_spellInfo);     // Try duration index first...
         if (!duration)
-            { duration = m_currentBasePoints[eff_idx]; }        // Base points after...
+        {
+            duration = m_currentBasePoints[eff_idx];         // Base points after...
+        }
         if (!duration)
-            { duration = 10 * IN_MILLISECONDS; }                // 10 seconds for enchants which don't have listed duration
+        {
+            duration = 10 * IN_MILLISECONDS;                 // 10 seconds for enchants which don't have listed duration
+        }
 
         SpellItemEnchantmentEntry const* pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
         if (!pEnchant)
@@ -5225,10 +5277,14 @@ void Spell::EffectAddExtraAttacks(SpellEffectIndex /*eff_idx*/)
     if (unitTarget->m_extraAttacks)
     {
         if (m_spellInfo->Id == 20178 && unitTarget->m_extraAttacks < 4)
+        {
             ++unitTarget->m_extraAttacks;   // += damage would be more logical
+        }
     }
     else
+    {
         unitTarget->m_extraAttacks = damage;
+    }
 }
 
 void Spell::EffectParry(SpellEffectIndex /*eff_idx*/)
@@ -5274,7 +5330,9 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
         if (unitTarget->GetMap()->GetTerrain()->IsInWater(nextPos.x, nextPos.y, nextPos.z, &liquidData))
         {
             if (fabs(nextPos.z - liquidData.level) < 10.0f)
+            {
                 nextPos.z = liquidData.level - IN_OR_UNDER_LIQUID_RANGE;
+            }
         }
         else
         {
@@ -5294,7 +5352,9 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
 
     // fix origin position if player was jumping and near of the ground but not in ground
     if (fabs(prevPos.z - groundZ) > 0.5f)
+    {
         prevPos.z = groundZ;
+    }
 
     //check if in liquid
     isPrevInLiquid = unitTarget->GetMap()->GetTerrain()->IsInWater(prevPos.x, prevPos.y, prevPos.z);
@@ -5339,7 +5399,9 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
             }
         }
         else
+        {
             isOnGround = true;                                  // player is on ground
+        }
 
         if (isInLiquid || (!isInLiquidTested && unitTarget->GetMap()->GetTerrain()->IsInWater(nextPos.x, nextPos.y, nextPos.z, &liquidData)))
         {
@@ -5352,9 +5414,13 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
             }
 
             if ((liquidData.level - IN_OR_UNDER_LIQUID_RANGE) > nextPos.z)
+            {
                 nextPos.z = prevPos.z;                                      // we are under water so next z equal prev z
+            }
             else
+            {
                 nextPos.z = liquidData.level - IN_OR_UNDER_LIQUID_RANGE;    // we are on water surface, so next z equal liquid level
+            }
 
             isInLiquid = true;
 
@@ -5630,10 +5696,14 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
     }
 #ifdef ENABLE_ELUNA
     if (Unit* summoner = m_caster->ToUnit())
+    {
         sEluna->OnSummoned(critter, summoner);
+    }
     if (m_originalCaster)
         if (Unit* summoner = m_originalCaster->ToUnit())
+        {
             sEluna->OnSummoned(critter, summoner);
+        }
 #endif /* ENABLE_ELUNA */
 }
 

@@ -27,7 +27,9 @@ bool TaxiAction::Execute(Event event)
     {
         Creature *npc = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_FLIGHTMASTER);
         if (!npc)
+        {
             continue;
+        }
 
         if (movement.taxiNodes.empty())
         {

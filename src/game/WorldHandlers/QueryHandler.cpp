@@ -158,7 +158,9 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         data << subName;
         data << uint32(ci->CreatureTypeFlags);              // flags
         if (unit)
-            { data << uint32(((unit->IsPet()) ? 0 : ci->CreatureType)); } // CreatureType.dbc   wdbFeild8
+        {
+            data << uint32(((unit->IsPet()) ? 0 : ci->CreatureType));  // CreatureType.dbc   wdbFeild8
+        }
         else
         {
             data << uint32(ci->CreatureType);
@@ -169,9 +171,13 @@ void WorldSession::HandleCreatureQueryOpcode(WorldPacket& recv_data)
         data << uint32(0);                                  // unknown        wdbFeild11
         data << uint32(ci->PetSpellDataId);                 // Id from CreatureSpellData.dbc    wdbField12
         if (unit)
-            { data << unit->GetUInt32Value(UNIT_FIELD_DISPLAYID); } // DisplayID      wdbFeild13
+        {
+            data << unit->GetUInt32Value(UNIT_FIELD_DISPLAYID);  // DisplayID      wdbFeild13
+        }
         else
-            { data << uint32(Creature::ChooseDisplayId(ci)); }  // workaround, way to manage models must be fixed
+        {
+            data << uint32(Creature::ChooseDisplayId(ci));   // workaround, way to manage models must be fixed
+        }
 
         data << uint8(ci->civilian);                       // wdbFeild14
         data << uint8(ci->RacialLeader);

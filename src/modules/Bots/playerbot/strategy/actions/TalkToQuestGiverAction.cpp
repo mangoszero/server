@@ -41,11 +41,17 @@ void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questG
     }
 
     if (quest->GetRewChoiceItemsCount() == 0)
+    {
         RewardNoItem(quest, questGiver, out);
+    }
     else if (quest->GetRewChoiceItemsCount() == 1)
+    {
         RewardSingleItem(quest, questGiver, out);
+    }
     else {
+    {
         AskToSelectReward(quest, out);
+    }
     }
 }
 

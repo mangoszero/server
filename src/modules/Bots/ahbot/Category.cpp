@@ -8,7 +8,9 @@ using namespace ahbot;
 uint32 Category::GetStackCount(ItemPrototype const* proto)
 {
     if (proto->Quality > ITEM_QUALITY_UNCOMMON)
+    {
         return 1;
+    }
 
     return urand(1, proto->GetMaxStackSize());
 }
@@ -26,7 +28,9 @@ uint32 Category::GetMaxAllowedAuctionCount()
 PricingStrategy* Category::GetPricingStrategy()
 {
     if (pricingStrategy)
+    {
         return pricingStrategy;
+    }
 
     ostringstream out; out << "AhBot.PricingStrategy." << GetName();
     string name = sAhBotConfig.GetStringDefault(out.str().c_str(), "default");

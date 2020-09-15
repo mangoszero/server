@@ -345,7 +345,9 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         SetPower(powerType, savedpower > GetMaxPower(powerType) ? GetMaxPower(powerType) : savedpower);
 
         if (getPetType() == HUNTER_PET && savedhealth == 0)
-          SetDeathState(JUST_DIED);
+        {
+            SetDeathState(JUST_DIED);
+        }
 
     }
 
@@ -1880,7 +1882,9 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
         for (PetSpellMap::const_iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
         {
             if (itr2->second.state == PETSPELL_REMOVED)
+            {
                 continue;
+            }
 
             uint32 const oldspell_id = itr2->first;
 

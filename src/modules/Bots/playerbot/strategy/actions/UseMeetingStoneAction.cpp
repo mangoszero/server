@@ -17,7 +17,9 @@ namespace MaNGOS
         bool operator()(GameObject* u)
         {
             if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo() && u->GetObjectGuid() == i_guid)
+            {
                 return true;
+            }
 
             return false;
         }
@@ -32,7 +34,9 @@ bool UseMeetingStoneAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     WorldPacket p(event.getPacket());
     p.rpos(0);
@@ -40,13 +44,19 @@ bool UseMeetingStoneAction::Execute(Event event)
     p >> guid;
 
     if (master->GetSelectionGuid() && master->GetSelectionGuid() != bot->GetObjectGuid())
+    {
         return false;
+    }
 
     if (!master->GetSelectionGuid() && master->GetGroup() != bot->GetGroup())
+    {
         return false;
+    }
 
     if (master->IsBeingTeleported())
+    {
         return false;
+    }
 
     if (bot->IsInCombat())
     {
@@ -72,11 +82,15 @@ bool UseMeetingStoneAction::Execute(Event event)
     }
 
     if (!gameObject)
+    {
         return false;
+    }
 
     const GameObjectInfo* goInfo = gameObject->GetGOInfo();
     if (!goInfo || goInfo->type != GAMEOBJECT_TYPE_SUMMONING_RITUAL)
+    {
         return false;
+    }
 
     return Teleport();
 }
@@ -86,7 +100,9 @@ bool SummonAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     if (master->GetSession()->GetSecurity() < SEC_GAMEMASTER)
     {

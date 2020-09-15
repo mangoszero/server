@@ -34,18 +34,26 @@ uint32 SpellIdValue::Calculate()
         uint32 spellId = itr->first;
 
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         if (pSpellInfo->Effect[0] == SPELL_EFFECT_LEARN_SPELL)
+        {
             continue;
+        }
 
         char* spellName = pSpellInfo->SpellName[loc];
         if (tolower(spellName[0]) != firstSymbol || strlen(spellName) != spellLength || !Utf8FitTo(spellName, wnamepart))
+        {
             continue;
+        }
 
         bool usesNoReagents = (pSpellInfo->Reagent[0] <= 0);
 
@@ -61,10 +69,14 @@ uint32 SpellIdValue::Calculate()
 
             }
             else
+            {
                 useThisSpell = false;
+            }
         }
         if (useThisSpell) {
+        {
             foundSpellId = spellId;
+        }
             foundMatchUsesNoReagents = usesNoReagents;
         }
     }
@@ -75,19 +87,27 @@ uint32 SpellIdValue::Calculate()
         for (PetSpellMap::const_iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
         {
             if(itr->second.state == PETSPELL_REMOVED)
+            {
                 continue;
+            }
 
             uint32 spellId = itr->first;
             const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
             if (!pSpellInfo)
+            {
                 continue;
+            }
 
             if (pSpellInfo->Effect[0] == SPELL_EFFECT_LEARN_SPELL)
+            {
                 continue;
+            }
 
             char* spellName = pSpellInfo->SpellName[loc];
             if (tolower(spellName[0]) != firstSymbol || strlen(spellName) != spellLength || !Utf8FitTo(spellName, wnamepart))
+            {
                 continue;
+            }
 
             foundSpellId = spellId;
         }

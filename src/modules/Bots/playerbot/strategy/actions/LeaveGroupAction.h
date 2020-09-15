@@ -12,7 +12,9 @@ namespace ai
         virtual bool Execute(Event event)
         {
             if (!bot->GetGroup())
+            {
                 return false;
+            }
 
             ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
 
@@ -47,11 +49,15 @@ namespace ai
             p >> operation >> member;
 
             if (operation != PARTY_OP_LEAVE)
+            {
                 return false;
+            }
 
             Player* master = GetMaster();
             if (master && member == master->GetName())
+            {
                 return LeaveGroupAction::Execute(event);
+            }
 
             return false;
         }
@@ -70,7 +76,9 @@ namespace ai
             p >> guid;
 
             if (bot->GetObjectGuid() == guid)
+            {
                 return LeaveGroupAction::Execute(event);
+            }
 
             return false;
         }

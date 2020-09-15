@@ -17,7 +17,9 @@ list<ObjectGuid> AttackersValue::Calculate()
 
     Group* group = bot->GetGroup();
     if (group)
+    {
         AddAttackersOf(group, targets);
+    }
 
     RemoveNonThreating(targets);
 
@@ -28,7 +30,9 @@ list<ObjectGuid> AttackersValue::Calculate()
     }
 
     if (bot->duel && bot->duel->opponent)
+    {
         result.push_back(bot->duel->opponent->GetObjectGuid());
+    }
 
     return result;
 }
@@ -40,7 +44,9 @@ void AttackersValue::AddAttackersOf(Group* group, set<Unit*>& targets)
     {
         Player *member = sObjectMgr.GetPlayer(itr->guid);
         if (!member || !member->IsAlive() || member == bot)
+        {
             continue;
+        }
 
         AddAttackersOf(member, targets);
     }
@@ -75,7 +81,9 @@ void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
             targets.erase(tIter2);
         }
         else
+        {
             ++tIter;
+        }
     }
 }
 

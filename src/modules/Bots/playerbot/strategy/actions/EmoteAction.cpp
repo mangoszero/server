@@ -9,7 +9,9 @@ map<string, uint32> EmoteAction::emotes;
 bool EmoteAction::Execute(Event event)
 {
     if (emotes.empty())
+    {
         InitEmotes();
+    }
 
     uint32 emote = 0;
 

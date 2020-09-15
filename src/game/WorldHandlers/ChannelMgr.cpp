@@ -32,7 +32,9 @@ INSTANTIATE_SINGLETON_1(HordeChannelMgr);
 ChannelMgr* channelMgr(Team team)
 {
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
-        { return &MaNGOS::Singleton<AllianceChannelMgr>::Instance(); }        // cross-faction
+    {
+        return &MaNGOS::Singleton<AllianceChannelMgr>::Instance();         // cross-faction
+    }
 
     if (team == ALLIANCE)
     {

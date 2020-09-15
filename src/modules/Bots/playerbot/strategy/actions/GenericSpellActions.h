@@ -62,11 +62,17 @@ namespace ai
         virtual NextAction** getPrerequisites()
         {
             if (range > sPlayerbotAIConfig.spellDistance)
+            {
                 return NULL;
+            }
             else if (range > ATTACK_DISTANCE)
+            {
                 return NextAction::merge( NextAction::array(0, new NextAction("reach spell"), NULL), Action::getPrerequisites());
+            }
             else
+            {
                 return NextAction::merge( NextAction::array(0, new NextAction("reach melee"), NULL), Action::getPrerequisites());
+            }
         }
 
     protected:

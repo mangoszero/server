@@ -114,7 +114,9 @@ void WardenCheckMgr::LoadWardenChecks()
 
         // PROC_CHECK support missing
         if (checkType == MEM_CHECK || checkType == MPQ_CHECK || checkType == LUA_STR_CHECK || checkType == DRIVER_CHECK || checkType == MODULE_CHECK)
+        {
             wardenCheck->Str = str;
+        }
 
         CheckStore.insert(std::pair<uint16, WardenCheck*>(build, wardenCheck));
 
@@ -137,9 +139,13 @@ void WardenCheckMgr::LoadWardenChecks()
         }
 
         if (comment.empty())
+        {
             wardenCheck->Comment = "";
+        }
         else
+        {
             wardenCheck->Comment = comment;
+        }
 
         ++count;
     } while (result->NextRow());
@@ -180,7 +186,9 @@ void WardenCheckMgr::LoadWardenOverrides()
 
         // Check if action value is in range (0-2, see WardenActions enum)
         if (action > WARDEN_ACTION_BAN)
+        {
             sLog.outWarden("Warden check override action out of range (ID: %u, action: %u)", checkId, action);
+        }
         else
         {
             bool found = false;
@@ -210,7 +218,9 @@ WardenCheck* WardenCheckMgr::GetWardenDataById(uint16 build, uint16 id)
     for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
     {
         if (it->second->CheckId == id)
+        {
             result = it->second;
+        }
     }
 
     return result;
@@ -224,7 +234,9 @@ WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 id)
     for (CheckResultMap::iterator it = CheckResultStore.lower_bound(build); it != CheckResultStore.upper_bound(build); ++it)
     {
         if (it->second->Id == id)
+        {
             result = it->second;
+        }
     }
 
     return result;
@@ -240,9 +252,13 @@ void WardenCheckMgr::GetWardenCheckIds(bool isMemCheck, uint16 build, std::list<
         if (isMemCheck)
         {
             if ((it->second->Type == MEM_CHECK) || (it->second->Type == MODULE_CHECK))
+            {
                 idl.push_back(it->second->CheckId);
+            }
         }
         else
+        {
             idl.push_back(it->second->CheckId);
+        }
     }
 }

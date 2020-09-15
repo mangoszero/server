@@ -229,7 +229,9 @@ void Channel::KickOrBan(Player* player, const char* targetName, bool ban)
         MakePlayerBanned(&data, targetGuid, guid);
     }
     else
+    {
         MakePlayerKicked(&data, targetGuid, guid);
+    }
 
     SendToAll(&data);
     m_players.erase(targetGuid);
@@ -380,9 +382,13 @@ void Channel::SetMode(Player* player, const char* targetName, bool moderator, bo
 
     // set channel moderator
     if (moderator)
+    {
         SetModerator(targetGuid, set);
+    }
     else
+    {
         SetMute(targetGuid, set);
+    }
 }
 
 void Channel::SetOwner(Player* player, const char* targetName)
@@ -590,7 +596,9 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         HonorRankInfo honorInfo = plr->GetHonorRankInfo();
         //We can speak in local defense if we're above this rank (see .h file)
         if (honorInfo.rank >= SPEAK_IN_LOCALDEFENSE_RANK)
+        {
             speakInLocalDef = true;
+        }
     }
 
     if (!IsOn(guid))
@@ -620,7 +628,9 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
 
     // send channel message
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
+    {
         lang = LANG_UNIVERSAL;
+    }
     WorldPacket data;
     ChatHandler::BuildChatPacket(data, CHAT_MSG_CHANNEL, text, Language(lang), player->GetChatTag(), guid, player->GetName(), ObjectGuid(), "", m_name.c_str(), player->GetHonorRankInfo().rank);
     SendToAll(&data, !m_players[guid].IsModerator() ? guid : ObjectGuid());

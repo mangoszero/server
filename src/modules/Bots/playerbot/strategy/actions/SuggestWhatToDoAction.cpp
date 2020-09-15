@@ -77,11 +77,15 @@ vector<uint32> SuggestWhatToDoAction::GetIncompletedQuests()
     {
         uint32 questId = bot->GetQuestSlotQuestId(slot);
         if (!questId)
+        {
             continue;
+        }
 
         QuestStatus status = bot->GetQuestStatus(questId);
         if (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_NONE)
+        {
             result.push_back(questId);
+        }
     }
 
     return result;
@@ -106,7 +110,9 @@ void SuggestWhatToDoAction::newQuest()
 {
     vector<uint32> quests = GetIncompletedQuests();
     if (quests.size() < MAX_QUEST_LOG_SIZE - 5)
+    {
         spam("I would like to pick up and do a new quest. Just invite me!");
+    }
 }
 
 void SuggestWhatToDoAction::grindMaterials()
@@ -135,7 +141,9 @@ void SuggestWhatToDoAction::grindMaterials()
 void SuggestWhatToDoAction::grindReputation()
 {
     if (bot->getLevel() > 15)
+    {
         ai->TellMasterNoFacing("I think we should do something to improve our reputation", PLAYERBOT_SECURITY_ALLOW_ALL);
+    }
 }
 
 void SuggestWhatToDoAction::nothing()
@@ -164,7 +172,9 @@ public:
         if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
         {
             if(proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
+            {
                 stacks.push_back(proto->ItemId);
+            }
 
             items.push_back(proto->ItemId);
             count[proto->ItemId] += item->GetCount();
@@ -191,13 +201,21 @@ void SuggestWhatToDoAction::trade()
 
     uint32 quality = urand(0, 100);
     if (quality > 90)
+    {
         quality = ITEM_QUALITY_EPIC;
+    }
     else if (quality >75)
+    {
         quality = ITEM_QUALITY_RARE;
+    }
     else if (quality > 50)
+    {
         quality = ITEM_QUALITY_UNCOMMON;
+    }
     else
+    {
         quality = ITEM_QUALITY_NORMAL;
+    }
 
     uint32 item = 0, count = 0;
     while (quality-- > ITEM_QUALITY_POOR)

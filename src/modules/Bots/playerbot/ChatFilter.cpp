@@ -186,7 +186,9 @@ public:
 
             bool isRti = message.find(rti) == 0;
             if (!isRti)
+            {
                 continue;
+            }
 
             ObjectGuid rtiTarget = group->GetTargetIcon(RtiTargetValue::GetRtiIndex(rti.substr(1)));
             if (bot->GetObjectGuid() == rtiTarget)
@@ -206,7 +208,9 @@ public:
             }
 
             if (found |= isRti)
+            {
                 break;
+            }
         }
 
         if (found)
@@ -252,7 +256,9 @@ public:
             }
 
             if (found |= isClass)
+            {
                 break;
+            }
         }
 
         if (found)
@@ -294,7 +300,9 @@ string CompositeChatFilter::Filter(string message)
         {
             message = (*i)->Filter(message);
             if (message.empty())
+            {
                 break;
+            }
         }
     }
 

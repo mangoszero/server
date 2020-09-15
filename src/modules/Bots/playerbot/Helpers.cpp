@@ -68,7 +68,9 @@ uint64 extractGuid(WorldPacket& packet)
             guid += (word << bit);
         }
         if (bit == 7)
+        {
             break;
+        }
         ++bit;
         testMask <<= 1;
     }

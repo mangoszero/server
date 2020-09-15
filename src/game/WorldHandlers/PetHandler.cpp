@@ -176,7 +176,9 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                         }
                         else
                             // dismissing a summoned pet is like killing them (this prevents returning a soulshard...)
-                            { p->SetDeathState(CORPSE); }
+                        {
+                            p->SetDeathState(CORPSE);
+                        }
                     }
                     else                                    // charmed
                     {
@@ -472,7 +474,9 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
             UnitActionBarEntry const* actionEntry_1 = charmInfo->GetActionBarEntry(position[1]);
             if (!actionEntry_1 || spell_id_0 != actionEntry_1->GetAction() ||
                 act_state_0 != actionEntry_1->GetType())
-                { return; }
+                {
+                    return;
+                }
         }
 
         uint8 act_state_1 = UNIT_ACTION_BUTTON_TYPE(data[1]);
@@ -482,7 +486,9 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
             UnitActionBarEntry const* actionEntry_0 = charmInfo->GetActionBarEntry(position[0]);
             if (!actionEntry_0 || spell_id_1 != actionEntry_0->GetAction() ||
                 act_state_1 != actionEntry_0->GetType())
-                { return; }
+                {
+                    return;
+                }
         }
     }
 
@@ -541,7 +547,9 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     if (!pet || pet->getPetType() != HUNTER_PET ||
         !pet->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME) ||
         pet->GetOwnerGuid() != _player->GetObjectGuid() || !pet->GetCharmInfo())
-        { return; }
+        {
+            return;
+        }
 
     PetNameInvalidReason res = ObjectMgr::CheckPetName(name);
     if (res != PET_NAME_SUCCESS)
@@ -696,7 +704,9 @@ void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
 
     if (pet->IsCharmed())
         // state can be used as boolean
-        { pet->GetCharmInfo()->ToggleCreatureAutocast(spellid, state); }
+    {
+        pet->GetCharmInfo()->ToggleCreatureAutocast(spellid, state);
+    }
     else
     {
         ((Pet*)pet)->ToggleAutocast(spellid, state);

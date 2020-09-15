@@ -37,7 +37,9 @@ namespace ai
         virtual T Get()
         {
             if (ticksElapsed >= checkInterval) {
+            {
                 ticksElapsed = 0;
+            }
                 value = Calculate();
             }
             return value;
@@ -46,7 +48,9 @@ namespace ai
         virtual void Update()
         {
             if (ticksElapsed < checkInterval) {
+            {
                 ticksElapsed++;
+            }
             }
         }
 

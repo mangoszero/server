@@ -9,7 +9,9 @@
 PlayerbotSecurity::PlayerbotSecurity(Player* const bot) : bot(bot)
 {
     if (bot)
+    {
         account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
+    }
 }
 
 PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* reason, bool ignoreGroup)

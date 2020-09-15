@@ -28,26 +28,34 @@ void TrainerAction::List(Creature* creature, TrainerSpellAction action, SpellIds
 
     TrainerSpellData const* trainer_spells = cSpells;
     if (!trainer_spells)
+    {
         trainer_spells = tSpells;
+    }
 
     for (TrainerSpellMap::const_iterator itr =  trainer_spells->spellList.begin(); itr !=  trainer_spells->spellList.end(); ++itr)
     {
         TrainerSpell const* tSpell = &itr->second;
 
         if (!tSpell)
+        {
             continue;
+        }
 
         uint32 reqLevel = 0;
 
         reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
         TrainerSpellState state = bot->GetTrainerSpellState(tSpell, reqLevel);
         if (state != TRAINER_SPELL_GREEN)
+        {
             continue;
+        }
 
         uint32 spellId = tSpell->spell;
         const SpellEntry *const pSpellInfo =  sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
         totalCost += cost;
@@ -56,7 +64,9 @@ void TrainerAction::List(Creature* creature, TrainerSpellAction action, SpellIds
         out << chat->formatSpell(pSpellInfo) << chat->formatMoney(cost);
 
         if (action && (spells.empty() || spells.find(tSpell->spell) != spells.end()))
+        {
             (this->*action)(cost, tSpell, out);
+        }
 
         ai->TellMaster(out);
     }
@@ -98,12 +108,18 @@ bool TrainerAction::Execute(Event event)
     uint32 spell = chat->parseSpell(text);
     SpellIds spells;
     if (spell)
+    {
         spells.insert(spell);
+    }
 
     if (text == "learn")
+    {
         List(creature, &TrainerAction::Learn, spells);
+    }
     else
+    {
         List(creature, NULL, spells);
+    }
 
     return true;
 }

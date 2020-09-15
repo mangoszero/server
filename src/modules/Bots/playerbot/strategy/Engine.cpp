@@ -118,7 +118,9 @@ bool Engine::DoNextAction(Unit* unit, int depth)
 {
     LogAction("--- AI Tick ---");
     if (sPlayerbotAIConfig.logValuesPerTick)
+    {
         LogValues();
+    }
 
     bool actionExecuted = false;
     ActionBasket* basket = NULL;
@@ -133,7 +135,9 @@ bool Engine::DoNextAction(Unit* unit, int depth)
         basket = queue.Peek();
         if (basket) {
             if (++iterations > iterationsPerTick)
+            {
                 break;
+            }
 
             float relevance = basket->getRelevance(); // just for reference
             bool skipPrerequisites = basket->isSkipPrerequisites();
@@ -211,11 +215,15 @@ bool Engine::DoNextAction(Unit* unit, int depth)
     }
 
     if (time(0) - currentTime > 1) {
+    {
         LogAction("too long execution");
+    }
     }
 
     if (!actionExecuted)
+    {
         LogAction("no actions executed");
+    }
 
     return actionExecuted;
 }
@@ -266,7 +274,9 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                 delete nextAction;
             }
             else
+            {
                 break;
+            }
         }
         delete actions;
     }
@@ -340,7 +350,9 @@ void Engine::addStrategies(string first, ...)
     {
         cur = va_arg(vl, const char*);
         if (cur)
+        {
             addStrategy(cur);
+        }
     }
     while (cur);
 
@@ -370,7 +382,9 @@ void Engine::removeAllStrategies()
 void Engine::toggleStrategy(string name)
 {
     if (!removeStrategy(name))
+    {
         addStrategy(name);
+    }
 }
 
 bool Engine::HasStrategy(string name)
@@ -384,7 +398,9 @@ void Engine::ProcessTriggers()
     {
         TriggerNode* node = *i;
         if (!node)
+        {
             continue;
+        }
 
         Trigger* trigger = node->getTrigger();
         if (!trigger)
@@ -394,13 +410,17 @@ void Engine::ProcessTriggers()
         }
 
         if (!trigger)
+        {
             continue;
+        }
 
         if (testMode || trigger->needCheck())
         {
             Event event = trigger->Check();
             if (!event)
+            {
                 continue;
+            }
 
             LogAction("T:%s", trigger->getName().c_str());
             MultiplyAndPush(node->getHandlers(), 0.0f, false, event);

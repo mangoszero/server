@@ -44,7 +44,9 @@ void TellLosAction::ListUnits(string title, list<ObjectGuid> units)
     {
         Unit* unit = ai->GetUnit(*i);
         if (unit)
+        {
             ai->TellMaster(unit->GetName());
+        }
     }
 
 }
@@ -56,6 +58,8 @@ void TellLosAction::ListGameObjects(string title, list<ObjectGuid> gos)
     {
         GameObject* go = ai->GetGameObject(*i);
         if (go)
+        {
             ai->TellMaster(chat->formatGameobject(go));
+        }
     }
 }

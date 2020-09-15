@@ -317,7 +317,9 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
 
         // check and, if needed, modify AtWar flag every rep rank crossing
         if (ReputationToRank(standing) != ReputationToRank(BaseRep))
+        {
             SetAtWar(&itr->second, ReputationToRank(standing) <= REP_HOSTILE);
+        }
 
         m_player->ReputationChanged(factionEntry);
 

@@ -34,11 +34,15 @@ bool LootRollAction::Execute(Event event)
         case ITEM_CLASS_WEAPON:
         case ITEM_CLASS_ARMOR:
             if (QueryItemUsage(proto))
+            {
                 vote = ROLL_NEED;
+            }
             break;
         default:
             if (IsLootAllowed(guid.GetEntry()))
+            {
                 vote = ROLL_NEED;
+            }
             break;
         }
     }

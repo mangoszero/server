@@ -49,7 +49,10 @@ void PlayerbotHolder::LogoutAllBots()
     while (true)
     {
         PlayerBotMap::const_iterator itr = GetPlayerBotsBegin();
-        if (itr == GetPlayerBotsEnd()) break;
+        if (itr == GetPlayerBotsEnd())
+        {
+            break;
+        }
         Player* bot= itr->second;
         LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
     }
@@ -287,11 +290,15 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
             ObjectGuid member = i->guid;
 
             if (member == master->GetObjectGuid())
+            {
                 continue;
+            }
 
             string bot;
             if (sObjectMgr.GetPlayerNameByGUID(member, bot))
+            {
                 bots.insert(bot);
+            }
         }
     }
 
@@ -301,7 +308,9 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         {
             Player* bot = i->second;
             if (bot && bot->IsInWorld())
+            {
                 bots.insert(bot->GetName());
+            }
         }
     }
 
@@ -405,7 +414,9 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == master)
+        {
             bot->GetPlayerbotAI()->HandleCommand(type, text, *master);
+        }
     }
 }
 
@@ -421,7 +432,9 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->GetPlayerbotAI()->HandleMasterIncomingPacket(packet);
+        }
     }
 
     switch (packet.GetOpcode())
@@ -446,7 +459,9 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
+        }
     }
 }
 
@@ -461,7 +476,9 @@ void PlayerbotMgr::SaveToDB()
     {
         Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
+        {
             bot->SaveToDB();
+        }
     }
 }
 

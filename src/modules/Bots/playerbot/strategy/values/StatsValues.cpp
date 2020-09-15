@@ -106,7 +106,9 @@ uint8 BagSpaceValue::Calculate()
     for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
     {
         if (bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
+        {
             totalused++;
+        }
     }
 
     uint32 totalfree = 16 - totalused;

@@ -12,10 +12,14 @@ bool RepairAllAction::Execute(Event event)
     {
         Creature *unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_REPAIR);
         if (!unit)
+        {
             continue;
+        }
 
         if(bot->hasUnitState(UNIT_STAT_DIED))
+        {
             bot->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
+        }
 
         bot->SetFacingToObject(unit);
         float discountMod = bot->GetReputationPriceDiscount(unit);

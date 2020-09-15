@@ -184,10 +184,14 @@ namespace MaNGOS
             for(CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
             {
                 if (!itr->getSource()->InSamePhase(i_phaseMask))
+                {
                     continue;
+                }
 
                 if (!i_check(itr->getSource()))
+                {
                     continue;
+                }
 
                 ..some code for update result and possible stop search
             }
@@ -584,7 +588,9 @@ namespace MaNGOS
             {
                 if (i_fobj->IsFriendlyTo(u) || u->IsAlive() || u->IsTaxiFlying() ||
                     (u->GetCreatureTypeMask() & CREATURE_TYPEMASK_HUMANOID_OR_UNDEAD) == 0)
-                    { return false; }
+                {
+                    return false;
+                }
 
                 return i_fobj->IsWithinDistInMap(u, i_range);
             }
@@ -821,7 +827,9 @@ namespace MaNGOS
             {
                 if (u->IsAlive() && (i_controlledByPlayer ? !i_obj->IsFriendlyTo(u) : i_obj->IsHostileTo(u))
                     && i_obj->IsWithinDistInMap(u, i_range))
-                    { return true; }
+                {
+                    return true;
+                }
                 else
                 {
                     return false;

@@ -476,9 +476,13 @@ WaypointNode const* WaypointManager::AddNode(uint32 entry, uint32 dbGuid, uint32
     WaypointPath& path = (*wpMap)[key];
 
     if (pointId == 0 && !path.empty())                      // Start with highest waypoint
+    {
         pointId = path.rbegin()->first + 1;
+    }
     else if (pointId == 0)
+    {
         pointId = 1;
+    }
 
     uint32 nextPoint = pointId;
     WaypointNode temp = WaypointNode(x, y, z, 100, 0, 0, NULL);
@@ -502,7 +506,9 @@ WaypointNode const* WaypointManager::AddNode(uint32 entry, uint32 dbGuid, uint32
     for (WaypointPath::reverse_iterator rItr = path.rbegin(); rItr != path.rend() && rItr->first > pointId; ++rItr)
     {
         if (rItr->first <= nextPoint)
+        {
             WorldDatabase.PExecuteLog("UPDATE `%s` SET `point`=`point`+1 WHERE `%s`=%u AND `point`=%u", table, key_field, key, rItr->first - 1);
+        }
     }
     // Insert new Point to database
     WorldDatabase.PExecuteLog("INSERT INTO `%s` (`%s`,`point`,`position_x`,`position_y`,`position_z`,`orientation`) VALUES (%u,%u, %f,%f,%f, 100)", table, key_field, key, pointId, x, y, z);
@@ -595,7 +601,9 @@ void WaypointManager::SetNodeWaittime(uint32 entry, uint32 dbGuid, uint32 point,
 
     WaypointPath::iterator find = path->find(point);
     if (find != path->end())
+    {
         find->second.delay = waittime;
+    }
 }
 
 void WaypointManager::SetNodeOrientation(uint32 entry, uint32 dbGuid, uint32 point, int32 pathId, WaypointPathOrigin wpOrigin, float orientation)
@@ -619,7 +627,9 @@ void WaypointManager::SetNodeOrientation(uint32 entry, uint32 dbGuid, uint32 poi
 
     WaypointPath::iterator find = path->find(point);
     if (find != path->end())
+    {
         find->second.orientation = orientation;
+    }
 }
 
 /// return true if a valid scriptId is provided
@@ -644,7 +654,9 @@ bool WaypointManager::SetNodeScriptId(uint32 entry, uint32 dbGuid, uint32 point,
 
     WaypointPath::iterator find = path->find(point);
     if (find != path->end())
+    {
         find->second.script_id = scriptId;
+    }
 
     ScriptChainMap const* scm = sScriptMgr.GetScriptChainMap(DBS_ON_CREATURE_MOVEMENT);
     if (!scm)

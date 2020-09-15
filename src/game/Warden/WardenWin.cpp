@@ -170,10 +170,14 @@ void WardenWin::RequestData()
 
     // If all checks were done, fill the todo list again
     if (_memChecksTodo.empty())
+    {
         sWardenCheckMgr->GetWardenCheckIds(true, build, _memChecksTodo);
+    }
 
     if (_otherChecksTodo.empty())
+    {
         sWardenCheckMgr->GetWardenCheckIds(false, build, _otherChecksTodo);
+    }
 
     _serverTicks = WorldTimer::getMSTime();
 
@@ -184,7 +188,9 @@ void WardenWin::RequestData()
     {
         // If todo list is done break loop (will be filled on next Update() run)
         if (_memChecksTodo.empty())
+        {
             break;
+        }
 
         // Get check id from the end and remove it from todo
         id = _memChecksTodo.back();
@@ -201,7 +207,9 @@ void WardenWin::RequestData()
     {
         // If todo list is done break loop (will be filled on next Update() run)
         if (_otherChecksTodo.empty())
+        {
             break;
+        }
 
         // Get check id from the end and remove it from todo
         id = _otherChecksTodo.back();
@@ -400,11 +408,17 @@ void WardenWin::HandleData(ByteBuffer &buff)
                 if (memcmp(buff.contents() + buff.rpos(), &byte, sizeof(uint8)) != 0)
                 {
                     if (type == PAGE_CHECK_A || type == PAGE_CHECK_B)
+                    {
                         sLog.outWarden("RESULT PAGE_CHECK fail, CheckId %u account Id %u", *itr, _session->GetAccountId());
+                    }
                     if (type == MODULE_CHECK)
+                    {
                         sLog.outWarden("RESULT MODULE_CHECK fail, CheckId %u account Id %u", *itr, _session->GetAccountId());
+                    }
                     if (type == DRIVER_CHECK)
+                    {
                         sLog.outWarden("RESULT DRIVER_CHECK fail, CheckId %u account Id %u", *itr, _session->GetAccountId());
+                    }
                     checkFailed = *itr;
                     buff.rpos(buff.rpos() + 1);
                     continue;
@@ -412,11 +426,17 @@ void WardenWin::HandleData(ByteBuffer &buff)
 
                 buff.rpos(buff.rpos() + 1);
                 if (type == PAGE_CHECK_A || type == PAGE_CHECK_B)
+                {
                     sLog.outWarden("RESULT PAGE_CHECK passed CheckId %u account Id %u", *itr, _session->GetAccountId());
+                }
                 else if (type == MODULE_CHECK)
+                {
                     sLog.outWarden("RESULT MODULE_CHECK passed CheckId %u account Id %u", *itr, _session->GetAccountId());
+                }
                 else if (type == DRIVER_CHECK)
+                {
                     sLog.outWarden("RESULT DRIVER_CHECK passed CheckId %u account Id %u", *itr, _session->GetAccountId());
+                }
                 break;
             }
             case LUA_STR_CHECK:

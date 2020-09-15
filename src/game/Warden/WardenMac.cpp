@@ -156,7 +156,9 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     {
         sLog.outWarden("%s failed hash reply. Action: %s", _session->GetPlayerName(), Penalty().c_str());
         if (sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION) > uint32(WARDEN_ACTION_LOG))
+        {
             _session->KickPlayer();
+        }
         return;
     }
 
@@ -254,9 +256,13 @@ void WardenMac::HandleData(ByteBuffer &buff)
     }
 
     if (found && sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION) > uint32(WARDEN_ACTION_LOG))
+    {
         _session->KickPlayer();
+    }
     else
+    {
         sLog.outWarden("SHA1 and MD5 hash verified. Handle data passed.");
+    }
 
     Warden::HandleData(buff);
 }

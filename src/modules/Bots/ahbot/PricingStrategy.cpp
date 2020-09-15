@@ -118,7 +118,9 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
         float chance = fields[0].GetFloat();
 
         if (chance > 0 && chance <= 90.0)
+        {
             result = sqrt((100.0 - chance) / 10.0);
+        }
 
         delete results;
     }
@@ -140,7 +142,9 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
         uint32 count = fields[0].GetUInt32();
 
         if (count)
+        {
             result += count;
+        }
 
         delete results;
     }
@@ -168,7 +172,9 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
         uint32 count = fields[0].GetUInt32();
 
         if (count)
+        {
             result += count;
+        }
 
         delete results;
     }
@@ -191,9 +197,13 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
     uint32 price = 0;
 
     if (proto->SellPrice)
+    {
         price = proto->SellPrice;
+    }
     if (proto->BuyPrice)
+    {
         price = max(price, proto->BuyPrice / 4);
+    }
 
     uint32 level = max(proto->ItemLevel, proto->RequiredLevel);
     if (proto->Class == ITEM_CLASS_QUEST)

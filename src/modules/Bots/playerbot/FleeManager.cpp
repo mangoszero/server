@@ -18,7 +18,9 @@ void FleeManager::calculateDistanceToPlayers(FleePoint *point)
     {
         Player* player = gref->getSource();
         if(player == bot)
+        {
             continue;
+        }
 
         float d = player->GetDistance(point->x, point->y, point->z);
         point->toAllPlayers.probe(d);
@@ -47,11 +49,15 @@ void FleeManager::calculateDistanceToCreatures(FleePoint *point)
     {
         Unit* unit = bot->GetPlayerbotAI()->GetUnit(*i);
         if (!unit)
+        {
             continue;
+        }
 
         float d = unit->GetDistance(point->x, point->y, point->z);
         if (d <= sPlayerbotAIConfig.tooCloseDistance)
+        {
             continue;
+        }
 
         distance.probe(d);
     }
@@ -71,7 +77,9 @@ void FleeManager::calculatePossibleDestinations(list<FleePoint*> &points)
             float y = botPosY + sin(angle) * distance;
 
             if (!bot->IsWithinLOS(x, y, botPosZ))
+            {
                 continue;
+            }
 
             FleePoint *point = new FleePoint(x, y, botPosZ);
             calculateDistanceToPlayers(point);
@@ -120,7 +128,9 @@ FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
     {
         FleePoint* point = *i;
         if (point->isReasonable() && (!byCreatures || point->isBetterByCreatures(byCreatures)))
+        {
             byCreatures = point;
+        }
     }
 
     FleePoint* byAll = NULL;
@@ -128,7 +138,9 @@ FleePoint* FleeManager::selectOptimalDestination(list<FleePoint*> &points)
     {
         FleePoint* point = *i;
         if (point->isReasonable() && (!byAll || point->isBetterByAll(byAll)))
+        {
             byAll = point;
+        }
     }
 
     if (byAll && byCreatures)

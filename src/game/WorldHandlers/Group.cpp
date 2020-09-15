@@ -615,7 +615,9 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
     {
         if(citr->guid == pPlayer->GetObjectGuid())
+        {
             continue;
+        }
 
         Player* member = sObjectMgr.GetPlayer(citr->guid);
         uint8 onlineState = (member) ? MEMBER_STATUS_ONLINE : MEMBER_STATUS_OFFLINE;
@@ -633,7 +635,9 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
     {
         data << uint8(m_lootMethod);                    // loot method
         if (m_lootMethod == MASTER_LOOT)
-            { data << m_looterGuid; }                           // looter guid
+        {
+            data << m_looterGuid;                            // looter guid
+        }
         else
         {
             data << uint64(0);
@@ -707,7 +711,9 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
                     ++DpsCount;
 
                     if(DpsCount >= 3)
+                    {
                         InitRoles &= ~LFG_ROLE_DPS;
+                    }
                 }
                 break;
             }
@@ -723,7 +729,9 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
         for (member_citerator citr = GetMemberSlots().begin(); citr != GetMemberSlots().end(); ++citr)
         {
             if (plrGuid == citr->guid)
+            {
                 continue;
+            }
 
             Classes memberClass = (Classes)sObjectMgr.GetPlayerClassByGUID(plrGuid);
 
@@ -757,7 +765,9 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
                         ++DpsCount;
 
                         if(DpsCount >= 3)
+                        {
                             InitRoles &= ~LFG_ROLE_DPS;
+                        }
                     }
                     break;
                 }
@@ -1001,7 +1011,9 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     Roll::PlayerVote::iterator itr = roll->playerVote.find(playerGUID);
     // this condition means that player joins to the party after roll begins
     if (itr == roll->playerVote.end())
-        { return true; }                                        // result used for need iterator ++, so avoid for end of list
+    {
+        return true;                                         // result used for need iterator ++, so avoid for end of list
+    }
 
     if (roll->getLoot())
         if (roll->getLoot()->items.empty())
@@ -1327,7 +1339,9 @@ static void GetDataForXPAtKill_helper(Player* player, Unit const* victim, uint32
     uint32 gray_level = MaNGOS::XP::GetGrayLevel(player->getLevel());
     if (victim->getLevel() > gray_level && (!not_gray_member_with_max_level
                                             || not_gray_member_with_max_level->getLevel() < player->getLevel()))
-        { not_gray_member_with_max_level = player; }
+    {
+        not_gray_member_with_max_level = player;
+    }
 }
 
 void Group::GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level, Player* additional)
@@ -1426,7 +1440,9 @@ void Group::SendUpdate()
         {
             data << uint8(m_lootMethod);                    // loot method
             if (m_lootMethod == MASTER_LOOT)
-                { data << m_looterGuid; }                           // looter guid
+            {
+                data << m_looterGuid;                            // looter guid
+            }
             else
             {
                 data << uint64(0);
@@ -1893,7 +1909,9 @@ void Group::ChangeMembersGroup(ObjectGuid guid, uint8 group)
     }
     else
         // This methods handles itself groupcounter decrease
-        { ChangeMembersGroup(player, group); }
+    {
+        ChangeMembersGroup(player, group);
+    }
 }
 
 // only for online members
@@ -2331,7 +2349,9 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
             }
 
             if (!pGroupGuy->IsAtGroupRewardDistance(pVictim))
-                { continue; }                               // member (alive or dead) or his corpse at req. distance
+            {
+                continue;                                // member (alive or dead) or his corpse at req. distance
+            }
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
         }

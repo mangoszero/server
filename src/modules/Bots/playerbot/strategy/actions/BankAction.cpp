@@ -16,7 +16,9 @@ bool BankAction::Execute(Event event)
     {
         Unit* npc = ai->GetUnit(*i);
         if (!npc || !bot->GetNPCIfCanInteractWith(npc->GetObjectGuid(), UNIT_NPC_FLAG_BANKER))
+        {
             continue;
+        }
 
         return Execute(text, npc);
     }
@@ -55,7 +57,9 @@ bool BankAction::Execute(string text, Unit* bank)
         {
             Item* item = *i;
             if (!item)
+            {
                 continue;
+            }
 
             result &= Deposit(item);
         }
@@ -126,7 +130,9 @@ void BankAction::ListItems()
             {
                 Item* const item = bot->GetItemByPos(bag, slot);
                 if (item)
+                {
                     items[item->GetProto()->ItemId] = item->GetCount();
+                }
             }
         }
     }
@@ -143,7 +149,9 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
         {
             const ItemPrototype* const pItemProto = pItem->GetProto();
             if (!pItemProto)
+            {
                 continue;
+            }
 
             if (pItemProto->ItemId == ItemId)   // have required item
             {
@@ -163,7 +171,9 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
                 {
                     const ItemPrototype* const pItemProto = pItem->GetProto();
                     if (!pItemProto)
+                    {
                         continue;
+                    }
 
                     if (pItemProto->ItemId == ItemId)
                     {

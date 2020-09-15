@@ -13,7 +13,9 @@ namespace ai
             Unit* target = AI_VALUE(Unit*, qualifier);
 
             if (!target)
+            {
                 return false;
+            }
 
             switch (target->GetMotionMaster()->GetCurrentMovementGeneratorType())
             {
@@ -34,7 +36,9 @@ namespace ai
             Unit* target = AI_VALUE(Unit*, qualifier);
 
             if (!target)
+            {
                 return false;
+            }
 
             return target->IsUnderWater() || target->IsInWater();
         }

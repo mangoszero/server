@@ -90,9 +90,13 @@ void OutdoorPvP::HandleGameObjectCreate(GameObject* go)
         CapturePointSliderMap const* capturePoints = sOutdoorPvPMgr.GetCapturePointSliderMap();
         CapturePointSliderMap::const_iterator itr = capturePoints->find(go->GetEntry());
         if (itr != capturePoints->end())
+        {
             go->SetCapturePointSlider(itr->second.Value, itr->second.IsLocked);
+        }
         else
+        {
             go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE, false);
+        }
     }
 }
 

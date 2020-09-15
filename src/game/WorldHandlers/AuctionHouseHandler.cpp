@@ -92,7 +92,9 @@ void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Act
     {
         case AUCTION_OK:
             if (Action == AUCTION_BID_PLACED)
-                { data << uint32(auc->GetAuctionOutBid()); }    // new AuctionOutBid?
+            {
+                data << uint32(auc->GetAuctionOutBid());     // new AuctionOutBid?
+            }
             break;
         case AUCTION_ERR_INVENTORY:
             data << uint32(invError);
@@ -266,7 +268,9 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     recv_data >> etime;
 
     if (!bid || !etime)
-        { return; }                                             // check for cheaters
+    {
+        return;                                              // check for cheaters
+    }
 
     Player* pl = GetPlayer();
 
@@ -374,7 +378,9 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
     recv_data >> auctionId >> price;
 
     if (!auctionId || !price)
-        { return; }                                             // check for cheaters
+    {
+        return;                                              // check for cheaters
+    }
 
     AuctionHouseEntry const* auctionHouseEntry = GetCheckedAuctionHouseForAuctioneer(auctioneerGuid);
     if (!auctionHouseEntry)

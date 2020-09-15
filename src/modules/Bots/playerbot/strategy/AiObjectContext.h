@@ -53,11 +53,15 @@ namespace ai
             {
                 UntypedValue* value = GetUntypedValue(*i);
                 if (!value)
+                {
                     continue;
+                }
 
                 string text = value->Format();
                 if (text == "?")
+                {
                     continue;
+                }
 
                 out << "{" << *i << "=" << text << "} ";
             }

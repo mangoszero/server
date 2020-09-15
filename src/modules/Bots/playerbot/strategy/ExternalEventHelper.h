@@ -20,7 +20,9 @@ namespace ai
             {
                 size_t found = command.rfind(" ", i);
                 if (found == string::npos || !found)
+                {
                     break;
+                }
 
                 string name = command.substr(0, found);
                 string param = command.substr(found + 1);

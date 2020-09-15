@@ -370,7 +370,9 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
         if (uint32 quest = _player->GetQuestSlotQuestId(slot))
         {
             if (!_player->TakeQuestSourceItem(quest, true))
-                { return; }                                     // can't un-equip some items, reject quest cancel
+            {
+                return;                                      // can't un-equip some items, reject quest cancel
+            }
 
             if (const Quest* pQuest = sObjectMgr.GetQuestTemplate(quest))
             {
@@ -429,7 +431,9 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
         }
 
         if (_player->CanAddQuest(pQuest, true))
-            { _player->AddQuest(pQuest, NULL); }                // NULL, this prevent DB script from duplicate running
+        {
+            _player->AddQuest(pQuest, NULL);                 // NULL, this prevent DB script from duplicate running
+        }
 
         _player->ClearDividerGuid();
     }

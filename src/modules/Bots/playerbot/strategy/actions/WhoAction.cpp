@@ -14,7 +14,9 @@ map<uint32, string> WhoAction::skills;
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    return *s1 - *s2;
+    {
+        return *s1 - *s2;
+    }
 }
 #endif
 
@@ -67,7 +69,9 @@ string WhoAction::QueryTrade(string text)
         Item* sell = *i;
         int32 sellPrice = auctionbot.GetSellPrice(sell->GetProto()) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * sell->GetCount();
         if (!sellPrice)
+        {
             continue;
+        }
 
         out << "Selling " << chat->formatItem(sell->GetProto(), sell->GetCount()) << " for " << chat->formatMoney(sellPrice);
         return out.str();
@@ -126,14 +130,18 @@ string WhoAction::QuerySpec(string text)
     if (visitor.count[ITEM_QUALITY_RARE])
     {
         if (needSlash) out << "/";
-        out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
+        {
+            out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
+        }
         needSlash = true;
     }
 
     if (visitor.count[ITEM_QUALITY_UNCOMMON])
     {
         if (needSlash) out << "/";
-        out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
+        {
+            out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
+        }
         needSlash = true;
     }
 

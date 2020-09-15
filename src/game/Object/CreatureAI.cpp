@@ -177,7 +177,9 @@ void CreatureAI::SetCombatMovement(bool enable, bool stopOrStartMovement /*=fals
     SetCombatMovementFlag(COMBAT_MOVEMENT_SCRIPT, enable);
 
     if (stopOrStartMovement)     // Only change current movement while in combat
+    {
         SetChase(enable);
+    }
 }
 
 void CreatureAI::SetCombatMovementFlag(uint8 flag, bool setFlag)

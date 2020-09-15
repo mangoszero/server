@@ -47,7 +47,9 @@ namespace ai
             T *object = (*creator)(ai);
             Qualified *q = dynamic_cast<Qualified *>(object);
             if (q)
+            {
                 q->Qualify(qualifier);
+            }
 
             return object;
         }
@@ -90,7 +92,9 @@ namespace ai
             for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
             {
                 if (i->second)
+                {
                     delete i->second;
+                }
             }
 
             created.clear();
@@ -101,7 +105,9 @@ namespace ai
             for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
             {
                 if (i->second)
+                {
                     i->second->Update();
+                }
             }
         }
 
@@ -110,7 +116,9 @@ namespace ai
             for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
             {
                 if (i->second)
+                {
                     i->second->Reset();
+                }
             }
         }
 
@@ -142,7 +150,9 @@ namespace ai
             {
                 NamedObjectContext<T>* context = *i;
                 if (!context->IsShared())
+                {
                     delete context;
+                }
             }
         }
 
@@ -166,7 +176,9 @@ namespace ai
             for (typename list<NamedObjectContext<T>*>::iterator i = contexts.begin(); i != contexts.end(); i++)
             {
                 if (!(*i)->IsShared())
+                {
                     (*i)->Update();
+                }
             }
         }
 
@@ -183,12 +195,16 @@ namespace ai
             for (typename list<NamedObjectContext<T>*>::iterator i = contexts.begin(); i != contexts.end(); i++)
             {
                 if (!(*i)->IsSupportsSiblings())
+                {
                     continue;
+                }
 
                 set<string> supported = (*i)->supports();
                 set<string>::iterator found = supported.find(name);
                 if (found == supported.end())
+                {
                     continue;
+                }
 
                 supported.erase(found);
                 return supported;

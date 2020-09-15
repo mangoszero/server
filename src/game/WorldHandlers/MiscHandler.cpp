@@ -102,7 +102,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     recv_data >> zones_count;                               // zones count, client limit=10 (2.0.10)
 
     if (zones_count > 10)
-        { return; }                                             // can't be received from real client or broken packet
+    {
+        return;                                              // can't be received from real client or broken packet
+    }
 
     for (uint32 i = 0; i < zones_count; ++i)
     {
@@ -115,7 +117,9 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     recv_data >> str_count;                                 // user entered strings count, client limit=4 (checked on 2.0.10)
 
     if (str_count > 4)
-        { return; }                                             // can't be received from real client or broken packet
+    {
+        return;                                              // can't be received from real client or broken packet
+    }
 
     DEBUG_LOG("Minlvl %u, maxlvl %u, name %s, guild %s, racemask %u, classmask %u, zones %u, strings %u", level_min, level_max, player_name.c_str(), guild_name.c_str(), racemask, classmask, zones_count, str_count);
 
@@ -436,7 +440,9 @@ void WorldSession::HandleTogglePvP(WorldPacket& recv_data)
     else
     {
         if (!GetPlayer()->pvpInfo.inHostileArea && GetPlayer()->IsPvP())
-            { GetPlayer()->pvpInfo.endTimer = time(NULL); }     // start toggle-off
+        {
+            GetPlayer()->pvpInfo.endTimer = time(NULL);      // start toggle-off
+        }
     }
 }
 
@@ -857,7 +863,9 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     {
         // set resting flag we are in the inn
         if (player->GetRestType() != REST_TYPE_IN_CITY)
+        {
             player->SetRestType(REST_TYPE_IN_TAVERN, Trigger_ID);
+        }
         return;
     }
 

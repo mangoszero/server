@@ -19,7 +19,9 @@ bool FollowMasterRandomAction::Execute(Event event)
 {
     Player* master = GetMaster();
     if (!master)
+    {
         return false;
+    }
 
     float range = rand() % 10 + 2;
     float angle = GetFollowAngle();

@@ -22,10 +22,14 @@ namespace ai
     public:
         void probe(float d) {
             if (min < 0 || min > d)
+            {
                 min = d;
+            }
 
             if (max < 0 || max < d)
+            {
                 max = d;
+            }
         }
     };
 

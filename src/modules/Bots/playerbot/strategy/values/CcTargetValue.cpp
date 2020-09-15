@@ -67,14 +67,20 @@ public:
         {
             Player *member = sObjectMgr.GetPlayer(itr->guid);
             if( !member || !member->IsAlive() || member == bot)
+            {
                 continue;
+            }
 
             if (!ai->IsTank(member))
+            {
                 continue;
+            }
 
             float distance = member->GetDistance(creature);
             if (distance < minDistance)
+            {
                 minDistance = distance;
+            }
         }
 
         if (!result || minDistance > maxDistance)

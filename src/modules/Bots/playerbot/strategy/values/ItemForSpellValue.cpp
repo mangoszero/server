@@ -8,7 +8,9 @@ using namespace ai;
 inline int strcmpi(const char* s1, const char* s2)
 {
     for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    return *s1 - *s2;
+    {
+        return *s1 - *s2;
+    }
 }
 #endif
 
@@ -60,7 +62,9 @@ Item* ItemForSpellValue::Calculate()
     }
 
     for( uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++ ) {
+    {
         itemForSpell = GetItemFitsToSpellRequirements(slot, spellInfo);
+    }
         if (itemForSpell)
         {
             return itemForSpell;

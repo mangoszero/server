@@ -135,12 +135,16 @@ WorldSession::~WorldSession()
 
     // Warden
     if (_warden)
+    {
         delete _warden;
+    }
 
     ///- empty incoming packet queue
     WorldPacket* packet = NULL;
     while (_recvQueue.next(packet))
-        { delete packet; }
+    {
+        delete packet;
+    }
 }
 
 void WorldSession::SizeError(WorldPacket const& packet, uint32 size) const
@@ -161,9 +165,13 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 #ifdef ENABLE_PLAYERBOTS
     if (GetPlayer()) {
         if (GetPlayer()->GetPlayerbotAI())
+        {
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
+        }
         else if (GetPlayer()->GetPlayerbotMgr())
+        {
             GetPlayer()->GetPlayerbotMgr()->HandleMasterOutgoingPacket(*packet);
+        }
     }
 #endif
 
@@ -275,7 +283,9 @@ bool WorldSession::Update(PacketFilter& updater)
 
 #ifdef ENABLE_PLAYERBOTS
                     if (_player && _player->GetPlayerbotMgr())
+                    {
                         _player->GetPlayerbotMgr()->HandleMasterIncomingPacket(*packet);
+                    }
 #endif
                     break;
                 case STATUS_LOGGEDIN_OR_RECENTLY_LOGGEDOUT:
@@ -285,7 +295,9 @@ bool WorldSession::Update(PacketFilter& updater)
                     }
                     else
                         // not expected _player or must checked in packet hanlder
-                        { ExecuteOpcode(opHandle, packet); }
+                    {
+                        ExecuteOpcode(opHandle, packet);
+                    }
                     break;
                 case STATUS_TRANSFER:
                     if (!_player)
@@ -356,7 +368,9 @@ bool WorldSession::Update(PacketFilter& updater)
 
 #ifdef ENABLE_PLAYERBOTS
     if (GetPlayer() && GetPlayer()->GetPlayerbotMgr())
+    {
         GetPlayer()->GetPlayerbotMgr()->UpdateSessions(0);
+    }
 #endif
 
     ///- Cleanup socket pointer if need
@@ -368,7 +382,9 @@ bool WorldSession::Update(PacketFilter& updater)
 
     // Warden
     if (m_Socket && !m_Socket->IsClosed() && _warden)
+    {
         _warden->Update();
+    }
 
     // check if we are safe to proceed with logout
     // logout procedure should happen only in World::UpdateSessions() method!!!
@@ -383,10 +399,14 @@ bool WorldSession::Update(PacketFilter& updater)
 
         // Warden
         if (m_Socket && GetPlayer() && _warden)
+        {
             _warden->Update();
+        }
 
         if (!m_Socket)
-            { return false; }                                   // Will remove this session from the world session map
+        {
+            return false;                                    // Will remove this session from the world session map
+        }
     }
 
     return true;
@@ -410,7 +430,9 @@ void WorldSession::LogoutPlayer(bool Save)
 {
     // finish pending transfers before starting the logout
     while (_player && _player->IsBeingTeleportedFar())
-        { HandleMoveWorldportAckOpcode(); }
+    {
+        HandleMoveWorldportAckOpcode();
+    }
 
     m_playerLogout = true;
     m_playerSave = Save;
@@ -419,7 +441,9 @@ void WorldSession::LogoutPlayer(bool Save)
     {
 #ifdef ENABLE_PLAYERBOTS
         if (GetPlayer()->GetPlayerbotMgr())
+        {
             GetPlayer()->GetPlayerbotMgr()->LogoutAllBots();
+        }
 #endif
 
         sLog.outChar("Account: %d (IP: %s) Logout Character:[%s] (guid: %u)", GetAccountId(), GetRemoteAddress().c_str(), _player->GetName() , _player->GetGUIDLow());
@@ -431,7 +455,9 @@ void WorldSession::LogoutPlayer(bool Save)
 
 #ifdef ENABLE_PLAYERBOTS
         if (_player->GetPlayerbotMgr())
+        {
             _player->GetPlayerbotMgr()->LogoutAllBots();
+        }
         sRandomPlayerbotMgr.OnPlayerLogout(_player);
 #endif
 
@@ -512,7 +538,9 @@ void WorldSession::LogoutPlayer(bool Save)
         // FG: finish pending transfers after starting the logout
         // this should fix players beeing able to logout and login back with full hp at death position
         while (_player->IsBeingTeleportedFar())
-            { HandleMoveWorldportAckOpcode(); }
+        {
+            HandleMoveWorldportAckOpcode();
+        }
 
         for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
         {

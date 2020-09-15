@@ -245,7 +245,9 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
         EventProcFlag = spellProcEvent->procFlags;
     }
     else
-        { EventProcFlag = spellProto->procFlags; }       // else get from spell proto
+    {
+        EventProcFlag = spellProto->procFlags;        // else get from spell proto
+    }
     // Continue if no trigger exist
     if (!EventProcFlag)
     {
@@ -336,7 +338,9 @@ bool Unit::IsTriggeredAtSpellProcEvent(Unit* pVictim, SpellAuraHolder* holder, S
        {
        // Break stealth on sap if improved sap doesnt proc
        if ((procSpell && procSpell->SpellIconID == 249 && procSpell->SpellVisual == 257) && (spellProto->SpellFamilyName == SPELLFAMILY_ROGUE && spellProto->SpellIconID == 249 && spellProto->SpellVisual == 0))
-       RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+       {
+           RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+       }
        return false;
        }
     return true;
@@ -803,7 +807,9 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                     for (int j = 0; j < 5; j++)
                     {
                         if ((*i)->GetId() == ModSpellId[j])
+                        {
                             ModPct *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
+                        }
                     }
                 }
                 triggerAmount = triggerAmount * ModPct;
