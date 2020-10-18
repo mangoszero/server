@@ -2212,7 +2212,7 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
             // 1.11.0: If you cast Drain Soul while shadowburn is on the victim, you will no longer receive two soul shards upon the victim's death.
             for (auto const& aura : victim->GetAurasByType(SPELL_AURA_CHANNEL_DEATH_ITEM))
             {
-                if (aura != this && aura->GetSpellProto()->EffectItemType[aura->GetEffIndex()] == ITEM_SOUL_SHARD)
+                if (aura != this && caster->GetObjectGuid() == aura->GetCasterGuid() && aura->GetSpellProto()->EffectItemType[aura->GetEffIndex()] == ITEM_SOUL_SHARD)
                 {
                     return;
                 }
