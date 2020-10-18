@@ -2608,4 +2608,23 @@ enum WhisperLoggingLevels
     WHISPER_LOGGING_EVERYTHING = 2
 };
 
+/*
+    Creature entries for more readable code
+*/
+enum CreatureEntriesConsts
+{
+    CREATURE_TAINTED_OOZE   = 7092,
+    CREATURE_CURSED_OOZE    = 7086,
+    CREATURE_MUCULENT_OOZE  = 6556,
+    CREATURE_PRIMAL_OOZE    = 6557,
+    CREATURE_GLUTINOUS_OOZE = 6559,
+};
+
+enum SpellEntriesConsts 
+{
+    SPELL_FILLING_EMPTY_JAR__CURSED_OOZE    = 15698,
+    SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE   = 15699,
+    SPELL_FILLING_EMPTY_JAR__PURE_OOZE      = 15702, // (Works on  Primal, Muculent and Glutonous Ooze)
+};
+
 #endif
