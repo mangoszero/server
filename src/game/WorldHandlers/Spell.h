@@ -236,6 +236,7 @@ class Spell
         void EffectPowerDrain(SpellEffectIndex eff_idx);
         void EffectHeal(SpellEffectIndex eff_idx);
         void EffectBind(SpellEffectIndex eff_idx);
+        void EffectTeleportGraveyard(SpellEffectIndex eff_idx);
         void EffectHealthLeech(SpellEffectIndex eff_idx);
         void EffectQuestComplete(SpellEffectIndex eff_idx);
         void EffectCreateItem(SpellEffectIndex eff_idx);
