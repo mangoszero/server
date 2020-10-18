@@ -255,6 +255,10 @@ pAuraHandler AuraHandler[TOTAL_AURAS] =
 
 static AuraType const frozenAuraTypes[] = { SPELL_AURA_MOD_ROOT, SPELL_AURA_MOD_STUN, SPELL_AURA_NONE };
 
+enum SpellCreatedItems {
+    ITEM_SOUL_SHARD = 6265
+};
+
 Aura::Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem) :
     m_spellmod(NULL), m_periodicTimer(0), m_periodicTick(0), m_removeMode(AURA_REMOVE_BY_DEFAULT),
     m_effIndex(eff), m_positive(false), m_isPeriodic(false), m_isAreaAura(false),
@@ -2192,8 +2196,10 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
             return;
         }
 
+        uint32 createdItemId = spellInfo->EffectItemType[m_effIndex];
+
         // Soul Shard (target req.)
-        if (spellInfo->EffectItemType[m_effIndex] == 6265)
+        if (createdItemId == ITEM_SOUL_SHARD)
         {
             // Only from non-grey units
             if (!((Player*)caster)->isHonorOrXPTarget(victim) ||
@@ -2201,6 +2207,17 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
             {
                 return;
             }
+
+            // Avoid awarding multiple souls on the same target
+            // 1.11.0: If you cast Drain Soul while shadowburn is on the victim, you will no longer receive two soul shards upon the victim's death.
+            for (auto const& aura : victim->GetAurasByType(SPELL_AURA_CHANNEL_DEATH_ITEM))
+            {
+                if (aura != this && caster->GetObjectGuid() == aura->GetCasterGuid() && aura->GetSpellProto()->EffectItemType[aura->GetEffIndex()] == ITEM_SOUL_SHARD)
+                {
+                    return;
+                }
+            }
+
         }
 
         // Adding items
@@ -2208,18 +2225,18 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         uint32 count = m_modifier.m_amount;
 
         ItemPosCountVec dest;
-        InventoryResult msg = ((Player*)caster)->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, spellInfo->EffectItemType[m_effIndex], count, &noSpaceForCount);
+        InventoryResult msg = ((Player*)caster)->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, createdItemId, count, &noSpaceForCount);
         if (msg != EQUIP_ERR_OK)
         {
             count -= noSpaceForCount;
-            ((Player*)caster)->SendEquipError(msg, NULL, NULL, spellInfo->EffectItemType[m_effIndex]);
+            ((Player*)caster)->SendEquipError(msg, NULL, NULL, createdItemId);
             if (count == 0)
             {
                 return;
             }
         }
 
-        Item* newitem = ((Player*)caster)->StoreNewItem(dest, spellInfo->EffectItemType[m_effIndex], true);
+        Item* newitem = ((Player*)caster)->StoreNewItem(dest, createdItemId, true);
         ((Player*)caster)->SendNewItem(newitem, count, true, true);
     }
 }
