@@ -2259,6 +2259,40 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
 
 void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
 {
+    switch (m_spellInfo->Id)
+    {
+        case SPELL_FILLING_EMPTY_JAR__CURSED_OOZE: // Spell 15698 (for Cursed Ooze)
+        case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)        
+        {
+            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
+
+                Creature* creature = static_cast<Creature*>(unitTarget);
+                if (creature->IsDead() && (creature->GetEntry() == CREATURE_TAINTED_OOZE || creature->GetEntry() == CREATURE_CURSED_OOZE))
+                {
+                    creature->ForcedDespawn();
+                }
+            }
+            
+            break;
+        }
+        case SPELL_FILLING_EMPTY_JAR__PURE_OOZE: // Spell 15702 (for Primal, Muculent and Glutonous Ooze): 
+        {
+            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
+
+                Creature* creature = static_cast<Creature*>(unitTarget);
+                if (creature->IsDead() && (
+                    creature->GetEntry() == CREATURE_MUCULENT_OOZE ||
+                    creature->GetEntry() == CREATURE_PRIMAL_OOZE ||
+                    creature->GetEntry() == CREATURE_GLUTINOUS_OOZE
+                    ))
+                {
+                    creature->ForcedDespawn();
+                }
+            }
+
+            break;
+        }
+    }
     DoCreateItem(eff_idx, m_spellInfo->EffectItemType[eff_idx]);
 }
 
