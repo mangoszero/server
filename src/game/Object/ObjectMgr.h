@@ -731,6 +731,8 @@ class ObjectMgr
         void LoadGameTele();
 
         void LoadGossipMenus();
+        void LoadCoreSideGossipTextIdCache();
+        
 
         void LoadVendorTemplates();
         void LoadVendors()
@@ -1086,7 +1088,7 @@ class ObjectMgr
         bool AddGameTele(GameTele& data);
         bool DeleteGameTele(const std::string& name);
 
-        uint32 GetNpcGossip(uint32 entry) const
+        uint32 GetNpcGossipTextId(uint32 entry) const
         {
             CacheNpcTextIdMap::const_iterator iter = m_mCacheNpcTextIdMap.find(entry);
             if (iter == m_mCacheNpcTextIdMap.end())

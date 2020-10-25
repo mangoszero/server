@@ -13803,7 +13803,7 @@ uint32 Player::GetGossipTextId(WorldObject* pSource)
         return DEFAULT_GOSSIP_MESSAGE;
     }
 
-    if (uint32 pos = sObjectMgr.GetNpcGossip(((Creature*)pSource)->GetGUIDLow()))
+    if (uint32 pos = sObjectMgr.GetNpcGossipTextId(((Creature*)pSource)->GetEntry()))
     {
         return pos;
     }

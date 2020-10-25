@@ -9071,6 +9071,58 @@ void ObjectMgr::LoadGossipMenus()
     {
         sLog.outErrorDb("Table `db_scripts [type = %d]` contains unused script, id %u.", DBS_ON_GOSSIP, *itr);
     }
+
+    LoadCoreSideGossipTextIdCache();
+}
+
+/*
+    This method will send the correct return when the code calls
+    pPlayer->GetGossipTextId(pCreature)
+    Otherwise teh default 
+*/
+void ObjectMgr::LoadCoreSideGossipTextIdCache()
+{
+    m_mCacheNpcTextIdMap.clear();
+
+    QueryResult* result = WorldDatabase.Query("SELECT `ct`.`Entry`, "
+                                                "`gm`.`text_id` "
+                                                "FROM `creature_template` `ct` "
+                                                "LEFT JOIN ("
+                                                "	SELECT "
+                                                "    `entry`, MIN(`text_id`) as `text_id` "
+                                                "    FROM `gossip_menu` "
+                                                "    GROUP BY `entry` "
+                                                ") As gm on `ct`.`GossipMenuId` = `gm`.`entry` "
+                                                "WHERE `ct`.GossipMenuId <> 0 "
+                                                "ORDER BY `ct`.`Entry` ASC, `gm`.`entry` ASC, `gm`.`text_id` ASC"
+                                                );
+
+    if (!result)
+    {
+        BarGoLink bar(1);
+        bar.step();
+        sLog.outErrorDb(">> Loaded core side gossip text id cache, NO DATA FOUND !");
+        sLog.outString();
+        return;
+    }
+
+    BarGoLink bar(result->GetRowCount());
+
+    uint32 count = 0;
+
+    do 
+    {
+        bar.step();
+        Field* fields = result->Fetch();      
+       m_mCacheNpcTextIdMap[fields[0].GetUInt32()] =  fields[1].GetUInt32();
+
+        ++count;
+    }
+    while (result->NextRow());
+
+    sLog.outString(">> Loaded %u core side gossip text id in cache", count);
+    sLog.outString();
+
 }
 
 void ObjectMgr::AddVendorItem(uint32 entry, uint32 item, uint32 maxcount, uint32 incrtime)
