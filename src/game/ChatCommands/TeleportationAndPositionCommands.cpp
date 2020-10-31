@@ -1047,6 +1047,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
     }
 
     Player* _player = m_session->GetPlayer();
+    ObjectGuid targetMobGuid;
 
     // "id" or number or [name] Shift-click form |color|Hcreature:creature_id|h[name]|h|r
     int crType;
@@ -1106,6 +1107,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
             }
 
             data = &dataPair->second;
+            targetMobGuid = data->GetObjectGuid(dataPair->first);
             break;
         }
         case CREATURE_LINK_GUID:
@@ -1117,12 +1119,15 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
             }
 
             data = sObjectMgr.GetCreatureData(lowguid);
+            
             if (!data)
             {
                 SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
                 SetSentErrorMessage(true);
                 return false;
             }
+
+            targetMobGuid = data->GetObjectGuid(lowguid);
             break;
         }
         case CREATURE_LINK_RAW:
@@ -1131,12 +1136,15 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
             if (ExtractUInt32(&pParam1, lowguid))
             {
                 data = sObjectMgr.GetCreatureData(lowguid);
+
                 if (!data)
                 {
                     SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
                     SetSentErrorMessage(true);
                     return false;
                 }
+
+                targetMobGuid = data->GetObjectGuid(lowguid);
             }
             // Number is invalid - maybe the user specified the mob's name
             else
@@ -1179,12 +1187,28 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
                 }
 
                 data = &dataPair->second;
+                targetMobGuid = data->GetObjectGuid(dataPair->first);
             }
             break;
         }
     }
 
-    return HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
+    // If we are on the same map then we can teleport to the creature
+    Creature* targetMob = _player->GetMap()->GetAnyTypeCreature(targetMobGuid);
+    if (targetMob)
+    {
+        HandleGoHelper(_player, targetMob->GetMapId(), targetMob->GetPositionX(), targetMob->GetPositionY(), targetMob->GetPositionZ(), _player->GetOrientation());
+    }
+    else
+    {
+        // Go to creature initial pos to be on teh right Map
+        HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
+        
+        // Inform player that he will need to make the command another time to go directly to the NPC
+        PSendSysMessage(LANG_COMMAND_EXECUTE_GOCRE_ANOTHER_TIME, targetMobGuid.GetCounter());
+    }
+
+    return true;
 }
 
 // teleport to gameobject
