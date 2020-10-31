@@ -868,6 +868,7 @@ Faction Template: %u. */
 	LANG_COMMAND_AURAGROUP_CANNOT_UNAURA_DEAD_PLAYER         = 1703,    /* Cannot remove aura(s) from %s because the player is dead. */
 	LANG_COMMAND_AURAGROUP_ALL_AURA_REMOVED                  = 1704,    /* All auras have been removed from %s. */
 	LANG_COMMAND_AURAGROUP_AURA_REMOVED_FOR_SPELL            = 1705,    /* Aura from spell %u has been removedfrom %s */
+	LANG_COMMAND_EXECUTE_GOCRE_ANOTHER_TIME                  = 1706,    /* You will have to execute your command another time to get to the real moving npc position (.go creature %u) */
 
         // FREE IDS                           1701-9999
         // Use for not-in-official-sources patches
