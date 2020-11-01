@@ -498,6 +498,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     return;
                 }
+                case 9204:                                  // Hate to Zero
+                case 20538:
+                case 26569:
+                case 26637:
+                {
+                    m_caster->GetThreatManager().modifyThreatPercent(unitTarget, -100);
+                    return;
+                }
                 case 9976:                                  // Polly Eats the E.C.A.C.
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
