@@ -487,6 +487,25 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, spell_id, true, NULL);
                     return;
                 }
+                case 8344:                                  // Gnomish Universal Remote (ItemID: 7506)
+                {
+                    if (m_CastItem && unitTarget)
+                    {
+                        // 8345 - Control the machine | 8346 = Malfunction the machine (root) | 8347 = Taunt/enrage the machine
+                        const uint32 spell_list[3] = { 8345, 8346, 8347 };
+                        m_caster->CastSpell(unitTarget, spell_list[urand(0, 2)], true, m_CastItem);
+                    }
+
+                    return;
+                }
+                case 9204:                                  // Hate to Zero
+                case 20538:
+                case 26569:
+                case 26637:
+                {
+                    m_caster->GetThreatManager().modifyThreatPercent(unitTarget, -100);
+                    return;
+                }
                 case 9976:                                  // Polly Eats the E.C.A.C.
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
@@ -4982,7 +5001,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
     spawnCreature->SetCharmerGuid(m_caster->GetObjectGuid());
     spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
     spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
-    spawnCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+    spawnCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
 
     spawnCreature->SetLevel(m_caster->getLevel());
 

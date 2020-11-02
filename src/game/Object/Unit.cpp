@@ -3703,33 +3703,73 @@ void Unit::FinishSpell(CurrentSpellTypes spellType, bool ok /*= true*/)
     spell->finish(ok);
 }
 
-bool Unit::IsNonMeleeSpellCasted(bool withDelayed, bool skipChanneled, bool skipAutorepeat) const
+bool Unit::IsClientControlled(Player const* exactClient /*= nullptr*/) const
+{
+    // Severvide method to check if unit is client controlled (optionally check for specific client in control)
+
+    // Applies only to player controlled units
+    if (!HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED))
+        return false;
+
+    // These flags are meant to be used when server controls this unit, client control is taken away
+    if (HasFlag(UNIT_FIELD_FLAGS, (UNIT_FLAG_CLIENT_CONTROL_LOST | UNIT_FLAG_CONFUSED | UNIT_FLAG_FLEEING)))
+        return false;
+
+    // If unit is possessed, it has lost original control...
+    if (ObjectGuid const& guid = GetCharmerGuid())
+    {
+        // ... but if it is a possessing charm, then we have to check if some other player controls it
+        if (HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED) && guid.IsPlayer())
+            return (exactClient ? (exactClient->GetObjectGuid() == guid) : true);
+        return false;
+    }
+
+    // By default: players have client control over themselves
+    if (GetTypeId() == TYPEID_PLAYER)
+        return (exactClient ? (exactClient == this) : true);
+    return false;
+}
+
+
+bool Unit::IsNonMeleeSpellCasted(bool withDelayed, bool skipChanneled, bool skipAutorepeat, bool forMovement, bool forAutoIgnore) const
 {
     // We don't do loop here to explicitly show that melee spell is excluded.
-    // Maybe later some special spells will be excluded too.
+       // Maybe later some special spells will be excluded too.
 
-    // generic spells are casted when they are not finished and not delayed
-    if (m_currentSpells[CURRENT_GENERIC_SPELL] &&
-        (m_currentSpells[CURRENT_GENERIC_SPELL]->getState() != SPELL_STATE_FINISHED) &&
-        (withDelayed || m_currentSpells[CURRENT_GENERIC_SPELL]->getState() != SPELL_STATE_DELAYED))
+       // generic spells are casted when they are not finished and not delayed
+    if (Spell const* genericSpell = m_currentSpells[CURRENT_GENERIC_SPELL])
+    {
+        if (genericSpell->getState() != SPELL_STATE_FINISHED)
         {
-            return true;
+            bool specialResult = true;
+            if (forMovement) // mobs can move during spells without this flag
+                specialResult = genericSpell->m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_MOVEMENT;
+            bool isAutoNonInterrupting = forAutoIgnore && genericSpell->m_spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_RESET_AUTO_ACTIONS);
+            if (!isAutoNonInterrupting && specialResult && (withDelayed || genericSpell->getState() != SPELL_STATE_TRAVELING))
+                return true;
         }
+    }
 
     // channeled spells may be delayed, but they are still considered casted
-    else if (!skipChanneled && m_currentSpells[CURRENT_CHANNELED_SPELL] &&
-             (m_currentSpells[CURRENT_CHANNELED_SPELL]->getState() != SPELL_STATE_FINISHED))
+    if (!skipChanneled)
     {
-        return true;
+        if (Spell const* channeledSpell = m_currentSpells[CURRENT_CHANNELED_SPELL])
+        {
+            bool attributeResult = false;
+            if (!forMovement)
+                attributeResult = channeledSpell->m_spellInfo->HasAttribute(SPELL_ATTR_EX4_CAN_CAST_WHILE_CASTING);
+
+            bool isAutoNonInterrupting = forAutoIgnore && channeledSpell->m_spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_RESET_AUTO_ACTIONS);
+            if (!isAutoNonInterrupting && !attributeResult && !channeledSpell->IsTriggered() && (channeledSpell->getState() != SPELL_STATE_FINISHED))
+                return true;
+        }
     }
 
     // autorepeat spells may be finished or delayed, but they are still considered casted
-    else if (!skipAutorepeat && m_currentSpells[CURRENT_AUTOREPEAT_SPELL])
-    {
+    if (!skipAutorepeat && m_currentSpells[CURRENT_AUTOREPEAT_SPELL])
         return true;
-    }
 
-    return false;
+    return forAutoIgnore;
 }
 
 void Unit::InterruptNonMeleeSpells(bool withDelayed, uint32 spell_id)
@@ -4902,11 +4942,18 @@ void Unit::RemoveAllAurasOnDeath()
 void Unit::RemoveAllAurasOnEvade()
 {
     // used when evading to remove all auras except some special auras
-    // Linked and flying auras should not be removed on evade
+   // Fly should not be removed on evade - neither should linked auras
+   // Some cosmetic script auras should not be removed on evade either
     for (SpellAuraHolderMap::iterator iter = m_spellAuraHolders.begin(); iter != m_spellAuraHolders.end();)
     {
-        RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
-        iter = m_spellAuraHolders.begin();
+        SpellEntry const* proto = iter->second->GetSpellProto();
+        if (IsSpellRemovedOnEvade(proto))
+        {
+            RemoveSpellAuraHolder(iter->second, AURA_REMOVE_BY_DEFAULT);
+            iter = m_spellAuraHolders.begin();
+        }
+        else
+            ++iter;
     }
 
     if ((GetTypeId() == TYPEID_UNIT) && HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED))

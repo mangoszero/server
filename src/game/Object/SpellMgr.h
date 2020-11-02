@@ -360,6 +360,103 @@ inline bool IsAreaEffectTarget(Targets target)
     return false;
 }
 
+inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
+{
+    //TODO: search for potential correct case for Classic
+    /*if (IsSpellHaveAura(spellInfo, SPELL_AURA_FLY))
+        return false; */
+
+    switch (spellInfo->Id)
+    {
+        case 588:           // Inner Fire (Rank 1)
+        case 3235:          // Rancid Blood
+        case 3284:          // Violent Shield
+        case 3417:          // Thrash
+        case 3418:          // Improved Blocking
+        case 3616:          // Poison Proc
+        case 3637:          // Improved Blocking III
+        case 5111:          // Living Flame Passive
+        case 5301:          // Defensive State (DND)
+        case 5680:          // Torch Burn
+        case 6718:          // Phasing Stealth
+        case 6752:          // Weak Poison Proc
+        case 6947:          // Curse of the Bleakheart Proc
+        case 7090:          // Bear Form (Shapeshift)
+        case 7165:          // Battle Stance (Rank 1)
+        case 7276:          // Poison Proc
+        case 8247:          // Wandering Plague
+        case 8279:          // Stealth Detection
+        case 8393:          // Barbs
+        case 8599:          // Enrage
+        case 8601:          // Slowing Poison
+        case 8876:          // Thrash
+        case 9205:          // Hate to Zero (Hate to Zero)
+        case 9460:          // Corrosive Ooze
+        case 9941:          // Spell Reflection
+        case 10022:         // Deadly Poison
+        case 10072:         // Splintered Obsidian
+        case 10074:         // Spell Reflection
+        case 10095:         // Hate to Zero (Hate to Zero)
+        case 11838:         // Hate to Zero (Hate to Zero)
+        case 11919:         // Poison Proc
+        case 11966:         // Fire Shield
+        case 11984:         // Immolate
+        case 12099:         // Shield Spike
+        case 12246:         // Infected Spine
+        case 12529:         // Chilling Touch
+        case 12539:         // Ghoul Rot
+        case 12546:         // Spitelash (Spitelash)
+        case 12556:         // Frost Armor
+        case 12627:         // Disease Cloud
+        case 12787:         // Thrash
+        case 12898:         // Smoke Aura Visual
+        case 13299:         // Poison Proc
+        case 13616:         // Wracking Pains Proc
+        case 13767:         // Hate to Zero (Hate to Zero)
+        case 14178:         // Sticky Tar
+        case 15088:         // Flurry
+        case 15097:         // Enrage
+        case 15876:         // Ice Blast
+        case 16140:         // Exploding Cadaver (Exploding Cadaver)
+        case 16563:         // Drowning Death
+        case 16577:         // Disease Cloud
+        case 16592:         // Shadowform
+        case 17327:         // Spirit Particles
+        case 17467:         // Unholy Aura
+        case 18148:         // Static Field
+        case 18268:         // Fire Shield
+        case 18943:         // Double Attack
+        case 18968:         // Fire Shield
+        case 19030:         // Bear Form (Shapeshift)
+        case 18950:         // Invisibility and Stealth Detection
+        case 19194:         // Double Attack
+        case 19195:         // Hate to 90% (Hate to 90%)
+        case 19396:         // Incinerate (Incinerate)
+        case 19626:         // Fire Shield (Fire Shield)
+        case 19640:         // Pummel (Pummel)
+        case 19817:         // Double Attack
+        case 19818:         // Double Attack
+        case 20514:         // Ruul Snowhoof Shapechange (DND)
+        case 21061:         // Putrid Breath
+        case 21857:         // Lava Shield
+        case 22128:         // Thorns
+        case 22578:         // Glowy (Black)
+        case 22735:         // Spirit of Runn Tum
+        case 22781:         // Thornling
+        case 22788:         // Grow
+        case 22856:         // Ice Lock (Guard Slip'kik ice trap in Dire Maul)
+        case 25592:         // Hate to Zero (Hate to Zero)
+        case 26341:         // Saurfang's Rage
+        case 27987:         // Unholy Aura
+        case 28126:         // Spirit Particles (purple)
+        case 29526:         // Hate to Zero (Hate to Zero)
+            return false;
+        default:
+            return true;
+    }
+}
+
+
 inline bool IsAreaOfEffectSpell(SpellEntry const* spellInfo)
 {
     if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_0])))
@@ -484,7 +581,6 @@ inline bool IsNeedCastSpellAtOutdoor(SpellEntry const* spellInfo)
 {
     return (spellInfo->HasAttribute(SPELL_ATTR_OUTDOORS_ONLY) && spellInfo->HasAttribute(SPELL_ATTR_PASSIVE));
 }
-
 
 inline bool NeedsComboPoints(SpellEntry const* spellInfo)
 {
