@@ -2399,7 +2399,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
     {
         target->addUnitState(UNIT_STAT_CONTROLLED);
 
-        target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
         target->SetCharmerGuid(p_caster->GetObjectGuid());
         target->setFaction(p_caster->getFaction());
 
@@ -2458,7 +2458,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
         target->DeleteThreatList();
         target->GetHostileRefManager().deleteReferences();
 
-        target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
 
         target->SetCharmerGuid(ObjectGuid());
 
@@ -2517,7 +2517,7 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
         p_caster->SetClientControl(pet, 1);
         ((Player*)caster)->SetMover(pet);
 
-        pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
 
         pet->StopMoving();
         pet->GetMotionMaster()->Clear(false);
@@ -2541,7 +2541,7 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
 
         pet->clearUnitState(UNIT_STAT_CONTROLLED);
 
-        pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
 
         pet->AttackStop();
 

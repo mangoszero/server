@@ -5001,7 +5001,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
     spawnCreature->SetCharmerGuid(m_caster->GetObjectGuid());
     spawnCreature->SetCreatorGuid(m_caster->GetObjectGuid());
     spawnCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, m_spellInfo->Id);
-    spawnCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+    spawnCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
 
     spawnCreature->SetLevel(m_caster->getLevel());
 

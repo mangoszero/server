@@ -136,9 +136,13 @@ bool TargetedMovementGeneratorMedium<T, D>::Update(T& owner, const uint32& time_
         if (!owner.movespline->Finalized())
         {
             if (owner.IsClientControlled())
+            {
                 owner.StopMoving(true);
+            }
             else
+            {
                 owner.InterruptMoving();
+            }
         }
         return true;
     }
