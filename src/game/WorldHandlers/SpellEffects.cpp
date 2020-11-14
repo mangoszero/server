@@ -2797,7 +2797,7 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
                 }
                 else
                 {
-                    positive = (holder->GetSpellProto()->AttributesEx & SPELL_ATTR_EX_NEGATIVE) == 0;
+                    positive = (holder->GetSpellProto()->AttributesEx & SPELL_ATTR_EX_CANT_BE_REFLECTED) == 0;
                 }
 
                 // do not remove positive auras if friendly target
@@ -3412,7 +3412,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     uint32 duration;
 
     // shaman family enchantments
-    if (m_spellInfo->Attributes == (SPELL_ATTR_UNK9 | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_UNK18))
+    if (m_spellInfo->Attributes == (SPELL_ATTR_TARGET_MAINHAND_ITEM | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_DONT_AFFECT_SHEATH_STATE))
     {
         duration = 300;                                      // 5 mins
     }
@@ -3427,7 +3427,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
         duration = 3600;                                     // 1 hour
     }
     // some fishing pole bonuses
-    else if (m_spellInfo->HasAttribute(SPELL_ATTR_HIDE_SPELL))
+    else if (m_spellInfo->HasAttribute(SPELL_ATTR_HIDDEN_CLIENTSIDE))
     {
         duration = 600;                                      // 10 mins
     }
