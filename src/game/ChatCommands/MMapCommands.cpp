@@ -128,7 +128,7 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
 
     for (uint32 i = 0; i < pointPath.size(); ++i)
     {
-        player->SummonCreature(VISUAL_WAYPOINT, pointPath[i].x, pointPath[i].y, pointPath[i].z, 0, TEMPSUMMON_TIMED_DESPAWN, 9000);
+        player->SummonCreature(VISUAL_WAYPOINT, pointPath[i].x, pointPath[i].y, pointPath[i].z, 0, TEMPSPAWN_TIMED_DESPAWN, 9000);
     }
 
     if (followPath)
@@ -385,7 +385,7 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
     float gx, gy, gz;
     unit->GetPosition(gx, gy, gz);
 
-    Creature* summoned = unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz + 0.5f, 0, TEMPSUMMON_TIMED_DESPAWN, 20000);
+    Creature* summoned = unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz + 0.5f, 0, TEMPSPAWN_TIMED_DESPAWN, 20000);
     summoned->CastSpell(summoned, 8599, false);
     uint32 tries = 1;
     uint32 successes = 0;
@@ -395,7 +395,7 @@ bool ChatHandler::HandleMmapTestHeight(char* args)
         unit->GetPosition(gx, gy, gz);
         if (unit->GetMap()->GetReachableRandomPosition(unit, gx, gy, gz, radius))
         {
-            unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSUMMON_TIMED_DESPAWN, 15000);
+            unit->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSPAWN_TIMED_DESPAWN, 15000);
             ++successes;
             if (successes >= 100)
             {
