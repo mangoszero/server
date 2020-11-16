@@ -2797,7 +2797,7 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
                 }
                 else
                 {
-                    positive = (holder->GetSpellProto()->AttributesEx & SPELL_ATTR_EX_NEGATIVE) == 0;
+                    positive = (holder->GetSpellProto()->AttributesEx & SPELL_ATTR_EX_CANT_BE_REFLECTED) == 0;
                 }
 
                 // do not remove positive auras if friendly target
@@ -3059,7 +3059,7 @@ void Spell::EffectSummonWild(SpellEffectIndex eff_idx)
 
     float radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
     int32 duration = GetSpellDuration(m_spellInfo);
-    TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN;
+    TempSpawnType summonType = (duration == 0) ? TEMPSPAWN_DEAD_DESPAWN : TEMPSPAWN_TIMED_OOC_OR_DEAD_DESPAWN;
 
     int32 amount = damage > 0 ? damage : 1;
 
@@ -3412,7 +3412,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     uint32 duration;
 
     // shaman family enchantments
-    if (m_spellInfo->Attributes == (SPELL_ATTR_UNK9 | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_UNK18))
+    if (m_spellInfo->Attributes == (SPELL_ATTR_TARGET_MAINHAND_ITEM | SPELL_ATTR_NOT_SHAPESHIFT | SPELL_ATTR_DONT_AFFECT_SHEATH_STATE))
     {
         duration = 300;                                      // 5 mins
     }
@@ -3427,7 +3427,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
         duration = 3600;                                     // 1 hour
     }
     // some fishing pole bonuses
-    else if (m_spellInfo->HasAttribute(SPELL_ATTR_HIDE_SPELL))
+    else if (m_spellInfo->HasAttribute(SPELL_ATTR_HIDDEN_CLIENTSIDE))
     {
         duration = 600;                                      // 10 mins
     }
@@ -4892,7 +4892,7 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
                         case 24790: npcEntry = 15305;                 break;
                     }
 
-                    gameObjTarget->SummonCreature(npcEntry, gameObjTarget->GetPositionX(), gameObjTarget->GetPositionY(), gameObjTarget->GetPositionZ(), gameObjTarget->GetAngle(m_caster), TEMPSUMMON_TIMED_OOC_OR_DEAD_DESPAWN, MINUTE * IN_MILLISECONDS);
+                    gameObjTarget->SummonCreature(npcEntry, gameObjTarget->GetPositionX(), gameObjTarget->GetPositionY(), gameObjTarget->GetPositionZ(), gameObjTarget->GetAngle(m_caster), TEMPSPAWN_TIMED_OOC_OR_DEAD_DESPAWN, MINUTE * IN_MILLISECONDS);
                     gameObjTarget->SetLootState(GO_JUST_DEACTIVATED);
                     break;
                 }
@@ -4990,7 +4990,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
         return;
     }
 
-    Creature* spawnCreature = m_caster->SummonCreature(creatureEntry, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN, 0);
+    Creature* spawnCreature = m_caster->SummonCreature(creatureEntry, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation(), TEMPSPAWN_CORPSE_DESPAWN, 0);
     if (!spawnCreature)
     {
         sLog.outError("Spell::DoSummonPossessed: creature entry %u for spell %u could not be summoned.", creatureEntry, m_spellInfo->Id);
@@ -6123,7 +6123,7 @@ void Spell::EffectSummonDemon(SpellEffectIndex eff_idx)
     float py = m_targets.m_destY;
     float pz = m_targets.m_destZ;
 
-    Creature* Charmed = m_caster->SummonCreature(m_spellInfo->EffectMiscValue[eff_idx], px, py, pz, m_caster->GetOrientation(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 3600000);
+    Creature* Charmed = m_caster->SummonCreature(m_spellInfo->EffectMiscValue[eff_idx], px, py, pz, m_caster->GetOrientation(), TEMPSPAWN_TIMED_OR_DEAD_DESPAWN, 3600000);
     if (!Charmed)
     {
         return;
