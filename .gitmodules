@@ -6,7 +6,7 @@
 	url = https://github.com/mangos/realmd
 [submodule "src/modules/Eluna"]
 	path = src/modules/Eluna
-	url = https://github.com/elunaluaengine/eluna
+	url = https://github.com/MangosServer/Eluna.git
 [submodule "src/modules/SD3"]
 	path = src/modules/SD3
 	url = https://github.com/mangos/ScriptDev3.git
