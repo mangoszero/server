@@ -78,6 +78,10 @@ CMakeCache.txt
 CMakeFiles
 ipch
 
+# EasyBuild created debug files
+cmake.cmd
+msbuild.cmd
+
 # cmake generated files in sources
 /dep/ACE_wrappers/ace/ACE_vc8.vcxproj*
 /dep/ACE_wrappers/ace/Backup*
