@@ -216,6 +216,10 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
         --loot->unlootedCount;
 
         player->SendNewItem(newitem, uint32(item->count), false, false, true);
+
+#ifdef ENABLE_ELUNA
+        sEluna->OnLootItem(player, newitem, item->count, lguid);
+#endif /* ENABLE_ELUNA */
     }
     else
     {
