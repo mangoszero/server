@@ -3162,6 +3162,7 @@ void Spell::cast(bool skipCheck)
     SpellCastResult castResult = CheckPower();
     if (castResult != SPELL_CAST_OK)
     {
+        SendInterrupted(castResult);
         SendCastResult(castResult);
         finish(false);
         m_caster->DecreaseCastCounter();
@@ -3175,6 +3176,7 @@ void Spell::cast(bool skipCheck)
         castResult = CheckCast(false);
         if (castResult != SPELL_CAST_OK)
         {
+            SendInterrupted(castResult);
             SendCastResult(castResult);
             finish(false);
             m_caster->DecreaseCastCounter();

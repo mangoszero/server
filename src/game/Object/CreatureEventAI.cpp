@@ -1349,7 +1349,7 @@ void CreatureEventAI::EnterEvadeMode()
     m_creature->SetLootRecipient(NULL);
 
     // Reset back to default spells template. This also resets timers.
-    SetSpellsList(m_creature->GetCreatureInfo()->spell_list_id);
+    SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
 
     // Handle Evade events
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)

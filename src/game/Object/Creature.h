@@ -136,6 +136,7 @@ struct CreatureInfo
     int32   ResistanceFrost;
     int32   ResistanceShadow;
     int32   ResistanceArcane;
+    uint32  SpellListId;
     uint32  PetSpellDataId;
     uint32  MovementType;
     uint32  TrainerType;

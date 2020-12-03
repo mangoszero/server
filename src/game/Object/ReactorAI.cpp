@@ -135,5 +135,5 @@ ReactorAI::EnterEvadeMode()
     }
 
     // Reset back to default spells template. This also resets timers.
-    SetSpellsList(m_creature->GetCreatureInfo()->spell_list_id);
+    SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
 }

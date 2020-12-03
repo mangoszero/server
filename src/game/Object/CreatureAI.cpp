@@ -29,13 +29,15 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "movement/MoveSplineInit.h"
+#include "movement/MoveSpline.h"
 
 static_assert(MAXIMAL_AI_EVENT_EVENTAI <= 32, "Maximal 32 AI_EVENTs supported with EventAI");
 
 CreatureAI::CreatureAI(Creature* creature) : m_creature(creature), m_combatMovement(COMBAT_MOVEMENT_SCRIPT),
                                              m_attackDistance(0.0f), m_attackAngle(0.0f), m_meleeAttack(true), m_uiCastingDelay(0)
 {
-    SetSpellsList(creature->GetCreatureInfo()->spell_list_id);
+    SetSpellsList(creature->GetCreatureInfo()->SpellListId);
 }
 
 CreatureAI::~CreatureAI()
@@ -298,7 +300,7 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
             // Checked on startup.
             SpellEntry const* pSpellInfo = sSpellStore.LookupEntry(spell.spellId);
 
-            Unit* pTarget = ToUnit(GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex)->maxRange, spell.targetParam2));
+            Unit* pTarget = GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex)->maxRange, spell.targetParam2);
 
             SpellCastResult result = m_creature->TryToCast(pTarget, pSpellInfo, spell.castFlags, spell.probability);
             

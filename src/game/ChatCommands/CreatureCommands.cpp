@@ -318,6 +318,8 @@ bool ChatHandler::HandleNpcAIInfoCommand(char* /*args*/)
                     strAI.empty() ? " - " : strAI.c_str(),
                     cstrAIClass ? cstrAIClass : " - ",
                     strScript.empty() ? " - " : strScript.c_str());
+    PSendSysMessage("Motion Type: %u", pTarget->GetMotionMaster()->GetCurrentMovementGeneratorType());
+    PSendSysMessage("Casting Spell: %s", pTarget->IsNonMeleeSpellCasted(true) ? "yes" : "no");
 
     if (pTarget->AI())
     {
