@@ -29,6 +29,7 @@
 #include "Dynamic/FactoryHolder.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
+#include "ObjectMgr.h"
 
 class WorldObject;
 class GameObject;
@@ -63,6 +64,18 @@ enum CastFlags
     CAST_NO_MELEE_IF_OOM        = 0x08,                     // Prevents creature from entering melee if out of mana or out of range
     CAST_FORCE_TARGET_SELF      = 0x10,                     // Forces the target to cast this spell on itself
     CAST_AURA_NOT_PRESENT       = 0x20,                     // Only casts the spell if the target does not have an aura from the spell
+};
+
+enum SpellListCastFlags
+{
+    CF_INTERRUPT_PREVIOUS     = 0x01,                     // Interrupt any spell casting
+    CF_TRIGGERED              = 0x02,                     // Triggered (this makes spell cost zero mana and have no cast time)
+    CF_FORCE_CAST             = 0x04,                     // Forces cast even if creature is out of mana or out of range
+    CF_MAIN_RANGED_SPELL      = 0x08,                     // To be used by ranged mobs only. Creature will not chase target until cast fails.
+    CF_TARGET_UNREACHABLE     = 0x10,                     // Will only use the ability if creature cannot currently get to target
+    CF_AURA_NOT_PRESENT       = 0x20,                     // Only casts the spell if the target does not have an aura from the spell
+    CF_ONLY_IN_MELEE          = 0x40,                     // Only casts if the creature is in melee range of the target
+    CF_NOT_IN_MELEE           = 0x80,                     // Only casts if the creature is not in melee range of the target
 };
 
 enum CombatMovementFlags
@@ -101,6 +114,12 @@ enum AIEventType
     AI_EVENT_CUSTOM_D           = 1003,
     AI_EVENT_CUSTOM_E           = 1004,
     AI_EVENT_CUSTOM_F           = 1005,
+};
+
+struct CreatureAISpellsEntry : CreatureSpellsEntry
+{
+    uint32 cooldown;
+    CreatureAISpellsEntry(CreatureSpellsEntry const& EntryStruct) : CreatureSpellsEntry(EntryStruct), cooldown(urand(EntryStruct.delayInitialMin, EntryStruct.delayInitialMax)) {}
 };
 
 class CreatureAI
@@ -317,6 +336,17 @@ class CreatureAI
          */
         virtual CanCastResult DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, ObjectGuid OriginalCasterGuid = ObjectGuid());
 
+        // Assigns a creature_spells list to the AI.
+        void SetSpellsList(uint32 entry);
+        void SetSpellsList(CreatureSpellsList const* pSpellsList);
+
+        // Goes through the creature's spells list to update timers and cast spells.
+        void UpdateSpellsList(uint32 const uiDiff);
+        void DoSpellsListCasts(uint32 const uiDiff);
+
+        // Enables or disables melee attacks.
+        void SetMeleeAttack(bool enabled);
+
         /// Combat movement functions
         void SetCombatMovement(bool enable, bool stopOrStartMovement = false);
         bool IsCombatMovement() const { return m_combatMovement != 0; }
@@ -365,9 +395,12 @@ class CreatureAI
         /// How should an enemy be chased
         float m_attackDistance;
         float m_attackAngle;
-    private:
+
         /// Combat movement currently enabled
-        uint8 m_combatMovement;
+        bool m_meleeAttack;                                     // If we allow melee auto attack
+        uint8 m_combatMovement;                                 // If we allow targeted movement gen (chasing target)
+        uint32 m_uiCastingDelay;                                // Cooldown before updating spell list again
+        std::vector<CreatureAISpellsEntry> m_CreatureSpells;    // Contains the currently used creature_spells template
 };
 
 struct SelectableAI : public FactoryHolder<CreatureAI>, public Permissible<Creature>

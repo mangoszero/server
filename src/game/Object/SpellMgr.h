@@ -537,6 +537,16 @@ inline bool IsOnlySelfTargeting(SpellEntry const* spellInfo)
     return true;
 }
 
+inline bool IsDismountSpell(SpellEntry const* spellInfo)
+{
+    for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA) && (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MECHANIC_IMMUNITY) && (spellInfo->EffectMiscValue[i] == MECHANIC_MOUNT))
+            return true;
+    }
+    return false;
+}
+
 inline bool IsDispelSpell(SpellEntry const* spellInfo)
 {
     return spellInfo->HasSpellEffect(SPELL_EFFECT_DISPEL);
@@ -580,6 +590,27 @@ inline bool IsNeedCastSpellAtFormApply(SpellEntry const* spellInfo, ShapeshiftFo
 inline bool IsNeedCastSpellAtOutdoor(SpellEntry const* spellInfo)
 {
     return (spellInfo->HasAttribute(SPELL_ATTR_OUTDOORS_ONLY) && spellInfo->HasAttribute(SPELL_ATTR_PASSIVE));
+}
+
+// Spell effects require a specific power type on the target
+inline bool IsTargetPowerTypeValid(SpellEntry const* spellInfo, Powers powerType)
+{
+    for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        if (spellInfo->Effect[i] == SPELL_EFFECT_NONE)
+            continue;
+
+        if ((spellInfo->Effect[i] == SPELL_EFFECT_POWER_BURN ||
+            spellInfo->Effect[i] == SPELL_EFFECT_POWER_DRAIN ||
+            spellInfo->EffectApplyAuraName[i] == SPELL_AURA_PERIODIC_MANA_LEECH ||
+            spellInfo->EffectApplyAuraName[i] == SPELL_AURA_POWER_BURN_MANA) &&
+            int32(powerType) != spellInfo->EffectMiscValue[i])
+        {
+            continue;
+        }
+        return true;
+    }
+    return false;
 }
 
 inline bool NeedsComboPoints(SpellEntry const* spellInfo)

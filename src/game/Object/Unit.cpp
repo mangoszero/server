@@ -10589,6 +10589,81 @@ Unit* Unit::SelectRandomFriendlyTarget(Unit* except /*= NULL*/, float radius /*=
     return *tcIter;
 }
 
+// Returns friendly unit with the most amount of hp missing from max hp
+Unit* Unit::FindLowestHpFriendlyUnit(float fRange, uint32 uiMinHPDiff, bool bPercent, Unit* except) const
+{
+    std::list<Unit*> targets;
+
+    if (Unit* pVictim = getVictim())
+    {
+        HostileReference* pReference = pVictim->GetHostileRefManager().getFirst();
+
+        while (pReference)
+        {
+            if (Unit* pTarget = pReference->getSourceUnit())
+            {
+                if (pTarget->IsAlive() && IsFriendlyTo(pTarget) && IsWithinDistInMap(pTarget, fRange) &&
+                    ((bPercent && (100 - pTarget->GetHealthPercent() > uiMinHPDiff)) || (!bPercent && (pTarget->GetMaxHealth() - pTarget->GetHealth() > uiMinHPDiff))))
+                {
+                    targets.push_back(pTarget);
+                }
+            }
+            pReference = pReference->next();
+        }
+    }
+    else
+    {
+        MaNGOS::MostHPMissingInRangeCheck u_check(this, fRange, uiMinHPDiff, bPercent);
+        MaNGOS::UnitListSearcher<MaNGOS::MostHPMissingInRangeCheck> searcher(targets, u_check);
+
+        Cell::VisitAllObjects(this, searcher, fRange);
+    }
+
+    // remove current target
+    if (except)
+        targets.remove(except);
+
+    // no appropriate targets
+    if (targets.empty())
+        return nullptr;
+
+    return *targets.begin();
+}
+
+// Returns friendly unit that does not have an aura from the provided spellid
+Unit* Unit::FindFriendlyUnitMissingBuff(float range, uint32 spellid, Unit* except) const
+{
+    std::list<Unit*> targets;
+
+    MaNGOS::FriendlyMissingBuffInRangeCheck u_check(this, range, spellid);
+    MaNGOS::UnitListSearcher<MaNGOS::FriendlyMissingBuffInRangeCheck> searcher(targets, u_check);
+
+    Cell::VisitGridObjects(this, searcher, range);
+
+    // remove current target
+    if (except)
+        targets.remove(except);
+
+    // no appropriate targets
+    if (targets.empty())
+        return nullptr;
+
+    return *targets.begin();
+}
+
+// Returns friendly unit that is under a crowd control effect
+Unit* Unit::FindFriendlyUnitCC(float range) const
+{
+    Unit* pUnit = nullptr;
+
+    MaNGOS::FriendlyCCedInRangeCheck u_check(this, range);
+    MaNGOS::UnitSearcher<MaNGOS::FriendlyCCedInRangeCheck> searcher(pUnit, u_check);
+
+    Cell::VisitGridObjects(this, searcher, range);
+
+    return pUnit;
+}
+
 bool Unit::hasNegativeAuraWithInterruptFlag(uint32 flag)
 {
     for (SpellAuraHolderMap::const_iterator iter = m_spellAuraHolders.begin(); iter != m_spellAuraHolders.end(); ++iter)

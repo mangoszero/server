@@ -2954,7 +2954,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
     }
 }
 
-void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
+SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura, uint32 chance)
 {
     m_targets = *targets;
 
@@ -2977,14 +2977,14 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
     {
         SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
         finish(false);
-        return;
+        return SPELL_FAILED_SPELL_IN_PROGRESS;
     }
 
     if (DisableMgr::IsDisabledFor(DISABLE_TYPE_SPELL, m_spellInfo->Id, m_caster))
     {
         SendCastResult(SPELL_FAILED_SPELL_UNAVAILABLE);
         finish(false);
-        return;
+        return SPELL_FAILED_SPELL_UNAVAILABLE;
     }
 
     // Fill cost data
@@ -3000,7 +3000,17 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
         }
         SendCastResult(result);
         finish(false);
-        return;
+        return result;
+    }
+
+    // Roll chance to cast from spell list (must be after cast checks, this is why its here)
+    if (chance)
+    {
+        if (!roll_chance_i(chance))
+        {
+            finish(false);
+            return SPELL_FAILED_TRY_AGAIN;
+        }
     }
 
     m_spellState = SPELL_STATE_PREPARING;
@@ -3047,6 +3057,8 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
             cast(true);
         }
     }
+
+    return SPELL_CAST_OK;
 }
 
 void Spell::cancel()

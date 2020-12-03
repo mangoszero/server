@@ -61,7 +61,8 @@ enum DBScriptType
     DBS_ON_GO_USE             = 6,
     DBS_ON_GOT_USE            = 7,
     DBS_ON_EVENT              = 8,
-    DBS_END                   = 9,
+    DBS_ON_CREATURE_SPELL     = 9,
+    DBS_END                   = 10,
 };
 #define DBS_START DBS_ON_QUEST_START
 

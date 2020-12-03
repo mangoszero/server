@@ -33,8 +33,9 @@
 static_assert(MAXIMAL_AI_EVENT_EVENTAI <= 32, "Maximal 32 AI_EVENTs supported with EventAI");
 
 CreatureAI::CreatureAI(Creature* creature) : m_creature(creature), m_combatMovement(COMBAT_MOVEMENT_SCRIPT),
-                                             m_attackDistance(0.0f), m_attackAngle(0.0f)
+                                             m_attackDistance(0.0f), m_attackAngle(0.0f), m_meleeAttack(true), m_uiCastingDelay(0)
 {
+    SetSpellsList(creature->GetCreatureInfo()->spell_list_id);
 }
 
 CreatureAI::~CreatureAI()
@@ -167,6 +168,195 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
     return CAST_FAIL_IS_CASTING;
 }
 
+// Values used in target_type column
+enum CreatureSpellTarget
+{
+    TARGET_T_PROVIDED_TARGET                = 0,            //Object that was provided to the command.
+
+    TARGET_T_HOSTILE                        = 1,            //Our current target (ie: highest aggro).
+    TARGET_T_HOSTILE_SECOND_AGGRO           = 2,            //Second highest aggro (generaly used for cleaves and some special attacks).
+    TARGET_T_HOSTILE_LAST_AGGRO             = 3,            //Dead last on aggro (no idea what this could be used for).
+    TARGET_T_HOSTILE_RANDOM                 = 4,            //Just any random target on our threat list.
+    TARGET_T_HOSTILE_RANDOM_NOT_TOP         = 5,            //Any random target except top threat.
+
+    TARGET_T_FRIENDLY                       = 14,           //Random friendly unit.
+                                                            //Param1 = search_radius
+                                                            //Param2 = (bool) exclude_target
+    TARGET_T_FRIENDLY_INJURED               = 15,           //Friendly unit missing the most health.
+                                                            //Param1 = search_radius
+                                                            //Param2 = hp_percent
+    TARGET_T_FRIENDLY_INJURED_EXCEPT        = 16,           //Friendly unit missing the most health but not provided target.
+                                                            //Param1 = search_radius
+                                                            //Param2 = hp_percent
+    TARGET_T_FRIENDLY_MISSING_BUFF          = 17,           //Friendly unit without aura.
+                                                            //Param1 = search_radius
+                                                            //Param2 = spell_id
+    TARGET_T_FRIENDLY_MISSING_BUFF_EXCEPT   = 18,           //Friendly unit without aura but not provided target.
+                                                            //Param1 = search_radius
+                                                            //Param2 = spell_id
+    TARGET_T_FRIENDLY_CC                    = 19,           //Friendly unit under crowd control.
+                                                            //Param1 = search_radius
+    TARGET_T_END
+};
+
+// Returns a target based on the type specified.
+Unit* GetTargetByType(Unit* pSource, Unit* pTarget, uint8 TargetType, uint32 Param1, uint32 Param2)
+{
+    switch (TargetType)
+    {
+        case TARGET_T_PROVIDED_TARGET:
+            return pTarget;
+        case TARGET_T_HOSTILE:
+            return pSource->getVictim();
+            break;
+        case TARGET_T_HOSTILE_SECOND_AGGRO:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
+            break;
+        case TARGET_T_HOSTILE_LAST_AGGRO:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
+            break;
+        case TARGET_T_HOSTILE_RANDOM:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+            break;
+        case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
+            break;
+        case TARGET_T_FRIENDLY:
+            return pSource->SelectRandomFriendlyTarget(Param2 ? pTarget : nullptr, Param1 ? Param1 : 30.0f);
+        case TARGET_T_FRIENDLY_INJURED:
+            return pSource->FindLowestHpFriendlyUnit(Param1 ? Param1 : 30.0f, Param2 ? Param2 : 50, true);
+        case TARGET_T_FRIENDLY_INJURED_EXCEPT:
+            return pSource->FindLowestHpFriendlyUnit(Param1 ? Param1 : 30.0f, Param2 ? Param2 : 50, true, pTarget);;
+        case TARGET_T_FRIENDLY_MISSING_BUFF:
+            return pSource->FindFriendlyUnitMissingBuff(Param1 ? Param1 : 30.0f, Param2);
+        case TARGET_T_FRIENDLY_MISSING_BUFF_EXCEPT:
+            return pSource->FindFriendlyUnitMissingBuff(Param1 ? Param1 : 30.0f, Param2, pTarget);
+        case TARGET_T_FRIENDLY_CC:
+            return pSource->FindFriendlyUnitCC(Param1 ? Param1 : 30.0f);
+    }
+    return NULL;
+}
+
+void CreatureAI::SetSpellsList(uint32 entry)
+{
+    if (entry == 0)
+        m_CreatureSpells.clear();
+    else if (CreatureSpellsList const* pSpellsTemplate = sObjectMgr.GetCreatureSpellsList(entry))
+        SetSpellsList(pSpellsTemplate);
+    else
+        sLog.outError("CreatureAI: Attempt to set spells template of creature %u to non-existent entry %u.", m_creature->GetEntry(), entry);
+}
+
+void CreatureAI::SetSpellsList(CreatureSpellsList const* pSpellsList)
+{
+    m_CreatureSpells.clear();
+    for (const auto& entry : *pSpellsList)
+    {
+        m_CreatureSpells.push_back(CreatureAISpellsEntry(entry));
+    }
+    m_CreatureSpells.shrink_to_fit();
+    m_uiCastingDelay = 0;
+}
+
+// Creature spell lists should be updated every 1.2 seconds according to research.
+// https://www.reddit.com/r/wowservers/comments/834nt5/felmyst_ai_system_research/
+#define CREATURE_CASTING_DELAY 1200
+
+void CreatureAI::UpdateSpellsList(uint32 const uiDiff)
+{
+    if (m_uiCastingDelay <= uiDiff)
+    {
+        uint32 const uiDesync = (uiDiff - m_uiCastingDelay);
+        DoSpellsListCasts(CREATURE_CASTING_DELAY + uiDesync);
+        m_uiCastingDelay = uiDesync < CREATURE_CASTING_DELAY ? CREATURE_CASTING_DELAY - uiDesync : 0;
+    }
+    else
+        m_uiCastingDelay -= uiDiff;
+}
+
+void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
+{
+    bool bDontCast = false;
+    for (auto& spell : m_CreatureSpells)
+    {
+        if (spell.cooldown <= uiDiff)
+        {
+            // Cooldown has expired.
+            spell.cooldown = 0;
+
+            // Prevent casting multiple spells in the same update. Only update timers.
+            if (!(spell.castFlags & (CF_TRIGGERED | CF_INTERRUPT_PREVIOUS)))
+            {
+                if (bDontCast || m_creature->IsNonMeleeSpellCasted(false))
+                    continue;
+            } 
+
+            // Checked on startup.
+            SpellEntry const* pSpellInfo = sSpellStore.LookupEntry(spell.spellId);
+
+            Unit* pTarget = ToUnit(GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex)->maxRange, spell.targetParam2));
+
+            SpellCastResult result = m_creature->TryToCast(pTarget, pSpellInfo, spell.castFlags, spell.probability);
+            
+            switch (result)
+            {
+                case SPELL_CAST_OK:
+                {
+                    bDontCast = !(spell.castFlags & CF_TRIGGERED);
+                    spell.cooldown = urand(spell.delayRepeatMin, spell.delayRepeatMax);
+
+                    if (spell.castFlags & CF_MAIN_RANGED_SPELL)
+                    {
+                        if (m_creature->m_movementInfo.HasMovementFlag(movementFlagsMask))
+                            m_creature->StopMoving();
+
+                        SetCombatMovement(false);
+                        //SetMeleeAttack(false);
+                    }
+
+                    // If there is a script for this spell, run it.
+                    if (spell.scriptId)
+                        m_creature->GetMap()->ScriptsStart(DBS_ON_CREATURE_SPELL, spell.scriptId, m_creature, pTarget);
+                    break;
+                }
+                case SPELL_FAILED_FLEEING:
+                case SPELL_FAILED_SPELL_IN_PROGRESS:
+                {
+                    // Do nothing so it will try again on next update.
+                    break;
+                }
+                case SPELL_FAILED_TRY_AGAIN:
+                {
+                    // Chance roll failed, so we reset cooldown.
+                    spell.cooldown = urand(spell.delayRepeatMin, spell.delayRepeatMax);
+                    if (spell.castFlags & CF_MAIN_RANGED_SPELL)
+                    {
+                        SetCombatMovement(true);
+                        //SetMeleeAttack(true);
+                    }
+                    break;
+                }
+                default:
+                {
+                    // other error
+                    if (spell.castFlags & CF_MAIN_RANGED_SPELL)
+                    {
+                        SetCombatMovement(true);
+                        //SetMeleeAttack(true);
+                    }
+                    break;
+                }
+            }
+        }
+        else
+            spell.cooldown -= uiDiff;
+    }
+}
+
 bool CreatureAI::DoMeleeAttackIfReady()
 {
     return m_creature->UpdateMeleeAttackingState();
@@ -214,6 +404,7 @@ void CreatureAI::SetChase(bool chase)
                 case IDLE_MOTION_TYPE:
                 case CHASE_MOTION_TYPE:
                 case FOLLOW_MOTION_TYPE:
+                    m_meleeAttack = true;
                     creatureMotion->Clear(false);
                     creatureMotion->MoveChase(m_creature->getVictim(), 0.0f, 0.0f);
                     break;
@@ -226,6 +417,7 @@ void CreatureAI::SetChase(bool chase)
             m_creature->StopMoving();
             if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
             {
+                m_meleeAttack = false;
                 m_creature->SendMeleeAttackStop(m_creature->getVictim());
             }
         }

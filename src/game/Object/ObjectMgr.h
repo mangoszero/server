@@ -263,6 +263,31 @@ struct PetCreateSpellEntry
     uint32 spellid[4];
 };
 
+// Number of spells in one template
+#define CREATURE_SPELLS_MAX_SPELLS 8
+// Columns in the db for each spell
+#define CREATURE_SPELLS_MAX_COLUMNS 11
+
+struct CreatureSpellsEntry
+{
+    uint16 const spellId;
+    uint8 const  probability;
+    uint8 const  castTarget;
+    uint32 const targetParam1;
+    uint32 const targetParam2;
+    uint8 const  castFlags;
+    uint32 const delayInitialMin;
+    uint32 const delayInitialMax;
+    uint32 const delayRepeatMin;
+    uint32 const delayRepeatMax;
+    uint32 const scriptId;
+    CreatureSpellsEntry(uint16 Id, uint8 Probability, uint8 CastTarget, uint32 TargetParam1, uint32 TargetParam2, uint8 CastFlags, uint32 InitialMin, uint32 InitialMax, uint32 RepeatMin, uint32 RepeatMax, uint32 ScriptId) : spellId(Id), probability(Probability), castTarget(CastTarget), targetParam1(TargetParam1), targetParam2(TargetParam2), castFlags(CastFlags), delayInitialMin(InitialMin), delayInitialMax(InitialMax), delayRepeatMin(RepeatMin), delayRepeatMax(RepeatMax), scriptId(ScriptId) {}
+};
+
+typedef std::vector<CreatureSpellsEntry> CreatureSpellsList;
+
+typedef UNORDERED_MAP<uint32, CreatureSpellsList> CreatureSpellsMap;
+
 struct GraveYardData
 {
     uint32 safeLocId;
@@ -688,6 +713,7 @@ class ObjectMgr
         void LoadCreatureClassLvlStats();
         void LoadCreatureModelInfo();
         void LoadCreatureItemTemplates();
+        void LoadCreatureSpells();
         void LoadEquipmentTemplates();
         void LoadGameObjectLocales();
         void LoadGameObjects();
@@ -904,6 +930,13 @@ class ObjectMgr
         }
 
         void GetCreatureLocaleStrings(uint32 entry, int32 loc_idx, char const** namePtr, char const** subnamePtr = NULL) const;
+
+        CreatureSpellsList const* GetCreatureSpellsList(uint32 entry) const
+        {
+            auto itr = m_CreatureSpellsMap.find(entry);
+            if (itr == m_CreatureSpellsMap.end()) return nullptr;
+            return &itr->second;
+        }
 
         GameObjectLocale const* GetGameObjectLocale(uint32 entry) const
         {
@@ -1334,6 +1367,7 @@ class ObjectMgr
         LocalTransportGuidsOnMap m_localTransports;
         CreatureDataMap mCreatureDataMap;
         CreatureLocaleMap mCreatureLocaleMap;
+        CreatureSpellsMap m_CreatureSpellsMap;
         GameObjectDataMap mGameObjectDataMap;
         GameObjectLocaleMap mGameObjectLocaleMap;
         ItemLocaleMap mItemLocaleMap;

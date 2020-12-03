@@ -759,14 +759,16 @@ namespace MaNGOS
     class MostHPMissingInRangeCheck
     {
         public:
-            MostHPMissingInRangeCheck(Unit const* obj, float range, uint32 hp) : i_obj(obj), i_range(range), i_hp(hp) {}
+            MostHPMissingInRangeCheck(Unit const* obj, float range, uint32 hp, bool percent = false) : i_obj(obj), i_range(range), i_hp(hp), i_percent(percent) {}
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
             {
-                if (u->IsAlive() && u->IsInCombat() && !i_obj->IsHostileTo(u) && i_obj->IsWithinDistInMap(u, i_range) && u->GetMaxHealth() - u->GetHealth() > i_hp)
+                if (u->IsAlive() && u->IsInCombat() && i_obj->IsFriendlyTo(u) && i_obj->IsWithinDistInMap(u, i_range))
                 {
-                    i_hp = u->GetMaxHealth() - u->GetHealth();
-                    return true;
+                    if (i_percent)
+                        return 100 - u->GetHealthPercent() > i_hp;
+                    
+                    return u->GetMaxHealth() - u->GetHealth() > i_hp;
                 }
                 return false;
             }
@@ -774,6 +776,7 @@ namespace MaNGOS
             Unit const* i_obj;
             float i_range;
             uint32 i_hp;
+            bool i_percent;
     };
 
     class FriendlyCCedInRangeCheck

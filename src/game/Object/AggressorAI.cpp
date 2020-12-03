@@ -123,9 +123,12 @@ void AggressorAI::EnterEvadeMode()
     i_victimGuid.Clear();
     m_creature->CombatStop(true);
     m_creature->SetLootRecipient(NULL);
+
+    // Reset back to default spells template. This also resets timers.
+    SetSpellsList(m_creature->GetCreatureInfo()->spell_list_id);
 }
 
-void AggressorAI::UpdateAI(const uint32 /*diff*/)
+void AggressorAI::UpdateAI(const uint32 diff)
 {
     // update i_victimGuid if m_creature->getVictim() !=0 and changed
     if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -134,6 +137,9 @@ void AggressorAI::UpdateAI(const uint32 /*diff*/)
     }
 
     i_victimGuid = m_creature->getVictim()->GetObjectGuid();
+
+    if (!m_CreatureSpells.empty())
+        UpdateSpellsList(diff);
 
     DoMeleeAttackIfReady();
 }

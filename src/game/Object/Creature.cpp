@@ -53,6 +53,7 @@
 #include "movement/MoveSplineInit.h"
 #include "CreatureLinkingMgr.h"
 #include "DisableMgr.h"
+#include "MovementGenerator.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -3277,4 +3278,107 @@ void Creature::SetWaterWalk(bool enable)
     WorldPacket data(enable ? SMSG_SPLINE_MOVE_WATER_WALK : SMSG_SPLINE_MOVE_LAND_WALK, 9);
     data << GetPackGUID();
     SendMessageToSet(&data, true);
+}
+
+SpellCastResult Creature::TryToCast(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags, uint8 uiChance)
+{
+    if (IsNonMeleeSpellCasted(false) && !(uiCastFlags & (CF_TRIGGERED | CF_INTERRUPT_PREVIOUS)))
+        return SPELL_FAILED_SPELL_IN_PROGRESS;
+
+    const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(uiSpell);
+
+    if (!pSpellInfo)
+    {
+        sLog.outError("TryToCast: attempt to cast unknown spell %u by creature with entry: %u", uiSpell, GetEntry());
+        return SPELL_FAILED_SPELL_UNAVAILABLE;
+    }
+
+    return TryToCast(pTarget, pSpellInfo, uiCastFlags, uiChance);
+}
+
+SpellCastResult Creature::TryToCast(Unit* pTarget, const SpellEntry* pSpellInfo, uint32 uiCastFlags, uint8 uiChance)
+{
+    if (!pTarget)
+        return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
+
+    // This spell should only be cast when target does not have the aura it applies.
+    if ((uiCastFlags & CF_AURA_NOT_PRESENT) && pTarget->HasAura(pSpellInfo->Id))
+        return SPELL_FAILED_MORE_POWERFUL_SPELL_ACTIVE;
+
+    if (GetMotionMaster()->GetCurrentMovementGeneratorType() == TIMED_FLEEING_MOTION_TYPE)
+        return SPELL_FAILED_FLEEING;
+
+    // This spell is only used when target is in melee range.
+    if ((uiCastFlags & CF_ONLY_IN_MELEE) && !CanReachWithMeleeAttack(pTarget))
+        return SPELL_FAILED_OUT_OF_RANGE;
+
+    // This spell should not be used if target is in melee range.
+    if ((uiCastFlags & CF_NOT_IN_MELEE) && CanReachWithMeleeAttack(pTarget))
+        return SPELL_FAILED_TOO_CLOSE;
+
+    // This spell should only be cast when we cannot get into melee range.
+    if ((uiCastFlags & CF_TARGET_UNREACHABLE) && (CanReachWithMeleeAttack(pTarget) || (GetMotionMaster()->GetCurrentMovementGeneratorType() != CHASE_MOTION_TYPE) || !(hasUnitState(UNIT_STAT_ROOT) || !GetMotionMaster()->GetCurrent()->IsReachable())))
+        return SPELL_FAILED_MOVING;
+
+    // Custom checks
+    if (!(uiCastFlags & CF_FORCE_CAST))
+    {
+        // Motion Master is not updated when this state is active.
+        if (!hasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+        {
+            // Can't cast while fleeing.
+            switch (GetMotionMaster()->GetCurrentMovementGeneratorType())
+            {
+            case TIMED_FLEEING_MOTION_TYPE:
+                return SPELL_FAILED_FLEEING;
+            }
+        }
+
+        // If the spell requires to be behind the target.
+        if (pSpellInfo->AttributesEx2 == SPELL_ATTR_EX2_FACING_TARGETS_BACK && pSpellInfo->HasAttribute(SPELL_ATTR_EX_FACING_TARGET) && pTarget->HasInArc(M_PI_F, this))
+            return SPELL_FAILED_UNIT_NOT_BEHIND;
+
+        if (!IsAreaOfEffectSpell(pSpellInfo))
+        {
+            // If the spell requires the target having a specific power type.
+            if (!IsTargetPowerTypeValid(pSpellInfo, pTarget->GetPowerType()))
+                return SPELL_FAILED_UNKNOWN;
+
+            // No point in casting if target is immune.
+            if (pTarget->IsImmuneToDamage(GetSpellSchoolMask(pSpellInfo)))
+                return SPELL_FAILED_IMMUNE;
+        }
+
+        // Mind control abilities can't be used with just 1 attacker or mob will reset.
+        if ((GetThreatManager().getThreatList().size() == 1) && (IsSpellHaveAura(pSpellInfo, SPELL_AURA_MOD_CHARM) || IsSpellHaveAura(pSpellInfo, SPELL_AURA_MOD_POSSESS)))
+            return SPELL_FAILED_UNKNOWN;
+
+        // Do not use dismounting spells when target is not mounted (there are 4 such spells).
+        if (!pTarget->IsMounted() && IsDismountSpell(pSpellInfo))
+            return SPELL_FAILED_ONLY_MOUNTED;
+    }
+
+    // Interrupt any previous spell
+    if ((uiCastFlags & CF_INTERRUPT_PREVIOUS) && IsNonMeleeSpellCasted(false))
+        InterruptNonMeleeSpells(false);
+
+    Spell *spell = new Spell(this, pSpellInfo, uiCastFlags & CF_TRIGGERED);
+
+    SpellCastTargets targets;
+    targets.setUnitTarget(pTarget);
+
+    if (pSpellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+    {
+        targets.setDestination(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ());
+    }
+    if (pSpellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
+    {
+        if (WorldObject* caster = spell->GetCastingObject())
+        {
+            targets.setSource(caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ());
+        }
+    }
+
+    spell->m_CastItem = NULL;
+    return spell->prepare(&targets, NULL, uiChance);
 }
