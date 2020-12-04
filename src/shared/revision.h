@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "Add_Field_Comments"
 
     #define WORLD_DB_VERSION_NR 21
-    #define WORLD_DB_STRUCTURE_NR 22
-    #define WORLD_DB_CONTENT_NR 024
-    #define WORLD_DB_UPDATE_DESCRIPTION "NPC_1434_position_fix"
+    #define WORLD_DB_STRUCTURE_NR 23
+    #define WORLD_DB_CONTENT_NR 001
+    #define WORLD_DB_UPDATE_DESCRIPTION "creature_spells"
 #endif // __REVISION_H__
