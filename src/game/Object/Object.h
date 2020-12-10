@@ -715,4 +715,55 @@ class WorldObject : public Object
         bool m_isActiveObject;
 };
 
+// Helper functions to cast between different Object pointers. Useful when unsure that your object* is valid at all.
+inline WorldObject* ToWorldObject(Object* object)
+{
+    return object && object->isType(TYPEMASK_WORLDOBJECT) ? static_cast<WorldObject*>(object) : nullptr;
+}
+
+inline WorldObject const* ToWorldObject(Object const* object)
+{
+    return object && object->isType(TYPEMASK_WORLDOBJECT) ? static_cast<WorldObject const*>(object) : nullptr;
+}
+
+inline GameObject* ToGameObject(Object* object)
+{
+    return object && object->GetTypeId() == TYPEID_GAMEOBJECT ? reinterpret_cast<GameObject*>(object) : nullptr;
+}
+
+inline GameObject const* ToGameObject(Object const* object)
+{
+    return object && object->GetTypeId() == TYPEID_GAMEOBJECT ? reinterpret_cast<GameObject const*>(object) : nullptr;
+}
+
+inline Unit* ToUnit(Object* object)
+{
+    return object && object->isType(TYPEMASK_UNIT) ? reinterpret_cast<Unit*>(object) : nullptr;
+}
+
+inline Unit const* ToUnit(Object const* object)
+{
+    return object && object->isType(TYPEMASK_UNIT) ? reinterpret_cast<Unit const*>(object) : nullptr;
+}
+
+inline Creature* ToCreature(Object* object)
+{
+    return object && object->GetTypeId() == TYPEID_UNIT ? reinterpret_cast<Creature*>(object) : nullptr;
+}
+
+inline Creature const* ToCreature(Object const* object)
+{
+    return object && object->GetTypeId() == TYPEID_UNIT ? reinterpret_cast<Creature const*>(object) : nullptr;
+}
+
+inline Player* ToPlayer(Object* object)
+{
+    return object && object->GetTypeId() == TYPEID_PLAYER ? reinterpret_cast<Player*>(object) : nullptr;
+}
+
+inline Player const* ToPlayer(Object const* object)
+{
+    return object && object->GetTypeId() == TYPEID_PLAYER ? reinterpret_cast<Player const*>(object) : nullptr;
+}
+
 #endif

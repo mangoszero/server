@@ -112,9 +112,12 @@ void GuardAI::EnterEvadeMode()
     {
         m_creature->GetMotionMaster()->MoveTargetedHome();
     }
+
+    // Reset back to default spells template. This also resets timers.
+    SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
 }
 
-void GuardAI::UpdateAI(const uint32 /*diff*/)
+void GuardAI::UpdateAI(const uint32 diff)
 {
     // update i_victimGuid if i_creature.getVictim() !=0 and changed
     if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
@@ -123,6 +126,9 @@ void GuardAI::UpdateAI(const uint32 /*diff*/)
     }
 
     i_victimGuid = m_creature->getVictim()->GetObjectGuid();
+
+    if (!m_CreatureSpells.empty())
+        UpdateSpellsList(diff);
 
     DoMeleeAttackIfReady();
 }

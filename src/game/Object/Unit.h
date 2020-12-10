@@ -1412,6 +1412,32 @@ class Unit : public WorldObject
          */
         Unit* SelectRandomFriendlyTarget(Unit* except = NULL, float radius = ATTACK_DISTANCE) const;
         /**
+        * @param fRange how big the radius for our search should be
+        * @param uiMinHPDiff how much health the unit has to be missing
+        * @param bPercent if the previous param is percent or raw value
+        * @param except select any target but this one, usually your current target
+        * @return The injured friendly target found, NULL if no targets were found
+        * \see Mangos::UnitListSearcher
+        * \see Cell::VisitAllObjects
+        */
+        Unit* FindLowestHpFriendlyUnit(float fRange, uint32 uiMinHPDiff = 1, bool bPercent = false, Unit* except = nullptr) const;
+        /**
+        * @param range how big the radius for our search should be
+        * @param spellid buff to check
+        * @param except select any target but this one, usually your current target
+        * @return The friendly target found, NULL if no targets were found
+        * \see Mangos::UnitListSearcher
+        * \see Cell::VisitAllObjects
+        */
+        Unit* FindFriendlyUnitMissingBuff(float range, uint32 spellid, Unit* except = nullptr) const;
+        /**
+        * @param range how big the radius for our search should be
+        * @return The friendly target found, NULL if no targets were found
+        * \see Mangos::UnitListSearcher
+        * \see Cell::VisitAllObjects
+        */
+        Unit* FindFriendlyUnitCC(float range) const;
+        /**
          * Checks if we have a negative aura with the given interrupt flag/s
          * @param flag The interrupt flag/s to check for, see SpellAuraInterruptFlags
          * @return true if we have a negative aura with the given flag, false otherwise

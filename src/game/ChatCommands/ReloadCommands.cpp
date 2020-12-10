@@ -145,6 +145,7 @@ bool ChatHandler::HandleReloadAllScriptsCommand(char* /*args*/)
     HandleReloadDBScriptsOnQuestEndCommand((char*)"a");
     HandleReloadDBScriptsOnQuestStartCommand((char*)"a");
     HandleReloadDBScriptsOnSpellCommand((char*)"a");
+    HandleReloadDBScriptsOnCreatureSpellCommand((char*)"a");
     SendGlobalSysMessage("DB tables `*_scripts` reloaded.", SEC_MODERATOR);
     HandleReloadDbScriptStringCommand((char*)"a");
     return true;
@@ -260,6 +261,14 @@ bool ChatHandler::HandleReloadCreaturesStatsCommand(char* /*args*/)
     sLog.outString("Re-Loading stats data...");
     sObjectMgr.LoadCreatureClassLvlStats();
     SendGlobalSysMessage("DB table `creature_template_classlevelstats` reloaded.", SEC_MODERATOR);
+    return true;
+}
+
+bool ChatHandler::HandleReloadCreatureSpellsCommand(char* /*args*/)
+{
+    sLog.outString("Re-Loading Creature Spells... (`creature_spells`)");
+    sObjectMgr.LoadCreatureSpells();
+    SendGlobalSysMessage("DB table `creature_spells` reloaded.", SEC_MODERATOR);
     return true;
 }
 
@@ -685,6 +694,30 @@ bool ChatHandler::HandleReloadDBScriptsOnSpellCommand(char* args)
     if (*args != 'a')
     {
         SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_SPELL]` reloaded.", SEC_MODERATOR);
+    }
+
+    return true;
+}
+
+bool ChatHandler::HandleReloadDBScriptsOnCreatureSpellCommand(char* args)
+{
+    if (sScriptMgr.IsScriptScheduled())
+    {
+        SendSysMessage("DB scripts used currently, please attempt reload later.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (*args != 'a')
+    {
+        sLog.outString("Re-Loading Scripts from `db_scripts [type = DBS_ON_CREATURE_SPELL]`...");
+    }
+
+    sScriptMgr.LoadDbScripts(DBS_ON_CREATURE_SPELL);
+
+    if (*args != 'a')
+    {
+        SendGlobalSysMessage("DB table `db_scripts [type = DBS_ON_CREATURE_SPELL]` reloaded.", SEC_MODERATOR);
     }
 
     return true;

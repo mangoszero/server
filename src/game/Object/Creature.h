@@ -136,6 +136,7 @@ struct CreatureInfo
     int32   ResistanceFrost;
     int32   ResistanceShadow;
     int32   ResistanceArcane;
+    uint32  SpellListId;
     uint32  PetSpellDataId;
     uint32  MovementType;
     uint32  TrainerType;
@@ -731,6 +732,10 @@ class Creature : public Unit
         uint32 m_spells[CREATURE_MAX_SPELLS];
         CreatureSpellCooldowns m_CreatureSpellCooldowns;
         CreatureSpellCooldowns m_CreatureCategoryCooldowns;
+
+        // Used by Creature Spells system to always know result of cast
+        SpellCastResult TryToCast(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags, uint8 uiChance);
+        SpellCastResult TryToCast(Unit* pTarget, SpellEntry const* pSpellInfo, uint32 uiCastFlags, uint8 uiChance);
 
         float GetAttackDistance(Unit const* pl) const;
 

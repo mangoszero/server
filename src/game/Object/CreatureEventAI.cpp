@@ -1348,6 +1348,9 @@ void CreatureEventAI::EnterEvadeMode()
 
     m_creature->SetLootRecipient(NULL);
 
+    // Reset back to default spells template. This also resets timers.
+    SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
+
     // Handle Evade events
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
     {
@@ -1634,6 +1637,9 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
     // Melee Auto-Attack (getVictim might be NULL as result of timer based events and actions)
     if (Combat && m_creature->getVictim() && m_MeleeEnabled)
     {
+        if (!m_CreatureSpells.empty())
+            UpdateSpellsList(diff);
+
         DoMeleeAttackIfReady();
     }
 }
