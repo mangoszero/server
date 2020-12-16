@@ -321,8 +321,7 @@ enum MangosStrings
 	LANG_TRIGGER_EXPLORE_QUEST                               = 366,    /* Explore quest: */
 	LANG_TRIGGER_CONDITION                                   = 367,    /* Condition %u */
 	LANG_COMMAND_TICKETRESPONSE                              = 373,    /* Response: %s */
-	LANG_COMMAND_TICKETCOUNT_CONSOLE                         = 374,    /* Tickets count: %i
- */
+	LANG_COMMAND_TICKETCOUNT_CONSOLE                         = 374,    /* Tickets count: %i */
 	LANG_COMMAND_TICKETNOTEXIST_NAME                         = 375,    /* Player %s not have tickets. */
 	LANG_POOL_ENTRY_LIST_CHAT                                = 376,    /* %u - |cffffffff|Hpool:%u|h[%s]|h|r AutoSpawn: %u MaxLimit: %u Creatures: %u GameObjecs: %u Pools %u */
 	LANG_NO_POOL_FOR_MAP                                     = 377,    /* No pools found for map '%s' (Id:%u) */

@@ -1809,13 +1809,13 @@ void AuctionBotSeller::SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, 
     double temp_buyp = buyp * stackcnt *
                        (itemQuality < MAX_AUCTION_QUALITY ? config.GetPriceRatioPerQuality(AuctionQuality(itemQuality)) : 1) ;
 
-    double randrange = temp_buyp * 0.4;    
+    double randrange = temp_buyp * 0.4;
 
     uint32 buypMin = (uint32)temp_buyp - (uint32)randrange;
     uint32 buypMax = ((uint32)temp_buyp + (uint32)randrange) < temp_buyp ? ACE_Numeric_Limits<uint32>::max() : temp_buyp + randrange;
-    
+
     buyp = (urand(buypMin, buypMax) / 100) + 1;
-    
+
     double urandrange = buyp * 40;
     double temp_bidp = buyp * 50;
     uint32 bidPmin = (uint32)temp_bidp - (uint32)urandrange;
