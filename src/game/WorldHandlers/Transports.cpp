@@ -54,15 +54,23 @@ void Map::LoadLocalTransports()
             delete lt;
         }
     }
-/*
+
     sLog.outString();
+/*
     for (std::set<Transport*>::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
     {
         sLog.outString(">>>%s initialized", (*i)->GetGuidStr().c_str());
     }
 */
-    sLog.outString(">> Loaded " SIZEFMTD " local transports for map %u", i_transports.size(), GetId());
 
+	if (GetId()==369)
+	{
+        sLog.outString(">> Loaded " SIZEFMTD " tram cars for map %u", i_transports.size(), GetId());
+	}
+    else
+    {
+        sLog.outString(">> Loaded " SIZEFMTD " local transports for map %u", i_transports.size(), GetId());
+    }
 }
 
 void MapManager::LoadTransports()
@@ -291,10 +299,11 @@ bool GlobalTransport::Initialize(uint32 entry, uint32 period, std::string const&
 
     // no global transports in dungeons
     const MapEntry* pMapInfo = sMapStore.LookupEntry(mapid);
-    if (!pMapInfo || pMapInfo->Instanceable())
+/*    if (!pMapInfo || pMapInfo->Instanceable())
     {
         return false;
     }
+*/
     Map* m = sMapMgr.CreateMap(mapid, this);
     if (m == NULL)
     {

@@ -432,7 +432,7 @@ BattleGroundMap* MapManager::CreateBattleGroundMap(uint32 id, uint32 InstanceId,
 
 void MapManager::LoadContinents()
 {
-    uint32 continents[] = {0, 1};
+    uint32 continents[] = {0, 1, 369};
     Map* _map = NULL;
 
     for (uint8 i = 0; i < countof(continents); ++i)
