@@ -299,11 +299,11 @@ bool GlobalTransport::Initialize(uint32 entry, uint32 period, std::string const&
 
     // no global transports in dungeons
     const MapEntry* pMapInfo = sMapStore.LookupEntry(mapid);
-/*    if (!pMapInfo || pMapInfo->Instanceable())
+    if (!pMapInfo || pMapInfo->Instanceable())
     {
         return false;
     }
-*/
+
     Map* m = sMapMgr.CreateMap(mapid, this);
     if (m == NULL)
     {
