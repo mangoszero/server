@@ -184,6 +184,9 @@ void World::CleanupsBeforeStop()
     KickAll();                                       // save and kick all players
     UpdateSessions(1);                               // real players unload required UpdateSessions call
     sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
+#ifdef ENABLE_ELUNA
+    Eluna::Uninitialize();
+#endif
 }
 
 /// Find a session by its id
