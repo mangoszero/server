@@ -24,12 +24,12 @@
 
 #ifndef MANGOS_H_REVISION
 #define MANGOS_H_REVISION
-    #define REVISION_NR "2122024"
+    #define REVISION_NR "2124001"
 
     #define REALMD_DB_VERSION_NR 21
-    #define REALMD_DB_STRUCTURE_NR 3
+    #define REALMD_DB_STRUCTURE_NR 4
     #define REALMD_DB_CONTENT_NR 001
-    #define REALMD_DB_UPDATE_DESCRIPTION "Update Row format and engine"
+    #define REALMD_DB_UPDATE_DESCRIPTION "fix account table errors"
 
     #define CHAR_DB_VERSION_NR 21
     #define CHAR_DB_STRUCTURE_NR 7
