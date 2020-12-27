@@ -2600,6 +2600,20 @@ bool ScriptMgr::OnGossipHello(Player* pPlayer, GameObject* pGameObject)
 #endif
 }
 
+bool ScriptMgr::OnGossipHello(Player* pPlayer, Item* pItem)
+{
+    // Used by Eluna
+#ifdef ENABLE_ELUNA
+// TODO ELUNA handler
+#endif /* ENABLE_ELUNA */
+
+#ifdef ENABLE_SD3
+    return SD3::ItemGossipHello(pPlayer, pItem);
+#else
+    return false;
+#endif
+}
+
 bool ScriptMgr::OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action, const char* code)
 {
 #ifdef ENABLE_ELUNA
@@ -2663,6 +2677,27 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, GameObject* pGameObject, uint32 
     else
     {
         return SD3::GOGossipSelect(pPlayer, pGameObject, sender, action);
+    }
+#else
+    return false;
+#endif
+}
+
+bool ScriptMgr::OnGossipSelect(Player* pPlayer, Item* pItem, uint32 sender, uint32 action, const char* code)
+{
+    // Used by Eluna
+#ifdef ENABLE_ELUNA
+// TODO Add Eluna handlers
+#endif /* ENABLE_ELUNA */
+
+#ifdef ENABLE_SD3
+    if (code)
+    {
+        return SD3::ItemGossipSelectWithCode(pPlayer, pItem, sender, action, code);
+    }
+    else
+    {
+        return SD3::ItemGossipSelect(pPlayer, pItem, sender, action);
     }
 #else
     return false;

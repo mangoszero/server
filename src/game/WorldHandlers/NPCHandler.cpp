@@ -490,6 +490,13 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
             return;
         }
 
+        if (!sScriptMgr.OnGossipSelect(_player, item, sender, action, code.empty() ? NULL : code.c_str()))
+        {
+            DEBUG_LOG("WORLD: HandleGossipSelectOptionOpcode - item script for %s not found or you can't interact with it.", item->GetProto()->Name1);
+            return;
+        }
+
+
         // Used by Eluna
 #ifdef ENABLE_ELUNA
         sEluna->HandleGossipSelectOption(GetPlayer(), item, GetPlayer()->PlayerTalkClass->GossipOptionSender(gossipListId), GetPlayer()->PlayerTalkClass->GossipOptionAction(gossipListId), code);
