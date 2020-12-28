@@ -41,7 +41,7 @@ GossipMenu::~GossipMenu()
     ClearMenu();
 }
 
-void GossipMenu::AddMenuItem(uint8 Icon, const std::string& Message, uint32 dtSender, uint32 dtAction, const std::string& BoxMessage, bool Coded)
+void GossipMenu::AddMenuItem(uint8 Icon, const std::string& Message, uint32 dtSender, uint32 dtAction, const std::string& BoxMessage, uint32 BoxMoney, bool Coded)
 {
     MANGOS_ASSERT(m_gItems.size() <= GOSSIP_MAX_MENU_ITEMS);
 
@@ -53,7 +53,7 @@ void GossipMenu::AddMenuItem(uint8 Icon, const std::string& Message, uint32 dtSe
     gItem.m_gSender     = dtSender;
     gItem.m_gOptionId   = dtAction;
     gItem.m_gBoxMessage = BoxMessage;
-
+    gItem.m_gBoxMoney = BoxMoney;
     m_gItems.push_back(gItem);
 }
 
@@ -78,9 +78,14 @@ void GossipMenu::AddMenuItem(uint8 Icon, char const* Message, bool Coded)
     AddMenuItem(Icon, std::string(Message ? Message : ""), Coded);
 }
 
-void GossipMenu::AddMenuItem(uint8 Icon, char const* Message, uint32 dtSender, uint32 dtAction, char const* BoxMessage, bool Coded)
+void GossipMenu::AddMenuItem(uint8 Icon, char const* Message, uint32 dtSender, uint32 dtAction, bool Coded)
 {
-    AddMenuItem(Icon, std::string(Message ? Message : ""), dtSender, dtAction, std::string(BoxMessage ? BoxMessage : ""), Coded);
+    AddMenuItem(Icon, std::string(Message ? Message : ""), dtSender, dtAction, "", 0,Coded);
+}
+
+void GossipMenu::AddMenuItem(uint8 Icon, char const* Message, uint32 dtSender, uint32 dtAction, char const* BoxMessage, uint32 BoxMoney, bool Coded)
+{
+    AddMenuItem(Icon, std::string(Message ? Message : ""), dtSender, dtAction, std::string(BoxMessage ? BoxMessage : ""), BoxMoney, Coded);
 }
 
 void GossipMenu::AddMenuItem(uint8 Icon, int32 itemText, uint32 dtSender, uint32 dtAction, int32 boxText, bool Coded)
@@ -173,7 +178,9 @@ void PlayerMenu::SendGossipMenu(uint32 TitleTextId, ObjectGuid objectGuid)
         data << uint32(iI);
         data << uint8(gItem.m_gIcon);
         data << uint8(gItem.m_gCoded);                      // makes pop up box password
+        //data << uint32(gItem.m_gBoxMoney);
         data << gItem.m_gMessage;                           // text for gossip item, max 0x800
+       // data << gItem.m_gBoxMessage;
     }
 
     data << uint32(mQuestMenu.MenuItemCount());             // max count 0x20
