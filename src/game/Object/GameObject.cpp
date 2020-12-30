@@ -409,17 +409,15 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
             if (isSpawned())
             {
+
                 // traps can have time and can not have
                 GameObjectInfo const* goInfo = GetGOInfo();
+                
+                uint32 max_charges = goInfo->GetCharges();
+
                 if (goInfo->type == GAMEOBJECT_TYPE_TRAP)   // traps
                 {
                     if (m_cooldownTime >= time(NULL))
-                    {
-                        return;
-                    }
-
-                    // cannot use more than trap charges
-                    if (m_useTimes >= goInfo->GetCharges())
                     {
                         return;
                     }
@@ -475,13 +473,14 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     }
                 }
 
-                if (uint32 max_charges = goInfo->GetCharges())
+                // Only despawn object if there are charges to "consume" 
+                // it means (all GO with charges = 0 in DB should never be despawned)
+                // Check : https://www.getmangos.eu/wiki/referenceinfo/dbinfo/mangosdb/mangoszeroworlddb/gameobject_template-r1047
+                // for more information about charges field in db depending on object type
+                if (max_charges > 0 && m_useTimes >= max_charges)
                 {
-                    if (m_useTimes >= max_charges)
-                    {
-                        m_useTimes = 0;
-                        SetLootState(GO_JUST_DEACTIVATED);  // can be despawned or destroyed
-                    }
+                    m_useTimes = 0;
+                    SetLootState(GO_JUST_DEACTIVATED);  // can be despawned or destroyed
                 }
             }
             break;
