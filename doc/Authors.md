@@ -28,45 +28,100 @@ server code, and furthered the development of a few [World of Warcraft][1] serve
 
 Authors
 -------
-For Authors prior to Release 0.19, please see the file [Historic Authors](Authors_historic.md)
+For Authors prior to Release 0.21, please see the file [Historic Authors](Authors_historic.md)
 
 We are grateful to the following who contributed to Release 0.21:
 
+* aleigood
+* altronrain
 * Antzmangos/billy1arm
+* Armand-Gabriel-Camner
+* arrai
+* Artox
+* bdebaere
+* beefbroccoli
+* Blumfield
+* brotalnia
+* cabfever/stormrage-project
 * cala
+* Caydan
 * Chuck5ta
 * cyberium
+* Cylae
+* EinBaum
+* Elmsroth
+* emeric254
 * evil-at-wow
 * Evildead666
 * Faded
 * fgreinus
 * Flying--Dutchman
 * Foereaper
+* galathil
+* Giperionn
+* gromchek
 * H0zen
 * hallabro
+* hates_sundays
+* Helladan
+* HelloKitty
+* i-am-fyre
 * iLeopard66
+* inifield
+* jasanhell
+* Jeremy lb
+* katz1
+* Kel
 * krullgor
 * kvipka
+* Laizerox
+* leewalkergm
 * Machiavell1
+* MadMax/MadMaxMangos
+* Markus
+* mpfans
+* MrMarvin
+* Necrovoice
 * neo2003
+* NÃ¸lin
+* Oleg
 * Olion17
+* Pastew
 * patman64
+* Pavel Belev
+* Phatcat
+* RidingKeys
 * robinsch
 * Rochet2
+* santalex
 * schmoozerd
+* Scott Stout
+* Sidsukana
+* Simon SandstrÃ¶m
+* Simplaf234
+* Sio
 * spp-
+* Sterling Alexander
 * stfx 
-* cabfever/stormrage-project
 * tarwyn
+* themadfitz
+* Tid
+* Tim Forbes
+* Tristan 'Natrist' Cormier
 * UnkleNuke
+* Vale the Violet Mote
 * VelVet
 * virusav
 * vladimirmangos
+* Warkdev
+* Warlockbugs
+* willtuker
+* Wolverine
 * xfurry
 * y1x2
 * zingzah
-
-
+* zorix
+* zwisus
 
 [1]: http://blizzard.com/games/wow/ "World of Warcraft"
 [2]: http://sourceforge.net/p/mangos/ "mangos on SourceForge"
