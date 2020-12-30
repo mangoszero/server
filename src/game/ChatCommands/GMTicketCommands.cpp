@@ -545,7 +545,8 @@ bool ChatHandler::HandleTicketShowCommand(char* args)
 bool ChatHandler::HandleTickerSurveyClose(char* args)
 {
     GMTicket* ticket = NULL;
-
+    std::string target_name;
+    ObjectGuid target_guid;
     uint32 num;
     if (ExtractUInt32(&args, num))
     {
@@ -565,8 +566,7 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
     }
     else
     {
-        ObjectGuid target_guid;
-        std::string target_name;
+
         if (!ExtractPlayerTarget(&args, NULL, &target_guid, &target_name))
         {
             return false;
@@ -582,7 +582,8 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
             return false;
         }
     }
-
+    
+    uint32 ticketId = ticket->GetId();
     ticket->CloseWithSurvey();
 
     //This needs to be before we delete the ticket
@@ -599,7 +600,9 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
     sTicketMgr.Delete(ticket->GetPlayerGuid());
     ticket = NULL;
 
-    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, pPlayer->GetName());
+    const char* gmNameReplacementWhenUsingCLI = "ADMIN";
+
+    PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
 
     return true;
 }
