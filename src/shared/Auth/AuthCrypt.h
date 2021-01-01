@@ -49,9 +49,9 @@ class AuthCrypt
         ~AuthCrypt();
 
         /**
-        * @brief
-        *
-        */
+         * @brief
+         *
+         */
         void Init();
 
         /**

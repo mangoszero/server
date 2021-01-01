@@ -1243,7 +1243,7 @@ class BattleGround
         bool IsPlayerInBattleGround(ObjectGuid guid);
 
         /* virtual score-array - get's used in bg-subclasses */
-        int32 m_TeamScores[PVP_TEAM_COUNT]; /**< TODO */
+        int32 m_TeamScores[PVP_TEAM_COUNT];
 
         /**
          * @brief
