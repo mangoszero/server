@@ -773,15 +773,15 @@ void ScriptMgr::LoadScripts(DBScriptType type)
             case SCRIPT_COMMAND_UPDATE_TEMPLATE:              // 44
             {
                 if (tmp.updateTemplate.entry && !ObjectMgr::GetCreatureTemplate(tmp.updateTemplate.entry))
-                    {
-                        sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u, but this creature_template does not exist.", type, tmp.updateTemplate.entry, tmp.id);
-                        continue;
-                    }
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u, but this creature_template does not exist.", type, tmp.updateTemplate.entry, tmp.id);
+                    continue;
+                }
                 if (tmp.updateTemplate.faction > 1)
-                    {
-                        sLog.outErrorDb("Table `db_scripts [type = %d]` uses invalid faction team (datalong2 = %u, must be 0 or 1) in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u", type, tmp.updateTemplate.faction, tmp.id);
-                        continue;
-                    }
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` uses invalid faction team (datalong2 = %u, must be 0 or 1) in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u", type, tmp.updateTemplate.faction, tmp.id);
+                    continue;
+                }
                 break;
             }
             default:
@@ -2197,14 +2197,14 @@ bool ScriptAction::HandleScriptStep()
                 sLog.outErrorDb("Table `db_scripts [type = %d]` has no gameobject defined in SCRIPT_COMMAND_DESPAWN_GO for script id %u", m_type, m_script->id);
                 break;
             }
-            
+
             GameObjectData const* goData = sObjectMgr.GetGOData(m_script->despawnGo.goGuid);
             if (!goData)
             {
                 sLog.outErrorDb("Table `db_scripts [type = %d]` has invalid gameobject (GUID: %u) in SCRIPT_COMMAND_RESPAWN_GO for script id %u", m_type, m_script->despawnGo.goGuid, m_script->id);
                 break;
             }
-            
+
             pGo = m_map->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, goData->id, m_script->despawnGo.goGuid));
 
             pGo->SetRespawnTime(m_script->despawnGo.respawnTime);
@@ -2272,7 +2272,7 @@ bool ScriptAction::HandleScriptStep()
                     pGoTarget->ResetDoorOrButton();
                     break;
                 default:
-                    sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u failed: GO(buddyEntry) %u is not a door or button", m_type, m_script->id, m_script->command, m_script->buddyEntry);
+                    sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u failed for gameobject(buddyEntry: %u). Gameobject is not a door or button", m_type, m_script->id, m_script->command, m_script->buddyEntry);
                     break;
             }
             break;
@@ -2835,7 +2835,7 @@ bool ScriptMgr::OnGameObjectUse(Player* pPlayer, GameObject* pGameObject)
 
 bool ScriptMgr::OnGameObjectUse(Unit* pUnit, GameObject* pGameObject)
 {
- // TODO Add Eluna support
+    // TODO Add Eluna support
 
 #ifdef ENABLE_SD3
     return SD3::GOUse(pUnit, pGameObject);
@@ -3023,7 +3023,7 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
             }
         }
     }
-#if defined(TBC) || defined (WOTLK)
+#if defined(TBC) || defined (WOTLK) || defined (CATA)
     // Load all possible event entries from taxi path nodes
     for (size_t path_idx = 0; path_idx < sTaxiPathNodesByPath.size(); ++path_idx)
     {
