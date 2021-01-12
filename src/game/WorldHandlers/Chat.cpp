@@ -1336,10 +1336,12 @@ void ChatHandler::ExecuteCommand(const char* text)
                 }
 
                 if (ChatCommand* showCommand = (strlen(command->Name) == 0 && parentCommand ? parentCommand : command))
+                {
                     if (ChatCommand* childs = showCommand->ChildCommands)
                     {
                         ShowHelpForSubCommands(childs, showCommand->Name);
                     }
+                }
 
                 SetSentErrorMessage(true);
             }
