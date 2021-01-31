@@ -329,9 +329,12 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         DoLootRelease(lootGuid);
     }
 
-    uint8 reason = 0;
+    bool instantLogout = (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->IsTaxiFlying() || GetSecurity() >= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_INSTANT_LOGOUT));
 
-    if (GetPlayer()->IsInCombat())
+    bool canLogoutInCombat = GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING);
+
+    uint8 reason = 0;
+    if (GetPlayer()->IsInCombat() && !canLogoutInCombat)
     {
         reason = 1;
     }
@@ -344,24 +347,20 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         reason = 2;                                         // FIXME - Need the correct value
     }
 
+    WorldPacket data(SMSG_LOGOUT_RESPONSE, 1 + 4);
+    data << uint32(reason);
+    data << uint8(instantLogout);
+    SendPacket(&data);
+
     if (reason)
     {
-        WorldPacket data(SMSG_LOGOUT_RESPONSE, 1+4);
-        data << uint32(reason);
-        data << uint8(0);
-        SendPacket(&data);
-        LogoutRequest(0);
+        LogoutRequest(time(0));
         return;
     }
 
     // instant logout in taverns/cities or on taxi or for admins, gm's, mod's if its enabled in mangosd.conf
-    if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->IsTaxiFlying() ||
-        GetSecurity() >= (AccountTypes)sWorld.getConfig(CONFIG_UINT32_INSTANT_LOGOUT))
+    if (instantLogout)
     {
-        WorldPacket data(SMSG_LOGOUT_RESPONSE, 1+4);
-        data << uint32(0);
-        data << uint8(1);
-        SendPacket(&data);
         LogoutPlayer(true);
         return;
     }
@@ -379,10 +378,6 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
         GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
     }
 
-    WorldPacket data(SMSG_LOGOUT_RESPONSE, 1 + 4);
-    data << uint32(0);
-    data << uint8(0);
-    SendPacket(&data);
     LogoutRequest(time(NULL));
 }
 
@@ -394,6 +389,12 @@ void WorldSession::HandlePlayerLogoutOpcode(WorldPacket& /*recv_data*/)
 void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_CANCEL Message");
+
+    // Player have already logged out serverside, too late to cancel
+    if (!GetPlayer())
+    {
+        return;
+    }
 
     LogoutRequest(0);
 
