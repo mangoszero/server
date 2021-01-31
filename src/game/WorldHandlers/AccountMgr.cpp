@@ -48,13 +48,18 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
         return AOR_NAME_TOO_LONG;                            // username's too long
     }
 
+    if (utf8length(password) > MAX_PASSWORD_STR)
+    {
+        return AOR_PASS_TOO_LONG;                            // password too long                
+    }
+
     normalizeString(username);
     normalizeString(password);
 
     if (GetId(username))
     {
         {
-            return AOR_NAME_ALREADY_EXIST;                        // username does already exist
+            return AOR_NAME_ALREADY_EXIST;                   // username does already exist
         }
     }
 
@@ -64,7 +69,7 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
     }
     LoginDatabase.Execute("INSERT INTO `realmcharacters` (`realmid`, `acctid`, `numchars`) SELECT `realmlist`.`id`, `account`.`id`, 0 FROM `realmlist`,`account` LEFT JOIN `realmcharacters` ON `acctid`=`account`.`id` WHERE `acctid` IS NULL");
 
-    return AOR_OK;                                          // everything's fine
+    return AOR_OK;                                           // everything's fine
 }
 
 AccountOpResult AccountMgr::DeleteAccount(uint32 accid)
@@ -128,7 +133,7 @@ AccountOpResult AccountMgr::ChangeUsername(uint32 accid, std::string new_uname, 
         return AOR_NAME_TOO_LONG;
     }
 
-    if (utf8length(new_passwd) > MAX_ACCOUNT_STR)
+    if (utf8length(new_passwd) > MAX_PASSWORD_STR)
     {
         return AOR_PASS_TOO_LONG;
     }
@@ -157,7 +162,7 @@ AccountOpResult AccountMgr::ChangePassword(uint32 accid, std::string new_passwd)
         return AOR_NAME_NOT_EXIST;                           // account doesn't exist
     }
 
-    if (utf8length(new_passwd) > MAX_ACCOUNT_STR)
+    if (utf8length(new_passwd) > MAX_PASSWORD_STR)
     {
         return AOR_PASS_TOO_LONG;
     }
