@@ -466,13 +466,14 @@ int main(int argc, char** argv)
     // 3. Start the SOAP listener thread, if enabled
     //************************************************************************************************************************
 #ifdef ENABLE_SOAP
-    SoapThread* soapThread = NULL;
+    std::shared_ptr<std::thread> soapThread;
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
     {
-        host = sConfig.GetStringDefault("SOAP.IP", "127.0.0.1");
-        port = sConfig.GetIntDefault("SOAP.Port", 7878);
-        soapThread = new SoapThread(port, host.c_str());
-        soapThread->open(0);
+        soapThread.reset(new std::thread(SoapThread, sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"), uint16(sConfig.GetIntDefault("SOAP.Port", 7878))), [](std::thread* thread)
+        {
+            thread->join();
+            delete thread;
+        });
     }
 #else /* ENABLE_SOAP */
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
@@ -519,10 +520,6 @@ int main(int argc, char** argv)
     if (freezeThread)
         delete freezeThread;
 
-#ifdef ENABLE_SOAP
-    if (soapThread)
-        delete soapThread;
-#endif
     if (raThread)
         delete raThread;
 

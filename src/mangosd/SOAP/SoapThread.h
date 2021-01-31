@@ -25,29 +25,47 @@
 #ifndef MANGOS_H_SOAPTHREAD
 #define MANGOS_H_SOAPTHREAD
 
-#include <ace/Task.h>
-
 #include "Common.h"
-#include "soapH.h"
 
-class SoapPool;
+#include <mutex>
+#include <future>
+#include <string>
 
-class SoapThread: public ACE_Task_Base
+void process_message(struct soap* soap_message);
+void SoapThread(const std::string& host, uint16 port);
+
+class SOAPCommand
 {
-    enum { SOAP_THREADS = 1 }; //TODO: configure in mangosd.conf
+public:
+	SOAPCommand() : m_success(false) { }
+	~SOAPCommand() { }
 
-    public:
-        SoapThread(uint16 port, const char* host) : host_(host), port_(port), pool_(NULL) {}
-        virtual ~SoapThread();
+	void appendToPrintBuffer(std::string msg)
+	{
+		m_printBuffer += msg;
+	}
 
-        virtual int svc() override;
-        virtual int open(void*) override;
+	void setCommandSuccess(bool val)
+	{
+		m_success = val;
+		finishedPromise.set_value();
+	}
 
-    private:
-        const char   *host_;
-        uint16       port_;
-        SoapPool     *pool_;
-        struct soap  soap_;
+	bool hasCommandSucceeded() const
+	{
+		return m_success;
+	}
+
+	static void print(void* callbackArg, const char* msg)
+	{
+		((SOAPCommand*)callbackArg)->appendToPrintBuffer(msg);
+	}
+
+	static void commandFinished(void* callbackArg, bool success);
+
+	bool m_success;
+	std::string m_printBuffer;
+	std::promise<void> finishedPromise;
 };
 
 #endif
