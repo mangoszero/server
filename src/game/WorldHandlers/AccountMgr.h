@@ -37,7 +37,8 @@ enum AccountOpResult
     AOR_DB_INTERNAL_ERROR
 };
 
-#define MAX_ACCOUNT_STR 16
+#define MAX_ACCOUNT_STR  16
+#define MAX_PASSWORD_STR 16
 
 class AccountMgr
 {
@@ -61,4 +62,5 @@ class AccountMgr
 };
 
 #define sAccountMgr MaNGOS::Singleton<AccountMgr>::Instance()
+
 #endif
