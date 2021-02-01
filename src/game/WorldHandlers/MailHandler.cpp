@@ -133,6 +133,13 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         return;
     }
 
+    // safeguard against possible money dupe
+    if (money && COD)
+    {
+        pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_INTERNAL_ERROR);
+        return;
+    }
+
     uint32 reqmoney = money + 30;
 
     if (pl->GetMoney() < reqmoney)
