@@ -191,7 +191,7 @@ public:
 
 	bool Passed() const
 	{
-		return _expiryTime <= 0s;
+		return _expiryTime <= Seconds(0);
 	}
 
 	void Reset(int32 expiry)
