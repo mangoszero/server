@@ -68,7 +68,7 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
-    PSendSysMessage("World Delay", updateTime); // ToDo: move to language string
+    PSendSysMessage("World Delay: %u", updateTime); // ToDo: move to language string
 
     return true;
 }
