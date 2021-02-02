@@ -223,6 +223,7 @@ add_library(game STATIC
     ${SRC_GRP_OUTDOOR_PVP}
     ${SRC_GRP_REFERENCES}
     ${SRC_GRP_SERVER}
+    ${SRC_GRP_TIME}
     ${SRC_GRP_TOOL}
     ${SRC_GRP_VMAPS}
     ${SRC_GRP_WARDEN}
@@ -248,6 +249,7 @@ target_include_directories(game
         OutdoorPvP
         References
         Server
+        Time
         Tools
         vmap
         Warden

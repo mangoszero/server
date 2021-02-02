@@ -33,8 +33,8 @@ WorldUpdateTime sWorldUpdateTime;
 
 UpdateTime::UpdateTime()
 {
-	_averageUpdateTime = 0;
-	_totalUpdateTime = 0;
+    _averageUpdateTime = 0;
+    _totalUpdateTime = 0;
     _updateTimeTableIndex = 0;
     _maxUpdateTime = 0;
     _maxUpdateTimeOfLastTable = 0;
