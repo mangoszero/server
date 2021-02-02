@@ -575,7 +575,7 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
 
 void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 {
-    //uint32 mstime = WorldTimer::getMSTime();
+    //uint32 mstime = getMSTime();
     //if (m_clientTimeDelay == 0)
     //    m_clientTimeDelay = mstime - movementInfo.GetTime();
 

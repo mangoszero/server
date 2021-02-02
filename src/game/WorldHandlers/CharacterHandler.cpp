@@ -799,7 +799,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 #endif
 
     /* Sync player's in-game time with server time */
-    pCurrChar->SetInGameTime(WorldTimer::getMSTime());
+    pCurrChar->SetInGameTime(getMSTime());
 
     /* Send logon notification to player's group
      * This is sent after player is added to the world so that player receives it too */

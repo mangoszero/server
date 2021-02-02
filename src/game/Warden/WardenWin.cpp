@@ -156,7 +156,7 @@ void WardenWin::HandleHashResult(ByteBuffer &buff)
     _inputCrypto.Init(_inputKey);
     _outputCrypto.Init(_outputKey);
 
-    _previousTimestamp = WorldTimer::getMSTime();
+    _previousTimestamp = getMSTime();
 }
 
 void WardenWin::RequestData()
@@ -179,7 +179,7 @@ void WardenWin::RequestData()
         sWardenCheckMgr->GetWardenCheckIds(false, build, _otherChecksTodo);
     }
 
-    _serverTicks = WorldTimer::getMSTime();
+    _serverTicks = getMSTime();
 
     _currentChecks.clear();
 
@@ -355,7 +355,7 @@ void WardenWin::HandleData(ByteBuffer &buff)
         uint32 newClientTicks;
         buff >> newClientTicks;
 
-        uint32 ticksNow = WorldTimer::getMSTime();
+        uint32 ticksNow = getMSTime();
         uint32 ourTicks = newClientTicks + (ticksNow - _serverTicks);
 
         sLog.outWarden("ServerTicks %u, RequestTicks %u, ClientTicks %u", ticksNow, _serverTicks, newClientTicks);  // Now, At request, At response

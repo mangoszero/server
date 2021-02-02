@@ -3850,7 +3850,7 @@ protected:
         UnitVisibility m_Visibility;
         Position m_last_notified_position;
         bool m_AINotifyScheduled;
-        ShortTimeTracker m_movesplineTimer;
+        TimeTracker m_movesplineTimer;
 
         Diminishing m_Diminishing;
         // Manage all Units threatening us

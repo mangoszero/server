@@ -74,6 +74,7 @@
 #include "Language.h"
 #include "CommandMgr.h"
 #include "revision.h"
+#include "UpdateTime.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -962,7 +963,7 @@ void World::SetInitialWorldSettings()
     srand((unsigned int)time(NULL));
 
     ///- Time server startup
-    uint32 uStartTime = WorldTimer::getMSTime();
+    uint32 startupBegin = getMSTime();
 
     ///- Initialize detour memory management
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
@@ -1500,8 +1501,8 @@ void World::SetInitialWorldSettings()
 
     showFooter();
 
-    uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
-    sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
+    uint32 startupDuration = GetMSTimeDiffToNow(startupBegin);
+    sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", (startupDuration / 60000), ((startupDuration % 60000) / 1000));
     sLog.outString();
 }
 
@@ -1675,6 +1676,8 @@ void World::Update(uint32 diff)
 
     ///- Update the game time and check for shutdown time
     _UpdateGameTime();
+
+    sWorldUpdateTime.UpdateWithDiff(diff);
 
     ///-Update mass mailer tasks if any
     sMassMailMgr.Update();

@@ -322,7 +322,7 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
     // 0x2
     if (updateFlags & UPDATEFLAG_TRANSPORT)
     {
-        *data << uint32(WorldTimer::getMSTime());           // ms time
+        *data << uint32(getMSTime());           // ms time
     }
 }
 

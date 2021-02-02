@@ -100,7 +100,7 @@ class Weather
         uint32 m_zone;
         WeatherType m_type;
         float m_grade;
-        ShortIntervalTimer m_timer;
+        IntervalTimer m_timer;
         WeatherZoneChances const* m_weatherChances;
         bool m_isPermanentWeather;
 };

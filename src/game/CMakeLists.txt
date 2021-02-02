@@ -57,6 +57,10 @@ source_group("References" FILES ${SRC_GRP_REFERENCES})
 file(GLOB SRC_GRP_SERVER Server/*.cpp Server/*.h)
 source_group("Server" FILES ${SRC_GRP_SERVER})
 
+#Time group
+file(GLOB SRC_GRP_TIME Time/*.cpp Time/*.h)
+source_group("Time" FILES ${SRC_GRP_TIME})
+
 #Tools group
 file(GLOB SRC_GRP_TOOL Tools/*.cpp Tools/*.h)
 source_group("Tool" FILES ${SRC_GRP_TOOL})

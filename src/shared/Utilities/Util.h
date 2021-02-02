@@ -26,7 +26,6 @@
 #define MANGOS_H_UTIL
 
 #include "Common/Common.h"
-#include <ace/Null_Mutex.h>
 #include <ace/INET_Addr.h>
 
 #include <string>
@@ -71,6 +70,13 @@ float GetFloatValueFromArray(Tokens const& data, uint16 index);
  * @param src
  */
 void stripLineInvisibleChars(std::string& src);
+
+/**
+ * @brief
+ *
+ * @param localtime
+ */
+std::tm localtime_r(const time_t& time);
 
 /**
  * @brief

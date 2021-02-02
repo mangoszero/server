@@ -177,7 +177,7 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     _inputCrypto.Init(_inputKey);
     _outputCrypto.Init(_outputKey);
 
-    _previousTimestamp = WorldTimer::getMSTime();
+    _previousTimestamp = getMSTime();
 }
 
 void WardenMac::RequestData()

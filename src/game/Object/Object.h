@@ -114,13 +114,13 @@ class WorldUpdateCounter
         {
             if (!m_tmStart)
             {
-                m_tmStart = WorldTimer::tickPrevTime();
+                m_tmStart = getMSTime();
             }
 
-            return WorldTimer::getMSTimeDiff(m_tmStart, WorldTimer::tickTime());
+            return getMSTimeDiff(m_tmStart, getMSTime());
         }
 
-        void Reset() { m_tmStart = WorldTimer::tickTime(); }
+        void Reset() { m_tmStart = getMSTime(); }
 
     private:
         uint32 m_tmStart;

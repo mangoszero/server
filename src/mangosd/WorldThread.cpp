@@ -71,38 +71,35 @@ int WorldThread::open(void* unused)
 /// Heartbeat for the World
 int WorldThread::svc()
 {
-    uint32 prevSleepTime = 0;                               // used for balanced full tick time length near WORLD_SLEEP_CONST
+    uint32 realCurrTime = 0;
+    uint32 realPrevTime = getMSTime();
     sLog.outString("World Updater Thread started (%dms min update interval)", WORLD_SLEEP_CONST);
 
     ///- While we have not World::m_stopEvent, update the world
     while (!World::IsStopped())
     {
         ++World::m_worldLoopCounter;
+        realCurrTime = getMSTime();
 
-        uint32 diff = WorldTimer::tick();
+        uint32 diff = getMSTimeDiff(realPrevTime, realCurrTime);
 
         sWorld.Update(diff);
+        realPrevTime = realCurrTime;
 
-        // diff (D0) include time of previous sleep (d0) + tick time (t0)
-        // we want that next d1 + t1 == WORLD_SLEEP_CONST
-        // we can't know next t1 and then can use (t0 + d1) == WORLD_SLEEP_CONST requirement
-        // d1 = WORLD_SLEEP_CONST - t0 = WORLD_SLEEP_CONST - (D0 - d0) = WORLD_SLEEP_CONST + d0 - D0
-        if (diff <= WORLD_SLEEP_CONST + prevSleepTime)
+        uint32 executionTimeDiff = getMSTimeDiff(realCurrTime, getMSTime());
+
+        // we know exactly how long it took to update the world, if the update took less than WORLD_SLEEP_CONST, sleep for WORLD_SLEEP_CONST - world update time
+        if (executionTimeDiff < WORLD_SLEEP_CONST)
         {
-            prevSleepTime = WORLD_SLEEP_CONST + prevSleepTime - diff;
-            ACE_Based::Thread::Sleep(prevSleepTime);
-        }
-        else
-        {
-            prevSleepTime = 0;
+            std::this_thread::sleep_for(std::chrono::milliseconds(WORLD_SLEEP_CONST - executionTimeDiff));
         }
 #ifdef _WIN32
-        if (m_ServiceStatus == 0) //service stopped
+        if (m_ServiceStatus == 0) // service stopped
         {
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
 
-        while (m_ServiceStatus == 2) //service paused
+        while (m_ServiceStatus == 2) // service paused
             Sleep(1000);
 #endif
     }
