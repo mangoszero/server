@@ -75,6 +75,7 @@
 #include "CommandMgr.h"
 #include "revision.h"
 #include "UpdateTime.h"
+#include "GameTime.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -963,7 +964,7 @@ void World::SetInitialWorldSettings()
     srand((unsigned int)time(NULL));
 
     ///- Time server startup
-    uint32 startupBegin = getMSTime();
+    uint32 startupBegin = GameTime::GetGameTimeMS();
 
     ///- Initialize detour memory management
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);

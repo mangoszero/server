@@ -52,6 +52,7 @@
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
+#include "GameTime.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaEventMgr.h"
@@ -159,12 +160,12 @@ void MovementInfo::Write(ByteBuffer& data) const
 bool GlobalCooldownMgr::HasGlobalCooldown(SpellEntry const* spellInfo) const
 {
     GlobalCooldownList::const_iterator itr = m_GlobalCooldowns.find(spellInfo->StartRecoveryCategory);
-    return itr != m_GlobalCooldowns.end() && itr->second.duration && getMSTimeDiff(itr->second.cast_time, getMSTime()) < itr->second.duration;
+    return itr != m_GlobalCooldowns.end() && itr->second.duration && getMSTimeDiff(itr->second.cast_time, GameTime::GetGameTimeMS()) < itr->second.duration;
 }
 
 void GlobalCooldownMgr::AddGlobalCooldown(SpellEntry const* spellInfo, uint32 gcd)
 {
-    m_GlobalCooldowns[spellInfo->StartRecoveryCategory] = GlobalCooldown(gcd, getMSTime());
+    m_GlobalCooldowns[spellInfo->StartRecoveryCategory] = GlobalCooldown(gcd, GameTime::GetGameTimeMS());
 }
 
 void GlobalCooldownMgr::CancelGlobalCooldown(SpellEntry const* spellInfo)
@@ -474,7 +475,7 @@ bool Unit::haveOffhandWeapon() const
 
 void Unit::SendHeartBeat()
 {
-    m_movementInfo.UpdateTime(getMSTime());
+    m_movementInfo.UpdateTime(GameTime::GetGameTimeMS());
     WorldPacket data(MSG_MOVE_HEARTBEAT, 31);
     data << GetPackGUID();
     data << m_movementInfo;
@@ -8794,7 +8795,7 @@ DiminishingLevels Unit::GetDiminishing(DiminishingGroup group)
         }
 
         // If last spell was casted more than 15 seconds ago - reset the count.
-        if (i->stack == 0 && getMSTimeDiff(i->hitTime, getMSTime()) > 15 * IN_MILLISECONDS)
+        if (i->stack == 0 && getMSTimeDiff(i->hitTime, GameTime::GetGameTimeMS()) > 15 * IN_MILLISECONDS)
         {
             i->hitCount = DIMINISHING_LEVEL_1;
             return DIMINISHING_LEVEL_1;
@@ -8823,7 +8824,7 @@ void Unit::IncrDiminishing(DiminishingGroup group)
         }
         return;
     }
-    m_Diminishing.push_back(DiminishingReturn(group, getMSTime(), DIMINISHING_LEVEL_2));
+    m_Diminishing.push_back(DiminishingReturn(group, GameTime::GetGameTimeMS(), DIMINISHING_LEVEL_2));
 }
 
 void Unit::ApplyDiminishingToDuration(DiminishingGroup group, int32& duration, Unit* caster, DiminishingLevels Level, bool isReflected)
@@ -8872,7 +8873,7 @@ void Unit::ApplyDiminishingAura(DiminishingGroup group, bool apply)
             // Remember time after last aura from group removed
             if (i->stack == 0)
             {
-                i->hitTime = getMSTime();
+                i->hitTime = GameTime::GetGameTimeMS();
             }
         }
         break;

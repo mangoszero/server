@@ -30,6 +30,7 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "Path.h"
+#include "GameTime.h"
 
 #include "WorldPacket.h"
 #include "DBCStores.h"
@@ -655,7 +656,7 @@ void GlobalTransport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
         return;
     }
 
-    m_timer = getMSTime() % m_period;
+    m_timer = GameTime::GetGameTimeMS() % m_period;
     while (((m_timer - m_curr->first) % m_pathTime) > ((m_next->first - m_curr->first) % m_pathTime))
     {
         MoveToNextWayPoint();

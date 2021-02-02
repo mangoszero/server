@@ -31,6 +31,7 @@
 #include "UpdateData.h"
 #include "ObjectGuid.h"
 #include "Camera.h"
+#include "GameTime.h"
 
 #include <set>
 
@@ -114,13 +115,13 @@ class WorldUpdateCounter
         {
             if (!m_tmStart)
             {
-                m_tmStart = getMSTime();
+                m_tmStart = GameTime::GetGameTimeMS();
             }
 
-            return getMSTimeDiff(m_tmStart, getMSTime());
+            return getMSTimeDiff(m_tmStart, GameTime::GetGameTimeMS());
         }
 
-        void Reset() { m_tmStart = getMSTime(); }
+        void Reset() { m_tmStart = GameTime::GetGameTimeMS(); }
 
     private:
         uint32 m_tmStart;
