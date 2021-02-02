@@ -36,6 +36,9 @@
 #include "MapManager.h"
 #include "Database/DatabaseEnv.h"
 
+#include <chrono>
+#include <thread>
+
 #ifdef ENABLE_ELUNA 
 #include "LuaEngine.h" 
 #endif /* ENABLE_ELUNA */ 
