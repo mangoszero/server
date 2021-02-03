@@ -19,14 +19,17 @@
 
 add_subdirectory(Extractor_projects)
 
+# Used for install targets
+set(TOOLS_DIR "tools")
+
 #install documentation and generation scripts
 install(
     FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/ExtractResources.sh"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/make_vmaps.bat"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/mmap_excluded.txt"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/MoveMapGen.sh"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/offmesh.txt"
+       "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/ExtractResources.sh"
+       "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/make_vmaps.bat"
+      # "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/mmap_excluded.txt"
+      # "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/MoveMapGen.sh"
+      # "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/offmesh.txt"
         "${CMAKE_CURRENT_SOURCE_DIR}/Extractor_Binaries/README.txt"
     DESTINATION
         "${BIN_DIR}/${TOOLS_DIR}"
