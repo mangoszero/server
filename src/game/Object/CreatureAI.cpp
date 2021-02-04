@@ -213,19 +213,27 @@ Unit* GetTargetByType(Unit* pSource, Unit* pTarget, uint8 TargetType, uint32 Par
             break;
         case TARGET_T_HOSTILE_SECOND_AGGRO:
             if (Creature* pCreatureSource = ToCreature(pSource))
+            {
                 return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
+            }
             break;
         case TARGET_T_HOSTILE_LAST_AGGRO:
             if (Creature* pCreatureSource = ToCreature(pSource))
+            {
                 return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
+            }
             break;
         case TARGET_T_HOSTILE_RANDOM:
             if (Creature* pCreatureSource = ToCreature(pSource))
+            {
                 return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+            }
             break;
         case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
             if (Creature* pCreatureSource = ToCreature(pSource))
+            {
                 return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
+            }
             break;
         case TARGET_T_FRIENDLY:
             return pSource->SelectRandomFriendlyTarget(Param2 ? pTarget : nullptr, Param1 ? Param1 : 30.0f);
@@ -246,11 +254,17 @@ Unit* GetTargetByType(Unit* pSource, Unit* pTarget, uint8 TargetType, uint32 Par
 void CreatureAI::SetSpellsList(uint32 entry)
 {
     if (entry == 0)
+    {
         m_CreatureSpells.clear();
+    }
     else if (CreatureSpellsList const* pSpellsTemplate = sObjectMgr.GetCreatureSpellsList(entry))
+    {
         SetSpellsList(pSpellsTemplate);
+    }
     else
+    {
         sLog.outError("CreatureAI: Attempt to set spells template of creature %u to non-existent entry %u.", m_creature->GetEntry(), entry);
+    }
 }
 
 void CreatureAI::SetSpellsList(CreatureSpellsList const* pSpellsList)
@@ -277,7 +291,9 @@ void CreatureAI::UpdateSpellsList(uint32 const uiDiff)
         m_uiCastingDelay = uiDesync < CREATURE_CASTING_DELAY ? CREATURE_CASTING_DELAY - uiDesync : 0;
     }
     else
+    {
         m_uiCastingDelay -= uiDiff;
+    }
 }
 
 void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
@@ -294,8 +310,10 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
             if (!(spell.castFlags & (CF_TRIGGERED | CF_INTERRUPT_PREVIOUS)))
             {
                 if (bDontCast || m_creature->IsNonMeleeSpellCasted(false))
+                {
                     continue;
-            } 
+                }
+            }
 
             // Checked on startup.
             SpellEntry const* pSpellInfo = sSpellStore.LookupEntry(spell.spellId);
@@ -303,7 +321,7 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
             Unit* pTarget = GetTargetByType(m_creature, m_creature, spell.castTarget, spell.targetParam1 ? spell.targetParam1 : sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex)->maxRange, spell.targetParam2);
 
             SpellCastResult result = m_creature->TryToCast(pTarget, pSpellInfo, spell.castFlags, spell.probability);
-            
+
             switch (result)
             {
                 case SPELL_CAST_OK:
@@ -314,7 +332,9 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
                     if (spell.castFlags & CF_MAIN_RANGED_SPELL)
                     {
                         if (m_creature->m_movementInfo.HasMovementFlag(movementFlagsMask))
+                        {
                             m_creature->StopMoving();
+                        }
 
                         SetCombatMovement(false);
                         //SetMeleeAttack(false);
@@ -322,7 +342,9 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
 
                     // If there is a script for this spell, run it.
                     if (spell.scriptId)
+                    {
                         m_creature->GetMap()->ScriptsStart(DBS_ON_CREATURE_SPELL, spell.scriptId, m_creature, pTarget);
+                    }
                     break;
                 }
                 case SPELL_FAILED_FLEEING:
@@ -355,7 +377,9 @@ void CreatureAI::DoSpellsListCasts(uint32 const uiDiff)
             }
         }
         else
+        {
             spell.cooldown -= uiDiff;
+        }
     }
 }
 

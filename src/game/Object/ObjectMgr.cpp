@@ -1194,7 +1194,7 @@ void ObjectMgr::LoadCreatureSpells()
     std::set<uint32> spellScriptSet;
 
     std::unique_ptr<QueryResult> result (WorldDatabase.PQuery("SELECT `id` FROM `db_scripts` WHERE `script_type` = %d", DBS_ON_CREATURE_SPELL));
-    
+
     if (result)
     {
         do
@@ -1303,7 +1303,9 @@ void ObjectMgr::LoadCreatureSpells()
                         scriptId = 0;
                     }
                     else
+                    {
                         spellScriptSet.erase(scriptId);
+                    }
                 }
 
                 spellsList.emplace_back(spellId, probability, castTarget, targetParam1, targetParam2, castFlags, delayInitialMin, delayInitialMax, delayRepeatMin, delayRepeatMax, scriptId);
@@ -1311,12 +1313,16 @@ void ObjectMgr::LoadCreatureSpells()
         }
 
         if (!spellsList.empty())
+        {
             m_CreatureSpellsMap.insert(CreatureSpellsMap::value_type(entry, spellsList));
+        }
 
     } while (result->NextRow());
 
     for (const auto itr : spellScriptSet)
+    {
         sLog.outErrorDb("Table `creature_spells_scripts` contains unused script, id %u.", itr);
+    }
 
     sLog.outString();
     sLog.outString(">> Loaded %lu creature spell templates.", (unsigned long)m_CreatureSpellsMap.size());
@@ -9212,7 +9218,7 @@ void ObjectMgr::LoadGossipMenus()
 /*
     This method will send the correct return when the code calls
     pPlayer->GetGossipTextId(pCreature)
-    Otherwise teh default 
+    Otherwise the default
 */
 void ObjectMgr::LoadCoreSideGossipTextIdCache()
 {
@@ -9244,10 +9250,10 @@ void ObjectMgr::LoadCoreSideGossipTextIdCache()
 
     uint32 count = 0;
 
-    do 
+    do
     {
         bar.step();
-        Field* fields = result->Fetch();      
+        Field* fields = result->Fetch();
        m_mCacheNpcTextIdMap[fields[0].GetUInt32()] =  fields[1].GetUInt32();
 
         ++count;

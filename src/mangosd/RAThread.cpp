@@ -57,12 +57,16 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             ACE_GUARD_RETURN(ACE_Thread_Mutex, Guard, outBufferLock, -1);
 
             if (closing_)
-              { return -1; }
+            {
+                return -1;
+            }
 
             int msgLen = strlen(msg);
 
             if (msgLen + outputBufferLen > RA_BUFF_SIZE)
-              { return -1; }
+            {
+                return -1;
+            }
 
             ACE_OS::memcpy(outputBuffer + outputBufferLen, msg, msgLen);
             outputBufferLen += msgLen;
@@ -124,7 +128,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         virtual int close(u_long unused) override
         {
             if (closing_)
-              { return -1; }
+            {
+                return -1;
+            }
 
             shutdown();
 
@@ -208,7 +214,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
                         ///- allow by remotely connected admin use console level commands dependent from config setting
                         if (accAccessLevel >= SEC_ADMINISTRATOR && !bStricted)
-                          { accAccessLevel = SEC_CONSOLE; }
+                        {
+                            accAccessLevel = SEC_CONSOLE;
+                        }
 
                         stage = LG;
                         sendf(sObjectMgr.GetMangosStringForDBCLocale(LANG_RA_PASS));
@@ -247,7 +255,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                         {
                             sLog.outRALog("Got '%s' cmd.", inputBuffer);
                             if (strncmp(inputBuffer, "quit", 4) == 0)
-                              { return -1; }
+                            {
+                                return -1;
+                            }
                             else
                             {
                                 CliCommandHolder* cmd = new CliCommandHolder(accId, accAccessLevel, this, inputBuffer,
@@ -256,7 +266,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                             }
                         }
                         else
-                          { sendf("mangos>"); }
+                        {
+                            sendf("mangos>");
+                        }
                         break;
                 }
             }
@@ -269,12 +281,16 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             ACE_GUARD_RETURN(ACE_Thread_Mutex, Guard, outBufferLock, -1);
 
             if (closing_)
-              { return -1; }
+            {
+                return -1;
+            }
 
             if (!outputBufferLen)
             {
                 if (reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
-                  { return -1; }
+                {
+                    return -1;
+                }
                 outActive = false;
                 return 0;
             }
@@ -285,7 +301,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 #endif // MSG_NOSIGNAL
 
             if (n <= 0)
-              { return -1; }
+            {
+                return -1;
+            }
 
             ACE_OS::memmove(outputBuffer, outputBuffer + n, outputBufferLen - n);
 
@@ -298,14 +316,18 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                                  ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK) override
         {
             if (closing_)
-              { return -1; }
+            {
+                return -1;
+            }
 
             ACE_GUARD_RETURN(ACE_Thread_Mutex, Guard, outBufferLock, -1);
 
             closing_ = true;
 
             if (h == ACE_INVALID_HANDLE)
-                { peer().close_writer(); }
+            {
+                peer().close_writer();
+            }
             remove_reference();
             return 0;
         }
@@ -337,7 +359,9 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         static void zprint(void* callbackArg, const char* szText)
         {
             if (!szText)
-              { return; }
+            {
+                return;
+            }
 
             ((RASocket*)callbackArg)->sendf(szText);
         }
@@ -389,7 +413,9 @@ int RAThread::svc()
         ACE_Time_Value interval(0, 10000);
 
         if (m_Reactor->run_reactor_event_loop(interval) == -1)
-          { break; }
+        {
+            break;
+        }
 
         if (World::IsStopped())
         {

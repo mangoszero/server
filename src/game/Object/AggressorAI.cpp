@@ -139,7 +139,9 @@ void AggressorAI::UpdateAI(const uint32 diff)
     i_victimGuid = m_creature->getVictim()->GetObjectGuid();
 
     if (!m_CreatureSpells.empty())
+    {
         UpdateSpellsList(diff);
+    }
 
     DoMeleeAttackIfReady();
 }

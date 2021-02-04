@@ -758,7 +758,7 @@ class ObjectMgr
 
         void LoadGossipMenus();
         void LoadCoreSideGossipTextIdCache();
-        
+
 
         void LoadVendorTemplates();
         void LoadVendors()
@@ -934,7 +934,10 @@ class ObjectMgr
         CreatureSpellsList const* GetCreatureSpellsList(uint32 entry) const
         {
             auto itr = m_CreatureSpellsMap.find(entry);
-            if (itr == m_CreatureSpellsMap.end()) return nullptr;
+            if (itr == m_CreatureSpellsMap.end())
+            {
+                return nullptr;
+            }
             return &itr->second;
         }
 

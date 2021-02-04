@@ -305,15 +305,23 @@ int main(int argc, char** argv)
                 const char* mode = cmd_opts.opt_arg();
 
                 if (!strcmp(mode, "run"))
-                    { serviceDaemonMode = 'r'; }
+                {
+                    serviceDaemonMode = 'r';
+                }
 #ifdef WIN32
                 else if (!strcmp(mode, "install"))
-                    { serviceDaemonMode = 'i'; }
+                {
+                    serviceDaemonMode = 'i';
+                }
                 else if (!strcmp(mode, "uninstall"))
-                    { serviceDaemonMode = 'u'; }
+                {
+                    serviceDaemonMode = 'u';
+                }
 #else
                 else if (!strcmp(mode, "stop"))
-                    { serviceDaemonMode = 's'; }
+                {
+                    serviceDaemonMode = 's';
+                }
 #endif
                 else
                 {
@@ -342,11 +350,15 @@ int main(int argc, char** argv)
     {
         case 'i':
             if (WinServiceInstall())
-                { sLog.outString("Installing service"); }
+            {
+                sLog.outString("Installing service");
+            }
             return 1;
         case 'u':
             if (WinServiceUninstall())
-                { sLog.outString("Uninstalling service"); }
+            {
+                sLog.outString("Uninstalling service");
+            }
             return 1;
         case 'r':
             WinServiceRun();
@@ -517,14 +529,20 @@ int main(int argc, char** argv)
 
     ///- Stop freeze protection before shutdown tasks
     if (freezeThread)
+    {
         delete freezeThread;
+    }
 
 #ifdef ENABLE_SOAP
     if (soapThread)
+    {
         delete soapThread;
+    }
 #endif
     if (raThread)
+    {
         delete raThread;
+    }
 
     delete worldThread;
 

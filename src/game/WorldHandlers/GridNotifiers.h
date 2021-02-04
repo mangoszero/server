@@ -766,8 +766,10 @@ namespace MaNGOS
                 if (u->IsAlive() && u->IsInCombat() && i_obj->IsFriendlyTo(u) && i_obj->IsWithinDistInMap(u, i_range))
                 {
                     if (i_percent)
+                    {
                         return 100 - u->GetHealthPercent() > i_hp;
-                    
+                    }
+
                     return u->GetMaxHealth() - u->GetHealth() > i_hp;
                 }
                 return false;
