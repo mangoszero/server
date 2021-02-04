@@ -45,7 +45,9 @@ int AntiFreezeThread::open(void* unused)
 int AntiFreezeThread::svc(void)
 {
     if (!delaytime_)
-      { return 0; }
+    {
+        return 0;
+    }
 
     sLog.outString("AntiFreeze Thread started (%u seconds max stuck time)", delaytime_/1000);
     while (!World::IsStopped())

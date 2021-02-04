@@ -68,7 +68,9 @@ int CliThread::svc()
     ACE_OS::sleep(1);
 
     if (beep_)
-        { printf("\a"); }    // \a = Alert
+    {
+        printf("\a");     // \a = Alert
+    }
 
     prompt();
 
@@ -78,9 +80,13 @@ int CliThread::svc()
 #if (PLATFORM != PLATFORM_WINDOWS)
         while (!kb_hit_return() && !World::IsStopped())
             // With this, we limit CLI to 10 commands/second
-            { usleep(100); }
+        {
+            usleep(100);
+        }
         if (World::IsStopped())
-            { break; }
+        {
+            break;
+        }
 #endif
         char* command_str = fgets(buffer_, sizeof(buffer_), stdin);
         if (command_str != NULL)
