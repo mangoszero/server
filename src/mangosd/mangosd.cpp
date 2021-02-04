@@ -305,15 +305,23 @@ int main(int argc, char** argv)
                 const char* mode = cmd_opts.opt_arg();
 
                 if (!strcmp(mode, "run"))
-                    { serviceDaemonMode = 'r'; }
+                {
+                    serviceDaemonMode = 'r';
+                }
 #ifdef WIN32
                 else if (!strcmp(mode, "install"))
-                    { serviceDaemonMode = 'i'; }
+                {
+                    serviceDaemonMode = 'i';
+                }
                 else if (!strcmp(mode, "uninstall"))
-                    { serviceDaemonMode = 'u'; }
+                {
+                    serviceDaemonMode = 'u';
+                }
 #else
                 else if (!strcmp(mode, "stop"))
-                    { serviceDaemonMode = 's'; }
+                {
+                    serviceDaemonMode = 's';
+                }
 #endif
                 else
                 {
@@ -342,11 +350,15 @@ int main(int argc, char** argv)
     {
         case 'i':
             if (WinServiceInstall())
-                { sLog.outString("Installing service"); }
+            {
+                sLog.outString("Installing service");
+            }
             return 1;
         case 'u':
             if (WinServiceUninstall())
-                { sLog.outString("Uninstalling service"); }
+            {
+                sLog.outString("Uninstalling service");
+            }
             return 1;
         case 'r':
             WinServiceRun();
@@ -466,13 +478,14 @@ int main(int argc, char** argv)
     // 3. Start the SOAP listener thread, if enabled
     //************************************************************************************************************************
 #ifdef ENABLE_SOAP
-    SoapThread* soapThread = NULL;
+    std::shared_ptr<std::thread> soapThread;
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
     {
-        host = sConfig.GetStringDefault("SOAP.IP", "127.0.0.1");
-        port = sConfig.GetIntDefault("SOAP.Port", 7878);
-        soapThread = new SoapThread(port, host.c_str());
-        soapThread->open(0);
+        soapThread.reset(new std::thread(SoapThread, sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"), uint16(sConfig.GetIntDefault("SOAP.Port", 7878))), [](std::thread* thread)
+        {
+            thread->join();
+            delete thread;
+        });
     }
 #else /* ENABLE_SOAP */
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
@@ -517,14 +530,14 @@ int main(int argc, char** argv)
 
     ///- Stop freeze protection before shutdown tasks
     if (freezeThread)
+    {
         delete freezeThread;
+    }
 
-#ifdef ENABLE_SOAP
-    if (soapThread)
-        delete soapThread;
-#endif
     if (raThread)
+    {
         delete raThread;
+    }
 
     delete worldThread;
 
