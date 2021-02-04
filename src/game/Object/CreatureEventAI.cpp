@@ -1638,7 +1638,9 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
     if (Combat && m_creature->getVictim() && m_MeleeEnabled)
     {
         if (!m_CreatureSpells.empty())
+        {
             UpdateSpellsList(diff);
+        }
 
         DoMeleeAttackIfReady();
     }

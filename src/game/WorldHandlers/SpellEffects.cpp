@@ -2281,7 +2281,7 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
     switch (m_spellInfo->Id)
     {
         case SPELL_FILLING_EMPTY_JAR__CURSED_OOZE: // Spell 15698 (for Cursed Ooze)
-        case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)        
+        case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)
         {
             if (unitTarget->GetTypeId() == TYPEID_UNIT) {
 
@@ -2291,10 +2291,10 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
                     creature->ForcedDespawn();
                 }
             }
-            
+
             break;
         }
-        case SPELL_FILLING_EMPTY_JAR__PURE_OOZE: // Spell 15702 (for Primal, Muculent and Glutonous Ooze): 
+        case SPELL_FILLING_EMPTY_JAR__PURE_OOZE: // Spell 15702 (for Primal, Muculent and Glutonous Ooze):
         {
             if (unitTarget->GetTypeId() == TYPEID_UNIT) {
 
@@ -4069,7 +4069,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if (unitTarget)
                     {
                         m_caster->CastSpell(unitTarget, 22856, true);
-                        sLog.outString("EffectScriptEffect : %s target of spell 5249", unitTarget->GetName());                        
+                        sLog.outString("EffectScriptEffect : %s target of spell 5249", unitTarget->GetName());
                     }
                     break;
                 }
@@ -6220,7 +6220,9 @@ void Spell::EffectBind(SpellEffectIndex eff_idx)
 void Spell::EffectTeleportGraveyard(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER || !unitTarget->GetMap()->IsBattleGround())
+    {
         return;
+    }
 
     Player* player = static_cast<Player*>(unitTarget);
     player->RepopAtGraveyard();

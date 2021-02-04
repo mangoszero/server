@@ -542,7 +542,9 @@ inline bool IsDismountSpell(SpellEntry const* spellInfo)
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
         if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA) && (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MECHANIC_IMMUNITY) && (spellInfo->EffectMiscValue[i] == MECHANIC_MOUNT))
+        {
             return true;
+        }
     }
     return false;
 }
@@ -598,7 +600,9 @@ inline bool IsTargetPowerTypeValid(SpellEntry const* spellInfo, Powers powerType
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
         if (spellInfo->Effect[i] == SPELL_EFFECT_NONE)
+        {
             continue;
+        }
 
         if ((spellInfo->Effect[i] == SPELL_EFFECT_POWER_BURN ||
             spellInfo->Effect[i] == SPELL_EFFECT_POWER_DRAIN ||
