@@ -967,6 +967,10 @@ void World::SetInitialWorldSettings()
     ///- Initialize detour memory management
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
 
+    ///- Initialize thread pool manager
+    sLog.outString("Starting Thread Pool Manager");
+    sThreadPoolMgr->Start(getConfig(CONFIG_UINT32_NUMTHREADS));
+
     ///- Initialize config settings
     LoadConfigSettings();
 

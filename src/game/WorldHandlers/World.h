@@ -34,6 +34,8 @@
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 
+#include "ThreadPoolMgr.h"
+
 #include <set>
 #include <list>
 

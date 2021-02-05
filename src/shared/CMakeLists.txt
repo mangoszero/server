@@ -111,8 +111,11 @@ source_group("Log" FILES ${SRC_GRP_LOG})
 set(SRC_GRP_THREAD
   Threading/DelayExecutor.cpp
   Threading/DelayExecutor.h
+  Threading/SynchronizedQueue.h
   Threading/Threading.cpp
   Threading/Threading.h
+  Threading/ThreadPoolMgr.cpp
+  Threading/ThreadPoolMgr.h
 )
 source_group("Threading" FILES ${SRC_GRP_THREAD})
 
