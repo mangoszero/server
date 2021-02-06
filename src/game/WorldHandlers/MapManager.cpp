@@ -354,7 +354,7 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
     return map;
 }
 
-DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save)
+MapInstanced* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save)
 {
     // make sure we have a valid map id
     const MapEntry* entry = sMapStore.LookupEntry(id);
@@ -371,7 +371,7 @@ DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPe
 
     DEBUG_LOG("MapInstanced::CreateInstanceMap: %s map instance %d for %d created", save ? "" : "new ", InstanceId, id);
 
-    DungeonMap* map = new DungeonMap(id, i_gridCleanUpDelay, InstanceId);
+    MapInstanced* map = new MapInstanced(id, i_gridCleanUpDelay, InstanceId);
 
     // Dungeons can have saved instance data
     bool load_data = save != NULL;

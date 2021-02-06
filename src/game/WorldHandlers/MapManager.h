@@ -30,6 +30,7 @@
 #include "Policies/Singleton.h"
 #include <ace/Recursive_Thread_Mutex.h>
 #include "Map.h"
+#include "MapInstanced.h"
 #include "GridStates.h"
 #include "ThreadPoolMgr.h"
 
@@ -176,14 +177,14 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         ~MapManager();
 
         MapManager(const MapManager&);
-        MapManager& operator=(const MapManager&);
+        MapManager& operator=(MapManager const&) = delete;
 
         void InitStateMachine();
         void DeleteStateMachine();
         void LoadActiveEntities(Map* m);
 
         Map* CreateInstance(uint32 id, Player* player);
-        DungeonMap* CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save = NULL);
+        MapInstanced* CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save = NULL);
         BattleGroundMap* CreateBattleGroundMap(uint32 id, uint32 InstanceId, BattleGround* bg);
 
         uint32 i_gridCleanUpDelay;

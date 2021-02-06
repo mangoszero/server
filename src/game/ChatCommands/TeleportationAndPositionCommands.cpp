@@ -357,7 +357,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
                 // if no bind exists, create a solo bind
                 if (!gBind)
                 {
-                    DungeonPersistentState* save = ((DungeonMap*)target->GetMap())->GetPersistanceState();
+                    DungeonPersistentState* save = ((MapInstanced*)target->GetMap())->GetPersistanceState();
 
                     // if player is group leader then we need add group bind
                     if (group && group->IsLeader(_player->GetObjectGuid()))

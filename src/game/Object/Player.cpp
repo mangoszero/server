@@ -18858,7 +18858,7 @@ void Player::ResetInstances(InstanceResetMethod method)
         if (Map* map = sMapMgr.FindMap(state->GetMapId(), state->GetInstanceId()))
             if (map->IsDungeon())
             {
-                ((DungeonMap*)map)->Reset(method);
+                ((MapInstanced*)map)->Reset(method);
             }
 
         // since this is a solo instance there should not be any players inside
@@ -23009,7 +23009,7 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
     if (map && map->IsDungeon())
     {
         // can not enter if the instance is full (player cap), GMs don't count
-        if (((DungeonMap*)map)->GetPlayersCountExceptGMs() >= ((DungeonMap*)map)->GetMaxPlayers())
+        if (((MapInstanced*)map)->GetPlayersCountExceptGMs() >= ((MapInstanced*)map)->GetMaxPlayers())
         {
             return AREA_LOCKSTATUS_INSTANCE_IS_FULL;
         }

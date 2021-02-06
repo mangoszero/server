@@ -1198,12 +1198,12 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
             {
                 if (victim->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_INSTANCE_BIND)
                 {
-                    ((DungeonMap*)m)->PermBindAllPlayers(creditedPlayer);
+                    ((MapInstanced*)m)->PermBindAllPlayers(creditedPlayer);
                 }
             }
             else
             {
-                DungeonPersistentState* save = ((DungeonMap*)m)->GetPersistanceState();
+                DungeonPersistentState* save = ((MapInstanced*)m)->GetPersistanceState();
                 // the reset time is set but not added to the scheduler
                 // until the players leave the instance
                 time_t resettime = victim->GetRespawnTimeEx() + 2 * HOUR;

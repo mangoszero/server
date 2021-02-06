@@ -46,6 +46,7 @@
 #include "WorldPacket.h"
 #include "Timer.h"
 #include "Log.h"
+#include "MapInstanced.h"
 
 #include <list>
 

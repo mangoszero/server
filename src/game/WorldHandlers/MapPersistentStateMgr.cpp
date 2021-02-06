@@ -902,7 +902,7 @@ void MapPersistentStateManager::_ResetInstance(uint32 mapid, uint32 instanceId)
         {
             MANGOS_ASSERT(iMap->IsDungeon());
 
-            ((DungeonMap*)iMap)->Reset(INSTANCE_RESET_RESPAWN_DELAY);
+            ((MapInstanced*)iMap)->Reset(INSTANCE_RESET_RESPAWN_DELAY);
             return;
         }
 
@@ -918,8 +918,8 @@ struct MapPersistantStateResetWorker
     MapPersistantStateResetWorker() {};
     void operator()(Map* map)
     {
-        ((DungeonMap*)map)->TeleportAllPlayersTo(TELEPORT_LOCATION_HOMEBIND);
-        ((DungeonMap*)map)->Reset(INSTANCE_RESET_GLOBAL);
+        ((MapInstanced*)map)->TeleportAllPlayersTo(TELEPORT_LOCATION_HOMEBIND);
+        ((MapInstanced*)map)->Reset(INSTANCE_RESET_GLOBAL);
     }
 };
 
@@ -930,7 +930,7 @@ struct MapPersistantStateWarnWorker
 
     void operator()(Map* map)
     {
-        ((DungeonMap*)map)->SendResetWarnings(timeLeft);
+        ((MapInstanced*)map)->SendResetWarnings(timeLeft);
     }
 
     time_t timeLeft;

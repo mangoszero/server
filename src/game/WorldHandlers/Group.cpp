@@ -2134,7 +2134,7 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
         if (Map* map = sMapMgr.FindMap(state->GetMapId(), state->GetInstanceId()))
             if (map->IsDungeon() && !(method == INSTANCE_RESET_GROUP_DISBAND && !state->CanReset()))
             {
-                isEmpty = ((DungeonMap*)map)->Reset(method);
+                isEmpty = ((MapInstanced*)map)->Reset(method);
             }
 
         if (SendMsgTo)

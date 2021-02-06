@@ -408,34 +408,6 @@ class WorldMap : public Map
         WorldPersistentState* GetPersistanceState() const;
 };
 
-class DungeonMap : public Map
-{
-    private:
-        using Map::GetPersistentState;                      // hide in subclass for overwrite
-    public:
-        DungeonMap(uint32 id, time_t, uint32 InstanceId);
-        ~DungeonMap();
-        bool Add(Player*) override;
-        void Remove(Player*, bool) override;
-        void Update(const uint32&) override;
-        bool Reset(InstanceResetMethod method);
-        void PermBindAllPlayers(Player* player);
-        void UnloadAll(bool pForce) override;
-        void SendResetWarnings(uint32 timeLeft) const;
-        void SetResetSchedule(bool on);
-        uint32 GetMaxPlayers() const;
-
-        uint32 GetScriptId() const override { return sScriptMgr.GetBoundScriptId(SCRIPTED_INSTANCE, GetId()); }
-
-        // can't be nullptr for loaded map
-        DungeonPersistentState* GetPersistanceState() const;
-
-        virtual void InitVisibilityDistance() override;
-    private:
-        bool m_resetAfterUnload;
-        bool m_unloadWhenEmpty;
-};
-
 class BattleGroundMap : public Map
 {
     private:
