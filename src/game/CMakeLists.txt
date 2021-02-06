@@ -29,9 +29,9 @@ source_group("BattleGround" FILES ${SRC_GRP_BATTLEGROUND})
 file(GLOB SRC_GRP_CHAT_COMMANDS ChatCommands/*.cpp ChatCommands/*.h)
 source_group("Chat Commands" FILES ${SRC_GRP_CHAT_COMMANDS})
 
-#Map Threading group
-file(GLOB SRC_GRP_MAP_THREAD Maps/*.cpp Maps/*.h)
-source_group("Map Threading" FILES ${SRC_GRP_MAP_THREAD})
+#Map Threading group - Replaced by ThreadPoolMgr
+#file(GLOB SRC_GRP_MAP_THREAD Maps/*.cpp Maps/*.h)
+#source_group("Map Threading" FILES ${SRC_GRP_MAP_THREAD})
 
 #Motion Generator group
 file(GLOB SRC_GRP_MOTION_GEN MotionGenerators/*.cpp MotionGenerators/*.h)

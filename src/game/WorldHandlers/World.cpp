@@ -967,10 +967,6 @@ void World::SetInitialWorldSettings()
     ///- Initialize detour memory management
     dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
 
-    ///- Initialize thread pool manager
-    sLog.outString("Starting Thread Pool Manager");
-    sThreadPoolMgr->Start(getConfig(CONFIG_UINT32_NUMTHREADS));
-
     ///- Initialize config settings
     LoadConfigSettings();
 
@@ -993,6 +989,10 @@ void World::SetInitialWorldSettings()
         Log::WaitBeforeContinueIfNeed();
         exit(1);
     }
+
+    ///- Initialize thread pool manager
+    sLog.outString("Starting Thread Pool Manager");
+    sThreadPoolMgr->Start(getConfig(CONFIG_UINT32_NUMTHREADS));
 
     ///- Loading strings. Getting no records means core load has to be canceled because no error message can be output.
     sLog.outString("Loading MaNGOS strings...");

@@ -58,16 +58,8 @@ MapManager::~MapManager()
     DeleteStateMachine();
 }
 
-void
-MapManager::Initialize()
+void MapManager::Initialize()
 {
-    int num_threads(sWorld.getConfig(CONFIG_UINT32_NUMTHREADS));
-    // Start mtmaps if needed.
-    if (num_threads > 0 && m_updater.activate(num_threads) == -1)
-    {
-        abort();
-    }
-
     InitStateMachine();
     InitMaxInstanceId();
 }
@@ -202,49 +194,30 @@ void MapManager::Update(uint32 diff)
         return;
     }
 
-    for (MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
+    uint32 curr = uint32(i_timer.GetCurrent());
+    i_timer.SetCurrent(0);
+
+    for (MapMapType::iterator i = i_maps.begin(); i != i_maps.end(); ++i)
     {
-        if (m_updater.activated())
-        {
-            m_updater.schedule_update(*iter->second, (uint32)i_timer.GetCurrent());
-        }
-        else
-        {
-            iter->second->Update((uint32)i_timer.GetCurrent());
-        }
+        Map* const map = i->second;
+        sThreadPoolMgr->Schedule([map, curr] { map->Update(curr); });
     }
 
-    if (m_updater.activated())
+    sThreadPoolMgr->Wait();
+
+    for (MapMapType::iterator i = i_maps.begin(); i != i_maps.end(); ++i)
     {
-        m_updater.wait();
+        Map* const map = i->second;
+        sThreadPoolMgr->Schedule([map, curr] { return map->CanUnload(curr); });
     }
+
+    sThreadPoolMgr->Wait();
 
     for (TransportSet::iterator iter = m_Transports.begin(); iter != m_Transports.end(); ++iter)
     {
         WorldObject::UpdateHelper helper((*iter));
         helper.Update((uint32)i_timer.GetCurrent());
     }
-
-    // remove all maps which can be unloaded
-    MapMapType::iterator iter = i_maps.begin();
-    while (iter != i_maps.end())
-    {
-        Map* pMap = iter->second;
-        // check if map can be unloaded
-        if (pMap->CanUnload((uint32)i_timer.GetCurrent()))
-        {
-            pMap->UnloadAll(true);
-            delete pMap;
-
-            i_maps.erase(iter++);
-        }
-        else
-        {
-            ++iter;
-        }
-    }
-
-    i_timer.SetCurrent(0);
 }
 
 void MapManager::RemoveAllObjectsInRemoveList()
@@ -286,11 +259,6 @@ void MapManager::UnloadAll()
     }
 
     TerrainManager::Instance().UnloadAll();
-
-    if (m_updater.activated())
-    {
-        m_updater.deactivate();
-    }
 }
 
 void MapManager::InitMaxInstanceId()
