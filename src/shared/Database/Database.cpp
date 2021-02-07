@@ -670,7 +670,7 @@ bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
 bool Database::DirectExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
 {
     MANGOS_ASSERT(params);
-    std::auto_ptr<SqlStmtParameters> p(params);
+    std::shared_ptr<SqlStmtParameters> p(params);
     // execute statement
     SqlConnection::Lock _guard(getAsyncConnection());
     return _guard->ExecuteStmt(id.ID(), *params);
