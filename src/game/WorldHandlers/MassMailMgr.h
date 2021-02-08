@@ -117,7 +117,7 @@ class MassMailMgr
             }
 
             /// m_protoMail is owned by MassMail, so at copy original MassMail field set to NULL
-            std::auto_ptr<MailDraft> m_protoMail;
+            std::shared_ptr<MailDraft> m_protoMail;
 
             MailSender m_sender;
             ReceiversList m_receivers;
