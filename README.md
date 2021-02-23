@@ -14,7 +14,7 @@ Build Status:<br><b>Linux/MAC:</b>
  **MangosZero - Vanilla WoW server**
 ===
 
-**Mangos** is an open source project written in [C++][7]. It's fast, runs on multiple
+**Mangos** is an open source project written in [C++][7] . It's fast, runs on multiple
 platforms and stores game data in [MySQL][40] or [MariaDB][41]. It also has 
 optional support for SOAP.
 
@@ -96,7 +96,7 @@ Optional dependencies
 
 <br>We have a small, but extremely friendly and helpful community managed by MadMax and Antz.
 <br>Any trolling or unpleasantness is swiftly dealt with !!
-- Our discord/forum motto is "Be nice or Be somewhere else"
+* Our discord/forum motto is "Be nice or Be somewhere else"
 
 **Official Website**
 ----
@@ -166,12 +166,11 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
-[2]: https://worldofwarcraft.com/ "World of Warcraft
+[2]: https://worldofwarcraft.com/ "World of Warcraft"
 [4]: http://www.wowpedia.org/Patch_1.12.1 "Vanilla WoW · Patch 1.12.1 release notes"
 [5]: http://www.wowpedia.org/Patch_1.12.2 "Vanilla WoW · Patch 1.12.2 release notes"
 [6]: http://www.wowpedia.org/Patch_1.12.3 "Vanilla WoW · Patch 1.12.3 release notes"
 [7]: http://www.cppreference.com/ "C / C++ reference"
-
 [10]: https://getmangos.eu/ "mangos · project site"
 [12]: https://github.com/mangoszero "MaNGOS Zero · github organization"
 [13]: https://github.com/mangoszero/server "MaNGOS Zero · server repository"
