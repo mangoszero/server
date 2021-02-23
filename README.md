@@ -4,14 +4,14 @@
 Build Status:<br><b>Linux/MAC:</b>
 [<img src='https://travis-ci.org/mangoszero/server.png' border=0 valign="middle">](https://travis-ci.org/mangoszero/server/builds)
 <b>Windows:</b>
-[<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=develop21&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-9fytl/history)
+[<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-9fytl/history)
  <b>Codacy Status:</b> 
-[<img src='https://api.codacy.com/project/badge/Grade/895a7434531a456ba12410ac585717c8' border=0 valign="middle"/>](https://www.codacy.com/app/MaNGOS/MangosZero?utm_source=github.com&utm_medium=referral&utm_content=mangoszero/server&utm_campaign=Badge_Grade)
+[<img src='https://api.codacy.com/project/badge/Grade/895a7434531a456ba12410ac585717c8' border=0 valign="middle"/>](https://app.codacy.com/gh/mangoszero/server/dashboard)
 
 ---
 
 [<img src="https://www.getmangos.eu/!assets_mangos/Mangos0.png" width="48" valign="middle"/>](http://getmangos.eu)
- **MangosZero - Vanilla World of Warcraft server**
+ **MangosZero - Vanilla WoW server**
 ===
 
 **Mangos** is an open source project written in [C++][7]. It's fast, runs on multiple
@@ -166,8 +166,7 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 
 
 [1]: http://blizzard.com/ "Blizzard Entertainment Inc. · we love you!"
-[2]: http://blizzard.com/games/wow/ "World of Warcraft · Classic / Vanilla"
-[3]: http://wowpedia.org/Beta#World_of_Warcraft "World of Warcraft - Classic Beta"
+[2]: https://worldofwarcraft.com/ "World of Warcraft
 [4]: http://www.wowpedia.org/Patch_1.12.1 "Vanilla WoW · Patch 1.12.1 release notes"
 [5]: http://www.wowpedia.org/Patch_1.12.2 "Vanilla WoW · Patch 1.12.2 release notes"
 [6]: http://www.wowpedia.org/Patch_1.12.3 "Vanilla WoW · Patch 1.12.3 release notes"
