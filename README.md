@@ -1,12 +1,14 @@
 [<img src='https://www.getmangos.eu/!assets_mangos/currentlogo.gif' width="48" border=0>](https://www.getmangos.eu)
 [<img src='https://www.getmangos.eu/!assets_mangos/logo.png' border=0>](https://www.getmangos.eu)
 
-Build Status:<br><b>Linux/MAC:</b>
-[<img src='https://travis-ci.org/mangoszero/server.png' border=0 valign="middle">](https://travis-ci.org/mangoszero/server/builds)
-<b>Windows:</b>
-[<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-9fytl/history)
- <b>Codacy Status:</b> 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>Build Status:</b>
+ Linux/MAC: [<img src='https://travis-ci.org/mangoszero/server.png' border=0 valign="middle">](https://travis-ci.org/mangoszero/server/builds)
+ Windows: [<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">](https://ci.appveyor.com/project/MaNGOS/server-9fytl/history)
+ <br><b>Repository Status:</b> 
 [<img src='https://api.codacy.com/project/badge/Grade/895a7434531a456ba12410ac585717c8' border=0 valign="middle"/>](https://app.codacy.com/gh/mangoszero/server/dashboard)
+[<img src='https://www.codefactor.io/repository/github/mangoszero/server/badge' border=0 valign="middle"/>](https://www.codefactor.io/repository/github/mangoszero/server)
+[<img src='https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat' border=0 valign="middle"/>](http://makeapullrequest.com)
+[<img src='https://img.shields.io/discord/286167585270005763.svg' border=0 valign="middle"/>](https://discord.gg/fPxMjHS8xs "Our community hub on Discord")
 
 ---
 
@@ -107,7 +109,10 @@ We welcome anyone who is interested in enjoying older versions of wow or contrib
 
 **Discord Server**
 ----
-[![Widget for the Discord API guild](https://discord.com/api/guilds/286167585270005763/widget.png?style=banner2)](https://discord.gg/CzXcBXq) 
+
+We also have a Discord server where many of us hang out and discuss Mangos related stuff.
+
+* [**Discord Server**](https://discord.gg/fPxMjHS8xs) 
 
 **Main Wiki**
 ----
