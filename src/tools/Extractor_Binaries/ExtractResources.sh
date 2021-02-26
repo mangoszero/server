@@ -149,7 +149,7 @@ if [ "$1" != "a" ]; then
     read -p"Press any key to proceed" line
 fi
 
-echo "`date`: Start extracting data for MaNGOS" | tee $LOG_FILE
+echo "$(date): Start extracting data for MaNGOS" | tee $LOG_FILE
 
 ## Handle log messages
 if [ "$USE_AD" = "1" ]; then
@@ -172,27 +172,27 @@ fi
 
 echo | tee -a $LOG_FILE
 
-echo "`date`: Start extracting data for MaNGOS, DBCs/maps $USE_AD, vmaps $USE_VMAPS, mmaps $USE_MMAPS on $NUM_CPU processes" | tee $DETAIL_LOG_FILE
+echo "$(date): Start extracting data for MaNGOS, DBCs/maps $USE_AD, vmaps $USE_VMAPS, mmaps $USE_MMAPS on $NUM_CPU processes" | tee $DETAIL_LOG_FILE
 echo | tee -a $DETAIL_LOG_FILE
 
 ## Extract dbcs and maps
 if [ "$USE_AD" = "1" ]; then
-    echo "`date`: Start extraction of DBCs and map files..." | tee -a $LOG_FILE
+    echo "$(date): Start extraction of DBCs and map files..." | tee -a $LOG_FILE
     ./map-extractor | tee -a $DETAIL_LOG_FILE
-    echo "`date`: Extracting of DBCs and map files finished" | tee -a $LOG_FILE
+    echo "$(date): Extracting of DBCs and map files finished" | tee -a $LOG_FILE
     echo | tee -a $LOG_FILE
     echo | tee -a $DETAIL_LOG_FILE
 fi
 
 ## Extract vmaps
 if [ "$USE_VMAPS" = "1" ]; then
-    echo "`date`: Start extraction of vmaps..." | tee -a $LOG_FILE
+    echo "$(date): Start extraction of vmaps..." | tee -a $LOG_FILE
     ./vmap-extractor | tee -a $DETAIL_LOG_FILE
-    echo "`date`: Extracting of vmaps finished" | tee -a $LOG_FILE
+    echo "$(date): Extracting of vmaps finished" | tee -a $LOG_FILE
 
-    echo "`date`: Start assembling of vmaps..." | tee -a $LOG_FILE
+    echo "$(date): Start assembling of vmaps..." | tee -a $LOG_FILE
     ./vmap-assembler Buildings vmaps | tee -a $DETAIL_LOG_FILE
-    echo "`date`: Assembling of vmaps finished" | tee -a $LOG_FILE
+    echo "$(date): Assembling of vmaps finished" | tee -a $LOG_FILE
 
     echo | tee -a $LOG_FILE
     echo | tee -a $DETAIL_LOG_FILE
