@@ -72,54 +72,6 @@ inline uint32 GetMSTimeDiffToNow(uint32 oldMSTime)
 	return getMSTimeDiff(oldMSTime, getMSTime());
 }
 
-// Work Around
-class WorldTimer
-{
-	static inline std::chrono::steady_clock::time_point GetApplicationStartTime()
-	{
-		using namespace std::chrono;
-
-		static const steady_clock::time_point ApplicationStartTime = steady_clock::now();
-
-		return ApplicationStartTime;
-	}
-
-public:
-	static inline uint32 getMSTime()
-	{
-		using namespace std::chrono;
-
-		return uint32(duration_cast<milliseconds>(steady_clock::now() - GetApplicationStartTime()).count());
-	}
-
-	static inline uint32 getMSTimeDiff(uint32 oldMSTime, uint32 newMSTime)
-	{
-		// getMSTime() have limited data range and this is case when it overflow in this tick
-		if (oldMSTime > newMSTime)
-		{
-			return (0xFFFFFFFF - oldMSTime) + newMSTime;
-		}
-		else
-		{
-			return newMSTime - oldMSTime;
-		}
-	}
-
-	static inline uint32 getMSTimeDiff(uint32 oldMSTime, std::chrono::steady_clock::time_point newTime)
-	{
-		using namespace std::chrono;
-
-		uint32 newMSTime = uint32(duration_cast<milliseconds>(newTime - GetApplicationStartTime()).count());
-
-		return getMSTimeDiff(oldMSTime, newMSTime);
-	}
-
-	static inline uint32 GetMSTimeDiffToNow(uint32 oldMSTime)
-	{
-		return getMSTimeDiff(oldMSTime, getMSTime());
-	}
-};
-
 struct IntervalTimer
 {
 public:
