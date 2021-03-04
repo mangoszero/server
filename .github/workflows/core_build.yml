@@ -3,6 +3,7 @@ on:
   push:
     branches: 
       - github-actions # just for testing and replace with release branch
+  pull_request:
 
 jobs:
   build: 
