@@ -140,6 +140,10 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         return false;
     }
 
+    if (*args) {
+        ticket->SetResponseText(args);
+    }
+
     // Set reponse text if not existing
     if (!*ticket->GetResponse())
     {
@@ -148,7 +152,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
 
         if (m_session)
         {
-            const char* format = "[System Message] This ticket was closed by <GM>%s without any mail response, perhaps it was resolved by direct chat.";
+            const char* format = "[System Message] This ticket was closed by <GM> %s without any written response, perhaps it was resolved by direct chat.";
             const char* buffer;
             snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
         }
