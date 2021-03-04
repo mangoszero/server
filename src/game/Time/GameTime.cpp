@@ -22,54 +22,54 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "ace/OS.h"
-#include "AFThread.h"
-#include "World.h"
-#include "Log.h"
+#include "GameTime.h"
+#include "Timer.h"
 
-AntiFreezeThread::AntiFreezeThread(uint32 delay) : delaytime_(delay)
+namespace GameTime
 {
-    m_loops = 0;
-    w_loops = 0;
-    m_lastchange = 0;
-    w_lastchange = 0;
-}
+	time_t const StartTime = time(nullptr);
 
-int AntiFreezeThread::open(void* unused)
-{
-    activate();
-    return 0;
-}
+	time_t GameTime = 0;
+	uint32 GameMSTime = 0;
 
-int AntiFreezeThread::svc(void)
-{
-    if (!delaytime_)
+    std::chrono::system_clock::time_point GameTimeSystemPoint = std::chrono::system_clock::time_point::min();
+    std::chrono::steady_clock::time_point GameTimeSteadyPoint = std::chrono::steady_clock::time_point::min();
+
+    time_t GetStartTime()
     {
-        return 0;
+        return StartTime;
     }
 
-    sLog.outString("AntiFreeze Thread started (%u seconds max stuck time)", delaytime_ / 1000);
-    while (!World::IsStopped())
+    time_t GetGameTime()
     {
-        ACE_OS::sleep(1);
-
-        uint32 curtime = getMSTime();
-
-        // normal work
-        if (w_loops != World::m_worldLoopCounter.value())
-        {
-              w_lastchange = curtime;
-              w_loops = World::m_worldLoopCounter.value();
-        }
-        // possible freeze
-        else if (getMSTimeDiff(w_lastchange, curtime) > delaytime_)
-        {
-            sLog.outError("World Thread hangs, kicking out server!");
-            *((uint32 volatile*)NULL) = 0;          // bang crash
-        }
+        return GameTime;
     }
 
-    sLog.outString("AntiFreeze Thread stopped.");
-    return 0;
-}
+    uint32 GetGameTimeMS()
+    {
+        return GameMSTime;
+    }
 
+    std::chrono::system_clock::time_point GetGameTimeSystemPoint()
+    {
+        return GameTimeSystemPoint;
+    }
+
+    std::chrono::steady_clock::time_point GetGameTimeSteadyPoint()
+    {
+        return GameTimeSteadyPoint;
+    }
+
+    uint32 GetUptime()
+    {
+        return uint32(GameTime - StartTime);
+    }
+
+    void UpdateGameTimers()
+    {
+        GameTime = time(nullptr);
+        GameMSTime = getMSTime();
+        GameTimeSystemPoint = std::chrono::system_clock::now();
+        GameTimeSteadyPoint = std::chrono::steady_clock::now();
+    }
+}

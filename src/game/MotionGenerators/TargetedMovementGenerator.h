@@ -69,7 +69,7 @@ class TargetedMovementGeneratorMedium
         bool RequiresNewPosition(T& owner, float x, float y, float z) const;
         virtual float GetDynamicTargetDistance(T& /*owner*/, bool /*forRangeCheck*/) const { return i_offset; }
 
-        ShortTimeTracker i_recheckDistance;
+        TimeTracker i_recheckDistance;
         float i_offset;
         float i_angle;
         G3D::Vector3 m_prevTargetPos;

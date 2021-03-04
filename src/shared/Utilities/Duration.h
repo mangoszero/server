@@ -22,34 +22,30 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_RANDOMMOTIONGENERATOR_H
-#define MANGOS_RANDOMMOTIONGENERATOR_H
+#ifndef DURATION_H
+#define DURATION_H
 
-#include "MovementGenerator.h"
+#include <chrono>
 
-// define chance for creature to not stop after reaching a waypoint
-#define MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK 30
+ /// Milliseconds shorthand typedef.
+typedef std::chrono::milliseconds Milliseconds;
 
-template<class T>
-class RandomMovementGenerator
-    : public MovementGeneratorMedium< T, RandomMovementGenerator<T> >
+/// Seconds shorthand typedef.
+typedef std::chrono::seconds Seconds;
+
+/// Minutes shorthand typedef.
+typedef std::chrono::minutes Minutes;
+
+/// Hours shorthand typedef.
+typedef std::chrono::hours Hours;
+
+/// time_point shorthand typedefs
+typedef std::chrono::steady_clock::time_point TimePoint;
+typedef std::chrono::system_clock::time_point SystemTimePoint;
+
+constexpr std::chrono::hours operator""_days(unsigned long long days)
 {
-    public:
-        explicit RandomMovementGenerator(const Creature&);
-        explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f);
-
-        void _setRandomLocation(T&);
-        void Initialize(T&);
-        void Finalize(T&);
-        void Interrupt(T&);
-        void Reset(T&);
-        bool Update(T&, const uint32&);
-        MovementGeneratorType GetMovementGeneratorType() const override { return RANDOM_MOTION_TYPE; }
-    private:
-        TimeTracker i_nextMoveTime;
-        float i_x, i_y, i_z;
-        float i_radius;
-        float i_verticalZ;
-};
+    return std::chrono::hours(days * Hours(24));
+}
 
 #endif

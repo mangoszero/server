@@ -390,11 +390,11 @@ void WaypointMovementGenerator<Creature>::GetPathInformation(std::ostringstream&
 
 void WaypointMovementGenerator<Creature>::AddToWaypointPauseTime(int32 waitTimeDiff)
 {
-    if (!i_nextMoveTime.Passed())
+    i_nextMoveTime.Update(waitTimeDiff);
+    if (i_nextMoveTime.Passed())
     {
-        // Prevent <= 0, the code in Update requires to catch the change from moving to not moving
-        int32 newWaitTime = i_nextMoveTime.GetExpiry() + waitTimeDiff;
-        i_nextMoveTime.Reset(newWaitTime > 0 ? newWaitTime : 1);
+        i_nextMoveTime.Reset(0);
+        return;
     }
 }
 

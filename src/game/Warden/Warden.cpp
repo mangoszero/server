@@ -35,6 +35,7 @@
 #include "Util.h"
 #include "Warden.h"
 #include "AccountMgr.h"
+#include "GameTime.h"
 
 Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTimer(10000/*10 sec*/), _clientResponseTimer(0),
                    _module(NULL), _state(WardenState::STATE_INITIAL)
@@ -42,7 +43,7 @@ Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTi
     memset(_inputKey, 0, sizeof(_inputKey));
     memset(_outputKey, 0, sizeof(_outputKey));
     memset(_seed, 0, sizeof(_seed));
-    _previousTimestamp = WorldTimer::getMSTime();
+    _previousTimestamp = GameTime::GetGameTimeMS();
 }
 
 Warden::~Warden()
@@ -128,7 +129,7 @@ void Warden::RequestModule()
 
 void Warden::Update()
 {
-    uint32 currentTimestamp = WorldTimer::getMSTime();
+    uint32 currentTimestamp = GameTime::GetGameTimeMS();
     uint32 diff = currentTimestamp - _previousTimestamp;
     _previousTimestamp = currentTimestamp;
 

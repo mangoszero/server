@@ -22,34 +22,34 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_RANDOMMOTIONGENERATOR_H
-#define MANGOS_RANDOMMOTIONGENERATOR_H
+#ifndef GAMETIME_H
+#define GAMETIME_H
 
-#include "MovementGenerator.h"
+#include "Define.h"
 
-// define chance for creature to not stop after reaching a waypoint
-#define MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK 30
+#include <chrono>
 
-template<class T>
-class RandomMovementGenerator
-    : public MovementGeneratorMedium< T, RandomMovementGenerator<T> >
+namespace GameTime
 {
-    public:
-        explicit RandomMovementGenerator(const Creature&);
-        explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f);
+	// Server Start Time
+	time_t GetStartTime();
 
-        void _setRandomLocation(T&);
-        void Initialize(T&);
-        void Finalize(T&);
-        void Interrupt(T&);
-        void Reset(T&);
-        bool Update(T&, const uint32&);
-        MovementGeneratorType GetMovementGeneratorType() const override { return RANDOM_MOTION_TYPE; }
-    private:
-        TimeTracker i_nextMoveTime;
-        float i_x, i_y, i_z;
-        float i_radius;
-        float i_verticalZ;
-};
+	// Current Server Time (unix) in seconds
+	time_t GetGameTime();
+
+	// Milliseconds since Server Start
+	uint32 GetGameTimeMS();
+
+	// Current chrono system_clock time point
+	std::chrono::system_clock::time_point GetGameTimeSystemPoint();
+
+	// Current chrono steady_clock time point
+	std::chrono::steady_clock::time_point GetGameTimeSteadyPoint();
+
+	// Uptime (in seconds)
+	uint32 GetUptime();
+
+	void UpdateGameTimers();
+}
 
 #endif

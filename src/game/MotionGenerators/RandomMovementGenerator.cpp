@@ -45,7 +45,7 @@ RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creat
 {
     float respX, respY, respZ, respO, wander_distance;
     creature.GetRespawnCoord(respX, respY, respZ, &respO, &wander_distance);
-    i_nextMoveTime = ShortTimeTracker(0);
+    i_nextMoveTime = TimeTracker(0);
     i_x = respX;
     i_y = respY;
     i_z = respZ;

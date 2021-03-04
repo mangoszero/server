@@ -275,7 +275,7 @@ class TerrainInfo : public Referencable<AtomicLong>
         int16 m_GridRef[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
 
         // global garbage collection timer
-        ShortIntervalTimer i_timer;
+        IntervalTimer i_timer;
 
         typedef ACE_Thread_Mutex LOCK_TYPE;
         LOCK_TYPE m_mutex;

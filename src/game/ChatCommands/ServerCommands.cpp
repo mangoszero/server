@@ -27,6 +27,7 @@
 #include "World.h"
 #include "Config.h"
 #include "SystemConfig.h"
+#include "UpdateTime.h"
 #include "revision.h"
 
  /**********************************************************************
@@ -41,6 +42,7 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     uint32 maxActiveClientsNum = sWorld.GetMaxActiveSessionCount();
     uint32 maxQueuedClientsNum = sWorld.GetMaxQueuedSessionCount();
     std::string str = secsToTimeString(sWorld.GetUptime());
+    uint32 updateTime = sWorldUpdateTime.GetLastUpdateTime();
 
     char const* full;
     full = REVISION_NR;
@@ -66,6 +68,7 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
+    PSendSysMessage("World Delay: %u", updateTime); // ToDo: move to language string
 
     return true;
 }
