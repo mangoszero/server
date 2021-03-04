@@ -71,6 +71,12 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
     std::string ticketText;
     recv_data >> ticketText;
 
+    // When updating the ticket , the client adds a leading '\a' char ! so we need to remove it
+    stripLineInvisibleChars(ticketText);
+
+    // Since invisible char are replaced with a ' ' if any leading space is added we remove it :
+    ltrim(ticketText);
+
     GMTicketResponse responce = GMTICKET_RESPONSE_UPDATE_SUCCESS;
     if (GMTicket* ticket = sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid()))
     {

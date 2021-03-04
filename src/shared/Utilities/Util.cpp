@@ -358,6 +358,33 @@ void utf8truncate(std::string& utf8str, size_t len)
     }
 }
 
+size_t utf8limit(std::string& utf8str, size_t bytes)
+{
+    if (utf8str.size() > bytes)
+    {
+        try
+        {
+            auto end = (utf8str.cbegin() + bytes);
+            auto itr = utf8::find_invalid(utf8str.cbegin(), end);
+
+            // Fix UTF8 if it was corrupted by bytes truncated
+            if (itr != end)
+                bytes = std::distance(utf8str.cbegin(), itr);
+
+            utf8str.resize(bytes);
+            utf8str.shrink_to_fit();
+
+            return bytes;
+        }
+        catch (const std::exception&)
+        {
+            utf8str = "";
+        }
+    }
+
+    return 0;
+}
+
 bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize)
 {
     try

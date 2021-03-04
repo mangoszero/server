@@ -109,6 +109,13 @@ inline uint32 secsToTimeBitFields(time_t secs)
 }
 
 
+inline std::string   ltrim(std::string& s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+        }));
+    return s;
+}
+
 /**
  * @brief Return a random number in the range min..max; (max-min) must be smaller than 32768.
  *
@@ -321,6 +328,14 @@ size_t utf8length(std::string& utf8str);                    // set string to "" 
  * @param len
  */
 void utf8truncate(std::string& utf8str, size_t len);
+
+/**
+ * @brief
+ *
+ * @param utf8str
+ * @param bytes
+ */
+size_t utf8limit(std::string& utf8str, size_t bytes);
 
 /**
  * @brief
