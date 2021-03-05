@@ -15,6 +15,7 @@
 #include "PlayerbotAI.h"
 #include "PlayerbotFactory.h"
 #include "PlayerbotSecurity.h"
+#include "Util.h"
 
 using namespace ai;
 using namespace std;
@@ -23,7 +24,6 @@ vector<string>& split(const string &s, char delim, vector<string> &elems);
 vector<string> split(const string &s, char delim);
 char * strstri (string str1, string str2);
 uint64 extractGuid(WorldPacket& packet);
-std::string &trim(std::string &s);
 
 uint32 PlayerbotChatHandler::extractQuestId(string str)
 {
