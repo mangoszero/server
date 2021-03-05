@@ -7,7 +7,7 @@ echo "Checking for whitespaces:"
 echo
 
 declare -A singleLineRegexChecks=(
-	["[[:blank:]]$"]="Remove whitespace at the end of the lines above"
+    ["[[:blank:]]$"]="Remove whitespace at the end of the lines above"
     ["\t"]="Replace tabs with 4 spaces in the lines above"
 )
 

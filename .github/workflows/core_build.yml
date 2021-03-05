@@ -43,4 +43,3 @@ jobs:
  
       - name: Build Mangos Project
         run: source ./apps/ci/ci-compile.sh
-  
