@@ -2,7 +2,7 @@ name: core-build
 on:
   push:
       branches: [ master ]
-    pull_request:
+  pull_request:
       branches: [ master ]
 
 jobs:
