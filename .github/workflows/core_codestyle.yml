@@ -1,0 +1,17 @@
+name: Codestyle Checks
+on:
+  push:
+  pull_request:
+  
+jobs:
+  check-codestyle:
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-20.04
+    name: Check Codestyling
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check Codestyling
+        run: source ./apps/ci/ci-codestyle.sh
