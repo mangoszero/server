@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build: 
+  build:
     strategy:
       fail-fast: false
     
@@ -23,7 +23,7 @@ jobs:
             compiler: clang
             
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    name: ${{ matrix.name }}
     env:
       compiler: ${{ matrix.compiler }}
 
@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       
     runs-on: windows-2019
-    name: Windows 2019 MVSC16
+    name: Windows Server 2019
     
     steps:
       - uses: actions/checkout@v2
