@@ -79,7 +79,7 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
 {
     float z;
     float ort = player->GetOrientation();
-
+    z = zPtr;
     if (zPtr > 0.0f)
     {
         z = zPtr;
@@ -107,8 +107,9 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
             return false;
         }
 
-        TerrainInfo const* map = sTerrainMgr.LoadTerrain(mapid);
-        z = map->GetWaterOrGroundLevel(x, y, MAX_HEIGHT);
+        // COmmented since it can be a problem when exploring zones !
+        //TerrainInfo const* map = sTerrainMgr.LoadTerrain(mapid);
+        //z = map->GetWaterOrGroundLevel(x, y, MAX_HEIGHT);
     }
 
     // stop flight if need
