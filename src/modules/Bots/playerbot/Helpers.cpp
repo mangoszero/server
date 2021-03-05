@@ -2,7 +2,6 @@
 #include "playerbot.h"
 #include "Util.h"
 #include <algorithm>
-#include <functional>
 #include <cctype>
 #include <locale>
 
@@ -78,12 +77,3 @@ uint64 extractGuid(WorldPacket& packet)
     return guid;
 }
 
-
-std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-        return s;
-}
-
-std::string &trim(std::string &s) {
-        return ltrim(rtrim(s));
-}
