@@ -66,12 +66,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p build && cd build
-          cmake .. -DTOOLS=ON
+          cmake .. -DBUILD_TOOLS:BOOL=1 -DBUILD_MANGOSD:BOOL=1 -DBUILD_REALMD:BOOL=1 -DSOAP:BOOL=1 -DSCRIPT_LIB_ELUNA:BOOL=1 -DSCRIPT_LIB_SD3:BOOL=1 -DPLAYERBOTS:BOOL=1 -DUSE_STORMLIB:BOOL=1
           cmake --build . --config Release --parallel 4
       
-      - name: Copy dll files
-        shell: bash
-        run: |
-          cp "/c/mysql-5.7.21-winx64/lib/libmysql.dll" "build/bin/Release/"
-          cp "/c/Program Files/OpenSSL-Win64/bin/libcrypto-1_1-x64.dll" "build/bin/Release/"
-          cp "/c/Program Files/OpenSSL-Win64/bin/libssl-1_1-x64.dll" "build/bin/Release/"
+ 
