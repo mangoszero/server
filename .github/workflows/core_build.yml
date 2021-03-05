@@ -12,7 +12,8 @@ jobs:
     
     runs-on: ubuntu-18.04
     name: Ubuntu 18.04 GCC
-    compiler: gcc
+    compiler:
+      - gcc
 
     steps:
       - uses: actions/checkout@v2
@@ -37,7 +38,8 @@ jobs:
     
     runs-on: ubuntu-18.04
     name: Ubuntu 18.04 Clang
-    compiler: clang
+    compiler:
+      - clang
 
     steps:
       - uses: actions/checkout@v2
