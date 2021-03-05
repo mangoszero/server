@@ -1,9 +1,10 @@
 name: core-build
 on:
   push:
-    branches: 
-      - github-actions # just for testing and replace with release branch
-  pull_request:
+      branches: 
+      - master
+    pull_request:
+      - master
 
 jobs:
   build:
