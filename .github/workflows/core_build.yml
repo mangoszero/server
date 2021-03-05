@@ -41,3 +41,30 @@ jobs:
  
       - name: Build Mangos Project
         run: source ./apps/ci/ci-compile.sh
+        
+  windows-build:
+    strategy:
+      fail-fast: false
+      
+    runs-on: windows-2019
+    name: Windows 2019 MVSC16
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Configure Windows
+        run: choco install --no-progress openssl
+        
+      - name: Build
+        shell: bash
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DTOOLS=ON
+          cmake --build . --config Release --parallel 4
+      
+      - name: Copy dll files
+        shell: bash
+        run: |
+          cp "/c/mysql-5.7.21-winx64/lib/libmysql.dll" "build/bin/Release/"
+          cp "/c/Program Files/OpenSSL-Win64/bin/libcrypto-1_1-x64.dll" "build/bin/Release/"
+          cp "/c/Program Files/OpenSSL-Win64/bin/libssl-1_1-x64.dll" "build/bin/Release/"
