@@ -1,10 +1,9 @@
 name: core-build
 on:
   push:
-      branches: 
-      - master
+      branches: [ master ]
     pull_request:
-      - master
+      branches: [ master ]
 
 jobs:
   build:
