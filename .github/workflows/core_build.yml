@@ -6,26 +6,38 @@ on:
   pull_request:
 
 jobs:
-  build:
+  ubuntu-build-gcc:
     strategy:
       fail-fast: false
     
-      matrix:
-        compiler: [gcc, clang]
+    runs-on: ubuntu-18.04
+    name: Ubuntu 18.04 GCC
+    compiler: gcc
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for Updates
+        run: sudo apt-get update -y
+       
+      - name: Install Required Packages
+        run: sudo apt-get install -y git make cmake gcc g++ clang libssl-dev libbz2-dev build-essential default-libmysqlclient-dev libace-6.4.5 libace-dev python
+
+      - name: Check for Submodule Updates
+        run: source ./apps/ci/ci-submodule-update.sh
+ 
+      - name: Build Mangos Project
+        run: source ./apps/ci/ci-compile.sh
         
-        include:
-          - os: ubuntu-18.04
-            name: Ubuntu 18.04 GCC
-            compiler: gcc
-            
-          - os: ubuntu-18.04
-            name: Ubuntu 18.04 Clang
-            compiler: clang
-            
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.name }}
-    env:
-      compiler: ${{ matrix.compiler }}
+  ubuntu-build-clang:
+    strategy:
+      fail-fast: false
+    
+    runs-on: ubuntu-18.04
+    name: Ubuntu 18.04 Clang
+    compiler: clang
 
     steps:
       - uses: actions/checkout@v2
