@@ -233,11 +233,11 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
 
             // for riding spells, override the levels with the levels from the configuration file
             switch (tSpell->spell) {
-		case 33388:
+        case 33388:
                 case 33389: // Apprentice Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
                     break;
-		case 33391:
+        case 33391:
                 case 33392: // Journeyman Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
                     break;

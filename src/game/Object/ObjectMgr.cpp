@@ -9228,7 +9228,7 @@ void ObjectMgr::LoadCoreSideGossipTextIdCache()
                                                 "`gm`.`text_id` "
                                                 "FROM `creature_template` `ct` "
                                                 "LEFT JOIN ("
-                                                "	SELECT "
+                                                "    SELECT "
                                                 "    `entry`, MIN(`text_id`) as `text_id` "
                                                 "    FROM `gossip_menu` "
                                                 "    GROUP BY `entry` "

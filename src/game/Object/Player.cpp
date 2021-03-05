@@ -17936,7 +17936,7 @@ void Player::SaveToDB()
                               "`watchedFaction`, `drunk`, `health`, `power1`, `power2`, `power3`, "
                               "`power4`, `power5`, `exploredZones`, `equipmentCache`, `ammoId`, `actionBars`) "
                               "VALUES ( ?, ?, ?, ?, ?, ?, "
-			      "?, ?, ?, ?, ?, ?, "
+                  "?, ?, ?, ?, ?, ?, "
                               "?, ?, ?, ?, ?, "
                               "?, ?, ?, "
                               "?, ?, ?, ?, ?, ?, ?, "

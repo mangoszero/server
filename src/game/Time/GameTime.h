@@ -31,25 +31,25 @@
 
 namespace GameTime
 {
-	// Server Start Time
-	time_t GetStartTime();
+    // Server Start Time
+    time_t GetStartTime();
 
-	// Current Server Time (unix) in seconds
-	time_t GetGameTime();
+    // Current Server Time (unix) in seconds
+    time_t GetGameTime();
 
-	// Milliseconds since Server Start
-	uint32 GetGameTimeMS();
+    // Milliseconds since Server Start
+    uint32 GetGameTimeMS();
 
-	// Current chrono system_clock time point
-	std::chrono::system_clock::time_point GetGameTimeSystemPoint();
+    // Current chrono system_clock time point
+    std::chrono::system_clock::time_point GetGameTimeSystemPoint();
 
-	// Current chrono steady_clock time point
-	std::chrono::steady_clock::time_point GetGameTimeSteadyPoint();
+    // Current chrono steady_clock time point
+    std::chrono::steady_clock::time_point GetGameTimeSteadyPoint();
 
-	// Uptime (in seconds)
-	uint32 GetUptime();
+    // Uptime (in seconds)
+    uint32 GetUptime();
 
-	void UpdateGameTimers();
+    void UpdateGameTimers();
 }
 
 #endif

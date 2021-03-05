@@ -28,7 +28,7 @@
 #include "GameEventMgr.h"
 
  /**********************************************************************
-	 CommandTable : eventCommandTable
+     CommandTable : eventCommandTable
  /***********************************************************************/
 
 bool ChatHandler::HandleEventListCommand(char* args)

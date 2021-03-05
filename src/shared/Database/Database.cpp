@@ -537,19 +537,19 @@ bool Database::RollbackTransaction()
 // TODO : Depending on the case do not use Error but Warning, so will need to ad a function pointer in args
 void PrintYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
 {
-	sLog.outErrorDb("  [A] You have database Version: %u", current_db_version);
-	sLog.outErrorDb("                      Structure: %u", current_db_structure);
-	sLog.outErrorDb("                        Content: %u", current_db_content);
-	sLog.outErrorDb("                    Description: %s", description.c_str());
+    sLog.outErrorDb("  [A] You have database Version: %u", current_db_version);
+    sLog.outErrorDb("                      Structure: %u", current_db_structure);
+    sLog.outErrorDb("                        Content: %u", current_db_content);
+    sLog.outErrorDb("                    Description: %s", description.c_str());
 }
 
 // TODO : Depending on the case do not use Error but Warning, so will need to ad a function pointer in args
 void PrintYouNeedDatabaseVersionExpectedByCore(const DBVersion& core_db_requirements)
 {
-	sLog.outErrorDb("  [B] The core needs database Version: %u", core_db_requirements.expected_version);
-	sLog.outErrorDb("                            Structure: %u", core_db_requirements.expected_structure);
-	sLog.outErrorDb("                              Content: %u", core_db_requirements.minimal_expected_content);
-	sLog.outErrorDb("                          Description: %s", core_db_requirements.description.c_str());
+    sLog.outErrorDb("  [B] The core needs database Version: %u", core_db_requirements.expected_version);
+    sLog.outErrorDb("                            Structure: %u", core_db_requirements.expected_structure);
+    sLog.outErrorDb("                              Content: %u", core_db_requirements.minimal_expected_content);
+    sLog.outErrorDb("                          Description: %s", core_db_requirements.description.c_str());
 }
 
 bool Database::CheckDatabaseVersion(DatabaseTypes database)
@@ -596,15 +596,15 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         return false;
     }
 
-	bool db_vs_core_content_version_mismatch = false;
+    bool db_vs_core_content_version_mismatch = false;
 
     // DB is not up to date, but structure is correct.
-	// The 'content' version in the 'db_version' table can be < from the one required by the core
-	// See  enum values for :
-	//  WORLD_DB_CONTENT_NR 
-	//  CHAR_DB_CONTENT_NR
-	//  REALMD_DB_CONTENT_NR
-	// for more information.
+    // The 'content' version in the 'db_version' table can be < from the one required by the core
+    // See  enum values for :
+    //  WORLD_DB_CONTENT_NR 
+    //  CHAR_DB_CONTENT_NR
+    //  REALMD_DB_CONTENT_NR
+    // for more information.
     if (current_db_content < core_db_requirements.minimal_expected_content)
     {
         // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()
@@ -615,7 +615,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb("This is ok for now but should not last long.");
         db_vs_core_content_version_mismatch = true;
     }
-	// Else if the 'content' version in the 'db_version' table is > to the on expected by the core
+    // Else if the 'content' version in the 'db_version' table is > to the on expected by the core
     else if (current_db_content > core_db_requirements.minimal_expected_content)
     {
         // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()        
@@ -625,16 +625,16 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         db_vs_core_content_version_mismatch = true;
     };
 
-	// In anys cases if there are differences in content : output a recap of the differences : 
-	if (db_vs_core_content_version_mismatch)
-	{
+    // In anys cases if there are differences in content : output a recap of the differences : 
+    if (db_vs_core_content_version_mismatch)
+    {
         // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected version!", core_db_requirements.dbname.c_str());
         sLog.outErrorDb();
         PrintYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
         sLog.outErrorDb();
         PrintYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
-	}
+    }
 
     return true;
 }

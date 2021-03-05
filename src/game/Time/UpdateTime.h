@@ -35,49 +35,49 @@
 
 class UpdateTime
 {
-	using DiffTableArray = std::array<uint32, AVG_DIFF_COUNT>;
+    using DiffTableArray = std::array<uint32, AVG_DIFF_COUNT>;
 
 public:
-	uint32 GetAverageUpdateTime() const;
-	uint32 GetTimeWeightedAverageUpdateTime() const;
-	uint32 GetMaxUpdateTime() const;
-	uint32 GetMaxUpdatTimeOfCurrentTable() const;
-	uint32 GetLastUpdateTime() const;
+    uint32 GetAverageUpdateTime() const;
+    uint32 GetTimeWeightedAverageUpdateTime() const;
+    uint32 GetMaxUpdateTime() const;
+    uint32 GetMaxUpdatTimeOfCurrentTable() const;
+    uint32 GetLastUpdateTime() const;
 
-	void UpdateWithDiff(uint32 diff);
+    void UpdateWithDiff(uint32 diff);
 
-	void RecordUpdateTimeReset();
+    void RecordUpdateTimeReset();
 
 protected:
-	UpdateTime();
+    UpdateTime();
 
-	void _RecordUpdateTimeDuration(std::string const& text, uint32 minUpdateTime);
+    void _RecordUpdateTimeDuration(std::string const& text, uint32 minUpdateTime);
 
 private:
-	DiffTableArray _updateTimeDataTable;
-	uint32 _averageUpdateTime;
-	uint32 _totalUpdateTime;
-	uint32 _updateTimeTableIndex;
-	uint32 _maxUpdateTime;
-	uint32 _maxUpdateTimeOfLastTable;
-	uint32 _maxUpdateTimeOfCurrentTable;
+    DiffTableArray _updateTimeDataTable;
+    uint32 _averageUpdateTime;
+    uint32 _totalUpdateTime;
+    uint32 _updateTimeTableIndex;
+    uint32 _maxUpdateTime;
+    uint32 _maxUpdateTimeOfLastTable;
+    uint32 _maxUpdateTimeOfCurrentTable;
 
-	uint32 _recordedTime;
+    uint32 _recordedTime;
 };
 
 class WorldUpdateTime : public UpdateTime
 {
 public:
-	WorldUpdateTime() : UpdateTime(), _recordUpdateTimeInverval(0), _recordUpdateTimeMin(0), _lastRecordTime(0) { }
-	void LoadFromConfig();
-	void SetRecordUpdateTimeInterval(uint32 t);
-	void RecordUpdateTime(uint32 gameTimeMs, uint32 diff, uint32 sessionCount);
-	void RecordUpdateTimeDuration(std::string const& text);
+    WorldUpdateTime() : UpdateTime(), _recordUpdateTimeInverval(0), _recordUpdateTimeMin(0), _lastRecordTime(0) { }
+    void LoadFromConfig();
+    void SetRecordUpdateTimeInterval(uint32 t);
+    void RecordUpdateTime(uint32 gameTimeMs, uint32 diff, uint32 sessionCount);
+    void RecordUpdateTimeDuration(std::string const& text);
 
 private:
-	uint32 _recordUpdateTimeInverval;
-	uint32 _recordUpdateTimeMin;
-	uint32 _lastRecordTime;
+    uint32 _recordUpdateTimeInverval;
+    uint32 _recordUpdateTimeMin;
+    uint32 _lastRecordTime;
 };
 
 extern WorldUpdateTime sWorldUpdateTime;

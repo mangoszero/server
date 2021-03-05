@@ -37,35 +37,35 @@ void SoapThread(const std::string& host, uint16 port);
 class SOAPCommand
 {
 public:
-	SOAPCommand() : m_success(false) { }
-	~SOAPCommand() { }
+    SOAPCommand() : m_success(false) { }
+    ~SOAPCommand() { }
 
-	void appendToPrintBuffer(std::string msg)
-	{
-		m_printBuffer += msg;
-	}
+    void appendToPrintBuffer(std::string msg)
+    {
+        m_printBuffer += msg;
+    }
 
-	void setCommandSuccess(bool val)
-	{
-		m_success = val;
-		finishedPromise.set_value();
-	}
+    void setCommandSuccess(bool val)
+    {
+        m_success = val;
+        finishedPromise.set_value();
+    }
 
-	bool hasCommandSucceeded() const
-	{
-		return m_success;
-	}
+    bool hasCommandSucceeded() const
+    {
+        return m_success;
+    }
 
-	static void print(void* callbackArg, const char* msg)
-	{
-		((SOAPCommand*)callbackArg)->appendToPrintBuffer(msg);
-	}
+    static void print(void* callbackArg, const char* msg)
+    {
+        ((SOAPCommand*)callbackArg)->appendToPrintBuffer(msg);
+    }
 
-	static void commandFinished(void* callbackArg, bool success);
+    static void commandFinished(void* callbackArg, bool success);
 
-	bool m_success;
-	std::string m_printBuffer;
-	std::promise<void> finishedPromise;
+    bool m_success;
+    std::string m_printBuffer;
+    std::promise<void> finishedPromise;
 };
 
 #endif
