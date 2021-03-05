@@ -15,9 +15,11 @@ jobs:
         
         include:
           - os: ubuntu-18.04
+            name: Ubuntu 18.04 GCC
             compiler: gcc
             
           - os: ubuntu-18.04
+            name: Ubuntu 18.04 Clang
             compiler: clang
             
     runs-on: ${{ matrix.os }}
@@ -54,6 +56,11 @@ jobs:
       
       - name: Configure Windows
         run: choco install --no-progress openssl
+        
+      - name: Checkout Submodules
+        shell: bash
+        run: | 
+          git submodule init && git submodule update
         
       - name: Build
         shell: bash
