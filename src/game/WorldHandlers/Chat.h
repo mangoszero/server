@@ -684,6 +684,9 @@ class ChatHandler
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
 
+        bool HandleFreezePlayerCommand(char* args);
+        bool HandleUnfreezePlayerCommand(char* args);
+
 #ifdef ENABLE_PLAYERBOTS
         bool HandlePlayerbotCommand(char* args);
         bool HandlePlayerbotConsoleCommand(char* args);
@@ -819,5 +822,7 @@ class CliHandler : public ChatHandler
         void* m_callbackArg;
         Print* m_print;
 };
+
+bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif

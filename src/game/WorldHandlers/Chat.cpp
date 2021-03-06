@@ -796,6 +796,8 @@ ChatCommand* ChatHandler::getCommandTable()
         { "repairitems",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleRepairitemsCommand,         "", NULL },
         { "stable",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleStableCommand,              "", NULL },
         { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", NULL },
+        { "freezeplayer",   SEC_GAMEMASTER,     false, &ChatHandler::HandleFreezePlayerCommand,        "", NULL },
+        { "unfreezeplayer", SEC_GAMEMASTER,     false, &ChatHandler::HandleUnfreezePlayerCommand,      "", NULL },
         { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
         { "spell_linked",   SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleReloadSpellLinkedCommand,   "", NULL },
@@ -4085,3 +4087,37 @@ template void ChatHandler::ShowNpcOrGoSpawnInformation<GameObject>(uint32 guid);
 
 template std::string ChatHandler::PrepareStringNpcOrGoSpawnInformation<Creature>(uint32 guid);
 template std::string ChatHandler::PrepareStringNpcOrGoSpawnInformation<GameObject>(uint32 guid);
+
+bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster)
+{
+    // We assume the spellInfo has been checked and teh spell has aura effects
+    /*
+        if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
+        !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
+    */
+    if (!spellInfo)
+    {
+        return false;
+    }
+
+    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, caster);
+
+    for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        uint8 eff = spellInfo->Effect[i];
+        if (eff >= TOTAL_SPELL_EFFECTS)
+        {
+            continue;
+        }
+        if (IsAreaAuraEffect(eff) ||
+            eff == SPELL_EFFECT_APPLY_AURA ||
+            eff == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+        {
+            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), NULL, holder, target);
+            holder->AddAura(aur, SpellEffectIndex(i));
+        }
+    }
+    target->AddSpellAuraHolder(holder);
+
+    return true;
+}
