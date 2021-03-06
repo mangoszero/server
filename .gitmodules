@@ -1,18 +1,18 @@
 [submodule "dep"]
-	path = dep
-	url = https://github.com/mangos/mangosDeps
+    path = dep
+    url = https://github.com/mangos/mangosDeps
 [submodule "src/realmd"]
-	path = src/realmd
-	url = https://github.com/mangos/realmd
+    path = src/realmd
+    url = https://github.com/mangos/realmd
 [submodule "src/modules/Eluna"]
-	path = src/modules/Eluna
-	url = https://github.com/MangosServer/Eluna.git
+    path = src/modules/Eluna
+    url = https://github.com/MangosServer/Eluna.git
 [submodule "src/modules/SD3"]
-	path = src/modules/SD3
-	url = https://github.com/mangos/ScriptDev3.git
+    path = src/modules/SD3
+    url = https://github.com/mangos/ScriptDev3.git
 [submodule "src/tools/Extractor_projects"]
-	path = src/tools/Extractor_projects
-	url = https://github.com/mangos/Extractor_projects.git
+    path = src/tools/Extractor_projects
+    url = https://github.com/mangos/Extractor_projects.git
 [submodule "win"]
-	path = win
-	url = https://github.com/mangostools/EasyBuild
+    path = win
+    url = https://github.com/mangostools/EasyBuild

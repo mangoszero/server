@@ -119,14 +119,14 @@ endif ()
 # GCC compiler options
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     set(DEFAULT_COMPILE_OPTS ${DEFAULT_COMPILE_OPTS}
-	# Enhanced 32-bit check, now we can use the arch to specify flags
-	$<$<STREQUAL:${CMAKE_OSX_ARCHITECTURES},"i386">:
+    # Enhanced 32-bit check, now we can use the arch to specify flags
+    $<$<STREQUAL:${CMAKE_OSX_ARCHITECTURES},"i386">:
             -msse2
             -mfpmath=sse
         >
-	$<$<STREQUAL:${CMAKE_OSX_ARCHITECTURES},"ARM32">:
-	# explicit space for compiler flags
-	>
+    $<$<STREQUAL:${CMAKE_OSX_ARCHITECTURES},"ARM32">:
+    # explicit space for compiler flags
+    >
         $<$<STREQUAL:${CMAKE_OSX_ARCHITECTURES},"ARM64">:
         # explicit space for compiler flags
         >
@@ -142,9 +142,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
         $<$<CONFIG:Release>:
           --no-warnings
-	  # Suppress compiler note on parameter passing.  See the following
-	  # GCC BZ for more info:  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=77728
-	  -Wno-psabi
+      # Suppress compiler note on parameter passing.  See the following
+      # GCC BZ for more info:  https://gcc.gnu.org/bugzilla/show_bug.cgi?id=77728
+      -Wno-psabi
         >
     )
 endif ()

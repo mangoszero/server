@@ -673,9 +673,9 @@ INPUT                  = @TOP_SRCDIR@/src/shared/ \
                          @TOP_SRCDIR@/src/realmd/ \
                          @TOP_SRCDIR@/src/mangosd/ \
                          @TOP_SRCDIR@/doc/DocStructure.dox \
-            			 @TOP_SRCDIR@/doc/CallForExamples.md \
-			             @TOP_SRCDIR@/doc/Spell.md \
-            			 @TOP_SRCDIR@/doc/CodingStandard.md
+                         @TOP_SRCDIR@/doc/CallForExamples.md \
+                         @TOP_SRCDIR@/doc/Spell.md \
+                         @TOP_SRCDIR@/doc/CodingStandard.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is

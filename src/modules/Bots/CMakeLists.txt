@@ -590,13 +590,13 @@ add_library(Bots STATIC ${BOT_SRCS})
 
 target_include_directories(BotsIntf
     INTERFACE
-	    ${CMAKE_CURRENT_SOURCE_DIR}
-	    ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
 )
 
 target_link_libraries(Bots
     PUBLIC
-	    game
+        game
 )
 
 # Install config files
