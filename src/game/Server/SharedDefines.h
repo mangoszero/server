@@ -2625,6 +2625,7 @@ enum SpellEntriesConsts
     SPELL_FILLING_EMPTY_JAR__CURSED_OOZE    = 15698,
     SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE   = 15699,
     SPELL_FILLING_EMPTY_JAR__PURE_OOZE      = 15702, // (Works on  Primal, Muculent and Glutonous Ooze)
+    SPELL_GM_FREEZE                         = 9454,
 };
 
 #endif

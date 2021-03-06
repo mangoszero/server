@@ -514,36 +514,3 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
     }
 }
 
-bool AddAuraToPlayer(const SpellEntry * spellInfo,Unit * target, WorldObject * caster)
-{
-    // We assume the spellInfo has been checked and teh spell has aura effects
-    /*
-        if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
-        !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
-    */
-    if (!spellInfo)
-    {
-        return false;
-    }
-
-    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, caster);
-
-    for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-    {
-        uint8 eff = spellInfo->Effect[i];
-        if (eff >= TOTAL_SPELL_EFFECTS)
-        {
-            continue;
-        }
-        if (IsAreaAuraEffect(eff) ||
-            eff == SPELL_EFFECT_APPLY_AURA ||
-            eff == SPELL_EFFECT_PERSISTENT_AREA_AURA)
-        {
-            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), NULL, holder, target);
-            holder->AddAura(aur, SpellEffectIndex(i));
-        }
-    }
-    target->AddSpellAuraHolder(holder);
-
-    return true;
-}
