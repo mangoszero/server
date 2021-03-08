@@ -91,7 +91,7 @@ void GMTicket::SetText(const char* text)
 void GMTicket::SetResponseText(const char* text)
 {
     m_responseText = text ? text : "";
-    
+
     // Perform action in DB only if text is not empty
     if (m_responseText != "")
     {
@@ -102,7 +102,7 @@ void GMTicket::SetResponseText(const char* text)
         CharacterDatabase.PExecute("UPDATE `character_ticket` SET `response_text` = '%s' "
             "WHERE `guid` = '%u' and `ticket_id` = %u",
             escapedString.c_str(), m_guid.GetCounter(), m_ticketId);
-    }   
+    }
 }
 
 void GMTicket::CloseWithSurvey() const
@@ -195,7 +195,7 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
                                      guid.GetCounter(), escapedText.c_str());
 
     // Get the id of the ticket, needed for logging whispers
-    // Limiting to the the most recent ticket of the player and avoid potential multiple returns 
+    // Limiting to the the most recent ticket of the player and avoid potential multiple returns
     // if there is inconsistent data in table (e.g : more than 1 ticket unsolved for the same player (should never happen but..who knows..)
     QueryResult* result = CharacterDatabase.PQuery("SELECT `ticket_id`, `guid`, `resolved` "
                                                    "FROM `character_ticket` "

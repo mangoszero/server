@@ -4676,7 +4676,7 @@ void Player::SetLevitate(bool /*enable*/)
 void Player::SetCanFly(bool enable)
 {
     //     TODO: check if there is something similar for 1.12.x (99% chance there is not)
-    if (enable) 
+    if (enable)
     {
         m_movementInfo.SetMovementFlags((MovementFlags)(MOVEFLAG_LEVITATING | MOVEFLAG_SWIMMING | MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING));
     }
@@ -4684,7 +4684,7 @@ void Player::SetCanFly(bool enable)
     {
         m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
     }
-    
+
     SendHeartBeat();
 }
 
@@ -9546,7 +9546,7 @@ Item* Player::GetItemByPos(uint16 pos) const
 
 Item* Player::GetItemByPos(uint8 bag, uint8 slot) const
 {
-    if ( bag == INVENTORY_SLOT_BAG_0 && 
+    if ( bag == INVENTORY_SLOT_BAG_0 &&
         (slot < BANK_SLOT_BAG_END  || // Equiped, Default Bagpack Inventory, Default Bank SLots
          slot >= BUYBACK_SLOT_START
         )

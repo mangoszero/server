@@ -50,7 +50,7 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
 
     if (utf8length(password) > MAX_PASSWORD_STR)
     {
-        return AOR_PASS_TOO_LONG;                            // password too long                
+        return AOR_PASS_TOO_LONG;                            // password too long
     }
 
     normalizeString(username);

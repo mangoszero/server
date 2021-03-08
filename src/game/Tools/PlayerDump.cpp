@@ -374,7 +374,7 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             wherestr = GenerateWhereStr(fieldname, guid);
         }
 
-        //fetch table columns 
+        //fetch table columns
         std::string tableColumnNamesStr = "";
         QueryNamedResult* resNames = CharacterDatabase.PQueryNamed("SELECT * FROM `%s` LIMIT 1", tableFrom);
         if (!resNames)
@@ -437,16 +437,16 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
     dump += "IMPORTANT NOTE: NOT APPLY ITS DIRECTLY to character DB or you will DAMAGE and CORRUPT character DB\n";
 
     // revision check guard
-    // Check the revision of character DB which will be the first  line of the whole version/structure set 
+    // Check the revision of character DB which will be the first  line of the whole version/structure set
     QueryResult* result = CharacterDatabase.Query("SELECT `version`, `structure`, `description`, `comment` FROM `db_version` ORDER BY `version` DESC, `structure` DESC, `content` ASC LIMIT 1");
-   
+
     if (result)
     {
         Field* fields = result->Fetch();
-        
-        dump += "DUMPED_WITH:"+std::to_string(fields[0].GetInt16()) 
+
+        dump += "DUMPED_WITH:"+std::to_string(fields[0].GetInt16())
         + "." + std::to_string(fields[1].GetInt16()) + ".X "
-        +" CHAR. DB VERSION ( " 
+        +" CHAR. DB VERSION ( "
         + fields[2].GetCppString() + " / "
         + fields[3].GetCppString()  +
          ")\n\n"
@@ -605,7 +605,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                 size_t dbversionLen = dbversion.size();
 
                 std::string dbversionInDumpFile = line.substr(nw_pos+12, dbversionLen);
-               
+
                delete result;
 
                 if (dbversionInDumpFile != dbversion)
@@ -613,7 +613,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                     sLog.outError("LoadPlayerDump: Cannot load player dump - file version is %s, DB needs %s", dbversionInDumpFile.c_str(), dbversion.c_str());
                     ROLLBACK(DUMP_DB_VERSION_MISMATCH);
                 }
-                else 
+                else
                 {
                     continue;
                 }
@@ -621,7 +621,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
 
             }
         }
-        
+
 
         // determine table name and load type
         std::string tn = gettablename(line);

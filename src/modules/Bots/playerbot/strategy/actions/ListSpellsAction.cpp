@@ -26,7 +26,7 @@ bool ListSpellsAction::Execute(Event event)
     for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
     {
         const uint32 spellId = itr->first;
-    
+
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
         {
             continue;

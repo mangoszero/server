@@ -39,9 +39,9 @@
 #include <chrono>
 #include <thread>
 
-#ifdef ENABLE_ELUNA 
-#include "LuaEngine.h" 
-#endif /* ENABLE_ELUNA */ 
+#ifdef ENABLE_ELUNA
+#include "LuaEngine.h"
+#endif /* ENABLE_ELUNA */
 
 #define WORLD_SLEEP_CONST 50
 

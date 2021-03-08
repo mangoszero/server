@@ -2620,7 +2620,7 @@ enum CreatureEntriesConsts
     CREATURE_GLUTINOUS_OOZE = 6559,
 };
 
-enum SpellEntriesConsts 
+enum SpellEntriesConsts
 {
     SPELL_FILLING_EMPTY_JAR__CURSED_OOZE    = 15698,
     SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE   = 15699,
