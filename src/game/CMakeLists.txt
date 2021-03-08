@@ -95,7 +95,7 @@ source_group("Player Bot" FILES ${Playerbot_Source})
 file(GLOB AHbot_Source ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/ahbot/*.h)
 source_group("AH Bot" FILES ${AHbot_Source})
 
-set(SRC_GRP_BOTS 
+set(SRC_GRP_BOTS
     ${Playerbot_Source}
     ${AHbot_Source}
 )
@@ -118,7 +118,7 @@ LIST(APPEND SRC_GRP_BOTS ${Playerbot_Generic})
 file(GLOB Playerbot_Triggers ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/triggers/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/triggers/*.h)
 source_group("Player Bot\\Strategies\\Triggers" FILES ${Playerbot_Triggers})
 LIST(APPEND SRC_GRP_BOTS ${Playerbot_Triggers})
-   
+
 
 #Value files
 file(GLOB Playerbot_Values ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/values/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot/strategy/values/*.h)
