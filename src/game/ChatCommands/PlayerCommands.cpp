@@ -1142,7 +1142,6 @@ bool ChatHandler::HandleAddItemCommand(char* args)
             }
         }
     }
-           
 
     if (count > 0 && item)
     {

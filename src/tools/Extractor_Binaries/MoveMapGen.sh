@@ -30,7 +30,7 @@ EXCLUDE_MAPS_FILE="mmap_excluded.txt"
 
 ## Does an exclude file exist ?
 if [ "$EXCLUDE_MAPS" == "" ]
-then 
+then
   ## Exclude file provided?
   if [ -f "$EXCLUDE_MAPS_FILE" ]
   then ## Yes, read the file
