@@ -1079,7 +1079,6 @@ bool ChatHandler::HandleAddItemCommand(char* args)
             return false;
         }
     }
-   
 
     Player* pl = m_session->GetPlayer();
     Player* plTarget = getSelectedPlayer();
@@ -1125,12 +1124,12 @@ bool ChatHandler::HandleAddItemCommand(char* args)
     }
 
     Item* item = plTarget->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
-    
-   
 
-    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr) 
+
+
+    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
     {
-        if (pl == plTarget) 
+        if (pl == plTarget)
         {
 
             // Remove binding (let GM give it to another player later)
@@ -1142,8 +1141,8 @@ bool ChatHandler::HandleAddItemCommand(char* args)
                 {
                     item1->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
                 }
-            }            
-        }            
+            }
+        }
     }
            
 
