@@ -1125,8 +1125,6 @@ bool ChatHandler::HandleAddItemCommand(char* args)
 
     Item* item = plTarget->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
 
-
-
     for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
     {
         if (pl == plTarget)
