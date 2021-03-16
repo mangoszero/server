@@ -629,7 +629,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb("This is ok for now but should not last long.");
         db_vs_core_content_version_mismatch = true;
     }
-    
+
     // Do not alert if current_db_content > core_db_requirements.minimal_expected_content it can mislead newcomers !
 
     // In anys cases if there are differences in content : output a recap of the differences :
