@@ -73,7 +73,7 @@ inline uint32 GetMSTimeDiffToNow(uint32 oldMSTime)
     return getMSTimeDiff(oldMSTime, getMSTime());
 }
 
-inline uint32 GetUnixTimeStamp() 
+inline uint32 GetUnixTimeStamp()
 {
     time_t nowMS = std::time(nullptr);
 
