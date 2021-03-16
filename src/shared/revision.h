@@ -32,9 +32,9 @@
     #define REALMD_DB_UPDATE_DESCRIPTION "Release 22"
 
     #define CHAR_DB_VERSION_NR 22
-    #define CHAR_DB_STRUCTURE_NR 1
+    #define CHAR_DB_STRUCTURE_NR 2
     #define CHAR_DB_CONTENT_NR 001
-    #define CHAR_DB_UPDATE_DESCRIPTION "Release 22"
+    #define CHAR_DB_UPDATE_DESCRIPTION "add_character_createdDate_col"
 
     #define WORLD_DB_VERSION_NR 22
     #define WORLD_DB_STRUCTURE_NR 1
