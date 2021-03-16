@@ -27,6 +27,7 @@
 
 #include "Common.h"
 #include "Duration.h"
+#include <ctime>
 
 // New Method
 inline std::chrono::steady_clock::time_point GetApplicationStartTime()
@@ -70,6 +71,13 @@ inline uint32 getMSTimeDiff(uint32 oldMSTime, std::chrono::steady_clock::time_po
 inline uint32 GetMSTimeDiffToNow(uint32 oldMSTime)
 {
     return getMSTimeDiff(oldMSTime, getMSTime());
+}
+
+inline uint32 GetUnixTimeStamp()
+{
+    time_t nowMS = std::time(nullptr);
+
+    return nowMS;
 }
 
 struct IntervalTimer

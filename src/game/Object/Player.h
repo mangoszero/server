@@ -1007,6 +1007,16 @@ class Player : public Unit
             return m_social;
         }
 
+        void SetCreatedDate(uint32 createdDate)
+        {
+            m_created_date = createdDate;
+        }
+
+        uint32 GetCreatedDate()
+        {
+            return m_created_date;
+        }
+
         PlayerTaxi m_taxi;
         void InitTaxiNodes()
         {
@@ -2596,6 +2606,7 @@ class Player : public Unit
         float  m_summon_z;
 
     private:
+        uint32 m_created_date = 0;
         // internal common parts for CanStore/StoreItem functions
         InventoryResult _CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemPrototype const* pProto, uint32& count, bool swap, Item* pSrcItem) const;
         InventoryResult _CanStoreItem_InBag(uint8 bag, ItemPosCountVec& dest, ItemPrototype const* pProto, uint32& count, bool merge, bool non_specialized, Item* pSrcItem, uint8 skip_bag, uint8 skip_slot) const;
