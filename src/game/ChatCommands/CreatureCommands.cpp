@@ -671,6 +671,13 @@ bool ChatHandler::HandleNpcSetModelCommand(char* args)
         return false;
     }
 
+    if (!sCreatureDisplayInfoStore.LookupEntry(displayId))
+    {
+        SendSysMessage(LANG_BAD_VALUE);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
     pCreature->SetDisplayId(displayId);
     pCreature->SetNativeDisplayId(displayId);
 
