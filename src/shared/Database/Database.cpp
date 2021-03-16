@@ -534,8 +534,15 @@ bool Database::RollbackTransaction()
     return true;
 }
 
-// TODO : Depending on the case do not use Error but Warning, so will need to ad a function pointer in args
-void PrintYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
+void PrintNormalYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
+{
+    sLog.outString("  [A] You have database Version: %u", current_db_version);
+    sLog.outString("                      Structure: %u", current_db_structure);
+    sLog.outString("                        Content: %u", current_db_content);
+    sLog.outString("                    Description: %s", description.c_str());
+}
+
+void PrintErrorYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
 {
     sLog.outErrorDb("  [A] You have database Version: %u", current_db_version);
     sLog.outErrorDb("                      Structure: %u", current_db_structure);
@@ -543,8 +550,15 @@ void PrintYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_st
     sLog.outErrorDb("                    Description: %s", description.c_str());
 }
 
-// TODO : Depending on the case do not use Error but Warning, so will need to ad a function pointer in args
-void PrintYouNeedDatabaseVersionExpectedByCore(const DBVersion& core_db_requirements)
+void PrintNormalDatabaseVersionReferencedByCore(const DBVersion& core_db_requirements)
+{
+    sLog.outString("  [B] The core references last database Version: %u", core_db_requirements.expected_version);
+    sLog.outString("                                      Structure: %u", core_db_requirements.expected_structure);
+    sLog.outString("                                        Content: %u", core_db_requirements.minimal_expected_content);
+    sLog.outString("                                    Description: %s", core_db_requirements.description.c_str());
+}
+
+void PrintErrorYouNeedDatabaseVersionExpectedByCore(const DBVersion& core_db_requirements)
 {
     sLog.outErrorDb("  [B] The core needs database Version: %u", core_db_requirements.expected_version);
     sLog.outErrorDb("                            Structure: %u", core_db_requirements.expected_structure);
@@ -566,7 +580,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb();
         sLog.outErrorDb("  [A] You have database Version: MaNGOS can not verify your database version or its existence!");
         sLog.outErrorDb();
-        PrintYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
+        PrintErrorYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
         sLog.outErrorDb();
         sLog.outErrorDb("Please verify your database location or your database integrity.");
 
@@ -587,9 +601,9 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     {
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected structure!", core_db_requirements.dbname.c_str());
         sLog.outErrorDb();
-        PrintYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
+        PrintErrorYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
         sLog.outErrorDb();
-        PrintYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
+        PrintErrorYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
         sLog.outErrorDb();
         sLog.outErrorDb("You must apply all updates after [A] to [B] to use MaNGOS with this database.");
         sLog.outErrorDb("These updates are included in the database/%s/Updates folder.", core_db_requirements.dbname.c_str());
@@ -615,15 +629,8 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb("This is ok for now but should not last long.");
         db_vs_core_content_version_mismatch = true;
     }
-    // Else if the 'content' version in the 'db_version' table is > to the on expected by the core
-    else if (current_db_content > core_db_requirements.minimal_expected_content)
-    {
-        // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()
-        sLog.outErrorDb("You have content updates beyond the expected core version.");
-        sLog.outErrorDb("Check if the core you are running is built from the latest sources.");
-        sLog.outErrorDb("If so, DO NOT PANIC ! This message will disappear when the next DB Roll-Up will be released.");
-        db_vs_core_content_version_mismatch = true;
-    };
+    
+    // Do not alert if current_db_content > core_db_requirements.minimal_expected_content it can mislead newcomers !
 
     // In anys cases if there are differences in content : output a recap of the differences :
     if (db_vs_core_content_version_mismatch)
@@ -631,9 +638,21 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()
         sLog.outErrorDb("The table `db_version` indicates that your [%s] database does not match the expected version!", core_db_requirements.dbname.c_str());
         sLog.outErrorDb();
-        PrintYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
+        PrintErrorYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
         sLog.outErrorDb();
-        PrintYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
+        PrintErrorYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
+    }
+    else 
+    {
+        sLog.outString("The table `db_version` indicates that your [%s] database has a higher version than the one referenced by the core."
+                       "\nYou have probably applied DB updates, and that's a good thing to keep your server up to date.", core_db_requirements.dbname.c_str());
+        sLog.outString();
+        PrintNormalYouHaveDatabaseVersion(current_db_version, current_db_structure, current_db_content, description);
+        sLog.outString();
+        PrintNormalDatabaseVersionReferencedByCore(core_db_requirements);
+        sLog.outString();
+        sLog.outString("You can run the core without any problem like that.");
+        sLog.outString();
     }
 
     return true;
