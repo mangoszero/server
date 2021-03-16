@@ -63,7 +63,7 @@ inline uint32 getMSTimeDiff(uint32 oldMSTime, std::chrono::steady_clock::time_po
     using namespace std::chrono;
 
     uint32 newMSTime = uint32(duration_cast<milliseconds>(newTime - GetApplicationStartTime()).count());
-    
+
     return getMSTimeDiff(oldMSTime, newMSTime);
 }
 

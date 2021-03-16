@@ -412,7 +412,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
                 // traps can have time and can not have
                 GameObjectInfo const* goInfo = GetGOInfo();
-                
+
                 uint32 max_charges = goInfo->GetCharges();
 
                 if (goInfo->type == GAMEOBJECT_TYPE_TRAP)   // traps
@@ -464,7 +464,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                             {
                                 useTrap = false;
                             }
-                            
+
                             if(useTrap)
                             {
                                 Use(targetUnit);
@@ -473,7 +473,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     }
                 }
 
-                // Only despawn object if there are charges to "consume" 
+                // Only despawn object if there are charges to "consume"
                 // it means (all GO with charges = 0 in DB should never be despawned)
                 // Check : https://www.getmangos.eu/wiki/referenceinfo/dbinfo/mangosdb/mangoszeroworlddb/gameobject_template-r1047
                 // for more information about charges field in db depending on object type
@@ -708,7 +708,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
         AI()->UpdateAI(update_diff);   // AI not react good at real update delays (while freeze in non-active part of map)
         m_AI_locked = false;
     }
-        
+
 }
 
 void GameObject::Refresh()
@@ -1043,9 +1043,9 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
                         visibleDistance = GetGOInfo()->trap.radius + INTERACTION_DISTANCE;
                     }
                 }
-                
+
             }
-            
+
             case GAMEOBJECT_TYPE_SPELL_FOCUS:
             {
                 if (GetGOInfo()->spellFocus.serverOnly == 1)
@@ -2817,7 +2817,7 @@ bool  GameObject::AIM_Initialize()
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "AIM_Initialize: failed to init, locked.");
         return false;
     }
-       
+
    m_AI.reset(sScriptMgr.GetGameObjectAI(this));
 
    return true;

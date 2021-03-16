@@ -1120,7 +1120,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
             }
 
             data = sObjectMgr.GetCreatureData(lowguid);
-            
+
             if (!data)
             {
                 SendSysMessage(LANG_COMMAND_GOCREATNOTFOUND);
@@ -1204,7 +1204,7 @@ bool ChatHandler::HandleGoCreatureCommand(char* args)
     {
         // Go to creature initial pos to be on teh right Map
         HandleGoHelper(_player, data->mapid, data->posX, data->posY, data->posZ);
-        
+
         // Inform player that he will need to make the command another time to go directly to the NPC
         PSendSysMessage(LANG_COMMAND_EXECUTE_GOCRE_ANOTHER_TIME, targetMobGuid.GetCounter());
     }

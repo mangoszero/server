@@ -1703,7 +1703,7 @@ CharDelete.KeepDays = 30
 #
 #    Warden.ClientCheckFailAction
 #        Description: Default action being taken if a client check failed. Actions can be
-#                     overwritten for each single check via warden_action table in characters 
+#                     overwritten for each single check via warden_action table in characters
 #                     database.
 #        Default:     1 - (Kick)
 #                     0 - (Disabled, Logging only)

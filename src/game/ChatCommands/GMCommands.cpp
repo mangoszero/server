@@ -438,7 +438,7 @@ bool freezePlayer(Player* player, WorldObject* caster)
 // Internal shortcut function to freeze a player
 void unFreezePlayer(Player* player)
 {
-    player->RemoveAurasDueToSpell(SPELL_GM_FREEZE);   
+    player->RemoveAurasDueToSpell(SPELL_GM_FREEZE);
 }
 
 
@@ -458,7 +458,7 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
             return false;
         }
     }
-    
+
     // 2. If arg is empty, gets the current selected target (returns current player if no unit selected)
     if (!targetPlayer)
     {
@@ -487,7 +487,7 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
     }
 
     // Check if target can be freezed
-    if (targetPlayer->GetSession()->GetSecurity() > m_session->GetSecurity()) 
+    if (targetPlayer->GetSession()->GetSecurity() > m_session->GetSecurity())
     {
         PSendSysMessage(LANG_COMMAND_FREEZE_PLAYER_CANNOT_FREEZE_HIGHER_SECLEVEL, targetName);
         SetSentErrorMessage(true);
@@ -498,7 +498,7 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
 
     // Notif GM
     PSendSysMessage(LANG_COMMAND_FREEZE_PLAYER, targetName);
-    
+
     // Send message to player to prevent he has been frozen
     ChatHandler(targetPlayer).SendSysMessage(LANG_COMMAND_FREEZE_PLAYER_YOU_HAVE_BEEN_FROZEN);
 

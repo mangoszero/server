@@ -14,7 +14,7 @@ namespace ai
         {
             int index = -1;
             if(rti == "star")
-            {    
+            {
                 index = 0;
             }
             else if(rti == "circle")

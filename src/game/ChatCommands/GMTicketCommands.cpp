@@ -586,7 +586,7 @@ bool ChatHandler::HandleTickerSurveyClose(char* args)
             return false;
         }
     }
-    
+
     uint32 ticketId = ticket->GetId();
     ticket->CloseWithSurvey();
 

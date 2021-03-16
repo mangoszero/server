@@ -555,7 +555,7 @@ struct GameObjectDisplayInfoEntry;
 
 class GameObject : public WorldObject
 {
-    
+
     public:
         explicit GameObject();
         ~GameObject();
@@ -766,7 +766,7 @@ class GameObject : public WorldObject
         void StopGroupLoot() override;
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded
         uint32 m_lootGroupRecipientId;                      // group who will have rights for looting if set and exist
-        
+
          // Used for trap type
         time_t m_rearmTimer;                                // timer to rearm the trap once disarmed
 
@@ -774,7 +774,7 @@ class GameObject : public WorldObject
         bool m_isInUse;                                     // only one player at time are allowed to open chest
         time_t m_reStockTimer;                              // timer to refill the chest
         time_t m_despawnTimer;                              // timer to despawn the chest if something changed in it
-        
+
         bool m_AI_locked;
 
         std::unique_ptr<GameObjectAI> m_AI;

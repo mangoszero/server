@@ -260,7 +260,7 @@ bool ChatHandler::HandleResetAllCommand(char* args)
 int GetResetItemsBitMask(char* args)
 {
     int optionsBitMask = RESET_ITEMS_COMMAND_FLAG_OPTION_NONE;
-    
+
     if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_EQUIPED, strlen(args)) == 0)
     {
         optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED;
@@ -304,12 +304,12 @@ int GetResetItemsBitMask(char* args)
             {
                 optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS;
             }
-            else 
+            else
             {
                 return RESET_ITEMS_COMMAND_FLAG_OPTION_NONE;
             }
         }
-       
+
         return optionsBitMask;
     }
 
@@ -325,7 +325,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
 
     // Define all boolean by analysing args
     int optionBitMask = GetResetItemsBitMask(args);
-    
+
     if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_NONE)
     {
         return false;
@@ -348,7 +348,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
             for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
             {
                 if (Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-                {   
+                {
                     if (pItem->GetEntry() == EARTH_STONE_ITEM)
                     {
                         // Do not delete earthstone
@@ -483,18 +483,18 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
                     }
                     player->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
                     ++count;
-                }               
+                }
             }
 
             PSendSysMessage(LANG_COMMAND_RESET_ITEMS_BUYBACK, count, player->GetName());
 
             break;
-        }        
+        }
 
-        // Perhaps check if we have deleted earthstone if, so then re-add it 
+        // Perhaps check if we have deleted earthstone if, so then re-add it
     }
 
-    // Since bitmaskorepation is "AND" we have to manually test the last cases 
+    // Since bitmaskorepation is "AND" we have to manually test the last cases
     if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_ALL)
     {
         // Just text display
@@ -540,7 +540,7 @@ int GetResetMailBitMask(char* args)
     if (args == NULL)
     {
         return optionBitMask;
-    }   
+    }
 
     if (strncmp(args, RESET_MAIL_COMMAND_ARG_OPTION_COD, strlen(args)) == 0)
     {
@@ -570,8 +570,8 @@ int GetResetMailBitMask(char* args)
     return optionBitMask;
 }
 
-/* 
-        HandleResetMailCommand 
+/*
+        HandleResetMailCommand
         Default behaviour :
        -------------------
         - delete checked mails (even if its is GM stationery and if it contains items in it, but not deleted COD)
@@ -606,7 +606,7 @@ bool ChatHandler::HandleResetMailCommand(char* args)
     uint8 deletedCODMailCount = 0;
     uint8 deletedFromMailCount = 0;
 
-    // Special chack if amil delete "from" 
+    // Special chack if amil delete "from"
     // in order to retrieve player
     uint32 senderGuid = -1;
     std::string from_sender_name;
@@ -618,7 +618,7 @@ bool ChatHandler::HandleResetMailCommand(char* args)
         uint32  playerGuid = 0;
         Player* sender;
         ObjectGuid from_sender_guid;
-       
+
         if (!ExtractPlayerTarget(&args, &sender, &from_sender_guid, &from_sender_name))
         {
             SendSysMessage(LANG_PLAYER_NOT_FOUND);
@@ -632,10 +632,10 @@ bool ChatHandler::HandleResetMailCommand(char* args)
     {
         // Flag the mail as "deleted"
         Mail* m = (*itr);
-        
+
         bool deleteMail = false;
 
-        // DO not use the swith because it begins at 1 
+        // DO not use the swith because it begins at 1
         if (optionBitMask == RESET_MAIL_COMMAND_FLAG_OPTION_NONE)
         {
             if (m->checked && !m->COD && m->state != MAIL_STATE_DELETED)
@@ -724,7 +724,7 @@ bool ChatHandler::HandleResetMailCommand(char* args)
      if (gm != player)
      {
          ChatHandler(player).PSendSysMessage(LANG_COMMAND_RESET_MAIL_PLAYER_NOTIF, m_session->GetPlayer()->GetName(), totalDeletedMailCount);
-     }     
+     }
      PSendSysMessage(LANG_COMMAND_RESET_MAIL_RECAP, totalDeletedMailCount, player->GetName());
 
     return true;

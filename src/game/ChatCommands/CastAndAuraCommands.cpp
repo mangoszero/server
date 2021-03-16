@@ -368,7 +368,7 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
             return true;
         }
     }
-    else 
+    else
     {
         // Apply to all members of the group
         for (GroupReference* itr = grp->GetFirstMember(); itr != NULL; itr = itr->next())
@@ -401,9 +401,9 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
 
 bool ChatHandler::HandleUnAuraGroupCommand(char* args)
 {
-    // Must have args : spellId or "all" 
+    // Must have args : spellId or "all"
     if(!*args)
-    { 
+    {
         return false;
     }
 
@@ -471,7 +471,7 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
                 playerTarget->RemoveAurasDueToSpell(spellIdToRemove);
                 PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_REMOVED_FOR_SPELL, spellIdToRemove, nameLink.c_str());
             }
-            
+
             return true;
         }
     }

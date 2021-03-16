@@ -1063,6 +1063,23 @@ bool ChatHandler::HandleAddItemCommand(char* args)
         return false;
     }
 
+    uint32 enchant_id = 0;
+    if (!ExtractOptUInt32(&args, enchant_id, 0))
+    {
+        return false;
+    }
+
+    // Check enchant id
+    if (enchant_id > 0)
+    {
+
+        SpellItemEnchantmentEntry const* pEnchant = sSpellItemEnchantmentStore.LookupEntry(enchant_id);
+        if (!pEnchant)
+        {
+            return false;
+        }
+    }
+
     Player* pl = m_session->GetPlayer();
     Player* plTarget = getSelectedPlayer();
     if (!plTarget)
@@ -1108,13 +1125,23 @@ bool ChatHandler::HandleAddItemCommand(char* args)
 
     Item* item = plTarget->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
 
-    // remove binding (let GM give it to another player later)
-    if (pl == plTarget)
-        for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
+    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
+    {
+        if (pl == plTarget)
+        {
+
+            // Remove binding (let GM give it to another player later)
             if (Item* item1 = pl->GetItemByPos(itr->pos))
             {
                 item1->SetBinding(false);
+                // Perhaps we can enchant the item
+                if (enchant_id)
+                {
+                    item1->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
+                }
             }
+        }
+    }
 
     if (count > 0 && item)
     {
