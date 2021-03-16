@@ -642,7 +642,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
         sLog.outErrorDb();
         PrintErrorYouNeedDatabaseVersionExpectedByCore(core_db_requirements);
     }
-    else 
+    else
     {
         sLog.outString("The table `db_version` indicates that your [%s] database has a higher version than the one referenced by the core."
                        "\nYou have probably applied DB updates, and that's a good thing to keep your server up to date.", core_db_requirements.dbname.c_str());
