@@ -660,8 +660,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
             sLog.outString();
             sLog.outString("You can run the core without any problem like that.");
             sLog.outString();
-        }
-        
+        }     
     }
 
     return true;
