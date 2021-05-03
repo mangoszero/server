@@ -7,6 +7,9 @@
 [submodule "src/modules/SD3"]
     path = src/modules/SD3
     url = https://github.com/mangos/ScriptDev3.git
+[submodule "src/modules/Eluna"]
+    path = src/modules/Eluna
+    url = https://github.com/ElunaLuaEngine/Eluna
 [submodule "src/tools/Extractor_projects"]
     path = src/tools/Extractor_projects
     url = https://github.com/mangos/Extractor_projects.git
