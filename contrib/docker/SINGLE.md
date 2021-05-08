@@ -61,6 +61,13 @@ Not here documented.
    docker-compose build
    ```
 5) Intialize the database
+
+   We need the right database for the server.
+
+   ```
+   git clone https://github.com/mangoszero/database zero-database --recursive
+   ```
+   Now we can start the database container.
    ```
    docker-compose up -d mangos-db
    docker exec -it mangos-db bash

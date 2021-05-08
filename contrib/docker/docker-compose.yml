@@ -11,8 +11,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./mariadb/:/var/lib/mysql
-      - ./mangos:/mangos:ro
-      - ./classic-db:/classic-db
+      - ./zero-database:/zero-database
 
   mangos-realm:
     image: mangos-realm
@@ -30,7 +29,7 @@ services:
       - mangos.env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./app:/app
+      - ./app/etc:/app/etc
       - ./logs:/app/logs
     depends_on:
       - mangos-db
@@ -55,7 +54,7 @@ services:
       - mangos.env
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./app:/app
+      - ./app/etc:/app/etc
       - ./data:/app/data
       - ./logs:/app/logs
     depends_on:
