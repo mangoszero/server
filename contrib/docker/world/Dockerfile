@@ -15,11 +15,8 @@ COPY bin/tools/* /app/bin/tools/
 
 RUN mkdir /app/etc
 COPY etc/mangosd.conf.dist /app/etc/
-#COPY etc/playerbot.conf.dist /app/etc/
 
 RUN chown -R mangos:mangos /app
-
-#USER mangos
 
 EXPOSE 8085
 EXPOSE 7878

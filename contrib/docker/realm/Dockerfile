@@ -13,8 +13,6 @@ COPY etc/realmd.conf.dist /app/etc/
 
 RUN chown -R mangos:mangos /app
 
-#USER mangos
-
 EXPOSE 3724
 
 WORKDIR "/app/bin"

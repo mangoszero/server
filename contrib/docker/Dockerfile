@@ -11,10 +11,3 @@ RUN DEBIAN_FRONTEND=noninteractive \
 WORKDIR /work
 
 ENTRYPOINT /bin/bash
-
-# WE DO NOT CREATE A MAGOS USER HERE!!
-
-# docker build . -t mongo-build
-# docker run -v$(pwd)/app:/app -v $(pwd):/work --rm -it mangos-zero-build  bash
-# mkdir build && cd build
-# cmake -DCMAKE_INSTALL_PREFIX=/app ../mangos -DBUILD_EXTRACTORS=ON
