@@ -123,4 +123,4 @@ Not here documented.
    (container - screen) strg + a + d   (detache from screen)
    (container) exit
    ```
-9) Don't forget to change the reaml.list from WoW client to localhost.
+9) Don't forget to change the reaml.rtf from WoW client to localhost.
