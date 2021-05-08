@@ -1,0 +1,1 @@
+<a href="SingleInstance.md" >Install mangos as single instance with mangos-zero</a>
