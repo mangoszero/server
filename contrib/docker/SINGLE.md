@@ -27,7 +27,7 @@ Not here documented.
    ```
    For a rebuild next time we only need
    ```
-   ./build.sh
+   ./build.sh (&& docker-compose build && docker-compose reload )
    ```
    (Optional) Create an extractor container for the maps
    ```
