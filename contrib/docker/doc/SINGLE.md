@@ -60,7 +60,7 @@ we the nessery binaries.
    cd WoW1.12.1
    cp -r Buildings  dbc  maps  mmaps  vmaps ../data
    ```
-<h3>4) if everything went fine we create our container by</h3><br>
+<h3>4) If everything went fine we create our container by</h3><br>
 
    ```
    docker-compose build
