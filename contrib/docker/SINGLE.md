@@ -17,7 +17,7 @@ Not here documented.
    ```
 2) Build the source and create directory structur
    
-   create a  build script
+   Create a  build script
    ```
    echo "docker run -v$(pwd)/app:/app -v $(pwd):/work " \
         "--rm -it  --entrypoint ./mangos/contrib/docker/build.sh \
