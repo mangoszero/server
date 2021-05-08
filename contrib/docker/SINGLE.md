@@ -6,7 +6,7 @@ What you need to know:
 - linux commandline standards
 - sql statments
 
-This Example works only on  local machine only. For the cloud the database must be changed.
+This example works only on  local machine only. For the cloud the database must be changed.
 Not here documented.
 
 1) Create the build container on ubuntu:focal
@@ -91,7 +91,7 @@ Not here documented.
    LogsDir                = "/app/logs"
    ```
 
-   For mangosd we in mangosd.conf<br>
+   For mangosd we update mangosd.conf<br>
    -> nano mangosd.conf
    ```
    DataDir                      = ""
