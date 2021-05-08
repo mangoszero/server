@@ -6,7 +6,7 @@ What you need to know:
 - linux commandline standards
 - sql statments
 
-This example works only on  local machine only. For the cloud the database must be changed.
+This example works only on  local(host) machine. For the cloud the database must be changed.
 Not here documented.
 
 1) Create the build container on ubuntu:focal
