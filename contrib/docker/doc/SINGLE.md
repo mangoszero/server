@@ -1,4 +1,4 @@
-Example container for the mangos zero
+<h1>Example container for the mangos zero</h1>
 
 What you need to know:
 
@@ -7,15 +7,18 @@ What you need to know:
 - sql statments
 
 This example works only on  local(host) machine. For the cloud the database must be changed.
-Not here documented.
+Not here documented.<br><br>
+We use a build container? Because realm and world should be small as possible and shippes only
+we the nessery binaries.
 
-1) Create the build container on ubuntu:focal
+<h3>1) Create the build container on ubuntu:focal</h3><br>
+
    ```
    git clone git clone https://github.com/mangoszero/server.git mangos --recursive 
 
    docker build mangos/contrib/docker/ -t mangos-zero-build
    ```
-2) Build the source and create directory structur
+<h3>2) Build the source and create directory structur</h3><br>
    
    Create a  build script
    ```
@@ -27,7 +30,7 @@ Not here documented.
    ```
    For a rebuild next time we only need
    ```
-   ./build.sh (&& docker-compose build && docker-compose reload )
+   ./build.sh (&& docker-compose build && docker-compose reload)
    ```
    (Optional) Create an extractor container script for the maps
    ```
@@ -35,7 +38,8 @@ Not here documented.
         "--rm -it mangos-zero-build bash" > extract.sh
 
    ```
-3) (Optional) Extract needed data from client<br>
+<h3>3) (Optional) Extract needed data from client</h3><br>
+
    Copy the full client into you work directory like
    (here from linux lutris)
    ```
@@ -56,11 +60,13 @@ Not here documented.
    cd WoW1.12.1
    cp -r Buildings  dbc  maps  mmaps  vmaps ../data
    ```
-4) if everything went fine we create our container by
+<h3>4) if everything went fine we create our container by</h3><br>
+
    ```
    docker-compose build
    ```
-5) Intialize the database
+
+<h3>5) Intialize the database</h3><br>
 
    We need the right database for the server.
 
@@ -79,7 +85,8 @@ Not here documented.
    - user: "root"
    - password: "mangos"
    ```
-6) Configure container <br>
+<h3>6) Configure container</h3><br>
+
    ```
    cd app/etc
    cp realmd.conf.dist realmd.conf
@@ -116,13 +123,15 @@ Not here documented.
    CharacterDatabaseInfo        = "mangos-db;3306;root;mangos;character0"
    ```
 
-7) Start the realmd & mangos-one container detached
+<h3>7) Start the realmd & mangos-one container detached</h3><br>
+
    ```
    docker-compose up -d mangos-realm mangos-one
    ```
    take a look with "docker stats". Hopefully all container stay and not reloaded all the time.
 
-8) Join the world container to create an admin user
+<h3>8) Join the world container to create an admin user</h3><br>
+
    ```
    docker exec -it mangos-one bash
    (container) screen -r (go into screen)
@@ -130,4 +139,5 @@ Not here documented.
    (container - screen) strg + a + d   (detache from screen)
    (container) exit
    ```
-9) Don't forget to change the realm.rtf from WoW client to localhost.
+
+<h3>9) Don't forget to change the realm.rtf from WoW client to localhost.</h3>
