@@ -29,7 +29,7 @@ Not here documented.
    ```
    ./build.sh (&& docker-compose build && docker-compose reload )
    ```
-   (Optional) Create an extractor container for the maps
+   (Optional) Create an extractor container script for the maps
    ```
    echo "docker run -v$(pwd)/app:/app -v $(pwd):/work " \
         "--rm -it mangos-zero-build bash" > extract.sh
