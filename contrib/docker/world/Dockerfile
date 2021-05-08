@@ -2,6 +2,7 @@ from ubuntu:focal
 
 RUN apt update && apt dist-upgrade -y  --no-install-recommends init \
     libmariadb3 mariadb-client screen \
+    openssl \
     procps nano less
 
 COPY bin/mangosd-entrypoint.sh  /usr/bin/entrypoint.sh

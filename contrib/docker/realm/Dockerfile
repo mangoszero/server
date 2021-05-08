@@ -1,6 +1,7 @@
 from ubuntu:focal
 
 RUN apt update && apt dist-upgrade -y  --no-install-recommends \
+    openssl \
     libmariadb3 
 
 RUN useradd -m -d /home/mangos -c "MaNGOS" -U mangos
