@@ -1,1 +1,1 @@
-<a href="SingleInstance.md" >Install mangos as single instance with mangos-zero</a>
+<a href="https://github.com/andybe/server/blob/master/contrib/docker/SINGLE.md" >Install mangos as single instance with mangos-zero</a>
