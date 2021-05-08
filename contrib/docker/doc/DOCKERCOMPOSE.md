@@ -7,8 +7,8 @@ For best practice
 - network is defined as mangos
 - every container starts automatical, but can be stopped at any time<br>
   "restart: unless-stopped"
-- localtime is mapped into the container and also define ine mangos.env<br>
-  This is absolute recommends, because of diffrent timezone the container runs.
+- localtime is mapped into the container and also define in mangos.env<br>
+  This is absolute recommend, because container can run in different timezones.
 
 <h1>Alle containers depends on the database</h1>
 The mariadb:latest is a debian based container.<br> Nothing needs to be rethink - debian and ubuntu - use the same command lines.
