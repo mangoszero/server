@@ -1,0 +1,70 @@
+version: '3'
+services:
+  mangos-db:
+    container_name: mangos-db
+    image: mariadb:latest
+    restart: unless-stopped
+    env_file:
+      - mangos.env
+    networks: 
+      - mangos
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./mariadb/:/var/lib/mysql
+      - ./zero-database:/zero-database
+
+  mangos-realm:
+    image: mangos-realm
+    build:
+      context: ./app
+      dockerfile: ../mangos/contrib/docker/realm/Dockerfile
+    container_name: mangos-realm
+    restart: unless-stopped
+    ports:
+      - target: 3724
+        published: 3724
+        protocol: tcp
+        mode: host
+    env_file:
+      - mangos.env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./app/etc:/app/etc
+      - ./logs:/app/logs
+    depends_on:
+      - mangos-db
+
+    networks:
+      - mangos
+
+  mangos-zero:
+    image: mangos-zero
+    build:
+      context: app
+      dockerfile: ../mangos/contrib/docker/world/Dockerfile
+    container_name: mangos-zero
+    restart: unless-stopped
+    ports:
+      - target: 8085
+        published: 8085
+        protocol: tcp
+        mode: host
+      - 7878:7878
+    env_file:
+      - mangos.env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./app/etc:/app/etc
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - mangos-db
+      - mangos-realm
+
+    networks:
+      - mangos
+
+networks:
+  mangos:
+    name: mangos
+    driver: bridge
