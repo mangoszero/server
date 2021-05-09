@@ -37,12 +37,12 @@ services:
     networks:
       - mangos
 
-  mangos:
-    image: mangos
+  mangos-zero:
+    image: mangos-zero
     build:
       context: app
       dockerfile: ../mangos/contrib/docker/world/Dockerfile
-    container_name: mangos
+    container_name: mangos-zero
     restart: unless-stopped
     ports:
       - target: 8085

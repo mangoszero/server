@@ -84,17 +84,19 @@ we the nessery binaries.
    - host: localhost
    - user: "root"
    - password: "mangos"
+
+   (container) exit
    ```
 <h3>6) Configure container</h3><br>
 
    ```
    cd app/etc
-   cp realmd.conf.dist realmd.conf
-   cp mangosd.conf.dist mangosd.conf
-   cp ahbot.conf.dist ahbot.conf
+   sudo cp realmd.conf.dist realmd.conf
+   sudo cp mangosd.conf.dist mangosd.conf
+   sudo cp ahbot.conf.dist ahbot.conf
    ```
-   For realmd change follow lines in realmd.conf<br>
-   -> nano realmd.conf
+   For realmd change follow lines in realmd.conf (wee need to root)<br>
+   -> sudo nano realmd.conf
    ```
    LoginDatabaseInfo      = "localhost;3306;root;mangos;realmd"
    LogsDir                = ""
@@ -105,8 +107,8 @@ we the nessery binaries.
    LogsDir                = "/app/logs"
    ```
 
-   For mangosd we update mangosd.conf<br>
-   -> nano mangosd.conf
+   For mangosd we update mangosd.conf (wee need to root)<br>
+   -> sudo nano mangosd.conf
    ```
    DataDir                      = ""
    LogsDir                      = ""
@@ -122,6 +124,10 @@ we the nessery binaries.
    WorldDatabaseInfo            = "mangos-db;3306;root;mangos;mangos0"
    CharacterDatabaseInfo        = "mangos-db;3306;root;mangos;character0"
    ```
+   Back to the workspace
+   ```
+   cd ../..
+   ```
 
 <h3>7) Start the realmd & mangos-one container detached</h3><br>
 
@@ -133,7 +139,7 @@ we the nessery binaries.
 <h3>8) Join the world container to create an admin user</h3><br>
 
    ```
-   docker exec -it mangos-one bash
+   docker exec -it mangos-zero bash
    (container) screen -r (go into screen)
    (container - screen) account create testuser mypassword
    (container - screen) strg + a + d   (detache from screen)
