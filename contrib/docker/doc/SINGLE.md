@@ -147,4 +147,8 @@ we the nessery binaries.
    (container) exit
    ```
 
-<h3>9) Don't forget to change the realm.rtf from WoW client to localhost.</h3>
+<h3>9) Don't forget to change the realmlist.wtf from WoW client to localhost.</h3>
+
+   ```
+   set realmlist localhost
+   ```
