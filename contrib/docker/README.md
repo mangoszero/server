@@ -4,9 +4,9 @@
 
 - <a href="https://github.com/andybe/server/blob/master/contrib/docker/doc/DOCKERCOMPOSE.md" >The "if and way" about the mangos docker-compose.yml</a>
 
-- <a href="https://github.com/andybe/server/blob/master/contrib/docker/realmd/README.md" >Realmd Dockerfile</a>
+- <a href="https://github.com/andybe/server/tree/master/contrib/docker/realm#readme" >Realmd Dockerfile</a>
 
-- <a href="https://github.com/andybe/server/blob/master/contrib/docker/world/README.md" >Mangos world Dockerfile</a>
+- <a href="https://github.com/andybe/server/tree/master/contrib/docker/world#readme" >Mangos world Dockerfile</a>
 
 <br>
 <h3>Please read up in single instance.</h3>
