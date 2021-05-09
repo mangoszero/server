@@ -30,7 +30,7 @@ we the nessery binaries.
    ```
    For a rebuild next time we only need
    ```
-   ./build.sh (&& docker-compose build && docker-compose reload)
+   ./build.sh (&& docker-compose build && docker-compose restart)
    ```
    (Optional) Create an extractor container script for the maps
    ```
