@@ -52,9 +52,10 @@ we the nessery binaries.
    (container) cp -r ../app/bin/tools/* .
    (container) chmod +x Extractor.sh
    (container) ./Extractor.sh
+   (container) exit
    ```
-   This may take a while.
-   After that "exit" the container.
+   This may take a while.<br>
+   Now wee need a data directory.
    ```
    mkdir data
    cd WoW1.12.1
