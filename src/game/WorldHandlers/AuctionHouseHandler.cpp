@@ -351,6 +351,32 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
                         GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
     }
 
+    /* The client limits owned auctions to 50: */
+    /* Make sure we do not go over this limit, or the client will crash */
+    char numTotalOwned = 0;
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionHouse->GetAuctions().begin(); itr != auctionHouse->GetAuctions().end(); ++itr)
+    {
+        AuctionEntry* Aentry = itr->second;
+        if (Aentry->owner == pl->GetGUIDLow())
+        {
+            Item *pItem = sAuctionMgr.GetAItem(Aentry->itemGuidLow);
+            if (!pItem)
+            {
+                sLog.outError("%s:%d:\tItem %id doesn't exist!", __FILE__, __LINE__, Aentry->itemGuidLow);
+            }
+            else
+            {
+                numTotalOwned++;
+                if (numTotalOwned == 50)
+                {
+                    /* Player already listed 50 auctions; */
+                    /* Send an internal error result back down to the client... */
+                    return SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK);
+                }
+            }
+        }
+    }
+
     pl->ModifyMoney(-int32(deposit));
 
     AuctionEntry* AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl);
