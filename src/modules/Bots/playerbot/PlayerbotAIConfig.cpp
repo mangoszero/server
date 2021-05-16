@@ -289,7 +289,7 @@ void PlayerbotAIConfig::CreateRandomBots()
             do
             {
                 Field* fields = results->Fetch();
-                sAccountMgr.DeleteAccount(fields[0].GetUInt32());
+                sAccountMgr->DeleteAccount(fields[0].GetUInt32());
             } while (results->NextRow());
 
             delete results;
@@ -315,7 +315,7 @@ void PlayerbotAIConfig::CreateRandomBots()
         {
             password += (char)urand('!', 'z');
         }
-        sAccountMgr.CreateAccount(accountName, password);
+        sAccountMgr->CreateAccount(accountName, password);
 
         sLog.outDetail("Account %s created for random bots", accountName.c_str());
     }
@@ -340,7 +340,7 @@ void PlayerbotAIConfig::CreateRandomBots()
 
         randomBotAccounts.push_back(accountId);
 
-        int count = sAccountMgr.GetCharactersCount(accountId);
+        int count = sAccountMgr->GetCharactersCount(accountId);
         if (count >= 10)
         {
             totalRandomBotChars += count;
@@ -356,7 +356,7 @@ void PlayerbotAIConfig::CreateRandomBots()
             }
         }
 
-        totalRandomBotChars += sAccountMgr.GetCharactersCount(accountId);
+        totalRandomBotChars += sAccountMgr->GetCharactersCount(accountId);
     }
 
     sLog.outBasic("%d random bot accounts with %d characters available", randomBotAccounts.size(), totalRandomBotChars);

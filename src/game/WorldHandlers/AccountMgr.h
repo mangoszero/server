@@ -27,7 +27,7 @@
 
 #include "Common.h"
 
-enum AccountOpResult
+enum class AccountOpResult : uint8
 {
     AOR_OK,
     AOR_NAME_TOO_LONG,
@@ -42,25 +42,27 @@ enum AccountOpResult
 
 class AccountMgr
 {
-    public:
+    private:
         AccountMgr();
         ~AccountMgr();
 
+    public:
+        static AccountMgr* Instance();
+
         AccountOpResult CreateAccount(std::string username, std::string password);
-        AccountOpResult DeleteAccount(uint32 accid);
-        AccountOpResult ChangeUsername(uint32 accid, std::string new_uname, std::string new_passwd);
-        AccountOpResult ChangePassword(uint32 accid, std::string new_passwd);
-        bool CheckPassword(uint32 accid, std::string passwd);
+        static AccountOpResult DeleteAccount(uint32 accountId);
+        static AccountOpResult ChangeUsername(uint32 accountId, std::string newUsername, std::string newPassword);
+        static AccountOpResult ChangePassword(uint32 accountId, std::string newPassword);
+        static bool CheckPassword(uint32 accountId, std::string password);
 
-        uint32 GetId(std::string username);
-        AccountTypes GetSecurity(uint32 acc_id);
-        bool GetName(uint32 acc_id, std::string& name);
-        uint32 GetCharactersCount(uint32 acc_id);
-        std::string CalculateShaPassHash(std::string& name, std::string& password);
+        static uint32 GetId(std::string username);
+        static AccountTypes GetSecurity(uint32 accountId);
+        static bool GetName(uint32 accountId, std::string& username);
+        static uint32 GetCharactersCount(uint32 accountId);
 
-        static bool normalizeString(std::string& utf8str);
+        static std::string CalculateShaPassHash(std::string& username, std::string& password);
 };
 
-#define sAccountMgr MaNGOS::Singleton<AccountMgr>::Instance()
+#define sAccountMgr AccountMgr::Instance()
 
 #endif

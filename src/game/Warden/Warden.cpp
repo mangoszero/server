@@ -282,7 +282,7 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
         {
             std::stringstream duration;
             std::string accountName;
-            sAccountMgr.GetName(_session->GetAccountId(), accountName);
+            sAccountMgr->GetName(_session->GetAccountId(), accountName);
             std::stringstream banReason;
             banReason << "Warden Anticheat Violation";
             // Check can be NULL, for example if the client sent a wrong signature in the warden packet (CHECKSUM FAIL)

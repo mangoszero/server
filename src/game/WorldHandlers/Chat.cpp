@@ -912,7 +912,7 @@ bool ChatHandler::HasLowerSecurityAccount(WorldSession* target, uint32 target_ac
     }
     else if (target_account)
     {
-        target_sec = sAccountMgr.GetSecurity(target_account);
+        target_sec = sAccountMgr->GetSecurity(target_account);
     }
     else
     {
@@ -3545,7 +3545,7 @@ uint32 ChatHandler::ExtractAccountId(char** args, std::string* accountName /*= N
 
         if (accountName)
         {
-            sAccountMgr.GetName(account_id, *accountName);
+            sAccountMgr->GetName(account_id, *accountName);
         }
 
         if (targetIfNullArg)
@@ -3560,7 +3560,7 @@ uint32 ChatHandler::ExtractAccountId(char** args, std::string* accountName /*= N
 
     if (ExtractUInt32(&account_str, account_id))
     {
-        if (!sAccountMgr.GetName(account_id, account_name))
+        if (!sAccountMgr->GetName(account_id, account_name))
         {
             PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_str);
             SetSentErrorMessage(true);
@@ -3570,14 +3570,14 @@ uint32 ChatHandler::ExtractAccountId(char** args, std::string* accountName /*= N
     else
     {
         account_name = account_str;
-        if (!AccountMgr::normalizeString(account_name))
+        if (!Utf8ToUpperOnlyLatin(account_name))
         {
             PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
             SetSentErrorMessage(true);
             return 0;
         }
 
-        account_id = sAccountMgr.GetId(account_name);
+        account_id = sAccountMgr->GetId(account_name);
         if (!account_id)
         {
             PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());

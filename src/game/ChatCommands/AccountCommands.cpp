@@ -80,25 +80,25 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
         return false;
     }
 
-    if (!sAccountMgr.CheckPassword(GetAccountId(), password_old))
+    if (!sAccountMgr->CheckPassword(GetAccountId(), password_old))
     {
         SendSysMessage(LANG_COMMAND_WRONGOLDPASSWORD);
         SetSentErrorMessage(true);
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.ChangePassword(GetAccountId(), password_new);
+    AccountOpResult result = sAccountMgr->ChangePassword(GetAccountId(), password_new);
 
     switch (result)
     {
-        case AOR_OK:
+        case AccountOpResult::AOR_OK:
             SendSysMessage(LANG_COMMAND_PASSWORD);
             break;
-        case AOR_PASS_TOO_LONG:
+        case AccountOpResult::AOR_PASS_TOO_LONG:
             SendSysMessage(LANG_PASSWORD_TOO_LONG);
             SetSentErrorMessage(true);
             return false;
-        case AOR_NAME_NOT_EXIST:                            // not possible case, don't want get account name for output
+        case AccountOpResult::AOR_NAME_NOT_EXIST:                            // not possible case, don't want get account name for output
         default:
             SendSysMessage(LANG_COMMAND_NOTCHANGEPASSWORD);
             SetSentErrorMessage(true);
@@ -183,17 +183,17 @@ bool ChatHandler::HandleAccountDeleteCommand(char* args)
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.DeleteAccount(account_id);
+    AccountOpResult result = sAccountMgr->DeleteAccount(account_id);
     switch (result)
     {
-        case AOR_OK:
+        case AccountOpResult::AOR_OK:
             PSendSysMessage(LANG_ACCOUNT_DELETED, account_name.c_str());
             break;
-        case AOR_NAME_NOT_EXIST:
+        case AccountOpResult::AOR_NAME_NOT_EXIST:
             PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
             SetSentErrorMessage(true);
             return false;
-        case AOR_DB_INTERNAL_ERROR:
+        case AccountOpResult::AOR_DB_INTERNAL_ERROR:
             PSendSysMessage(LANG_ACCOUNT_NOT_DELETED_SQL_ERROR, account_name.c_str());
             SetSentErrorMessage(true);
             return false;
@@ -222,21 +222,21 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     std::string password = szPassword;
 
     AccountOpResult result;
-    result = sAccountMgr.CreateAccount(account_name, password);
+    result = sAccountMgr->CreateAccount(account_name, password);
     switch (result)
     {
-        case AOR_OK:
+        case AccountOpResult::AOR_OK:
             PSendSysMessage(LANG_ACCOUNT_CREATED, account_name.c_str());
             break;
-        case AOR_NAME_TOO_LONG:
+        case AccountOpResult::AOR_NAME_TOO_LONG:
             SendSysMessage(LANG_ACCOUNT_TOO_LONG);
             SetSentErrorMessage(true);
             return false;
-        case AOR_NAME_ALREADY_EXIST:
+        case AccountOpResult::AOR_NAME_ALREADY_EXIST:
             SendSysMessage(LANG_ACCOUNT_ALREADY_EXIST);
             SetSentErrorMessage(true);
             return false;
-        case AOR_DB_INTERNAL_ERROR:
+        case AccountOpResult::AOR_DB_INTERNAL_ERROR:
             PSendSysMessage(LANG_ACCOUNT_NOT_CREATED_SQL_ERROR, account_name.c_str());
             SetSentErrorMessage(true);
             return false;
@@ -395,18 +395,18 @@ bool ChatHandler::HandleAccountSetPasswordCommand(char* args)
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.ChangePassword(targetAccountId, szPassword1);
+    AccountOpResult result = sAccountMgr->ChangePassword(targetAccountId, szPassword1);
 
     switch (result)
     {
-        case AOR_OK:
+        case AccountOpResult::AOR_OK:
             SendSysMessage(LANG_COMMAND_PASSWORD);
             break;
-        case AOR_NAME_NOT_EXIST:
+        case AccountOpResult::AOR_NAME_NOT_EXIST:
             PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, account_name.c_str());
             SetSentErrorMessage(true);
             return false;
-        case AOR_PASS_TOO_LONG:
+        case AccountOpResult::AOR_PASS_TOO_LONG:
             SendSysMessage(LANG_PASSWORD_TOO_LONG);
             SetSentErrorMessage(true);
             return false;
