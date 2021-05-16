@@ -33,13 +33,15 @@
 
 extern DatabaseType LoginDatabase;
 
-INSTANTIATE_SINGLETON_1(AccountMgr);
+AccountMgr::AccountMgr() { }
 
-AccountMgr::AccountMgr()
-{}
+AccountMgr::~AccountMgr() { }
 
-AccountMgr::~AccountMgr()
-{}
+AccountMgr* AccountMgr::Instance()
+{
+    static AccountMgr Instance;
+    return &Instance;
+}
 
 AccountOpResult AccountMgr::CreateAccount(std::string username, std::string password)
 {

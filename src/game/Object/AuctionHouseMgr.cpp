@@ -124,7 +124,7 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
         else
         {
             bidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(bidder_guid);
-            bidder_security = bidder_accId ? sAccountMgr.GetSecurity(bidder_accId) : SEC_PLAYER;
+            bidder_security = bidder_accId ? sAccountMgr->GetSecurity(bidder_accId) : SEC_PLAYER;
 
             if (bidder_security > SEC_PLAYER)               // not do redundant DB requests
             {

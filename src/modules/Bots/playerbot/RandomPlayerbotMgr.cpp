@@ -547,7 +547,7 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
     for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); i++)
     {
         uint32 accountId = *i;
-        if (!sAccountMgr.GetCharactersCount(accountId))
+        if (!sAccountMgr->GetCharactersCount(accountId))
         {
             continue;
         }

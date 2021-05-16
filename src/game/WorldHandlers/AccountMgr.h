@@ -42,9 +42,12 @@ enum AccountOpResult
 
 class AccountMgr
 {
-    public:
+    private:
         AccountMgr();
         ~AccountMgr();
+
+    public:
+        static AccountMgr* Instance();
 
         AccountOpResult CreateAccount(std::string username, std::string password);
         AccountOpResult DeleteAccount(uint32 accid);
@@ -61,6 +64,6 @@ class AccountMgr
         static bool normalizeString(std::string& utf8str);
 };
 
-#define sAccountMgr MaNGOS::Singleton<AccountMgr>::Instance()
+#define sAccountMgr AccountMgr::Instance()
 
 #endif

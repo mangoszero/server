@@ -80,14 +80,14 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
         return false;
     }
 
-    if (!sAccountMgr.CheckPassword(GetAccountId(), password_old))
+    if (!sAccountMgr->CheckPassword(GetAccountId(), password_old))
     {
         SendSysMessage(LANG_COMMAND_WRONGOLDPASSWORD);
         SetSentErrorMessage(true);
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.ChangePassword(GetAccountId(), password_new);
+    AccountOpResult result = sAccountMgr->ChangePassword(GetAccountId(), password_new);
 
     switch (result)
     {
@@ -183,7 +183,7 @@ bool ChatHandler::HandleAccountDeleteCommand(char* args)
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.DeleteAccount(account_id);
+    AccountOpResult result = sAccountMgr->DeleteAccount(account_id);
     switch (result)
     {
         case AOR_OK:
@@ -222,7 +222,7 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     std::string password = szPassword;
 
     AccountOpResult result;
-    result = sAccountMgr.CreateAccount(account_name, password);
+    result = sAccountMgr->CreateAccount(account_name, password);
     switch (result)
     {
         case AOR_OK:
@@ -395,7 +395,7 @@ bool ChatHandler::HandleAccountSetPasswordCommand(char* args)
         return false;
     }
 
-    AccountOpResult result = sAccountMgr.ChangePassword(targetAccountId, szPassword1);
+    AccountOpResult result = sAccountMgr->ChangePassword(targetAccountId, szPassword1);
 
     switch (result)
     {

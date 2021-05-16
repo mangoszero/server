@@ -178,7 +178,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                     case NONE:
                     {
                         std::string szLogin = inputBuffer;
-                        accId = sAccountMgr.GetId(szLogin);
+                        accId = sAccountMgr->GetId(szLogin);
 
                         ///- If the user is not found, deny access
                         if (!accId)
@@ -195,7 +195,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                             break;
                         }
 
-                        accAccessLevel = sAccountMgr.GetSecurity(accId);
+                        accAccessLevel = sAccountMgr->GetSecurity(accId);
 
                         ///- if gmlevel is too low, deny access
                         if (accAccessLevel < iMinLevel)
@@ -227,7 +227,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                         // login+pass ok
                         std::string pw = inputBuffer;
 
-                        if (sAccountMgr.CheckPassword(accId, pw))
+                        if (sAccountMgr->CheckPassword(accId, pw))
                         {
                             stage = OK;
 

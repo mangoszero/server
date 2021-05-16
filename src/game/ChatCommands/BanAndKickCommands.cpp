@@ -76,7 +76,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
             // "character" case, name need extract from another DB
             else
             {
-                sAccountMgr.GetName(account_id, account_name);
+                sAccountMgr->GetName(account_id, account_name);
             }
 
             // No SQL injection. id is uint32.
@@ -305,7 +305,7 @@ bool ChatHandler::HandleBanInfoCharacterCommand(char* args)
     uint32 accountid = target ? target->GetSession()->GetAccountId() : sObjectMgr.GetPlayerAccountIdByGUID(target_guid);
 
     std::string accountname;
-    if (!sAccountMgr.GetName(accountid, accountname))
+    if (!sAccountMgr->GetName(accountid, accountname))
     {
         PSendSysMessage(LANG_BANINFO_NOCHARACTER);
         return true;
