@@ -624,6 +624,19 @@ void utf8printf(FILE* out, const char* str, ...)
     va_end(ap);
 }
 
+bool Utf8ToUpperOnlyLatin(std::string& utf8String)
+{
+    std::wstring wstr;
+    if (!Utf8toWStr(utf8String, wstr))
+    {
+        return false;
+    }
+
+    std::transform(wstr.begin(), wstr.end(), wstr.begin(), wcharToUpperOnlyLatin);
+
+    return WStrToUtf8(wstr, utf8String);
+}
+
 int return_iCoreNumber()
 {
 

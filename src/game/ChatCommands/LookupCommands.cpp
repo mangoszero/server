@@ -503,7 +503,7 @@ bool ChatHandler::HandleLookupAccountNameCommand(char* args)
     }
 
     std::string account = accountStr;
-    if (!AccountMgr::normalizeString(account))
+    if (!Utf8ToUpperOnlyLatin(account))
     {
         return false;
     }
@@ -610,7 +610,7 @@ bool ChatHandler::HandleLookupPlayerAccountCommand(char* args)
     }
 
     std::string account = accountStr;
-    if (!AccountMgr::normalizeString(account))
+    if (!Utf8ToUpperOnlyLatin(account))
     {
         return false;
     }

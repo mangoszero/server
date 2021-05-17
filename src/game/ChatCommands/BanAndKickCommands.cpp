@@ -149,7 +149,7 @@ bool ChatHandler::HandleBanHelper(BanMode mode, char* args)
     switch (mode)
     {
         case BAN_ACCOUNT:
-            if (!AccountMgr::normalizeString(nameOrIP))
+            if (!Utf8ToUpperOnlyLatin(nameOrIP))
             {
                 PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
                 SetSentErrorMessage(true);
@@ -486,7 +486,7 @@ bool ChatHandler::HandleUnBanHelper(BanMode mode, char* args)
     switch (mode)
     {
         case BAN_ACCOUNT:
-            if (!AccountMgr::normalizeString(nameOrIP))
+            if (!Utf8ToUpperOnlyLatin(nameOrIP))
             {
                 PSendSysMessage(LANG_ACCOUNT_NOT_EXIST, nameOrIP.c_str());
                 SetSentErrorMessage(true);
