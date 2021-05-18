@@ -27,7 +27,7 @@
 
 #include "Common.h"
 
-enum AccountOpResult
+enum class AccountOpResult : uint8
 {
     AOR_OK,
     AOR_NAME_TOO_LONG,
@@ -39,7 +39,6 @@ enum AccountOpResult
 
 #define MAX_ACCOUNT_STR  16
 #define MAX_PASSWORD_STR 16
-#define MAX_EMAIL_STR 64
 
 class AccountMgr
 {
@@ -50,17 +49,18 @@ class AccountMgr
     public:
         static AccountMgr* Instance();
 
-        static AccountOpResult CreateAccount(std::string username, std::string password);
-        static AccountOpResult DeleteAccount(uint32 accid);
-        static AccountOpResult ChangeUsername(uint32 accid, std::string new_uname, std::string new_passwd);
-        static AccountOpResult ChangePassword(uint32 accid, std::string new_passwd);
-        static bool CheckPassword(uint32 accid, std::string passwd);
+        AccountOpResult CreateAccount(std::string username, std::string password);
+        static AccountOpResult DeleteAccount(uint32 accountId);
+        static AccountOpResult ChangeUsername(uint32 accountId, std::string newUsername, std::string newPassword);
+        static AccountOpResult ChangePassword(uint32 accountId, std::string newPassword);
+        static bool CheckPassword(uint32 accountId, std::string password);
 
         static uint32 GetId(std::string username);
-        static AccountTypes GetSecurity(uint32 acc_id);
-        static bool GetName(uint32 acc_id, std::string& name);
-        static uint32 GetCharactersCount(uint32 acc_id);
-        static std::string CalculateShaPassHash(std::string& name, std::string& password);
+        static AccountTypes GetSecurity(uint32 accountId);
+        static bool GetName(uint32 accountId, std::string& username);
+        static uint32 GetCharactersCount(uint32 accountId);
+
+        static std::string CalculateShaPassHash(std::string& username, std::string& password);
 };
 
 #define sAccountMgr AccountMgr::Instance()
