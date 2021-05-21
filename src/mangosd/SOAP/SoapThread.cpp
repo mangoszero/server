@@ -83,21 +83,21 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
         return 401;
     }
 
-    uint32 accountId = sAccountMgr.GetId(soap->userid);
+    uint32 accountId = sAccountMgr->GetId(soap->userid);
     if (!accountId)
     {
         sLog.outString("SoapThread: Client used invalid username %s", soap->userid);
         return 401;
     }
 
-    if (!sAccountMgr.CheckPassword(accountId, soap->passwd))
+    if (!sAccountMgr->CheckPassword(accountId, soap->passwd))
     {
         sLog.outString("SoapThread: Client sent an invalid password for account %s", soap->passwd);
         return 401;
     }
 
     /* ToDo: Add realm check */
-    if (sAccountMgr.GetSecurity(accountId) < SEC_ADMINISTRATOR)
+    if (sAccountMgr->GetSecurity(accountId) < SEC_ADMINISTRATOR)
     {
         sLog.outString("SoapThread: %s's account security level is to low", soap->userid);
         return 403;
