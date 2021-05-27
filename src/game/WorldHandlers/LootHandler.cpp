@@ -255,15 +255,26 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
 
             break;
         }
-        case HIGHGUID_CORPSE:                               // remove insignia ONLY in BG
+        /* HACK: Due to the spaghetti code below, */
+        /* we have a special case here for the looting of player corpses in battlegrounds. */
+        case HIGHGUID_CORPSE:
         {
             Corpse* bones = _player->GetMap()->GetCorpse(guid);
 
             if (bones && bones->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
             {
                 pLoot = &bones->loot;
-            }
+                pLoot->NotifyMoneyRemoved();
+                player->ModifyMoney(pLoot->gold);
 
+                // Used by Eluna
+                #ifdef ENABLE_ELUNA
+                    sEluna->OnLootMoney(player, pLoot->gold);
+                #endif /* ENABLE_ELUNA */
+
+                pLoot->gold = 0;
+                return;
+            }
             break;
         }
         case HIGHGUID_ITEM:
