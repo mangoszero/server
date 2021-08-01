@@ -62,6 +62,8 @@ void SoapThread(const std::string& host, uint16 port)
         process_message(thread_soap);
     }
 
+    soap_destroy(&soap);
+    soap_end(&soap);
     soap_done(&soap);
 }
 
@@ -70,8 +72,7 @@ void process_message(struct soap* soap_message)
     soap_serve(soap_message);
     soap_destroy(soap_message); // dealloc C++ data
     soap_end(soap_message);     // dealloc data and clean up
-    soap_done(soap_message);    // detach soap struct
-    free(soap_message);
+    soap_free(soap_message);    // detach soap struct and free up memory
 }
 
 int ns1__executeCommand(soap* soap, char* command, char** result)
