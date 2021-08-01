@@ -43,7 +43,7 @@ typedef std::chrono::hours Hours;
 typedef std::chrono::steady_clock::time_point TimePoint;
 typedef std::chrono::system_clock::time_point SystemTimePoint;
 
-constexpr std::chrono::hours operator""_days(unsigned long long days)
+constexpr std::chrono::hours operator "" _days(unsigned long long days)
 {
     return std::chrono::hours(days * Hours(24));
 }
