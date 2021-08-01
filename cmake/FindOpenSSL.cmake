@@ -223,6 +223,8 @@ if(OPENSSL_INCLUDE_DIR)
   ENSURE_VERSION_RANGE("${OPENSSL_EXPECTED_VERSION}" "${OPENSSL_VERSION}" "${OPENSSL_MAX_VERSION}" OPENSSL_VERSION_OK)
   if(NOT OPENSSL_VERSION_OK)
       message(FATAL_ERROR "MaNGOS needs OpenSSL version ${OPENSSL_EXPECTED_VERSION} but found version ${OPENSSL_VERSION}. MaNGOS needs OpenSSL 1.0.x or 1.1.x to work properly.")
+  else()
+      message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")
   endif()
 endif(OPENSSL_INCLUDE_DIR)
 

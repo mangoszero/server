@@ -101,16 +101,15 @@ endif()
 
 find_package(Threads REQUIRED)
 find_package(MySQL   REQUIRED)
-find_package(DL      REQUIRED)
 
 find_package(ZLIB  QUIET)
 find_package(BZip2 QUIET)
 
-include(${CMAKE_SOURCE_DIR}/cmake/MangosParams.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
-
 include(${CMAKE_SOURCE_DIR}/cmake/EnsureVersion.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/FindOpenSSL.cmake)
+
+include(${CMAKE_SOURCE_DIR}/cmake/MangosParams.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
 
 if(PCH)
     include(${CMAKE_SOURCE_DIR}/cmake/PCHSupport.cmake)
