@@ -230,5 +230,6 @@ target_link_libraries(shared
         ace
         utf8
         MySQL::MySQL
+        DL::DL
         ${OPENSSL_LIBRARIES}
 )
