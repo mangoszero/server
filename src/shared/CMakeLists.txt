@@ -213,6 +213,7 @@ target_include_directories(shared
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
+        ${OPENSSL_INCLUDE_DIR}
         ${TGT_INCL}
 )
 
@@ -229,5 +230,6 @@ target_link_libraries(shared
         ace
         utf8
         MySQL::MySQL
-        OpenSSL::Crypto
+        DL::DL
+        ${OPENSSL_LIBRARIES}
 )
