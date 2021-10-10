@@ -21,5 +21,20 @@ for check in ${!singleLineRegexChecks[@]}; do
     fi
 done
 
+declare -A multiLineRegexChecks=(
+    ["\n\n\n"]="Multiple blank lines detected, keep only one. Check the files above"
+)
+
+for check in ${!multiLineRegexChecks[@]}; do
+    echo "  Checking RegEx: '${check}'"
+
+    if grep -Pzo -r -I ${check} src; then
+        echo
+        echo
+        echo "${multiLineRegexChecks[$check]}"
+        exit 1
+    fi
+done
+
 echo
 echo "Awesome! No issues..."
