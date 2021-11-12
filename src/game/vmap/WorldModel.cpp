@@ -384,9 +384,11 @@ namespace VMAP
             result = false;
         }
         if (count)
-        if (result && fwrite(&triangles[0], sizeof(MeshTriangle), count, wf) != count)
         {
-            result = false;
+            if (result && fwrite(&triangles[0], sizeof(MeshTriangle), count, wf) != count)
+            {
+                result = false;
+            }
         }
 
         // write mesh BIH
@@ -410,9 +412,11 @@ namespace VMAP
             result = false;
         }
         if (chunkSize)
-        if (result)
         {
-            result = iLiquid->WriteToFile(wf);
+            if (result)
+            {
+                result = iLiquid->WriteToFile(wf);
+            }
         }
 
         return result;
@@ -483,14 +487,14 @@ namespace VMAP
         }
         if (count)
         {
-        if (result)
-        {
-            triangles.resize(count);
-        }
-        if (result && fread(&triangles[0], sizeof(MeshTriangle), count, rf) != count)
-        {
-            result = false;
-        }
+            if (result)
+            {
+                triangles.resize(count);
+            }
+            if (result && fread(&triangles[0], sizeof(MeshTriangle), count, rf) != count)
+            {
+                result = false;
+            }
         }
 
         // read mesh BIH
@@ -729,10 +733,10 @@ namespace VMAP
         count = groupModels.size();
         if (count)
         {
-        if (result && fwrite("GMOD", 1, 4, wf) != 4)
-        {
-            result = false;
-        }
+            if (result && fwrite("GMOD", 1, 4, wf) != 4)
+            {
+                result = false;
+            }
             // chunkSize = sizeof(uint32)+ sizeof(GroupModel)*count;
             // if (result && fwrite(&chunkSize, sizeof(uint32), 1, wf) != 1) result = false;
             if (result && fwrite(&count, sizeof(uint32), 1, wf) != 1)
