@@ -27,7 +27,7 @@
 #include "World.h"
 #include "Weather.h"
 #include "SpellMgr.h"
-
+#include "Util.h"
 
  /**********************************************************************
      CommandTable : commandTable
@@ -129,7 +129,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
     PSendSysMessage(LANG_PINFO_ACCOUNT, (target ? "" : GetMangosString(LANG_OFFLINE)), nameLink.c_str(), target_guid.GetCounter(), username.c_str(), accId, security, email.c_str(), last_ip.c_str(), last_login.c_str(), latency);
 
-    std::string timeStr = secsToTimeString(total_player_time, true, true);
+    std::string timeStr = secsToTimeString(total_player_time, TimeFormat::ShortText, true);
     uint32 gold = money / GOLD;
     uint32 silv = (money % GOLD) / SILVER;
     uint32 copp = (money % GOLD) % SILVER;

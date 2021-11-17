@@ -44,18 +44,18 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
     for (Player::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
     {
         DungeonPersistentState* state = itr->second.state;
-        std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), true);
+        std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), TimeFormat::ShortText);
         if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
         {
             PSendSysMessage("map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s",
-                itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
-                state->CanReset() ? "yes" : "no", timeleft.c_str());
+                            itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+                            state->CanReset() ? "yes" : "no", timeleft.c_str());
         }
         else
         {
             PSendSysMessage("bound for a nonexistent map %u", itr->first);
         }
-        counter++;
+        ++counter;
     }
 
     PSendSysMessage("player binds: %d", counter);
@@ -67,13 +67,12 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
         for (Group::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
         {
             DungeonPersistentState* state = itr->second.state;
-            std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), true);
-
+            std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), TimeFormat::ShortText);
             if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
             {
                 PSendSysMessage("map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s",
-                    itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
-                    state->CanReset() ? "yes" : "no", timeleft.c_str());
+                                itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+                                state->CanReset() ? "yes" : "no", timeleft.c_str());
             }
             else
             {
@@ -125,13 +124,13 @@ bool ChatHandler::HandleInstanceUnbindCommand(char* args)
         if (itr->first != player->GetMapId())
         {
             DungeonPersistentState* save = itr->second.state;
-            std::string timeleft = secsToTimeString(save->GetResetTime() - time(NULL), true);
+            std::string timeleft = secsToTimeString(save->GetResetTime() - time(NULL), TimeFormat::ShortText);
 
             if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
             {
                 PSendSysMessage("unbinding map: %d (%s) inst: %d perm: %s canReset: %s TTR: %s",
-                    itr->first, entry->name[GetSessionDbcLocale()], save->GetInstanceId(), itr->second.perm ? "yes" : "no",
-                    save->CanReset() ? "yes" : "no", timeleft.c_str());
+                                itr->first, entry->name[GetSessionDbcLocale()], save->GetInstanceId(), itr->second.perm ? "yes" : "no",
+                                save->CanReset() ? "yes" : "no", timeleft.c_str());
             }
             else
             {

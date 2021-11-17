@@ -82,9 +82,18 @@ inline uint32 GetUnixTimeStamp()
 
 struct IntervalTimer
 {
-public:
-    IntervalTimer() : _interval(0), _current(0) { }
+    public:
+        /**
+         * @brief
+         *
+         */
+        IntervalTimer() : _interval(0), _current(0) {}
 
+        /**
+         * @brief
+         *
+         * @param diff
+         */
     void Update(time_t diff)
     {
         _current += diff;
@@ -93,12 +102,19 @@ public:
             _current = 0;
         }
     }
-
+        /**
+         * @brief
+         *
+         * @return bool
+         */
     bool Passed()
     {
         return _current >= _interval;
     }
-
+        /**
+         * @brief
+         *
+         */
     void Reset()
     {
         if (_current >= _interval)
@@ -127,12 +143,15 @@ public:
         return _current;
     }
 
-private:
-
-    time_t _interval;
-    time_t _current;
+    private:
+        time_t _interval; /**< TODO */
+        time_t _current; /**< TODO */
 };
 
+/**
+ * @brief
+ *
+ */
 struct TimeTracker
 {
 public:

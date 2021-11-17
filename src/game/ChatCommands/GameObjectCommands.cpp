@@ -601,8 +601,8 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
             curRespawnDelay = 0;
         }
 
-        std::string curRespawnDelayStr = secsToTimeString(curRespawnDelay, true);
-        std::string defRespawnDelayStr = secsToTimeString(target->GetRespawnDelay(), true);
+        std::string curRespawnDelayStr = secsToTimeString(curRespawnDelay, TimeFormat::ShortText);
+        std::string defRespawnDelayStr = secsToTimeString(target->GetRespawnDelay(), TimeFormat::ShortText);
 
         PSendSysMessage(LANG_COMMAND_RAWPAWNTIMES, defRespawnDelayStr.c_str(), curRespawnDelayStr.c_str());
 

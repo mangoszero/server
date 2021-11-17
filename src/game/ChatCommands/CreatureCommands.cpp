@@ -1081,8 +1081,8 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     {
         curRespawnDelay = 0;
     }
-    std::string curRespawnDelayStr = secsToTimeString(curRespawnDelay, true);
-    std::string defRespawnDelayStr = secsToTimeString(target->GetRespawnDelay(), true);
+    std::string curRespawnDelayStr = secsToTimeString(curRespawnDelay, TimeFormat::ShortText);
+    std::string defRespawnDelayStr = secsToTimeString(target->GetRespawnDelay(), TimeFormat::ShortText);
 
     PSendSysMessage(LANG_NPCINFO_CHAR, target->GetGuidStr().c_str(), faction, npcflags, Entry, displayid, nativeid);
     PSendSysMessage(LANG_NPCINFO_LEVEL, target->getLevel());
