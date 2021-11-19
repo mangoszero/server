@@ -26,9 +26,9 @@
 #define MANGOSSERVER_CHAT_H
 
 #include "Common.h"
-#include "SharedDefines.h"
-#include "ObjectGuid.h"
 #include "Language.h"
+#include "ObjectGuid.h"
+#include "SharedDefines.h"
 
 struct AreaTrigger;
 struct AreaTriggerEntry;
@@ -37,17 +37,18 @@ struct FactionState;
 struct GameTele;
 struct SpellEntry;
 
-class QueryResult;
 class ChatHandler;
-class WorldSession;
-class WorldPacket;
+class Creature;
 class GMTicket;
+class GameObject;
 class MailDraft;
 class Object;
-class GameObject;
-class Creature;
 class Player;
+class QueryResult;
 class Unit;
+class WorldObject;
+class WorldPacket;
+class WorldSession;
 
 class ChatCommand
 {

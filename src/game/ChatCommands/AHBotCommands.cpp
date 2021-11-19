@@ -28,8 +28,7 @@
 
 #include "Chat.h"
 #include "Language.h"
-#include "AuctionHouseBot/AuctionHouseBot.h"
-
+#include "AuctionHouseBot.h"
 
  /**********************************************************************
      Useful constants definition
