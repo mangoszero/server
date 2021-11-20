@@ -26,9 +26,9 @@
  *   AHBot related commands
  */
 
+#include "AuctionHouseBot.h"
 #include "Chat.h"
 #include "Language.h"
-#include "AuctionHouseBot.h"
 
  /**********************************************************************
      Useful constants definition

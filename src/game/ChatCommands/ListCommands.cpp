@@ -23,8 +23,13 @@
  */
 
 #include "Chat.h"
+#include "DatabaseEnv.h"
+#include "GameObject.h"
 #include "Language.h"
+#include "ObjectMgr.h"
+#include "Spell.h"
 #include "SpellAuras.h"
+#include "WorldSession.h"
 
  /**********************************************************************
       CommandTable : listCommandTable

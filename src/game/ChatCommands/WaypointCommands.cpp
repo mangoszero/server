@@ -22,17 +22,18 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "CellImpl.h"
 #include "Chat.h"
-#include "Language.h"
-#include "PointMovementGenerator.h"
-#include "WaypointMovementGenerator.h"
-#include "TemporarySummon.h"
-#include "MoveMap.h"
-#include "PathFinder.h" // for mmap manager
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
-#include "CellImpl.h"
-#include "movement/MoveSplineInit.h"
+#include "Language.h"
+#include "MoveMap.h"
+#include "MoveSplineInit.h"
+#include "PathFinder.h" // for mmap manager
+#include "PointMovementGenerator.h"
+#include "TemporarySummon.h"
+#include "WaypointMovementGenerator.h"
+
 #include <fstream>
 #include <map>
 #include <typeinfo>

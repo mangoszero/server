@@ -24,8 +24,11 @@
 
 #include "Chat.h"
 #include "Language.h"
-#include "World.h"
 #include "Mail.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
+#include "World.h"
+#include "WorldSession.h"
 
  /**********************************************************************
      CommandTable : commandTable

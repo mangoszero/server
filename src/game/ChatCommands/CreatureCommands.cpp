@@ -22,16 +22,16 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "World.h"
-#include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "Chat.h"
+#include "GridNotifiersImpl.h"
+#include "Language.h"
+#include "PathFinder.h"                                     // for mmap commands
 #include "TargetedMovementGenerator.h"                      // for HandleNpcUnFollowCommand
 #include "TemporarySummon.h"
-#include "WaypointManager.h"
-#include "PathFinder.h"                                     // for mmap commands
 #include "Totem.h"
+#include "WaypointManager.h"
+#include "World.h"
 
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"

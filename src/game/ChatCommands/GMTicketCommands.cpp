@@ -23,11 +23,12 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
-#include "World.h"
 #include "GMTicketMgr.h"
+#include "Language.h"
 #include "Mail.h"
-
+#include "ObjectMgr.h"
+#include "Player.h"
+#include "World.h"
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)

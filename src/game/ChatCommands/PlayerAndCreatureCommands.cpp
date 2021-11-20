@@ -23,12 +23,15 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
-#include "PathFinder.h"
-#include "TargetedMovementGenerator.h"
-#include "MovementGenerator.h"
+#include "Creature.h"
 #include "FollowerReference.h"
-#include "G3D/Vector3.h"
+#include "Language.h"
+#include "MovementGenerator.h"
+#include "PathFinder.h"
+#include "Player.h"
+#include "TargetedMovementGenerator.h"
+#include "Vector3.h"
+#include "WorldSession.h"
 
  /**********************************************************************
       CommandTable : commandTable

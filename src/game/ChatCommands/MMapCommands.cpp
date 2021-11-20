@@ -22,16 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "World.h"
-#include "MoveMap.h"
-#include "PathFinder.h" // for mmap manager
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"          // for mmap manager
 #include "CellImpl.h"
-#include "movement/MoveSplineInit.h"
+#include "Chat.h"
 #include "GameTime.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
+#include "Language.h"
+#include "MoveMap.h"
+#include "PathFinder.h"
+#include "World.h"
+#include "movement/MoveSplineInit.h"
+
 #include <fstream>
 #include <map>
 #include <typeinfo>
