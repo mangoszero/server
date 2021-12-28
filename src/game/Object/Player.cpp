@@ -12175,7 +12175,7 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
     }
 }
 
-void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
+uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
 {
     DEBUG_LOG("STORAGE: DestroyItemCount item = %u, count = %u", item, count);
     uint32 remcount = 0;
@@ -12195,7 +12195,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                     if (remcount >= count)
                     {
-                        return;
+                        return remcount;
                     }
                 }
                 else
@@ -12207,12 +12207,13 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
     }
 
+    // Search in keyring slots
     for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
     {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -12227,7 +12228,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                     if (remcount >= count)
                     {
-                        return;
+                        return remcount;
                     }
                 }
                 else
@@ -12239,7 +12240,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
@@ -12264,7 +12265,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                             if (remcount >= count)
                             {
-                                return;
+                                return remcount;
                             }
                         }
                         else
@@ -12276,7 +12277,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                                 pItem->SendCreateUpdateToPlayer(this);
                             }
                             pItem->SetState(ITEM_CHANGED, this);
-                            return;
+                            return remcount;
                         }
                     }
                 }
@@ -12297,10 +12298,9 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                     {
                         remcount += pItem->GetCount();
                         DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
-
                         if (remcount >= count)
                         {
-                            return;
+                            return remcount;
                         }
                     }
                 }
@@ -12313,7 +12313,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
@@ -12337,7 +12337,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                         if (remcount >= count)
                         {
-                            return;
+                            return remcount;
                         }
                     }
                     else
@@ -12349,7 +12349,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                             pItem->SendCreateUpdateToPlayer(this);
                         }
                         pItem->SetState(ITEM_CHANGED, this);
-                        return;
+                        return remcount;
                     }
                 }
             }
@@ -12374,7 +12374,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                                 if (remcount >= count)
                                 {
-                                    return;
+                                    return remcount;
                                 }
                             }
                             else
@@ -12386,7 +12386,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                                     pItem->SendCreateUpdateToPlayer(this);
                                 }
                                 pItem->SetState(ITEM_CHANGED, this);
-                                return;
+                                return remcount;
                             }
                         }
                     }
@@ -12412,7 +12412,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                         if (remcount >= count)
                         {
-                            return;
+                            return remcount;
                         }
                     }
                     else
@@ -12424,12 +12424,14 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                             pItem->SendCreateUpdateToPlayer(this);
                         }
                         pItem->SetState(ITEM_CHANGED, this);
-                        return;
+                        return remcount;
                     }
                 }
             }
         }
     }
+
+    return remcount;
 }
 
 void Player::DestroyZoneLimitedItem(bool update, uint32 new_zone)
