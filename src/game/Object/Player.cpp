@@ -12175,7 +12175,7 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
     }
 }
 
-void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank)
+void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
 {
     DEBUG_LOG("STORAGE: DestroyItemCount item = %u, count = %u", item, count);
     uint32 remcount = 0;
@@ -12319,6 +12319,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
         }
     }
 
+    // Search in bank items
     if (delete_from_bank)
     {
         // Normal bank slots
@@ -12388,6 +12389,42 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                                 return;
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // Search in buyback npcs vendor tab
+    if (delete_from_buyback)
+    {
+        for (int i = BUYBACK_SLOT_START; i < BUYBACK_SLOT_END; ++i)
+        {
+            if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                if (pItem->GetEntry() == item && !pItem->IsInTrade())
+                {
+                    if (pItem->GetCount() + remcount <= count)
+                    {
+                        // all keys can be unequipped
+                        remcount += pItem->GetCount();
+                        DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
+
+                        if (remcount >= count)
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
+                        pItem->SetCount(pItem->GetCount() - count + remcount);
+                        if (IsInWorld() && update)
+                        {
+                            pItem->SendCreateUpdateToPlayer(this);
+                        }
+                        pItem->SetState(ITEM_CHANGED, this);
+                        return;
                     }
                 }
             }

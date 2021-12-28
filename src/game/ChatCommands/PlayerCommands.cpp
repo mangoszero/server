@@ -1100,7 +1100,7 @@ bool ChatHandler::HandleAddItemCommand(char* args)
     // Subtract
     if (count < 0)
     {
-        plTarget->DestroyItemCount(itemId, -count, true, false, /* Delete from bank*/ true);
+        plTarget->DestroyItemCount(itemId, -count, true, false, /* delete_from_bank */ true, /* delete_from_buyback*/ true);
         PSendSysMessage(LANG_REMOVEITEM, itemId, -count, GetNameLink(plTarget).c_str());
         return true;
     }
