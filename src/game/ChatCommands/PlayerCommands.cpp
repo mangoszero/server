@@ -1125,26 +1125,23 @@ bool ChatHandler::HandleAddItemCommand(char* args)
 
     Item* item = plTarget->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
 
-    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
-    {
-        if (pl == plTarget)
-        {
-
-            // Remove binding (let GM give it to another player later)
-            if (Item* item1 = pl->GetItemByPos(itr->pos))
-            {
-                item1->SetBinding(false);
-                // Perhaps we can enchant the item
-                if (enchant_id)
-                {
-                    item1->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
-                }
-            }
-        }
-    }
-
     if (count > 0 && item)
     {
+        // Perhaps we can enchant the item
+        if (enchant_id)
+        {
+            item->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
+        }
+
+        // If player is GM, then remove item binding to allow to give it later toplayer
+        // WARNING : If enchant is applied, the item can stay souldbound if it is a soulbound enchant id.
+        // e.g : enchant id is 1900 (Crusader) => Item stays "LINKED WHEN PICKED UP"
+        //    if enchant id is 2606 (+30AP)    => Item becomes is Soulbound even if added on a GM character
+        if (pl == plTarget)
+        {
+            item->SetBinding(false);
+        }
+
         pl->SendNewItem(item, count, false, true);
         if (pl != plTarget)
         {
