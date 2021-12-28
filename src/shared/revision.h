@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "add_character_createdDate_col"
 
     #define WORLD_DB_VERSION_NR 22
-    #define WORLD_DB_STRUCTURE_NR 1
-    #define WORLD_DB_CONTENT_NR 011
-    #define WORLD_DB_UPDATE_DESCRIPTION "update_additem_command_syntax"
+    #define WORLD_DB_STRUCTURE_NR 2
+    #define WORLD_DB_CONTENT_NR 001
+    #define WORLD_DB_UPDATE_DESCRIPTION "Fix_Additem_LANG_REMOVEITEM"
 #endif // __REVISION_H__

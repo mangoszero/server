@@ -75,7 +75,7 @@
     foreach($rows as $row)
     {
         $tagLen = strlen($row["source_enum_tag"]);
-        $line = TAB  . $row["source_enum_tag"] . spaces($maxTagLength - $tagLen + 2) . "= " .$row["entry"] ."," . spaces(4) . "/* " .$row["content_default"] ." */" . NEWLINE;
+        $line = spaces(4)  . $row["source_enum_tag"] . spaces($maxTagLength - $tagLen + 2) . "= " .$row["entry"] ."," . spaces(4) . "/* " .$row["content_default"] ." */" . NEWLINE;
         $fileContent .= $line;
     }
 
