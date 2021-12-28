@@ -686,6 +686,18 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
+    // Check visibility in order to avoid hanging trade sessions
+    if (GetSecurity() > SEC_PLAYER && GetPlayer()->GetVisibility() == VISIBILITY_OFF &&
+       (   pOther->GetSession()->GetSecurity() < GetSecurity()
+       || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
+       )
+    )
+    {
+        info.Status = TRADE_STATUS_TRADE_CANCELED;
+        SendTradeStatus(info);
+        return;
+    }
+
     // OK start trade
     GetPlayer()->m_trade = new TradeData(GetPlayer(), pOther);
     pOther->m_trade = new TradeData(pOther, GetPlayer());
