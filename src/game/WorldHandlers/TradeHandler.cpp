@@ -671,26 +671,39 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_TRADE) && pOther->GetTeam() != _player->GetTeam())
+    // Checking faction restrictions but allow a GM to start a trade even if not in same faction
+    if (!sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_TRADE) && pOther->GetTeam() != GetPlayer()->GetTeam() && GetSecurity() == SEC_PLAYER)
     {
         info.Status = TRADE_STATUS_WRONG_FACTION;
         SendTradeStatus(info);
         return;
     }
 
-    if (!pOther->IsWithinDistInMap(_player, TRADE_DISTANCE, false))
+    if (!pOther->IsWithinDistInMap(GetPlayer(), TRADE_DISTANCE, false))
     {
         info.Status = TRADE_STATUS_TARGET_TO_FAR;
         SendTradeStatus(info);
         return;
     }
 
+    // Check visibility in order to avoid hanging trade sessions
+    if (GetSecurity() > SEC_PLAYER && GetPlayer()->GetVisibility() == VISIBILITY_OFF &&
+       (   pOther->GetSession()->GetSecurity() < GetSecurity()
+       || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
+       )
+    )
+    {
+        info.Status = TRADE_STATUS_TRADE_CANCELED;
+        SendTradeStatus(info);
+        return;
+    }
+
     // OK start trade
-    _player->m_trade = new TradeData(_player, pOther);
-    pOther->m_trade = new TradeData(pOther, _player);
+    GetPlayer()->m_trade = new TradeData(GetPlayer(), pOther);
+    pOther->m_trade = new TradeData(pOther, GetPlayer());
 
     info.Status = TRADE_STATUS_BEGIN_TRADE;
-    info.TraderGuid = _player->GetObjectGuid();
+    info.TraderGuid = GetPlayer()->GetObjectGuid();
     pOther->GetSession()->SendTradeStatus(info);
 }
 
