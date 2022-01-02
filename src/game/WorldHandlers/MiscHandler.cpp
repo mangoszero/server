@@ -953,7 +953,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     AreaLockStatus lockStatus = player->GetAreaTriggerLockStatus(at, miscRequirement);
     if (lockStatus != AREA_LOCKSTATUS_OK)
     {
-        player->SendTransferAbortedByLockStatus(targetMapEntry, lockStatus, miscRequirement);
+        player->SendTransferAbortedByLockStatus(targetMapEntry, at, lockStatus, miscRequirement);
         return;
     }
 

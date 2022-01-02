@@ -69,6 +69,7 @@ struct AreaTrigger
     float  target_Y;
     float  target_Z;
     float  target_Orientation;
+    uint32 failed_text_mangos_string_id = 0;
 
     // Operators
     bool IsMinimal() const

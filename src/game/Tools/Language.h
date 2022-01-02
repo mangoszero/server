@@ -877,6 +877,8 @@ Faction Template: %u. */
     LANG_COMMAND_FREEZE_PLAYER_YOU_HAVE_BEEN_UNFROZEN         = 1712,    /* You have been unfrozen. You can now move freely, use spells or even logout. */
     LANG_COMMAND_FREEZE_PLAYER_PLAYER_NOT_FOUND               = 1713,    /* You can only freeze online characters. */
     LANG_COMMAND_UNFREEZE_PLAYER_PLAYER_NOT_FOUND             = 1714,    /* You can only unfreeze online characters. */
+    LANG_CANNOT_ENTER_CHAMPIONS_HALL                          = 1715,    /* You must be a Knight or higher rank in order to enter the Champions Hall. */
+    LANG_CANNOT_ENTER_LEGENDS_HALL                            = 1716,    /* You must be a Stone Guard or higher rank in order to enter the Hall of Legends. */
 
         // FREE IDS                           1701-9999
         // Use for not-in-official-sources patches

@@ -1758,7 +1758,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     if (!isGameMaster() && DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, mapid, this))
     {
         sLog.outDebug("Player (GUID: %u, name: %s) tried to enter a forbidden map %u", GetGUIDLow(), GetName(), mapid);
-        SendTransferAbortedByLockStatus(mEntry, AREA_LOCKSTATUS_NOT_ALLOWED);
+        SendTransferAbortedByLockStatus(mEntry,nullptr, AREA_LOCKSTATUS_NOT_ALLOWED);
         return false;
     }
 
@@ -20977,11 +20977,17 @@ void Player::SendUpdateToOutOfRangeGroupMembers()
     }
 }
 
-void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockStatus lockStatus, uint32 miscRequirement)
+void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigger const* at, AreaLockStatus lockStatus, uint32 miscRequirement)
 {
     MANGOS_ASSERT(mapEntry);
 
     DEBUG_LOG("SendTransferAbortedByLockStatus: Called for %s on map %u, LockAreaStatus %u, miscRequirement %u)", GetGuidStr().c_str(), mapEntry->MapID, lockStatus, miscRequirement);
+
+    if (at && at->failed_text_mangos_string_id > 0)
+    {
+        GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(at->failed_text_mangos_string_id));
+        return;
+    }
 
     switch (lockStatus)
     {
@@ -21031,17 +21037,8 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
             break;
         case AREA_LOCKSTATUS_PVP_RANK:
         {
-            std::string msg = "You cannot enter this zone";
-            switch (GetTeamId())
-            {
-                case TEAM_INDEX_ALLIANCE:
-                    msg = "You must be a Knight or higher rank in order to enter the Champions Hall.";
-                    break;
-                case TEAM_INDEX_HORDE:
-                    msg = "You must be a Stone Guard or higher rank in order to enter the Hall of Legends.";
-                    break;
-            }
-            // TODO : Rely on a a status_failed_text that could be localized, need a DB structure rework for later.
+            // This portion of code should never be hit anymore since an AreaTrigger should handle that.
+            const std::string msg = "You cannot enter this zone"; // fallback message
             GetSession()->SendAreaTriggerMessage(msg.c_str());
             break;
         }
