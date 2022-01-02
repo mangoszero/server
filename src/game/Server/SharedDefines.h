@@ -2533,6 +2533,7 @@ enum AreaLockStatus
     AREA_LOCKSTATUS_NOT_ALLOWED                 = 10,
     AREA_LOCKSTATUS_HAS_BIND                    = 11,
     AREA_LOCKSTATUS_WRONG_TEAM                  = 12,
+    AREA_LOCKSTATUS_PVP_RANK                    = 100
 };
 
 enum TrackedAuraType
