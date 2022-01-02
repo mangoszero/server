@@ -5597,8 +5597,8 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
     uint32 count = 0;
 
-    //                                                0   1           2                  3                  4                  5                   6                  7                  8                  9
-    QueryResult* result = WorldDatabase.Query("SELECT `id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`, `condition_id` FROM `areatrigger_teleport`");
+    //                                                0         1                2                       3                  4                  5                                6                    7  
+    QueryResult* result = WorldDatabase.Query("SELECT `id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`, `status_failed_mangos_string_id`, `condition_id` FROM `areatrigger_teleport`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -5622,12 +5622,13 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
         AreaTrigger at;
 
-        at.target_mapId         = fields[1].GetUInt32();
-        at.target_X             = fields[2].GetFloat();
-        at.target_Y             = fields[3].GetFloat();
-        at.target_Z             = fields[4].GetFloat();
-        at.target_Orientation   = fields[5].GetFloat();
-        at.condition            = fields[6].GetUInt16();
+        at.target_mapId                 = fields[1].GetUInt32();
+        at.target_X                     = fields[2].GetFloat();
+        at.target_Y                     = fields[3].GetFloat();
+        at.target_Z                     = fields[4].GetFloat();
+        at.target_Orientation           = fields[5].GetFloat();
+        at.failed_text_mangos_string_id = fields[6].GetUInt32();
+        at.condition                    = fields[7].GetUInt16();
 
         AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
         if (!atEntry)
