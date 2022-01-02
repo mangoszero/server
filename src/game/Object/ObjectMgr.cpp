@@ -5597,7 +5597,7 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
     uint32 count = 0;
 
-    //                                                0         1                2                       3                  4                  5                                6                    7  
+    //                                                0         1                2                       3                  4                  5                                6                    7
     QueryResult* result = WorldDatabase.Query("SELECT `id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`, `status_failed_mangos_string_id`, `condition_id` FROM `areatrigger_teleport`");
     if (!result)
     {
