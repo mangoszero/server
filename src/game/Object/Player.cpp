@@ -21029,6 +21029,23 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
         case AREA_LOCKSTATUS_UNKNOWN_ERROR:
             // ToDo: SendAreaTriggerMessage or Transfer Abort for these cases!
             break;
+        case AREA_LOCKSTATUS_PVP_RANK:
+        {
+            std::string msg = "You cannot enter this zone";
+            switch (GetTeamId())
+            {
+                case TEAM_INDEX_ALLIANCE:
+                    msg = "You must be a Knight or higher rank in order to enter the Champions Hall.";
+                    break;
+                case TEAM_INDEX_HORDE:
+                    msg = "You must be a Stone Guard or higher rank in order to enter the Hall of Legends.";
+                    break;
+            }
+            // TODO : Rely on a a status_failed_text that could be localized, need a DB structure rework for later.
+            GetSession()->SendAreaTriggerMessage(msg.c_str());
+            break;
+        }
+
         case AREA_LOCKSTATUS_OK:
             sLog.outError("SendTransferAbortedByLockStatus: LockAreaStatus AREA_LOCKSTATUS_OK received for %s (mapId %u)", GetGuidStr().c_str(), mapEntry->MapID);
             MANGOS_ASSERT(false);
@@ -23146,7 +23163,7 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
                 case CONDITION_PVP_RANK:
                 {
                     miscRequirement = fault.param1;
-                    return AREA_LOCKSTATUS_NOT_ALLOWED;
+                    return AREA_LOCKSTATUS_PVP_RANK;
                 }
 
                 default:
