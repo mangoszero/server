@@ -37,7 +37,7 @@
     #define CHAR_DB_UPDATE_DESCRIPTION "add_character_createdDate_col"
 
     #define WORLD_DB_VERSION_NR 22
-    #define WORLD_DB_STRUCTURE_NR 3
-    #define WORLD_DB_CONTENT_NR 003
-    #define WORLD_DB_UPDATE_DESCRIPTION "Implement_Mount_Spell_24576"
+    #define WORLD_DB_STRUCTURE_NR 4
+    #define WORLD_DB_CONTENT_NR 002
+    #define WORLD_DB_UPDATE_DESCRIPTION "Update_conditions_comments"
 #endif // __REVISION_H__
