@@ -12,6 +12,8 @@
 
 ---
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/714e767d4df146a985ffff368c558503)](https://app.codacy.com/gh/mangoszero/server?utm_source=github.com&utm_medium=referral&utm_content=mangoszero/server&utm_campaign=Badge_Grade_Settings)
+
 [<img src="https://www.getmangos.eu/!assets_mangos/Mangos0.png" width="48" valign="middle"/>][8]
  **MangosZero - Vanilla WoW server**
 ===
