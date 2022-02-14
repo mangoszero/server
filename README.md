@@ -34,7 +34,7 @@ as you can see by the images in the heading above! We do love green builds, and 
 Requirements
 ------------
 The server supports a wide range of operating systems, and various compiler platforms.
-In order to do that, we use various free cross-platform libraries and use [CMake][19] to provide
+In order to do that, we use various free cross-platform libraries and use [CMake][19] (v3.12+) to provide
 a cross-platform build system which adapts to your chosen operating system and compiler.
 
 Operating systems
@@ -54,7 +54,7 @@ Compilers
 Building the server is currently possible with these compilers:
 
 * **[Microsoft Visual Studio][31] 32 bit and 64 bit.** All editions of Visual Studio
-from 2015 upwards are officially supported.
+from 2015 upwards are officially supported (although support for 2015 and 2017 are end of life.)
 
 * **[Clang][33]**, 32 bit and 64 bit. The Clang compiler can be used on any
   supported operating system.
