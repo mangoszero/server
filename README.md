@@ -5,7 +5,7 @@
  Linux/MAC: [<img src='https://github.com/mangoszero/server/actions/workflows/core_build.yml/badge.svg' border=0 valign="middle">][10]
  Windows: [<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">][11]
  <br><b>Repository Status:</b> 
-[<img src='https://api.codacy.com/project/badge/Grade/895a7434531a456ba12410ac585717c8' border=0 valign="middle"/>][12]
+[<img src='https://api.codacy.com/project/badge/Grade/714e767d4df146a985ffff368c558503' border=0 valign="middle"/>][12]
 [<img src='https://www.codefactor.io/repository/github/mangoszero/server/badge' border=0 valign="middle"/>][13]
 [<img src='https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat' border=0 valign="middle"/>][14]
 [<img src='https://img.shields.io/discord/286167585270005763.svg' border=0 valign="middle"/>][9]
