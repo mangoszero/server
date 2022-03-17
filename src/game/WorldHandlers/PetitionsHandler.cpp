@@ -683,22 +683,19 @@ void WorldSession::SendPetitionShowList(ObjectGuid guid)
     uint8 count = 1;
 
     WorldPacket data(SMSG_PETITION_SHOWLIST, 8 + 1 + 4 * 6);
-    data << ObjectGuid(guid);                               // npc guid
-    data << count;                                          // count; allowed values 1-10
-    data << uint32(1);                                      // index
-    data << uint32(GUILD_CHARTER);                          // charter entry
-    data << uint32(CHARTER_DISPLAY_ID);                     // charter display id
-    data << uint32(GUILD_CHARTER_COST);                     // charter cost
-    data << uint32(1);                                      // unknown
-    //data << uint32(9);                                      // [-ZERO] required signs?
-    // for(uint8 i = 0; i < count; ++i)
-    //{
-    //    data << uint32(i);                        // index
-    //    data << uint32(GUILD_CHARTER);            // charter entry
-    //    data << uint32(CHARTER_DISPLAY_ID);       // charter display id
-    //    data << uint32(GUILD_CHARTER_COST+i);     // charter cost
-    //    data << uint32(1);                        // unknown
-    //}
+    data << guid;                           // npc guid
+
+    if (pCreature->IsTabardDesigner())
+    {
+        data << uint8(1);                   // count
+        data << uint32(1);                  // index
+        data << uint32(GUILD_CHARTER);      // charter entry
+        data << uint32(CHARTER_DISPLAY_ID); // charter display id
+        data << uint32(GUILD_CHARTER_COST); // charter cost
+        data << uint32(0);                  // unknown
+        data << uint32(4);                  // required signs
+    }
+
     SendPacket(&data);
     DEBUG_LOG("Sent SMSG_PETITION_SHOWLIST");
 }
