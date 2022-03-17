@@ -775,6 +775,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_UINT32_INSTANT_LOGOUT, "InstantLogout", SEC_MODERATOR);
 
+    setConfig(CONFIG_UNIT32_GUILD_PETITION_COST, "Guild.PetitionCost", 1000);
     setConfigMin(CONFIG_UINT32_GUILD_EVENT_LOG_COUNT, "Guild.EventLogRecordsCount", GUILD_EVENTLOG_MAX_RECORDS, GUILD_EVENTLOG_MAX_RECORDS);
 
     setConfig(CONFIG_UINT32_TIMERBAR_FATIGUE_GMLEVEL, "TimerBar.Fatigue.GMLevel", SEC_CONSOLE);
