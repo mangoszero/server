@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@ bool ChatHandler::HandleSendMassMailCommand(char* args)
 
 bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
 {
-    // format: "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
+    // format: "subject text" "mail text" item1[:count1][:enchant1] item2[:count2][:enchant2] ... item12[:count12][:enchant12]
     char* msgSubject = ExtractQuotedArg(&args);
     if (!msgSubject)
     {
@@ -144,9 +144,9 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
     }
 
     // extract items
-    typedef std::pair<uint32, uint32> ItemPair;
-    typedef std::list< ItemPair > ItemPairs;
-    ItemPairs items;
+    typedef std::tuple<uint32, uint32, uint32> ItemToSend;
+    typedef std::list< ItemToSend > ItemsToSend;
+    ItemsToSend items;
 
     // get from tail next item str
     while (char* itemStr = ExtractArg(&args))
@@ -154,13 +154,22 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
         // parse item str
         uint32 item_id = 0;
         uint32 item_count = 1;
-        if (sscanf(itemStr, "%u:%u", &item_id, &item_count) != 2)
+        uint32 item_enchant_id = 0;
+
+        // Try with item1[:count1][:enchant1] format
+        if (sscanf(itemStr, "%u:%u:%u", &item_id, &item_count, &item_enchant_id) == 0)
         {
-            if (sscanf(itemStr, "%u", &item_id) != 1)
+            // Try perhaps with item1[:count1]
+            if (sscanf(itemStr, "%u:%u", &item_id, &item_count) == 0)
             {
-                return false;
+                // Try at least with item1 - if not a integer >0 then => error
+                if (sscanf(itemStr, "%u", &item_id) == 0)
+                {
+                    return false;
+                }
             }
         }
+
         if (!item_id)
         {
             PSendSysMessage(LANG_COMMAND_ITEMIDINVALID, item_id);
@@ -183,13 +192,16 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
             return false;
         }
 
-        while (item_count > item_proto->GetMaxStackSize())
+        uint32 max_items_count = item_proto->GetMaxStackSize();
+        uint32 remaining_items_count = item_count;
+
+        while (remaining_items_count > max_items_count)
         {
-            items.push_back(ItemPair(item_id, item_proto->GetMaxStackSize()));
-            item_count -= item_proto->GetMaxStackSize();
+            items.push_back(ItemToSend(item_id, max_items_count, item_enchant_id));
+            remaining_items_count -= max_items_count;
         }
 
-        items.push_back(ItemPair(item_id, item_count));
+        items.push_back(ItemToSend(item_id, remaining_items_count, item_enchant_id));
 
         if (items.size() > MAX_MAIL_ITEMS)
         {
@@ -202,10 +214,16 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
     // fill mail
     draft.SetSubjectAndBody(msgSubject, msgText);
 
-    for (ItemPairs::const_iterator itr = items.begin(); itr != items.end(); ++itr)
+    for (ItemsToSend::iterator itr = items.begin(); itr != items.end(); ++itr)
     {
-        if (Item* item = Item::CreateItem(itr->first, itr->second, m_session ? m_session->GetPlayer() : 0))
+        uint32 item_id =  std::get<0>(*itr);
+        uint32 item_count = std::get<1>(*itr);
+        if (Item* item = Item::CreateItem(item_id, item_count, m_session ? m_session->GetPlayer() : 0))
         {
+            uint32 item_enchant_id = std::get<2>(*itr);
+            if (item_enchant_id) {
+                item->SetEnchantment(PERM_ENCHANTMENT_SLOT, item_enchant_id, 0, 0);
+            }
             item->SaveToDB();                               // save for prevent lost at next mail load, if send fail then item will deleted
             draft.AddItem(item);
         }
@@ -216,7 +234,7 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
 
 bool ChatHandler::HandleSendItemsCommand(char* args)
 {
-    // format: name "subject text" "mail text" item1[:count1] item2[:count2] ... item12[:count12]
+    // format: "subject text" "mail text" item1[:count1][:enchant1] item2[:count2][:enchant2] ... item12[:count12][:enchant12]
     Player* receiver;
     ObjectGuid receiver_guid;
     std::string receiver_name;

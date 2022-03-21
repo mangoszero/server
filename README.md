@@ -5,7 +5,7 @@
  Linux/MAC: [<img src='https://github.com/mangoszero/server/actions/workflows/core_build.yml/badge.svg' border=0 valign="middle">][10]
  Windows: [<img src='https://ci.appveyor.com/api/projects/status/github/mangoszero/server?branch=master&svg=true' border=0 valign="middle">][11]
  <br><b>Repository Status:</b> 
-[<img src='https://api.codacy.com/project/badge/Grade/895a7434531a456ba12410ac585717c8' border=0 valign="middle"/>][12]
+[<img src='https://api.codacy.com/project/badge/Grade/714e767d4df146a985ffff368c558503' border=0 valign="middle"/>][12]
 [<img src='https://www.codefactor.io/repository/github/mangoszero/server/badge' border=0 valign="middle"/>][13]
 [<img src='https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat' border=0 valign="middle"/>][14]
 [<img src='https://img.shields.io/discord/286167585270005763.svg' border=0 valign="middle"/>][9]
@@ -34,7 +34,7 @@ as you can see by the images in the heading above! We do love green builds, and 
 Requirements
 ------------
 The server supports a wide range of operating systems, and various compiler platforms.
-In order to do that, we use various free cross-platform libraries and use [CMake][19] to provide
+In order to do that, we use various free cross-platform libraries and use [CMake][19] (v3.12+) to provide
 a cross-platform build system which adapts to your chosen operating system and compiler.
 
 Operating systems
@@ -54,7 +54,7 @@ Compilers
 Building the server is currently possible with these compilers:
 
 * **[Microsoft Visual Studio][31] 32 bit and 64 bit.** All editions of Visual Studio
-from 2015 upwards are officially supported.
+from 2015 upwards are officially supported (although support for 2015 and 2017 are end of life.)
 
 * **[Clang][33]**, 32 bit and 64 bit. The Clang compiler can be used on any
   supported operating system.

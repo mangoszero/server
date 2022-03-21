@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -443,7 +443,7 @@ enum MangosStrings
     LANG_REMOVE_COOLDOWN                                      = 493,    /* Spell %u cooldown removed for %s. */
     LANG_ADDITEM                                              = 494,    /* Command : Additem, itemId = %i, amount = %i */
     LANG_ADDITEMSET                                           = 495,    /* Command : Additemset, itemsetId = %i */
-    LANG_REMOVEITEM                                           = 496,    /* Removed itemID = %i, amount = %i from %s */
+    LANG_REMOVEITEM                                           = 496,    /* Removed itemID = |cffffffff%i|r : Try to remove count = |cff00a1ff%i|r, Effective deleted count = |cffff0000%i|r from |cffffffff%s|r */
     LANG_ITEM_CANNOT_CREATE                                   = 497,    /* Cannot create item '%i' (amount: %i) */
     LANG_INSERT_GUILD_NAME                                    = 498,    /* You need to provide a guild name! */
     LANG_PLAYER_NOT_FOUND                                     = 499,    /* Player not found! */
@@ -869,14 +869,16 @@ Faction Template: %u. */
     LANG_COMMAND_AURAGROUP_ALL_AURA_REMOVED                   = 1704,    /* All auras have been removed from %s. */
     LANG_COMMAND_AURAGROUP_AURA_REMOVED_FOR_SPELL             = 1705,    /* Aura from spell %u has been removedfrom %s */
     LANG_COMMAND_EXECUTE_GOCRE_ANOTHER_TIME                   = 1706,    /* You will have to execute your command another time to get to the real moving npc position (.go creature %u) */
-    LANG_COMMAND_FREEZE_PLAYER                                = 1707,    /* %s has been freezed ! Be careful : Effect will persist after logout or ban if not manually removed ! (use ".unfreezeplayer" command to allow the player to move again) */
-    LANG_COMMAND_UNFREEZE_PLAYER                              = 1708,    /* %s has been unfreezed. */
+    LANG_COMMAND_FREEZE_PLAYER                                = 1707,    /* %s has been frozen ! Be careful : Effect will persist after logout or ban if not manually removed ! (use ".unfreezeplayer" command to allow the player to move again) */
+    LANG_COMMAND_UNFREEZE_PLAYER                              = 1708,    /* %s has been unfrozen. */
     LANG_COMMAND_FREEZE_PLAYER_CANNOT_FREEZE_HIGHER_SECLEVEL  = 1709,    /* You cannot freeze %s since his security level is higher than yours. */
     LANG_COMMAND_FREEZE_PLAYER_CANNOT_FREEZE_YOURSELF         = 1710,    /* You cannot freeze yourself ! (What a strange idea by the way...) */
     LANG_COMMAND_FREEZE_PLAYER_YOU_HAVE_BEEN_FROZEN           = 1711,    /* A GM has frozen your character. From now, you cannot move, use spells or logout. */
     LANG_COMMAND_FREEZE_PLAYER_YOU_HAVE_BEEN_UNFROZEN         = 1712,    /* You have been unfrozen. You can now move freely, use spells or even logout. */
     LANG_COMMAND_FREEZE_PLAYER_PLAYER_NOT_FOUND               = 1713,    /* You can only freeze online characters. */
     LANG_COMMAND_UNFREEZE_PLAYER_PLAYER_NOT_FOUND             = 1714,    /* You can only unfreeze online characters. */
+    LANG_CANNOT_ENTER_CHAMPIONS_HALL                          = 1715,    /* You must be a Knight or higher rank in order to enter the Champions Hall. */
+    LANG_CANNOT_ENTER_LEGENDS_HALL                            = 1716,    /* You must be a Stone Guard or higher rank in order to enter the Hall of Legends. */
 
         // FREE IDS                           1701-9999
         // Use for not-in-official-sources patches

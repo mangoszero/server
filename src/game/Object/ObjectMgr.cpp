@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -5597,8 +5597,8 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
     uint32 count = 0;
 
-    //                                                0   1           2                  3                  4                  5                   6                  7                  8                  9
-    QueryResult* result = WorldDatabase.Query("SELECT `id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`, `condition_id` FROM `areatrigger_teleport`");
+    //                                                0         1                2                       3                  4                  5                                6                    7
+    QueryResult* result = WorldDatabase.Query("SELECT `id`, `target_map`, `target_position_x`, `target_position_y`, `target_position_z`, `target_orientation`, `status_failed_mangos_string_id`, `condition_id` FROM `areatrigger_teleport`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -5622,12 +5622,13 @@ void ObjectMgr::LoadAreaTriggerTeleports()
 
         AreaTrigger at;
 
-        at.target_mapId         = fields[1].GetUInt32();
-        at.target_X             = fields[2].GetFloat();
-        at.target_Y             = fields[3].GetFloat();
-        at.target_Z             = fields[4].GetFloat();
-        at.target_Orientation   = fields[5].GetFloat();
-        at.condition            = fields[6].GetUInt16();
+        at.target_mapId                 = fields[1].GetUInt32();
+        at.target_X                     = fields[2].GetFloat();
+        at.target_Y                     = fields[3].GetFloat();
+        at.target_Z                     = fields[4].GetFloat();
+        at.target_Orientation           = fields[5].GetFloat();
+        at.failed_text_mangos_string_id = fields[6].GetUInt32();
+        at.condition                    = fields[7].GetUInt16();
 
         AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(Trigger_ID);
         if (!atEntry)

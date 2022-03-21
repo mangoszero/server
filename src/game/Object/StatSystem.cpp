@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -374,8 +374,9 @@ void Player::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, fl
     }
     else if (attType == RANGED_ATTACK)                      // add ammo DPS to ranged damage
     {
-        weapon_mindamage += GetAmmoDPS() * att_speed;
-        weapon_maxdamage += GetAmmoDPS() * att_speed;
+        std::pair<float,float> ammoDps = GetAmmoDPS();
+        weapon_mindamage += ammoDps.first * att_speed;
+        weapon_maxdamage += ammoDps.second * att_speed;
     }
 
     min_damage = ((base_value + weapon_mindamage) * base_pct + total_value) * total_pct;

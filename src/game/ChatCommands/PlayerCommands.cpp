@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1098,8 +1098,8 @@ bool ChatHandler::HandleAddItemCommand(char* args)
     // Subtract
     if (count < 0)
     {
-        plTarget->DestroyItemCount(itemId, -count, true, false);
-        PSendSysMessage(LANG_REMOVEITEM, itemId, -count, GetNameLink(plTarget).c_str());
+        uint32 deletedCount = plTarget->DestroyItemCount(itemId, -count, true, false, /* delete_from_bank */ true, /* delete_from_buyback*/ true);
+        PSendSysMessage(LANG_REMOVEITEM, itemId, -count , deletedCount, GetNameLink(plTarget).c_str());
         return true;
     }
 
@@ -1123,26 +1123,23 @@ bool ChatHandler::HandleAddItemCommand(char* args)
 
     Item* item = plTarget->StoreNewItem(dest, itemId, true, Item::GenerateItemRandomPropertyId(itemId));
 
-    for (ItemPosCountVec::const_iterator itr = dest.begin(); itr != dest.end(); ++itr)
-    {
-        if (pl == plTarget)
-        {
-
-            // Remove binding (let GM give it to another player later)
-            if (Item* item1 = pl->GetItemByPos(itr->pos))
-            {
-                item1->SetBinding(false);
-                // Perhaps we can enchant the item
-                if (enchant_id)
-                {
-                    item1->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
-                }
-            }
-        }
-    }
-
     if (count > 0 && item)
     {
+        // Perhaps we can enchant the item
+        if (enchant_id)
+        {
+            item->SetEnchantment(PERM_ENCHANTMENT_SLOT, enchant_id, 0, 0);
+        }
+
+        // If player is GM, then remove item binding to allow to give it later toplayer
+        // WARNING : If enchant is applied, the item can stay souldbound if it is a soulbound enchant id.
+        // e.g : enchant id is 1900 (Crusader) => Item stays "LINKED WHEN PICKED UP"
+        //    if enchant id is 2606 (+30AP)    => Item becomes is Soulbound even if added on a GM character
+        if (pl == plTarget)
+        {
+            item->SetBinding(false);
+        }
+
         pl->SendNewItem(item, count, false, true);
         if (pl != plTarget)
         {

@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2021 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -540,7 +540,8 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_canParry = false;
     m_canBlock = false;
     m_canDualWield = false;
-    m_ammoDPS = 0.0f;
+    m_ammoDPSMin = 0.0f;
+    m_ammoDPSMax = 0.0f;
 
     m_temporaryUnsummonedPetNumber = 0;
 
@@ -1757,7 +1758,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     if (!isGameMaster() && DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, mapid, this))
     {
         sLog.outDebug("Player (GUID: %u, name: %s) tried to enter a forbidden map %u", GetGUIDLow(), GetName(), mapid);
-        SendTransferAbortedByLockStatus(mEntry, AREA_LOCKSTATUS_NOT_ALLOWED);
+        SendTransferAbortedByLockStatus(mEntry,nullptr, AREA_LOCKSTATUS_NOT_ALLOWED);
         return false;
     }
 
@@ -5411,64 +5412,94 @@ uint32 Player::GetShieldBlockValue() const
 
 float Player::GetMeleeCritFromAgility()
 {
-    // from mangos 3462 for 1.12
-    float val = 0.0f, classrate = 0.0f, levelfactor = 0.0f, fg = 0.0f;
-
-    fg = (0.35f*(float) (getLevel())) + 5.55f;
-    levelfactor = (106.20f / fg) - 3;
+    float valLevel1 = 0.0f;
+    float valLevel60 = 0.0f;
 
     // critical
     switch (getClass())
     {
-        case CLASS_PALADIN: classrate = 19.77f; break;
-        case CLASS_SHAMAN:  classrate = 19.7f;  break;
-        case CLASS_MAGE:    classrate = 19.44f; break;
-        case CLASS_ROGUE:   classrate = 29.0f;  break;
-        case CLASS_HUNTER:  classrate = 53.0f;  break;
-        case CLASS_PRIEST:
-        case CLASS_WARLOCK:
-        case CLASS_DRUID:
-        case CLASS_WARRIOR:
-        default:            classrate = 20.0f; break;
+    case CLASS_PALADIN:
+    case CLASS_SHAMAN:
+    case CLASS_DRUID:
+        valLevel1 = 4.6f;
+        valLevel60 = 20.0f;
+        break;
+    case CLASS_MAGE:
+        valLevel1 = 12.9f;
+        valLevel60 = 20.0f;
+        break;
+    case CLASS_ROGUE:
+        valLevel1 = 2.2f;
+        valLevel60 = 29.0f;
+        break;
+    case CLASS_HUNTER:
+        valLevel1 = 3.5f;
+        valLevel60 = 53.0f;
+        break;
+    case CLASS_PRIEST:
+        valLevel1 = 11.0f;
+        valLevel60 = 20.0f;
+        break;
+    case CLASS_WARLOCK:
+        valLevel1 = 8.4f;
+        valLevel60 = 20.0f;
+        break;
+    case CLASS_WARRIOR:
+        valLevel1 = 3.9f;
+        valLevel60 = 20.0f;
+        break;
+    default:
+        return 0.0f;
     }
-
-    val = levelfactor * (GetStat(STAT_AGILITY) / classrate);
-    return val;
+    float classrate = valLevel1 * float(60.0f - getLevel()) / 59.0f + valLevel60 * float(getLevel() - 1.0f) / 59.0f;
+    return GetStat(STAT_AGILITY) / classrate;
 }
 
 float Player::GetDodgeFromAgility()
 {
-    // from mangos 3462 for 1.12
-    float val = 0, classrate = 0, levelrate = 0;
+    float valLevel1 = 0.0f;
+    float valLevel60 = 0.0f;
 
-    levelrate = ((16.225f/((0.45f*(float)(getLevel()))+2.5f))-0.1f)/0.42f;
-
-    // dodge
+    // critical
     switch (getClass())
     {
-        case CLASS_ROGUE:   classrate = 14.5;  break;
-        case CLASS_HUNTER:  classrate = 26.5f;  break;
         case CLASS_PALADIN:
         case CLASS_SHAMAN:
-        case CLASS_MAGE:
-        case CLASS_PRIEST:
-        case CLASS_WARLOCK:
         case CLASS_DRUID:
+            valLevel1 = 4.6f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_MAGE:
+            valLevel1 = 12.9f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_ROGUE:
+            valLevel1 = 1.1f;
+            valLevel60 = 14.5f;
+            break;
+        case CLASS_HUNTER:
+            valLevel1 = 1.8f;
+            valLevel60 = 26.5f;
+            break;
+        case CLASS_PRIEST:
+            valLevel1 = 11.0f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_WARLOCK:
+            valLevel1 = 8.4f;
+            valLevel60 = 20.0f;
+            break;
         case CLASS_WARRIOR:
-        default:            classrate = 20.0f; break;
+            valLevel1 = 3.9f;
+            valLevel60 = 20.0f;
+            break;
+        default:
+            return 0.0f;
     }
 
-    ///*+(Defense*0,04);
-    if (getRace() == RACE_NIGHTELF)
-    {
-        val = (levelrate * (GetStat(STAT_AGILITY) / classrate)) + 1;
-    }
-    else
-    {
-        val = (levelrate * (GetStat(STAT_AGILITY) / classrate));
-    }
+    float classrate = valLevel1 * float(60.0f - getLevel()) / 59.0f + valLevel60 * float(getLevel() - 1.0f) / 59.0f;
 
-    return val;
+    return GetStat(STAT_AGILITY) / classrate;
 }
 
 float Player::GetSpellCritFromIntellect()
@@ -8284,24 +8315,28 @@ void Player::_ApplyAmmoBonuses()
         return;
     }
 
-    float currentAmmoDPS;
+    float currentAmmoDPSMin;
+    float currentAmmoDPSMax;
 
     ItemPrototype const* ammo_proto = ObjectMgr::GetItemPrototype(ammo_id);
     if (!ammo_proto || ammo_proto->Class != ITEM_CLASS_PROJECTILE || !CheckAmmoCompatibility(ammo_proto))
     {
-        currentAmmoDPS = 0.0f;
+        currentAmmoDPSMin = 0.f;
+        currentAmmoDPSMax = 0.f;
     }
     else
     {
-        currentAmmoDPS = ammo_proto->Damage[0].DamageMin;
+        currentAmmoDPSMin = ammo_proto->Damage[0].DamageMin;
+        currentAmmoDPSMax = ammo_proto->Damage[0].DamageMax;
     }
 
-    if (currentAmmoDPS == GetAmmoDPS())
+    if (std::make_pair(currentAmmoDPSMin, currentAmmoDPSMax) == GetAmmoDPS())
     {
         return;
     }
 
-    m_ammoDPS = currentAmmoDPS;
+    m_ammoDPSMin = currentAmmoDPSMin;
+    m_ammoDPSMax = currentAmmoDPSMax;
 
     if (CanModifyStats())
     {
@@ -11621,7 +11656,8 @@ void Player::RemoveAmmo()
 {
     SetUInt32Value(PLAYER_AMMO_ID, 0);
 
-    m_ammoDPS = 0.0f;
+    m_ammoDPSMin = 0.0f;
+    m_ammoDPSMax = 0.0f;
 
     if (CanModifyStats())
     {
@@ -12175,12 +12211,12 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
     }
 }
 
-void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check)
+uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
 {
     DEBUG_LOG("STORAGE: DestroyItemCount item = %u, count = %u", item, count);
     uint32 remcount = 0;
 
-    // in inventory
+    // Search in default bagpack
     for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
     {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -12195,7 +12231,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                     if (remcount >= count)
                     {
-                        return;
+                        return remcount;
                     }
                 }
                 else
@@ -12207,12 +12243,13 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
     }
 
+    // Search in keyring slots
     for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
     {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -12227,7 +12264,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                     if (remcount >= count)
                     {
-                        return;
+                        return remcount;
                     }
                 }
                 else
@@ -12239,13 +12276,13 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
     }
 
-    // in inventory bags
+    // Search in inventory bags
     for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -12264,7 +12301,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
 
                             if (remcount >= count)
                             {
-                                return;
+                                return remcount;
                             }
                         }
                         else
@@ -12276,7 +12313,7 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                                 pItem->SendCreateUpdateToPlayer(this);
                             }
                             pItem->SetState(ITEM_CHANGED, this);
-                            return;
+                            return remcount;
                         }
                     }
                 }
@@ -12284,8 +12321,8 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
         }
     }
 
-    // in equipment and bag list
-    for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    // Search in Equiped items
+    for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
     {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
         {
@@ -12297,10 +12334,9 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                     {
                         remcount += pItem->GetCount();
                         DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
-
                         if (remcount >= count)
                         {
-                            return;
+                            return remcount;
                         }
                     }
                 }
@@ -12313,11 +12349,125 @@ void Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequ
                         pItem->SendCreateUpdateToPlayer(this);
                     }
                     pItem->SetState(ITEM_CHANGED, this);
-                    return;
+                    return remcount;
                 }
             }
         }
     }
+
+    // Search in bank items
+    if (delete_from_bank)
+    {
+        // Normal bank slots
+        for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+        {
+            if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                if (pItem->GetEntry() == item && !pItem->IsInTrade())
+                {
+                    if (pItem->GetCount() + remcount <= count)
+                    {
+                        // all items in inventory can unequipped
+                        remcount += pItem->GetCount();
+                        DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
+
+                        if (remcount >= count)
+                        {
+                            return remcount;
+                        }
+                    }
+                    else
+                    {
+                        ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
+                        pItem->SetCount(pItem->GetCount() - count + remcount);
+                        if (IsInWorld() && update)
+                        {
+                            pItem->SendCreateUpdateToPlayer(this);
+                        }
+                        pItem->SetState(ITEM_CHANGED, this);
+                        return remcount;
+                    }
+                }
+            }
+        }
+
+        // Bank bagslots
+        for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+        {
+            if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                {
+                    if (Item* pItem = pBag->GetItemByPos(j))
+                    {
+                        if (pItem->GetEntry() == item && !pItem->IsInTrade())
+                        {
+                            // all items in bags can be unequipped
+                            if (pItem->GetCount() + remcount <= count)
+                            {
+                                remcount += pItem->GetCount();
+                                DestroyItem(i, j, update);
+
+                                if (remcount >= count)
+                                {
+                                    return remcount;
+                                }
+                            }
+                            else
+                            {
+                                ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
+                                pItem->SetCount(pItem->GetCount() - count + remcount);
+                                if (IsInWorld() && update)
+                                {
+                                    pItem->SendCreateUpdateToPlayer(this);
+                                }
+                                pItem->SetState(ITEM_CHANGED, this);
+                                return remcount;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Search in buyback npcs vendor tab
+    if (delete_from_buyback)
+    {
+        for (int i = BUYBACK_SLOT_START; i < BUYBACK_SLOT_END; ++i)
+        {
+            if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
+                if (pItem->GetEntry() == item && !pItem->IsInTrade())
+                {
+                    if (pItem->GetCount() + remcount <= count)
+                    {
+                        // all keys can be unequipped
+                        remcount += pItem->GetCount();
+                        DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
+
+                        if (remcount >= count)
+                        {
+                            return remcount;
+                        }
+                    }
+                    else
+                    {
+                        ItemRemovedQuestCheck(pItem->GetEntry(), count - remcount);
+                        pItem->SetCount(pItem->GetCount() - count + remcount);
+                        if (IsInWorld() && update)
+                        {
+                            pItem->SendCreateUpdateToPlayer(this);
+                        }
+                        pItem->SetState(ITEM_CHANGED, this);
+                        return remcount;
+                    }
+                }
+            }
+        }
+    }
+
+    return remcount;
 }
 
 void Player::DestroyZoneLimitedItem(bool update, uint32 new_zone)
@@ -20827,11 +20977,17 @@ void Player::SendUpdateToOutOfRangeGroupMembers()
     }
 }
 
-void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockStatus lockStatus, uint32 miscRequirement)
+void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigger const* at, AreaLockStatus lockStatus, uint32 miscRequirement)
 {
     MANGOS_ASSERT(mapEntry);
 
     DEBUG_LOG("SendTransferAbortedByLockStatus: Called for %s on map %u, LockAreaStatus %u, miscRequirement %u)", GetGuidStr().c_str(), mapEntry->MapID, lockStatus, miscRequirement);
+
+    if (at && at->failed_text_mangos_string_id > 0)
+    {
+        GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(at->failed_text_mangos_string_id));
+        return;
+    }
 
     switch (lockStatus)
     {
@@ -20879,6 +21035,14 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaLockS
         case AREA_LOCKSTATUS_UNKNOWN_ERROR:
             // ToDo: SendAreaTriggerMessage or Transfer Abort for these cases!
             break;
+        case AREA_LOCKSTATUS_PVP_RANK:
+        {
+            // This portion of code should never be hit anymore since an AreaTrigger should handle that.
+            const std::string msg = "You cannot enter this zone"; // fallback message
+            GetSession()->SendAreaTriggerMessage(msg.c_str());
+            break;
+        }
+
         case AREA_LOCKSTATUS_OK:
             sLog.outError("SendTransferAbortedByLockStatus: LockAreaStatus AREA_LOCKSTATUS_OK received for %s (mapId %u)", GetGuidStr().c_str(), mapEntry->MapID);
             MANGOS_ASSERT(false);
@@ -22996,7 +23160,7 @@ AreaLockStatus Player::GetAreaTriggerLockStatus(AreaTrigger const* at, uint32& m
                 case CONDITION_PVP_RANK:
                 {
                     miscRequirement = fault.param1;
-                    return AREA_LOCKSTATUS_NOT_ALLOWED;
+                    return AREA_LOCKSTATUS_PVP_RANK;
                 }
 
                 default:
