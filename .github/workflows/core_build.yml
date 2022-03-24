@@ -9,19 +9,19 @@ jobs:
   build:
     strategy:
       fail-fast: false
-    
+
       matrix:
         compiler: [gcc, clang]
-        
+
         include:
-          - os: ubuntu-18.04
-            name: Ubuntu 18.04 GCC
+          - os: ubuntu-20.04
+            name: Ubuntu 20.04 GCC
             compiler: gcc
-            
-          - os: ubuntu-18.04
-            name: Ubuntu 18.04 Clang
+
+          - os: ubuntu-20.04
+            name: Ubuntu 20.04 Clang
             compiler: clang
-            
+
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}
     env:
@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for Updates
         run: sudo apt-get update -y
-       
+
       - name: Install Required Packages
         run: sudo apt-get install -y git make cmake gcc g++ clang libssl-dev libbz2-dev build-essential default-libmysqlclient-dev libace-6.4.5 libace-dev python
 
