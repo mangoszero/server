@@ -3305,6 +3305,10 @@ SpellCastResult Creature::TryToCast(Unit* pTarget, const SpellEntry* pSpellInfo,
         return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
     }
 
+    if (hasUnitState(UNIT_STAT_STUNNED)) {
+        return SPELL_FAILED_STUNNED;
+    }
+
     // This spell should only be cast when target does not have the aura it applies.
     if ((uiCastFlags & CF_AURA_NOT_PRESENT) && pTarget->HasAura(pSpellInfo->Id))
     {
