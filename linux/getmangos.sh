@@ -263,6 +263,10 @@ function GetPrerequisites()
       # Ubuntu 19.04
       su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
       ;;
+    "focal")
+      # Ubuntu 20.04
+      su -c "apt-get -y install build-essential curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool" root
+      ;;
         *)
           OS_VER=0
           ;;
