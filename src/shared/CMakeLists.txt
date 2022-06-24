@@ -40,6 +40,8 @@ set(SRC_GRP_COMMON
   Common/Common.cpp
   Common/Common.h
   Common/ServerDefines.h
+  Common/GitRevision.cpp
+  Common/GitRevision.h
 )
 source_group("Common" FILES ${SRC_GRP_COMMON})
 
@@ -186,6 +188,7 @@ set(TGT_INCL
   Policies
 )
 
+configure_file(revision_data.h.in ${CMAKE_CURRENT_BINARY_DIR}/revision_data.h)
 configure_file(SystemConfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/SystemConfig.h)
 
 TEST_BIG_ENDIAN(ENDIAN_VALUE)
@@ -206,6 +209,7 @@ add_library(shared STATIC
     ${SRC_GRP_SVC}
     ${SRC_GRP_UTILITIES}
     revision.h
+    ${CMAKE_CURRENT_BINARY_DIR/revision_data.h}
     ${CMAKE_CURRENT_BINARY_DIR/SystemConfig.h}
 )
 

@@ -120,5 +120,9 @@ msbuild.cmd
 
 /src/tools/Extractor_Binaries/*.exe
 
+# Skip Git Revision created file
+/src/shared/revision_data.h
+
+
 # File generated during compile
 /dep/libmpq/compile

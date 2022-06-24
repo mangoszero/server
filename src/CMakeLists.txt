@@ -17,21 +17,31 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+# Build the mangos shared library
 add_subdirectory(shared)
 
+add_subdirectory(genrev)
+
+# Needs to link against mangos_world.lib
 if(BUILD_MANGOSD OR BUILD_TOOLS)
+    # Build the mangos game library
     add_subdirectory(game)
 endif()
 
 if(BUILD_MANGOSD)
+    # Build the mangos world server
     add_subdirectory(mangosd)
+
+    # Build the selected modules
     add_subdirectory(modules)
 endif()
 
+# Build the mangos realm authentication server
 if(BUILD_REALMD)
     add_subdirectory(realmd)
 endif()
 
+# If we want the tools for map/vmap/mmap extraction
 if(BUILD_TOOLS)
     add_subdirectory(tools)
 endif()

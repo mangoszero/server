@@ -1,7 +1,14 @@
 message("===================================================")
+message("Mangos revision       : ${rev_hash} ${rev_date} (${rev_branch} branch)")
 message("Build type            : ${CMAKE_BUILD_TYPE}")
 message("Install server(s) to  : ${BIN_DIR}")
 message("Install configs to    : ${CONF_INSTALL_DIR}")
+
+message("")
+message("Detailed Information")
+message("+-- opeating system   : ${CMAKE_HOST_SYSTEM}")
+message("+-- cmake version     : ${CMAKE_VERSION}")
+message("")
 
 if(BUILD_MANGOSD)
     message("Build main server     : Yes (default)")

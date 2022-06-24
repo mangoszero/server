@@ -26,9 +26,11 @@
 #include "Language.h"
 #include "World.h"
 #include "Config.h"
+#include "GitRevision.h"
 #include "SystemConfig.h"
 #include "UpdateTime.h"
 #include "revision.h"
+#include "revision_data.h"
 
  /**********************************************************************
      CommandTable : serverCommandTable
@@ -64,6 +66,9 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     {
         SendSysMessage(LANG_USING_SCRIPT_LIB_NONE);
     }
+
+    PSendSysMessage("%s", GitRevision::GetFullRevision());
+    PSendSysMessage("%s", GitRevision::GetRunningSystem());
 
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
