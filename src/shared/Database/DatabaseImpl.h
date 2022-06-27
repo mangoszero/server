@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#if !defined(DATABASEIMPL_H)
+#define DATABASEIMPL_H
 #include "Database/Database.h"
 #include "Database/SqlOperations.h"
 
@@ -360,3 +362,5 @@ Database::DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, Sq
 #undef ASYNC_QUERY_BODY
 #undef ASYNC_PQUERY_BODY
 #undef ASYNC_DELAYHOLDER_BODY
+
+#endif
