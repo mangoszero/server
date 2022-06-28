@@ -24,10 +24,12 @@
 
 #include "Chat.h"
 #include "Language.h"
-#include "World.h"
-#include "Weather.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
 #include "SpellMgr.h"
 #include "Util.h"
+#include "Weather.h"
+#include "World.h"
 
  /**********************************************************************
      CommandTable : commandTable

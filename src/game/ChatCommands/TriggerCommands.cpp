@@ -24,7 +24,9 @@
 
 #include "Chat.h"
 #include "Language.h"
-
+#include "ObjectMgr.h"
+#include "Player.h"
+#include "WorldSession.h"
 
 void ChatHandler::ShowTriggerTargetListHelper(uint32 id, AreaTrigger const* at, bool subpart /*= false*/)
 {

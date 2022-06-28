@@ -23,9 +23,12 @@
  */
 
 #include "Chat.h"
+#include "InstanceData.h"
 #include "Language.h"
 #include "MapManager.h"
-#include "InstanceData.h"
+#include "MapPersistentStateMgr.h"
+#include "Player.h"
+#include "WorldSession.h"
 
  /**********************************************************************
      CommandTable : instanceCommandTable

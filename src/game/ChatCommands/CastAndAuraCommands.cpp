@@ -23,9 +23,12 @@
  */
 
 #include "Chat.h"
+#include "Creature.h"
 #include "Language.h"
+#include "Player.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
+#include "WorldSession.h"
 
 /**********************************************************************
     CommandTable : castCommandTable

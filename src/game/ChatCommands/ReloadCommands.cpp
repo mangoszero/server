@@ -22,16 +22,16 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "SpellMgr.h"
-#include "DisableMgr.h"
-#include "World.h"
-#include "MapManager.h"
-#include "CreatureEventAIMgr.h"
 #include "BattleGroundMgr.h"
-#include "ItemEnchantmentMgr.h"
+#include "Chat.h"
 #include "CommandMgr.h"
+#include "CreatureEventAIMgr.h"
+#include "DisableMgr.h"
+#include "ItemEnchantmentMgr.h"
+#include "Language.h"
+#include "MapManager.h"
+#include "SpellMgr.h"
+#include "World.h"
 
  /**********************************************************************
      CommandTable : commandTable

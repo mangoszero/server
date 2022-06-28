@@ -23,9 +23,9 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
-#include "GuildMgr.h"
 #include "Guild.h"
+#include "GuildMgr.h"
+#include "Language.h"
 
  /**********************************************************************
      CommandTable : guildCommandTable

@@ -23,14 +23,15 @@
  */
 
 /*
-*   Account related commands
+ *   Account related commands
 */
 
-#include "World.h"
-#include "Chat.h"
-#include "Language.h"
 #include "AccountMgr.h"
-
+#include "Chat.h"
+#include "DatabaseEnv.h"
+#include "Language.h"
+#include "Player.h"
+#include "World.h"
 
 /**********************************************************************
     CommandTable : accountCommandTable

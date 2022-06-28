@@ -22,12 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "CellImpl.h"
 #include "Chat.h"
 #include "Language.h"
-#include "World.h"
 #include "MapManager.h"
-#include "CellImpl.h"
-
+#include "ObjectMgr.h"
+#include "Player.h"
+#include "World.h"
+#include "WorldSession.h"
 
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"

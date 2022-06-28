@@ -22,11 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "World.h"
 #include "AccountMgr.h"
+#include "Chat.h"
+#include "DatabaseEnv.h"
+#include "Language.h"
+#include "ObjectMgr.h"
 #include "Util.h"
+#include "World.h"
+#include "WorldSession.h"
+#include "QueryResult.h"
 
  /**********************************************************************
      CommandTable : banCommandTable

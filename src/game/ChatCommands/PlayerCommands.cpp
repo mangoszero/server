@@ -22,14 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "AccountMgr.h"
 #include "Chat.h"
 #include "Language.h"
-#include "World.h"
-#include "AccountMgr.h"
 #include "ObjectMgr.h"
 #include "SQLStorages.h"
-
-
+#include "World.h"
 
  /**********************************************************************
      CommandTable : characterCommandTable

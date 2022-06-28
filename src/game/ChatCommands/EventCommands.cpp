@@ -23,9 +23,9 @@
  */
 
 #include "Chat.h"
+#include "GameEventMgr.h"
 #include "Language.h"
-#include "GameEventMgr.h"
-#include "GameEventMgr.h"
+#include "Util.h"
 
  /**********************************************************************
      CommandTable : eventCommandTable
