@@ -66,6 +66,72 @@ char const* GitRevision::GetHostOSVersion()
     #define MANGOS_PLATFORM_STR "Unknown System"
 #endif
 
+// Database Revision
+char const* GitRevision::GetProjectRevision()
+{
+    return PROJECT_REVISION_NR;
+}
+
+char const* GitRevision::GetRealmDBVersion()
+{
+    return REALMD_DB_VERSION_NR;
+}
+
+char const* GitRevision::GetRealmDBStructure()
+{
+    return REALMD_DB_STRUCTURE_NR;
+}
+
+char const* GitRevision::GetRealmDBContent()
+{
+    return REALMD_DB_CONTENT_NR;
+}
+
+char const* GitRevision::GetRealmDBUpdateDescription()
+{
+    return REALMD_DB_UPDATE_DESCRIPT;
+}
+
+char const* GitRevision::GetCharDBVersion()
+{
+    return CHAR_DB_VERSION_NR;
+}
+
+char const* GitRevision::GetCharDBStructure()
+{
+    return CHAR_DB_STRUCTURE_NR;
+}
+
+char const* GitRevision::GetCharDBContent()
+{
+    return CHAR_DB_CONTENT_NR;
+}
+
+char const* GitRevision::GetCharDBUpdateDescription()
+{
+    return CHAR_DB_UPDATE_DESCRIPT;
+}
+
+char const* GitRevision::GetWorldDBVersion()
+{
+    return WORLD_DB_VERSION_NR;
+}
+
+char const* GitRevision::GetWorldDBStructure()
+{
+    return WORLD_DB_STRUCTURE_NR;
+}
+
+char const* GitRevision::GetWorldDBContent()
+{
+    return WORLD_DB_CONTENT_NR;
+}
+
+char const* GitRevision::GetWorldDBUpdateDescription()
+{
+    return WORLD_DB_UPDATE_DESCRIPT;
+}
+
 char const* GitRevision::GetFullRevision()
 {
     return "Mangos revision: " VER_PRODUCTVERSION_STR;

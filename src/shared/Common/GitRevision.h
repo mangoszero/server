@@ -41,6 +41,23 @@ namespace GitRevision
     char const* GetHostOSVersion();
     char const* GetRunningSystem();
 
+    // database data
+    char const* GetProjectRevision();
+    char const* GetRealmDBVersion();
+    char const* GetRealmDBStructure();
+    char const* GetRealmDBContent();
+    char const* GetRealmDBUpdateDescription();
+
+    char const* GetCharDBVersion();
+    char const* GetCharDBStructure();
+    char const* GetCharDBContent();
+    char const* GetCharDBUpdateDescription();
+
+    char const* GetWorldDBVersion();
+    char const* GetWorldDBStructure();
+    char const* GetWorldDBContent();
+    char const* GetWorldDBUpdateDescription();
+
     // application data
     char const* GetFullRevision();
     char const* GetCompanyNameStr();

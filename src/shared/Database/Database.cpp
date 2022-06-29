@@ -25,7 +25,7 @@
 #include "DatabaseEnv.h"
 #include "Config/Config.h"
 #include "Database/SqlOperations.h"
-#include "revision.h"
+#include "GitRevision.h"
 
 #include <ctime>
 #include <iostream>
@@ -38,16 +38,16 @@
 struct DBVersion
 {
     std::string dbname;
-    uint32 expected_version;
-    uint32 expected_structure;
-    uint32 minimal_expected_content; // Minimal because core can starts with some missing contents
+    std::string expected_version;
+    std::string expected_structure;
+    std::string minimal_expected_content; // Minimal because core can starts with some missing contents
     std::string description;
 };
 
 const DBVersion databaseVersions[COUNT_DATABASES] = {
-    { "World", WORLD_DB_VERSION_NR, WORLD_DB_STRUCTURE_NR, WORLD_DB_CONTENT_NR, WORLD_DB_UPDATE_DESCRIPTION }, // DATABASE_WORLD
-    { "Realmd", REALMD_DB_VERSION_NR, REALMD_DB_STRUCTURE_NR, REALMD_DB_CONTENT_NR, REALMD_DB_UPDATE_DESCRIPTION }, // DATABASE_REALMD
-    { "Character", CHAR_DB_VERSION_NR, CHAR_DB_STRUCTURE_NR, CHAR_DB_CONTENT_NR, CHAR_DB_UPDATE_DESCRIPTION }, // DATABASE_CHARACTER
+    { "World", GitRevision::GetWorldDBVersion(), GitRevision::GetWorldDBStructure(), GitRevision::GetWorldDBContent(), GitRevision::GetWorldDBUpdateDescription() }, // DATABASE_WORLD
+    { "Realmd", GitRevision::GetRealmDBVersion(), GitRevision::GetRealmDBStructure(), GitRevision::GetRealmDBContent(), GitRevision::GetRealmDBUpdateDescription() }, // DATABASE_REALMD
+    { "Character", GitRevision::GetCharDBVersion(), GitRevision::GetCharDBStructure(), GitRevision::GetCharDBContent(), GitRevision::GetCharDBUpdateDescription() }, // DATABASE_CHARACTER
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -534,35 +534,35 @@ bool Database::RollbackTransaction()
     return true;
 }
 
-void PrintNormalYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
+void PrintNormalYouHaveDatabaseVersion(std::string current_db_version, std::string current_db_structure, std::string current_db_content, std::string description)
 {
-    sLog.outString("  [A] You have database Version: %u", current_db_version);
-    sLog.outString("                      Structure: %u", current_db_structure);
-    sLog.outString("                        Content: %u", current_db_content);
+    sLog.outString("  [A] You have database Version: %s", current_db_version.c_str());
+    sLog.outString("                      Structure: %s", current_db_structure.c_str());
+    sLog.outString("                        Content: %s", current_db_content.c_str());
     sLog.outString("                    Description: %s", description.c_str());
 }
 
-void PrintErrorYouHaveDatabaseVersion(uint32 current_db_version, uint32 current_db_structure, uint32 current_db_content, std::string description)
+void PrintErrorYouHaveDatabaseVersion(std::string current_db_version, std::string current_db_structure, std::string current_db_content, std::string description)
 {
-    sLog.outErrorDb("  [A] You have database Version: %u", current_db_version);
-    sLog.outErrorDb("                      Structure: %u", current_db_structure);
-    sLog.outErrorDb("                        Content: %u", current_db_content);
+    sLog.outErrorDb("  [A] You have database Version: %s", current_db_version.c_str());
+    sLog.outErrorDb("                      Structure: %s", current_db_structure.c_str());
+    sLog.outErrorDb("                        Content: %s", current_db_content.c_str());
     sLog.outErrorDb("                    Description: %s", description.c_str());
 }
 
 void PrintNormalDatabaseVersionReferencedByCore(const DBVersion& core_db_requirements)
 {
-    sLog.outString("  [B] The core references last database Version: %u", core_db_requirements.expected_version);
-    sLog.outString("                                      Structure: %u", core_db_requirements.expected_structure);
-    sLog.outString("                                        Content: %u", core_db_requirements.minimal_expected_content);
+    sLog.outString("  [B] The core references last database Version: %s", core_db_requirements.expected_version.c_str());
+    sLog.outString("                                      Structure: %s", core_db_requirements.expected_structure.c_str());
+    sLog.outString("                                        Content: %s", core_db_requirements.minimal_expected_content.c_str());
     sLog.outString("                                    Description: %s", core_db_requirements.description.c_str());
 }
 
 void PrintErrorYouNeedDatabaseVersionExpectedByCore(const DBVersion& core_db_requirements)
 {
-    sLog.outErrorDb("  [B] The core needs database Version: %u", core_db_requirements.expected_version);
-    sLog.outErrorDb("                            Structure: %u", core_db_requirements.expected_structure);
-    sLog.outErrorDb("                              Content: %u", core_db_requirements.minimal_expected_content);
+    sLog.outErrorDb("  [B] The core needs database Version: %s", core_db_requirements.expected_version.c_str());
+    sLog.outErrorDb("                            Structure: %s", core_db_requirements.expected_structure.c_str());
+    sLog.outErrorDb("                              Content: %s", core_db_requirements.minimal_expected_content.c_str());
     sLog.outErrorDb("                          Description: %s", core_db_requirements.description.c_str());
 }
 
@@ -589,9 +589,9 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     }
 
     Field* fields = result->Fetch();
-    uint32 current_db_version = fields[0].GetUInt32();
-    uint32 current_db_structure = fields[1].GetUInt32();
-    uint32 current_db_content = fields[2].GetUInt32();
+    std::string current_db_version = fields[0].GetCppString();
+    std::string current_db_structure = fields[1].GetCppString();
+    std::string current_db_content = fields[2].GetCppString();
     std::string description = fields[3].GetCppString();
 
     delete result;
@@ -623,7 +623,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     {
         // TODO : Should not display with error color but warning (e.g YELLOW) => Create a sLog.outWarningDb() and sLog.outWarning()
         sLog.outErrorDb("You have not updated the core for few DB [%s] updates!", core_db_requirements.dbname.c_str());
-        sLog.outErrorDb("Current DB content is %u, core expects %u", current_db_content, core_db_requirements.minimal_expected_content);
+        sLog.outErrorDb("Current DB content is %s, core expects %s", current_db_content.c_str(), core_db_requirements.minimal_expected_content.c_str());
         sLog.outErrorDb("It is recommended to run ALL database updates up to the required core version.");
         sLog.outErrorDb("These updates are included in the database/%s/Updates folder.", core_db_requirements.dbname.c_str());
         sLog.outErrorDb("This is ok for now but should not last long.");
@@ -646,7 +646,7 @@ bool Database::CheckDatabaseVersion(DatabaseTypes database)
     {
         if (current_db_version == core_db_requirements.expected_version && current_db_structure == core_db_requirements.expected_structure)
         {
-            sLog.outString("The table `db_version` indicates that your [%s] database hase the same version as the core requirements.", core_db_requirements.dbname.c_str());
+            sLog.outString("The table `db_version` indicates that your [%s] database has the same version as the core requirements.", core_db_requirements.dbname.c_str());
             sLog.outString();
         }
         else

@@ -39,7 +39,6 @@
 #include "Log.h"
 #include "SystemConfig.h"
 #include "AuctionHouseBot.h"
-#include "revision.h"
 #include "revision_data.h"
 #include "World.h"
 #include "Util.h"
@@ -300,7 +299,7 @@ int main(int argc, char** argv)
                 cfg_file = cmd_opts.opt_arg();
                 break;
             case 'v':
-                printf("%s\n", REVISION_NR);
+                printf("%s\n", GitRevision::GetProjectRevision());
                 return 0;
             case 's':
             {
@@ -386,7 +385,7 @@ int main(int argc, char** argv)
     }
 #endif
 
-    sLog.outString("%s [world-daemon]", REVISION_NR);
+    sLog.outString("%s [world-daemon]", GitRevision::GetProjectRevision());
     sLog.outString("%s", GitRevision::GetFullRevision());
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);

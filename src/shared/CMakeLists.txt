@@ -208,7 +208,6 @@ add_library(shared STATIC
     ${SRC_GRP_POLICIES}
     ${SRC_GRP_SVC}
     ${SRC_GRP_UTILITIES}
-    revision.h
     ${CMAKE_CURRENT_BINARY_DIR/revision_data.h}
     ${CMAKE_CURRENT_BINARY_DIR/SystemConfig.h}
 )
