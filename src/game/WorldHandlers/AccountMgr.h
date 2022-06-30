@@ -59,11 +59,8 @@ class AccountMgr
         bool GetName(uint32 acc_id, std::string& name);
         uint32 GetCharactersCount(uint32 acc_id);
         std::string CalculateShaPassHash(std::string& name, std::string& password);
-
-        static bool normalizeString(std::string& utf8str);
 };
 
 /* A macro that creates a global variable called `sAccountMgr` that is an instance of the `AccountMgr` class. */
 #define sAccountMgr MaNGOS::Singleton<AccountMgr>::Instance()
-
 #endif

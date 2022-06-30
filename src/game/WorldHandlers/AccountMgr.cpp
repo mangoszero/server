@@ -67,8 +67,8 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
         return AOR_PASS_TOO_LONG;                            // password too long
     }
 
-    normalizeString(username);
-    normalizeString(password);
+    Utf8ToUpperOnlyLatin(username);
+    Utf8ToUpperOnlyLatin(password);
 
     if (GetId(username))
     {
@@ -168,8 +168,8 @@ AccountOpResult AccountMgr::ChangeUsername(uint32 accid, std::string new_uname, 
         return AOR_PASS_TOO_LONG;
     }
 
-    normalizeString(new_uname);
-    normalizeString(new_passwd);
+    Utf8ToUpperOnlyLatin(new_uname);
+    Utf8ToUpperOnlyLatin(new_passwd);
 
     std::string safe_new_uname = new_uname;
     LoginDatabase.escape_string(safe_new_uname);
@@ -205,8 +205,8 @@ AccountOpResult AccountMgr::ChangePassword(uint32 accid, std::string new_passwd)
         return AOR_PASS_TOO_LONG;
     }
 
-    normalizeString(username);
-    normalizeString(new_passwd);
+    Utf8ToUpperOnlyLatin(username);
+    Utf8ToUpperOnlyLatin(new_passwd);
 
     // also reset s and v to force update at next realmd login
     if (!LoginDatabase.PExecute("UPDATE `account` SET `v`='0', `s`='0', `sha_pass_hash`='%s' WHERE `id`='%u'",
@@ -322,8 +322,8 @@ bool AccountMgr::CheckPassword(uint32 accid, std::string passwd)
         return false;
     }
 
-    normalizeString(passwd);
-    normalizeString(username);
+    Utf8ToUpperOnlyLatin(passwd);
+    Utf8ToUpperOnlyLatin(username);
 
     QueryResult* result = LoginDatabase.PQuery("SELECT 1 FROM `account` WHERE `id`='%u' AND `sha_pass_hash`='%s'", accid, CalculateShaPassHash(username, passwd).c_str());
     if (result)
@@ -333,31 +333,6 @@ bool AccountMgr::CheckPassword(uint32 accid, std::string passwd)
     }
 
     return false;
-}
-
-/**
- * It converts a string to uppercase, but only if it's a latin character
- *
- * @param utf8str The string to be normalized.
- *
- * @return A boolean value.
- */
-bool AccountMgr::normalizeString(std::string& utf8str)
-{
-    wchar_t wstr_buf[MAX_ACCOUNT_STR + 1];
-    size_t wstr_len = MAX_ACCOUNT_STR;
-
-    if (!Utf8toWStr(utf8str, wstr_buf, wstr_len))
-    {
-        return false;
-    }
-
-    for (uint32 i = 0; i <= wstr_len; ++i)
-    {
-        wstr_buf[i] = wcharToUpperOnlyLatin(wstr_buf[i]);
-    }
-
-    return WStrToUtf8(wstr_buf, wstr_len, utf8str);
 }
 
 /**

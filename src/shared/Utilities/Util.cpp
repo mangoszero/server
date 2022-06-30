@@ -415,6 +415,19 @@ void utf8truncate(std::string& utf8str, size_t len)
     }
 }
 
+bool Utf8ToUpperOnlyLatin(std::string& utf8String)
+{
+    std::wstring wstr;
+    if (!Utf8toWStr(utf8String, wstr))
+    {
+        return false;
+    }
+
+    std::transform(wstr.begin(), wstr.end(), wstr.begin(), wcharToUpperOnlyLatin);
+
+    return WStrToUtf8(wstr, utf8String);
+}
+
 size_t utf8limit(std::string& utf8str, size_t bytes)
 {
     if (utf8str.size() > bytes)

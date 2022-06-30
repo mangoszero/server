@@ -291,6 +291,14 @@ inline void ApplyPercentModFloatVar(float& var, float val, bool apply)
 /**
  * @brief
  *
+ * @param utf8String
+ * @return bool
+ */
+bool Utf8ToUpperOnlyLatin(std::string& utf8String);
+
+/**
+ * @brief
+ *
  * @param utf8str
  * @param wstr
  * @return bool

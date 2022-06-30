@@ -29,6 +29,7 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "SQLStorages.h"
+#include "Util.h"
 
  /**********************************************************************
       CommandTable : lookupCommandTable
@@ -503,7 +504,7 @@ bool ChatHandler::HandleLookupAccountNameCommand(char* args)
     }
 
     std::string account = accountStr;
-    if (!AccountMgr::normalizeString(account))
+    if (!Utf8ToUpperOnlyLatin(account))
     {
         return false;
     }
@@ -610,7 +611,7 @@ bool ChatHandler::HandleLookupPlayerAccountCommand(char* args)
     }
 
     std::string account = accountStr;
-    if (!AccountMgr::normalizeString(account))
+    if (!Utf8ToUpperOnlyLatin(account))
     {
         return false;
     }
