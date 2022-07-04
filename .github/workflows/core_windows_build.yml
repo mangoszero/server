@@ -1,9 +1,9 @@
 name: Windows Build
 on:
   push:
-      branches: [ master ]
+      branches: [ master, Implement_trans_words ]
   pull_request:
-      branches: [ master ]
+      branches: [ master, Implement_trans_words ]
 
 jobs:
   build:

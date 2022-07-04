@@ -40,7 +40,7 @@ INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 void CreatureEventAIMgr::LoadCreatureEventAI_Texts(bool check_entry_use)
 {
     // Load EventAI Text
-    sObjectMgr.LoadMangosStrings(WorldDatabase, "creature_ai_texts", MIN_CREATURE_AI_TEXT_STRING_ID, MAX_CREATURE_AI_TEXT_STRING_ID, true);
+    sObjectMgr.LoadMangosStringsOneWordId(WorldDatabase, "creature_ai_texts", MIN_CREATURE_AI_TEXT_STRING_ID, MAX_CREATURE_AI_TEXT_STRING_ID, true);
 
     if (check_entry_use)
     {

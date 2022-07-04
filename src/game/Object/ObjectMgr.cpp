@@ -7479,6 +7479,174 @@ bool ObjectMgr::LoadMangosStrings(DatabaseType& db, char const* table, int32 min
     return true;
 }
 
+bool ObjectMgr::LoadMangosStringsOneWordId(DatabaseType& db, char const* table, int32 min_value, int32 max_value, bool extra_content)
+{
+    int32 start_value = min_value;
+    int32 end_value = max_value;
+    // some string can have negative indexes range
+    if (start_value < 0)
+    {
+        if (end_value >= start_value)
+        {
+            sLog.outErrorDb("Table '%s' attempt loaded with invalid range (%d - %d), strings not loaded.", table, min_value, max_value);
+            return false;
+        }
+
+        // real range (max+1,min+1) exaple: (-10,-1000) -> -999...-10+1
+        std::swap(start_value, end_value);
+        ++start_value;
+        ++end_value;
+    }
+    else
+    {
+        if (start_value >= end_value)
+        {
+            sLog.outErrorDb("Table '%s' attempt loaded with invalid range (%d - %d), strings not loaded.", table, min_value, max_value);
+            return false;
+        }
+    }
+
+    // cleanup affected map part for reloading case
+    for (MangosStringLocaleMap::iterator itr = mMangosStringLocaleMap.begin(); itr != mMangosStringLocaleMap.end();)
+    {
+        if (itr->first >= start_value && itr->first < end_value)
+        {
+            mMangosStringLocaleMap.erase(itr++);
+        }
+        else
+        {
+            ++itr;
+        }
+    }
+
+    sLog.outString("Loading texts from %s%s", table, extra_content ? ", with additional data" : "");
+
+    QueryResult* result = db.PQuery("SELECT `entry`,`content_loc0`,`content_loc1`,`content_loc2`,`content_loc3`,`content_loc4`,`content_loc5`,`content_loc6`,`content_loc7`,`content_loc8` %s FROM %s LEFT JOIN `trans_words` ON `%s`.`word_id` = `trans_words`.`word_id`", extra_content ? ",sound,type,language,emote" : "", table, table);
+
+    if (!result)
+    {
+        BarGoLink bar(1);
+
+        bar.step();
+
+        sLog.outString();
+        if (min_value == MIN_MANGOS_STRING_ID)              // error only in case internal strings
+        {
+            sLog.outErrorDb(">> Loaded 0 `%s` strings. DB table is empty. Can not continue.", table);
+        }
+        else
+        {
+            sLog.outString(">> Loaded 0 string templates. DB table `%s` is empty.", table);
+        }
+        return false;
+    }
+
+    uint32 count = 0;
+
+    BarGoLink bar(result->GetRowCount());
+
+    do
+    {
+        Field* fields = result->Fetch();
+        bar.step();
+
+        int32 entry = fields[0].GetInt32();
+
+        if (entry == 0)
+        {
+            _DoStringError(start_value, "Table `%s` contain reserved entry 0, ignored.", table);
+            continue;
+        }
+        else if (entry < start_value || entry >= end_value)
+        {
+            _DoStringError(start_value, "Table `%s` contain entry %i out of allowed range (%d - %d), ignored.", table, entry, min_value, max_value);
+            continue;
+        }
+
+        MangosStringLocale& data = mMangosStringLocaleMap[entry];
+
+        if (!data.Content.empty())
+        {
+            _DoStringError(entry, "Table `%s` contain data for already loaded entry  %i (from another table?), ignored.", table, entry);
+            continue;
+        }
+
+        data.Content.resize(1);
+        ++count;
+
+        // 0 -> default, idx in to idx+1
+        data.Content[0] = fields[1].GetCppString();
+
+        for (int i = 1; i < MAX_LOCALE; ++i)
+        {
+            std::string str = fields[i + 1].GetCppString();
+            if (!str.empty())
+            {
+                int idx = GetOrNewIndexForLocale(LocaleConstant(i));
+                if (idx >= 0)
+                {
+                    // 0 -> default, idx in to idx+1
+                    if ((int32)data.Content.size() <= idx + 1)
+                    {
+                        data.Content.resize(idx + 2);
+                    }
+
+                    data.Content[idx + 1] = str;
+                }
+            }
+        }
+
+        // Load additional string content if necessary
+        if (extra_content)
+        {
+            data.SoundId = fields[10].GetUInt32();
+            data.Type = fields[11].GetUInt32();
+            data.LanguageId = Language(fields[12].GetUInt32());
+            data.Emote = fields[13].GetUInt32();
+
+            if (data.SoundId && !sSoundEntriesStore.LookupEntry(data.SoundId))
+            {
+                _DoStringError(entry, "Entry %i in table `%s` has soundId %u but sound does not exist.", entry, table, data.SoundId);
+                data.SoundId = 0;
+            }
+
+            if (!GetLanguageDescByID(data.LanguageId))
+            {
+                _DoStringError(entry, "Entry %i in table `%s` using Language %u but Language does not exist.", entry, table, uint32(data.LanguageId));
+                data.LanguageId = LANG_UNIVERSAL;
+            }
+
+            if (data.Type > CHAT_TYPE_ZONE_YELL)
+            {
+                _DoStringError(entry, "Entry %i in table `%s` has Type %u but this Chat Type does not exist.", entry, table, data.Type);
+                data.Type = CHAT_TYPE_SAY;
+            }
+
+            if (data.Emote && !sEmotesStore.LookupEntry(data.Emote))
+            {
+                _DoStringError(entry, "Entry %i in table `%s` has Emote %u but emote does not exist.", entry, table, data.Emote);
+                data.Emote = EMOTE_ONESHOT_NONE;
+            }
+        }
+    } while (result->NextRow());
+
+    delete result;
+
+    if (min_value == MIN_MANGOS_STRING_ID)
+    {
+        sLog.outString(">> Loaded %u strings from table %s", count, table);
+    }
+    else
+    {
+        sLog.outString(">> Loaded %u %s templates from %s", count, extra_content ? "text" : "string", table);
+    }
+    sLog.outString();
+
+    m_loadedStringCount[min_value] = count;
+
+    return true;
+}
+
 const char* ObjectMgr::GetMangosString(int32 entry, int locale_idx) const
 {
     // locale_idx==-1 -> default, locale_idx >= 0 in to idx+1
