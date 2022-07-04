@@ -72,6 +72,25 @@ enum LootSlotType
     MAX_LOOT_SLOT_TYPE                                      // custom, use for mark skipped from show items
 };
 
+// Used to determine which type of loot to load from loot_template table
+    enum Loot_TypeId
+    {
+        LOOT_TYPE_NONE            = -1,
+        LOOT_TYPE_CREATURE        = 1,
+        LOOT_TYPE_DISENCHANT      = 2,
+        LOOT_TYPE_FISHING         = 3,
+        LOOT_TYPE_GAMEOBJECT      = 4,
+        LOOT_TYPE_ITEM            = 5,
+        LOOT_TYPE_MAIL            = 6,
+        LOOT_TYPE_MILLING         = 7,
+        LOOT_TYPE_PICKPOCKETING   = 8,
+        LOOT_TYPE_PROSPECTING     = 9,
+        LOOT_TYPE_REFERENCE       = 10,
+        LOOT_TYPE_SKINNING        = 11,
+        LOOT_TYPE_SPELL           = 12
+
+    };
+
 struct LootStoreItem
 {
     uint32  itemid;                                         // id of the item
@@ -151,12 +170,12 @@ class LootStore
             : m_name(name), m_entryName(entryName), m_ratesAllowed(ratesAllowed) {}
         virtual ~LootStore() { Clear(); }
 
-        void Verify() const;
+        void Verify(Loot_TypeId lootTypeId) const;
 
-        void LoadAndCollectLootIds(LootIdSet& ids_set);
-        void CheckLootRefs(LootIdSet* ref_set = NULL) const;// check existence reference and remove it from ref_set
-        void ReportUnusedIds(LootIdSet const& ids_set) const;
-        void ReportNotExistedId(uint32 id) const;
+        void LoadAndCollectLootIds(LootIdSet& ids_set,Loot_TypeId lootTypeId);
+        void CheckLootRefs(Loot_TypeId lootTypeId, LootIdSet* ref_set = NULL) const;// check existence reference and remove it from ref_set
+        void ReportUnusedIds(LootIdSet const& ids_set, Loot_TypeId lootTypeId) const;
+        void ReportNotExistedId(uint32 id,Loot_TypeId lootTypeId) const;
 
         bool HaveLootFor(uint32 loot_id) const { return m_LootTemplates.find(loot_id) != m_LootTemplates.end(); }
         bool HaveQuestLootFor(uint32 loot_id) const;
@@ -186,7 +205,7 @@ class LootStore
         char const* GetEntryName() const { return m_entryName; }
         bool IsRatesAllowed() const { return m_ratesAllowed; }
     protected:
-        void LoadLootTable();
+        void LoadLootTable(Loot_TypeId);
         void Clear();
     private:
         LootTemplateMap m_LootTemplates;
@@ -232,8 +251,8 @@ class LootTemplate
         bool HasStartingQuestDropForPlayer(LootTemplateMap const& store, Player const* player, uint8 GroupId = 0) const;
 
         // Checks integrity of the template
-        void Verify(LootStore const& store, uint32 Id) const;
-        void CheckLootRefs(LootIdSet* ref_set) const;
+        void Verify(LootStore const& store, uint32 Id, Loot_TypeId lootTypeId) const;
+        void CheckLootRefs(Loot_TypeId lootTypeId, LootIdSet* ref_set) const;
     private:
         LootStoreItemList Entries;                          // not grouped only
         LootGroups        Groups;                           // groups have own (optimised) processing, grouped entries go there

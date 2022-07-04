@@ -1,9 +1,9 @@
 name: Linux Build
 on:
   push:
-      branches: [ master ]
+      branches: [ master, Merged_Loot_template ]
   pull_request:
-      branches: [ master ]
+      branches: [ master, Merged_Loot_template ]
 
 jobs:
   build:
