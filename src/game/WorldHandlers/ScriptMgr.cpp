@@ -898,7 +898,7 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
 
 void ScriptMgr::LoadDbScriptStrings()
 {
-    sObjectMgr.LoadMangosStrings(WorldDatabase, "db_script_string", MIN_DB_SCRIPT_STRING_ID, MAX_DB_SCRIPT_STRING_ID, true);
+    sObjectMgr.LoadMangosStringsOneWordId(WorldDatabase, "db_script_string", MIN_DB_SCRIPT_STRING_ID, MAX_DB_SCRIPT_STRING_ID, true);
 
     std::set<int32> ids;
 
