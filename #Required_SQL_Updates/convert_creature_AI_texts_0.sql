@@ -475,7 +475,12 @@ INSERT  INTO `trans_words`(`WordId`,`content_loc0`,`content_loc1`,`content_loc2`
 -- TODO: Alter creature_ai_texts to add WordId field
 ALTER TABLE `creature_ai_texts` ADD `WordId` INT(11) DEFAULT 0  COMMENT 'Lookup into trans_words' AFTER `comment`;
 ALTER TABLE `creature_ai_texts` ADD `CreatureId` INT(11) DEFAULT 0  COMMENT 'Lookup into creature_template' AFTER `WordId`;
+
+-- Attempt to populate as many CreatureId as we can, non-numeric entries with end up as 0
 UPDATE IGNORE `creature_ai_texts` SET `CreatureId`=`comment`;
+
+-- Populate the comment with the original content_default to assist in tracking entries
+UPDATE IGNORE `creature_ai_texts` SET `comment`=`content_default`;
 
 UPDATE `creature_ai_texts` SET WordId=3 WHERE entry=-106;
 UPDATE `creature_ai_texts` SET WordId=4 WHERE entry=-46;
