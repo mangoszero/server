@@ -318,80 +318,106 @@ bool ChatHandler::HandleReloadQuestTemplateCommand(char* /*args*/)
 
 bool ChatHandler::HandleReloadLootTemplatesCreatureCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Creature.LoadAndCollectLootIds(ids_set, LOOT_TYPE_CREATURE);
+
     sLog.outString("Re-Loading Loot Tables... (`creature_loot_template`)");
     LoadLootTemplates_Creature();
-    LootTemplates_Creature.CheckLootRefs();
+    LootTemplates_Creature.CheckLootRefs(LOOT_TYPE_CREATURE, &ids_set);
     SendGlobalSysMessage("DB table `creature_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesDisenchantCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Disenchant.LoadAndCollectLootIds(ids_set, LOOT_TYPE_DISENCHANT);
+
     sLog.outString("Re-Loading Loot Tables... (`disenchant_loot_template`)");
     LoadLootTemplates_Disenchant();
-    LootTemplates_Disenchant.CheckLootRefs();
+    LootTemplates_Disenchant.CheckLootRefs(LOOT_TYPE_DISENCHANT, &ids_set);
     SendGlobalSysMessage("DB table `disenchant_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesFishingCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Fishing.LoadAndCollectLootIds(ids_set, LOOT_TYPE_FISHING);
+
     sLog.outString("Re-Loading Loot Tables... (`fishing_loot_template`)");
     LoadLootTemplates_Fishing();
-    LootTemplates_Fishing.CheckLootRefs();
+    LootTemplates_Fishing.CheckLootRefs(LOOT_TYPE_FISHING, &ids_set);
     SendGlobalSysMessage("DB table `fishing_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesGameobjectCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Gameobject.LoadAndCollectLootIds(ids_set, LOOT_TYPE_GAMEOBJECT);
+
     sLog.outString("Re-Loading Loot Tables... (`gameobject_loot_template`)");
     LoadLootTemplates_Gameobject();
-    LootTemplates_Gameobject.CheckLootRefs();
+    LootTemplates_Gameobject.CheckLootRefs(LOOT_TYPE_GAMEOBJECT, &ids_set);
     SendGlobalSysMessage("DB table `gameobject_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesItemCommand(char* /*args*/)
 {
-    sLog.outString("Re-Loading Loot Tables... (`item_loot_template`)");
+    LootIdSet ids_set;
+    LootTemplates_Item.LoadAndCollectLootIds(ids_set, LOOT_TYPE_ITEM);
     LoadLootTemplates_Item();
-    LootTemplates_Item.CheckLootRefs();
+    sLog.outString("Re-Loading Loot Tables... (`item_loot_template`)");
+    LootTemplates_Item.CheckLootRefs(LOOT_TYPE_ITEM, &ids_set);
     SendGlobalSysMessage("DB table `item_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesPickpocketingCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Pickpocketing.LoadAndCollectLootIds(ids_set, LOOT_TYPE_PICKPOCKETING);
+
     sLog.outString("Re-Loading Loot Tables... (`pickpocketing_loot_template`)");
-    LoadLootTemplates_Pickpocketing();
-    LootTemplates_Pickpocketing.CheckLootRefs();
+    LootTemplates_Pickpocketing.CheckLootRefs(LOOT_TYPE_PICKPOCKETING, &ids_set);
     SendGlobalSysMessage("DB table `pickpocketing_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesMailCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Mail.LoadAndCollectLootIds(ids_set, LOOT_TYPE_MAIL);
+
     sLog.outString("Re-Loading Loot Tables... (`mail_loot_template`)");
     LoadLootTemplates_Mail();
-    LootTemplates_Mail.CheckLootRefs();
+    LootTemplates_Mail.CheckLootRefs(LOOT_TYPE_MAIL, &ids_set);
     SendGlobalSysMessage("DB table `mail_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesReferenceCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Reference.LoadAndCollectLootIds(ids_set, LOOT_TYPE_REFERENCE);
+
     sLog.outString("Re-Loading Loot Tables... (`reference_loot_template`)");
     LoadLootTemplates_Reference();
+    LootTemplates_Reference.CheckLootRefs(LOOT_TYPE_REFERENCE, &ids_set);
     SendGlobalSysMessage("DB table `reference_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }
 
 bool ChatHandler::HandleReloadLootTemplatesSkinningCommand(char* /*args*/)
 {
+    LootIdSet ids_set;
+    LootTemplates_Skinning.LoadAndCollectLootIds(ids_set, LOOT_TYPE_SKINNING);
+
     sLog.outString("Re-Loading Loot Tables... (`skinning_loot_template`)");
-    LoadLootTemplates_Skinning();
-    LootTemplates_Skinning.CheckLootRefs();
+    LootTemplates_Skinning.CheckLootRefs(LOOT_TYPE_SKINNING, &ids_set);
+
     SendGlobalSysMessage("DB table `skinning_loot_template` reloaded.", SEC_MODERATOR);
     return true;
 }

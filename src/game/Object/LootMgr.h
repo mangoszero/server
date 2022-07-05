@@ -406,6 +406,7 @@ extern LootStore LootTemplates_Mail;
 extern LootStore LootTemplates_Pickpocketing;
 extern LootStore LootTemplates_Skinning;
 extern LootStore LootTemplates_Disenchant;
+extern LootStore LootTemplates_Reference;
 
 void LoadLootTemplates_Creature();
 void LoadLootTemplates_Fishing();
