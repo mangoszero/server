@@ -13,7 +13,7 @@
 DROP TABLE IF EXISTS `trans_words`;
 
 CREATE TABLE `trans_words` (
-  `WordId` INT(8) NOT NULL AUTO_INCREMENT,
+  `word_id` INT(8) NOT NULL AUTO_INCREMENT,
   `content_loc0` TEXT NOT NULL COMMENT 'English',
   `content_loc1` TEXT DEFAULT NULL COMMENT 'Korean',
   `content_loc2` TEXT DEFAULT NULL COMMENT 'French',
@@ -26,8 +26,8 @@ CREATE TABLE `trans_words` (
   `content_loc9` TEXT DEFAULT NULL COMMENT 'Portugese',
   `content_loc10` TEXT DEFAULT NULL COMMENT 'Brazillian',
   `content_loc11` TEXT DEFAULT NULL COMMENT 'Italian',
-  PRIMARY KEY (`WordId`),
-  UNIQUE KEY `Words_old` (`content_loc0`(255),`WordId`),
+  PRIMARY KEY (`word_id`),
+  UNIQUE KEY `Words_old` (`content_loc0`(255),`word_id`),
   KEY `content_loc0` (`content_loc0`(255)),
   KEY `content_loc1` (`content_loc1`(255)),
   KEY `content_loc2` (`content_loc2`(255)),
@@ -42,7 +42,7 @@ CREATE TABLE `trans_words` (
 
 /*Data for the table `trans_words` */
 
-INSERT  INTO `trans_words`(`WordId`,`content_loc0`,`content_loc1`,`content_loc2`,`content_loc3`,`content_loc4`,`content_loc5`,`content_loc6`,`content_loc7`,`content_loc8`,`content_loc9`,`content_loc10`,`content_loc11`) VALUES 
+INSERT  INTO `trans_words`(`word_id`,`content_loc0`,`content_loc1`,`content_loc2`,`content_loc3`,`content_loc4`,`content_loc5`,`content_loc6`,`content_loc7`,`content_loc8`,`content_loc9`,`content_loc10`,`content_loc11`) VALUES 
 (3,'%s goes into a frenzy!','%s|1이;가; 광란 상태에 빠집니다!','%s est pris de frénésie !','%s gerät in Raserei!','%s狂暴了！','%s進入狂暴!','¡%s entra en frenesí!','¡%s entra en frenesí!','%s впадает в исступление!',NULL,NULL,NULL),
 (4,'%s becomes enraged!','%s|1이;가; 분노에 휩싸입니다!','%s est pris de frénésie  !','%s gerät in Raserei!','%s变得愤怒了！','%s暴怒了起來!','¡%s se enfurece!','¡%s se enfurece!','%становится злым!',NULL,NULL,NULL),
 (94,'Taste blade, mongrel!','칼날 맛 좀 봐라!','Goûte à ma lame, bâtard !','Niemand soll entkommen!','看招，混帐！','嘗嘗劍的滋味吧，死雜種!','¡Siente el acero, chucho!','¡Siente el acero, chucho!','Отведай моего клинка, пес!',NULL,NULL,NULL),

@@ -7521,6 +7521,7 @@ bool ObjectMgr::LoadMangosStringsOneWordId(DatabaseType& db, char const* table, 
 
     sLog.outString("Loading texts from %s%s", table, extra_content ? ", with additional data" : "");
 
+    // TODO: Need to add Loc9,10 and 11 at some point
     QueryResult* result = db.PQuery("SELECT `entry`,`content_loc0`,`content_loc1`,`content_loc2`,`content_loc3`,`content_loc4`,`content_loc5`,`content_loc6`,`content_loc7`,`content_loc8` %s FROM %s LEFT JOIN `trans_words` ON `%s`.`WordId` = `trans_words`.`word_id`", extra_content ? ",sound,type,language,emote" : "", table, table);
 
     if (!result)
