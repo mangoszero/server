@@ -9725,6 +9725,20 @@ bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value, i
     return sObjectMgr.LoadMangosStrings(db, table, start_value, end_value, extra_content);
 }
 
+// Functions for scripting access
+bool LoadMangosStringsOneWordId(DatabaseType& db, char const* table, int32 start_value, int32 end_value, bool extra_content)
+{
+    // MAX_DB_SCRIPT_STRING_ID is max allowed negative value for scripts (scrpts can use only more deep negative values
+    // start/end reversed for negative values
+    if (start_value > MAX_DB_SCRIPT_STRING_ID || end_value >= start_value)
+    {
+        sLog.outErrorDb("Table '%s' attempt loaded with reserved by mangos range (%d - %d), strings not loaded.", table, start_value, end_value + 1);
+        return false;
+    }
+
+    return sObjectMgr.LoadMangosStringsOneWordId(db, table, start_value, end_value, extra_content);
+}
+
 void ObjectMgr::LoadCreatureTemplateSpells()
 {
     sCreatureTemplateSpellsStorage.Load();

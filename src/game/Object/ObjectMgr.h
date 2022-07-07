@@ -1398,6 +1398,7 @@ class ObjectMgr
 
 // scripting access functions
  bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = std::numeric_limits<int32>::min(), bool extra_content = false);
+ bool LoadMangosStringsOneWordId(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = std::numeric_limits<int32>::min(), bool extra_content = false);
  CreatureInfo const* GetCreatureTemplateStore(uint32 entry);
  Quest const* GetQuestTemplateStore(uint32 entry);
  MangosStringLocale const* GetMangosStringData(int32 entry);
