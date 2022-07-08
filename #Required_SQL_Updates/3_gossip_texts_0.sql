@@ -55,3 +55,6 @@ ALTER TABLE `gossip_texts` DROP `Content_loc5`;
 ALTER TABLE `gossip_texts` DROP `Content_loc6`;
 ALTER TABLE `gossip_texts` DROP `Content_loc7`;
 ALTER TABLE `gossip_texts` DROP `Content_loc8`;
+
+
+UPDATE `gossip_texts` SET `wordid`=283315 WHERE `entry`=-3409002;
