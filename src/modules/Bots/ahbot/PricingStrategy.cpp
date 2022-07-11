@@ -97,17 +97,7 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
 
     QueryResult* results = WorldDatabase.PQuery(
         "SELECT MAX(`ChanceOrQuestChance`) FROM ( "
-        "SELECT `ChanceOrQuestChance` FROM `gameobject_loot_template` WHERE `item` = '%u' "
-        //"union select ChanceOrQuestChance from spell_loot_template where item = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `disenchant_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `fishing_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `item_loot_template` WHERE `item` = '%u' "
-        //"union select ChanceOrQuestChance from milling_loot_template where `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `pickpocketing_loot_template` WHERE `item` = '%u' "
-        //"union select ChanceOrQuestChance from prospecting_loot_template where `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `reference_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `skinning_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `creature_loot_template` WHERE `item` = '%u' "
+        "SELECT `ChanceOrQuestChance` FROM `loot_template` WHERE `item` = '%u' "
         "UNION SELECT 0 "
         ") a",
         itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId);

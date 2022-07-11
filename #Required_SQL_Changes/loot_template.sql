@@ -85,3 +85,30 @@ SELECT * FROM loot_template WHERE entry=61 AND loottypeid=1; -- Exec 0.014s Tota
 SELECT * FROM creature_loot_template WHERE entry=61 AND item=2406; -- Exec 0.014s Total: 0.065s 1 Rows
 SELECT * FROM loot_template WHERE entry=61 AND loottypeid=1 AND item=2406; -- Exec 0.014s Total: 0.064s 1 Rows
 */
+
+-- Remove the original Tables
+DROP TABLE `creature_loot_template`;
+
+-- disenchant_loot_template
+DROP TABLE `disenchant_loot_template`;
+
+-- fishing_loot_template
+DROP TABLE `fishing_loot_template`;
+
+-- gameobject_loot_template
+DROP TABLE `gameobject_loot_template`;
+
+-- item_loot_template
+DROP TABLE `item_loot_template`;
+
+-- mail_loot_template
+DROP TABLE `mail_loot_template`;
+
+-- pickpocketing_loot_template
+DROP TABLE `pickpocketing_loot_template`;
+
+-- reference_loot_template
+DROP TABLE `reference_loot_template`;
+
+-- skinning_loot_template
+DROP TABLE `skinning_loot_template`;
