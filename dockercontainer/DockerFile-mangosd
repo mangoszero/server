@@ -9,6 +9,14 @@ RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/nul
     apt-get update
 RUN apt-get -y install cmake
 
+# CMake needs an update to compile on 18.04
+RUN apt purge --auto-remove cmake -y
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4
+RUN apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+RUN apt-get -y update
+RUN apt-get -y install cmake
+
 COPY . /mangoserver
 RUN mkdir /mangoserver/build
 WORKDIR /mangoserver/build
