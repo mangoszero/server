@@ -34,7 +34,7 @@
      CommandTable : commandTable
  /***********************************************************************/
 
- // global announce
+// global announce
 bool ChatHandler::HandleAnnounceCommand(char* args)
 {
     if (!*args)
@@ -306,7 +306,7 @@ bool ChatHandler::HandleNpcTextEmoteCommand(char* args)
         return false;
     }
 
-    pCreature->MonsterTextEmote(args, NULL);
+    pCreature->MonsterTextEmote(args, m_session->GetPlayer());
 
     return true;
 }
@@ -380,4 +380,3 @@ bool ChatHandler::HandleSendMessageCommand(char* args)
     PSendSysMessage(LANG_SENDMESSAGE, nameLink.c_str(), args);
     return true;
 }
-

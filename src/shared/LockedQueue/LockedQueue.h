@@ -49,8 +49,7 @@ namespace ACE_Based
              * @brief Create a LockedQueue.
              *
              */
-            LockedQueue()
-                : _lock(), _queue()
+            LockedQueue() : _lock(), _queue()
             {
             }
 

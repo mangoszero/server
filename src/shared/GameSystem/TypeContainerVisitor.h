@@ -35,19 +35,9 @@
 #include "TypeContainer.h"
 
 template<class VISITOR, class CONTAINER>
-/**
- * @brief
- *
- */
 class TypeContainerVisitor
 {
     public:
-
-        /**
-         * @brief
-         *
-         * @param v
-         */
         TypeContainerVisitor(VISITOR& v) : i_visitor(v){}
         void Visit(CONTAINER& c)
         {
@@ -57,10 +47,8 @@ class TypeContainerVisitor
         {
             c.template accept<VISITOR>(std::forward<VISITOR>(i_visitor));
         }
-
     private:
-
-        VISITOR& i_visitor; /**< TODO */
+        VISITOR& i_visitor;
 };
 
 #endif
