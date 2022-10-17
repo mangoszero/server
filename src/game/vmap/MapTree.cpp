@@ -62,6 +62,9 @@ namespace VMAP
 
             void operator()(const Vector3& point, uint32 entry)
             {
+#ifdef VMAP_DEBUG
+                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
+#endif
                 prims[entry].GetAreaInfo(point, aInfo);
             }
 
@@ -76,6 +79,9 @@ namespace VMAP
 
             void operator()(const Vector3& point, uint32 entry)
             {
+#ifdef VMAP_DEBUG
+                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
+#endif
                 if (prims[entry].GetLocationInfo(point, locInfo))
                 {
                     result = true;
@@ -222,8 +228,12 @@ namespace VMAP
             {
                 pResultHitPos = pResultHitPos + dir * pModifyDist;
             }
+            return true;
         }
-        pResultHitPos = pPos2;
+        else
+        {
+            pResultHitPos = pPos2;
+        }
         return false;
     }
 
@@ -320,7 +330,7 @@ namespace VMAP
             }
             if (success)
             {
-                success = iTree.readFromFile(rf);
+                success = iTree.ReadFromFile(rf);
             }
             if (success)
             {
@@ -338,7 +348,7 @@ namespace VMAP
 #ifdef VMAP_DEBUG
             DEBUG_LOG("Map isTiled: %u", static_cast<uint32>(iIsTiled));
 #endif
-            if (!iIsTiled && ModelSpawn::readFromFile(rf, spawn))
+            if (!iIsTiled && ModelSpawn::ReadFromFile(rf, spawn))
             {
                 WorldModel* model = vm->acquireModelInstance(iBasePath, spawn.name, spawn.flags);
                 DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "StaticMapTree::InitMap(): loading %s", spawn.name.c_str());
@@ -412,7 +422,7 @@ namespace VMAP
             {
                 // read model spawns
                 ModelSpawn spawn;
-                result = ModelSpawn::readFromFile(tf, spawn);
+                result = ModelSpawn::ReadFromFile(tf, spawn);
                 if (result)
                 {
                     // acquire model instance
@@ -494,7 +504,7 @@ namespace VMAP
                 {
                     // read model spawns
                     ModelSpawn spawn;
-                    result = ModelSpawn::readFromFile(tf, spawn);
+                    result = ModelSpawn::ReadFromFile(tf, spawn);
                     if (result)
                     {
                         // release model instance

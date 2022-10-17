@@ -162,7 +162,7 @@ namespace VMAP
         return false;
     }
 
-    bool ModelSpawn::readFromFile(FILE* rf, ModelSpawn& spawn)
+    bool ModelSpawn::ReadFromFile(FILE* rf, ModelSpawn& spawn)
     {
         uint32 check = 0, nameLen;
         check += fread(&spawn.flags, sizeof(uint32), 1, rf);
@@ -210,7 +210,7 @@ namespace VMAP
         return true;
     }
 
-    bool ModelSpawn::writeToFile(FILE* wf, const ModelSpawn& spawn)
+    bool ModelSpawn::WriteToFile(FILE* wf, const ModelSpawn& spawn)
     {
         uint32 check = 0;
         check += fwrite(&spawn.flags, sizeof(uint32), 1, wf);

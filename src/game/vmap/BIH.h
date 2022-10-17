@@ -453,14 +453,14 @@ class BIH
          * @param wf
          * @return bool
          */
-        bool writeToFile(FILE* wf) const;
+        bool WriteToFile(FILE* wf) const;
         /**
          * @brief
          *
          * @param rf
          * @return bool
          */
-        bool readFromFile(FILE* rf);
+        bool ReadFromFile(FILE* rf);
 
     protected:
         std::vector<uint32> tree; /**< TODO */
