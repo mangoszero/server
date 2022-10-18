@@ -2,7 +2,20 @@
 FROM ubuntu:18.04 as build-step
 
 RUN apt-get -y update
-RUN apt-get -y install curl autoconf automake cmake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential
+RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential gpg wget
+
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update
+RUN apt-get -y install cmake
+
+# CMake needs an update to compile on 18.04
+RUN apt purge --auto-remove cmake -y
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4
+RUN apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+RUN apt-get -y update
+RUN apt-get -y install cmake
 
 COPY . /mangoserver
 RUN mkdir /mangoserver/build

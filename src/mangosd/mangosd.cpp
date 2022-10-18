@@ -391,10 +391,10 @@ int main(int argc, char** argv)
     sLog.outString("Using configuration file %s.", cfg_file);
 
     DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
-    if (SSLeay() < 0x009080bfL)
+    if (SSLeay() < 0x10100000L || SSLeay() > 0x10200000L)
     {
-        DETAIL_LOG("WARNING: Outdated version of OpenSSL lib. Logins to server may not work!");
-        DETAIL_LOG("WARNING: Minimal required version [OpenSSL 0.9.8k]");
+        DETAIL_LOG("WARNING: OpenSSL version may be out of date or unsupported. Logins to server may not work!");
+        DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
     }
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
