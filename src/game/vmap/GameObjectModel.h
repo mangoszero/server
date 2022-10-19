@@ -79,15 +79,6 @@ class GameObjectModel
 
         bool IntersectRay(const G3D::Ray& Ray, float& MaxDist, bool StopAtFirstHit) const;
 
-        // returns the intersection point given from srcPoint down.
-        // If absolute is true, srcPoint is in world space, else srcPoint is assumed in local space.
-        // If method succeeds, dstPoint will be filled with local space coordinates of the intersection
-        // else will be untouched
-        bool GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vector3& dstPoint, bool absolute = true) const;
-
-        void GetLocalCoords(const G3D::Vector3& worldCoords, G3D::Vector3& localCoords); //NYI
-        void GetWorldCoords(const G3D::Vector3& localCoords, G3D::Vector3& worldCoords); //NYI
-
         static GameObjectModel* Create(const GameObject* const pGo);
 };
 #endif

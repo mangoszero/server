@@ -153,7 +153,7 @@ namespace VMAP
             }
             if (success)
             {
-                success = pTree.writeToFile(mapfile);
+                success = pTree.WriteToFile(mapfile);
             }
             // global map spawns (WDT), if any (most instances)
             if (success && fwrite("GOBJ", 4, 1, mapfile) != 1)
@@ -163,7 +163,7 @@ namespace VMAP
 
             for (TileMap::iterator glob = globalRange.first; glob != globalRange.second && success; ++glob)
             {
-                success = ModelSpawn::writeToFile(mapfile, map_iter->second->UniqueEntries[glob->second]);
+                success = ModelSpawn::WriteToFile(mapfile, map_iter->second->UniqueEntries[glob->second]);
             }
 
             fclose(mapfile);
@@ -206,7 +206,7 @@ namespace VMAP
                         ++tile;
                     }
                     const ModelSpawn& spawn2 = map_iter->second->UniqueEntries[tile->second];
-                    success = success && ModelSpawn::writeToFile(tilefile, spawn2);
+                    success = success && ModelSpawn::WriteToFile(tilefile, spawn2);
                     // MapTree nodes to update when loading tile:
                     std::map<uint32, uint32>::iterator nIdx = modelNodeIdx.find(spawn2.ID);
                     if (success && fwrite(&nIdx->second, sizeof(uint32), 1, tilefile) != 1)
@@ -266,7 +266,7 @@ namespace VMAP
             }
             check += fread(&tileX, sizeof(uint32), 1, dirf);
             check += fread(&tileY, sizeof(uint32), 1, dirf);
-            if (!ModelSpawn::readFromFile(dirf, spawn))
+            if (!ModelSpawn::ReadFromFile(dirf, spawn))
             {
                 break;
             }

@@ -368,15 +368,15 @@ namespace VMAP
             bool ReadFile(const std::string& filename);
             uint32 Flags;
         protected:
-            uint32 RootWMOID;
-            std::vector<GroupModel> groupModels;
-            BIH groupTree;
+            uint32 RootWMOID; /**< TODO */
+            std::vector<GroupModel> groupModels; /**< TODO */
+            BIH groupTree; /**< TODO */
 
 #ifdef MMAP_GENERATOR
         public:
             void getGroupModels(std::vector<GroupModel>& groupModels);
 #endif
     };
-}
+} // namespace VMAP
 
 #endif // _WORLDMODEL_H

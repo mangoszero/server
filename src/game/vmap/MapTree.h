@@ -232,11 +232,11 @@ namespace VMAP
              * @return uint32
              */
             uint32 numLoadedTiles() const { return iLoadedTiles.size(); }
+
 #ifdef MMAP_GENERATOR
         public:
             void getModelInstances(ModelInstance*& models, uint32& count);
 #endif
-
     };
 
     /**
