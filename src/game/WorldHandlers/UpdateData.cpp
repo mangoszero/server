@@ -46,12 +46,6 @@ void UpdateData::AddOutOfRangeGUID(ObjectGuid const& guid)
     m_outOfRangeGUIDs.insert(guid);
 }
 
-void UpdateData::AddUpdateBlock(const ByteBuffer& block)
-{
-    m_data.append(block);
-    ++m_blockCount;
-}
-
 void UpdateData::Compress(void* dst, uint32* dst_size, void* src, int src_size)
 {
     z_stream c_stream;
