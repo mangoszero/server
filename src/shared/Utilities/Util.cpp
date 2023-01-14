@@ -154,15 +154,83 @@ void stripLineInvisibleChars(std::string& str)
     }
 }
 
-std::tm localtime_r(const time_t& time)
-{
-    std::tm tm_snapshot;
+/**
+ * It's a wrapper for the localtime_r function that works on Windows
+ *
+ * @param time The time to convert.
+ * @param result A pointer to a tm structure to receive the broken-down time.
+ *
+ * @return A pointer to the result.
+ */
 #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-    localtime_s(&tm_snapshot, &time);
-#else
-    localtime_r(&time, &tm_snapshot); // POSIX
+struct tm* localtime_r(time_t const* time, struct tm *result)
+{
+    localtime_s(result, time);
+    return result;
+}
 #endif
-    return tm_snapshot;
+
+/**
+ * It takes a time_t value and returns a tm structure with the same time, but in local time
+ *
+ * @param time The time to break down.
+ *
+ * @return A struct tm
+ */
+tm TimeBreakdown(time_t time)
+{
+    tm timeLocal;
+    localtime_r(&time, &timeLocal);
+    return timeLocal;
+}
+
+/**
+ * Convert local time to UTC time.
+ *
+ * @param time The time to convert.
+ *
+ * @return The time in UTC.
+ */
+time_t LocalTimeToUTCTime(time_t time)
+{
+    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
+        return time + _timezone;
+    #else
+        return time + timezone;
+    #endif
+}
+
+/**
+ * "Get the timestamp of the next time the given hour occurs in the local timezone."
+ *
+ * The function takes a timestamp, an hour, and a boolean. The timestamp is the time you want to find
+ * the next occurrence of the given hour. The hour is the hour you want to find the next occurrence of.
+ * The boolean is whether or not you want to find the next occurrence of the hour after the given
+ * timestamp
+ *
+ * @param time The time you want to get the hour timestamp for.
+ * @param hour The hour of the day you want to get the timestamp for.
+ * @param onlyAfterTime If true, the function will return the next hour after the current time. If
+ * false, it will return the current hour.
+ *
+ * @return A timestamp for the given hour of the day.
+ */
+time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
+{
+    tm timeLocal = TimeBreakdown(time);
+    timeLocal.tm_hour = 0;
+    timeLocal.tm_min  = 0;
+    timeLocal.tm_sec  = 0;
+
+    time_t midnightLocal = mktime(&timeLocal);
+    time_t hourLocal = midnightLocal + hour * HOUR;
+
+    if (onlyAfterTime && hourLocal < time)
+    {
+        hourLocal += DAY;
+    }
+
+    return hourLocal;
 }
 
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hoursOnly)
@@ -316,7 +384,8 @@ uint32 TimeStringToSecs(const std::string& timestring)
 
 std::string TimeToTimestampStr(time_t t)
 {
-    tm aTm = localtime_r(t);
+    tm aTm;
+    localtime_r(&t, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)

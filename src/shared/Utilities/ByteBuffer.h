@@ -476,6 +476,11 @@ class ByteBuffer
             return _rpos;
         }
 
+        void rfinish()
+        {
+            _rpos = wpos();
+        }
+
         /**
          * @brief
          *

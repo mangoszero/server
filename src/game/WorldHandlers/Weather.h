@@ -32,6 +32,7 @@
 #include "Common.h"
 #include "SharedDefines.h"
 #include "Timer.h"
+#include "Util.h"
 
 class Player;
 class Map;

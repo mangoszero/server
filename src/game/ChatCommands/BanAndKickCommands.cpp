@@ -88,22 +88,25 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                 Field* fields2 = banInfo->Fetch();
                 do
                 {
-                    time_t t_ban = fields2[0].GetUInt64();
-                    tm* aTm_ban = localtime(&t_ban);
+                    time_t timeBan = fields2[0].GetUInt64();
+                    tm tmBan;
+                    localtime_r(&timeBan, &tmBan);
 
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                                        account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                        account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
                                         fields2[2].GetString(), fields2[3].GetString());
                     }
                     else
                     {
-                        time_t t_unban = fields2[1].GetUInt64();
-                        tm* aTm_unban = localtime(&t_unban);
+                        time_t timeUnban = fields2[1].GetUInt64();
+                        tm tmUnban;
+                        localtime_r(&timeUnban, &tmUnban);
+
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                                        account_name.c_str(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                                        aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
+                                        account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
+                                        tmUnban.tm_year % 100, tmUnban.tm_mon + 1, tmUnban.tm_mday, tmUnban.tm_hour, tmUnban.tm_min,
                                         fields2[2].GetString(), fields2[3].GetString());
                     }
                 }
