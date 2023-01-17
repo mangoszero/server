@@ -43,7 +43,7 @@ class QueryResult
          * @param fieldCount
          */
         QueryResult(uint64 rowCount, uint32 fieldCount)
-            : mFieldCount(fieldCount), mRowCount(rowCount) {}
+            : mFieldCount(fieldCount), mRowCount(rowCount), mCurrentRow{} {}
 
         /**
          * @brief

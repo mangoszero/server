@@ -75,7 +75,7 @@ void Engine::Reset()
     {
         action = queue.Pop();
         delete action;
-    } while (action);
+    } while (action != NULL);
 
     for (list<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
     {

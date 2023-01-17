@@ -73,9 +73,9 @@ typedef std::vector<PlayerLogBase> PlayerLogBaseType;
 
 struct PlayerLogDamage : public PlayerLogBase       // 10 bytes
 {
-    uint16 dmgUnit;     // guid for player, entry with highest bit set for mob incl. pet/guardian
-    int16 damage;       // if negative then it's heal
-    uint16 spell;       // 0 for melee autoattack
+    uint16 dmgUnit{};     // guid for player, entry with highest bit set for mob incl. pet/guardian
+    int16 damage{};       // if negative then it's heal
+    uint16 spell{};       // 0 for melee autoattack
 
     void SetCreature(bool on) { if (on) dmgUnit |= 0x8000; else dmgUnit &= 0x7FFF; }
     bool IsPlayer() const { return (dmgUnit & 0x8000) == 0; }

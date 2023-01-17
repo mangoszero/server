@@ -42,7 +42,7 @@ PlayerLogger::~PlayerLogger()
     {
         if (data[i])
         {
-            data[i]->empty();
+            data[i]->clear();
             delete data[i];
         }
     }
