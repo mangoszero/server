@@ -549,5 +549,3 @@ bool ChatHandler::HandleUnfreezePlayerCommand(char* args)
     return true;
 }
 
-
-

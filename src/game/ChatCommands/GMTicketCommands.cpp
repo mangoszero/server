@@ -140,7 +140,8 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         return false;
     }
 
-    if (*args) {
+    if (*args)
+    {
         ticket->SetResponseText(args);
     }
 
