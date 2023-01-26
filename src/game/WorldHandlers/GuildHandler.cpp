@@ -35,7 +35,6 @@
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
-#include <WorldModel.cpp>
 
 void WorldSession::HandleGuildQueryOpcode(WorldPacket& recvPacket)
 {
@@ -257,7 +256,6 @@ void WorldSession::HandleGuildDeclineOpcode(WorldPacket& /*recvPacket*/)
     }
 
     GetPlayer()->SetGuildIdInvited(0);
-    GetPlayer()->SetInGuild(0);
 }
 
 void WorldSession::HandleGuildInfoOpcode(WorldPacket& /*recvPacket*/)
