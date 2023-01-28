@@ -4433,7 +4433,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             // completely remove from the database
         case 0:
         {
-            // return back all mails with COD and Item                  0    1             2                3        4         5      6       7
+            // return back all mails with COD and Item                  0    1             2                3        4         5            6       7
             QueryResult* resultMail = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`mailTemplateId`,`sender`,`subject`,`itemTextId`,`money`,`has_items` FROM `mail` WHERE `receiver`='%u' AND `has_items`<>0 AND `cod`<>0", lowguid);
             if (resultMail)
             {
@@ -5026,11 +5026,12 @@ void Player::DurabilityLoss(Item* item, double percent)
 void Player::DurabilityPointsLossAll(int32 points, bool inventory)
 {
     for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
         {
             DurabilityPointsLoss(pItem, points);
         }
-
+    }
     if (inventory)
     {
         // bags not have durability
@@ -12216,7 +12217,7 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
     }
 }
 
-uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
+uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank, bool delete_from_buyback)
 {
     DEBUG_LOG("STORAGE: DestroyItemCount item = %u, count = %u", item, count);
     uint32 remcount = 0;
@@ -12339,6 +12340,7 @@ uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool une
                     {
                         remcount += pItem->GetCount();
                         DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
+
                         if (remcount >= count)
                         {
                             return remcount;
@@ -14106,6 +14108,7 @@ void Player::PrepareQuestMenu(ObjectGuid guid)
 void Player::SendPreparedQuest(ObjectGuid guid)
 {
     QuestMenu& questMenu = PlayerTalkClass->GetQuestMenu();
+
     if (questMenu.Empty())
     {
         return;
@@ -20103,7 +20106,6 @@ void Player::InitDataForForm(bool reapplyMods)
             {
                 SetPowerType(Powers(cEntry->powerType));
             }
-
             break;
         }
     }
