@@ -20178,7 +20178,7 @@ bool Player::BuyItemFromVendor(ObjectGuid vendorGuid, uint32 item, uint8 count, 
     {
         return false;
     }
-    
+
     if (!IsAlive())
     {
         return false;
