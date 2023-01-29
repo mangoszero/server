@@ -222,30 +222,38 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     std::string password = szPassword;
 
     AccountOpResult result;
-    result = sAccountMgr.CreateAccount(account_name, password);
-    switch (result)
+    uint32 expansion = 0;
+    if(ExtractUInt32(&args, expansion))
     {
-        case AOR_OK:
-            PSendSysMessage(LANG_ACCOUNT_CREATED, account_name.c_str());
-            break;
-        case AOR_NAME_TOO_LONG:
-            SendSysMessage(LANG_ACCOUNT_TOO_LONG);
-            SetSentErrorMessage(true);
-            return false;
-        case AOR_NAME_ALREADY_EXIST:
-            SendSysMessage(LANG_ACCOUNT_ALREADY_EXIST);
-            SetSentErrorMessage(true);
-            return false;
-        case AOR_DB_INTERNAL_ERROR:
-            PSendSysMessage(LANG_ACCOUNT_NOT_CREATED_SQL_ERROR, account_name.c_str());
-            SetSentErrorMessage(true);
-            return false;
-        default:
-            PSendSysMessage(LANG_ACCOUNT_NOT_CREATED, account_name.c_str());
-            SetSentErrorMessage(true);
-            return false;
+        // No point in assigning to result as it's never used on this side of the if/else branch
+        sAccountMgr.CreateAccount(account_name, password, expansion);
     }
-
+    else
+    {
+        result = sAccountMgr.CreateAccount(account_name, password);
+        switch (result)
+        {
+            case AOR_OK:
+                PSendSysMessage(LANG_ACCOUNT_CREATED, account_name.c_str());
+                break;
+            case AOR_NAME_TOO_LONG:
+                SendSysMessage(LANG_ACCOUNT_TOO_LONG);
+                SetSentErrorMessage(true);
+                return false;
+            case AOR_NAME_ALREADY_EXIST:
+                SendSysMessage(LANG_ACCOUNT_ALREADY_EXIST);
+                SetSentErrorMessage(true);
+                return false;
+            case AOR_DB_INTERNAL_ERROR:
+                PSendSysMessage(LANG_ACCOUNT_NOT_CREATED_SQL_ERROR, account_name.c_str());
+                SetSentErrorMessage(true);
+                return false;
+            default:
+                PSendSysMessage(LANG_ACCOUNT_NOT_CREATED, account_name.c_str());
+                SetSentErrorMessage(true);
+                return false;
+        }
+    }
     return true;
 }
 
