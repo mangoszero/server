@@ -1474,11 +1474,12 @@ void ObjectMgr::LoadCreatures()
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
         {
             AddCreatureToGrid(guid, &data);
-        }
 
-        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE)
-        {
-            m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+            if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE)
+            {
+                sLog.outString("Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
+                m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+            }
         }
 
         ++count;
