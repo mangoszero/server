@@ -1429,18 +1429,18 @@ void ObjectMgr::LoadCreatures()
             data.curhealth = cInfo->MinLevelHealth;
         }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_INSTANCE_BIND)
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_INSTANCE_BIND)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
                 sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_INSTANCE_BIND (%u) but creature are not in instance.",
-                                guid, data.id, CREATURE_EXTRA_FLAG_INSTANCE_BIND);
+                                guid, data.id, CREATURE_FLAG_EXTRA_INSTANCE_BIND);
         }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_AGGRO_ZONE)
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_AGGRO_ZONE)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
                 sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_AGGRO_ZONE (%u) but creature are not in instance.",
-                                guid, data.id, CREATURE_EXTRA_FLAG_AGGRO_ZONE);
+                                guid, data.id, CREATURE_FLAG_EXTRA_AGGRO_ZONE);
         }
 
         if (data.curmana < cInfo->MinLevelMana)
@@ -1476,7 +1476,7 @@ void ObjectMgr::LoadCreatures()
             AddCreatureToGrid(guid, &data);
         }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE)
         {
             m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
         }

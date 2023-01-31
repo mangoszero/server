@@ -119,7 +119,7 @@ namespace MMAP
         {
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
-                if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_ENABLE)
+                if (pInfo->ExtraFlags & CREATURE_FLAG_EXTRA_MMAP_FORCE_ENABLE)
                 {
                     return true;
                 }
@@ -135,7 +135,7 @@ namespace MMAP
         {
             if (const CreatureInfo* pInfo = pCreature->GetCreatureInfo())
             {
-                if (pInfo->ExtraFlags & CREATURE_EXTRA_FLAG_MMAP_FORCE_DISABLE)
+                if (pInfo->ExtraFlags & CREATURE_FLAG_EXTRA_MMAP_FORCE_DISABLE)
                 {
                     return true;
                 }

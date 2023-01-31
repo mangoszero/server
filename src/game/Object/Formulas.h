@@ -396,7 +396,7 @@ namespace MaNGOS
         {
             if (u->GetTypeId() == TYPEID_UNIT && (
                     ((Creature*)u)->IsTotem() || ((Creature*)u)->IsPet() ||
-                    (((Creature*)u)->GetCreatureInfo()->ExtraFlags & CREATURE_EXTRA_FLAG_NO_XP_AT_KILL)))
+                    (((Creature*)u)->GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL)))
                     {
                         return 0;
                     }
