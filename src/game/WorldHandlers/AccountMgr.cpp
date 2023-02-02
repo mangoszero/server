@@ -73,7 +73,7 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
     if (GetId(username))
     {
         {
-            return AOR_NAME_ALREADY_EXIST;                        // username does already exist
+            return AOR_NAME_ALREADY_EXIST;                   // username does already exist
         }
     }
 
@@ -83,7 +83,7 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
     }
     LoginDatabase.Execute("INSERT INTO `realmcharacters` (`realmid`, `acctid`, `numchars`) SELECT `realmlist`.`id`, `account`.`id`, 0 FROM `realmlist`,`account` LEFT JOIN `realmcharacters` ON `acctid`=`account`.`id` WHERE `acctid` IS NULL");
 
-    return AOR_OK;                                          // everything's fine
+    return AOR_OK;                                           // everything's fine
 }
 
 /**

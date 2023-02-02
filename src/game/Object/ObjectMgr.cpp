@@ -179,7 +179,6 @@ bool AreaTrigger::IsLessOrEqualThan(AreaTrigger const* l) const      // Expected
 ObjectMgr::ObjectMgr() :
     m_AuctionIds("Auction ids"),
     m_GuildIds("Guild ids"),
-    m_ItemTextIds("Item text ids"),
     m_MailIds("Mail ids"),
     m_PetNumbers("Pet numbers"),
     m_GroupIds("Group ids"),
@@ -4575,43 +4574,6 @@ void ObjectMgr::LoadPetCreateSpells()
     sLog.outString(">> Loaded %u pet create spells from table and %u from DBC", count, dcount);
 }
 
-void ObjectMgr::LoadItemTexts()
-{
-    QueryResult* result = CharacterDatabase.Query("SELECT `id`, `text` FROM `item_text`");
-
-    uint32 count = 0;
-
-    if (!result)
-    {
-        BarGoLink bar(1);
-        bar.step();
-
-        sLog.outString();
-        sLog.outString(">> Loaded %u item pages", count);
-        return;
-    }
-
-    BarGoLink bar(result->GetRowCount());
-
-    Field* fields;
-    do
-    {
-        bar.step();
-
-        fields = result->Fetch();
-
-        mItemTexts[ fields[0].GetUInt32()] = fields[1].GetCppString();
-
-        ++count;
-    }
-    while (result->NextRow());
-
-    delete result;
-
-    sLog.outString(">> Loaded %u item texts", count);
-    sLog.outString();
-}
-
 void ObjectMgr::LoadPageTexts()
 {
     sPageTextStore.Load();
@@ -5011,10 +4973,10 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
     // delete all old mails without item and without body immediately, if starting server
     if (!serverUp)
     {
-        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE `expire_time` < '" UI64FMTD "' AND `has_items` = '0' AND `itemTextId` = 0", (uint64)basetime);
+        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE `expire_time` < '" UI64FMTD "' AND `has_items` = '0' AND `body` = ''", (uint64)basetime);
     }
     //                                                     0  1           2      3        4          5         6           7   8       9
-    QueryResult* result = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`sender`,`receiver`,`itemTextId`,`has_items`,`expire_time`,`cod`,`checked`,`mailTemplateId` FROM `mail` WHERE `expire_time` < '" UI64FMTD "'", (uint64)basetime);
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`sender`,`receiver`,`has_items`,`expire_time`,`cod`,`checked`,`mailTemplateId` FROM `mail` WHERE `expire_time` < '" UI64FMTD "'", (uint64)basetime);
     if (!result)
     {
         BarGoLink bar(1);
@@ -5043,12 +5005,12 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
         m->messageType = fields[1].GetUInt8();
         m->sender = fields[2].GetUInt32();
         m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, fields[3].GetUInt32());
-        bool has_items = fields[5].GetBool();
-        m->expire_time = (time_t)fields[6].GetUInt64();
+        bool has_items = fields[4].GetBool();
+        m->expire_time = (time_t)fields[5].GetUInt64();
         m->deliver_time = 0;
-        m->COD = fields[7].GetUInt32();
-        m->checked = fields[8].GetUInt32();
-        m->mailTemplateId = fields[9].GetInt16();
+        m->COD = fields[6].GetUInt32();
+        m->checked = fields[7].GetUInt32();
+        m->mailTemplateId = fields[8].GetInt16();
 
         Player* pl = 0;
         if (serverUp)
@@ -5104,11 +5066,6 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
                 delete m;
                 continue;
             }
-        }
-
-        if (m->itemTextId)
-        {
-            CharacterDatabase.PExecute("DELETE FROM `item_text` WHERE `id` = '%u'", m->itemTextId);
         }
 
         // deletemail = true;
@@ -5845,13 +5802,6 @@ void ObjectMgr::SetHighestGuids()
         delete result;
     }
 
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `item_text`");
-    if (result)
-    {
-        m_ItemTextGuids.Set((*result)[0].GetUInt32() + 1);
-        delete result;
-    }
-
     // Cleanup other tables from nonexistent guids (>=m_hiItemGuid)
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute("DELETE FROM `character_inventory` WHERE `item` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
@@ -5877,13 +5827,6 @@ void ObjectMgr::SetHighestGuids()
     if (result)
     {
         m_MailIds.Set((*result)[0].GetUInt32() + 1);
-        delete result;
-    }
-
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `item_text`");
-    if (result)
-    {
-        m_ItemTextIds.Set((*result)[0].GetUInt32() + 1);
         delete result;
     }
 
@@ -5914,20 +5857,6 @@ void ObjectMgr::SetHighestGuids()
 
     m_StaticGameObjectGuids.Set(m_FirstTemporaryGameObjectGuid);
     m_FirstTemporaryGameObjectGuid += sWorld.getConfig(CONFIG_UINT32_GUID_RESERVE_SIZE_GAMEOBJECT);
-}
-
-uint32 ObjectMgr::CreateItemText(std::string text)
-{
-    uint32 newItemTextId = GenerateItemTextID();
-    // insert new itempage to container
-    mItemTexts[ newItemTextId ] = text;
-    // save new itempage
-    CharacterDatabase.escape_string(text);
-    // any Delete query needed, itemTextId is maximum of all ids
-    std::ostringstream query;
-    query << "INSERT INTO `item_text` (`id`,`text`) VALUES ( '" << newItemTextId << "', '" << text << "')";
-    CharacterDatabase.Execute(query.str().c_str());         // needs to be run this way, because mail body may be more than 1024 characters
-    return newItemTextId;
 }
 
 void ObjectMgr::LoadGameObjectLocales()

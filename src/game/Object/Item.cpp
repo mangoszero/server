@@ -360,15 +360,17 @@ void Item::SaveToDB()
                 ss << GetUInt32Value(i) << " ";
             }
 
-            stmt = CharacterDatabase.CreateStatement(insItem, "INSERT INTO `item_instance` (`guid`,`owner_guid`,`data`) VALUES (?, ?, ?)");
-            stmt.PExecute(guid, GetOwnerGuid().GetCounter(), ss.str().c_str());
+            stmt = CharacterDatabase.CreateStatement(insItem, "INSERT INTO `item_instance` (`guid`,`owner_guid`,`data`,`text`) VALUES (?, ?, ?, ?)");
+            stmt.PExecute(guid, GetOwnerGuid().GetCounter(), ss.str().c_str(), m_text.c_str());
         } break;
         case ITEM_CHANGED:
         {
+            std::string text = m_text;
+            CharacterDatabase.escape_string(text);
             static SqlStatementID updInstance ;
             static SqlStatementID updGifts ;
 
-            SqlStatement stmt = CharacterDatabase.CreateStatement(updInstance, "UPDATE `item_instance` SET `data` = ?, `owner_guid` = ? WHERE `guid` = ?");
+            SqlStatement stmt = CharacterDatabase.CreateStatement(updInstance, "UPDATE `item_instance` SET `data` = ?, `owner_guid` = ?, `text` = ? WHERE `guid` = ?");
 
             std::ostringstream ss;
             for (uint16 i = 0; i < m_valuesCount; ++i)
@@ -376,7 +378,7 @@ void Item::SaveToDB()
                 ss << GetUInt32Value(i) << " ";
             }
 
-            stmt.PExecute(ss.str().c_str(), GetOwnerGuid().GetCounter(), guid);
+            stmt.PExecute(ss.str().c_str(), GetOwnerGuid().GetCounter(), m_text.c_str(), guid);
 
             if (HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_WRAPPED))
             {
@@ -386,16 +388,9 @@ void Item::SaveToDB()
         } break;
         case ITEM_REMOVED:
         {
-            static SqlStatementID delItemText;
             static SqlStatementID delInst ;
             static SqlStatementID delGifts ;
             static SqlStatementID delLoot ;
-
-            if (uint32 item_text_id = GetUInt32Value(ITEM_FIELD_ITEM_TEXT_ID))
-            {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(delItemText, "DELETE FROM `item_text` WHERE `id` = ?");
-                stmt.PExecute(item_text_id);
-            }
 
             SqlStatement stmt = CharacterDatabase.CreateStatement(delInst, "DELETE FROM `item_instance` WHERE `guid` = ?");
             stmt.PExecute(guid);
@@ -490,6 +485,8 @@ bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
         sLog.outError("Item #%d have broken data in `data` field. Can't be loaded.", guidLow);
         return false;
     }
+
+    SetText(fields[1].GetCppString());
 
     bool need_save = false;                                 // need explicit save data at load fixes
 

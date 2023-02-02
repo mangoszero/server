@@ -185,7 +185,7 @@ void WorldSession::SendAuctionOutbiddedMail(AuctionEntry* auction)
             oldBidder->GetSession()->SendAuctionBidderNotification(auction, false);
         }
 
-        MailDraft(msgAuctionOutbiddedSubject.str())
+        MailDraft(msgAuctionOutbiddedSubject.str(),"")
         .SetMoney(auction->bid)
         .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
@@ -214,7 +214,7 @@ void WorldSession::SendAuctionCancelledToBidderMail(AuctionEntry* auction)
             bidder->GetSession()->SendAuctionRemovedNotification(auction);
         }
 
-        MailDraft(msgAuctionCancelledSubject.str())
+        MailDraft(msgAuctionCancelledSubject.str(),"")
         .SetMoney(auction->bid)
         .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
@@ -543,7 +543,7 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
 
     // item will deleted or added to received mail list
-    MailDraft(msgAuctionCanceledOwner.str())
+    MailDraft(msgAuctionCanceledOwner.str(),"")
     .AddItem(pItem)
     .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
 

@@ -63,7 +63,6 @@ static DumpTable dumpTables[] =
     { "character_gifts",                  DTT_ITEM_GIFT  }, //                  <- item guids
     { "item_instance",                    DTT_ITEM       }, //                  <- item guids
     { "item_loot",                        DTT_ITEM_LOOT  }, //                  <- item guids
-    { "item_text",                        DTT_ITEM_TEXT  },
     { NULL,                               DTT_CHAR_TABLE }, // end marker
 };
 
@@ -344,7 +343,6 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
         case DTT_PET_TABLE: fieldname = "guid";      guids = &pets;  break;
         case DTT_MAIL:      fieldname = "receiver";                  break;
         case DTT_MAIL_ITEM: fieldname = "mail_id";   guids = &mails; break;
-        case DTT_ITEM_TEXT: fieldname = "id";        guids = &texts; break;
         default:            fieldname = "guid";                      break;
     }
 
@@ -406,14 +404,10 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             {
                 case DTT_INVENTORY:
                     StoreGUID(result, 3, items); break;     // item guid collection
-                case DTT_ITEM:
-                    StoreGUID(result, 0, ITEM_FIELD_ITEM_TEXT_ID, texts); break;
-                    // item text id collection
                 case DTT_PET:
                     StoreGUID(result, 0, pets);  break;     // pet petnumber collection (character_pet.id)
                 case DTT_MAIL:
                     StoreGUID(result, 0, mails);            // mail id collection (mail.id)
-                    StoreGUID(result, 7, texts); break;     // item text id collection
                 case DTT_MAIL_ITEM:
                     StoreGUID(result, 1, items); break;     // item guid collection (mail_items.item_guid)
                 default:                       break;
@@ -617,11 +611,8 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                 {
                     continue;
                 }
-
-
             }
         }
-
 
         // determine table name and load type
         std::string tn = gettablename(line);
@@ -734,10 +725,6 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                 {
                     ROLLBACK(DUMP_FILE_BROKEN);              // item_instance.data.ITEM_FIELD_OWNER update
                 }
-                if (!changetokGuid(vals, ITEM_FIELD_ITEM_TEXT_ID + 1, itemTexts, sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed(), true))
-                {
-                    ROLLBACK(DUMP_FILE_BROKEN);
-                }
                 if (!changenth(line, 3, vals.c_str()))      // item_instance.data update
                 {
                     ROLLBACK(DUMP_FILE_BROKEN);
@@ -832,10 +819,6 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                 {
                     ROLLBACK(DUMP_FILE_BROKEN);
                 }
-                if (!changeGuid(line, 8, itemTexts, sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed()))
-                {
-                    ROLLBACK(DUMP_FILE_BROKEN);
-                }
                 break;
             }
             case DTT_MAIL_ITEM:                             // mail_items
@@ -854,20 +837,6 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
                 }
                 break;
             }
-            case DTT_ITEM_TEXT:                             // item_text
-            {
-                // id
-                if (!changeGuid(line, 1, itemTexts, sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed()))
-                {
-                    ROLLBACK(DUMP_FILE_BROKEN);
-                }
-
-                // add it to cache
-                uint32 id = atoi(getnth(line, 1).c_str());
-                std::string text = getnth(line, 2);
-                sObjectMgr.AddItemText(id, text);
-                break;
-            }
             default:
                 sLog.outError("Unknown dump table type: %u", type);
                 break;
@@ -883,9 +852,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
 
     // FIXME: current code with post-updating guids not safe for future per-map threads
     sObjectMgr.m_ItemGuids.Set(sObjectMgr.m_ItemGuids.GetNextAfterMaxUsed() + items.size());
-    sObjectMgr.m_ItemTextGuids.Set(sObjectMgr.m_ItemTextGuids.GetNextAfterMaxUsed() + itemTexts.size());
     sObjectMgr.m_MailIds.Set(sObjectMgr.m_MailIds.GetNextAfterMaxUsed() +  mails.size());
-    sObjectMgr.m_ItemTextIds.Set(sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed() + itemTexts.size());
 
     if (incHighest)
     {

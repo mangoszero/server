@@ -116,27 +116,6 @@ MailReceiver::MailReceiver(Player* receiver, ObjectGuid receiver_guid) : m_recei
 }
 
 /**
- * Creates a new MailDraft object using subject and contect texts.
- *
- * @param subject The subject of the mail.
- * @param itemText The text of the body of the mail.
- */
-MailDraft::MailDraft(std::string subject, std::string text) : m_mailTemplateId(0), m_mailTemplateItemsNeed(false), m_subject(subject),
-    m_bodyId(!text.empty() ? sObjectMgr.CreateItemText(text) : 0), m_money(0), m_COD(0)
-{
-}
-
-MailDraft& MailDraft::SetSubjectAndBody(std::string subject, std::string text)
-{
-    m_subject = subject;
-
-    MANGOS_ASSERT(!m_bodyId);
-    m_bodyId = !text.empty() ? sObjectMgr.CreateItemText(text) : 0;
-
-    return *this;
-}
-
-/**
  * Adds an item to the MailDraft.
  *
  * @param item The item to be added to the MailDraft.
@@ -211,14 +190,7 @@ void MailDraft::CloneFrom(MailDraft const& draft)
     m_mailTemplateItemsNeed = draft.m_mailTemplateItemsNeed;
 
     m_subject = draft.GetSubject();
-
-    MANGOS_ASSERT(!m_bodyId);
-    if (uint32 bodyId = draft.GetBodyId())
-    {
-        std::string text = sObjectMgr.GetItemText(bodyId);
-        m_bodyId = sObjectMgr.CreateItemText(text);
-    }
-
+    m_body = draft.GetBody();
     m_money = draft.GetMoney();
     m_COD = draft.GetCOD();
 
@@ -352,12 +324,15 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
 
     // Add to DB
     std::string safe_subject = GetSubject();
+    CharacterDatabase.escape_string(safe_subject);
+
+    std::string safe_body = GetBody();
+    CharacterDatabase.escape_string(safe_body);
 
     CharacterDatabase.BeginTransaction();
-    CharacterDatabase.escape_string(safe_subject);
-    CharacterDatabase.PExecute("INSERT INTO `mail` (`id`,`messageType`,`stationery`,`mailTemplateId`,`sender`,`receiver`,`subject`,`itemTextId`,`has_items`,`expire_time`,`deliver_time`,`money`,`cod`,`checked`) "
-                               "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '%s', '%u', '%u', '" UI64FMTD "','" UI64FMTD "', '%u', '%u', '%u')",
-                               mailId, sender.GetMailMessageType(), sender.GetStationery(), GetMailTemplateId(), sender.GetSenderId(), receiver.GetPlayerGuid().GetCounter(), safe_subject.c_str(), GetBodyId(), (has_items ? 1 : 0), (uint64)expire_time, (uint64)deliver_time, m_money, m_COD, checked);
+    CharacterDatabase.PExecute("INSERT INTO `mail` (`id`,`messageType`,`stationery`,`mailTemplateId`,`sender`,`receiver`,`subject`,`body`,`has_items`,`expire_time`,`deliver_time`,`money`,`cod`,`checked`) "
+                               "VALUES ('%u', '%u', '%u', '%u', '%u', '%u', '%s', '%s', '%u', '" UI64FMTD "','" UI64FMTD "', '%u', '%u', '%u')",
+                               mailId, sender.GetMailMessageType(), sender.GetStationery(), GetMailTemplateId(), sender.GetSenderId(), receiver.GetPlayerGuid().GetCounter(), safe_subject.c_str(), safe_body.c_str(), (has_items ? 1 : 0), (uint64)expire_time, (uint64)deliver_time, m_money, m_COD, checked);
 
     for (MailItemMap::const_iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
     {
@@ -376,7 +351,7 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
         m->messageID = mailId;
         m->mailTemplateId = GetMailTemplateId();
         m->subject = GetSubject();
-        m->itemTextId = GetBodyId();
+        m->body = GetBody();
         m->money = GetMoney();
         m->COD = GetCOD();
 

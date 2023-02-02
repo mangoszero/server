@@ -270,7 +270,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
         auction->itemGuidLow = 0;
 
         // will delete item or place to receiver mail list
-        MailDraft(subject.str())
+        MailDraft(subject.str(),"")
         .AddItem(pItem)
         .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
     }

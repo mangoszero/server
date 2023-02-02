@@ -53,7 +53,6 @@ enum DumpTableType
 
     DTT_PET,            //    -> pet guids collection       // character_pet
     DTT_PET_TABLE,      // <- pet guids                     // pet_aura, pet_spell, pet_spell_cooldown
-    DTT_ITEM_TEXT,      // <- item_text                     // item_text
 };
 
 enum DumpReturn
@@ -89,7 +88,6 @@ class PlayerDumpWriter : public PlayerDump
         GUIDs pets;
         GUIDs mails;
         GUIDs items;
-        GUIDs texts;
 };
 
 class PlayerDumpReader : public PlayerDump

@@ -4433,8 +4433,8 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             // completely remove from the database
         case 0:
         {
-            // return back all mails with COD and Item                  0    1             2                3        4         5            6       7
-            QueryResult* resultMail = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`mailTemplateId`,`sender`,`subject`,`itemTextId`,`money`,`has_items` FROM `mail` WHERE `receiver`='%u' AND `has_items`<>0 AND `cod`<>0", lowguid);
+            // return back all mails with COD and Item                  0    1             2                3        4         5      6       7
+            QueryResult* resultMail = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`mailTemplateId`,`sender`,`subject`,`body`,`money`,`has_items` FROM `mail` WHERE `receiver`='%u' AND `has_items`<>0 AND `cod`<>0", lowguid);
             if (resultMail)
             {
                 do
@@ -4446,7 +4446,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
                     uint16 mailTemplateId = fields[2].GetUInt16();
                     uint32 sender        = fields[3].GetUInt32();
                     std::string subject  = fields[4].GetCppString();
-                    uint32 itemTextId    = fields[5].GetUInt32();
+                    std::string body     = fields[5].GetCppString();
                     uint32 money         = fields[6].GetUInt32();
                     bool has_items       = fields[7].GetBool();
 
@@ -4464,29 +4464,29 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
                         continue;
                     }
 
-                    MailDraft draft;
+                    MailDraft draft(subject, body);
                     if (mailTemplateId)
                     {
                         draft.SetMailTemplate(mailTemplateId, false); // items already included
                     }
                     else
                     {
-                        draft.SetSubjectAndBodyId(subject, itemTextId);
+                        draft.SetSubjectAndBody(subject, body);
                     }
 
                     if (has_items)
                     {
                         // data needs to be at first place for Item::LoadFromDB
-                        //                                                           0      1           2
-                        QueryResult* resultItems = CharacterDatabase.PQuery("SELECT `data`,`item_guid`,`item_template` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mail_id);
+                        //                                                           0      1      2           3
+                        QueryResult* resultItems = CharacterDatabase.PQuery("SELECT `data`,`text`,`item_guid`,`item_template` FROM `mail_items` JOIN `item_instance` ON `item_guid` = `guid` WHERE `mail_id`='%u'", mail_id);
                         if (resultItems)
                         {
                             do
                             {
                                 Field* fields2 = resultItems->Fetch();
 
-                                uint32 item_guidlow = fields2[1].GetUInt32();
-                                uint32 item_template = fields2[2].GetUInt32();
+                                uint32 item_guidlow = fields2[2].GetUInt32();
+                                uint32 item_template = fields2[3].GetUInt32();
 
                                 ItemPrototype const* itemProto = ObjectMgr::GetItemPrototype(item_template);
                                 if (!itemProto)
@@ -12217,7 +12217,7 @@ void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
     }
 }
 
-uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank, bool delete_from_buyback)
+uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool unequip_check, bool delete_from_bank,bool delete_from_buyback)
 {
     DEBUG_LOG("STORAGE: DestroyItemCount item = %u, count = %u", item, count);
     uint32 remcount = 0;
@@ -12340,7 +12340,6 @@ uint32 Player::DestroyItemCount(uint32 item, uint32 count, bool update, bool une
                     {
                         remcount += pItem->GetCount();
                         DestroyItem(INVENTORY_SLOT_BAG_0, i, update);
-
                         if (remcount >= count)
                         {
                             return remcount;
@@ -14108,7 +14107,6 @@ void Player::PrepareQuestMenu(ObjectGuid guid)
 void Player::SendPreparedQuest(ObjectGuid guid)
 {
     QuestMenu& questMenu = PlayerTalkClass->GetQuestMenu();
-
     if (questMenu.Empty())
     {
         return;
@@ -17367,7 +17365,7 @@ void Player::_LoadInventory(QueryResult* result, uint32 timediff)
             std::string subject = "Item could not be loaded to inventory.";
             std::string content = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
             // fill mail
-            MailDraft draft(subject);
+            MailDraft draft(subject,"");
             draft.SetSubjectAndBody(subject,content);
             for (int i = 0; !problematicItems.empty() && i < MAX_MAIL_ITEMS; ++i)
             {
@@ -17444,8 +17442,8 @@ void Player::_LoadItemLoot(QueryResult* result)
 void Player::_LoadMailedItems(QueryResult* result)
 {
     // data needs to be at first place for Item::LoadFromDB
-    //         0     1        2          3
-    // "SELECT data, mail_id, item_guid, item_template FROM mail_items JOIN item_instance ON item_guid = guid WHERE receiver = '%u'", GUID_LOPART(m_guid)
+    //         0     1     2        3          4
+    // "SELECT data, text, mail_id, item_guid, item_template FROM mail_items JOIN item_instance ON item_guid = guid WHERE receiver = '%u'", GUID_LOPART(m_guid)
     if (!result)
     {
         return;
@@ -17496,8 +17494,8 @@ void Player::_LoadMailedItems(QueryResult* result)
 void Player::_LoadMails(QueryResult* result)
 {
     m_mail.clear();
-    //        0  1           2      3        4       5          6           7            8     9   10      11         12             13
-    //"SELECT id,messageType,sender,receiver,subject,itemTextId,expire_time,deliver_time,money,cod,checked,stationery,mailTemplateId,has_items FROM mail WHERE receiver = '%u' ORDER BY id DESC",GetGUIDLow()
+    //        0  1           2      3        4       5    6           7            8     9   10      11         12             13
+    //"SELECT id,messageType,sender,receiver,subject,body,expire_time,deliver_time,money,cod,checked,stationery,mailTemplateId,has_items FROM mail WHERE receiver = '%u' ORDER BY id DESC", GetGUIDLow()
     if (!result)
     {
         return;
@@ -17512,7 +17510,7 @@ void Player::_LoadMails(QueryResult* result)
         m->sender = fields[2].GetUInt32();
         m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, fields[3].GetUInt32());
         m->subject = fields[4].GetCppString();
-        m->itemTextId = fields[5].GetUInt32();
+        m->body = fields[5].GetCppString();
         m->expire_time = (time_t)fields[6].GetUInt64();
         m->deliver_time = (time_t)fields[7].GetUInt64();
         m->money = fields[8].GetUInt32();
@@ -18562,7 +18560,6 @@ void Player::SaveMail()
     static SqlStatementID deleteMailItems ;
 
     static SqlStatementID deleteItem ;
-    static SqlStatementID deleteItemText;
     static SqlStatementID deleteMail ;
     static SqlStatementID deleteItems ;
 
@@ -18571,8 +18568,8 @@ void Player::SaveMail()
         Mail* m = (*itr);
         if (m->state == MAIL_STATE_CHANGED)
         {
-            SqlStatement stmt = CharacterDatabase.CreateStatement(updateMail, "UPDATE `mail` SET `itemTextId` = ?,`has_items` = ?, `expire_time` = ?, `deliver_time` = ?, `money` = ?, `cod` = ?, `checked` = ? WHERE `id` = ?");
-            stmt.addUInt32(m->itemTextId);
+            SqlStatement stmt = CharacterDatabase.CreateStatement(updateMail, "UPDATE `mail` SET `body` = ?,`has_items` = ?, `expire_time` = ?, `deliver_time` = ?, `money` = ?, `cod` = ?, `checked` = ? WHERE `id` = ?");
+            stmt.addString(m->body);
             stmt.addUInt32(m->HasItems() ? 1 : 0);
             stmt.addUInt64(uint64(m->expire_time));
             stmt.addUInt64(uint64(m->deliver_time));
@@ -18604,12 +18601,6 @@ void Player::SaveMail()
                 {
                     stmt.PExecute(itr2->item_guid);
                 }
-            }
-
-            if (m->itemTextId)
-            {
-                SqlStatement stmt = CharacterDatabase.CreateStatement(deleteItemText, "DELETE FROM `item_text` WHERE `id` = ?");
-                stmt.PExecute(m->itemTextId);
             }
 
             SqlStatement stmt = CharacterDatabase.CreateStatement(deleteMail, "DELETE FROM `mail` WHERE `id` = ?");
@@ -20106,6 +20097,7 @@ void Player::InitDataForForm(bool reapplyMods)
             {
                 SetPowerType(Powers(cEntry->powerType));
             }
+
             break;
         }
     }
@@ -21683,7 +21675,7 @@ void Player::AutoUnequipOffhandIfNeed()
         CharacterDatabase.CommitTransaction();
 
         std::string subject = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
-        MailDraft(subject).AddItem(offItem).SendMailTo(this, MailSender(this, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_COPIED);
+        MailDraft(subject, "There's were problems with equipping this item.").AddItem(offItem).SendMailTo(this, MailSender(this, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_COPIED);
     }
 }
 
