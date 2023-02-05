@@ -45,6 +45,7 @@
 #include "CreatureLinkingMgr.h"
 #include "Chat.h"
 #include "GameTime.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #include "ElunaEventMgr.h"
@@ -180,6 +181,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) c
     buf << uint8(m_objectTypeId);
 
     BuildMovementUpdate(&buf, updateFlags);
+
     UpdateMask updateMask;
     updateMask.SetCount(m_valuesCount);
     _SetCreateBits(&updateMask, target);
@@ -411,8 +413,10 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
                     /* Initiate pointer to creature so we can check loot */
                     if (Creature* my_creature = (Creature*)this)
+                    {
                         /* If the creature is NOT fully looted */
                         if (!my_creature->loot.isLooted())
+                        {
                             /* If the lootable flag is NOT set */
                             if (!(send_value & UNIT_DYNFLAG_LOOTABLE))
                             {
@@ -421,13 +425,16 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                                 /* Update it in the packet */
                                 send_value = send_value | UNIT_DYNFLAG_LOOTABLE;
                             }
-
+                        }
+                    }
                     /* If we're not allowed to loot the target, destroy the lootable flag */
                     if (!target->isAllowedToLoot((Creature*)this))
+                    {
                         if (send_value & UNIT_DYNFLAG_LOOTABLE)
                         {
                             send_value = send_value & ~UNIT_DYNFLAG_LOOTABLE;
                         }
+                    }
 
                     /* If we are allowed to loot it and mob is tapped by us, destroy the tapped flag */
                     bool is_tapped = target->IsTappedByMeOrMyGroup((Creature*)this);
@@ -438,29 +445,29 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                         send_value = send_value & ~UNIT_DYNFLAG_TAPPED;
                     }
 
-                 // Checking SPELL_AURA_EMPATHY and caster
-                if (send_value & UNIT_DYNFLAG_SPECIALINFO && ((Unit*)this)->IsAlive())
-                {
-                    bool bIsEmpathy = false;
-                    bool bIsCaster = false;
-                    Unit::AuraList const& mAuraEmpathy = ((Unit*)this)->GetAurasByType(SPELL_AURA_EMPATHY);
-                    for (Unit::AuraList::const_iterator itr = mAuraEmpathy.begin(); !bIsCaster && itr != mAuraEmpathy.end(); ++itr)
+                    // Checking SPELL_AURA_EMPATHY and caster
+                    if (send_value & UNIT_DYNFLAG_SPECIALINFO && ((Unit*)this)->IsAlive())
                     {
-                        bIsEmpathy = true; // Empathy by aura set
-                        if ((*itr)->GetCasterGuid() == target->GetObjectGuid())
+                        bool bIsEmpathy = false;
+                        bool bIsCaster = false;
+                        Unit::AuraList const& mAuraEmpathy = ((Unit*)this)->GetAurasByType(SPELL_AURA_EMPATHY);
+                        for (Unit::AuraList::const_iterator itr = mAuraEmpathy.begin(); !bIsCaster && itr != mAuraEmpathy.end(); ++itr)
                         {
-                            bIsCaster = true; // target is the caster of an empathy aura
+                            bIsEmpathy = true; // Empathy by aura set
+                            if ((*itr)->GetCasterGuid() == target->GetObjectGuid())
+                            {
+                                bIsCaster = true; // target is the caster of an empathy aura
+                            }
+                        }
+                        if (bIsEmpathy && !bIsCaster) // Empathy by aura, but target is not the caster
+                        {
+                            send_value &= ~UNIT_DYNFLAG_SPECIALINFO;
                         }
                     }
-                if (bIsEmpathy && !bIsCaster) // Empathy by aura, but target is not the caster
-                {
-                    send_value &= ~UNIT_DYNFLAG_SPECIALINFO;
-                }
-                }
 
                     *data << send_value;
                 }
-                else
+                else                                        // Unhandled index, just send
                 {
                     // send in current format (float as float, uint32 as uint32)
                     *data << m_uint32Values[index];
@@ -496,12 +503,13 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                     }
                     else
                     {
-                        *data << uint32(0); // disable quest object
+                        // disable quest object
+                        *data << uint32(0);
                     }
                 }
                 else
                 {
-                    *data << m_uint32Values[index]; // other cases
+                    *data << m_uint32Values[index];          // other cases
                 }
             }
         }
@@ -1310,7 +1318,7 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float& z) const
     float new_z = GetMap()->GetHeight(x, y, z);
     if (new_z > INVALID_HEIGHT)
     {
-        z = new_z + 0.05f; // just to be sure that we are not a few pixel under the surface
+        z = new_z + 0.05f;                                   // just to be sure that we are not a few pixel under the surface
     }
 }
 
@@ -1340,6 +1348,10 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                     {
                         z = max_z;
                     }
+                    else if (z < ground_z)
+                    {
+                        z = ground_z;
+                    }
                 }
             }
             else
@@ -1363,6 +1375,10 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                     if (z > max_z)
                     {
                         z = max_z;
+                    }
+                    else if (z < ground_z)
+                    {
+                        z = ground_z;
                     }
                 }
             }
@@ -1431,7 +1447,7 @@ namespace MaNGOS
                 : i_object(obj), i_msgtype(msgtype), i_textData(textData), i_language(language), i_target(target) {}
             void operator()(WorldPacket& data, int32 loc_idx)
             {
-                char const* text;
+                char const* text = NULL;
                 if ((int32)i_textData->Content.size() > loc_idx + 1 && !i_textData->Content[loc_idx + 1].empty())
                 {
                     text = i_textData->Content[loc_idx + 1].c_str();
@@ -1785,7 +1801,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
     {
         if (searcher)
         {
-            searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
         }
         else
         {
@@ -1817,7 +1833,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
     {
         if (searcher)
         {
-            searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
         }
         else
         {
@@ -1845,7 +1861,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
 
         if (searcher)
         {
-            searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
         }
         else
         {
@@ -1867,7 +1883,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
 
         if (searcher)
         {
-            searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
         }
         else
         {
@@ -1887,7 +1903,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
 
         if (searcher)
         {
-            searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+            searcher->UpdateAllowedPositionZ(x, y, z, GetMap());       // update to LOS height if available
         }
         else
         {
@@ -1906,7 +1922,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float& x, float& y, 
 
     if (searcher)
     {
-        searcher->UpdateAllowedPositionZ(x, y, z, GetMap()); // update to LOS height if available
+        searcher->UpdateAllowedPositionZ(x, y, z, GetMap());           // update to LOS height if available
     }
     else
     {

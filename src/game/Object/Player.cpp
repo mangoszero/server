@@ -1076,6 +1076,7 @@ int32 Player::getMaxTimer(MirrorTimerType timer)
         default:
             return 0;
     }
+    return 0;
 }
 
 void Player::UpdateMirrorTimers()
@@ -1353,7 +1354,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
                 RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
             }
         }
-    }
+    }// Speed collect rest bonus (section/in hour)
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING))
     {
@@ -1418,6 +1419,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
             else
             {
                 // Use area updates as well
+                // Needed for free for all arenas for example
                 if (m_areaUpdateId != newarea)
                 {
                     UpdateArea(newarea);
@@ -3395,7 +3397,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
         m_spells[spell_id] = newspell;
 
-        // return false if spell disabled
+        // return false if spell disabled or spell is non-stackable with lower-ranks
         if (newspell.disabled)
         {
             return false;
@@ -6595,6 +6597,15 @@ void Player::SendCinematicStart(uint32 CinematicSequenceId)
     data << uint32(CinematicSequenceId);
     SendDirectMessage(&data);
 }
+
+#if defined (WOTLK) || defined (CATA) || defined (MISTS)
+void Player::SendMovieStart(uint32 MovieId)
+{
+    WorldPacket data(SMSG_TRIGGER_MOVIE, 4);
+    data << uint32(MovieId);
+    SendDirectMessage(&data);
+}
+#endif
 
 void Player::CheckAreaExploreAndOutdoor()
 {
@@ -22877,6 +22888,23 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
     }
 
     m_temporaryUnsummonedPetNumber = 0;
+}
+
+bool Player::canSeeSpellClickOn(Creature const* c) const
+{
+    if (!c->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK))
+    {
+        return false;
+    }
+
+    SpellClickInfoMapBounds clickPair = sObjectMgr.GetSpellClickInfoMapBounds(c->GetEntry());
+    for (SpellClickInfoMap::const_iterator itr = clickPair.first; itr != clickPair.second; ++itr)
+        if (itr->second.IsFitToRequirements(this, c))
+        {
+            return true;
+        }
+
+    return false;
 }
 
 void Player::_SaveBGData()

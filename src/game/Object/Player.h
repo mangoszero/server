@@ -416,6 +416,7 @@ enum PlayerFlags
     PLAYER_FLAGS_SANCTUARY              = 0x00010000,       // player entered sanctuary
     PLAYER_FLAGS_TAXI_BENCHMARK         = 0x00020000,       // taxi benchmark mode (on/off) (2.0.1)
     PLAYER_FLAGS_PVP_TIMER              = 0x00040000,       // 3.0.2, pvp timer active (after you disable pvp manually)
+    PLAYER_FLAGS_XP_USER_DISABLED       = 0x02000000,
 };
 
 // used in (PLAYER_FIELD_BYTES, 0) byte values
@@ -1235,7 +1236,10 @@ class Player : public Unit
         void ApplyEquipCooldown(Item* pItem);
         void SetAmmo(uint32 item);
         void RemoveAmmo();
-        std::pair<float, float> GetAmmoDPS() const { return { m_ammoDPSMin, m_ammoDPSMax }; }
+        std::pair<float, float> GetAmmoDPS() const
+        {
+            return {m_ammoDPSMin, m_ammoDPSMax};
+        }
 
         bool CheckAmmoCompatibility(const ItemPrototype* ammo_proto) const;
         void QuickEquipItem(uint16 pos, Item* pItem);
@@ -2335,6 +2339,9 @@ class Player : public Unit
         bool IsPetNeedBeTemporaryUnsummoned() const { return !IsInWorld() || !IsAlive() || IsMounted() /*+in flight*/; }
 
         void SendCinematicStart(uint32 CinematicSequenceId);
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
+        void SendMovieStart(uint32 MovieId);
+#endif
 
         /*********************************************************/
         /***                 INSTANCE SYSTEM                   ***/
@@ -2391,6 +2398,8 @@ class Player : public Unit
 
         bool IsTappedByMeOrMyGroup(Creature* creature);
         bool isAllowedToLoot(Creature* creature);
+
+        bool canSeeSpellClickOn(Creature const* creature) const;
 
 #ifdef ENABLE_PLAYERBOTS
         //EquipmentSets& GetEquipmentSets() { return m_EquipmentSets; }

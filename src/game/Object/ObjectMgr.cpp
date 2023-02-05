@@ -118,6 +118,34 @@ LanguageDesc const* GetLanguageDescByID(uint32 lang)
     return NULL;
 }
 
+bool SpellClickInfo::IsFitToRequirements(Player const* player, Creature const* clickedCreature) const
+{
+    if (conditionId)
+    {
+        return sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), clickedCreature, CONDITION_FROM_SPELLCLICK);
+    }
+
+    if (questStart)
+    {
+        // not in expected required quest state
+        if (!player || ((!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart)))
+        {
+            return false;
+        }
+    }
+
+    if (questEnd)
+    {
+        // not in expected forbidden quest state
+        if (!player || player->GetQuestRewardStatus(questEnd))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template<typename T>
 T IdGenerator<T>::Generate()
 {

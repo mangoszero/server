@@ -584,6 +584,13 @@ struct MapEntry
     }
 };
 
+
+struct MovieEntry
+{
+    uint32      Id;                                         // 0        m_ID
+    // char*       filename;                                // 1        m_filename
+    // uint32      unk2;                                    // 2        m_volume
+};
 /**
 * \struct QuestSortEntry
 * \brief Entry representing the type of quest within the game.

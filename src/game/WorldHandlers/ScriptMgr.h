@@ -166,13 +166,21 @@ enum DBScriptCommand                                        // resSource, resTar
                                                             // datalong: Send mailTemplateId from resSource (if provided) to player resTarget
                                                             // datalong2: AlternativeSenderEntry. Use as sender-Entry
                                                             // dataint1: Delay (>= 0) in Seconds
-    SCRIPT_COMMAND_SET_FLY                  = 39,           // resSource = Creature, datalong = 0 (off) | 1 (on)
+    SCRIPT_COMMAND_CHANGE_ENTRY             = 39,           // resSource = Creature, datalong=creature entry
+                                                            // dataint1 = entry
     SCRIPT_COMMAND_DESPAWN_GO               = 40,           // resTarget = GameObject
     SCRIPT_COMMAND_RESPAWN                  = 41,           // resSource = Creature. Requires SCRIPT_FLAG_BUDDY_IS_DESPAWNED to find dead or despawned targets
     SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS      = 42,           // resSource = Creature, datalong = reset default 0(false) | 1(true)
                                                             // dataint = main hand slot, dataint2 = offhand slot, dataint3 = ranged slot
     SCRIPT_COMMAND_RESET_GO                 = 43,           // resTarget = GameObject
-    SCRIPT_COMMAND_UPDATE_TEMPLATE          = 44,           // resSource = Creature, datalong = new creature entry, datalong2 = 0(Alliance) | 1(Horde)
+    SCRIPT_COMMAND_UPDATE_TEMPLATE          = 44,           // resSource = Creature
+                                                            // datalong = new Creature entry
+                                                            // datalong2 = Alliance(0) Horde(1), other values throw error
+    SCRIPT_COMMAND_XP_USER                  = 53,           // source or target with Player, datalong = bool (0=off, 1=on)
+    SCRIPT_COMMAND_SET_FLY                  = 59,           // resSource = Creature
+                                                            // datalong = bool 0=off, 1=on
+                                                            // data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL set/unset byte flag UNIT_BYTE1_FLAG_FLY_ANIM
+                                                            // dataint1: Delay (>= 0) in Seconds
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK, SCRIPT_COMMAND_EMOTE, SCRIPT_COMMAND_CAST_SPELL, SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -420,11 +428,11 @@ struct ScriptInfo
             uint32 altSender;                               // datalong2;
         } sendMail;
 
-        struct                                              // SCRIPT_COMMAND_SET_FLY (39)
+        struct                                              // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (39)
         {
-            uint32 enable;                                  // datalong
-            uint32 empty;                                   // datalong2
-        } fly;
+            uint32 creatureEntry;                           // datalong
+            uint32 empty1;                                  // datalong2
+        } changeEntry;
 
         struct                                              // SCRIPT_COMMAND_DESPAWN_GO (40)
         {
@@ -446,6 +454,18 @@ struct ScriptInfo
             uint32 entry;                                   // datalong
             uint32 faction;                                 // datalong2
         } updateTemplate;
+
+        struct                                              // SCRIPT_COMMAND_XP_USER (53)
+        {
+            uint32 flags;                                   // datalong
+            uint32 empty;                                   // datalong2
+        } xpDisabled;
+
+        struct                                              // SCRIPT_COMMAND_SET_FLY (59)
+        {
+            uint32 enable;                                  // datalong
+            uint32 empty;                                   // datalong2
+        } fly;
 
         struct
         {
@@ -608,6 +628,9 @@ class ScriptMgr
         void LoadEventIdScripts();
         void LoadSpellIdScripts();
 
+        uint32 GetAreaTriggerScriptId(uint32 triggerId) const;
+        uint32 GetEventIdScriptId(uint32 eventId) const;
+
         bool ReloadScriptBinding();
 
         ScriptChainMap const* GetScriptChainMap(DBScriptType type);
@@ -679,6 +702,7 @@ class ScriptMgr
         bool OnGameObjectUse(Unit* pUnit, GameObject* pGameObject);
         bool OnItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets);
         bool OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry);
+        bool OnNpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uint32 spellId);
         bool OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget, bool isStart);
         bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Unit* pTarget, ObjectGuid originalCasterGuid);
         bool OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid);
@@ -716,6 +740,8 @@ bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool
 uint32 GetScriptId(const char* name);
 char const* GetScriptName(uint32 id);
 uint32 GetScriptIdsCount();
+uint32 GetAreaTriggerScriptId(uint32 triggerId);
+uint32 GetEventIdScriptId(uint32 eventId);
 void SetExternalWaypointTable(char const* tableName);
 bool AddWaypointFromExternal(uint32 entry, int32 pathId, uint32 pointId, float x, float y, float z, float o, uint32 waittime);
 

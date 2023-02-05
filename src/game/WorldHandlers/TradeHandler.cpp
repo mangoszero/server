@@ -355,7 +355,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
             Item* castItem = my_trade->GetSpellCastItem();
 
             if (!spellEntry || !his_trade->GetItem(TRADE_SLOT_NONTRADED) ||
-                    (my_trade->HasSpellCastItem() && !castItem))
+                (my_trade->HasSpellCastItem() && !castItem))
             {
                 clearAcceptTradeMode(my_trade, his_trade);
                 clearAcceptTradeMode(myItems, hisItems);
@@ -390,7 +390,7 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
             Item* castItem = his_trade->GetSpellCastItem();
 
             if (!spellEntry || !my_trade->GetItem(TRADE_SLOT_NONTRADED) ||
-                    (his_trade->HasSpellCastItem() && !castItem))
+                (his_trade->HasSpellCastItem() && !castItem))
             {
                 delete my_spell;
                 his_trade->SetSpell(0);
@@ -688,10 +688,10 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
 
     // Check visibility in order to avoid hanging trade sessions
     if (GetSecurity() > SEC_PLAYER && GetPlayer()->GetVisibility() == VISIBILITY_OFF &&
-       (   pOther->GetSession()->GetSecurity() < GetSecurity()
-       || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
-       )
-    )
+        (pOther->GetSession()->GetSecurity() < GetSecurity()
+            || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
+            )
+        )
     {
         info.Status = TRADE_STATUS_TRADE_CANCELED;
         SendTradeStatus(info);

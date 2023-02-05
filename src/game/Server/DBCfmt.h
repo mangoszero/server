@@ -54,6 +54,7 @@ const char LiquidTypefmt[] = "niii";
 const char LockEntryfmt[] = "niiiiiiiiiiiiiiiiiiiiiiiixxxxxxxx";
 const char MailTemplateEntryfmt[] = "nxxxxxxxxx";
 const char MapEntryfmt[] = "nxixssssssssxxxxxxxixxxxxxxxxxxxxxxxxxixxx";
+const char MovieEntryfmt[] = "nxx";
 const char QuestSortEntryfmt[] = "nxxxxxxxxx";
 const char SkillLinefmt[] = "nixssssssssxxxxxxxxxxx";
 const char SkillLineAbilityfmt[] = "niiiixxiiiiixxi";

@@ -772,6 +772,7 @@ Faction Template: %u. */
     LANG_COMMAND_GO_STATUS                                    = 1194,    /* Current State Information: GOState %u, LootState %u. Collision %s */
     LANG_COMMAND_GO_STATUS_DOOR                               = 1195,    /* Current State Information: GOState %u, LootState %u. Collision %s, (door %s by default) */
     LANG_CINEMATIC_NOT_EXIST                                  = 1200,    /* You try to view cinematic %u but it doesn't exist. */
+    LANG_MOVIE_NOT_EXIST                                      = 1201,
     LANG_SPELLCOEFS                                           = 1202,    /* Spell %u %s = %f (*1.88 = %f) DB = %f AP = %f */
     LANG_DIRECT_HEAL                                          = 1203,    /* direct heal */
     LANG_DIRECT_DAMAGE                                        = 1204,    /* direct damage */

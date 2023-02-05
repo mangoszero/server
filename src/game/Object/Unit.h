@@ -564,6 +564,7 @@ enum NPCFlags
     UNIT_NPC_FLAG_AUCTIONEER            = 0x00001000,       ///< 100%
     UNIT_NPC_FLAG_STABLEMASTER          = 0x00002000,       ///< 100%
     UNIT_NPC_FLAG_REPAIR                = 0x00004000,       ///< 100%
+    UNIT_NPC_FLAG_SPELLCLICK            = 0x01000000,       // cause client to send 1015 opcode (spell click), dynamic, set at loading and don't must be set in DB
     UNIT_NPC_FLAG_OUTDOORPVP            = 0x20000000        ///< custom flag for outdoor pvp creatures || Custom flag
 };
 
@@ -575,6 +576,7 @@ enum NPCFlags
  */
 enum MovementFlags
 {
+    // Byte 1 (Resets on Movement Key Press)
     MOVEFLAG_NONE             = 0x00000000,
     MOVEFLAG_FORWARD          = 0x00000001,
     MOVEFLAG_BACKWARD         = 0x00000002,
@@ -584,6 +586,8 @@ enum MovementFlags
     MOVEFLAG_TURN_RIGHT       = 0x00000020,
     MOVEFLAG_PITCH_UP         = 0x00000040,
     MOVEFLAG_PITCH_DOWN       = 0x00000080,
+
+    // Byte 2 (Resets on Situation Change)
     MOVEFLAG_WALK_MODE        = 0x00000100,               // Walking
 
     MOVEFLAG_LEVITATING       = 0x00000400,

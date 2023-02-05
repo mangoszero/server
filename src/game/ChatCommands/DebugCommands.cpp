@@ -403,6 +403,29 @@ bool ChatHandler::HandleDebugPlayCinematicCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleDebugPlayMovieCommand(char* args)
+{
+#if defined(TBC) || defined(WOTLK) || defined(CATA) || defined(MISTS)
+    // USAGE: .debug play movie #movieid
+    // #movieid - ID decimal number from Movie.dbc (1st column)
+    uint32 dwId;
+    if (!ExtractUInt32(&args, dwId))
+    {
+        return false;
+    }
+
+    if (!sMovieStore.LookupEntry(dwId))
+    {
+        PSendSysMessage(LANG_MOVIE_NOT_EXIST, dwId);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    m_session->GetPlayer()->SendMovieStart(dwId);
+#endif
+    return true;
+}
+
 // Play sound
 bool ChatHandler::HandleDebugPlaySoundCommand(char* args)
 {

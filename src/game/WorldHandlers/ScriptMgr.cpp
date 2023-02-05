@@ -28,6 +28,8 @@
 #include "ProgressBar.h"
 #include "ObjectMgr.h"
 #include "WaypointManager.h"
+#include "World.h"
+#include <DBCStores.cpp>
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Cell.h"
@@ -88,24 +90,47 @@ ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
 // returns priority (0 == can not start script)
 uint8 GetSpellStartDBScriptPriority(SpellEntry const* spellinfo, SpellEffectIndex effIdx)
 {
+#if defined (CATA)
+    SpellEffectEntry const* spellEffect = spellinfo->GetSpellEffect(effIdx);
+    if (!spellEffect)
+    {
+        return 0;
+    }
+#endif
+#if defined (CATA)
+    if (spellEffect->Effect == SPELL_EFFECT_SCRIPT_EFFECT)
+#else
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_SCRIPT_EFFECT)
+#endif
     {
         return 10;
     }
 
+#if defined (CATA)
+    if (spellEffect->Effect == SPELL_EFFECT_DUMMY)
+#else
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_DUMMY)
+#endif
     {
         return 9;
     }
 
     // NonExisting triggered spells can also start DB-Spell-Scripts
+#if defined (CATA)
+    if (spellEffect->Effect == SPELL_EFFECT_TRIGGER_SPELL && !sSpellStore.LookupEntry(spellEffect->EffectTriggerSpell))
+#else
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_SPELL && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
+#endif
     {
         return 5;
     }
 
     // NonExisting trigger missile spells can also start DB-Spell-Scripts
+#if defined (CATA)
+    if (spellEffect->Effect == SPELL_EFFECT_TRIGGER_MISSILE && !sSpellStore.LookupEntry(spellEffect->EffectTriggerSpell))
+#else
     if (spellinfo->Effect[effIdx] == SPELL_EFFECT_TRIGGER_MISSILE && !sSpellStore.LookupEntry(spellinfo->EffectTriggerSpell[effIdx]))
+#endif
     {
         return 4;
     }
@@ -543,9 +568,19 @@ void ScriptMgr::LoadScripts(DBScriptType type)
             }
             case SCRIPT_COMMAND_PLAY_MOVIE:                 // 19
             {
+#if defined(CLASSIC)
                 sLog.outErrorDb("Table `db_scripts [type = %d]` use unsupported SCRIPT_COMMAND_PLAY_MOVIE for script id %u",
                                 type, tmp.id);
                 continue;
+#else
+                if (!sMovieStore.LookupEntry(tmp.playMovie.movieId))
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` use non-existing movie_id (id: %u) in SCRIPT_COMMAND_PLAY_MOVIE for script id %u",
+                                type, tmp.playMovie.movieId, tmp.id);
+                    continue;
+                }
+                break;
+#endif
             }
             case SCRIPT_COMMAND_MOVEMENT:                   // 20
             {
@@ -658,7 +693,17 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                         if (SpellEntry const* spell = sSpellStore.LookupEntry(i))
                             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
                             {
+#if defined (CATA)
+                                SpellEffectEntry const* spellEffect = spell->GetSpellEffect(SpellEffectIndex(j));
+                                if (!spellEffect)
+                                {
+                                    continue;
+                                }
+
+                                if (spellEffect->Effect == SPELL_EFFECT_SEND_TAXI && spellEffect->EffectMiscValue == tmp.sendTaxiPath.taxiPathId)
+#else
                                 if (spell->Effect[j] == SPELL_EFFECT_SEND_TAXI && spell->EffectMiscValue[j] == int32(tmp.sendTaxiPath.taxiPathId))
+#endif
                                 {
                                     taxiSpell = i;
                                     break;
@@ -736,8 +781,15 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 }
                 break;
             }
-            case SCRIPT_COMMAND_SET_FLY:                      // 39
+            case SCRIPT_COMMAND_CHANGE_ENTRY:              // 39
+            {
+                if (tmp.changeEntry.creatureEntry && !ObjectMgr::GetCreatureTemplate(tmp.changeEntry.creatureEntry))
+                    {
+                        sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_CHANGE_ENTRY for script id %u, but this creature_template does not exist.", type, tmp.changeEntry.creatureEntry, tmp.id);
+                        continue;
+                    }
                 break;
+            }
             case SCRIPT_COMMAND_DESPAWN_GO:                   // 40
             {
                 if (!tmp.despawnGo.goGuid)
@@ -770,16 +822,32 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             case SCRIPT_COMMAND_UPDATE_TEMPLATE:              // 44
             {
+#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
                 if (tmp.updateTemplate.entry && !ObjectMgr::GetCreatureTemplate(tmp.updateTemplate.entry))
+#else
+                if (!sCreatureStorage.LookupEntry<CreatureInfo>(tmp.updateTemplate.entry))
+#endif
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u, but this creature_template does not exist.", type, tmp.updateTemplate.entry, tmp.id);
                     continue;
                 }
+#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
                 if (tmp.updateTemplate.faction > 1)
+#else
+                if (tmp.updateTemplate.faction != 0 && tmp.updateTemplate.faction != 1)
+#endif
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` uses invalid faction team (datalong2 = %u, must be 0 or 1) in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u", type, tmp.updateTemplate.faction, tmp.id);
                     continue;
                 }
+                break;
+            }
+            case SCRIPT_COMMAND_XP_USER:                      // 53
+            {
+                break;
+            }
+            case SCRIPT_COMMAND_SET_FLY:                      // 59
+            {
                 break;
             }
             default:
@@ -963,6 +1031,9 @@ bool ScriptAction::GetScriptCommandObject(const ObjectGuid guid, bool includeIte
     switch (guid.GetHigh())
     {
         case HIGHGUID_UNIT:
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
+        case HIGHGUID_VEHICLE:
+#endif
             resultObject = m_map->GetCreature(guid);
             break;
         case HIGHGUID_PET:
@@ -1714,6 +1785,15 @@ bool ScriptAction::HandleScriptStep()
         }
         case SCRIPT_COMMAND_PLAY_MOVIE:                     // 19
         {
+#if defined(WOTLK) || defined (CATA) || defined (MISTS)
+            Player* pPlayer = GetPlayerTargetOrSourceAndLog(pSource, pTarget);
+            if (!pPlayer)
+            {
+                break;
+            }
+
+            pPlayer->SendMovieStart(m_script->playMovie.movieId);
+#endif
             break;                                      // must be skipped at loading
         }
         case SCRIPT_COMMAND_MOVEMENT:                       // 20
@@ -2085,7 +2165,20 @@ bool ScriptAction::HandleScriptStep()
                 break;
             }
 
+#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
             ((Creature*)pSource)->AI()->SendAIEventAround(AIEventType(m_script->sendAIEvent.eventType), (Unit*)pTarget, 0, float(m_script->sendAIEvent.radius));
+#else
+            // if radius is provided send AI event around
+            if (m_script->sendAIEvent.radius)
+            {
+                ((Creature*)pSource)->AI()->SendAIEventAround(AIEventType(m_script->sendAIEvent.eventType), (Unit*)pTarget, 0, float(m_script->sendAIEvent.radius));
+            }
+            // else if no radius and target is creature send AI event to target
+            else if (pTarget->GetTypeId() == TYPEID_UNIT)
+            {
+                ((Creature*)pSource)->AI()->SendAIEvent(AIEventType(m_script->sendAIEvent.eventType), NULL, (Creature*)pTarget);
+            }
+#endif
             break;
         }
         case SCRIPT_COMMAND_TURN_TO:                        // 36
@@ -2164,25 +2257,14 @@ bool ScriptAction::HandleScriptStep()
             MailDraft(m_script->sendMail.mailTemplateId).SendMailTo(static_cast<Player*>(pTarget), sender, MAIL_CHECK_MASK_HAS_BODY, deliverDelay);
             break;
         }
-        case SCRIPT_COMMAND_SET_FLY:                        // 39
+        case SCRIPT_COMMAND_CHANGE_ENTRY:                   // 39
         {
             if (LogIfNotCreature(pSource))
             {
                 break;
             }
-            if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
-            {
-                if (m_script->fly.enable)
-                {
-                    pSource->SetByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
-                }
-                else
-                {
-                    pSource->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
-                }
-            }
 
-            ((Creature*)pSource)->SetLevitate((m_script->fly.enable == 0) ? false : true);
+            ((Creature*)pSource)->UpdateEntry(m_script->changeEntry.creatureEntry);
             break;
         }
         case SCRIPT_COMMAND_DESPAWN_GO:                     // 40
@@ -2292,6 +2374,56 @@ bool ScriptAction::HandleScriptStep()
             {
                 sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u: source creature already has the specified creature entry %u", m_type, m_script->id, m_script->command, m_script->updateTemplate.entry);
             }
+            break;
+        }
+        case SCRIPT_COMMAND_XP_USER:                        // 53
+        {
+            Player* pPlayer = GetPlayerTargetOrSourceAndLog(pSource, pTarget);
+            if (!pPlayer)
+            {
+                break;
+            }
+
+            if (m_script->xpDisabled.flags)
+            {
+                pPlayer->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+            }
+            else
+            {
+                pPlayer->RemoveFlag(PLAYER_FLAGS, PLAYER_FLAGS_XP_USER_DISABLED);
+            }
+            break;
+        }
+
+        case SCRIPT_COMMAND_SET_FLY:                        // 59
+        {
+            if (LogIfNotCreature(pSource))
+            {
+                break;
+            }
+
+            // enable / disable the fly anim flag
+            if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL)
+            {
+                if (m_script->fly.enable)
+                {
+#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
+                    pSource->SetByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
+#else
+                    pSource->SetByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_FLY_ANIM);
+#endif
+                }
+                else
+                {
+#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
+                    pSource->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_ALWAYS_STAND);
+#else
+                    pSource->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_FLY_ANIM);
+#endif
+                }
+            }
+
+            ((Creature*)pSource)->SetLevitate((m_script->fly.enable == 0) ? false : true);
             break;
         }
         default:
@@ -2876,6 +3008,15 @@ bool ScriptMgr::OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry)
 #endif
 }
 
+bool ScriptMgr::OnNpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uint32 spellId)
+{
+#ifdef ENABLE_SD3
+    return SD3::NpcSpellClick(pPlayer, pClickedCreature, spellId);
+#else
+    return false;
+#endif
+}
+
 bool ScriptMgr::OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget, bool isStart)
 {
 #ifdef ENABLE_SD3
@@ -2998,6 +3139,14 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
                 eventIds.insert(itr->capturePoint.winEventID1);
                 eventIds.insert(itr->capturePoint.winEventID2);
                 break;
+#if defined(WOTLK) || defined (CATA) || defined (MISTS)
+            case GAMEOBJECT_TYPE_DESTRUCTIBLE_BUILDING:
+                eventIds.insert(itr->destructibleBuilding.damagedEvent);
+                eventIds.insert(itr->destructibleBuilding.destroyedEvent);
+                eventIds.insert(itr->destructibleBuilding.intactEvent);
+                eventIds.insert(itr->destructibleBuilding.rebuildingEvent);
+                break;
+#endif
             default:
                 break;
         }
@@ -3011,6 +3160,21 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
         {
             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
             {
+#if defined (CATA)
+                SpellEffectEntry const* spellEffect = spell->GetSpellEffect(SpellEffectIndex(j));
+                if (!spellEffect)
+                {
+                    continue;
+                }
+
+                if (spellEffect->Effect == SPELL_EFFECT_SEND_EVENT)
+                {
+                    if (spellEffect->EffectMiscValue)
+                    {
+                        eventIds.insert(spellEffect->EffectMiscValue);
+                    }
+                }
+#else
                 if (spell->Effect[j] == SPELL_EFFECT_SEND_EVENT)
                 {
                     if (spell->EffectMiscValue[j])
@@ -3018,6 +3182,7 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
                         eventIds.insert(spell->EffectMiscValue[j]);
                     }
                 }
+#endif
             }
         }
     }
@@ -3107,6 +3272,7 @@ bool StartEvents_Event(Map* map, uint32 id, Object* source, Object* target, bool
     return map->ScriptsStart(DBS_ON_EVENT, id, source, target, execParam);
 }
 
+// Wrappers
 uint32 GetScriptId(const char* name)
 {
     return sScriptMgr.GetScriptId(name);
