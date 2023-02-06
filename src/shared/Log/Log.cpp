@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -358,8 +358,9 @@ FILE* Log::openGmlogPerAccount(uint32 account)
 void Log::outTimestamp(FILE* file)
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm aTm = localtime_r(tt);
 
+    std::tm aTm;
+    localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -372,8 +373,9 @@ void Log::outTimestamp(FILE* file)
 void Log::outTime()
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm aTm = localtime_r(tt);
 
+    std::tm aTm;
+    localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -386,8 +388,9 @@ void Log::outTime()
 std::string Log::GetTimestampStr()
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::tm aTm = localtime_r(tt);
 
+    std::tm aTm;
+    localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)

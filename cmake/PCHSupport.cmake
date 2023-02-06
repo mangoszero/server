@@ -84,10 +84,10 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         add_custom_command(
             OUTPUT ${OUTPUT_NAME}
             COMMAND ${CMAKE_CXX_COMPILER} @${PCH_FLAGS_FILE} ${COMPILER_FLAGS} -x c++-header -std=${CXX_STD} -o ${OUTPUT_NAME} ${PRECOMPILED_HEADER}
-            DEPENDS ${PRECOMPILED_HEADER}
+            DEPENDS ${PRECOMPILED_HEADER} ${PRECOMPILED_SOURCE}
         )
 
-        add_custom_target(${TARGET_NAME}_${SFX} DEPENDS ${OUTPUT_NAME})
+        add_custom_target(${TARGET_NAME}_${SFX} DEPENDS ${OUTPUT_NAME} ${PRECOMPILED_HEADER})
         add_dependencies(${TARGET_NAME} ${TARGET_NAME}_${SFX})
 
         target_compile_options(${TARGET_NAME}

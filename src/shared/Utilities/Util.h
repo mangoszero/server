@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,12 +79,11 @@ float GetFloatValueFromArray(Tokens const& data, uint16 index);
  */
 void stripLineInvisibleChars(std::string& src);
 
-/**
- * @brief
- *
- * @param localtime
- */
-std::tm localtime_r(const time_t& time);
+struct tm* localtime_r(const time_t* time, struct tm* result);
+
+time_t LocalTimeToUTCTime(time_t time);
+time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
+tm TimeBreakdown(time_t t);
 
 /**
  * @brief
@@ -123,19 +122,24 @@ inline uint32 secsToTimeBitFields(time_t secs)
 }
 
 
-inline std::string& ltrim(std::string& s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+inline std::string& ltrim(std::string& s)
+{
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
+    {
         return !std::isspace(ch);
-        }));
+    }));
+
     return s;
 }
 
-inline std::string& rtrim(std::string& s) {
+inline std::string& rtrim(std::string& s)
+{
     s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
     return s;
 }
 
-inline std::string& trim(std::string& s) {
+inline std::string& trim(std::string& s)
+{
     return ltrim(rtrim(s));
 }
 

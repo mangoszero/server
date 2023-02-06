@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,15 +78,6 @@ class GameObjectModel
         void SetCollidable(bool enabled) { isCollidable = enabled; }
 
         bool IntersectRay(const G3D::Ray& Ray, float& MaxDist, bool StopAtFirstHit) const;
-
-        // returns the intersection point given from srcPoint down.
-        // If absolute is true, srcPoint is in world space, else srcPoint is assumed in local space.
-        // If method succeeds, dstPoint will be filled with local space coordinates of the intersection
-        // else will be untouched
-        bool GetIntersectPoint(const G3D::Vector3& srcPoint, G3D::Vector3& dstPoint, bool absolute = true) const;
-
-        void GetLocalCoords(const G3D::Vector3& worldCoords, G3D::Vector3& localCoords); //NYI
-        void GetWorldCoords(const G3D::Vector3& localCoords, G3D::Vector3& worldCoords); //NYI
 
         static GameObjectModel* Create(const GameObject* const pGo);
 };

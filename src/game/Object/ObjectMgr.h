@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,22 @@ struct GameTele
 };
 
 typedef UNORDERED_MAP<uint32, GameTele > GameTeleMap;
+
+struct SpellClickInfo
+{
+    uint32 spellId;
+    uint32 questStart;                                      // quest start (quest must be active or rewarded for spell apply)
+    uint32 questEnd;                                        // quest end (quest don't must be rewarded for spell apply)
+    bool   questStartCanActive;                             // if true then quest start can be active (not only rewarded)
+    uint8 castFlags;
+    uint16 conditionId;                                     // intends to replace questStart, questEnd, questStartCanActive
+
+    // helpers
+    bool IsFitToRequirements(Player const* player, Creature const* clickedCreature) const;
+};
+
+typedef std::multimap<uint32 /*npcEntry*/, SpellClickInfo> SpellClickInfoMap;
+typedef std::pair<SpellClickInfoMap::const_iterator, SpellClickInfoMap::const_iterator> SpellClickInfoMapBounds;
 
 struct AreaTrigger
 {
@@ -361,7 +377,7 @@ enum ConditionSource                                        // From where was th
     CONDITION_FROM_HARDCODED        = 5,                    // Used to check a hardcoded event - not actually a condition
     CONDITION_FROM_VENDOR           = 6,                    // Used to check a condition from a vendor
     CONDITION_FROM_SPELL_AREA       = 7,                    // Used to check a condition from spell_area table
-    CONDITION_FROM_RESERVED_1       = 8,                    // reserved for 3.x and later
+    CONDITION_FROM_SPELLCLICK       = 8,                    // Used to check a condition from npc_spellclick_spells table
     CONDITION_FROM_DBSCRIPTS        = 9,                    // Used to check a condition from DB Scripts Engine
     CONDITION_AREA_TRIGGER          = 10,                   // Used to check a condition from CMSG_AREATRIGGER
 };
@@ -501,8 +517,6 @@ class ObjectMgr
     public:
         ObjectMgr();
         ~ObjectMgr();
-
-        typedef UNORDERED_MAP<uint32, Item*> ItemMap;
 
         typedef UNORDERED_MAP<uint32, Group*> GroupMap;
 
@@ -736,7 +750,6 @@ class ObjectMgr
         void LoadTavernAreaTriggers();
         void LoadGameObjectForQuests();
 
-        void LoadItemTexts();
         void LoadPageTexts();
 
         void LoadPlayerInfo();
@@ -853,10 +866,6 @@ class ObjectMgr
         {
             return m_GroupIds.Generate();
         }
-        uint32 GenerateItemTextID()
-        {
-            return m_ItemTextGuids.Generate();
-        }
         uint32 GenerateMailID()
         {
             return m_MailIds.Generate();
@@ -865,18 +874,14 @@ class ObjectMgr
         {
             return m_PetNumbers.Generate();
         }
-
-        uint32 CreateItemText(std::string text);
-        void AddItemText(uint32 itemTextId, std::string text)
-        {
-            mItemTexts[itemTextId] = text;
-        }
         std::string GetItemText(uint32 id)
         {
-            ItemTextMap::const_iterator itr = mItemTexts.find(id);
-            if (itr != mItemTexts.end())
+            if (QueryResult* result = CharacterDatabase.PQuery("SELECT `body` FROM `mail` WHERE `id` = '%u'", id))
             {
-                return itr->second;
+                Field* fields = result->Fetch();
+                std::string body = fields[0].GetCppString();
+                delete result;
+                return body;
             }
             else
             {
@@ -1195,6 +1200,11 @@ class ObjectMgr
 
         int GetOrNewIndexForLocale(LocaleConstant loc);
 
+        SpellClickInfoMapBounds GetSpellClickInfoMapBounds(uint32 creature_id) const
+        {
+            return mSpellClickInfoMap.equal_range(creature_id);
+        }
+
         ItemRequiredTargetMapBounds GetItemRequiredTargetMapBounds(uint32 uiItemEntry) const
         {
             return m_ItemRequiredTarget.equal_range(uiItemEntry);
@@ -1257,7 +1267,6 @@ class ObjectMgr
         // first free id for selected id type
         IdGenerator<uint32> m_AuctionIds;
         IdGenerator<uint32> m_GuildIds;
-        IdGenerator<uint32> m_ItemTextIds;
         IdGenerator<uint32> m_MailIds;
         IdGenerator<uint32> m_PetNumbers;
         IdGenerator<uint32> m_GroupIds;
@@ -1273,20 +1282,16 @@ class ObjectMgr
         // first free low guid for selected guid type
         ObjectGuidGenerator<HIGHGUID_PLAYER>     m_CharGuids;
         ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemGuids;
-        ObjectGuidGenerator<HIGHGUID_ITEM>       m_ItemTextGuids;
         ObjectGuidGenerator<HIGHGUID_CORPSE>     m_CorpseGuids;
 
         QuestMap            mQuestTemplates;
 
         typedef UNORDERED_MAP<uint32, GossipText> GossipTextMap;
         typedef UNORDERED_MAP<uint32, uint32> QuestAreaTriggerMap;
-        typedef UNORDERED_MAP<uint32, std::string> ItemTextMap;
         typedef std::set<uint32> TavernAreaTriggerSet;
         typedef std::set<uint32> GameObjectForQuestSet;
 
         GroupMap            mGroupMap;
-
-        ItemTextMap         mItemTexts;
 
         QuestAreaTriggerMap mQuestAreaTriggerMap;
         TavernAreaTriggerSet mTavernAreaTriggerSet;
@@ -1311,6 +1316,8 @@ class ObjectMgr
         GraveYardMap        mGraveYardMap;
 
         GameTeleMap         m_GameTeleMap;
+
+        SpellClickInfoMap   mSpellClickInfoMap;
 
         ItemRequiredTargetMap m_ItemRequiredTarget;
 

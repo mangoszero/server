@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -772,6 +772,7 @@ Faction Template: %u. */
     LANG_COMMAND_GO_STATUS                                    = 1194,    /* Current State Information: GOState %u, LootState %u. Collision %s */
     LANG_COMMAND_GO_STATUS_DOOR                               = 1195,    /* Current State Information: GOState %u, LootState %u. Collision %s, (door %s by default) */
     LANG_CINEMATIC_NOT_EXIST                                  = 1200,    /* You try to view cinematic %u but it doesn't exist. */
+    LANG_MOVIE_NOT_EXIST                                      = 1201,
     LANG_SPELLCOEFS                                           = 1202,    /* Spell %u %s = %f (*1.88 = %f) DB = %f AP = %f */
     LANG_DIRECT_HEAL                                          = 1203,    /* direct heal */
     LANG_DIRECT_DAMAGE                                        = 1204,    /* direct damage */

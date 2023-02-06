@@ -2,7 +2,7 @@
 * MaNGOS is a full featured server for World of Warcraft, supporting
 * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
 *
-* Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+* Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -73,9 +73,9 @@ typedef std::vector<PlayerLogBase> PlayerLogBaseType;
 
 struct PlayerLogDamage : public PlayerLogBase       // 10 bytes
 {
-    uint16 dmgUnit;     // guid for player, entry with highest bit set for mob incl. pet/guardian
-    int16 damage;       // if negative then it's heal
-    uint16 spell;       // 0 for melee autoattack
+    uint16 dmgUnit{};     // guid for player, entry with highest bit set for mob incl. pet/guardian
+    int16 damage{};       // if negative then it's heal
+    uint16 spell{};       // 0 for melee autoattack
 
     void SetCreature(bool on) { if (on) dmgUnit |= 0x8000; else dmgUnit &= 0x7FFF; }
     bool IsPlayer() const { return (dmgUnit & 0x8000) == 0; }

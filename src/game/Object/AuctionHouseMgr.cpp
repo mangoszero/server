@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -270,7 +270,7 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
         auction->itemGuidLow = 0;
 
         // will delete item or place to receiver mail list
-        MailDraft(subject.str())
+        MailDraft(subject.str(),"")
         .AddItem(pItem)
         .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
@@ -343,6 +343,7 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
+        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }
@@ -355,6 +356,7 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
+        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }
@@ -365,6 +367,7 @@ void AuctionHouseMgr::LoadAuctions()
     {
         BarGoLink bar(1);
         bar.step();
+        sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
         return;
     }

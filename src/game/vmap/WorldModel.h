@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -368,15 +368,15 @@ namespace VMAP
             bool ReadFile(const std::string& filename);
             uint32 Flags;
         protected:
-            uint32 RootWMOID;
-            std::vector<GroupModel> groupModels;
-            BIH groupTree;
+            uint32 RootWMOID; /**< TODO */
+            std::vector<GroupModel> groupModels; /**< TODO */
+            BIH groupTree; /**< TODO */
 
 #ifdef MMAP_GENERATOR
         public:
             void getGroupModels(std::vector<GroupModel>& groupModels);
 #endif
     };
-}
+} // namespace VMAP
 
 #endif // _WORLDMODEL_H

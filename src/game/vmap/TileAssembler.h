@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,13 +25,14 @@
 #ifndef MANGOS_H_TILEASSEMBLER
 #define MANGOS_H_TILEASSEMBLER
 
-#include "ModelInstance.h"
-#include "WorldModel.h"
 #include <G3D/Vector3.h>
 #include <G3D/Matrix3.h>
 
 #include <map>
 #include <set>
+
+#include "ModelInstance.h"
+#include "WorldModel.h"
 
 namespace VMAP
 {
@@ -218,12 +219,6 @@ namespace VMAP
              * @return bool
              */
             bool convertRawFile(const std::string& pModelFilename, const char *RAW_VMAP_MAGIC);
-            /**
-             * @brief
-             *
-             * @param )
-             */
-            void setModelNameFilterMethod(bool (*pFilterMethod)(char* pName)) { iFilterMethod = pFilterMethod; }
     };
 }
 #endif

@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,6 @@ enum DumpTableType
 
     DTT_PET,            //    -> pet guids collection       // character_pet
     DTT_PET_TABLE,      // <- pet guids                     // pet_aura, pet_spell, pet_spell_cooldown
-    DTT_ITEM_TEXT,      // <- item_text                     // item_text
 };
 
 enum DumpReturn
@@ -89,7 +88,6 @@ class PlayerDumpWriter : public PlayerDump
         GUIDs pets;
         GUIDs mails;
         GUIDs items;
-        GUIDs texts;
 };
 
 class PlayerDumpReader : public PlayerDump

@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ enum AccountOpResult
     AOR_DB_INTERNAL_ERROR
 };
 
-#define MAX_ACCOUNT_STR  16
+#define MAX_ACCOUNT_STR 16
 #define MAX_PASSWORD_STR 16
 
 /* A class that is used to manage accounts. */
@@ -49,6 +49,7 @@ class AccountMgr
         ~AccountMgr();
 
         AccountOpResult CreateAccount(std::string username, std::string password);
+        AccountOpResult CreateAccount(std::string username, std::string password, uint32 expansion);
         AccountOpResult DeleteAccount(uint32 accid);
         AccountOpResult ChangeUsername(uint32 accid, std::string new_uname, std::string new_passwd);
         AccountOpResult ChangePassword(uint32 accid, std::string new_passwd);

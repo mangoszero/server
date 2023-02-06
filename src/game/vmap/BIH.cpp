@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -272,7 +272,7 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
     }
 }
 
-bool BIH::writeToFile(FILE* wf) const
+bool BIH::WriteToFile(FILE* wf) const
 {
     uint32 treeSize = tree.size();
     uint32 check = 0;
@@ -286,7 +286,7 @@ bool BIH::writeToFile(FILE* wf) const
     return check == (3 + 3 + 2 + treeSize + count);
 }
 
-bool BIH::readFromFile(FILE* rf)
+bool BIH::ReadFromFile(FILE* rf)
 {
     uint32 treeSize;
     Vector3 lo, hi;

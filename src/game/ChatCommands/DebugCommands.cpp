@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -400,6 +400,29 @@ bool ChatHandler::HandleDebugPlayCinematicCommand(char* args)
     }
 
     m_session->GetPlayer()->SendCinematicStart(dwId);
+    return true;
+}
+
+bool ChatHandler::HandleDebugPlayMovieCommand(char* args)
+{
+#if defined(TBC) || defined(WOTLK) || defined(CATA) || defined(MISTS)
+    // USAGE: .debug play movie #movieid
+    // #movieid - ID decimal number from Movie.dbc (1st column)
+    uint32 dwId;
+    if (!ExtractUInt32(&args, dwId))
+    {
+        return false;
+    }
+
+    if (!sMovieStore.LookupEntry(dwId))
+    {
+        PSendSysMessage(LANG_MOVIE_NOT_EXIST, dwId);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    m_session->GetPlayer()->SendMovieStart(dwId);
+#endif
     return true;
 }
 

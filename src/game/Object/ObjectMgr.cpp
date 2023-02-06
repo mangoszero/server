@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,6 +118,34 @@ LanguageDesc const* GetLanguageDescByID(uint32 lang)
     return NULL;
 }
 
+bool SpellClickInfo::IsFitToRequirements(Player const* player, Creature const* clickedCreature) const
+{
+    if (conditionId)
+    {
+        return sObjectMgr.IsPlayerMeetToCondition(conditionId, player, player->GetMap(), clickedCreature, CONDITION_FROM_SPELLCLICK);
+    }
+
+    if (questStart)
+    {
+        // not in expected required quest state
+        if (!player || ((!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart)))
+        {
+            return false;
+        }
+    }
+
+    if (questEnd)
+    {
+        // not in expected forbidden quest state
+        if (!player || player->GetQuestRewardStatus(questEnd))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template<typename T>
 T IdGenerator<T>::Generate()
 {
@@ -179,7 +207,6 @@ bool AreaTrigger::IsLessOrEqualThan(AreaTrigger const* l) const      // Expected
 ObjectMgr::ObjectMgr() :
     m_AuctionIds("Auction ids"),
     m_GuildIds("Guild ids"),
-    m_ItemTextIds("Item text ids"),
     m_MailIds("Mail ids"),
     m_PetNumbers("Pet numbers"),
     m_GroupIds("Group ids"),
@@ -499,6 +526,8 @@ void ObjectMgr::LoadCreatureTemplates()
     SQLCreatureLoader loader;
     loader.Load(sCreatureStorage);
 
+    sLog.outString(">> Loaded %u creature definitions", sCreatureStorage.GetRecordCount());
+    sLog.outString();
     // check data correctness
     for (uint32 i = 1; i < sCreatureStorage.GetMaxEntry(); ++i)
     {
@@ -1427,18 +1456,18 @@ void ObjectMgr::LoadCreatures()
             data.curhealth = cInfo->MinLevelHealth;
         }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_INSTANCE_BIND)
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_INSTANCE_BIND)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
                 sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_INSTANCE_BIND (%u) but creature are not in instance.",
-                                guid, data.id, CREATURE_EXTRA_FLAG_INSTANCE_BIND);
+                                guid, data.id, CREATURE_FLAG_EXTRA_INSTANCE_BIND);
         }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_AGGRO_ZONE)
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_AGGRO_ZONE)
         {
             if (!mapEntry || !mapEntry->IsDungeon())
                 sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `creature_template`.`ExtraFlags` including CREATURE_FLAG_EXTRA_AGGRO_ZONE (%u) but creature are not in instance.",
-                                guid, data.id, CREATURE_EXTRA_FLAG_AGGRO_ZONE);
+                                guid, data.id, CREATURE_FLAG_EXTRA_AGGRO_ZONE);
         }
 
         if (data.curmana < cInfo->MinLevelMana)
@@ -1472,11 +1501,12 @@ void ObjectMgr::LoadCreatures()
         if (gameEvent == 0 && GuidPoolId == 0 && EntryPoolId == 0) // if not this is to be managed by GameEvent System or Pool system
         {
             AddCreatureToGrid(guid, &data);
-        }
 
-        if (cInfo->ExtraFlags & CREATURE_EXTRA_FLAG_ACTIVE)
-        {
-            m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+            if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE)
+            {
+                sLog.outString("Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
+                m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+            }
         }
 
         ++count;
@@ -4572,43 +4602,6 @@ void ObjectMgr::LoadPetCreateSpells()
     sLog.outString(">> Loaded %u pet create spells from table and %u from DBC", count, dcount);
 }
 
-void ObjectMgr::LoadItemTexts()
-{
-    QueryResult* result = CharacterDatabase.Query("SELECT `id`, `text` FROM `item_text`");
-
-    uint32 count = 0;
-
-    if (!result)
-    {
-        BarGoLink bar(1);
-        bar.step();
-
-        sLog.outString();
-        sLog.outString(">> Loaded %u item pages", count);
-        return;
-    }
-
-    BarGoLink bar(result->GetRowCount());
-
-    Field* fields;
-    do
-    {
-        bar.step();
-
-        fields = result->Fetch();
-
-        mItemTexts[ fields[0].GetUInt32()] = fields[1].GetCppString();
-
-        ++count;
-    }
-    while (result->NextRow());
-
-    delete result;
-
-    sLog.outString(">> Loaded %u item texts", count);
-    sLog.outString();
-}
-
 void ObjectMgr::LoadPageTexts()
 {
     sPageTextStore.Load();
@@ -4999,15 +4992,19 @@ void ObjectMgr::LoadGossipTextLocales()
 /// @param serverUp true if the server is already running, false when the server is started
 void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
-    time_t basetime = time(NULL);
-    DEBUG_LOG("Returning mails current time: hour: %d, minute: %d, second: %d ", localtime(&basetime)->tm_hour, localtime(&basetime)->tm_min, localtime(&basetime)->tm_sec);
+    time_t curTime = time(NULL);
+    tm lt;
+    localtime_r(&curTime, &lt);
+    uint64 basetime(curTime);
+    sLog.outString("Returning mails current time: hour: %d, minute: %d, second: %d ", lt.tm_hour, lt.tm_min, lt.tm_sec);
+
     // delete all old mails without item and without body immediately, if starting server
     if (!serverUp)
     {
-        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE `expire_time` < '" UI64FMTD "' AND `has_items` = '0' AND `itemTextId` = 0", (uint64)basetime);
+        CharacterDatabase.PExecute("DELETE FROM `mail` WHERE `expire_time` < '" UI64FMTD "' AND `has_items` = '0' AND `body` = ''", (uint64)basetime);
     }
     //                                                     0  1           2      3        4          5         6           7   8       9
-    QueryResult* result = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`sender`,`receiver`,`itemTextId`,`has_items`,`expire_time`,`cod`,`checked`,`mailTemplateId` FROM `mail` WHERE `expire_time` < '" UI64FMTD "'", (uint64)basetime);
+    QueryResult* result = CharacterDatabase.PQuery("SELECT `id`,`messageType`,`sender`,`receiver`,`has_items`,`expire_time`,`cod`,`checked`,`mailTemplateId` FROM `mail` WHERE `expire_time` < '" UI64FMTD "'", (uint64)basetime);
     if (!result)
     {
         BarGoLink bar(1);
@@ -5036,12 +5033,12 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
         m->messageType = fields[1].GetUInt8();
         m->sender = fields[2].GetUInt32();
         m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, fields[3].GetUInt32());
-        bool has_items = fields[5].GetBool();
-        m->expire_time = (time_t)fields[6].GetUInt64();
+        bool has_items = fields[4].GetBool();
+        m->expire_time = (time_t)fields[5].GetUInt64();
         m->deliver_time = 0;
-        m->COD = fields[7].GetUInt32();
-        m->checked = fields[8].GetUInt32();
-        m->mailTemplateId = fields[9].GetInt16();
+        m->COD = fields[6].GetUInt32();
+        m->checked = fields[7].GetUInt32();
+        m->mailTemplateId = fields[8].GetInt16();
 
         Player* pl = 0;
         if (serverUp)
@@ -5097,11 +5094,6 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
                 delete m;
                 continue;
             }
-        }
-
-        if (m->itemTextId)
-        {
-            CharacterDatabase.PExecute("DELETE FROM `item_text` WHERE `id` = '%u'", m->itemTextId);
         }
 
         // deletemail = true;
@@ -5838,13 +5830,6 @@ void ObjectMgr::SetHighestGuids()
         delete result;
     }
 
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `item_text`");
-    if (result)
-    {
-        m_ItemTextGuids.Set((*result)[0].GetUInt32() + 1);
-        delete result;
-    }
-
     // Cleanup other tables from nonexistent guids (>=m_hiItemGuid)
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute("DELETE FROM `character_inventory` WHERE `item` >= '%u'", m_ItemGuids.GetNextAfterMaxUsed());
@@ -5870,13 +5855,6 @@ void ObjectMgr::SetHighestGuids()
     if (result)
     {
         m_MailIds.Set((*result)[0].GetUInt32() + 1);
-        delete result;
-    }
-
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `item_text`");
-    if (result)
-    {
-        m_ItemTextIds.Set((*result)[0].GetUInt32() + 1);
         delete result;
     }
 
@@ -5907,20 +5885,6 @@ void ObjectMgr::SetHighestGuids()
 
     m_StaticGameObjectGuids.Set(m_FirstTemporaryGameObjectGuid);
     m_FirstTemporaryGameObjectGuid += sWorld.getConfig(CONFIG_UINT32_GUID_RESERVE_SIZE_GAMEOBJECT);
-}
-
-uint32 ObjectMgr::CreateItemText(std::string text)
-{
-    uint32 newItemTextId = GenerateItemTextID();
-    // insert new itempage to container
-    mItemTexts[ newItemTextId ] = text;
-    // save new itempage
-    CharacterDatabase.escape_string(text);
-    // any Delete query needed, itemTextId is maximum of all ids
-    std::ostringstream query;
-    query << "INSERT INTO `item_text` (`id`,`text`) VALUES ( '" << newItemTextId << "', '" << text << "')";
-    CharacterDatabase.Execute(query.str().c_str());         // needs to be run this way, because mail body may be more than 1024 characters
-    return newItemTextId;
 }
 
 void ObjectMgr::LoadGameObjectLocales()
@@ -8417,7 +8381,8 @@ SkillRangeType GetSkillRangeType(SkillLineEntry const* pSkill, bool racial)
 {
     switch (pSkill->categoryId)
     {
-        case SKILL_CATEGORY_LANGUAGES: return SKILL_RANGE_LANGUAGE;
+        case SKILL_CATEGORY_LANGUAGES:
+            return SKILL_RANGE_LANGUAGE;
         case SKILL_CATEGORY_WEAPON:
             if (pSkill->id != SKILL_FIST_WEAPONS)
             {
@@ -8772,7 +8737,7 @@ void ObjectMgr::LoadTrainerTemplates()
                 }
                 else
                 {
-                    sLog.outErrorDb("Creature (Entry: %u) has TrainerTemplateId = %u for nonexistent trainer template", cInfo->Entry, cInfo->TrainerTemplateId);
+                    sLog.outErrorDb("Creature (Entry: %u) has `TrainerTemplateId` = %u for nonexistent trainer template", cInfo->Entry, cInfo->TrainerTemplateId);
                     hasErrored = true;
                 }
             }

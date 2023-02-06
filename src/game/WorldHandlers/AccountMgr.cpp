@@ -2,7 +2,7 @@
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
  *
- * Copyright (C) 2005-2022 MaNGOS <https://getmangos.eu>
+ * Copyright (C) 2005-2023 MaNGOS <https://getmangos.eu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,6 +84,39 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
     LoginDatabase.Execute("INSERT INTO `realmcharacters` (`realmid`, `acctid`, `numchars`) SELECT `realmlist`.`id`, `account`.`id`, 0 FROM `realmlist`,`account` LEFT JOIN `realmcharacters` ON `acctid`=`account`.`id` WHERE `acctid` IS NULL");
 
     return AOR_OK;                                           // everything's fine
+}
+
+/**
+ * It creates an account
+ *
+ * @param username The username of the account to create.
+ * @param password The password you want to set for the account.
+ * @param expansion 0 = Classic, 1 = TBC, 2 = WOTLK, 3 = Cataclysm
+ *
+ * @return AOR_OK
+ */
+AccountOpResult AccountMgr::CreateAccount(std::string username, std::string password, uint32 expansion)
+{
+    if (utf8length(username) > MAX_ACCOUNT_STR)
+    {
+        return AOR_NAME_TOO_LONG;                           // username's too long
+    }
+
+    Utf8ToUpperOnlyLatin(username);
+    Utf8ToUpperOnlyLatin(password);
+
+    if (GetId(username))
+    {
+        return AOR_NAME_ALREADY_EXIST;                       // username does already exist
+    }
+
+    if (!LoginDatabase.PExecute("INSERT INTO `account`(`username`,`sha_pass_hash`,`joindate`,`expansion`) VALUES('%s','%s',NOW(),'%u')", username.c_str(), CalculateShaPassHash(username, password).c_str(), expansion))
+    {
+        return AOR_DB_INTERNAL_ERROR;                       // unexpected error
+    }
+    LoginDatabase.Execute("INSERT INTO `realmcharacters` (`realmid`, `acctid`, `numchars`) SELECT `realmlist`.`id`, `account`.`id`, 0 FROM `realmlist`,`account` LEFT JOIN `realmcharacters` ON `acctid`=`account`.`id` WHERE `acctid` IS NULL");
+
+    return AOR_OK;                                          // everything's fine
 }
 
 /**
