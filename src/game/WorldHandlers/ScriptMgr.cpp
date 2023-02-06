@@ -29,7 +29,7 @@
 #include "ObjectMgr.h"
 #include "WaypointManager.h"
 #include "World.h"
-#include <DBCStores.cpp>
+#include <DBCStores.h>
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "Cell.h"
