@@ -11,6 +11,6 @@ test_loot_template_merge.py - Python script to run some basic queries on the xxx
 
 Requirements:
 * Python 3.10 (at least tested with this version)
-* The pysql module 
+* The MySQLdb module 
 
 Backup your data, before you change anything!
