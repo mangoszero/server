@@ -77,6 +77,8 @@
 #include "UpdateTime.h"
 #include "GameTime.h"
 
+#include "ace/OS_NS_stdio.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -1809,7 +1811,7 @@ namespace MaNGOS
                     va_copy(ap, *i_args);
 
                     char str [2048];
-                    vsnprintf(str, 2048, text, ap);
+                    ACE_OS::vsnprintf(str, 2048, text, ap);
                     va_end(ap);
 
                     do_helper(data_list, &str[0]);
@@ -2342,8 +2344,8 @@ void World::SetPlayerLimit(int32 limit, bool needUpdate)
 
 void World::UpdateMaxSessionCounters()
 {
-    m_maxActiveSessionCount = std::max(m_maxActiveSessionCount, uint32(m_sessions.size() - m_QueuedSessions.size()));
-    m_maxQueuedSessionCount = std::max(m_maxQueuedSessionCount, uint32(m_QueuedSessions.size()));
+    m_maxActiveSessionCount = (std::max)(m_maxActiveSessionCount, uint32(m_sessions.size() - m_QueuedSessions.size()));
+    m_maxQueuedSessionCount = (std::max)(m_maxQueuedSessionCount, uint32(m_QueuedSessions.size()));
 }
 
 void World::LoadDBVersion()

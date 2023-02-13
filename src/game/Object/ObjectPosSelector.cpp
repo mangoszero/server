@@ -134,7 +134,7 @@ void ObjectPosSelector::InitializeAngle(UsedAreaSide side)
     if (!m_UsedAreaLists[~side].empty())
     {
         UsedArea const& otherArea = *m_UsedAreaLists[~side].begin();
-        m_stepAngle[side] = std::max(m_searchedForReqHAngle + otherArea.second.angleOffset - otherArea.first, 0.0f);
+        m_stepAngle[side] = (std::max)(m_searchedForReqHAngle + otherArea.second.angleOffset - otherArea.first, 0.0f);
     }
     else                                                    // Other side empty. start from 0
     {

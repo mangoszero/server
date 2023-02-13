@@ -29,9 +29,11 @@
 #include "Util.h"
 #include "ObjectMgr.h"
 
- /**********************************************************************
-     CommandTable : banCommandTable
- /***********************************************************************/
+#include "ace/OS_NS_time.h"
+
+//**********************************************************************
+//     CommandTable : banCommandTable
+//**********************************************************************
 
 
 bool ChatHandler::HandleBanListHelper(QueryResult* result)
@@ -90,8 +92,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                 {
                     time_t timeBan = fields2[0].GetUInt64();
                     tm tmBan;
-                    localtime_r(&timeBan, &tmBan);
-
+                    ACE_OS::localtime_r(&timeBan, &tmBan);
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
@@ -102,8 +103,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                     {
                         time_t timeUnban = fields2[1].GetUInt64();
                         tm tmUnban;
-                        localtime_r(&timeUnban, &tmUnban);
-
+                        ACE_OS::localtime_r(&timeUnban, &tmUnban);
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
                                         account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
                                         tmUnban.tm_year % 100, tmUnban.tm_mon + 1, tmUnban.tm_mday, tmUnban.tm_hour, tmUnban.tm_min,
@@ -226,9 +226,9 @@ bool ChatHandler::HandleBanAccountCommand(char* args)
     return HandleBanHelper(BAN_ACCOUNT, args);
 }
 
- /**********************************************************************
-     CommandTable : baninfoCommandTable
- /***********************************************************************/
+//**********************************************************************
+//     CommandTable : baninfoCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleBanInfoHelper(uint32 accountid, char const* accountname)
 {
@@ -336,9 +336,9 @@ bool ChatHandler::HandleBanInfoAccountCommand(char* args)
     return HandleBanInfoHelper(accountid, account_name.c_str());
 }
 
- /**********************************************************************
-     CommandTable : banlistCommandTable
- /***********************************************************************/
+//**********************************************************************
+//     CommandTable : banlistCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleBanListIPCommand(char* args)
 {
@@ -469,9 +469,9 @@ bool ChatHandler::HandleBanListAccountCommand(char* args)
     return HandleBanListHelper(result);
 }
 
-/**********************************************************************
-    CommandTable : unbanCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : unbanCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleUnBanHelper(BanMode mode, char* args)
 {
@@ -541,9 +541,9 @@ bool ChatHandler::HandleUnBanIPCommand(char* args)
     return HandleUnBanHelper(BAN_IP, args);
 }
 
-/**********************************************************************
-    CommandTable : commandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : commandTable
+//**********************************************************************
 
 // kick player
 bool ChatHandler::HandleKickPlayerCommand(char* args)

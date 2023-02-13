@@ -25,6 +25,7 @@
 #include "WorldModel.h"
 #include "VMapDefinitions.h"
 #include "MapTree.h"
+#include "VMap.h"
 #include <string.h>
 
 using G3D::Vector3;

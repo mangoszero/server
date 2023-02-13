@@ -725,10 +725,11 @@ class ScriptMgr
 #ifdef _DEBUG
         // mutex allowing to reload the script binding table; TODO just do it AWAY from any map update, e.g. right after sessions update
         ACE_RW_Thread_Mutex m_bindMutex;
+		char __cache_guard_0[1024]; 
 #endif /* _DEBUG */
         // atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_scheduledScripts;
-        char __cache_guard[1024];
+        char __cache_guard_1[1024];
         ACE_Thread_Mutex m_lock;
 };
 

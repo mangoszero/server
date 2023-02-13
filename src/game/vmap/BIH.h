@@ -222,8 +222,8 @@ class BIH
             {
                 return;
             }
-            intervalMin = std::max(intervalMin, 0.f);
-            intervalMax = std::min(intervalMax, maxDist);
+            intervalMin = (std::max)(intervalMin, 0.f);
+            intervalMax = (std::min)(intervalMax, maxDist);
 
             uint32 offsetFront[3];
             uint32 offsetBack[3];

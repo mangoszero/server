@@ -120,7 +120,7 @@ typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
 // Spell modifier (used for modify other spells)
 struct SpellModifier
 {
-    SpellModifier() : charges(0), lastAffected(NULL) {}
+    SpellModifier() : charges(0), lastAffected(NULL), op(SPELLMOD_DAMAGE), spellId(0), type(SPELLMOD_FLAT), value(0) {}
 
     SpellModifier(SpellModOp _op, SpellModType _type, int32 _value, uint32 _spellId, uint64 _mask, int16 _charges = 0)
         : op(_op), type(_type), charges(_charges), value(_value), mask(_mask), spellId(_spellId), lastAffected(NULL)
@@ -136,9 +136,9 @@ struct SpellModifier
 
     bool isAffectedOnSpell(SpellEntry const* spell) const;
 
-    SpellModOp   op   : 8;
-    SpellModType type : 8;
-    int16 charges     : 16;
+    SpellModOp   op;
+    SpellModType type;
+    int16 charges;
     int32 value;
     ClassFamilyMask mask;
     uint32 spellId;
@@ -1000,7 +1000,7 @@ class Player : public Unit
         {
             return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DND);
         }
-        ChatTagFlags GetChatTag() const;
+        ChatTagFlags GetChatTag () const;
         std::string autoReplyMsg;
 
         PlayerSocial* GetSocial()

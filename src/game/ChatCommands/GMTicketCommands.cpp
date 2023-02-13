@@ -27,7 +27,7 @@
 #include "World.h"
 #include "GMTicketMgr.h"
 #include "Mail.h"
-
+#include "ObjectMgr.h"
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
@@ -154,7 +154,6 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
         if (m_session)
         {
             const char* format = "[System Message] This ticket was closed by <GM> %s without any written response, perhaps it was resolved by direct chat.";
-            const char* buffer;
             snprintf(response, responseBufferSize, format, m_session->GetPlayer()->GetName());
         }
         else
@@ -292,7 +291,7 @@ bool ChatHandler::HandleTicketInfoCommand(char* args)
 
 bool ChatHandler::HandleTicketListCommand(char* args)
 {
-    uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()), uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
+    uint16 numToShow = (std::min)(uint16(sTicketMgr.GetTicketCount()), uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
     for (uint16 i = 0; i < numToShow; ++i)
     {
         GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(i);
@@ -321,7 +320,7 @@ bool ChatHandler::HandleTicketOnlineListCommand(char* args)
         }
     }
 
-    PSendSysMessage(LANG_COMMAND_TICKET_COUNT_ONLINE, std::min(count, uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE))), count);
+    PSendSysMessage(LANG_COMMAND_TICKET_COUNT_ONLINE, (std::min)(count, uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE))), count);
     return true;
 }
 

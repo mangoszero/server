@@ -26,6 +26,7 @@
 #include "Language.h"
 #include "World.h"
 #include "Mail.h"
+#include "ObjectMgr.h"
 
  /**********************************************************************
      CommandTable : commandTable

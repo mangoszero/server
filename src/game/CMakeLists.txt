@@ -185,12 +185,6 @@ add_library(vmap2 STATIC
     vmap/TileAssembler.cpp
     vmap/WorldModel.cpp
     vmap/ModelInstance.cpp
-    vmap/BIH.h
-    vmap/VMapManager2.h
-    vmap/MapTree.h
-    vmap/TileAssembler.h
-    vmap/WorldModel.h
-    vmap/ModelInstance.h
 )
 
 target_include_directories(vmap2

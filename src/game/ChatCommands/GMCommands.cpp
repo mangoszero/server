@@ -28,6 +28,7 @@
 #include "Weather.h"
 #include "SpellMgr.h"
 #include "Util.h"
+#include "ObjectMgr.h"
 
  /**********************************************************************
      CommandTable : commandTable

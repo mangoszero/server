@@ -26,6 +26,8 @@
 #include "Language.h"
 #include "Mail.h"
 #include "MassMailMgr.h"
+#include "Player.h"
+#include "ObjectMgr.h"
 
  /**********************************************************************
       CommandTable : mailCommandTable
@@ -65,7 +67,7 @@ bool ChatHandler::HandleSendMailCommand(char* args)
 
 
     // GM mail
-    MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetGUIDLow() : (uint32)0, MAIL_STATIONERY_GM);
+    MailSender sender(MAIL_NORMAL, static_cast<uint32>(m_session ? m_session->GetPlayer()->GetGUIDLow() : 0), MAIL_STATIONERY_GM);
 
     draft.SendMailTo(MailReceiver(target, target_guid), sender);
 

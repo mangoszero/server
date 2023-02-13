@@ -42,6 +42,8 @@
 #include "ObjectAccessor.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
+#include "ace/OS_NS_stdio.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -684,7 +686,7 @@ void WorldSession::SendAreaTriggerMessage(const char* Text, ...)
     szStr[0] = '\0';
 
     va_start(ap, Text);
-    vsnprintf(szStr, 1024, Text, ap);
+    ACE_OS::vsnprintf(szStr, 1024, Text, ap);
     va_end(ap);
 
     uint32 length = strlen(szStr) + 1;
@@ -702,7 +704,7 @@ void WorldSession::SendNotification(const char* format, ...)
         char szStr [1024];
         szStr[0] = '\0';
         va_start(ap, format);
-        vsnprintf(szStr, 1024, format, ap);
+        ACE_OS::vsnprintf(szStr, 1024, format, ap);
         va_end(ap);
 
         WorldPacket data(SMSG_NOTIFICATION, (strlen(szStr) + 1));
@@ -720,7 +722,7 @@ void WorldSession::SendNotification(int32 string_id, ...)
         char szStr [1024];
         szStr[0] = '\0';
         va_start(ap, string_id);
-        vsnprintf(szStr, 1024, format, ap);
+        ACE_OS::vsnprintf(szStr, 1024, format, ap);
         va_end(ap);
 
         WorldPacket data(SMSG_NOTIFICATION, (strlen(szStr) + 1));

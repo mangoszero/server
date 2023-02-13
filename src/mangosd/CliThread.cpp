@@ -43,7 +43,7 @@ static void prompt(void* callback = NULL, bool status = true)
 }
 
 // Non-blocking keypress detector, when return pressed, return 1, else always return 0
-#if (PLATFORM != PLATFORM_WINDOWS)
+#ifndef _WIN32
 static int kb_hit_return()
 {
     struct timeval tv;
@@ -77,7 +77,7 @@ int CliThread::svc()
     ///- As long as the World is running (no World::m_stopEvent), get the command line and handle it
     while (!World::IsStopped())
     {
-#if (PLATFORM != PLATFORM_WINDOWS)
+#ifndef _WIN32
         while (!kb_hit_return() && !World::IsStopped())
             // With this, we limit CLI to 10 commands/second
         {

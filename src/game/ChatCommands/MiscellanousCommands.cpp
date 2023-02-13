@@ -26,6 +26,11 @@
 #include "Language.h"
 #include "World.h"
 #include "PlayerDump.h"
+#include "Player.h"
+#include "ScriptMgr.h"
+#include "WorldSession.h"
+#include "ObjectMgr.h"
+
 
  /**********************************************************************
      CommandTable : commandTable

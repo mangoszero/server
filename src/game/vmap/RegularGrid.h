@@ -304,7 +304,7 @@ class RegularGrid2D
                 tMaxY = (y_border - by) * ky_inv;
             }
 
-            //int Cycles = std::max((int)ceilf(max_dist/tMaxX),(int)ceilf(max_dist/tMaxY));
+            //int Cycles = (std::max)((int)ceilf(max_dist/tMaxX),(int)ceilf(max_dist/tMaxY));
             //int i = 0;
 
             float tDeltaX = voxel * fabs(kx_inv);

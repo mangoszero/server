@@ -51,8 +51,12 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "DisableMgr.h"
-
 #include "ItemEnchantmentMgr.h"
+
+#include "ace/OS_NS_time.h"
+#include "ace/OS_NS_stdio.h"
+
+#include <cmath>
 #include <limits>
 
 INSTANTIATE_SINGLETON_1(ObjectMgr);
@@ -3255,7 +3259,7 @@ void ObjectMgr::DistributeRankPoints(uint32 team, uint32 dateBegin , bool flush 
         {
             CharacterDatabase.BeginTransaction();
             CharacterDatabase.PExecute("UPDATE `character_honor_cp` SET `used`=1 WHERE `guid` = %u AND `TYPE` = %u AND `date` BETWEEN %u AND %u", itr->guid, HONORABLE, dateBegin, dateBegin + 7);
-            CharacterDatabase.PExecute("UPDATE `characters` SET `stored_honor_rating` = %f , `stored_honorable_kills` = %u WHERE `guid` = %u", finiteAlways(RP + itr->rpEarning), HK + itr->honorKills, itr->guid);
+            CharacterDatabase.PExecute("UPDATE `characters` SET `stored_honor_rating` = %f , `stored_honorable_kills` = %u WHERE `guid` = %u", isfinite(RP + itr->rpEarning) ? (RP + itr->rpEarning) : 0, HK + itr->honorKills, itr->guid);
             CharacterDatabase.CommitTransaction();
         }
     }
@@ -4796,7 +4800,7 @@ void ObjectMgr::LoadInstanceTemplate()
         // the reset_delay must be at least one day
         if (temp->reset_delay)
         {
-            const_cast<InstanceTemplate*>(temp)->reset_delay = std::max((uint32)1, (uint32)(temp->reset_delay * sWorld.getConfig(CONFIG_FLOAT_RATE_INSTANCE_RESET_TIME)));
+            const_cast<InstanceTemplate*>(temp)->reset_delay = (std::max)((uint32)1, (uint32)(temp->reset_delay * sWorld.getConfig(CONFIG_FLOAT_RATE_INSTANCE_RESET_TIME)));
         }
     }
 
@@ -4994,7 +4998,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
     time_t curTime = time(NULL);
     tm lt;
-    localtime_r(&curTime, &lt);
+    ACE_OS::localtime_r(&curTime, &lt);
     uint64 basetime(curTime);
     sLog.outString("Returning mails current time: hour: %d, minute: %d, second: %d ", lt.tm_hour, lt.tm_min, lt.tm_sec);
 
@@ -7252,7 +7256,7 @@ inline void _DoStringError(int32 entry, char const* text, ...)
     char buf[256];
     va_list ap;
     va_start(ap, text);
-    vsnprintf(buf, 256, text, ap);
+    ACE_OS::vsnprintf(buf, 256, text, ap);
     va_end(ap);
 
     if (entry <= MAX_CREATURE_AI_TEXT_STRING_ID)            // script library error

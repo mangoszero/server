@@ -26,6 +26,7 @@
 #define DATABASEIMPL_H
 #include "Database/Database.h"
 #include "Database/SqlOperations.h"
+#include "ace/OS_NS_stdio.h"
 
 /// Function body definitions for the template function members of the Database class
 
@@ -41,7 +42,7 @@
         va_list ap; \
         \
         va_start(ap, format); \
-        int res = vsnprintf( szQuery, MAX_QUERY_LEN, format, ap ); \
+        int res = ACE_OS::vsnprintf( szQuery, MAX_QUERY_LEN, format, ap ); \
         va_end(ap); \
         \
         if(res==-1) \

@@ -58,7 +58,7 @@ uint32 UpdateTime::GetMaxUpdateTime() const
 
 uint32 UpdateTime::GetMaxUpdatTimeOfCurrentTable() const
 {
-    return std::max(_maxUpdateTimeOfCurrentTable, _maxUpdateTimeOfLastTable);
+    return (std::max)(_maxUpdateTimeOfCurrentTable, _maxUpdateTimeOfLastTable);
 }
 
 uint32 UpdateTime::GetLastUpdateTime() const

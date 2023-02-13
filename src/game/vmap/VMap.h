@@ -22,9 +22,29 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#ifndef MANGOS_COMPILERDEFS_H
-#define MANGOS_COMPILERDEFS_H
+#ifndef __MANGOS_VMAP_H
+#define __MANGOS_VMAP_H
 
-//TODO: remove this relic
+#ifndef NO_CORE_FUNCS
+#  include "Utilities/Errors.h"
+#  include "Log/Log.h"
+#  define ERROR_LOG(...) sLog.outError(__VA_ARGS__);
+#elif defined MMAP_GENERATOR
+#  include <assert.h>
+#  define MANGOS_ASSERT(x) assert(x)
+#  define DEBUG_LOG(...) 0
+#  define DETAIL_LOG(...) 0
+#  define LOG_FILTER_MAP_LOADING true
+#  define DEBUG_FILTER_LOG(F,...) do{ if (F) DEBUG_LOG(__VA_ARGS__); } while(0)
+#  define ERROR_LOG(...) do{ printf("ERROR:"); printf(__VA_ARGS__); printf("\n"); } while(0)
+#else
+#  include <assert.h>
+#  define MANGOS_ASSERT(x) assert(x)
+#  define DEBUG_LOG(...) do{ printf(__VA_ARGS__); printf("\n"); } while(0)
+#  define DETAIL_LOG(...) do{ printf(__VA_ARGS__); printf("\n"); } while(0)
+#  define LOG_FILTER_MAP_LOADING true
+#  define DEBUG_FILTER_LOG(F,...) do{ if (F) DEBUG_LOG(__VA_ARGS__); } while(0)
+#  define ERROR_LOG(...) do{ printf("ERROR:"); printf(__VA_ARGS__); printf("\n"); } while(0)
+#endif
 
 #endif

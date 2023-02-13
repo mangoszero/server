@@ -32,6 +32,8 @@
 #include "GameObjectModel.h"
 #include "DBCStores.h"
 
+#include "VMap.h"
+
 struct GameobjectModelData
 {
     GameobjectModelData(const std::string& name_, const G3D::AABox& box) :

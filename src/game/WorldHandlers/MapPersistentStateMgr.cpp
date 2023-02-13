@@ -37,6 +37,9 @@
 #include "Group.h"
 #include "InstanceData.h"
 #include "ProgressBar.h"
+
+#include "ace/OS_NS_stdio.h"
+
 #include <vector>
 
 INSTANTIATE_SINGLETON_1(MapPersistentStateManager);
@@ -547,7 +550,7 @@ void DungeonResetScheduler::Update()
         {
             // global reset/warning for a certain map
             time_t resetTime = GetResetTimeFor(event.mapid);
-            uint32 timeLeft = uint32(std::max(int32(resetTime - now), 0));
+            uint32 timeLeft = uint32((std::max)(int32(resetTime - now), 0));
             bool warn = event.type != RESET_EVENT_INFORM_LAST && event.type != RESET_EVENT_FORCED_INFORM_LAST;
             m_InstanceSaves._ResetOrWarnAll(event.mapid, warn, timeLeft);
             if (event.type != RESET_EVENT_INFORM_LAST && event.type != RESET_EVENT_FORCED_INFORM_LAST)
@@ -768,7 +771,7 @@ void MapPersistentStateManager::_DelHelper(DatabaseType& db, const char* fields,
     va_list ap;
     char szQueryTail [MAX_QUERY_LEN];
     va_start(ap, queryTail);
-    vsnprintf(szQueryTail, MAX_QUERY_LEN, queryTail, ap);
+    ACE_OS::vsnprintf(szQueryTail, MAX_QUERY_LEN, queryTail, ap);
     va_end(ap);
 
     // query is delimited in input

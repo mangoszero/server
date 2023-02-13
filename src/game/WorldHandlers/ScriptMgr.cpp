@@ -2226,7 +2226,7 @@ bool ScriptAction::HandleScriptStep()
 
                 pSource->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), m_script->moveDynamic.maxDist, x, y, z,
                                         m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
-                z = std::max(z, pTarget->GetPositionZ());
+                z = (std::max)(z, pTarget->GetPositionZ());
                 pSource->UpdateAllowedPositionZ(x, y, z);
             }
             ((Creature*)pSource)->GetMotionMaster()->MovePoint(1, x, y, z);

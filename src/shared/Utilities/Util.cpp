@@ -29,6 +29,9 @@
 #include "RNGen.h"
 #include "Log/Log.h"
 
+#include "ace/OS_NS_time.h"
+#include "ace/OS_NS_stdio.h"
+
 #include <iomanip>
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,85 +155,6 @@ void stripLineInvisibleChars(std::string& str)
     {
         str.erase(wpos, str.size());
     }
-}
-
-/**
- * It's a wrapper for the localtime_r function that works on Windows
- *
- * @param time The time to convert.
- * @param result A pointer to a tm structure to receive the broken-down time.
- *
- * @return A pointer to the result.
- */
-#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-struct tm* localtime_r(time_t const* time, struct tm *result)
-{
-    localtime_s(result, time);
-    return result;
-}
-#endif
-
-/**
- * It takes a time_t value and returns a tm structure with the same time, but in local time
- *
- * @param time The time to break down.
- *
- * @return A struct tm
- */
-tm TimeBreakdown(time_t time)
-{
-    tm timeLocal;
-    localtime_r(&time, &timeLocal);
-    return timeLocal;
-}
-
-/**
- * Convert local time to UTC time.
- *
- * @param time The time to convert.
- *
- * @return The time in UTC.
- */
-time_t LocalTimeToUTCTime(time_t time)
-{
-    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-        return time + _timezone;
-    #else
-        return time + timezone;
-    #endif
-}
-
-/**
- * "Get the timestamp of the next time the given hour occurs in the local timezone."
- *
- * The function takes a timestamp, an hour, and a boolean. The timestamp is the time you want to find
- * the next occurrence of the given hour. The hour is the hour you want to find the next occurrence of.
- * The boolean is whether or not you want to find the next occurrence of the hour after the given
- * timestamp
- *
- * @param time The time you want to get the hour timestamp for.
- * @param hour The hour of the day you want to get the timestamp for.
- * @param onlyAfterTime If true, the function will return the next hour after the current time. If
- * false, it will return the current hour.
- *
- * @return A timestamp for the given hour of the day.
- */
-time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
-{
-    tm timeLocal = TimeBreakdown(time);
-    timeLocal.tm_hour = 0;
-    timeLocal.tm_min  = 0;
-    timeLocal.tm_sec  = 0;
-
-    time_t midnightLocal = mktime(&timeLocal);
-    time_t hourLocal = midnightLocal + hour * HOUR;
-
-    if (onlyAfterTime && hourLocal < time)
-    {
-        hourLocal += DAY;
-    }
-
-    return hourLocal;
 }
 
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hoursOnly)
@@ -385,7 +309,7 @@ uint32 TimeStringToSecs(const std::string& timestring)
 std::string TimeToTimestampStr(time_t t)
 {
     tm aTm;
-    localtime_r(&t, &aTm);
+    ACE_OS::localtime_r(&t, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -621,7 +545,7 @@ typedef wchar_t const* const* wstrlist;
 
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
     std::wstring wstr;
     if (!Utf8toWStr(utf8str, wstr))
     {
@@ -640,7 +564,7 @@ bool utf8ToConsole(const std::string& utf8str, std::string& conStr)
 
 bool consoleToUtf8(const std::string& conStr, std::string& utf8str)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
     std::wstring wstr;
     wstr.resize(conStr.size());
     OemToCharBuffW(&conStr[0], &wstr[0], conStr.size());
@@ -676,11 +600,11 @@ bool Utf8FitTo(const std::string& str, std::wstring search)
 
 void vutf8printf(FILE* out, const char* str, va_list* ap)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
     char temp_buf[32 * 1024];
     wchar_t wtemp_buf[32 * 1024];
 
-    size_t temp_len = vsnprintf(temp_buf, 32 * 1024, str, *ap);
+    size_t temp_len = ACE_OS::vsnprintf(temp_buf, 32 * 1024, str, *ap);
 
     size_t wtemp_len = 32 * 1024 - 1;
     Utf8toWStr(temp_buf, temp_len, wtemp_buf, wtemp_len);
@@ -769,7 +693,7 @@ void HexStrToByteArray(std::string const& str, uint8* out, bool reverse /*= fals
 
 void utf8print(void* /*arg*/, const char* str)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
     wchar_t wtemp_buf[6000];
     size_t wtemp_len = 6000 - 1;
     if (!Utf8toWStr(str, strlen(str), wtemp_buf, wtemp_len))

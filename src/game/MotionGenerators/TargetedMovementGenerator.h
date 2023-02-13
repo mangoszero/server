@@ -27,9 +27,10 @@
 
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
+#include "PathFinder.h"
 #include "G3D/Vector3.h"
 
-class PathFinder;
+//class PathFinder;
 
 class TargetedMovementGeneratorBase
 {

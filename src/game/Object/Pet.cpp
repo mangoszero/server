@@ -1075,7 +1075,7 @@ void Pet::GivePetXP(uint32 xp)
     }
 
     uint32 level = getLevel();
-    uint32 maxlevel = std::min(sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL), GetOwner()->getLevel());
+    uint32 maxlevel = (std::min)(sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL), GetOwner()->getLevel());
 
     // pet not receive xp for level equal to owner level
     if (level >= maxlevel)
@@ -2415,7 +2415,7 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
                 {
                     if ((*it)->GetId() != 19582)                        // exclude the aura influenced by Bestial Swiftness
                     {
-                        main_speed_mod = std::max((*it)->GetBasePoints(), main_speed_mod);
+                        main_speed_mod = (std::max)((*it)->GetBasePoints(), main_speed_mod);
                     }
                 }
             }
@@ -2452,7 +2452,7 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
         ownerSpeed *= 100.0f / (100.0f + slow) ;
     }
 
-    float speed = std::max(non_stack_bonus, stack_bonus) * ownerSpeed;
+    float speed = (std::max)(non_stack_bonus, stack_bonus) * ownerSpeed;
 
     if (main_speed_mod)
     {

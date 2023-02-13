@@ -30,7 +30,7 @@
 #include "MapTree.h"
 #include "BIH.h"
 #include "VMapDefinitions.h"
-
+#include "VMap.h"
 
 using G3D::Vector3;
 using G3D::AABox;

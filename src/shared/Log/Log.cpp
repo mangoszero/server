@@ -34,7 +34,9 @@
 #include <fstream>
 #include <iostream>
 
-#include <ace/OS_NS_unistd.h>
+#include "ace/OS_NS_time.h"
+#include "ace/OS_NS_unistd.h"
+#include "ace/OS_NS_stdio.h"
 
 INSTANTIATE_SINGLETON_1(Log);
 
@@ -120,7 +122,7 @@ void Log::InitColors(const std::string& str)
 
 void Log::SetColor(bool stdout_stream, Color color)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
 
     static WORD WinColorFG[Color_count] =
     {
@@ -191,7 +193,7 @@ void Log::SetColor(bool stdout_stream, Color color)
 
 void Log::ResetColor(bool stdout_stream)
 {
-#if PLATFORM == PLATFORM_WINDOWS
+#ifdef _WIN32
     HANDLE hConsole = GetStdHandle(stdout_stream ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);
     SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 #else
@@ -360,7 +362,7 @@ void Log::outTimestamp(FILE* file)
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -375,7 +377,7 @@ void Log::outTime()
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -390,7 +392,7 @@ std::string Log::GetTimestampStr()
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -1284,7 +1286,7 @@ void outstring_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     sLog.outString("%s", buf);
@@ -1300,7 +1302,7 @@ void detail_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     sLog.outDetail("%s", buf);
@@ -1316,7 +1318,7 @@ void debug_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     DEBUG_LOG("%s", buf);
@@ -1332,7 +1334,7 @@ void error_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     sLog.outError("%s", buf);
@@ -1348,7 +1350,7 @@ void error_db_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     sLog.outErrorDb("%s", buf);
@@ -1369,7 +1371,7 @@ void script_error_log(const char* str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf, 256, str, ap);
+    ACE_OS::vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
     sLog.outErrorScriptLib("%s", buf);

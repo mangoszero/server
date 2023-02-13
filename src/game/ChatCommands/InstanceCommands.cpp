@@ -26,6 +26,7 @@
 #include "Language.h"
 #include "MapManager.h"
 #include "InstanceData.h"
+#include "ObjectMgr.h"
 
  /**********************************************************************
      CommandTable : instanceCommandTable

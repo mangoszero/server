@@ -39,6 +39,8 @@
 #include "Formulas.h"
 #include "GridNotifiersImpl.h"
 #include "Chat.h"
+#include "ace/OS_NS_stdio.h"
+
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -71,7 +73,7 @@ namespace MaNGOS
                     va_copy(ap, *i_args);
 
                     char str [2048];
-                    vsnprintf(str, 2048, text, ap);
+                    ACE_OS::vsnprintf(str, 2048, text, ap);
                     va_end(ap);
 
                     ChatHandler::BuildChatPacket(data, i_msgtype, &str[0], LANG_UNIVERSAL, CHAT_TAG_NONE, sourceGuid, sourceName.c_str());
@@ -111,7 +113,7 @@ namespace MaNGOS
                     va_copy(ap, *i_args);
 
                     char str [2048];
-                    vsnprintf(str, 2048, text, ap);
+                    ACE_OS::vsnprintf(str, 2048, text, ap);
                     va_end(ap);
 
                     ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, &str[0], i_language, CHAT_TAG_NONE, i_source->GetObjectGuid(), i_source->GetName());
