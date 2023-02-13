@@ -167,7 +167,15 @@ inline char* mangos_strdup(const char* source)
 #endif
 
 #ifndef countof
-#define countof(array) (sizeof(array) / sizeof((array)[0]))
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
+#ifdef max
+#  undef max
+#endif
+
+#ifdef min
+#  undef min
 #endif
 
 
