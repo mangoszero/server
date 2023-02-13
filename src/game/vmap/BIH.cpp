@@ -108,8 +108,8 @@ void BIH::subdivide(int left, int right, std::vector<uint32>& tempTree, buildDat
                     clipR = minb;
                 }
             }
-            nodeL = std::min(nodeL, minb);
-            nodeR = std::max(nodeR, maxb);
+            nodeL = (std::min)(nodeL, minb);
+            nodeR = (std::max)(nodeR, maxb);
         }
         // check for empty space
         if (nodeL > nodeBox.lo[axis] && nodeR < nodeBox.hi[axis])
@@ -306,13 +306,13 @@ bool BIH::ReadFromFile(FILE* rf)
 void BIH::BuildStats::updateLeaf(int depth, int n)
 {
     ++numLeaves;
-    minDepth = std::min(depth, minDepth);
-    maxDepth = std::max(depth, maxDepth);
+    minDepth = (std::min)(depth, minDepth);
+    maxDepth = (std::max)(depth, maxDepth);
     sumDepth += depth;
-    minObjects = std::min(n, minObjects);
-    maxObjects = std::max(n, maxObjects);
+    minObjects = (std::min)(n, minObjects);
+    maxObjects = (std::max)(n, maxObjects);
     sumObjects += n;
-    int nl = std::min(n, 5);
+    int nl = (std::min)(n, 5);
     ++numLeavesN[nl];
 }
 

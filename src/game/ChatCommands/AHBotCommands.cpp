@@ -31,9 +31,9 @@
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
 
- /**********************************************************************
-     Useful constants definition
- /***********************************************************************/
+//**********************************************************************
+//     Useful constants definition
+//**********************************************************************
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
@@ -43,9 +43,9 @@ static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
     LANG_AHBOT_QUALITY_YELLOW
 };
 
- /**********************************************************************
-     CommandTable : ahbotCommandTable
- /***********************************************************************/
+//**********************************************************************
+//     CommandTable : ahbotCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleAHBotRebuildCommand(char* args)
 {
@@ -151,9 +151,9 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : ahbotItemsAmountCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : ahbotItemsAmountCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
 {
@@ -196,9 +196,9 @@ template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_
 template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_ORANGE>(char*);
 template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_YELLOW>(char*);
 
-/**********************************************************************
-    CommandTable : ahbotItemsRatioCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : ahbotItemsRatioCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
 {

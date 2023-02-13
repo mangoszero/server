@@ -610,13 +610,13 @@ class SqlStatement
          *
          * @param var
          */
-        void addFloat(float var) { arg(var); }
+        void addFloat(float var) { arg(isfinite(var)?var:0); }
         /**
          * @brief
          *
          * @param var
          */
-        void addDouble(double var) { arg(var); }
+        void addDouble(double var) { arg(isfinite(var) ? var : 0); }
         /**
          * @brief
          *

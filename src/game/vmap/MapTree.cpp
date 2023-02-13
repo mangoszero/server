@@ -26,6 +26,7 @@
 #include "ModelInstance.h"
 #include "VMapManager2.h"
 #include "VMapDefinitions.h"
+#include "VMap.h"
 
 #include <string>
 #include <sstream>

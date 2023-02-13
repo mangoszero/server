@@ -30,6 +30,11 @@
 #include "SystemConfig.h"
 #include "UpdateTime.h"
 #include "revision_data.h"
+#include "Utilities/Util.h"
+#include "Log/Log.h"
+#include "ScriptMgr.h"
+#include "MapPersistentStateMgr.h"
+#include "ObjectAccessor.h"
 
  /**********************************************************************
      CommandTable : serverCommandTable

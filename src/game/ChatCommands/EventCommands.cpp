@@ -26,10 +26,11 @@
 #include "Language.h"
 #include "GameEventMgr.h"
 #include "GameEventMgr.h"
+#include "Utilities/Util.h"
 
- /**********************************************************************
-     CommandTable : eventCommandTable
- /***********************************************************************/
+//**********************************************************************
+//     CommandTable : eventCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleEventListCommand(char* args)
 {

@@ -30,6 +30,7 @@
 #include "ModelInstance.h"
 #include "WorldModel.h"
 #include "VMapDefinitions.h"
+#include "VMap.h"
 
 using G3D::Vector3;
 

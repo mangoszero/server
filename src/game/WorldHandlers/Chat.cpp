@@ -41,6 +41,7 @@
 #include "GameEventMgr.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 #include "CommandMgr.h"
+#include "ace/OS_NS_stdio.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -1017,7 +1018,7 @@ void ChatHandler::PSendSysMessage(int32 entry, ...)
     va_list ap;
     char str [2048];
     va_start(ap, entry);
-    vsnprintf(str, 2048, format, ap);
+    ACE_OS::vsnprintf(str, 2048, format, ap);
     va_end(ap);
     SendSysMessage(str);
 }
@@ -1030,7 +1031,7 @@ void  ChatHandler::PSendSysMessageMultiline(int32 entry, ...)
     va_list ap;
     char str[2048];
     va_start(ap, entry);
-    vsnprintf(str, 2048, format, ap);
+    ACE_OS::vsnprintf(str, 2048, format, ap);
     va_end(ap);
 
     std::string mangosString(str);
@@ -1066,7 +1067,7 @@ void ChatHandler::PSendSysMessage(const char* format, ...)
     va_list ap;
     char str [2048];
     va_start(ap, format);
-    vsnprintf(str, 2048, format, ap);
+    ACE_OS::vsnprintf(str, 2048, format, ap);
     va_end(ap);
     SendSysMessage(str);
 }
@@ -2229,7 +2230,7 @@ bool  ChatHandler::ExtractInt32(char** args, int32& val)
         return false;                                        // args not modified and can be re-parsed
     }
 
-    if (valRaw < std::numeric_limits<int32>::min() || valRaw > std::numeric_limits<int32>::max())
+    if (valRaw < (std::numeric_limits<int32>::min)() || valRaw > (std::numeric_limits<int32>::max)())
     {
         return false;
     }
@@ -2287,7 +2288,7 @@ bool  ChatHandler::ExtractUInt32Base(char** args, uint32& val, uint32 base)
         return false;                                        // args not modified and can be re-parsed
     }
 
-    if (valRaw > std::numeric_limits<uint32>::max())
+    if (valRaw > (std::numeric_limits<uint32>::max)())
     {
         return false;
     }

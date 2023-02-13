@@ -1447,13 +1447,13 @@ void Creature::SelectLevel(uint32 forcedLevel /*= USE_DEFAULT_DATABASE_LEVEL*/)
             float rellevel = maxlevel == minlevel ? 0 : (float(level - minlevel)) / (maxlevel - minlevel);
 
             // health
-            uint32 minhealth = std::min(cinfo->MaxLevelHealth, cinfo->MinLevelHealth);
-            uint32 maxhealth = std::max(cinfo->MaxLevelHealth, cinfo->MinLevelHealth);
+            uint32 minhealth = (std::min)(cinfo->MaxLevelHealth, cinfo->MinLevelHealth);
+            uint32 maxhealth = (std::max)(cinfo->MaxLevelHealth, cinfo->MinLevelHealth);
             health = uint32(minhealth + uint32(rellevel * (maxhealth - minhealth)));
 
             // mana
-            uint32 minmana = std::min(cinfo->MaxLevelMana, cinfo->MinLevelMana);
-            uint32 maxmana = std::max(cinfo->MaxLevelMana, cinfo->MinLevelMana);
+            uint32 minmana = (std::min)(cinfo->MaxLevelMana, cinfo->MinLevelMana);
+            uint32 maxmana = (std::max)(cinfo->MaxLevelMana, cinfo->MinLevelMana);
             mana = minmana + uint32(rellevel * (maxmana - minmana));
         }
         else
@@ -1645,7 +1645,7 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     m_respawnradius = data->spawndist;
 
     m_respawnDelay = data->spawntimesecs;
-    m_corpseDelay = std::min(m_respawnDelay * 9 / 10, m_corpseDelay); // set corpse delay to 90% of the respawn delay
+    m_corpseDelay = (std::min)(m_respawnDelay * 9 / 10, m_corpseDelay); // set corpse delay to 90% of the respawn delay
     m_IsDeadByDefault = data->is_dead;
     m_deathState = m_IsDeadByDefault ? DEAD : ALIVE;
 
@@ -3053,7 +3053,7 @@ void Creature::FillGuidsListFromThreatList(GuidVector& guids, uint32 maxamount /
 
     ThreatList const& threats = GetThreatManager().getThreatList();
 
-    maxamount = maxamount > 0 ? std::min(maxamount, uint32(threats.size())) : threats.size();
+    maxamount = maxamount > 0 ? (std::min)(maxamount, uint32(threats.size())) : threats.size();
 
     guids.reserve(guids.size() + maxamount);
 

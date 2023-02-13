@@ -27,6 +27,8 @@
 #include "Database/SqlOperations.h"
 #include "GitRevision.h"
 
+#include "ace/OS_NS_stdio.h"
+
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -306,7 +308,7 @@ bool Database::PExecuteLog(const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)
@@ -352,7 +354,7 @@ QueryResult* Database::PQuery(const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)
@@ -374,7 +376,7 @@ QueryNamedResult* Database::PQueryNamed(const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)
@@ -424,7 +426,7 @@ bool Database::PExecute(const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)
@@ -446,7 +448,7 @@ bool Database::DirectPExecute(const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)

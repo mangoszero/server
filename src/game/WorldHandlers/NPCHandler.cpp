@@ -242,7 +242,7 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
                     break;
                 default: // any other spell requirement is read from DBC and the database
-                   reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
+                   reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : (std::max)(reqLevel, tSpell->reqLevel);
                    break;
             }
 
@@ -268,7 +268,7 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
                 continue;
             }
 
-            reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
+            reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : (std::max)(reqLevel, tSpell->reqLevel);
 
             TrainerSpellState state = _player->GetTrainerSpellState(tSpell, reqLevel);
 
@@ -341,7 +341,7 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
         return;
     }
 
-    reqLevel = trainer_spell->isProvidedReqLevel ? trainer_spell->reqLevel : std::max(reqLevel, trainer_spell->reqLevel);
+    reqLevel = trainer_spell->isProvidedReqLevel ? trainer_spell->reqLevel : (std::max)(reqLevel, trainer_spell->reqLevel);
     if (_player->GetTrainerSpellState(trainer_spell, reqLevel) != TRAINER_SPELL_GREEN)
     {
         return;

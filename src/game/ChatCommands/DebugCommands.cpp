@@ -22,25 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Common.h"
-#include "DBCStores.h"
-#include "WorldPacket.h"
-#include "Player.h"
-#include "Opcodes.h"
 #include "Chat.h"
-#include "Log.h"
-#include "Unit.h"
-#include "GossipDef.h"
-#include "Language.h"
-#include "BattleGround/BattleGroundMgr.h"
-#include <fstream>
 #include "ObjectMgr.h"
-#include "ObjectGuid.h"
 #include "SpellMgr.h"
+#include "GossipDef.h"
+#include "BattleGround/BattleGroundMgr.h"
 
-/**********************************************************************
-     CommandTable : debugCommandTable
-/***********************************************************************/
+#include <fstream>
+
+//**********************************************************************
+//     CommandTable : debugCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleDebugSendSpellFailCommand(char* args)
 {
@@ -1235,30 +1227,29 @@ bool ChatHandler::HandlerDebugModValueHelper(Object* target, uint32 field, char*
         }
 
         uint32 value = target->GetUInt32Value(field);
-        const char* guidString = guid.GetString().c_str();
 
         switch (type)
         {
             default:
             case 1:                                         // int +
                 value = uint32(int32(value) + int32(iValue));
-                DEBUG_LOG(GetMangosString(LANG_CHANGE_INT32), guidString, field, iValue, value, value);
-                PSendSysMessage(LANG_CHANGE_INT32_FIELD, guidString, field, iValue, value, value);
+                DEBUG_LOG(GetMangosString(LANG_CHANGE_INT32), guid.GetString().c_str(), field, iValue, value, value);
+                PSendSysMessage(LANG_CHANGE_INT32_FIELD, guid.GetString().c_str(), field, iValue, value, value);
                 break;
             case 2:                                         // |= bit or
                 value |= iValue;
-                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guidString, field, typeStr, iValue, value);
-                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guidString, field, typeStr, iValue, value);
+                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guid.GetString().c_str(), field, typeStr, iValue, value);
+                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guid.GetString().c_str(), field, typeStr, iValue, value);
                 break;
             case 3:                                         // &= bit and
                 value &= iValue;
-                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guidString, field, typeStr, iValue, value);
-                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guidString, field, typeStr, iValue, value);
+                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guid.GetString().c_str(), field, typeStr, iValue, value);
+                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guid.GetString().c_str(), field, typeStr, iValue, value);
                 break;
             case 4:                                         // &=~ bit and not
                 value &= ~iValue;
-                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guidString, field, typeStr, iValue, value);
-                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guidString, field, typeStr, iValue, value);
+                DEBUG_LOG(GetMangosString(LANG_CHANGE_HEX), guid.GetString().c_str(), field, typeStr, iValue, value);
+                PSendSysMessage(LANG_CHANGE_HEX_FIELD, guid.GetString().c_str(), field, typeStr, iValue, value);
                 break;
         }
 

@@ -27,6 +27,8 @@
 #include "DatabaseEnv.h"
 #include "DatabaseImpl.h"
 
+#include "ace/OS_NS_stdio.h"
+
 #define LOCK_DB_CONN(conn) SqlConnection::Lock guard(conn)
 
 /// ---- ASYNC STATEMENTS / TRANSACTIONS ----
@@ -162,7 +164,7 @@ bool SqlQueryHolder::SetPQuery(size_t index, const char* format, ...)
     va_list ap;
     char szQuery [MAX_QUERY_LEN];
     va_start(ap, format);
-    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
+    int res = ACE_OS::vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);
     va_end(ap);
 
     if (res == -1)

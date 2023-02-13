@@ -96,7 +96,7 @@ enum GMTicketResponse
 class GMTicket
 {
     public:
-        explicit GMTicket() : m_lastUpdate(0)
+        explicit GMTicket() : m_lastUpdate(0),m_ticketId(0)
         {}
 
         /**

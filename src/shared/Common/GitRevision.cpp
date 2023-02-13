@@ -49,23 +49,6 @@ char const* GitRevision::GetHostOSVersion()
     return "Compiled on: " CMAKE_HOST_SYSTEM;
 }
 
-// Platform Define
-#if PLATFORM == PLATFORM_WINDOWS
-    #ifdef _WIN64
-        #define MANGOS_PLATFORM_STR "Win64"
-    #else
-        #define MANGOS_PLATFORM_STR "Win32"
-    #endif
-#elif PLATFORM == PLATFORM_APPLE
-    #define MANGOS_PLATFORM_STR "MacOSX"
-#elif PLATFORM == PLATFORM_INTEL
-    #define MANGOS_PLATFORM_STR "Intel"
-#elif PLATFORM == PLATFORM_UNIX
-    #define MANGOS_PLATFORM_STR "Linux"
-#else
-    #define MANGOS_PLATFORM_STR "Unknown System"
-#endif
-
 // Database Revision
 char const* GitRevision::GetProjectRevision()
 {

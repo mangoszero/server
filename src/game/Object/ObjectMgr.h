@@ -196,7 +196,7 @@ typedef std::pair<QuestRelationsMap::const_iterator, QuestRelationsMap::const_it
 
 struct PetLevelInfo
 {
-    PetLevelInfo() : health(0), mana(0)
+    PetLevelInfo() : health(0), mana(0), armor(0)
     {
         for (int i = 0; i < MAX_STATS; ++i) stats[i] = 0;
     }
@@ -1403,7 +1403,7 @@ class ObjectMgr
  bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target = NULL);
 
 // scripting access functions
- bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = std::numeric_limits<int32>::min(), bool extra_content = false);
+ bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = (std::numeric_limits<int32>::min)(), bool extra_content = false);
  CreatureInfo const* GetCreatureTemplateStore(uint32 entry);
  Quest const* GetQuestTemplateStore(uint32 entry);
  MangosStringLocale const* GetMangosStringData(int32 entry);

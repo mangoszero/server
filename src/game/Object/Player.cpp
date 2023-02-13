@@ -15481,7 +15481,7 @@ void Player::AdjustQuestReqItemCount(Quest const* pQuest, QuestStatusData& quest
             {
                 uint32 curitemcount = GetItemCount(pQuest->ReqItemId[i], true);
 
-                questStatusData.m_itemcount[i] = std::min(curitemcount, reqitemcount);
+                questStatusData.m_itemcount[i] = (std::min)(curitemcount, reqitemcount);
                 if (questStatusData.uState != QUEST_NEW)
                 {
                     questStatusData.uState = QUEST_CHANGED;
@@ -18132,18 +18132,18 @@ void Player::SaveToDB()
     if (!IsBeingTeleported())
     {
         uberInsert.addUInt32(GetMapId());
-        uberInsert.addFloat(finiteAlways(GetPositionX()));
-        uberInsert.addFloat(finiteAlways(GetPositionY()));
-        uberInsert.addFloat(finiteAlways(GetPositionZ()));
-        uberInsert.addFloat(finiteAlways(GetOrientation()));
+        uberInsert.addFloat(GetPositionX());
+        uberInsert.addFloat(GetPositionY());
+        uberInsert.addFloat(GetPositionZ());
+        uberInsert.addFloat(GetOrientation());
     }
     else
     {
         uberInsert.addUInt32(GetTeleportDest().mapid);
-        uberInsert.addFloat(finiteAlways(GetTeleportDest().coord_x));
-        uberInsert.addFloat(finiteAlways(GetTeleportDest().coord_y));
-        uberInsert.addFloat(finiteAlways(GetTeleportDest().coord_z));
-        uberInsert.addFloat(finiteAlways(GetTeleportDest().orientation));
+        uberInsert.addFloat(GetTeleportDest().coord_x);
+        uberInsert.addFloat(GetTeleportDest().coord_y);
+        uberInsert.addFloat(GetTeleportDest().coord_z);
+        uberInsert.addFloat(GetTeleportDest().orientation);
     }
 
     std::ostringstream ss;
@@ -18157,7 +18157,7 @@ void Player::SaveToDB()
     uberInsert.addUInt32(m_Played_time[PLAYED_TIME_TOTAL]);
     uberInsert.addUInt32(m_Played_time[PLAYED_TIME_LEVEL]);
 
-    uberInsert.addFloat(finiteAlways(m_rest_bonus));
+    uberInsert.addFloat(m_rest_bonus);
     uberInsert.addUInt64(uint64(time(NULL)));
     uberInsert.addUInt32(HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) ? 1 : 0);
     // save, far from tavern/city
@@ -18166,10 +18166,10 @@ void Player::SaveToDB()
     uberInsert.addUInt64(uint64(m_resetTalentsTime));
 
     Position const* transportPosition = m_movementInfo.GetTransportPos();
-    uberInsert.addFloat(finiteAlways(transportPosition->x));
-    uberInsert.addFloat(finiteAlways(transportPosition->y));
-    uberInsert.addFloat(finiteAlways(transportPosition->z));
-    uberInsert.addFloat(finiteAlways(transportPosition->o));
+    uberInsert.addFloat(transportPosition->x);
+    uberInsert.addFloat(transportPosition->y);
+    uberInsert.addFloat(transportPosition->z);
+    uberInsert.addFloat(transportPosition->o);
 
     if (m_transport)
     {
@@ -18195,7 +18195,7 @@ void Player::SaveToDB()
 
     uberInsert.addUInt32(uint32(m_highest_rank.rank));
     uberInsert.addInt32(m_standing_pos);
-    uberInsert.addFloat(finiteAlways(m_stored_honor));
+    uberInsert.addFloat(m_stored_honor);
     uberInsert.addUInt32(m_stored_dishonorableKills);
     uberInsert.addUInt32(m_stored_honorableKills);
 
@@ -21001,20 +21001,20 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
 
     if (at && at->failed_text_mangos_string_id > 0)
     {
-        GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(at->failed_text_mangos_string_id));
+        GetSession()->SendAreaTriggerMessage("%s", GetSession()->GetMangosString(at->failed_text_mangos_string_id));
         return;
     }
 
     switch (lockStatus)
     {
         case AREA_LOCKSTATUS_LEVEL_TOO_LOW:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s" UI32FMTD, GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_LEVEL_TOO_HIGH:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MAXREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s" UI32FMTD, GetSession()->GetMangosString(LANG_LEVEL_MAXREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_LEVEL_NOT_EQUAL:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_EQUALREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s" UI32FMTD, GetSession()->GetMangosString(LANG_LEVEL_EQUALREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_ZONE_IN_COMBAT:
             GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_ZONE_IN_COMBAT);
@@ -21041,9 +21041,9 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
             // ToDo: SendAreaTriggerMessage or Transfer Abort for these cases!
             break;
         case AREA_LOCKSTATUS_MISSING_ITEM:
-            if (AreaTrigger const* at = sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
+            if (AreaTrigger const* atm = sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
             {
-                GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
+                GetSession()->SendAreaTriggerMessage("%s %s", GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
             }
             break;
         case AREA_LOCKSTATUS_NOT_ALLOWED:
@@ -21055,7 +21055,7 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
         {
             // This portion of code should never be hit anymore since an AreaTrigger should handle that.
             const std::string msg = "You cannot enter this zone"; // fallback message
-            GetSession()->SendAreaTriggerMessage(msg.c_str());
+            GetSession()->SendAreaTriggerMessage("%s", msg.c_str());
             break;
         }
 

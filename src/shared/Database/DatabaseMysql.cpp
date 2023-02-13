@@ -31,6 +31,8 @@
 #include "DatabaseEnv.h"
 #include "Utilities/Timer.h"
 
+#include "ace/OS_NS_strings.h"
+
 size_t DatabaseMysql::db_count = 0;
 
 void DatabaseMysql::ThreadStart()
@@ -396,7 +398,7 @@ bool MySqlPreparedStatement::prepare()
     /* Fetch result set meta information */
     m_pResultMetadata = mysql_stmt_result_metadata(m_stmt);
     // if we do not have result metadata
-    if (!m_pResultMetadata && strnicmp(m_szFmt.c_str(), "select", 6) == 0)
+    if (!m_pResultMetadata && ACE_OS::strncasecmp(m_szFmt.c_str(), "select", 6) == 0)
     {
         sLog.outError("SQL: no meta information for '%s'", m_szFmt.c_str());
         sLog.outError("SQL ERROR: %s", mysql_stmt_error(m_stmt));

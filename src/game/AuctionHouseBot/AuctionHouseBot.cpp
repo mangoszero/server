@@ -829,7 +829,7 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
                 double ratio = buyoutPrice / MaxBuyablePrice;
                 if (ratio < 10)
                 {
-                    Chance = MaxChance - (ratio * (MaxChance / 10));
+                    Chance = MaxChance - (ratio * (MaxChance / static_cast<double>(10)));
                 }
                 else
                 {
@@ -851,7 +851,7 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
                 double ratio = buyoutPrice / MaxBuyablePrice;
                 if (ratio < 10)
                 {
-                    Chance = (MaxChance / 5) - (ratio * (MaxChance / 50));
+                    Chance = (MaxChance / static_cast<double>(5)) - (ratio * (MaxChance / static_cast<double>(50)));
                 }
                 else
                 {
@@ -871,7 +871,7 @@ bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice,
             double ratio = buyoutPrice / MaxBuyablePrice;
             if (ratio < 10)
             {
-                Chance = (MaxChance / 5) - (ratio * (MaxChance / 50));
+                Chance = (MaxChance / static_cast<double>(5)) - (ratio * (MaxChance / static_cast<double>(50)));
             }
             else
             {
@@ -911,7 +911,7 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
                 double ratio = MaxBidablePrice / bidPrice;
                 if (ratio < 3)
                 {
-                    Chance = ((MaxChance / 500) * ratio);
+                    Chance = ((MaxChance / static_cast<double>(500)) * ratio);
                 }
                 else
                 {
@@ -931,7 +931,7 @@ bool AuctionBotBuyer::IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, do
             double ratio = MaxBidablePrice / bidPrice;
             if (ratio < 4)
             {
-                Chance = ((MaxChance / 1000) * ratio);
+                Chance = ((MaxChance / static_cast<double>(1000)) * ratio);
             }
             else
             {
@@ -1021,7 +1021,7 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
         uint32 BasePrice = sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BUYPRICE_BUYER) ? prototype->BuyPrice : prototype->SellPrice;
         BasePrice *= item->GetCount();
 
-        double MaxBuyablePrice = (BasePrice * config.BuyerPriceRatio) / 100;
+        double MaxBuyablePrice = (static_cast<double>(BasePrice) * config.BuyerPriceRatio) / 100;
         BuyerItemInfoMap::iterator sameitem_itr = config.SameItemInfo.find(item->GetEntry());
         uint32 buyoutPrice = auction->buyout / item->GetCount();
 
@@ -1812,14 +1812,14 @@ void AuctionBotSeller::SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, 
     double randrange = temp_buyp * 0.4;
 
     uint32 buypMin = (uint32)temp_buyp - (uint32)randrange;
-    uint32 buypMax = ((uint32)temp_buyp + (uint32)randrange) < temp_buyp ? std::numeric_limits<uint32>::max() : temp_buyp + randrange;
+    uint32 buypMax = ((uint32)temp_buyp + (uint32)randrange) < temp_buyp ? (std::numeric_limits<uint32>::max)() : temp_buyp + randrange;
 
     buyp = (urand(buypMin, buypMax) / 100) + 1;
 
     double urandrange = buyp * 40;
     double temp_bidp = buyp * 50;
     uint32 bidPmin = (uint32)temp_bidp - (uint32)urandrange;
-    uint32 bidPmax = ((uint32)temp_bidp + (uint32)urandrange) < temp_bidp ? std::numeric_limits<uint32>::max() : temp_bidp + urandrange;
+    uint32 bidPmax = ((uint32)temp_bidp + (uint32)urandrange) < temp_bidp ? (std::numeric_limits<uint32>::max)() : temp_bidp + urandrange;
 
     bidp = (urand(bidPmin, bidPmax) / 100) + 1;
 }

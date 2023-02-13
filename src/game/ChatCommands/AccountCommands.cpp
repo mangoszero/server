@@ -30,11 +30,13 @@
 #include "Chat.h"
 #include "Language.h"
 #include "AccountMgr.h"
+#include "DatabaseEnv.h"
+#include "Player.h"
 
 
-/**********************************************************************
-    CommandTable : accountCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : accountCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleAccountCommand(char* args)
 {
@@ -275,9 +277,9 @@ bool ChatHandler::HandleAccountCharactersCommand(char* args)
     return ShowPlayerListHelper(result);
 }
 
-/**********************************************************************
-    CommandTable : accountSetCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : accountSetCommandTable
+//**********************************************************************
 
 /// Set/Unset the expansion level for an account
 bool ChatHandler::HandleAccountSetAddonCommand(char* args)

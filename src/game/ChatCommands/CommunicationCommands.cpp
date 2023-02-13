@@ -25,14 +25,15 @@
 #include "Chat.h"
 #include "Language.h"
 #include "World.h"
+#include "ObjectMgr.h"
 
 /*
     All commands related to discussions
 */
 
- /**********************************************************************
-     CommandTable : commandTable
- /***********************************************************************/
+//**********************************************************************
+//     CommandTable : commandTable
+//**********************************************************************
 
 // global announce
 bool ChatHandler::HandleAnnounceCommand(char* args)
@@ -245,9 +246,9 @@ bool ChatHandler::HandleGMChatCommand(char* args)
 }
 
 
-/**********************************************************************
-    CommandTable : npcCommandTable
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : npcCommandTable
+//**********************************************************************
 
 bool ChatHandler::HandleNpcSayCommand(char* args)
 {

@@ -1500,7 +1500,7 @@ DungeonMap::DungeonMap(uint32 id, time_t expiry, uint32 InstanceId)
 
     // the timer is started by default, and stopped when the first player joins
     // this make sure it gets unloaded if for some reason no player joins
-    m_unloadTimer = std::max(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
+    m_unloadTimer = (std::max)(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
 }
 
 DungeonMap::~DungeonMap()
@@ -1654,7 +1654,7 @@ void DungeonMap::Remove(Player* player, bool remove)
     // if last player set unload timer
     if (!m_unloadTimer && m_mapRefManager.getSize() == 1)
     {
-        m_unloadTimer = m_unloadWhenEmpty ? MIN_UNLOAD_DELAY : std::max(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
+        m_unloadTimer = m_unloadWhenEmpty ? MIN_UNLOAD_DELAY : (std::max)(sWorld.getConfig(CONFIG_UINT32_INSTANCE_UNLOAD_DELAY), (uint32)MIN_UNLOAD_DELAY);
     }
 
     Map::Remove(player, remove);
@@ -2416,8 +2416,8 @@ bool Map::GetRandomPointUnderWater(float& x, float& y, float& z, float radius, G
             return false;
         }
 
-        float max_z = std::max(z + 0.7f * radius, min_z);
-        max_z = std::min(max_z, liquidLevel);
+        float max_z = (std::max)(z + 0.7f * radius, min_z);
+        max_z = (std::min)(max_z, liquidLevel);
         x = i_x;
         y = i_y;
         z = min_z + rand_norm_f() * (max_z - min_z);
@@ -2445,7 +2445,7 @@ bool Map::GetRandomPointInTheAir(float& x, float& y, float& z, float radius)
         {
             min_z = ground + 2.5f; // Get some space to prevent landing
         }
-        float max_z = std::max(z + 0.7f * radius, min_z);
+        float max_z = (std::max)(z + 0.7f * radius, min_z);
         x = i_x;
         y = i_y;
         z = min_z + rand_norm_f() * (max_z - min_z);

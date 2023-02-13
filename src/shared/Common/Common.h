@@ -25,79 +25,9 @@
 #ifndef MANGOSSERVER_COMMON_H
 #define MANGOSSERVER_COMMON_H
 
-// config.h needs to be included 1st
-#ifdef HAVE_CONFIG_H
-#ifdef PACKAGE
-#undef PACKAGE
-#endif // PACKAGE
-
-#ifdef PACKAGE_BUGREPORT
-#undef PACKAGE_BUGREPORT
-#endif // PACKAGE_BUGREPORT
-
-#ifdef PACKAGE_NAME
-#undef PACKAGE_NAME
-#endif // PACKAGE_NAME
-
-#ifdef PACKAGE_STRING
-#undef PACKAGE_STRING
-#endif // PACKAGE_STRING
-
-#ifdef PACKAGE_TARNAME
-#undef PACKAGE_TARNAME
-#endif // PACKAGE_TARNAME
-
-#ifdef PACKAGE_VERSION
-#undef PACKAGE_VERSION
-#endif // PACKAGE_VERSION
-
-#ifdef VERSION
-#undef VERSION
-#endif // VERSION
-
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
-#endif // HAVE_CONFIG_H
-
 #include "Platform/Define.h"
-
-#if COMPILER == COMPILER_MICROSOFT
-#  pragma warning(disable:4996)                             // 'function': was declared deprecated
-#ifndef __SHOW_STUPID_WARNINGS__
-#  pragma warning(disable:4244)                             // 'argument' : conversion from 'type1' to 'type2', possible loss of data
-#  pragma warning(disable:4355)                             // 'this' : used in base member initializer list
-#endif                                                      // __SHOW_STUPID_WARNINGS__
-
-#endif                                                      // __GNUC__
-
 #include "Utilities/UnorderedMapSet.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
-#include <errno.h>
-#include <signal.h>
-#include <assert.h>
 #include "ServerDefines.h"
-
-#if defined(__sun__)
-#include <ieeefp.h> // finite() on Solaris
-#endif
-
-#include <set>
-#include <list>
-#include <string>
-#include <map>
-#include <queue>
-#include <sstream>
-#include <algorithm>
-
 #include "Utilities/Errors.h"
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
@@ -108,84 +38,44 @@
 #include <ace/Thread_Mutex.h>
 #include <ace/OS_NS_arpa_inet.h>
 
-// Old ACE versions (pre-ACE-5.5.4) not have this type (add for allow use at Unix side external old ACE versions)
-#if PLATFORM != PLATFORM_WINDOWS
-#  ifndef ACE_OFF_T
-/**
- * @brief
- *
- */
-typedef off_t ACE_OFF_T;
-#  endif
-#endif
+#include <cinttypes>
+#include <set>
+#include <list>
+#include <string>
+#include <map>
+#include <queue>
+#include <sstream>
+#include <algorithm>
 
-#if PLATFORM == PLATFORM_WINDOWS
-#  if !defined (FD_SETSIZE)
-#    define FD_SETSIZE 4096
-#  endif
-#  include <ace/config-all.h>
-#  include <ws2tcpip.h>
+//TODO: Maybe unify all constants, enums and macros used global-wide here.
+//      SharedDefines.h, ServerDefines.h, Define.h, CompilerDefs and other atrocities...really necessary?
+
+//For some obscure reason, Eluna will not compile without
+#define PLATFORM_WINDOWS 1
+#define PLATFORM_OTHER   0
+
+#ifdef _WIN32
+#  define PLATFORM PLATFORM_WINDOWS
 #else
-#  include <sys/types.h>
-#  include <sys/ioctl.h>
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  include <unistd.h>
-#  include <netdb.h>
+# define PLATFORM PLATFORM_OTHER
 #endif
+// For Eluna only, until fixed
 
-#if COMPILER == COMPILER_MICROSOFT
 
-#  include <float.h>
 
-#  define I32FMT "%08I32X"
-#  define I64FMT "%016I64X"
-#
-#  define vsnprintf _vsnprintf
-#  define finite(X) _finite(X)
-
-#else
-
-#  define stricmp strcasecmp
-#  define strnicmp strncasecmp
-
-#  define I32FMT "%08X"
-#  if ACE_SIZEOF_LONG == 8
-#    define I64FMT "%016lX"
-#  else
-#    define I64FMT "%016llX"
-#  endif /* ACE_SIZEOF_LONG == 8 */
-
-#endif
-
-#if defined(__APPLE__)
-#  ifdef I64FMT
-#    undef I64FMT
-#  endif
-#  define I64FMT "%016llX"
-#  define UI64FMTD "%llu"
-#else
-#  define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
-#endif
-
+#define SI64LIT(N) ACE_INT64_LITERAL(N)
 #define UI64LIT(N) ACE_UINT64_LITERAL(N)
 
-#define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
-#define SI64LIT(N) ACE_INT64_LITERAL(N)
+#define UI64FMTD "%" PRIu64
+#define I64FMTD "%" PRIi64
+#define UI32FMTD "%" PRIu32
+#define I32FMTD "%" PRIi32
 
-#define SIZEFMTD ACE_SIZE_T_FORMAT_SPECIFIER
+#define SI64FMTD "%" SCNi64
 
-/**
- * @brief
- *
- * @param f
- * @return float
- */
-inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
-
-#define atol(a) strtoul( a, NULL, 10)
-
+#define SIZEFMTD "%zu"
 #define STRINGIZE(a) #a
+
 
 // used for creating values for respawn for example
 #define MAKE_PAIR64(l, h)  uint64( uint32(l) | ( uint64(h) << 32 ) )
@@ -268,15 +158,6 @@ inline char* mangos_strdup(const char* source)
     return dest;
 }
 
-// we always use stdlibc++ std::max/std::min, undefine some not C++ standard defines (Win API and some pother platforms)
-#ifdef max
-#  undef max
-#endif
-
-#ifdef min
-#  undef min
-#endif
-
 #ifndef M_PI
 #  define M_PI          3.14159265358979323846
 #endif
@@ -288,5 +169,6 @@ inline char* mangos_strdup(const char* source)
 #ifndef countof
 #define countof(array) (sizeof(array) / sizeof((array)[0]))
 #endif
+
 
 #endif

@@ -29,6 +29,12 @@
 #include "SharedDefines.h"
 #include "ObjectGuid.h"
 #include "Language.h"
+#include "WorldSession.h"
+#include "DBCStructure.h"
+#include "AuctionHouseMgr.h"
+
+
+
 
 struct AreaTrigger;
 struct AreaTriggerEntry;
@@ -44,6 +50,7 @@ class WorldPacket;
 class GMTicket;
 class MailDraft;
 class Object;
+class WorldObject;
 class GameObject;
 class Creature;
 class Player;

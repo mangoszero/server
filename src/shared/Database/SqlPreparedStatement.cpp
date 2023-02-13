@@ -23,6 +23,7 @@
  */
 
 #include "DatabaseEnv.h"
+#include "ace/OS_NS_strings.h"
 
 SqlStmtParameters::SqlStmtParameters(uint32 nParams)
 {
@@ -98,7 +99,7 @@ SqlPlainPreparedStatement::SqlPlainPreparedStatement(const std::string& fmt, Sql
 {
     m_bPrepared = true;
     m_nParams = std::count(m_szFmt.begin(), m_szFmt.end(), '?');
-    m_bIsQuery = strnicmp(m_szFmt.c_str(), "select", 6) == 0;
+    m_bIsQuery = ACE_OS::strncasecmp(m_szFmt.c_str(), "select", 6) == 0;
 }
 
 void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)

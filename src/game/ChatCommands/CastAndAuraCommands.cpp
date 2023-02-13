@@ -26,10 +26,12 @@
 #include "Language.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
+#include "ObjectMgr.h"
 
-/**********************************************************************
-    CommandTable : castCommandTable
-/***********************************************************************/
+
+//**********************************************************************
+//    CommandTable : castCommandTable
+//**********************************************************************
 
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
@@ -243,9 +245,9 @@ bool ChatHandler::HandleCastSelfCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : Aura commands
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : Aura commands
+//**********************************************************************
 
 bool ChatHandler::HandleAuraCommand(char* args)
 {
@@ -306,9 +308,9 @@ bool ChatHandler::HandleUnAuraCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : Main Command table
-/***********************************************************************/
+//**********************************************************************
+//    CommandTable : Main Command table
+//**********************************************************************
 
 bool ChatHandler::HandleAuraGroupCommand(char* args)
 {
@@ -513,4 +515,3 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
         return true;
     }
 }
-

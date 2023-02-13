@@ -388,7 +388,7 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
         }
         // remove last character of tableColumnNamesStr = ","
         tableColumnNamesStr.pop_back();
-        namesMap.empty();
+        delete resNames; //memory leak?
 
         // fetch results of the table
         QueryResult* result = CharacterDatabase.PQuery("SELECT %s FROM `%s` WHERE %s", tableColumnNamesStr.c_str(), tableFrom, wherestr.c_str());
