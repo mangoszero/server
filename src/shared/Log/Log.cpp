@@ -22,6 +22,8 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+#include "ace/OS_NS_time.h"
+
 #include "Common/Common.h"
 #include "Log.h"
 #include "Policies/Singleton.h"
@@ -360,7 +362,7 @@ void Log::outTimestamp(FILE* file)
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -375,7 +377,7 @@ void Log::outTime()
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -390,7 +392,7 @@ std::string Log::GetTimestampStr()
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
     std::tm aTm;
-    localtime_r(&tt, &aTm);
+    ACE_OS::localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)

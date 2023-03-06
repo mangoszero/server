@@ -41,6 +41,7 @@ class QueryResult;
 class ChatHandler;
 class WorldSession;
 class WorldPacket;
+class WorldObject;
 class GMTicket;
 class MailDraft;
 class Object;

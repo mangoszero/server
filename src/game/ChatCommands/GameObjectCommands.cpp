@@ -24,6 +24,7 @@
 
 #include "Chat.h"
 #include "Language.h"
+#include "ObjectMgr.h"
 #include "G3D/Quat.h"
 #include "MapManager.h"
 #include "GameEventMgr.h"

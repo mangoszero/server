@@ -29,6 +29,8 @@
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
 #include "G3D/Vector3.h"
+#include "ObjectMgr.h"
+
 
  /**********************************************************************
       CommandTable : commandTable

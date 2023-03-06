@@ -24,6 +24,7 @@
 
 #include "Chat.h"
 #include "Language.h"
+#include "ObjectMgr.h"
 #include "SpellAuras.h"
 
  /**********************************************************************
