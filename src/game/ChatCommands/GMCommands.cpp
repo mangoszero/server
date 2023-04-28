@@ -22,16 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "Weather.h"
 #include "SpellMgr.h"
-#include "Util.h"
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 // show info of player
 bool ChatHandler::HandlePInfoCommand(char* args)

@@ -1,6 +1,5 @@
 #include "botpch.h"
 #include "playerbot.h"
-#include "ahbot/AhBot.h"
 #include "LootAction.h"
 
 #include "LootObjectStack.h"
@@ -296,7 +295,7 @@ bool StoreLootAction::Execute(Event event)
             ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemid);
             if (proto)
             {
-                uint32 price = itemcount * auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot) + gold;
+                uint32 price = itemcount * proto->SellPrice * sRandomPlayerbotMgr.GetSellMultiplier(bot) + gold;
                 uint32 lootAmount = sRandomPlayerbotMgr.GetLootAmount(bot);
                 if (bot->GetGroup() && price)
                 {

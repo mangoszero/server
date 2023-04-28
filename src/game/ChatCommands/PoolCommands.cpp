@@ -22,9 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-
+#include "ObjectMgr.h"
 
 void ChatHandler::ShowPoolListHelper(uint16 pool_id)
 {

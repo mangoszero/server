@@ -54,6 +54,7 @@
 
 #include "ItemEnchantmentMgr.h"
 #include <limits>
+#include <ace/OS_NS_time.h>
 
 INSTANTIATE_SINGLETON_1(ObjectMgr);
 
@@ -4994,7 +4995,7 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
     time_t curTime = time(NULL);
     tm lt;
-    localtime_r(&curTime, &lt);
+    ACE_OS::localtime_r(&curTime, &lt);
     uint64 basetime(curTime);
     sLog.outString("Returning mails current time: hour: %d, minute: %d, second: %d ", lt.tm_hour, lt.tm_min, lt.tm_sec);
 

@@ -527,7 +527,6 @@ class AuctionHouseBot
 
 ///Convenience to easily access the singleton for the \ref AuctionHouseBot
 #define sAuctionBot MaNGOS::Singleton<AuctionHouseBot>::Instance()
-
 /** @} */
 
 #endif

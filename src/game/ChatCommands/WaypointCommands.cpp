@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "PointMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
 #include "TemporarySummon.h"

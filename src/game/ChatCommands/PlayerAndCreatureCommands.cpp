@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "PathFinder.h"
 #include "TargetedMovementGenerator.h"
 #include "MovementGenerator.h"
@@ -32,7 +31,7 @@
 
  /**********************************************************************
       CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 // demorph player or unit
 bool ChatHandler::HandleDeMorphCommand(char* /*args*/)

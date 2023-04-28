@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
@@ -33,13 +32,14 @@
 #include "PathFinder.h"                                     // for mmap commands
 #include "Totem.h"
 
+//what's this?
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"
 #endif
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 /*
 ComeToMe command REQUIRED for 3rd party scripting library to have access to PointMovementGenerator

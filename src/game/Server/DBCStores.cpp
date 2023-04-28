@@ -418,7 +418,7 @@ void LoadDBCStores(const std::string& dataPath)
             }
 
             // prevent memory corruption; otherwise cls will become 12 below
-            if (!talentTabInfo->ClassMask & CLASSMASK_ALL_PLAYABLE)
+            if (!(talentTabInfo->ClassMask & CLASSMASK_ALL_PLAYABLE))
             {
                 continue;
             }

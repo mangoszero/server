@@ -1,18 +1,9 @@
 #include "botpch.h"
-#include "../../playerbot.h"
+#include "playerbot.h"
 #include "ItemForSpellValue.h"
+#include <ace/OS_NS_strings.h>
 
 using namespace ai;
-
-#ifndef WIN32
-inline int strcmpi(const char* s1, const char* s2)
-{
-    for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    {
-        return *s1 - *s2;
-    }
-}
-#endif
 
 Item* ItemForSpellValue::Calculate()
 {
@@ -40,11 +31,11 @@ Item* ItemForSpellValue::Calculate()
     }
 
     // Workaround as some spells have no item mask (e.g. shaman weapon enhancements)
-    if (!strcmpi(spellInfo->SpellName[0], "rockbiter weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "flametongue weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "earthliving weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "frostbrand weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "windfury weapon"))
+    if (!ACE_OS::strcasecmp(spellInfo->SpellName[0], "rockbiter weapon") ||
+        !ACE_OS::strcasecmp(spellInfo->SpellName[0], "flametongue weapon") ||
+        !ACE_OS::strcasecmp(spellInfo->SpellName[0], "earthliving weapon") ||
+        !ACE_OS::strcasecmp(spellInfo->SpellName[0], "frostbrand weapon") ||
+        !ACE_OS::strcasecmp(spellInfo->SpellName[0], "windfury weapon"))
     {
         itemForSpell = GetItemFitsToSpellRequirements(EQUIPMENT_SLOT_MAINHAND, spellInfo);
         if (itemForSpell && itemForSpell->GetProto()->Class == ITEM_CLASS_WEAPON)

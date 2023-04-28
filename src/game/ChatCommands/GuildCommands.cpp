@@ -22,14 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "GuildMgr.h"
 #include "Guild.h"
 
  /**********************************************************************
      CommandTable : guildCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
  /** \brief GM command level 3 - Create a guild.
   *

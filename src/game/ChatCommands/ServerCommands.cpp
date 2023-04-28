@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "Config.h"
 #include "GitRevision.h"
@@ -33,7 +32,7 @@
 
  /**********************************************************************
      CommandTable : serverCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 
 bool ChatHandler::HandleServerInfoCommand(char* /*args*/)

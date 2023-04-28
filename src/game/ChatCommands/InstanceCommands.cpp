@@ -22,14 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "MapManager.h"
 #include "InstanceData.h"
 
  /**********************************************************************
      CommandTable : instanceCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
 {
@@ -179,4 +178,3 @@ bool ChatHandler::HandleInstanceSaveDataCommand(char* /*args*/)
     iData->SaveToDB();
     return true;
 }
-

@@ -22,16 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "AccountMgr.h"
-#include "Util.h"
-#include "ObjectMgr.h"
+#include <ace/OS_NS_time.h>
 
  /**********************************************************************
      CommandTable : banCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 
 bool ChatHandler::HandleBanListHelper(QueryResult* result)
@@ -90,7 +88,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                 {
                     time_t timeBan = fields2[0].GetUInt64();
                     tm tmBan;
-                    localtime_r(&timeBan, &tmBan);
+                    ACE_OS::localtime_r(&timeBan, &tmBan);
 
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
@@ -102,7 +100,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                     {
                         time_t timeUnban = fields2[1].GetUInt64();
                         tm tmUnban;
-                        localtime_r(&timeUnban, &tmUnban);
+                        ACE_OS::localtime_r(&timeUnban, &tmUnban);
 
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
                                         account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
@@ -228,7 +226,7 @@ bool ChatHandler::HandleBanAccountCommand(char* args)
 
  /**********************************************************************
      CommandTable : baninfoCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleBanInfoHelper(uint32 accountid, char const* accountname)
 {
@@ -338,7 +336,7 @@ bool ChatHandler::HandleBanInfoAccountCommand(char* args)
 
  /**********************************************************************
      CommandTable : banlistCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleBanListIPCommand(char* args)
 {
@@ -471,7 +469,7 @@ bool ChatHandler::HandleBanListAccountCommand(char* args)
 
 /**********************************************************************
     CommandTable : unbanCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleUnBanHelper(BanMode mode, char* args)
 {
@@ -543,7 +541,7 @@ bool ChatHandler::HandleUnBanIPCommand(char* args)
 
 /**********************************************************************
     CommandTable : commandTable
-/***********************************************************************/
+***********************************************************************/
 
 // kick player
 bool ChatHandler::HandleKickPlayerCommand(char* args)

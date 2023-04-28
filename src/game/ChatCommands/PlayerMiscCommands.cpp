@@ -22,14 +22,13 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "Mail.h"
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 enum
 {
@@ -52,7 +51,7 @@ bool ChatHandler::HandleStableCommand(char* /*args*/)
 
 /**********************************************************************
     CommandTable : resetCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 static bool HandleResetStatsOrLevelHelper(Player* player)
 {

@@ -90,8 +90,6 @@ GameObject::GameObject() : WorldObject(),
     m_reStockTimer = 0;
     m_rearmTimer = 0;
     m_despawnTimer = 0;
-
-    m_AI_locked;
 }
 
 GameObject::~GameObject()

@@ -207,7 +207,7 @@ public:
                 return "";
             }
 
-            if (found |= isRti)
+            if ((found |= isRti))
             {
                 break;
             }
@@ -255,7 +255,7 @@ public:
                 return "";
             }
 
-            if (found |= isClass)
+            if ((found |= isClass))
             {
                 break;
             }

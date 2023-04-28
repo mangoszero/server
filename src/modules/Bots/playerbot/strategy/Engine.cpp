@@ -1,8 +1,8 @@
-#include "../../botpch.h"
-#include "../playerbot.h"
+#include "botpch.h"
+#include "playerbot.h"
 
 #include "Engine.h"
-#include "../PlayerbotAIConfig.h"
+#include "PlayerbotAIConfig.h"
 
 using namespace ai;
 using namespace std;
@@ -520,7 +520,7 @@ void Engine::LogAction(const char* format, ...)
     if (testMode)
     {
         FILE* file = fopen("test.log", "a");
-        fprintf(file, buf);
+        fprintf(file, "%s", buf);
         fprintf(file, "\n");
         fclose(file);
     }

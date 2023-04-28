@@ -16,6 +16,7 @@ namespace ai
         virtual bool AllowExecution(Action* action, Event event) = 0;
         virtual void After(Action* action, bool executed, Event event) = 0;
         virtual bool OverrideResult(Action* action, bool executed, Event event) = 0;
+        virtual ~ActionExecutionListener(){}
     };
 
     // -----------------------------------------------------------------------------------------------------------------------

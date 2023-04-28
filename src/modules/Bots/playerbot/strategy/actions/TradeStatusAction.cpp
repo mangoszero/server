@@ -4,7 +4,7 @@
 
 #include "../ItemVisitors.h"
 #include "../../PlayerbotAIConfig.h"
-#include "../../../ahbot/AhBot.h"
+
 #include "../../RandomPlayerbotMgr.h"
 #include "../values/ItemUsageValue.h"
 
@@ -116,7 +116,7 @@ bool TradeStatusAction::CheckTrade()
     for (uint32 slot = 0; slot < TRADE_SLOT_TRADED_COUNT; ++slot)
     {
         Item* item = bot->GetTradeData()->GetItem((TradeSlots)slot);
-        if (item && !auctionbot.GetSellPrice(item->GetProto()))
+        if (item && !item->GetProto()->SellPrice)
         {
             ostringstream out;
             out << chat->formatItem(item->GetProto()) << " - This is not for sale";
@@ -129,7 +129,7 @@ bool TradeStatusAction::CheckTrade()
         {
             ostringstream out; out << item->GetProto()->ItemId;
             ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
-            if (!auctionbot.GetBuyPrice(item->GetProto()) || usage == ITEM_USAGE_NONE)
+            if (!item->GetProto()->BuyPrice || usage == ITEM_USAGE_NONE)
             {
                 ostringstream out;
                 out << chat->formatItem(item->GetProto()) << " - I don't need this";
@@ -212,11 +212,11 @@ int32 TradeStatusAction::CalculateCost(TradeData* data, bool sell)
 
         if (sell)
         {
-            sum += item->GetCount() * auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot);
+            sum += item->GetCount() * proto->SellPrice * sRandomPlayerbotMgr.GetSellMultiplier(bot);
         }
         else
         {
-            sum += item->GetCount() * auctionbot.GetBuyPrice(proto) * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
+            sum += item->GetCount() * proto->BuyPrice * sRandomPlayerbotMgr.GetBuyMultiplier(bot);
         }
     }
 

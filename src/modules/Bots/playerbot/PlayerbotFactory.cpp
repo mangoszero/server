@@ -1,6 +1,5 @@
 #include "botpch.h"
 #include "playerbot.h"
-#include "ahbot/AhBot.h"
 #include "PlayerbotFactory.h"
 #include "SQLStorages.h"
 #include "ItemPrototype.h"
@@ -1737,7 +1736,7 @@ void PlayerbotFactory::InitInventoryTrade()
     {
     case ITEM_QUALITY_NORMAL:
         count = proto->GetMaxStackSize();
-        stacks = urand(1, 7) / auctionbot.GetRarityPriceMultiplier(proto);
+        stacks = urand(1, 7);
         break;
     case ITEM_QUALITY_UNCOMMON:
         stacks = 1;
