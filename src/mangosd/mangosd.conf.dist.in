@@ -1672,6 +1672,17 @@ CharDelete.MinLevel = 0
 CharDelete.KeepDays = 30
 
 ###################################################################################################
+# QUEST TRACKER
+#    QuestTracker.Enable
+#        Description: Store data in the database about quest completion and abandonment to help find bugged quests.
+#        Default:     0  - (Disabled)
+#                     1  - (Enabled)
+#
+###################################################################################################
+
+QuestTracker.Enable= 0
+
+###################################################################################################
 # WARDEN SETTINGS
 #
 #    Warden.WinEnabled

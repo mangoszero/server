@@ -384,6 +384,19 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
 
             _player->SetQuestStatus(quest, QUEST_STATUS_NONE);
 
+            if (sWorld.getConfig(CONFIG_BOOL_ENABLE_QUEST_TRACKER)) // check if Quest Tracker is enabled
+            {
+                DEBUG_LOG("QUEST TRACKER: Quest Abandoned.");
+                static SqlStatementID CHAR_UPD_QUEST_TRACK_ABANDON_TIME;
+                // prepare Quest Tracker datas
+                SqlStatement stmt = CharacterDatabase.CreateStatement(CHAR_UPD_QUEST_TRACK_ABANDON_TIME, "UPDATE `quest_tracker` SET `quest_abandon_time` = NOW() WHERE `id` = ? AND `character_guid` = ? ORDER BY `quest_accept_time` DESC LIMIT 1");
+                stmt.addUInt32(quest);
+                stmt.addUInt32(_player->GetGUIDLow());
+
+                // add to Quest Tracker
+                stmt.Execute();
+            }
+
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             sEluna->OnQuestAbandon(_player, quest);
