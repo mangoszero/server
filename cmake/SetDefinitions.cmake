@@ -99,6 +99,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
         /wd4589
         /wd4131
         /wd4311
+        /wd4355
         /wd4456
         /wd4127
         /wd4100

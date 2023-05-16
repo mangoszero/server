@@ -586,12 +586,18 @@ set(BOT_SRCS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/playerbot FILES ${BOT_SRCS})
 
 add_library(BotsIntf INTERFACE)
-add_library(Bots STATIC ${BOT_SRCS})
+add_library(Bots
+    STATIC
+      ${BOT_SRCS}
+      $<$<BOOL:${PCH}>:botpch.cpp botpch.h>
+)
 
 target_include_directories(BotsIntf
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
+        ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy
+        ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/actions
 )
 
 target_link_libraries(Bots
@@ -605,5 +611,5 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CO
 
 # Generate PCH
 if(PCH)
-    ADD_CXX_PCH(Bots ${bots_PCH})
+    ADD_CXX_PCH(Bots ${CMAKE_CURRENT_SOURCE_DIR}/botpch.h ${CMAKE_CURRENT_SOURCE_DIR}/botpch.cpp)
 endif()

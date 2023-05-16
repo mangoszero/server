@@ -22,15 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "G3D/Quat.h"
 #include "MapManager.h"
 #include "GameEventMgr.h"
 
  /**********************************************************************
      CommandTable : gobjectCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
  // delete object by selection or guid
 bool ChatHandler::HandleGameObjectDeleteCommand(char* args)

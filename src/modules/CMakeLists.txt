@@ -20,4 +20,48 @@
 # Build the mangos script library if enabled
 if(SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
+
+    add_library(SD3Intf INTERFACE)
+    target_include_directories(SD3Intf
+        INTERFACE
+            ${CMAKE_CURRENT_SOURCE_DIR}/SD3
+            ${CMAKE_CURRENT_SOURCE_DIR}/SD3/system
+)
+endif()
+
+# Build the mangos script library if enabled
+if(PLAYERBOTS)
+    add_subdirectory(Bots)
+endif()
+
+# Build the Eluna library if enabled
+if(SCRIPT_LIB_ELUNA)
+
+file(GLOB SRC_GRP_ELUNA Eluna/*.cpp Eluna/*.h)
+source_group("Eluna" FILES ${SRC_GRP_ELUNA})
+
+add_library(ElunaIntf INTERFACE)
+add_library(Eluna STATIC ${SRC_GRP_ELUNA})
+
+target_include_directories(ElunaIntf
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/Eluna
+)
+
+target_link_libraries(ElunaIntf
+    INTERFACE
+        lualib
+)
+
+target_link_libraries(Eluna
+    PUBLIC
+        game
+        lualib
+)
+
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Eluna/extensions
+    DESTINATION ${BIN_DIR}/lua_scripts
+)
+
 endif()

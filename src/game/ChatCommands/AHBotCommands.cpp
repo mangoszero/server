@@ -26,14 +26,13 @@
  *   AHBot related commands
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "AuctionHouseBot/AuctionHouseBot.h"
+#include "ObjectMgr.h"
+#include "AuctionHouseBot.h"
 
 
  /**********************************************************************
      Useful constants definition
- /***********************************************************************/
+ ***********************************************************************/
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
@@ -45,7 +44,7 @@ static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 
  /**********************************************************************
      CommandTable : ahbotCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleAHBotRebuildCommand(char* args)
 {
@@ -153,7 +152,7 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
 
 /**********************************************************************
     CommandTable : ahbotItemsAmountCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
 {
@@ -198,7 +197,7 @@ template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_
 
 /**********************************************************************
     CommandTable : ahbotItemsRatioCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
 {

@@ -115,7 +115,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.DeleteRandomBotAccounts = 0
 
 # Maps to teleport random bots
-#AiPlayerbot.RandomBotMaps = 0,1,530,571
+#AiPlayerbot.RandomBotMaps = 0,1
 
 # Change random bot has lower gear
 #AiPlayerbot.RandomGearLoweringChance = 0.15

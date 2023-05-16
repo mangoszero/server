@@ -22,14 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "Mail.h"
 #include "MassMailMgr.h"
 
  /**********************************************************************
       CommandTable : mailCommandTable
- /***********************************************************************/
+ ***********************************************************************/
+
 // Send mail by command
 bool ChatHandler::HandleSendMailCommand(char* args)
 {
@@ -380,4 +380,3 @@ bool ChatHandler::HandleSendMassMoneyCommand(char* args)
     PSendSysMessage(LANG_MAIL_SENT, name);
     return true;
 }
-

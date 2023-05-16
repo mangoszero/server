@@ -21031,20 +21031,20 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
 
     if (at && at->failed_text_mangos_string_id > 0)
     {
-        GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(at->failed_text_mangos_string_id));
+        GetSession()->SendAreaTriggerMessage("%s",GetSession()->GetMangosString(at->failed_text_mangos_string_id));
         return;
     }
 
     switch (lockStatus)
     {
         case AREA_LOCKSTATUS_LEVEL_TOO_LOW:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s %u", GetSession()->GetMangosString(LANG_LEVEL_MINREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_LEVEL_TOO_HIGH:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_MAXREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s %u", GetSession()->GetMangosString(LANG_LEVEL_MAXREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_LEVEL_NOT_EQUAL:
-            GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_LEVEL_EQUALREQUIRED), miscRequirement);
+            GetSession()->SendAreaTriggerMessage("%s %u", GetSession()->GetMangosString(LANG_LEVEL_EQUALREQUIRED), miscRequirement);
             break;
         case AREA_LOCKSTATUS_ZONE_IN_COMBAT:
             GetSession()->SendTransferAborted(mapEntry->MapID, TRANSFER_ABORT_ZONE_IN_COMBAT);
@@ -21073,7 +21073,7 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
         case AREA_LOCKSTATUS_MISSING_ITEM:
             if (AreaTrigger const* at = sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
             {
-                GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
+                GetSession()->SendAreaTriggerMessage("%s %s", GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
             }
             break;
         case AREA_LOCKSTATUS_NOT_ALLOWED:
@@ -21085,7 +21085,7 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
         {
             // This portion of code should never be hit anymore since an AreaTrigger should handle that.
             const std::string msg = "You cannot enter this zone"; // fallback message
-            GetSession()->SendAreaTriggerMessage(msg.c_str());
+            GetSession()->SendAreaTriggerMessage("%s", msg.c_str());
             break;
         }
 

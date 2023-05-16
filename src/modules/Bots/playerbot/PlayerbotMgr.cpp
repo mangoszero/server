@@ -247,7 +247,7 @@ bool ChatHandler::HandlePlayerbotCommand(char* args)
 
     for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
     {
-        PSendSysMessage(i->c_str());
+        PSendSysMessage("%s", i->c_str());
     }
     SetSentErrorMessage(true);
     return false;

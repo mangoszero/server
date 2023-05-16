@@ -1,7 +1,6 @@
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "SuggestWhatToDoAction.h"
-#include "../../../ahbot/AhBot.h"
 #include "ChannelMgr.h"
 #include "../../PlayerbotAIConfig.h"
 
@@ -255,7 +254,7 @@ void SuggestWhatToDoAction::trade()
         return;
     }
 
-    uint32 price = auctionbot.GetSellPrice(proto) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * count;
+    uint32 price = proto->SellPrice * sRandomPlayerbotMgr.GetSellMultiplier(bot) * count;
     if (!price)
     {
         return;

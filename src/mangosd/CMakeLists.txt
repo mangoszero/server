@@ -66,15 +66,13 @@ target_include_directories(mangosd
         ${OPENSSL_INCLUDE_DIR}
 )
 
-target_compile_definitions(mangosd
-    PUBLIC
-        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA>
-)
-
 target_link_libraries(mangosd
     PUBLIC
         game
         $<$<BOOL:${SOAP}>:gsoap>
+        $<$<BOOL:${PLAYERBOTS}>:Bots>
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:Eluna>
+        $<$<BOOL:${SCRIPT_LIB_SD3}>:mangosscript>
         Threads::Threads
         ${OPENSSL_LIBRARIES}
 )

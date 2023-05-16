@@ -180,4 +180,3 @@ protected:
     CompositeChatFilter chatFilter;
     PlayerbotSecurity security;
 };
-

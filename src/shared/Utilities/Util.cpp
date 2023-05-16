@@ -30,6 +30,7 @@
 #include "Log/Log.h"
 
 #include <iomanip>
+#include <ace/OS_NS_time.h>
 
 //////////////////////////////////////////////////////////////////////////
 int32 irand(int32 min, int32 max)
@@ -155,22 +156,6 @@ void stripLineInvisibleChars(std::string& str)
 }
 
 /**
- * It's a wrapper for the localtime_r function that works on Windows
- *
- * @param time The time to convert.
- * @param result A pointer to a tm structure to receive the broken-down time.
- *
- * @return A pointer to the result.
- */
-#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-struct tm* localtime_r(time_t const* time, struct tm *result)
-{
-    localtime_s(result, time);
-    return result;
-}
-#endif
-
-/**
  * It takes a time_t value and returns a tm structure with the same time, but in local time
  *
  * @param time The time to break down.
@@ -180,24 +165,8 @@ struct tm* localtime_r(time_t const* time, struct tm *result)
 tm TimeBreakdown(time_t time)
 {
     tm timeLocal;
-    localtime_r(&time, &timeLocal);
+    ACE_OS::localtime_r(&time, &timeLocal);
     return timeLocal;
-}
-
-/**
- * Convert local time to UTC time.
- *
- * @param time The time to convert.
- *
- * @return The time in UTC.
- */
-time_t LocalTimeToUTCTime(time_t time)
-{
-    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-        return time + _timezone;
-    #else
-        return time + timezone;
-    #endif
 }
 
 /**
@@ -385,7 +354,7 @@ uint32 TimeStringToSecs(const std::string& timestring)
 std::string TimeToTimestampStr(time_t t)
 {
     tm aTm;
-    localtime_r(&t, &aTm);
+    ACE_OS::localtime_r(&t, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)

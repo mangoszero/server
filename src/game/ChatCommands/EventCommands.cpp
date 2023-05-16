@@ -22,14 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
-#include "GameEventMgr.h"
+#include "ObjectMgr.h"
 #include "GameEventMgr.h"
 
  /**********************************************************************
      CommandTable : eventCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleEventListCommand(char* args)
 {

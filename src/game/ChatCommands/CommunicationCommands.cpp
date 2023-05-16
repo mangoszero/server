@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 
 /*
@@ -32,7 +31,7 @@
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 // global announce
 bool ChatHandler::HandleAnnounceCommand(char* args)
@@ -247,7 +246,7 @@ bool ChatHandler::HandleGMChatCommand(char* args)
 
 /**********************************************************************
     CommandTable : npcCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleNpcSayCommand(char* args)
 {

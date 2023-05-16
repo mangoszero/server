@@ -89,7 +89,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
-    sLog.outString("%d bots processed. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
+    sLog.outString("%d bots processed. %d alliance and %d horde bots added. %zu bots online. Next check in %d seconds",
             botProcessed, allianceNewBots, hordeNewBots, playerBots.size(), sPlayerbotAIConfig.randomBotUpdateInterval);
 
     if (processTicks++ == 1)
@@ -648,7 +648,7 @@ bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
     }
     else if (cmd == "init" || cmd == "refresh")
     {
-        sLog.outString("Randomizing bots for %d accounts", sPlayerbotAIConfig.randomBotAccounts.size());
+        sLog.outString("Randomizing bots for %zu accounts", sPlayerbotAIConfig.randomBotAccounts.size());
         BarGoLink bar(sPlayerbotAIConfig.randomBotAccounts.size());
         for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); ++i)
         {
@@ -694,7 +694,7 @@ bool ChatHandler::HandlePlayerbotConsoleCommand(char* args)
         list<string> messages = sRandomPlayerbotMgr.HandlePlayerbotCommand(args, NULL);
         for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
         {
-            sLog.outString(i->c_str());
+            sLog.outString("%s", i->c_str());
         }
         return true;
     }
@@ -783,7 +783,7 @@ Player* RandomPlayerbotMgr::GetRandomPlayer()
 
 void RandomPlayerbotMgr::PrintStats()
 {
-    sLog.outString("%d Random Bots online", playerBots.size());
+    sLog.outString("%zu Random Bots online", playerBots.size());
 
     map<uint32, int> alliance, horde;
     for (uint32 i = 0; i < 10; ++i)

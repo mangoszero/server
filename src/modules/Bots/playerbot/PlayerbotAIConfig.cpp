@@ -359,5 +359,5 @@ void PlayerbotAIConfig::CreateRandomBots()
         totalRandomBotChars += sAccountMgr.GetCharactersCount(accountId);
     }
 
-    sLog.outBasic("%d random bot accounts with %d characters available", randomBotAccounts.size(), totalRandomBotChars);
+    sLog.outBasic(SIZEFMTD" random bot accounts with %d characters available", randomBotAccounts.size(), totalRandomBotChars);
 }

@@ -22,8 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "SpellMgr.h"
 #include "DisableMgr.h"
 #include "World.h"
@@ -35,7 +34,8 @@
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
+
 bool ChatHandler::HandleReloadSpellLinkedCommand(char* /*arg*/)
 {
     sLog.outString("Re-Loading spell linked table...");
@@ -48,7 +48,7 @@ bool ChatHandler::HandleReloadSpellLinkedCommand(char* /*arg*/)
 
 /**********************************************************************
     CommandTable : reloadCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleReloadAllSpellCommand(char* /*args*/)
 {

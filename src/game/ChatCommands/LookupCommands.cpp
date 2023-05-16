@@ -22,19 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "AccountMgr.h"
 #include "GameEventMgr.h"
 #include "World.h"
-#include "ObjectMgr.h"
 #include "SQLStorages.h"
-#include "Util.h"
 
  /**********************************************************************
       CommandTable : lookupCommandTable
- /***********************************************************************/
-
+ ***********************************************************************/
 
 bool ChatHandler::LookupPlayerSearchCommand(QueryResult* result, uint32* limit)
 {

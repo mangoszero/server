@@ -22,13 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "SpellAuras.h"
 
  /**********************************************************************
       CommandTable : listCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleListAurasCommand(char* /*args*/)
 {

@@ -22,13 +22,12 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "SpellMgr.h"
 
  /**********************************************************************
       CommandTable : learnCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleUnLearnCommand(char* args)
 {

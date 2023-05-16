@@ -22,12 +22,11 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 
  /**********************************************************************
      CommandTable : auctionCommandTable
- /***********************************************************************/
+ ***********************************************************************/
 
 bool ChatHandler::HandleAuctionCommand(char* /*args*/)
 {

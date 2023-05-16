@@ -25,56 +25,7 @@
 #ifndef MANGOSSERVER_COMMON_H
 #define MANGOSSERVER_COMMON_H
 
-// config.h needs to be included 1st
-#ifdef HAVE_CONFIG_H
-#ifdef PACKAGE
-#undef PACKAGE
-#endif // PACKAGE
-
-#ifdef PACKAGE_BUGREPORT
-#undef PACKAGE_BUGREPORT
-#endif // PACKAGE_BUGREPORT
-
-#ifdef PACKAGE_NAME
-#undef PACKAGE_NAME
-#endif // PACKAGE_NAME
-
-#ifdef PACKAGE_STRING
-#undef PACKAGE_STRING
-#endif // PACKAGE_STRING
-
-#ifdef PACKAGE_TARNAME
-#undef PACKAGE_TARNAME
-#endif // PACKAGE_TARNAME
-
-#ifdef PACKAGE_VERSION
-#undef PACKAGE_VERSION
-#endif // PACKAGE_VERSION
-
-#ifdef VERSION
-#undef VERSION
-#endif // VERSION
-
-#undef PACKAGE
-#undef PACKAGE_BUGREPORT
-#undef PACKAGE_NAME
-#undef PACKAGE_STRING
-#undef PACKAGE_TARNAME
-#undef PACKAGE_VERSION
-#undef VERSION
-#endif // HAVE_CONFIG_H
-
 #include "Platform/Define.h"
-
-#if COMPILER == COMPILER_MICROSOFT
-#  pragma warning(disable:4996)                             // 'function': was declared deprecated
-#ifndef __SHOW_STUPID_WARNINGS__
-#  pragma warning(disable:4244)                             // 'argument' : conversion from 'type1' to 'type2', possible loss of data
-#  pragma warning(disable:4355)                             // 'this' : used in base member initializer list
-#endif                                                      // __SHOW_STUPID_WARNINGS__
-
-#endif                                                      // __GNUC__
-
 #include "Utilities/UnorderedMapSet.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -173,7 +124,7 @@ typedef off_t ACE_OFF_T;
 #define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
 #define SI64LIT(N) ACE_INT64_LITERAL(N)
 
-#define SIZEFMTD ACE_SIZE_T_FORMAT_SPECIFIER
+#define SIZEFMTD "%zu"
 
 /**
  * @brief

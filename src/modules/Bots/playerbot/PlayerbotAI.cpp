@@ -1,4 +1,4 @@
-#include "../botpch.h"
+#include "botpch.h"
 #include "PlayerbotMgr.h"
 #include "playerbot.h"
 
@@ -16,6 +16,8 @@
 #include "PlayerbotFactory.h"
 #include "PlayerbotSecurity.h"
 #include "Util.h"
+
+#include <ace/OS_NS_strings.h>
 
 using namespace ai;
 using namespace std;
@@ -1242,16 +1244,6 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 }
 
 
-#ifndef WIN32
-inline int strcmpi(const char* s1, const char* s2)
-{
-    for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    {
-        return *s1 - *s2;
-    }
-}
-#endif
-
 bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
 {
     if (entry->Dispel != dispelType)
@@ -1260,12 +1252,14 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
     }
 
     return !entry->SpellName[0] ||
-        (strcmpi((const char*)entry->SpellName[0], "demon skin") &&
-        strcmpi((const char*)entry->SpellName[0], "mage armor") &&
-        strcmpi((const char*)entry->SpellName[0], "frost armor") &&
-        strcmpi((const char*)entry->SpellName[0], "wavering will") &&
-        strcmpi((const char*)entry->SpellName[0], "chilled") &&
-        strcmpi((const char*)entry->SpellName[0], "ice armor"));
+        (
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "demon skin") &&
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "mage armor") &&
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "frost armor") &&
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "wavering will") &&
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "chilled") &&
+        ACE_OS::strcasecmp((const char*)entry->SpellName[0], "ice armor")
+        );
 }
 
 bool IsAlliance(uint8 race)

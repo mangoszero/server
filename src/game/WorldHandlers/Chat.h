@@ -44,6 +44,7 @@ class WorldPacket;
 class GMTicket;
 class MailDraft;
 class Object;
+class WorldObject;
 class GameObject;
 class Creature;
 class Player;

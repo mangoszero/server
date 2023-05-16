@@ -22,19 +22,18 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-#include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "MapManager.h"
 #include "CellImpl.h"
 
-
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"
 #endif
- /*
+
+/*
      All commands related to Teleportation
- */
+*/
 
 /*
     Utilities methods an enums
@@ -131,7 +130,7 @@ bool ChatHandler::HandleGoHelper(Player* player, uint32 mapid, float x, float y,
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+ ***********************************************************************/
 
  // Summon Player
 bool ChatHandler::HandleSummonCommand(char* args)
@@ -809,7 +808,7 @@ bool ChatHandler::HandleNearGraveCommand(char* args)
 
 /**********************************************************************
     CommandTable : goCommandTable
-/***********************************************************************/
+***********************************************************************/
 
 bool ChatHandler::HandleGoTaxinodeCommand(char* args)
 {

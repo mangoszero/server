@@ -1,24 +1,14 @@
 #include "botpch.h"
-#include "../../playerbot.h"
+#include "playerbot.h"
 #include "WhoAction.h"
-#include "../../AiFactory.h"
-#include "../ItemVisitors.h"
-#include "../../../ahbot/AhBot.h"
-#include "../../RandomPlayerbotMgr.h"
+#include "AiFactory.h"
+#include "ItemVisitors.h"
+#include "RandomPlayerbotMgr.h"
+#include <ace/OS_NS_strings.h>
 
 using namespace ai;
 
 map<uint32, string> WhoAction::skills;
-
-#ifndef WIN32
-inline int strcmpi(const char* s1, const char* s2)
-{
-    for (; *s1 && *s2 && (toupper(*s1) == toupper(*s2)); ++s1, ++s2);
-    {
-        return *s1 - *s2;
-    }
-}
-#endif
 
 bool WhoAction::Execute(Event event)
 {
@@ -67,7 +57,7 @@ string WhoAction::QueryTrade(string text)
     for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
     {
         Item* sell = *i;
-        int32 sellPrice = auctionbot.GetSellPrice(sell->GetProto()) * sRandomPlayerbotMgr.GetSellMultiplier(bot) * sell->GetCount();
+        int32 sellPrice = sell->GetProto()->SellPrice * sRandomPlayerbotMgr.GetSellMultiplier(bot) * sell->GetCount();
         if (!sellPrice)
         {
             continue;
@@ -89,7 +79,7 @@ string WhoAction::QuerySkill(string text)
     {
         string name = i->second;
         uint16 skill = i->first;
-        if (!strcmpi(text.c_str(), name.c_str()) && bot->HasSkill(skill))
+        if (!ACE_OS::strcasecmp(text.c_str(), name.c_str()) && bot->HasSkill(skill))
         {
             string skillName = i->second;
             uint32 spellId = AI_VALUE2(uint32, "spell id", skillName);
