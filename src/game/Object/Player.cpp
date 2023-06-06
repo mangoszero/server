@@ -4336,7 +4336,7 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
 
     // check skill requirement
     bool prof = SpellMgr::IsProfessionSpell(trainer_spell->spell);
-    if (!prof || trainer_spell->reqSkill && GetBaseSkillValue(trainer_spell->reqSkill) < trainer_spell->reqSkillValue)
+    if (prof || trainer_spell->reqSkill && GetBaseSkillValue(trainer_spell->reqSkill) < trainer_spell->reqSkillValue)
     {
         return TRAINER_SPELL_RED;
     }
