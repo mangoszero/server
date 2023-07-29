@@ -83,7 +83,7 @@ source_group("World\\Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
 
 # Build the Eluna library if enabled
 if(SCRIPT_LIB_ELUNA)
-    file(GLOB SRC_GRP_ELUNA 
+    file(GLOB SRC_GRP_ELUNA
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.cpp
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.h
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/Mangos/*.cpp
