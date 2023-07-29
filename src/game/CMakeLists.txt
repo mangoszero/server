@@ -83,7 +83,12 @@ source_group("World\\Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
 
 # Build the Eluna library if enabled
 if(SCRIPT_LIB_ELUNA)
-    file(GLOB SRC_GRP_ELUNA ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.cpp ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.h)
+    file(GLOB SRC_GRP_ELUNA 
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.h
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/Mangos/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/Mangos/*.h
+    )
     source_group("Eluna" FILES ${SRC_GRP_ELUNA})
 endif()
 
@@ -255,7 +260,10 @@ target_include_directories(game
         Warden
         Warden/Modules
         WorldHandlers
-        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${CMAKE_SOURCE_DIR}/src/modules/Eluna>
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:
+            ${CMAKE_SOURCE_DIR}/src/modules/Eluna
+            ${CMAKE_SOURCE_DIR}/src/modules/Eluna/Mangos
+        >
         $<$<BOOL:${PLAYERBOTS}>:
             ${CMAKE_SOURCE_DIR}/src/modules/Bots
             ${CMAKE_SOURCE_DIR}/src/modules/Bots/playerbot
