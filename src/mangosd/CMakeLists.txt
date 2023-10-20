@@ -78,7 +78,7 @@ target_link_libraries(mangosd
         Threads::Threads
         ${OPENSSL_LIBRARIES}
 #if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3)
-	OpenSSL::Crypto
+    OpenSSL::Crypto
 #endif()
 
 )
