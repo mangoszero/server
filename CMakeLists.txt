@@ -109,8 +109,6 @@ find_package(DL      REQUIRED)
 find_package(ZLIB  QUIET)
 find_package(BZip2 QUIET)
 
-#static linkage for openssl libs
-set(OPENSSL_USE_STATIC_LIBS ON)
 find_package(OpenSSL REQUIRED)
 
 include(${CMAKE_SOURCE_DIR}/cmake/GenRevision.cmake)
