@@ -21,12 +21,8 @@ jobs:
 
       - name: Checkout Submodules
         shell: bash
-        run: |
-          git submodule init && git submodule update
-  
+        run: apps/ci/ci-submodule-update.sh
+
       - name: Build Project
         shell: bash
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DBUILD_TOOLS:BOOL=1 -DBUILD_MANGOSD:BOOL=1 -DBUILD_REALMD:BOOL=1 -DSOAP:BOOL=1 -DSCRIPT_LIB_ELUNA:BOOL=1 -DSCRIPT_LIB_SD3:BOOL=1 -DPLAYERBOTS:BOOL=1 -DUSE_STORMLIB:BOOL=1
-          cmake --build . --config Release --parallel 4
+        run: .github/workflows/core_windows_build.yml
