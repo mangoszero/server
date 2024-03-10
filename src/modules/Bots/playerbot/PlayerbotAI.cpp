@@ -254,7 +254,7 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
         filtered = filtered.substr(sPlayerbotAIConfig.commandPrefix.size());
     }
 
-    filtered = chatFilter.Filter(trim((string&)filtered));
+    filtered = chatFilter.Filter((string&)filtered);
     if (filtered.empty())
     {
         return;

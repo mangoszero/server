@@ -28,6 +28,7 @@
 #include "Common/Common.h"
 #include <ace/INET_Addr.h>
 
+#include <string_view>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -121,28 +122,25 @@ inline uint32 secsToTimeBitFields(time_t secs)
     return (lt->tm_year - 100) << 24 | lt->tm_mon  << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min;
 }
 
-
-inline std::string& ltrim(std::string& s)
+inline std::string_view ltrim(std::string_view str)
 {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
-    {
-        return !std::isspace(ch);
-    }));
-    return s;
+    const auto pos(str.find_first_not_of(" \t\n\r\f\v"));
+    str.remove_prefix(std::min(pos, str.length()));
+    return str;
 }
 
-inline std::string& rtrim(std::string& s)
+inline std::string_view rtrim(std::string_view str)
 {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch)
-        {
-            return !std::isspace(ch);
-        }).base(), s.end());
-    return s;
+    const auto pos(str.find_last_not_of(" \t\n\r\f\v"));
+    str.remove_suffix(std::min(str.length() - pos - 1, str.length()));
+    return str;
 }
 
-inline std::string& trim(std::string& s)
+inline std::string_view trim(std::string_view str)
 {
-    return ltrim(rtrim(s));
+    str = ltrim(str);
+    str = rtrim(str);
+    return str;
 }
 
 /**

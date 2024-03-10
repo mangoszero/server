@@ -256,7 +256,8 @@ bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnReputationChange(m_player, factionEntry->ID, standing, incremental);
+    if (Eluna* e = m_player->GetEluna())
+        e->OnReputationChange(m_player, factionEntry->ID, standing, incremental);
 #endif /* ENABLE_ELUNA */
 
     bool res = false;
