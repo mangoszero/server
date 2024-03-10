@@ -79,7 +79,7 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
         set(COMPILER_FLAGS "${${CXX_FLAGS}} ${CMAKE_CXX_FLAGS}")
         separate_arguments(COMPILER_FLAGS)
 
-        set(CXX_STD c++11)
+        set(CXX_STD c++17)
 
         add_custom_command(
             OUTPUT ${OUTPUT_NAME}
