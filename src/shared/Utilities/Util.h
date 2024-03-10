@@ -121,28 +121,6 @@ inline uint32 secsToTimeBitFields(time_t secs)
     return (lt->tm_year - 100) << 24 | lt->tm_mon  << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min;
 }
 
-
-inline std::string& ltrim(std::string& s)
-{
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch)
-    {
-        return !std::isspace(ch);
-    }));
-
-    return s;
-}
-
-inline std::string& rtrim(std::string& s)
-{
-    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-    return s;
-}
-
-inline std::string& trim(std::string& s)
-{
-    return ltrim(rtrim(s));
-}
-
 /**
  * @brief Return a random number in the range min..max; (max-min) must be smaller than 32768.
  *

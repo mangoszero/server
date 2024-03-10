@@ -44,9 +44,15 @@
 #include "DynamicTree.h"
 
 #include <bitset>
+#ifdef ENABLE_ELUNA
+#include "LuaValue.h"
+#endif
 
 struct CreatureInfo;
 class Creature;
+#ifdef ENABLE_ELUNA
+class Eluna;
+#endif
 class Unit;
 class WorldPacket;
 class InstanceData;
@@ -300,6 +306,12 @@ class Map : public GridRefManager<NGridType>
 
         void LoadLocalTransports();
 
+#ifdef ENABLE_ELUNA
+        Eluna* GetEluna() const;
+
+        LuaVal lua_data = LuaVal({});
+#endif
+
     private:
         void LoadMapAndVMap(int gx, int gy);
 
@@ -394,6 +406,10 @@ class Map : public GridRefManager<NGridType>
 
         // WeatherSystem
         WeatherSystem* m_weatherSystem;
+
+#ifdef ENABLE_ELUNA
+        Eluna* eluna;
+#endif
 };
 
 class WorldMap : public Map
