@@ -49,7 +49,6 @@ if(WIN32)
     configure_file(${CMAKE_SOURCE_DIR}/cmake/win/VersionInfo.h.in ${CMAKE_CURRENT_BINARY_DIR}/VersionInfo.h)
 endif()
 
-
 add_executable(mangosd
     ${SRC_GRP_MAIN}
     $<$<BOOL:${SOAP}>:${SRC_GRP_SOAP}>
@@ -58,6 +57,9 @@ add_executable(mangosd
         ${CMAKE_SOURCE_DIR}/cmake/win/VersionInfo.rc
     >
 )
+
+target_compile_features(mangosd PUBLIC cxx_std_17)
+set_target_properties(mangosd PROPERTIES CXX_EXTENSIONS OFF)
 
 target_include_directories(mangosd
     PUBLIC
