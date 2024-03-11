@@ -11,7 +11,7 @@ namespace ai
 {
     class ActionExecutionListener
     {
-    public: 
+    public:
         virtual ~ActionExecutionListener() = default;
     public:
         virtual bool Before(Action* action, Event event) = 0;
