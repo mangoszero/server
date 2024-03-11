@@ -399,7 +399,8 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            sEluna->OnQuestAbandon(_player, quest);
+            if (Eluna* e = _player->GetEluna())
+                e->OnQuestAbandon(_player, quest);
 #endif /* ENABLE_ELUNA */
         }
 

@@ -47,13 +47,23 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include "ElunaConfig.h"
+#include "ElunaLoader.h"
 #endif /* ENABLE_ELUNA */
 
 Map::~Map()
 {
 #ifdef ENABLE_ELUNA
-    sEluna->OnDestroy(this);
-#endif /* ENABLE_ELUNA */
+    if (Eluna* e = GetEluna())
+        e->OnDestroy(this);
+
+    if (Eluna* e = GetEluna())
+        if (Instanceable())
+            e->FreeInstanceId(GetInstanceId());
+
+    delete eluna;
+    eluna = nullptr;
+#endif
 
     UnloadAll(true);
 
@@ -66,13 +76,6 @@ Map::~Map()
     {
         m_persistentState->SetUsedByMapState(NULL);          // field pointer can be deleted after this
     }
-
-#ifdef ENABLE_ELUNA
-    if (Instanceable())
-    {
-        sEluna->FreeInstanceId(GetInstanceId());
-    }
-#endif /* ENABLE_ELUNA */
 
     delete i_data;
     i_data = NULL;
@@ -117,6 +120,13 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
       i_gridExpiry(expiry), m_TerrainData(sTerrainMgr.LoadTerrain(id)),
       i_data(NULL)
 {
+#ifdef ENABLE_ELUNA
+    // lua state begins uninitialized
+    eluna = nullptr;
+
+    if (sElunaConfig->IsElunaEnabled() && !sElunaConfig->IsElunaCompatibilityMode() && sElunaLoader->ShouldMapLoadEluna(id))
+        eluna = new Eluna(this);
+#endif
     m_CreatureGuids.Set(sObjectMgr.GetFirstTemporaryCreatureLowGuid());
     m_GameObjectGuids.Set(sObjectMgr.GetFirstTemporaryGameObjectLowGuid());
 
@@ -141,9 +151,11 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
 
     m_weatherSystem = new WeatherSystem(this);
     i_transports.clear();
+
 #ifdef ENABLE_ELUNA
-    sEluna->OnCreate(this);
-#endif /* ENABLE_ELUNA */
+    if (Eluna* e = GetEluna())
+        e->OnCreate(this);
+#endif
 }
 
 void Map::InitVisibilityDistance()
@@ -356,8 +368,11 @@ bool Map::Add(Player* player)
     UpdateObjectVisibility(player, cell, p);
 
 #ifdef ENABLE_ELUNA
-    sEluna->OnMapChanged(player);
-    sEluna->OnPlayerEnter(this, player);
+    if (Eluna* e = GetEluna())
+    {
+        e->OnMapChanged(player);
+        e->OnPlayerEnter(this, player);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (i_data)
@@ -677,7 +692,13 @@ void Map::Update(const uint32& t_diff)
     }
 
 #ifdef ENABLE_ELUNA
-    sEluna->OnUpdate(this, t_diff);
+    if (Eluna* e = GetEluna())
+    {
+        if (!sElunaConfig->IsElunaCompatibilityMode())
+            e->UpdateEluna(t_diff);
+
+        e->OnUpdate(this, t_diff);
+    }
 #endif /* ENABLE_ELUNA */
 
     if (i_data)
@@ -691,7 +712,8 @@ void Map::Update(const uint32& t_diff)
 void Map::Remove(Player* player, bool remove)
 {
 #ifdef ENABLE_ELUNA
-    sEluna->OnPlayerLeave(this, player);
+    if (Eluna* e = GetEluna())
+        e->OnPlayerLeave(this, player);
 #endif /* ENABLE_ELUNA */
 
     if (i_data)
@@ -1155,13 +1177,12 @@ void Map::AddObjectToRemoveList(WorldObject* obj)
     MANGOS_ASSERT(obj->GetMapId() == GetId() && obj->GetInstanceId() == GetInstanceId());
 
 #ifdef ENABLE_ELUNA
-    if (Creature* creature = obj->ToCreature())
+    if (Eluna* e = GetEluna())
     {
-        sEluna->OnRemove(creature);
-    }
-    else if (GameObject* gameobject = obj->ToGameObject())
-    {
-        sEluna->OnRemove(gameobject);
+        if (Creature* creature = obj->ToCreature())
+            e->OnRemove(creature);
+        else if (GameObject* gameobject = obj->ToGameObject())
+            e->OnRemove(gameobject);
     }
 #endif /* ENABLE_ELUNA */
 
@@ -1377,7 +1398,8 @@ void Map::CreateInstanceData(bool load)
     }
 
 #ifdef ENABLE_ELUNA
-    i_data = sEluna->GetInstanceData(this);
+    if (Eluna* e = GetEluna())
+        i_data = e->GetInstanceData(this);
 #endif /* ENABLE_ELUNA */
 
     uint32 i_script_id = 0;
@@ -2576,3 +2598,13 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
 
     return false;
 }
+
+#ifdef ENABLE_ELUNA
+Eluna* Map::GetEluna() const
+{
+    if (sElunaConfig->IsElunaCompatibilityMode())
+        return sWorld.GetEluna();
+
+    return eluna;
+}
+#endif

@@ -21,3 +21,7 @@
 if(SCRIPT_LIB_SD3)
     add_subdirectory(SD3)
 endif()
+
+if(SCRIPT_LIB_ELUNA)
+    add_subdirectory(Eluna)
+endif()
