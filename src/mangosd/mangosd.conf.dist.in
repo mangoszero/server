@@ -1744,7 +1744,7 @@ Warden.DBLogLevel            = 0
 #                    false - (disabled)
 #
 #   Eluna.CompatibilityMode
-#       Description: Toggles Eluna between compatibility mode (single-threaded) or multistate mode. 
+#       Description: Toggles Eluna between compatibility mode (single-threaded) or multistate mode.
 #                    Compatibility mode limits the core to a single map update thread.
 #       Default:     true  - (enabled)
 #                    false - (disabled)
