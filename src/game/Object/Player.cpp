@@ -3661,11 +3661,12 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
         UpdateFreeTalentPoints(false);
     }
 
-    // update free primary prof.points (if any, can be none in case GM .learn prof. learning)
+    // update free primary prof.points (if not overflow setting, can be in case GM use before .learn prof. learning)
     if (sSpellMgr.IsPrimaryProfessionFirstRankSpell(spell_id))
     {
         uint32 freeProfs = GetFreePrimaryProfessionPoints() + 1;
-        if (freeProfs <= sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL))
+        uint32 maxProfs = GetSession()->GetSecurity() < AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRADE_SKILL_GMIGNORE_MAX_PRIMARY_COUNT)) ? sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL) : 10;
+        if (freeProfs <= maxProfs)
         {
             SetFreePrimaryProfessions(freeProfs);
         }
@@ -4312,6 +4313,8 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
         return TRAINER_SPELL_RED;
     }
 
+    bool prof = SpellMgr::IsProfessionSpell(trainer_spell->spell);
+
     // check level requirement
     uint32 spellLevel = reqLevel ? reqLevel : TriggerSpell->spellLevel;
     if (getLevel() < spellLevel)
@@ -4335,11 +4338,11 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
     }
 
     // check skill requirement
-    bool prof = SpellMgr::IsProfessionSpell(trainer_spell->spell);
-    if (prof || trainer_spell->reqSkill && GetBaseSkillValue(trainer_spell->reqSkill) < trainer_spell->reqSkillValue)
-    {
-        return TRAINER_SPELL_RED;
-    }
+    if (!prof || GetSession()->GetSecurity() < AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRADE_SKILL_GMIGNORE_SKILL)))
+        if (trainer_spell->reqSkill && GetBaseSkillValue(trainer_spell->reqSkill) < trainer_spell->reqSkillValue)
+        {
+            return TRAINER_SPELL_RED;
+        }
 
     // exist, already checked at loading
 
@@ -20814,7 +20817,9 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
 
 void Player::InitPrimaryProfessions()
 {
-    SetFreePrimaryProfessions(sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL));
+    uint32 maxProfs = GetSession()->GetSecurity() < AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRADE_SKILL_GMIGNORE_MAX_PRIMARY_COUNT))
+                      ? sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL) : 10;
+    SetFreePrimaryProfessions(maxProfs);
 }
 
 void Player::SetComboPoints()
