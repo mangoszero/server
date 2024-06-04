@@ -35,6 +35,10 @@
 
 #include <set>
 
+#ifdef ENABLE_ELUNA
+#include "LuaValue.h"
+#endif
+
 #define CONTACT_DISTANCE            0.5f
 #define INTERACTION_DISTANCE        5.0f
 #define ATTACK_DISTANCE             5.0f
@@ -78,7 +82,9 @@ class UpdateMask;
 class InstanceData;
 class TerrainInfo;
 #ifdef ENABLE_ELUNA
+class Eluna;
 class ElunaEventProcessor;
+class LuaVal;
 #endif /* ENABLE_ELUNA */
 struct MangosStringLocale;
 
@@ -689,6 +695,10 @@ class WorldObject : public Object
 
 #ifdef ENABLE_ELUNA
         ElunaEventProcessor* elunaEvents;
+
+        Eluna* GetEluna() const;
+
+        LuaVal lua_data = LuaVal({});
 #endif /* ENABLE_ELUNA */
 
     protected:

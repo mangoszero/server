@@ -254,7 +254,10 @@ void PlayerbotAI::HandleCommand(uint32 type, const string& text, Player& fromPla
         filtered = filtered.substr(sPlayerbotAIConfig.commandPrefix.size());
     }
 
-    filtered = chatFilter.Filter(trim((string&)filtered));
+    // trim right and left trailing whitespace
+    std::string trimmed{ trim(filtered) };
+
+    filtered = chatFilter.Filter(trimmed);
     if (filtered.empty())
     {
         return;

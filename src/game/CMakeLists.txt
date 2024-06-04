@@ -242,6 +242,9 @@ add_library(game STATIC
     >
 )
 
+target_compile_features(game PUBLIC cxx_std_17)
+set_target_properties(game PROPERTIES CXX_EXTENSIONS OFF)
+
 target_include_directories(game
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
