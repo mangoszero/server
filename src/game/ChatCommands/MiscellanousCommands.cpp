@@ -24,8 +24,12 @@
 
 #include "Chat.h"
 #include "Language.h"
-#include "World.h"
+#include "ObjectMgr.h"
+#include "Player.h"
 #include "PlayerDump.h"
+#include "Util.h"
+#include "World.h"
+#include "WorldSession.h"
 
  /**********************************************************************
      CommandTable : commandTable

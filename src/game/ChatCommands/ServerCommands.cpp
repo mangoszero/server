@@ -23,12 +23,17 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
-#include "World.h"
 #include "Config.h"
 #include "GitRevision.h"
+#include "Language.h"
+#include "Log.h"
+#include "MapPersistentStateMgr.h"
 #include "SystemConfig.h"
+#include "ScriptMgr.h"
+#include "ObjectAccessor.h"
 #include "UpdateTime.h"
+#include "Util.h"
+#include "World.h"
 #include "revision_data.h"
 
  /**********************************************************************

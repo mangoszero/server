@@ -25,9 +25,11 @@
 #include "Chat.h"
 #include "Language.h"
 #include "PathFinder.h"
+#include "Player.h"
 #include "TargetedMovementGenerator.h"
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
+#include "WorldSession.h"
 #include "G3D/Vector3.h"
 
  /**********************************************************************

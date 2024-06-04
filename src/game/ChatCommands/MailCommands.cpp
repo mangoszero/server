@@ -26,6 +26,9 @@
 #include "Language.h"
 #include "Mail.h"
 #include "MassMailMgr.h"
+#include "Player.h"
+#include "ObjectMgr.h"
+#include "WorldSession.h"
 
  /**********************************************************************
       CommandTable : mailCommandTable

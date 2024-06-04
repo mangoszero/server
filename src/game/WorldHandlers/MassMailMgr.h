@@ -44,6 +44,7 @@
 
 #include "Common.h"
 #include "Mail.h"
+#include "Singleton.h"
 
 /**
  * A class to represent the mail send factory to multiple (often all existing) characters.

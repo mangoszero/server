@@ -23,8 +23,12 @@
  */
 
 #include "Chat.h"
+#include "Map.h"
+#include "MapPersistentStateMgr.h"
 #include "Language.h"
-
+#include "ObjectMgr.h"
+#include "Player.h"
+#include "PoolManager.h"
 
 void ChatHandler::ShowPoolListHelper(uint16 pool_id)
 {

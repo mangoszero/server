@@ -48,6 +48,7 @@ class GameObject;
 class Creature;
 class Player;
 class Unit;
+class WorldObject;
 
 class ChatCommand
 {

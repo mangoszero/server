@@ -28,6 +28,7 @@
 #include "SpellAuraDefines.h"
 #include "DBCEnums.h"
 #include "ObjectGuid.h"
+#include "Unit.h"
 
 /**
  * Used to modify what an \ref Aura does to a player/npc.

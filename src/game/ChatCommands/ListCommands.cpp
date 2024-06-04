@@ -23,7 +23,10 @@
  */
 
 #include "Chat.h"
+#include "DBCStores.h"
 #include "Language.h"
+#include "ObjectMgr.h"
+#include "Player.h"
 #include "SpellAuras.h"
 
  /**********************************************************************

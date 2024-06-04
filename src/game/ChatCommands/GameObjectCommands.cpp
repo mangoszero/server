@@ -23,10 +23,12 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
-#include "G3D/Quat.h"
-#include "MapManager.h"
 #include "GameEventMgr.h"
+#include "GameObject.h"
+#include "MapManager.h"
+#include "Language.h"
+#include "ObjectMgr.h"
+#include "G3D/Quat.h"
 
  /**********************************************************************
      CommandTable : gobjectCommandTable
