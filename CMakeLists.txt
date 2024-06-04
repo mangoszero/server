@@ -117,10 +117,6 @@ include(${CMAKE_SOURCE_DIR}/cmake/EnsureVersion.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/MangosParams.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
 
-if(PCH)
-    include(${CMAKE_SOURCE_DIR}/cmake/PCHSupport.cmake)
-endif()
-
 add_subdirectory(dep)
 add_subdirectory(src)
 

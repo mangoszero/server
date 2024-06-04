@@ -605,5 +605,5 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CO
 
 # Generate PCH
 if(PCH)
-    ADD_CXX_PCH(Bots ${bots_PCH})
+    target_precompile_headers(Bots PUBLIC ${bots_PCH})
 endif()

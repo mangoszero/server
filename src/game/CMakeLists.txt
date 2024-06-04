@@ -291,7 +291,7 @@ target_link_libraries(game
 
 # Generate precompiled header
 if(PCH)
-    ADD_CXX_PCH(game ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
+    target_precompile_headers(game PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.cpp)
 endif()
 
 install(
