@@ -112,7 +112,7 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
     PointsArray pointPath = path.getPath();
     PSendSysMessage("%s's path to %s:", originUnit->GetName(), destinationUnit->GetName());
     PSendSysMessage("Building %s", useStraightPath ? "StraightPath" : "SmoothPath");
-    PSendSysMessage("length " SIZEFMTD " type %u", pointPath.size(), path.getPathType());
+    PSendSysMessage("length %zu type %u", pointPath.size(), path.getPathType());
 
     Vector3 start = path.getStartPosition();
     Vector3 end = path.getEndPosition();
@@ -318,7 +318,7 @@ bool ChatHandler::HandleMmapTestArea(char* args)
 
     if (!creatureList.empty())
     {
-        PSendSysMessage("Found " SIZEFMTD " Creatures.", creatureList.size());
+        PSendSysMessage("Found %zu Creatures.", creatureList.size());
 
         uint32 paths = 0;
         uint32 uStartTime = GameTime::GetGameTimeMS();
