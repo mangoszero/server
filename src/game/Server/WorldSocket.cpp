@@ -550,7 +550,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #endif /* ENABLE_ELUNA */
                 return HandleAuthSession(*new_pct);
             case CMSG_KEEP_ALIVE:
-                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: " SIZEFMTD " ", new_pct->size());
+                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: %zu ", new_pct->size());
 
 #ifdef ENABLE_ELUNA
                 sEluna->OnPacketReceive(m_Session, *new_pct);

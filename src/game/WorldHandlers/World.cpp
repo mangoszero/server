@@ -2605,7 +2605,7 @@ void World::LoadBroadcastStrings()
     }
     else
     {
-        sLog.outString(">> Loaded " SIZEFMTD " broadcast strings.", m_broadcastList.size());
+        sLog.outString(">> Loaded %zu broadcast strings.", m_broadcastList.size());
     }
 }
 

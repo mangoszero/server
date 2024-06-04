@@ -66,11 +66,11 @@ void Map::LoadLocalTransports()
 
     if (GetId()==369)
     {
-        sLog.outString(">> Loaded " SIZEFMTD " tram cars for map %u", i_transports.size(), GetId());
+        sLog.outString(">> Loaded %zu tram cars for map %u", i_transports.size(), GetId());
     }
     else
     {
-        sLog.outString(">> Loaded " SIZEFMTD " local transports for map %u", i_transports.size(), GetId());
+        sLog.outString(">> Loaded %zu local transports for map %u", i_transports.size(), GetId());
     }
 }
 

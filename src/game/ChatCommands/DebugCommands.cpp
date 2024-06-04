@@ -829,7 +829,7 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
 
             if (item->GetOwnerGuid() != player->GetObjectGuid())
             {
-                PSendSysMessage("queue(" SIZEFMTD "): %s has the owner (%s) and inventory owner (%s) don't match!",
+                PSendSysMessage("queue(%zu): %s has the owner (%s) and inventory owner (%s) don't match!",
                                 i, item->GetGuidStr().c_str(),
                                 item->GetOwnerGuid().GetString().c_str(), player->GetGuidStr().c_str());
                 error = true; continue;
@@ -837,7 +837,7 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
 
             if (item->GetQueuePos() != i)
             {
-                PSendSysMessage("queue(" SIZEFMTD "): %s has queuepos doesn't match it's position in the queue!",
+                PSendSysMessage("queue(%zu): %s has queuepos doesn't match it's position in the queue!",
                                 i, item->GetGuidStr().c_str());
                 error = true; continue;
             }
@@ -850,14 +850,14 @@ bool ChatHandler::HandleDebugGetItemStateCommand(char* args)
 
             if (test == NULL)
             {
-                PSendSysMessage("queue(" SIZEFMTD "): %s has incorrect (bag %u slot %u) values, the player doesn't have an item at that position!",
+                PSendSysMessage("queue(%zu): %s has incorrect (bag %u slot %u) values, the player doesn't have an item at that position!",
                                 i, item->GetGuidStr().c_str(), item->GetBagSlot(), item->GetSlot());
                 error = true; continue;
             }
 
             if (test != item)
             {
-                PSendSysMessage("queue(" SIZEFMTD "): %s has incorrect (bag %u slot %u) values, the %s is there instead!",
+                PSendSysMessage("queue(%zu): %s has incorrect (bag %u slot %u) values, the %s is there instead!",
                                 i, item->GetGuidStr().c_str(), item->GetBagSlot(), item->GetSlot(),
                                 test->GetGuidStr().c_str());
                 error = true; continue;
