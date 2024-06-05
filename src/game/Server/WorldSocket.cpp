@@ -772,7 +772,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     sha.UpdateBigNumbers(&K, nullptr);
     sha.Finalize();
 
-    if (sha.GetDigest() != digest)
+    if (memcmp(sha.GetDigest(), digest, SHA_DIGEST_LENGTH))
     {
         WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_FAILED);
