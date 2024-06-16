@@ -1750,6 +1750,26 @@ Warden.ClientCheckFailAction = 1
 Warden.BanDuration           = 86400
 Warden.DBLogLevel            = 0
 
+###################################################################################################
+#  REALM STATUS FLAG
+#
+#    Realm.RecommendedOrNew.Enabled
+#       Enable setting to set realm flag after initial startup
+#       Default: 0 (Disabled)
+#                1 (Enabled)
+#
+#    Realm.ReacommendedOrNew
+#       Sets the recommended or new flag on realm.
+#       Default: 0 (Recommended)
+#                1 (New)
+#
+#       Note: Recommended will display as 'New Players' for Wrath of the Lich King
+#
+###################################################################################################
+
+Realm.RecommendedOrNew.Enabled = 0
+Realm.ReacommendedOrNew = 0
+
 ###################################################################################################################
 #  ELUNA SETTINGS
 #
