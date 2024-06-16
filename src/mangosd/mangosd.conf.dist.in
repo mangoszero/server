@@ -1758,7 +1758,7 @@ Warden.DBLogLevel            = 0
 #       Default: 0 (Disabled)
 #                1 (Enabled)
 #
-#    Realm.ReacommendedOrNew
+#    Realm.RecommendedOrNew
 #       Sets the recommended or new flag on realm.
 #       Default: 0 (Recommended)
 #                1 (New)
@@ -1768,7 +1768,7 @@ Warden.DBLogLevel            = 0
 ###################################################################################################
 
 Realm.RecommendedOrNew.Enabled = 0
-Realm.ReacommendedOrNew = 0
+Realm.RecommendedOrNew = 0
 
 ###################################################################################################################
 #  ELUNA SETTINGS

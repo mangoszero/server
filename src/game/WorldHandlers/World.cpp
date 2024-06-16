@@ -826,7 +826,7 @@ void World::LoadConfigSettings(bool reload)
 
     // Recommended Or New Flag
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
-    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.ReacommendedOrNew", false);
+    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
 
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
