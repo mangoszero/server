@@ -466,7 +466,7 @@ int main(int argc, char** argv)
 
     // set realm flag by configuration boolean
     uint8 recommendedornew = sWorld.getConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW) ? REALM_FLAG_NEW_PLAYERS : REALM_FLAG_RECOMMENDED;
-    uint8 realmstatus = sWorld.getConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED) ? recommendedornew : uint8(~REALM_FLAG_OFFLINE);
+    uint8 realmstatus = sWorld.getConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED) ? recommendedornew : uint8(REALM_FLAG_NONE);
 
     // set realmbuilds depend on mangosd expected builds, and set server online
     std::string builds = AcceptableClientBuildsListStr();
