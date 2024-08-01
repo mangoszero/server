@@ -197,37 +197,44 @@
     function GetPrerequisites
     {
       # First, we need to check the installer.
-      installer=0
+      {
+        installer=0
 
-      which apt-get >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
-        installer=1
-        # On a fresh OS boot (EC2) libace was not found without first updating
-        apt-get update -y && apt-get -y install git lsb-release curl
-      fi
+        which apt-get >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+          installer=1
+          # On a fresh OS boot (EC2) libace was not found without first updating
+          apt-get update -y && apt-get -y install git lsb-release curl
+        fi
 
-      which yum >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
-        installer=1
+        which yum >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+          installer=1
 
-        for packageName in 'git' 'redhat-lsb' 'curl'; do
-          if ! rpm -qa "name=$packageName"; then
-            yum -y install "$packageName"
-          fi
-        done
-      fi
+          for packageName in 'git' 'redhat-lsb' 'curl'; do
+            if ! rpm -qa "name=$packageName"; then
+              yum -y install "$packageName"
+            fi
+          done
+        fi
 
-      which aptitude >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
-        installer=1
-        aptitude -y install git lsb-release curl
-      fi
+        which aptitude >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+          installer=1
+          aptitude -y install git lsb-release curl
+        fi
+      }
 
       # Then, let's check that we have the necessary tools to define the OS version.
       which lsb_release >/dev/null 2>&1
       if [ $? -ne 0 ]; then
         Log "Cannot define your OS distribution and version." 1
         return 0
+      fi
+
+      if [[ "$installer" != '1' ]]; then
+        Log 'No installer found.  Exiting.' 1
+        return 1;
       fi
 
       local OS=$( lsb_release -si)
