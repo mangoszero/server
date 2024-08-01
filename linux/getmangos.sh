@@ -400,7 +400,7 @@
               tar xjvf ACE-6.3.3.tar.bz2
               export ACE_ROOT=/root/ACE_wrappers
               echo '#include "ace/config-linux.h"' >> $ACE_ROOT/ace/config.h
-              # We want this to output $ACE_ROOT without expansion.
+              # We want this to output $(ACE_ROOT) without expansion.
               # This is to be resolved during make compilation, not now.
               # shellcheck disable=SC2016
               echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
@@ -443,6 +443,9 @@
                 pushd "$ACE_ROOT"
 
                 echo '#include "ace/config-linux.h"' >> 'ace/config.h'
+                # We want this to output $(ACE_ROOT) without expansion.
+                # This is to be resolved during make compilation, not now.
+                # shellcheck disable=SC2016
                 echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> 'include/makeinclude/platform_macros.GNU'
                 echo 'INSTALL_PREFIX=/usr/local' >> 'include/makeinclude/platform_macros.GNU'
 
