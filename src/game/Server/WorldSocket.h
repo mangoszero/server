@@ -213,7 +213,7 @@ class WorldSocket : protected WorldHandler
         /// this allows not-to kick player if its buffer is overflowed.
         PacketQueueT m_PacketQueue;
 
-        uint32 m_Seed;
+        const uint32 m_Seed;
 };
 
 #endif  /* _WORLDSOCKET_H */

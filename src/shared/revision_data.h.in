@@ -39,14 +39,14 @@
     #define REALMD_DB_UPDATE_DESCRIPT   "Release 22"
 
     #define CHAR_DB_VERSION_NR          "22"
-    #define CHAR_DB_STRUCTURE_NR        "3"
+    #define CHAR_DB_STRUCTURE_NR        "4"
     #define CHAR_DB_CONTENT_NR          "1"
-    #define CHAR_DB_UPDATE_DESCRIPT     "remove_item_text"
+    #define CHAR_DB_UPDATE_DESCRIPT     "Add_Quest_Tracker_Table"
 
     #define WORLD_DB_VERSION_NR         "22"
     #define WORLD_DB_STRUCTURE_NR       "4"
-    #define WORLD_DB_CONTENT_NR         "2"
-    #define WORLD_DB_UPDATE_DESCRIPT    "Update_conditions_comments"
+    #define WORLD_DB_CONTENT_NR         "24"
+    #define WORLD_DB_UPDATE_DESCRIPT    "Fix_AutoUpdate_Entries"
 
     #define VER_COMPANY_NAME_STR        "MaNGOS Developers"
     #define VER_LEGALCOPYRIGHT_STR      "(c)2005-@rev_year@ MaNGOS"

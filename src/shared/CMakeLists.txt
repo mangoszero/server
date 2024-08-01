@@ -236,4 +236,8 @@ target_link_libraries(shared
         MySQL::MySQL
         DL::DL
         ${OPENSSL_LIBRARIES}
+#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3)
+    OpenSSL::Crypto
+#endif()
+
 )

@@ -550,7 +550,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 #endif /* ENABLE_ELUNA */
                 return HandleAuthSession(*new_pct);
             case CMSG_KEEP_ALIVE:
-                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: " SIZEFMTD " ", new_pct->size());
+                DEBUG_LOG("CMSG_KEEP_ALIVE ,size: %zu ", new_pct->size());
 
 #ifdef ENABLE_ELUNA
                 sEluna->OnPacketReceive(m_Session, *new_pct);
@@ -602,24 +602,20 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
     // NOTE: ATM the socket is singlethread, have this in mind ...
-    uint8 digest[20];
-    uint32 clientSeed, id, security;
+    uint8 digest[SHA_DIGEST_LENGTH];
+    uint32 clientSeed;
     uint32 unk2;
     uint32 BuiltNumberClient;
-    LocaleConstant locale;
     std::string account;
-    Sha1Hash sha1;
     BigNumber v, s, g, N, K;
-    std::string os;
-    WorldPacket packet, SendAddonPacked;
-    bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
+    const bool wardenActive = (sWorld.getConfig(CONFIG_BOOL_WARDEN_WIN_ENABLED) || sWorld.getConfig(CONFIG_BOOL_WARDEN_OSX_ENABLED));
 
     // Read the content of the packet
     recvPacket >> BuiltNumberClient;
     recvPacket >> unk2;
     recvPacket >> account;
     recvPacket >> clientSeed;
-    recvPacket.read(digest, 20);
+    recvPacket.read(digest, SHA_DIGEST_LENGTH);
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: client %u, unk2 %u, account %s, clientseed %u",
               BuiltNumberClient,
@@ -630,9 +626,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Check the version of client trying to connect
     if (!IsAcceptableClientBuild(BuiltNumberClient))
     {
-        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_VERSION_MISMATCH);
-
         SendPacket(packet);
 
         sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (version mismatch).");
@@ -663,16 +658,15 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Stop if the account is not found
     if (!result)
     {
-        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_UNKNOWN_ACCOUNT);
-
         SendPacket(packet);
 
         sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (unknown account).");
         return -1;
     }
 
-    Field* fields = result->Fetch();
+    const Field* fields = result->Fetch();
 
     N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
     g.SetDword(7);
@@ -691,11 +685,11 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     OPENSSL_free((void*) vStr);
 
     ///- Re-check ip locking (same check as in realmd).
-    if (fields[4].GetUInt8() == 1)  // if ip is locked
+    if (fields[4].GetBool())
     {
         if (strcmp(fields[3].GetString(), GetRemoteAddress().c_str()))
         {
-            packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+            WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
             packet << uint8(AUTH_FAILED);
             SendPacket(packet);
 
@@ -705,8 +699,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         }
     }
 
-    id = fields[0].GetUInt32();
-    security = fields[1].GetUInt16();
+    uint32 id = fields[0].GetUInt32();
+    uint32 security = fields[1].GetUInt16();
     if (security > SEC_ADMINISTRATOR)                       // prevent invalid security settings in DB
     {
         security = SEC_ADMINISTRATOR;
@@ -717,16 +711,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     time_t mutetime = time_t (fields[7].GetUInt64());
 
     uint8 tmpLoc = fields[8].GetUInt8();
-    if (tmpLoc >= MAX_LOCALE)
-    {
-        locale = LOCALE_enUS;
-    }
-    else
-    {
-        locale = LocaleConstant(tmpLoc);
-    }
+    LocaleConstant locale = tmpLoc >= MAX_LOCALE ? LOCALE_enUS : LocaleConstant(tmpLoc);
 
-    os = fields[9].GetString();
+    std::string os = fields[9].GetString();
 
     delete result;
 
@@ -739,7 +726,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     if (banresult) // if account banned
     {
-        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_BANNED);
         SendPacket(packet);
 
@@ -754,9 +741,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     if (allowedAccountType > SEC_PLAYER && AccountTypes(security) < allowedAccountType)
     {
-        WorldPacket Packet(SMSG_AUTH_RESPONSE, 1);
-        Packet << uint8(AUTH_UNAVAILABLE);
-
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
+        packet << uint8(AUTH_UNAVAILABLE);
         SendPacket(packet);
 
         BASIC_LOG("WorldSocket::HandleAuthSession: User tries to login but his security level is not enough");
@@ -766,9 +752,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Must be done before WorldSession is created
     if (wardenActive && os != "Win" && os != "OSX")
     {
-        WorldPacket Packet(SMSG_AUTH_RESPONSE, 1);
-        Packet << uint8(AUTH_REJECT);
-
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
+        packet << uint8(AUTH_REJECT);
         SendPacket(packet);
 
         BASIC_LOG("WorldSocket::HandleAuthSession: Client %s attempted to log in using invalid client OS (%s).", GetRemoteAddress().c_str(), os.c_str());
@@ -776,23 +761,21 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     }
 
     // Check that Key and account name are the same on client and server
-    Sha1Hash sha;
-
-    uint32 t = 0;
+    uint8 t[4]{ 0 };
     uint32 seed = m_Seed;
 
+    Sha1Hash sha;
     sha.UpdateData(account);
     sha.UpdateData((uint8*) & t, 4);
     sha.UpdateData((uint8*) & clientSeed, 4);
     sha.UpdateData((uint8*) & seed, 4);
-    sha.UpdateBigNumbers(&K, NULL);
+    sha.UpdateBigNumbers(&K, nullptr);
     sha.Finalize();
 
-    if (memcmp(sha.GetDigest(), digest, 20))
+    if (memcmp(sha.GetDigest(), digest, SHA_DIGEST_LENGTH))
     {
-        packet.Initialize(SMSG_AUTH_RESPONSE, 1);
+        WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
         packet << uint8(AUTH_FAILED);
-
         SendPacket(packet);
 
         sLog.outError("WorldSocket::HandleAuthSession: Sent Auth Response (authentification failed).");
@@ -832,6 +815,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     sWorld.AddSession(m_Session);
 
     // Create and send the Addon packet
+    WorldPacket SendAddonPacked;
     if (sAddOnHandler.BuildAddonPacket(&recvPacket, &SendAddonPacked))
     {
         SendPacket(SendAddonPacked);

@@ -77,6 +77,10 @@ target_link_libraries(mangosd
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
         ${OPENSSL_LIBRARIES}
+#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3)
+    OpenSSL::Crypto
+#endif()
+
 )
 
 install(

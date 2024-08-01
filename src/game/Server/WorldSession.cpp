@@ -149,7 +149,7 @@ WorldSession::~WorldSession()
 
 void WorldSession::SizeError(WorldPacket const& packet, uint32 size) const
 {
-    sLog.outError("Client (account %u) send packet %s (%u) with size " SIZEFMTD " but expected %u (attempt crash server?), skipped",
+    sLog.outError("Client (account %u) send packet %s (%u) with size %zu but expected %u (attempt crash server?), skipped",
                   GetAccountId(), packet.GetOpcodeName(), packet.GetOpcode(), packet.size(), size);
 }
 
@@ -240,7 +240,7 @@ void WorldSession::LogUnexpectedOpcode(WorldPacket* packet, const char* reason)
 /// Logging helper for unexpected opcodes
 void WorldSession::LogUnprocessedTail(WorldPacket* packet)
 {
-    sLog.outError("SESSION: opcode %s (0x%.4X) have unprocessed tail data (read stop at " SIZEFMTD " from " SIZEFMTD ")",
+    sLog.outError("SESSION: opcode %s (0x%.4X) have unprocessed tail data (read stop at %zu from %zu)",
                   packet->GetOpcodeName(),
                   packet->GetOpcode(),
                   packet->rpos(), packet->wpos());

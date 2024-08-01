@@ -152,7 +152,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
             if (readBytes <= 0)
             {
-                DEBUG_LOG("read " SIZEFMTD " bytes in RASocket::handle_input", readBytes);
+                DEBUG_LOG("read %zu bytes in RASocket::handle_input", readBytes);
                 return -1;
             }
 

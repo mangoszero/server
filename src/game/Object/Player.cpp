@@ -58,6 +58,7 @@
 #include "BattleGround/BattleGroundAV.h"
 #include "OutdoorPvP/OutdoorPvP.h"
 #include "Chat.h"
+#include "revision_data.h"
 #include "Database/DatabaseImpl.h"
 #include "Spell.h"
 #include "ScriptMgr.h"
@@ -14690,6 +14691,22 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
     }
 
     UpdateForQuestWorldObjects();
+
+    if (sWorld.getConfig(CONFIG_BOOL_ENABLE_QUEST_TRACKER)) // check if Quest Tracker is enabled
+    {
+        DEBUG_LOG("QUEST TRACKER: Quest Added.");
+
+        static SqlStatementID CHAR_INS_QUEST_TRACK;
+        // prepare Quest Tracker datas
+        SqlStatement stmt = CharacterDatabase.CreateStatement(CHAR_INS_QUEST_TRACK, "INSERT INTO `quest_tracker` (`id`, `character_guid`, `quest_accept_time`, `core_hash`, `core_revision`) VALUES (?, ?, NOW(), ?, ?)");
+        stmt.addUInt32(quest_id);
+        stmt.addUInt32(GetGUIDLow());
+        stmt.addString(REVISION_HASH);
+        stmt.addString(REVISION_DATE);
+
+        // add to Quest Tracker
+        stmt.Execute();
+    }
 }
 
 void Player::CompleteQuest(uint32 quest_id, QuestStatus status)
@@ -14711,6 +14728,19 @@ void Player::CompleteQuest(uint32 quest_id, QuestStatus status)
                 RewardQuest(qInfo, 0, this, false);
             }
         }
+    }
+
+    if (sWorld.getConfig(CONFIG_BOOL_ENABLE_QUEST_TRACKER)) // check if Quest Tracker is enabled
+    {
+        DEBUG_LOG("QUEST TRACKER: Quest Completed.");
+        static SqlStatementID CHAR_UPD_QUEST_TRACK_COMPLETE_TIME;
+        // prepare Quest Tracker datas
+        SqlStatement stmt = CharacterDatabase.CreateStatement(CHAR_UPD_QUEST_TRACK_COMPLETE_TIME, "UPDATE `quest_tracker` SET `quest_complete_time` = NOW() WHERE `id` = ? AND `character_guid` = ? ORDER BY `quest_accept_time` DESC LIMIT 1");
+        stmt.addUInt32(quest_id);
+        stmt.addUInt32(GetGUIDLow());
+
+        // add to Quest Tracker
+        stmt.Execute();
     }
 }
 
