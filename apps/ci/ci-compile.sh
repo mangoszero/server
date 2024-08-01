@@ -2,7 +2,7 @@
 
 set -e
 
-mkdir -p build
+test -d build || mkdir build
 cd build
 
 cmake .. \
