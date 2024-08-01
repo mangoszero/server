@@ -240,7 +240,7 @@
           echo -e 'Yes\nNo' \
           | $DLGAPPFZF --header 'Install the required build and development packages?'
         )
-        [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+        if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
       else
         $DLGAPP \
           --backtitle "MaNGOS Linux Build Configuration" \
@@ -393,6 +393,9 @@
               tar xjvf ACE-6.3.3.tar.bz2
               export ACE_ROOT=/root/ACE_wrappers
               echo '#include "ace/config-linux.h"' >> $ACE_ROOT/ace/config.h
+              # We want this to output $ACE_ROOT without expansion.
+              # This is to be resolved during make compilation, not now.
+              # shellcheck disable=SC2016
               echo 'include $(ACE_ROOT)/include/makeinclude/platform_linux.GNU' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
               echo 'INSTALL_PREFIX=/usr/local' >> $ACE_ROOT/include/makeinclude/platform_macros.GNU
               export LD_LIBRARY_PATH=$ACE_ROOT/lib:$LD_LIBRARY_PATH
@@ -564,7 +567,7 @@
             echo -e 'Yes\nNo' \
             | $DLGAPPFZF --header "Would you like to keep the user \"$SERVER_USER\"?"
           )
-          [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+          if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
         else
           $DLGAPP \
           --backtitle "MaNGOS Linux Build Configuration" \
@@ -629,7 +632,7 @@
                 echo -e 'Yes\nNo' \
                 | $DLGAPPFZF --header "Would you like to create the directory \"$SRCPATH\"?"
               )
-              [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+              if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
             else
               $DLGAPP \
                 --backtitle "MaNGOS Linux Build Configuration" \
@@ -661,7 +664,7 @@
                   echo -e 'Yes\nNo' \
                   | $DLGAPPFZF --header "Would you like to remove the old sources? (Answer yes if you are cloning MaNGOS)"
                 )
-                [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+                if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
               else
                 $DLGAPP \
                   --backtitle "MaNGOS Linux Build Configuration" \
@@ -716,7 +719,7 @@
                 echo -e 'Yes\nNo' \
                 | $DLGAPPFZF --header "Would you like to create the directory \"$BUILDPATH\"?"
               )
-              [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+              if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
             else
               $DLGAPP \
                 --backtitle "MaNGOS Linux Build Configuration" \
@@ -749,7 +752,7 @@
                   echo -e 'Yes\nNo' \
                   | $DLGAPPFZF --header "Would you like to uninstall the current version of MaNGOS first?"
                 )
-                [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+                if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
               else
                 $DLGAPP \
                   --backtitle "MaNGOS Linux Build Configuration" \
@@ -817,7 +820,7 @@
                 echo -e 'Yes\nNo' \
                 | $DLGAPPFZF --header "Would you like to create the directory \"$INSTPATH\"?"
               )
-              [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+              if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
             else
               $DLGAPP \
                 --backtitle "MaNGOS Linux Build Configuration" \
@@ -850,7 +853,7 @@
                   echo -e 'Yes\nNo' \
                   | $DLGAPPFZF --header "Would you like to uninstall the current version of MaNGOS first?"
                 )
-                [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+                if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
               else
                 $DLGAPP \
                   --backtitle "MaNGOS Linux Build Configuration" \
@@ -1063,7 +1066,7 @@
           echo -e 'Yes\nNo' \
           | $DLGAPPFZF --header 'Use default build options?'
         )
-        [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+        if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
       else
         $DLGAPP \
           --backtitle "MaNGOS Linux Build Configuration" \
@@ -1172,7 +1175,7 @@
             echo -e 'Yes\nNo' \
             | $DLGAPPFZF --header 'Are you sure you want to build MaNGOS?'
           )
-          [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+          if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
         else
           $DLGAPP \
             --backtitle "MaNGOS Linux Build Configuration" \
@@ -1251,7 +1254,7 @@
             echo -e 'Yes\nNo' \
             | $DLGAPPFZF --header 'Do you want to install MaNGOS now?'
           )
-          [[ "$CHOICE" == 'Yes' ]] && (exit 0) || (exit 1)
+          if [[ "$CHOICE" == 'Yes' ]]; then (exit 0); else (exit 1); fi
         else
           $DLGAPP \
             --backtitle "MaNGOS Linux Build Configuration" \
