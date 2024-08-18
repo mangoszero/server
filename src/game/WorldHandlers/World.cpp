@@ -824,6 +824,10 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_WARDEN_CLIENT_RESPONSE_DELAY, "Warden.ClientResponseDelay", 600);
     setConfig(CONFIG_UINT32_WARDEN_DB_LOGLEVEL, "Warden.DBLogLevel", 0);
 
+    // Recommended Or New Flag
+    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
+    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
@@ -2605,7 +2609,7 @@ void World::LoadBroadcastStrings()
     }
     else
     {
-        sLog.outString(">> Loaded " SIZEFMTD " broadcast strings.", m_broadcastList.size());
+        sLog.outString(">> Loaded %zu broadcast strings.", m_broadcastList.size());
     }
 }
 

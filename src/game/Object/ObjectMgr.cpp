@@ -354,7 +354,7 @@ void ObjectMgr::LoadCreatureLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " creature locale strings", mCreatureLocaleMap.size());
+    sLog.outString(">> Loaded %zu creature locale strings", mCreatureLocaleMap.size());
     sLog.outString();
 }
 
@@ -449,7 +449,7 @@ void ObjectMgr::LoadGossipMenuItemsLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " gossip_menu_option locale strings", mGossipMenuItemsLocaleMap.size());
+    sLog.outString(">> Loaded %zu gossip_menu_option locale strings", mGossipMenuItemsLocaleMap.size());
     sLog.outString();
 }
 
@@ -508,7 +508,7 @@ void ObjectMgr::LoadPointOfInterestLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " points_of_interest locale strings", mPointOfInterestLocaleMap.size());
+    sLog.outString(">> Loaded %zu points_of_interest locale strings", mPointOfInterestLocaleMap.size());
     sLog.outString();
 }
 
@@ -1515,7 +1515,7 @@ void ObjectMgr::LoadCreatures()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " creatures", mCreatureDataMap.size());
+    sLog.outString(">> Loaded %zu creatures", mCreatureDataMap.size());
     sLog.outString();
 }
 
@@ -1673,7 +1673,7 @@ void ObjectMgr::LoadGameObjects()
     delete result;
 
     sLog.outString();
-    sLog.outString(">> Loaded " SIZEFMTD " gameobjects", mGameObjectDataMap.size());
+    sLog.outString(">> Loaded %zu gameobjects", mGameObjectDataMap.size());
     sLog.outString(">>> Loaded %u local transport objects", local_transports);
 }
 
@@ -1888,7 +1888,7 @@ void ObjectMgr::LoadItemLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " Item locale strings", mItemLocaleMap.size());
+    sLog.outString(">> Loaded %zu Item locale strings", mItemLocaleMap.size());
     sLog.outString();
 }
 
@@ -4290,7 +4290,7 @@ void ObjectMgr::LoadQuests()
         }
     }
 
-    sLog.outString(">> Loaded " SIZEFMTD " quests definitions", mQuestTemplates.size());
+    sLog.outString(">> Loaded %zu quests definitions", mQuestTemplates.size());
     sLog.outString();
 }
 
@@ -4705,7 +4705,7 @@ void ObjectMgr::LoadPageTextLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " PageText locale strings", mPageTextLocaleMap.size());
+    sLog.outString(">> Loaded %zu PageText locale strings", mPageTextLocaleMap.size());
     sLog.outString();
 }
 
@@ -4984,7 +4984,7 @@ void ObjectMgr::LoadGossipTextLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " NpcText locale strings", mNpcTextLocaleMap.size());
+    sLog.outString(">> Loaded %zu NpcText locale strings", mNpcTextLocaleMap.size());
     sLog.outString();
 }
 
@@ -5941,7 +5941,7 @@ void ObjectMgr::LoadGameObjectLocales()
 
     delete result;
 
-    sLog.outString(">> Loaded " SIZEFMTD " gameobject locale strings", mGameObjectLocaleMap.size());
+    sLog.outString(">> Loaded %zu gameobject locale strings", mGameObjectLocaleMap.size());
     sLog.outString();
 }
 

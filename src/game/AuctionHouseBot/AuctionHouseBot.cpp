@@ -789,7 +789,7 @@ uint32 AuctionBotBuyer::GetBuyableEntry(AHB_Buyer_Config& config)
     }
 
     DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: %u items added to buyable vector for AH type: %u", count, config.GetHouseType());
-    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: SameItemInfo size = " SIZEFMTD, config.SameItemInfo.size());
+    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: SameItemInfo size = %zu", config.SameItemInfo.size());
     return count;
 }
 
@@ -809,7 +809,7 @@ void AuctionBotBuyer::PrepareListOfEntry(AHB_Buyer_Config& config)
         }
     }
 
-    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: CheckedEntry size = " SIZEFMTD, config.CheckedEntry.size());
+    DEBUG_FILTER_LOG(LOG_FILTER_AHBOT_BUYER, "AHBot: CheckedEntry size = %zu", config.CheckedEntry.size());
 }
 
 bool AuctionBotBuyer::IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice, double MaxBuyablePrice, uint32 MinBuyPrice, uint32 MaxChance, uint32 ChanceRatio)
@@ -1174,8 +1174,8 @@ bool AuctionBotSeller::Initialize()
             excludeItems.push_back(atoi(temp.c_str()));
         }
     }
-    sLog.outString("Forced Inclusion " SIZEFMTD " items", includeItems.size());
-    sLog.outString("Forced Exclusion " SIZEFMTD " items", excludeItems.size());
+    sLog.outString("Forced Inclusion %zu items", includeItems.size());
+    sLog.outString("Forced Exclusion %zu items", excludeItems.size());
     sLog.outString();
 
     sLog.outString("Loading npc vendor items for filter..");
@@ -1196,7 +1196,7 @@ bool AuctionBotSeller::Initialize()
         BarGoLink bar(1);
         bar.step();
     }
-    sLog.outString("Npc vendor filter has " SIZEFMTD " items", npcItems.size());
+    sLog.outString("Npc vendor filter has %zu items", npcItems.size());
     sLog.outString();
 
     sLog.outString("Loading loot items for filter..");
@@ -1231,7 +1231,7 @@ bool AuctionBotSeller::Initialize()
         BarGoLink bar(1);
         bar.step();
     }
-    sLog.outString("Loot filter has " SIZEFMTD " items", lootItems.size());
+    sLog.outString("Loot filter has %zu items", lootItems.size());
     sLog.outString();
 
     sLog.outString("Sorting and cleaning items for AHBot seller...");
@@ -1544,7 +1544,7 @@ bool AuctionBotSeller::Initialize()
 
     sLog.outString("Items loaded      \tGrey\tWhite\tGreen\tBlue\tPurple\tOrange\tYellow");
     for (uint32 i = 0; i < MAX_ITEM_CLASS; ++i)
-        sLog.outString("%-18s\t" SIZEFMTD "\t" SIZEFMTD "\t" SIZEFMTD "\t" SIZEFMTD "\t" SIZEFMTD "\t" SIZEFMTD "\t" SIZEFMTD,
+        sLog.outString("%-18s\t%zu\t%zu\t%zu\t%zu\t%zu\t%zu\t%zu",
                        sAuctionBotConfig.GetItemClassName(ItemClass(i)),
                        m_ItemPool[0][i].size(), m_ItemPool[1][i].size(), m_ItemPool[2][i].size(),
                        m_ItemPool[3][i].size(), m_ItemPool[4][i].size(), m_ItemPool[5][i].size(),

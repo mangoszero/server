@@ -99,6 +99,6 @@ class Sha1Hash
 
     private:
         SHA_CTX mC; /**< TODO */
-        uint8 mDigest[SHA_DIGEST_LENGTH]; /**< TODO */
+        uint8 mDigest[SHA_DIGEST_LENGTH]{ 0 }; /**< TODO */
 };
 #endif
