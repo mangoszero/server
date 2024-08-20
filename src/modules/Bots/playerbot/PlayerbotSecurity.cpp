@@ -23,16 +23,18 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
     if (from->GetPlayerbotAI())
     {
-        if (reason) *reason = PLAYERBOT_DENY_IS_BOT;
+        if (reason)
         {
+            *reason = PLAYERBOT_DENY_IS_BOT;
             return PLAYERBOT_SECURITY_DENY_ALL;
         }
     }
 
     if (bot->GetPlayerbotAI()->IsOpposing(from))
     {
-        if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
+        if (reason)
         {
+            *reason = PLAYERBOT_DENY_OPPOSING;
             return PLAYERBOT_SECURITY_DENY_ALL;
         }
     }
@@ -41,8 +43,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
     {
         if (bot->GetPlayerbotAI()->IsOpposing(from))
         {
-            if (reason) *reason = PLAYERBOT_DENY_OPPOSING;
+            if (reason)
             {
+                *reason = PLAYERBOT_DENY_OPPOSING;
                 return PLAYERBOT_SECURITY_DENY_ALL;
             }
         }
@@ -62,8 +65,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
         if ((int)bot->getLevel() - (int)from->getLevel() > 5)
         {
-            if (reason) *reason = PLAYERBOT_DENY_LOW_LEVEL;
+            if (reason)
             {
+                *reason = PLAYERBOT_DENY_LOW_LEVEL;
                 return PLAYERBOT_SECURITY_TALK;
             }
         }
@@ -72,8 +76,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         {
             if (!bot->GetGuildId() || bot->GetGuildId() != from->GetGuildId())
             {
-                if (reason) *reason = PLAYERBOT_DENY_FAR;
+                if (reason)
                 {
+                    *reason = PLAYERBOT_DENY_FAR;
                     return PLAYERBOT_SECURITY_TALK;
                 }
             }
@@ -81,8 +86,9 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
         if (bot->IsDead())
         {
-            if (reason) *reason = PLAYERBOT_DENY_DEAD;
+            if (reason)
             {
+                *reason = PLAYERBOT_DENY_DEAD;
                 return PLAYERBOT_SECURITY_TALK;
             }
         }
@@ -107,14 +113,16 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 
         if (group->IsFull())
         {
-            if (reason) *reason = PLAYERBOT_DENY_FULL_GROUP;
+            if (reason)
             {
+                *reason = PLAYERBOT_DENY_FULL_GROUP;
                 return PLAYERBOT_SECURITY_TALK;
             }
         }
 
-        if (reason) *reason = PLAYERBOT_DENY_INVITE;
+        if (reason)
         {
+            *reason = PLAYERBOT_DENY_INVITE;
             return PLAYERBOT_SECURITY_INVITE;
         }
     }

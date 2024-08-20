@@ -892,10 +892,11 @@ void RandomPlayerbotMgr::PrintStats()
 
         uint32 from = i*10;
         uint32 to = min(from + 9, maxLevel);
-        if (!from) from = 1;
+        if (!from)
         {
-            sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
+            from = 1;
         }
+        sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
     }
     sLog.outString("Per race:");
     for (uint8 race = RACE_HUMAN; race < MAX_RACES; ++race)
