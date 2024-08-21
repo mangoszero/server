@@ -53,8 +53,8 @@ class RAThread : public ACE_Task_Base
         explicit RAThread(uint16 port, const char* host);
         virtual ~RAThread();
 
-        virtual int open(void* unused) override;
-        virtual int svc() override;
+        int open(void* unused) override;
+        int svc() override;
 };
 
 #endif
