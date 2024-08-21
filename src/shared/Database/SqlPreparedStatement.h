@@ -801,21 +801,21 @@ class SqlPlainPreparedStatement : public SqlPreparedStatement
          *
          * @return bool
          */
-        virtual bool prepare() override { return true; }
+        bool prepare() override { return true; }
 
         /**
          * @brief we should replace all '?' symbols with substrings with proper format
          *
          * @param holder
          */
-        virtual void bind(const SqlStmtParameters& holder) override;
+        void bind(const SqlStmtParameters& holder) override;
 
         /**
          * @brief
          *
          * @return bool
          */
-        virtual bool execute() override;
+        bool execute() override;
 
     protected:
         /**
