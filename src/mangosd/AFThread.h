@@ -32,8 +32,8 @@ class AntiFreezeThread : public ACE_Task_Base
 {
     public:
         explicit AntiFreezeThread(uint32 delay);
-        virtual int open(void*) override;
-        virtual int svc() override;
+        int open(void*) override;
+        int svc() override;
 
     private:
         uint32 m_loops;

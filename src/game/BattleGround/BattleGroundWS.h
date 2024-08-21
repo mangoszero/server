@@ -165,12 +165,12 @@ class BattleGroundWS : public BattleGround
          *
          * @param plr
          */
-        virtual void AddPlayer(Player* plr) override;
+        void AddPlayer(Player* plr) override;
         /**
          * @brief
          *
          */
-        virtual void StartingEventOpenDoors() override;
+        void StartingEventOpenDoors() override;
 
         /**
          * @brief BG Flags
@@ -248,20 +248,20 @@ class BattleGroundWS : public BattleGround
          *
          * @param source
          */
-        virtual void EventPlayerDroppedFlag(Player* source) override;
+        void EventPlayerDroppedFlag(Player* source) override;
         /**
          * @brief
          *
          * @param source
          * @param target_obj
          */
-        virtual void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
+        void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
         /**
          * @brief
          *
          * @param source
          */
-        virtual void EventPlayerCapturedFlag(Player* source) override;
+        void EventPlayerCapturedFlag(Player* source) override;
 
         /**
          * @brief
@@ -288,7 +288,7 @@ class BattleGroundWS : public BattleGround
          * @brief
          *
          */
-        virtual void Reset() override;
+        void Reset() override;
         /**
          * @brief
          *
@@ -301,7 +301,7 @@ class BattleGroundWS : public BattleGround
          * @param player
          * @return const WorldSafeLocsEntry
          */
-        virtual WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
+        WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
         /**
          * @brief
@@ -350,12 +350,12 @@ class BattleGroundWS : public BattleGround
          * @param data
          * @param count
          */
-        virtual void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
+        void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
         /**
          * @brief
          *
          */
-        virtual Team GetPrematureWinner() override;
+        Team GetPrematureWinner() override;
 
     private:
         ObjectGuid m_flagCarrierAlliance; /**< TODO */

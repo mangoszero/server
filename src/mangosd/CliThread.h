@@ -40,7 +40,7 @@ class CliThread : public ACE_Task_Base
     enum { BUFFSIZE = 256 };
     public:
         CliThread(bool);
-        virtual int svc() override;
+        int svc() override;
         void cli_shutdown();
     private:
         char buffer_[BUFFSIZE];

@@ -132,19 +132,19 @@ class WorldSocket : protected WorldHandler
         virtual ~WorldSocket(void);
 
         /// Called on open ,the void* is the acceptor.
-        virtual int open(void*) override;
+        int open(void*) override;
 
         /// Called on failures inside of the acceptor, don't call from your code.
-        virtual int close(u_long) override;
+        int close(u_long) override;
 
         /// Called when we can read from the socket.
-        virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
+        int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
 
         /// Called when the socket can write.
-        virtual int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
+        int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
 
         /// Called when connection is closed or error happens.
-        virtual int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
+        int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
                                  ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
 
     private:
