@@ -965,7 +965,7 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell)
 
     ObjectGuid oldSel = bot->GetSelectionGuid();
     bot->SetSelectionGuid(target->GetObjectGuid());
-    Spell *spell = new Spell(bot, spellInfo, false );
+    Spell *spell = new Spell(bot, spellInfo, false);
 
     spell->m_targets.setUnitTarget(target);
     spell->m_CastItem = aiObjectContext->GetValue<Item*>("item for spell", spellid)->Get();
@@ -1038,8 +1038,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         return false;
     }
 
-    bot->clearUnitState( UNIT_STAT_CHASE );
-    bot->clearUnitState( UNIT_STAT_FOLLOW );
+    bot->clearUnitState(UNIT_STAT_CHASE);
+    bot->clearUnitState(UNIT_STAT_FOLLOW);
 
     ObjectGuid oldSel = bot->GetSelectionGuid();
     bot->SetSelectionGuid(target->GetObjectGuid());
@@ -1184,7 +1184,7 @@ bool PlayerbotAI::IsInterruptableSpellCasting(Unit* target, string spell)
         return false;
     }
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid );
+    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
     if (!spellInfo)
     {
         return false;

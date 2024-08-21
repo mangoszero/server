@@ -133,7 +133,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
     int iterationsPerTick = queue.Size() * sPlayerbotAIConfig.iterationsPerTick;
     do {
         basket = queue.Peek();
-        if (basket) {
+        if (basket)
+        {
             if (++iterations > iterationsPerTick)
             {
                 break;
@@ -426,6 +427,7 @@ void Engine::ProcessTriggers()
             MultiplyAndPush(node->getHandlers(), 0.0f, false, event);
         }
     }
+
     for (list<TriggerNode*>::iterator i = triggers.begin(); i != triggers.end(); i++)
     {
         Trigger* trigger = (*i)->getTrigger();
@@ -574,5 +576,5 @@ void Engine::LogValues()
     }
 
     string text = ai->GetAiObjectContext()->FormatValues();
-    sLog.outDebug("Values for %s: %s", bot->GetName(), text.c_str());
+    sLog.outDebug( "Values for %s: %s", bot->GetName(), text.c_str());
 }
