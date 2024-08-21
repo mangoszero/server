@@ -508,7 +508,9 @@ size_t utf8limit(std::string& utf8str, size_t bytes)
 
             // Fix UTF8 if it was corrupted by bytes truncated
             if (itr != end)
+            {
                 bytes = std::distance(utf8str.cbegin(), itr);
+            }
 
             utf8str.resize(bytes);
             utf8str.shrink_to_fit();

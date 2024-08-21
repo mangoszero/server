@@ -3305,7 +3305,8 @@ SpellCastResult Creature::TryToCast(Unit* pTarget, const SpellEntry* pSpellInfo,
         return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
     }
 
-    if (hasUnitState(UNIT_STAT_STUNNED)) {
+    if (hasUnitState(UNIT_STAT_STUNNED))
+    {
         return SPELL_FAILED_STUNNED;
     }
 
