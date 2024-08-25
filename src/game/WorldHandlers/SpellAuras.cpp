@@ -1459,7 +1459,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
     }
 
     // AT APPLY & REMOVE
-
     switch (GetSpellProto()->SpellFamilyName)
     {
         case SPELLFAMILY_GENERIC:
@@ -1554,9 +1553,13 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             break;
         }
         case SPELLFAMILY_ROGUE:
+        {
             break;
+        }
         case SPELLFAMILY_HUNTER:
+        {
             break;
+        }
         case SPELLFAMILY_SHAMAN:
         {
             switch (GetId())
