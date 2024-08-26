@@ -32,6 +32,7 @@
 #include "Config/Config.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
+#include "Opcodes.h"
 
 #include <ace/ACE.h>
 #include <ace/TP_Reactor.h>
@@ -46,6 +47,7 @@ WorldSocketMgr::WorldSocketMgr()
   : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
     reactor_(NULL), acceptor_(NULL)
 {
+    InitializeOpcodes();
 }
 
 WorldSocketMgr::~WorldSocketMgr()

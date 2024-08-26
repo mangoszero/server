@@ -964,6 +964,8 @@ enum OpcodesList
 // Don't forget to change this value and add opcode name to Opcodes.cpp when you add new opcode!
 #define NUM_MSG_TYPES 0x424
 
+extern void InitializeOpcodes();
+
 /// Player state
 enum SessionStatus
 {
@@ -1009,62 +1011,16 @@ struct OpcodeHandler
     void (WorldSession::*handler)(WorldPacket& recvPacket);
 };
 
-typedef std::map< uint16, OpcodeHandler> OpcodeMap;
-
-class Opcodes
-{
-    public:
-        Opcodes();
-        ~Opcodes();
-    public:
-        void BuildOpcodeList();
-        void StoreOpcode(uint16 Opcode, char const* name, SessionStatus status, PacketProcessing process, void (WorldSession::*handler)(WorldPacket& recvPacket))
-        {
-            OpcodeHandler& ref = mOpcodeMap[Opcode];
-            ref.name = name;
-            ref.status = status;
-            ref.packetProcessing = process;
-            ref.handler = handler;
-        }
-
-        /// Lookup opcode
-        inline OpcodeHandler const* LookupOpcode(uint16 id) const
-        {
-            OpcodeMap::const_iterator itr = mOpcodeMap.find(id);
-            if (itr != mOpcodeMap.end())
-            {
-                return &itr->second;
-            }
-            return NULL;
-        }
-
-        /// compatible with other mangos branches access
-
-        inline OpcodeHandler const& operator[](uint16 id) const
-        {
-            OpcodeMap::const_iterator itr = mOpcodeMap.find(id);
-            if (itr != mOpcodeMap.end())
-            {
-                return itr->second;
-            }
-            return emptyHandler;
-        }
-
-        static OpcodeHandler const emptyHandler;
-
-        OpcodeMap mOpcodeMap;
-};
-
-#define opcodeTable MaNGOS::Singleton<Opcodes>::Instance()
+extern OpcodeHandler opcodeTable[NUM_MSG_TYPES];
 
 /// Lookup opcode name for human understandable logging
 inline const char* LookupOpcodeName(uint16 id)
 {
-    if (OpcodeHandler const* op = opcodeTable.LookupOpcode(id))
+    if (id >= NUM_MSG_TYPES)
     {
-        return op->name;
+        return "Received unknown opcode, it's more than max!";
     }
-    return "Received unknown opcode, it's more than max!";
+    return opcodeTable[id].name;
 }
 #endif
 
