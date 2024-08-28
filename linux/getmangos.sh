@@ -88,6 +88,7 @@
     [[ -z "$AUTO_DEFAULT_OPTIONS" ]] && AUTO_DEFAULT_OPTIONS='false'
     [[ -z "$AUTO_BUILD"           ]] && AUTO_BUILD='false'
     [[ -z "$AUTO_INSTALL"         ]] && AUTO_INSTALL='false'
+    [[ -z "$AUTO_CLEAN"           ]] && AUTO_CLEAN='true'
   }
 }
 
@@ -1200,13 +1201,15 @@
         fi
       fi
 
-      # See if the build directory exists and clean up if possible
-      if [ -d "$BUILDPATH" ]; then
-        # See if a makefile exists and clean up
-        if [ -f $BUILDPATH/Makefile ]; then
-          Log "Cleaning the old build..." 1
-          cd "$BUILDPATH"
-          make clean
+      if [[ "$AUTO_CLEAN" != 'false' ]]; then
+        # See if the build directory exists and clean up if possible
+        if [ -d "$BUILDPATH" ]; then
+          # See if a makefile exists and clean up
+          if [ -f $BUILDPATH/Makefile ]; then
+            Log "Cleaning the old build..." 1
+            cd "$BUILDPATH"
+            make clean
+          fi
         fi
       fi
 
