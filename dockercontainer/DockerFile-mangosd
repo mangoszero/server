@@ -2,7 +2,7 @@
 FROM ubuntu:18.04 as build-step
 
 RUN apt-get -y update
-RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential gpg wget
+RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential gpg wget lsb-release software-properties-common
 
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
     echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \

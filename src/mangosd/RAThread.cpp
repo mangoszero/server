@@ -99,7 +99,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             sLog.outRALog("Connection was closed.");
         }
 
-        virtual int open(void* unused) override
+        int open(void* unused) override
         {
             if (reactor()->register_handler(this, ACE_Event_Handler::READ_MASK | ACE_Event_Handler::WRITE_MASK) == -1)
             {
@@ -125,7 +125,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             return 0;
         }
 
-        virtual int close(u_long unused) override
+        int close(u_long unused) override
         {
             if (closing_)
             {
@@ -140,7 +140,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             return 0;
         }
 
-        virtual int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override
+        int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override
         {
             if (closing_)
             {
@@ -276,7 +276,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             return 0;
         }
 
-        virtual int handle_output(ACE_HANDLE h = ACE_INVALID_HANDLE) override
+        int handle_output(ACE_HANDLE h = ACE_INVALID_HANDLE) override
         {
             ACE_GUARD_RETURN(ACE_Thread_Mutex, Guard, outBufferLock, -1);
 
@@ -312,7 +312,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
             return 0;
         }
 
-        virtual int handle_close(ACE_HANDLE h = ACE_INVALID_HANDLE,
+        int handle_close(ACE_HANDLE h = ACE_INVALID_HANDLE,
                                  ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK) override
         {
             if (closing_)

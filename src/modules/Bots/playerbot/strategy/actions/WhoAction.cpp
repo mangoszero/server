@@ -129,19 +129,21 @@ string WhoAction::QuerySpec(string text)
 
     if (visitor.count[ITEM_QUALITY_RARE])
     {
-        if (needSlash) out << "/";
+        if (needSlash)
         {
-            out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
+            out << "/";
         }
+        out << "|h|cff8080ff" << visitor.count[ITEM_QUALITY_RARE] << "|h|cffffffff";
         needSlash = true;
     }
 
     if (visitor.count[ITEM_QUALITY_UNCOMMON])
     {
-        if (needSlash) out << "/";
+        if (needSlash)
         {
-            out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
+            out << "/";
         }
+        out << "|h|cff00ff00" << visitor.count[ITEM_QUALITY_UNCOMMON] << "|h|cffffffff";
         needSlash = true;
     }
 

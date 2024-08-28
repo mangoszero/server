@@ -64,21 +64,21 @@ class MySqlPreparedStatement : public SqlPreparedStatement
          *
          * @return bool
          */
-        virtual bool prepare() override;
+        bool prepare() override;
 
         /**
          * @brief bind input parameters
          *
          * @param holder
          */
-        virtual void bind(const SqlStmtParameters& holder) override;
+        void bind(const SqlStmtParameters& holder) override;
 
         /**
          * @brief execute DML statement
          *
          * @return bool
          */
-        virtual bool execute() override;
+        bool execute() override;
 
     protected:
         /**
@@ -259,7 +259,7 @@ class DatabaseMysql : public Database
          *
          * @return SqlConnection
          */
-        virtual SqlConnection* CreateConnection() override;
+        SqlConnection* CreateConnection() override;
 
     private:
         static size_t db_count; /**< TODO */

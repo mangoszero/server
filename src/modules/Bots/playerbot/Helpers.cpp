@@ -76,4 +76,3 @@ uint64 extractGuid(WorldPacket& packet)
     }
     return guid;
 }
-

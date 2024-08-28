@@ -218,7 +218,8 @@ bool ChatHandler::HandleSendItemsHelper(MailDraft& draft, char* args)
         if (Item* item = Item::CreateItem(item_id, item_count, m_session ? m_session->GetPlayer() : 0))
         {
             uint32 item_enchant_id = std::get<2>(*itr);
-            if (item_enchant_id) {
+            if (item_enchant_id)
+            {
                 item->SetEnchantment(PERM_ENCHANTMENT_SLOT, item_enchant_id, 0, 0);
             }
             item->SaveToDB();                               // save for prevent lost at next mail load, if send fail then item will deleted
