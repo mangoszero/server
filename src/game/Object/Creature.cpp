@@ -211,8 +211,12 @@ void Creature::AddToWorld()
 
 #ifdef ENABLE_ELUNA
     if (!inWorld)
+    {
         if (Eluna* e = GetEluna())
+        {
             e->OnAddToWorld(this);
+        }
+    }
 #endif /* ENABLE_ELUNA */
 
 }
@@ -221,8 +225,12 @@ void Creature::RemoveFromWorld()
 {
 #ifdef ENABLE_ELUNA
     if (IsInWorld())
+    {
         if (Eluna* e = GetEluna())
+        {
             e->OnRemoveFromWorld(this);
+        }
+    }
 #endif /* ENABLE_ELUNA */
 
     ///- Remove the creature from the accessor

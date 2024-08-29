@@ -833,8 +833,12 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
             // Used by Eluna
 #ifdef ENABLE_ELUNA
             if (Eluna* e = killer->GetEluna())
+            {
                 if (Player* killed = pVictim->ToPlayer())
+                {
                     e->OnPlayerKilledByCreature(killer, killed);
+                }
+            }
 #endif /* ENABLE_ELUNA */
 
         }
@@ -901,7 +905,9 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
                 // Used by Eluna
 #ifdef ENABLE_ELUNA
                 if (Eluna* e = player_tap->GetEluna())
+                {
                     e->OnPVPKill(player_tap, playerVictim);
+                }
 #endif /* ENABLE_ELUNA */
 
             }
@@ -1153,7 +1159,9 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
             // Used by Eluna
 #ifdef ENABLE_ELUNA
         if (Eluna* e = responsiblePlayer->GetEluna())
+        {
             e->OnCreatureKill(responsiblePlayer, victim);
+        }
 #endif /* ENABLE_ELUNA */
 
     }
@@ -7685,8 +7693,12 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
     // Used by Eluna
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         if (GetTypeId() == TYPEID_PLAYER)
+        {
             e->OnPlayerEnterCombat(ToPlayer(), enemy);
+        }
+    }
 #endif /* ENABLE_ELUNA */
 
 }
@@ -7704,8 +7716,12 @@ void Unit::ClearInCombat()
     // Used by Eluna
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         if (GetTypeId() == TYPEID_PLAYER)
+        {
             e->OnPlayerLeaveCombat(ToPlayer());
+        }
+    }
 #endif /* ENABLE_ELUNA */
 
     // Player's state will be cleared in Player::UpdateContestedPvP

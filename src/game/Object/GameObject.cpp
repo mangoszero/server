@@ -123,8 +123,12 @@ void GameObject::AddToWorld()
 
 #ifdef ENABLE_ELUNA
     if (!inWorld)
+    {
         if (Eluna* e = GetEluna())
+        {
             e->OnAddToWorld(this);
+        }
+    }
 #endif /* ENABLE_ELUNA */
 
 }
@@ -136,7 +140,9 @@ void GameObject::RemoveFromWorld()
     {
 #ifdef ENABLE_ELUNA
         if (Eluna* e = GetEluna())
+        {
             e->OnRemoveFromWorld(this);
+        }
 #endif /* ENABLE_ELUNA */
 
         // Notify the outdoor pvp script
@@ -249,7 +255,9 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map,float x, float 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         e->OnSpawn(this);
+    }
 #endif /* ENABLE_ELUNA */
 
     // Notify the battleground or outdoor pvp script
@@ -284,7 +292,9 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
     // Used by Eluna
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         e->UpdateAI(this, update_diff);
+    }
 #endif /* ENABLE_ELUNA */
 
     switch (m_lootState)
@@ -2313,7 +2323,9 @@ void GameObject::SetLootState(LootState state)
     m_lootState = state;
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         e->OnLootStateChanged(this, state);
+    }
 #endif /* ENABLE_ELUNA */
     UpdateCollisionState();
 }
@@ -2323,7 +2335,9 @@ void GameObject::SetGoState(GOState state)
     SetByteValue(GAMEOBJECT_STATE, 0, state);
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetEluna())
+    {
         e->OnGameObjectStateChanged(this, state);
+    }
 #endif /* ENABLE_ELUNA */
     UpdateCollisionState();
 }

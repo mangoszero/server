@@ -96,5 +96,4 @@ function(ADD_CXX_PCH TARGET_NAME PRECOMPILED_HEADER PRECOMPILED_SOURCE)
                 -Winvalid-pch
         )
     endif()
->>>>>>> 4538810c3 (Update PCH to C++17)
 endfunction()
