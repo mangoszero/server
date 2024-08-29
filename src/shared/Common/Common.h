@@ -97,6 +97,8 @@
 #include <queue>
 #include <sstream>
 #include <algorithm>
+#include <thread>
+#include <atomic>
 
 #include "Utilities/Errors.h"
 #include "LockedQueue/LockedQueue.h"

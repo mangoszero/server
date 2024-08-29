@@ -68,7 +68,7 @@ target_include_directories(mangosd
 
 target_compile_definitions(mangosd
     PUBLIC
-        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA>
+        $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA ELUNA_EXPANSION=0 ELUNA_MANGOS>
 )
 
 target_link_libraries(mangosd

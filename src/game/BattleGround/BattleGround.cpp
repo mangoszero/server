@@ -774,7 +774,10 @@ void BattleGround::UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player*
 void BattleGround::EndBattleGround(Team winner)
 {
 #ifdef ENABLE_ELUNA
-    sEluna->OnBGEnd(this, GetTypeID(), GetInstanceID(), winner);
+    if (Eluna* e = GetBgMap()->GetEluna())
+    {
+        e->OnBGEnd(this, GetTypeID(), GetInstanceID(), winner);
+    }
 #endif /* ENABLE_ELUNA */
     this->RemoveFromBGFreeSlotQueue();
 
@@ -1281,7 +1284,10 @@ void BattleGround::StartBattleGround()
     sBattleGroundMgr.AddBattleGround(GetInstanceID(), GetTypeID(), this);
 
 #ifdef ENABLE_ELUNA
-    sEluna->OnBGStart(this, GetTypeID(), GetInstanceID());
+    if (Eluna* e = GetBgMap()->GetEluna())
+    {
+        e->OnBGStart(this, GetTypeID(), GetInstanceID());
+    }
 #endif /* ENABLE_ELUNA */
 }
 

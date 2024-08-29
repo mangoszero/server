@@ -63,9 +63,6 @@ int WorldThread::open(void* unused)
         World::StopNow(ERROR_EXIT_CODE);
         return -1;
     }
-#ifdef ENABLE_ELUNA
-    sEluna->OnStartup();
-#endif /* ENABLE_ELUNA */
 
     activate();
     return 0;
@@ -106,20 +103,11 @@ int WorldThread::svc()
             Sleep(1000);
 #endif
     }
-#ifdef ENABLE_ELUNA
-    sEluna->OnShutdown();
-#endif /* ENABLE_ELUNA */
     sWorld.KickAll();                                       // save and kick all players
     sWorld.UpdateSessions(1);                               // real players unload required UpdateSessions call
     sWorldSocketMgr->StopNetwork();
 
     sMapMgr.UnloadAll();                                    // unload all grids (including locked in memory)
-
-#ifdef ENABLE_ELUNA
-    // Eluna must be unloaded after Maps, since ~Map calls sEluna->OnDestroy,
-    //   and must be unloaded before the DB, since it can access the DB.
-    Eluna::Uninitialize();
-#endif /* ENABLE_ELUNA */
 
     sLog.outString("World Updater Thread stopped");
     return 0;

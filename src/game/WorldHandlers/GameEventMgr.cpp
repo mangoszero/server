@@ -105,9 +105,12 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
         }
     }
 #ifdef ENABLE_ELUNA
-    if (IsActiveEvent(event_id))
+    if (Eluna* e = sWorld.GetEluna())
     {
-        sEluna->OnGameEventStart(event_id);
+        if (IsActiveEvent(event_id))
+        {
+            e->OnGameEventStart(event_id);
+        }
     }
 #endif /* ENABLE_ELUNA */
 }
@@ -124,9 +127,12 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
         }
     }
 #ifdef ENABLE_ELUNA
-    if (!IsActiveEvent(event_id))
+    if (Eluna* e = sWorld.GetEluna())
     {
-        sEluna->OnGameEventStop(event_id);
+        if (!IsActiveEvent(event_id))
+        {
+            e->OnGameEventStop(event_id);
+        }
     }
 #endif /* ENABLE_ELUNA */
 }

@@ -312,10 +312,6 @@ void Unit::Update(uint32 update_diff, uint32 p_time)
     }else
     m_AurasCheck -= p_time;*/
 
-#ifdef ENABLE_ELUNA
-    elunaEvents->Update(update_diff);
-#endif /* ENABLE_ELUNA */
-
     // WARNING! Order of execution here is important, do not change.
     // Spells must be processed with event system BEFORE they go to _UpdateSpells.
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
@@ -836,9 +832,12 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
         {
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (Player* killed = pVictim->ToPlayer())
+            if (Eluna* e = killer->GetEluna())
             {
-                sEluna->OnPlayerKilledByCreature(killer, killed);
+                if (Player* killed = pVictim->ToPlayer())
+                {
+                    e->OnPlayerKilledByCreature(killer, killed);
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -905,7 +904,10 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
 
                 // Used by Eluna
 #ifdef ENABLE_ELUNA
-                sEluna->OnPVPKill(player_tap, playerVictim);
+                if (Eluna* e = player_tap->GetEluna())
+                {
+                    e->OnPVPKill(player_tap, playerVictim);
+                }
 #endif /* ENABLE_ELUNA */
 
             }
@@ -1156,7 +1158,10 @@ void Unit::JustKilledCreature(Creature* victim, Player* responsiblePlayer)
         }
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            sEluna->OnCreatureKill(responsiblePlayer, victim);
+        if (Eluna* e = responsiblePlayer->GetEluna())
+        {
+            e->OnCreatureKill(responsiblePlayer, victim);
+        }
 #endif /* ENABLE_ELUNA */
 
     }
@@ -7687,9 +7692,12 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    if (GetTypeId() == TYPEID_PLAYER)
+    if (Eluna* e = GetEluna())
     {
-        sEluna->OnPlayerEnterCombat(ToPlayer(), enemy);
+        if (GetTypeId() == TYPEID_PLAYER)
+        {
+            e->OnPlayerEnterCombat(ToPlayer(), enemy);
+        }
     }
 #endif /* ENABLE_ELUNA */
 
@@ -7707,9 +7715,12 @@ void Unit::ClearInCombat()
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    if (GetTypeId() == TYPEID_PLAYER)
+    if (Eluna* e = GetEluna())
     {
-        sEluna->OnPlayerLeaveCombat(ToPlayer());
+        if (GetTypeId() == TYPEID_PLAYER)
+        {
+            e->OnPlayerLeaveCombat(ToPlayer());
+        }
     }
 #endif /* ENABLE_ELUNA */
 
