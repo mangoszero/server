@@ -454,6 +454,13 @@ void BattleGround::Update(uint32 diff)
         {
             m_Events |= BG_STARTING_EVENT_4;
 
+#ifdef ENABLE_ELUNA
+            if (Eluna* e = this->GetBgMap()->GetEluna())
+            {
+                e->OnBGCreate(this, GetTypeID(), GetInstanceID());
+            }
+#endif /* ENABLE_ELUNA */
+
             StartingEventOpenDoors();
 
             SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_FOURTH], CHAT_MSG_BG_SYSTEM_NEUTRAL);
@@ -1286,7 +1293,7 @@ void BattleGround::StartBattleGround()
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetBgMap()->GetEluna())
     {
-        e->OnBGStart(this, GetTypeID(), GetInstanceID());
+        e->OnBGCreate(this, GetTypeID(), GetInstanceID());
     }
 #endif /* ENABLE_ELUNA */
 }
