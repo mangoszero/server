@@ -909,7 +909,7 @@ void Object::MarkForClientUpdate()
 
 WorldObject::WorldObject() :
 #ifdef ENABLE_ELUNA
-    elunaEvents(NULL),
+    elunaEvents(nullptr),
 #endif /* ENABLE_ELUNA */
     m_currMap(NULL),
     m_mapId(0), m_InstanceId(0),
@@ -921,7 +921,7 @@ WorldObject::~WorldObject()
 {
 #ifdef ENABLE_ELUNA
     delete elunaEvents;
-    elunaEvents = NULL;
+    elunaEvents = nullptr;
 #endif /* ENABLE_ELUNA */
 }
 
@@ -1582,26 +1582,6 @@ void WorldObject::SetMap(Map* map)
     // lets save current map's Id/instanceId
     m_mapId = map->GetId();
     m_InstanceId = map->GetInstanceId();
-
-#ifdef ENABLE_ELUNA
-    //@todo: possibly look into cleanly clearing all pending events from previous map's event mgr.
-
-    // if multistate, delete elunaEvents and set to nullptr. events shouldn't move across states.
-    // in single state, the timed events should move across maps
-    if (!sElunaConfig->IsElunaCompatibilityMode())
-    {
-        delete elunaEvents;
-        elunaEvents = nullptr; // set to null in case map doesn't use eluna
-    }
-
-    if (Eluna* e = map->GetEluna())
-    {
-        if (!elunaEvents)
-        {
-            elunaEvents = new ElunaEventProcessor(e, this);
-        }
-    }
-#endif
 }
 
 void WorldObject::ResetMap()

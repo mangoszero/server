@@ -55,6 +55,7 @@
 #include "GameTime.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include "ElunaConfig.h"
 #include "ElunaEventMgr.h"
 #endif /* ENABLE_ELUNA */
 
@@ -9385,6 +9386,16 @@ void Unit::AddToWorld()
 {
     Object::AddToWorld();
     ScheduleAINotify(0);
+
+#ifdef ENABLE_ELUNA
+    if (Eluna* e = GetEluna())
+    {
+        if (!elunaEvents)
+        {
+            elunaEvents = new ElunaEventProcessor(e, this);
+        }
+    }
+#endif
 }
 
 void Unit::RemoveFromWorld()
@@ -9400,6 +9411,16 @@ void Unit::RemoveFromWorld()
         CleanupDeletedAuras();
         GetViewPoint().Event_RemovedFromWorld();
     }
+
+#ifdef ENABLE_ELUNA
+    // if multistate, delete elunaEvents and set to nullptr. events shouldn't move across states.
+    // in single state, the timed events should move across maps
+    if (!sElunaConfig->IsElunaCompatibilityMode())
+    {
+        delete elunaEvents;
+        elunaEvents = nullptr; // set to null in case map doesn't use eluna
+    }
+#endif
 
     Object::RemoveFromWorld();
 }
