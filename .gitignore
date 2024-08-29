@@ -64,6 +64,8 @@ Thumbs.db
 _build
 build
 /dep/libmpq/autom4te.cache/
+/ACE_wrappers/*
+/ACE*.tar.bz2
 
 # Generated files
 *.ncb
