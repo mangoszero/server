@@ -52,7 +52,7 @@ if (_MYSQL_USE_PKGCONFIG)
 endif ()
 
 if(NOT MySQL_FOUND)
-  set(_MySQL_mariadb_versions 10.1 10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12 10.13 10.14 10.15)
+  set(_MySQL_mariadb_versions 10.1 10.2 10.3 10.4 10.5 10.6 10.7 10.8 10.9 10.10 10.11 10.12 10.13 10.14 10.15 11.5 11.6 11.7)
   set(_MySQL_versions 5.4 5.5 5.6 5.7 8.0)
   set(_MySQL_paths)
   foreach (_MySQL_version IN LISTS _MySQL_mariadb_versions)
