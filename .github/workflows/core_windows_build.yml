@@ -26,8 +26,9 @@ jobs:
 
       - name: Checkout Submodules
         shell: bash
-        run: apps/ci/ci-submodule-update.sh
-
+        run: |
+          git submodule init && git submodule update
+  
       - name: Build Project
         shell: bash
         run: |
