@@ -18,7 +18,7 @@ jobs:
         run: sudo apt-get update -y
 
       - name: Install Required Packages
-        run: ./apps/ci/ci-packages.sh
+        run: source ./apps/ci/ci-packages.sh
 
       - name: Update Compilers
         run: source ./apps/ci/ci-compiler-update.sh
