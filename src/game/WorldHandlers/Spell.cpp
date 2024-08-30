@@ -3294,12 +3294,15 @@ void Spell::cast(bool skipCheck)
     // set to real guid to be sent later to the client
     m_targets.updateTradeSlotItem();
 
-    if (m_caster->GetTypeId() == TYPEID_PLAYER)
-    {
 #ifdef ENABLE_ELUNA
-        sEluna->OnSpellCast(m_caster->ToPlayer(), this, skipCheck);
-#endif /* ENABLE_ELUNA */
+    if (Eluna* e = m_caster->GetEluna())
+    {
+        if (m_caster->GetTypeId() == TYPEID_PLAYER)
+        {
+            e->OnSpellCast(m_caster->ToPlayer(), this, skipCheck);
+        }
     }
+#endif /* ENABLE_ELUNA */
 
     FillTargetMap();
 

@@ -212,7 +212,10 @@ void Creature::AddToWorld()
 #ifdef ENABLE_ELUNA
     if (!inWorld)
     {
-        sEluna->OnAddToWorld(this);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnAddToWorld(this);
+        }
     }
 #endif /* ENABLE_ELUNA */
 
@@ -223,7 +226,10 @@ void Creature::RemoveFromWorld()
 #ifdef ENABLE_ELUNA
     if (IsInWorld())
     {
-        sEluna->OnRemoveFromWorld(this);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnRemoveFromWorld(this);
+        }
     }
 #endif /* ENABLE_ELUNA */
 
