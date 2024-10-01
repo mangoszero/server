@@ -79,6 +79,8 @@
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
+#include "ElunaConfig.h"
+#include "ElunaLoader.h"
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_PLAYERBOTS
@@ -156,6 +158,12 @@ World::World()
 /// World destructor
 World::~World()
 {
+#ifdef ENABLE_ELUNA
+    // Delete world Eluna state
+    delete eluna;
+    eluna = nullptr;
+#endif /* ENABLE_ELUNA */
+
     ///- Empty the kicked session set
     while (!m_sessions.empty())
     {
@@ -186,9 +194,6 @@ void World::CleanupsBeforeStop()
     KickAll();                                       // save and kick all players
     UpdateSessions(1);                               // real players unload required UpdateSessions call
     sBattleGroundMgr.DeleteAllBattleGrounds();       // unload battleground templates before different singletons destroyed
-#ifdef ENABLE_ELUNA
-    Eluna::Uninitialize();
-#endif
 }
 
 /// Find a session by its id
@@ -824,6 +829,10 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_WARDEN_CLIENT_RESPONSE_DELAY, "Warden.ClientResponseDelay", 600);
     setConfig(CONFIG_UINT32_WARDEN_DB_LOGLEVEL, "Warden.DBLogLevel", 0);
 
+    // Recommended Or New Flag
+    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
+    setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
@@ -949,12 +958,13 @@ void World::LoadConfigSettings(bool reload)
     MMAP::MMapFactory::preventPathfindingOnMaps(ignoreMapIds.c_str());
     sLog.outString("WORLD: MMap pathfinding %sabled", getConfig(CONFIG_BOOL_MMAP_ENABLED) ? "en" : "dis");
 
-    setConfig(CONFIG_BOOL_ELUNA_ENABLED, "Eluna.Enabled", true);
-
 #ifdef ENABLE_ELUNA
     if (reload)
     {
-        sEluna->OnConfigLoad(reload);
+        if (Eluna* e = GetEluna())
+        {
+            e->OnConfigLoad(reload);
+        }
     }
 #endif /* ENABLE_ELUNA */
     sLog.outString();
@@ -1048,8 +1058,19 @@ void World::SetInitialWorldSettings()
 
 #ifdef ENABLE_ELUNA
     ///- Initialize Lua Engine
-    sLog.outString("Initialize Eluna Lua Engine...");
-    Eluna::Initialize();
+
+    // lua state begins uninitialized
+    eluna = nullptr;
+
+    sLog.outString("Loading Eluna config...");
+    sElunaConfig->Initialize();
+
+    if (sElunaConfig->IsElunaEnabled())
+    {
+        ///- Initialize Lua Engine
+        sLog.outString("Loading Lua scripts...");
+        sElunaLoader->LoadScripts();
+    }
 #endif /* ENABLE_ELUNA */
 
     sLog.outString("Loading Page Texts...");
@@ -1335,6 +1356,17 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading GM tickets...");
     sTicketMgr.LoadGMTickets();
 
+#ifdef ENABLE_ELUNA
+    if (sElunaConfig->IsElunaEnabled())
+    {
+        ///- Run eluna scripts.
+        sLog.outString("Starting Eluna world state...");
+        // use map id -1 for the global Eluna state
+        eluna = new Eluna(nullptr, sElunaConfig->IsElunaCompatibilityMode());
+        sLog.outString();
+    }
+#endif /*ENABLE_ELUNA*/
+
     ///- Load and initialize DBScripts Engine
     sLog.outString("Loading DB-Scripts Engine...");
     sScriptMgr.LoadDbScripts(DBS_ON_QUEST_START);           // must be after load Creature/Gameobject(Template/Data) and QuestTemplate
@@ -1492,8 +1524,10 @@ void World::SetInitialWorldSettings()
 #ifdef ENABLE_ELUNA
     ///- Run eluna scripts.
     // in multithread foreach: run scripts
-    sEluna->RunScripts();
-    sEluna->OnConfigLoad(false); // Must be done after Eluna is initialized and scripts have run.
+    if (Eluna* e = GetEluna())
+    {
+        e->OnConfigLoad(false); // Must be done after Eluna is initialized and scripts have run.
+    }
 #endif
 
 #ifdef ENABLE_PLAYERBOTS
@@ -1735,7 +1769,11 @@ void World::Update(uint32 diff)
 
     ///- Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnWorldUpdate(diff);
+    if (Eluna* e = GetEluna())
+    {
+        e->UpdateEluna(diff);
+        e->OnWorldUpdate(diff);
+    }
 #endif /* ENABLE_ELUNA */
 
     ///- Delete all characters which have been deleted X days before
@@ -2143,7 +2181,10 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
 
     ///- Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnShutdownInitiate(ShutdownExitCode(exitcode), ShutdownMask(options));
+    if (Eluna* e = GetEluna())
+    {
+        e->OnShutdownInitiate(ShutdownExitCode(exitcode), ShutdownMask(options));
+    }
 #endif /* ENABLE_ELUNA */
 }
 
@@ -2193,7 +2234,10 @@ void World::ShutdownCancel()
 
     ///- Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnShutdownCancel();
+    if (Eluna* e = GetEluna())
+    {
+        e->OnShutdownCancel();
+    }
 #endif /* ENABLE_ELUNA */
 }
 

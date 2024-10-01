@@ -214,9 +214,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             if (type == CHAT_MSG_SAY)
             {
 #ifdef ENABLE_ELUNA
-                if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                if (Eluna* e = sWorld.GetEluna())
                 {
-                    return;
+                    if (!e->OnChat(GetPlayer(), type, lang, msg))
+                    {
+                        return;
+                    }
                 }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->Say(msg, lang);
@@ -224,9 +227,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             else if (type == CHAT_MSG_EMOTE)
             {
 #ifdef ENABLE_ELUNA
-                if (!sEluna->OnChat(GetPlayer(), type, LANG_UNIVERSAL, msg))
+                if (Eluna* e = sWorld.GetEluna())
                 {
-                    return;
+                    if (!e->OnChat(GetPlayer(), type, LANG_UNIVERSAL, msg))
+                    {
+                        return;
+                    }
                 }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->TextEmote(msg);
@@ -234,9 +240,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             else if (type == CHAT_MSG_YELL)
             {
 #ifdef ENABLE_ELUNA
-                if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                if (Eluna* e = sWorld.GetEluna())
                 {
-                    return;
+                    if (!e->OnChat(GetPlayer(), type, lang, msg))
+                    {
+                        return;
+                    }
                 }
 #endif /* ENABLE_ELUNA */
                  GetPlayer()->Yell(msg, lang);
@@ -292,9 +301,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, player))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, player))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
@@ -347,9 +359,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -402,9 +417,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 {
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
-                    if (!sEluna->OnChat(GetPlayer(), type, lang, msg, guild))
+                    if (Eluna* e = sWorld.GetEluna())
                     {
-                        return;
+                        if (!e->OnChat(GetPlayer(), type, lang, msg, guild))
+                        {
+                            return;
+                        }
                     }
 #endif /* ENABLE_ELUNA */
 
@@ -458,9 +476,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 {
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
-                    if (!sEluna->OnChat(GetPlayer(), type, lang, msg, guild))
+                    if (Eluna* e = sWorld.GetEluna())
                     {
-                        return;
+                        if (!e->OnChat(GetPlayer(), type, lang, msg, guild))
+                        {
+                            return;
+                        }
                     }
 #endif /* ENABLE_ELUNA */
 
@@ -507,9 +528,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -568,9 +592,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -616,9 +643,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -665,9 +695,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -700,9 +733,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg, group))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg, group))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -733,9 +769,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 {
                     // Used by Eluna
 #ifdef ENABLE_ELUNA
-                    if (!sEluna->OnChat(GetPlayer(), type, lang, msg, chn))
+                    if (Eluna* e = sWorld.GetEluna())
                     {
-                        return;
+                        if (!e->OnChat(GetPlayer(), type, lang, msg, chn))
+                        {
+                            return;
+                        }
                     }
 #endif /* ENABLE_ELUNA */
 #ifdef ENABLE_PLAYERBOTS
@@ -781,9 +820,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 }
                 // Used by Eluna
 #ifdef ENABLE_ELUNA
-                if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+                if (Eluna* e = sWorld.GetEluna())
                 {
-                    return;
+                    if (!e->OnChat(GetPlayer(), type, lang, msg))
+                    {
+                        return;
+                    }
                 }
 #endif /* ENABLE_ELUNA */
             }
@@ -818,9 +860,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
             // Used by Eluna
 #ifdef ENABLE_ELUNA
-            if (!sEluna->OnChat(GetPlayer(), type, lang, msg))
+            if (Eluna* e = sWorld.GetEluna())
             {
-                return;
+                if (!e->OnChat(GetPlayer(), type, lang, msg))
+                {
+                    return;
+                }
             }
 #endif /* ENABLE_ELUNA */
 
@@ -845,7 +890,10 @@ void WorldSession::HandleEmoteOpcode(WorldPacket& recv_data)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnEmote(GetPlayer(), emote);
+    if (Eluna* e = GetPlayer()->GetEluna())
+    {
+        e->OnEmote(GetPlayer(), emote);
+    }
 #endif /* ENABLE_ELUNA */
     GetPlayer()->HandleEmoteCommand(emote);
 }
@@ -909,7 +957,10 @@ void WorldSession::HandleTextEmoteOpcode(WorldPacket& recv_data)
 
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-    sEluna->OnTextEmote(GetPlayer(), text_emote, emoteNum, guid);
+    if (Eluna* e = GetPlayer()->GetEluna())
+    {
+        e->OnTextEmote(GetPlayer(), text_emote, emoteNum, guid);
+    }
 #endif /* ENABLE_ELUNA */
 
     EmotesTextEntry const* em = sEmotesTextStore.LookupEntry(text_emote);

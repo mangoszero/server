@@ -1128,7 +1128,7 @@ class Player : public Unit
 
         void RemovePet(PetSaveMode mode);
         void RemoveMiniPet();
-        virtual Pet* GetMiniPet() const override;
+        Pet* GetMiniPet() const override;
 
         // use only in Pet::Unsummon/Spell::DoSummon
         void _SetMiniPet(Pet* pet)
@@ -2269,8 +2269,8 @@ class Player : public Unit
         bool isMoving() const { return m_movementInfo.HasMovementFlag(movementFlagsMask); }
         bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(movementOrTurningFlagsMask); }
 
-        virtual bool CanSwim() const override { return true; }
-        virtual bool CanFly() const override { return false; }
+        bool CanSwim() const override { return true; }
+        bool CanFly() const override { return false; }
         bool IsFlying() const { return false; }
         bool IsFreeFlying() const { return false; }
 

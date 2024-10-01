@@ -332,13 +332,13 @@ class BGQueueInviteEvent : public BasicEvent
          * @param p_time
          * @return bool
          */
-        virtual bool Execute(uint64 e_time, uint32 p_time) override;
+        bool Execute(uint64 e_time, uint32 p_time) override;
         /**
          * @brief
          *
          * @param e_time
          */
-        virtual void Abort(uint64 e_time) override;
+        void Abort(uint64 e_time) override;
     private:
         ObjectGuid m_PlayerGuid; /**< TODO */
         uint32 m_BgInstanceGUID; /**< TODO */
@@ -382,13 +382,13 @@ class BGQueueRemoveEvent : public BasicEvent
          * @param p_time
          * @return bool
          */
-        virtual bool Execute(uint64 e_time, uint32 p_time) override;
+        bool Execute(uint64 e_time, uint32 p_time) override;
         /**
          * @brief
          *
          * @param e_time
          */
-        virtual void Abort(uint64 e_time) override;
+        void Abort(uint64 e_time) override;
     private:
         ObjectGuid m_PlayerGuid; /**< TODO */
         uint32 m_BgInstanceGUID; /**< TODO */

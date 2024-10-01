@@ -341,9 +341,13 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
         uint32 buyoutPrice = item->GetCount() * urand(price, 4 * price / 3);
 
         uint32 curPrice = entry->bid;
-        if (!curPrice) curPrice = entry->startbid;
+        if (!curPrice)
         {
-            if (!curPrice) curPrice = entry->buyout;
+            curPrice = entry->startbid;
+        }
+        if (!curPrice)
+        {
+            curPrice = entry->buyout;
         }
 
         if (curPrice > buyoutPrice)
@@ -469,9 +473,13 @@ uint32 AhBot::GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Categ
     uint32 categoryTime = GetTime(categoryName, 0, auctionHouse, AHBOT_WON_DELAY);
     uint32 itemTime = GetTime("item", itemId, auctionHouse, AHBOT_WON_DELAY);
 
-    if (categoryTime < time(0)) categoryTime = time(0);
+    if (categoryTime < time(0))
     {
-        if (itemTime < time(0)) itemTime = time(0);
+        categoryTime = time(0);
+    }
+    if (itemTime < time(0))
+    {
+        itemTime = time(0);
     }
 
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);
@@ -504,9 +512,13 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
     uint32 categoryBuyTime = GetTime(categoryName, 0, auctionHouse, AHBOT_WON_DELAY);
     uint32 categoryTime = max(categorySellTime, categoryBuyTime);
 
-    if (categoryTime < time(0)) categoryTime = time(0);
+    if (categoryTime < time(0))
     {
-        if (itemTime < time(0)) itemTime = time(0);
+        categoryTime = time(0);
+    }
+    if (itemTime < time(0))
+    {
+        itemTime = time(0);
     }
 
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);

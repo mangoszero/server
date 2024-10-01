@@ -167,10 +167,12 @@ string ChatHelper::formatMoney(uint32 copper)
     {
         out << gold <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\gold:0|t ";
     }
+
     if (silver > 0 && gold < 50)
     {
         out << silver <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\silver:0|t ";
     }
+
     if (copper > 0 && gold < 10)
     {
         out << copper <<  "|TInterface\\AddOns\\AtlasLoot\\Images\\bronze:0|t";

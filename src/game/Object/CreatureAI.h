@@ -415,7 +415,7 @@ struct CreatureAIFactory : public SelectableAI
 
     CreatureAI* Create(void*) const override;
 
-    virtual int Permit(const Creature* c) const override { return REAL_AI::Permissible(c); }
+    int Permit(const Creature* c) const override { return REAL_AI::Permissible(c); }
 };
 
 enum Permitions

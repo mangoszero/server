@@ -49,7 +49,7 @@ class workerThread(threading.Thread):
             cFlags = 0
             binName = "./mmap-extractor"
         if self.mapID == 0:
-            retcode = subprocess.call([binName, "%u" % (self.mapID), "--silent",  "--offMeshInput", "offmesh.txt"], startupinfo=stInfo, creationflags=cFlags)
+            retcode = subprocess.call([binName, "%u" % (self.mapID), "--silent", "--offMeshInput", "offmesh.txt"], startupinfo=stInfo, creationflags=cFlags)
         else:
             retcode = subprocess.call([binName, "%u" % (self.mapID), "--silent"], startupinfo=stInfo, creationflags=cFlags)
         print "-- %s" % (name)

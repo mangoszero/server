@@ -41,10 +41,9 @@ namespace ai
         virtual string GetTargetName() { return "self target"; }
 
         bool needCheck() {
-            if (++ticksElapsed >= checkInterval) {
+            if (++ticksElapsed >= checkInterval)
             {
                 ticksElapsed = 0;
-            }
                 return true;
             }
             return false;

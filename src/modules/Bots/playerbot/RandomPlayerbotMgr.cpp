@@ -36,7 +36,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     {
         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
         SetEventValue(0, "bot_count", maxAllowedBotCount,
-                urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
+            urand(sPlayerbotAIConfig.randomBotCountChangeMinInterval, sPlayerbotAIConfig.randomBotCountChangeMaxInterval));
     }
 
     list<uint32> bots = GetBots();
@@ -351,7 +351,7 @@ void RandomPlayerbotMgr::Randomize(Player* bot)
 void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
 {
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
-    uint32 level = min(bot->getLevel() + 1, maxLevel);
+    uint32 level = min((uint32)(bot->getLevel() + 1), maxLevel);
     PlayerbotFactory factory(bot, level);
     if (bot->GetGuildId())
     {
@@ -379,7 +379,7 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 
         vector<GameTele const*> locs;
         GameTeleMap const & teleMap = sObjectMgr.GetGameTeleMap();
-        for(GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
+        for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
             GameTele const* tele = &itr->second;
             if (tele->mapId == mapId)
@@ -462,7 +462,7 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
     bot->GetPlayerbotAI()->Reset();
 
     HostileReference *ref = bot->GetHostileRefManager().getFirst();
-    while( ref )
+    while (ref)
     {
         ThreatManager *threatManager = ref->getSource();
         Unit *unit = threatManager->getOwner();
@@ -890,12 +890,13 @@ void RandomPlayerbotMgr::PrintStats()
             continue;
         }
 
-        uint32 from = i*10;
+        uint32 from = i * 10;
         uint32 to = min(from + 9, maxLevel);
-        if (!from) from = 1;
+        if (!from)
         {
-            sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
+            from = 1;
         }
+        sLog.outString("    %d..%d: %d alliance, %d horde", from, to, alliance[i], horde[i]);
     }
     sLog.outString("Per race:");
     for (uint8 race = RACE_HUMAN; race < MAX_RACES; ++race)

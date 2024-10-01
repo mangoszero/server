@@ -180,6 +180,12 @@ void WorldSession::SendPacket(WorldPacket const* packet)
         return;
     }
 
+    if (opcodeTable[packet->GetOpcode()].status == STATUS_UNHANDLED)
+    {
+        sLog.outError("SESSION: tried to send an unhandled opcode 0x%.4X", packet->GetOpcode());
+        return;
+    }
+
 #ifdef MANGOS_DEBUG
 
     // Code for network use statistic
@@ -334,7 +340,7 @@ bool WorldSession::Update(PacketFilter& updater)
                     break;
                 case STATUS_UNHANDLED:
                     DEBUG_LOG("SESSION: received not handled opcode %s (0x%.4X)",
-                              packet->GetOpcodeName(),
+                              LookupOpcodeName(packet->GetOpcode()),
                               packet->GetOpcode());
                     break;
                 default:
@@ -622,7 +628,10 @@ void WorldSession::LogoutPlayer(bool Save)
 
         ///- Used by Eluna
 #ifdef ENABLE_ELUNA
-        sEluna->OnLogout(_player);
+        if (Eluna* e = sWorld.GetEluna())
+        {
+            e->OnLogout(_player);
+        }
 #endif /* ENABLE_ELUNA */
 
         ///- Remove the player from the world
@@ -871,9 +880,12 @@ void WorldSession::SendTransferAborted(uint32 mapid, uint8 reason, uint8 arg)
 void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet)
 {
 #ifdef ENABLE_ELUNA
-    if (!sEluna->OnPacketReceive(this, *packet))
+    if (Eluna* e = sWorld.GetEluna())
     {
-        return;
+        if (!e->OnPacketReceive(this, *packet))
+        {
+            return;
+        }
     }
 #endif /* ENABLE_ELUNA */
 

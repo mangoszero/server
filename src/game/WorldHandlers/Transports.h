@@ -42,8 +42,8 @@ class Transport : public GameObject
         bool AddPassenger(Unit* passenger);
         bool RemovePassenger(Unit* passenger);
 
-        virtual void Update(uint32 update_diff, uint32 p_time) override {}
-        virtual void DeleteFromDB() override {}
+        void Update(uint32 update_diff, uint32 p_time) override {}
+        void DeleteFromDB() override {}
 
         UnitSet const& GetPassengers() const { return m_passengers; }
 
@@ -69,7 +69,7 @@ class GlobalTransport : public Transport
     public:
         explicit GlobalTransport();
         virtual ~GlobalTransport();
-        virtual void Update(uint32 update_diff, uint32 p_time) override;
+        void Update(uint32 update_diff, uint32 p_time) override;
 
         bool Initialize(uint32 entry, uint32 period, std::string const& name);
         std::set<uint32> const* GetMapsUsed() const { return &m_mapsUsed; }

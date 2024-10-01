@@ -6,7 +6,7 @@ message("Install configs to    : ${CONF_INSTALL_DIR}")
 
 message("")
 message("Detailed Information")
-message("+-- opeating system   : ${CMAKE_HOST_SYSTEM}")
+message("+-- operating system   : ${CMAKE_HOST_SYSTEM}")
 message("+-- cmake version     : ${CMAKE_VERSION}")
 message("")
 

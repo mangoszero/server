@@ -1750,13 +1750,45 @@ Warden.ClientCheckFailAction = 1
 Warden.BanDuration           = 86400
 Warden.DBLogLevel            = 0
 
-###################################################################################################################
+###################################################################################################
+#  REALM STATUS FLAG
+#
+#    Realm.RecommendedOrNew.Enabled
+#       Enable setting to set realm flag after initial startup
+#       Default: 0 (Disabled)
+#                1 (Enabled)
+#
+#    Realm.RecommendedOrNew
+#       Sets the recommended or new flag on realm.
+#       Default: 0 (Recommended)
+#                1 (New)
+#
+#       Note: Recommended will display as 'New Players' for Wrath of the Lich King
+#
+###################################################################################################
+
+Realm.RecommendedOrNew.Enabled = 0
+Realm.RecommendedOrNew = 0
+
+###################################################################################################
 #  ELUNA SETTINGS
 #
-#    Eluna.Enabled
-#       Enable Eluna LuaEngine
-#       Default: 1 (Enabled)
-#                0 (Disabled)
+#   Eluna.Enabled
+#       Description: Enable or disable Eluna LuaEngine
+#       Default:     true  - (enabled)
+#                    false - (disabled)
+#
+#   Eluna.CompatibilityMode
+#       Description: Toggles Eluna between compatibility mode (single-threaded) or multistate mode.
+#                    Compatibility mode limits the core to a single map update thread.
+#       Default:     true  - (enabled)
+#                    false - (disabled)
+#
+#   Eluna.OnlyOnMaps
+#       Description: When Eluna is enabled, a state will only be created for a list of specified maps
+#                    This only works for multistate mode.
+#       Default:     ""  - (enabled on all maps)
+#                    "0,1,2,..." - (enabled on specific maps only)
 #
 #   Eluna.TraceBack
 #       Description: Sets whether to use debug.traceback function on a lua error or not.
@@ -1769,8 +1801,10 @@ Warden.DBLogLevel            = 0
 #                    The path can be relative or absolute.
 #       Default:     "lua_scripts"
 #
-###################################################################################################################
+###################################################################################################
 
-Eluna.Enabled    = 1
-Eluna.TraceBack  = false
+Eluna.Enabled = true
+Eluna.CompatibilityMode = false
+Eluna.OnlyOnMaps = ""
+Eluna.TraceBack = false
 Eluna.ScriptPath = "lua_scripts"
