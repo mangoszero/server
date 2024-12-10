@@ -1,0 +1,31 @@
+name: Docker Build
+on:
+  push:
+      branches: [ master ]
+  pull_request:
+      branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout Submodules
+        shell: bash
+        run: |
+          git submodule init && git submodule update
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Mangosd Docker image
+        run: |
+          docker build -t mangosd:latest -f dockercontainer/DockerFile-mangosd .
+
+      - name: Build Realmd Docker image
+        run: |
+          docker build -t realmd:latest -f dockercontainer/DockerFile-realmd .
