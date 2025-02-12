@@ -34,7 +34,7 @@ DisplayHeader()
     echo " |_|  |_\\__,_|_|\\_|\\___|\\___/|___/   "
     echo "                                         "
     echo " For help and support please visit:      "
-    echo " Website/Forum/Wiki: https://getmangos.eu"
+    echo " Website/Forum/Wiki: https://www.getmangos.eu"
     echo "========================================================="
 }
 

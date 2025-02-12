@@ -183,7 +183,7 @@ World of Warcraft, and all related art, images, and lore are copyright [Blizzard
 [12]: https://app.codacy.com/gh/mangoszero/server/dashboard "Codacy Code Status"
 [13]: https://www.codefactor.io/repository/github/mangoszero/server "Codefactor Code Status"
 [14]: http://makeapullrequest.com "Show PR's Welcome Icon"
-[15]: http://getmangos.eu/wiki "Mangos Wiki"
+[15]: https://www.getmangos.eu/wiki "Mangos Wiki"
 [16]: https://www.getmangos.eu/bug-tracker/mangos-zero/ "Mangos Online tracker"
 [17]: https://www.getmangos.eu/wiki/documentation/installation-guides/ "Installation Guides"
 [19]: http://www.cmake.org/ "CMake - Cross Platform Make"

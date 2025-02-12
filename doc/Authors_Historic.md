@@ -517,4 +517,4 @@ Prior to Release 0.20, the following helped get Mangos to where it was.
 [1]: http://blizzard.com/games/wow/ "World of Warcraft"
 [2]: http://sourceforge.net/p/mangos/ "mangos on SourceForge"
 [3]: https://github.com/mangos/ "mangos on github"
-[4]: http://getmangos.eu/ "mangos project"
+[4]: https://www.getmangos.eu/ "mangos project"
