@@ -88,6 +88,8 @@ if(SCRIPT_LIB_ELUNA)
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/*.h
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/hooks/*.cpp
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/hooks/*.h
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/methods/*.cpp
+        ${CMAKE_SOURCE_DIR}/src/modules/Eluna/methods/*.h
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/methods/Mangos/*.cpp
         ${CMAKE_SOURCE_DIR}/src/modules/Eluna/methods/Mangos/*.h
     )
