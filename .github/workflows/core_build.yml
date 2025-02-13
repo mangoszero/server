@@ -18,7 +18,7 @@ jobs:
         run: sudo apt-get update -y
 
       - name: Install Required Packages
-        run: sudo apt-get install -y git make cmake clang libssl-dev libbz2-dev build-essential default-libmysqlclient-dev libace-dev
+        run: sudo apt-get install -y git make cmake clang libssl-dev libbz2-dev build-essential default-libmysqlclient-dev libace-dev libreadline-dev
 
       - name: Update Compilers
         run: source ./apps/ci/ci-compiler-update.sh
