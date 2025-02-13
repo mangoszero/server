@@ -22,7 +22,7 @@ jobs:
           sdk-version: 22621
 
       - name: Install OpenSSL
-        run: choco install --no-progress openssl --version=3.3.3
+        run: choco install --no-progress openssl --version=3.4.0
 
       - name: Checkout Submodules
         shell: bash
