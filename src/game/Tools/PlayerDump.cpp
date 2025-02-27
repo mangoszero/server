@@ -372,14 +372,14 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             wherestr = GenerateWhereStr(fieldname, guid);
         }
 
-        //fetch table columns
+        // fetch table columns
         std::string tableColumnNamesStr = "";
         QueryNamedResult* resNames = CharacterDatabase.PQueryNamed("SELECT * FROM `%s` LIMIT 1", tableFrom);
         if (!resNames)
         {
             return;
         }
-        // There will be a result since if not teh code does not hit lines before... so no check needed
+        // There will be a result since if not the code does not hit lines before... so no check needed
         QueryFieldNames const& namesMap = resNames->GetFieldNames();
 
         for (QueryFieldNames::const_iterator itr = namesMap.begin(); itr != namesMap.end(); ++itr)
@@ -388,7 +388,10 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
         }
         // remove last character of tableColumnNamesStr = ","
         tableColumnNamesStr.pop_back();
-        namesMap.empty();
+
+        // Create a non-const copy of namesMap to clear it
+        QueryFieldNames nonConstNamesMap = namesMap;
+        nonConstNamesMap.clear(); // Clear the contents of the vector
 
         // fetch results of the table
         QueryResult* result = CharacterDatabase.PQuery("SELECT %s FROM `%s` WHERE %s", tableColumnNamesStr.c_str(), tableFrom, wherestr.c_str());
@@ -396,6 +399,8 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
         {
             return;
         }
+
+
 
         do
         {
