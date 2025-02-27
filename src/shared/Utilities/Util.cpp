@@ -30,6 +30,8 @@
 #include "Log/Log.h"
 
 #include <iomanip>
+#include <cctype>
+#include <cstring>
 
 //////////////////////////////////////////////////////////////////////////
 int32 irand(int32 min, int32 max)
@@ -903,4 +905,25 @@ void print_banner()
             "\n");
         break;
     }
+}
+
+// Used by Playerbot
+
+// Function to perform a case-insensitive search of str2 in str1
+char* strstri(const std::string& str1, const std::string& str2)
+{
+    // Convert both strings to lowercase for case-insensitive comparison
+    std::string lowerStr1 = str1;
+    std::string lowerStr2 = str2;
+    std::transform(lowerStr1.begin(), lowerStr1.end(), lowerStr1.begin(), ::tolower);
+    std::transform(lowerStr2.begin(), lowerStr2.end(), lowerStr2.begin(), ::tolower);
+
+    // Find the first occurrence of lowerStr2 in lowerStr1
+    size_t pos = lowerStr1.find(lowerStr2);
+    if (pos != std::string::npos)
+    {
+        // Return the pointer to the first occurrence in the original string
+        return (char*)str1.c_str() + pos;
+    }
+    return nullptr;
 }

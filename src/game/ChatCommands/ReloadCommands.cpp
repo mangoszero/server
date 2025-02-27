@@ -404,6 +404,16 @@ bool ChatHandler::HandleReloadMangosStringCommand(char* /*args*/)
     return true;
 }
 
+bool ChatHandler::HandleReloadNpcGossipCommand(char* args)
+{
+    sLog.outString("Re-Loading 'gossip_menus' Table!");
+    sObjectMgr.LoadGossipMenus();
+    sLog.outString("Re-Loading 'gossip_text' Table!");
+    sObjectMgr.LoadGossipText();
+    SendGlobalSysMessage("DB tables `Gossip_menu` and `gossip_text` reloaded.", SEC_MODERATOR);
+    return true;
+}
+
 bool ChatHandler::HandleReloadNpcTextCommand(char* /*args*/)
 {
     sLog.outString("Re-Loading `npc_text` Table!");

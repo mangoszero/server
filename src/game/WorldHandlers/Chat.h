@@ -1,3 +1,4 @@
+
 /**
  * MaNGOS is a full featured server for World of Warcraft, supporting
  * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
@@ -190,7 +191,6 @@ class ChatHandler
         * \param ObjectGuid const& targetGuid  : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND* or *ACHIEVEMENT
         * \param char const* targetName        : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND*
         * \param char const* channelName       : Required only for CHAT_MSG_CHANNEL
-        * \param uint8 playerRank              : Used only for Defensive Channels (Value over 0 will show rank name before character name in channel)
         **/
         static void BuildChatPacket(
             WorldPacket& data, ChatMsg msgtype, char const* message, Language language = LANG_UNIVERSAL, ChatTagFlags chatTag = CHAT_TAG_NONE,
@@ -322,7 +322,9 @@ class ChatHandler
         bool HandleGameObjectLootstateCommand(char* args);
         bool HandleGameObjectMoveCommand(char* args);
         bool HandleGameObjectNearCommand(char* args);
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
         bool HandleGameObjectPhaseCommand(char* args);
+#endif
         bool HandleGameObjectStateCommand(char* args);
         bool HandleGameObjectTargetCommand(char* args);
         bool HandleGameObjectTurnCommand(char* args);
@@ -550,7 +552,9 @@ class ChatHandler
         bool HandleReloadDisablesCommand(char* args);
 
         bool HandleReloadSpellLinkedCommand(char* args);
+#if defined(WOTLK) || defined(CATA) || defined(MISTS)
         bool HandleResetAchievementsCommand(char* args);
+#endif
         bool HandleResetAllCommand(char* args);
         bool HandleResetHonorCommand(char* args);
         bool HandleResetLevelCommand(char* args);
@@ -827,3 +831,4 @@ class CliHandler : public ChatHandler
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif
+

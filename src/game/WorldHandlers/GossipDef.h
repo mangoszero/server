@@ -35,6 +35,9 @@ class WorldSession;
 #define GOSSIP_MAX_MENU_ITEMS       32                      // client supports showing max 32 items
 #define DEFAULT_GOSSIP_MESSAGE      0xffffff
 
+/**
+ * Enum representing different gossip options available in the game.
+ */
 enum Gossip_Option
 {
     GOSSIP_OPTION_NONE              = 0,                    // UNIT_NPC_FLAG_NONE                (0)
@@ -58,33 +61,38 @@ enum Gossip_Option
     GOSSIP_OPTION_MAX
 };
 
+/**
+ * Enum representing different icons used in gossip options.
+ */
 enum GossipOptionIcon
 {
-    GOSSIP_ICON_CHAT                = 0,                    // white chat bubble
-    GOSSIP_ICON_VENDOR              = 1,                    // brown bag
-    GOSSIP_ICON_TAXI                = 2,                    // flight
-    GOSSIP_ICON_TRAINER             = 3,                    // book
-    GOSSIP_ICON_INTERACT_1          = 4,                    // interaction wheel
-    GOSSIP_ICON_INTERACT_2          = 5,                    // interaction wheel
-    GOSSIP_ICON_MONEY_BAG           = 6,                    // brown bag with yellow dot
-    GOSSIP_ICON_TALK                = 7,                    // white chat bubble with black dots
-    GOSSIP_ICON_TABARD              = 8,                    // tabard
-    GOSSIP_ICON_BATTLE              = 9,                    // two swords
-    GOSSIP_ICON_DOT                 = 10,                   // yellow dot
-    GOSSIP_ICON_CHAT_11             = 11,                   // This and below are most the same visual as GOSSIP_ICON_CHAT
-    GOSSIP_ICON_CHAT_12             = 12,                   // but are still used for unknown reasons.
-    GOSSIP_ICON_DOT_13              = 13,
-    GOSSIP_ICON_DOT_14              = 14,                   // probably invalid
-    GOSSIP_ICON_DOT_15              = 15,                   // probably invalid
-    GOSSIP_ICON_DOT_16              = 16,
-    GOSSIP_ICON_DOT_17              = 17,
-    GOSSIP_ICON_DOT_18              = 18,
-    GOSSIP_ICON_DOT_19              = 19,
-    GOSSIP_ICON_DOT_20              = 20,
+    GOSSIP_ICON_CHAT                = 0,                    // White chat bubble
+    GOSSIP_ICON_VENDOR              = 1,                    // Brown bag
+    GOSSIP_ICON_TAXI                = 2,                    // Flight
+    GOSSIP_ICON_TRAINER             = 3,                    // Book
+    GOSSIP_ICON_INTERACT_1          = 4,                    // Interaction wheel
+    GOSSIP_ICON_INTERACT_2          = 5,                    // Interaction wheel
+    GOSSIP_ICON_MONEY_BAG           = 6,                    // Brown bag with yellow dot
+    GOSSIP_ICON_TALK                = 7,                    // White chat bubble with black dots
+    GOSSIP_ICON_TABARD              = 8,                    // Tabard
+    GOSSIP_ICON_BATTLE              = 9,                    // Two swords
+    GOSSIP_ICON_DOT                 = 10,                   // Yellow dot
+    GOSSIP_ICON_CHAT_11             = 11,                   // Similar to GOSSIP_ICON_CHAT
+    GOSSIP_ICON_CHAT_12             = 12,                   // Similar to GOSSIP_ICON_CHAT
+    GOSSIP_ICON_DOT_13              = 13,                   // Yellow dot
+    GOSSIP_ICON_DOT_14              = 14,                   // Probably invalid
+    GOSSIP_ICON_DOT_15              = 15,                   // Probably invalid
+    GOSSIP_ICON_DOT_16              = 16,                   // Yellow dot
+    GOSSIP_ICON_DOT_17              = 17,                   // Yellow dot
+    GOSSIP_ICON_DOT_18              = 18,                   // Yellow dot
+    GOSSIP_ICON_DOT_19              = 19,                   // Yellow dot
+    GOSSIP_ICON_DOT_20              = 20,                   // Yellow dot
     GOSSIP_ICON_MAX
 };
 
-// POI icons. Many more exist, list not complete.
+/**
+ * Enum representing different Point of Interest (POI) icons.
+ */
 enum Poi_Icon
 {
     ICON_POI_GREY_AV_MINE       =   0,                      // Grey mine lorry
@@ -93,7 +101,7 @@ enum Poi_Icon
     ICON_POI_BWTOMB             =   3,                      // Blue and White Tomb Stone
     ICON_POI_SMALL_HOUSE        =   4,                      // Small house
     ICON_POI_GREYTOWER          =   5,                      // Grey Tower
-    ICON_POI_REDFLAG            =   6,                      // Red Flag w/Yellow !
+    ICON_POI_REDFLAG            =   6,                      // Red Flag with Yellow !
     ICON_POI_TOMBSTONE          =   7,                      // Normal tomb stone (brown)
     ICON_POI_BWTOWER            =   8,                      // Blue and White Tower
     ICON_POI_REDTOWER           =   9,                      // Red Tower
@@ -130,36 +138,48 @@ enum Poi_Icon
     ICON_POI_REDHORSE           =   40                      // Red Horse
 };
 
+/**
+ * Structure representing a gossip menu item.
+ */
 struct GossipMenuItem
 {
-    uint8       m_gIcon;
-    bool        m_gCoded;
-    std::string m_gMessage;
-    uint32      m_gSender;
-    uint32      m_gOptionId;
-    std::string m_gBoxMessage;
-    uint32      m_gBoxMoney;
+    uint8       m_gIcon;            // Icon for the gossip menu item
+    bool        m_gCoded;           // Whether the gossip menu item is coded
+    std::string m_gMessage;         // Message for the gossip menu item
+    uint32      m_gSender;          // Sender ID for the gossip menu item
+    uint32      m_gOptionId;        // Option ID for the gossip menu item
+    std::string m_gBoxMessage;      // Box message for the gossip menu item
+    uint32      m_gBoxMoney;        // Box money for the gossip menu item
 };
 
 typedef std::vector<GossipMenuItem> GossipMenuItemList;
 
+/**
+ * Structure representing data for a gossip menu item.
+ */
 struct GossipMenuItemData
 {
-    int32  m_gAction_menu;                                  // negative for close gossip
-    uint32 m_gAction_poi;
-    uint32 m_gAction_script;
+    int32  m_gAction_menu;          // Action menu ID (negative for close gossip)
+    uint32 m_gAction_poi;           // Action POI ID
+    uint32 m_gAction_script;        // Action script ID
 };
 
 typedef std::vector<GossipMenuItemData> GossipMenuItemDataList;
 
+/**
+ * Structure representing a quest menu item.
+ */
 struct QuestMenuItem
 {
-    uint32      m_qId;
-    uint8       m_qIcon;
+    uint32      m_qId;              // Quest ID
+    uint8       m_qIcon;            // Icon for the quest menu item
 };
 
 typedef std::vector<QuestMenuItem> QuestMenuItemList;
 
+/**
+ * Class representing a gossip menu.
+ */
 class GossipMenu
 {
     public:
@@ -176,13 +196,13 @@ class GossipMenu
         void AddMenuItem(uint8 Icon, int32 itemText, uint32 dtSender, uint32 dtAction, int32 boxText, bool Coded = false);
 
         void SetMenuId(uint32 menu_id) { m_gMenuId = menu_id; }
-        uint32 GetMenuId() { return m_gMenuId; }
+        uint32 GetMenuId() const { return m_gMenuId; }
 
         void AddGossipMenuItemData(int32 action_menu, uint32 action_poi, uint32 action_script);
 
         unsigned int MenuItemCount() const
         {
-            return m_gItems.size();
+            return static_cast<unsigned int>(m_gItems.size());
         }
 
         bool Empty() const
@@ -190,34 +210,37 @@ class GossipMenu
             return m_gItems.empty();
         }
 
-        GossipMenuItem const& GetItem(unsigned int Id)
+        GossipMenuItem const& GetItem(unsigned int Id) const
         {
-            return m_gItems[ Id ];
+            return m_gItems.at(Id);
         }
 
-        GossipMenuItemData const& GetItemData(unsigned int indexId)
+        GossipMenuItemData const* GetItemData(unsigned int indexId) const
         {
-            return m_gItemsData[indexId];
+            return &m_gItemsData.at(indexId);
         }
 
-        uint32 MenuItemSender(unsigned int ItemId);
-        uint32 MenuItemAction(unsigned int ItemId);
-        bool MenuItemCoded(unsigned int ItemId);
+        uint32 MenuItemSender(unsigned int ItemId) const;
+        uint32 MenuItemAction(unsigned int ItemId) const;
+        bool MenuItemCoded(unsigned int ItemId) const;
 
         void ClearMenu();
 
         WorldSession* GetMenuSession() const { return m_session; }
 
     protected:
-        GossipMenuItemList      m_gItems;
-        GossipMenuItemDataList  m_gItemsData;
+        GossipMenuItemList      m_gItems;           // List of gossip menu items
+        GossipMenuItemDataList  m_gItemsData;       // List of gossip menu item data
 
-        uint32 m_gMenuId;
+        uint32 m_gMenuId;                           // Gossip menu ID
 
     private:
-        WorldSession* m_session;
+        WorldSession* m_session;                    // Session associated with the gossip menu
 };
 
+/**
+ * Class representing a quest menu.
+ */
 class QuestMenu
 {
     public:
@@ -229,7 +252,7 @@ class QuestMenu
 
         uint8 MenuItemCount() const
         {
-            return m_qItems.size();
+            return static_cast<uint8>(m_qItems.size());
         }
 
         bool Empty() const
@@ -237,22 +260,25 @@ class QuestMenu
             return m_qItems.empty();
         }
 
-        bool HasItem(uint32 questid);
+        bool HasItem(uint32 questid) const;
 
-        QuestMenuItem const& GetItem(uint16 Id)
+        QuestMenuItem const& GetItem(uint16 Id) const
         {
-            return m_qItems[ Id ];
+            return m_qItems.at(Id);
         }
 
     protected:
-        QuestMenuItemList m_qItems;
+        QuestMenuItemList m_qItems;                 // List of quest menu items
 };
 
+/**
+ * Class representing a player menu, which includes both gossip and quest menus.
+ */
 class PlayerMenu
 {
     private:
-        GossipMenu mGossipMenu;
-        QuestMenu  mQuestMenu;
+        GossipMenu mGossipMenu;                     // Gossip menu
+        QuestMenu  mQuestMenu;                      // Quest menu
 
     public:
         explicit PlayerMenu(WorldSession* Session);
@@ -266,28 +292,28 @@ class PlayerMenu
         bool Empty() const { return mGossipMenu.Empty() && mQuestMenu.Empty(); }
 
         void ClearMenus();
-        uint32 GossipOptionSender(unsigned int Selection);
-        uint32 GossipOptionAction(unsigned int Selection);
-        bool GossipOptionCoded(unsigned int Selection);
+        uint32 GossipOptionSender(unsigned int Selection) const;
+        uint32 GossipOptionAction(unsigned int Selection) const;
+        bool GossipOptionCoded(unsigned int Selection) const;
 
         void SendGossipMenu(uint32 titleTextId, ObjectGuid objectGuid);
-        void CloseGossip();
-        void SendPointOfInterest(float X, float Y, uint32 Icon, uint32 Flags, uint32 Data, const char* locName);
-        void SendPointOfInterest(uint32 poi_id);
-        void SendTalking(uint32 textID);
-        void SendTalking(char const* title, char const* text);
+        void CloseGossip() const;
+        void SendPointOfInterest(float X, float Y, uint32 Icon, uint32 Flags, uint32 Data, const char* locName) const;
+        void SendPointOfInterest(uint32 poi_id) const;
+        void SendTalking(uint32 textID) const;
+        void SendTalking(char const* title, char const* text) const;
 
         /*********************************************************/
         /***                    QUEST SYSTEM                   ***/
         /*********************************************************/
-        void SendQuestGiverStatus(uint8 questStatus, ObjectGuid npcGUID);
+        void SendQuestGiverStatus(uint8 questStatus, ObjectGuid npcGUID) const;
 
         void SendQuestGiverQuestList(QEmote eEmote, const std::string& Title, ObjectGuid npcGUID);
 
-        void SendQuestQueryResponse(Quest const* pQuest);
-        void SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid npcGUID, bool ActivateAccept);
+        void SendQuestQueryResponse(Quest const* pQuest) const;
+        void SendQuestGiverQuestDetails(Quest const* pQuest, ObjectGuid npcGUID, bool ActivateAccept) const;
 
-        void SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGUID, bool EnbleNext);
-        void SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel);
+        void SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGUID, bool EnbleNext) const;
+        void SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel) const;
 };
 #endif

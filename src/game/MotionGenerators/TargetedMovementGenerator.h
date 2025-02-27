@@ -28,6 +28,7 @@
 #include "MovementGenerator.h"
 #include "FollowerReference.h"
 #include "G3D/Vector3.h"
+#include "PathFinder.h" // Include the header file for PathFinder
 
 class PathFinder;
 
@@ -132,5 +133,4 @@ class FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, Follow
     protected:
         float GetDynamicTargetDistance(T& owner, bool forRangeCheck) const override;
 };
-
 #endif
