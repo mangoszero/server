@@ -13,12 +13,12 @@
 
 /**
  * A static map that stores the available races for each class.
- * 
+ *
  * The key is a uint8 representing the class ID (e.g., CLASS_WARRIOR, CLASS_PALADIN).
- * The value is a vector of uint8 representing the race IDs (e.g., RACE_HUMAN, RACE_ORC) 
+ * The value is a vector of uint8 representing the race IDs (e.g., RACE_HUMAN, RACE_ORC)
  * that are available for that class.
- * 
- * This map is initialized in the constructor of RandomPlayerbotFactory and is used to 
+ *
+ * This map is initialized in the constructor of RandomPlayerbotFactory and is used to
  * determine the possible races when creating a random bot for a specific class.
  */
 map<uint8, vector<uint8> > RandomPlayerbotFactory::availableRaces;
@@ -135,11 +135,11 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls)
 
 /**
  * Generates a random name for a bot.
- * 
+ *
  * This function queries the database to find a random name from the `ai_playerbot_names` table
  * that is not already used by a character in the `characters` table. It ensures that the generated
  * name is unique and available for use.
- * 
+ *
  * @return A randomly generated bot name, or an empty string if no names are available.
  */
 string RandomPlayerbotFactory::CreateRandomBotName()
