@@ -33,7 +33,7 @@
  * @{
  *
  * @file Mail.h
- * This file contains the the headers needed for MaNGOS to handle mails.
+ * This file contains the headers needed for MaNGOS to handle mails.
  *
  */
 
@@ -64,6 +64,7 @@ enum MailMessageType
     MAIL_GAMEOBJECT     = 4,                                /// client send CMSG_GAMEOBJECT_QUERY on this mailmessagetype
     MAIL_ITEM           = 5,                                /// client send CMSG_ITEM_QUERY on this mailmessagetype
 };
+
 /**
  * A Mask representing the status of the mail.
  */
@@ -90,6 +91,7 @@ enum MailStationery
     MAIL_STATIONERY_VAL     = 64,
     MAIL_STATIONERY_CHR     = 65,
 };
+
 /**
  * Representation of the State of a mail.
  */
@@ -99,6 +101,7 @@ enum MailState
     MAIL_STATE_CHANGED   = 2,
     MAIL_STATE_DELETED   = 3
 };
+
 /**
  * Answers contained in mails from auctionhouses.
  */
@@ -112,6 +115,7 @@ enum MailAuctionAnswers
     AUCTION_CANCELED            = 5,
     AUCTION_SALE_PENDING        = 6
 };
+
 /**
  * A class to represent the sender of a mail.
  */
@@ -150,6 +154,7 @@ class MailSender
         uint32 m_senderId;                                  // player low guid or other object entry
         MailStationery m_stationery;
 };
+
 /**
  * A class to represent the receiver of a mail.
  */
@@ -179,6 +184,7 @@ class MailReceiver
         Player* m_receiver;
         ObjectGuid m_receiver_guid;
 };
+
 /**
  * The class to represent the draft of a mail.
  */
@@ -272,13 +278,14 @@ class MailDraft
         /// The cod amount of this MailDraft.
         uint32 m_COD;
 };
+
 /**
  * Structure holding information about an item in the mail.
  */
 struct MailItemInfo
 {
-    uint32 item_guid;                                       ///< the GUID of the item.
-    uint32 item_template;                                   ///< the ID of the template of the item.
+    uint32 item_guid = 0;                                       ///< the GUID of the item.
+    uint32 item_template = 0;                                   ///< the ID of the template of the item.
 };
 
 typedef std::vector<MailItemInfo> MailItemInfoVec;
@@ -288,15 +295,15 @@ typedef std::vector<MailItemInfo> MailItemInfoVec;
 struct Mail
 {
     /// the ID of the message contained in the mail.
-    uint32 messageID;
+    uint32 messageID = 0;
     /// the type of the message
-    uint8 messageType;
+    uint8 messageType = 0;
     /// the stationary used in this mail.
-    uint8 stationery;
+    uint8 stationery = 0;
     /// the ID of the template this mail is based on.
-    uint16 mailTemplateId;
+    uint16 mailTemplateId = 0;
     /// the LowGUID of the player that sent this mail, or creature low guid, or other id
-    uint32 sender;
+    uint32 sender = 0;
     /// the GUID of the player that this mail is sent to.
     ObjectGuid receiverGuid;
     /// the subject of the mail
@@ -304,23 +311,23 @@ struct Mail
     /// the body of the mail
     std::string body;
     /// flag mark mail that already has items, or already generate none items for template
-    bool has_items;
+    bool has_items = false;
     /// A vector containing Information about the items in this mail.
     MailItemInfoVec items;
     /// A vector containing Information about the items that where already take from this mail.
     std::vector<uint32> removedItems;
     /// The time at which this mail will expire
-    time_t expire_time;
+    time_t expire_time = 0;
     /// The time at which this mail (was/will be) delivered
-    time_t deliver_time;
+    time_t deliver_time = 0;
     /// The amount of money contained in this mail.
-    uint32 money;
+    uint32 money = 0;
     /// The amount of money the receiver has to pay to get this mail.
-    uint32 COD;
+    uint32 COD = 0;
     /// The time at which this mail was read.
-    uint32 checked;
+    uint32 checked = 0;
     /// The state of this mail.
-    MailState state;
+    MailState state = MAIL_STATE_UNCHANGED;
 
     /**
      * Adds an item to the mail.

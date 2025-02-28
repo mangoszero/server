@@ -24,17 +24,30 @@
 
 #include "EventProcessor.h"
 
+/**
+ * @brief Construct a new Event Processor::Event Processor object
+ * Initializes member variables m_time and m_aborting.
+ */
 EventProcessor::EventProcessor()
 {
     m_time = 0;
     m_aborting = false;
 }
 
+/**
+ * @brief Destroy the Event Processor::Event Processor object
+ * Calls KillAllEvents with force set to true.
+ */
 EventProcessor::~EventProcessor()
 {
     KillAllEvents(true);
 }
 
+/**
+ * @brief Updates the event processor with the given time.
+ *
+ * @param p_time Time to update the event processor with.
+ */
 void EventProcessor::Update(uint32 p_time)
 {
     // update time
@@ -64,6 +77,11 @@ void EventProcessor::Update(uint32 p_time)
     }
 }
 
+/**
+ * @brief Kills all events in the event processor.
+ *
+ * @param force If true, forces the deletion of all events.
+ */
 void EventProcessor::KillAllEvents(bool force)
 {
     // prevent event insertions
@@ -95,6 +113,13 @@ void EventProcessor::KillAllEvents(bool force)
     }
 }
 
+/**
+ * @brief Adds an event to the event processor.
+ *
+ * @param Event Pointer to the event to add.
+ * @param e_time Execution time of the event.
+ * @param set_addtime If true, sets the add time of the event.
+ */
 void EventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime)
 {
     if (set_addtime)
@@ -106,7 +131,13 @@ void EventProcessor::AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime
     m_events.insert(std::pair<uint64, BasicEvent*>(e_time, Event));
 }
 
-uint64 EventProcessor::CalculateTime(uint64 t_offset)
+/**
+ * @brief Calculates the time with the given offset.
+ *
+ * @param t_offset Time offset to add.
+ * @return uint64 Calculated time.
+ */
+uint64 EventProcessor::CalculateTime(uint64 t_offset) const
 {
     return m_time + t_offset;
 }

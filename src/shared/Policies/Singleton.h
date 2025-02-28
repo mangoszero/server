@@ -43,25 +43,25 @@ namespace MaNGOS
              class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
              >
     /**
-     * @brief
+     * @brief Singleton class template
      *
+     * This class provides a thread-safe singleton implementation.
      */
     class Singleton
     {
         public:
 
             /**
-             * @brief
+             * @brief Get the singleton instance
              *
-             * @return T
+             * @return T& Reference to the singleton instance
              */
             static T& Instance();
 
         protected:
 
             /**
-             * @brief
-             *
+             * @brief Protected constructor to prevent instantiation
              */
             Singleton()
             {
@@ -70,52 +70,59 @@ namespace MaNGOS
         private:
 
             /**
-             * @brief Prohibited actions...this does not prevent hijacking.
+             * @brief Prohibited copy constructor
              *
-             * @param
+             * @param other The other instance to copy from
              */
             Singleton(const Singleton&);
+
             /**
-             * @brief
+             * @brief Prohibited assignment operator
              *
-             * @param
-             * @return Singleton &operator
+             * @param other The other instance to assign from
+             * @return Singleton& Reference to this instance
              */
             Singleton& operator=(const Singleton&);
 
             /**
-             * @brief Singleton Helpers
-             *
+             * @brief Destroy the singleton instance
              */
             static void DestroySingleton();
 
             /**
-             * @brief data structure
-             *
+             * @brief Type alias for the threading model's lock
              */
             typedef typename ThreadingModel::Lock Guard;
-            static T* si_instance; /**< TODO */
-            static bool si_destroyed; /**< TODO */
+
+            /**
+             * @brief Pointer to the singleton instance
+             */
+            static T* si_instance;
+
+            /**
+             * @brief Flag indicating if the singleton has been destroyed
+             */
+            static bool si_destroyed;
     };
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< TODO */
+    T* Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_instance = NULL; /**< Initialize singleton instance pointer to NULL */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
-    bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< TODO */
+    bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
     /**
-     * @brief
+     * @brief Get the singleton instance
      *
-     * @return T &MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>
+     * @return T& Reference to the singleton instance
      */
     T& MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::Instance()
     {
         if (!si_instance)
         {
             // double-checked Locking pattern
-            Guard();
+            Guard guard; // Named variable
 
             if (!si_instance)
             {
@@ -135,8 +142,7 @@ namespace MaNGOS
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
     /**
-     * @brief
-     *
+     * @brief Destroy the singleton instance
      */
     void MaNGOS::Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::DestroySingleton()
     {

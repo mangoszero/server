@@ -6,10 +6,12 @@
 #include "AccountMgr.h"
 #include "RandomPlayerbotMgr.h"
 
-
 class LoginQueryHolder;
 class CharacterHandler;
 
+/**
+ * @brief Constructor for PlayerbotHolder.
+ */
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     for (uint32 spellId = 0; spellId < sSpellStore.GetNumRows(); spellId++)
@@ -18,16 +20,26 @@ PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
     }
 }
 
+/**
+ * @brief Destructor for PlayerbotHolder.
+ */
 PlayerbotHolder::~PlayerbotHolder()
 {
     LogoutAllBots();
 }
 
-
+/**
+ * @brief Updates the AI internal state.
+ * @param elapsed Time elapsed since the last update.
+ */
 void PlayerbotHolder::UpdateAIInternal(uint32 elapsed)
 {
 }
 
+/**
+ * @brief Updates the sessions for all player bots.
+ * @param elapsed Time elapsed since the last update.
+ */
 void PlayerbotHolder::UpdateSessions(uint32 elapsed)
 {
     for (PlayerBotMap::const_iterator itr = GetPlayerBotsBegin(); itr != GetPlayerBotsEnd(); ++itr)
@@ -44,6 +56,9 @@ void PlayerbotHolder::UpdateSessions(uint32 elapsed)
     }
 }
 
+/**
+ * @brief Logs out all player bots.
+ */
 void PlayerbotHolder::LogoutAllBots()
 {
     while (true)
@@ -53,11 +68,15 @@ void PlayerbotHolder::LogoutAllBots()
         {
             break;
         }
-        Player* bot= itr->second;
+        Player* bot = itr->second;
         LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
     }
 }
 
+/**
+ * @brief Logs out a specific player bot.
+ * @param guid The GUID of the player bot to log out.
+ */
 void PlayerbotHolder::LogoutPlayerBot(uint64 guid)
 {
     Player* bot = GetPlayerBot(guid);
@@ -66,20 +85,29 @@ void PlayerbotHolder::LogoutPlayerBot(uint64 guid)
         bot->GetPlayerbotAI()->TellMaster("Goodbye!");
         //bot->SaveToDB();
 
-        WorldSession * botWorldSessionPtr = bot->GetSession();
+        WorldSession* botWorldSessionPtr = bot->GetSession();
         playerBots.erase(guid);    // deletes bot player ptr inside this WorldSession PlayerBotMap
         botWorldSessionPtr->LogoutPlayer(true); // this will delete the bot Player object and PlayerbotAI object
         delete botWorldSessionPtr;  // finally delete the bot's WorldSession
     }
 }
 
+/**
+ * @brief Gets a player bot by its GUID.
+ * @param playerGuid The GUID of the player bot.
+ * @return Pointer to the player bot, or nullptr if not found.
+ */
 Player* PlayerbotHolder::GetPlayerBot(uint64 playerGuid) const
 {
     PlayerBotMap::const_iterator it = playerBots.find(playerGuid);
-    return (it == playerBots.end()) ? 0 : it->second;
+    return (it == playerBots.end()) ? nullptr : it->second;
 }
 
-void PlayerbotHolder::OnBotLogin(Player * const bot)
+/**
+ * @brief Handles the login of a player bot.
+ * @param bot Pointer to the player bot.
+ */
+void PlayerbotHolder::OnBotLogin(Player* const bot)
 {
     PlayerbotAI* ai = new PlayerbotAI(bot);
     bot->SetPlayerbotAI(ai);
@@ -92,11 +120,11 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     {
         ObjectGuid masterGuid = master->GetObjectGuid();
         if (master->GetGroup() &&
-            ! master->GetGroup()->IsLeader(masterGuid))
+            !master->GetGroup()->IsLeader(masterGuid))
             master->GetGroup()->ChangeLeader(masterGuid);
     }
 
-    Group *group = bot->GetGroup();
+    Group* group = bot->GetGroup();
     if (group)
     {
         bool groupValid = false;
@@ -366,12 +394,17 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
     return messages;
 }
 
+/**
+ * @brief Gets the account ID for a given name.
+ * @param name The name of the account.
+ * @return The account ID.
+ */
 uint32 PlayerbotHolder::GetAccountId(string name)
 {
     uint32 accountId = 0;
 
-    QueryResult *results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", name.c_str());
-    if(results)
+    QueryResult* results = LoginDatabase.PQuery("SELECT `id` FROM `account` WHERE `username` = '%s'", name.c_str());
+    if (results)
     {
         Field* fields = results->Fetch();
         accountId = fields[0].GetUInt32();
@@ -383,22 +416,39 @@ uint32 PlayerbotHolder::GetAccountId(string name)
 
 
 
-PlayerbotMgr::PlayerbotMgr(Player* const master) : PlayerbotHolder(),  master(master)
+
+/**
+ * @brief Constructor for PlayerbotMgr.
+ * @param master Pointer to the master player.
+ */
+PlayerbotMgr::PlayerbotMgr(Player* const master) : PlayerbotHolder(), master(master)
 {
 }
 
+/**
+ * @brief Destructor for PlayerbotMgr.
+ */
 PlayerbotMgr::~PlayerbotMgr()
 {
 }
 
+/**
+ * @brief Updates the AI internal state.
+ * @param elapsed Time elapsed since the last update.
+ */
 void PlayerbotMgr::UpdateAIInternal(uint32 elapsed)
 {
     SetNextCheckDelay(sPlayerbotAIConfig.reactDelay);
 }
 
+/**
+ * @brief Handles a command from the master.
+ * @param type The type of the command.
+ * @param text The text of the command.
+ */
 void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
 {
-    Player *master = GetMaster();
+    Player* master = GetMaster();
     if (!master)
     {
         return;
@@ -420,14 +470,20 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text)
     }
 }
 
+/**
+ * @brief Handles an incoming packet from the master.
+ * @param packet The incoming packet.
+ */
 void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 {
+    // Iterate through all player bots and handle the incoming packet
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
         bot->GetPlayerbotAI()->HandleMasterIncomingPacket(packet);
     }
 
+    // Iterate through all random player bots and handle the incoming packet if the master matches
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -437,9 +493,10 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
         }
     }
 
+    // Handle specific packet opcodes
     switch (packet.GetOpcode())
     {
-        // if master is logging out, log out all bots
+        // If the master is logging out, log out all bots
         case CMSG_LOGOUT_REQUEST:
         {
             LogoutAllBots();
@@ -447,14 +504,21 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
         }
     }
 }
+
+/**
+ * @brief Handles an outgoing packet to the master.
+ * @param packet The outgoing packet.
+ */
 void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
 {
+    // Iterate through all player bots and handle the outgoing packet
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
         bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
     }
 
+    // Iterate through all random player bots and handle the outgoing packet if the master matches
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -465,13 +529,19 @@ void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
     }
 }
 
+/**
+ * @brief Saves all player bots to the database.
+ */
 void PlayerbotMgr::SaveToDB()
 {
+    // Iterate through all player bots and save them to the database
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
         bot->SaveToDB();
     }
+
+    // Iterate through all random player bots and save them to the database if the master matches
     for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
     {
         Player* const bot = it->second;
@@ -482,8 +552,13 @@ void PlayerbotMgr::SaveToDB()
     }
 }
 
+/**
+ * @brief Internal handler for bot login.
+ * @param bot Pointer to the player bot.
+ */
 void PlayerbotMgr::OnBotLoginInternal(Player * const bot)
 {
+    // Set the master for the bot and reset its strategies
     bot->GetPlayerbotAI()->SetMaster(master);
     bot->GetPlayerbotAI()->ResetStrategies();
 }

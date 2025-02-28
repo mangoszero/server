@@ -26,7 +26,6 @@
 #define MANGOS_H_EVENTPROCESSOR
 
 #include "Platform/Define.h"
-
 #include <map>
 
 /**
@@ -36,113 +35,113 @@
 class BasicEvent
 {
     public:
-
         /**
-         * @brief
-         *
+         * @brief Construct a new Basic Event object
+         * Initializes member variables to_Abort, m_addTime, and m_execTime.
          */
         BasicEvent()
-            : to_Abort(false)
+            : to_Abort(false), m_addTime(0), m_execTime(0) // Initialize member variables
         {
         }
 
         /**
-         * @brief override destructor to perform some actions on event removal
-         *
+         * @brief Destroy the Basic Event object
+         * Override destructor to perform some actions on event removal.
          */
         virtual ~BasicEvent()
         {
         };
 
-
         /**
-         * @brief this method executes when the event is triggered
+         * @brief This method executes when the event is triggered
          *
-         * @param uint64 e_time is execution time
-         * @param uint32 p_time is update interval
-         * @return bool return false if event does not want to be deleted
+         * @param e_time Execution time
+         * @param p_time Update interval
+         * @return bool Return false if event does not want to be deleted
          */
         virtual bool Execute(uint64 /*e_time*/, uint32 /*p_time*/) { return true; }
 
         /**
-         * @brief this event can be safely deleted
+         * @brief This event can be safely deleted
          *
          * @return bool
          */
         virtual bool IsDeletable() const { return true; }
 
         /**
-         * @brief this method executes when the event is aborted
+         * @brief This method executes when the event is aborted
          *
-         * @param uint64
+         * @param e_time Execution time
          */
         virtual void Abort(uint64 /*e_time*/) {}
 
-        bool to_Abort;                                      /**< set by externals when the event is aborted, aborted events don't execute and get Abort call when deleted */
+        bool to_Abort; /**< Set by externals when the event is aborted, aborted events don't execute and get Abort call when deleted */
 
-        // these can be used for time offset control
-        uint64 m_addTime;                                   /**< time when the event was added to queue, filled by event handler */
-        uint64 m_execTime;                                  /**< planned time of next execution, filled by event handler */
+        // These can be used for time offset control
+        uint64 m_addTime; /**< Time when the event was added to queue, filled by event handler */
+        uint64 m_execTime; /**< Planned time of next execution, filled by event handler */
 };
 
 /**
- * @brief
+ * @brief Typedef for a multimap of events
  *
  */
 typedef std::multimap<uint64, BasicEvent*> EventList;
 
 /**
- * @brief
+ * @brief Event Processor class
  *
  */
 class EventProcessor
 {
     public:
-
         /**
-         * @brief
-         *
+         * @brief Construct a new Event Processor object
+         * Initializes member variables m_time and m_aborting.
          */
         EventProcessor();
+
         /**
-         * @brief
-         *
+         * @brief Destroy the Event Processor object
+         * Calls KillAllEvents with force set to true.
          */
         ~EventProcessor();
 
         /**
-         * @brief
+         * @brief Updates the event processor with the given time
          *
-         * @param p_time
+         * @param p_time Time to update the event processor with
          */
         void Update(uint32 p_time);
+
         /**
-         * @brief
+         * @brief Kills all events in the event processor
          *
-         * @param force
+         * @param force If true, forces the deletion of all events
          */
         void KillAllEvents(bool force);
+
         /**
-         * @brief
+         * @brief Adds an event to the event processor
          *
-         * @param Event
-         * @param e_time
-         * @param set_addtime
+         * @param Event Pointer to the event to add
+         * @param e_time Execution time of the event
+         * @param set_addtime If true, sets the add time of the event
          */
         void AddEvent(BasicEvent* Event, uint64 e_time, bool set_addtime = true);
+
         /**
-         * @brief
+         * @brief Calculates the time with the given offset
          *
-         * @param t_offset
-         * @return uint64
+         * @param t_offset Time offset to add
+         * @return uint64 Calculated time
          */
-        uint64 CalculateTime(uint64 t_offset);
+        uint64 CalculateTime(uint64 t_offset) const;
 
     protected:
-
-        uint64 m_time; /**< TODO */
-        EventList m_events; /**< TODO */
-        bool m_aborting; /**< TODO */
+        uint64 m_time; /**< Current time in milliseconds */
+        EventList m_events; /**< List of events */
+        bool m_aborting; /**< Flag indicating if the event processor is aborting */
 };
 
 #endif

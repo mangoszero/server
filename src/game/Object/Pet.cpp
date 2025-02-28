@@ -492,7 +492,7 @@ void Pet::SavePetToDB(PetSaveMode mode)
         savePet.addUInt32(GetLoyaltyLevel());
         savePet.addInt32(m_TrainingPoints);
         savePet.addUInt32(uint32(mode));
-        savePet.addString(m_name);
+        savePet.addString(m_name.c_str());
         savePet.addUInt32(uint32(HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME) ? 0 : 1));
         savePet.addUInt32((curhealth));
         savePet.addUInt32(curpower);

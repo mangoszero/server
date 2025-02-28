@@ -79,7 +79,11 @@ typedef GridRefManager<Player>          PlayerMapType;
 typedef Grid<Player, WorldTypeMapContainer, GridTypeMapContainer> GridType;
 typedef NGrid<MAX_NUMBER_OF_CELLS, Player, WorldTypeMapContainer, GridTypeMapContainer> NGridType;
 
-
+/**
+ * @brief A structure representing a pair of coordinates.
+ *
+ * @tparam LIMIT The maximum limit for the coordinates.
+ */
 template<const unsigned int LIMIT>
 struct CoordPair
 {
@@ -89,8 +93,11 @@ struct CoordPair
     bool operator!=(const CoordPair<LIMIT>& obj) const { return !operator==(obj); }
     CoordPair<LIMIT>& operator=(const CoordPair<LIMIT>& obj)
     {
-        x_coord = obj.x_coord;
-        y_coord = obj.y_coord;
+        if (this != &obj) // Check for self-assignment
+        {
+            x_coord = obj.x_coord;
+            y_coord = obj.y_coord;
+        }
         return *this;
     }
 
@@ -149,8 +156,8 @@ struct CoordPair
         return *this;
     }
 
-    uint32 x_coord;
-    uint32 y_coord;
+    uint32 x_coord; ///< The x-coordinate.
+    uint32 y_coord; ///< The y-coordinate.
 };
 
 typedef CoordPair<MAX_NUMBER_OF_GRIDS> GridPair;
@@ -158,6 +165,17 @@ typedef CoordPair<TOTAL_NUMBER_OF_CELLS_PER_MAP> CellPair;
 
 namespace MaNGOS
 {
+    /**
+     * @brief Computes the grid or cell pair for given coordinates.
+     *
+     * @tparam RET_TYPE The return type.
+     * @tparam CENTER_VAL The center value.
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @param center_offset The center offset.
+     * @param size The size of the grid or cell.
+     * @return RET_TYPE The computed grid or cell pair.
+     */
     template<class RET_TYPE, int CENTER_VAL>
     inline RET_TYPE Compute(float x, float y, float center_offset, float size)
     {
@@ -170,16 +188,35 @@ namespace MaNGOS
         return RET_TYPE(x_val, y_val);
     }
 
+    /**
+     * @brief Computes the grid pair for given coordinates.
+     *
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @return GridPair The computed grid pair.
+     */
     inline GridPair ComputeGridPair(float x, float y)
     {
         return Compute<GridPair, CENTER_GRID_ID>(x, y, CENTER_GRID_OFFSET, SIZE_OF_GRIDS);
     }
 
+    /**
+     * @brief Computes the cell pair for given coordinates.
+     *
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @return CellPair The computed cell pair.
+     */
     inline CellPair ComputeCellPair(float x, float y)
     {
         return Compute<CellPair, CENTER_GRID_CELL_ID>(x, y, CENTER_GRID_CELL_OFFSET, SIZE_OF_GRID_CELL);
     }
 
+    /**
+     * @brief Normalizes the map coordinate.
+     *
+     * @param c The coordinate to normalize.
+     */
     inline void NormalizeMapCoord(float& c)
     {
         if (c > MAP_HALFSIZE - 0.5)
@@ -192,24 +229,59 @@ namespace MaNGOS
         }
     }
 
+    /**
+     * @brief Checks if the map coordinate is valid.
+     *
+     * @param c The coordinate to check.
+     * @return true If the coordinate is valid.
+     * @return false If the coordinate is not valid.
+     */
     inline bool IsValidMapCoord(float c)
     {
         return finite(c) && (std::fabs(c) <= MAP_HALFSIZE - 0.5);
     }
 
+    /**
+     * @brief Checks if the map coordinates are valid.
+     *
+     * @param x The x-coordinate to check.
+     * @param y The y-coordinate to check.
+     * @return true If the coordinates are valid.
+     * @return false If the coordinates are not valid.
+     */
     inline bool IsValidMapCoord(float x, float y)
     {
         return IsValidMapCoord(x) && IsValidMapCoord(y);
     }
 
+    /**
+     * @brief Checks if the map coordinates are valid.
+     *
+     * @param x The x-coordinate to check.
+     * @param y The y-coordinate to check.
+     * @param z The z-coordinate to check.
+     * @return true If the coordinates are valid.
+     * @return false If the coordinates are not valid.
+     */
     inline bool IsValidMapCoord(float x, float y, float z)
     {
         return IsValidMapCoord(x, y) && finite(z);
     }
 
+    /**
+     * @brief Checks if the map coordinates are valid.
+     *
+     * @param x The x-coordinate to check.
+     * @param y The y-coordinate to check.
+     * @param z The z-coordinate to check.
+     * @param o The orientation to check.
+     * @return true If the coordinates and orientation are valid.
+     * @return false If the coordinates and orientation are not valid.
+     */
     inline bool IsValidMapCoord(float x, float y, float z, float o)
     {
         return IsValidMapCoord(x, y, z) && finite(o);
     }
 }
 #endif
+

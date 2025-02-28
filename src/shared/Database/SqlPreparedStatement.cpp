@@ -24,6 +24,10 @@
 
 #include "DatabaseEnv.h"
 
+/**
+ * @brief Constructor to reserve memory for parameters.
+ * @param nParams The number of parameters to reserve memory for.
+ */
 SqlStmtParameters::SqlStmtParameters(uint32 nParams)
 {
     // reserve memory if needed
@@ -33,6 +37,10 @@ SqlStmtParameters::SqlStmtParameters(uint32 nParams)
     }
 }
 
+/**
+ * @brief Reset the parameters.
+ * @param stmt The statement to reset the parameters for.
+ */
 void SqlStmtParameters::reset(const SqlStatement& stmt)
 {
     m_params.clear();
@@ -44,6 +52,12 @@ void SqlStmtParameters::reset(const SqlStatement& stmt)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Assignment operator.
+ * @param index The statement to assign from.
+ * @return The assigned statement.
+ */
 SqlStatement& SqlStatement::operator=(const SqlStatement& index)
 {
     if (this != &index)
@@ -63,6 +77,10 @@ SqlStatement& SqlStatement::operator=(const SqlStatement& index)
     return *this;
 }
 
+/**
+ * @brief Execute the statement.
+ * @return True if the execution was successful, false otherwise.
+ */
 bool SqlStatement::Execute()
 {
     SqlStmtParameters* args = detach();
@@ -78,6 +96,10 @@ bool SqlStatement::Execute()
     return m_pDB->ExecuteStmt(m_index, args);
 }
 
+/**
+ * @brief Directly execute the statement.
+ * @return True if the execution was successful, false otherwise.
+ */
 bool SqlStatement::DirectExecute()
 {
     SqlStmtParameters* args = detach();
@@ -94,6 +116,12 @@ bool SqlStatement::DirectExecute()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Constructor to create a SqlPlainPreparedStatement object.
+ * @param fmt The format string for the statement.
+ * @param conn The SQL connection.
+ */
 SqlPlainPreparedStatement::SqlPlainPreparedStatement(const std::string& fmt, SqlConnection& conn) : SqlPreparedStatement(fmt, conn)
 {
     m_bPrepared = true;
@@ -101,6 +129,10 @@ SqlPlainPreparedStatement::SqlPlainPreparedStatement(const std::string& fmt, Sql
     m_bIsQuery = strnicmp(m_szFmt.c_str(), "select", 6) == 0;
 }
 
+/**
+ * @brief Replace all '?' symbols with substrings with proper format.
+ * @param holder The parameter holder.
+ */
 void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)
 {
     // verify if we bound all needed input parameters
@@ -135,6 +167,10 @@ void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)
     }
 }
 
+/**
+ * @brief Execute the statement.
+ * @return True if the execution was successful, false otherwise.
+ */
 bool SqlPlainPreparedStatement::execute()
 {
     if (m_szPlainRequest.empty())
@@ -145,6 +181,11 @@ bool SqlPlainPreparedStatement::execute()
     return m_pConn.Execute(m_szPlainRequest.c_str());
 }
 
+/**
+ * @brief Convert data to string format.
+ * @param data The data to convert.
+ * @param fmt The output format string.
+ */
 void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::ostringstream& fmt)
 {
     switch (data.type())
@@ -169,4 +210,101 @@ void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::
         }
         case FIELD_NONE:                                                    break;
     }
+}
+
+/**
+ * @brief Set the value of the field.
+ * @param param1 The value to set.
+ */
+template<typename T1>
+void SqlStmtFieldData::set(T1 param1)
+{
+    // Implementation for setting the value based on the type of param1
+    if constexpr (std::is_same_v<T1, bool>)
+    {
+        m_type = FIELD_BOOL;
+        m_binaryData.ui8 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, uint8>)
+    {
+        m_type = FIELD_UI8;
+        m_binaryData.ui8 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, int8>)
+    {
+        m_type = FIELD_I8;
+        m_binaryData.i8 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, uint16>)
+    {
+        m_type = FIELD_UI16;
+        m_binaryData.ui16 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, int16>)
+    {
+        m_type = FIELD_I16;
+        m_binaryData.i16 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, uint32>)
+    {
+        m_type = FIELD_UI32;
+        m_binaryData.ui32 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, int32>)
+    {
+        m_type = FIELD_I32;
+        m_binaryData.i32 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, uint64>)
+    {
+        m_type = FIELD_UI64;
+        m_binaryData.ui64 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, int64>)
+    {
+        m_type = FIELD_I64;
+        m_binaryData.i64 = param1;
+    }
+    else if constexpr (std::is_same_v<T1, float>)
+    {
+        m_type = FIELD_FLOAT;
+        m_binaryData.f = param1;
+    }
+    else if constexpr (std::is_same_v<T1, double>)
+    {
+        m_type = FIELD_DOUBLE;
+        m_binaryData.d = param1;
+    }
+    else if constexpr (std::is_same_v<T1, const char*>)
+    {
+        m_type = FIELD_STRING;
+        m_szStringData = param1;
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported type for SqlStmtFieldData::set");
+    }
+}
+
+/**
+ * @brief Swap the contents of the internal parameter container.
+ * @param obj The object to swap with.
+ */
+void SqlStmtParameters::swap(SqlStmtParameters& obj)
+{
+    std::swap(m_params, obj.m_params);
+}
+
+/**
+ * @brief Assignment operator.
+ * @param obj The object to assign from.
+ * @return The assigned object.
+ */
+SqlStmtParameters& SqlStmtParameters::operator=(const SqlStmtParameters& obj)
+{
+    if (this != &obj)
+    {
+        m_params = obj.m_params;
+    }
+    return *this;
 }
