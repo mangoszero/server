@@ -17,6 +17,9 @@ using namespace ai;
 
 bool IsAlliance(uint8 race);
 
+/**
+ * @brief Handles chat commands for player bots.
+ */
 class PlayerbotChatHandler: protected ChatHandler
 {
 public:
@@ -35,6 +38,9 @@ public:
 
 namespace ai
 {
+    /**
+     * @brief Calculates the minimum value for a given parameter.
+     */
     class MinValueCalculator {
     public:
         MinValueCalculator(float def = 0.0f) {
@@ -67,6 +73,9 @@ enum BotState
 
 #define BOT_STATE_MAX 3
 
+/**
+ * @brief Handles packet processing for player bots.
+ */
 class PacketHandlingHelper
 {
 public:
@@ -79,6 +88,9 @@ private:
     stack<WorldPacket> queue;
 };
 
+/**
+ * @brief Holds chat commands for player bots.
+ */
 class ChatCommandHolder
 {
 public:
@@ -93,7 +105,7 @@ public:
 public:
     string GetCommand() { return command; }
     Player* GetOwner() { return owner; }
-    uint32 GetType() { return type; }
+    uint32 GetType() const { return type; }
 
 private:
     string command;
@@ -101,6 +113,9 @@ private:
     uint32 type;
 };
 
+/**
+ * @brief Manages the AI for player bots.
+ */
 class PlayerbotAI : public PlayerbotAIBase
 {
 public:

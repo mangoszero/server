@@ -6,6 +6,9 @@
 
 namespace ai
 {
+    /**
+     * @brief Base class for untyped values.
+     */
     class UntypedValue : public AiNamedObject
     {
     public:
@@ -15,6 +18,11 @@ namespace ai
         virtual string Format() { return "?"; }
     };
 
+    /**
+     * @brief Template class for typed values.
+     *
+     * @tparam T The type of the value.
+     */
     template<class T>
     class Value
     {
@@ -24,16 +32,37 @@ namespace ai
         operator T() { return Get(); }
     };
 
+    /**
+     * @brief Template class for calculated values.
+     *
+     * @tparam T The type of the value.
+     */
     template<class T>
     class CalculatedValue : public UntypedValue, public Value<T>
     {
     public:
+        /**
+         * @brief Construct a new Calculated Value object
+         *
+         * @param ai Pointer to the PlayerbotAI instance.
+         * @param name The name of the value.
+         * @param checkInterval The interval at which the value is checked.
+         */
         CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
             checkInterval(checkInterval), ticksElapsed(checkInterval)
         { }
+
+        /**
+         * @brief Destroy the Calculated Value object
+         */
         virtual ~CalculatedValue() {}
 
     public:
+        /**
+         * @brief Get the calculated value.
+         *
+         * @return T The calculated value.
+         */
         virtual T Get()
         {
             if (ticksElapsed >= checkInterval)
@@ -43,6 +72,12 @@ namespace ai
             }
             return value;
         }
+
+        /**
+         * @brief Set the value.
+         *
+         * @param value The value to set.
+         */
         virtual void Set(T value) { this->value = value; }
         virtual void Update()
         {
@@ -53,6 +88,11 @@ namespace ai
         }
 
     protected:
+        /**
+         * @brief Calculate the value.
+         *
+         * @return T The calculated value.
+         */
         virtual T Calculate() = 0;
 
     protected:
@@ -61,6 +101,10 @@ namespace ai
         T value;
     };
 
+
+    /**
+     * @brief Class for calculated uint8 values.
+     */
     class Uint8CalculatedValue : public CalculatedValue<uint8>
     {
     public:
@@ -74,6 +118,9 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Class for calculated uint32 values.
+     */
     class Uint32CalculatedValue : public CalculatedValue<uint32>
     {
     public:
@@ -87,6 +134,9 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Class for calculated float values.
+     */
     class FloatCalculatedValue : public CalculatedValue<float>
     {
     public:
@@ -100,6 +150,9 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Class for calculated bool values.
+     */
     class BoolCalculatedValue : public CalculatedValue<bool>
     {
     public:
@@ -112,6 +165,9 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Class for calculated Unit* values.
+     */
     class UnitCalculatedValue : public CalculatedValue<Unit*>
     {
     public:
@@ -125,6 +181,9 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Class for calculated list<ObjectGuid> values.
+     */
     class ObjectGuidListCalculatedValue : public CalculatedValue<list<ObjectGuid> >
     {
     public:
@@ -145,6 +204,11 @@ namespace ai
         }
     };
 
+    /**
+     * @brief Template class for manually set values.
+     *
+     * @tparam T The type of the value.
+     */
     template<class T>
     class ManualSetValue : public UntypedValue, public Value<T>
     {
@@ -160,10 +224,13 @@ namespace ai
         virtual void Reset() { value = defaultValue; }
 
     protected:
-        T value;
-        T defaultValue;
+        T value; ///< The current value.
+        T defaultValue; ///< The default value.
     };
 
+    /**
+     * @brief Class for manually set Unit* values.
+     */
     class UnitManualSetValue : public ManualSetValue<Unit*>
     {
     public:

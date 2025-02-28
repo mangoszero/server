@@ -2,9 +2,15 @@
 #include "../../playerbot.h"
 #include "GossipHelloAction.h"
 
-
 using namespace ai;
 
+/**
+ * @brief Execute the Gossip Hello action.
+ *
+ * @param event The event triggering the action.
+ * @return true If the action was executed successfully.
+ * @return false Otherwise.
+ */
 bool GossipHelloAction::Execute(Event event)
 {
     ObjectGuid guid;
