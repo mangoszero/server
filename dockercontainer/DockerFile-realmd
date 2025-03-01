@@ -1,33 +1,31 @@
 #Build image
-FROM ubuntu:18.04 as build-step
+FROM ubuntu:22.04 AS build-step
+
+ENV TZ=US DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get -y update
-RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool build-essential gpg wget
+RUN apt-get -y install curl autoconf automake libbz2-dev libace-dev libssl-dev libmysqlclient-dev libtool \
+    build-essential lsb-release software-properties-common cmake libreadline-dev clang
 
-RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
-    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
-    apt-get update
-RUN apt-get -y install cmake
-    
 COPY . /mangoserver
 RUN mkdir /mangoserver/build
 WORKDIR /mangoserver/build
 
 #Install mangos
-RUN cmake .. -DCMAKE_INSTALL_PREFIX=/mangos -DBUILD_MANGOSD=0 -DBUILD_REALMD=1 -DBUILD_TOOLS=0
+RUN cmake .. -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_INSTALL_PREFIX=/mangos -DBUILD_MANGOSD=0 -DBUILD_REALMD=1 -DBUILD_TOOLS=0
 RUN make -j4
 RUN make install
 
 #Runtime image
-FROM ubuntu:18.04 as runtime
+FROM ubuntu:22.04 AS runtime
 
 RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install libmysqlclient20 openssl
+RUN apt-get -y install libmysqlclient-dev openssl
 
 COPY --from=build-step /mangos /mangos
-COPY --from=build-step /etc/realmd.conf.dist ../etc/realmd.conf.dist
+COPY --from=build-step /etc/realmd.conf.dist /mangos/etc/realmd.conf.dist
 WORKDIR /mangos/bin
 RUN chmod +x realmd
 
 EXPOSE 3724
-ENTRYPOINT [ "./realmd" ]
+ENTRYPOINT [ "./realmd","-c","/mangos/etc/realmd.conf" ]
