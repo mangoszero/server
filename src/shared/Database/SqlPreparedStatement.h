@@ -502,6 +502,12 @@ class SqlStatement
          */
         void addString(std::ostringstream& ss) { arg(ss.str().c_str()); ss.str(std::string()); }
 
+        /**
+         * @brief Add a string parameter from a string
+         * @param ss The string containing the string parameter to add.
+         */
+         void addString(const std::string& var) { arg(var.c_str()); } // Add this line
+
     protected:
         // don't allow anyone except Database class to create static SqlStatement objects
         friend class Database;
