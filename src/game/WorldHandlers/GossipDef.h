@@ -205,6 +205,11 @@ class GossipMenu
             return static_cast<unsigned int>(m_gItems.size());
         }
 
+        unsigned int MenuItemDataCount() const
+        {
+            return static_cast<unsigned int>(m_gItemsData.size());
+        }
+
         bool Empty() const
         {
             return m_gItems.empty();
@@ -217,6 +222,11 @@ class GossipMenu
 
         GossipMenuItemData const* GetItemData(unsigned int indexId) const
         {
+            if (indexId >= m_gItemsData.size())
+            {
+                sLog.outError("GossipMenu::GetItemData> indexId is out of bounds!");
+                return nullptr;
+            }
             return &m_gItemsData.at(indexId);
         }
 
