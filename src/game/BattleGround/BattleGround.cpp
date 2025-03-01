@@ -234,12 +234,12 @@ BattleGround::BattleGround()
     m_LevelMin = 0;
     m_LevelMax = 0;
     m_InBGFreeSlotQueue = false;
-	m_BuffChange = false;
+    m_BuffChange = false;
     m_MaxPlayersPerTeam = 0;
     m_MaxPlayers = 0;
     m_MinPlayersPerTeam = 0;
     m_MinPlayers = 0;
-	m_StartDelayTime = 0;
+    m_StartDelayTime = 0;
     m_MapId = 0;
     m_Map = NULL;
     m_startMaxDist = 0;
