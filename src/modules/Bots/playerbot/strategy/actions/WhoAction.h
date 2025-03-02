@@ -15,9 +15,9 @@ namespace ai
 
     private:
         void InitSkills();
-        string QueryTrade(string text);
+        string QueryTrade(string &text);
         string QuerySkill(string text);
-        string QuerySpec(string text);
+        string QuerySpec(string &text);
     };
 
 }

@@ -298,7 +298,7 @@ string PlayerbotAIConfig::GetValue(string name) const
  * @param name The name of the configuration parameter.
  * @param value The value to set the configuration parameter to.
  */
-void PlayerbotAIConfig::SetValue(string name, string value)
+void PlayerbotAIConfig::SetValue(string &name, string value)
 {
     istringstream out(value, istringstream::in);
 
