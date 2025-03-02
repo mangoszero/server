@@ -542,7 +542,7 @@ void PrintNormalYouHaveDatabaseVersion(std::string current_db_version, std::stri
     sLog.outString("                    Description: %s", description.c_str());
 }
 
-void PrintErrorYouHaveDatabaseVersion(std::string current_db_version, std::string current_db_structure, std::string current_db_content, std::string description)
+void PrintErrorYouHaveDatabaseVersion(std::string &current_db_version, std::string current_db_structure, std::string current_db_content, std::string description)
 {
     sLog.outErrorDb("  [A] You have database Version: %s", current_db_version.c_str());
     sLog.outErrorDb("                      Structure: %s", current_db_structure.c_str());
