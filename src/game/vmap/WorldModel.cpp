@@ -42,7 +42,16 @@ template<> struct BoundsTrait<VMAP::GroupModel>
 
 namespace VMAP
 {
-    bool IntersectTriangle(const MeshTriangle& tri, std::vector<Vector3>::const_iterator points, const G3D::Ray& ray, float& distance)
+    /**
+     * @brief Checks if a ray intersects with a triangle.
+     *
+     * @param tri The triangle to check.
+     * @param points Iterator to the vertices of the triangle.
+     * @param ray The ray to check.
+     * @param distance The distance to the intersection.
+     * @return bool True if the ray intersects, false otherwise.
+     */
+    static bool IntersectTriangle(const MeshTriangle& tri, std::vector<Vector3>::const_iterator points, const G3D::Ray& ray, float& distance)
     {
         static const float EPS = 1e-5f;
 
@@ -95,44 +104,80 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Functor to calculate the bounding box of a triangle.
+     */
     class TriBoundFunc
     {
-        public:
-            TriBoundFunc(std::vector<Vector3>& vert): vertices(vert.begin()) {}
-            void operator()(const MeshTriangle& tri, G3D::AABox& out) const
-            {
-                G3D::Vector3 lo = vertices[tri.idx0];
-                G3D::Vector3 hi = lo;
+    public:
+        /**
+         * @brief Constructor for TriBoundFunc.
+         *
+         * @param vert Vector of vertices.
+         */
+        TriBoundFunc(std::vector<Vector3>& vert) : vertices(vert.begin()) {}
+        /**
+         * @brief Calculates the bounding box of a triangle.
+         *
+         * @param tri The triangle to calculate the bounding box for.
+         * @param out The calculated bounding box.
+         */
+        void operator()(const MeshTriangle& tri, G3D::AABox& out) const
+        {
+            G3D::Vector3 lo = vertices[tri.idx0];
+            G3D::Vector3 hi = lo;
 
-                lo = (lo.min(vertices[tri.idx1])).min(vertices[tri.idx2]);
-                hi = (hi.max(vertices[tri.idx1])).max(vertices[tri.idx2]);
+            lo = (lo.min(vertices[tri.idx1])).min(vertices[tri.idx2]);
+            hi = (hi.max(vertices[tri.idx1])).max(vertices[tri.idx2]);
 
-                out = G3D::AABox(lo, hi);
-            }
-        protected:
-            const std::vector<Vector3>::const_iterator vertices;
+            out = G3D::AABox(lo, hi);
+        }
+    protected:
+        const std::vector<Vector3>::const_iterator vertices;
     };
 
     // ===================== WmoLiquid ==================================
 
-    WmoLiquid::WmoLiquid(uint32 width, uint32 height, const Vector3& corner, uint32 type):
+    /**
+     * @brief Constructor for WmoLiquid.
+     *
+     * @param width Width of the liquid area.
+     * @param height Height of the liquid area.
+     * @param corner The lower corner of the liquid area.
+     * @param type The type of the liquid.
+     */
+    WmoLiquid::WmoLiquid(uint32 width, uint32 height, const Vector3& corner, uint32 type) :
         iTilesX(width), iTilesY(height), iCorner(corner), iType(type)
     {
         iHeight = new float[(width + 1) * (height + 1)];
         iFlags = new uint8[width * height];
     }
 
-    WmoLiquid::WmoLiquid(const WmoLiquid& other): iHeight(NULL), iFlags(NULL)
+    /**
+     * @brief Copy constructor for WmoLiquid.
+     *
+     * @param other The WmoLiquid to copy from.
+     */
+    WmoLiquid::WmoLiquid(const WmoLiquid& other) : iHeight(NULL), iFlags(NULL)
     {
         *this = other;                                      // use assignment operator defined below
     }
 
+    /**
+     * @brief Destructor for WmoLiquid.
+     */
     WmoLiquid::~WmoLiquid()
     {
         delete[] iHeight;
         delete[] iFlags;
     }
 
+    /**
+     * @brief Assignment operator for WmoLiquid.
+     *
+     * @param other The WmoLiquid to assign from.
+     * @return WmoLiquid& Reference to the assigned WmoLiquid.
+     */
     WmoLiquid& WmoLiquid::operator=(const WmoLiquid& other)
     {
         if (this == &other)
@@ -169,6 +214,13 @@ namespace VMAP
         return *this;
     }
 
+    /**
+     * @brief Gets the liquid height at a specific position.
+     *
+     * @param pos The position to check.
+     * @param liqHeight The liquid height at the position.
+     * @return bool True if the liquid height was retrieved, false otherwise.
+     */
     bool WmoLiquid::GetLiquidHeight(const Vector3& pos, float& liqHeight) const
     {
         float tx_f = (pos.x - iCorner.x) / LIQUID_TILE_SIZE;
@@ -210,28 +262,39 @@ namespace VMAP
         const uint32 rowOffset = iTilesX + 1;
         if (dx > dy) // case (a)
         {
-            float sx = iHeight[tx + 1 +  ty    * rowOffset] - iHeight[tx   + ty * rowOffset];
+            float sx = iHeight[tx + 1 + ty * rowOffset] - iHeight[tx + ty * rowOffset];
             float sy = iHeight[tx + 1 + (ty + 1) * rowOffset] - iHeight[tx + 1 + ty * rowOffset];
             liqHeight = iHeight[tx + ty * rowOffset] + dx * sx + dy * sy;
         }
         else // case (b)
         {
             float sx = iHeight[tx + 1 + (ty + 1) * rowOffset] - iHeight[tx + (ty + 1) * rowOffset];
-            float sy = iHeight[tx   + (ty + 1) * rowOffset] - iHeight[tx +  ty    * rowOffset];
+            float sy = iHeight[tx + (ty + 1) * rowOffset] - iHeight[tx + ty * rowOffset];
             liqHeight = iHeight[tx + ty * rowOffset] + dx * sx + dy * sy;
         }
         return true;
     }
 
-    uint32 WmoLiquid::GetFileSize()
+    /**
+     * @brief Gets the file size of the liquid data.
+     *
+     * @return uint32 The file size of the liquid data.
+     */
+    uint32 WmoLiquid::GetFileSize() const
     {
         return 2 * sizeof(uint32) +
-               sizeof(Vector3) +
-               (iTilesX + 1) * (iTilesY + 1) * sizeof(float) +
-               iTilesX * iTilesY;
+            sizeof(Vector3) +
+            (iTilesX + 1) * (iTilesY + 1) * sizeof(float) +
+            iTilesX * iTilesY;
     }
 
-    bool WmoLiquid::WriteToFile(FILE* wf)
+    /**
+     * @brief Writes the liquid data to a file.
+     *
+     * @param wf The file to write to.
+     * @return bool True if the write was successful, false otherwise.
+     */
+    bool WmoLiquid::WriteToFile(FILE* wf) const
     {
         bool result = true;
         if (result && fwrite(&iTilesX, sizeof(uint32), 1, wf) != 1)
@@ -263,6 +326,13 @@ namespace VMAP
         return result;
     }
 
+    /**
+     * @brief Reads the liquid data from a file.
+     *
+     * @param rf The file to read from.
+     * @param out The WmoLiquid to read into.
+     * @return bool True if the read was successful, false otherwise.
+     */
     bool WmoLiquid::ReadFromFile(FILE* rf, WmoLiquid*& out)
     {
         bool result = true;
@@ -306,9 +376,12 @@ namespace VMAP
         return result;
     }
 
-    // ===================== GroupModel ==================================
-
-    GroupModel::GroupModel(const GroupModel& other):
+    /**
+     * @brief Copy constructor for GroupModel.
+     *
+     * @param other The GroupModel to copy from.
+     */
+    GroupModel::GroupModel(const GroupModel& other) :
         iBound(other.iBound), iMogpFlags(other.iMogpFlags), iGroupWMOID(other.iGroupWMOID),
         vertices(other.vertices), triangles(other.triangles), meshTree(other.meshTree), iLiquid(0)
     {
@@ -318,6 +391,12 @@ namespace VMAP
         }
     }
 
+    /**
+     * @brief Passes mesh data to the object and creates the BIH.
+     *
+     * @param vert Vector of vertices.
+     * @param tri Vector of triangles.
+     */
     void GroupModel::SetMeshData(std::vector<Vector3>& vert, std::vector<MeshTriangle>& tri)
     {
         vertices.swap(vert);
@@ -326,6 +405,12 @@ namespace VMAP
         meshTree.build(triangles, bFunc);
     }
 
+    /**
+     * @brief Writes the group model data to a file.
+     *
+     * @param wf The file to write to.
+     * @return bool True if the write was successful, false otherwise.
+     */
     bool GroupModel::WriteToFile(FILE* wf)
     {
         bool result = true;
@@ -422,31 +507,40 @@ namespace VMAP
         return result;
     }
 
+    /**
+     * @brief Reads the group model data from a file.
+     *
+     * @param rf The file to read from.
+     * @return bool True if the read was successful, false otherwise.
+     */
     bool GroupModel::ReadFromFile(FILE* rf)
     {
         char chunk[8];
         bool result = true;
         uint32 chunkSize = 0;
-        uint32 count =0;
+        uint32 count = 0;
         triangles.clear();
         vertices.clear();
         delete iLiquid;
         iLiquid = 0;
 
+        // Read bounding box
         if (result && fread(&iBound, sizeof(G3D::AABox), 1, rf) != 1)
         {
             result = false;
         }
+        // Read model flags
         if (result && fread(&iMogpFlags, sizeof(uint32), 1, rf) != 1)
         {
             result = false;
         }
+        // Read group WMO ID
         if (result && fread(&iGroupWMOID, sizeof(uint32), 1, rf) != 1)
         {
             result = false;
         }
 
-        // read vertices
+        // Read vertices
         if (result && !readChunk(rf, chunk, "VERT", 4))
         {
             result = false;
@@ -472,7 +566,7 @@ namespace VMAP
             result = false;
         }
 
-        // read triangle mesh
+        // Read triangle mesh
         if (result && !readChunk(rf, chunk, "TRIM", 4))
         {
             result = false;
@@ -497,7 +591,7 @@ namespace VMAP
             }
         }
 
-        // read mesh BIH
+        // Read mesh BIH
         if (result && !readChunk(rf, chunk, "MBIH", 4))
         {
             result = false;
@@ -507,7 +601,7 @@ namespace VMAP
             result = meshTree.ReadFromFile(rf);
         }
 
-        // read liquid data
+        // Read liquid data
         if (result && !readChunk(rf, chunk, "LIQU", 4))
         {
             result = false;
@@ -523,10 +617,13 @@ namespace VMAP
         return result;
     }
 
+    /**
+     * @brief Callback structure for ray intersection with group model.
+     */
     struct GModelRayCallback
     {
-        GModelRayCallback(const std::vector<MeshTriangle>& tris, const std::vector<Vector3>& vert):
-            vertices(vert.begin()), triangles(tris.begin()), hit(false) {}
+        GModelRayCallback(const std::vector<MeshTriangle>& tris, const std::vector<Vector3>& vert) :
+        vertices(vert.begin()), triangles(tris.begin()), hit(false) {}
         bool operator()(const G3D::Ray& ray, uint32 entry, float& distance, bool /*pStopAtFirstHit*/)
         {
             bool result = IntersectTriangle(triangles[entry], vertices, ray, distance);
@@ -541,6 +638,14 @@ namespace VMAP
         bool hit;
     };
 
+    /**
+     * @brief Checks if a ray intersects with the group model.
+     *
+     * @param ray The ray to check.
+     * @param distance The distance to the intersection.
+     * @param stopAtFirstHit Whether to stop at the first hit.
+     * @return bool True if the ray intersects, false otherwise.
+     */
     bool GroupModel::IntersectRay(const G3D::Ray& ray, float& distance, bool stopAtFirstHit) const
     {
         if (triangles.empty())
@@ -553,6 +658,14 @@ namespace VMAP
         return callback.hit;
     }
 
+    /**
+     * @brief Checks if a position is inside the object.
+     *
+     * @param pos The position to check.
+     * @param down The direction vector.
+     * @param z_dist The distance to the intersection.
+     * @return bool True if the position is inside the object, false otherwise.
+     */
     bool GroupModel::IsInsideObject(const Vector3& pos, const Vector3& down, float& z_dist) const
     {
         if (triangles.empty() || !iBound.contains(pos))
@@ -571,6 +684,13 @@ namespace VMAP
         return hit;
     }
 
+    /**
+     * @brief Gets the liquid level at a specific position.
+     *
+     * @param pos The position to check.
+     * @param liqHeight The liquid height at the position.
+     * @return bool True if the liquid level was retrieved, false otherwise.
+     */
     bool GroupModel::GetLiquidLevel(const Vector3& pos, float& liqHeight) const
     {
         if (iLiquid)
@@ -580,6 +700,11 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Gets the type of the liquid.
+     *
+     * @return uint32 The type of the liquid.
+     */
     uint32 GroupModel::GetLiquidType() const
     {
         if (iLiquid)
@@ -589,17 +714,23 @@ namespace VMAP
         return 0;
     }
 
-    // ===================== WorldModel ==================================
-
+    /**
+     * @brief Passes group models to WorldModel and creates the BIH.
+     *
+     * @param models Vector of group models.
+     */
     void WorldModel::SetGroupModels(std::vector<GroupModel>& models)
     {
         groupModels.swap(models);
         groupTree.build(groupModels, BoundsTrait<GroupModel>::getBounds, 1);
     }
 
+    /**
+     * @brief Callback structure for ray intersection with world model.
+     */
     struct WModelRayCallBack
     {
-        WModelRayCallBack(const std::vector<GroupModel>& mod): models(mod.begin()), hit(false) {}
+        WModelRayCallBack(const std::vector<GroupModel>& mod) : models(mod.begin()), hit(false) {}
         bool operator()(const G3D::Ray& ray, uint32 entry, float& distance, bool pStopAtFirstHit)
         {
             bool result = models[entry].IntersectRay(ray, distance, pStopAtFirstHit);
@@ -613,6 +744,14 @@ namespace VMAP
         bool hit;
     };
 
+    /**
+     * @brief Checks if a ray intersects with the world model.
+     *
+     * @param ray The ray to check.
+     * @param distance The distance to the intersection.
+     * @param stopAtFirstHit Whether to stop at the first hit.
+     * @return bool True if the ray intersects, false otherwise.
+     */
     bool WorldModel::IntersectRay(const G3D::Ray& ray, float& distance, bool stopAtFirstHit) const
     {
         // M2 models are not taken into account for LoS calculation
@@ -624,30 +763,42 @@ namespace VMAP
         return isc.hit;
     }
 
+    /**
+     * @brief Callback structure for area information retrieval.
+     */
     class WModelAreaCallback
     {
-        public:
-            WModelAreaCallback(const std::vector<GroupModel>& vals, const Vector3& down):
-                prims(vals.begin()), hit(vals.end()), minVol(G3D::inf()), zDist(G3D::inf()), zVec(down) {}
-            std::vector<GroupModel>::const_iterator prims;
-            std::vector<GroupModel>::const_iterator hit;
-            float minVol;
-            float zDist;
-            Vector3 zVec;
-            void operator()(const Vector3& point, uint32 entry)
+    public:
+        WModelAreaCallback(const std::vector<GroupModel>& vals, const Vector3& down) :
+        prims(vals.begin()), hit(vals.end()), minVol(G3D::inf()), zDist(G3D::inf()), zVec(down) {}
+        std::vector<GroupModel>::const_iterator prims;
+        std::vector<GroupModel>::const_iterator hit;
+        float minVol;
+        float zDist;
+        Vector3 zVec;
+        void operator()(const Vector3& point, uint32 entry)
+        {
+            float group_Z;
+            if (prims[entry].IsInsideObject(point, zVec, group_Z))
             {
-                float group_Z;
-                if (prims[entry].IsInsideObject(point, zVec, group_Z))
+                if (group_Z < zDist)
                 {
-                    if (group_Z < zDist)
-                    {
-                        zDist = group_Z;
-                        hit = prims + entry;
-                    }
+                    zDist = group_Z;
+                    hit = prims + entry;
                 }
             }
+        }
     };
 
+    /**
+     * @brief Gets area information at a specific position.
+     *
+     * @param p The position to check.
+     * @param down The direction vector.
+     * @param dist The distance to the intersection.
+     * @param info The area information.
+     * @return bool True if area information was retrieved, false otherwise.
+     */
     bool WorldModel::GetAreaInfo(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, AreaInfo& info) const
     {
         if (groupModels.empty())
@@ -669,6 +820,15 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Gets location information at a specific position.
+     *
+     * @param p The position to check.
+     * @param down The direction vector.
+     * @param dist The distance to the intersection.
+     * @param info The location information.
+     * @return bool True if location information was retrieved, false otherwise.
+     */
     bool WorldModel::GetLocationInfo(const G3D::Vector3& p, const G3D::Vector3& down, float& dist, LocationInfo& info) const
     {
         if (groupModels.empty())
@@ -687,6 +847,14 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Gets the contact point at a specific position.
+     *
+     * @param point The position to check.
+     * @param dir The direction vector.
+     * @param dist The distance to the intersection.
+     * @return bool True if a contact point was found, false otherwise.
+     */
     bool WorldModel::GetContactPoint(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist) const
     {
         if (groupModels.empty())
@@ -704,7 +872,12 @@ namespace VMAP
         return false;
     }
 
-
+    /**
+     * @brief Writes the world model data to a file.
+     *
+     * @param filename The file to write to.
+     * @return bool True if the write was successful, false otherwise.
+     */
     bool WorldModel::WriteFile(const std::string& filename)
     {
         FILE* wf = fopen(filename.c_str(), "wb");
@@ -763,6 +936,12 @@ namespace VMAP
         return result;
     }
 
+    /**
+     * @brief Reads the world model data from a file.
+     *
+     * @param filename The file to read from.
+     * @return bool True if the read was successful, false otherwise.
+     */
     bool WorldModel::ReadFile(const std::string& filename)
     {
         FILE* rf = fopen(filename.c_str(), "rb");

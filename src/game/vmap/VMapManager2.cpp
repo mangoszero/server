@@ -35,14 +35,17 @@ using G3D::Vector3;
 
 namespace VMAP
 {
-    //=========================================================
-
-    VMapManager2::VMapManager2()
+    /**
+     * @brief Constructor for VMapManager2.
+     */
+    VMapManager2::VMapManager2() : IsVMAPDisabledForPtr(nullptr), iLoadedModelFiles(), iInstanceMapTrees()
     {
     }
 
-    //=========================================================
-
+    /**
+     * @brief Destructor for VMapManager2.
+     * Cleans up all loaded map trees and model files.
+     */
     VMapManager2::~VMapManager2(void)
     {
         for (InstanceTreeMap::iterator i = iInstanceMapTrees.begin(); i != iInstanceMapTrees.end(); ++i)
@@ -55,8 +58,14 @@ namespace VMAP
         }
     }
 
-    //=========================================================
-
+    /**
+     * @brief Converts a position from the game world to the internal representation.
+     *
+     * @param x The x-coordinate in the game world.
+     * @param y The y-coordinate in the game world.
+     * @param z The z-coordinate in the game world.
+     * @return Vector3 The converted position.
+     */
     Vector3 VMapManager2::convertPositionToInternalRep(float x, float y, float z) const
     {
         Vector3 pos;
@@ -68,7 +77,12 @@ namespace VMAP
         return pos;
     }
 
-    // move to MapTree too?
+    /**
+     * @brief Generates the map file name based on the map ID.
+     *
+     * @param pMapId The map ID.
+     * @return std::string The generated map file name.
+     */
     std::string VMapManager2::getMapFileName(unsigned int pMapId)
     {
         std::stringstream fname;
@@ -77,8 +91,15 @@ namespace VMAP
         return fname.str();
     }
 
-    //=========================================================
-
+    /**
+     * @brief Loads a map tile.
+     *
+     * @param pBasePath The base path to the map files.
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the tile.
+     * @param y The y-coordinate of the tile.
+     * @return VMAPLoadResult The result of the load operation.
+     */
     VMAPLoadResult VMapManager2::loadMap(const char* pBasePath, unsigned int pMapId, int x, int y)
     {
         VMAPLoadResult result = VMAP_LOAD_RESULT_IGNORED;
@@ -96,9 +117,15 @@ namespace VMAP
         return result;
     }
 
-    //=========================================================
-    // load one tile (internal use only)
-
+    /**
+     * @brief Internal method to load a map tile.
+     *
+     * @param pMapId The map ID.
+     * @param basePath The base path to the map files.
+     * @param tileX The x-coordinate of the tile.
+     * @param tileY The y-coordinate of the tile.
+     * @return bool True if the tile was loaded successfully, false otherwise.
+     */
     bool VMapManager2::_loadMap(unsigned int pMapId, const std::string& basePath, uint32 tileX, uint32 tileY)
     {
         InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
@@ -115,8 +142,11 @@ namespace VMAP
         return instanceTree->second->LoadMapTile(tileX, tileY, this);
     }
 
-    //=========================================================
-
+    /**
+     * @brief Unloads a map.
+     *
+     * @param pMapId The map ID.
+     */
     void VMapManager2::unloadMap(unsigned int pMapId)
     {
         InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
@@ -131,9 +161,14 @@ namespace VMAP
         }
     }
 
-    //=========================================================
-
-    void VMapManager2::unloadMap(unsigned int  pMapId, int x, int y)
+    /**
+     * @brief Unloads a specific map tile.
+     *
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the tile.
+     * @param y The y-coordinate of the tile.
+     */
+    void VMapManager2::unloadMap(unsigned int pMapId, int x, int y)
     {
         InstanceTreeMap::iterator instanceTree = iInstanceMapTrees.find(pMapId);
         if (instanceTree != iInstanceMapTrees.end())
@@ -147,8 +182,18 @@ namespace VMAP
         }
     }
 
-    //==========================================================
-
+    /**
+     * @brief Checks if there is a line of sight between two points.
+     *
+     * @param pMapId The map ID.
+     * @param x1 The x-coordinate of the first point.
+     * @param y1 The y-coordinate of the first point.
+     * @param z1 The z-coordinate of the first point.
+     * @param x2 The x-coordinate of the second point.
+     * @param y2 The y-coordinate of the second point.
+     * @param z2 The z-coordinate of the second point.
+     * @return bool True if there is a line of sight, false otherwise.
+     */
     bool VMapManager2::isInLineOfSight(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2)
     {
         if (!isLineOfSightCalcEnabled() || IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_LOS))
@@ -169,11 +214,23 @@ namespace VMAP
         }
         return result;
     }
-    //=========================================================
+
     /**
-    get the hit position and return true if we hit something
-    otherwise the result pos will be the dest pos
-    */
+     * @brief Gets the hit position of an object in the line of sight.
+     *
+     * @param pMapId The map ID.
+     * @param x1 The x-coordinate of the first point.
+     * @param y1 The y-coordinate of the first point.
+     * @param z1 The z-coordinate of the first point.
+     * @param x2 The x-coordinate of the second point.
+     * @param y2 The y-coordinate of the second point.
+     * @param z2 The z-coordinate of the second point.
+     * @param rx The x-coordinate of the hit position.
+     * @param ry The y-coordinate of the hit position.
+     * @param rz The z-coordinate of the hit position.
+     * @param pModifyDist The distance to modify the hit position.
+     * @return bool True if an object was hit, false otherwise.
+     */
     bool VMapManager2::getObjectHitPos(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2, float& rx, float& ry, float& rz, float pModifyDist)
     {
         bool result = false;
@@ -198,11 +255,16 @@ namespace VMAP
         return result;
     }
 
-    //=========================================================
     /**
-    get height or INVALID_HEIGHT if no height available
-    */
-
+     * @brief Gets the height at a specific position.
+     *
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the position.
+     * @param y The y-coordinate of the position.
+     * @param z The z-coordinate of the position.
+     * @param maxSearchDist The maximum search distance.
+     * @return float The height at the position, or VMAP_INVALID_HEIGHT_VALUE if no height is available.
+     */
     float VMapManager2::getHeight(unsigned int pMapId, float x, float y, float z, float maxSearchDist)
     {
         float height = VMAP_INVALID_HEIGHT_VALUE;           // no height
@@ -222,8 +284,19 @@ namespace VMAP
         return height;
     }
 
-    //=========================================================
-
+    /**
+     * @brief Gets area information at a specific position.
+     *
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the position.
+     * @param y The y-coordinate of the position.
+     * @param z The z-coordinate of the position.
+     * @param flags The area flags.
+     * @param adtId The ADT ID.
+     * @param rootId The root ID.
+     * @param groupId The group ID.
+     * @return bool True if area information was retrieved, false otherwise.
+     */
     bool VMapManager2::getAreaInfo(unsigned int pMapId, float x, float y, float& z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const
     {
         bool result = false;
@@ -241,6 +314,19 @@ namespace VMAP
         return result;
     }
 
+    /**
+     * @brief Gets the liquid level at a specific position.
+     *
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the position.
+     * @param y The y-coordinate of the position.
+     * @param z The z-coordinate of the position.
+     * @param ReqLiquidType The required liquid type.
+     * @param level The liquid level.
+     * @param floor The floor level.
+     * @param type The liquid type.
+     * @return bool True if the liquid level was retrieved, false otherwise.
+     */
     bool VMapManager2::GetLiquidLevel(uint32 pMapId, float x, float y, float z, uint8 ReqLiquidType, float& level, float& floor, uint32& type) const
     {
         if (!IsVMAPDisabledForPtr(pMapId, VMAP_DISABLE_LIQUIDSTATUS))
@@ -268,8 +354,14 @@ namespace VMAP
         return false;
     }
 
-    //=========================================================
-
+    /**
+     * @brief Acquires a model instance.
+     *
+     * @param basepath The base path to the model files.
+     * @param filename The name of the model file.
+     * @param flags The flags for the model.
+     * @return WorldModel* The acquired model instance.
+     */
     WorldModel* VMapManager2::acquireModelInstance(const std::string& basepath, const std::string& filename, uint32 flags/* Only used when creating the model */)
     {
         ModelFileMap::iterator model = iLoadedModelFiles.find(filename);
@@ -291,6 +383,11 @@ namespace VMAP
         return model->second.getModel();
     }
 
+    /**
+     * @brief Releases a model instance.
+     *
+     * @param filename The name of the model file.
+     */
     void VMapManager2::releaseModelInstance(const std::string& filename)
     {
         ModelFileMap::iterator model = iLoadedModelFiles.find(filename);
@@ -306,8 +403,16 @@ namespace VMAP
             iLoadedModelFiles.erase(model);
         }
     }
-    //=========================================================
 
+    /**
+     * @brief Checks if a map exists.
+     *
+     * @param pBasePath The base path to the map files.
+     * @param pMapId The map ID.
+     * @param x The x-coordinate of the tile.
+     * @param y The y-coordinate of the tile.
+     * @return bool True if the map exists, false otherwise.
+     */
     bool VMapManager2::existsMap(const char* pBasePath, unsigned int pMapId, int x, int y)
     {
         return StaticMapTree::CanLoadMap(std::string(pBasePath), pMapId, x, y);

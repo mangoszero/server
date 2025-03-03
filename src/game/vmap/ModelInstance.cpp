@@ -32,12 +32,26 @@ using G3D::Ray;
 
 namespace VMAP
 {
-    ModelInstance::ModelInstance(const ModelSpawn& spawn, WorldModel* model): ModelSpawn(spawn), iModel(model)
+    /**
+     * @brief Constructor for ModelInstance.
+     *
+     * @param spawn The model spawn data.
+     * @param model The world model.
+     */
+    ModelInstance::ModelInstance(const ModelSpawn& spawn, WorldModel* model) : ModelSpawn(spawn), iModel(model)
     {
         iInvRot = G3D::Matrix3::fromEulerAnglesZYX(G3D::pi() * iRot.y / 180.f, G3D::pi() * iRot.x / 180.f, G3D::pi() * iRot.z / 180.f).inverse();
         iInvScale = 1.f / iScale;
     }
 
+    /**
+     * @brief Intersects a ray with the model instance.
+     *
+     * @param pRay The ray to intersect.
+     * @param pMaxDist The maximum distance to check.
+     * @param pStopAtFirstHit Whether to stop at the first hit.
+     * @return true if an intersection is found, false otherwise.
+     */
     bool ModelInstance::intersectRay(const G3D::Ray& pRay, float& pMaxDist, bool pStopAtFirstHit) const
     {
         if (!iModel)
@@ -55,7 +69,7 @@ namespace VMAP
 #endif
             return false;
         }
-        // child bounds are defined in object space:
+        // Child bounds are defined in object space:
         Vector3 p = iInvRot * (pRay.origin() - iPos) * iInvScale;
         Ray modRay(p, iInvRot * pRay.direction());
         float distance = pMaxDist * iInvScale;
@@ -68,6 +82,12 @@ namespace VMAP
         return hit;
     }
 
+    /**
+     * @brief Retrieves area information for a given position.
+     *
+     * @param p The position to check.
+     * @param info The area information.
+     */
     void ModelInstance::GetAreaInfo(const G3D::Vector3& p, AreaInfo& info) const
     {
         if (!iModel)
@@ -86,7 +106,7 @@ namespace VMAP
             return;
         }
 
-        // child bounds are defined in object space:
+        // Child bounds are defined in object space:
         Vector3 pModel = iInvRot * (p - iPos) * iInvScale;
         Vector3 zDirModel = iInvRot * Vector3(0.f, 0.f, -1.f);
         float zDist;
@@ -105,6 +125,13 @@ namespace VMAP
         }
     }
 
+    /**
+     * @brief Retrieves location information for a given position.
+     *
+     * @param p The position to check.
+     * @param info The location information.
+     * @return true if location information was found, false otherwise.
+     */
     bool ModelInstance::GetLocationInfo(const G3D::Vector3& p, LocationInfo& info) const
     {
         if (!iModel)
@@ -123,7 +150,7 @@ namespace VMAP
             return false;
         }
 
-        // child bounds are defined in object space:
+        // Child bounds are defined in object space:
         Vector3 pModel = iInvRot * (p - iPos) * iInvScale;
         Vector3 zDirModel = iInvRot * Vector3(0.f, 0.f, -1.f);
         float zDist;
@@ -144,17 +171,25 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Retrieves the liquid level at a given position.
+     *
+     * @param p The position to check.
+     * @param info The location information.
+     * @param liqHeight The liquid height.
+     * @return true if the liquid level was found, false otherwise.
+     */
     bool ModelInstance::GetLiquidLevel(const G3D::Vector3& p, LocationInfo& info, float& liqHeight) const
     {
-        // child bounds are defined in object space:
+        // Child bounds are defined in object space:
         Vector3 pModel = iInvRot * (p - iPos) * iInvScale;
         // Vector3 zDirModel = iInvRot * Vector3(0.f, 0.f, -1.f);
         float zLevel;
         if (info.hitModel->GetLiquidLevel(pModel, zLevel))
         {
-            // calculate world height (zDist in model coords):
-            // despite making little sense, there ARE some (slightly) tilted WMOs...
-            // we can only determine liquid height in LOCAL z-direction (heightmap data),
+            // Calculate world height (zDist in model coords):
+            // Despite making little sense, there ARE some (slightly) tilted WMOs...
+            // We can only determine liquid height in LOCAL z-direction (heightmap data),
             // so with increasing tilt, liquid calculation gets increasingly wrong...not my fault, really :p
             liqHeight = (zLevel - pModel.z) * iScale + p.z;
             return true;
@@ -162,6 +197,13 @@ namespace VMAP
         return false;
     }
 
+    /**
+     * @brief Reads a ModelSpawn from a file.
+     *
+     * @param rf The file to read from.
+     * @param spawn The ModelSpawn to read into.
+     * @return true if the read was successful, false otherwise.
+     */
     bool ModelSpawn::ReadFromFile(FILE* rf, ModelSpawn& spawn)
     {
         uint32 check = 0, nameLen;
@@ -181,7 +223,7 @@ namespace VMAP
         check += fread(&spawn.iRot, sizeof(float), 3, rf);
         check += fread(&spawn.iScale, sizeof(float), 1, rf);
         bool has_bound = (spawn.flags & MOD_HAS_BOUND);
-        if (has_bound) // only WMOs have bound in MPQ, only available after computation
+        if (has_bound) // Only WMOs have bound in MPQ, only available after computation
         {
             Vector3 bLow, bHigh;
             check += fread(&bLow, sizeof(float), 3, rf);
@@ -195,7 +237,7 @@ namespace VMAP
             return false;
         }
         char nameBuff[500];
-        if (nameLen > 500) // file names should never be that long, must be file error
+        if (nameLen > 500) // File names should never be that long, must be file error
         {
             ERROR_LOG("Error reading ModelSpawn, file name too long!");
             return false;
@@ -210,6 +252,13 @@ namespace VMAP
         return true;
     }
 
+    /**
+     * @brief Writes a ModelSpawn to a file.
+     *
+     * @param wf The file to write to.
+     * @param spawn The ModelSpawn to write.
+     * @return true if the write was successful, false otherwise.
+     */
     bool ModelSpawn::WriteToFile(FILE* wf, const ModelSpawn& spawn)
     {
         uint32 check = 0;
@@ -220,7 +269,7 @@ namespace VMAP
         check += fwrite(&spawn.iRot, sizeof(float), 3, wf);
         check += fwrite(&spawn.iScale, sizeof(float), 1, wf);
         bool has_bound = (spawn.flags & MOD_HAS_BOUND);
-        if (has_bound) // only WMOs have bound in MPQ, only available after computation
+        if (has_bound) // Only WMOs have bound in MPQ, only available after computation
         {
             check += fwrite(&spawn.iBound.low(), sizeof(float), 3, wf);
             check += fwrite(&spawn.iBound.high(), sizeof(float), 3, wf);
