@@ -2765,12 +2765,12 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 send
                 return true;
             }
         }
-    }
-    else
-    {
-        if (e->OnGossipSelect(pPlayer, pCreature, sender, action))
+        else
         {
-            return true;
+            if (e->OnGossipSelect(pPlayer, pCreature, sender, action))
+            {
+                return true;
+            }
         }
     }
 #endif /* ENABLE_ELUNA */
@@ -2803,12 +2803,12 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, GameObject* pGameObject, uint32 
                 return true;
             }
         }
-    }
-    else
-    {
-        if (e->OnGossipSelect(pPlayer, pGameObject, sender, action))
+        else
         {
-            return true;
+            if (e->OnGossipSelect(pPlayer, pGameObject, sender, action))
+            {
+                return true;
+            }
         }
     }
 #endif /* ENABLE_ELUNA */
