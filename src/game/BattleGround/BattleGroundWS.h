@@ -32,8 +32,7 @@
 #define BG_WS_FLAG_DROP_TIME      (10*IN_MILLISECONDS)
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch sound effects.
  */
 enum BG_WS_Sound
 {
@@ -47,8 +46,7 @@ enum BG_WS_Sound
 };
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch spell IDs.
  */
 enum BG_WS_SpellId
 {
@@ -59,8 +57,7 @@ enum BG_WS_SpellId
 };
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch world states.
  */
 enum BG_WS_WorldStates
 {
@@ -75,8 +72,7 @@ enum BG_WS_WorldStates
 };
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch flag states.
  */
 enum BG_WS_FlagState
 {
@@ -87,8 +83,7 @@ enum BG_WS_FlagState
 };
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch graveyards.
  */
 enum BG_WS_Graveyards
 {
@@ -99,33 +94,29 @@ enum BG_WS_Graveyards
 };
 
 /**
- * @brief
- *
+ * @brief Class for storing Warsong Gulch score.
  */
 class BattleGroundWGScore : public BattleGroundScore
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor for BattleGroundWGScore.
          */
         BattleGroundWGScore() : FlagCaptures(0), FlagReturns(0) {};
         /**
-         * @brief
-         *
+         * @brief Destructor for BattleGroundWGScore.
          */
         virtual ~BattleGroundWGScore() {};
 
         uint32 GetAttr1() const { return FlagCaptures; }
         uint32 GetAttr2() const { return FlagReturns; }
 
-        uint32 FlagCaptures; /**< TODO */
-        uint32 FlagReturns; /**< TODO */
+        uint32 FlagCaptures; /**< Number of flag captures. */
+        uint32 FlagReturns; /**< Number of flag returns. */
 };
 
 /**
- * @brief
- *
+ * @brief Enum for Warsong Gulch events.
  */
 enum BG_WS_Events
 {
@@ -136,12 +127,11 @@ enum BG_WS_Events
 };
 
 // Honor granted depending on player's level
-const uint32 BG_WSG_FlagCapturedHonor[MAX_BATTLEGROUND_BRACKETS] = {48, 82, 136, 226, 378, 396}; /**< TODO */
-const uint32 BG_WSG_WinMatchHonor[MAX_BATTLEGROUND_BRACKETS] = {24, 41, 68, 113, 189, 198}; /**< TODO */
+const uint32 BG_WSG_FlagCapturedHonor[MAX_BATTLEGROUND_BRACKETS] = {48, 82, 136, 226, 378, 396}; /**< Honor for flag capture. */
+const uint32 BG_WSG_WinMatchHonor[MAX_BATTLEGROUND_BRACKETS] = {24, 41, 68, 113, 189, 198}; /**< Honor for winning match. */
 
 /**
- * @brief
- *
+ * @brief Class for managing Warsong Gulch battleground.
  */
 class BattleGroundWS : public BattleGround
 {
@@ -149,225 +139,195 @@ class BattleGroundWS : public BattleGround
 
     public:
         /**
-         * @brief Construction
-         *
+         * @brief Constructor for BattleGroundWS.
          */
         BattleGroundWS();
         /**
-         * @brief
-         *
-         * @param diff
+         * @brief Updates the battleground.
+         * @param diff The time difference.
          */
         void Update(uint32 diff) override;
 
         /**
-         * @brief inherited from BattlegroundClass
-         *
-         * @param plr
+         * @brief Adds a player to the battleground.
+         * @param plr Pointer to the player.
          */
         void AddPlayer(Player* plr) override;
         /**
-         * @brief
-         *
+         * @brief Opens the doors at the start of the event.
          */
         void StartingEventOpenDoors() override;
 
         /**
-         * @brief BG Flags
-         *
-         * @return ObjectGuid
+         * @brief Gets the GUID of the alliance flag carrier.
+         * @return ObjectGuid The GUID of the alliance flag carrier.
          */
         ObjectGuid GetAllianceFlagCarrierGuid() const { return m_flagCarrierAlliance; }
         /**
-         * @brief
-         *
-         * @return ObjectGuid
+         * @brief Gets the GUID of the horde flag carrier.
+         * @return ObjectGuid The GUID of the horde flag carrier.
          */
         ObjectGuid GetHordeFlagCarrierGuid() const { return m_flagCarrierHorde; }
 
         /**
-         * @brief
-         *
-         * @param guid
+         * @brief Sets the GUID of the alliance flag carrier.
+         * @param guid The GUID of the alliance flag carrier.
          */
         void SetAllianceFlagCarrier(ObjectGuid guid) { m_flagCarrierAlliance = guid; }
         /**
-         * @brief
-         *
-         * @param guid
+         * @brief Sets the GUID of the horde flag carrier.
+         * @param guid The GUID of the horde flag carrier.
          */
         void SetHordeFlagCarrier(ObjectGuid guid) { m_flagCarrierHorde = guid; }
 
         /**
-         * @brief
-         *
+         * @brief Clears the GUID of the alliance flag carrier.
          */
         void ClearAllianceFlagCarrier() { m_flagCarrierAlliance.Clear(); }
         /**
-         * @brief
-         *
+         * @brief Clears the GUID of the horde flag carrier.
          */
         void ClearHordeFlagCarrier() { m_flagCarrierHorde.Clear(); }
 
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Checks if the alliance flag is picked up.
+         * @return bool True if the alliance flag is picked up, false otherwise.
          */
         bool IsAllianceFlagPickedUp() const { return !m_flagCarrierAlliance.IsEmpty(); }
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Checks if the horde flag is picked up.
+         * @return bool True if the horde flag is picked up, false otherwise.
          */
         bool IsHordeFlagPickedUp() const { return !m_flagCarrierHorde.IsEmpty(); }
 
         /**
-         * @brief
-         *
-         * @param team
-         * @param captured
+         * @brief Respawns the flag for a team.
+         * @param team The team.
+         * @param captured True if the flag was captured, false otherwise.
          */
         void RespawnFlag(Team team, bool captured);
         /**
-         * @brief
-         *
-         * @param team
+         * @brief Respawns the dropped flag for a team.
+         * @param team The team.
          */
         void RespawnDroppedFlag(Team team);
         /**
-         * @brief
-         *
-         * @param team
-         * @return uint8
+         * @brief Gets the flag state for a team.
+         * @param team The team.
+         * @return uint8 The flag state.
          */
         uint8 GetFlagState(Team team) { return m_FlagState[GetTeamIndexByTeamId(team)]; }
 
         /**
-         * @brief Battleground Events
-         *
-         * @param source
+         * @brief Handles the event when a player drops the flag.
+         * @param source The player who dropped the flag.
          */
         void EventPlayerDroppedFlag(Player* source) override;
         /**
-         * @brief
-         *
-         * @param source
-         * @param target_obj
+         * @brief Handles the event when a player clicks on the flag.
+         * @param source The player who clicked on the flag.
+         * @param target_obj The flag object.
          */
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
         /**
-         * @brief
-         *
-         * @param source
+         * @brief Handles the event when a player captures the flag.
+         * @param source The player who captured the flag.
          */
         void EventPlayerCapturedFlag(Player* source) override;
 
         /**
-         * @brief
-         *
-         * @param plr
-         * @param guid
+         * @brief Removes a player from the battleground.
+         * @param plr The player to remove.
+         * @param guid The GUID of the player.
          */
         void RemovePlayer(Player* plr, ObjectGuid guid) override;
         /**
-         * @brief
-         *
-         * @param source
-         * @param trigger
+         * @brief Handles area triggers.
+         * @param source The player who triggered the area.
+         * @param trigger The trigger ID.
+         * @return bool True if the trigger was handled, false otherwise.
          */
         bool HandleAreaTrigger(Player* source, uint32 trigger) override;
         /**
-         * @brief
-         *
-         * @param player
-         * @param killer
+         * @brief Handles the event when a player is killed.
+         * @param player The player who was killed.
+         * @param killer The player who killed.
          */
         void HandleKillPlayer(Player* player, Player* killer) override;
         /**
-         * @brief
-         *
+         * @brief Resets the battleground.
          */
         void Reset() override;
         /**
-         * @brief
-         *
-         * @param winner
+         * @brief Ends the battleground.
+         * @param winner The winning team.
          */
         void EndBattleGround(Team winner) override;
         /**
-         * @brief
-         *
-         * @param player
-         * @return const WorldSafeLocsEntry
+         * @brief Gets the closest graveyard for a player.
+         * @param player The player.
+         * @return const WorldSafeLocsEntry The closest graveyard.
          */
         WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
         /**
-         * @brief
-         *
-         * @param team
-         * @param value
+         * @brief Updates the flag state for a team.
+         * @param team The team.
+         * @param value The flag state value.
          */
         void UpdateFlagState(Team team, uint32 value);
         /**
-         * @brief
-         *
-         * @param team
+         * @brief Updates the team score.
+         * @param team The team.
          */
         void UpdateTeamScore(Team team);
         /**
-         * @brief
-         *
-         * @param source
-         * @param type
-         * @param value
+         * @brief Updates the player score.
+         * @param source The player.
+         * @param type The score type.
+         * @param value The score value.
          */
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
         /**
-         * @brief
-         *
-         * @param guid
-         * @param team
+         * @brief Sets the GUID of the dropped flag for a team.
+         * @param guid The GUID of the dropped flag.
+         * @param team The team.
          */
         void SetDroppedFlagGuid(ObjectGuid guid, Team team)  { m_DroppedFlagGuid[GetTeamIndexByTeamId(team)] = guid;}
         /**
-         * @brief
-         *
-         * @param team
+         * @brief Clears the GUID of the dropped flag for a team.
+         * @param team The team.
          */
         void ClearDroppedFlagGuid(Team team)  { m_DroppedFlagGuid[GetTeamIndexByTeamId(team)].Clear();}
         /**
-         * @brief
-         *
-         * @param team
-         * @return const ObjectGuid
+         * @brief Gets the GUID of the dropped flag for a team.
+         * @param team The team.
+         * @return const ObjectGuid The GUID of the dropped flag.
          */
         ObjectGuid const& GetDroppedFlagGuid(Team team) const { return m_DroppedFlagGuid[GetTeamIndexByTeamId(team)];}
         /**
-         * @brief
-         *
-         * @param data
-         * @param count
+         * @brief Fills the initial world states.
+         * @param data The world packet data.
+         * @param count The count of world states.
          */
         void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
         /**
-         * @brief
-         *
+         * @brief Gets the premature winner of the battleground.
+         * @return Team The premature winner.
          */
         Team GetPrematureWinner() override;
 
     private:
-        ObjectGuid m_flagCarrierAlliance; /**< TODO */
-        ObjectGuid m_flagCarrierHorde; /**< TODO */
+        ObjectGuid m_flagCarrierAlliance; /**< GUID of the alliance flag carrier. */
+        ObjectGuid m_flagCarrierHorde; /**< GUID of the horde flag carrier. */
 
-        ObjectGuid m_DroppedFlagGuid[PVP_TEAM_COUNT]; /**< TODO */
-        uint8 m_FlagState[PVP_TEAM_COUNT]; /**< TODO */
-        int32 m_FlagsTimer[PVP_TEAM_COUNT]; /**< TODO */
-        int32 m_FlagsDropTimer[PVP_TEAM_COUNT]; /**< TODO */
+        ObjectGuid m_DroppedFlagGuid[PVP_TEAM_COUNT]; /**< GUIDs of the dropped flags. */
+        uint8 m_FlagState[PVP_TEAM_COUNT]; /**< States of the flags. */
+        int32 m_FlagsTimer[PVP_TEAM_COUNT]; /**< Timers for the flags. */
+        int32 m_FlagsDropTimer[PVP_TEAM_COUNT]; /**< Drop timers for the flags. */
 
-        uint32 m_ReputationCapture; /**< TODO */
-        uint32 m_HonorWinKills; /**< TODO */
-        uint32 m_HonorEndKills; /**< TODO */
+        uint32 m_ReputationCapture; /**< Reputation for capturing the flag. */
+        uint32 m_HonorWinKills; /**< Honor for winning kills. */
+        uint32 m_HonorEndKills; /**< Honor for end kills. */
 };
 #endif

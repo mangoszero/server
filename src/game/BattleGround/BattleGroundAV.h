@@ -39,7 +39,7 @@
 #define BG_AV_SCORE_NEAR_LOSE               120
 
 // description: KILL = bonushonor kill one kill is 21honor worth at 0
-// REP reputation, RES = ressources a team will lose
+// REP reputation, RES = resources a team will lose
 #define BG_AV_KILL_BOSS                     4
 #define BG_AV_REP_BOSS                      350
 #define BG_AV_REP_BOSS_HOLIDAY              525
@@ -75,16 +75,15 @@
 #define BG_AV_REP_OWNED_MINE_HOLIDAY        36
 
 /**
- * @brief
- *
+ * @brief Enum for various sounds used in the battleground.
  */
 enum BG_AV_Sounds
 {
     BG_AV_SOUND_NEAR_LOSE               = 8456,             // not confirmed yet
 
-    BG_AV_SOUND_ALLIANCE_ASSAULTS       = 8212,             // tower,grave + enemy boss if someone tries to attack him
+    BG_AV_SOUND_ALLIANCE_ASSAULTS       = 8212,             // tower, grave + enemy boss if someone tries to attack him
     BG_AV_SOUND_HORDE_ASSAULTS          = 8174,
-    BG_AV_SOUND_ALLIANCE_GOOD           = 8173,             // if something good happens for the team:  wins(maybe only through killing the boss), captures mine or grave, destroys tower and defends grave
+    BG_AV_SOUND_ALLIANCE_GOOD           = 8173,             // if something good happens for the team: wins, captures mine or grave, destroys tower and defends grave
     BG_AV_SOUND_HORDE_GOOD              = 8213,
     BG_AV_SOUND_BOTH_TOWER_DEFEND       = 8192,
 
@@ -93,8 +92,7 @@ enum BG_AV_Sounds
 };
 
 /**
- * @brief
- *
+ * @brief Enum for other values used in the battleground.
  */
 enum BG_AV_OTHER_VALUES
 {
@@ -108,8 +106,7 @@ enum BG_AV_OTHER_VALUES
 #define BG_AV_MAX_MINES 2
 
 /**
- * @brief
- *
+ * @brief Enum for object IDs used in the battleground.
  */
 enum BG_AV_ObjectIds
 {
@@ -119,8 +116,7 @@ enum BG_AV_ObjectIds
 };
 
 /**
- * @brief
- *
+ * @brief Enum for nodes in the battleground.
  */
 enum BG_AV_Nodes
 {
@@ -143,7 +139,7 @@ enum BG_AV_Nodes
 };
 #define BG_AV_NODES_MAX                 15
 
-// for nodeevents we will use event1=node
+// for node events we will use event1=node
 // event2 is related to BG_AV_States
 // 0 = alliance assaulted
 // 1 = alliance control
@@ -182,8 +178,7 @@ enum BG_AV_Nodes
 #define BG_AV_NodeEventCaptainDead_H 64
 
 /**
- * @brief
- *
+ * @brief Enum for graveyards in the battleground.
  */
 enum BG_AV_Graveyards
 {
@@ -212,8 +207,7 @@ const uint32 BG_AV_GraveyardIds[9] = /**< TODO */
 };
 
 /**
- * @brief
- *
+ * @brief Enum for states of nodes in the battleground.
  */
 enum BG_AV_States
 {
@@ -223,8 +217,7 @@ enum BG_AV_States
 #define BG_AV_MAX_STATES 2
 
 /**
- * @brief
- *
+ * @brief Enum for world states in the battleground.
  */
 enum BG_AV_WorldStates
 {
@@ -236,7 +229,7 @@ enum BG_AV_WorldStates
 };
 
 /**
- * @brief special version with  more wide values range that BattleGroundTeamIndex
+ * @brief Special version with more wide values range than BattleGroundTeamIndex.
  *
  * BattleGroundAVTeamIndex <- BattleGroundTeamIndex cast safe
  * BattleGroundAVTeamIndex -> BattleGroundTeamIndex cast safe and array with BG_TEAMS_COUNT elements must checked != BG_AV_TEAM_NEUTRAL before used
@@ -293,7 +286,7 @@ const uint32 BG_AV_NodeWorldStates[BG_AV_NODES_MAX][4] = /**< alliance_control a
 
 #define BG_AV_MAX_GRAVETYPES 4
 /**
- * @brief through the armorscap-quest 4 different gravedefender exist
+ * @brief Through the armorscap-quest 4 different grave defender exist.
  *
  */
 enum BG_AV_QuestIds
@@ -304,11 +297,11 @@ enum BG_AV_QuestIds
     BG_AV_QUEST_H_SCRAPS2       = 6741,
     BG_AV_QUEST_A_COMMANDER1    = 6942,                     // soldier
     BG_AV_QUEST_H_COMMANDER1    = 6825,
-    BG_AV_QUEST_A_COMMANDER2    = 6941,                     // leutnant
+    BG_AV_QUEST_A_COMMANDER2    = 6941,                     // lieutenant
     BG_AV_QUEST_H_COMMANDER2    = 6826,
     BG_AV_QUEST_A_COMMANDER3    = 6943,                     // commander
     BG_AV_QUEST_H_COMMANDER3    = 6827,
-    BG_AV_QUEST_A_BOSS1         = 7386,                     // 5 cristal/blood
+    BG_AV_QUEST_A_BOSS1         = 7386,                     // 5 crystal/blood
     BG_AV_QUEST_H_BOSS1         = 7385,
     BG_AV_QUEST_A_BOSS2         = 6881,                     // 1
     BG_AV_QUEST_H_BOSS2         = 6801,
@@ -323,25 +316,24 @@ enum BG_AV_QuestIds
 };
 
 /**
- * @brief
- *
+ * @brief Structure to hold information about a node in the battleground.
  */
 struct BG_AV_NodeInfo
 {
-    BattleGroundAVTeamIndex TotalOwner; /**< TODO */
-    BattleGroundAVTeamIndex Owner; /**< TODO */
-    BattleGroundAVTeamIndex PrevOwner; /**< TODO */
-    BG_AV_States State; /**< TODO */
-    BG_AV_States PrevState; /**< TODO */
-    uint32       Timer; /**< TODO */
-    bool         Tower; /**< TODO */
+    BattleGroundAVTeamIndex TotalOwner; /**< The total owner of the node. */
+    BattleGroundAVTeamIndex Owner; /**< The current owner of the node. */
+    BattleGroundAVTeamIndex PrevOwner; /**< The previous owner of the node. */
+    BG_AV_States State; /**< The current state of the node. */
+    BG_AV_States PrevState; /**< The previous state of the node. */
+    uint32       Timer; /**< The timer for the node. */
+    bool         Tower; /**< Whether the node is a tower. */
 };
 
 /**
- * @brief
+ * @brief Increment operator for BG_AV_Nodes enum.
  *
- * @param i
- * @return BG_AV_Nodes &operator
+ * @param i The node to increment.
+ * @return BG_AV_Nodes& The incremented node.
  */
 inline BG_AV_Nodes& operator++(BG_AV_Nodes& i)
 {
@@ -349,20 +341,17 @@ inline BG_AV_Nodes& operator++(BG_AV_Nodes& i)
 }
 
 /**
- * @brief
- *
+ * @brief Class to hold the score for a player in the battleground.
  */
 class BattleGroundAVScore : public BattleGroundScore
 {
     public:
-/**
- * @brief
- *
- */
+        /**
+         * @brief Constructor for BattleGroundAVScore.
+         */
         BattleGroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), SecondaryObjectives(0), LieutnantCount(0), SecondaryNPC(0) {};
         /**
-         * @brief
-         *
+         * @brief Destructor for BattleGroundAVScore.
          */
         virtual ~BattleGroundAVScore() {};
 
@@ -372,18 +361,17 @@ class BattleGroundAVScore : public BattleGroundScore
         uint32 GetAttr4() const { return TowersDefended; }
         uint32 GetAttr5() const { return SecondaryObjectives; }
 
-        uint32 GraveyardsAssaulted; /**< TODO */
-        uint32 GraveyardsDefended; /**< TODO */
-        uint32 TowersAssaulted; /**< TODO */
-        uint32 TowersDefended; /**< TODO */
-        uint32 SecondaryObjectives; /**< TODO */
-        uint32 LieutnantCount; /**< TODO */
-        uint32 SecondaryNPC; /**< TODO */
+        uint32 GraveyardsAssaulted; /**< Number of graveyards assaulted. */
+        uint32 GraveyardsDefended; /**< Number of graveyards defended. */
+        uint32 TowersAssaulted; /**< Number of towers assaulted. */
+        uint32 TowersDefended; /**< Number of towers defended. */
+        uint32 SecondaryObjectives; /**< Number of secondary objectives completed. */
+        uint32 LieutnantCount; /**< Number of lieutenants killed. */
+        uint32 SecondaryNPC; /**< Number of secondary NPCs killed. */
 };
 
 /**
- * @brief
- *
+ * @brief Class for the Alterac Valley battleground.
  */
 class BattleGroundAV : public BattleGround
 {
@@ -391,267 +379,281 @@ class BattleGroundAV : public BattleGround
 
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor for BattleGroundAV.
          */
         BattleGroundAV();
         /**
-         * @brief
+         * @brief Updates the battleground.
          *
-         * @param diff
+         * @param diff The time difference since the last update.
          */
         void Update(uint32 diff) override;
 
         /**
-         * @brief inherited from BattlegroundClass
+         * @brief Adds a player to the battleground.
          *
-         * @param plr
+         * @param plr The player to add.
          */
         void AddPlayer(Player* plr) override;
 
         /**
-         * @brief
-         *
+         * @brief Opens the doors at the start of the battleground.
          */
         void StartingEventOpenDoors() override;
         /**
-         * @brief  world states
+         * @brief Fills the initial world states for the battleground.
          *
-         * @param data
-         * @param count
+         * @param data The world packet to fill.
+         * @param count The count of world states.
          */
         void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
-        /**
-         * @brief
+                /**
+         * @brief Handles an area trigger.
          *
-         * @param source
-         * @param trigger
+         * @param source The player who triggered the area.
+         * @param trigger The ID of the trigger.
+         * @return true If the trigger was handled.
          */
         bool HandleAreaTrigger(Player* source, uint32 trigger) override;
+
         /**
-         * @brief
-         *
+         * @brief Resets the battleground to its initial state.
          */
         void Reset() override;
 
-        /*general stuff*/
+        /* General functions */
         /**
-         * @brief
+         * @brief Updates the score for a team.
          *
-         * @param teamIdx
-         * @param points
+         * @param teamIdx The index of the team.
+         * @param points The points to add to the team's score.
          */
         void UpdateScore(PvpTeamIndex teamIdx, int32 points);
+
         /**
-         * @brief
+         * @brief Updates the score for a player.
          *
-         * @param source
-         * @param type
-         * @param value
+         * @param source The player whose score is being updated.
+         * @param type The type of score to update.
+         * @param value The value to add to the score.
          */
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
-        /*handle stuff*/ // these are functions which get called from extern scripts
+        /* Event handling functions - these are are called from external scripts */
         /**
-         * @brief
+         * @brief Handles a player clicking on a flag.
          *
-         * @param source
-         * @param target_obj
+         * @param source The player who clicked on the flag.
+         * @param target_obj The game object representing the flag.
          */
         void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
+
         /**
-         * @brief
+         * @brief Handles a player being killed.
          *
-         * @param player
-         * @param killer
+         * @param player The player who was killed.
+         * @param killer The player who killed the player.
          */
         void HandleKillPlayer(Player* player, Player* killer) override;
+
         /**
-         * @brief
+         * @brief Handles a unit being killed.
          *
-         * @param creature
-         * @param killer
+         * @param creature The unit that was killed.
+         * @param killer The player who killed the unit.
          */
         void HandleKillUnit(Creature* creature, Player* killer) override;
+
         /**
-         * @brief
+         * @brief Handles a quest being completed.
          *
-         * @param questid
-         * @param player
+         * @param questid The ID of the quest.
+         * @param player The player who completed the quest.
          */
         void HandleQuestComplete(uint32 questid, Player* player);
+
         /**
-         * @brief
+         * @brief Checks if a player can do a mine quest.
          *
-         * @param GOId
-         * @param team
-         * @return bool
+         * @param GOId The ID of the game object.
+         * @param team The team of the player.
+         * @return true If the player can do the mine quest.
          */
         bool PlayerCanDoMineQuest(int32 GOId, Team team);
 
         /**
-         * @brief
+         * @brief Ends the battleground.
          *
-         * @param winner
+         * @param winner The team that won the battleground.
          */
         void EndBattleGround(Team winner) override;
 
         /**
-         * @brief
+         * @brief Gets the closest graveyard to a player.
          *
-         * @param plr
-         * @return const WorldSafeLocsEntry
+         * @param plr The player.
+         * @return const WorldSafeLocsEntry* The closest graveyard.
          */
         WorldSafeLocsEntry const* GetClosestGraveYard(Player* plr) override;
 
         /**
-         * @brief
+         * @brief Gets the premature winner of the battleground.
          *
-         * @return Team
+         * @return Team The premature winner.
          */
         Team GetPrematureWinner() override;
 
         /**
-         * @brief
+         * @brief Gets the AV team index by team ID.
          *
-         * @param team
-         * @return BattleGroundAVTeamIndex
+         * @param team The team ID.
+         * @return BattleGroundAVTeamIndex The AV team index.
          */
         static BattleGroundAVTeamIndex GetAVTeamIndexByTeamId(Team team) { return BattleGroundAVTeamIndex(GetTeamIndexByTeamId(team)); }
+
     private:
-        /* Nodes occupying */
+        /* Node handling functions */
         /**
-         * @brief
+         * @brief Handles a player assaulting a point.
          *
-         * @param player
-         * @param node
+         * @param player The player assaulting the point.
+         * @param node The node being assaulted.
          */
         void EventPlayerAssaultsPoint(Player* player, BG_AV_Nodes node);
+
         /**
-         * @brief
+         * @brief Handles a player defending a point.
          *
-         * @param player
-         * @param node
+         * @param player The player defending the point.
+         * @param node The node being defended.
          */
         void EventPlayerDefendsPoint(Player* player, BG_AV_Nodes node);
+
         /**
-         * @brief
+         * @brief Handles a player destroying a point.
          *
-         * @param node
+         * @param node The node being destroyed.
          */
         void EventPlayerDestroyedPoint(BG_AV_Nodes node);
 
         /**
-         * @brief
+         * @brief Assaults a node.
          *
-         * @param node
-         * @param teamIdx
+         * @param node The node being assaulted.
+         * @param teamIdx The index of the team assaulting the node.
          */
         void AssaultNode(BG_AV_Nodes node, PvpTeamIndex teamIdx);
+
         /**
-         * @brief
+         * @brief Destroys a node.
          *
-         * @param node
+         * @param node The node being destroyed.
          */
         void DestroyNode(BG_AV_Nodes node);
+
         /**
-         * @brief
+         * @brief Initializes a node.
          *
-         * @param node
-         * @param teamIdx
-         * @param tower
+         * @param node The node being initialized.
+         * @param teamIdx The index of the team owning the node.
+         * @param tower Whether the node is a tower.
          */
         void InitNode(BG_AV_Nodes node, BattleGroundAVTeamIndex teamIdx, bool tower);
+
         /**
-         * @brief
+         * @brief Defends a node.
          *
-         * @param node
-         * @param teamIdx
+         * @param node The node being defended.
+         * @param teamIdx The index of the team defending the node.
          */
         void DefendNode(BG_AV_Nodes node, PvpTeamIndex teamIdx);
 
         /**
-         * @brief
+         * @brief Populates a node with NPCs.
          *
-         * @param node
+         * @param node The node being populated.
          */
         void PopulateNode(BG_AV_Nodes node);
 
         /**
-         * @brief
+         * @brief Gets the name of a node.
          *
-         * @param node
-         * @return uint32
+         * @param node The node.
+         * @return uint32 The name of the node.
          */
         uint32 GetNodeName(BG_AV_Nodes node) const;
+
         /**
-         * @brief
+         * @brief Checks if a node is a tower.
          *
-         * @param node
-         * @return bool
+         * @param node The node.
+         * @return bool True if the node is a tower.
          */
         bool IsTower(BG_AV_Nodes node) const { return (node == BG_AV_NODES_ERROR) ? false : m_Nodes[node].Tower; }
+
         /**
-         * @brief
+         * @brief Checks if a node is a graveyard.
          *
-         * @param node
-         * @return bool
+         * @param node The node.
+         * @return bool True if the node is a graveyard.
          */
         bool IsGrave(BG_AV_Nodes node) const { return (node == BG_AV_NODES_ERROR) ? false : !m_Nodes[node].Tower; }
 
-        /*mine*/
+        /* Mine handling functions */
         /**
-         * @brief
+         * @brief Changes the owner of a mine.
          *
-         * @param mine
-         * @param teamIdx
+         * @param mine The mine.
+         * @param teamIdx The index of the team owning the mine.
          */
         void ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx);
 
-        /*worldstates*/
+        /* World state handling functions */
         /**
-         * @brief
+         * @brief Gets the world state type for a node.
          *
-         * @param state
-         * @param teamIdx
-         * @return uint8
+         * @param state The state of the node.
+         * @param teamIdx The index of the team owning the node.
+         * @return uint8 The world state type.
          */
         uint8 GetWorldStateType(uint8 state, BattleGroundAVTeamIndex teamIdx) const { return teamIdx * BG_AV_MAX_STATES + state; }
+
         /**
-         * @brief
+         * @brief Sends the world states for a mine.
          *
-         * @param mine
+         * @param mine The mine.
          */
         void SendMineWorldStates(uint32 mine);
+
         /**
-         * @brief
+         * @brief Updates the world state for a node.
          *
-         * @param node
+         * @param node The node.
          */
         void UpdateNodeWorldState(BG_AV_Nodes node);
 
-        /*variables */
-        uint32 m_Team_QuestStatus[PVP_TEAM_COUNT][9];       /**< [x][y] x=team y=questcounter */
+        /* Variables */
+        uint32 m_Team_QuestStatus[PVP_TEAM_COUNT][9];       /**< The quest status for each team. [x][y] x=team y=quest counter. */
 
-        BG_AV_NodeInfo m_Nodes[BG_AV_NODES_MAX]; /**< TODO */
+        BG_AV_NodeInfo m_Nodes[BG_AV_NODES_MAX]; /**< Information about each node. */
 
-        // only for worldstates needed
-        BattleGroundAVTeamIndex m_Mine_Owner[BG_AV_MAX_MINES]; /**< TODO */
-        BattleGroundAVTeamIndex m_Mine_PrevOwner[BG_AV_MAX_MINES]; /**< TODO */
-        int32 m_Mine_Timer[BG_AV_MAX_MINES]; /**< TODO */
-        uint32 m_Mine_Reclaim_Timer[BG_AV_MAX_MINES]; /**< TODO */
+        // Only for world states needed
+        BattleGroundAVTeamIndex m_Mine_Owner[BG_AV_MAX_MINES]; /**< The owner of each mine. */
+        BattleGroundAVTeamIndex m_Mine_PrevOwner[BG_AV_MAX_MINES]; /**< The previous owner of each mine. */
+        int32 m_Mine_Timer[BG_AV_MAX_MINES]; /**< The timer for each mine. */
+        uint32 m_Mine_Reclaim_Timer[BG_AV_MAX_MINES]; /**< The reclaim timer for each mine. */
 
-        bool m_IsInformedNearLose[PVP_TEAM_COUNT]; /**< TODO */
+        bool m_IsInformedNearLose[PVP_TEAM_COUNT]; /**< Whether each team has been informed of a near loss. */
 
-        uint32 m_HonorMapComplete; /**< TODO */
-        uint32 m_RepTowerDestruction; /**< TODO */
-        uint32 m_RepCaptain; /**< TODO */
-        uint32 m_RepBoss; /**< TODO */
-        uint32 m_RepOwnedGrave; /**< TODO */
-        uint32 m_RepOwnedMine; /**< TODO */
-        uint32 m_RepSurviveCaptain; /**< TODO */
-        uint32 m_RepSurviveTower; /**< TODO */
+        uint32 m_HonorMapComplete; /**< The honor for completing the map. */
+        uint32 m_RepTowerDestruction; /**< The reputation for destroying a tower. */
+        uint32 m_RepCaptain; /**< The reputation for killing a captain. */
+        uint32 m_RepBoss; /**< The reputation for killing a boss. */
+        uint32 m_RepOwnedGrave; /**< The reputation for owning a graveyard. */
+        uint32 m_RepOwnedMine; /**< The reputation for owning a mine. */
+        uint32 m_RepSurviveCaptain; /**< The reputation for surviving a captain. */
+        uint32 m_RepSurviveTower; /**< The reputation for surviving a tower. */
 };
 
 #endif
