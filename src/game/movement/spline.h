@@ -33,53 +33,48 @@ namespace Movement
 {
 
     /**
-     * @brief
-     *
+     * @brief Base class for handling splines.
      */
     class SplineBase
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Type definition for index.
              */
             typedef int index_type;
             /**
-             * @brief
-             *
+             * @brief Type definition for control points array.
              */
             typedef std::vector<Vector3> ControlArray;
 
             /**
-             * @brief
-             *
+             * @brief Enumeration for spline evaluation modes.
              */
             enum EvaluationMode
             {
-                ModeLinear,
-                ModeCatmullrom,
-                ModeBezier3_Unused,
-                UninitializedMode,
-                ModesEnd
+                ModeLinear,         /**< Linear interpolation mode */
+                ModeCatmullrom,     /**< Catmull-Rom spline mode */
+                ModeBezier3_Unused, /**< Bezier curve mode (unused) */
+                UninitializedMode,  /**< Uninitialized mode */
+                ModesEnd            /**< End of modes */
             };
 
         protected:
-            ControlArray points; /**< TODO */
+            ControlArray points; /**< Control points of the spline */
 
-            index_type index_lo; /**< TODO */
-            index_type index_hi; /**< TODO */
+            index_type index_lo; /**< Lower bound index */
+            index_type index_hi; /**< Upper bound index */
 
-            uint8 m_mode; /**< TODO */
-            bool cyclic; /**< TODO */
+            uint8 m_mode; /**< Evaluation mode */
+            bool cyclic; /**< Indicates if the spline is cyclic */
 
             /**
-             * @brief
-             *
+             * @brief Constants for segment length evaluation precision.
              */
             enum
             {
                 // could be modified, affects segment length evaluation precision
-                // lesser value saves more performance in cost of lover precision
+                // lesser value saves more performance in cost of lower precision
                 // minimal value is 1
                 // client's value is 20, blizzs use 2-3 steps to compute length
                 STEPS_PER_SEGMENT = 3
@@ -88,231 +83,200 @@ namespace Movement
 
         protected:
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the spline linearly.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated point.
              */
-            void EvaluateLinear(index_type, float, Vector3&) const;
+            void EvaluateLinear(index_type index, float t, Vector3& out) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the spline using Catmull-Rom interpolation.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated point.
              */
-            void EvaluateCatmullRom(index_type, float, Vector3&) const;
+            void EvaluateCatmullRom(index_type index, float t, Vector3& out) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the spline using Bezier interpolation.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated point.
              */
-            void EvaluateBezier3(index_type, float, Vector3&) const;
+            void EvaluateBezier3(index_type index, float t, Vector3& out) const;
             /**
-             * @brief
-             *
+             * @brief Type definition for evaluation method pointers.
              */
             typedef void (SplineBase::*EvaluationMethtod)(index_type, float, Vector3&) const;
-            static EvaluationMethtod evaluators[ModesEnd]; /**< TODO */
+            static EvaluationMethtod evaluators[ModesEnd]; /**< Array of evaluation methods */
 
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the derivative of the spline linearly.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated derivative.
              */
-            void EvaluateDerivativeLinear(index_type, float, Vector3&) const;
+            void EvaluateDerivativeLinear(index_type index, float t, Vector3& out) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the derivative of the spline using Catmull-Rom interpolation.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated derivative.
              */
-            void EvaluateDerivativeCatmullRom(index_type, float, Vector3&) const;
+            void EvaluateDerivativeCatmullRom(index_type index, float t, Vector3& out) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @param float
-             * @param
+             * @brief Evaluates the derivative of the spline using Bezier interpolation.
+             * @param index Index of the segment.
+             * @param t Parameter for interpolation.
+             * @param out Output vector for the evaluated derivative.
              */
-            void EvaluateDerivativeBezier3(index_type, float, Vector3&) const;
-            static EvaluationMethtod derivative_evaluators[ModesEnd]; /**< TODO */
+            void EvaluateDerivativeBezier3(index_type index, float t, Vector3& out) const;
+            static EvaluationMethtod derivative_evaluators[ModesEnd]; /**< Array of derivative evaluation methods */
 
             /**
-             * @brief
-             *
-             * @param index_type
-             * @return float
+             * @brief Calculates the length of a linear segment.
+             * @param index Index of the segment.
+             * @return Length of the segment.
              */
-            float SegLengthLinear(index_type) const;
+            float SegLengthLinear(index_type index) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @return float
+             * @brief Calculates the length of a Catmull-Rom segment.
+             * @param index Index of the segment.
+             * @return Length of the segment.
              */
-            float SegLengthCatmullRom(index_type) const;
+            float SegLengthCatmullRom(index_type index) const;
             /**
-             * @brief
-             *
-             * @param index_type
-             * @return float
+             * @brief Calculates the length of a Bezier segment.
+             * @param index Index of the segment.
+             * @return Length of the segment.
              */
-            float SegLengthBezier3(index_type) const;
+            float SegLengthBezier3(index_type index) const;
             /**
-             * @brief
-             *
+             * @brief Type definition for segment length method pointers.
              */
             typedef float(SplineBase::*SegLenghtMethtod)(index_type) const;
-            static SegLenghtMethtod seglengths[ModesEnd]; /**< TODO */
+            static SegLenghtMethtod seglengths[ModesEnd]; /**< Array of segment length methods */
 
             /**
-             * @brief
-             *
-             * @param
-             * @param index_type
-             * @param bool
-             * @param index_type
+             * @brief Initializes the spline linearly.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param cyclic Indicates if the spline is cyclic.
+             * @param cyclic_point Index of the cyclic point.
              */
-            void InitLinear(const Vector3*, index_type, bool, index_type);
+            void InitLinear(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
             /**
-             * @brief
-             *
-             * @param
-             * @param index_type
-             * @param bool
-             * @param index_type
+             * @brief Initializes the spline using Catmull-Rom interpolation.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param cyclic Indicates if the spline is cyclic.
+             * @param cyclic_point Index of the cyclic point.
              */
-            void InitCatmullRom(const Vector3*, index_type, bool, index_type);
+            void InitCatmullRom(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
             /**
-             * @brief
-             *
-             * @param
-             * @param index_type
-             * @param bool
-             * @param index_type
+             * @brief Initializes the spline using Bezier interpolation.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param cyclic Indicates if the spline is cyclic.
+             * @param cyclic_point Index of the cyclic point.
              */
-            void InitBezier3(const Vector3*, index_type, bool, index_type);
+            void InitBezier3(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
             /**
-             * @brief
-             *
+             * @brief Type definition for initialization method pointers.
              */
             typedef void (SplineBase::*InitMethtod)(const Vector3*, index_type, bool, index_type);
-            static InitMethtod initializers[ModesEnd]; /**< TODO */
+            static InitMethtod initializers[ModesEnd]; /**< Array of initialization methods */
 
             /**
-             * @brief
-             *
+             * @brief Uninitialized spline handler.
              */
             void UninitializedSpline() const { MANGOS_ASSERT(false);}
 
         public:
 
             /**
-             * @brief
-             *
+             * @brief Constructor for SplineBase.
              */
             explicit SplineBase() : index_lo(0), index_hi(0), m_mode(UninitializedMode), cyclic(false) {}
 
             /**
-             * @brief Calculates the position for given segment Idx, and percent of segment length t
-             *
-             * @param Idx spline segment index, should be in range [first, last)
-             * @param u percent of segment length, assumes that t in range [0, 1]
-             * @param c
+             * @brief Calculates the position for given segment Idx, and percent of segment length t.
+             * @param Idx Spline segment index, should be in range [first, last).
+             * @param u Percent of segment length, assumes that t in range [0, 1].
+             * @param c Output vector for the evaluated point.
              */
             void evaluate_percent(index_type Idx, float u, Vector3& c) const {(this->*evaluators[m_mode])(Idx, u, c);}
 
             /**
-             * @brief Calculates derivation in index Idx, and percent of segment length t
-             *
-             * @param Idx spline segment index, should be in range [first, last)
-             * @param u percent of spline segment length, assumes that t in range [0, 1]
-             * @param hermite
+             * @brief Calculates derivation in index Idx, and percent of segment length t.
+             * @param Idx Spline segment index, should be in range [first, last).
+             * @param u Percent of spline segment length, assumes that t in range [0, 1].
+             * @param hermite Output vector for the evaluated derivative.
              */
             void evaluate_derivative(index_type Idx, float u, Vector3& hermite) const {(this->*derivative_evaluators[m_mode])(Idx, u, hermite);}
 
             /**
              * @brief Bounds for spline indexes. All indexes should be in range [first, last).
-             *
-             * @return index_type
+             * @return Lower bound index.
              */
             index_type first() const { return index_lo;}
             /**
-             * @brief
-             *
-             * @return index_type
+             * @brief Upper bound index.
+             * @return Upper bound index.
              */
             index_type last()  const { return index_hi;}
 
             /**
-             * @brief
-             *
-             * @return bool
+             * @brief Checks if the spline is empty.
+             * @return True if the spline is empty, false otherwise.
              */
             bool empty() const { return index_lo == index_hi;}
             /**
-             * @brief
-             *
-             * @return EvaluationMode
+             * @brief Gets the evaluation mode of the spline.
+             * @return Evaluation mode.
              */
             EvaluationMode mode() const { return (EvaluationMode)m_mode;}
             /**
-             * @brief
-             *
-             * @return bool
+             * @brief Checks if the spline is cyclic.
+             * @return True if the spline is cyclic, false otherwise.
              */
             bool isCyclic() const { return cyclic;}
 
             /**
-             * @brief
-             *
-             * @return const ControlArray
+             * @brief Gets the control points of the spline.
+             * @return Control points array.
              */
             const ControlArray& getPoints() const { return points;}
             /**
-             * @brief
-             *
-             * @return index_type
+             * @brief Gets the number of control points.
+             * @return Number of control points.
              */
             index_type getPointCount() const { return points.size();}
             /**
-             * @brief
-             *
-             * @param i
-             * @return const Vector3
+             * @brief Gets a specific control point.
+             * @param i Index of the control point.
+             * @return Control point at the specified index.
              */
             const Vector3& getPoint(index_type i) const { return points[i];}
 
             /**
-             * @brief Initializes spline. Don't call other methods while spline not initialized.
-             *
-             * @param controls
-             * @param count
-             * @param m
+             * @brief Initializes the spline. Don't call other methods while spline not initialized.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param m Evaluation mode.
              */
             void init_spline(const Vector3* controls, index_type count, EvaluationMode m);
             /**
-             * @brief
-             *
-             * @param controls
-             * @param count
-             * @param m
-             * @param cyclic_point
+             * @brief Initializes a cyclic spline.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param m Evaluation mode.
+             * @param cyclic_point Index of the cyclic point.
              */
             void init_cyclic_spline(const Vector3* controls, index_type count, EvaluationMode m, index_type cyclic_point);
 
             /**
-             * @brief As i can see there are a lot of ways how spline can be
-             * initialized would be no harm to have some custom initializers.
-             *
-             * @param initializer
+             * @brief Initializes the spline with a custom initializer.
+             * @param initializer Custom initializer.
              */
             template<class Init> inline void init_spline(Init& initializer)
             {
@@ -320,143 +284,126 @@ namespace Movement
             }
 
             /**
-             * @brief
-             *
+             * @brief Clears the spline.
              */
             void clear();
 
             /**
-             * @brief Calculates distance between [i; i+1] points, assumes that index i is in bounds.
-             *
-             * @param i
-             * @return float
+             * @brief Calculates the length of a segment.
+             * @param i Index of the segment.
+             * @return Length of the segment.
              */
             float SegLength(index_type i) const { return (this->*seglengths[m_mode])(i);}
 
             /**
-             * @brief
-             *
-             * @return std::string
+             * @brief Converts the spline to a string representation.
+             * @return String representation of the spline.
              */
             std::string ToString() const;
     };
 
     template<typename length_type>
     /**
-     * @brief
-     *
+     * @brief Template class for handling splines with length information.
+     * @tparam length_type Type for length information.
      */
     class Spline : public SplineBase
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Type definition for length.
              */
             typedef length_type LengthType;
             /**
-             * @brief
-             *
+             * @brief Type definition for length array.
              */
             typedef std::vector<length_type> LengthArray;
         protected:
 
-            LengthArray lengths; /**< TODO */
+            LengthArray lengths; /**< Array of segment lengths */
 
             /**
-             * @brief
-             *
-             * @param length
-             * @return index_type
+             * @brief Computes the index within bounds for a given length.
+             * @param length Length to compute the index for.
+             * @return Computed index.
              */
             index_type computeIndexInBounds(length_type length) const;
         public:
 
             /**
-             * @brief
-             *
+             * @brief Constructor for Spline.
              */
             explicit Spline() {}
 
             /**
-             * @brief Calculates the position for given t
-             *
-             * @param t percent of spline's length, assumes that t in range [0, 1].
-             * @param c
+             * @brief Calculates the position for a given t.
+             * @param t Percent of spline's length, assumes that t in range [0, 1].
+             * @param c Output vector for the evaluated point.
              */
             void evaluate_percent(float t, Vector3& c) const;
 
             /**
-             * @brief Calculates derivation for given t
-             *
-             * @param t percent of spline's length, assumes that t in range [0, 1].
-             * @param hermite
+             * @brief Calculates the derivative for a given t.
+             * @param t Percent of spline's length, assumes that t in range [0, 1].
+             * @param hermite Output vector for the evaluated derivative.
              */
             void evaluate_derivative(float t, Vector3& hermite) const;
 
             /**
-             * @brief Calculates the position for given segment Idx, and percent of segment length t
-             *
-             * @param Idx spline segment index, should be in range [first, last).
-             * @param u partial_segment_length / whole_segment_length
-             * @param c
+             * @brief Calculates the position for a given segment Idx, and percent of segment length t.
+             * @param Idx Spline segment index, should be in range [first, last).
+             * @param u Partial segment length / whole segment length.
+             * @param c Output vector for the evaluated point.
              */
             void evaluate_percent(index_type Idx, float u, Vector3& c) const { SplineBase::evaluate_percent(Idx, u, c);}
 
             /**
-             * @brief Caclulates derivation for index Idx, and percent of segment length t
-             *
-             * @param Idx spline segment index, should be in range [first, last)
-             * @param u percent of spline segment length, assumes that t in range [0, 1].
-             * @param c
+             * @brief Calculates the derivative for a given index Idx, and percent of segment length t.
+             * @param Idx Spline segment index, should be in range [first, last).
+             * @param u Percent of spline segment length, assumes that t in range [0, 1].
+             * @param c Output vector for the evaluated derivative.
              */
             void evaluate_derivative(index_type Idx, float u, Vector3& c) const { SplineBase::evaluate_derivative(Idx, u, c);}
 
             /**
-             * @brief
-             *
-             * @param t Assumes that t in range [0, 1]
-             * @return index_type
+             * @brief Computes the index within bounds for a given t.
+             * @param t Percent of spline's length, assumes that t in range [0, 1].
+             * @return Computed index.
              */
             index_type computeIndexInBounds(float t) const;
             /**
-             * @brief
-             *
-             * @param t
-             * @param out_idx
-             * @param out_u
+             * @brief Computes the index and partial segment length for a given t.
+             * @param t Percent of spline's length, assumes that t in range [0, 1].
+             * @param out_idx Output index.
+             * @param out_u Output partial segment length.
              */
             void computeIndex(float t, index_type& out_idx, float& out_u) const;
 
             /**
-             * @brief Initializes spline. Don't call other methods while spline not initialized.
-             *
-             * @param controls
-             * @param count
-             * @param m
+             * @brief Initializes the spline. Don't call other methods while spline not initialized.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param m Evaluation mode.
              */
             void init_spline(const Vector3* controls, index_type count, EvaluationMode m) { SplineBase::init_spline(controls, count, m);}
             /**
-             * @brief
-             *
-             * @param controls
-             * @param count
-             * @param m
-             * @param cyclic_point
+             * @brief Initializes a cyclic spline.
+             * @param controls Array of control points.
+             * @param count Number of control points.
+             * @param m Evaluation mode.
+             * @param cyclic_point Index of the cyclic point.
              */
             void init_cyclic_spline(const Vector3* controls, index_type count, EvaluationMode m, index_type cyclic_point) { SplineBase::init_cyclic_spline(controls, count, m, cyclic_point);}
 
             /**
              * @brief Initializes lengths with SplineBase::SegLength method.
-             *
              */
             void initLengths();
 
             /**
-             * @brief Initializes lengths in some custom way
+             * @brief Initializes lengths in a custom way.
              * Note that value returned by cacher must be greater or equal to previous value.
-             *
-             * @param cacher
+             * @param cacher Custom length initializer.
              */
             template<class T> inline void initLengths(T& cacher)
             {
@@ -480,37 +427,32 @@ namespace Movement
             }
 
             /**
-             * @brief Returns length of the whole spline.
-             *
-             * @return length_type
+             * @brief Returns the length of the whole spline.
+             * @return Length of the spline.
              */
             length_type length() const { return lengths[index_hi];}
             /**
-             * @brief Returns length between given nodes.
-             *
-             * @param first
-             * @param last
-             * @return length_type
+             * @brief Returns the length between given nodes.
+             * @param first Index of the first node.
+             * @param last Index of the last node.
+             * @return Length between the nodes.
              */
             length_type length(index_type first, index_type last) const { return lengths[last] - lengths[first];}
             /**
-             * @brief
-             *
-             * @param Idx
-             * @return length_type
+             * @brief Returns the length of a specific segment.
+             * @param Idx Index of the segment.
+             * @return Length of the segment.
              */
             length_type length(index_type Idx) const { return lengths[Idx];}
 
             /**
-             * @brief
-             *
-             * @param i
-             * @param length
+             * @brief Sets the length of a specific segment.
+             * @param i Index of the segment.
+             * @param length Length to set.
              */
             void set_length(index_type i, length_type length) { lengths[i] = length;}
             /**
-             * @brief
-             *
+             * @brief Clears the spline.
              */
             void clear();
     };

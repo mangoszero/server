@@ -25,10 +25,9 @@
 namespace Movement
 {
     /**
-     * @brief
-     *
-     * @param t
-     * @param c
+     * @brief Evaluates the spline at a given percentage of its length.
+     * @param t The percentage of the spline's length (0.0 to 1.0).
+     * @param c The resulting position on the spline.
      */
     template<typename length_type> void Spline<length_type>::evaluate_percent(float t, Vector3& c) const
     {
@@ -39,10 +38,9 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param t
-     * @param hermite
+     * @brief Evaluates the derivative of the spline at a given percentage of its length.
+     * @param t The percentage of the spline's length (0.0 to 1.0).
+     * @param hermite The resulting derivative on the spline.
      */
     template<typename length_type> void Spline<length_type>::evaluate_derivative(float t, Vector3& hermite) const
     {
@@ -53,34 +51,12 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param length_
-     * @return SplineBase::index_type Spline<length_type>
+     * @brief Computes the index of the segment that contains the given length.
+     * @param length_ The length along the spline.
+     * @return SplineBase::index_type The index of the segment.
      */
     template<typename length_type> SplineBase::index_type Spline<length_type>::computeIndexInBounds(length_type length_) const
     {
-        // Temporary disabled: causes infinite loop with t = 1.f
-        /*
-            index_type hi = index_hi;
-            index_type lo = index_lo;
-
-            index_type i = lo + (float)(hi - lo) * t;
-
-            while ((lengths[i] > length) || (lengths[i + 1] <= length))
-            {
-                if (lengths[i] > length)
-                {
-                    hi = i - 1; // too big
-                }
-                else if (lengths[i + 1] <= length)
-                {
-                    lo = i + 1; // too small
-                }
-
-                i = (hi + lo) / 2;
-            }*/
-
         index_type i = index_lo;
         index_type N = index_hi;
         while (i + 1 < N && lengths[i + 1] < length_)
@@ -92,11 +68,10 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param t
-     * @param index
-     * @param u
+     * @brief Computes the index and the local parameter for a given percentage of the spline's length.
+     * @param t The percentage of the spline's length (0.0 to 1.0).
+     * @param index The resulting index of the segment.
+     * @param u The resulting local parameter within the segment.
      */
     template<typename length_type> void Spline<length_type>::computeIndex(float t, index_type& index, float& u) const
     {
@@ -108,10 +83,9 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param t
-     * @return SplineBase::index_type Spline<length_type>
+     * @brief Computes the index of the segment that contains the given percentage of the spline's length.
+     * @param t The percentage of the spline's length (0.0 to 1.0).
+     * @return SplineBase::index_type The index of the segment.
      */
     template<typename length_type> SplineBase::index_type Spline<length_type>::computeIndexInBounds(float t) const
     {
@@ -120,8 +94,7 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
+     * @brief Initializes the lengths of the segments of the spline.
      */
     template<typename length_type> void Spline<length_type>::initLengths()
     {
@@ -136,8 +109,7 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
+     * @brief Clears the spline data.
      */
     template<typename length_type> void Spline<length_type>::clear()
     {
@@ -145,3 +117,4 @@ namespace Movement
         lengths.clear();
     }
 }
+

@@ -41,10 +41,9 @@ namespace Movement
     using G3D::Vector4;
 
     /**
-     * @brief
-     *
-     * @param sec
-     * @return uint32
+     * @brief Converts seconds to milliseconds.
+     * @param sec The time in seconds.
+     * @return uint32 The time in milliseconds.
      */
     inline uint32 SecToMS(float sec)
     {
@@ -52,10 +51,9 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param ms
-     * @return float
+     * @brief Converts milliseconds to seconds.
+     * @param ms The time in milliseconds.
+     * @return float The time in seconds.
      */
     inline float MSToSec(uint32 ms)
     {
@@ -64,22 +62,18 @@ namespace Movement
 
     template<class T, T limit>
     /**
-     * @brief
-     *
+     * @brief A counter class that generates unique IDs up to a specified limit.
      */
     class counter
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Constructor for the counter class.
              */
             counter() { init();}
 
-
             /**
-             * @brief
-             *
+             * @brief Increases the counter value.
              */
             void Increase()
             {
@@ -94,30 +88,26 @@ namespace Movement
             }
 
             /**
-             * @brief
-             *
-             * @return T
+             * @brief Generates a new ID.
+             * @return T The new ID.
              */
             T NewId() { Increase(); return m_counter;}
             /**
-             * @brief
-             *
-             * @return T
+             * @brief Gets the current counter value.
+             * @return T The current counter value.
              */
             T getCurrent() const { return m_counter;}
 
         private:
             /**
-             * @brief
-             *
+             * @brief Initializes the counter to zero.
              */
             void init() { m_counter = 0; }
-            T m_counter; /**< TODO */
+            T m_counter; /**< The current counter value. */
     };
 
     /**
-     * @brief
-     *
+     * @brief Typedef for a 32-bit unsigned integer counter.
      */
     typedef counter<uint32, 0xFFFFFFFF> UInt32Counter;
 }

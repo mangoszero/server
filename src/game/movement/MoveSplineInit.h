@@ -41,163 +41,152 @@ namespace Movement
         public:
 
             /**
-             * @brief
-             *
-             * @param m
+             * @brief Constructor that initializes the MoveSplineInit with a reference to a Unit.
+             * @param m Reference to the Unit to be moved.
              */
             explicit MoveSplineInit(Unit& m);
 
             /**
              * @brief Final pass of initialization that launches spline movement.
-             *
              * @return int32 duration - estimated travel time
              */
             int32 Launch();
 
             /**
-             * @brief Stop any creature movement
-             *
+             * @brief Stops any creature movement.
              */
             void Stop();
 
             /**
-             * @brief  Adds final facing animation
-             * sets unit's facing to specified point/angle after all path done.
-             * you can have only one final facing: previous will be overriden
-             *
-             * @param angle
+             * @brief Adds final facing animation.
+             * Sets unit's facing to specified point/angle after all path done.
+             * You can have only one final facing: previous will be overridden.
+             * @param angle The angle to face.
              */
             void SetFacing(float angle);
+
             /**
-             * @brief
-             *
-             * @param point
+             * @brief Sets unit's facing to a specified point after all path done.
+             * @param point The point to face.
              */
             void SetFacing(Vector3 const& point);
+
             /**
-             * @brief
-             *
-             * @param target
+             * @brief Sets unit's facing to a specified target after all path done.
+             * @param target The target to face.
              */
             void SetFacing(const Unit* target);
 
             /**
-             * @brief Initializes movement by path
-             *
-             * @param path array of points, shouldn't be empty
-             * @param pointId Id of fisrt point of the path. Example: when third path point will be done it will notify that pointId + 3 done
+             * @brief Initializes movement by path.
+             * @param path Array of points, shouldn't be empty.
+             * @param pointId Id of first point of the path. Example: when the third path point is done, it will notify that pointId + 3 is done.
              */
             void MovebyPath(const PointsArray& path, int32 pointId = 0);
 
             /**
-             * @brief Initializes simple A to B mition, A is current unit's position, B is destination
-             *
-             * @param destination
-             * @param generatePath
-             * @param forceDestination
-             * @param maxPathRange
+             * @brief Initializes simple A to B motion, A is the current unit's position, B is the destination.
+             * @param destination The destination point.
+             * @param generatePath Whether to generate a path.
+             * @param forceDestination Whether to force the destination.
+             * @param maxPathRange The maximum path range.
              */
             void MoveTo(const Vector3& destination, bool generatePath = false, bool forceDestination = false, float maxPathRange = 0.0f);
+
             /**
-             * @brief
-             *
-             * @param x
-             * @param y
-             * @param z
-             * @param generatePath
-             * @param forceDestination
-             * @param maxPathRange
+             * @brief Initializes simple A to B motion, A is the current unit's position, B is the destination.
+             * @param x The x-coordinate of the destination.
+             * @param y The y-coordinate of the destination.
+             * @param z The z-coordinate of the destination.
+             * @param generatePath Whether to generate a path.
+             * @param forceDestination Whether to force the destination.
+             * @param maxPathRange The maximum path range.
              */
             void MoveTo(float x, float y, float z, bool generatePath = false, bool forceDestination = false, float maxPathRange = 0.0f);
 
             /**
-             * @brief Sets Id of fisrt point of the path
-             *
-             * When N-th path point will be done ILisener will notify that pointId + N done
-             * Needed for waypoint movement where path splitten into parts
-             *
-             * @param pointId
+             * @brief Sets the Id of the first point of the path.
+             * When the N-th path point is done, the listener will notify that pointId + N is done.
+             * Needed for waypoint movement where the path is split into parts.
+             * @param pointId The Id of the first point of the path.
              */
             void SetFirstPointId(int32 pointId) { args.path_Idx_offset = pointId; }
 
             /**
              * @brief Enables CatmullRom spline interpolation mode, enables flying animation.
-             * Disabled by default
-             *
+             * Disabled by default.
              */
             void SetFly();
+
             /**
-             * @brief Enables walk mode. Disabled by default
-             *
-             * @param enable
+             * @brief Enables walk mode. Disabled by default.
+             * @param enable Whether to enable walk mode.
              */
             void SetWalk(bool enable);
+
             /**
-             * @brief Makes movement cyclic. Disabled by default
-             *
+             * @brief Makes movement cyclic. Disabled by default.
              */
             void SetCyclic();
+
             /**
-             * @brief Enables falling mode. Disabled by default
-             *
+             * @brief Enables falling mode. Disabled by default.
              */
             void SetFall();
 
             /**
-             * @brief Sets the velocity (in case you want to have custom movement velocity)
-             *
-             * if no set, speed will be selected based on unit's speeds and current movement mode
-             * Has no effect if falling mode enabled
-             *
-             * @param velocity velocity shouldn't be negative
+             * @brief Sets the velocity (in case you want to have custom movement velocity).
+             * If not set, speed will be selected based on the unit's speeds and current movement mode.
+             * Has no effect if falling mode is enabled.
+             * @param velocity The velocity, shouldn't be negative.
              */
             void SetVelocity(float velocity);
 
             /**
-             * @brief
-             *
-             * @return PointsArray
+             * @brief Gets the path points array.
+             * @return PointsArray The path points array.
              */
             PointsArray& Path() { return args.path; }
         protected:
 
-            MoveSplineInitArgs args; /**< TODO */
-            Unit&  unit; /**< TODO */
+            MoveSplineInitArgs args; /**< Arguments for initializing the spline movement. */
+            Unit&  unit; /**< Reference to the unit to be moved. */
     };
 
     /**
-     * @brief
-     *
+     * @brief Enables CatmullRom spline interpolation mode, enables flying animation.
+     * Disabled by default.
      */
     inline void MoveSplineInit::SetFly() { args.flags.flying = true;}
+
     /**
-     * @brief
-     *
-     * @param enable
+     * @brief Enables walk mode. Disabled by default.
+     * @param enable Whether to enable walk mode.
      */
     inline void MoveSplineInit::SetWalk(bool enable) { args.flags.runmode = !enable;}
+
     /**
-     * @brief
-     *
+     * @brief Makes movement cyclic. Disabled by default.
      */
     inline void MoveSplineInit::SetCyclic() { args.flags.cyclic = true;}
+
     /**
-     * @brief
-     *
+     * @brief Enables falling mode. Disabled by default.
      */
     inline void MoveSplineInit::SetFall() { args.flags.falling = true;}
+
     /**
-     * @brief
-     *
-     * @param vel
+     * @brief Sets the velocity (in case you want to have custom movement velocity).
+     * If not set, speed will be selected based on the unit's speeds and current movement mode.
+     * Has no effect if falling mode is enabled.
+     * @param vel The velocity, shouldn't be negative.
      */
     inline void MoveSplineInit::SetVelocity(float vel) { args.velocity = vel;}
 
     /**
-     * @brief
-     *
-     * @param controls
-     * @param path_offset
+     * @brief Initializes movement by path.
+     * @param controls Array of points, shouldn't be empty.
+     * @param path_offset Id of the first point of the path.
      */
     inline void MoveSplineInit::MovebyPath(const PointsArray& controls, int32 path_offset)
     {
@@ -206,14 +195,13 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param x
-     * @param y
-     * @param z
-     * @param generatePath
-     * @param forceDestination
-     * @param maxPathRange
+     * @brief Initializes simple A to B motion, A is the current unit's position, B is the destination.
+     * @param x The x-coordinate of the destination.
+     * @param y The y-coordinate of the destination.
+     * @param z The z-coordinate of the destination.
+     * @param generatePath Whether to generate a path.
+     * @param forceDestination Whether to force the destination.
+     * @param maxPathRange The maximum path range.
      */
     inline void MoveSplineInit::MoveTo(float x, float y, float z, bool generatePath, bool forceDestination, float maxPathRange)
     {
@@ -222,12 +210,11 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param dest
-     * @param generatePath
-     * @param forceDestination
-     * @param maxPathRange
+     * @brief Initializes simple A to B motion, A is the current unit's position, B is the destination.
+     * @param dest The destination point.
+     * @param generatePath Whether to generate a path.
+     * @param forceDestination Whether to force the destination.
+     * @param maxPathRange The maximum path range.
      */
     inline void MoveSplineInit::MoveTo(const Vector3& dest, bool generatePath, bool forceDestination, float maxPathRange)
     {
@@ -251,9 +238,8 @@ namespace Movement
     }
 
     /**
-     * @brief
-     *
-     * @param spot
+     * @brief Sets unit's facing to a specified point after all path done.
+     * @param spot The point to face.
      */
     inline void MoveSplineInit::SetFacing(Vector3 const& spot)
     {

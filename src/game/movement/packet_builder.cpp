@@ -28,16 +28,31 @@
 
 namespace Movement
 {
+    /**
+     * @brief Overloads the << operator to write a Vector3 to a ByteBuffer.
+     * @param b The ByteBuffer to write to.
+     * @param v The Vector3 to write.
+     */
     inline void operator << (ByteBuffer& b, const Vector3& v)
     {
         b << v.x << v.y << v.z;
     }
 
+    /**
+     * @brief Overloads the >> operator to read a Vector3 from a ByteBuffer.
+     * @param b The ByteBuffer to read from.
+     * @param v The Vector3 to read.
+     */
     inline void operator >> (ByteBuffer& b, Vector3& v)
     {
         b >> v.x >> v.y >> v.z;
     }
 
+    /**
+     * @brief Writes the common part of a monster move packet.
+     * @param move_spline The MoveSpline object containing movement data.
+     * @param data The WorldPacket to write the data to.
+     */
     void PacketBuilder::WriteCommonMonsterMovePart(const MoveSpline& move_spline, WorldPacket& data)
     {
         MoveSplineFlag splineflags = move_spline.splineflags;
@@ -71,6 +86,11 @@ namespace Movement
         data << move_spline.Duration();
     }
 
+    /**
+     * @brief Writes a linear path to a ByteBuffer.
+     * @param spline The spline containing the path points.
+     * @param data The ByteBuffer to write the data to.
+     */
     void WriteLinearPath(const Spline<int32>& spline, ByteBuffer& data)
     {
         Movement::SplineBase::ControlArray const& pathPoint = spline.getPoints(); // get ref of whole path points array
@@ -89,6 +109,11 @@ namespace Movement
         }
     }
 
+    /**
+     * @brief Writes a Catmull-Rom path to a ByteBuffer.
+     * @param spline The spline containing the path points.
+     * @param data The ByteBuffer to write the data to.
+     */
     void WriteCatmullRomPath(const Spline<int32>& spline, ByteBuffer& data)
     {
         uint32 count = spline.getPointCount() - 3;
@@ -96,6 +121,11 @@ namespace Movement
         data.append<Vector3>(&spline.getPoint(2), count);
     }
 
+    /**
+     * @brief Writes a cyclic Catmull-Rom path to a ByteBuffer.
+     * @param spline The spline containing the path points.
+     * @param data The ByteBuffer to write the data to.
+     */
     void WriteCatmullRomCyclicPath(const Spline<int32>& spline, ByteBuffer& data)
     {
         uint32 count = spline.getPointCount() - 3;
@@ -104,6 +134,11 @@ namespace Movement
         data.append<Vector3>(&spline.getPoint(1), count);
     }
 
+    /**
+     * @brief Writes a monster move packet.
+     * @param move_spline The MoveSpline object containing movement data.
+     * @param data The WorldPacket to write the data to.
+     */
     void PacketBuilder::WriteMonsterMove(const MoveSpline& move_spline, WorldPacket& data)
     {
         WriteCommonMonsterMovePart(move_spline, data);
@@ -127,6 +162,11 @@ namespace Movement
         }
     }
 
+    /**
+     * @brief Writes the creation data of a MoveSpline to a ByteBuffer.
+     * @param move_spline The MoveSpline object containing movement data.
+     * @param data The ByteBuffer to write the data to.
+     */
     void PacketBuilder::WriteCreate(const MoveSpline& move_spline, ByteBuffer& data)
     {
         MoveSplineFlag splineFlags = move_spline.splineflags;

@@ -33,83 +33,73 @@ class Unit;
 namespace Movement
 {
     /**
-     * @brief
-     *
+     * @brief A typedef for a vector of Vector3 points representing a path.
      */
     typedef std::vector<Vector3> PointsArray;
 
     /**
-     * @brief
-     *
+     * @brief A union for storing facing information.
      */
     union FacingInfo
     {
         /**
-         * @brief
-         *
+         * @brief A struct for storing coordinates.
          */
         struct
         {
-            float x, y, z; /**< TODO */
-        } f; /**< TODO */
-        uint64  target; /**< TODO */
-        float   angle; /**< TODO */
+            float x, y, z; /**< Coordinates for facing a point. */
+        } f; /**< Facing coordinates. */
+        uint64  target; /**< GUID of the target to face. */
+        float   angle; /**< Angle to face. */
 
         /**
-         * @brief
-         *
-         * @param o
+         * @brief Constructor for facing an angle.
+         * @param o The angle to face.
          */
         FacingInfo(float o) : angle(o) {}
         /**
-         * @brief
-         *
-         * @param t
+         * @brief Constructor for facing a target.
+         * @param t The GUID of the target to face.
          */
         FacingInfo(uint64 t) : target(t) {}
         /**
-         * @brief
-         *
+         * @brief Default constructor.
          */
-        FacingInfo() {}
+        FacingInfo() : target(0) {}
     };
 
     /**
-     * @brief
-     *
+     * @brief A struct for initializing MoveSpline arguments.
      */
     struct MoveSplineInitArgs
     {
             /**
-             * @brief
-             *
-             * @param path_capacity
+             * @brief Constructor for MoveSplineInitArgs.
+             * @param path_capacity The initial capacity of the path vector.
              */
             MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
-                velocity(0.f), splineId(0)
+                velocity(0.f), splineId(0), facing(), flags()
             {
                 path.reserve(path_capacity);
             }
 
-            PointsArray path; /**< TODO */
-            FacingInfo facing; /**< TODO */
-            MoveSplineFlag flags; /**< TODO */
-            int32 path_Idx_offset; /**< TODO */
-            float velocity; /**< TODO */
-            uint32 splineId; /**< TODO */
+            PointsArray path; /**< The path points for the spline. */
+            FacingInfo facing; /**< The facing information. */
+            MoveSplineFlag flags; /**< The flags for the spline. */
+            int32 path_Idx_offset; /**< The path index offset. */
+            float velocity; /**< The velocity of the spline movement. */
+            uint32 splineId; /**< The ID of the spline. */
 
             /**
-             * @brief Returns true to show that the arguments were configured correctly and MoveSpline initialization will succeed.
-             *
-             * @param unit
-             * @return bool
+             * @brief Validates the MoveSplineInitArgs.
+             * @param unit The unit to validate against.
+             * @return bool True if the arguments are valid, false otherwise.
              */
             bool Validate(Unit* unit) const;
         private:
             /**
-             * @brief
-             *
-             * @return bool
+             * @brief Checks if the path bounds are valid.
+             * @return bool True if the path bounds are valid, false otherwise.
              */
             bool _checkPathBounds() const;
     };

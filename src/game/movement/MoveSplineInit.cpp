@@ -29,6 +29,11 @@
 
 namespace Movement
 {
+    /**
+     * @brief Selects the appropriate speed type based on movement flags.
+     * @param moveFlags The movement flags.
+     * @return The selected UnitMoveType.
+     */
     UnitMoveType SelectSpeedType(uint32 moveFlags)
     {
         if (moveFlags & MOVEFLAG_SWIMMING)
@@ -55,6 +60,10 @@ namespace Movement
         return MOVE_RUN;
     }
 
+    /**
+     * @brief Final pass of initialization that launches spline movement.
+     * @return int32 duration - estimated travel time
+     */
     int32 MoveSplineInit::Launch()
     {
         MoveSpline& move_spline = *unit.movespline;
@@ -73,7 +82,7 @@ namespace Movement
             MoveTo(real_position);
         }
 
-        // corrent first vertex
+        // correct first vertex
         args.path[0] = real_position;
         uint32 moveFlags = unit.m_movementInfo.GetMovementFlags();
         if (args.flags.runmode)
@@ -108,6 +117,9 @@ namespace Movement
         return move_spline.Duration();
     }
 
+    /**
+     * @brief Stops any creature movement.
+     */
     void MoveSplineInit::Stop()
     {
         MoveSpline& move_spline = *unit.movespline;
@@ -118,9 +130,7 @@ namespace Movement
             return;
         }
 
-
         Location real_position(unit.GetPositionX(), unit.GetPositionY(), unit.GetPositionZ(), unit.GetOrientation());
-
 
         // there is a big chance that current position is unknown if current state is not finalized, need compute it
         // this also allows calculate spline position and update map position in much greater intervals
@@ -143,14 +153,16 @@ namespace Movement
 
         WorldPacket data(SMSG_MONSTER_MOVE, 64);
         data << unit.GetPackGUID();
-
-
         data << real_position.x << real_position.y << real_position.z;
         data << move_spline.GetId();
         data << uint8(MonsterMoveStop);
         unit.SendMessageToSet(&data, true);
     }
 
+    /**
+     * @brief Constructor that initializes the MoveSplineInit with a reference to a Unit.
+     * @param m Reference to the Unit to be moved.
+     */
     MoveSplineInit::MoveSplineInit(Unit& m) : unit(m)
     {
         // mix existing state into new
@@ -158,12 +170,22 @@ namespace Movement
         args.flags.flying = unit.m_movementInfo.HasMovementFlag((MovementFlags)(MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING | MOVEFLAG_LEVITATING));
     }
 
+    /**
+     * @brief Sets unit's facing to a specified target after all path done.
+     * @param target The target to face.
+     */
     void MoveSplineInit::SetFacing(const Unit* target)
     {
         args.flags.EnableFacingTarget();
         args.facing.target = target->GetObjectGuid().GetRawValue();
     }
 
+    /**
+     * @brief Adds final facing animation.
+     * Sets unit's facing to specified point/angle after all path done.
+     * You can have only one final facing: previous will be overridden.
+     * @param angle The angle to face.
+     */
     void MoveSplineInit::SetFacing(float angle)
     {
         args.facing.angle = G3D::wrap(angle, 0.f, (float)G3D::twoPi());

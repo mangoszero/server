@@ -27,16 +27,24 @@
 
 namespace Movement
 {
+    // Gravity constant used in movement calculations
     double gravity = 19.29110527038574;
 
     /// Velocity bounds that makes fall speed limited
     float terminalVelocity = 60.148003f;
     float terminalSavefallVelocity = 7.f;
 
-    const float terminal_length = float(terminalVelocity* terminalVelocity) / (2.f* gravity);
-    const float terminal_savefall_length = (terminalSavefallVelocity* terminalSavefallVelocity) / (2.f* gravity);
-    const float terminalFallTime = float(terminalVelocity / gravity); // the time that needed to reach terminalVelocity
+    // Precomputed constants for terminal velocity and fall time
+    const float terminal_length = float(terminalVelocity * terminalVelocity) / (2.f * gravity);
+    const float terminal_savefall_length = (terminalSavefallVelocity * terminalSavefallVelocity) / (2.f * gravity);
+    const float terminalFallTime = float(terminalVelocity / gravity); // the time needed to reach terminalVelocity
 
+    /**
+     * @brief Computes the fall time based on the path length and whether it is a safe fall.
+     * @param path_length The length of the fall path.
+     * @param isSafeFall True if it is a safe fall, false otherwise.
+     * @return float The computed fall time.
+     */
     float computeFallTime(float path_length, bool isSafeFall)
     {
         if (path_length < 0.f)
@@ -71,6 +79,13 @@ namespace Movement
         return time;
     }
 
+    /**
+     * @brief Computes the fall elevation based on the time passed, whether it is a safe fall, and the start velocity.
+     * @param t_passed The time passed.
+     * @param isSafeFall True if it is a safe fall, false otherwise.
+     * @param start_velocity The start velocity.
+     * @return float The computed fall elevation.
+     */
     float computeFallElevation(float t_passed, bool isSafeFall, float start_velocity)
     {
         float termVel;
@@ -90,7 +105,7 @@ namespace Movement
             start_velocity = termVel;
         }
 
-        float terminal_time = terminalFallTime - start_velocity / gravity; // the time that needed to reach terminalVelocity
+        float terminal_time = terminalFallTime - start_velocity / gravity; // the time needed to reach terminalVelocity
 
         if (t_passed > terminal_time)
         {
@@ -105,6 +120,11 @@ namespace Movement
         return result;
     }
 
+    /**
+     * @brief Computes the fall elevation based on the time passed.
+     * @param t_passed The time passed.
+     * @return float The computed fall elevation.
+     */
     float computeFallElevation(float t_passed)
     {
         float result;
@@ -125,6 +145,7 @@ namespace Movement
 
 #define STR(x) #x
 
+    // Array of movement flag names
     const char* g_MovementFlag_names[] =
     {
         STR(Forward),            // 0x00000001,
@@ -178,6 +199,7 @@ namespace Movement
         STR(Unk10),
     };
 
+    // Array of spline flag names
     const char* g_SplineFlag_names[32] =
     {
         STR(Done),             // 0x00000001,
@@ -214,6 +236,14 @@ namespace Movement
         STR(Unknown31),        // 0x80000000,
     };
 
+    /**
+     * @brief Prints the flags to a string.
+     * @tparam Flags The type of the flags.
+     * @tparam N The number of flags.
+     * @param t The flags.
+     * @param names The names of the flags.
+     * @param str The string to append the flag names to.
+     */
     template<class Flags, int N>
     void print_flags(Flags t, const char * (&names)[N], std::string& str)
     {
@@ -226,6 +256,10 @@ namespace Movement
         }
     }
 
+    /**
+     * @brief Converts the MoveSplineFlag to a string representation.
+     * @return std::string The string representation of the MoveSplineFlag.
+     */
     std::string MoveSplineFlag::ToString() const
     {
         std::string str;
