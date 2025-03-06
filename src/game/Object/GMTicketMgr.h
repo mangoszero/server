@@ -96,7 +96,7 @@ enum GMTicketResponse
 class GMTicket
 {
     public:
-        explicit GMTicket() : m_lastUpdate(0)
+        explicit GMTicket() : m_guid(), m_ticketId(0), m_text(), m_responseText(), m_lastUpdate(0)
         {}
 
         /**
@@ -196,25 +196,36 @@ class GMTicket
     private:
         void _Close(GMTicketStatus statusCode) const;
 
-        ObjectGuid m_guid;
-        uint32 m_ticketId;
-        std::string m_text;
-        std::string m_responseText;
-        time_t m_lastUpdate;
+        ObjectGuid m_guid; ///< The GUID of the player who created the ticket
+        uint32 m_ticketId; ///< The ID of the ticket in the database
+        std::string m_text; ///< The question text of the ticket
+        std::string m_responseText; ///< The response text to the ticket
+        time_t m_lastUpdate; ///< The last update time of the ticket
 };
 typedef std::map<ObjectGuid, GMTicket> GMTicketMap;
 typedef std::map<uint32, GMTicket*> GMTicketIdMap;                  // for creating order access
 
+/**
+ * This class manages all GM tickets on the server.
+ */
 class GMTicketMgr
 {
     public:
         //TODO: Make the default value a config option instead
-        GMTicketMgr() : m_TicketSystemOn(true)
+        GMTicketMgr() : m_TicketSystemOn(true), m_GMTicketMap(), m_GMTicketIdMap()
         {  }
         ~GMTicketMgr() {  }
 
+        /**
+         * Loads all GM tickets from the database.
+         */
         void LoadGMTickets();
 
+        /**
+         * Retrieves a GM ticket by the player's GUID.
+         * @param guid The GUID of the player who created the ticket
+         * @return A pointer to the GM ticket, or NULL if not found
+         */
         GMTicket* GetGMTicket(ObjectGuid guid)
         {
             GMTicketMap::iterator itr = m_GMTicketMap.find(guid);
@@ -225,6 +236,11 @@ class GMTicketMgr
             return &(itr->second);
         }
 
+        /**
+         * Retrieves a GM ticket by its ID.
+         * @param id The ID of the ticket
+         * @return A pointer to the GM ticket, or NULL if not found
+         */
         GMTicket* GetGMTicket(uint32 id)
         {
             GMTicketIdMap::iterator itr = m_GMTicketIdMap.find(id);
@@ -235,11 +251,20 @@ class GMTicketMgr
             return itr->second;
         }
 
+        /**
+         * Gets the total number of GM tickets.
+         * @return The number of GM tickets
+         */
         size_t GetTicketCount() const
         {
             return m_GMTicketMap.size();
         }
 
+        /**
+         * Retrieves a GM ticket by its order position.
+         * @param pos The order position of the ticket
+         * @return A pointer to the GM ticket, or NULL if not found
+         */
         GMTicket* GetGMTicketByOrderPos(uint32 pos)
         {
             if (pos >= GetTicketCount())
@@ -257,12 +282,9 @@ class GMTicketMgr
         }
 
         /**
-         * This will delete a \ref GMTicket from this manager of tickets so that we don't
-         * need to handle it anymore, this should be used in conjunction with setting
-         * resolved = 1 in the character_ticket table.
-         *
-         * Note: This will _not_ remove anything from the DB
-         * @param guid guid of the \ref Player who created the ticket that we want to delete
+         * Deletes a GM ticket by the player's GUID.
+         * Note: This will not remove anything from the database.
+         * @param guid The GUID of the player who created the ticket
          */
         void Delete(ObjectGuid guid)
         {
@@ -275,39 +297,35 @@ class GMTicketMgr
             m_GMTicketMap.erase(itr);
         }
 
+        /**
+         * Deletes all GM tickets.
+         */
         void DeleteAll();
 
         /**
-         * This will create a new \ref GMTicket and fill it with the given question so that
-         * a GM can find it and answer it. Should only be called if we've already checked
-         * that there are no open tickets already, as this function will close any other
-         * currently open tickets for the given \ref Player and open a new one with the given
-         * text.
-         *
-         * Tables of interest here are characters.character_ticket and possibly characaters.
-         * character_whispers
-         * @param guid \ref ObjectGuid of the creator of the \ref GMTicket
-         * @param text the question text sent
+         * Creates a new GM ticket.
+         * This function will close any other currently open tickets for the given player and open a new one with the given text.
+         * @param guid The GUID of the player who created the ticket
+         * @param text The question text of the ticket
          */
         void Create(ObjectGuid guid, const char* text);
 
         /**
-         * Turns on/off accepting tickets globally, if this is off the client will see a message
-         * telling them that filing tickets is currently unavailable. When it's on anyone can
-         * file a ticket.
-         * @param accept true means that we accept tickets, false means that we don't
+         * Turns on/off accepting tickets globally.
+         * If this is off, the client will see a message telling them that filing tickets is currently unavailable.
+         * @param accept True to accept tickets, false to not accept tickets
          */
         void SetAcceptTickets(bool accept) { m_TicketSystemOn = accept; }
         /**
-         * Checks if we accept tickets globally (see \ref GMTicketMgr::SetAcceptTickets)
-         * @return true if we are accepting tickets globally, false otherwise
+         * Checks if we accept tickets globally.
+         * @return True if we are accepting tickets globally, false otherwise
          * \todo Perhaps rename to IsAcceptingTickets?
          */
-        bool WillAcceptTickets() { return m_TicketSystemOn; }
+        bool WillAcceptTickets() const { return m_TicketSystemOn; }
     private:
-        bool m_TicketSystemOn;
-        GMTicketMap m_GMTicketMap;
-        GMTicketIdMap m_GMTicketIdMap;
+        bool m_TicketSystemOn; ///< Whether the ticket system is on or off
+        GMTicketMap m_GMTicketMap; ///< Map of player GUIDs to GM tickets
+        GMTicketIdMap m_GMTicketIdMap; ///< Map of ticket IDs to GM tickets
 };
 
 #define sTicketMgr MaNGOS::Singleton<GMTicketMgr>::Instance()

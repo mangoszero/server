@@ -198,7 +198,7 @@ class ChatHandler
             ObjectGuid const& targetGuid = ObjectGuid(), char const* targetName = NULL,
             char const* channelName = NULL, uint8 playerRank = 0);
     protected:
-        explicit ChatHandler() : m_session(NULL) {}      // for CLI subclass
+        explicit ChatHandler() : m_session(NULL), sentErrorMessage(false) {}      // for CLI subclass
 
         bool hasStringAbbr(const char* name, const char* part);
 
