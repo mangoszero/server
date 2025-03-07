@@ -27,29 +27,83 @@
 
 #include "MovementGenerator.h"
 
-// define chance for creature to not stop after reaching a waypoint
+// Define chance for creature to not stop after reaching a waypoint
 #define MOVEMENT_RANDOM_MMGEN_CHANCE_NO_BREAK 30
 
+/**
+ * @brief RandomMovementGenerator is a movement generator that makes a unit move randomly within a specified radius.
+ * @tparam T Type of the unit (Player or Creature).
+ */
 template<class T>
 class RandomMovementGenerator
     : public MovementGeneratorMedium< T, RandomMovementGenerator<T> >
 {
     public:
-        explicit RandomMovementGenerator(const Creature&);
+        /**
+         * @brief Constructor for RandomMovementGenerator.
+         * @param creature Reference to the creature.
+         */
+        explicit RandomMovementGenerator(const Creature& creature);
+
+        /**
+         * @brief Constructor for RandomMovementGenerator with specified coordinates and radius.
+         * @param x X-coordinate of the center.
+         * @param y Y-coordinate of the center.
+         * @param z Z-coordinate of the center.
+         * @param radius Radius within which the unit will move.
+         * @param verticalZ Vertical offset for the movement.
+         */
         explicit RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ = 0.0f);
 
-        void _setRandomLocation(T&);
-        void Initialize(T&);
-        void Finalize(T&);
-        void Interrupt(T&);
-        void Reset(T&);
-        bool Update(T&, const uint32&);
+        /**
+         * @brief Sets a random location for the unit to move to.
+         * @param owner Reference to the unit.
+         */
+        void _setRandomLocation(T& owner);
+
+        /**
+         * @brief Initializes the movement generator.
+         * @param owner Reference to the unit.
+         */
+        void Initialize(T& owner);
+
+        /**
+         * @brief Finalizes the movement generator.
+         * @param owner Reference to the unit.
+         */
+        void Finalize(T& owner);
+
+        /**
+         * @brief Interrupts the movement generator.
+         * @param owner Reference to the unit.
+         */
+        void Interrupt(T& owner);
+
+        /**
+         * @brief Resets the movement generator.
+         * @param owner Reference to the unit.
+         */
+        void Reset(T& owner);
+
+        /**
+         * @brief Updates the movement generator.
+         * @param owner Reference to the unit.
+         * @param diff Time difference.
+         * @return True if the update was successful, false otherwise.
+         */
+        bool Update(T& owner, const uint32& diff);
+
+        /**
+         * @brief Gets the type of the movement generator.
+         * @return The type of the movement generator.
+         */
         MovementGeneratorType GetMovementGeneratorType() const override { return RANDOM_MOTION_TYPE; }
+
     private:
-        TimeTracker i_nextMoveTime;
-        float i_x, i_y, i_z;
-        float i_radius;
-        float i_verticalZ;
+        TimeTracker i_nextMoveTime; ///< Time tracker for the next move.
+        float i_x, i_y, i_z; ///< Coordinates of the center.
+        float i_radius; ///< Radius within which the unit will move.
+        float i_verticalZ; ///< Vertical offset for the movement.
 };
 
-#endif
+#endif // MANGOS_RANDOMMOTIONGENERATOR_H

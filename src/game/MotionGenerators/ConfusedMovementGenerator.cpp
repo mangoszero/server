@@ -28,12 +28,16 @@
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 
+/**
+ * @brief Initializes the ConfusedMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void ConfusedMovementGenerator<T>::Initialize(T& unit)
 {
     unit.addUnitState(UNIT_STAT_CONFUSED);
 
-    // set initial position
+    // Set initial position
     unit.GetPosition(i_x, i_y, i_z);
 
     if (!unit.IsAlive() || unit.hasUnitState(UNIT_STAT_NOT_MOVE))
@@ -45,14 +49,22 @@ void ConfusedMovementGenerator<T>::Initialize(T& unit)
     unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
 }
 
+/**
+ * @brief Interrupts the ConfusedMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void ConfusedMovementGenerator<T>::Interrupt(T& unit)
 {
     unit.InterruptMoving();
-    // confused state still applied while movegen disabled
+    // Confused state still applied while movegen disabled
     unit.clearUnitState(UNIT_STAT_CONFUSED_MOVE);
 }
 
+/**
+ * @brief Resets the ConfusedMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void ConfusedMovementGenerator<T>::Reset(T& unit)
 {
@@ -67,10 +79,16 @@ void ConfusedMovementGenerator<T>::Reset(T& unit)
     unit.addUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
 }
 
+/**
+ * @brief Updates the ConfusedMovementGenerator.
+ * @param unit Reference to the unit.
+ * @param diff Time difference.
+ * @return True if the update was successful, false otherwise.
+ */
 template<class T>
 bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
 {
-    // ignore in case other no reaction state
+    // Ignore in case other no reaction state
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT & ~UNIT_STAT_CONFUSED))
     {
         return true;
@@ -78,7 +96,7 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
 
     if (i_nextMoveTime.Passed())
     {
-        // currently moving, update location
+        // Currently moving, update location
         unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
 
         if (unit.movespline->Finalized())
@@ -88,29 +106,29 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
     }
     else
     {
-        // waiting for next move
+        // Waiting for next move
         i_nextMoveTime.Update(diff);
         if (i_nextMoveTime.Passed())
         {
-            // start moving
+            // Start moving
             unit.addUnitState(UNIT_STAT_CONFUSED_MOVE);
 
             float destX = i_x;
             float destY = i_y;
             float destZ = i_z;
 
-            // check if new random position is assigned, GetReachableRandomPosition may fail
+            // Check if new random position is assigned, GetReachableRandomPosition may fail
             if (unit.GetMap()->GetReachableRandomPosition(&unit, destX, destY, destZ, 10.0f))
             {
                 Movement::MoveSplineInit init(unit);
                 init.MoveTo(destX, destY, destZ, true);
                 init.SetWalk(true);
                 init.Launch();
-                i_nextMoveTime.Reset(urand(800, 1000));             // Keep a short wait time
+                i_nextMoveTime.Reset(urand(800, 1000)); // Keep a short wait time
             }
             else
             {
-                i_nextMoveTime.Reset(50);                           // Retry later
+                i_nextMoveTime.Reset(50); // Retry later
             }
         }
     }
@@ -118,6 +136,10 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
     return true;
 }
 
+/**
+ * @brief Finalizes the ConfusedMovementGenerator for a Player.
+ * @param unit Reference to the player.
+ */
 template<>
 void ConfusedMovementGenerator<Player>::Finalize(Player& unit)
 {
@@ -125,14 +147,21 @@ void ConfusedMovementGenerator<Player>::Finalize(Player& unit)
     unit.StopMoving(true);
 }
 
+/**
+ * @brief Finalizes the ConfusedMovementGenerator for a Creature.
+ * @param unit Reference to the creature.
+ */
 template<>
 void ConfusedMovementGenerator<Creature>::Finalize(Creature& unit)
 {
     unit.clearUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_CONFUSED_MOVE);
 }
 
+// Template instantiations for Player and Creature
 template void ConfusedMovementGenerator<Player>::Initialize(Player& player);
 template void ConfusedMovementGenerator<Creature>::Initialize(Creature& creature);
+template void ConfusedMovementGenerator<Player>::Finalize(Player& player);
+template void ConfusedMovementGenerator<Creature>::Finalize(Creature& creature);
 template void ConfusedMovementGenerator<Player>::Interrupt(Player& player);
 template void ConfusedMovementGenerator<Creature>::Interrupt(Creature& creature);
 template void ConfusedMovementGenerator<Player>::Reset(Player& player);

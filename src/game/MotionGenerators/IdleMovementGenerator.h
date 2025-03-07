@@ -27,44 +27,134 @@
 
 #include "MovementGenerator.h"
 
+/**
+ * @brief IdleMovementGenerator is a movement generator that does nothing.
+ */
 class IdleMovementGenerator : public MovementGenerator
 {
     public:
-
+        /**
+         * @brief Initializes the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Initialize(Unit&) override {}
+
+        /**
+         * @brief Finalizes the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Finalize(Unit&) override {}
+
+        /**
+         * @brief Interrupts the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Interrupt(Unit&) override {}
+
+        /**
+         * @brief Resets the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Reset(Unit&) override;
+
+        /**
+         * @brief Updates the movement generator.
+         * @param unit Reference to the unit.
+         * @param diff Time difference.
+         * @return Always returns true.
+         */
         bool Update(Unit&, const uint32&) override { return true; }
+
+        /**
+         * @brief Gets the type of the movement generator.
+         * @return The type of the movement generator.
+         */
         MovementGeneratorType GetMovementGeneratorType() const override { return IDLE_MOTION_TYPE; }
 };
 
+/**
+ * @brief Global instance of IdleMovementGenerator.
+ */
 extern IdleMovementGenerator si_idleMovement;
 
+/**
+ * @brief DistractMovementGenerator is a movement generator that distracts the unit for a specified time.
+ */
 class DistractMovementGenerator : public MovementGenerator
 {
     public:
+        /**
+         * @brief Constructor for DistractMovementGenerator.
+         * @param timer Time to distract the unit.
+         */
         explicit DistractMovementGenerator(uint32 timer) : m_timer(timer) {}
 
+        /**
+         * @brief Initializes the movement generator.
+         * @param owner Reference to the unit.
+         */
         void Initialize(Unit& owner) override;
+
+        /**
+         * @brief Finalizes the movement generator.
+         * @param owner Reference to the unit.
+         */
         void Finalize(Unit& owner) override;
+
+        /**
+         * @brief Interrupts the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Interrupt(Unit&) override;
+
+        /**
+         * @brief Resets the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Reset(Unit&) override;
+
+        /**
+         * @brief Updates the movement generator.
+         * @param owner Reference to the unit.
+         * @param time_diff Time difference.
+         * @return True if the update was successful, false otherwise.
+         */
         bool Update(Unit& owner, const uint32& time_diff) override;
+
+        /**
+         * @brief Gets the type of the movement generator.
+         * @return The type of the movement generator.
+         */
         MovementGeneratorType GetMovementGeneratorType() const override { return DISTRACT_MOTION_TYPE; }
 
     private:
-        uint32 m_timer;
+        uint32 m_timer; ///< Time to distract the unit.
 };
 
+/**
+ * @brief AssistanceDistractMovementGenerator is a movement generator that distracts the unit for assistance.
+ */
 class AssistanceDistractMovementGenerator : public DistractMovementGenerator
 {
     public:
+        /**
+         * @brief Constructor for AssistanceDistractMovementGenerator.
+         * @param timer Time to distract the unit.
+         */
         AssistanceDistractMovementGenerator(uint32 timer) :
             DistractMovementGenerator(timer) {}
 
+        /**
+         * @brief Gets the type of the movement generator.
+         * @return The type of the movement generator.
+         */
         MovementGeneratorType GetMovementGeneratorType() const override { return ASSISTANCE_DISTRACT_MOTION_TYPE; }
+
+        /**
+         * @brief Finalizes the movement generator.
+         * @param unit Reference to the unit.
+         */
         void Finalize(Unit& unit) override;
 };
 
-#endif
+#endif // MANGOS_IDLEMOVEMENTGENERATOR_H

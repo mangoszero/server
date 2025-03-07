@@ -31,6 +31,11 @@
 #include "movement/MoveSpline.h"
 
 //----- Point Movement Generator
+
+/**
+ * @brief Initializes the PointMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void PointMovementGenerator<T>::Initialize(T& unit)
 {
@@ -47,6 +52,10 @@ void PointMovementGenerator<T>::Initialize(T& unit)
     init.Launch();
 }
 
+/**
+ * @brief Finalizes the PointMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void PointMovementGenerator<T>::Finalize(T& unit)
 {
@@ -58,6 +67,10 @@ void PointMovementGenerator<T>::Finalize(T& unit)
     }
 }
 
+/**
+ * @brief Interrupts the PointMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void PointMovementGenerator<T>::Interrupt(T& unit)
 {
@@ -65,6 +78,10 @@ void PointMovementGenerator<T>::Interrupt(T& unit)
     unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 }
 
+/**
+ * @brief Resets the PointMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 template<class T>
 void PointMovementGenerator<T>::Reset(T& unit)
 {
@@ -72,6 +89,12 @@ void PointMovementGenerator<T>::Reset(T& unit)
     unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 }
 
+/**
+ * @brief Updates the PointMovementGenerator.
+ * @param unit Reference to the unit.
+ * @param diff Time difference.
+ * @return True if the update was successful, false otherwise.
+ */
 template<class T>
 bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
 {
@@ -89,11 +112,19 @@ bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
     return !unit.movespline->Finalized();
 }
 
+/**
+ * @brief Informs the player about the movement.
+ * @param player Reference to the player.
+ */
 template<>
 void PointMovementGenerator<Player>::MovementInform(Player&)
 {
 }
 
+/**
+ * @brief Informs the creature about the movement.
+ * @param unit Reference to the creature.
+ */
 template <>
 void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
 {
@@ -114,6 +145,7 @@ void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
     }
 }
 
+// Explicit template instantiations
 template void PointMovementGenerator<Player>::Initialize(Player&);
 template void PointMovementGenerator<Creature>::Initialize(Creature&);
 template void PointMovementGenerator<Player>::Finalize(Player&);
@@ -125,7 +157,10 @@ template void PointMovementGenerator<Creature>::Reset(Creature&);
 template bool PointMovementGenerator<Player>::Update(Player&, const uint32& diff);
 template bool PointMovementGenerator<Creature>::Update(Creature&, const uint32& diff);
 
-
+/**
+ * @brief Initializes the AssistanceMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 void AssistanceMovementGenerator::Initialize(Unit& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
@@ -141,13 +176,17 @@ void AssistanceMovementGenerator::Initialize(Unit& unit)
     unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     Movement::MoveSplineInit init(unit);
     init.MoveTo(i_x, i_y, i_z, m_generatePath);
-    //Slow down the mob that is running for assistance
-    //TODO: There are different speeds for the different mobs, isn't there?
-    //That should probably be taken into account here
+    // Slow down the mob that is running for assistance
+    // TODO: There are different speeds for the different mobs, isn't there?
+    // That should probably be taken into account here
     init.SetWalk(true);
     init.Launch();
 }
 
+/**
+ * @brief Finalizes the AssistanceMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 void AssistanceMovementGenerator::Finalize(Unit& unit)
 {
     unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
@@ -160,11 +199,21 @@ void AssistanceMovementGenerator::Finalize(Unit& unit)
     }
 }
 
+/**
+ * @brief Updates the EffectMovementGenerator.
+ * @param unit Reference to the unit.
+ * @param diff Time difference.
+ * @return True if the update was successful, false otherwise.
+ */
 bool EffectMovementGenerator::Update(Unit& unit, const uint32&)
 {
     return !unit.movespline->Finalized();
 }
 
+/**
+ * @brief Finalizes the EffectMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 void EffectMovementGenerator::Finalize(Unit& unit)
 {
     if (unit.GetTypeId() != TYPEID_UNIT)
@@ -190,6 +239,10 @@ void EffectMovementGenerator::Finalize(Unit& unit)
     }
 }
 
+/**
+ * @brief Initializes the FlyOrLandMovementGenerator.
+ * @param unit Reference to the unit.
+ */
 void FlyOrLandMovementGenerator::Initialize(Unit& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))

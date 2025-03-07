@@ -47,7 +47,17 @@ struct WaypointBehavior
     uint32 model2;
 
     bool isEmpty();
-    WaypointBehavior() {}
+    WaypointBehavior()
+    {
+        emote = 0;
+        spell = 0;
+        model1 = 0;
+        model2 = 0;
+        for (uint32 i = 0; i < MAX_WAYPOINT_TEXT; ++i)
+        {
+            textid[i] = 0;
+        }
+    }
     WaypointBehavior(const WaypointBehavior& b);
 };
 

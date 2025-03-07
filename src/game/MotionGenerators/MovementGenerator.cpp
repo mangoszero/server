@@ -25,10 +25,18 @@
 #include "MovementGenerator.h"
 #include "Unit.h"
 
+/**
+ * @brief Destructor for MovementGenerator.
+ */
 MovementGenerator::~MovementGenerator()
 {
 }
 
+/**
+ * @brief Checks if the movement generator is still active (top movement generator) after some not safe for this calls.
+ * @param u Reference to the unit.
+ * @return True if the movement generator is still active, false otherwise.
+ */
 bool MovementGenerator::IsActive(Unit& u)
 {
     // When movement generator list modified from Update movegen object erase delayed,

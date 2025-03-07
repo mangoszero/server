@@ -29,6 +29,9 @@
 
 class Creature;
 
+/**
+ * @brief HomeMovementGenerator is a movement generator that returns a creature to its home position.
+ */
 template < class T >
 class HomeMovementGenerator;
 
@@ -37,19 +40,62 @@ class HomeMovementGenerator<Creature>
     : public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
 {
     public:
-
+        /**
+         * @brief Constructor for HomeMovementGenerator.
+         */
         HomeMovementGenerator() : arrived(false) {}
+
+        /**
+         * @brief Destructor for HomeMovementGenerator.
+         */
         ~HomeMovementGenerator() {}
 
+        /**
+         * @brief Initializes the movement generator.
+         * @param creature Reference to the creature.
+         */
         void Initialize(Creature&);
+
+        /**
+         * @brief Finalizes the movement generator.
+         * @param creature Reference to the creature.
+         */
         void Finalize(Creature&);
+
+        /**
+         * @brief Interrupts the movement generator.
+         * @param creature Reference to the creature.
+         */
         void Interrupt(Creature&) {}
+
+        /**
+         * @brief Resets the movement generator.
+         * @param creature Reference to the creature.
+         */
         void Reset(Creature&);
+
+        /**
+         * @brief Updates the movement generator.
+         * @param creature Reference to the creature.
+         * @param diff Time difference.
+         * @return True if the update was successful, false otherwise.
+         */
         bool Update(Creature&, const uint32&);
+
+        /**
+         * @brief Gets the type of the movement generator.
+         * @return The type of the movement generator.
+         */
         MovementGeneratorType GetMovementGeneratorType() const override { return HOME_MOTION_TYPE; }
 
     private:
+        /**
+         * @brief Sets the target location for the creature.
+         * @param creature Reference to the creature.
+         */
         void _setTargetLocation(Creature&);
-        bool arrived;
+
+        bool arrived; ///< Indicates whether the creature has arrived at its home position.
 };
-#endif
+
+#endif // MANGOS_HOMEMOVEMENTGENERATOR_H

@@ -33,10 +33,14 @@
 #define MIN_QUIET_DISTANCE 28.0f
 #define MAX_QUIET_DISTANCE 43.0f
 
+/**
+ * @brief Sets the target location for the unit to flee to.
+ * @param owner Reference to the unit.
+ */
 template<class T>
 void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
 {
-    // ignore in case other no reaction state
+    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
     if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
     {
         return;
@@ -45,7 +49,7 @@ void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
     float x, y, z;
     if (!_getPoint(owner, x, y, z))
     {
-        // random point not found recheck later
+        // Random point not found, recheck later
         i_nextCheckTime.Reset(50);
         return;
     }
@@ -57,7 +61,7 @@ void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
     path.calculate(x, y, z);
     if (path.getPathType() & PATHFIND_NOPATH)
     {
-        // path not found recheck later
+        // Path not found, recheck later
         i_nextCheckTime.Reset(50);
         return;
     }
@@ -69,6 +73,14 @@ void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
     i_nextCheckTime.Reset(traveltime + urand(800, 1500));
 }
 
+/**
+ * @brief Gets a point for the unit to flee to.
+ * @param owner Reference to the unit.
+ * @param x Reference to the x-coordinate.
+ * @param y Reference to the y-coordinate.
+ * @param z Reference to the z-coordinate.
+ * @return True if the point was successfully obtained, false otherwise.
+ */
 template<class T>
 bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float& z)
 {
@@ -102,20 +114,20 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
         dist = frand(0.4f, 1.0f) * (MAX_QUIET_DISTANCE - MIN_QUIET_DISTANCE);
         angle = -angle_to_caster + frand(-M_PI_F / 4, M_PI_F / 4);
     }
-    else    // we are inside quiet range
+    else    // We are inside quiet range
     {
         dist = frand(0.6f, 1.2f) * (MAX_QUIET_DISTANCE - MIN_QUIET_DISTANCE);
         angle = frand(0, 2 * M_PI_F);
     }
 
-    float curr_x, curr_y, curr_z;
+    float curr_x = 0.0, curr_y = 0.0, curr_z = 0.0;
     owner.GetPosition(curr_x, curr_y, curr_z);
 
     x = curr_x + dist * cos(angle);
     y = curr_y + dist * sin(angle);
     z = curr_z + 0.5f;
 
-    // try to fix z
+    // Try to fix z
     if (!owner.GetMap()->GetHeightInRange(x, y, z))
     {
         return false;
@@ -123,8 +135,8 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
 
     if (owner.GetTypeId() == TYPEID_PLAYER)
     {
-        // check any collision
-        float testZ = z + 0.5f; // needed to avoid some false positive hit detection of terrain or passable little object
+        // Check any collision
+        float testZ = z + 0.5f; // Needed to avoid some false positive hit detection of terrain or passable little object
         if (owner.GetMap()->GetHitPosition(curr_x, curr_y, curr_z + 0.5f, x, y, testZ, -0.1f))
         {
             z = testZ;
@@ -138,6 +150,10 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
     return true;
 }
 
+/**
+ * @brief Initializes the FleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ */
 template<class T>
 void FleeingMovementGenerator<T>::Initialize(T& owner)
 {
@@ -153,6 +169,10 @@ void FleeingMovementGenerator<T>::Initialize(T& owner)
     _setTargetLocation(owner);
 }
 
+/**
+ * @brief Finalizes the FleeingMovementGenerator for a Player.
+ * @param owner Reference to the player.
+ */
 template<>
 void FleeingMovementGenerator<Player>::Finalize(Player& owner)
 {
@@ -160,6 +180,10 @@ void FleeingMovementGenerator<Player>::Finalize(Player& owner)
     owner.StopMoving();
 }
 
+/**
+ * @brief Finalizes the FleeingMovementGenerator for a Creature.
+ * @param owner Reference to the creature.
+ */
 template<>
 void FleeingMovementGenerator<Creature>::Finalize(Creature& owner)
 {
@@ -167,20 +191,34 @@ void FleeingMovementGenerator<Creature>::Finalize(Creature& owner)
     owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
 }
 
+/**
+ * @brief Interrupts the FleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ */
 template<class T>
 void FleeingMovementGenerator<T>::Interrupt(T& owner)
 {
     owner.InterruptMoving();
-    // flee state still applied while movegen disabled
+    // Flee state still applied while movegen disabled
     owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
 }
 
+/**
+ * @brief Resets the FleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ */
 template<class T>
 void FleeingMovementGenerator<T>::Reset(T& owner)
 {
     Initialize(owner);
 }
 
+/**
+ * @brief Updates the FleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ * @param time_diff Time difference.
+ * @return True if the update was successful, false otherwise.
+ */
 template<class T>
 bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
 {
@@ -189,7 +227,7 @@ bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
         return false;
     }
 
-    // ignore in case other no reaction state
+    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
     if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
     {
         owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
@@ -205,6 +243,7 @@ bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
     return true;
 }
 
+// Template instantiations for Player and Creature
 template void FleeingMovementGenerator<Player>::Initialize(Player&);
 template void FleeingMovementGenerator<Creature>::Initialize(Creature&);
 template bool FleeingMovementGenerator<Player>::_getPoint(Player&, float&, float&, float&);
@@ -218,6 +257,10 @@ template void FleeingMovementGenerator<Creature>::Reset(Creature&);
 template bool FleeingMovementGenerator<Player>::Update(Player&, const uint32&);
 template bool FleeingMovementGenerator<Creature>::Update(Creature&, const uint32&);
 
+/**
+ * @brief Finalizes the TimedFleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ */
 void TimedFleeingMovementGenerator::Finalize(Unit& owner)
 {
     owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
@@ -231,6 +274,12 @@ void TimedFleeingMovementGenerator::Finalize(Unit& owner)
     }
 }
 
+/**
+ * @brief Updates the TimedFleeingMovementGenerator.
+ * @param owner Reference to the unit.
+ * @param time_diff Time difference.
+ * @return True if the update was successful, false otherwise.
+ */
 bool TimedFleeingMovementGenerator::Update(Unit& owner, const uint32& time_diff)
 {
     if (!owner.IsAlive())
@@ -238,7 +287,7 @@ bool TimedFleeingMovementGenerator::Update(Unit& owner, const uint32& time_diff)
         return false;
     }
 
-    // ignore in case other no reaction state
+    // Ignore if the unit is in a state where it cannot react or move, except for fleeing
     if (owner.hasUnitState((UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE) & ~UNIT_STAT_FLEEING))
     {
         owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
@@ -251,7 +300,7 @@ bool TimedFleeingMovementGenerator::Update(Unit& owner, const uint32& time_diff)
         return false;
     }
 
-    // This calls grant-parent Update method hiden by FleeingMovementGenerator::Update(Creature &, const uint32 &) version
-    // This is done instead of casting Unit& to Creature& and call parent method, then we can use Unit directly
+    // This calls the grandparent Update method hidden by FleeingMovementGenerator::Update(Creature &, const uint32 &) version
+    // This is done instead of casting Unit& to Creature& and calling the parent method, so we can use Unit directly
     return MovementGeneratorMedium< Creature, FleeingMovementGenerator<Creature> >::Update(owner, time_diff);
 }

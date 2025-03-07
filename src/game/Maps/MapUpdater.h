@@ -32,32 +32,66 @@
 
 class Map;
 
+/**
+ * @brief The MapUpdater class is responsible for managing map update requests.
+ */
 class MapUpdater
 {
     public:
-
+        /**
+         * @brief Constructor for MapUpdater.
+         */
         MapUpdater();
+
+        /**
+         * @brief Destructor for MapUpdater.
+         */
         virtual ~MapUpdater();
 
         friend class MapUpdateRequest;
 
+        /**
+         * @brief Schedules a map update.
+         * @param map Reference to the map to be updated.
+         * @param diff Time difference for the update.
+         * @return Result of the scheduling.
+         */
         int schedule_update(Map& map, ACE_UINT32 diff);
 
+        /**
+         * @brief Waits for all pending requests to be processed.
+         * @return Always returns 0.
+         */
         int wait();
 
+        /**
+         * @brief Activates the map updater with the specified number of threads.
+         * @param num_threads Number of threads to activate.
+         * @return Result of the activation.
+         */
         int activate(size_t num_threads);
 
+        /**
+         * @brief Deactivates the map updater.
+         * @return Result of the deactivation.
+         */
         int deactivate();
 
+        /**
+         * @brief Checks if the map updater is activated.
+         * @return True if activated, false otherwise.
+         */
         bool activated();
 
     private:
+        DelayExecutor m_executor; ///< Executor for handling delayed tasks.
+        ACE_Thread_Mutex m_mutex; ///< Mutex for synchronizing access to pending requests.
+        ACE_Condition_Thread_Mutex m_condition; ///< Condition variable for signaling when requests are processed.
+        size_t pending_requests; ///< Number of pending update requests.
 
-        DelayExecutor m_executor;
-        ACE_Thread_Mutex m_mutex;
-        ACE_Condition_Thread_Mutex m_condition;
-        size_t pending_requests;
-
+        /**
+         * @brief Called when a map update is finished.
+         */
         void update_finished();
 };
 

@@ -40,27 +40,32 @@
 #define FLIGHT_TRAVEL_UPDATE  100
 #define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)// 3 Minutes
 
+/**
+ * @brief Base class for path movement generators.
+ * @tparam T Type of the unit (Player or Creature).
+ * @tparam P Type of the path.
+ */
 template<class T, class P>
 class PathMovementBase
 {
     public:
-        PathMovementBase() : i_currentNode(0) {}
+        PathMovementBase() : i_path(nullptr), i_currentNode(0) {}
         virtual ~PathMovementBase() {};
 
-        // template pattern, not defined .. override required
+        // Template pattern, not defined .. override required
         void LoadPath(T&);
         uint32 GetCurrentNode() const { return i_currentNode; }
 
     protected:
-        P i_path;
-        uint32 i_currentNode;
+        P i_path; ///< Path for the movement.
+        uint32 i_currentNode; ///< Current node in the path.
 };
 
-/** WaypointMovementGenerator loads a series of way points
- * from the DB and apply it to the creature's movement generator.
- * Hence, the creature will move according to its predefined way points.
+/**
+ * @brief WaypointMovementGenerator loads a series of waypoints
+ * from the DB and applies it to the creature's movement generator.
+ * Hence, the creature will move according to its predefined waypoints.
  */
-
 template<class T>
 class WaypointMovementGenerator;
 
@@ -70,8 +75,9 @@ class WaypointMovementGenerator<Creature>
       public PathMovementBase<Creature, WaypointPath const*>
 {
     public:
-        WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0) {}
+        WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0), m_pathId(0) {}
         ~WaypointMovementGenerator() { i_path = NULL; }
+
         void Initialize(Creature& u);
         void Interrupt(Creature&);
         void Finalize(Creature&);
@@ -99,15 +105,16 @@ class WaypointMovementGenerator<Creature>
         void OnArrived(Creature&);
         void StartMove(Creature&);
 
-        TimeTracker i_nextMoveTime;
-        bool m_isArrivalDone;
-        uint32 m_lastReachedWaypoint;
+        TimeTracker i_nextMoveTime; ///< Time tracker for the next move.
+        bool m_isArrivalDone; ///< Indicates if the arrival is done.
+        uint32 m_lastReachedWaypoint; ///< Last reached waypoint.
 
-        int32 m_pathId;
-        WaypointPathOrigin m_PathOrigin;
+        int32 m_pathId; ///< Path ID.
+        WaypointPathOrigin m_PathOrigin; ///< Path origin.
 };
 
-/** FlightPathMovementGenerator generates movement of the player for the paths
+/**
+ * @brief FlightPathMovementGenerator generates movement of the player for the paths
  * and hence generates ground and activities for the player.
  */
 class FlightPathMovementGenerator
@@ -135,4 +142,4 @@ class FlightPathMovementGenerator
         bool GetResetPosition(Player&, float& /*x*/, float& /*y*/, float& /*z*/, float& /*o*/) const;
 };
 
-#endif
+#endif // MANGOS_WAYPOINTMOVEMENTGENERATOR_H
