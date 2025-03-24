@@ -2443,7 +2443,7 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
         return NULL;
     }
 
-    if (npcflagmask & UNIT_NPC_FLAG_STABLEMASTER)
+    if (npcflagmask == UNIT_NPC_FLAG_STABLEMASTER)
     {
         if (getClass() != CLASS_HUNTER)
         {
@@ -10131,7 +10131,7 @@ InventoryResult Player::_CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, Item
         if (bag == INVENTORY_SLOT_BAG_0)
         {
             // keyring case
-            if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START + GetMaxKeyringSize() && !(pProto->BagFamily & BAG_FAMILY_KEYS))
+            if (slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START + GetMaxKeyringSize() && !(pProto->BagFamily == BAG_FAMILY_KEYS))
             {
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
             }
@@ -10521,7 +10521,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
         if (bag == INVENTORY_SLOT_BAG_0)                    // inventory
         {
             // search free slot - keyring case
-            if (pProto->BagFamily & BAG_FAMILY_KEYS)
+            if (pProto->BagFamily == BAG_FAMILY_KEYS)
             {
                 uint32 keyringSize = GetMaxKeyringSize();
                 res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START, KEYRING_SLOT_START + keyringSize, dest, pProto, count, false, pItem, bag, slot);
@@ -10712,7 +10712,7 @@ InventoryResult Player::_CanStoreItem(uint8 bag, uint8 slot, ItemPosCountVec& de
     // search free slot - special bag case
     if (pProto->BagFamily)
     {
-        if (pProto->BagFamily & BAG_FAMILY_KEYS)
+        if (pProto->BagFamily == BAG_FAMILY_KEYS)
         {
             uint32 keyringSize = GetMaxKeyringSize();
             res = _CanStoreItem_InInventorySlots(KEYRING_SLOT_START, KEYRING_SLOT_START + keyringSize, dest, pProto, count, false, pItem, bag, slot);
@@ -10979,7 +10979,7 @@ InventoryResult Player::CanStoreItems(Item** pItems, int count) const
         if (pProto->BagFamily)
         {
             bool b_found = false;
-            if (pProto->BagFamily & BAG_FAMILY_KEYS)
+            if (pProto->BagFamily == BAG_FAMILY_KEYS)
             {
                 uint32 keyringSize = GetMaxKeyringSize();
                 for (uint32 t = KEYRING_SLOT_START; t < KEYRING_SLOT_START + keyringSize; ++t)
