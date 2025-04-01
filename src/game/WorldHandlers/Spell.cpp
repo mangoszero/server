@@ -4808,6 +4808,19 @@ SpellCastResult Spell::CheckCast(bool strict)
         return SPELL_FAILED_AFFECTING_COMBAT;
     }
 
+    // Backstab position check
+    if (m_spellInfo->Id == 53 || m_spellInfo->Id == 2589 || m_spellInfo->Id == 7159)
+    {
+        if (Unit* target = m_targets.getUnitTarget())
+        {
+            if (target->HasInArc(M_PI_F, m_caster))
+            {
+                SendCastResult(SPELL_FAILED_NOT_BEHIND);
+                return SPELL_FAILED_NOT_BEHIND;
+            }
+        }
+    }
+   
     if (m_caster->GetTypeId() == TYPEID_PLAYER && !((Player*)m_caster)->isGameMaster() &&
         sWorld.getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) &&
         VMAP::VMapFactory::createOrGetVMapManager()->isLineOfSightCalcEnabled())
