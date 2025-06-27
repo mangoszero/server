@@ -127,6 +127,14 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
         pCaster = pTarget;
     }
 
+    if (uiSpell == 53 || uiSpell == 2589 || uiSpell == 7159) // All Backstab variants
+    {
+        if (pTarget && pTarget->HasInArc(M_PI_F, pCaster))
+        {
+            return CAST_FAIL_OTHER;
+        }
+    }
+  
     if (!pCaster->IsNonMeleeSpellCasted(false) || (uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS)))
     {
         if (const SpellEntry* pSpell = sSpellStore.LookupEntry(uiSpell))
