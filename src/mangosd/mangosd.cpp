@@ -390,6 +390,8 @@ int main(int argc, char** argv)
 
     sLog.outString("%s [world-daemon]", GitRevision::GetProjectRevision());
     sLog.outString("%s", GitRevision::GetFullRevision());
+    sLog.outString("%s", GitRevision::GetDepElunaFullRevisionStr());
+    sLog.outString("%s", GitRevision::GetDepSD3FullRevisionStr());
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);
 

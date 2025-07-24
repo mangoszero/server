@@ -67,6 +67,8 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     }
 
     PSendSysMessage("%s", GitRevision::GetFullRevision());
+    PSendSysMessage("%s", GitRevision::GetDepElunaFullRevisionStr());
+    PSendSysMessage("%s", GitRevision::GetDepSD3FullRevisionStr());
     PSendSysMessage("%s", GitRevision::GetRunningSystem());
 
     PSendSysMessage(LANG_USING_WORLD_DB, sWorld.GetDBVersion());
