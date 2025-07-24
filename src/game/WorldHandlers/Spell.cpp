@@ -4820,7 +4820,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
         }
     }
-   
+
     if (m_caster->GetTypeId() == TYPEID_PLAYER && !((Player*)m_caster)->isGameMaster() &&
         sWorld.getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) &&
         VMAP::VMapFactory::createOrGetVMapManager()->isLineOfSightCalcEnabled())
