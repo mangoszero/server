@@ -134,7 +134,7 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
             return CAST_FAIL_OTHER;
         }
     }
-  
+
     if (!pCaster->IsNonMeleeSpellCasted(false) || (uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS)))
     {
         if (const SpellEntry* pSpell = sSpellStore.LookupEntry(uiSpell))
