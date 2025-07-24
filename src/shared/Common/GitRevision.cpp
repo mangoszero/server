@@ -165,27 +165,27 @@ char const* GitRevision::GetWorldDBUpdateDescription()
 
 char const* GitRevision::GetFullRevision()
 {
-  return "Mangos revision: " VER_PRODUCTVERSION_STR;
+    return "Mangos revision: " VER_PRODUCTVERSION_STR;
 }
 
 char const* GitRevision::GetDepElunaFullRevision()
 {
-  return DEP_ELUNA_REVISION_STR;
+    return DEP_ELUNA_REVISION_STR;
 }
 
 char const* GitRevision::GetDepElunaFullRevisionStr()
 {
-  return "Eluna submodule revision: " DEP_ELUNA_REVISION_STR;
+    return "Eluna submodule revision: " DEP_ELUNA_REVISION_STR;
 }
 
 char const* GitRevision::GetDepSD3FullRevision()
 {
-  return DEP_SD3_REVISION_STR;
+    return DEP_SD3_REVISION_STR;
 }
 
 char const* GitRevision::GetDepSD3FullRevisionStr()
 {
-  return "SD3 submodule revision: " DEP_SD3_REVISION_STR;
+    return "SD3 submodule revision: " DEP_SD3_REVISION_STR;
 }
 
 char const* GitRevision::GetRunningSystem()
