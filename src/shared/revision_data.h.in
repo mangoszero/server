@@ -28,10 +28,20 @@
     #define REVISION_DATE               "@rev_date@"
     #define REVISION_BRANCH             "@rev_branch@"
 
+    #define DEP_ELUNA_REVISION_HASH     "@dep_eluna_rev_hash@"
+    #define DEP_ELUNA_REVISION_DATE     "@dep_eluna_rev_date@"
+    #define DEP_ELUNA_REVISION_BRANCH   "@dep_eluna_rev_branch@"
+    #define DEP_ELUNA_REVISION_STR      "@dep_eluna_rev_hash@ @dep_eluna_rev_date@ (@dep_eluna_rev_branch@ branch)"
+
+    #define DEP_SD3_REVISION_HASH       "@dep_sd3_rev_hash@"
+    #define DEP_SD3_REVISION_DATE       "@dep_sd3_rev_date@"
+    #define DEP_SD3_REVISION_BRANCH     "@dep_sd3_rev_branch@"
+    #define DEP_SD3_REVISION_STR        "@dep_sd3_rev_hash@ @dep_sd3_rev_date@ (@dep_sd3_rev_branch@ branch)"
+
     #define CMAKE_VERSION               R"(@CMAKE_VERSION@)"
     #define CMAKE_HOST_SYSTEM           R"(@CMAKE_HOST_SYSTEM_NAME@ @CMAKE_HOST_SYSTEM_VERSION@)"
 
-    #define PROJECT_REVISION_NR "2201075"
+    #define PROJECT_REVISION_NR         "2201075"
 
     #define REALMD_DB_VERSION_NR        "22"
     #define REALMD_DB_STRUCTURE_NR      "1"
