@@ -324,7 +324,7 @@ class Group
         time_t GetMemberSlotJoinedTime(ObjectGuid guid)
         {
             member_citerator mslot = _getMemberCSlot(guid);
-            if(mslot == m_memberSlots.end())
+            if (mslot == m_memberSlots.end())
             {
                 return 0;
             }

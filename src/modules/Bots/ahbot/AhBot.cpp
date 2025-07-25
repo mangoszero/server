@@ -618,7 +618,7 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
-    if(!ahEntry)
+    if (!ahEntry)
     {
         return 0;
     }
@@ -753,7 +753,7 @@ void AhBot::Expire(int auction)
     }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
-    if(!ahEntry)
+    if (!ahEntry)
     {
         return;
     }
@@ -787,7 +787,7 @@ void AhBot::PrintStats(int auction)
     }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
-    if(!ahEntry)
+    if (!ahEntry)
     {
         return;
     }

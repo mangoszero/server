@@ -321,7 +321,7 @@ int WorldSocket::handle_output(ACE_HANDLE)
     {
         m_OutBuffer->reset();
 
-        if(!iFlushPacketQueue()) //no more packets in queue
+        if (!iFlushPacketQueue()) //no more packets in queue
         {
             reactor()->cancel_wakeup(this, ACE_Event_Handler::WRITE_MASK);
         }

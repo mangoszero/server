@@ -559,7 +559,7 @@ void ChatHandler::HandleCharacterLevel(Player* player, ObjectGuid player_guid, u
             {
                 ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_UP, GetNameLink().c_str(), newlevel);
             }
-            else                                            // if(oldlevel > newlevel)
+            else                                            // if (oldlevel > newlevel)
             {
                 ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, GetNameLink().c_str(), newlevel);
             }

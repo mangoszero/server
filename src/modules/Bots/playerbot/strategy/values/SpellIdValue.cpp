@@ -86,7 +86,7 @@ uint32 SpellIdValue::Calculate()
     {
         for (PetSpellMap::const_iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
         {
-            if(itr->second.state == PETSPELL_REMOVED)
+            if (itr->second.state == PETSPELL_REMOVED)
             {
                 continue;
             }

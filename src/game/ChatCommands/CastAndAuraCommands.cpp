@@ -402,7 +402,7 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
 bool ChatHandler::HandleUnAuraGroupCommand(char* args)
 {
     // Must have args : spellId or "all"
-    if(!*args)
+    if (!*args)
     {
         return false;
     }

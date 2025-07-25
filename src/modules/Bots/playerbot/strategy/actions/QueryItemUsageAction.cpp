@@ -150,7 +150,7 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId)
     for (QuestStatusMap::const_iterator i = questMap.begin(); i != questMap.end(); i++)
     {
         const Quest *questTemplate = sObjectMgr.GetQuestTemplate( i->first );
-        if( !questTemplate )
+        if ( !questTemplate )
         {
             continue;
         }

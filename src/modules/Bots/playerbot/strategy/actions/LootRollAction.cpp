@@ -19,7 +19,7 @@ bool LootRollAction::Execute(Event event)
     p >> rollType; //need,greed or pass on roll
 
     Group* group = bot->GetGroup();
-    if(!group)
+    if (!group)
     {
         return false;
     }
@@ -27,7 +27,7 @@ bool LootRollAction::Execute(Event event)
     RollVote vote = ROLL_PASS;
 
     ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(guid.GetEntry());
-    if(proto)
+    if (proto)
     {
         switch (proto->Class)
         {

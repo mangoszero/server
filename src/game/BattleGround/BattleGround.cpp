@@ -896,7 +896,7 @@ void BattleGround::EndBattleGround(Team winner)
         }
 
         // this line is obsolete - team is set ALWAYS
-        // if(!team) team = plr->GetTeam();
+        // if (!team) team = plr->GetTeam();
 
         // store battleground score statistics for each player
         if (sWorld.getConfig(CONFIG_BOOL_BATTLEGROUND_SCORE_STATISTICS))

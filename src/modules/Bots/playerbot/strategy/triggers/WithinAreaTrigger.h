@@ -19,7 +19,7 @@ namespace ai
             }
 
             AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(movement.lastAreaTrigger);
-            if(!atEntry)
+            if (!atEntry)
             {
                 return false;
             }

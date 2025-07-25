@@ -49,7 +49,7 @@ DatabaseMysql::DatabaseMysql()
     if (db_count++ == 0)
     {
         // Mysql Library Init
-        if(mysql_library_init(-1, NULL, NULL))
+        if (mysql_library_init(-1, NULL, NULL))
         {
             sLog.outError("Could not initialize MySQL client library\n");
             ACE_OS::exit();

@@ -423,8 +423,8 @@ void WorldSession::HandleSetChannelWatchOpcode(WorldPacket& recvPacket)
     // recvPacket.hexlike();
     std::string channelname;
     recvPacket >> channelname;
-    /*if(ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
-        if(Channel *chn = cMgr->GetChannel(channelname, _player))
+    /*if (ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
+        if (Channel *chn = cMgr->GetChannel(channelname, _player))
         {
             chn->JoinNotify(_player->GetGUID());
         }

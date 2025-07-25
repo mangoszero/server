@@ -19,7 +19,7 @@ LootTarget::LootTarget(LootTarget const& other)
 
 LootTarget& LootTarget::operator=(LootTarget const& other)
 {
-    if((void*)this == (void*)&other)
+    if ((void*)this == (void*)&other)
     {
         return *this;
     }

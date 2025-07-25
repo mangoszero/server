@@ -125,7 +125,7 @@ class LFGQueue
 
             for(QueuedPlayersMap::iterator itr = m_QueuedPlayers.begin(); itr != m_QueuedPlayers.end(); ++itr)
             {
-                if(itr->second.areaId == areaId)
+                if (itr->second.areaId == areaId)
                 {
                     ++m_QueueSize;
                 }

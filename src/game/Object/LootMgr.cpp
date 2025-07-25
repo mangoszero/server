@@ -803,7 +803,7 @@ bool Loot::IsWinner(Player * player)
 {
     for(LootItemList::const_iterator i = items.begin(); i != items.end(); ++i)
     {
-        if(i->winner == player->GetObjectGuid())
+        if (i->winner == player->GetObjectGuid())
         {
             return true;
         }
@@ -1114,7 +1114,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 
         proto = ObjectMgr::GetItemPrototype(i->itemid);
 
-        if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
+        if (proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
         {
             return true;
         }
@@ -1129,7 +1129,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 
         proto = ObjectMgr::GetItemPrototype(i->itemid);
 
-        if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
+        if (proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
         {
             return true;
         }
@@ -1458,7 +1458,7 @@ bool LootTemplate::HasStartingQuestDropForPlayer(LootTemplateMap const& store, P
         {
             return false; // player doesn't respect the conditions.
         }
-        else if(proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
+        else if (proto->StartQuest && ((i->chance == 100 && player->GetQuestStatus(proto->StartQuest) == QUEST_STATUS_NONE) || player->HasQuestForItem(i->itemid)))
         {
             return true; // starting quest drop found.
         }

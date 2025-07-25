@@ -118,13 +118,13 @@ uint32 StatsAction::EstRepair(uint16 pos)
     Item* item = bot->GetItemByPos(pos);
 
     uint32 TotalCost = 0;
-    if(!item)
+    if (!item)
     {
         return TotalCost;
     }
 
     uint32 maxDurability = item->GetUInt32Value(ITEM_FIELD_MAXDURABILITY);
-    if(!maxDurability)
+    if (!maxDurability)
     {
         return TotalCost;
     }
@@ -132,12 +132,12 @@ uint32 StatsAction::EstRepair(uint16 pos)
     uint32 curDurability = item->GetUInt32Value(ITEM_FIELD_DURABILITY);
 
     uint32 LostDurability = maxDurability - curDurability;
-    if(LostDurability>0)
+    if (LostDurability>0)
     {
         ItemPrototype const *ditemProto = item->GetProto();
 
         DurabilityCostsEntry const *dcost = sDurabilityCostsStore.LookupEntry(ditemProto->ItemLevel);
-        if(!dcost)
+        if (!dcost)
         {
             sLog.outError("RepairDurability: Wrong item lvl %u", ditemProto->ItemLevel);
             return TotalCost;
@@ -145,7 +145,7 @@ uint32 StatsAction::EstRepair(uint16 pos)
 
         uint32 dQualitymodEntryId = (ditemProto->Quality+1)*2;
         DurabilityQualityEntry const *dQualitymodEntry = sDurabilityQualityStore.LookupEntry(dQualitymodEntryId);
-        if(!dQualitymodEntry)
+        if (!dQualitymodEntry)
         {
             sLog.outError("RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
             return TotalCost;

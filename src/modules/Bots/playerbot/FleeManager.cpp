@@ -17,7 +17,7 @@ void FleeManager::calculateDistanceToPlayers(FleePoint *point)
     for (GroupReference *gref = group->GetFirstMember(); gref; gref = gref->next())
     {
         Player* player = gref->getSource();
-        if(player == bot)
+        if (player == bot)
         {
             continue;
         }

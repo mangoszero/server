@@ -2107,7 +2107,7 @@ SpellEntry const* Creature::ReachWithSpellAttack(Unit* pVictim)
 
         float dist = GetCombatDistance(pVictim, spellInfo->rangeIndex == SPELL_RANGE_IDX_COMBAT);
 
-        // if(!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
+        // if (!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
         //    continue;
         if (dist > range || dist < minrange)
         {
@@ -2161,7 +2161,7 @@ SpellEntry const* Creature::ReachWithSpellCure(Unit* pVictim)
 
         float dist = GetCombatDistance(pVictim, spellInfo->rangeIndex == SPELL_RANGE_IDX_COMBAT);
 
-        // if(!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
+        // if (!IsInFront( pVictim, range ) && spellInfo->AttributesEx )
         //    continue;
         if (dist > range || dist < minrange)
         {

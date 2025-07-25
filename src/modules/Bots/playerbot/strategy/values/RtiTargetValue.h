@@ -13,35 +13,35 @@ namespace ai
         static int GetRtiIndex(string rti)
         {
             int index = -1;
-            if(rti == "star")
+            if (rti == "star")
             {
                 index = 0;
             }
-            else if(rti == "circle")
+            else if (rti == "circle")
             {
                 index = 1;
             }
-            else if(rti == "diamond")
+            else if (rti == "diamond")
             {
                 index = 2;
             }
-            else if(rti == "triangle")
+            else if (rti == "triangle")
             {
                 index = 3;
             }
-            else if(rti == "moon")
+            else if (rti == "moon")
             {
                 index = 4;
             }
-            else if(rti == "square")
+            else if (rti == "square")
             {
                 index = 5;
             }
-            else if(rti == "cross")
+            else if (rti == "cross")
             {
                 index = 6;
             }
-            else if(rti == "skull")
+            else if (rti == "skull")
             {
                 index = 7;
             }
@@ -51,7 +51,7 @@ namespace ai
         Unit *Calculate()
         {
             Group *group = bot->GetGroup();
-            if(!group)
+            if (!group)
             {
                 return NULL;
             }

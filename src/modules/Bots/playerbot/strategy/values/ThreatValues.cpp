@@ -58,7 +58,7 @@ uint8 ThreatValue::Calculate(Unit* target)
     for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
     {
         Player *player = sObjectMgr.GetPlayer(itr->guid);
-        if( !player || !player->IsAlive() || player == bot)
+        if ( !player || !player->IsAlive() || player == bot)
         {
             continue;
         }

@@ -46,7 +46,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
     list<ObjectGuid> targets = *context->GetValue<list<ObjectGuid> >("possible targets");
 
-    if(targets.empty())
+    if (targets.empty())
     {
         return NULL;
     }
@@ -93,7 +93,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
             for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
             {
                 Player *member = sObjectMgr.GetPlayer(itr->guid);
-                if( !member || !member->IsAlive())
+                if ( !member || !member->IsAlive())
                 {
                     continue;
                 }
@@ -134,7 +134,7 @@ int GrindTargetValue::GetTargetingPlayerCount( Unit* unit )
     for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
     {
         Player *member = sObjectMgr.GetPlayer(itr->guid);
-        if( !member || !member->IsAlive() || member == bot)
+        if ( !member || !member->IsAlive() || member == bot)
         {
             continue;
         }

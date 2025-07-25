@@ -41,7 +41,7 @@ list<ObjectGuid> NearestGameObjects::Calculate()
     for(list<GameObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
     {
         GameObject* go = *tIter;
-        if(bot->IsWithinLOSInMap(go))
+        if (bot->IsWithinLOSInMap(go))
         {
             result.push_back(go->GetObjectGuid());
         }

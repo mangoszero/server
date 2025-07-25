@@ -34,7 +34,7 @@ __fastcall thOpenFile::thOpenFile(bool CreateSuspended)
 void __fastcall thOpenFile::Execute()
 {
     //---- Place thread code here ----
-    //if(!Terminated){
+    //if (!Terminated){
     //  FrmMain->LoadAndModify(FrmMain->OpenDialog1->FileName.c_str());
     //  FrmMain->OpenOk=true;
     //}

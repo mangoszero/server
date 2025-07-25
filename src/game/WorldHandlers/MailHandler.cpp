@@ -628,7 +628,7 @@ void WorldSession::HandleGetMailList(WorldPacket& recv_data)
         /*[-ZERO] TODO recheck this
         size_t next_mail_size = 4+1+8+((*itr)->subject.size()+1)+4*7+1+item_count*(1+4+4+6*3*4+4+4+1+4+4+4);
 
-        if(data.wpos()+next_mail_size > maxPacketSize)
+        if (data.wpos()+next_mail_size > maxPacketSize)
         {
             break;
         }

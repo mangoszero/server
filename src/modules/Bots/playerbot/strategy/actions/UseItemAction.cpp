@@ -154,7 +154,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         }
     }
 
-    if(uint32 questid = item->GetProto()->StartQuest)
+    if (uint32 questid = item->GetProto()->StartQuest)
     {
         Quest const* qInfo = sObjectMgr.GetQuestTemplate(questid);
         if (qInfo)

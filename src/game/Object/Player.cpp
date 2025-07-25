@@ -3468,7 +3468,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
             do
             {
                 uint32 prev_spell_id = sSpellMgr.GetPrevSpellInChain(spell_id);  // get the previous spell in chain (if any)
-                if(!prev_spell_id)  //spell_id does not have ranks or is the first spell in chain; must add in spellbook
+                if (!prev_spell_id)  //spell_id does not have ranks or is the first spell in chain; must add in spellbook
                 {
                     continue;
                 }
@@ -8693,7 +8693,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                 {
                     if (group == GetGroup())
                     {
-                        if(group->GetLootMethod() == MASTER_LOOT)
+                        if (group->GetLootMethod() == MASTER_LOOT)
                         {
                             permission = MASTER_PERMISSION;
                         }
@@ -11748,7 +11748,7 @@ InventoryResult Player::CanUseAmmo(uint32 item) const
     {
         return EQUIP_ERR_YOU_ARE_DEAD;
     }
-    // if( isStunned() )
+    // if ( isStunned() )
     //    return EQUIP_ERR_YOU_ARE_STUNNED;
     ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(item);
     if (pProto)
@@ -15457,7 +15457,7 @@ bool Player::SatisfyQuestPrevChain(Quest const* qInfo, bool msg) const
 
         // check for all quests further down the chain
         // only necessary if there are quest chains with more than one quest that can be skipped
-        // if( !SatisfyQuestPrevChain( prevId, msg ) )
+        // if ( !SatisfyQuestPrevChain( prevId, msg ) )
         //    return false;
     }
 
@@ -17096,7 +17096,7 @@ bool Player::isAllowedToLoot(Creature* creature)
             }
 
             /* If the player has joined the group after the creature has been killed, doesn't show up. */
-            if(creature->GetKilledTime() < plr_group->GetMemberSlotJoinedTime(GetObjectGuid()))
+            if (creature->GetKilledTime() < plr_group->GetMemberSlotJoinedTime(GetObjectGuid()))
             {
                 return false;
             }
@@ -17125,7 +17125,7 @@ bool Player::isAllowedToLoot(Creature* creature)
                     bool hasStartingQuestLoot = LootTemplates_Creature.HaveStartingQuestLootForPlayer(loot_id,  this);
 
                     /* If there's no loot, we return false. */
-                    if(!hasLoot)
+                    if (!hasLoot)
                     {
                         return false;
                     }
@@ -17166,7 +17166,7 @@ bool Player::isAllowedToLoot(Creature* creature)
                             }
 
                             /* Player is too far from the creature. */
-                            if(!grp_plr->IsWithinDist(creature, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+                            if (!grp_plr->IsWithinDist(creature, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
                             {
                                 continue;
                             }
@@ -17567,7 +17567,7 @@ void Player::_LoadInventory(QueryResult* result, uint32 timediff)
         }
     }
 
-    // if(IsAlive())
+    // if (IsAlive())
     _ApplyAllItemMods();
 }
 
