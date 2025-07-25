@@ -7,6 +7,9 @@ on:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+
     runs-on: ubuntu-latest
 
     steps:
@@ -20,11 +23,27 @@ jobs:
       - name: Install Required Packages
         run: sudo apt-get install -y git make cmake clang libssl-dev libbz2-dev build-essential default-libmysqlclient-dev libace-dev libreadline-dev
 
-      - name: Update Compilers
-        run: source ./apps/ci/ci-compiler-update.sh
+      - name: Install OpenSSL 3.5.1 Package Manually
+        run: |
+          wget https://www.openssl.org/source/openssl-3.5.1.tar.gz
+          tar -xvf openssl-3.5.1.tar.gz
+          cd openssl-3.5.1
+          ./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl
+          make -j$(nproc)
+          sudo make install
+
+      - name: Set OpenSSL 3.5.1 Environment Variables
+        run: |
+          echo "OPENSSL_ROOT_DIR=/usr/local/openssl" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=/usr/local/openssl/include" >> $GITHUB_ENV
+          echo "OPENSSL_LIBRARIES=/usr/local/openssl/lib" >> $GITHUB_ENV
+          echo "/usr/local/openssl/lib" | sudo tee /etc/ld.so.conf.d/openssl-3.5.conf
+          sudo ldconfig
 
       - name: Check for Submodule Updates
-        run: source ./apps/ci/ci-submodule-update.sh
+        run: |
+          git submodule init
+          git submodule update
 
       - name: Build Mangos Project
         run: source ./apps/ci/ci-compile.sh
