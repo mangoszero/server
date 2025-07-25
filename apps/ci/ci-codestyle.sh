@@ -22,6 +22,7 @@ grep_exclude_args=(
     --exclude-dir="Extractor_Binaries"
     --exclude-dir="MangosStrings_LanguageHGenerator"
     --exclude-dir="restart-scripts"
+    --exclude="CMakeLists.txt"
 )
 
 # Accept multiple input paths
