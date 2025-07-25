@@ -11,9 +11,19 @@ jobs:
       fail-fast: false
 
     runs-on: ubuntu-latest
+
     name: Check Codestyling
     steps:
       - uses: actions/checkout@v2
+
+      - name: Ensure grep supports -P
+        run: |
+          grep -P 'test' <<< 'test' || echo "::warning ::grep -P not supported"
+
+      - name: Install GNU grep (for full -P support)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y grep
 
       - name: Check Codestyling
         run: source ./apps/ci/ci-codestyle.sh
