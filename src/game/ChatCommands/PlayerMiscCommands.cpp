@@ -298,7 +298,7 @@ int GetResetItemsBitMask(char* args)
         // here we have at least "all" but the string is perhaps greater and indicats "allbags"
         optionsBitMask |= RESET_ITEMS_COMMAND_FLAG_OPTION_ALL;
 
-        if(strlen(args) > strlen(RESET_ITEMS_COMMAND_ARG_OPTION_ALL))
+        if (strlen(args) > strlen(RESET_ITEMS_COMMAND_ARG_OPTION_ALL))
         {
             if (strncmp(args, RESET_ITEMS_COMMAND_ARG_OPTION_ALL_BAGS, strlen(args)) == 0)
             {
@@ -334,7 +334,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
     // Get Select player Or if no selection, use Current player
     Player * player = getSelectedPlayer();
 
-    if(!player)
+    if (!player)
     {
         player = m_session->GetPlayer();
     }

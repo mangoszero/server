@@ -174,7 +174,7 @@ public:
     {
         Player* bot = ai->GetBot();
         Group *group = bot->GetGroup();
-        if(!group)
+        if (!group)
         {
             return message;
         }

@@ -14,7 +14,7 @@ bool ReachAreaTriggerAction::Execute(Event event)
     p >> triggerId;
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(triggerId);
-    if(!atEntry)
+    if (!atEntry)
     {
         return false;
     }
@@ -66,7 +66,7 @@ bool AreaTriggerAction::Execute(Event event)
     movement.lastAreaTrigger = 0;
 
     AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(triggerId);
-    if(!atEntry)
+    if (!atEntry)
     {
         return false;
     }

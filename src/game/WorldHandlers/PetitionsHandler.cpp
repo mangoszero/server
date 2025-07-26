@@ -428,7 +428,7 @@ void WorldSession::HandlePetitionSignOpcode(WorldPacket& recv_data)
 
     // update signs count on charter, required testing...
     // Item *item = _player->GetItemByGuid(petitionguid));
-    // if(item)
+    // if (item)
     //    item->SetUInt32Value(ITEM_FIELD_ENCHANTMENT+1, signs);
 
     // update for owner if online

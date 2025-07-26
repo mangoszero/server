@@ -633,9 +633,9 @@ void WorldSession::HandlePartyAssignmentOpcode(WorldPacket& recv_data)
         return;
     }
 
-    // if(flag1) Main Assist
+    // if (flag1) Main Assist
     //     0x4
-    // if(flag2) Main Tank
+    // if (flag2) Main Tank
     //     0x2
 
     /** error handling **/
@@ -702,10 +702,10 @@ void WorldSession::HandleRaidReadyCheckOpcode(WorldPacket& recv_data)
 void WorldSession::HandleRaidReadyCheckFinishedOpcode(WorldPacket& /*recv_data*/)
 {
     // Group* group = GetPlayer()->GetGroup();
-    // if(!group)
+    // if (!group)
     //    return;
 
-    // if(!group->IsLeader(GetPlayer()->GetGUID()) && !group->IsAssistant(GetPlayer()->GetGUID()))
+    // if (!group->IsLeader(GetPlayer()->GetGUID()) && !group->IsAssistant(GetPlayer()->GetGUID()))
     //    return;
 
     // Is any reaction need?

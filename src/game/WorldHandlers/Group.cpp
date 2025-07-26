@@ -361,9 +361,9 @@ bool Group::AddMember(ObjectGuid guid, const char* name, uint8 joinMethod)
             player->UpdateForQuestWorldObjects();
         }
 
-        if(isInLFG())
+        if (isInLFG())
         {
-            if(joinMethod == GROUP_LFG)
+            if (joinMethod == GROUP_LFG)
             {
 
             }
@@ -401,7 +401,7 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 removeMethod)
                 data.Initialize(SMSG_GROUP_UNINVITE, 0);
                 player->GetSession()->SendPacket(&data);
 
-                if(isInLFG())
+                if (isInLFG())
                 {
                     data.Initialize(SMSG_MEETINGSTONE_SETQUEUE, 5);
                     data << 0 << uint8(MEETINGSTONE_STATUS_PARTY_MEMBER_REMOVED_PARTY_REMOVED);
@@ -414,7 +414,7 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 removeMethod)
                 }
             }
 
-            if(removeMethod == GROUP_LEAVE && isInLFG())
+            if (removeMethod == GROUP_LEAVE && isInLFG())
             {
                 player->GetSession()->SendMeetingstoneSetqueue(0, MEETINGSTONE_STATUS_NONE);
 
@@ -447,7 +447,7 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 removeMethod)
             sLFGMgr.RemoveGroupFromQueue(m_Id);
         }
 
-        if(isInLFG())
+        if (isInLFG())
         {
             sLFGMgr.UpdateGroup(m_Id);
         }
@@ -555,7 +555,7 @@ void Group::Disband(bool hideDestroy)
             data << uint64(0) << uint64(0) << uint64(0);
             player->GetSession()->SendPacket(&data);
 
-            if(isInLFG())
+            if (isInLFG())
             {
                 sLFGMgr.RemoveGroupFromQueue(m_Id);
 
@@ -618,7 +618,7 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
     // looking for player's subgroup
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
     {
-        if(citr->guid == pPlayer->GetObjectGuid())
+        if (citr->guid == pPlayer->GetObjectGuid())
         {
             subGroup=citr->group;
         }
@@ -632,7 +632,7 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
     data << uint32(GetMembersCount() - 1);
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
     {
-        if(citr->guid == pPlayer->GetObjectGuid())
+        if (citr->guid == pPlayer->GetObjectGuid())
         {
             continue;
         }
@@ -724,11 +724,11 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
 
             case LFG_ROLE_DPS:
             {
-                if(DpsCount < 3)
+                if (DpsCount < 3)
                 {
                     ++DpsCount;
 
-                    if(DpsCount >= 3)
+                    if (DpsCount >= 3)
                     {
                         InitRoles &= ~LFG_ROLE_DPS;
                     }
@@ -778,11 +778,11 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
 
                 case LFG_ROLE_DPS:
                 {
-                    if(DpsCount < 3)
+                    if (DpsCount < 3)
                     {
                         ++DpsCount;
 
-                        if(DpsCount >= 3)
+                        if (DpsCount >= 3)
                         {
                             InitRoles &= ~LFG_ROLE_DPS;
                         }
@@ -1304,7 +1304,7 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 
 bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
 {
-    if(RollId.empty())
+    if (RollId.empty())
     {
         return true;
     }
@@ -1313,7 +1313,7 @@ bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
     for(Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {
         Roll *roll = *i;
-        if(roll->lootedTargetGUID == pObject->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)
+        if (roll->lootedTargetGUID == pObject->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)
         {
             return false;
         }
@@ -2003,7 +2003,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
                 {
                     bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                    // if(refresh)                          // update loot for new looter
+                    // if (refresh)                          // update loot for new looter
                     //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                     SetLooterGuid(pl->GetObjectGuid());
                     SendUpdate();
@@ -2026,7 +2026,7 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
             {
                 bool refresh = pl->GetLootGuid() == pSource->GetObjectGuid();
 
-                // if(refresh)                              // update loot for new looter
+                // if (refresh)                              // update loot for new looter
                 //    pl->GetSession()->DoLootRelease(pl->GetLootGUID());
                 SetLooterGuid(pl->GetObjectGuid());
                 SendUpdate();

@@ -115,7 +115,7 @@ static bool start_db()
     }
 
     ///- Check the World database version
-    if(!WorldDatabase.CheckDatabaseVersion(DATABASE_WORLD))
+    if (!WorldDatabase.CheckDatabaseVersion(DATABASE_WORLD))
     {
         ///- Wait for already started DB delay threads to end
         WorldDatabase.HaltDelayThread();

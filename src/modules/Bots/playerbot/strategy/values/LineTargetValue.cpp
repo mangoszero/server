@@ -23,7 +23,7 @@ Unit* LineTargetValue::Calculate()
     for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
     {
         Player *player = sObjectMgr.GetPlayer(itr->guid);
-        if( !player || !player->IsAlive() || player == master)
+        if ( !player || !player->IsAlive() || player == master)
         {
             continue;
         }

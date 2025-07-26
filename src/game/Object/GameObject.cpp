@@ -456,7 +456,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     }
 
                     SpellEntry const* se = sSpellStore.LookupEntry(goInfo->trap.spellId);
-                    if(IsAreaOfEffectSpell(se))
+                    if (IsAreaOfEffectSpell(se))
                     {
                         MaNGOS::AllSpecificUnitsInGameObjectRangeDo unit_do(this, radius, IsPositiveSpell(se));
                         MaNGOS::UnitWorker<MaNGOS::AllSpecificUnitsInGameObjectRangeDo> worker(unit_do);
@@ -477,7 +477,7 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                                 useTrap = false;
                             }
 
-                            if(useTrap)
+                            if (useTrap)
                             {
                                 Use(targetUnit);
                             }
@@ -1490,7 +1490,7 @@ void GameObject::Use(Unit* user)
                 SendGameObjectCustomAnim();
             }
 
-            if(!scriptReturnValue && user->GetTypeId() == TYPEID_UNIT)
+            if (!scriptReturnValue && user->GetTypeId() == TYPEID_UNIT)
             {
                 sScriptMgr.OnGameObjectUse(user, this);
             }

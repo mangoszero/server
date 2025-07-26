@@ -34,7 +34,7 @@ namespace ai
             out << AI_VALUE(string, "rti");
 
             Unit* target = AI_VALUE(Unit*, "rti target");
-            if(target)
+            if (target)
             {
                 out << " (" << target->GetName() << ")";
             }

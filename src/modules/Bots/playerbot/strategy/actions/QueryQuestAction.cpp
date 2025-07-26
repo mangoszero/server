@@ -26,7 +26,7 @@ bool QueryQuestAction::Execute(Event event)
 
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        if(questId != bot->GetQuestSlotQuestId(slot))
+        if (questId != bot->GetQuestSlotQuestId(slot))
         {
             continue;
         }

@@ -171,7 +171,7 @@ public:
 
         if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
         {
-            if(proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
+            if (proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
             {
                 stacks.push_back(proto->ItemId);
             }

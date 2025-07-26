@@ -16,7 +16,7 @@ bool RepairAllAction::Execute(Event event)
             continue;
         }
 
-        if(bot->hasUnitState(UNIT_STAT_DIED))
+        if (bot->hasUnitState(UNIT_STAT_DIED))
         {
             bot->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
         }

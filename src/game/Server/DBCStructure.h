@@ -706,7 +706,7 @@ struct ClassFamilyMask
     */
     bool operator!() const { return Empty(); }
 
-    operator void const* () const { return Empty() ? NULL : this; } // for allow normal use in if(mask)
+    operator void const* () const { return Empty() ? NULL : this; } // for allow normal use in if (mask)
 
     /**
     * function indicating whether a familyFlags belongs to a Spell Family.

@@ -122,12 +122,12 @@ float MovementAction::GetFollowAngle()
     int index = 1;
     for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
     {
-        if( ref->getSource() == master)
+        if ( ref->getSource() == master)
         {
             continue;
         }
 
-        if( ref->getSource() == bot)
+        if ( ref->getSource() == bot)
         {
             return 2 * M_PI / (group->GetMembersCount() -1) * index;
         }

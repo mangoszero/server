@@ -440,7 +440,7 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2)
     }
 
     // Mighty Rage Potion + Elixir of giants
-    if((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405)){
+    if ((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405)){
     {
         return false;
     }
@@ -1008,7 +1008,7 @@ bool IsPositiveEffect(SpellEntry const* spellproto, SpellEffectIndex effIndex)
                     switch (spellproto->EffectMiscValue[effIndex])
                     {
                         case SPELLMOD_COST:                 // dependent from bas point sign (negative -> positive)
-                        if(spellproto->Id == 12042)         // Arcane Power
+                        if (spellproto->Id == 12042)         // Arcane Power
                         {
                             break;
                         }
@@ -1764,7 +1764,7 @@ void SpellMgr::LoadSpellBonuses()
         // Check if direct_bonus_done is needed in `spell_bonus_data`
         float direct_done_calc = 0.0f;
         float direct_done_diff = 1000.0f;
-        if(sbe.direct_damage_done)
+        if (sbe.direct_damage_done)
         {
             direct_done_calc = CalculateDefaultCoefficient(spell, SPELL_DIRECT_DAMAGE);
             direct_done_diff = std::abs(sbe.direct_damage_done - direct_done_calc);
@@ -1773,7 +1773,7 @@ void SpellMgr::LoadSpellBonuses()
         // Check if direct_bonus_taken is needed in `spell_bonus_data`
         float direct_taken_calc = 0.0f;
         float direct_taken_diff = 1000.0f;
-        if(sbe.direct_damage_taken)
+        if (sbe.direct_damage_taken)
         {
             direct_taken_calc = CalculateDefaultCoefficient(spell, SPELL_DIRECT_DAMAGE);
             direct_taken_diff = std::abs(sbe.direct_damage_taken - direct_taken_calc);
@@ -2470,21 +2470,21 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Icon overload
                     // Warrior Battle Shout and All Generic Spell with SpellIconID 456.
-                    if(spellInfo_1->SpellIconID==456 && spellInfo_2->IsFitToFamilyMask(0x0000000000010000))
+                    if (spellInfo_1->SpellIconID==456 && spellInfo_2->IsFitToFamilyMask(0x0000000000010000))
                     {
                         return false;
                     }
 
                     // Icon overload
                     // Warrior Rend and All Generic Spell with SpellIconID 245.
-                    if(spellInfo_1->SpellIconID==245 && spellInfo_2->IsFitToFamilyMask(0x0000000000000020))
+                    if (spellInfo_1->SpellIconID==245 && spellInfo_2->IsFitToFamilyMask(0x0000000000000020))
                     {
                         return false;
                     }
 
                     // Icon overload
                     // Les spells Warrior Recklessness and All Generic Spell with SpellIconID 138.
-                    if(spellInfo_1->SpellIconID==138 && spellInfo_2->IsFitToFamilyMask(0x0000000000000010))
+                    if (spellInfo_1->SpellIconID==138 && spellInfo_2->IsFitToFamilyMask(0x0000000000000010))
                     {
                         return false;
                     }
@@ -2524,7 +2524,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
                     // Icon overload
                     // Rogue gouge and All Generic Spell with SpellIconID 245.
-                    if(spellInfo_1->SpellIconID==245 && spellInfo_2->IsFitToFamilyMask(0x0000000000000008))
+                    if (spellInfo_1->SpellIconID==245 && spellInfo_2->IsFitToFamilyMask(0x0000000000000008))
                     {
                         return false;
                     }
@@ -2747,7 +2747,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // Warrior Battle Shout and All Generic Spell with SpellIconID 456.
                     //
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000010000) && spellInfo_2->SpellIconID==456)
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000010000) && spellInfo_2->SpellIconID==456)
                     {
                         return false;
                     }
@@ -2755,7 +2755,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // Warrior Rend and All Generic Spell with SpellIconID 245.
                     //
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000020) && spellInfo_2->SpellIconID==245)
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000020) && spellInfo_2->SpellIconID==245)
                     {
                         return false;
                     }
@@ -2763,7 +2763,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // Warrior Recklessness and All Generic Spell with SpellIconID 138.
                     //
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000010) && spellInfo_2->SpellIconID==138)
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000010) && spellInfo_2->SpellIconID==138)
                     {
                         return false;
                     }
@@ -2794,7 +2794,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Icon overload
                     // Warrior spell with SpellIconID 84.
                     // Load general's sword et Berserker Stance
-                    if(spellInfo_1->SpellIconID==84 && spellInfo_2->SpellIconID==84)
+                    if (spellInfo_1->SpellIconID==84 && spellInfo_2->SpellIconID==84)
                     {
                         return false;
                     }
@@ -2802,7 +2802,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 case SPELLFAMILY_PALADIN:
                     // Icon overload
                     // Devotion Aura and Savior's Sacrifice
-                    if(spellInfo_2->IsFitToFamilyMask(0x0000000000000040) && spellInfo_1->SpellIconID==291)
+                    if (spellInfo_2->IsFitToFamilyMask(0x0000000000000040) && spellInfo_1->SpellIconID==291)
                     {
                         return false;
                     }
@@ -2811,7 +2811,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 {
                     // Icon overload
                     // Rogue Gouge and Warrior Rend
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000020) && spellInfo_2->IsFitToFamilyMask(0x0000000000000008))
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000020) && spellInfo_2->IsFitToFamilyMask(0x0000000000000008))
                     {
                         return false;
                     }
@@ -2975,7 +2975,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 {
                     // Icon overload
                     // Rogue Gouge and All Generic Spell with SpellIconID 245.
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000008) && spellInfo_2->SpellIconID==245)
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000008) && spellInfo_2->SpellIconID==245)
                     {
                         return false;
                     }
@@ -2986,7 +2986,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 {
                     // Icon overload
                     // Rogue Gouge and Warrior Rend
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000008) && spellInfo_2->IsFitToFamilyMask(0x0000000000000020))
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000008) && spellInfo_2->IsFitToFamilyMask(0x0000000000000020))
                     {
                         return false;
                     }
@@ -3108,7 +3108,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 case SPELLFAMILY_WARRIOR:
                     // Icon overload
                     // Devotion Aura and Savior's sacrifice.
-                    if(spellInfo_1->IsFitToFamilyMask(0x0000000000000040) && spellInfo_2->SpellIconID==291)
+                    if (spellInfo_1->IsFitToFamilyMask(0x0000000000000040) && spellInfo_2->SpellIconID==291)
                     {
                         return false;
                     }

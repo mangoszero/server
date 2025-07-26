@@ -106,7 +106,7 @@ void InventoryAction::IterateItemsInEquip(IterateItemsVisitor* visitor)
     for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
     {
         Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
-        if(!pItem)
+        if (!pItem)
         {
             continue;
         }

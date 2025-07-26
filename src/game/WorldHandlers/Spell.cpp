@@ -1136,7 +1136,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         {
             // Warrior's execute must be returned as 20647 spell result since the client only displays info when receiving this id.
             // Done here because must be based on MeleeSpellHitResult of spell id's 5308/20658/20660/20661/20662.
-            if(m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && m_spellInfo->IsFitToFamilyMask(0x0000000020000000))
+            if (m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && m_spellInfo->IsFitToFamilyMask(0x0000000020000000))
             {
                 real_caster->SendSpellMiss(unit, 20647, missInfo);
             }
@@ -2781,7 +2781,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     /*[-ZERO]  if (m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED ||
                           m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED2)
                       {
-                          if(m_targets.getUnitTarget())
+                          if (m_targets.getUnitTarget())
                           {
                               targetUnitMap.push_back(m_targets.getUnitTarget());
                           }
@@ -3848,7 +3848,7 @@ void Spell::finish(bool ok)
     }
 
 #ifdef ENABLE_PLAYERBOTS
-    if(!m_caster->GetMapId())
+    if (!m_caster->GetMapId())
     {
         return;
     }

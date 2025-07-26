@@ -75,7 +75,7 @@ bool AcceptQuestShareAction::Execute(Event event)
     }
 
     quest = qInfo->GetQuestId();
-    if( !bot->CanTakeQuest( qInfo, false ) )
+    if ( !bot->CanTakeQuest( qInfo, false ) )
     {
         // can't take quest
         bot->SetDividerGuid( ObjectGuid() );
@@ -84,18 +84,18 @@ bool AcceptQuestShareAction::Execute(Event event)
         return false;
     }
 
-    if( !bot->GetDividerGuid().IsEmpty() )
+    if ( !bot->GetDividerGuid().IsEmpty() )
     {
         // send msg to quest giving player
         master->SendPushToPartyResponse( bot, QUEST_PARTY_MSG_ACCEPT_QUEST );
         bot->SetDividerGuid( ObjectGuid() );
     }
 
-    if( bot->CanAddQuest( qInfo, false ) )
+    if ( bot->CanAddQuest( qInfo, false ) )
     {
         bot->AddQuest( qInfo, master );
 
-        if( bot->CanCompleteQuest( quest ) )
+        if ( bot->CanCompleteQuest( quest ) )
         {
             bot->CompleteQuest( quest );
         }
@@ -104,7 +104,7 @@ bool AcceptQuestShareAction::Execute(Event event)
         // I think it's not needed, cause typeid should be TYPEID_PLAYER - and this one is not handled
         // there and there is no default case also.
 
-        if( qInfo->GetSrcSpell() > 0 )
+        if ( qInfo->GetSrcSpell() > 0 )
         {
             bot->CastSpell( bot, qInfo->GetSrcSpell(), true );
         }

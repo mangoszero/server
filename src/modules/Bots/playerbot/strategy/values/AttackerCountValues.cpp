@@ -74,7 +74,7 @@ uint8 BalancePercentValue::Calculate()
         for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
         {
             Player *player = sObjectMgr.GetPlayer(itr->guid);
-            if( !player || !player->IsAlive())
+            if ( !player || !player->IsAlive())
             {
                 continue;
             }

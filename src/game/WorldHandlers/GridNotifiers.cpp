@@ -54,7 +54,7 @@ void VisibleNotifier::Notify()
             if (i_clientGUIDs.find((*itr)->GetObjectGuid()) != i_clientGUIDs.end())
             {
                 // ignore far sight case
-                if(Player* p = (*itr)->ToPlayer())
+                if (Player* p = (*itr)->ToPlayer())
                 {
                     p->UpdateVisibilityOf(p, &player);
                 }

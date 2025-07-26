@@ -66,7 +66,7 @@ public:
         for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
         {
             Player *member = sObjectMgr.GetPlayer(itr->guid);
-            if( !member || !member->IsAlive() || member == bot)
+            if ( !member || !member->IsAlive() || member == bot)
             {
                 continue;
             }

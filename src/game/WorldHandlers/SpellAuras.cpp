@@ -5980,7 +5980,7 @@ void SpellAuraHolder::_RemoveSpellAuraHolder()
 
     // passive auras do not get put in slots - said who? ;)
     // Note: but totem can be not accessible for aura target in time remove (to far for find in grid)
-    // if(m_isPassive && !(caster && caster->GetTypeId() == TYPEID_UNIT && ((Creature*)caster)->IsTotem()))
+    // if (m_isPassive && !(caster && caster->GetTypeId() == TYPEID_UNIT && ((Creature*)caster)->IsTotem()))
     //    return;
 
     uint8 slot = GetAuraSlot();
@@ -6319,7 +6319,7 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
             {
                 case 11129:                                 // Combustion (remove triggered aura stack)
                 {
-                    if(!apply)
+                    if (!apply)
                     {
                         spellId1 = 28682;
                     }
@@ -6331,7 +6331,7 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                 }
                 case 28682:                                 // Combustion (remove main aura)
                 {
-                    if(!apply)
+                    if (!apply)
                     {
                         spellId1 = 11129;
                     }

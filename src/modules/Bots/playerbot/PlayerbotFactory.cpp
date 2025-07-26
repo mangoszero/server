@@ -1353,18 +1353,18 @@ void PlayerbotFactory::InitTalents(uint32 specNo)
     for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
     {
         TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
-        if(!talentInfo)
+        if (!talentInfo)
         {
             continue;
         }
 
         TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry( talentInfo->TalentTab );
-        if(!talentTabInfo || talentTabInfo->tabpage != specNo)
+        if (!talentTabInfo || talentTabInfo->tabpage != specNo)
         {
             continue;
         }
 
-        if( (classMask & talentTabInfo->ClassMask) == 0 )
+        if ( (classMask & talentTabInfo->ClassMask) == 0 )
         {
             continue;
         }

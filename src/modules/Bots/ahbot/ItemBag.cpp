@@ -171,7 +171,7 @@ void AvailableItemsBag::Load()
 void InAuctionItemsBag::Load()
 {
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionId);
-    if(!ahEntry)
+    if (!ahEntry)
     {
         return;
     }
