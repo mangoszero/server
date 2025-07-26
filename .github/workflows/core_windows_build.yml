@@ -1,9 +1,15 @@
 name: Windows Build
 on:
   push:
-      branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'apps/**'
+    branches: [ master ]
   pull_request:
-      branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'apps/**'
+    branches: [ master ]
 
 jobs:
   build:
