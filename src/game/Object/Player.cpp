@@ -2796,7 +2796,7 @@ void Player::GiveLevel(uint32 level)
     data << uint32(level);
     data << uint32((int32(classInfo.basehealth) - int32(GetCreateHealth()))
         + ((int32(info.stats[STAT_STAMINA]) - GetCreateStat(STAT_STAMINA)) * 10));
-    // for(int i = 0; i < MAX_POWERS; ++i)                  // Powers loop (0-6)
+    // for (int i = 0; i < MAX_POWERS; ++i)                  // Powers loop (0-6)
     data << uint32(int32(classInfo.basemana)   - int32(GetCreateMana()));
     data << uint32(0);
     data << uint32(0);
@@ -3506,7 +3506,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
                     canAddToSpellBook = false;
                 }
-            } while(0);
+            } while (0);
         }
 
         m_spells[spell_id] = newspell;
@@ -5100,7 +5100,7 @@ void Player::DurabilityLossAll(double percent, bool inventory)
     if (inventory)
     {
         // bags not have durability
-        // for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        // for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
             if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -5109,7 +5109,7 @@ void Player::DurabilityLossAll(double percent, bool inventory)
             }
 
         // keys not have durability
-        // for(int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+        // for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 
         for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
             if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -5157,7 +5157,7 @@ void Player::DurabilityPointsLossAll(int32 points, bool inventory)
     if (inventory)
     {
         // bags not have durability
-        // for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        // for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
             if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -5166,7 +5166,7 @@ void Player::DurabilityPointsLossAll(int32 points, bool inventory)
             }
 
         // keys not have durability
-        // for(int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+        // for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 
         for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
             if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -8906,7 +8906,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     {
                         if (group == GetGroup())
                         {
-                            switch(group->GetLootMethod())
+                            switch (group->GetLootMethod())
                             {
                                 case FREE_FOR_ALL:
                                 case ROUND_ROBIN:
@@ -11641,7 +11641,7 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
 
         // override mount level requirements with the settings from the configuration file
         uint32 requiredLevel = pProto->RequiredLevel;
-        switch(pProto->ItemId) {
+        switch (pProto->ItemId) {
              case 1132: //regular mounts
              case 2411:
              case 2414:
@@ -13647,7 +13647,7 @@ void Player::ApplyEnchantment(Item* item, EnchantmentSlot slot, bool apply, bool
                 default:
                     sLog.outError("Unknown item enchantment (id = %d) display type: %d", enchant_id, enchant_display_type);
                     break;
-            }                                               /*switch(enchant_display_type)*/
+            }                                               /*switch (enchant_display_type)*/
         }                                                   /*for*/
     }
 

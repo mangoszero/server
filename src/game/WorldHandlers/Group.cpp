@@ -708,7 +708,7 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
 
     if (sLFGMgr.getPriority(plrClass, requiredRole) >= LFG_PRIORITY_HIGH && !inLFGGroup(playersProcessed, plrGuid))
     {
-        switch(requiredRole)
+        switch (requiredRole)
         {
             case LFG_ROLE_TANK:
             {
@@ -761,7 +761,7 @@ void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& 
 
         if (!hasFoundPriority)
         {
-            switch(requiredRole)
+            switch (requiredRole)
             {
                 case LFG_ROLE_TANK:
                 {
@@ -1310,7 +1310,7 @@ bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
     }
 
 
-    for(Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
+    for (Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {
         Roll *roll = *i;
         if (roll->lootedTargetGUID == pObject->GetObjectGuid() && roll->itemid == pItem->itemid && roll->totalPlayersRolling > 1)

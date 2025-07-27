@@ -123,7 +123,7 @@ class LFGQueue
         {
             uint32 m_QueueSize = 0;
 
-            for(QueuedPlayersMap::iterator itr = m_QueuedPlayers.begin(); itr != m_QueuedPlayers.end(); ++itr)
+            for (QueuedPlayersMap::iterator itr = m_QueuedPlayers.begin(); itr != m_QueuedPlayers.end(); ++itr)
             {
                 if (itr->second.areaId == areaId)
                 {

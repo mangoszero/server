@@ -338,7 +338,7 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 
         // override mount level requirements with the settings from the configuration file
         uint32 requiredLevel = pProto->RequiredLevel;
-        switch(pProto->ItemId) {
+        switch (pProto->ItemId) {
              case 1132: //regular mounts
              case 2411:
              case 2414:

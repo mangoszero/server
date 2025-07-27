@@ -181,7 +181,7 @@ namespace MaNGOS
         {
             ..some code fast return if result found
 
-            for(CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+            for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
             {
                 if (!itr->getSource()->InSamePhase(i_phaseMask))
                 {

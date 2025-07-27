@@ -433,7 +433,7 @@ void CreatureAI::SetChase(bool chase)
         MotionMaster* creatureMotion = m_creature->GetMotionMaster();
         if (chase)
         {
-            switch(creatureMotion->GetCurrentMovementGeneratorType())
+            switch (creatureMotion->GetCurrentMovementGeneratorType())
             {
                 case IDLE_MOTION_TYPE:
                 case CHASE_MOTION_TYPE:

@@ -211,7 +211,7 @@ void LFGQueue::Update(uint32 diff)
     }
 
     // Iterate over QueuedPlayersMap to update players timers and remove offline/disconnected players.
-    for(QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.begin(); qPlayer != m_QueuedPlayers.end(); ++qPlayer)
+    for (QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.begin(); qPlayer != m_QueuedPlayers.end(); ++qPlayer)
     {
         Player* plr = sObjectMgr.GetPlayer(qPlayer->first);
 
@@ -235,7 +235,7 @@ void LFGQueue::Update(uint32 diff)
     if (!m_QueuedGroups.empty())
     {
         // Iterate over QueuedGroupsMap to fill groups with roles they're missing.
-        for(QueuedGroupsMap::iterator qGroup = m_QueuedGroups.begin(); qGroup != m_QueuedGroups.end(); ++qGroup)
+        for (QueuedGroupsMap::iterator qGroup = m_QueuedGroups.begin(); qGroup != m_QueuedGroups.end(); ++qGroup)
         {
             Group* grp = sObjectMgr.GetGroupById(qGroup->first);
 
@@ -253,7 +253,7 @@ void LFGQueue::Update(uint32 diff)
             }
 
             // Iterate over QueuedPlayersMap to find suitable player to join group
-            for(QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.begin(); qPlayer != m_QueuedPlayers.end(); ++qPlayer)
+            for (QueuedPlayersMap::iterator qPlayer = m_QueuedPlayers.begin(); qPlayer != m_QueuedPlayers.end(); ++qPlayer)
             {
                 Player* plr = sObjectMgr.GetPlayer(qPlayer->first);
 
@@ -337,7 +337,7 @@ void LFGQueue::Update(uint32 diff)
             Group* newQueueGroup = new Group;
 
             // Iterate of QueuedPlayersMap and pick first member to accompany leader.
-            for(QueuedPlayersMap::iterator nPlayer2 = m_QueuedPlayers.begin(); nPlayer2 != m_QueuedPlayers.end(); ++nPlayer2)
+            for (QueuedPlayersMap::iterator nPlayer2 = m_QueuedPlayers.begin(); nPlayer2 != m_QueuedPlayers.end(); ++nPlayer2)
             {
                 if (nPlayer1->first == nPlayer2->first)
                 {
@@ -416,7 +416,7 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
 
             if (hasBeenLongerInQueue)
             {
-                switch(role)
+                switch (role)
                 {
                     case LFG_ROLE_TANK:
                     {
@@ -498,7 +498,7 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
             // If there were no one in group for role with higher priority add this member to group
             if (!hasFoundPriority && hasBeenLongerInQueue)
             {
-                switch(role)
+                switch (role)
                 {
                     case LFG_ROLE_TANK:
                     {

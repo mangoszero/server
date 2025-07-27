@@ -169,7 +169,7 @@ void AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target, ui
         Target->Initialize(SMSG_ADDON_INFO);
 
         uint32 i = 5;                                       // offset for addon extraction
-        while(i != AddOnPacked.size())
+        while (i != AddOnPacked.size())
         {
             std::string AddonNames;
             AddOns* Addonstr = new AddOns;

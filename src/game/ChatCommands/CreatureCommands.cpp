@@ -1165,7 +1165,7 @@ bool ChatHandler::HandleNpcAddWeaponCommand(char* /*args*/)
     bool added = false;
     if (tmpItem)
     {
-        switch(SlotID)
+        switch (SlotID)
         {
             case 1:
                 pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY, ItemID);

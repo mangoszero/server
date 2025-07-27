@@ -494,7 +494,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         {                                               \
             sLog.outBasic(__VA_ARGS__);                 \
         }                                               \
-    } while(0)
+    } while (0)
 
 #define BASIC_FILTER_LOG(F,...)                         \
     do                                                  \
@@ -503,7 +503,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         {                                               \
             sLog.outBasic(__VA_ARGS__);                 \
         }                                               \
-    } while(0)
+    } while (0)
 
 #define DETAIL_LOG(...)                                 \
     do                                                  \
@@ -513,7 +513,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             sLog.outDetail(__VA_ARGS__);                \
         }                                               \
     }                                                   \
-    while(0)
+    while (0)
 
 #define DETAIL_FILTER_LOG(F,...)                        \
     do                                                  \
@@ -523,7 +523,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             sLog.outDetail(__VA_ARGS__);                \
         }                                               \
     }                                                   \
-    while(0)
+    while (0)
 
 #define DEBUG_LOG(...)                                  \
     do                                                  \
@@ -533,7 +533,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             sLog.outDebug(__VA_ARGS__);                 \
         }                                               \
     }                                                   \
-    while(0)
+    while (0)
 
 #define DEBUG_FILTER_LOG(F,...)                         \
     do                                                  \
@@ -543,7 +543,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             sLog.outDebug(__VA_ARGS__);                 \
         }                                               \
     }                                                   \
-    while(0)
+    while (0)
 
 #define ERROR_DB_FILTER_LOG(F,...)                      \
     do                                                  \
@@ -553,7 +553,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
             sLog.outErrorDb(__VA_ARGS__);               \
         }                                               \
     }                                                   \
-    while(0)
+    while (0)
 
 #define ERROR_DB_STRICT_LOG(...) \
     ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)

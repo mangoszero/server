@@ -3895,7 +3895,7 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, SpellCas
                 data << uint32(spellInfo->RequiresSpellFocus);
                 break;
             case SPELL_FAILED_REQUIRES_AREA:
-                /* [-ZERO]    // hardcode areas limitation case     switch(spellInfo->Id)
+                /* [-ZERO]    // hardcode areas limitation case     switch (spellInfo->Id)
                     {
                         default:                            // default case             data << uint32(spellInfo->AreaId);
                             break;
@@ -4882,7 +4882,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
 
         // Loatheb Corrupted Mind spell failed
-        switch(m_spellInfo->SpellFamilyName)
+        switch (m_spellInfo->SpellFamilyName)
         {
             case SPELLFAMILY_DRUID:
             case SPELLFAMILY_PRIEST:
@@ -7144,7 +7144,7 @@ SpellCastResult Spell::CheckItems()
         /*[-ZERO] to rewrite?
         // Check items for TotemCategory  (items presence in inventory)
         uint32 TotemCategory = MAX_SPELL_TOTEM_CATEGORIES;
-        for(int i= 0; i < MAX_SPELL_TOTEM_CATEGORIES; ++i)
+        for (int i= 0; i < MAX_SPELL_TOTEM_CATEGORIES; ++i)
         {
             if (m_spellInfo->TotemCategory[i] != 0)
             {

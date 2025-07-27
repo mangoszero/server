@@ -131,7 +131,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket& recv_data)
     {
         WorldObject * pObject = player->GetMap()->GetWorldObject(lguid);
 
-        switch(group->GetLootMethod())
+        switch (group->GetLootMethod())
         {
             case GROUP_LOOT:
             case NEED_BEFORE_GREED:

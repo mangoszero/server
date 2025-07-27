@@ -801,7 +801,7 @@ void Loot::generateMoneyLoot(uint32 minAmount, uint32 maxAmount)
 
 bool Loot::IsWinner(Player * player)
 {
-    for(LootItemList::const_iterator i = items.begin(); i != items.end(); ++i)
+    for (LootItemList::const_iterator i = items.begin(); i != items.end(); ++i)
     {
         if (i->winner == player->GetObjectGuid())
         {

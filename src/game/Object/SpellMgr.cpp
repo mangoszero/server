@@ -2201,7 +2201,7 @@ void SpellMgr::ModDBCSpellAttributes()
             continue;
         }
 
-        switch(spell_id)
+        switch (spell_id)
         {
             // Execute spell id 20647 is used to actually notify the client of the damage done.
             // If MeleeSpellHitResult method is executed for this spell id, it means that the spellId sent by the client for execute did already passed.
@@ -2616,7 +2616,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         }
         case SPELLFAMILY_MAGE:
         {
-            switch(spellInfo_2->SpellFamilyName)
+            switch (spellInfo_2->SpellFamilyName)
             {
                 case SPELLFAMILY_GENERIC:
                 {
@@ -2684,7 +2684,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         }
         case SPELLFAMILY_WARLOCK:
         {
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // All Generic Spell with SpellIconID 313 and Warlock Corruption
@@ -2729,7 +2729,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         }
         case SPELLFAMILY_WARRIOR:
         {
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                     // Defensive Stance and Scroll of Protection (multi-family check)
                     if (spellInfo_1->Id == 71 && spellInfo_2->SpellIconID == 276)
@@ -2823,7 +2823,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             break;
         }
         case SPELLFAMILY_PRIEST:
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // All Generic Spell with SpellIconID 207 and Shadow Protection.
@@ -2897,7 +2897,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             }
             break;
         case SPELLFAMILY_DRUID:
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // Rip and All Generic Spell with SpellIconID 108.
@@ -2970,7 +2970,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_ROGUE:
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                 {
                     // Icon overload
@@ -2997,7 +2997,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_HUNTER:
-            switch(spellInfo_2->SpellFamilyName)
+            switch (spellInfo_2->SpellFamilyName)
             {
                 case SPELLFAMILY_GENERIC:
                     // Wing Clip -> Improved Wing Clip (multi-family check)
@@ -3039,7 +3039,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_PALADIN:
-            switch(spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName){
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // Shadow Resistance Aura and All Generic Spell with SpellIconID 140.
@@ -3135,7 +3135,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_SHAMAN:
-            switch(spellInfo_2->SpellFamilyName)
+            switch (spellInfo_2->SpellFamilyName)
             {
                 case SPELLFAMILY_SHAMAN:
                     // Windfury weapon

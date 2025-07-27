@@ -683,7 +683,7 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint3
 }
 
 /*
-this method is called when group is inserted, or player / group is removed from BG Queue - there is only one player's status changed, so we don't use while(true) cycles to invite whole queue
+this method is called when group is inserted, or player / group is removed from BG Queue - there is only one player's status changed, so we don't use while (true) cycles to invite whole queue
 it must be called after fully adding the members of a group to ensure group joining
 should be called from BattleGround::RemovePlayer function in some cases
 */

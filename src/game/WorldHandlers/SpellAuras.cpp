@@ -1024,7 +1024,7 @@ void Aura::TriggerSpell()
 //            }
 //            case SPELLFAMILY_WARRIOR:
 //            {
-//                switch(auraId)
+//                switch (auraId)
 //                {
 //                    // Wild Magic
 //                    case 23410: break;
@@ -1035,7 +1035,7 @@ void Aura::TriggerSpell()
 //            }
 //            case SPELLFAMILY_PRIEST:
 //            {
-//                switch(auraId)
+//                switch (auraId)
 //                {
 //                    default:
 //                        break;
@@ -1072,7 +1072,7 @@ void Aura::TriggerSpell()
             }
 //            case SPELLFAMILY_HUNTER:
 //            {
-//                switch(auraId)
+//                switch (auraId)
 //                {
 //                    default:
 //                        break;
