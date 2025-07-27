@@ -23,7 +23,7 @@
 # List of statement keywords to fix
 keywords="if|else[[:blank:]]+if|for|while|switch"
 
-for file in $(find . -type f \( -name "*.cpp" -o -name "*.h" \)); do
+for file in $(find ./src -type f \( -name "*.cpp" -o -name "*.h" \)); do
     temp_file="${file}.tmp"
     cp "$file" "$temp_file"
 
