@@ -29,7 +29,8 @@ for file in $(find . -type f \( -name "*.cpp" -o -name "*.h" \)); do
 
     changed=false
 
-    for kw in if 'else[[:blank:]]+if' for while switch; do
+    IFS='|' read -ra KW_ARR <<< "$keywords"
+    for kw in "${KW_ARR[@]}"; do
         # Fix keyword immediately followed by '(' with no space
         sed -E "s/\b($kw)\(/\1 (/g" "$temp_file" > "$temp_file.tmp" && mv "$temp_file.tmp" "$temp_file"
         if ! diff -q "$file" "$temp_file" >/dev/null; then
