@@ -206,9 +206,9 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
 
         bool reqKey = false;                                    // some locks not have reqs
 
-        for(int j = 0; j < 8; ++j)
+        for (int j = 0; j < 8; ++j)
         {
-            switch(lockInfo->Type[j])
+            switch (lockInfo->Type[j])
             {
             /*
             case LOCK_KEY_ITEM:

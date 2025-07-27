@@ -806,7 +806,7 @@ Creature* PlayerbotAI::GetCreature(ObjectGuid guid)
     MaNGOS::UnitListSearcher<MaNGOS::UnitByGuidInRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig.sightDistance);
 
-    for(list<Unit *>::iterator i = targets.begin(); i != targets.end(); i++)
+    for (list<Unit *>::iterator i = targets.begin(); i != targets.end(); i++)
     {
         Creature* creature = dynamic_cast<Creature*>(*i);
         if (creature)
@@ -836,7 +836,7 @@ GameObject* PlayerbotAI::GetGameObject(ObjectGuid guid)
     MaNGOS::GameObjectListSearcher<MaNGOS::GameObjectByGuidInRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig.sightDistance);
 
-    for(list<GameObject*>::iterator i = targets.begin(); i != targets.end(); i++)
+    for (list<GameObject*>::iterator i = targets.begin(); i != targets.end(); i++)
     {
         GameObject* go = *i;
         if (go && go->isSpawned())

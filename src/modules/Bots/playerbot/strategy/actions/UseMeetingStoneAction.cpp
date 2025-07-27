@@ -71,7 +71,7 @@ bool UseMeetingStoneAction::Execute(Event event)
     Cell::VisitAllObjects(master, searcher, sPlayerbotAIConfig.sightDistance);
 
     GameObject* gameObject = NULL;
-    for(list<GameObject*>::iterator i = targets.begin(); i != targets.end(); i++)
+    for (list<GameObject*>::iterator i = targets.begin(); i != targets.end(); i++)
     {
         GameObject* go = *i;
         if (go && go->isSpawned())

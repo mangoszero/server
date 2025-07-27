@@ -38,7 +38,7 @@ list<ObjectGuid> NearestGameObjects::Calculate()
     Cell::VisitAllObjects((const WorldObject*)bot, searcher, range);
 
     list<ObjectGuid> result;
-    for(list<GameObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
+    for (list<GameObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
     {
         GameObject* go = *tIter;
         if (bot->IsWithinLOSInMap(go))

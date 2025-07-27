@@ -89,7 +89,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 
     if (bot->IsInCombat())
     {
-        for(int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+        for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
         {
             SpellEntry const *spellInfo = sSpellStore.LookupEntry(item->GetProto()->Spells[i].SpellId);
             if (spellInfo && IsNonCombatSpell(spellInfo))

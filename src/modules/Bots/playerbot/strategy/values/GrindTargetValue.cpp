@@ -53,7 +53,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
     float distance = 0;
     Unit* result = NULL;
-    for(list<ObjectGuid>::iterator tIter = targets.begin(); tIter != targets.end(); tIter++)
+    for (list<ObjectGuid>::iterator tIter = targets.begin(); tIter != targets.end(); tIter++)
     {
         Unit* unit = ai->GetUnit(*tIter);
         if (!unit)

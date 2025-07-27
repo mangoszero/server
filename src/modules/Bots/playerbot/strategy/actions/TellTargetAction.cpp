@@ -43,7 +43,7 @@ bool TellAttackersAction::Execute(Event event)
         return true;
     }
 
-    while( ref )
+    while ( ref )
     {
         ThreatManager *threatManager = ref->getSource();
         Unit *unit = threatManager->getOwner();

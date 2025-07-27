@@ -71,7 +71,7 @@ void AttackersValue::AddAttackersOf(Player* player, set<Unit*>& targets)
 
 void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
 {
-    for(set<Unit *>::iterator tIter = targets.begin(); tIter != targets.end();)
+    for (set<Unit *>::iterator tIter = targets.begin(); tIter != targets.end();)
     {
         Unit* unit = *tIter;
         if (!bot->IsWithinLOSInMap(unit) || bot->GetMapId() != unit->GetMapId() || !hasRealThreat(unit))

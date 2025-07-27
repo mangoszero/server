@@ -24,7 +24,7 @@ bool HasAggroValue::Calculate()
         return true; // simulate as target is not atacking anybody yet
     }
 
-    while( ref )
+    while ( ref )
     {
         ThreatManager *threatManager = ref->getSource();
         Unit *attacker = threatManager->getOwner();
