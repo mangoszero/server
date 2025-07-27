@@ -129,13 +129,13 @@ void thOpenFile::ReadAndModifyFromBuff(char* pBuff, DWORD dwSize, const char* ps
 
                 switch (ColType[j + 1])
                 {
-                    case 0: //整型
+                    case 0: // Integer
                         FrmMain->sgEdit->Cells[j + 1][i + 1] = IntToStr(lTemp);
                         break;
-                    case 1: //浮点
+                    case 1: // Float
                         FrmMain->sgEdit->Cells[j + 1][i + 1] = FloatToStr(fTemp);
                         break;
-                    case 2: //文本  文本类型只能看，不能编辑
+                    case 2: // Text (read-only)
                         if (dwTextStartPos + lTemp < dwSize)
                         {
                             pTextPtr = pBuff + dwTextStartPos + lTemp;
@@ -143,10 +143,10 @@ void thOpenFile::ReadAndModifyFromBuff(char* pBuff, DWORD dwSize, const char* ps
                         }
                         else
                         {
-                            FrmMain->sgEdit->Cells[j + 1][i + 1] = "该列不是文本";
+                            FrmMain->sgEdit->Cells[j + 1][i + 1] = "This column is not text";
                         }
                         break;
-                    default: //整型
+                    default: // Fallback to Integer
                         FrmMain->sgEdit->Cells[j + 1][i + 1] = IntToStr(lTemp);
                 }
             }

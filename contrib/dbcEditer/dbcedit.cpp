@@ -11,20 +11,22 @@
 #include <dir.h>
 #include "thOpenSource.h"
 #include "SearchFrm.h"
-//#include "SysUtils.hpp"
-
 
 //---------------------------------------------------------------------------
+
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 TFrmMain* FrmMain;
+
 //---------------------------------------------------------------------------
+
 __fastcall TFrmMain::TFrmMain(TComponent* Owner)
     : TForm(Owner)
 {
     OpenOk = false;
     Term = false;
 }
+
 //---------------------------------------------------------------------------
 
 void __fastcall TFrmMain::btOpenClick(TObject* Sender)
@@ -39,7 +41,6 @@ void __fastcall TFrmMain::btOpenClick(TObject* Sender)
                 thOpen->Terminate();
             }
             thOpen = new thOpenFile(false);
-            //thOpen->Priority = tpTimeCritical;
             pnFileName->Caption = OpenDialog1->FileName;
         }
         else
@@ -49,19 +50,21 @@ void __fastcall TFrmMain::btOpenClick(TObject* Sender)
         }
     }
 }
+
 //---------------------------------------------------------------------------
+
 void __fastcall TFrmMain::btSaveClick(TObject* Sender)
 {
-    //CurrentOpenFile;
     if (OpenOk)
     {
         SaveToFile(CurrentOpenFile.c_str());
     }
     else
     {
-        ShowMessage("文件未打开完成！");
+        ShowMessage("File not opened completely!");
     }
 }
+
 //---------------------------------------------------------------------------
 
 void TFrmMain::SaveToFile(const char* pszFileName)
@@ -69,31 +72,25 @@ void TFrmMain::SaveToFile(const char* pszFileName)
     char szFileName[255];
     FILE* stream;
 
-
-
-
     fnsplit(pszFileName, 0, 0, szFileName, 0);
     strcat(szFileName, "_new.dbc");
 
-
-    AnsiString NewFileName = ExtractFilePath(Application->ExeName) + szFileName; //=pszFileName;
-    int iFileHandle; //文件句柄
-    AnsiString  iniSetFile = ExtractFilePath(Application->ExeName) + "BcdEditer.ini";
+    AnsiString NewFileName = ExtractFilePath(Application->ExeName) + szFileName;
+    int iFileHandle;
+    AnsiString iniSetFile = ExtractFilePath(Application->ExeName) + "BcdEditer.ini";
     AnsiString SectionName = ExtractFileName(CurrentOpenFile);
 
     DWORD w;
 
     CopyFileTo(pszFileName, NewFileName);
 
-    iFileHandle = FileOpen(NewFileName, fmOpenRead | fmOpenWrite); //打开文件
+    iFileHandle = FileOpen(NewFileName, fmOpenRead | fmOpenWrite);
 
-    if ((stream = fopen(CurrentOpenFile.c_str(), "r+"))
-            == NULL)
+    if ((stream = fopen(CurrentOpenFile.c_str(), "r+")) == NULL)
     {
-        ShowMessage("打开文件出错");
+        ShowMessage("Error opening file");
         return;
     }
-
 
     int iVal;
     float fVal;
@@ -101,40 +98,35 @@ void TFrmMain::SaveToFile(const char* pszFileName)
     int ColType;
 
     FileSeek(iFileHandle, 0x14, 0);
-    TIniFile* ini;
-    ini = new TIniFile(iniSetFile);
+    TIniFile* ini = new TIniFile(iniSetFile);
 
     for (int i = 1; i < sgEdit->RowCount; i++)
     {
         for (int j = 1; j < sgEdit->ColCount; j++)
         {
-            if (j == 1) //ID
+            if (j == 1) // ID
             {
                 iVal = StrToInt(sgEdit->Cells[j][i]);
                 FileWrite(iFileHandle, &iVal, 4);
             }
             else
             {
-
-                //ColType= ini->ReadInteger(SectionName,"ColType"+IntToStr(j-1),0);
-                //thOpen->ColType[10000];
-
                 switch (thOpen->ColType[j])
                 {
-                    case 0: //整型
+                    case 0: // Integer
                         iVal = StrToFloat(sgEdit->Cells[j][i]);
                         FileWrite(iFileHandle, &iVal, 4);
                         break;
-                    case 1: //浮点
+                    case 1: // Float
                         fVal = StrToFloat(sgEdit->Cells[j][i]);
                         FileWrite(iFileHandle, &fVal, 4);
                         break;
-                    case 2: //文本
+                    case 2: // Text
                         fseek(stream, 0x14 + (i * (sgEdit->ColCount - 1) + (j - 1)) * 4, 0);
                         fread(&iVal, 4, 1, stream);
                         FileWrite(iFileHandle, &iVal, 4);
                         break;
-                    default: //整型
+                    default: // Integer
                         iVal = StrToFloat(sgEdit->Cells[j][i]);
                         FileWrite(iFileHandle, &iVal, 4);
                 }
@@ -143,9 +135,8 @@ void TFrmMain::SaveToFile(const char* pszFileName)
     }
     FileClose(iFileHandle);
     fclose(stream);
-
     delete ini;
-    ShowMessage("Save To File:" + NewFileName);
+    ShowMessage("Saved to file: " + NewFileName);
 }
 void __fastcall TFrmMain::btIntTypeClick(TObject* Sender)
 {
@@ -158,13 +149,10 @@ void __fastcall TFrmMain::btIntTypeClick(TObject* Sender)
         ini->WriteInteger(SectionName, "ColType" + IntToStr(sgEdit->Col), 0);
         delete ini;
         thOpen->ColType[sgEdit->Col] = 0;
-        //重新打开对应列的值
-        //OpenFileCol(AnsiString FileName,int ColType);
         OpenFileCol(CurrentOpenFile, sgEdit->Col, 0);
     }
 }
 //---------------------------------------------------------------------------
-
 
 void __fastcall TFrmMain::btFloatTypeClick(TObject* Sender)
 {
@@ -254,13 +242,13 @@ void __fastcall TFrmMain::ToolButton1Click(TObject* Sender)
     {
         switch (FrmSearch->rgSI->ItemIndex)
         {
-            case 0: //向上找;
+            case 0: //Integer value;
                 for (int i = sgEdit->ColCount * sgEdit->Row + sgEdit->Col - 1; i > sgEdit->ColCount; i--)
                 {
                     if (i % sgEdit->ColCount != 0)
                     {
                         if (0 == CompareStr(sgEdit->Cells[i - sgEdit->ColCount * (i / sgEdit->ColCount)][i / sgEdit->ColCount],
-                                            FrmSearch->edSeach->Text))  //找到了
+                                            FrmSearch->edSeach->Text))  //Found it
                         {
                             sgEdit->Col = i - sgEdit->ColCount * i / sgEdit->ColCount;
                             sgEdit->Row = i / sgEdit->ColCount;
@@ -273,13 +261,13 @@ void __fastcall TFrmMain::ToolButton1Click(TObject* Sender)
                 {
                     break;
                 }
-            case 1:  //向下找;
+            case 1:  //Search downward;
                 for (int i = sgEdit->ColCount * sgEdit->Row + sgEdit->Col + 1; i < sgEdit->ColCount * sgEdit->RowCount; i++)
                 {
                     if (i % sgEdit->ColCount != 0)
                     {
                         if (0 == CompareStr(sgEdit->Cells[i - sgEdit->ColCount * (i / sgEdit->ColCount)][i / sgEdit->ColCount],
-                                            FrmSearch->edSeach->Text))  //找到了
+                                            FrmSearch->edSeach->Text))  //Found it
                         {
                             sgEdit->Col = i - sgEdit->ColCount * (i / sgEdit->ColCount);
                             sgEdit->Row = i / sgEdit->ColCount;
@@ -290,11 +278,11 @@ void __fastcall TFrmMain::ToolButton1Click(TObject* Sender)
                 }
                 if (SeFlag)  ShowMessage("Seach End，Find Nothing");
                 break;
-            case 2: //当前列向上找;
+            case 2: //Search upward in current column;
                 for (int i = sgEdit->Row; i > 1; i--)
                 {
                     if (0 == CompareStr(sgEdit->Cells[sgEdit->Col][i],
-                                        FrmSearch->edSeach->Text))  //找到了
+                                        FrmSearch->edSeach->Text))  //Found it
                     {
                         sgEdit->Row = i;
                         SeFlag = false;
@@ -303,11 +291,11 @@ void __fastcall TFrmMain::ToolButton1Click(TObject* Sender)
                 }
                 if (SeFlag)  ShowMessage("Seach col top，Find Nothing");
                 break;
-            case 3:  //当前列向下找;
+            case 3:  //Search upward in current column;
                 for (int i = sgEdit->Row; i < sgEdit->RowCount; i++)
                 {
                     if (0 == CompareStr(sgEdit->Cells[sgEdit->Col][i],
-                                        FrmSearch->edSeach->Text))  //找到了
+                                        FrmSearch->edSeach->Text))  //Found it
                     {
                         sgEdit->Row = i;
                         SeFlag = false;
@@ -330,13 +318,13 @@ void __fastcall TFrmMain::sgEditKeyDown(TObject* Sender, WORD& Key,
     {
         switch (FrmSearch->rgSI->ItemIndex)
         {
-            case 0: //向上找;
+            case 0: //Integer value;
                 for (int i = sgEdit->ColCount * sgEdit->Row + sgEdit->Col - 1; i > sgEdit->ColCount; i--)
                 {
                     if (i % sgEdit->ColCount != 0)
                     {
                         if (0 == CompareStr(sgEdit->Cells[i - sgEdit->ColCount * (i / sgEdit->ColCount)][i / sgEdit->ColCount],
-                                            FrmSearch->edSeach->Text))  //找到了
+                                            FrmSearch->edSeach->Text))  //Found it
                         {
                             sgEdit->Col = i - sgEdit->ColCount * i / sgEdit->ColCount;
                             sgEdit->Row = i / sgEdit->ColCount;
@@ -347,13 +335,13 @@ void __fastcall TFrmMain::sgEditKeyDown(TObject* Sender, WORD& Key,
                 }
                 if (SeFlag)  ShowMessage("Seach Top，Find Nothing.");
                 break;
-            case 1:  //向下找;
+            case 1:  //Search downward;
                 for (int i = sgEdit->ColCount * sgEdit->Row + sgEdit->Col + 1; i < sgEdit->ColCount * sgEdit->RowCount; i++)
                 {
                     if (i % sgEdit->ColCount != 0)
                     {
                         if (0 == CompareStr(sgEdit->Cells[i - sgEdit->ColCount * (i / sgEdit->ColCount)][i / sgEdit->ColCount],
-                                            FrmSearch->edSeach->Text))  //找到了
+                                            FrmSearch->edSeach->Text))  //Found it
                         {
                             sgEdit->Col = i - sgEdit->ColCount * (i / sgEdit->ColCount);
                             sgEdit->Row = i / sgEdit->ColCount;
@@ -364,11 +352,11 @@ void __fastcall TFrmMain::sgEditKeyDown(TObject* Sender, WORD& Key,
                 }
                 if (SeFlag)  ShowMessage("Seach End，Find Nothing.");
                 break;
-            case 2: //当前列向上找;
+            case 2: //Search upward in current column;
                 for (int i = sgEdit->Row; i > 1; i--)
                 {
                     if (0 == CompareStr(sgEdit->Cells[sgEdit->Col][i],
-                                        FrmSearch->edSeach->Text))  //找到了
+                                        FrmSearch->edSeach->Text))  //Found it
                     {
                         sgEdit->Row = i;
                         SeFlag = false;
@@ -377,11 +365,11 @@ void __fastcall TFrmMain::sgEditKeyDown(TObject* Sender, WORD& Key,
                 }
                 if (SeFlag)  ShowMessage("Seach col Top，Find Nothing.");
                 break;
-            case 3:  //当前列向下找;
+            case 3:  //Search upward in current column;
                 for (int i = sgEdit->Row; i < sgEdit->RowCount; i++)
                 {
                     if (0 == CompareStr(sgEdit->Cells[sgEdit->Col][i],
-                                        FrmSearch->edSeach->Text))  //找到了
+                                        FrmSearch->edSeach->Text))  //Found it
                     {
                         sgEdit->Row = i;
                         SeFlag = false;
@@ -403,7 +391,7 @@ void __fastcall TFrmMain::sgEditSelectCell(TObject* Sender, int ACol,
 //---------------------------------------------------------------------------
 void __fastcall TFrmMain::OpenFileCol(AnsiString FileName, int ColIndex, int ColType)
 {
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char Txtbuf[255];
     int iVal;
     float fVal;
@@ -429,7 +417,7 @@ void __fastcall TFrmMain::OpenFileCol(AnsiString FileName, int ColIndex, int Col
 
     switch (ColType)
     {
-        case 0: //整型值   Int
+        case 0: //Integer value   Int
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 fseek(stream, 0x14 + (i * (sgEdit->ColCount - 1) + (ColIndex - 1)) * 4, 0);
@@ -437,7 +425,7 @@ void __fastcall TFrmMain::OpenFileCol(AnsiString FileName, int ColIndex, int Col
                 sgEdit->Cells[ColIndex][i + 1] = IntToStr(iVal);
             }
             break;
-        case 1: //浮点值    Float
+        case 1: //Floating point value    Float
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 fseek(stream, 0x14 + (i * (sgEdit->ColCount - 1) + (ColIndex - 1)) * 4, 0);
@@ -445,7 +433,7 @@ void __fastcall TFrmMain::OpenFileCol(AnsiString FileName, int ColIndex, int Col
                 sgEdit->Cells[ColIndex][i + 1] = FloatToStr(fVal);
             }
             break;
-        case 2: //文本      Text
+        case 2: //Text      Text
             fseek(stream, 0x4, 0);
             fread(&iVal, 4, 1, stream);
             dwRows = iVal;
@@ -490,12 +478,12 @@ void __fastcall TFrmMain::Timer1Timer(TObject* Sender)
     }
 }
 //---------------------------------------------------------------------------
-//当前格子写入修改文件中
+//Writing current cell into modified file
 void __fastcall TFrmMain::N4Click(TObject* Sender)
 {
     if (!thOpen) return;
 
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char buf[4];
     int iVal;
     float fVal;
@@ -504,15 +492,15 @@ void __fastcall TFrmMain::N4Click(TObject* Sender)
        if ((stream = fopen(CurrentOpenFile.c_str(), "r+"))
            == NULL)
        {
-          ShowMessage("打开文件出错");
+          ShowMessage("Error opening file");
           return;
        }
     */
-    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //打开文件
+    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //open file
 
     switch (thOpen->ColType[sgEdit->Col])
     {
-        case 0: //整型值
+        case 0: //Integer value
             //for(int i=0;i<sgEdit->RowCount-1;i++){
             /*
                 fseek(stream, 0x14+((sgEdit->Row-1)*(sgEdit->ColCount-1)+(sgEdit->Col-1))*4, 0);
@@ -527,7 +515,7 @@ void __fastcall TFrmMain::N4Click(TObject* Sender)
             FileWrite(iFileHandle, buf, 4);
             //}
             break;
-        case 1: //浮点值
+        case 1: //Floating point value
             //fseek(stream, 0x14+((sgEdit->Row-1)*(sgEdit->ColCount-1)+(sgEdit->Col-1))*4, 0);
             //fVal=StrToFloat(sgEdit->Cells[sgEdit->Col][sgEdit->Row]);
             //fwrite(&fVal, 4, 1, stream);
@@ -536,7 +524,7 @@ void __fastcall TFrmMain::N4Click(TObject* Sender)
             FileSeek(iFileHandle, 0x14 + ((sgEdit->Row - 1) * (sgEdit->ColCount - 1) + (sgEdit->Col - 1)) * 4, 0);
             FileWrite(iFileHandle, buf, 4);
             break;
-        case 2: //文本不写入
+        case 2: //Text not written
             break;
     }
 
@@ -588,7 +576,7 @@ void __fastcall TFrmMain::btRowSaveClick(TObject* Sender)
 {
     if (OpenOk == false) return;
 
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char Txtbuf[255];
     int iVal;
     char buf[4];
@@ -604,20 +592,20 @@ void __fastcall TFrmMain::btRowSaveClick(TObject* Sender)
     //if ((stream = fopen(CurrentOpenFile.c_str(), "r+"))
     //    == NULL)
     //{
-    //   ShowMessage("打开文件出错");
+    //   ShowMessage("Error opening file");
     //   return;
     //}
 
     //curpos = ftell(stream);
     //fseek(stream, 0L, SEEK_END);
     //length = ftell(stream);
-    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //打开文件
+    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //open file
 
     for (int i = 0; i < sgEdit->ColCount - 1; i++)
     {
         switch (thOpen->ColType[i])
         {
-            case 0: //整型值             sgEdit->Row
+            case 0: //Integer value             sgEdit->Row
                 //fseek(stream, 0x14+((sgEdit->Row-1)*(sgEdit->ColCount-1)+i)*4, 0);
                 //iVal=StrToInt(sgEdit->Cells[i+1][sgEdit->Row]);
                 //fwrite(&iVal, 4, 1, stream);
@@ -626,7 +614,7 @@ void __fastcall TFrmMain::btRowSaveClick(TObject* Sender)
                 FileSeek(iFileHandle, 0x14 + ((sgEdit->Row - 1) * (sgEdit->ColCount - 1) + i) * 4, 0);
                 FileWrite(iFileHandle, buf, 4);
                 break;
-            case 1: //浮点值
+            case 1: //Floating point value
                 //fseek(stream, 0x14+((sgEdit->Row-1)*(sgEdit->ColCount-1)+i)*4, 0);
                 //fVal=StrToFloat(sgEdit->Cells[i+1][sgEdit->Row]);
                 //fwrite(&fVal, 4, 1, stream);
@@ -635,7 +623,7 @@ void __fastcall TFrmMain::btRowSaveClick(TObject* Sender)
                 FileSeek(iFileHandle, 0x14 + ((sgEdit->Row - 1) * (sgEdit->ColCount - 1) + i) * 4, 0);
                 FileWrite(iFileHandle, buf, 4);
                 break;
-            case 2: //文本   不存
+            case 2: //Text   Text
                 break;
         }
     }
@@ -649,7 +637,7 @@ void __fastcall TFrmMain::btColSaveClick(TObject* Sender)
 {
     if (OpenOk == false) return;
 
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char Txtbuf[255];
     int iVal;
     char buf[4];
@@ -661,12 +649,12 @@ void __fastcall TFrmMain::btColSaveClick(TObject* Sender)
     DWORD dwTextStartPos;
     char* pTextPtr ;
 
-    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //打开文件
+    iFileHandle = FileOpen(CurrentOpenFile, fmOpenRead | fmOpenWrite); //open file
 
     //if ((stream = fopen(CurrentOpenFile.c_str(), "r+"))
     //    == NULL)
     //{
-    //   ShowMessage("打开文件出错");
+    //   ShowMessage("Error opening file");
     //   return;
     //}
 
@@ -677,7 +665,7 @@ void __fastcall TFrmMain::btColSaveClick(TObject* Sender)
 
     switch (thOpen->ColType[sgEdit->Col])
     {
-        case 0: //整型值
+        case 0: //Integer value
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 //fseek(stream, 0x14+(i*(sgEdit->ColCount-1)+(sgEdit->Col-1))*4, 0);
@@ -689,7 +677,7 @@ void __fastcall TFrmMain::btColSaveClick(TObject* Sender)
                 FileWrite(iFileHandle, buf, 4);
             }
             break;
-        case 1: //浮点值
+        case 1: //Floating point value
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 //fseek(stream, 0x14+(i*(sgEdit->ColCount-1)+(sgEdit->Col-1))*4, 0);
@@ -701,7 +689,7 @@ void __fastcall TFrmMain::btColSaveClick(TObject* Sender)
                 FileWrite(iFileHandle, buf, 4);
             }
             break;
-        case 2: //文本   不存
+        case 2: //Text   Text
             break;
     }
     //fclose(stream);
@@ -715,7 +703,7 @@ void __fastcall TFrmMain::btRowClearClick(TObject* Sender)
 {
     if (OpenOk == false) return;
 
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char Txtbuf[255];
     int iVal;
     float fVal;
@@ -742,19 +730,19 @@ void __fastcall TFrmMain::btRowClearClick(TObject* Sender)
     {
         switch (thOpen->ColType[i])
         {
-            case 0: //整型值             sgEdit->Row
+            case 0: //Integer value             sgEdit->Row
                 //fseek(stream, 0x14+(sgEdit->Row*(sgEdit->ColCount-1)+i)*4, 0);
                 //iVal=StrToInt(sgEdit->Cells[i+1][sgEdit->Row]);
                 //fwrite(&iVal, 4, 1, stream);
                 sgEdit->Cells[i + 1][sgEdit->Row] = "0";
                 break;
-            case 1: //浮点值
+            case 1: //Floating point value
                 //fseek(stream, 0x14+(sgEdit->Row*(sgEdit->ColCount-1)+i)*4, 0);
                 //fVal=StrToFloat(sgEdit->Cells[i+1][sgEdit->Row]);
                 //fwrite(&fVal, 4, 1, stream);
                 sgEdit->Cells[i + 1][sgEdit->Row] = "0";
                 break;
-            case 2: //文本   不存
+            case 2: //Text   Text
                 break;
         }
     }
@@ -766,7 +754,7 @@ void __fastcall TFrmMain::btColClearClick(TObject* Sender)
 {
     if (OpenOk == false) return;
 
-    int iFileHandle; //文件句柄
+    int iFileHandle; //file handle
     char Txtbuf[255];
     int iVal;
     float fVal;
@@ -792,7 +780,7 @@ void __fastcall TFrmMain::btColClearClick(TObject* Sender)
 
     switch (thOpen->ColType[sgEdit->Col])
     {
-        case 0: //整型值
+        case 0: //Integer value
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 //fseek(stream, 0x14+(i*(sgEdit->ColCount-1)+(ColIndex-1))*4, 0);
@@ -801,7 +789,7 @@ void __fastcall TFrmMain::btColClearClick(TObject* Sender)
                 sgEdit->Cells[sgEdit->Col][i + 1] = "0";
             }
             break;
-        case 1: //浮点值
+        case 1: //Floating point value
             for (int i = 0; i < sgEdit->RowCount - 1; i++)
             {
                 //fseek(stream, 0x14+(i*(sgEdit->ColCount-1)+(ColIndex-1))*4, 0);
@@ -810,7 +798,7 @@ void __fastcall TFrmMain::btColClearClick(TObject* Sender)
                 sgEdit->Cells[sgEdit->Col][i + 1] = "0";
             }
             break;
-        case 2: //文本   不存
+        case 2: //Text   Text
             break;
     }
     fclose(stream);
