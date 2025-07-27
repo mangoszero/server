@@ -11,9 +11,10 @@ jobs:
       fail-fast: false
 
     runs-on: ubuntu-latest
+
     name: Check Codestyling
     steps:
       - uses: actions/checkout@v2
 
       - name: Check Codestyling
-        run: source ./apps/ci/ci-codestyle.sh
+        run: bash ./apps/ci/ci-codestyle.sh
