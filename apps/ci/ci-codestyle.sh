@@ -127,9 +127,6 @@ for check in "${!singleLineRegexChecks[@]}"; do
         if [[ -n "$filteredMatches" ]]; then
             # Skip lines with streamed or quoted braces
             filteredMatches=$(printf "%s\n" "$filteredMatches" | while IFS= read -r line; do
-                # Extract just the code part from line (after filename:linenumber:)
-                codePart=$(echo "$line" | cut -d: -f3-)
-
                 echo "$line"
             done)
 
