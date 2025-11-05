@@ -358,9 +358,8 @@ FILE* Log::openGmlogPerAccount(uint32 account)
 void Log::outTimestamp(FILE* file)
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm aTm = safe_localtime(tt);
 
-    std::tm aTm;
-    localtime_r(&tt, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -374,8 +373,8 @@ void Log::outTime()
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-    std::tm aTm;
-    localtime_r(&tt, &aTm);
+    std::tm aTm = safe_localtime(tt);
+
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
@@ -389,8 +388,7 @@ std::string Log::GetTimestampStr()
 {
     time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-    std::tm aTm;
-    localtime_r(&tt, &aTm);
+    std::tm aTm = safe_localtime(tt);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)

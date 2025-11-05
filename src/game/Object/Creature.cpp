@@ -1727,8 +1727,8 @@ bool Creature::LoadFromDB(uint32 guidlow, Map* map)
     if (IsAlive() && sWorld.getConfig(CONFIG_UINT32_RABBIT_DAY))
     {
         time_t rabbit_day = time_t(sWorld.getConfig(CONFIG_UINT32_RABBIT_DAY));
-        tm rabbit_day_tm = *localtime(&rabbit_day);
-        tm now_tm = *localtime(&sWorld.GetGameTime());
+        std::tm rabbit_day_tm = safe_localtime(rabbit_day);
+        std::tm now_tm = safe_localtime(sWorld.GetGameTime());
 
         if (now_tm.tm_mon == rabbit_day_tm.tm_mon && now_tm.tm_mday == rabbit_day_tm.tm_mday)
         {

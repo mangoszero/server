@@ -23,7 +23,7 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "MapManager.h"
 #include "CellImpl.h"

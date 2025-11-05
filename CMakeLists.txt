@@ -19,24 +19,36 @@
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# =============================================================================
+# Project setup
+# =============================================================================
+project(MaNGOS VERSION 0.22.0 LANGUAGES C CXX)
 
+# Use modern CMake policies
 cmake_policy(SET CMP0028 NEW)
-cmake_policy(SET CMP0054 NEW)
-cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0048 NEW)
+cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0063 NEW)
+# CMP0042 = MACOSX_RPATH (macOS only) — optional
+if(APPLE)
+  cmake_policy(SET CMP0042 NEW)
+endif()
 
-set(CMAKE_CXX_STANDARD          17)
+# =============================================================================
+# C++ / C standard configuration
+# =============================================================================
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS        OFF)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_STANDARD          11)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set_property(GLOBAL
-    PROPERTY USE_FOLDERS ON
-)
+# IDE folder organization
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# Always export compile_commands.json for tooling
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #==================================================================================
 # Define available cmake options below
@@ -50,6 +62,7 @@ option(PLAYERBOTS           "Enable Player Bots"                            OFF)
 option(SOAP                 "Enable remote access via SOAP"                 OFF)
 option(PCH                  "Enable precompiled headers"                    ON)
 option(DEBUG                "Enable debug build (only on non IDEs)"         OFF)
+option(WITHOUT_GIT          "Disable Git revision detection"                OFF)
 #==================================================================================
 message("")
 message(
@@ -64,6 +77,7 @@ message(
     SOAP                    Enable remote access via SOAP
     PCH                     Enable use of precompiled headers
     DEBUG                   Debug build, only for systems without IDE (Linux, *BSD)
+    WITHOUT_GIT             Disable Git revision detection
    Scripting engines:
     SCRIPT_LIB_ELUNA        Compile with support for Eluna scripts
     SCRIPT_LIB_SD3          Compile with support for ScriptDev3 scripts
@@ -77,54 +91,74 @@ message(
 message("")
 #==================================================================================#
 
-project(MaNGOS VERSION 0.22.0)
-
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "Default install directory" FORCE)
+# =============================================================================
+# Build type logic
+# =============================================================================
+if(NOT CMAKE_CONFIGURATION_TYPES)
+    if(DEBUG)
+        set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
+    else()
+        set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+    endif()
 endif()
 
-if(DEBUG)
-  set(CMAKE_BUILD_TYPE Debug)
-else()
-  set(CMAKE_BUILD_TYPE Release)
-endif()
+# =============================================================================
+# Install paths
+# =============================================================================
+include(GNUInstallDirs)
 
 if(UNIX)
-    set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/bin)
-    if (NOT CONF_INSTALL_DIR)
-        set(CONF_INSTALL_DIR ../etc)
-    endif()
+    set(BIN_DIR "${CMAKE_INSTALL_FULL_BINDIR}")
+    set(CONF_INSTALL_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 else()
-    set(BIN_DIR ${CMAKE_INSTALL_PREFIX})
-    if (NOT CONF_INSTALL_DIR)
-        set(CONF_INSTALL_DIR .)
-    endif()
+    set(BIN_DIR "${CMAKE_INSTALL_PREFIX}")
+    set(CONF_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}")
 endif()
 
+# =============================================================================
+# Dependencies
+# =============================================================================
+
+# =============================================================================
+# Include project CMake modules safely (relative to current dir)
+# =============================================================================
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(NOT WITHOUT_GIT)
-  find_package(Git)
+  find_package(Git QUIET)
 endif()
 
 find_package(Threads REQUIRED)
-find_package(MySQL   REQUIRED)
-find_package(DL      REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(MySQL REQUIRED)
 
-find_package(ZLIB  QUIET)
+find_package(ZLIB QUIET)
 find_package(BZip2 QUIET)
 
-find_package(OpenSSL REQUIRED)
 
-include(${CMAKE_SOURCE_DIR}/cmake/GenRevision.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/EnsureVersion.cmake)
-
-include(${CMAKE_SOURCE_DIR}/cmake/MangosParams.cmake)
-include(${CMAKE_SOURCE_DIR}/cmake/SetDefinitions.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GenRevision.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/EnsureVersion.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/MangosParams.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/SetDefinitions.cmake)
 
 if(PCH)
-    include(${CMAKE_SOURCE_DIR}/cmake/PCHSupport.cmake)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PCHSupport.cmake)
 endif()
 
-add_subdirectory(dep)
-add_subdirectory(src)
+# =============================================================================
+# Subdirectories
+# =============================================================================
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/dep/CMakeLists.txt")
+  add_subdirectory(dep)
+endif()
 
-include(${CMAKE_SOURCE_DIR}/cmake/StatusInfo.cmake)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
+  add_subdirectory(src)
+else()
+  message(WARNING "Source directory 'src' not found. Nothing to build.")
+endif()
+
+# =============================================================================
+# Final info and summary
+# =============================================================================
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/StatusInfo.cmake)

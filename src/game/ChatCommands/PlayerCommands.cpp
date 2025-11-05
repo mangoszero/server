@@ -23,12 +23,10 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "AccountMgr.h"
-#include "ObjectMgr.h"
 #include "SQLStorages.h"
-
 
 
  /**********************************************************************

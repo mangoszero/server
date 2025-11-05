@@ -28,8 +28,9 @@
 
 #include "World.h"
 #include "Chat.h"
-#include "Language.h"
 #include "AccountMgr.h"
+#include "Database/DatabaseEnv.h"
+#include "Player.h"
 
 
 /**********************************************************************

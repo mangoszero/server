@@ -21227,7 +21227,7 @@ void Player::SendTransferAbortedByLockStatus(MapEntry const* mapEntry, AreaTrigg
             // ToDo: SendAreaTriggerMessage or Transfer Abort for these cases!
             break;
         case AREA_LOCKSTATUS_MISSING_ITEM:
-            if (AreaTrigger const* at = sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
+            if (sObjectMgr.GetMapEntranceTrigger(mapEntry->MapID))
             {
                 GetSession()->SendAreaTriggerMessage(GetSession()->GetMangosString(LANG_REQUIRED_ITEM), sObjectMgr.GetItemPrototype(miscRequirement)->Name1);
             }

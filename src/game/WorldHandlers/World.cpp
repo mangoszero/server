@@ -1419,10 +1419,8 @@ void World::SetInitialWorldSettings()
     m_gameTime = time(NULL);
     m_startTime = m_gameTime;
 
-    tm local;
-    time_t curr;
-    time(&curr);
-    local = *(localtime(&curr));                            // dereference and assign
+    std::tm local;
+    local = safe_localtime(time(nullptr));
     char isoDate[128];
     sprintf(isoDate, "%04d-%02d-%02d %02d:%02d:%02d",
             local.tm_year + 1900, local.tm_mon + 1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
@@ -1459,7 +1457,9 @@ void World::SetInitialWorldSettings()
     // to set mailtimer to return mails every day between 4 and 5 am
     // mailtimer is increased when updating auctions
     // one second is 1000 -(tested on win system)
-    mail_timer = uint32((((localtime(&m_gameTime)->tm_hour + 20) % 24) * HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
+
+    std::tm ltm = safe_localtime(m_gameTime);
+    mail_timer = uint32((((ltm.tm_hour + 20) % 24) * HOUR * IN_MILLISECONDS) / m_timers[WUPDATE_AUCTIONS].GetInterval());
     // 1440
     mail_timer_expires = uint32((DAY * IN_MILLISECONDS) / (m_timers[WUPDATE_AUCTIONS].GetInterval()));
     DEBUG_LOG("Mail timer set to: %u, mail return is called every %u minutes", mail_timer, mail_timer_expires);
