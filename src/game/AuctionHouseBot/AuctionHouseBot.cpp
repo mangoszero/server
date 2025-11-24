@@ -1380,7 +1380,7 @@ bool AuctionBotSeller::Initialize()
 
     // Load NPC vendor items for filtering
     sLog.outString("Loading npc vendor items for filter..");
-    if (QueryResult* result = WorldDatabase.Query("SELECT DISTINCT `item` FROM `npc_vendor`"))
+    if (QueryResult* result = WorldDatabase.Query("SELECT DISTINCT `item` FROM `npc_vendor` WHERE `maxcount` = 0"))
     {
         BarGoLink bar(result->GetRowCount());
         do
