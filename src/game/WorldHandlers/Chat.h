@@ -31,6 +31,7 @@
 #include "ObjectGuid.h"
 #include "Language.h"
 
+
 struct AreaTrigger;
 struct AreaTriggerEntry;
 struct FactionEntry;
@@ -45,6 +46,7 @@ class WorldPacket;
 class GMTicket;
 class MailDraft;
 class Object;
+class WorldObject;
 class GameObject;
 class Creature;
 class Player;

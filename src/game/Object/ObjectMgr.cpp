@@ -4993,8 +4993,7 @@ void ObjectMgr::LoadGossipTextLocales()
 void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
 {
     time_t curTime = time(NULL);
-    tm lt;
-    localtime_r(&curTime, &lt);
+    std::tm lt = safe_localtime(curTime);
     uint64 basetime(curTime);
     sLog.outString("Returning mails current time: hour: %d, minute: %d, second: %d ", lt.tm_hour, lt.tm_min, lt.tm_sec);
 

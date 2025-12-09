@@ -79,11 +79,25 @@ float GetFloatValueFromArray(Tokens const& data, uint16 index);
  */
 void stripLineInvisibleChars(std::string& src);
 
-struct tm* localtime_r(const time_t* time, struct tm* result);
+/**
+ * @brief Thread safe, portable localtime_s/localtime_r replacement
+ *
+ * @param time - local time
+ */
 
-time_t LocalTimeToUTCTime(time_t time);
+inline std::tm safe_localtime(const time_t time)
+{
+    std::tm _ltm{};
+#if PLATFORM == PLATFORM_WINDOWS
+    localtime_s(&_ltm, &time);
+#else
+    localtime_r(&time, &_ltm);
+#endif
+    return _ltm;
+}
+
 time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
-tm TimeBreakdown(time_t t);
+
 
 /**
  * @brief
@@ -117,8 +131,9 @@ std::string TimeToTimestampStr(time_t t);
  */
 inline uint32 secsToTimeBitFields(time_t secs)
 {
-    tm* lt = localtime(&secs);
-    return (lt->tm_year - 100) << 24 | lt->tm_mon  << 20 | (lt->tm_mday - 1) << 14 | lt->tm_wday << 11 | lt->tm_hour << 6 | lt->tm_min;
+    std::tm lt = safe_localtime(secs);
+    return (lt.tm_year - 100) << 24 | lt.tm_mon  << 20
+         | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
 }
 
 

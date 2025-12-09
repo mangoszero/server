@@ -26,7 +26,7 @@
 #include "Config/Config.h"
 #include "Database/SqlOperations.h"
 #include "GitRevision.h"
-
+#include "Utilities/Util.h"
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -318,9 +318,8 @@ bool Database::PExecuteLog(const char* format, ...)
     if (m_logSQL)
     {
         time_t curr;
-        tm local;
         time(&curr);                                        // get current time_t value
-        local = *(localtime(&curr));                        // dereference and assign
+        std::tm local = safe_localtime(curr);                        // dereference and assign
         char fName[128];
         sprintf(fName, "%04d-%02d-%02d_logSQL.sql", local.tm_year + 1900, local.tm_mon + 1, local.tm_mday);
 

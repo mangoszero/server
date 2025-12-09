@@ -23,7 +23,7 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "PathFinder.h"
 #include "TargetedMovementGenerator.h"
 #include "MovementGenerator.h"

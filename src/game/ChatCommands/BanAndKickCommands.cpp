@@ -89,8 +89,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                 do
                 {
                     time_t timeBan = fields2[0].GetUInt64();
-                    tm tmBan;
-                    localtime_r(&timeBan, &tmBan);
+                    std::tm tmBan = safe_localtime(timeBan);
 
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
@@ -101,8 +100,7 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                     else
                     {
                         time_t timeUnban = fields2[1].GetUInt64();
-                        tm tmUnban;
-                        localtime_r(&timeUnban, &tmUnban);
+                        tm tmUnban = safe_localtime(timeUnban);
 
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
                                         account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
@@ -391,20 +389,20 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
             SendSysMessage("-------------------------------------------------------------------------------");
             Field* fields = result->Fetch();
             time_t t_ban = fields[1].GetUInt64();
-            tm* aTm_ban = localtime(&t_ban);
+            std::tm aTm_ban = safe_localtime(t_ban);
             if (fields[1].GetUInt64() == fields[2].GetUInt64())
             {
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                                fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
+                                fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
                                 fields[3].GetString(), fields[4].GetString());
             }
             else
             {
                 time_t t_unban = fields[2].GetUInt64();
-                tm* aTm_unban = localtime(&t_unban);
+                std::tm aTm_unban = safe_localtime(t_unban);
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                                fields[0].GetString(), aTm_ban->tm_year % 100, aTm_ban->tm_mon + 1, aTm_ban->tm_mday, aTm_ban->tm_hour, aTm_ban->tm_min,
-                                aTm_unban->tm_year % 100, aTm_unban->tm_mon + 1, aTm_unban->tm_mday, aTm_unban->tm_hour, aTm_unban->tm_min,
+                                fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
+                                aTm_unban.tm_year % 100, aTm_unban.tm_mon + 1, aTm_unban.tm_mday, aTm_unban.tm_hour, aTm_unban.tm_min,
                                 fields[3].GetString(), fields[4].GetString());
             }
         }

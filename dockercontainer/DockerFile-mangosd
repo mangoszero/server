@@ -25,7 +25,7 @@ RUN apt-get -y update && apt-get -y upgrade
 RUN apt-get -y install libmysqlclient-dev openssl lua-readline
 
 COPY --from=build-step /mangos /mangos
-COPY --from=build-step /etc/mangosd.conf.dist /mangos/etc/mangosd.conf.dist
+COPY --from=build-step /mangos/etc/mangosd.conf.dist /mangos/etc/mangosd.conf.dist
 
 RUN echo "/mangos/lib" >> /etc/ld.so.conf && ldconfig
 

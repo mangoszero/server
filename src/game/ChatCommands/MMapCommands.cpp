@@ -23,7 +23,7 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
+#include "ObjectMgr.h"
 #include "World.h"
 #include "MoveMap.h"
 #include "PathFinder.h" // for mmap manager

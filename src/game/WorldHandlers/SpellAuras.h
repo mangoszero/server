@@ -26,8 +26,8 @@
 #define MANGOS_SPELLAURAS_H
 
 #include "SpellAuraDefines.h"
-#include "DBCEnums.h"
-#include "ObjectGuid.h"
+#include "ObjectMgr.h"
+
 
 /**
  * Used to modify what an \ref Aura does to a player/npc.

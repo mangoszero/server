@@ -39,6 +39,7 @@
 #define MANGOS_H_AUCTION_HOUSE_MGR
 
 #include "Common.h"
+#include "Policies/Singleton.h"
 #include "DBCStructure.h"
 
 /** \addtogroup auctionhouse

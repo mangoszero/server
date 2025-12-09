@@ -32,6 +32,10 @@
 #include <iomanip>
 #include <cctype>
 #include <cstring>
+#include <string>
+#include <charconv>   // for std::to_chars
+
+#include <array>
 
 //////////////////////////////////////////////////////////////////////////
 int32 irand(int32 min, int32 max)
@@ -157,52 +161,6 @@ void stripLineInvisibleChars(std::string& str)
 }
 
 /**
- * It's a wrapper for the localtime_r function that works on Windows
- *
- * @param time The time to convert.
- * @param result A pointer to a tm structure to receive the broken-down time.
- *
- * @return A pointer to the result.
- */
-#if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-struct tm* localtime_r(time_t const* time, struct tm *result)
-{
-    localtime_s(result, time);
-    return result;
-}
-#endif
-
-/**
- * It takes a time_t value and returns a tm structure with the same time, but in local time
- *
- * @param time The time to break down.
- *
- * @return A struct tm
- */
-tm TimeBreakdown(time_t time)
-{
-    tm timeLocal;
-    localtime_r(&time, &timeLocal);
-    return timeLocal;
-}
-
-/**
- * Convert local time to UTC time.
- *
- * @param time The time to convert.
- *
- * @return The time in UTC.
- */
-time_t LocalTimeToUTCTime(time_t time)
-{
-    #if (defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
-        return time + _timezone;
-    #else
-        return time + timezone;
-    #endif
-}
-
-/**
  * "Get the timestamp of the next time the given hour occurs in the local timezone."
  *
  * The function takes a timestamp, an hour, and a boolean. The timestamp is the time you want to find
@@ -219,7 +177,7 @@ time_t LocalTimeToUTCTime(time_t time)
  */
 time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
 {
-    tm timeLocal = TimeBreakdown(time);
+    std::tm timeLocal = safe_localtime(time);
     timeLocal.tm_hour = 0;
     timeLocal.tm_min  = 0;
     timeLocal.tm_sec  = 0;
@@ -235,122 +193,85 @@ time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
     return hourLocal;
 }
 
+
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hoursOnly)
 {
-    time_t secs    = timeInSecs % MINUTE;
-    time_t minutes = timeInSecs % HOUR / MINUTE;
-    time_t hours   = timeInSecs % DAY  / HOUR;
-    time_t days    = timeInSecs / DAY;
+    const time_t secs = timeInSecs % MINUTE;
+    const time_t minutes = (timeInSecs % HOUR) / MINUTE;
+    const time_t hours = (timeInSecs % DAY) / HOUR;
+    const time_t days = timeInSecs / DAY;
 
-    std::ostringstream ss;
+    std::string out;
+    out.reserve(64); // to avoid reallocations
+
+    auto append_number = [&](time_t value, bool pad2 = false)
+        {
+            std::array<char, 16> buf{};
+            auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
+            if (pad2 && (ptr - buf.data()) == 1)  // pad single-digit numbers
+                out.push_back('0');
+            out.append(buf.data(), ptr);
+        };
+
+    // --- Days ---
     if (days)
     {
-        ss << days;
+        append_number(days);
         if (timeFormat == TimeFormat::Numeric)
-        {
-            ss << ":";
-        }
+            out += ':';
         else if (timeFormat == TimeFormat::ShortText)
-        {
-            ss << "d";
-        }
-        else // if (timeFormat == TimeFormat::FullText)
-        {
-            if (days == 1)
-            {
-                ss << " Day ";
-            }
-            else
-            {
-                ss << " Days ";
-            }
-        }
+            out += 'd';
+        else
+            out += (days == 1 ? " Day " : " Days ");
     }
 
+    // --- Hours ---
     if (hours || hoursOnly)
     {
-        ss << hours;
+        append_number(hours);
         if (timeFormat == TimeFormat::Numeric)
-        {
-            ss << ":";
-        }
+            out += ':';
         else if (timeFormat == TimeFormat::ShortText)
-        {
-            ss << "h";
-        }
-        else // if (timeFormat == TimeFormat::FullText)
-        {
-            if (hours <= 1)
-            {
-                ss << " Hour ";
-            }
-            else
-            {
-                ss << " Hours ";
-            }
-        }
+            out += 'h';
+        else
+            out += (hours == 1 ? " Hour " : " Hours ");
     }
 
+    // --- Minutes ---
     if (!hoursOnly)
     {
-        ss << minutes;
+        append_number(minutes);
         if (timeFormat == TimeFormat::Numeric)
-        {
-            ss << ":";
-        }
+            out += ':';
         else if (timeFormat == TimeFormat::ShortText)
-        {
-            ss << "m";
-        }
-        else // if (timeFormat == TimeFormat::FullText)
-        {
-            if (minutes == 1)
-            {
-                ss << " Minute ";
-            }
-            else
-            {
-                ss << " Minutes ";
-            }
-        }
+            out += 'm';
+        else
+            out += (minutes == 1 ? " Minute " : " Minutes ");
     }
-    else
+    else if (timeFormat == TimeFormat::Numeric)
     {
-        if (timeFormat == TimeFormat::Numeric)
-        {
-            ss << "0:";
-        }
+        // add “0:” when hoursOnly requested
+        out += "0:";
     }
 
+    // --- Seconds ---
     if (secs || (!days && !hours && !minutes))
     {
-        ss << std::setw(2) << std::setfill('0') << secs;
+        // Always pad seconds to 2 digits in numeric format
+        append_number(secs, timeFormat == TimeFormat::Numeric);
         if (timeFormat == TimeFormat::ShortText)
-        {
-            ss << "s";
-        }
+            out += 's';
         else if (timeFormat == TimeFormat::FullText)
-        {
-            if (secs <= 1)
-            {
-                ss << " Second.";
-            }
-            else
-            {
-                ss << " Seconds.";
-            }
-        }
+            out += (secs == 1 ? " Second." : " Seconds.");
     }
-    else
+    else if (timeFormat == TimeFormat::Numeric)
     {
-        if (timeFormat == TimeFormat::Numeric)
-        {
-            ss << "00";
-        }
+        out += "00";
     }
 
-    return ss.str();
+    return out;
 }
+
 
 uint32 TimeStringToSecs(const std::string& timestring)
 {
@@ -386,17 +307,41 @@ uint32 TimeStringToSecs(const std::string& timestring)
 
 std::string TimeToTimestampStr(time_t t)
 {
-    tm aTm;
-    localtime_r(&t, &aTm);
     //       YYYY   year
     //       MM     month (2 digits 01-12)
     //       DD     day (2 digits 01-31)
     //       HH     hour (2 digits 00-23)
     //       MM     minutes (2 digits 00-59)
     //       SS     seconds (2 digits 00-59)
-    char buf[20];
-    snprintf(buf, 20, "%04d-%02d-%02d_%02d-%02d-%02d", aTm.tm_year + 1900, aTm.tm_mon + 1, aTm.tm_mday, aTm.tm_hour, aTm.tm_min, aTm.tm_sec);
-    return std::string(buf);
+
+    std::tm aTm = safe_localtime(t);
+    std::array<char, 20> buf; // "YYYY-MM-DD_HH-MM-SS" = 19 chars + '\0'
+    char* p = buf.data();
+
+    auto append_2d = [&](int v) {
+        *p++ = char('0' + v / 10);
+        *p++ = char('0' + v % 10);
+        };
+    auto append_4d = [&](int v) {
+        *p++ = char('0' + (v / 1000) % 10);
+        *p++ = char('0' + (v / 100) % 10);
+        *p++ = char('0' + (v / 10) % 10);
+        *p++ = char('0' + v % 10);
+        };
+
+    append_4d(aTm.tm_year + 1900);
+    *p++ = '-';
+    append_2d(aTm.tm_mon + 1);
+    *p++ = '-';
+    append_2d(aTm.tm_mday);
+    *p++ = '_';
+    append_2d(aTm.tm_hour);
+    *p++ = '-';
+    append_2d(aTm.tm_min);
+    *p++ = '-';
+    append_2d(aTm.tm_sec);
+
+    return std::string(buf.data(), p);
 }
 
 /// Check if the string is a valid ip address representation

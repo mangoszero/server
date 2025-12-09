@@ -23,8 +23,9 @@
  */
 
 #include "Chat.h"
-#include "Language.h"
+
 #include "World.h"
+#include "ObjectMgr.h"
 
 /*
     All commands related to discussions

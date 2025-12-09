@@ -132,7 +132,7 @@ bool Guild::Create(Player* leader, std::string gname)
 
     // creating data
     time_t now = time(0);
-    tm local = *(localtime(&now));                          // dereference and assign
+    std::tm local = safe_localtime(now);
     m_CreatedDay   = local.tm_mday;
     m_CreatedMonth = local.tm_mon + 1;
     m_CreatedYear  = local.tm_year + 1900;
@@ -333,7 +333,7 @@ bool Guild::LoadGuildFromDB(QueryResult* guildDataResult)
 
     if (time > 0)
     {
-        tm local       = *(localtime(&time));               // dereference and assign
+        std::tm local  = safe_localtime(time);
         m_CreatedDay   = local.tm_mday;
         m_CreatedMonth = local.tm_mon + 1;
         m_CreatedYear  = local.tm_year + 1900;

@@ -1,0 +1,74 @@
+name: Linux Build (GCC + Clang)
+
+on:
+  push:
+    branches: [ master, devel ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc
+            cc: gcc
+            cxx: g++
+            pkg: g++
+          - name: clang
+            cc: clang
+            cxx: clang++
+            pkg: clang
+
+    name: Build (${{ matrix.name }})
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: _build
+          key: ${{ runner.os }}-${{ matrix.name }}-cmake-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.name }}-cmake-
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            git cmake make build-essential \
+            libssl-dev libbz2-dev default-libmysqlclient-dev \
+            libace-dev libreadline-dev \
+            ${{ matrix.pkg }}
+
+      - name: Configure project
+        run: |
+          mkdir -p _build _install
+          cd _build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=../_install \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DBUILD_TOOLS=1 \
+            -DBUILD_MANGOSD=1 \
+            -DBUILD_REALMD=1 \
+            -DSOAP=1 \
+            -DSCRIPT_LIB_ELUNA=1 \
+            -DSCRIPT_LIB_SD3_GATE=1 \
+            -DPLAYERBOTS=1 \
+            -DUSE_STORMLIB=1 \
+            -DPCH=0
+
+      - name: Build and install
+        run: |
+          cd _build
+          make -j"$(nproc)"
+          make install -j"$(nproc)"

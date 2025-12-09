@@ -60,27 +60,23 @@ add_executable(mangosd
 )
 
 target_include_directories(mangosd
-    PUBLIC
+    PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR}
-        ${OPENSSL_INCLUDE_DIR}
 )
 
 target_compile_definitions(mangosd
-    PUBLIC
+    PRIVATE
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:ENABLE_ELUNA ELUNA_EXPANSION=0 ELUNA_MANGOS>
 )
 
 target_link_libraries(mangosd
-    PUBLIC
+    PRIVATE
         game
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
-        ${OPENSSL_LIBRARIES}
-#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3)
-    OpenSSL::Crypto
-#endif()
-
+        OpenSSL::Crypto
+        OpenSSL::SSL
 )
 
 install(

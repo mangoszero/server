@@ -23,7 +23,7 @@ RUN apt-get -y update && apt-get -y upgrade
 RUN apt-get -y install libmysqlclient-dev openssl
 
 COPY --from=build-step /mangos /mangos
-COPY --from=build-step /etc/realmd.conf.dist /mangos/etc/realmd.conf.dist
+COPY --from=build-step /mangos/etc/realmd.conf.dist /mangos/etc/realmd.conf.dist
 WORKDIR /mangos/bin
 RUN chmod +x realmd
 
