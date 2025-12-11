@@ -39,6 +39,21 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
 
     sLog.outBasic("Processing random bots...");
 
+    uint32 cachedMin = GetEventValue(0, "config_min");
+    uint32 cachedMax = GetEventValue(0, "config_max");
+
+    if (cachedMin != sPlayerbotAIConfig.minRandomBots ||
+        cachedMax != sPlayerbotAIConfig.maxRandomBots)
+    {
+        sLog.outString("Bot count range changed from %d-%d to %d-%d, regenerating target...",
+            cachedMin, cachedMax,
+            sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
+
+        SetEventValue(0, "bot_count", 0, 0);  // Invalidate
+        SetEventValue(0, "config_min", sPlayerbotAIConfig.minRandomBots, 999999);
+        SetEventValue(0, "config_max", sPlayerbotAIConfig.maxRandomBots, 999999);
+    }
+
     int maxAllowedBotCount = GetEventValue(0, "bot_count");
     if (!maxAllowedBotCount)
     {
@@ -225,6 +240,19 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         sLog.outDetail("Bot %d is in unsafe zone, forcing teleport", bot);
         RandomTeleportForLevel(player);
         SetEventValue(bot, "teleport", 1, sPlayerbotAIConfig.maxRandomBotInWorldTime);
+        return true;
+    }
+
+    // Check if bot level is outside configured min/max range
+    uint32 botLevel = player->getLevel();
+    uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+        maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    if (botLevel < sPlayerbotAIConfig.randomBotMinLevel || botLevel > maxLevel)
+    {
+        sLog.outDetail("Bot %d level %d is outside valid range (%d-%d), scheduling immediate re-randomization",
+                       bot, botLevel, sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        ScheduleRandomize(bot, 0);
         return true;
     }
 
@@ -555,7 +583,6 @@ list<uint32> RandomPlayerbotMgr::GetBots()
 vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
 {
     set<uint32> bots;
-
     QueryResult* results = CharacterDatabase.PQuery(
         "SELECT `bot` FROM `ai_playerbot_random_bots` WHERE `event` = 'add'"
     );
@@ -598,7 +625,6 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
         } while (result->NextRow());
         delete result;
     }
-
 
     return guids;
 }
