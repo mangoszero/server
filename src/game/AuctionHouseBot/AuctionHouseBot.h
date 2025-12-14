@@ -544,10 +544,16 @@ private:
      */
     void InitializeAgents();
 
+    /**
+     * @Brief Purges mail of all the returned unsold items.
+     */
+    void PurgeMailedItems();
+
     AuctionBotAgent* m_Buyer; /**< The buyer (\ref AuctionBotBuyer) for this \ref AuctionHouseBot */
     AuctionBotAgent* m_Seller; /**< The seller (\ref AuctionBotSeller) for this \ref AuctionHouseBot */
 
     uint32 m_OperationSelector; /**< 0..2*MAX_AUCTION_HOUSE_TYPE-1 */
+    time_t m_lastMailCleanup;  /**< Last time we cleaned up mails */
 };
 
 /// Convenience to easily access the singleton for the \ref AuctionHouseBot
