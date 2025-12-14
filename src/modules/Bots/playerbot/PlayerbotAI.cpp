@@ -1219,6 +1219,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         LootObject loot = *aiObjectContext->GetValue<LootObject>("loot target");
         if (!loot.IsLootPossible(bot))
         {
+            delete spell;
             return false;
         }
 
@@ -1247,6 +1248,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     {
         bot->SetFacingTo(bot->GetAngle(faceTo));
         SetNextCheckDelay(sPlayerbotAIConfig.globalCoolDown);
+        delete spell;
         return false;
     }
 

@@ -19,6 +19,7 @@ void Queue::Push(ActionBasket *action)
                 {
                     basket->setRelevance(action->getRelevance());
                 }
+                delete action->getAction();
                 delete action;
                 return;
             }
