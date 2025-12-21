@@ -12,7 +12,18 @@ class Object;
 class Item;
 
 using namespace std;
+/**
+* \struct AreaCreatureStats
+* \brief Entry representing creature levels within an area for playerbot spawning decisions
+*/
+struct AreaCreatureStats
+{
+    uint8   minLevel;
+    uint8   maxLevel;
+    uint16  creatureCount;
 
+    AreaCreatureStats() : minLevel(0), maxLevel(0), creatureCount(0) {}
+};
 class MANGOS_DLL_SPEC RandomPlayerbotMgr : public PlayerbotHolder
 {
     public:
@@ -58,10 +69,14 @@ class MANGOS_DLL_SPEC RandomPlayerbotMgr : public PlayerbotHolder
         void RandomTeleportForLevel(Player* bot);
         void RandomTeleport(Player* bot, vector<WorldLocation> &locs);
         uint32 GetZoneLevel(uint32 mapId, float teleX, float teleY, float teleZ);
+        bool IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z);
+        void CalculateAreaCreatureStats();
 
     private:
         vector<Player*> players;
         int processTicks;
+        std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
+        std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
 };
 
 #define sRandomPlayerbotMgr MaNGOS::Singleton<RandomPlayerbotMgr>::Instance()
