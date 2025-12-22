@@ -13,10 +13,13 @@ bool CheckMountStateAction::Execute(Event event)
     {
         return false;
     }
-
     if (bot->IsTaxiFlying())
     {
         return false;
+    }
+    if (master->IsTaxiFlying())
+    {
+        return false;  // not the kind of mounting this is supposed to react to
     }
 
     if (master->IsMounted() && !bot->IsMounted())
@@ -36,6 +39,11 @@ bool CheckMountStateAction::Mount()
 {
     Player* master = GetMaster();
     ai->RemoveShapeshift();
+    Unit::AuraList const& auras = master->GetAurasByType(SPELL_AURA_MOUNTED);
+    if (auras.empty())
+    {
+        return false;
+    }
 
     const SpellEntry* masterSpell = master->GetAurasByType(SPELL_AURA_MOUNTED).front()->GetSpellProto();
     int32 masterSpeed = max(masterSpell->EffectBasePoints[1], masterSpell->EffectBasePoints[2]);
