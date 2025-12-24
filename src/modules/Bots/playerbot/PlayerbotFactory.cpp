@@ -129,6 +129,7 @@ void PlayerbotFactory::Randomize(bool incremental)
     InitTalents();
     InitAvailableSpells();
     InitSpecialSpells();
+    InitQuestSpells();
     InitMounts();
     UpdateTradeSkills();
     bot->SaveToDB();
@@ -1359,6 +1360,123 @@ void PlayerbotFactory::InitSpecialSpells()
     {
         uint32 spellId = *i;
         bot->learnSpell(spellId, false);
+    }
+}
+
+/**
+ * Initializes quest-reward and auto-learned spells for the player bot.
+ * These are class-specific spells that aren't learned from trainers.
+ */
+void PlayerbotFactory::InitQuestSpells()
+{
+    uint8 cls = bot->getClass();
+    uint32 level = bot->getLevel();
+
+    switch (cls)
+    {
+        case CLASS_HUNTER:
+            if (level >= 10)
+            {
+                if (!bot->HasSpell(883))   bot->learnSpell(883, false);   // Call Pet
+                if (!bot->HasSpell(982))   bot->learnSpell(982, false);   // Revive Pet
+                if (!bot->HasSpell(1515))  bot->learnSpell(1515, false);  // Tame Beast
+                if (!bot->HasSpell(6991))  bot->learnSpell(6991, false);  // Feed Pet
+                if (!bot->HasSpell(5149))  bot->learnSpell(5149, false);  // Beast Training
+            }
+            if (level >= 12)
+            {
+                if (!bot->HasSpell(136))   bot->learnSpell(136, false);   // Mend Pet
+            }
+            break;
+
+        case CLASS_WARLOCK:
+            if (level >= 1)
+            {
+                if (!bot->HasSpell(688))   bot->learnSpell(688, false);   // Summon Imp
+            }
+            if (level >= 10)
+            {
+                if (!bot->HasSpell(697))   bot->learnSpell(697, false);   // Summon Voidwalker
+            }
+            if (level >= 20)
+            {
+                if (!bot->HasSpell(712))   bot->learnSpell(712, false);   // Summon Succubus
+            }
+            if (level >= 30)
+            {
+                if (!bot->HasSpell(691))   bot->learnSpell(691, false);   // Summon Felhunter
+            }
+            break;
+
+        case CLASS_WARRIOR:
+            if (level >= 10)
+            {
+                if (!bot->HasSpell(71))    bot->learnSpell(71, false);    // Defensive Stance
+            }
+            if (level >= 30)
+            {
+                if (!bot->HasSpell(2458))  bot->learnSpell(2458, false);  // Berserker Stance
+            }
+            break;
+
+        case CLASS_DRUID:
+            if (level >= 10)
+            {
+                if (!bot->HasSpell(5487))  bot->learnSpell(5487, false);  // Bear Form
+            }
+            if (level >= 16)
+            {
+                if (!bot->HasSpell(1066))  bot->learnSpell(1066, false);  // Aquatic Form
+            }
+            if (level >= 20)
+            {
+                if (!bot->HasSpell(768))   bot->learnSpell(768, false);   // Cat Form
+            }
+            if (level >= 30)
+            {
+                if (!bot->HasSpell(783))   bot->learnSpell(783, false);   // Travel Form
+            }
+            if (level >= 40)
+            {
+                if (!bot->HasSpell(9634))  bot->learnSpell(9634, false);  // Dire Bear Form
+            }
+            break;
+
+        case CLASS_PALADIN:
+            if (level >= 12)
+            {
+                if (!bot->HasSpell(7328))  bot->learnSpell(7328, false);  // Redemption
+            }
+            if (level >= 40)
+            {
+                if (!bot->HasSpell(13819)) bot->learnSpell(13819, false); // Summon Warhorse
+            }
+            if (level >= 60)
+            {
+                if (!bot->HasSpell(23214)) bot->learnSpell(23214, false); // Summon Charger
+            }
+            // Horde-specific
+            if (bot->GetTeam() == HORDE && level >= 50)
+            {
+                if (!bot->HasSpell(31892)) bot->learnSpell(31892, false); // Seal of Blood
+            }
+            break;
+
+        case CLASS_SHAMAN:
+            // Totem quests - these vary by race/level but add common ones
+            if (level >= 10)
+            {
+                if (!bot->HasSpell(8012))  bot->learnSpell(8012, false);  // Purge (often quest)
+            }
+            break;
+        case CLASS_PRIEST:
+            break;
+        case CLASS_ROGUE:
+            break;
+        case CLASS_MAGE:
+            break;
+        default:
+            break;
     }
 }
 
