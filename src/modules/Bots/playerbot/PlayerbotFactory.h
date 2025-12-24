@@ -128,6 +128,11 @@ private:
     void InitSpecialSpells();
 
     /**
+     * @brief Initializes spells not taught by trainers.
+     */
+    void InitQuestSpells();
+
+    /**
      * @brief Initializes the talents for the player bot.
      */
     void InitTalents();
