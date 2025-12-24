@@ -271,6 +271,10 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                     queue.Push(new ActionBasket(action, k, skipPrerequisites, event));
                     pushed = true;
                 }
+                else
+                {
+                    delete action;
+                }
 
                 delete nextAction;
             }
@@ -279,7 +283,7 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                 break;
             }
         }
-        delete actions;
+        delete [] actions;
     }
     return pushed;
 }
