@@ -2539,6 +2539,36 @@ void AuctionHouseBot::Update()
             break;
         }
     }
+    PurgeMailedItems(); // Check if its time to cleanup mailed items
+}
+
+void AuctionHouseBot::PurgeMailedItems()
+{
+    uint32 ahbotGuid = sAuctionBotConfig.GetAHBotId();
+    if (!ahbotGuid)
+    {
+        return;
+    }
+
+    time_t now = time(nullptr);
+    if (now - m_lastMailCleanup < 3600)
+        return;
+    m_lastMailCleanup = now;
+
+    CharacterDatabase.PExecute(
+        "DELETE ii FROM item_instance ii "
+        "INNER JOIN mail_items mi ON ii.guid = mi.item_guid "
+        "INNER JOIN mail m ON mi.mail_id = m.id "
+        "WHERE m.receiver = '%u'", ahbotGuid);
+
+    CharacterDatabase.PExecute(
+        "DELETE mi FROM mail_items mi "
+        "INNER JOIN mail m ON mi.mail_id = m.id "
+        "WHERE m.receiver = '%u'", ahbotGuid);
+
+    CharacterDatabase.PExecute(
+        "DELETE FROM mail WHERE receiver = '%u'", ahbotGuid);
 }
 /** @} */
+
 
