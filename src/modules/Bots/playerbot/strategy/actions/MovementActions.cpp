@@ -58,6 +58,12 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z)
             bot->SetStandState(UNIT_STAND_STATE_STAND);
         }
 
+        if (bot->GetLootGuid())
+        {
+            bot->SetLootGuid(ObjectGuid());
+            bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+        }
+
         if (bot->IsNonMeleeSpellCasted(true))
         {
             bot->CastStop();
