@@ -163,7 +163,7 @@ string RandomPlayerbotFactory::CreateRandomBotName()
     // Query the database to get a random name that is not already used by a character
     result = CharacterDatabase.PQuery("SELECT `n`.`name` FROM `ai_playerbot_names` n "
             "LEFT OUTER JOIN `characters` e ON `e`.`name` = `n`.`name` "
-            "WHERE `e`.`guid` IS NULL AND `n`.`name_id` >= '%u' LIMIT 1", id);
+            "WHERE `e`.`guid` IS NULL AND `n`.`name_id` >= '%u' ORDER BY `n`.`name_id` LIMIT 1", id);
     if (!result)
     {
         // Log an error and return an empty string if no names are left
