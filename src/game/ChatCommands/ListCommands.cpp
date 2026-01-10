@@ -364,6 +364,45 @@ bool ChatHandler::HandleListItemCommand(char* args)
     return true;
 }
 
+bool ChatHandler::HandleListPlayersCommand(char* args)
+{
+    uint32 limit;
+    if (!ExtractOptUInt32(&args, limit, 100))
+    {
+        return false;
+    }
+
+    uint32 count = 0;
+
+    PSendSysMessage("Online Players (Limit %u):", limit);
+    PSendSysMessage("===========================================");
+
+    sObjectAccessor.DoForAllPlayers([&](Player* player)
+    {
+        if (count >= limit)
+        {
+            return;
+        }
+
+        uint32 mapId = player->GetMapId();
+        uint32 zoneId = player->GetZoneId();
+
+        MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
+        AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
+
+        PSendSysMessage("%-20s | Lvl %-2u | Map %u Zone %u (%s)",
+                       player->GetName(),
+                       player->getLevel(),
+                       mapId,
+                       zoneId,
+                       (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "Unknown"));
+
+        count++;
+    });
+
+    return true;
+}
+
 bool ChatHandler::HandleListObjectCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject_entry:go_id|h[name]|h|r

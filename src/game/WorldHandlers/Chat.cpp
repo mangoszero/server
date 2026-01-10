@@ -338,7 +338,8 @@ ChatCommand* ChatHandler::getCommandTable()
         { "creature",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleListCreatureCommand,        "", NULL },
         { "item",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleListItemCommand,            "", NULL },
         { "object",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleListObjectCommand,          "", NULL },
-        { "talents",        SEC_ADMINISTRATOR,  false, &ChatHandler::HandleListTalentsCommand,         "", NULL },
+        { "talents",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleListTalentsCommand,         "", NULL },
+        { "players",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleListPlayersCommand,         "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
