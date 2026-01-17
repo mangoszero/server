@@ -3,6 +3,7 @@
 #include "AddLootAction.h"
 
 #include "../../LootObjectStack.h"
+#include "../../PlayerbotAIConfig.h"
 
 using namespace ai;
 
@@ -68,6 +69,17 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
     if (!loot.IsLootPossible(bot))
     {
         return false;
+    }
+
+    // NC gathering is a problem if you are supposed to be following
+    Player* master = ai->GetMaster();
+    if (master && ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT))
+    {
+        float masterDist = bot->GetDistance(master);
+        if (masterDist > sPlayerbotAIConfig.reactDistance / 2)
+        {
+            return false;
+        }
     }
 
     return AddAllLootAction::AddLoot(guid);
