@@ -590,6 +590,9 @@ class ChatHandler
         bool HandleServerShutDownCommand(char* args);
         bool HandleServerShutDownCancelCommand(char* args);
 
+        bool HandleSelectPlayerCommand(char* args);
+        bool HandleSelectClearCommand(char* args);
+
         bool HandleTeleCommand(char* args);
         bool HandleTeleAddCommand(char* args);
         bool HandleTeleDelCommand(char* args);
@@ -803,6 +806,9 @@ class ChatHandler
         // common global flag
         static bool load_command_table;
         bool sentErrorMessage;
+
+        // Console player selection storage (accountId -> player GUID)
+        static std::map<uint32, ObjectGuid> m_consoleSelectedPlayers;
 };
 
 class CliHandler : public ChatHandler
