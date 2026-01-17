@@ -94,7 +94,7 @@ void PetAI::AttackStart(Unit* u)
         // hope it doesn't start to leak memory without this :-/
         // i_pet->Clear();
         m_creature->UpdateSpeed(MOVE_RUN, false);
-        HandleMovementOnAttackStart(u);
+        // range and action choices handled by UpdateAI
         inCombat = true;
     }
 }
@@ -227,6 +227,7 @@ void PetAI::UpdateAI(const uint32 diff)
         typedef std::vector<std::pair<Unit*, Spell*> > TargetSpellList;
         TargetSpellList targetSpellStore;
 
+        float maxOutOfRangeDistance = 0.0f; // track spells failing due to range
         for (uint8 i = 0; i < m_creature->GetPetAutoSpellSize(); ++i)
         {
             uint32 spellID = m_creature->GetPetAutoSpellOnPos(i);
@@ -292,7 +293,7 @@ void PetAI::UpdateAI(const uint32 diff)
 
             Spell* spell = new Spell(m_creature, spellInfo, false);
 
-            if (inCombat && !m_creature->hasUnitState(UNIT_STAT_FOLLOW) && spell->CanAutoCast(m_creature->getVictim()))
+            if (inCombat && spell->CanAutoCast(m_creature->getVictim()))
             {
                 targetSpellStore.push_back(TargetSpellList::value_type(m_creature->getVictim(), spell));
                 continue;
@@ -317,6 +318,25 @@ void PetAI::UpdateAI(const uint32 diff)
                         break;
                     }
                 }
+
+                //if offensive spell wasn't usable, check WHY
+                if (!spellUsed && inCombat && m_creature->getVictim() && !IsPositiveSpell(spellInfo->Id))
+                {
+                    SpellCastResult failReason = spell->CheckPetCast(m_creature->getVictim());
+                    if (failReason == SPELL_FAILED_OUT_OF_RANGE)
+                    {
+                        SpellRangeEntry const* spellRange = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);
+                        if (spellRange)
+                        {
+                            float spellMaxRange =  GetSpellMaxRange(spellRange);
+                            if (spellMaxRange >= 7.0f)
+                            {
+                                maxOutOfRangeDistance = spellMaxRange - 1.0f;
+                            }
+                        }
+                    }
+                }
+
                 if (!spellUsed)
                 {
                     delete spell;
@@ -358,6 +378,21 @@ void PetAI::UpdateAI(const uint32 diff)
             }
 
             spell->prepare(&targets);
+        }
+        else if (maxOutOfRangeDistance > 0.0f && inCombat && m_creature->getVictim() && (m_attackDistance != maxOutOfRangeDistance))
+        {
+            // spells failed due to range - move closer
+            m_attackDistance = maxOutOfRangeDistance;
+            HandleMovementOnAttackStart(m_creature->getVictim());
+        }
+        else if (inCombat && m_creature->getVictim())
+        {
+            // No castable spells at all - switch to melee
+            if (m_attackDistance > 0.0f || !m_creature->hasUnitState(UNIT_STAT_CHASE))
+            {
+                m_attackDistance = 0.0f;
+                HandleMovementOnAttackStart(m_creature->getVictim());
+            }
         }
 
         // deleted cached Spell objects
