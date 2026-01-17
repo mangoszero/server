@@ -150,6 +150,7 @@ bool Engine::DoNextAction(Unit* unit, int depth)
             if (!action)
             {
                 LogAction("A:%s - UNKNOWN", actionNode->getName().c_str());
+                MultiplyAndPush(actionNode->getAlternatives(), relevance + 0.03, false, event);
             }
             else if (action->isUseful())
             {

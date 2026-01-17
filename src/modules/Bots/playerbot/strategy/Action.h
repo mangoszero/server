@@ -95,9 +95,9 @@ namespace ai
         string getName() { return name; }
 
     public:
-        NextAction** getContinuers() { return NextAction::merge(NextAction::clone(continuers), action->getContinuers()); }
-        NextAction** getAlternatives() { return NextAction::merge(NextAction::clone(alternatives), action->getAlternatives()); }
-        NextAction** getPrerequisites() { return NextAction::merge(NextAction::clone(prerequisites), action->getPrerequisites()); }
+        NextAction** getContinuers() { return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL); }
+        NextAction** getAlternatives() { return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL); }
+        NextAction** getPrerequisites() { return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL); }
 
     private:
         string name;
