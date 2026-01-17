@@ -157,9 +157,8 @@ class ThreatRefStatusChangeEvent : public UnitBaseEvent
         ThreatRefStatusChangeEvent(uint32 pType, HostileReference* pHostileReference, float pValue) : UnitBaseEvent(pType)
         {
             iHostileReference = pHostileReference;
+            // ifValue in union, so don't alter other values
             iFValue = pValue;
-            iIValue = 0;
-            iBValue = false;
             iThreatManager = nullptr;
         }
 
@@ -173,8 +172,7 @@ class ThreatRefStatusChangeEvent : public UnitBaseEvent
         ThreatRefStatusChangeEvent(uint32 pType, HostileReference* pHostileReference, bool pValue) : UnitBaseEvent(pType)
         {
             iHostileReference = pHostileReference;
-            iFValue = 0.0f;
-            iIValue = 0;
+            // iBValue in union, so don't alter other values
             iBValue = pValue;
             iThreatManager = nullptr;
         }
