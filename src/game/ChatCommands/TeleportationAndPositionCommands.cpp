@@ -1514,7 +1514,81 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
         return false;
     }
 
-    // id, or string, or [name] Shift-click form |color|Htele:id|h[name]|h|r
+    // id, or string, coordinates, or [name] Shift-click form |color|Htele:id|h[name]|h|r
+
+    // Try to parse as coordinates first: <mapid> <x> <y> <z> [orientation]
+    uint32 mapId;
+    float x, y, z, o = 0.0f;
+    char* mapStr = ExtractLiteralArg(&args);
+    if (mapStr && ExtractUInt32(&mapStr, mapId))
+    {
+        char* xStr = ExtractLiteralArg(&args);
+        char* yStr = ExtractLiteralArg(&args);
+        char* zStr = ExtractLiteralArg(&args);
+
+        if (xStr && yStr && zStr &&
+            ExtractFloat(&xStr, x) && ExtractFloat(&yStr, y) && ExtractFloat(&zStr, z))
+        {
+            char* oStr = ExtractLiteralArg(&args);
+            if (oStr)
+            {
+                ExtractFloat(&oStr, o);
+            }
+
+            MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
+            if (!mapEntry)
+            {
+                PSendSysMessage("Map %u does not exist.", mapId);
+                SetSentErrorMessage(true);
+                return false;
+            }
+
+            std::string chrNameLink = playerLink(target_name);
+
+            if (target)
+            {
+                // Online player
+                if (HasLowerSecurity(target))
+                {
+                    return false;
+                }
+
+                if (target->IsBeingTeleported())
+                {
+                    PSendSysMessage(LANG_IS_TELEPORTED, chrNameLink.c_str());
+                    SetSentErrorMessage(true);
+                    return false;
+                }
+
+                PSendSysMessage("Teleporting %s to map %u (%s) at coordinates %.2f, %.2f, %.2f",
+                               chrNameLink.c_str(), mapId, mapEntry->name[GetSessionDbcLocale()], x, y, z);
+
+                if (needReportToTarget(target))
+                {
+                    ChatHandler(target).PSendSysMessage(LANG_TELEPORTED_TO_BY, GetNameLink().c_str());
+                }
+
+                return HandleGoHelper(target, mapId, x, y, z, o);
+            }
+            else
+            {
+                // offline player
+                if (HasLowerSecurity(NULL, target_guid))
+                {
+                    return false;
+                }
+
+                PSendSysMessage("Teleporting %s %s to map %u at coordinates %.2f, %.2f, %.2f",
+                               chrNameLink.c_str(), GetMangosString(LANG_OFFLINE), mapId, x, y, z);
+
+                Player::SavePositionInDB(target_guid, mapId, x, y, z, o,
+                                       sTerrainMgr.GetZoneId(mapId, x, y, z));
+                return true;
+            }
+        }
+    }
+
+    // Not coordinates, restore args pointer and try as saved location name
     GameTele const* tele = ExtractGameTeleFromLink(&args);
     if (!tele)
     {
@@ -1566,6 +1640,7 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
 
     return true;
 }
+
 
 
 bool ChatHandler::HandleTeleCommand(char* args)

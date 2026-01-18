@@ -380,6 +380,7 @@ class ChatHandler
         bool HandleListCreatureCommand(char* args);
         bool HandleListItemCommand(char* args);
         bool HandleListObjectCommand(char* args);
+        bool HandleListPlayersCommand(char* args);
         bool HandleListTalentsCommand(char* args);
 
         bool HandleLookupAccountEmailCommand(char* args);

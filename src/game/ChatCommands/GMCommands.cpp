@@ -134,7 +134,27 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     uint32 silv = (money % GOLD) / SILVER;
     uint32 copp = (money % GOLD) % SILVER;
     PSendSysMessage(LANG_PINFO_LEVEL, timeStr.c_str(), level, gold, silv, copp);
+    if (target)
+    {
+        uint32 mapId = target->GetMapId();
+        uint32 zoneId = target->GetZoneId();
+        float posX = target->GetPositionX();
+        float posY = target->GetPositionY();
+        float posZ = target->GetPositionZ();
+        float orientation = target->GetOrientation();
 
+        MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
+        AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
+
+        PSendSysMessage("Location: Map %u (%s), Zone %u (%s)",
+                        mapId,
+                        (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+                        zoneId,
+                        (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
+
+        PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
+                        posX, posY, posZ, orientation);
+    }
     return true;
 }
 
