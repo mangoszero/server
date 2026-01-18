@@ -15,7 +15,19 @@ bool CastSpellAction::isPossible()
     {
         return false;
     }
-
+    uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
+    if (spellId)
+    {
+        const SpellEntry* spellInfo = sSpellStore.LookupEntry(spellId);
+        if (spellInfo && IsAutoRepeatRangedSpell(spellInfo))
+        {
+            Spell* currentAutoRepeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+            if (currentAutoRepeat && currentAutoRepeat->m_spellInfo->Id == spellId)
+            {
+                return false; // Already casting this autorepeat spell
+            }
+        }
+    }
     return ai->CanCastSpell(spell, GetTarget());
 }
 
