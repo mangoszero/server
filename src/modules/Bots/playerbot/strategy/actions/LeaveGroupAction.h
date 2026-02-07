@@ -11,12 +11,10 @@ namespace ai
 
         virtual bool Execute(Event event)
         {
-            if (!bot->GetGroup())
+            if (bot->GetGroup())
             {
-                return false;
+                ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
             }
-
-            ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
 
             WorldPacket p;
             string member = bot->GetName();
@@ -31,6 +29,9 @@ namespace ai
             }
 
             ai->ResetStrategies();
+            ai->ChangeStrategy("-follow master", BOT_STATE_NON_COMBAT);
+            ai->ChangeStrategy("-follow master", BOT_STATE_DEAD);
+            ai->ChangeStrategy("-follow master", BOT_STATE_COMBAT);
             return true;
         }
     };
