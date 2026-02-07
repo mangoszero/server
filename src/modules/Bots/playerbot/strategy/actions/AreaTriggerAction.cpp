@@ -42,7 +42,8 @@ bool ReachAreaTriggerAction::Execute(Event event)
         return true;
     }
 
-    ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+    bool wasFollowing = ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT);
+    ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
 
     MotionMaster &mm = *bot->GetMotionMaster();
     mm.Clear();
@@ -52,7 +53,7 @@ bool ReachAreaTriggerAction::Execute(Event event)
     ai->TellMaster("Wait for me");
     ai->SetNextCheckDelay(delay);
     context->GetValue<LastMovement&>("last movement")->Get().lastAreaTrigger = triggerId;
-
+    context->GetValue<LastMovement&>("last movement")->Get().lastFollowState = wasFollowing;
     return true;
 }
 
@@ -77,7 +78,7 @@ bool AreaTriggerAction::Execute(Event event)
         return true;
     }
 
-    ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+    ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
 
     MotionMaster &mm = *bot->GetMotionMaster();
     mm.Clear();
@@ -86,7 +87,6 @@ bool AreaTriggerAction::Execute(Event event)
     p << triggerId;
     p.rpos(0);
     bot->GetSession()->HandleAreaTriggerOpcode(p);
-
     ai->TellMaster("Hello");
     return true;
 }
