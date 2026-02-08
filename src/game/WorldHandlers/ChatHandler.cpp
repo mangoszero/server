@@ -105,12 +105,15 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
         return;
     }
 
-    //prevent cheating, by sending LANG_UNIVERSAL
-    if ((langDesc->lang_id == LANG_UNIVERSAL && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && GetSecurity() == SEC_PLAYER) ||
-         (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
+    if (type != CHAT_MSG_AFK && type != CHAT_MSG_DND)
     {
-        SendNotification(LANG_NOT_LEARNED_LANGUAGE);
-        return;
+        //prevent cheating, by sending LANG_UNIVERSAL
+        if ((langDesc->lang_id == LANG_UNIVERSAL && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && GetSecurity() == SEC_PLAYER) ||
+             (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
+        {
+            SendNotification(LANG_NOT_LEARNED_LANGUAGE);
+            return;
+        }
     }
 
     if (lang == LANG_ADDON)
