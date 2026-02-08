@@ -16,6 +16,7 @@ namespace ai
             lastMoveToOri = 0;
             lastFollow = NULL;
             lastAreaTrigger = 0; // Initialize lastAreaTrigger
+            lastFollowState = false;
         }
 
         // Copy constructor to copy movement details from another LastMovement object
@@ -29,6 +30,7 @@ namespace ai
             lastMoveToY = other.lastMoveToY;
             lastMoveToZ = other.lastMoveToZ;
             lastMoveToOri = other.lastMoveToOri;
+            lastFollowState = other.lastFollowState;
         }
 
         // Set the last follow unit and reset movement coordinates
@@ -53,6 +55,7 @@ namespace ai
         ObjectGuid taxiMaster; // GUID of the taxi master
         Unit* lastFollow; // Pointer to the last followed unit
         uint32 lastAreaTrigger; // ID of the last area trigger
+        bool lastFollowState; // whether follow was removed temprarily
         float lastMoveToX, lastMoveToY, lastMoveToZ, lastMoveToOri; // Last movement coordinates and orientation
     };
 

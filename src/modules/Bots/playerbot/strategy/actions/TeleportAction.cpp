@@ -29,10 +29,12 @@ bool TeleportAction::Execute(Event event)
             continue;
         }
 
+        LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
+        movement.lastFollowState = ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT);
         ostringstream out; out << "Teleporting using " << goInfo->name;
         ai->TellMasterNoFacing(out.str());
 
-        ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+        ai->ChangeStrategy("-follow master,+stay", BOT_STATE_NON_COMBAT);
 
         Spell *spell = new Spell(bot, pSpellInfo, false);
         SpellCastTargets targets;
