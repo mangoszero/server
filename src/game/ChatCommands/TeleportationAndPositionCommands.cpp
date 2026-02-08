@@ -1515,9 +1515,66 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
         return false;
     }
 
-    // id, or string, coordinates, or [name] Shift-click form |color|Htele:id|h[name]|h|r
+    // id, or string, coordinates, or @playername, or [name] Shift-click form |color|Htele:id|h[name]|h|r
+    if (args && args[0] == '@')
+    {
+        char* destPlayerName = args + 1;
+        if (!destPlayerName || !*destPlayerName)
+        {
+            SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            SetSentErrorMessage(true);
+            return false;
+        }
 
-    // Try to parse as coordinates first: <mapid> <x> <y> <z> [orientation]
+        Player* destPlayer = sObjectMgr.GetPlayer(destPlayerName);
+        if (!destPlayer)
+        {
+            SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            SetSentErrorMessage(true);
+            return false;
+        }
+
+        std::string chrNameLink = playerLink(target_name);
+        std::string destNameLink = playerLink(destPlayer->GetName());
+        if (target)
+        {
+            if (HasLowerSecurity(target))
+            {
+                return false;
+            }
+            if (target->IsBeingTeleported())
+            {
+                PSendSysMessage(LANG_IS_TELEPORTED, chrNameLink.c_str());
+                SetSentErrorMessage(true);
+                return false;
+            }
+            if (target == destPlayer)
+            {
+                SendSysMessage(LANG_CANT_TELEPORT_SELF);
+                SetSentErrorMessage(true);
+                return false;
+            }
+
+            PSendSysMessage(LANG_TELEPORTING_TO, chrNameLink.c_str(), "", destNameLink.c_str());
+            if (needReportToTarget(target))
+            {
+                ChatHandler(target).PSendSysMessage(LANG_TELEPORTED_TO_BY, GetNameLink().c_str());
+            }
+
+            float dx, dy, dz;
+            destPlayer->GetContactPoint(target, dx, dy, dz);
+            return HandleGoHelper(target, destPlayer->GetMapId(), dx, dy, dz, target->GetAngle(destPlayer));
+        }
+        else
+        {
+            // player not online
+            SendSysMessage(LANG_PLAYER_NOT_FOUND);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
+
+    // Try to parse as coordinates: <mapid> <x> <y> <z> [orientation]
     uint32 mapId;
     float x, y, z, o = 0.0f;
     char* mapStr = ExtractLiteralArg(&args);
