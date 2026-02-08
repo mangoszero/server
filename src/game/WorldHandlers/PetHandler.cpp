@@ -193,6 +193,11 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
             switch (spellid)
             {
                 case REACT_PASSIVE:                         // passive
+                    if (pet->getVictim())
+                    {
+                        pet->AttackStop();
+                    }
+                    pet->GetMotionMaster()->MoveFollow(_player, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
                 case REACT_DEFENSIVE:                       // recovery
                 case REACT_AGGRESSIVE:                      // activete
                     charmInfo->SetReactState(ReactStates(spellid));
