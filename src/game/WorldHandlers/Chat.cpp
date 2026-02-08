@@ -685,7 +685,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "delete",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleTicketDeleteCommand,         "", NULL },
         { "info",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketInfoCommand,           "", NULL },
         { "list",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketListCommand,           "", NULL },
-        { "meaccept",       SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketMeAcceptCommand,       "", NULL },
+        { "meaccept",       SEC_GAMEMASTER,     false, &ChatHandler::HandleTicketMeAcceptCommand,       "", NULL },
         { "onlinelist",     SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketOnlineListCommand,     "", NULL },
         { "respond",        SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketRespondCommand,        "", NULL },
         { "show",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleTicketShowCommand,           "", NULL },

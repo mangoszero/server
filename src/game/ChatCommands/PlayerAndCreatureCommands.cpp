@@ -98,9 +98,8 @@ bool ChatHandler::HandleDamageCommand(char* args)
     }
 
     Unit* target = getSelectedUnit();
-    Player* player = m_session->GetPlayer();
 
-    if (!target || !player->GetSelectionGuid())
+    if (!target)
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         SetSentErrorMessage(true);
@@ -125,13 +124,24 @@ bool ChatHandler::HandleDamageCommand(char* args)
 
     uint32 damage = damage_int;
 
+    // For console, use target as damage dealer; for in-game, use session player
+    Player* player = m_session ? m_session->GetPlayer() : nullptr;
+
     // flat melee damage without resistance/etc reduction
     if (!*args)
     {
-        player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-        if (target != player)
+        if (player)
         {
-            player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_NORMAL, 0);
+            player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+            if (target != player)
+            {
+                player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, SPELL_SCHOOL_MASK_NORMAL, damage, 0, 0, VICTIMSTATE_NORMAL, 0);
+            }
+        }
+        else
+        {
+            // Console: target damages itself (environmental-style)
+            target->DealDamage(target, damage, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
         }
         return true;
     }
@@ -149,7 +159,7 @@ bool ChatHandler::HandleDamageCommand(char* args)
 
     SpellSchoolMask schoolmask = GetSchoolMask(school);
 
-    if (schoolmask & SPELL_SCHOOL_MASK_NORMAL)
+    if (player && (schoolmask & SPELL_SCHOOL_MASK_NORMAL))
     {
         damage = player->CalcArmorReducedDamage(target, damage);
     }
@@ -160,40 +170,57 @@ bool ChatHandler::HandleDamageCommand(char* args)
         uint32 absorb = 0;
         uint32 resist = 0;
 
-        target->CalculateDamageAbsorbAndResist(player, schoolmask, SPELL_DIRECT_DAMAGE, damage, &absorb, &resist);
-
-        if (damage <= absorb + resist)
+        if (player)
         {
-            return true;
+            target->CalculateDamageAbsorbAndResist(player, schoolmask, SPELL_DIRECT_DAMAGE, damage, &absorb, &resist);
+
+            if (damage <= absorb + resist)
+            {
+                return true;
+            }
+
+            damage -= absorb + resist;
+
+            player->DealDamageMods(target, damage, &absorb);
+            player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
+            player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, schoolmask, damage, absorb, resist, VICTIMSTATE_NORMAL, 0);
         }
-
-        damage -= absorb + resist;
-
-        player->DealDamageMods(target, damage, &absorb);
-        player->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
-        player->SendAttackStateUpdate(HITINFO_NORMALSWING2, target, schoolmask, damage, absorb, resist, VICTIMSTATE_NORMAL, 0);
+        else
+        {
+            // Console: simplified damage without player-specific calculations
+            target->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
+        }
         return true;
     }
 
     // non-melee damage
-
-    // number or [name] Shift-click form |color|Hspell:spell_id|h[name]|h|r or Htalent form
     uint32 spellid = ExtractSpellIdFromLink(&args);
     if (!spellid || !sSpellStore.LookupEntry(spellid))
     {
         return false;
     }
 
-    player->SpellNonMeleeDamageLog(target, spellid, damage);
+    if (player)
+    {
+        player->SpellNonMeleeDamageLog(target, spellid, damage);
+    }
+    else
+    {
+        // Console: spell damage not supported without a caster
+        SendSysMessage("Spell damage requires an in-game player.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
     return true;
 }
 
+
 bool ChatHandler::HandleDieCommand(char* /*args*/)
 {
-    Player* player = m_session->GetPlayer();
     Unit* target = getSelectedUnit();
 
-    if (!target || !player->GetSelectionGuid())
+    if (!target)
     {
         SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
         SetSentErrorMessage(true);
@@ -210,7 +237,16 @@ bool ChatHandler::HandleDieCommand(char* /*args*/)
 
     if (target->IsAlive())
     {
-        player->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        if (m_session)
+        {
+            // In-game: player deals the damage
+            m_session->GetPlayer()->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        }
+        else
+        {
+            // Console: use environmental/direct kill
+            target->DealDamage(target, target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+        }
     }
 
     return true;
