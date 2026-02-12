@@ -314,6 +314,33 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     data << mover->GetPackGUID();             // write guid
     movementInfo.Write(data);                               // write data
     mover->SendMessageToSetExcept(&data, _player);
+    // Fix for seeing movement by fellow transport passengers
+    if (plMover && plMover->GetTransport())
+    {
+        Transport* transport = plMover->GetTransport();
+        float visibilityDist = mover->GetMap()->GetVisibilityDistance();
+        for (UnitSet::const_iterator itr = transport->GetPassengers().begin();
+             itr != transport->GetPassengers().end(); ++itr)
+        {
+            if (*itr == mover || (*itr)->GetTypeId() != TYPEID_PLAYER)
+            {
+                continue;
+            }
+            Player* passenger = static_cast<Player*>(*itr);
+            if (passenger == _player)
+            {
+                continue;
+            }
+            if (!mover->IsWithinDist(passenger, visibilityDist, false))
+            {
+                if (WorldSession* session = passenger->GetSession())
+                {
+                    session->SendPacket(&data);
+                }
+            }
+        }
+    }
+
 }
 
 void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
