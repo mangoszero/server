@@ -10,6 +10,7 @@ namespace ai
         MovementAction(PlayerbotAI* ai, string name) : Action(ai, name)
         {
             bot = ai->GetBot();
+            transportBoardingDelayTime = 0;
         }
 
     protected:
@@ -20,6 +21,8 @@ namespace ai
         float GetFollowAngle();
         bool Follow(Unit* target, float distance = sPlayerbotAIConfig.followDistance);
         bool Follow(Unit* target, float distance, float angle);
+        bool FollowOnTransport(Unit* target, Player* master);
+        bool FollowOffTransport(Unit* target, Player* master);
         void WaitForReach(float distance);
         bool IsMovingAllowed(Unit* target);
         bool IsMovingAllowed(uint32 mapId, float x, float y, float z);
@@ -28,6 +31,7 @@ namespace ai
 
     protected:
         Player* bot;
+        uint32 transportBoardingDelayTime;
     };
 
     class FleeAction : public MovementAction
