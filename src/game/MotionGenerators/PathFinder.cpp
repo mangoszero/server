@@ -254,7 +254,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: farFromPoly distToStartPoly=%.3f distToEndPoly=%.3f for %s\n",
                          distToStartPoly, distToEndPoly, m_sourceUnit->GetGuidStr().c_str());
 
-        bool buildShotrcut = false;
+        bool buildShortcut = false;
         if (m_sourceUnit->GetTypeId() == TYPEID_UNIT)
         {
             const Creature* owner = m_sourceUnit->ToCreature();
@@ -265,7 +265,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
                 DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: underWater case for %s\n", m_sourceUnit->GetGuidStr().c_str());
                 if (owner->CanSwim())
                 {
-                    buildShotrcut = true;
+                    buildShortcut = true;
                 }
             }
             else
@@ -273,12 +273,12 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
                 DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: flying case for %s\n", m_sourceUnit->GetGuidStr().c_str());
                 if (owner->CanFly())
                 {
-                    buildShotrcut = true;
+                    buildShortcut = true;
                 }
             }
         }
 
-        if (buildShotrcut)
+        if (buildShortcut)
         {
             BuildShortcut();
             m_type = PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH);
@@ -460,6 +460,21 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     if (m_pathPolyRefs[m_polyLength - 1] == endPoly && !(m_type & PATHFIND_INCOMPLETE))
     {
         m_type = PATHFIND_NORMAL;
+    }
+    else // case for playerbots navigating polyless gaps in water nav
+    if (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(startPos.x, startPos.y, startPos.z) &&
+        dtVdist(startPoint, endPoint) < 25.0f &&
+        m_sourceUnit->GetTypeId() == TYPEID_PLAYER &&
+        m_sourceUnit->GetMap()->IsInLineOfSight(startPos.x, startPos.y, startPos.z + 2.0f, endPos.x, endPos.y, endPos.z + 2.0f))
+
+    {
+        Player* player = (Player*)m_sourceUnit;
+        if (player->GetPlayerbotAI())
+        {
+            BuildShortcut();
+            m_type = PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH);
+            return;
+        }
     }
     else
     {
