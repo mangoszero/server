@@ -7,6 +7,9 @@
 #include "../../FleeManager.h"
 #include "../../LootObjectStack.h"
 #include "../../PlayerbotAIConfig.h"
+#include "WorldHandlers/Transports.h"
+#include "movement/MoveSplineInit.h"
+#include "movement/MoveSpline.h"
 
 using namespace ai;
 
@@ -180,6 +183,7 @@ bool MovementAction::IsMovingAllowed()
     if (bot->IsFrozen() || bot->IsPolymorphed() ||
             (bot->IsDead() && !bot->GetCorpse()) ||
             bot->IsBeingTeleported() ||
+            bot->GetTransport() ||
             bot->IsInRoots() ||
             bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || bot->IsCharmed() ||
             bot->HasAuraType(SPELL_AURA_MOD_STUN) || bot->IsTaxiFlying())
@@ -187,6 +191,107 @@ bool MovementAction::IsMovingAllowed()
 
     MotionMaster &mm = *bot->GetMotionMaster();
     return mm.GetCurrentMovementGeneratorType() != FLIGHT_MOTION_TYPE;
+}
+
+bool MovementAction::FollowOnTransport(Unit* target, Player* master)
+{
+    float distanceToMaster = bot->GetDistance(master);
+    bool outOfRange = distanceToMaster > sPlayerbotAIConfig.sightDistance;
+    uint32 currentTime = time(0);
+    if (outOfRange)
+    {
+        bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+        transportBoardingDelayTime = 0;
+        return false;
+    }
+
+    bool isApproaching = transportBoardingDelayTime > 0;
+    bool approachTimedOut = isApproaching && (currentTime - transportBoardingDelayTime) > 1;
+    // Determine if we should complete boarding now
+    if (isApproaching && approachTimedOut)
+    {
+        Transport* transport = master->GetTransport();
+        MotionMaster &mm = *bot->GetMotionMaster();
+        // Complete boarding - snap to master and attach to transport
+        transportBoardingDelayTime = 0;
+        bot->clearUnitState(UNIT_STAT_IGNORE_PATHFINDING);
+        mm.Clear();
+        bot->movespline->_Interrupt();
+        bot->NearTeleportTo(master->GetPositionX(),
+                            master->GetPositionY(),
+                            master->GetPositionZ(), bot->GetOrientation());
+        bot->SetTransport(transport);
+        transport->AddPassenger(bot);
+        bot->m_movementInfo.SetTransportData(
+            transport->GetObjectGuid(),
+            master->m_movementInfo.GetTransportPos()->x,
+            master->m_movementInfo.GetTransportPos()->y,
+            master->m_movementInfo.GetTransportPos()->z,
+            bot->GetOrientation(),
+            getMSTime()
+        );
+        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+
+        WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
+        data << bot->GetPackGUID();
+        bot->m_movementInfo.Write(data);
+        bot->SendMessageToSet(&data, false);
+        AI_VALUE(LastMovement&, "last movement").Set(target);
+        return true;
+
+    }
+
+    if (distanceToMaster <= sPlayerbotAIConfig.sightDistance)
+    {
+        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+        // Walk toward master in a straight line, ignoring map geometry
+        if(!isApproaching) // set the timeout
+        {
+            transportBoardingDelayTime = currentTime;
+        }
+        Movement::MoveSplineInit init(*bot);
+        init.MoveTo(master->GetPositionX(), master->GetPositionY(), master->GetPositionZ());
+        init.SetWalk(false);
+        init.Launch();
+        AI_VALUE(LastMovement&, "last movement").Set(target);
+        return true;
+    }
+}
+
+bool MovementAction::FollowOffTransport(Unit* target, Player* master)
+{
+    Transport* transport = master->GetTransport();
+    Transport* botTransport = bot->GetTransport();
+    float distanceToMaster = bot->GetDistance(master);
+    bool outOfRange = distanceToMaster > sPlayerbotAIConfig.sightDistance;
+    if(!transport || transport != botTransport) // master has left the transport
+    {
+        ObjectGuid botGuid = bot->GetObjectGuid();
+        uint32 currentTime = time(0);
+        // Delay elapsed or master too far - disembark now
+        transportBoardingDelayTime = 0;
+        bot->TradeCancel(false);
+        botTransport->RemovePassenger(bot);
+        bot->m_movementInfo.ClearTransportData();
+        bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+        bot->TeleportTo(master->GetMapId(),
+                       master->GetPositionX(),
+                       master->GetPositionY(),
+                       master->GetPositionZ(),
+                       bot->GetOrientation(),
+                       TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
+        WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
+        data << bot->GetPackGUID();
+        bot->m_movementInfo.Write(data);
+        bot->SendMessageToSet(&data, false);
+        AI_VALUE(LastMovement&, "last movement").Set(target);
+    }
+    else
+    {
+        // Bot and master on same transport - clear any stale delay
+        transportBoardingDelayTime = 0;
+    }
+    return true;
 }
 
 bool MovementAction::Follow(Unit* target, float distance)
@@ -198,10 +303,21 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 {
     MotionMaster &mm = *bot->GetMotionMaster();
 
-    if (!target)
+    if (!target || bot->IsBeingTeleported())
     {
         return false;
     }
+
+    Player* master = target->ToPlayer();
+    if (master  && bot->GetTransport() != master->GetTransport())
+    {
+        if(bot->GetTransport())
+            return FollowOffTransport(target, master);
+        else
+        if (master->GetTransport()) // master on transport
+            return FollowOnTransport(target, master);
+    }
+
 
     if (bot->GetDistance2d(target->GetPositionX(), target->GetPositionY()) <= sPlayerbotAIConfig.sightDistance &&
             abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
