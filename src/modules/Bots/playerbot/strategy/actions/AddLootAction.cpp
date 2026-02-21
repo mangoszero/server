@@ -71,16 +71,27 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
         return false;
     }
 
+    return AddAllLootAction::AddLoot(guid);
+}
+
+bool AddGatheringLootAction::isUseful()
+{
+    // Don't gather in dungeons or raids
+    if (bot->GetMap()->IsDungeon())
+    {
+        return false;
+    }
+
     // NC gathering is a problem if you are supposed to be following
     Player* master = ai->GetMaster();
-    if (master && ai->HasStrategy("follow master", BOT_STATE_NON_COMBAT))
+    if (master && bot->GetGroup())
     {
         float masterDist = bot->GetDistance(master);
-        if (masterDist > sPlayerbotAIConfig.reactDistance / 2)
+        if (masterDist > sPlayerbotAIConfig.reactDistance)
         {
             return false;
         }
     }
 
-    return AddAllLootAction::AddLoot(guid);
+    return AddAllLootAction::isUseful();
 }
