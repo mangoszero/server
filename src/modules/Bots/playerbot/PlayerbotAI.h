@@ -179,6 +179,22 @@ public:
     static bool IsOpposing(uint8 race1, uint8 race2);
     PlayerbotSecurity* GetSecurity() { return &security; }
 
+    bool IsEating() const
+    {
+        return m_eatingUntil && time(0) <= m_eatingUntil
+            && bot->GetHealth() < bot->GetMaxHealth();
+    }
+    bool IsDrinking() const
+    {
+        if (!m_drinkingUntil) return false;
+        time_t now = time(0);
+        uint32 mana = bot->GetPower(POWER_MANA);
+        uint32 maxMana = bot->GetMaxPower(POWER_MANA);
+        return now <= m_drinkingUntil && mana < maxMana;
+    }
+    void SetEating() { m_eatingUntil = time(0) + 30; }
+    void SetDrinking() { m_drinkingUntil = time(0) + 30; }
+
 protected:
     Player* bot;
     Player* master;
@@ -194,5 +210,7 @@ protected:
     PacketHandlingHelper masterOutgoingPacketHandlers;
     CompositeChatFilter chatFilter;
     PlayerbotSecurity security;
+    time_t m_eatingUntil;
+    time_t m_drinkingUntil;
 };
 

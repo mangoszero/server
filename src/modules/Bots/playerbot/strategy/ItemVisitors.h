@@ -279,4 +279,38 @@ namespace ai
     public:
         map<uint32, int> count;
     };
+
+    class FindFoodVisitor : public FindUsableItemVisitor
+    {
+    public:
+        FindFoodVisitor(Player* bot, uint32 spellCategory) : FindUsableItemVisitor(bot)
+        {
+            this->spellCategory = spellCategory;
+        }
+
+        virtual bool Accept(const ItemPrototype* proto)
+        {
+            return proto->Class == ITEM_CLASS_CONSUMABLE &&
+                   proto->Spells[0].SpellCategory == spellCategory;
+        }
+    private:
+        uint32 spellCategory;
+    };
+
+    class FindConjuredFoodVisitor : public FindUsableItemVisitor
+    {
+    public:
+        FindConjuredFoodVisitor(Player* bot, uint32 spellCategory) : FindUsableItemVisitor(bot)
+        {
+            this->spellCategory = spellCategory;
+        }
+
+        virtual bool Accept(const ItemPrototype* proto)
+        {
+            return proto->IsConjuredConsumable() &&
+                  proto->Spells[0].SpellCategory == spellCategory;
+        }
+    private:
+        uint32 spellCategory;
+    };
 }

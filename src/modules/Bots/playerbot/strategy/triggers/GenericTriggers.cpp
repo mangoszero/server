@@ -16,6 +16,11 @@ bool MediumManaTrigger::IsActive()
     return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana;
 }
 
+bool ThirstyTrigger::IsActive()
+{
+    return ai->IsDrinking() ||
+        (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.thirstyMana);
+}
 
 bool RageAvailable::IsActive()
 {

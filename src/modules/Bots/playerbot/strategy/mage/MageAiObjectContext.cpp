@@ -99,6 +99,9 @@ namespace ai
                 creators["missile barrage"] = &TriggerFactoryInternal::missile_barrage;
                 creators["arcane blast"] = &TriggerFactoryInternal::arcane_blast;
                 creators["counterspell on enemy healer"] = &TriggerFactoryInternal::counterspell_enemy_healer;
+                creators["no mana gem"] = &TriggerFactoryInternal::no_mana_gem;
+                creators["party member needs food"] = &TriggerFactoryInternal::party_member_needs_food;
+                creators["party member needs water"] = &TriggerFactoryInternal::party_member_needs_water;
 
             }
 
@@ -120,6 +123,9 @@ namespace ai
             static Trigger* missile_barrage(PlayerbotAI* ai) { return new MissileBarrageTrigger(ai); }
             static Trigger* arcane_blast(PlayerbotAI* ai) { return new ArcaneBlastTrigger(ai); }
             static Trigger* counterspell_enemy_healer(PlayerbotAI* ai) { return new CounterspellEnemyHealerTrigger(ai); }
+            static Trigger* no_mana_gem(PlayerbotAI* ai) { return new NoManaGemTrigger(ai); }
+            static Trigger* party_member_needs_food(PlayerbotAI* ai) { return new PartyMemberNeedsFoodTrigger(ai); }
+            static Trigger* party_member_needs_water(PlayerbotAI* ai) { return new PartyMemberNeedsWaterTrigger(ai); }
         };
     };
 };
@@ -141,8 +147,11 @@ namespace ai
                 creators["frost nova"] = &AiObjectContextInternal::frost_nova;
                 creators["arcane intellect"] = &AiObjectContextInternal::arcane_intellect;
                 creators["arcane intellect on party"] = &AiObjectContextInternal::arcane_intellect_on_party;
-                //creators["conjure water"] = &AiObjectContextInternal::conjure_water;
-                //creators["conjure food"] = &AiObjectContextInternal::conjure_food;
+                creators["conjure water"] = &AiObjectContextInternal::conjure_water;
+                creators["conjure food"] = &AiObjectContextInternal::conjure_food;
+                creators["conjure mana gem"] = &AiObjectContextInternal::conjure_mana_gem;
+                creators["give conjured food"] = &AiObjectContextInternal::give_conjured_food;
+                creators["give conjured water"] = &AiObjectContextInternal::give_conjured_water;
                 creators["mage armor"] = &AiObjectContextInternal::mage_armor;
                 creators["ice armor"] = &AiObjectContextInternal::ice_armor;
                 creators["frost armor"] = &AiObjectContextInternal::frost_armor;
@@ -170,8 +179,11 @@ namespace ai
             static Action* frost_nova(PlayerbotAI* ai) { return new CastFrostNovaAction(ai); }
             static Action* arcane_intellect(PlayerbotAI* ai) { return new CastArcaneIntellectAction(ai); }
             static Action* arcane_intellect_on_party(PlayerbotAI* ai) { return new CastArcaneIntellectOnPartyAction(ai); }
-            //static Action* conjure_water(PlayerbotAI* ai) { return new CastConjureWaterAction(ai); }
-            //static Action* conjure_food(PlayerbotAI* ai) { return new CastConjureFoodAction(ai); }
+            static Action* conjure_water(PlayerbotAI* ai) { return new CastConjureWaterAction(ai); }
+            static Action* conjure_food(PlayerbotAI* ai) { return new CastConjureFoodAction(ai); }
+            static Action* conjure_mana_gem(PlayerbotAI* ai) { return new CastConjureManaGemAction(ai); }
+            static Action* give_conjured_food(PlayerbotAI* ai) { return new GiveConjuredFoodAction(ai); }
+            static Action* give_conjured_water(PlayerbotAI* ai) { return new GiveConjuredWaterAction(ai); }
             static Action* mage_armor(PlayerbotAI* ai) { return new CastMageArmorAction(ai); }
             static Action* ice_armor(PlayerbotAI* ai) { return new CastIceArmorAction(ai); }
             static Action* frost_armor(PlayerbotAI* ai) { return new CastFrostArmorAction(ai); }

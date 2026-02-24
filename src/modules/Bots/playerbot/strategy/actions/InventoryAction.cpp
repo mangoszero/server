@@ -42,24 +42,43 @@ private:
     uint32 effectId;
 };
 
-class FindFoodVisitor : public FindUsableItemVisitor
+class FindManaGemVisitor : public FindUsableItemVisitor
 {
 public:
-    FindFoodVisitor(Player* bot, uint32 spellCategory) : FindUsableItemVisitor(bot)
-    {
-        this->spellCategory = spellCategory;
-    }
+    FindManaGemVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
 
     virtual bool Accept(const ItemPrototype* proto)
     {
-        return proto->Class == ITEM_CLASS_CONSUMABLE &&
-            proto->SubClass == ITEM_SUBCLASS_FOOD &&
-            proto->Spells[0].SpellCategory == spellCategory;
-    }
+        if (proto->Class == ITEM_CLASS_CONSUMABLE &&
+            (proto->Flags & ITEM_FLAG_CONJURED) &&
+            proto->SubClass != ITEM_SUBCLASS_POTION)
+        {
+            for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
+            {
+                if (!proto->Spells[j].SpellId)
+                {
+                    continue;
+                }
 
-private:
-    uint32 spellCategory;
+                const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
+                if (!spellInfo)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (spellInfo->Effect[i] == SPELL_EFFECT_ENERGIZE)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 };
+
 
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
 {
@@ -148,6 +167,28 @@ bool compare_items_by_level(const Item* item1, const Item* item2)
     return compare_items(item1->GetProto(), item2->GetProto());
 }
 
+
+Item* InventoryAction::FindPlayerItem(Player *bot, FindItemVisitor *visitor)
+{
+    for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
+        if (Item* pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            visitor->Visit(pItem);
+    }
+    for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
+        if (Bag* pBag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
+            for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
+                if (Item* pItem = pBag->GetItemByPos(j))
+                    visitor->Visit(pItem);
+            }
+        }
+    }
+    return visitor->GetResult().empty() ? NULL : visitor->GetResult().front();
+}
+
 void InventoryAction::TellItems(map<uint32, int> itemMap)
 {
     list<ItemPrototype const*> items;
@@ -232,14 +273,28 @@ list<Item*> InventoryAction::parseItems(string text)
 
     if (text == "food")
     {
-        FindFoodVisitor visitor(bot, 11);
+        FindFoodVisitor visitor(bot, SPELLCATEGORY_FOOD);
         IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
         found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
     }
 
     if (text == "drink")
     {
-        FindFoodVisitor visitor(bot, 59);
+        FindFoodVisitor visitor(bot, SPELLCATEGORY_DRINK);
+        IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+        found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
+    }
+
+    if (text == "conjured food")
+    {
+        FindConjuredFoodVisitor visitor(bot, SPELLCATEGORY_FOOD);
+        IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+        found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
+    }
+
+    if (text == "conjured drink")
+    {
+        FindConjuredFoodVisitor visitor(bot, SPELLCATEGORY_DRINK);
         IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
         found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
     }
@@ -254,6 +309,13 @@ list<Item*> InventoryAction::parseItems(string text)
     if (text == "healing potion")
     {
         FindPotionVisitor visitor(bot, SPELL_EFFECT_HEAL);
+        IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+        found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
+    }
+
+    if (text == "mana gem")
+    {
+        FindManaGemVisitor visitor(bot);
         IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
         found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
     }

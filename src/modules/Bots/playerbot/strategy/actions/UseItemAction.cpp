@@ -242,17 +242,6 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         return false;
     }
 
-    if (item->GetProto()->Class == ITEM_CLASS_CONSUMABLE && item->GetProto()->SubClass == ITEM_SUBCLASS_FOOD)
-    {
-        if (bot->IsInCombat())
-        {
-            return false;
-        }
-
-        ai->InterruptSpell();
-        ai->SetNextCheckDelay(30000);
-    }
-
     ai->TellMasterNoFacing(out.str());
     bot->GetSession()->QueuePacket(packet);
     return true;
