@@ -36,8 +36,10 @@ PlayerbotAIConfig::PlayerbotAIConfig()
       lowHealth(0),
       mediumHealth(0),
       almostFullHealth(0),
+      hungryHealth(0),
       lowMana(0),
       mediumMana(0),
+      thirstyMana(0),
       randomBotAutologin(false),
       randomBotTeleportDistance(0),
       randomGearLoweringChance(0.0f),
@@ -142,8 +144,10 @@ bool PlayerbotAIConfig::Initialize()
     lowHealth = config.GetIntDefault("AiPlayerbot.LowHealth", 50);
     mediumHealth = config.GetIntDefault("AiPlayerbot.MediumHealth", 70);
     almostFullHealth = config.GetIntDefault("AiPlayerbot.AlmostFullHealth", 85);
+    hungryHealth = config.GetIntDefault("AiPlayerbot.HungryHealth", 65);
     lowMana = config.GetIntDefault("AiPlayerbot.LowMana", 15);
     mediumMana = config.GetIntDefault("AiPlayerbot.MediumMana", 40);
+    thirstyMana = config.GetIntDefault("AiPlayerbot.ThirstyMana", 65);
 
     randomGearLoweringChance = config.GetFloatDefault("AiPlayerbot.RandomGearLoweringChance", 0.15f);
     randomBotMaxLevelChance = config.GetFloatDefault("AiPlayerbot.RandomBotMaxLevelChance", 0.4f);

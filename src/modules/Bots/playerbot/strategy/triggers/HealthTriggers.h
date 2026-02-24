@@ -60,6 +60,18 @@ namespace ai
             LowHealthTrigger(ai, "medium health", sPlayerbotAIConfig.mediumHealth, sPlayerbotAIConfig.lowHealth) {}
     };
 
+    class HungryTrigger : public Trigger
+    {
+    public:
+        HungryTrigger(PlayerbotAI* ai) : Trigger(ai, "hungry") {}
+
+        virtual bool IsActive()
+        {
+            return ai->IsEating() ||
+                AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.hungryHealth;
+        }
+    };
+
     class AlmostFullHealthTrigger : public LowHealthTrigger
     {
     public:

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../actions/GenericActions.h"
+#include "../actions/InventoryAction.h"
+#include "../actions/UseItemAction.h"
 
 namespace ai
 {
@@ -92,18 +94,34 @@ namespace ai
         CastRemoveCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "remove curse", DISPEL_CURSE) {}
     };
 
-    // Temp disable conjuration
-    /*class CastConjureFoodAction : public CastBuffSpellAction
+    class CastConjureFoodAction : public CastBuffSpellAction
     {
     public:
         CastConjureFoodAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "conjure food") {}
+        virtual string GetTargetName() { return "self target"; }
+        virtual bool isUseful() { return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty(); }
     };
 
     class CastConjureWaterAction : public CastBuffSpellAction
     {
     public:
         CastConjureWaterAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "conjure water") {}
-    };*/
+        virtual string GetTargetName() { return "self target"; }
+        virtual bool isUseful() { return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty(); }
+    };
+
+    class CastConjureManaGemAction : public CastSpellAction
+    {
+    public:
+        CastConjureManaGemAction(PlayerbotAI* ai) : CastSpellAction(ai, "conjure mana gem"), m_bestSpellId(0) {}
+        virtual string GetTargetName() { return "self target"; }
+        virtual bool isUseful() { return AI_VALUE2(uint8, "item count", "mana gem") == 0; }
+        virtual bool Execute(Event event);
+        virtual bool isPossible();
+    private:
+        uint32 FindBestConjureManaSpell();
+        uint32 m_bestSpellId;
+    };
 
     class CastIceBlockAction : public CastBuffSpellAction
     {
@@ -153,5 +171,22 @@ namespace ai
     {
     public:
         CastCounterspellOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "counterspell") {}
+    };
+
+
+    class GiveConjuredFoodAction : public InventoryAction
+    {
+    public:
+        GiveConjuredFoodAction(PlayerbotAI* ai) : InventoryAction(ai, "give conjured food") {}
+        virtual bool Execute(Event event);
+        virtual bool isUseful();
+    };
+
+    class GiveConjuredWaterAction : public InventoryAction
+    {
+    public:
+        GiveConjuredWaterAction(PlayerbotAI* ai) : InventoryAction(ai, "give conjured water") {}
+        virtual bool Execute(Event event);
+        virtual bool isUseful();
     };
 }

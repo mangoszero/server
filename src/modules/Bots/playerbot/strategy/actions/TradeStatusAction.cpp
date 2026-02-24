@@ -1,6 +1,7 @@
 #include "botpch.h"
 #include "../../playerbot.h"
 #include "TradeStatusAction.h"
+#include "UseItemAction.h"
 
 #include "../ItemVisitors.h"
 #include "../../PlayerbotAIConfig.h"

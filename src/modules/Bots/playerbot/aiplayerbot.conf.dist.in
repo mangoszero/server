@@ -93,8 +93,10 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.LowHealth = 45
 #AiPlayerbot.MediumHealth = 65
 #AiPlayerbot.AlmostFullHealth = 85
+#AiPlayerbot.HungryHealth = 65
 #AiPlayerbot.LowMana = 15
 #AiPlayerbot.MediumMana = 40
+#AiPlayerbot.ThirstyMana = 65
 
 # Enable random bot system
 #AiPlayerbot.RandomBotAutologin = 1

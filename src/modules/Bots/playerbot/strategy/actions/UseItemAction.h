@@ -12,8 +12,10 @@ namespace ai
         virtual bool Execute(Event event);
         virtual bool isPossible();
 
-    private:
+    protected:
         bool UseItemAuto(Item* item);
+
+    private:
         bool UseItemOnGameObject(Item* item, ObjectGuid go);
         bool UseItemOnItem(Item* item, Item* itemTarget);
         bool UseItem(Item* item, ObjectGuid go, Item* itemTarget);
@@ -43,5 +45,12 @@ namespace ai
     public:
         UseManaPotion(PlayerbotAI* ai) : UseItemAction(ai, "mana potion") {}
         virtual bool isUseful() { return AI_VALUE2(bool, "combat", "self target"); }
+        virtual bool Execute(Event event)
+        {
+            list<Item*> gems = AI_VALUE2(list<Item*>, "inventory items", "mana gem");
+            if (!gems.empty())
+                return UseItemAuto(*gems.begin());
+            return UseItemAction::Execute(event);
+        }
     };
 }
