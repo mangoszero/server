@@ -18,9 +18,9 @@ Engine::Engine(PlayerbotAI* ai, AiObjectContext *factory) : PlayerbotAIAware(ai)
 bool ActionExecutionListeners::Before(Action* action, Event event)
 {
     bool result = true;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result &= (*i)->Before(action, event);
+        result &= listener->Before(action, event);
     }
     return result;
 }
@@ -28,9 +28,9 @@ bool ActionExecutionListeners::Before(Action* action, Event event)
 // Executes actions after the main action
 void ActionExecutionListeners::After(Action* action, bool executed, Event event)
 {
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        (*i)->After(action, executed, event);
+        listener->After(action, executed, event);
     }
 }
 
@@ -38,9 +38,9 @@ void ActionExecutionListeners::After(Action* action, bool executed, Event event)
 bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Event event)
 {
     bool result = executed;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result = (*i)->OverrideResult(action, result, event);
+        result = listener->OverrideResult(action, result, event);
     }
     return result;
 }
@@ -49,9 +49,9 @@ bool ActionExecutionListeners::OverrideResult(Action* action, bool executed, Eve
 bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
 {
     bool result = true;
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        result &= (*i)->AllowExecution(action, event);
+        result &= listener->AllowExecution(action, event);
     }
     return result;
 }
@@ -59,9 +59,9 @@ bool ActionExecutionListeners::AllowExecution(Action* action, Event event)
 // Destructor for ActionExecutionListeners
 ActionExecutionListeners::~ActionExecutionListeners()
 {
-    for (list<ActionExecutionListener*>::iterator i = listeners.begin(); i!=listeners.end(); i++)
+    for (auto listener : listeners)
     {
-        delete *i;
+        delete listener;
     }
     listeners.clear();
 }
@@ -534,7 +534,22 @@ bool Engine::ListenAndExecute(Action* action, Event event)
 
     actionExecuted = actionExecutionListeners.OverrideResult(action, actionExecuted, event);
     actionExecutionListeners.After(action, actionExecuted, event);
+
     return actionExecuted;
+}
+
+/**
+ * Get list of strategy names
+ * @return list<string> List of strategy names
+ */
+list<string> Engine::GetStrategies()
+{
+    list<string> result;
+    for (std::map<string, Strategy*>::iterator i = strategies.begin(); i != strategies.end(); ++i)
+    {
+        result.push_back(i->first);
+    }
+    return result;
 }
 
 // Logs an action

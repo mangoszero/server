@@ -5,6 +5,6 @@
 using namespace ai;
 
 PositionValue::PositionValue(PlayerbotAI* ai)
-    : ManualSetValue<ai::Position&>(ai, position), Qualified()
+    : ManualSetValue<ai::PositionMap&>(ai, positions), Qualified()
 {
 }

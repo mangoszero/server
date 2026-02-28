@@ -87,6 +87,13 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         void HandleCommand(uint32 type, const string& text, Player& fromPlayer);
 
         /**
+         * @brief Handles a remote command request.
+         * @param request The command request string.
+         * @return The result of the command.
+         */
+        string HandleRemoteCommand(string request);
+
+        /**
          * @brief Handles player logout.
          * @param player Pointer to the player.
          */
