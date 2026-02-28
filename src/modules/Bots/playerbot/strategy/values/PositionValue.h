@@ -6,7 +6,8 @@ namespace ai
     class Position
     {
     public:
-        Position() : valueSet(false) {}
+        Position() : valueSet(false), x(0), y(0), z(0) {}
+        Position(const Position &other) : valueSet(other.valueSet), x(other.x), y(other.y), z(other.z) {}
         void Set(double x, double y, double z) { this->x = x; this->y = y; this->z = z; this->valueSet = true; }
         void Reset() { valueSet = false; }
         bool isSet() { return valueSet; }
@@ -15,12 +16,14 @@ namespace ai
         bool valueSet;
     };
 
-    class PositionValue : public ManualSetValue<Position&>, public Qualified
+    typedef map<string, Position> PositionMap;
+
+    class PositionValue : public ManualSetValue<PositionMap&>, public Qualified
     {
     public:
         PositionValue(PlayerbotAI* ai);
 
     private:
-        Position position;
+        PositionMap positions;
     };
 }

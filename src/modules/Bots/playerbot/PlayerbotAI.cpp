@@ -43,7 +43,7 @@ uint32 PlayerbotChatHandler::extractQuestId(string str)
  * @param opcode The opcode.
  * @param handler The handler name.
  */
-void PacketHandlingHelper::AddHandler(uint16 opcode, string handler)
+void PacketHandlingHelper::AddHandler(uint16 opcode, const string& handler)
 {
     handlers[opcode] = handler;
 }
@@ -52,12 +52,12 @@ void PacketHandlingHelper::AddHandler(uint16 opcode, string handler)
  * Handles packets using the provided ExternalEventHelper.
  * @param helper The ExternalEventHelper instance.
  */
-void PacketHandlingHelper::Handle(ExternalEventHelper &helper)
+void PacketHandlingHelper::Handle(ExternalEventHelper& helper)
 {
-    while (!queue.empty())
+    while (!packetQueue.empty())
     {
-        helper.HandlePacket(handlers, queue.top());
-        queue.pop();
+        helper.HandlePacket(handlers, packetQueue.front());
+        packetQueue.pop();
     }
 }
 
@@ -69,19 +69,19 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 {
     if (handlers.find(packet.GetOpcode()) != handlers.end())
     {
-        queue.push(WorldPacket(packet));
+        packetQueue.push(WorldPacket(packet));
     }
 }
 
 /**
  * Default constructor for PlayerbotAI.
  */
-PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT)
+PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(nullptr), aiObjectContext(nullptr),
+    currentEngine(nullptr), chatHelper(this), chatFilter(this), accountId(0), security(nullptr), master(nullptr), currentState(BOT_STATE_NON_COMBAT)
 {
-    for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    for (int i = 0; i < BOT_STATE_MAX; i++)
     {
-        engines[i] = NULL;
+        engines[i] = nullptr;
     }
 }
 
@@ -90,7 +90,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
  * @param bot The player bot.
  */
 PlayerbotAI::PlayerbotAI(Player* bot) :
-    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL)
+    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(nullptr)
 {
     this->bot = bot;
 
@@ -146,7 +146,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
  */
 PlayerbotAI::~PlayerbotAI()
 {
-    for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    for (int i = 0; i < BOT_STATE_MAX; i++)
     {
         if (engines[i])
         {
@@ -192,7 +192,7 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
     ExternalEventHelper helper(aiObjectContext);
     while (!chatCommands.empty())
     {
-        ChatCommandHolder holder = chatCommands.top();
+        ChatCommandHolder holder = chatCommands.front();
         string command = holder.GetCommand();
         Player* owner = holder.GetOwner();
         if (!helper.ParseChatCommand(command, owner) && holder.GetType() == CHAT_MSG_WHISPER)
@@ -251,22 +251,22 @@ void PlayerbotAI::Reset()
     currentEngine = engines[BOT_STATE_NON_COMBAT];
     nextAICheckDelay = 0;
 
-    aiObjectContext->GetValue<Unit*>("old target")->Set(NULL);
-    aiObjectContext->GetValue<Unit*>("current target")->Set(NULL);
+    aiObjectContext->GetValue<Unit*>("old target")->Set(nullptr);
+    aiObjectContext->GetValue<Unit*>("current target")->Set(nullptr);
     aiObjectContext->GetValue<LootObject>("loot target")->Set(LootObject());
     aiObjectContext->GetValue<uint32>("lfg proposal")->Set(0);
 
-    LastSpellCast & lastSpell = aiObjectContext->GetValue<LastSpellCast& >("last spell cast")->Get();
+    LastSpellCast& lastSpell = aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get();
     lastSpell.Reset();
 
-    LastMovement & lastMovement = aiObjectContext->GetValue<LastMovement& >("last movement")->Get();
-    lastMovement.Set(NULL);
+    LastMovement& lastMovement = aiObjectContext->GetValue<LastMovement&>("last movement")->Get();
+    lastMovement.Set(nullptr);
 
     bot->GetMotionMaster()->Clear();
     bot->m_taxi.ClearTaxiDestinations();
     InterruptSpell();
 
-    for (int i = 0 ; i < BOT_STATE_MAX; i++)
+    for (int i = 0; i < BOT_STATE_MAX; i++)
     {
         engines[i]->Init();
     }
@@ -576,22 +576,6 @@ void PlayerbotAI::ReInitCurrentEngine()
 {
     InterruptSpell();
     currentEngine->Init();
-}
-
-/**
- * Changes the strategy for the specified engine type.
- * @param names The names of the strategies.
- * @param type The type of the engine.
- */
-void PlayerbotAI::ChangeStrategy(string names, BotState type)
-{
-    Engine* e = engines[type];
-    if (!e)
-    {
-        return;
-    }
-
-    e->ChangeStrategy(names);
 }
 
 /**
@@ -1360,11 +1344,87 @@ void PlayerbotAI::InterruptSpell()
         data << uint32(spell->m_spellInfo->Id);
         data << uint8(0);
         bot->SendMessageToSet(&data, true);
-
         SpellInterrupted(spell->m_spellInfo->Id);
     }
 
     SpellInterrupted(lastSpell.id);
+}
+
+/**
+ * Changes the strategy for a specific engine type.
+ * @param names The strategy names.
+ * @param type The type of the engine.
+ */
+void PlayerbotAI::ChangeStrategy(string names, BotState type) const
+{
+    Engine* e = engines[type];
+    if (!e)
+    {
+        return;
+    }
+
+    e->ChangeStrategy(names);
+}
+
+/**
+ * Clears all strategies for the specified engine type.
+ * @param type The type of the engine.
+ */
+void PlayerbotAI::ClearStrategies(BotState type) const
+{
+    Engine* e = engines[type];
+    if (!e)
+    {
+        return;
+    }
+
+    e->removeAllStrategies();
+}
+
+/**
+ * Retrieves the list of strategies for the specified engine type.
+ * @param type The type of the engine.
+ * @return The list of strategies.
+ */
+list<string> PlayerbotAI::GetStrategies(BotState type) const
+{
+    Engine* e = engines[type];
+    if (!e)
+    {
+        return list<string>();
+    }
+
+    return e->GetStrategies();
+}
+
+/**
+ * Handles a remote command for the bot.
+ * @param command The command string.
+ * @return The response string.
+ */
+string PlayerbotAI::HandleRemoteCommand(string command)
+{
+    return "";
+}
+
+/**
+ * Plays a sound/emote for the bot.
+ * @param emote The emote ID.
+ * @return True if successful, false otherwise.
+ */
+bool PlayerbotAI::PlaySound(uint32 emote)
+{
+    return false;
+}
+
+/**
+ * Checks if the bot has a specific skill.
+ * @param skill The skill type.
+ * @return True if the bot has the skill, false otherwise.
+ */
+bool PlayerbotAI::HasSkill(SkillType skill)
+{
+    return bot && bot->HasSkill(skill);
 }
 
 /**

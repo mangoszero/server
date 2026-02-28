@@ -52,7 +52,7 @@ void PlayerbotAIBase::SetNextCheckDelay(const uint32 delay)
     // Log if the new delay is greater than the global cooldown
     if (nextAICheckDelay > sPlayerbotAIConfig.globalCoolDown)
     {
-        sLog.outDebug("set next check delay: %d", nextAICheckDelay);
+        sLog.outDebug("set next check delay: %u", nextAICheckDelay);
     }
 }
 
@@ -67,7 +67,7 @@ void PlayerbotAIBase::IncreaseNextCheckDelay(uint32 delay)
     // Log if the new delay is greater than the global cooldown
     if (nextAICheckDelay > sPlayerbotAIConfig.globalCoolDown)
     {
-        sLog.outDebug("increase next check delay: %d", nextAICheckDelay);
+        sLog.outDebug("increase next check delay: %u", nextAICheckDelay);
     }
 }
 
