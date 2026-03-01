@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <vector>
 #include "Action.h"
 #include "Queue.h"
 #include "Trigger.h"
@@ -57,11 +59,11 @@ namespace ai
          */
         void Remove(ActionExecutionListener* listener)
         {
-            listeners.remove(listener);
+            listeners.erase(std::remove(listeners.begin(), listeners.end(), listener), listeners.end());
         }
 
     private:
-        std::list<ActionExecutionListener*> listeners; /**< List of action execution listeners */
+        std::vector<ActionExecutionListener*> listeners; /**< Vector of action execution listeners for better cache locality */
     };
 
     // -----------------------------------------------------------------------------------------------------------------------
@@ -94,6 +96,7 @@ namespace ai
         void removeAllStrategies();
         void toggleStrategy(string name);
         std::string ListStrategies();
+        list<string> GetStrategies();
         bool ContainsStrategy(StrategyType type);
         void ChangeStrategy(string &names);
         string GetLastAction() { return lastAction; }

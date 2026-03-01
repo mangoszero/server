@@ -33,8 +33,8 @@ bool AttackMyTargetAction::Execute(Event event)
         if (verbose)
         {
             ai->TellMaster("You have no target");
-            return false;
         }
+        return false;
     }
 
     return Attack(ai->GetUnit(guid));
@@ -48,8 +48,8 @@ bool AttackAction::Attack(Unit* target)
         if (verbose)
         {
             ai->TellMaster("I cannot attack in flight");
-            return false;
         }
+        return false;
     }
 
     if (!target)
@@ -57,8 +57,8 @@ bool AttackAction::Attack(Unit* target)
         if (verbose)
         {
             ai->TellMaster("I have no target");
-            return false;
         }
+        return false;
     }
 
     ostringstream msg;
@@ -69,8 +69,8 @@ bool AttackAction::Attack(Unit* target)
         if (verbose)
         {
             ai->TellMaster(msg.str());
-            return false;
         }
+        return false;
     }
     if (!bot->IsWithinLOSInMap(target))
     {
@@ -78,8 +78,8 @@ bool AttackAction::Attack(Unit* target)
         if (verbose)
         {
             ai->TellMaster(msg.str());
-            return false;
         }
+        return false;
     }
 
     if (bot->IsMounted())

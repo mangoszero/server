@@ -8,6 +8,7 @@
 
 #include "RandomPlayerbotMgr.h"
 #include "strategy/values/ItemUsageValue.h"
+#include "strategy/values/LootStrategyValue.h"
 
 using namespace ai;
 
@@ -325,12 +326,7 @@ bool StoreLootAction::Execute(Event event)
 
 bool StoreLootAction::IsLootAllowed(uint32 itemid)
 {
-    LootStrategy lootStrategy = AI_VALUE(LootStrategy, "loot strategy");
-
-    if (lootStrategy == LOOTSTRATEGY_ALL)
-    {
-        return true;
-    }
+    LootStrategyBase* lootStrategy = AI_VALUE(LootStrategyBase*, "loot strategy");
 
     set<uint32>& lootItems = AI_VALUE(set<uint32>&, "always loot list");
     if (lootItems.find(itemid) != lootItems.end())
@@ -356,37 +352,5 @@ bool StoreLootAction::IsLootAllowed(uint32 itemid)
         proto->Class == ITEM_CLASS_QUEST)
         return true;
 
-    if (lootStrategy == LOOTSTRATEGY_QUEST)
-    {
-        return false;
-    }
-
-    ostringstream out; out << itemid;
-    ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
-    if (usage == ITEM_USAGE_SKILL || usage == ITEM_USAGE_USE)
-    {
-        return true;
-    }
-
-    if (lootStrategy == LOOTSTRATEGY_SKILL)
-    {
-        return false;
-    }
-
-    if (proto->Quality == ITEM_QUALITY_POOR)
-    {
-        return true;
-    }
-
-    if (lootStrategy == LOOTSTRATEGY_GRAY)
-    {
-        return true;
-    }
-
-    if (proto->Bonding == BIND_WHEN_PICKED_UP)
-    {
-        return false;
-    }
-
-    return true;
+    return lootStrategy->CanLoot(proto, context);
 }

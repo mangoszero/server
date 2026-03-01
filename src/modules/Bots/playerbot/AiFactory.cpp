@@ -16,7 +16,8 @@
 #include "PlayerbotAIConfig.h"
 #include "RandomPlayerbotMgr.h"
 
-
+// Static member initialization
+std::unordered_map<uint32, std::pair<map<uint32, int32>, uint32>> AiFactory::specCache;
 AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* ai)
 {
     switch (player->getClass())
@@ -71,6 +72,16 @@ int AiFactory::GetPlayerSpecTab(Player* bot)
 
 map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
 {
+    uint32 botId = bot->GetGUIDLow();
+    uint32 currentTime = getMSTime();
+
+    // Check cache first
+    auto cacheIt = specCache.find(botId);
+    if (cacheIt != specCache.end() && (currentTime - cacheIt->second.second) < SPEC_CACHE_DURATION)
+    {
+        return cacheIt->second.first;
+    }
+
     map<uint32, int32> tabs;
     for (uint32 i = 0; i < uint32(3); i++)
     {
@@ -112,6 +123,9 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
 
         }
     }
+
+    // Cache the result
+    specCache[botId] = std::make_pair(tabs, currentTime);
 
     return tabs;
 }
@@ -300,4 +314,9 @@ Engine* AiFactory::createDeadEngine(Player* player, PlayerbotAI* const facade, A
     Engine* deadEngine = new Engine(facade, AiObjectContext);
     AddDefaultDeadStrategies(player, facade, deadEngine);
     return deadEngine;
+}
+
+void AiFactory::ClearSpecCache()
+{
+    specCache.clear();
 }

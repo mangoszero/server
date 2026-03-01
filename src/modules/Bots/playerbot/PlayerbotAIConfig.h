@@ -6,6 +6,8 @@ class Player;
 class PlayerbotMgr;
 class ChatHandler;
 
+#define CAST_ANGLE_IN_FRONT M_PI / 3
+
 /**
  * @brief Configuration class for Playerbot AI.
  * This class holds all the configuration parameters for the Playerbot AI and provides methods to initialize and access these parameters.
@@ -44,7 +46,8 @@ public:
     bool allowGuildBots; ///< Indicates if guild bots are allowed.
     uint32 globalCoolDown, reactDelay, maxWaitForMove, passiveDelay;
     float sightDistance, spellDistance, reactDistance, grindDistance, lootDistance,
-        fleeDistance, tooCloseDistance, meleeDistance, followDistance, whisperDistance, contactDistance;
+        fleeDistance, tooCloseDistance, meleeDistance, followDistance, whisperDistance, contactDistance,
+        aoeRadius;
     uint32 criticalHealth, lowHealth, mediumHealth, almostFullHealth;
     uint32 lowMana, mediumMana;
 
