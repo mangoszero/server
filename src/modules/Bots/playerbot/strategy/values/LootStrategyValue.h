@@ -44,12 +44,6 @@ namespace ai
          */
         LootStrategyValue(PlayerbotAI* ai) : ManualSetValue<LootStrategyBase*>(ai, normal) {}
 
-        /**
-         * @brief Destroy the Loot Strategy Value object
-         * Deletes the default value.
-         */
-        virtual ~LootStrategyValue() { delete defaultValue; }
-
         // Static members representing different loot strategies
         static LootStrategyBase *normal, *gray, *all, *disenchant;
 

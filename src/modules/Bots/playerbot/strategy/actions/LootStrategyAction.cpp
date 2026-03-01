@@ -12,13 +12,13 @@ bool LootStrategyAction::Execute(Event event)
 
     LootObjectStack* lootItems = AI_VALUE(LootObjectStack*, "available loot");
     set<uint32>& alwaysLootItems = AI_VALUE(set<uint32>&, "always loot list");
-    Value<LootStrategy>* lootStrategy = context->GetValue<LootStrategy>("loot strategy");
+    Value<LootStrategyBase*>* lootStrategy = context->GetValue<LootStrategyBase*>("loot strategy");
 
     if (strategy == "?")
     {
         ostringstream out;
         out << "Loot strategy: ";
-        out << LootStrategy2string(lootStrategy->Get());
+        out << lootStrategy->Get()->GetName();
         out << ", always loot items: ";
 
         for (set<uint32>::iterator i = alwaysLootItems.begin(); i != alwaysLootItems.end(); i++)
@@ -39,9 +39,9 @@ bool LootStrategyAction::Execute(Event event)
 
         if (items.size() == 0)
         {
-            lootStrategy->Set(String2LootStrategy(strategy));
+            lootStrategy->Set(LootStrategyValue::instance(strategy));
             ostringstream out;
-            out << "Loot strategy set to " << LootStrategy2string(lootStrategy->Get());
+            out << "Loot strategy set to " << lootStrategy->Get()->GetName();
             ai->TellMaster(out);
             return true;
         }
@@ -69,46 +69,4 @@ bool LootStrategyAction::Execute(Event event)
     }
 
     return true;
-}
-
-
-LootStrategy LootStrategyAction::String2LootStrategy(string strategy)
-{
-    if (strategy == "*" || strategy == "all")
-    {
-        return LOOTSTRATEGY_ALL;
-    }
-    else if (strategy == "q" || strategy == "quest")
-    {
-        return LOOTSTRATEGY_QUEST;
-    }
-    else if (strategy == "s" || strategy == "skill")
-    {
-        return LOOTSTRATEGY_SKILL;
-    }
-    else if (strategy == "g" || strategy == "gray")
-    {
-        return LOOTSTRATEGY_GRAY;
-    }
-    else
-    {
-        return LOOTSTRATEGY_NORMAL;
-    }
-}
-
-string LootStrategyAction::LootStrategy2string(LootStrategy lootStrategy)
-{
-    switch (lootStrategy)
-    {
-    case LOOTSTRATEGY_ALL:
-        return "all";
-    case LOOTSTRATEGY_QUEST:
-        return "quest";
-    case LOOTSTRATEGY_SKILL:
-        return "skill";
-    case LOOTSTRATEGY_GRAY:
-        return "gray";
-    default:
-        return "normal";
-    }
 }

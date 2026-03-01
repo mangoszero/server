@@ -57,7 +57,7 @@ WorldLocation AoePositionValue::Calculate()
         return WorldLocation();
     }
 
-    float x1, y1, x2, y2;
+    float x1 = FLT_MAX, y1 = FLT_MAX, x2 = -FLT_MAX, y2 = -FLT_MAX;
     for (list<ObjectGuid>::iterator i = group.begin(); i != group.end(); ++i)
     {
         Unit* unit = bot->GetPlayerbotAI()->GetUnit(*i);
@@ -66,22 +66,14 @@ WorldLocation AoePositionValue::Calculate()
             continue;
         }
 
-        if (i == group.begin() || x1 > unit->GetPositionX())
-        {
-            x1 = unit->GetPositionX();
-        }
-        if (i == group.begin() || x2 < unit->GetPositionX())
-        {
-            x2 = unit->GetPositionX();
-        }
-        if (i == group.begin() || y1 > unit->GetPositionY())
-        {
-            y1 = unit->GetPositionY();
-        }
-        if (i == group.begin() || y2 < unit->GetPositionY())
-        {
-            y2 = unit->GetPositionY();
-        }
+        if (unit->GetPositionX() < x1) x1 = unit->GetPositionX();
+        if (unit->GetPositionX() > x2) x2 = unit->GetPositionX();
+        if (unit->GetPositionY() < y1) y1 = unit->GetPositionY();
+        if (unit->GetPositionY() > y2) y2 = unit->GetPositionY();
+    }
+    if (x1 == FLT_MAX)
+    {
+        return WorldLocation();
     }
     float x = (x1 + x2) / 2;
     float y = (y1 + y2) / 2;
