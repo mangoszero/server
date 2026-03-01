@@ -9,7 +9,7 @@ namespace ai
     {
     public:
         NearestFriendlyPlayersValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.spellDistance) :
-          NearestUnitsValue(ai) {}
+          NearestUnitsValue(ai, range) {}
 
     protected:
         void FindUnits(list<Unit*> &targets);
