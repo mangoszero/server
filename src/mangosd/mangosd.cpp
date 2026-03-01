@@ -371,12 +371,17 @@ int main(int argc, char** argv)
 #endif
     if (!sConfig.SetSource(cfg_file))
     {
-        sLog.outError("Could not find configuration file %s.", cfg_file);
-        Log::WaitBeforeContinueIfNeed();
-        return 1;
+        // Try current folder as fallback if SYSCONFDIR path fails
+        if (!sConfig.SetSource(MANGOSD_CONFIG_NAME))
+        {
+            sLog.outError("Could not find configuration file %s.", cfg_file);
+            Log::WaitBeforeContinueIfNeed();
+            return 1;
+        }
+        cfg_file = MANGOSD_CONFIG_NAME;
     }
 
-#ifndef _WIN32                                               // posix daemon commands need apply after config read
+#ifndef _WIN32
     switch (serviceDaemonMode)
     {
         case 'r':

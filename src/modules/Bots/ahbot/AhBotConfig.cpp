@@ -31,8 +31,12 @@ bool AhBotConfig::Initialize()
 {
     if (!config.SetSource(AUCTIONHOUSEBOT_CONFIG_NAME))
     {
-        sLog.outString("AhBot is Disabled. Unable to open configuration file ahbot.conf");
-        return false;
+        // Try current folder as fallback
+        if (!config.SetSource("ahbot.conf"))
+        {
+            sLog.outString("AhBot is Disabled. Unable to open configuration file ahbot.conf");
+            return false;
+        }
     }
 
     enabled = config.GetBoolDefault("AhBot.Enabled", false);
