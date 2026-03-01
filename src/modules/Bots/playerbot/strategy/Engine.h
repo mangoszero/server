@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <vector>
 #include "Action.h"
 #include "Queue.h"
 #include "Trigger.h"

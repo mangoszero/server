@@ -1404,17 +1404,39 @@ list<string> PlayerbotAI::GetStrategies(BotState type) const
  */
 string PlayerbotAI::HandleRemoteCommand(string command)
 {
-    return "";
+    for (int i = 0; i < BOT_STATE_MAX; i++)
+    {
+        ActionResult res = engines[i]->ExecuteAction(command);
+        switch (res)
+        {
+        case ACTION_RESULT_UNKNOWN:
+            continue;
+        case ACTION_RESULT_OK:
+            return command + ": done";
+        case ACTION_RESULT_IMPOSSIBLE:
+            return command + ": impossible";
+        case ACTION_RESULT_USELESS:
+            return command + ": useless";
+        case ACTION_RESULT_FAILED:
+            return command + ": failed";
+        }
+    }
+    return command + ": unknown action";
 }
 
 /**
  * Plays a sound/emote for the bot.
- * @param emote The emote ID.
+ * @param emote The text emote ID.
  * @return True if successful, false otherwise.
  */
 bool PlayerbotAI::PlaySound(uint32 emote)
 {
-    return false;
+    WorldPacket* const packet = new WorldPacket(CMSG_TEXT_EMOTE, 20);
+    *packet << uint32(emote);
+    *packet << uint32(1); // emoteNum: sequence/variant index (1 = default)
+    *packet << bot->GetSelectionGuid();
+    bot->GetSession()->QueuePacket(packet);
+    return true;
 }
 
 /**
