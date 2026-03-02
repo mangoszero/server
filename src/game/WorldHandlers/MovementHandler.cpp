@@ -627,6 +627,19 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
                         break;
                     }
                 }
+                // also check local transports (lifts/elevators) which are per-map only
+                if (!plMover->m_transport)
+                {
+                    for (Transport* lt : plMover->GetMap()->GetLocalTransports())
+                    {
+                        if (lt->GetObjectGuid() == movementInfo.GetTransportGuid())
+                        {
+                            plMover->m_transport = lt;
+                            lt->AddPassenger(plMover);
+                            break;
+                        }
+                    }
+                }
             }
         }
         else if (plMover->m_transport)               // if we were on a transport, leave
