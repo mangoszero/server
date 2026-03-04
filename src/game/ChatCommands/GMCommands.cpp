@@ -69,7 +69,6 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         race = target->getRace();
         class_ = target->getClass();
     }
-    // get additional information from DB
     else
     {
         // check offline security
@@ -169,6 +168,63 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
                         posX, posY, posZ, orientation);
     }
+
+    // Skills
+    {
+        std::string skillStr;
+        int loc = GetSessionDbcLocale();
+
+        if (target)
+        {
+            for (uint32 id = 0; id < sSkillLineStore.GetNumRows(); ++id)
+            {
+                if (!target->HasSkill(id))
+                    continue;
+                SkillLineEntry const* sl = sSkillLineStore.LookupEntry(id);
+                if (!sl)
+                    continue;
+                if (!skillStr.empty())
+                    skillStr += ", ";
+                skillStr += sl->name[loc];
+                uint16 val = target->GetPureSkillValue(id);
+                uint16 max = target->GetPureMaxSkillValue(id);
+                char buf[32];
+                snprintf(buf, sizeof(buf), "(%u/%u)", val, max);
+                skillStr += buf;
+            }
+        }
+        else
+        {
+            QueryResult* skillResult = CharacterDatabase.PQuery(
+                "SELECT `skill`, `value`, `max` FROM `character_skills` WHERE `guid` = '%u'",
+                target_guid.GetCounter());
+            if (skillResult)
+            {
+                do
+                {
+                    Field* f = skillResult->Fetch();
+                    uint32 skillId = f[0].GetUInt32();
+                    uint16 val = f[1].GetUInt16();
+                    uint16 max = f[2].GetUInt16();
+                    SkillLineEntry const* sl = sSkillLineStore.LookupEntry(skillId);
+                    if (!sl)
+                        continue;
+                    if (!skillStr.empty())
+                        skillStr += ", ";
+                    skillStr += sl->name[loc];
+                    char buf[32];
+                    snprintf(buf, sizeof(buf), "(%u/%u)", val, max);
+                    skillStr += buf;
+                }
+                while (skillResult->NextRow());
+                delete skillResult;
+            }
+        }
+
+        if (!skillStr.empty())
+            PSendSysMessage("Skills: %s", skillStr.c_str());
+    }
+
     return true;
 }
 
