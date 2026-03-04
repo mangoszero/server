@@ -78,6 +78,7 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.MeleeDistance = 1.0
 #AiPlayerbot.FollowDistance = 1.5
 #AiPlayerbot.WhisperDistance = 6000.0
+# If enabled, bot suggestion whispers will only target players in the same zone
 #AiPlayerbot.WhisperToZoneOnly = false
 #AiPlayerbot.ContactDistance = 0.5
 
