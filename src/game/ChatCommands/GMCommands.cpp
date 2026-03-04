@@ -155,6 +155,90 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
                         posX, posY, posZ, orientation);
     }
+
+    // Skills
+    {
+        int loc = GetSessionDbcLocale();
+        bool printedHeader = false;
+
+        if (target)
+        {
+            for (uint32 id = 0; id < sSkillLineStore.GetNumRows(); ++id)
+            {
+                if (!target->HasSkill(id))
+                    continue;
+                SkillLineEntry const* sl = sSkillLineStore.LookupEntry(id);
+                if (!sl)
+                    continue;
+                std::string name = sl->name[loc];
+                if (name.empty())
+                {
+                    int fallbackLoc = 0;
+                    for (; fallbackLoc < MAX_LOCALE; ++fallbackLoc)
+                    {
+                        if (fallbackLoc == loc)
+                            continue;
+                        name = sl->name[fallbackLoc];
+                        if (!name.empty())
+                            break;
+                    }
+                }
+                if (name.empty())
+                    continue;
+                if (!printedHeader)
+                {
+                    SendSysMessage("Skills:");
+                    printedHeader = true;
+                }
+                PSendSysMessage("  %s (%u/%u)", name.c_str(),
+                                target->GetPureSkillValue(id),
+                                target->GetPureMaxSkillValue(id));
+            }
+        }
+        else
+        {
+            QueryResult* skillResult = CharacterDatabase.PQuery(
+                "SELECT `skill`, `value`, `max` FROM `character_skills` WHERE `guid` = '%u' ORDER BY `skill`",
+                target_guid.GetCounter());
+            if (skillResult)
+            {
+                do
+                {
+                    Field* f = skillResult->Fetch();
+                    uint32 skillId = f[0].GetUInt32();
+                    uint16 val = f[1].GetUInt16();
+                    uint16 max = f[2].GetUInt16();
+                    SkillLineEntry const* sl = sSkillLineStore.LookupEntry(skillId);
+                    if (!sl)
+                        continue;
+                    std::string name = sl->name[loc];
+                    if (name.empty())
+                    {
+                        int fallbackLoc = 0;
+                        for (; fallbackLoc < MAX_LOCALE; ++fallbackLoc)
+                        {
+                            if (fallbackLoc == loc)
+                                continue;
+                            name = sl->name[fallbackLoc];
+                            if (!name.empty())
+                                break;
+                        }
+                    }
+                    if (name.empty())
+                        continue;
+                    if (!printedHeader)
+                    {
+                        SendSysMessage("Skills:");
+                        printedHeader = true;
+                    }
+                    PSendSysMessage("  %s (%u/%u)", name.c_str(), val, max);
+                }
+                while (skillResult->NextRow());
+                delete skillResult;
+            }
+        }
+    }
+
     return true;
 }
 
