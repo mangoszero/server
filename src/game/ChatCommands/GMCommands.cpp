@@ -49,6 +49,8 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     uint32 total_player_time;
     uint32 level;
     uint32 latency = 0;
+    uint8 race = 0;
+    uint8 class_ = 0;
 
     // get additional information from Player object
     if (target)
@@ -64,8 +66,10 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         total_player_time = target->GetTotalPlayedTime();
         level = target->getLevel();
         latency = target->GetSession()->GetLatency();
-    }
+        race = target->getRace();
+        class_ = target->getClass();
     // get additional information from DB
+    }
     else
     {
         // check offline security
@@ -75,7 +79,8 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         }
 
         //                                                     0          1      2      3
-        QueryResult* result = CharacterDatabase.PQuery("SELECT `totaltime`, `level`, `money`, `account` FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
+        QueryResult* result = CharacterDatabase.PQuery("SELECT `totaltime`, `level`, `money`, `account`, `race`, `class`"
+                                                       "FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
         if (!result)
         {
             return false;
@@ -86,6 +91,8 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         level = fields[1].GetUInt32();
         money = fields[2].GetUInt32();
         accId = fields[3].GetUInt32();
+        race = fields[4].GetUInt8();
+        class_ = fields[5].GetUInt8();
         delete result;
     }
 
@@ -134,6 +141,13 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     uint32 silv = (money % GOLD) / SILVER;
     uint32 copp = (money % GOLD) % SILVER;
     PSendSysMessage(LANG_PINFO_LEVEL, timeStr.c_str(), level, gold, silv, copp);
+
+    ChrRacesEntry const* raceEntry = sChrRacesStore.LookupEntry(race);
+    ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
+    char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<unknown>";
+    char const* class_name = classEntry ? classEntry->name[GetSessionDbcLocale()] : "<unknown>";
+    PSendSysMessage("Race: %s, Class: %s", race_name, class_name);
+
     if (target)
     {
         uint32 mapId = target->GetMapId();
