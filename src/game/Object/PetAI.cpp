@@ -46,7 +46,7 @@ int PetAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
-PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inCombat(false), m_loiterTimeout(0)
+PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inCombat(false), m_loiterUntilTime(0)
 {
     m_AllySet.clear();
     UpdateAllies();
@@ -127,7 +127,7 @@ void PetAI::_stopAttack()
     if (inCombat)
     {
         // simulate well known corpse loiter behavior by picking a loiter time
-        m_loiterTimeout = getMSTime() + urand(1000, 2500);
+        m_loiterUntilTime = getMSTime() + urand(1000, 2500);
         inCombat = false;
     }
 
@@ -252,12 +252,12 @@ void PetAI::UpdateAI(const uint32 diff)
             }
         }
     }
-    else if (owner && m_creature->GetCharmInfo() && ((m_loiterTimeout == 0) || (getMSTime() > m_loiterTimeout)))
+    else if (owner && m_creature->GetCharmInfo() && ((m_loiterUntilTime == 0) || (getMSTime() > m_loiterUntilTime)))
     {
         // pets with dead enemies, after loiter, pick next target based on distance and stance
-        if (m_loiterTimeout > 0)
+        if (m_loiterUntilTime > 0)
         {
-            m_loiterTimeout = 0;
+            m_loiterUntilTime = 0;
             SelectNextTarget(owner);
             // if nothing to do, loiter is extended 1 tick
         }

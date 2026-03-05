@@ -1389,7 +1389,7 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
     }
 
     int32 hpm = (int32)chr->GetMaxHealth();
-    if (ExtractOptInt32(&args, hpm))
+    if (ExtractOptInt32(&args, hpm, hpm))
     {
         if (hpm < hp)
         {
