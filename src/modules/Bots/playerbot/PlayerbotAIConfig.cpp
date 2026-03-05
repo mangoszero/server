@@ -31,6 +31,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
       followDistance(0.0f),
       whisperDistance(0.0f),
       contactDistance(0.0f),
+      whisperToZoneOnly(false),
       criticalHealth(0),
       lowHealth(0),
       mediumHealth(0),
@@ -134,6 +135,7 @@ bool PlayerbotAIConfig::Initialize()
     meleeDistance = config.GetFloatDefault("AiPlayerbot.MeleeDistance", 1.5f);
     followDistance = config.GetFloatDefault("AiPlayerbot.FollowDistance", 1.5f);
     whisperDistance = config.GetFloatDefault("AiPlayerbot.WhisperDistance", 6000.0f);
+    whisperToZoneOnly = config.GetBoolDefault("AiPlayerbot.WhisperToZoneOnly", false);
     contactDistance = config.GetFloatDefault("AiPlayerbot.ContactDistance", 0.5f);
 
     criticalHealth = config.GetIntDefault("AiPlayerbot.CriticalHealth", 20);

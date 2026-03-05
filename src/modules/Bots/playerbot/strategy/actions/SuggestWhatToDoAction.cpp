@@ -278,6 +278,9 @@ void SuggestWhatToDoAction::spam(string msg)
         return;
     }
 
+    if (sPlayerbotAIConfig.whisperToZoneOnly && bot->GetZoneId() != player->GetZoneId())
+        return;
+
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
             player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
             (bot->GetMapId() != player->GetMapId() || bot->GetDistance(player) > sPlayerbotAIConfig.whisperDistance))
