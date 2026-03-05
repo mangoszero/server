@@ -1366,10 +1366,8 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
         return false;
     }
 
-    int32 hp = atoi(args);
-    int32 hpm = atoi(args);
-
-    if (hp <= 0 || hpm <= 0 || hpm < hp)
+    int32 hp;
+    if (!ExtractInt32(&args, hp) || hp <= 0)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
@@ -1388,6 +1386,17 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
     if (HasLowerSecurity(chr))
     {
         return false;
+    }
+
+    int32 hpm = (int32)chr->GetMaxHealth();
+    if (ExtractOptInt32(&args, hpm))
+    {
+        if (hpm < hp)
+        {
+            SendSysMessage(LANG_BAD_VALUE);
+            SetSentErrorMessage(true);
+            return false;
+        }
     }
 
     PSendSysMessage(LANG_YOU_CHANGE_HP, GetNameLink(chr).c_str(), hp, hpm);
@@ -1410,10 +1419,8 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
         return false;
     }
 
-    int32 mana = atoi(args);
-    int32 manam = atoi(args);
-
-    if (mana <= 0 || manam <= 0 || manam < mana)
+    int32 mana;
+    if (!ExtractInt32(&args, mana) || mana < 0)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
@@ -1433,6 +1440,10 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
     {
         return false;
     }
+
+    int32 manam;
+    if (!ExtractInt32(&args, manam) || manam < mana)
+        manam = (int32)chr->GetMaxPower(POWER_MANA);
 
     PSendSysMessage(LANG_YOU_CHANGE_MANA, GetNameLink(chr).c_str(), mana, manam);
     if (needReportToTarget(chr))
@@ -1454,15 +1465,14 @@ bool ChatHandler::HandleModifyEnergyCommand(char* args)
         return false;
     }
 
-    int32 energy = atoi(args) * 10;
-    int32 energym = atoi(args) * 10;
-
-    if (energy <= 0 || energym <= 0 || energym < energy)
+    int32 energyRaw;
+    if (!ExtractInt32(&args, energyRaw) || energyRaw < 0)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
         return false;
     }
+    int32 energy = energyRaw * 10;
 
     Player* chr = getSelectedPlayer();
     if (!chr)
@@ -1477,6 +1487,11 @@ bool ChatHandler::HandleModifyEnergyCommand(char* args)
     {
         return false;
     }
+
+    int32 energyRawM;
+    int32 energym = (!ExtractInt32(&args, energyRawM) || energyRawM * 10 < energy)
+        ? (int32)chr->GetMaxPower(POWER_ENERGY)
+        : energyRawM * 10;
 
     PSendSysMessage(LANG_YOU_CHANGE_ENERGY, GetNameLink(chr).c_str(), energy / 10, energym / 10);
     if (needReportToTarget(chr))
@@ -1500,15 +1515,14 @@ bool ChatHandler::HandleModifyRageCommand(char* args)
         return false;
     }
 
-    int32 rage = atoi(args) * 10;
-    int32 ragem = atoi(args) * 10;
-
-    if (rage <= 0 || ragem <= 0 || ragem < rage)
+    int32 rageRaw;
+    if (!ExtractInt32(&args, rageRaw) || rageRaw < 0)
     {
         SendSysMessage(LANG_BAD_VALUE);
         SetSentErrorMessage(true);
         return false;
     }
+    int32 rage = rageRaw * 10;
 
     Player* chr = getSelectedPlayer();
     if (chr == NULL)
@@ -1523,6 +1537,11 @@ bool ChatHandler::HandleModifyRageCommand(char* args)
     {
         return false;
     }
+
+    int32 rageRawM;
+    int32 ragem = (!ExtractInt32(&args, rageRawM) || rageRawM * 10 < rage)
+        ? (int32)chr->GetMaxPower(POWER_RAGE)
+        : rageRawM * 10;
 
     PSendSysMessage(LANG_YOU_CHANGE_RAGE, GetNameLink(chr).c_str(), rage / 10, ragem / 10);
     if (needReportToTarget(chr))
