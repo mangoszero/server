@@ -31,7 +31,7 @@
 
  /**********************************************************************
      CommandTable : commandTable
- /***********************************************************************/
+  **********************************************************************/
 
 // show info of player
 bool ChatHandler::HandlePInfoCommand(char* args)
@@ -68,7 +68,6 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         latency = target->GetSession()->GetLatency();
         race = target->getRace();
         class_ = target->getClass();
-    // get additional information from DB
     }
     else
     {
@@ -78,9 +77,9 @@ bool ChatHandler::HandlePInfoCommand(char* args)
             return false;
         }
 
-        //                                                     0          1      2      3
+        //                                                     0          1      2      3       4       5
         QueryResult* result = CharacterDatabase.PQuery("SELECT `totaltime`, `level`, `money`, `account`, `race`, `class`"
-                                                       "FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
+                                                       " FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
         if (!result)
         {
             return false;
@@ -146,6 +145,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     ChrClassesEntry const* classEntry = sChrClassesStore.LookupEntry(class_);
     char const* race_name = raceEntry ? raceEntry->name[GetSessionDbcLocale()] : "<unknown>";
     char const* class_name = classEntry ? classEntry->name[GetSessionDbcLocale()] : "<unknown>";
+    //PSendSysMessage(LANG_PINFO_RACE_CLASS, race_name, class_name);
     PSendSysMessage("Race: %s, Class: %s", race_name, class_name);
 
     if (target)
