@@ -131,8 +131,6 @@ void PetAI::_stopAttack()
         inCombat = false;
     }
 
-    Unit* owner = m_creature->GetCharmerOrOwner();
-
     m_creature->GetMotionMaster()->Clear(false);
     m_creature->GetMotionMaster()->MoveIdle();
     m_creature->AttackStop();
