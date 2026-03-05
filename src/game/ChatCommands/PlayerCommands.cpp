@@ -1388,9 +1388,16 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
         return false;
     }
 
-    int32 hpm;
-    if (!ExtractInt32(&args, hpm) || hpm < hp)
-        hpm = (int32)chr->GetMaxHealth();
+    int32 hpm = (int32)chr->GetMaxHealth();
+    if (ExtractOptInt32(&args, hpm))
+    {
+        if (hpm < hp)
+        {
+            SendSysMessage(LANG_BAD_VALUE);
+            SetSentErrorMessage(true);
+            return false;
+        }
+    }
 
     PSendSysMessage(LANG_YOU_CHANGE_HP, GetNameLink(chr).c_str(), hp, hpm);
     if (needReportToTarget(chr))
