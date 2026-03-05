@@ -32,6 +32,9 @@
 #include "Creature.h"
 #include "World.h"
 #include "Util.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
+#include "CellImpl.h"
 
 int PetAI::Permissible(const Creature* creature)
 {
@@ -43,7 +46,7 @@ int PetAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
-PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inCombat(false)
+PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inCombat(false), m_loiterTimeout(0)
 {
     m_AllySet.clear();
     UpdateAllies();
@@ -121,21 +124,64 @@ bool PetAI::_needToStop() const
 
 void PetAI::_stopAttack()
 {
-    inCombat = false;
-
-    Unit* owner = m_creature->GetCharmerOrOwner();
-
-    if (owner && m_creature->GetCharmInfo() && m_creature->GetCharmInfo()->HasCommandState(COMMAND_FOLLOW))
+    if (inCombat)
     {
-        m_creature->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
-        m_creature->UpdateSpeed(MOVE_RUN, false);
+        // simulate well known corpse loiter behavior by picking a loiter time
+        m_loiterTimeout = getMSTime() + urand(1000, 2500);
+        inCombat = false;
     }
-    else
-    {
-        m_creature->GetMotionMaster()->Clear(false);
-        m_creature->GetMotionMaster()->MoveIdle();
-    }
+
+    m_creature->GetMotionMaster()->Clear(false);
+    m_creature->GetMotionMaster()->MoveIdle();
     m_creature->AttackStop();
+}
+
+void PetAI::SelectNextTarget(Unit* owner)
+{
+    if (!m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) && !m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY))
+    {
+        std::list<Unit*> candidates;
+
+        if (m_creature->GetCharmInfo()->HasReactState(REACT_DEFENSIVE))
+        {
+            for (Unit* attacker : owner->getAttackers())
+                candidates.push_back(attacker);
+            for (Unit* attacker : m_creature->getAttackers())
+                candidates.push_back(attacker);
+        }
+        else if (m_creature->GetCharmInfo()->HasReactState(REACT_AGGRESSIVE))
+        {
+            float radius = m_creature->GetAttackDistance(m_creature);
+            MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(m_creature, radius);
+            MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck>
+                searcher(candidates, u_check);
+            Cell::VisitAllObjects(m_creature, searcher, radius);
+        }
+
+        Unit* nextTarget = nullptr;
+        float closestDist = FLT_MAX;
+        for (Unit* candidate : candidates)
+        {
+            if (candidate->IsAlive() &&
+                candidate->IsTargetableForAttack() &&
+                candidate->isInAccessablePlaceFor(m_creature) &&
+                m_creature->IsWithinLOSInMap(candidate))
+            {
+                float dist = m_creature->GetDistance(candidate);
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    nextTarget = candidate;
+                }
+            }
+        }
+
+        if (nextTarget)
+        {
+            AttackStart(nextTarget);
+        }
+    }
+
 }
 
 void PetAI::UpdateAI(const uint32 diff)
@@ -206,9 +252,16 @@ void PetAI::UpdateAI(const uint32 diff)
             }
         }
     }
-    else if (owner && m_creature->GetCharmInfo())
+    else if (owner && m_creature->GetCharmInfo() && ((m_loiterTimeout == 0) || (getMSTime() > m_loiterTimeout)))
     {
-        if (owner->IsInCombat() && !(m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) || m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY)))
+        // pets with dead enemies, after loiter, pick next target based on distance and stance
+        if (m_loiterTimeout > 0)
+        {
+            m_loiterTimeout = 0;
+            SelectNextTarget(owner);
+            // if nothing to do, loiter is extended 1 tick
+        }
+        else if (owner->IsInCombat() && !(m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) || m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY)))
         {
             AttackStart(owner->getAttackerForHelper());
         }

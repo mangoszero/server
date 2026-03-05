@@ -52,6 +52,7 @@ class PetAI : public CreatureAI
         bool _needToStop(void) const;
         void _stopAttack(void);
 
+        void SelectNextTarget(Unit*);
         void UpdateAllies();
 
         TimeTracker i_tracker;
@@ -59,5 +60,6 @@ class PetAI : public CreatureAI
 
         GuidSet m_AllySet;
         uint32 m_updateAlliesTimer;
+        uint32 m_loiterUntilTime;
 };
 #endif
