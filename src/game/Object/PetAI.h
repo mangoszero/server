@@ -60,6 +60,6 @@ class PetAI : public CreatureAI
 
         GuidSet m_AllySet;
         uint32 m_updateAlliesTimer;
-        uint32 m_loiterTimeout;
+        uint32 m_loiterUntilTime;
 };
 #endif
