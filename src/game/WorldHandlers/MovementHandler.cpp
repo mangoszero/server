@@ -37,6 +37,7 @@
 
 #define MOVEMENT_PACKET_TIME_DELAY 300
 
+
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: got MSG_MOVE_WORLDPORT_ACK.");
