@@ -585,13 +585,33 @@ set(BOT_SRCS
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/playerbot FILES ${BOT_SRCS})
 
+# AhBot module sources (playerbot-enhanced auction house bot)
+file(GLOB AHBOT_MODULE_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ahbot/*.h
+)
+source_group("AH Bot" FILES ${AHBOT_MODULE_SRCS})
+
 add_library(BotsIntf INTERFACE)
-add_library(Bots STATIC ${BOT_SRCS})
+add_library(Bots STATIC ${BOT_SRCS} ${AHBOT_MODULE_SRCS})
 
 target_include_directories(BotsIntf
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
+        ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
+)
+
+target_include_directories(Bots
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/playerbot
+        ${CMAKE_CURRENT_SOURCE_DIR}/ahbot
+)
+
+target_compile_definitions(Bots
+    PUBLIC
+        ENABLE_PLAYERBOTS
 )
 
 target_link_libraries(Bots
@@ -605,5 +625,5 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CO
 
 # Generate PCH
 if(PCH)
-    ADD_CXX_PCH(Bots ${bots_PCH})
+    ADD_CXX_PCH(Bots botpch.h botpch.cpp)
 endif()

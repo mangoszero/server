@@ -29,11 +29,17 @@ if(BUILD_MANGOSD)
 endif()
 
 if(BUILD_MANGOSD)
+    # Build the selected modules (must come before mangosd and playerbotd so
+    # that the Bots target is defined before being referenced as a link library)
+    add_subdirectory(modules)
+
     # Build the mangos world server
     add_subdirectory(mangosd)
 
-    # Build the selected modules
-    add_subdirectory(modules)
+    # Build the playerbot daemon if requested
+    if(PLAYERBOTS)
+        add_subdirectory(playerbotd)
+    endif()
 endif()
 
 # Build the mangos realm authentication server
