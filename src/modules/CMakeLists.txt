@@ -25,3 +25,7 @@ endif()
 if(SCRIPT_LIB_ELUNA)
     add_subdirectory(Eluna)
 endif()
+
+if(PLAYERBOTS)
+    add_subdirectory(Bots)
+endif()
