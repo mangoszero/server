@@ -88,6 +88,9 @@ AiPlayerbot.CommandPrefix = ~
 # Bot can flee for enemy
 #AiPlayerbot.FleeingEnabled = 1
 
+# Bot avoids pulling aggro during movement by default
+#AiPlayerbot.Cautious = 0
+
 # Health/Mana levels
 #AiPlayerbot.CriticalHealth = 25
 #AiPlayerbot.LowHealth = 45

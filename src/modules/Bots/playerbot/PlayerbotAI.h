@@ -137,6 +137,7 @@ public:
     void ChangeStrategy(string name, BotState type);
     bool ContainsStrategy(StrategyType type);
     bool HasStrategy(string name, BotState type);
+    bool HasStrategy(string name) { return HasStrategy(name, currentState); }
     void ResetStrategies();
     void ReInitCurrentEngine();
     void Reset();

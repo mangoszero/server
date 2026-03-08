@@ -36,7 +36,11 @@ bool MoveToPositionAction::Execute(Event event)
         ai->TellMaster(out);
         return false;
     }
-
-    return MoveTo(bot->GetMapId(), pos.x, pos.y, pos.z);
+    if (IsAggroPosition(pos.x, pos.y))
+    {
+        ai->TellMaster("Warning: that position is near hostile creatures.");
+    }
+    return MoveTo(bot->GetMapId(), pos.x, pos.y, pos.z, true);
 }
+
 

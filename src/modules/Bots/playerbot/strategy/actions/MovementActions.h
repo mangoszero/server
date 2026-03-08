@@ -15,7 +15,7 @@ namespace ai
 
     protected:
         bool MoveNear(uint32 mapId, float x, float y, float z, float distance = sPlayerbotAIConfig.followDistance);
-        bool MoveTo(uint32 mapId, float x, float y, float z);
+        bool MoveTo(uint32 mapId, float x, float y, float z, bool unsafe = false);
         bool MoveTo(Unit* target, float distance = 0.0f);
         bool MoveNear(WorldObject* target, float distance = sPlayerbotAIConfig.followDistance);
         float GetFollowAngle();
@@ -28,6 +28,8 @@ namespace ai
         bool IsMovingAllowed(uint32 mapId, float x, float y, float z);
         bool IsMovingAllowed();
         bool Flee(Unit *target);
+        float CalculateAggroFreeDistance(float bx, float by, float angle, float maxDist);
+        bool IsAggroPosition(float x, float y);
 
     protected:
         Player* bot;
