@@ -179,9 +179,20 @@ void PlayerbotAI::UpdateAI(uint32 elapsed)
         }
     }
 
-    if (nextAICheckDelay > sPlayerbotAIConfig.maxWaitForMove && bot->IsInCombat() && !bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+    if (nextAICheckDelay > sPlayerbotAIConfig.maxWaitForMove &&
+        !bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
     {
-        nextAICheckDelay = sPlayerbotAIConfig.maxWaitForMove;
+        if (bot->IsInCombat())
+            nextAICheckDelay = sPlayerbotAIConfig.maxWaitForMove;
+        else
+        {
+            Player* master = GetMaster();
+            if (master && master->IsInCombat())
+            {
+                InterruptSpell();
+                nextAICheckDelay = sPlayerbotAIConfig.maxWaitForMove;
+            }
+        }
     }
 
     PlayerbotAIBase::UpdateAI(elapsed);

@@ -87,7 +87,7 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid)
     }
 
     GameObject* go = ai->GetGameObject(guid);
-    if (go && go->isSpawned())
+    if (go && go->isSpawned() && go->getLootState() == GO_READY)
     {
         uint32 lockId = go->GetGOInfo()->GetLockId();
         LockEntry const *lockInfo = sLockStore.LookupEntry(lockId);
