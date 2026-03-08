@@ -3526,15 +3526,36 @@ bool ChatHandler::ExtractPlayerTarget(char** args, Player** player /*= NULL*/, O
         {
             *player = pl;
         }
+
+        ObjectGuid guid = pl ? pl->GetObjectGuid() : ObjectGuid();
+
+        // Console with a selected player that is now offline: fall back to stored GUID
+        if (!pl && !m_session)
+        {
+            uint32 accountId = GetAccountId();
+            auto itr = m_consoleSelectedPlayers.find(accountId);
+            if (itr != m_consoleSelectedPlayers.end())
+                guid = itr->second;
+        }
+
         // if allowed player guid (if no then only online players allowed)
         if (player_guid)
         {
-            *player_guid = pl ? pl->GetObjectGuid() : ObjectGuid();
+            *player_guid = guid;
         }
 
         if (player_name)
         {
-            *player_name = pl ? pl->GetName() : "";
+            if (pl)
+                *player_name = pl->GetName();
+            else if (guid)
+            {
+                std::string name;
+                sObjectMgr.GetPlayerNameByGUID(guid, name);
+                *player_name = name;
+            }
+            else
+                *player_name = "";
         }
     }
 
