@@ -305,6 +305,7 @@ class Map : public GridRefManager<NGridType>
         bool GetRandomPointUnderWater(float& x, float& y, float& z, float radius, GridMapLiquidData& liquid_status);
 
         void LoadLocalTransports();
+        std::set<Transport*> const& GetLocalTransports() const { return i_transports; }
 
 #ifdef ENABLE_ELUNA
         Eluna* GetEluna() const;
