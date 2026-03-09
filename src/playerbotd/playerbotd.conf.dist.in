@@ -1,0 +1,35 @@
+################################################################################
+# MaNGOS Playerbot Daemon configuration                                        #
+#                                                                              #
+# playerbotd is a standalone world server daemon with playerbot support.       #
+# It uses the same configuration options as the main world server (mangosd).   #
+# Copy or symlink your mangosd.conf as playerbotd.conf, or run with:           #
+#   playerbotd -c /path/to/mangosd.conf                                        #
+#                                                                              #
+# All mangosd.conf settings are supported.  The key additional configuration   #
+# for playerbots is in aiplayerbot.conf (AiPlayerbot.* keys).                  #
+################################################################################
+
+[MangosdConf]
+ConfVersion=@MANGOS_WORLD_VER@
+
+################################################################################
+# CONNECTIONS AND DIRECTORIES
+################################################################################
+
+RealmID                      = 1
+DataDir                      = "@CONF_INSTALL_DIR@"
+LogsDir                      = ""
+LoginDatabaseInfo            = "127.0.0.1;3306;root;mangos;realmd"
+WorldDatabaseInfo            = "127.0.0.1;3306;root;mangos;mangos0"
+CharacterDatabaseInfo        = "127.0.0.1;3306;root;mangos;character0"
+LoginDatabaseConnections     = 1
+WorldDatabaseConnections     = 1
+CharacterDatabaseConnections = 1
+MaxPingTime                  = 5
+WorldServerPort              = 8085
+BindIP                       = "0.0.0.0"
+
+################################################################################
+# For all remaining configuration options, refer to mangosd.conf.dist
+################################################################################
