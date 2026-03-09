@@ -20901,6 +20901,9 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
 
             if (target->GetTypeId() == TYPEID_UNIT)
             {
+                Creature* c = target->ToCreature();
+                if (c->IsPet() && GetPetGuid() == c->GetObjectGuid() && ((Pet*)c)->GetTransport())
+                    return;
                 BeforeVisibilityDestroy(target, this);
             }
 
@@ -20939,6 +20942,13 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
     {
         if (!target->IsVisibleForInState(this, viewPoint, true))
         {
+            if (target->GetTypeId() == TYPEID_UNIT)
+            {
+                Creature* c = target->ToCreature();
+                if (c->IsPet() && GetPetGuid() == c->GetObjectGuid() && ((Pet*)c)->GetTransport())
+                    return;
+            }
+
             BeforeVisibilityDestroy(target, this);
 
             ObjectGuid t_guid = target->GetObjectGuid();
@@ -23047,6 +23057,12 @@ void Player::UnsummonPetTemporaryIfAny()
     if (!m_temporaryUnsummonedPetNumber && pet->isControlled() && !pet->isTemporarySummoned())
     {
         m_temporaryUnsummonedPetNumber = pet->GetCharmInfo()->GetPetNumber();
+    }
+
+    if (Transport* petTransport = pet->GetTransport())
+    {
+        petTransport->RemovePassenger(pet);
+        pet->SetTransport(nullptr);
     }
 
     pet->Unsummon(PET_SAVE_AS_CURRENT, this);

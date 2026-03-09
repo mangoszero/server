@@ -49,6 +49,7 @@ class Transport : public GameObject
 
     protected:
         UnitSet m_passengers;
+        void UpdateCreaturePassengerPositions();    // relocate creature passengers to transport's world position
 
 };
 
