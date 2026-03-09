@@ -366,6 +366,14 @@ namespace ai
         virtual bool IsActive();
     };
 
+    class ThirstyTrigger : public Trigger
+    {
+    public:
+        ThirstyTrigger(PlayerbotAI* ai) : Trigger(ai, "thirsty") {}
+
+        virtual bool IsActive();
+    };
+
     BEGIN_TRIGGER(PanicTrigger, Trigger)
         virtual string getName() { return "panic"; }
     END_TRIGGER()

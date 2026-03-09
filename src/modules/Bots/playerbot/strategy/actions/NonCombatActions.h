@@ -18,12 +18,25 @@ namespace ai
                 return false;
             }
 
-            return UseItemAction::Execute(event);
+            if (ai->IsDrinking())
+                return true;
+
+            bool result = UseItemAction::Execute(event);
+            if (result)
+                ai->SetDrinking();
+            return result;
+        }
+
+        virtual bool isPossible()
+        {
+            return ai->IsDrinking() || UseItemAction::isPossible();
         }
 
         virtual bool isUseful()
         {
-            return UseItemAction::isUseful() && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.lowMana;
+            if (ai->IsDrinking())
+                return true;
+            return UseItemAction::isUseful() && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.thirstyMana;
         }
     };
 
@@ -39,12 +52,25 @@ namespace ai
                 return false;
             }
 
-            return UseItemAction::Execute(event);
+            if (ai->IsEating())
+                return true;
+
+            bool result = UseItemAction::Execute(event);
+            if (result)
+                ai->SetEating();
+            return result;
+        }
+
+        virtual bool isPossible()
+        {
+            return ai->IsEating() || UseItemAction::isPossible();
         }
 
         virtual bool isUseful()
         {
-            return UseItemAction::isUseful() && AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.lowHealth;
+            if (ai->IsEating())
+                return true;
+            return UseItemAction::isUseful() && AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.hungryHealth;
         }
     };
 

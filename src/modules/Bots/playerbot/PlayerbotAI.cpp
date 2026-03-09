@@ -77,7 +77,8 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
  * Default constructor for PlayerbotAI.
  */
 PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT)
+    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BOT_STATE_NON_COMBAT),
+    m_eatingUntil(0), m_drinkingUntil(0)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
     {
@@ -90,7 +91,8 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
  * @param bot The player bot.
  */
 PlayerbotAI::PlayerbotAI(Player* bot) :
-    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL)
+    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL),
+    m_eatingUntil(0), m_drinkingUntil(0)
 {
     this->bot = bot;
 
@@ -192,6 +194,15 @@ void PlayerbotAI::UpdateAI(uint32 elapsed)
                 InterruptSpell();
                 nextAICheckDelay = sPlayerbotAIConfig.maxWaitForMove;
             }
+        }
+    }
+
+    if (m_drinkingUntil || m_eatingUntil)
+    {
+        if (bot->IsInCombat() || !bot->IsSitState())
+        {
+            m_drinkingUntil = 0;
+            m_eatingUntil = 0;
         }
     }
 
@@ -415,6 +426,9 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
  */
 void PlayerbotAI::SpellInterrupted(uint32 spellid)
 {
+    if (!spellid)
+        return;
+
     LastSpellCast& lastSpell = aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get();
     if (lastSpell.id != spellid)
     {

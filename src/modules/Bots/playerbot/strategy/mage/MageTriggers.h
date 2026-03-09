@@ -89,4 +89,39 @@ namespace ai
     public:
         CounterspellEnemyHealerTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "counterspell") {}
     };
+
+    class NoManaGemTrigger : public ItemCountTrigger
+    {
+    public:
+        NoManaGemTrigger(PlayerbotAI* ai) : ItemCountTrigger(ai, "mana gem", 1) {}
+    };
+
+    class PartyMemberNeedsSustenanceTrigger : public Trigger
+    {
+    public:
+        PartyMemberNeedsSustenanceTrigger(PlayerbotAI* ai, string name, uint32 spellCategory)
+            : Trigger(ai, name, 5), m_spellCategory(spellCategory),
+              m_lastScanTime(0), m_lastResult(false) {}
+        virtual bool IsActive();
+    private:
+        static const uint32 IDLE_SCAN_MS   = 30000;
+        static const uint32 ACTIVE_SCAN_MS =  2500;
+        uint32 m_spellCategory;
+        uint32 m_lastScanTime;
+        bool   m_lastResult;
+    };
+
+    class PartyMemberNeedsFoodTrigger : public PartyMemberNeedsSustenanceTrigger
+    {
+    public:
+        PartyMemberNeedsFoodTrigger(PlayerbotAI* ai)
+            : PartyMemberNeedsSustenanceTrigger(ai, "party member needs food", SPELLCATEGORY_FOOD) {}
+    };
+
+    class PartyMemberNeedsWaterTrigger : public PartyMemberNeedsSustenanceTrigger
+    {
+    public:
+        PartyMemberNeedsWaterTrigger(PlayerbotAI* ai)
+            : PartyMemberNeedsSustenanceTrigger(ai, "party member needs water", SPELLCATEGORY_DRINK) {}
+    };
 }

@@ -133,5 +133,6 @@ void GenericMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "low mana",
-        NextAction::array(0, new NextAction("evocation", ACTION_EMERGENCY + 5), NULL)));
+        NextAction::array(0, new NextAction("mana potion", ACTION_EMERGENCY + 6),
+                new NextAction("evocation", ACTION_EMERGENCY + 5), NULL)));
 }
