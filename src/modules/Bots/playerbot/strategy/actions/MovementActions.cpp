@@ -10,6 +10,7 @@
 #include "WorldHandlers/Transports.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
+#include "Creature.h"
 
 using namespace ai;
 
@@ -33,7 +34,7 @@ bool MovementAction::MoveNear(WorldObject* target, float distance)
     {
         bool moved = MoveTo(target->GetMapId(),
             target->GetPositionX() + cos(angle) * distance,
-            target->GetPositionY()+ sin(angle) * distance,
+            target->GetPositionY() + sin(angle) * distance,
             target->GetPositionZ());
         if (moved)
         {
@@ -43,13 +44,16 @@ bool MovementAction::MoveNear(WorldObject* target, float distance)
     return false;
 }
 
-bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z)
+bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe)
 {
     bot->UpdateGroundPositionZ(x, y, z);
     if (!IsMovingAllowed(mapId, x, y, z))
     {
         return false;
     }
+
+    if (!unsafe && ai->HasStrategy("cautious") && IsAggroPosition(x, y))
+        return false;
 
     float distance = bot->GetDistance(x, y, z);
     if (distance > sPlayerbotAIConfig.contactDistance)
@@ -77,7 +81,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z)
         mm.Clear();
 
         float botZ = bot->GetPositionZ();
-            mm.MovePoint(mapId, x, y, z);
+        mm.MovePoint(mapId, x, y, z);
     }
 
     AI_VALUE(LastMovement&, "last movement").Set(x, y, z, bot->GetOrientation());
@@ -93,7 +97,6 @@ bool MovementAction::MoveTo(Unit* target, float distance)
 
     float bx = bot->GetPositionX();
     float by = bot->GetPositionY();
-    float bz = bot->GetPositionZ();
 
     float tx = target->GetPositionX();
     float ty = target->GetPositionY();
@@ -116,7 +119,20 @@ bool MovementAction::MoveTo(Unit* target, float distance)
     float dx = cos(angle) * needToGo + bx;
     float dy = sin(angle) * needToGo + by;
 
-    return MoveTo(target->GetMapId(), dx, dy, tz);
+    if (needToGo > 0)
+    {
+        float safeDist = CalculateAggroFreeDistance(bx, by, angle, needToGo);
+        if (safeDist < needToGo)
+        {
+            if(safeDist < sPlayerbotAIConfig.contactDistance)
+            {
+                return false;
+            }
+            dx = cos(angle) * safeDist + bx;
+            dy = sin(angle) * safeDist + by;
+        }
+    }
+    return MoveTo(target->GetMapId(), dx, dy, tz, true);
 }
 
 float MovementAction::GetFollowAngle()
@@ -360,6 +376,11 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         ai->InterruptSpell();
     }
 
+    float followX = target->GetPositionX() + cos(angle) * distance;
+    float followY = target->GetPositionY() + sin(angle) * distance;
+    if (IsAggroPosition(followX, followY))
+        return false;
+
     mm.MoveFollow(target, distance, angle);
 
     AI_VALUE(LastMovement&, "last movement").Set(target);
@@ -417,6 +438,74 @@ bool MovementAction::Flee(Unit *target)
     }
 
     return MoveTo(target->GetMapId(), rx, ry, rz);
+}
+
+/*
+ * Returns the farthest distance along the beeline from (bx,by) at the
+ * given angle that doesn't enter any hostile creature's aggro zone.
+ * Returns maxDist if the entire path is clear.
+ */
+float MovementAction::CalculateAggroFreeDistance(float bx, float by,
+                                                  float angle, float maxDist)
+{
+    if( !ai->HasStrategy("cautious"))
+    {
+        return maxDist;
+    }
+    float cosA = cos(angle);
+    float sinA = sin(angle);
+    float safeDist = maxDist;
+
+    list<ObjectGuid> targets = AI_VALUE(list<ObjectGuid>, "possible targets");
+    for (list<ObjectGuid>::iterator i = targets.begin(); i != targets.end(); ++i)
+    {
+        Unit* unit = ai->GetUnit(*i);
+        if (!unit || !unit->IsAlive() || unit->IsInCombat() || !unit->IsHostileTo(bot) || unit == bot->getVictim())
+            continue;
+
+        Creature* creature = dynamic_cast<Creature*>(unit);
+        if (!creature || !creature->CanInitiateAttack())
+            continue;
+
+        float aggroRange = creature->GetAttackDistance(bot);
+        float ex = bx - creature->GetPositionX();
+        float ey = by - creature->GetPositionY();
+        float b = ex * cosA + ey * sinA;
+        float c = ex * ex + ey * ey - aggroRange * aggroRange;
+
+        float disc = b * b - c;
+        if (disc < 0)
+            continue;
+
+        float sqrtDisc = sqrt(disc);
+        float tEntry = -b - sqrtDisc;
+        if (tEntry < 0)
+        {
+            continue;
+        }
+
+        if (tEntry < safeDist)
+        {
+            safeDist = std::max(0.0f, tEntry - 2.0f);
+        }
+    }
+
+    return safeDist;
+}
+
+bool MovementAction::IsAggroPosition(float x, float y)
+{
+    float bx = bot->GetPositionX();
+    float by = bot->GetPositionY();
+
+    float dx = x - bx;
+    float dy = y - by;
+    float dist = sqrt(dx * dx + dy * dy);
+    if (dist < 0.1f)
+        return false;
+
+    float angle = atan2(dy, dx);
+    return CalculateAggroFreeDistance(bx, by, angle, dist) < dist;
 }
 
 bool FleeAction::Execute(Event event)

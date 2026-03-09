@@ -67,6 +67,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
       logInGroupOnly(false),
       logValuesPerTick(false),
       fleeingEnabled(false),
+      cautiousDefault(false),
       randomBotMinLevel(0),
       randomBotMaxLevel(0),
       randomChangeMultiplier(0.0f),
@@ -183,6 +184,7 @@ bool PlayerbotAIConfig::Initialize()
     logInGroupOnly = config.GetBoolDefault("AiPlayerbot.LogInGroupOnly", true);
     logValuesPerTick = config.GetBoolDefault("AiPlayerbot.LogValuesPerTick", false);
     fleeingEnabled = config.GetBoolDefault("AiPlayerbot.FleeingEnabled", true);
+    cautiousDefault = config.GetBoolDefault("AiPlayerbot.Cautious", false);
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
