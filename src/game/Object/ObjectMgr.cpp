@@ -2463,15 +2463,28 @@ void ObjectMgr::LoadPetLevelInfo()
 
 PetLevelInfo const* ObjectMgr::GetPetLevelInfo(uint32 creature_id, uint32 level) const
 {
+    if (level == 0)
+        return NULL;
+
     if (level > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
     {
         level = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
     }
 
     PetLevelInfoMap::const_iterator itr = petInfo.find(creature_id);
+
     if (itr == petInfo.end())
     {
-        return NULL;
+        // The pet_levelinfo table only contains 2 entries -- no per-creature or per-family data
+        //   exists.  Fall back to family ID, then to entry 1 (the only populated default).
+        //   Ideally this table should be populated per-family at minimum.
+        CreatureInfo const* cinfo = sCreatureStorage.LookupEntry<CreatureInfo>(creature_id);
+        if (cinfo && cinfo->Family > 0)
+            itr = petInfo.find(cinfo->Family);
+        if (itr == petInfo.end())
+            itr = petInfo.find(1); // fall back to generic entry 1 as default
+        if (itr == petInfo.end())
+            return NULL;
     }
 
     return &itr->second[level - 1];                         // data for level 1 stored in [0] array element, ...

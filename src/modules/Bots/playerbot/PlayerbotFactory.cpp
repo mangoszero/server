@@ -2,6 +2,7 @@
 #include "playerbot.h"
 #include "ahbot/AhBot.h"
 #include "PlayerbotFactory.h"
+#include "Pet.h"
 #include "SQLStorages.h"
 #include "ItemPrototype.h"
 #include "PlayerbotAIConfig.h"
@@ -188,14 +189,27 @@ void PlayerbotFactory::Randomize(bool incremental)
  */
 void PlayerbotFactory::InitPet()
 {
+    if (bot->getClass() != CLASS_HUNTER)
+        return;
+
     Pet* pet = bot->GetPet();
+
+    // If not summoned, try loading existing pet from DB before creating a new one
     if (!pet)
     {
-        if (bot->getClass() != CLASS_HUNTER)
+        Pet* loadPet = new Pet;
+        if (loadPet->LoadPetFromDB(bot, 0))
         {
-            return;
+            pet = bot->GetPet();
+            if (!pet)
+                delete loadPet;
         }
+        else
+            delete loadPet;
+    }
 
+    if (!pet)
+    {
         Map* map = bot->GetMap();
         if (!map)
         {
@@ -236,12 +250,6 @@ void PlayerbotFactory::InitPet()
             int index = urand(0, ids.size() - 1);
             CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(ids[index]);
 
-            PetLevelInfo const* petInfo = sObjectMgr.GetPetLevelInfo(co->Entry, bot->getLevel());
-            if (!petInfo)
-            {
-                continue;
-            }
-
             uint32 guid = map->GenerateLocalLowGuid(HIGHGUID_PET);
             uint32 pet_number = sObjectMgr.GeneratePetNumber();
             CreatureCreatePos pos(map, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
@@ -263,7 +271,8 @@ void PlayerbotFactory::InitPet()
             pet->InitStatsForLevel(bot->getLevel());
             pet->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(NULL)));
             pet->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
-            pet->SetByteValue(UNIT_FIELD_BYTES_1, 1, 0); // loyalty level
+            pet->SetLoyaltyLevel(BEST_FRIEND);
+            pet->ModifyLoyalty(pet->GetStartLoyaltyPoints(BEST_FRIEND));
             pet->SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE | UNIT_FLAG_RESTING);
             pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME); // Allow renaming
             pet->SetPowerType(POWER_FOCUS);
@@ -279,9 +288,6 @@ void PlayerbotFactory::InitPet()
             pet->SetHealth(pet->GetMaxHealth());
             pet->SetPower(POWER_FOCUS, pet->GetMaxPower(POWER_FOCUS));
             bot->SetPet(pet);
-
-            sLog.outDetail("Bot %s: assign pet %d (%d level)", bot->GetName(), co->Entry, bot->getLevel());
-            pet->SavePetToDB(PET_SAVE_AS_CURRENT);
             break;
         }
     }
@@ -290,6 +296,59 @@ void PlayerbotFactory::InitPet()
     {
         sLog.outError("Cannot create pet for bot %s", bot->GetName());
         return;
+    }
+
+    // Teach all pet trainer skills appropriate for this pet's level.
+    QueryResult* trainerSpells = WorldDatabase.PQuery(
+        "SELECT DISTINCT nt.spell"
+        " FROM npc_trainer nt"
+        " JOIN creature_template ct ON nt.entry = ct.Entry AND ct.TrainerType = 3"
+        " WHERE nt.reqlevel <= %u",
+        pet->getLevel());
+
+    if (trainerSpells)
+    {
+        do
+        {
+            uint32 trainerSpellId = (*trainerSpells)[0].GetUInt32();
+            SpellEntry const* trainerSpellInfo = sSpellStore.LookupEntry(trainerSpellId);
+            if (!trainerSpellInfo)
+                continue;
+            for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+            {
+                if (trainerSpellInfo->Effect[i] == SPELL_EFFECT_LEARN_PET_SPELL &&
+                    trainerSpellInfo->EffectTriggerSpell[i])
+                {
+                    pet->learnSpell(trainerSpellInfo->EffectTriggerSpell[i]);
+                    break;
+                }
+            }
+        }
+        while (trainerSpells->NextRow());
+        delete trainerSpells;
+    }
+
+    CreatureInfo const* cInfo = pet->GetCreatureInfo();
+    if (cInfo && cInfo->Family)
+    {
+        CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cInfo->Family);
+        if (cFamily && (cFamily->skillLine[0] || cFamily->skillLine[1]))
+        {
+            for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+            {
+                SkillLineAbilityEntry const* slab = sSkillLineAbilityStore.LookupEntry(j);
+                if (!slab || !slab->spellId)
+                    continue;
+                if (slab->skillId != cFamily->skillLine[0] && slab->skillId != cFamily->skillLine[1])
+                    continue;
+                SpellEntry const* spellInfo = sSpellStore.LookupEntry(slab->spellId);
+                if (!spellInfo || IsPassiveSpell(spellInfo))
+                    continue;
+                if (spellInfo->spellLevel > pet->getLevel())
+                    continue;
+                pet->learnSpell(slab->spellId);
+            }
+        }
     }
 
     for (PetSpellMap::const_iterator itr = pet->m_spells.begin(); itr != pet->m_spells.end(); ++itr)
@@ -307,6 +366,8 @@ void PlayerbotFactory::InitPet()
 
         pet->ToggleAutocast(spellId, true);
     }
+
+    pet->SavePetToDB(PET_SAVE_AS_CURRENT);
 }
 
 /**
@@ -1384,6 +1445,20 @@ void PlayerbotFactory::InitAvailableSpells()
             }
 
             ai->CastSpell(tSpell->spell, bot);
+            const SpellEntry* spellInfo = sSpellStore.LookupEntry(tSpell->spell);
+            if (spellInfo)
+            {
+                for (int ei = 0; ei < MAX_EFFECT_INDEX; ++ei)
+                {
+                    if (spellInfo->Effect[ei] == SPELL_EFFECT_LEARN_SPELL &&
+                        spellInfo->EffectTriggerSpell[ei] &&
+                        !bot->HasSpell(spellInfo->EffectTriggerSpell[ei]))
+                    {
+                        bot->learnSpell(spellInfo->EffectTriggerSpell[ei], false);
+                        break;
+                    }
+                }
+            }
         }
     }
 }
