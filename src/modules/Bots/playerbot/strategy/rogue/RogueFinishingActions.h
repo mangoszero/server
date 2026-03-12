@@ -2,34 +2,45 @@
 
 namespace ai
 {
-    class CastEviscerateAction : public CastMeleeSpellAction
+    class CastFinishingMoveAction : public CastMeleeSpellAction
     {
     public:
-        CastEviscerateAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "eviscerate") {}
+        CastFinishingMoveAction(PlayerbotAI* ai, string name) : CastMeleeSpellAction(ai, name) {}
+
+        virtual bool isUseful()
+        {
+            return CastMeleeSpellAction::isUseful() && AI_VALUE2(uint8, "combo", "current target") >= 1;
+        }
     };
 
-    class CastSliceAndDiceAction : public CastMeleeSpellAction
+    class CastEviscerateAction : public CastFinishingMoveAction
     {
     public:
-        CastSliceAndDiceAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "slice and dice") {}
+        CastEviscerateAction(PlayerbotAI* ai) : CastFinishingMoveAction(ai, "eviscerate") {}
     };
 
-    class CastExposeArmorAction : public CastMeleeSpellAction
+    class CastSliceAndDiceAction : public CastFinishingMoveAction
     {
     public:
-        CastExposeArmorAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "expose armor") {}
+        CastSliceAndDiceAction(PlayerbotAI* ai) : CastFinishingMoveAction(ai, "slice and dice") {}
     };
 
-    class CastRuptureAction : public CastMeleeSpellAction
+    class CastExposeArmorAction : public CastFinishingMoveAction
     {
     public:
-        CastRuptureAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "rupture") {}
+        CastExposeArmorAction(PlayerbotAI* ai) : CastFinishingMoveAction(ai, "expose armor") {}
     };
 
-    class CastKidneyShotAction : public CastMeleeSpellAction
+    class CastRuptureAction : public CastFinishingMoveAction
     {
     public:
-        CastKidneyShotAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "kidney shot") {}
+        CastRuptureAction(PlayerbotAI* ai) : CastFinishingMoveAction(ai, "rupture") {}
+    };
+
+    class CastKidneyShotAction : public CastFinishingMoveAction
+    {
+    public:
+        CastKidneyShotAction(PlayerbotAI* ai) : CastFinishingMoveAction(ai, "kidney shot") {}
     };
 
 }
