@@ -3,22 +3,42 @@
 
 namespace ai
 {
-    class CastJudgementOfLightAction : public CastMeleeSpellAction
+    // Base for judgement actions that guards against judging with no active seal
+    class CastJudgementBaseAction : public CastMeleeSpellAction
     {
     public:
-        CastJudgementOfLightAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "judgement of light") {}
+        CastJudgementBaseAction(PlayerbotAI* ai, string spell) : CastMeleeSpellAction(ai, spell) {}
+        virtual bool isPossible()
+        {
+            Unit* bot = ai->GetBot();
+            if (!ai->HasAura("seal of righteousness", bot) &&
+                !ai->HasAura("seal of the crusader", bot) &&
+                !ai->HasAura("seal of command", bot) &&
+                !ai->HasAura("seal of vengeance", bot) &&
+                !ai->HasAura("seal of justice", bot) &&
+                !ai->HasAura("seal of light", bot) &&
+                !ai->HasAura("seal of wisdom", bot))
+                return false;
+            return CastMeleeSpellAction::isPossible();
+        }
     };
 
-    class CastJudgementOfWisdomAction : public CastMeleeSpellAction
+    class CastJudgementOfLightAction : public CastJudgementBaseAction
     {
     public:
-        CastJudgementOfWisdomAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "judgement of wisdom") {}
+        CastJudgementOfLightAction(PlayerbotAI* ai) : CastJudgementBaseAction(ai, "judgement of light") {}
     };
 
-    class CastJudgementOfJusticeAction : public CastMeleeSpellAction
+    class CastJudgementOfWisdomAction : public CastJudgementBaseAction
     {
     public:
-        CastJudgementOfJusticeAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "judgement of justice") {}
+        CastJudgementOfWisdomAction(PlayerbotAI* ai) : CastJudgementBaseAction(ai, "judgement of wisdom") {}
+    };
+
+    class CastJudgementOfJusticeAction : public CastJudgementBaseAction
+    {
+    public:
+        CastJudgementOfJusticeAction(PlayerbotAI* ai) : CastJudgementBaseAction(ai, "judgement of justice") {}
     };
 
     class CastRighteousFuryAction : public CastBuffSpellAction
@@ -67,6 +87,25 @@ namespace ai
     {
     public:
         CastSealOfRighteousnessAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "seal of righteousness") {}
+    };
+
+    class CastSealOfTheCrusaderAction : public CastBuffSpellAction
+    {
+    public:
+        CastSealOfTheCrusaderAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "seal of the crusader") {}
+        virtual bool isPossible()
+        {
+            Unit* target = AI_VALUE(Unit*, "current target");
+            if (target && ai->HasAura("judgement of the crusader", target))
+                return false;
+            return CastBuffSpellAction::isPossible();
+        }
+    };
+
+    class CastJudgementAction : public CastJudgementBaseAction
+    {
+    public:
+        CastJudgementAction(PlayerbotAI* ai) : CastJudgementBaseAction(ai, "judgement") {}
     };
 
     class CastSealOfJusticeAction : public CastBuffSpellAction
@@ -304,6 +343,12 @@ namespace ai
 
     BEGIN_SPELL_ACTION(CastExorcismAction, "exorcism")
     END_SPELL_ACTION()
+
+    class CastBlessingOfFreedomAction : public CastBuffSpellAction
+    {
+    public:
+        CastBlessingOfFreedomAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "blessing of freedom") {}
+    };
 
     class CastHolyShieldAction : public CastBuffSpellAction
     {

@@ -10,6 +10,7 @@ class DpsPaladinStrategyActionNodeFactory : public NamedObjectFactory<ActionNode
 public:
     DpsPaladinStrategyActionNodeFactory()
     {
+        creators["seal of the crusader"] = &seal_of_the_crusader;
         creators["seal of vengeance"] = &seal_of_vengeance;
         creators["seal of command"] = &seal_of_command;
         creators["blessing of might"] = &blessing_of_might;
@@ -17,6 +18,13 @@ public:
     }
 
 private:
+    static ActionNode* seal_of_the_crusader(PlayerbotAI* ai)
+    {
+        return new ActionNode ("seal of the crusader",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("seal of vengeance"), NULL),
+            /*C*/ NULL);
+    }
     static ActionNode* seal_of_vengeance(PlayerbotAI* ai)
     {
         return new ActionNode ("seal of vengeance",
@@ -28,7 +36,7 @@ private:
     {
         return new ActionNode ("seal of command",
             /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("seal of wisdom"), NULL),
+            /*A*/ NextAction::array(0, new NextAction("seal of righteousness"), NULL),
             /*C*/ NULL);
     }
     static ActionNode* blessing_of_might(PlayerbotAI* ai)
@@ -70,7 +78,7 @@ void DpsPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("judgement of wisdom", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "blessing",
+        "blessing of might",
         NextAction::array(0, new NextAction("blessing of might", ACTION_HIGH + 8), NULL)));
 
     triggers.push_back(new TriggerNode(

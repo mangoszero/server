@@ -94,7 +94,9 @@ namespace ai
             {
                 creators["judgement of wisdom"] = &TriggerFactoryInternal::judgement_of_wisdom;
                 creators["judgement of light"] = &TriggerFactoryInternal::judgement_of_light;
+                creators["aura"] = &TriggerFactoryInternal::aura;
                 creators["blessing"] = &TriggerFactoryInternal::blessing;
+                creators["blessing of might"] = &TriggerFactoryInternal::blessing_of_might;
                 creators["seal"] = &TriggerFactoryInternal::seal;
                 creators["art of war"] = &TriggerFactoryInternal::art_of_war;
                 creators["blessing of kings on party"] = &TriggerFactoryInternal::blessing_of_kings_on_party;
@@ -115,6 +117,9 @@ namespace ai
                 creators["righteous fury"] = &TriggerFactoryInternal::righteous_fury;
                 creators["holy shield"] = &TriggerFactoryInternal::holy_shield;
                 creators["hammer of justice on enemy healer"] = &TriggerFactoryInternal::hammer_of_justice_on_enemy_target;
+                creators["holy wrath"] = &TriggerFactoryInternal::holy_wrath;
+                creators["exorcism"] = &TriggerFactoryInternal::exorcism;
+                creators["blessing of freedom"] = &TriggerFactoryInternal::blessing_of_freedom;
             }
 
         private:
@@ -122,7 +127,9 @@ namespace ai
             static Trigger* righteous_fury(PlayerbotAI* ai) { return new RighteousFuryTrigger(ai); }
             static Trigger* judgement_of_wisdom(PlayerbotAI* ai) { return new JudgementOfWisdomTrigger(ai); }
             static Trigger* judgement_of_light(PlayerbotAI* ai) { return new JudgementOfLightTrigger(ai); }
+            static Trigger* aura(PlayerbotAI* ai) { return new AuraTrigger(ai); }
             static Trigger* blessing(PlayerbotAI* ai) { return new BlessingTrigger(ai); }
+            static Trigger* blessing_of_might(PlayerbotAI* ai) { return new BlessingOfMightTrigger(ai); }
             static Trigger* seal(PlayerbotAI* ai) { return new SealTrigger(ai); }
             static Trigger* art_of_war(PlayerbotAI* ai) { return new ArtOfWarTrigger(ai); }
             static Trigger* blessing_of_kings_on_party(PlayerbotAI* ai) { return new BlessingOfKingsOnPartyTrigger(ai); }
@@ -141,6 +148,9 @@ namespace ai
             static Trigger* CleanseCureMagic(PlayerbotAI* ai) { return new CleanseCureMagicTrigger(ai); }
             static Trigger* CleanseCurePartyMemberMagic(PlayerbotAI* ai) { return new CleanseCurePartyMemberMagicTrigger(ai); }
             static Trigger* hammer_of_justice_on_enemy_target(PlayerbotAI* ai) { return new HammerOfJusticeEnemyHealerTrigger(ai); }
+            static Trigger* holy_wrath(PlayerbotAI* ai) { return new HolyWrathTrigger(ai); }
+            static Trigger* exorcism(PlayerbotAI* ai) { return new ExorcismTrigger(ai); }
+            static Trigger* blessing_of_freedom(PlayerbotAI* ai) { return new BlessingOfFreedomTrigger(ai); }
         };
     };
 };
@@ -156,12 +166,18 @@ namespace ai
         public:
             AiObjectContextInternal()
             {
+                creators["seal of the crusader"] = &AiObjectContextInternal::seal_of_the_crusader;
+                creators["judgement"] = &AiObjectContextInternal::judgement;
                 creators["seal of command"] = &AiObjectContextInternal::seal_of_command;
                 creators["blessing of might"] = &AiObjectContextInternal::blessing_of_might;
+                creators["blessing of might on party"] = &AiObjectContextInternal::blessing_of_might_on_party;
+                creators["blessing of wisdom"] = &AiObjectContextInternal::blessing_of_wisdom;
+                creators["blessing of wisdom on party"] = &AiObjectContextInternal::blessing_of_wisdom_on_party;
                 creators["blessing of kings on party"] = &AiObjectContextInternal::blessing_of_kings_on_party;
                 creators["redemption"] = &AiObjectContextInternal::redemption;
                 creators["seal of light"] = &AiObjectContextInternal::seal_of_light;
                 creators["devotion aura"] = &AiObjectContextInternal::devotion_aura;
+                creators["concentration aura"] = &AiObjectContextInternal::concentration_aura;
                 creators["holy wrath"] = &AiObjectContextInternal::holy_wrath;
                 creators["consecration"] = &AiObjectContextInternal::consecration;
                 creators["cleanse disease"] = &AiObjectContextInternal::cleanse_disease;
@@ -201,17 +217,24 @@ namespace ai
                 creators["righteous fury"] = &AiObjectContextInternal::righteous_fury;
                 creators["blessing of sanctuary"] = &AiObjectContextInternal::blessing_of_sanctuary;
                 creators["hammer of justice on enemy healer"] = &AiObjectContextInternal::hammer_of_justice_on_enemy_healer;
+                creators["blessing of freedom"] = &AiObjectContextInternal::blessing_of_freedom;
             }
 
         private:
             static Action* righteous_fury(PlayerbotAI* ai) { return new CastRighteousFuryAction(ai); }
             static Action* blessing_of_sanctuary(PlayerbotAI* ai) { return new CastBlessingOfSanctuaryAction(ai); }
+            static Action* seal_of_the_crusader(PlayerbotAI* ai) { return new CastSealOfTheCrusaderAction(ai); }
+            static Action* judgement(PlayerbotAI* ai) { return new CastJudgementAction(ai); }
             static Action* seal_of_command(PlayerbotAI* ai) { return new CastSealOfCommandAction(ai); }
             static Action* blessing_of_might(PlayerbotAI* ai) { return new CastBlessingOfMightAction(ai); }
+            static Action* blessing_of_might_on_party(PlayerbotAI* ai) { return new CastBlessingOfMightOnPartyAction(ai); }
+            static Action* blessing_of_wisdom(PlayerbotAI* ai) { return new CastBlessingOfWisdomAction(ai); }
+            static Action* blessing_of_wisdom_on_party(PlayerbotAI* ai) { return new CastBlessingOfWisdomOnPartyAction(ai); }
             static Action* blessing_of_kings_on_party(PlayerbotAI* ai) { return new CastBlessingOfKingsOnPartyAction(ai); }
             static Action* redemption(PlayerbotAI* ai) { return new CastRedemptionAction(ai); }
             static Action* seal_of_light(PlayerbotAI* ai) { return new CastSealOfLightAction(ai); }
             static Action* devotion_aura(PlayerbotAI* ai) { return new CastDevotionAuraAction(ai); }
+            static Action* concentration_aura(PlayerbotAI* ai) { return new CastConcentrationAuraAction(ai); }
             static Action* holy_wrath(PlayerbotAI* ai) { return new CastHolyWrathAction(ai); }
             static Action* consecration(PlayerbotAI* ai) { return new CastConsecrationAction(ai); }
             static Action* cleanse_poison(PlayerbotAI* ai) { return new CastCleansePoisonAction(ai); }
@@ -249,6 +272,7 @@ namespace ai
             static Action* frost_resistance_aura(PlayerbotAI* ai) { return new CastFrostResistanceAuraAction(ai); }
             static Action* fire_resistance_aura(PlayerbotAI* ai) { return new CastFireResistanceAuraAction(ai); }
             static Action* hammer_of_justice_on_enemy_healer(PlayerbotAI* ai) { return new CastHammerOfJusticeOnEnemyHealerAction(ai); }
+            static Action* blessing_of_freedom(PlayerbotAI* ai) { return new CastBlessingOfFreedomAction(ai); }
         };
     };
 };

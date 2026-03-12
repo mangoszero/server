@@ -27,6 +27,14 @@ namespace ai
 
     BUFF_ON_PARTY_TRIGGER(BlessingOfKingsOnPartyTrigger, "blessing of kings", "blessing of kings on party")
     BUFF_TRIGGER(BlessingTrigger, "blessing of sanctuary", "blessing of sanctuary")
+    BUFF_TRIGGER(BlessingOfMightTrigger, "blessing of might", "blessing of might")
+
+    class AuraTrigger : public BuffTrigger
+    {
+    public:
+        AuraTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "devotion aura") {}
+        virtual bool IsActive();
+    };
 
     class HammerOfJusticeInterruptSpellTrigger : public InterruptSpellTrigger
     {
@@ -110,5 +118,27 @@ namespace ai
     {
     public:
         HammerOfJusticeEnemyHealerTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "hammer of justice") {}
+    };
+
+    class HolyWrathTrigger : public SpellTrigger
+    {
+    public:
+        HolyWrathTrigger(PlayerbotAI* ai) : SpellTrigger(ai, "holy wrath") {}
+        virtual bool IsActive();
+    };
+
+    class ExorcismTrigger : public SpellTrigger
+    {
+    public:
+        ExorcismTrigger(PlayerbotAI* ai) : SpellTrigger(ai, "exorcism") {}
+        virtual bool IsActive();
+    };
+
+    // Fires when the bot itself is rooted — cast Blessing of Freedom on self.
+    class BlessingOfFreedomTrigger : public Trigger
+    {
+    public:
+        BlessingOfFreedomTrigger(PlayerbotAI* ai) : Trigger(ai, "blessing of freedom") {}
+        virtual bool IsActive();
     };
 }
