@@ -47,6 +47,11 @@ namespace ai
     {
     public:
         ReachMeleeAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach melee", sPlayerbotAIConfig.meleeDistance) {}
+
+        virtual bool isUseful()
+        {
+            return AI_VALUE2(float, "distance", "current target") > distance + sPlayerbotAIConfig.contactDistance + bot->GetObjectBoundingRadius();
+        }
     };
 
     class ReachSpellAction : public ReachTargetAction
