@@ -76,6 +76,7 @@ namespace ai
                 creators["freezing trap"] = &TriggerFactoryInternal::freezing_trap;
                 creators["aspect of the pack"] = &TriggerFactoryInternal::aspect_of_the_pack;
                 creators["rapid fire"] = &TriggerFactoryInternal::rapid_fire;
+                creators["bestial wrath"] = &TriggerFactoryInternal::bestial_wrath;
                 creators["aspect of the hawk"] = &TriggerFactoryInternal::aspect_of_the_hawk;
                 creators["aspect of the wild"] = &TriggerFactoryInternal::aspect_of_the_wild;
                 creators["aspect of the viper"] = &TriggerFactoryInternal::aspect_of_the_viper;
@@ -95,6 +96,7 @@ namespace ai
             static Trigger* freezing_trap(PlayerbotAI* ai) { return new FreezingTrapTrigger(ai); }
             static Trigger* aspect_of_the_pack(PlayerbotAI* ai) { return new HunterAspectOfThePackTrigger(ai); }
             static Trigger* rapid_fire(PlayerbotAI* ai) { return new RapidFireTrigger(ai); }
+            static Trigger* bestial_wrath(PlayerbotAI* ai) { return new BestialWrathTrigger(ai); }
             static Trigger* aspect_of_the_hawk(PlayerbotAI* ai) { return new HunterAspectOfTheHawkTrigger(ai); }
             static Trigger* aspect_of_the_wild(PlayerbotAI* ai) { return new HunterAspectOfTheWildTrigger(ai); }
         };
@@ -141,6 +143,16 @@ namespace ai
                 creators["trueshot aura"] = &AiObjectContextInternal::trueshot_aura;
                 creators["feign death"] = &AiObjectContextInternal::feign_death;
                 creators["wing clip"] = &AiObjectContextInternal::wing_clip;
+                creators["disengage"] = &AiObjectContextInternal::disengage;
+                creators["immolation trap"] = &AiObjectContextInternal::immolation_trap;
+                creators["frost trap"] = &AiObjectContextInternal::frost_trap;
+                creators["explosive trap"] = &AiObjectContextInternal::explosive_trap;
+                creators["scatter shot"] = &AiObjectContextInternal::scatter_shot;
+                creators["bestial wrath"] = &AiObjectContextInternal::bestial_wrath;
+                creators["mongoose bite"] = &AiObjectContextInternal::mongoose_bite;
+                creators["intimidation"] = &AiObjectContextInternal::intimidation;
+                creators["hunter melee"] = &AiObjectContextInternal::hunter_melee;
+                creators["hunter ensure ranged position"] = &AiObjectContextInternal::hunter_ensure_ranged_position;
             }
 
         private:
@@ -167,6 +179,16 @@ namespace ai
             static Action* rapid_fire(PlayerbotAI* ai) { return new CastRapidFireAction(ai); }
             static Action* aspect_of_the_hawk(PlayerbotAI* ai) { return new CastAspectOfTheHawkAction(ai); }
             static Action* aspect_of_the_wild(PlayerbotAI* ai) { return new CastAspectOfTheWildAction(ai); }
+            static Action* disengage(PlayerbotAI* ai) { return new CastDisengageAction(ai); }
+            static Action* immolation_trap(PlayerbotAI* ai) { return new CastImmolationTrapAction(ai); }
+            static Action* frost_trap(PlayerbotAI* ai) { return new CastFrostTrapAction(ai); }
+            static Action* explosive_trap(PlayerbotAI* ai) { return new CastExplosiveTrapAction(ai); }
+            static Action* scatter_shot(PlayerbotAI* ai) { return new CastScatterShotAction(ai); }
+            static Action* bestial_wrath(PlayerbotAI* ai) { return new CastBestialWrathAction(ai); }
+            static Action* mongoose_bite(PlayerbotAI* ai) { return new CastMongooseBiteAction(ai); }
+            static Action* intimidation(PlayerbotAI* ai) { return new CastIntimidationAction(ai); }
+            static Action* hunter_melee(PlayerbotAI* ai) { return new HunterMeleeAction(ai); }
+            static Action* hunter_ensure_ranged_position(PlayerbotAI* ai) { return new HunterEnsureRangedPositionAction(ai); }
             static Action* aspect_of_the_pack(PlayerbotAI* ai) { return new CastAspectOfThePackAction(ai); }
             static Action* aspect_of_the_cheetah(PlayerbotAI* ai) { return new CastAspectOfTheCheetahAction(ai); }
             static Action* wing_clip(PlayerbotAI* ai) { return new CastWingClipAction(ai); }

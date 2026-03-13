@@ -46,6 +46,11 @@ public:
      */
     void Refresh();
 
+    /**
+     * @brief Initializes the pet for the player bot.
+     */
+    void InitPet();
+
 private:
     /**
      * @brief Randomizes the player bot with an option for incremental changes.
@@ -147,11 +152,6 @@ private:
      * @brief Initializes the quests for the player bot.
      */
     void InitQuests();
-
-    /**
-     * @brief Initializes the pet for the player bot.
-     */
-    void InitPet();
 
     /**
      * @brief Clears the inventory of the player bot.
