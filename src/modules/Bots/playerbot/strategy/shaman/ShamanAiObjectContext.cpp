@@ -109,10 +109,14 @@ namespace ai
                 creators["bloodlust"] = &TriggerFactoryInternal::bloodlust;
                 creators["maelstrom weapon"] = &TriggerFactoryInternal::maelstrom_weapon;
                 creators["wind shear on enemy healer"] = &TriggerFactoryInternal::wind_shear_on_enemy_healer;
+                creators["ghost wolf"] = &TriggerFactoryInternal::ghost_wolf;
+                creators["tremor totem"] = &TriggerFactoryInternal::tremor_totem; // unwired intentionally
             }
 
         private:
             static Trigger* maelstrom_weapon(PlayerbotAI* ai) { return new MaelstromWeaponTrigger(ai); }
+            static Trigger* ghost_wolf(PlayerbotAI* ai) { return new GhostWolfTrigger(ai); }
+            static Trigger* tremor_totem(PlayerbotAI* ai) { return new TremorTotemTrigger(ai); }
             static Trigger* heroism(PlayerbotAI* ai) { return new HeroismTrigger(ai); }
             static Trigger* bloodlust(PlayerbotAI* ai) { return new BloodlustTrigger(ai); }
             static Trigger* party_member_cleanse_disease(PlayerbotAI* ai) { return new PartyMemberCleanseSpiritDiseaseTrigger(ai); }
@@ -186,10 +190,32 @@ namespace ai
                 creators["chain lightning"] = &AiObjectContextInternal::chain_lightning;
                 creators["lightning bolt"] = &AiObjectContextInternal::lightning_bolt;
                 creators["bloodlust"] = &AiObjectContextInternal::bloodlust;
+                creators["heroism"] = &AiObjectContextInternal::heroism;
+                creators["water shield"] = &AiObjectContextInternal::water_shield;
+                creators["cleanse spirit"] = &AiObjectContextInternal::cleanse_spirit;
+                creators["cleanse spirit poison on party"] = &AiObjectContextInternal::cleanse_spirit_poison_on_party;
+                creators["cleanse spirit curse on party"] = &AiObjectContextInternal::cleanse_spirit_curse_on_party;
+                creators["cleanse spirit disease on party"] = &AiObjectContextInternal::cleanse_spirit_disease_on_party;
+                creators["cleansing totem"] = &AiObjectContextInternal::cleansing_totem;
+                creators["fire nova"] = &AiObjectContextInternal::fire_nova;
+                creators["thunderstorm"] = &AiObjectContextInternal::thunderstorm;
+                creators["ghost wolf"] = &AiObjectContextInternal::ghost_wolf;
+                creators["tremor totem"] = &AiObjectContextInternal::tremor_totem; // unwired intentionally
             }
 
         private:
             static Action* bloodlust(PlayerbotAI* ai) { return new CastBloodlustAction(ai); }
+            static Action* heroism(PlayerbotAI* ai) { return new CastHeroismAction(ai); }
+            static Action* water_shield(PlayerbotAI* ai) { return new CastWaterShieldAction(ai); }
+            static Action* cleanse_spirit(PlayerbotAI* ai) { return new CastCleanseSpiritAction(ai); }
+            static Action* cleanse_spirit_poison_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritPoisonOnPartyAction(ai); }
+            static Action* cleanse_spirit_curse_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritCurseOnPartyAction(ai); }
+            static Action* cleanse_spirit_disease_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritDiseaseOnPartyAction(ai); }
+            static Action* cleansing_totem(PlayerbotAI* ai) { return new CastCleansingTotemAction(ai); }
+            static Action* fire_nova(PlayerbotAI* ai) { return new CastFireNovaAction(ai); }
+            static Action* thunderstorm(PlayerbotAI* ai) { return new CastThunderstormAction(ai); }
+            static Action* ghost_wolf(PlayerbotAI* ai) { return new CastGhostWolfAction(ai); }
+            static Action* tremor_totem(PlayerbotAI* ai) { return new CastTremorTotemAction(ai); }
             static Action* lightning_bolt(PlayerbotAI* ai) { return new CastLightningBoltAction(ai); }
             static Action* chain_lightning(PlayerbotAI* ai) { return new CastChainLightningAction(ai); }
             static Action* frost_shock(PlayerbotAI* ai) { return new CastFrostShockAction(ai); }

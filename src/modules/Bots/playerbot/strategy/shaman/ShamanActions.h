@@ -207,4 +207,70 @@ namespace ai
     public:
         CastBloodlustAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "bloodlust") {}
     };
+
+    class CastHeroismAction : public CastBuffSpellAction
+    {
+    public:
+        CastHeroismAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "heroism") {}
+    };
+
+    class CastWaterShieldAction : public CastBuffSpellAction
+    {
+    public:
+        CastWaterShieldAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "water shield") {}
+    };
+
+    class CastCleanseSpiritAction : public CastSpellAction
+    {
+    public:
+        CastCleanseSpiritAction(PlayerbotAI* ai) : CastSpellAction(ai, "cleanse spirit") {}
+        virtual string GetTargetName() { return "self target"; }
+    };
+
+    class CastCleanseSpiritPoisonOnPartyAction : public CurePartyMemberAction
+    {
+    public:
+        CastCleanseSpiritPoisonOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_POISON) {}
+        virtual string getName() { return "cleanse spirit poison on party"; }
+    };
+
+    class CastCleanseSpiritCurseOnPartyAction : public CurePartyMemberAction
+    {
+    public:
+        CastCleanseSpiritCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_CURSE) {}
+        virtual string getName() { return "cleanse spirit curse on party"; }
+    };
+
+    class CastCleanseSpiritDiseaseOnPartyAction : public CurePartyMemberAction
+    {
+    public:
+        CastCleanseSpiritDiseaseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_DISEASE) {}
+        virtual string getName() { return "cleanse spirit disease on party"; }
+    };
+
+    class CastFireNovaAction : public CastSpellAction
+    {
+    public:
+        CastFireNovaAction(PlayerbotAI* ai) : CastSpellAction(ai, "fire nova") {}
+        virtual string GetTargetName() { return "self target"; }
+    };
+
+    class CastThunderstormAction : public CastSpellAction
+    {
+    public:
+        CastThunderstormAction(PlayerbotAI* ai) : CastSpellAction(ai, "thunderstorm") {}
+        virtual string GetTargetName() { return "self target"; }
+    };
+
+    class CastGhostWolfAction : public CastBuffSpellAction
+    {
+    public:
+        CastGhostWolfAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "ghost wolf") {}
+    };
+
+    class CastTremorTotemAction : public CastTotemAction
+    {
+    public:
+        CastTremorTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "tremor totem") {}
+    };
 }
