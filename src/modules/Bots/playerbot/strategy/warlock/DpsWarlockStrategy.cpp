@@ -13,6 +13,7 @@ public:
     DpsWarlockStrategyActionNodeFactory()
     {
         creators["shadow bolt"] = &shadow_bolt;
+        creators["incinerate"] = &incinerate;
     }
 private:
     static ActionNode* shadow_bolt(PlayerbotAI* ai)
@@ -22,6 +23,38 @@ private:
             /*A*/ NextAction::array(0, new NextAction("shoot"), NULL),
             /*C*/ NULL);
     }
+    static ActionNode* incinerate(PlayerbotAI* ai)
+    {
+        return new ActionNode ("incinerate",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("shadow bolt"), NULL),
+            /*C*/ NULL);
+    }
+};
+
+class DpsAoeWarlockStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
+{
+public:
+    DpsAoeWarlockStrategyActionNodeFactory()
+    {
+        creators["seed of corruption"] = &seed_of_corruption;
+        creators["shadowfury"] = &shadowfury;
+    }
+private:
+    static ActionNode* seed_of_corruption(PlayerbotAI* ai)
+    {
+        return new ActionNode ("seed of corruption",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("rain of fire"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* shadowfury(PlayerbotAI* ai)
+    {
+        return new ActionNode ("shadowfury",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("rain of fire"), NULL),
+            /*C*/ NULL);
+    }
 };
 
 DpsWarlockStrategy::DpsWarlockStrategy(PlayerbotAI* ai) : GenericWarlockStrategy(ai)
@@ -29,10 +62,15 @@ DpsWarlockStrategy::DpsWarlockStrategy(PlayerbotAI* ai) : GenericWarlockStrategy
     actionNodeFactories.Add(new DpsWarlockStrategyActionNodeFactory());
 }
 
+DpsAoeWarlockStrategy::DpsAoeWarlockStrategy(PlayerbotAI* ai) : CombatStrategy(ai)
+{
+    actionNodeFactories.Add(new DpsAoeWarlockStrategyActionNodeFactory());
+}
+
 
 NextAction** DpsWarlockStrategy::getDefaultActions()
 {
-    return NextAction::array(0, new NextAction("incinirate", 10.0f), new NextAction("shadow bolt", 10.0f), NULL);
+    return NextAction::array(0, new NextAction("incinerate", 10.0f), new NextAction("shadow bolt", 10.0f), NULL);
 }
 
 void DpsWarlockStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
