@@ -170,6 +170,15 @@ namespace ai
                 creators["evocation"] = &AiObjectContextInternal::evocation;
                 creators["arcane missiles"] = &AiObjectContextInternal::arcane_missiles;
                 creators["counterspell on enemy healer"] = &AiObjectContextInternal::counterspell_on_enemy_healer;
+                creators["living bomb"] = &AiObjectContextInternal::living_bomb;
+                creators["icy veins"] = &AiObjectContextInternal::icy_veins;
+                creators["spellsteal"] = &AiObjectContextInternal::spellsteal;
+                creators["dragon's breath"] = &AiObjectContextInternal::dragons_breath;
+                creators["arcane blast"] = &AiObjectContextInternal::arcane_blast;
+                creators["arcane barrage"] = &AiObjectContextInternal::arcane_barrage;
+                creators["cone of cold"] = &AiObjectContextInternal::cone_of_cold;
+                creators["cold snap"] = &AiObjectContextInternal::cold_snap;
+                creators["arcane brilliance"] = &AiObjectContextInternal::arcane_brilliance;
             }
 
         private:
@@ -201,6 +210,15 @@ namespace ai
             static Action* blast_wave(PlayerbotAI* ai) { return new CastBlastWaveAction(ai); }
             static Action* evocation(PlayerbotAI* ai) { return new CastEvocationAction(ai); }
             static Action* counterspell_on_enemy_healer(PlayerbotAI* ai) { return new CastCounterspellOnEnemyHealerAction(ai); }
+            static Action* living_bomb(PlayerbotAI* ai) { return new CastLivingBombAction(ai); }
+            static Action* icy_veins(PlayerbotAI* ai) { return new CastIcyVeinsAction(ai); }
+            static Action* spellsteal(PlayerbotAI* ai) { return new CastSpellstealAction(ai); }
+            static Action* dragons_breath(PlayerbotAI* ai) { return new CastDragonsBreathAction(ai); }
+            static Action* arcane_blast(PlayerbotAI* ai) { return new CastArcaneBlastAction(ai); }
+            static Action* arcane_barrage(PlayerbotAI* ai) { return new CastArcaneBarrageAction(ai); }
+            static Action* cone_of_cold(PlayerbotAI* ai) { return new CastConeOfColdAction(ai); }
+            static Action* cold_snap(PlayerbotAI* ai) { return new CastColdSnapAction(ai); }
+            static Action* arcane_brilliance(PlayerbotAI* ai) { return new CastArcaneBrillianceAction(ai); }
         };
     };
 };

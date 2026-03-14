@@ -19,6 +19,7 @@ public:
         creators["evocation"] = &evocation;
         creators["dragon's breath"] = &dragons_breath;
         creators["blast wave"] = &blast_wave;
+        creators["ice block"] = &ice_block;
     }
 private:
     static ActionNode* frostbolt(PlayerbotAI* ai)
@@ -83,6 +84,13 @@ private:
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("frost nova"), NULL),
             /*C*/ NextAction::array(0, new NextAction("flamestrike", 71.0f), NULL));
+    }
+    static ActionNode* ice_block(PlayerbotAI* ai)
+    {
+        return new ActionNode ("ice block",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("cold snap"), NULL),
+            /*C*/ NULL);
     }
 };
 
