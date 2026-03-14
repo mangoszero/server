@@ -90,6 +90,8 @@ namespace ai
                 creators["eclipse (solar)"] = &TriggerFactoryInternal::eclipse_solar;
                 creators["eclipse (lunar)"] = &TriggerFactoryInternal::eclipse_lunar;
                 creators["bash on enemy healer"] = &TriggerFactoryInternal::bash_on_enemy_healer;
+                creators["remove curse"] = &TriggerFactoryInternal::remove_curse;
+                creators["remove curse on party"] = &TriggerFactoryInternal::remove_curse_on_party;
             }
 
         private:
@@ -113,6 +115,8 @@ namespace ai
             static Trigger* cat_form(PlayerbotAI* ai) { return new CatFormTrigger(ai); }
             static Trigger* tree_form(PlayerbotAI* ai) { return new TreeFormTrigger(ai); }
             static Trigger* bash_on_enemy_healer(PlayerbotAI* ai) { return new BashInterruptEnemyHealerSpellTrigger(ai); }
+            static Trigger* remove_curse(PlayerbotAI* ai) { return new RemoveCurseTrigger(ai); }
+            static Trigger* remove_curse_on_party(PlayerbotAI* ai) { return new PartyMemberRemoveCurseTrigger(ai); }
         };
     };
 };
@@ -176,12 +180,16 @@ namespace ai
                 creators["rejuvenation on party"] = &AiObjectContextInternal::rejuvenation_on_party;
                 creators["healing touch on party"] = &AiObjectContextInternal::healing_touch_on_party;
                 creators["rebirth"] = &AiObjectContextInternal::rebirth;
-                creators["barskin"] = &AiObjectContextInternal::barskin;
+                creators["barkskin"] = &AiObjectContextInternal::barskin;
                 creators["lacerate"] = &AiObjectContextInternal::lacerate;
                 creators["hurricane"] = &AiObjectContextInternal::hurricane;
                 creators["innervate"] = &AiObjectContextInternal::innervate;
                 creators["tranquility"] = &AiObjectContextInternal::tranquility;
                 creators["bash on enemy healer"] = &AiObjectContextInternal::bash_on_enemy_healer;
+                creators["remove curse"] = &AiObjectContextInternal::remove_curse;
+                creators["remove curse on party"] = &AiObjectContextInternal::remove_curse_on_party;
+                creators["frenzied regeneration"] = &AiObjectContextInternal::frenzied_regeneration;
+                creators["challenging roar"] = &AiObjectContextInternal::challenging_roar;
             }
 
         private:
@@ -239,6 +247,10 @@ namespace ai
             static Action* hurricane(PlayerbotAI* ai) { return new CastHurricaneAction(ai); }
             static Action* innervate(PlayerbotAI* ai) { return new CastInnervateAction(ai); }
             static Action* bash_on_enemy_healer(PlayerbotAI* ai) { return new CastBashOnEnemyHealerAction(ai); }
+            static Action* remove_curse(PlayerbotAI* ai) { return new CastRemoveCurseAction(ai); }
+            static Action* remove_curse_on_party(PlayerbotAI* ai) { return new CastRemoveCurseOnPartyAction(ai); }
+            static Action* frenzied_regeneration(PlayerbotAI* ai) { return new CastFrenziedRegenerationAction(ai); }
+            static Action* challenging_roar(PlayerbotAI* ai) { return new CastChallengingRoarAction(ai); }
         };
     };
 };

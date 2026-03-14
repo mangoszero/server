@@ -165,7 +165,19 @@ namespace ai
     class CastBarskinAction : public CastBuffSpellAction
     {
     public:
-        CastBarskinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "barskin") {}
+        CastBarskinAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "barkskin") {}
+    };
+
+    class CastRemoveCurseAction : public CastCureSpellAction
+    {
+    public:
+        CastRemoveCurseAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "remove curse") {}
+    };
+
+    class CastRemoveCurseOnPartyAction : public CurePartyMemberAction
+    {
+    public:
+        CastRemoveCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "remove curse", DISPEL_CURSE) {}
     };
 
     class CastInnervateAction : public CastSpellAction
