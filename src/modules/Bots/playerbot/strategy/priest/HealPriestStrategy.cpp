@@ -33,4 +33,8 @@ void HealPriestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "enemy too close for spell",
         NextAction::array(0, new NextAction("fade", 50.0f), new NextAction("flee", 49.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "shackle undead",
+        NextAction::array(0, new NextAction("shackle undead", 18.0f), NULL)));
 }

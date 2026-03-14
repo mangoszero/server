@@ -83,11 +83,14 @@ namespace ai
                 creators["vampiric touch"] = &TriggerFactoryInternal::vampiric_touch;
                 creators["shadowform"] = &TriggerFactoryInternal::shadowform;
                 creators["vampiric embrace"] = &TriggerFactoryInternal::vampiric_embrace;
-
+                creators["shackle undead"] = &TriggerFactoryInternal::shackle_undead;
+                creators["power infusion"] = &TriggerFactoryInternal::power_infusion;
             }
 
         private:
             static Trigger* vampiric_embrace(PlayerbotAI* ai) { return new VampiricEmbraceTrigger(ai); }
+            static Trigger* shackle_undead(PlayerbotAI* ai) { return new ShackleUndeadTrigger(ai); }
+            static Trigger* power_infusion(PlayerbotAI* ai) { return new PowerInfusionTrigger(ai); }
             static Trigger* shadowform(PlayerbotAI* ai) { return new ShadowformTrigger(ai); }
             static Trigger* vampiric_touch(PlayerbotAI* ai) { return new VampiricTouchTrigger(ai); }
             static Trigger* devouring_plague(PlayerbotAI* ai) { return new DevouringPlagueTrigger(ai); }
@@ -157,10 +160,18 @@ namespace ai
                 creators["resurrection"] = &AiObjectContextInternal::resurrection;
                 creators["psychic scream"] = &AiObjectContextInternal::psychic_scream;
                 creators["vampiric embrace"] = &AiObjectContextInternal::vampiric_embrace;
+                creators["vampiric touch"] = &AiObjectContextInternal::vampiric_touch;
+                creators["shackle undead"] = &AiObjectContextInternal::shackle_undead;
+                creators["power infusion"] = &AiObjectContextInternal::power_infusion;
+                creators["circle of healing"] = &AiObjectContextInternal::circle_of_healing;
             }
 
         private:
             static Action* vampiric_embrace(PlayerbotAI* ai) { return new CastVampiricEmbraceAction(ai); }
+            static Action* vampiric_touch(PlayerbotAI* ai) { return new CastVampiricTouchAction(ai); }
+            static Action* shackle_undead(PlayerbotAI* ai) { return new CastShackleUndeadAction(ai); }
+            static Action* power_infusion(PlayerbotAI* ai) { return new CastPowerInfusionAction(ai); }
+            static Action* circle_of_healing(PlayerbotAI* ai) { return new CastCircleOfHealingAction(ai); }
             static Action* psychic_scream(PlayerbotAI* ai) { return new CastPsychicScreamAction(ai); }
             static Action* resurrection(PlayerbotAI* ai) { return new CastResurrectionAction(ai); }
             static Action* shadow_word_pain(PlayerbotAI* ai) { return new CastPowerWordPainAction(ai); }

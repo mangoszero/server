@@ -51,4 +51,19 @@ namespace ai
         ShadowformTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "shadowform") {}
         virtual bool IsActive() { return !ai->HasAura("shadowform", bot); }
     };
+
+    class ShackleUndeadTrigger : public DebuffOnAttackerTrigger
+    {
+    public:
+        ShackleUndeadTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "shackle undead") {}
+        virtual bool IsActive()
+        {
+            Unit* target = GetTargetValue()->Get();
+            if (!target || target->GetCreatureType() != CREATURE_TYPE_UNDEAD)
+                return false;
+            return DebuffTrigger::IsActive();
+        }
+    };
+
+    BUFF_ON_PARTY_TRIGGER(PowerInfusionTrigger, "power infusion", "power infusion")
 }
