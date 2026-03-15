@@ -10090,7 +10090,10 @@ void Unit::InterruptMoving(bool forceSendStop /*=false*/)
     {
         Movement::Location loc = movespline->ComputePosition();
         movespline->_Interrupt();
-        Relocate(loc.x, loc.y, loc.z, loc.orientation);
+        if (GetTypeId() == TYPEID_PLAYER)
+            ((Player*)this)->SetPosition(loc.x, loc.y, loc.z, loc.orientation);
+        else
+            GetMap()->CreatureRelocation((Creature*)this, loc.x, loc.y, loc.z, loc.orientation);
         isMoving = true;
     }
 
