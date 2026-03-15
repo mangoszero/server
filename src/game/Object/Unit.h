@@ -671,6 +671,11 @@ class MovementInfo
         };
 
         JumpInfo const& GetJumpInfo() const { return jump; }
+        void SetJumpInfo(float vel, float sinA, float cosA, float xyspd)
+        {
+            jump.velocity = vel; jump.sinAngle = sinA; jump.cosAngle = cosA; jump.xyspeed = xyspd;
+        }
+        void SetFallTime(uint32 t) { fallTime = t; }
     private:
         // common
         uint32   moveFlags;                                 // see enum MovementFlags

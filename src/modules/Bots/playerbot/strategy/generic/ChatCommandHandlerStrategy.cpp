@@ -131,6 +131,14 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "attackers",
         NextAction::array(0, new NextAction("tell attackers", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "jump",
+        NextAction::array(0, new NextAction("jump", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "jump up",
+        NextAction::array(0, new NextAction("jump up", relevance), NULL)));
 }
 
 
@@ -173,4 +181,6 @@ ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("summon");
     supported.push_back("who");
     supported.push_back("save mana");
+    supported.push_back("jump");
+    supported.push_back("jump up");
 }

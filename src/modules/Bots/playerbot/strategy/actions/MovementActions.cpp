@@ -626,3 +626,21 @@ bool SetFacingTargetAction::isUseful()
 {
     return !AI_VALUE2(bool, "facing", "current target");
 }
+
+bool JumpAction::Execute(Event event)
+{
+    if (ai->IsJumping() || ai->IsPendingJump())
+        return false;
+
+    ai->RequestJump();
+    return ai->IsPendingJump();
+}
+
+bool JumpInPlaceAction::Execute(Event event)
+{
+    if (ai->IsJumping())
+        return false;
+
+    ai->StartJump(false);
+    return true;
+}
