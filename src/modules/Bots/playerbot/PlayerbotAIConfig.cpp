@@ -63,6 +63,7 @@ PlayerbotAIConfig::PlayerbotAIConfig()
       maxRandomBotsPriceChangeInterval(0),
       randomBotJoinLfg(false),
       randomBotLoginAtStartup(false),
+      randomBotKeepGroups(false),
       randomBotTeleLevel(0),
       logInGroupOnly(false),
       logValuesPerTick(false),
@@ -188,6 +189,7 @@ bool PlayerbotAIConfig::Initialize()
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
+    randomBotKeepGroups = config.GetBoolDefault("AiPlayerbot.RandomBotKeepGroups", false);
     randomBotTeleLevel = config.GetIntDefault("AiPlayerbot.RandomBotTeleLevel", 3);
 
     randomChangeMultiplier = config.GetFloatDefault("AiPlayerbot.RandomChangeMultiplier", 1.0);

@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "PlayerbotAIBase.h"
 #include "PlayerbotMgr.h"
+#include <set>
 
 class WorldPacket;
 class Player;
@@ -205,6 +206,9 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         void ScheduleRandomize(uint32 bot, uint32 time);
         void RandomTeleport(Player* bot, uint32 mapId, float teleX, float teleY, float teleZ);
         void RandomTeleportForLevel(Player* bot);
+        void EnsureGroupedBotsOnline();
+        void LoadGroupedBots();
+        QueryResult* QueryGroupedBots();
 
         /**
          * @brief Teleports the given player bot to a random location.
@@ -228,6 +232,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
     private:
         vector<Player*> players; ///< List of players.
         int processTicks; ///< Number of process ticks.
+        set<uint32> m_groupedBots; ///< Cached set of bot GUIDs currently in a group, refreshed each update cycle.
         std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
         std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
 };
