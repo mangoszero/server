@@ -540,6 +540,8 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
         m_pathPoints[i] = Vector3(pathPoints[i * VERTEX_SIZE + 2], pathPoints[i * VERTEX_SIZE], pathPoints[i * VERTEX_SIZE + 1]);
     }
 
+    NormalizePath(pointCount);
+
     // first point is always our current location - we need the next one
     setActualEndPosition(m_pathPoints[pointCount - 1]);
 
@@ -977,17 +979,9 @@ void PathFinder::NormalizePath(uint32& size)
         m_sourceUnit->UpdateAllowedPositionZ(m_pathPoints[i].x, m_pathPoints[i].y, m_pathPoints[i].z);
     }
 
-    // Check if the Z difference between each point is higher than SMOOTH_PATH_HEIGHT.
-    // Add another point if that's the case and keep adding new midpoints till the Z difference is low enough.
-    for (uint32 i = 1; i < m_pathPoints.size(); ++i)
-    {
-        if ((m_pathPoints[i - 1].z - m_pathPoints[i].z) > SMOOTH_PATH_HEIGHT)
-        {
-            auto midPoint = m_pathPoints[i - 1] + (m_pathPoints[i] - m_pathPoints[i - 1]) / 2.f;
-            m_sourceUnit->UpdateAllowedPositionZ(midPoint.x, midPoint.y, midPoint.z);
-            m_pathPoints.insert(m_pathPoints.begin() + i, midPoint);
-            --i;
-        }
-    }
-    size = m_pathPoints.size();
+    // NOTE: A midpoint-insertion loop was here to smooth steep Z descents,
+    // but it could loop infinitely when UpdateAllowedPositionZ returned terrain Z
+    // values that prevented convergence (cliff faces, etc.).  Removed.
+
+    size = static_cast<uint32>(m_pathPoints.size());
 }
