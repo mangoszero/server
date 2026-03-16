@@ -1008,9 +1008,9 @@ bool PlayerbotAI::HasAura(string name, Unit* unit)
     }
 
     uint32 spellId = aiObjectContext->GetValue<uint32>("spell id", name)->Get();
-    if (spellId)
+    if (spellId && HasAura(spellId, unit))
     {
-        return HasAura(spellId, unit);
+        return true;
     }
 
     wstring wnamepart;
