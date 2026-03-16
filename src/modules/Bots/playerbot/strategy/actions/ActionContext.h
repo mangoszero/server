@@ -66,6 +66,8 @@ namespace ai
             creators["set facing"] = &ActionContext::set_facing;
             creators["attack duel opponent"] = &ActionContext::attack_duel_opponent;
             creators["drop target"] = &ActionContext::drop_target;
+            creators["jump"] = &ActionContext::jump;
+            creators["jump up"] = &ActionContext::jump_up;
         }
 
     private:
@@ -112,5 +114,7 @@ namespace ai
         static Action* healthstone(PlayerbotAI* ai) { return new UseItemAction(ai, "healthstone"); }
         static Action* move_out_of_enemy_contact(PlayerbotAI* ai) { return new MoveOutOfEnemyContactAction(ai); }
         static Action* set_facing(PlayerbotAI* ai) { return new SetFacingTargetAction(ai); }
+        static Action* jump(PlayerbotAI* ai) { return new JumpAction(ai); }
+        static Action* jump_up(PlayerbotAI* ai) { return new JumpInPlaceAction(ai); }
     };
 };

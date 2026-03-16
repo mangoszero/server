@@ -95,4 +95,18 @@ namespace ai
         virtual bool isUseful();
     };
 
+    class JumpAction : public MovementAction
+    {
+    public:
+        JumpAction(PlayerbotAI* ai) : MovementAction(ai, "jump") {}
+        virtual bool Execute(Event event);
+    };
+
+    class JumpInPlaceAction : public MovementAction
+    {
+    public:
+        JumpInPlaceAction(PlayerbotAI* ai) : MovementAction(ai, "jump up") {}
+        virtual bool Execute(Event event);
+    };
+
 }

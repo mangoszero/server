@@ -180,6 +180,11 @@ public:
     static bool IsOpposing(uint8 race1, uint8 race2);
     PlayerbotSecurity* GetSecurity() { return &security; }
 
+    void StartJump(bool forward, float orientation = -1.f);
+    void RequestJump();
+    bool IsJumping() const { return m_isJumping; }
+    bool IsPendingJump() const { return m_pendingJump; }
+
     bool IsEating() const
     {
         return m_eatingUntil && time(0) <= m_eatingUntil
@@ -213,5 +218,15 @@ protected:
     PlayerbotSecurity security;
     time_t m_eatingUntil;
     time_t m_drinkingUntil;
+
+    bool   m_isJumping;
+    uint32 m_jumpStartTime;
+    float  m_jumpStartX, m_jumpStartY, m_jumpStartZ;
+    float  m_jumpSinAngle, m_jumpCosAngle, m_jumpXYSpeed;
+    bool   m_pendingJump;
+    uint32 m_jumpRequestTime;
+    float  m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ, m_jumpTargetO;
+
+    void UpdateJump();
 };
 
