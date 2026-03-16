@@ -3207,7 +3207,7 @@ void Spell::cast(bool skipCheck)
             // Bandages
             if (m_spellInfo->Mechanic == MECHANIC_BANDAGE)
             {
-                AddPrecastSpell(11196);                      // Recently Bandaged
+                AddPrecastSpell(SPELL_ID_RECENTLY_BANDAGED);
             }
             // Divine Shield, Divine Protection (Blessing of Protection in paladin switch case)
             else if (m_spellInfo->Mechanic == MECHANIC_INVULNERABILITY)

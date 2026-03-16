@@ -22,6 +22,7 @@ public:
         creators["drink"] = &drink;
         creators["mana potion"] = &mana_potion;
         creators["healing potion"] = &healing_potion;
+        creators["bandage"] = &bandage;
         creators["flee"] = &flee;
     }
 
@@ -94,6 +95,13 @@ private:
         return new ActionNode ("healing potion",
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("food"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* bandage(PlayerbotAI* ai)
+    {
+        return new ActionNode ("bandage",
+            /*P*/ NULL,
+            /*A*/ NULL,
             /*C*/ NULL);
     }
     static ActionNode* flee(PlayerbotAI* ai)
