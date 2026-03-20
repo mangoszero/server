@@ -786,7 +786,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "levelup",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleLevelUpCommand,             "", NULL },
         { "showarea",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleShowAreaCommand,            "", NULL },
         { "hidearea",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleHideAreaCommand,            "", NULL },
-        { "additem",        SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAddItemCommand,             "", NULL },
+        { "additem",        SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAddItemCommand,             "", NULL },
         { "additemset",     SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAddItemSetCommand,          "", NULL },
         { "bank",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleBankCommand,                "", NULL },
         { "wchange",        SEC_ADMINISTRATOR,  false, &ChatHandler::HandleChangeWeatherCommand,       "", NULL },
