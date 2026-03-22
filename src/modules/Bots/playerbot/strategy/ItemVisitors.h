@@ -326,6 +326,7 @@ namespace ai
             virtual bool Accept(const ItemPrototype* proto)
             {
                 return proto->Class == ITEM_CLASS_CONSUMABLE &&
+                    proto->SubClass != ITEM_SUBCLASS_BANDAGE &&
                     proto->Spells[0].SpellCategory == spellCategory;
             }
         private:

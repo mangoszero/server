@@ -48,7 +48,8 @@ class GenericMageStrategyActionNodeFactory : public NamedObjectFactory<ActionNod
             return new ActionNode ("frost nova",
                 /*P*/ NULL,
                 /*A*/ NextAction::array(0, new NextAction("flee"), NULL),
-                /*C*/ NextAction::array(0, new NextAction("flee"), NULL));
+                /*C*/ NextAction::array(0,
+                    new NextAction("flee", ACTION_NORMAL), NULL));
         }
         static ActionNode* icy_veins(PlayerbotAI* ai)
         {

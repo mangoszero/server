@@ -90,6 +90,11 @@ Value<Unit*>* DebuffOnAttackerTrigger::GetTargetValue()
     return context->GetValue<Unit*>("attacker without aura", spell);
 }
 
+bool HasThreatTrigger::IsActive()
+{
+    return !bot->getAttackers().empty();
+}
+
 bool NoAttackersTrigger::IsActive()
 {
     return !AI_VALUE(Unit*, "current target") && AI_VALUE(uint8, "attacker count") > 0;

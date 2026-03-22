@@ -862,7 +862,7 @@ bool PlayerbotAI::ContainsStrategy(StrategyType type)
  * @param type The type of the engine.
  * @return True if the strategy is present, false otherwise.
  */
-bool PlayerbotAI::HasStrategy(string name, BotState type)
+bool PlayerbotAI::HasStrategy(const string& name, BotState type)
 {
     return engines[type]->HasStrategy(name);
 }
@@ -934,9 +934,9 @@ bool PlayerbotAI::IsTank(Player* player)
 }
 
 /**
- * Checks if the player is a healer class.
- * @param player The player to check.
- * @return True if the player is a healer class, false otherwise.
+ * Returns the tank player in a given player's group.
+ * @param except The player to check.
+ * @return the tank in the group, or null
  */
 Player* PlayerbotAI::GetGroupTank(Player* except)
 {
@@ -952,7 +952,7 @@ Player* PlayerbotAI::GetGroupTank(Player* except)
         return nullptr;
     }
 
-    for (Group::member_citerator itr = slots.begin(); itr != slots.end(); ++itr)
+    for (auto itr = slots.begin(); itr != slots.end(); ++itr)
     {
         Player* member = sObjectMgr.GetPlayer(itr->guid);
         if (member && member != except && IsTank(member))
@@ -982,6 +982,96 @@ bool PlayerbotAI::IsHeal(Player* player)
             return true;
         case CLASS_DRUID:
             return HasAnyAuraOf(player, "tree of life form", NULL);
+    }
+    return false;
+}
+
+bool PlayerbotAI::HasBreakableCrowdControl(Unit* unit)
+{
+    if (!unit || !unit->IsAlive())
+    {
+        return false;
+    }
+
+    if (unit->HasAuraType(SPELL_AURA_MOD_CHARM) ||
+        unit->HasAuraType(SPELL_AURA_TRANSFORM) ||
+        unit->HasAuraType(SPELL_AURA_MOD_PACIFY))
+    {
+        return true;
+    }
+
+    if (unit->IsFeared() || unit->IsInRoots() || unit->IsPolymorphed())
+    {
+        return true;
+    }
+
+    static const uint32 breakableCcMechanicMask =
+        (1 << (MECHANIC_SAPPED - 1)) |
+        (1 << (MECHANIC_FREEZE - 1)) |
+        (1 << (MECHANIC_BANISH - 1)) |
+        (1 << (MECHANIC_SHACKLE - 1)) |
+        (1 << (MECHANIC_HORROR - 1)) |
+        (1 << (MECHANIC_SLEEP - 1)) |
+        (1 << (MECHANIC_TURN - 1)) |
+        (1 << (MECHANIC_DAZE - 1)) |
+        (1 << (MECHANIC_POLYMORPH - 1));
+
+    Unit::SpellAuraHolderMap const& auras = unit->GetSpellAuraHolderMap();
+    for (Unit::SpellAuraHolderMap::const_iterator itr = auras.begin();
+         itr != auras.end(); ++itr)
+    {
+        if (itr->second->HasMechanicMask(breakableCcMechanicMask))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * Uses the bots in-range unfriendlys as a pool to determine if
+ * the given center point (or the bots position) has any unfriendlys
+ * within the given range of that point. Such npcs would have to be
+ * non-combatants, and non-cced.
+ */
+bool PlayerbotAI::HasNonCombatantInRange(float range,
+    float centerX, float centerY, float centerZ)
+{
+    // Find nearby unfriendly units using grid search
+    list<Unit*> targets;
+    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(bot, range);
+    MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(targets, u_check);
+    Cell::VisitAllObjects(bot, searcher, range);
+
+    for (list<Unit*>::iterator i = targets.begin(); i != targets.end(); ++i)
+    {
+        Unit* unit = *i;
+        if (!unit || !unit->IsAlive())
+        {
+            continue;
+        }
+        // Check distance from center point (bot position by default, or explicit coords)
+        float dist;
+        if (centerX != 0 || centerY != 0 || centerZ != 0)
+        {
+            float dx = unit->GetPositionX() - centerX;
+            float dy = unit->GetPositionY() - centerY;
+            float dz = unit->GetPositionZ() - centerZ;
+            dist = sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        else
+        {
+            dist = bot->GetDistance(unit);
+        }
+        if (dist > range || unit->IsStunned())
+        {
+            continue;
+        }
+        if (HasBreakableCrowdControl(unit) || !unit->getVictim()) // do not aggro, or break cc
+        {
+            return true;
+        }
     }
     return false;
 }
