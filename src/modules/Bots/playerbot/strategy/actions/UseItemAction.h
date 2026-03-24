@@ -18,7 +18,7 @@ namespace ai
         private:
             bool UseItemOnGameObject(Item* item, ObjectGuid go);
             bool UseItemOnItem(Item* item, Item* itemTarget);
-            bool UseItem(Item* item, ObjectGuid go, Item* itemTarget);
+            bool UseItem(Item* item, ObjectGuid go, Object* target = nullptr);
             bool UseGameObject(ObjectGuid guid);
             bool SocketItem(Item* item, Item* gem, bool replace = false);
 

@@ -2,8 +2,59 @@
 #include "../../playerbot.h"
 #include "UseItemAction.h"
 #include "DBCStore.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
+#include "CellImpl.h"
+#include "../../PlayerbotAIConfig.h"
 
 using namespace ai;
+
+
+static Item* FindEquippedItemByName(Player* bot, string const& name)
+{
+    string lname = name;
+    strToLower(lname);
+    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
+    {
+        Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (!item)
+        {
+            continue;
+        }
+        string iname = item->GetProto()->Name1;
+        strToLower(iname);
+        if (iname.find(lname) != string::npos || lname.find(iname) != string::npos)
+        {
+            return item;
+        }
+    }
+    return nullptr;
+}
+
+class AnyUnitNameSubstrCheck
+{
+    public:
+AnyUnitNameSubstrCheck(WorldObject const* obj, float range, string const& name)
+            : i_obj(obj), i_range(range), i_name(name)
+        {
+            strToLower(i_name);
+        }
+        WorldObject const& GetFocusObject() const { return *i_obj; }
+        bool operator()(Unit* u)
+        {
+            if (!i_obj->IsWithinDistInMap(u, i_range))
+            {
+                return false;
+            }
+            string uname = u->GetName();
+            strToLower(uname);
+            return uname.find(i_name) != string::npos || i_name.find(uname) != string::npos;
+        }
+    private:
+        WorldObject const* i_obj;
+        float i_range;
+        string i_name;
+};
 
 bool UseItemAction::Execute(Event event)
 {
@@ -13,19 +64,68 @@ bool UseItemAction::Execute(Event event)
         name = getName();
     }
 
+    size_t atPos = name.find('@');
+    if (atPos != string::npos)
+    {
+        string itemPart = name.substr(0, atPos);
+        string targetPart = name.substr(atPos + 1);
+        while (!itemPart.empty() && itemPart.back() == ' ')
+        {
+            itemPart.pop_back();
+        }
+        size_t start = targetPart.find_first_not_of(' ');
+        targetPart = (start != string::npos) ? targetPart.substr(start) : "";
+
+        list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", itemPart);
+        if (items.empty())
+        {
+            ai->TellMaster("No item found matching '" + itemPart + "'");
+            return false;
+        }
+
+        list<Item*> targetItems = AI_VALUE2(list<Item*>, "inventory items", targetPart);
+        if (!targetItems.empty())
+        {
+            return UseItem(*items.begin(), ObjectGuid(), *targetItems.begin());
+        }
+
+        Item* equippedTarget = FindEquippedItemByName(bot, targetPart);
+        if (equippedTarget)
+        {
+            return UseItem(*items.begin(), ObjectGuid(), equippedTarget);
+        }
+
+        list<Unit*> units;
+        AnyUnitNameSubstrCheck u_check(bot, sPlayerbotAIConfig.sightDistance, targetPart);
+        MaNGOS::UnitListSearcher<AnyUnitNameSubstrCheck> searcher(units, u_check);
+        Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig.sightDistance);
+
+        if (units.empty())
+        {
+            ai->TellMaster("No target found matching '" + targetPart + "'");
+            return false;
+        }
+
+        Unit* target = nullptr;
+        float closest = FLT_MAX;
+        for (Unit* u : units)
+        {
+            float dist = bot->GetDistance(u);
+            if (dist < closest)
+            {
+                closest = dist;
+                target = u;
+            }
+        }
+        return UseItem(*items.begin(), ObjectGuid(), target);
+    }
+
     list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", name);
     list<ObjectGuid> gos = chat->parseGameobjects(name);
 
     if (gos.empty())
     {
-        if (items.size() > 1)
-        {
-            list<Item*>::iterator i = items.begin();
-            Item* itemTarget = *i++;
-            Item* item = *i;
-            return UseItemOnItem(item, itemTarget);
-        }
-        else if (!items.empty())
+        if (!items.empty())
         {
             return UseItemAuto(*items.begin());
         }
@@ -75,7 +175,7 @@ bool UseItemAction::UseItemOnItem(Item* item, Item* itemTarget)
     return UseItem(item, ObjectGuid(), itemTarget);
 }
 
-bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
+bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Object* target)
 {
     if (bot->CanUseItem(item) != EQUIP_ERR_OK)
     {
@@ -102,13 +202,9 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     uint8 bagIndex = item->GetBagSlot();
     uint8 slot = item->GetSlot();
     uint8 cast_count = 1;
-    uint64 item_guid = item->GetObjectGuid().GetRawValue();
-    uint32 glyphIndex = 0;
-    uint8 unk_flags = 0;
 
-    WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 1 + 1 + 1 + 4 + 8 + 4 + 1 + 8 + 1);
-    *packet << bagIndex << slot << cast_count << uint32(0) << item_guid
-            << glyphIndex << unk_flags;
+    WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 1 + 1 + 1 + 2 + 9);
+    *packet << bagIndex << slot << cast_count;
 
     bool targetSelected = false;
     ostringstream out; out << "Using " << chat->formatItem(item->GetProto());
@@ -125,12 +221,40 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         }
     }
 
+    if (target)
+    {
+        if (target->GetTypeId() == TYPEID_ITEM)
+        {
+            Item* itemTarget = static_cast<Item*>(target);
+            *packet << uint16(TARGET_FLAG_ITEM) << itemTarget->GetPackGUID();
+            out << " on " << chat->formatItem(itemTarget->GetProto());
+            targetSelected = true;
+        }
+        else if (target->GetTypeId() == TYPEID_UNIT)
+        {
+            Unit* unitTarget = static_cast<Unit*>(target);
+            uint16 flag = unitTarget->IsAlive() ? TARGET_FLAG_UNIT : TARGET_FLAG_UNIT_CORPSE;
+            *packet << flag << unitTarget->GetObjectGuid().WriteAsPacked();
+            out << " on " << unitTarget->GetName();
+            targetSelected = true;
+        }
+        for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; i++)
+        {
+            uint32 spellId = item->GetProto()->Spells[i].SpellId;
+            if (spellId && ai->CanCastSpell(spellId, bot, false))
+            {
+                ai->WaitForSpellCast(spellId);
+                break;
+            }
+        }
+    }
+
     if (goGuid)
     {
         GameObject* go = ai->GetGameObject(goGuid);
         if (go && go->isSpawned())
         {
-            uint32 targetFlag = TARGET_FLAG_OBJECT;
+            uint16 targetFlag = TARGET_FLAG_OBJECT;
             *packet << targetFlag << goGuid.WriteAsPacked();
             out << " on " << chat->formatGameobject(go);
             targetSelected = true;
@@ -146,7 +270,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
             Unit* unit = ai->GetUnit(masterSelection);
             if (unit)
             {
-                uint32 targetFlag = TARGET_FLAG_UNIT;
+                uint16 targetFlag = TARGET_FLAG_UNIT;
                 *packet << targetFlag << masterSelection.WriteAsPacked();
                 out << " on " << unit->GetName();
                 targetSelected = true;
@@ -159,11 +283,13 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         Quest const* qInfo = sObjectMgr.GetQuestTemplate(questid);
         if (qInfo)
         {
-            WorldPacket* const packet = new WorldPacket(CMSG_QUESTGIVER_ACCEPT_QUEST, 8+4+4);
-            *packet << item_guid;
-            *packet << questid;
-            *packet << uint32(0);
-            bot->GetSession()->QueuePacket(packet); // queue the packet to get around race condition
+            delete packet;
+            uint64 item_guid = item->GetObjectGuid().GetRawValue();
+            WorldPacket* const questPacket = new WorldPacket(CMSG_QUESTGIVER_ACCEPT_QUEST, 8+4+4);
+            *questPacket << item_guid;
+            *questPacket << questid;
+            *questPacket << uint32(0);
+            bot->GetSession()->QueuePacket(questPacket); // queue the packet to get around race condition
             ostringstream out; out << "Got quest " << chat->formatQuest(qInfo);
             ai->TellMasterNoFacing(out.str());
             return true;
@@ -174,6 +300,12 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     mm.Clear();
     bot->clearUnitState( UNIT_STAT_CHASE );
     bot->clearUnitState( UNIT_STAT_FOLLOW );
+
+    if (bot->isMoving())
+    {
+        delete packet;
+        return false;
+    }
 
     if (targetSelected)
     {
@@ -213,17 +345,18 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
             {
                 if (selfOnly)
                 {
+                    delete packet;
                     return false;
                 }
 
-                *packet << TARGET_FLAG_TRADE_ITEM << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
+                *packet << uint16(TARGET_FLAG_TRADE_ITEM) << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
                 targetSelected = true;
                 out << " on traded item";
                 ai->WaitForSpellCast(spellId);
             }
             else
             {
-                *packet << TARGET_FLAG_ITEM;
+                *packet << uint16(TARGET_FLAG_ITEM);
                 *packet << itemForSpell->GetPackGUID();
                 targetSelected = true;
                 out << " on "<< chat->formatItem(itemForSpell->GetProto());
@@ -232,7 +365,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
         }
         else
         {
-            *packet << TARGET_FLAG_SELF;
+            *packet << uint16(TARGET_FLAG_SELF);
             targetSelected = true;
             out << " on self";
         }
@@ -241,6 +374,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 
     if (!targetSelected)
     {
+        delete packet;
         return false;
     }
 
