@@ -1382,7 +1382,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
         }
     }
 
-    uint32 creature_ID = (getPetType() == HUNTER_PET) ? 1 : cinfo->Entry;
+    uint32 creature_ID = cinfo->Entry;
 
     switch (getPetType())
     {
