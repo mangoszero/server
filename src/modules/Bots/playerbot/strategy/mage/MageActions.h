@@ -173,6 +173,60 @@ namespace ai
         CastCounterspellOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "counterspell") {}
     };
 
+    class CastLivingBombAction : public CastSpellAction
+    {
+    public:
+        CastLivingBombAction(PlayerbotAI* ai) : CastSpellAction(ai, "living bomb") {}
+    };
+
+    class CastIcyVeinsAction : public CastBuffSpellAction
+    {
+    public:
+        CastIcyVeinsAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "icy veins") {}
+    };
+
+    class CastSpellstealAction : public CastSpellAction
+    {
+    public:
+        CastSpellstealAction(PlayerbotAI* ai) : CastSpellAction(ai, "spellsteal") {}
+    };
+
+    class CastDragonsBreathAction : public CastSpellAction
+    {
+    public:
+        CastDragonsBreathAction(PlayerbotAI* ai) : CastSpellAction(ai, "dragon's breath") {}
+    };
+
+    class CastArcaneBlastAction : public CastSpellAction
+    {
+    public:
+        CastArcaneBlastAction(PlayerbotAI* ai) : CastSpellAction(ai, "arcane blast") {}
+    };
+
+    class CastArcaneBarrageAction : public CastSpellAction
+    {
+    public:
+        CastArcaneBarrageAction(PlayerbotAI* ai) : CastSpellAction(ai, "arcane barrage") {}
+    };
+
+    class CastConeOfColdAction : public CastSpellAction
+    {
+    public:
+        CastConeOfColdAction(PlayerbotAI* ai) : CastSpellAction(ai, "cone of cold") {}
+    };
+
+    class CastColdSnapAction : public CastSpellAction
+    {
+    public:
+        CastColdSnapAction(PlayerbotAI* ai) : CastSpellAction(ai, "cold snap") {}
+        virtual string GetTargetName() { return "self target"; }
+    };
+
+    class CastArcaneBrillianceAction : public CastBuffSpellAction
+    {
+    public:
+        CastArcaneBrillianceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "arcane brilliance") {}
+    };
 
     class GiveConjuredFoodAction : public InventoryAction
     {
