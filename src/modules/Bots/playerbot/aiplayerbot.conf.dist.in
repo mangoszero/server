@@ -161,6 +161,9 @@ AiPlayerbot.RandomBotTeleLevel = 3
 # Log on all random bots on start
 #AiPlayerbot.RandomBotLoginAtStartup = 1
 
+# Preserve bot group assignments across server restarts
+#AiPlayerbot.RandomBotKeepGroups = 0
+
 # How far random bots are teleported after death
 #AiPlayerbot.RandomBotTeleportDistance = 1000
 
