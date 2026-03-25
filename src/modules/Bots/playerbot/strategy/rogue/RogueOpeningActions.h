@@ -2,23 +2,54 @@
 
 namespace ai
 {
-    class CastSapAction : public CastMeleeSpellAction
+    class CastStealthedOpeningAction : public CastMeleeSpellAction
     {
     public:
-        CastSapAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "sap") {}
+        CastStealthedOpeningAction(PlayerbotAI* ai, string name) : CastMeleeSpellAction(ai, name) {}
+
+        virtual bool isUseful()
+        {
+            return CastMeleeSpellAction::isUseful() && ai->HasAura("stealth", ai->GetBot());
+        }
     };
 
-    class CastGarroteAction : public CastMeleeSpellAction
+    class CastSapAction : public CastStealthedOpeningAction
     {
     public:
-        CastGarroteAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "garrote") {}
+        CastSapAction(PlayerbotAI* ai) : CastStealthedOpeningAction(ai, "sap") {}
+
+        virtual bool Execute(Event event)
+        {
+            bool result = CastStealthedOpeningAction::Execute(event);
+            if (result)
+            {
+                Unit* sapTarget = GetTarget();
+                if (sapTarget)
+                {
+                    sapTarget->DeleteThreatList();
+                    sapTarget->CombatStop();
+                }
+                ai->GetBot()->ClearInCombat();
+            }
+            return result;
+        }
     };
 
-
-    class CastCheapShotAction : public CastMeleeSpellAction
+    class CastGarroteAction : public CastStealthedOpeningAction
     {
     public:
-        CastCheapShotAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "cheap shot") {}
+        CastGarroteAction(PlayerbotAI* ai) : CastStealthedOpeningAction(ai, "garrote") {}
+
+        virtual bool isUseful()
+        {
+            return CastStealthedOpeningAction::isUseful() && AI_VALUE2(bool, "behind", "current target");
+        }
+    };
+
+    class CastCheapShotAction : public CastStealthedOpeningAction
+    {
+    public:
+        CastCheapShotAction(PlayerbotAI* ai) : CastStealthedOpeningAction(ai, "cheap shot") {}
     };
 
 }

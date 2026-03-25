@@ -85,8 +85,16 @@ void DpsRogueStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     MeleeCombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "combo points available",
+        "slice and dice",
+        NextAction::array(0, new NextAction("slice and dice", ACTION_HIGH + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "combo points for target available",
         NextAction::array(0, new NextAction("rupture", ACTION_HIGH + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "expose armor",
+        NextAction::array(0, new NextAction("expose armor", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "medium threat",
