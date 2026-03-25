@@ -128,12 +128,13 @@ bool TradeStatusAction::CheckTrade()
         item = master->GetTradeData()->GetItem((TradeSlots)slot);
         if (item)
         {
-            ostringstream out; out << item->GetProto()->ItemId;
+            ItemPrototype const* proto = item->GetProto();
+            ostringstream out; out << proto->ItemId;
             ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
-            if (!auctionbot.GetBuyPrice(item->GetProto()) || usage == ITEM_USAGE_NONE)
+            if (usage == ITEM_USAGE_NONE || proto->Quality < ITEM_QUALITY_NORMAL || !proto->SellPrice)
             {
                 ostringstream out;
-                out << chat->formatItem(item->GetProto()) << " - I don't need this";
+                out << chat->formatItem(proto) << " - I don't need this";
                 ai->TellMaster(out);
                 return false;
             }
