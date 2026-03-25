@@ -194,4 +194,20 @@ namespace ai
     public:
         WindShearInterruptEnemyHealerSpellTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "wind shear") {}
     };
+
+    class GhostWolfTrigger : public BuffTrigger
+    {
+    public:
+        GhostWolfTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "ghost wolf") {}
+    };
+
+    class TremorTotemTrigger : public TotemTrigger
+    {
+    public:
+        TremorTotemTrigger(PlayerbotAI* ai) : TotemTrigger(ai, "tremor totem", 1) {}
+        virtual bool IsActive()
+        {
+            return TotemTrigger::IsActive() && !AI_VALUE2(bool, "has totem", "strength of earth totem");
+        }
+    };
 }

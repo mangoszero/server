@@ -20,6 +20,9 @@ public:
         creators["chain heal on party"] = &chain_heal_on_party;
         creators["riptide on party"] = &riptide_on_party;
         creators["earth shock"] = &earth_shock;
+        creators["cleanse spirit"] = &cleanse_spirit;
+        creators["water shield"] = &water_shield;
+        creators["fire nova"] = &fire_nova;
     }
 private:
     static ActionNode* earth_shock(PlayerbotAI* ai)
@@ -27,6 +30,27 @@ private:
         return new ActionNode ("earth shock",
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("flame shock"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* cleanse_spirit(PlayerbotAI* ai)
+    {
+        return new ActionNode ("cleanse spirit",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("cleansing totem"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* water_shield(PlayerbotAI* ai)
+    {
+        return new ActionNode ("water shield",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("lightning shield"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* fire_nova(PlayerbotAI* ai)
+    {
+        return new ActionNode ("fire nova",
+            /*P*/ NULL,
+            /*A*/ NULL,
             /*C*/ NULL);
     }
     static ActionNode* flametongue_weapon(PlayerbotAI* ai)
