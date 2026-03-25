@@ -50,7 +50,15 @@ void GenericHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "enemy too close for spell",
-        NextAction::array(0, new NextAction("wing clip", 50.0f), new NextAction("flee",49.0f), new NextAction("concussive shot", 48.0f), NULL)));
+        NextAction::array(0,
+            new NextAction("intimidation", 52.0f),
+            new NextAction("wing clip", 51.0f),
+            new NextAction("hunter ensure ranged position", 50.0f),
+            new NextAction("mongoose bite", 49.5f),
+            new NextAction("disengage", 49.0f),
+            new NextAction("hunter melee", 48.5f),
+            new NextAction("flee", 48.0f),
+            NULL)));
 
     triggers.push_back(new TriggerNode(
         "medium threat",
@@ -63,4 +71,9 @@ void GenericHunterStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "rapid fire",
         NextAction::array(0, new NextAction("rapid fire", 55.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "bestial wrath",
+        NextAction::array(0, new NextAction("bestial wrath", 55.0f), NULL)));
+
 }

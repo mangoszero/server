@@ -72,6 +72,12 @@ namespace ai
         RapidFireTrigger(PlayerbotAI* ai) : BoostTrigger(ai, "rapid fire") {}
     };
 
+    class BestialWrathTrigger : public BoostTrigger
+    {
+    public:
+        BestialWrathTrigger(PlayerbotAI* ai) : BoostTrigger(ai, "bestial wrath") {}
+    };
+
     class TrueshotAuraTrigger : public BuffTrigger
     {
     public:
@@ -83,4 +89,5 @@ namespace ai
     public:
         SerpentStingOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "serpent sting") {}
     };
+
 }
