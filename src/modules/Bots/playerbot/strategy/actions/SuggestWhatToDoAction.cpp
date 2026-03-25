@@ -286,5 +286,8 @@ void SuggestWhatToDoAction::spam(string msg)
             (bot->GetMapId() != player->GetMapId() || bot->GetDistance(player) > sPlayerbotAIConfig.whisperDistance))
         return;
 
+    if ((int)bot->getLevel() - (int)player->getLevel() > 5)
+        return;
+
     bot->Whisper(msg, LANG_UNIVERSAL, player->GetObjectGuid());
 }
