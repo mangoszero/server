@@ -176,6 +176,29 @@ namespace ai
         CastBerserkerRageAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "berserker rage") {}
     };
 
+    class CastBerserkerStanceAction : public CastBuffSpellAction {
+    public:
+        CastBerserkerStanceAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "berserker stance") {}
+    };
+
+    class CastVictoryRushAction : public CastMeleeSpellAction {
+    public:
+        CastVictoryRushAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "victory rush") {}
+    };
+
+    class CastMortalStrikeAction : public CastBattleMeleeSpellAction {
+    public:
+        CastMortalStrikeAction(PlayerbotAI* ai) : CastBattleMeleeSpellAction(ai, "mortal strike") {}
+    };
+
+    class CastWhirlwindAction : public CastMeleeSpellAction {
+    public:
+        CastWhirlwindAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "whirlwind") {}
+        virtual NextAction** getPrerequisites() {
+            return NextAction::merge(NextAction::array(0, new NextAction("berserker stance"), NULL), CastMeleeSpellAction::getPrerequisites());
+        }
+    };
+
     class CastLastStandAction : public CastBuffSpellAction {
     public:
         CastLastStandAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "last stand") {}

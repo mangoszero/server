@@ -105,6 +105,10 @@ namespace ai
         public:
             AiObjectContextInternal()
             {
+                creators["berserker stance"] = &AiObjectContextInternal::berserker_stance;
+                creators["victory rush"] = &AiObjectContextInternal::victory_rush;
+                creators["mortal strike"] = &AiObjectContextInternal::mortal_strike;
+                creators["whirlwind"] = &AiObjectContextInternal::whirlwind;
                 creators["overpower"] = &AiObjectContextInternal::overpower;
                 creators["charge"] = &AiObjectContextInternal::charge;
                 creators["bloodthirst"] = &AiObjectContextInternal::bloodthirst;
@@ -140,6 +144,10 @@ namespace ai
             }
 
         private:
+            static Action* berserker_stance(PlayerbotAI* ai) { return new CastBerserkerStanceAction(ai); }
+            static Action* victory_rush(PlayerbotAI* ai) { return new CastVictoryRushAction(ai); }
+            static Action* mortal_strike(PlayerbotAI* ai) { return new CastMortalStrikeAction(ai); }
+            static Action* whirlwind(PlayerbotAI* ai) { return new CastWhirlwindAction(ai); }
             static Action* last_stand(PlayerbotAI* ai) { return new CastLastStandAction(ai); }
             static Action* cleave(PlayerbotAI* ai) { return new CastCleaveAction(ai); }
             static Action* concussion_blow(PlayerbotAI* ai) { return new CastConcussionBlowAction(ai); }

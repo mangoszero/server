@@ -12,7 +12,6 @@ public:
     {
         creators["melee"] = &melee;
         creators["shield wall"] = &shield_wall;
-        creators["rend"] = &rend;
         creators["revenge"] = &revenge;
         creators["devastate"] = &devastate;
         creators["shockwave"] = &shockwave;
@@ -31,13 +30,6 @@ private:
         return new ActionNode ("shield wall",
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("shield block"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* rend(PlayerbotAI* ai)
-    {
-        return new ActionNode ("rend",
-            /*P*/ NextAction::array(0, new NextAction("defensive stance"), NULL),
-            /*A*/ NULL,
             /*C*/ NULL);
     }
     static ActionNode* revenge(PlayerbotAI* ai)
@@ -110,7 +102,7 @@ void TankWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "light aoe",
-        NextAction::array(0, new NextAction("thunder clap", ACTION_HIGH + 2), new NextAction("demoralizing shout", ACTION_HIGH + 2),  new NextAction("cleave", ACTION_HIGH + 1), NULL)));
+        NextAction::array(0, new NextAction("demoralizing shout", ACTION_HIGH + 2), new NextAction("cleave", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "high aoe",
