@@ -74,4 +74,16 @@ void GenericPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "cleanse party member cure magic",
         NextAction::array(0, new NextAction("cleanse magic on party", ACTION_DISPEL + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "holy wrath",
+        NextAction::array(0, new NextAction("holy wrath", ACTION_HIGH + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "exorcism",
+        NextAction::array(0, new NextAction("exorcism", ACTION_HIGH + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "blessing of freedom",
+        NextAction::array(0, new NextAction("blessing of freedom", ACTION_EMERGENCY), NULL)));
 }
