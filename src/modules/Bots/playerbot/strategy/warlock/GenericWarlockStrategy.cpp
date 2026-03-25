@@ -12,6 +12,7 @@ public:
     {
         creators["summon voidwalker"] = &summon_voidwalker;
         creators["banish"] = &banish;
+        creators["curse of agony"] = &curse_of_agony;
     }
 private:
     static ActionNode* summon_voidwalker(PlayerbotAI* ai)
@@ -26,6 +27,13 @@ private:
         return new ActionNode ("banish",
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("fear"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* curse_of_agony(PlayerbotAI* ai)
+    {
+        return new ActionNode ("curse of agony",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("curse of weakness"), NULL),
             /*C*/ NULL);
     }
 };
@@ -70,5 +78,9 @@ void GenericWarlockStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 
     triggers.push_back(new TriggerNode(
         "immolate",
-        NextAction::array(0, new NextAction("immolate", 19.0f), new NextAction("conflagrate", 19.0f), NULL)));
+        NextAction::array(0, new NextAction("immolate", 19.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "target has immolate",
+        NextAction::array(0, new NextAction("conflagrate", 20.0f), NULL)));
 }

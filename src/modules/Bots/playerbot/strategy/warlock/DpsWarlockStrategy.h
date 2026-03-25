@@ -19,7 +19,7 @@ namespace ai
     class DpsAoeWarlockStrategy : public CombatStrategy
     {
     public:
-        DpsAoeWarlockStrategy(PlayerbotAI* ai) : CombatStrategy(ai) {}
+        DpsAoeWarlockStrategy(PlayerbotAI* ai);
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

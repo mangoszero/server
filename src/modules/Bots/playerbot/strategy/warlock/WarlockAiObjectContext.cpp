@@ -71,11 +71,13 @@ namespace ai
                 creators["corruption"] = &TriggerFactoryInternal::corruption;
                 creators["corruption on attacker"] = &TriggerFactoryInternal::corruption_on_attacker;
                 creators["curse of agony"] = &TriggerFactoryInternal::curse_of_agony;
+                creators["curse of weakness"] = &TriggerFactoryInternal::curse_of_weakness;
                 creators["banish"] = &TriggerFactoryInternal::banish;
                 creators["spellstone"] = &TriggerFactoryInternal::spellstone;
                 creators["backlash"] = &TriggerFactoryInternal::backlash;
                 creators["fear"] = &TriggerFactoryInternal::fear;
                 creators["immolate"] = &TriggerFactoryInternal::immolate;
+                creators["target has immolate"] = &TriggerFactoryInternal::target_has_immolate;
 
 
             }
@@ -89,11 +91,13 @@ namespace ai
             static Trigger* corruption(PlayerbotAI* ai) { return new CorruptionTrigger(ai); }
             static Trigger* corruption_on_attacker(PlayerbotAI* ai) { return new CorruptionOnAttackerTrigger(ai); }
             static Trigger* curse_of_agony(PlayerbotAI* ai) { return new CurseOfAgonyTrigger(ai); }
+            static Trigger* curse_of_weakness(PlayerbotAI* ai) { return new CurseOfWeaknessTrigger(ai); }
             static Trigger* banish(PlayerbotAI* ai) { return new BanishTrigger(ai); }
             static Trigger* spellstone(PlayerbotAI* ai) { return new SpellstoneTrigger(ai); }
             static Trigger* backlash(PlayerbotAI* ai) { return new BacklashTrigger(ai); }
             static Trigger* fear(PlayerbotAI* ai) { return new FearTrigger(ai); }
             static Trigger* immolate(PlayerbotAI* ai) { return new ImmolateTrigger(ai); }
+            static Trigger* target_has_immolate(PlayerbotAI* ai) { return new TargetHasImmolateTrigger(ai); }
 
         };
     };
@@ -122,7 +126,9 @@ namespace ai
                 creators["corruption"] = &AiObjectContextInternal::corruption;
                 creators["corruption on attacker"] = &AiObjectContextInternal::corruption_on_attacker;
                 creators["curse of agony"] = &AiObjectContextInternal::curse_of_agony;
+                creators["curse of weakness"] = &AiObjectContextInternal::curse_of_weakness;
                 creators["shadow bolt"] = &AiObjectContextInternal::shadow_bolt;
+                creators["incinerate"] = &AiObjectContextInternal::incinerate;
                 creators["drain soul"] = &AiObjectContextInternal::drain_soul;
                 creators["drain mana"] = &AiObjectContextInternal::drain_mana;
                 creators["drain life"] = &AiObjectContextInternal::drain_life;
@@ -132,10 +138,14 @@ namespace ai
                 creators["fear"] = &AiObjectContextInternal::fear;
                 creators["fear on cc"] = &AiObjectContextInternal::fear_on_cc;
                 creators["conflagrate"] = &AiObjectContextInternal::conflagrate;
+                creators["seed of corruption"] = &AiObjectContextInternal::seed_of_corruption;
+                creators["shadowfury"] = &AiObjectContextInternal::shadowfury;
             }
 
         private:
             static Action* conflagrate(PlayerbotAI* ai) { return new CastConflagrateAction(ai); }
+            static Action* seed_of_corruption(PlayerbotAI* ai) { return new CastSeedOfCorruptionAction(ai); }
+            static Action* shadowfury(PlayerbotAI* ai) { return new CastShadowfuryAction(ai); }
             static Action* fear_on_cc(PlayerbotAI* ai) { return new CastFearOnCcAction(ai); }
             static Action* fear(PlayerbotAI* ai) { return new CastFearAction(ai); }
             static Action* immolate(PlayerbotAI* ai) { return new CastImmolateAction(ai); }
@@ -150,7 +160,9 @@ namespace ai
             static Action* corruption(PlayerbotAI* ai) { return new CastCorruptionAction(ai); }
             static Action* corruption_on_attacker(PlayerbotAI* ai) { return new CastCorruptionOnAttackerAction(ai); }
             static Action* curse_of_agony(PlayerbotAI* ai) { return new CastCurseOfAgonyAction(ai); }
+            static Action* curse_of_weakness(PlayerbotAI* ai) { return new CastCurseOfWeaknessAction(ai); }
             static Action* shadow_bolt(PlayerbotAI* ai) { return new CastShadowBoltAction(ai); }
+            static Action* incinerate(PlayerbotAI* ai) { return new CastIncinerateAction(ai); }
             static Action* drain_soul(PlayerbotAI* ai) { return new CastDrainSoulAction(ai); }
             static Action* drain_mana(PlayerbotAI* ai) { return new CastDrainManaAction(ai); }
             static Action* drain_life(PlayerbotAI* ai) { return new CastDrainLifeAction(ai); }

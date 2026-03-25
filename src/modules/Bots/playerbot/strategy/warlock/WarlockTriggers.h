@@ -18,6 +18,7 @@ namespace ai
     };
 
     DEBUFF_TRIGGER(CurseOfAgonyTrigger, "curse of agony", "curse of agony");
+    DEBUFF_TRIGGER(CurseOfWeaknessTrigger, "curse of weakness", "curse of weakness");
     DEBUFF_TRIGGER(CorruptionTrigger, "corruption", "corruption");
 
     class CorruptionOnAttackerTrigger : public DebuffOnAttackerTrigger
@@ -76,6 +77,14 @@ namespace ai
     {
     public:
         FearTrigger(PlayerbotAI* ai) : HasCcTargetTrigger(ai, "fear") {}
+    };
+
+    class TargetHasImmolateTrigger : public Trigger
+    {
+    public:
+        TargetHasImmolateTrigger(PlayerbotAI* ai) : Trigger(ai, "target has immolate", 1) {}
+        virtual string GetTargetName() { return "current target"; }
+        virtual bool IsActive();
     };
 
 }
