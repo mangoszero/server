@@ -61,4 +61,16 @@ namespace ai {
     public:
         CastBashOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "bash") {}
     };
+
+    class CastFrenziedRegenerationAction : public CastSpellAction
+    {
+    public:
+        CastFrenziedRegenerationAction(PlayerbotAI* ai) : CastSpellAction(ai, "frenzied regeneration") {}
+    };
+
+    class CastChallengingRoarAction : public CastSpellAction
+    {
+    public:
+        CastChallengingRoarAction(PlayerbotAI* ai) : CastSpellAction(ai, "challenging roar") {}
+    };
 }

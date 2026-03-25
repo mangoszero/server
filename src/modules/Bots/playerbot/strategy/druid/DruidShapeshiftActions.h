@@ -30,6 +30,10 @@ namespace ai {
     class CastTreeFormAction : public CastBuffSpellAction {
     public:
         CastTreeFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "tree of life") {}
+
+        virtual bool isUseful() {
+            return AI_VALUE2(uint32, "spell id", "tree of life") != 0 && CastBuffSpellAction::isUseful();
+        }
     };
 
     class CastMoonkinFormAction : public CastBuffSpellAction {

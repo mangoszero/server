@@ -19,6 +19,8 @@ public:
         creators["rebirth"] = &rebirth;
         creators["entangling roots on cc"] = &entangling_roots_on_cc;
         creators["innervate"] = &innervate;
+        creators["remove curse"] = &remove_curse;
+        creators["remove curse on party"] = &remove_curse_on_party;
     }
 
 private:
@@ -85,6 +87,20 @@ private:
             /*A*/ NextAction::array(0, new NextAction("mana potion"), NULL),
             /*C*/ NULL);
     }
+    static ActionNode* remove_curse(PlayerbotAI* ai)
+    {
+        return new ActionNode ("remove curse",
+            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
+            /*A*/ NULL,
+            /*C*/ NULL);
+    }
+    static ActionNode* remove_curse_on_party(PlayerbotAI* ai)
+    {
+        return new ActionNode ("remove curse on party",
+            /*P*/ NextAction::array(0, new NextAction("caster form"), NULL),
+            /*A*/ NULL,
+            /*C*/ NULL);
+    }
 };
 
 GenericDruidStrategy::GenericDruidStrategy(PlayerbotAI* ai) : CombatStrategy(ai)
@@ -121,6 +137,14 @@ void GenericDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "party member cure poison",
         NextAction::array(0, new NextAction("abolish poison on party", ACTION_DISPEL + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "remove curse",
+        NextAction::array(0, new NextAction("remove curse", ACTION_DISPEL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "remove curse on party",
+        NextAction::array(0, new NextAction("remove curse on party", ACTION_DISPEL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "party member dead",

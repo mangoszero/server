@@ -22,6 +22,8 @@ public:
         creators["swipe"] = &swipe;
         creators["lacerate"] = &lacerate;
         creators["demoralizing roar"] = &demoralizing_roar;
+        creators["frenzied regeneration"] = &frenzied_regeneration;
+        creators["challenging roar"] = &challenging_roar;
     }
 private:
     static ActionNode* melee(PlayerbotAI* ai)
@@ -42,7 +44,7 @@ private:
     {
         return new ActionNode ("swipe (bear)",
             /*P*/ NULL,
-            /*A*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("swipe"), NULL),
             /*C*/ NULL);
     }
     static ActionNode* faerie_fire_feral(PlayerbotAI* ai)
@@ -115,6 +117,20 @@ private:
             /*A*/ NULL,
             /*C*/ NULL);
     }
+    static ActionNode* frenzied_regeneration(PlayerbotAI* ai)
+    {
+        return new ActionNode ("frenzied regeneration",
+            /*P*/ NULL,
+            /*A*/ NextAction::array(0, new NextAction("barkskin"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* challenging_roar(PlayerbotAI* ai)
+    {
+        return new ActionNode ("challenging roar",
+            /*P*/ NULL,
+            /*A*/ NULL,
+            /*C*/ NULL);
+    }
 };
 
 BearTankDruidStrategy::BearTankDruidStrategy(PlayerbotAI* ai) : FeralDruidStrategy(ai)
@@ -153,8 +169,12 @@ void BearTankDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("growl", ACTION_HIGH + 8), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "low health",
+        NextAction::array(0, new NextAction("frenzied regeneration", ACTION_MEDIUM_HEAL + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "medium aoe",
-        NextAction::array(0, new NextAction("demoralizing roar", ACTION_HIGH + 6), new NextAction("swipe (bear)", ACTION_HIGH + 6), NULL)));
+        NextAction::array(0, new NextAction("challenging roar", ACTION_HIGH + 7), new NextAction("demoralizing roar", ACTION_HIGH + 6), new NextAction("swipe (bear)", ACTION_HIGH + 6), NULL)));
 
     triggers.push_back(new TriggerNode(
         "light aoe",

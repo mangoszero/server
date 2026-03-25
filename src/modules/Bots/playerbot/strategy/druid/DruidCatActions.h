@@ -64,6 +64,4 @@ namespace ai {
         CastRipAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "rip") {}
     };
 
-
-
 }
