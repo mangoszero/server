@@ -40,6 +40,55 @@ namespace ai
         virtual bool isUseful() { return AI_VALUE2(bool, "combat", "self target"); }
     };
 
+    class UseBandage : public UseItemAction
+    {
+    public:
+        UseBandage(PlayerbotAI* ai) : UseItemAction(ai, "bandage"), m_isBandaging(false) {}
+
+        virtual bool Execute(Event event)
+        {
+            if (m_isBandaging)
+            {
+                ai->SetNextCheckDelay(500);
+                return true;
+            }
+
+            list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", "bandage");
+            if (items.empty())
+                return false;
+
+            bool result = UseItemAuto(*items.begin());
+            if (result)
+            {
+                m_isBandaging = true;
+                ai->SetNextCheckDelay(500);
+            }
+            return result;
+        }
+
+        virtual bool isPossible()
+        {
+            if (m_isBandaging && !bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                m_isBandaging = false;
+            if (m_isBandaging)
+                return true;
+            return UseItemAction::isPossible();
+        }
+
+        virtual bool isUseful()
+        {
+            if (bot->HasAura(SPELL_ID_RECENTLY_BANDAGED))
+                return false;
+            if (AI_VALUE2(bool, "combat", "self target"))
+                return bot->getAttackers().empty();
+            return bot->GetGroup() &&
+                   AI_VALUE2(list<Item*>, "inventory items", "food").empty();
+        }
+
+    private:
+        bool m_isBandaging;
+    };
+
     class UseManaPotion : public UseItemAction
     {
     public:

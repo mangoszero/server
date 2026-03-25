@@ -42,6 +42,18 @@ private:
     uint32 effectId;
 };
 
+class FindBandageVisitor : public FindUsableItemVisitor
+{
+public:
+   explicit FindBandageVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
+
+    virtual bool Accept(const ItemPrototype* proto)
+    {
+        return proto->Class == ITEM_CLASS_CONSUMABLE &&
+               proto->SubClass == ITEM_SUBCLASS_BANDAGE;
+    }
+};
+
 class FindManaGemVisitor : public FindUsableItemVisitor
 {
 public:
@@ -316,6 +328,13 @@ list<Item*> InventoryAction::parseItems(string text)
     if (text == "healing potion")
     {
         FindPotionVisitor visitor(bot, SPELL_EFFECT_HEAL);
+        IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+        found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
+    }
+
+    if (text == "bandage")
+    {
+        FindBandageVisitor visitor(bot);
         IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
         found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
     }
