@@ -278,6 +278,13 @@ list<Item*> InventoryAction::parseItems(string text)
         found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
     }
 
+    if (text == "buff food")
+    {
+        FindBuffFoodVisitor visitor(bot);
+        IterateItems(&visitor, ITERATE_ITEMS_IN_BAGS);
+        found.insert(visitor.GetResult().begin(), visitor.GetResult().end());
+    }
+
     if (text == "drink")
     {
         FindFoodVisitor visitor(bot, SPELLCATEGORY_DRINK);

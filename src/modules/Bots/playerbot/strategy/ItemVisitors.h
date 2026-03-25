@@ -1,5 +1,8 @@
 #pragma once
 
+#include "DBCStore.h"
+#include "DBCStores.h"
+
 char * strstri (const char* str1, const char* str2);
 
 namespace ai
@@ -280,6 +283,15 @@ namespace ai
         map<uint32, int> count;
     };
 
+    inline bool IsBuffFood(const ItemPrototype* proto)
+    {
+        if (proto->Class != ITEM_CLASS_CONSUMABLE ||
+            proto->Spells[0].SpellCategory != SPELLCATEGORY_FOOD)
+            return false;
+        SpellEntry const* sp = sSpellStore.LookupEntry(proto->Spells[0].SpellId);
+        return sp && ((sp->AttributesEx2 & SPELL_ATTR_EX2_FOOD_BUFF) || sp->Effect[1] != 0 || sp->Effect[2] != 0);
+    }
+
     class FindFoodVisitor : public FindUsableItemVisitor
     {
     public:
@@ -296,6 +308,36 @@ namespace ai
     private:
         uint32 spellCategory;
     };
+
+    class FindBuffFoodVisitor : public FindUsableItemVisitor
+    {
+    public:
+        FindBuffFoodVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
+
+        virtual bool Accept(const ItemPrototype* proto)
+        {
+            return IsBuffFood(proto);
+        }
+    };
+
+    inline bool HasFoodBuff(Player* bot, const list<Item*>& buffFoods)
+    {
+        for (Item* item : buffFoods)
+        {
+            SpellEntry const* sp = sSpellStore.LookupEntry(item->GetProto()->Spells[0].SpellId);
+            if (!sp)
+                continue;
+            if (bot->HasAura(sp->Id))
+                return true;
+            for (int i = 1; i < MAX_EFFECT_INDEX; ++i)
+            {
+                uint32 triggerSpell = sp->EffectTriggerSpell[i];
+                if (triggerSpell && bot->HasAura(triggerSpell))
+                    return true;
+            }
+        }
+        return false;
+    }
 
     class FindConjuredFoodVisitor : public FindUsableItemVisitor
     {
