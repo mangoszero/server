@@ -1078,11 +1078,17 @@ bool ChatHandler::HandleAddItemCommand(char* args)
         }
     }
 
-    Player* pl = m_session->GetPlayer();
+    Player* pl = m_session ? m_session->GetPlayer() : nullptr;
     Player* plTarget = getSelectedPlayer();
     if (!plTarget)
     {
         plTarget = pl;
+    }
+    if (!plTarget)
+    {
+        SendSysMessage(LANG_NO_CHAR_SELECTED);
+        SetSentErrorMessage(true);
+        return false;
     }
 
     DETAIL_LOG(GetMangosString(LANG_ADDITEM), itemId, count);
@@ -1140,7 +1146,10 @@ bool ChatHandler::HandleAddItemCommand(char* args)
             item->SetBinding(false);
         }
 
-        pl->SendNewItem(item, count, false, true);
+        if (pl)
+        {
+            pl->SendNewItem(item, count, false, true);
+        }
         if (pl != plTarget)
         {
             plTarget->SendNewItem(item, count, true, false);
