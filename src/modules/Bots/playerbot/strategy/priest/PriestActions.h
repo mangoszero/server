@@ -166,6 +166,9 @@ namespace ai
     BEGIN_DEBUFF_ACTION(CastDevouringPlagueAction, "devouring plague")
     END_SPELL_ACTION()
 
+    BEGIN_DEBUFF_ACTION(CastVampiricTouchAction, "vampiric touch")
+    END_SPELL_ACTION()
+
     BEGIN_RANGED_SPELL_ACTION(CastMindBlastAction, "mind blast")
     END_SPELL_ACTION()
 
@@ -225,5 +228,33 @@ namespace ai
     {
     public:
         CastPsychicScreamAction(PlayerbotAI* ai) : CastSpellAction(ai, "psychic scream") {}
+    };
+
+    class CastShackleUndeadAction : public CastDebuffSpellOnAttackerAction
+    {
+    public:
+        CastShackleUndeadAction(PlayerbotAI* ai) : CastDebuffSpellOnAttackerAction(ai, "shackle undead") {}
+        virtual bool isUseful()
+        {
+            Unit* target = GetTarget();
+            if (!target || target->GetCreatureType() != CREATURE_TYPE_UNDEAD)
+                return false;
+            return CastDebuffSpellOnAttackerAction::isUseful();
+        }
+        virtual string getName() { return "shackle undead"; }
+    };
+
+    class CastPowerInfusionAction : public BuffOnPartyAction
+    {
+    public:
+        CastPowerInfusionAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "power infusion") {}
+        virtual string getName() { return "power infusion"; }
+    };
+
+    class CastCircleOfHealingAction : public HealPartyMemberAction
+    {
+    public:
+        CastCircleOfHealingAction(PlayerbotAI* ai) : HealPartyMemberAction(ai, "circle of healing") {}
+        virtual string getName() { return "circle of healing"; }
     };
 }

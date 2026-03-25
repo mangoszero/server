@@ -7,11 +7,19 @@ namespace ai
     public:
         ShadowPriestStrategyActionNodeFactory()
         {
+            creators["vampiric touch"] = &vampiric_touch;
             creators["mind flay"] = &mind_flay;
             creators["mind blast"] = &mind_blast;
             creators["dispersion"] = &dispersion;
         }
     private:
+        static ActionNode* vampiric_touch(PlayerbotAI* ai)
+        {
+            return new ActionNode ("vampiric touch",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("shadow word: pain"), NULL),
+                /*C*/ NULL);
+        }
         static ActionNode* mind_flay(PlayerbotAI* ai)
         {
             return new ActionNode ("mind flay",

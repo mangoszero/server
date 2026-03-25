@@ -79,4 +79,8 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "party member cure disease",
         NextAction::array(0, new NextAction("abolish disease on party", 30.0f), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "power infusion",
+        NextAction::array(0, new NextAction("power infusion", 8.0f), NULL)));
 }
