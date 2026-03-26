@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include "Action.h"
 #include "Queue.h"
 #include "Trigger.h"
@@ -16,10 +17,10 @@ namespace ai
     {
     public:
         virtual ~ActionExecutionListener() = default; // Add a virtual destructor
-        virtual bool Before(Action* action, Event event) = 0;
-        virtual bool AllowExecution(Action* action, Event event) = 0;
-        virtual void After(Action* action, bool executed, Event event) = 0;
-        virtual bool OverrideResult(Action* action, bool executed, Event event) = 0;
+        virtual bool Before(Action* action, const Event& event) = 0;
+        virtual bool AllowExecution(Action* action, const Event& event) = 0;
+        virtual void After(Action* action, bool executed, const Event& event) = 0;
+        virtual bool OverrideResult(Action* action, bool executed, const Event& event) = 0;
     };
 
     // -----------------------------------------------------------------------------------------------------------------------
@@ -34,10 +35,10 @@ namespace ai
 
     // ActionExecutionListener
     public:
-        virtual bool Before(Action* action, Event event);
-        virtual bool AllowExecution(Action* action, Event event);
-        virtual void After(Action* action, bool executed, Event event);
-        virtual bool OverrideResult(Action* action, bool executed, Event event);
+        virtual bool Before(Action* action, const Event& event);
+        virtual bool AllowExecution(Action* action, const Event& event);
+        virtual void After(Action* action, bool executed, const Event& event);
+        virtual bool OverrideResult(Action* action, bool executed, const Event& event);
 
     public:
         /**
@@ -127,14 +128,16 @@ namespace ai
         virtual ~Engine(void);
 
     private:
-        bool MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, Event event);
+        bool MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, const Event& event);
         void Reset();
         void ProcessTriggers();
         void PushDefaultActions();
-        void PushAgain(ActionNode* actionNode, float relevance, Event event);
+        void PushAgain(ActionNode* actionNode, float relevance, const Event& event);
         ActionNode* CreateActionNode(string name);
         Action* InitializeAction(ActionNode* actionNode);
-        bool ListenAndExecute(Action* action, Event event);
+        bool ListenAndExecute(Action* action, const Event& event);
+        void ClearActionNodeCache();
+        void InitStrategies();
 
     private:
         void LogAction(const char* format, ...);
@@ -146,8 +149,10 @@ namespace ai
         std::list<Multiplier*> multipliers; /**< List of multipliers */
         AiObjectContext* aiObjectContext; /**< AI object context */
         std::map<string, Strategy*> strategies; /**< Map of strategies */
+        std::unordered_map<string, ActionNode*> actionNodeCache; /**< Cache of action nodes by name */
         float lastRelevance; /**< Last relevance value */
         std::string lastAction; /**< Last executed action */
+        bool strategiesDirty; /**< True when strategies changed and ActualInit() is pending */
 
     public:
         bool testMode; /**< Flag for test mode */
