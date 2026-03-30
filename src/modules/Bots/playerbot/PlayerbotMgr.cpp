@@ -344,6 +344,38 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         }
     }
 
+    if (charnameStr == "all" && master && (cmdStr == "add" || cmdStr == "login"))
+    {
+        Group* group = master->GetGroup();
+        if (!group)
+        {
+            messages.push_back("you must be in group");
+            return messages;
+        }
+
+        Group::MemberSlotList slots = group->GetMemberSlots();
+        for (Group::member_citerator i = slots.begin(); i != slots.end(); i++)
+        {
+            ObjectGuid member = i->guid;
+
+            if (member == master->GetObjectGuid())
+            {
+                continue;
+            }
+
+            if (sObjectMgr.GetPlayer(member))
+            {
+                continue;
+            }
+
+            string botName;
+            if (sObjectMgr.GetPlayerNameByGUID(member, botName))
+            {
+                bots.insert(botName);
+            }
+        }
+    }
+
     if (charnameStr == "!" && master && master->GetSession()->GetSecurity() > SEC_GAMEMASTER)
     {
         for (PlayerBotMap::const_iterator i = GetPlayerBotsBegin(); i != GetPlayerBotsEnd(); ++i)
