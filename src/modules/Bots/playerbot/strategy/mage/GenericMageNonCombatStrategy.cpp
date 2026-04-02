@@ -59,11 +59,11 @@ void GenericMageNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigger
             NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no drink",
+        "no conjured drink",
         NextAction::array(0, new NextAction("conjure water", 16.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no food",
+        "no conjured food",
         NextAction::array(0, new NextAction("conjure food", 15.0f), NULL)));
 
     triggers.push_back(new TriggerNode(

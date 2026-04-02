@@ -61,7 +61,11 @@ namespace ai
             if (!buffFoods.empty() && !HasFoodBuff(bot, buffFoods))
                 result = UseItemAuto(*buffFoods.begin());
             if (!result)
-                result = UseItemAction::Execute(event);
+            {
+                list<Item*> foods = AI_VALUE2(list<Item*>, "inventory items", "food");
+                if (!foods.empty())
+                    result = UseItemAuto(*foods.begin());
+            }
 
             if (result)
                 ai->SetEating();
@@ -70,7 +74,11 @@ namespace ai
 
         virtual bool isPossible()
         {
-            return ai->IsEating() || UseItemAction::isPossible();
+            if (ai->IsEating())
+                return true;
+            if(AI_VALUE2(list<Item*>, "inventory items", "food").empty())
+                return false;
+            return UseItemAction::isPossible();
         }
 
         virtual bool isUseful()

@@ -200,10 +200,22 @@ namespace ai
         virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "food").empty(); }
     };
 
+    class NoConjuredFoodTrigger : public Trigger {
+    public:
+        NoConjuredFoodTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured food trigger") {}
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty(); }
+    };
+
     class NoDrinkTrigger : public Trigger {
     public:
         NoDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no drink trigger") {}
         virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "drink").empty(); }
+    };
+
+    class NoConjuredDrinkTrigger : public Trigger {
+    public:
+        NoConjuredDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured drink trigger") {}
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty(); }
     };
 
     class LightAoeTrigger : public AoeTrigger
