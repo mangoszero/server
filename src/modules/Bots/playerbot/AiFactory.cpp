@@ -128,11 +128,6 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 
     engine->addStrategies("attack weak", "racials", "chat", "default", "aoe", "potions", "cast time", "conserve mana", "duel", "pvp", NULL);
 
-    if (sPlayerbotAIConfig.cautiousDefault)
-    {
-        engine->addStrategy("cautious");
-    }
-
     switch (player->getClass())
     {
         case CLASS_PRIEST:
@@ -248,7 +243,16 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             break;
     }
 
-    if (sRandomPlayerbotMgr.IsRandomBot(player) && !player->GetGroup())
+    if (player->GetGroup())
+    {
+        if (engine->ContainsStrategy(STRATEGY_TYPE_TANK))
+            engine->ChangeStrategy(sPlayerbotAIConfig.botTankStrategies);
+        else if (engine->ContainsStrategy(STRATEGY_TYPE_HEAL))
+            engine->ChangeStrategy(sPlayerbotAIConfig.botHealStrategies);
+        else
+            engine->ChangeStrategy(sPlayerbotAIConfig.botDpsStrategies);
+    }
+    else if (sRandomPlayerbotMgr.IsRandomBot(player))
     {
         engine->ChangeStrategy(sPlayerbotAIConfig.randomBotCombatStrategies);
     }
@@ -263,11 +267,6 @@ Engine* AiFactory::createCombatEngine(Player* player, PlayerbotAI* const facade,
 void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const facade, Engine* nonCombatEngine)
 {
     int tab = GetPlayerSpecTab(player);
-
-    if (sPlayerbotAIConfig.cautiousDefault)
-    {
-        nonCombatEngine->addStrategy("cautious");
-    }
 
     switch (player->getClass()){
         case CLASS_PALADIN:
@@ -289,7 +288,11 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     nonCombatEngine->addStrategies("nc", "attack weak", "food", "stay", "chat",
             "default", "quest", "loot", "gather", "duel", "emote", NULL);
 
-    if (sRandomPlayerbotMgr.IsRandomBot(player) && !player->GetGroup())
+    if (player->GetGroup())
+    {
+        nonCombatEngine->ChangeStrategy(sPlayerbotAIConfig.botGroupNonCombatStrategies);
+    }
+    else if (sRandomPlayerbotMgr.IsRandomBot(player))
     {
         nonCombatEngine->ChangeStrategy(sPlayerbotAIConfig.randomBotNonCombatStrategies);
     }
