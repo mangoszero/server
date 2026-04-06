@@ -599,7 +599,7 @@ bool GlobalTransport::GenerateWaypoints()
             cM = keyFrames[i + 1].node->mapid;
         }
 
-        pos = WayPoint(keyFrames[i + 1].node->mapid, keyFrames[i + 1].node->x, keyFrames[i + 1].node->y, keyFrames[i + 1].node->z, teleport);
+        pos = WayPoint(keyFrames[i + 1].node->mapid, keyFrames[i + 1].node->x, keyFrames[i + 1].node->y, keyFrames[i + 1].node->z, teleport, keyFrames[i + 1].node->delay > 0);
 
         //        sLog.outString("T: %d, x: %f, y: %f, z: %f, t:%d", t, pos.x, pos.y, pos.z, teleport);
 
@@ -711,6 +711,29 @@ void GlobalTransport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
         else
         {
             Relocate(m_curr->second.x, m_curr->second.y, m_curr->second.z);
+            if (m_curr->second.isStop)
+            {
+                uint32 zoneId = GetZoneId();
+                Map::PlayerList const& pl = GetMap()->GetPlayers();
+                UpdateData destroyData;
+                BuildOutOfRangeUpdateBlock(&destroyData);
+                WorldPacket destroyPacket;
+                destroyData.BuildPacket(&destroyPacket, true);
+                for (Map::PlayerList::const_iterator itr = pl.begin(); itr != pl.end(); ++itr)
+                {
+                    Player* player = itr->getSource();
+                    if (this == player->GetTransport())
+                        continue;
+                    if (player->GetZoneId() != zoneId)
+                        continue;
+                    player->SendDirectMessage(&destroyPacket);
+                    UpdateData transData;
+                    BuildCreateUpdateBlockForPlayer(&transData, player);
+                    WorldPacket packet;
+                    transData.BuildPacket(&packet, true);
+                    player->SendDirectMessage(&packet);
+                }
+            }
             UpdateCreaturePassengerPositions();
         }
 
