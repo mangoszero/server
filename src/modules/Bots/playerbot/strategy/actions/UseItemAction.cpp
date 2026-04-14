@@ -175,9 +175,11 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     bot->clearUnitState( UNIT_STAT_CHASE );
     bot->clearUnitState( UNIT_STAT_FOLLOW );
 
-    if (bot->isMoving())
+    if (targetSelected)
     {
-        return false;
+        ai->TellMasterNoFacing(out.str());
+        bot->GetSession()->QueuePacket(packet);
+        return true;
     }
 
     for (int i=0; i<MAX_ITEM_PROTO_SPELLS; i++)

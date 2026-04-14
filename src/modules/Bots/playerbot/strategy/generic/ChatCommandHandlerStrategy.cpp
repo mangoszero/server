@@ -45,6 +45,10 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("use", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "use",
+        NextAction::array(0, new NextAction("use", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "c",
         NextAction::array(0, new NextAction("item count", relevance), NULL)));
 
