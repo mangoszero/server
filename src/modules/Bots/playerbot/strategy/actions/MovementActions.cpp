@@ -119,18 +119,31 @@ bool MovementAction::MoveTo(Unit* target, float distance)
     float dx = cos(angle) * needToGo + bx;
     float dy = sin(angle) * needToGo + by;
 
-    if (needToGo > 0)
+    if (needToGo != 0)
     {
-        float safeDist = CalculateAggroFreeDistance(bx, by, angle, needToGo);
-        if (safeDist < needToGo)
+        float travelAngle = needToGo > 0 ? angle : angle + M_PI;
+        float travelDist  = fabs(needToGo);
+
+        static const float deltas[] = { 0.0f, M_PI/6, -M_PI/6, M_PI/3, -M_PI/3, M_PI/2, -M_PI/2 };
+        float bestSafeDist = 0.0f;
+        float bestAngle    = travelAngle;
+        for (float delta : deltas)
         {
-            if(safeDist < sPlayerbotAIConfig.contactDistance)
+            float safe = CalculateAggroFreeDistance(bx, by, travelAngle + delta, travelDist);
+            if (safe > bestSafeDist)
             {
-                return false;
+                bestSafeDist = safe;
+                bestAngle    = travelAngle + delta;
             }
-            dx = cos(angle) * safeDist + bx;
-            dy = sin(angle) * safeDist + by;
+            if (bestSafeDist >= travelDist)
+                break;
         }
+
+        float moveDist = std::min(bestSafeDist, travelDist);
+        if (moveDist < sPlayerbotAIConfig.contactDistance)
+            return false;
+        dx = cos(bestAngle) * moveDist + bx;
+        dy = sin(bestAngle) * moveDist + by;
     }
     return MoveTo(target->GetMapId(), dx, dy, tz, true);
 }
