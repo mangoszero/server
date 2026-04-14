@@ -131,7 +131,7 @@ namespace ai
 
     class DeadTrigger : public Trigger {
     public:
-        DeadTrigger(PlayerbotAI* ai) : Trigger(ai, "dead", 10) {}
+        DeadTrigger(PlayerbotAI* ai) : Trigger(ai, "bot dead", 10) {}
         virtual string GetTargetName() { return "self target"; }
         virtual bool IsActive();
     };
