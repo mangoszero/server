@@ -305,6 +305,13 @@ void PlayerbotAI::UpdateAI(uint32 elapsed)
         return;
     }
 
+    if (sPlayerbotAIConfig.randomBotActiveZoneOnly && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
+        !sRandomPlayerbotMgr.HasRealPlayerInZone(bot->GetZoneId()))
+    {
+        SetNextCheckDelay(5000);
+        return;
+    }
+
     if (nextAICheckDelay > sPlayerbotAIConfig.globalCoolDown &&
             bot->IsNonMeleeSpellCasted(true, true, false) &&
             *GetAiObjectContext()->GetValue<bool>("invalid target", "current target"))

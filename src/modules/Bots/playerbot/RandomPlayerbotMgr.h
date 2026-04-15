@@ -5,6 +5,7 @@
 #include "PlayerbotAIBase.h"
 #include "PlayerbotMgr.h"
 #include <set>
+#include <unordered_map>
 
 class WorldPacket;
 class Player;
@@ -98,6 +99,9 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param player Pointer to the player.
          */
         void OnPlayerLogin(Player* player);
+
+        void OnPlayerZoneChange(Player* player, uint32 newZone);
+        bool HasRealPlayerInZone(uint32 zoneId) const;
 
         /**
          * @brief Gets a random player.
@@ -235,6 +239,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         set<uint32> m_groupedBots; ///< Cached set of bot GUIDs currently in a group, refreshed each update cycle.
         std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
         std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
+        std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
 };
 
 #define sRandomPlayerbotMgr MaNGOS::Singleton<RandomPlayerbotMgr>::Instance()

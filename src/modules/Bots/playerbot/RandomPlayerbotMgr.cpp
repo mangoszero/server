@@ -1004,6 +1004,16 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
         {
             players.erase(i);
         }
+
+        uint32 zone = player->GetZoneId();
+        std::unordered_map<uint32, uint32>::iterator zi = m_playerZoneCounts.find(zone);
+        if (zi != m_playerZoneCounts.end())
+        {
+            if (zi->second <= 1)
+                m_playerZoneCounts.erase(zi);
+            else
+                zi->second--;
+        }
     }
 }
 
@@ -1041,8 +1051,38 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
     if (!player->GetPlayerbotAI())
     {
         players.push_back(player);
-        sLog.outDebug("Including non-random bot player %s into random bot update", player->GetName());
+        // do not add to m_playerZoneCounts, as OnPlayerZoneChange is called anyway
     }
+}
+
+void RandomPlayerbotMgr::OnPlayerZoneChange(Player* player, uint32 newZone)
+{
+    if (player->GetPlayerbotAI() ||
+        player->GetSession()->GetRemoteAddress() == "bot")
+    {
+        // PlayerbotAI is not set before calling this on entry, so remote address chk
+        return;
+    }
+
+    uint32 oldZone = player->GetCachedZoneId();
+    if (oldZone == newZone)
+        return;
+
+    std::unordered_map<uint32, uint32>::iterator zi = m_playerZoneCounts.find(oldZone);
+    if (zi != m_playerZoneCounts.end())
+    {
+        if (zi->second <= 1)
+            m_playerZoneCounts.erase(zi);
+        else
+            zi->second--;
+    }
+    m_playerZoneCounts[newZone]++;
+}
+
+bool RandomPlayerbotMgr::HasRealPlayerInZone(uint32 zoneId) const
+{
+    std::unordered_map<uint32, uint32>::const_iterator zi = m_playerZoneCounts.find(zoneId);
+    return zi != m_playerZoneCounts.end() && zi->second > 0;
 }
 
 Player* RandomPlayerbotMgr::GetRandomPlayer()

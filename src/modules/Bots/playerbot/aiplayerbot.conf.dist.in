@@ -164,6 +164,10 @@ AiPlayerbot.RandomBotTeleLevel = 3
 # Preserve bot group assignments across server restarts
 #AiPlayerbot.RandomBotKeepGroups = 0
 
+# Only tick ungrouped random bots when a real player is in their zone.
+# Reduces CPU load on empty zones at the cost of bots being frozen there.
+#AiPlayerbot.RandomBotActiveZoneOnly = 0
+
 # How far random bots are teleported after death
 #AiPlayerbot.RandomBotTeleportDistance = 1000
 
