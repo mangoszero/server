@@ -85,6 +85,19 @@ AiPlayerbot.CommandPrefix = ~
 #AiPlayerbot.WhisperToZoneOnly = false
 #AiPlayerbot.ContactDistance = 0.5
 
+# Random movement target priority (comma-separated, earlier = higher weight)
+# Valid types: usefulnpcs, anynpcs, players, tradeskillitems, interactableitems, anyitems, random
+#   usefulnpcs       = NPCs with service flags (bankers, vendors, quest givers, trainers, ...)
+#   anynpcs          = any friendly NPC including non-interactable critters
+#   players          = other player characters (including bots)
+#   tradeskillitems  = game objects matching bot's tradeskills (mining, herbalism, etc.)
+#   interactableitems= chests, quest items, usable objects (type-based filter)
+#   anyitems         = any game object including decorative
+#   random           = random position in the area
+# Omitting a type from the list excludes it as a possible target entirely
+# Example: AiPlayerbot.RandomMovementTargets = anynpcs,anyitems,random
+#AiPlayerbot.RandomMovementTargets = anynpcs,anyitems,random
+
 # Bot can flee for enemy
 #AiPlayerbot.FleeingEnabled = 1
 

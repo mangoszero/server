@@ -130,6 +130,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/MovementActions.h
     playerbot/strategy/actions/NonCombatActions.cpp
     playerbot/strategy/actions/NonCombatActions.h
+    playerbot/strategy/actions/NearestPlayersValue.cpp
+    playerbot/strategy/actions/NearestPlayersValue.h
     playerbot/strategy/actions/PassLeadershipToMasterAction.h
     playerbot/strategy/actions/PositionAction.cpp
     playerbot/strategy/actions/PositionAction.h
