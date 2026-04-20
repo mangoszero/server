@@ -9,7 +9,7 @@ Value<Unit*>* CastPolymorphAction::GetTargetValue()
     return context->GetValue<Unit*>("cc target", getName());
 }
 
-static Player* FindPartyMemberWithoutSustenance(Player* bot, bool food)
+static Player* FindPartyMemberWithoutSustenance(Player* bot, Item *item)
 {
     Group* group = bot->GetGroup();
     if (!group)
@@ -30,21 +30,17 @@ static Player* FindPartyMemberWithoutSustenance(Player* bot, bool food)
         {
             continue;
         }
-        if (!food && player->GetPowerType() != POWER_MANA)
+        if (bot->CanUseItem(item->GetProto()) != EQUIP_ERR_OK)
         {
             continue;
         }
-        bool hasItem;
-        if (food)
+        bool isWater = item->GetProto()->Spells[0].SpellCategory == SPELLCATEGORY_DRINK;
+        if (isWater && player->GetPowerType() != POWER_MANA)
         {
-            FindConjuredFoodVisitor foodVisitor(player, SPELLCATEGORY_FOOD);
-            hasItem = InventoryAction::FindPlayerItem(player, &foodVisitor) != NULL;
+            continue;
         }
-        else
-        {
-            FindConjuredFoodVisitor drinkVisitor(player, SPELLCATEGORY_DRINK);
-            hasItem = InventoryAction::FindPlayerItem(player, &drinkVisitor) != NULL;
-        }
+        FindLikeItemVisitor itemVisitor(item);
+        bool hasItem = InventoryAction::FindPlayerItem(player, &itemVisitor) != NULL;
         if (!hasItem)
             return player;
     }
@@ -71,7 +67,7 @@ bool GiveConjuredFoodAction::Execute(Event event)
     }
     Item* food = foods.front();
 
-    Player* target = FindPartyMemberWithoutSustenance(bot, true);
+    Player* target = FindPartyMemberWithoutSustenance(bot, food);
     if (!target)
     {
         return false;
@@ -81,7 +77,7 @@ bool GiveConjuredFoodAction::Execute(Event event)
     uint32 count = food->GetCount();
 
     Item* newItem = target->StoreNewItemInInventorySlot(itemId, count);
-    if (!newItem)
+    if (!newItem || target->CanUseItem(newItem->GetProto()) != EQUIP_ERR_OK)
         return false;
 
     bot->DestroyItem(food->GetBagSlot(), food->GetSlot(), true);
@@ -117,7 +113,7 @@ bool GiveConjuredWaterAction::Execute(Event event)
         return false;
     Item* water = drinks.front();
 
-    Player* target = FindPartyMemberWithoutSustenance(bot, false);
+    Player* target = FindPartyMemberWithoutSustenance(bot, water);
     if (!target)
         return false;
 
@@ -125,7 +121,7 @@ bool GiveConjuredWaterAction::Execute(Event event)
     uint32 count = water->GetCount();
 
     Item* newItem = target->StoreNewItemInInventorySlot(itemId, count);
-    if (!newItem)
+    if (!newItem || target->CanUseItem(newItem->GetProto()) != EQUIP_ERR_OK)
         return false;
 
     bot->DestroyItem(water->GetBagSlot(), water->GetSlot(), true);

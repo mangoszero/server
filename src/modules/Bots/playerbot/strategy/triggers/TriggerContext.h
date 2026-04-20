@@ -76,7 +76,9 @@ namespace ai
             creators["no possible targets"] = &TriggerContext::no_possible_targets;
 
             creators["no drink"] = &TriggerContext::no_drink;
+            creators["no conjured drink"] = &TriggerContext::no_conjured_drink;
             creators["no food"] = &TriggerContext::no_food;
+            creators["no conjured food"] = &TriggerContext::no_conjured_food;
 
             creators["panic"] = &TriggerContext::panic;
             creators["behind target"] = &TriggerContext::behind_target;
@@ -110,7 +112,9 @@ namespace ai
         static Trigger* not_facing_target(PlayerbotAI* ai) { return new IsNotFacingTargetTrigger(ai); }
         static Trigger* panic(PlayerbotAI* ai) { return new PanicTrigger(ai); }
         static Trigger* no_drink(PlayerbotAI* ai) { return new NoDrinkTrigger(ai); }
+        static Trigger* no_conjured_drink(PlayerbotAI* ai) { return new NoConjuredDrinkTrigger(ai); }
         static Trigger* no_food(PlayerbotAI* ai) { return new NoFoodTrigger(ai); }
+        static Trigger* no_conjured_food(PlayerbotAI* ai) { return new NoConjuredFoodTrigger(ai); }
         static Trigger* LightAoe(PlayerbotAI* ai) { return new LightAoeTrigger(ai); }
         static Trigger* MediumAoe(PlayerbotAI* ai) { return new MediumAoeTrigger(ai); }
         static Trigger* HighAoe(PlayerbotAI* ai) { return new HighAoeTrigger(ai); }
