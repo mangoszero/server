@@ -62,14 +62,14 @@ namespace ai
          *
          * @return string The source of the event
          */
-        string getSource() { return source; }
+        const string& getSource() { return source; }
 
         /**
          * @brief Get the parameter of the event
          *
          * @return string The parameter of the event
          */
-        string getParam() { return param; }
+        const string& getParam() { return param; }
 
         /**
          * @brief Get the packet associated with the event

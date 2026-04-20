@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <unordered_map>
+
 namespace ai
 {
     using namespace std;
@@ -20,7 +23,7 @@ namespace ai
     {
     protected:
         typedef T* (*ActionCreator) (PlayerbotAI* ai);
-        map<string, ActionCreator> creators;
+        unordered_map<string, ActionCreator> creators;
 
     public:
         T* create(string name, PlayerbotAI* ai)
@@ -57,7 +60,7 @@ namespace ai
         set<string> supports()
         {
             set<string> keys;
-            for (typename map<string, ActionCreator>::iterator it = creators.begin(); it != creators.end(); it++)
+            for (typename unordered_map<string, ActionCreator>::iterator it = creators.begin(); it != creators.end(); it++)
             {
                 keys.insert(it->first);
             }
@@ -76,7 +79,11 @@ namespace ai
         {
             if (created.find(name) == created.end())
             {
-                return created[name] = NamedObjectFactory<T>::create(name, ai);
+                T* obj = NamedObjectFactory<T>::create(name, ai);
+                created[name] = obj;
+                if (obj)
+                    createdList.push_back(obj);
+                return obj;
             }
 
             return created[name];
@@ -89,36 +96,28 @@ namespace ai
 
         void Clear()
         {
-            for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
+            for (typename vector<T*>::iterator i = createdList.begin(); i != createdList.end(); i++)
             {
-                if (i->second)
-                {
-                    delete i->second;
-                }
+                delete *i;
             }
 
+            createdList.clear();
             created.clear();
         }
 
         void Update()
         {
-            for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
+            for (typename vector<T*>::iterator i = createdList.begin(); i != createdList.end(); i++)
             {
-                if (i->second)
-                {
-                    i->second->Update();
-                }
+                (*i)->Update();
             }
         }
 
         void Reset()
         {
-            for (typename map<string, T*>::iterator i = created.begin(); i != created.end(); i++)
+            for (typename vector<T*>::iterator i = createdList.begin(); i != createdList.end(); i++)
             {
-                if (i->second)
-                {
-                    i->second->Reset();
-                }
+                (*i)->Reset();
             }
         }
 
@@ -128,7 +127,7 @@ namespace ai
         set<string> GetCreated()
         {
             set<string> keys;
-            for (typename map<string, T*>::iterator it = created.begin(); it != created.end(); it++)
+            for (typename unordered_map<string, T*>::iterator it = created.begin(); it != created.end(); it++)
             {
                 keys.insert(it->first);
             }
@@ -136,7 +135,8 @@ namespace ai
         }
 
     protected:
-        map<string, T*> created;
+        unordered_map<string, T*> created;
+        vector<T*> createdList;
         bool shared;
         bool supportsSiblings;
     };
