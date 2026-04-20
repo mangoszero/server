@@ -69,6 +69,7 @@ namespace ai
             creators["drop target"] = &ActionContext::drop_target;
             creators["jump"] = &ActionContext::jump;
             creators["jump up"] = &ActionContext::jump_up;
+            creators["back off"] = &ActionContext::back_off;
         }
 
     private:
@@ -82,6 +83,7 @@ namespace ai
         static Action* melee(PlayerbotAI* ai) { return new MeleeAction(ai); }
         static Action* ReachSpell(PlayerbotAI* ai) { return new ReachSpellAction(ai); }
         static Action* ReachMelee(PlayerbotAI* ai) { return new ReachMeleeAction(ai); }
+        static Action* back_off(PlayerbotAI* ai) { return new BackOffAction(ai); }
         static Action* flee(PlayerbotAI* ai) { return new FleeAction(ai); }
         static Action* gift_of_the_naaru(PlayerbotAI* ai) { return new CastGiftOfTheNaaruAction(ai); }
         static Action* lifeblood(PlayerbotAI* ai) { return new CastLifeBloodAction(ai); }
