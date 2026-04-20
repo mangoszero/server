@@ -2766,6 +2766,16 @@ uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized)
         max_damage = 5.0f;
     }
 
+    if (min_damage < 0.0f)
+    {
+        min_damage = 0.0f;
+    }
+
+    if (max_damage < min_damage)
+    {
+        max_damage = min_damage;
+    }
+
     return urand((uint32)min_damage, (uint32)max_damage);
 }
 
