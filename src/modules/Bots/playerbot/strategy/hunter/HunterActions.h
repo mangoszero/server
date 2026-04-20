@@ -123,7 +123,7 @@ namespace ai
         virtual bool isUseful()
         {
             Unit* target = GetTarget();
-            return target && target->IsAlive() && CastMeleeSpellAction::isUseful() && !ai->HasAura(spell, target);
+            return target && target->IsAlive() && CastMeleeSpellAction::isUseful() && !ai->HasAura(spell, target) && target->getVictim() == bot;
         }
     };
 

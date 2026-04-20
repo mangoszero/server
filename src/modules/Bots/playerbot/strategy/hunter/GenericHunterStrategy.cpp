@@ -14,6 +14,7 @@ public:
         creators["boost"] = &rapid_fire;
         creators["aspect of the pack"] = &aspect_of_the_pack;
         creators["feign death"] = &feign_death;
+        creators["wing clip"] = &wing_clip;
     }
 private:
     static ActionNode* rapid_fire(PlayerbotAI* ai)
@@ -35,6 +36,13 @@ private:
         return new ActionNode ("feign death",
             /*P*/ NULL,
             /*A*/ NextAction::array(0, new NextAction("flee"), NULL),
+            /*C*/ NULL);
+    }
+    static ActionNode* wing_clip(PlayerbotAI* ai)
+    {
+        return new ActionNode ("wing clip",
+            /*P*/ NULL,
+            /*A*/ NULL,
             /*C*/ NULL);
     }
 };
