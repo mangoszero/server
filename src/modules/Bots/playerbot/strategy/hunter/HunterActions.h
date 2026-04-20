@@ -180,18 +180,25 @@ namespace ai
 
     class HunterEnsureRangedPositionAction : public MovementAction
     {
+    private:
+        const float minShootDistance = 10.0;
     public:
         HunterEnsureRangedPositionAction(PlayerbotAI* ai) : MovementAction(ai, "hunter ensure ranged position") {}
+
         virtual bool Execute(Event event)
         {
-            return MoveTo(AI_VALUE(Unit*, "current target"), sPlayerbotAIConfig.spellDistance);
+            Unit* target = AI_VALUE(Unit*, "current target");
+            if(bot->GetDistance(target) > sPlayerbotAIConfig.spellDistance)
+                return MoveTo(target, sPlayerbotAIConfig.spellDistance - 1.0);
+            else
+                return MoveTo(target, minShootDistance + 1.0);
         }
         virtual bool isUseful()
         {
             Unit* target = AI_VALUE(Unit*, "current target");
-            if (!target || !target->IsAlive()) return false;
-            return target->getVictim() != bot &&
-                   bot->GetDistance(target) < sPlayerbotAIConfig.spellDistance;
+            if (!target || !target->IsAlive() || (target->getVictim() == bot)) return false;
+            float distance = bot->GetDistance(target);
+            return distance < minShootDistance || distance > sPlayerbotAIConfig.spellDistance;
         }
     };
 }
