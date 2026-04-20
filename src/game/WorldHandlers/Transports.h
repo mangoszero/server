@@ -84,14 +84,15 @@ class GlobalTransport : public Transport
     private:
         struct WayPoint
         {
-            WayPoint() : mapid(0), x(0), y(0), z(0), teleport(false) {}
-            WayPoint(uint32 _mapid, float _x, float _y, float _z, bool _teleport) :
-                mapid(_mapid), x(_x), y(_y), z(_z), teleport(_teleport) {}
+            WayPoint() : mapid(0), x(0), y(0), z(0), teleport(false), isStop(false) {}
+            WayPoint(uint32 _mapid, float _x, float _y, float _z, bool _teleport, bool _isStop = false) :
+                mapid(_mapid), x(_x), y(_y), z(_z), teleport(_teleport), isStop(_isStop) {}
             uint32 mapid;
             float x;
             float y;
             float z;
             bool teleport;
+            bool isStop;
         };
 
         typedef std::map<uint32, WayPoint> WayPointMap;
