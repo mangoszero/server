@@ -154,7 +154,8 @@ float MovementAction::GetFollowAngle()
 
         if ( ref->getSource() == bot)
         {
-            return 2 * M_PI / (group->GetMembersCount() -1) * index;
+            int botCount = (int)group->GetMembersCount() - 1;
+            return M_PI / 2.0f + M_PI * (index - 1) / std::max(botCount - 1, 1);
         }
 
         index++;
