@@ -72,8 +72,8 @@ public:
     uint32 randomBotTeleLevel; ///< The teleport level for random bots.
     bool logInGroupOnly, logValuesPerTick;
     bool fleeingEnabled; ///< Indicates if fleeing is enabled for bots.
-    bool cautiousDefault;
     std::string randomBotCombatStrategies, randomBotNonCombatStrategies;
+    std::string botTankStrategies, botDpsStrategies, botHealStrategies, botGroupNonCombatStrategies;
     uint32 randomBotMinLevel, randomBotMaxLevel;
     float randomChangeMultiplier;
     uint32 specProbability[MAX_CLASSES][3]; ///< Probability of class specs for random bots.

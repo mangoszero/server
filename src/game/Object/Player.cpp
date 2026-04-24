@@ -21080,6 +21080,9 @@ void Player::SetGroup(Group* group, int8 subgroup)
         m_group.link(group, this);
         m_group.setSubGroup((uint8)subgroup);
     }
+
+    if (GetPlayerbotAI())
+        GetPlayerbotAI()->ResetStrategies();
 }
 
 /* Called by WorldSession::HandlePlayerLogin */
