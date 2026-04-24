@@ -9,8 +9,9 @@ void DeadStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     PassTroughStrategy::InitTriggers(triggers);
 
+     // Trigger name changed from "dead" to "bot dead" because of collision with AI_VALUE2(bool, "dead", ...))
     triggers.push_back(new TriggerNode(
-        "dead",
+        "bot dead",
         NextAction::array(0, new NextAction("revive from corpse", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
