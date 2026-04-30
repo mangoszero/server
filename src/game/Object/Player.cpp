@@ -7492,6 +7492,10 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         sOutdoorPvPMgr.HandlePlayerLeaveZone(this, m_zoneUpdateId);
         sOutdoorPvPMgr.HandlePlayerEnterZone(this, newZone);
 
+#ifdef ENABLE_PLAYERBOTS
+        sRandomPlayerbotMgr.OnPlayerZoneChange(this, newZone);
+#endif
+
         SendInitWorldStates(newZone);                       // only if really enters to new zone, not just area change, works strange...
 
         if (sWorld.getConfig(CONFIG_BOOL_WEATHER))

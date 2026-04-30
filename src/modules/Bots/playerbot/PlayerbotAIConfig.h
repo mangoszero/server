@@ -69,6 +69,7 @@ public:
     bool randomBotJoinLfg; ///< Indicates if random bots should join Looking For Group.
     bool randomBotLoginAtStartup; ///< Indicates if random bots should login at startup.
     bool randomBotKeepGroups; ///< Indicates if random bots should preserve groups across restarts.
+    bool randomBotActiveZoneOnly; ///< If true, ungrouped random bots only tick when a real player is in their zone.
     uint32 randomBotTeleLevel; ///< The teleport level for random bots.
     bool logInGroupOnly, logValuesPerTick;
     bool fleeingEnabled; ///< Indicates if fleeing is enabled for bots.
