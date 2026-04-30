@@ -185,7 +185,18 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
 
 uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType damagetype)
 {
-    uint32 CastingTime = !IsChanneledSpell(spellProto) ? GetSpellCastTime(spellProto) : GetSpellDuration(spellProto);
+    uint32 CastingTime = 0;
+
+    // Holy Light uses spell 19968 as its triggered heal. The trigger must stay instant,
+    // but its spell bonus coefficient should still use Holy Light's 2.5 sec cast time.
+    if (spellProto->Id == 19968)
+    {
+        CastingTime = 2500;
+    }
+    else
+    {
+        CastingTime = !IsChanneledSpell(spellProto) ? GetSpellCastTime(spellProto) : GetSpellDuration(spellProto);
+    }
 
     if (CastingTime > 7000)
     {
