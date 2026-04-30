@@ -381,6 +381,8 @@ class Spell
         void HandleThreatSpells();
         // void HandleAddAura(Unit* Target);
 
+        SpellEntry const* GetSpellBonusLevelPenaltySpell(SpellEntry const* spellProto) const;
+
         SpellEntry const* m_spellInfo;
         SpellEntry const* m_triggeredBySpellInfo;
         int32 m_currentBasePoints[MAX_EFFECT_INDEX];        // cache SpellEntry::CalculateSimpleValue and use for set custom base points

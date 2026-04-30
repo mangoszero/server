@@ -6407,7 +6407,7 @@ void Unit::EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers 
 }
 
 /**
- * \fn int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, int32 total, int32 benefit, int32 ap_benefit,  DamageEffectType damagetype, bool donePart)
+ * \fn int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, int32 total, int32 benefit, int32 ap_benefit,  DamageEffectType damagetype, bool donePart, Spell const* spell)
  * \brief This method is calculating the total amount of damage done including spell power.
  *
  * If benefit is 0, this function won't do anything. If pCaster isn't player, the default coefficient 1.0 will be used.
@@ -6427,7 +6427,7 @@ void Unit::EnergizeBySpell(Unit* pVictim, uint32 SpellID, uint32 Damage, Powers 
  *
  * \return int32 Total amount of damage including spell power bonuses.
  */
-int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, int32 total, int32 benefit, int32 ap_benefit,  DamageEffectType damagetype, bool donePart)
+int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, int32 total, int32 benefit, int32 ap_benefit,  DamageEffectType damagetype, bool donePart, Spell const* spell)
 {
     // Just don't waste time into this function if there's no benefit.
     if (!benefit)
@@ -6437,6 +6437,8 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
 
     // Distribute Damage over multiple effects, reduce by AoE
     float coeff = 1.0f;
+    SpellEntry const* levelPenaltySpell = spell ? spell->GetSpellBonusLevelPenaltySpell(spellProto) : spellProto;
+    bool const useTriggeredHealBonus = damagetype == HEAL && levelPenaltySpell != spellProto;
 
     // Not apply this to creature casted spells
     if (pCaster->GetTypeId() == TYPEID_UNIT && !((Creature*)this)->IsPet())
@@ -6450,6 +6452,13 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
         {
             case DOT:
                 coeff = bonus->dot_damage;
+                break;
+            case HEAL:
+                if (useTriggeredHealBonus)
+                {
+                    coeff = donePart ? (bonus->direct_damage_done ? bonus->direct_damage_done : bonus->direct_damage)
+                                     : (bonus->direct_damage_taken ? bonus->direct_damage_taken : bonus->direct_damage);
+                }
                 break;
             case SPELL_DIRECT_DAMAGE:
                 // Special check for bonus damage applying on spells depending on the equiped weapon.
@@ -6530,10 +6539,10 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
         coeff = CalculateDefaultCoefficient(spellProto, damagetype);
     }
 
-    float LvlPenalty = CalculateLevelPenalty(spellProto);
+    float LvlPenalty = CalculateLevelPenalty(levelPenaltySpell);
 
-    // Holy Light and Seal of Righteousness PROC and Flash of Light receive benefit from Spell Damage and Healing too low.
-    if (spellProto->SpellFamilyName == SPELLFAMILY_PALADIN && (spellProto->SpellIconID == 25 || spellProto->SpellIconID == 70 || spellProto->SpellIconID == 242))
+    // Seal of Righteousness PROC and Flash of Light receive benefit from Spell Damage and Healing too low.
+    if (spellProto->SpellFamilyName == SPELLFAMILY_PALADIN && (spellProto->SpellIconID == 25 || spellProto->SpellIconID == 242))
     {
         LvlPenalty = 1.0f;
     }
@@ -6911,13 +6920,13 @@ uint32 Unit::SpellCriticalHealingBonus(SpellEntry const* spellProto, uint32 dama
  * Calculates caster part of healing spell bonuses,
  * also includes different bonuses dependent from target auras
  */
-uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, int32 healamount, DamageEffectType damagetype, uint32 stack)
+uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, int32 healamount, DamageEffectType damagetype, uint32 stack, Spell const* spell)
 {
     // For totems get healing bonus from owner (statue isn't totem in fact)
     if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->IsTotem() && ((Totem*)this)->GetTotemType() != TOTEM_STATUE)
         if (Unit* owner = GetOwner())
         {
-            return owner->SpellHealingBonusDone(pVictim, spellProto, healamount, damagetype, stack);
+            return owner->SpellHealingBonusDone(pVictim, spellProto, healamount, damagetype, stack, spell);
         }
 
     // No heal amount for this class spells
@@ -6966,7 +6975,7 @@ uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, 
     int32 DoneAdvertisedBenefit  = SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto));
 
     // apply ap bonus and benefit affected by spell power implicit coeffs and spell level penalties
-    DoneTotal = SpellBonusWithCoeffs(this, spellProto, DoneTotal, DoneAdvertisedBenefit, 0, damagetype, true);
+    DoneTotal = SpellBonusWithCoeffs(this, spellProto, DoneTotal, DoneAdvertisedBenefit, 0, damagetype, true, spell);
 
     // use float as more appropriate for negative values and percent applying
     float heal = (healamount + DoneTotal * int32(stack)) * DoneTotalMod;
@@ -6983,7 +6992,7 @@ uint32 Unit::SpellHealingBonusDone(Unit* pVictim, SpellEntry const* spellProto, 
  * Calculates target part of healing spell bonuses,
  * will be called on each tick for periodic damage over time auras
  */
-uint32 Unit::SpellHealingBonusTaken(Unit* pCaster, SpellEntry const* spellProto, int32 healamount, DamageEffectType damagetype, uint32 stack)
+uint32 Unit::SpellHealingBonusTaken(Unit* pCaster, SpellEntry const* spellProto, int32 healamount, DamageEffectType damagetype, uint32 stack, Spell const* spell)
 {
     float  TakenTotalMod = 1.0f;
 
@@ -7037,7 +7046,7 @@ uint32 Unit::SpellHealingBonusTaken(Unit* pCaster, SpellEntry const* spellProto,
     }
 
     // apply benefit affected by spell power implicit coeffs and spell level penalties
-    TakenTotal = SpellBonusWithCoeffs(pCaster, spellProto, TakenTotal, TakenAdvertisedBenefit, 0, damagetype, false);
+    TakenTotal = SpellBonusWithCoeffs(pCaster, spellProto, TakenTotal, TakenAdvertisedBenefit, 0, damagetype, false, spell);
 
     // Taken mods
     // Healing Wave cast

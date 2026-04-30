@@ -419,6 +419,22 @@ Spell::~Spell()
 {
 }
 
+SpellEntry const* Spell::GetSpellBonusLevelPenaltySpell(SpellEntry const* spellProto) const
+{
+    if (!spellProto || !m_triggeredBySpellInfo)
+    {
+        return spellProto;
+    }
+
+    if (m_currentBasePoints[EFFECT_INDEX_1] == int32(m_triggeredBySpellInfo->Id) &&
+        sSpellMgr.GetSpellBonusData(spellProto->Id))
+    {
+        return m_triggeredBySpellInfo;
+    }
+
+    return spellProto;
+}
+
 template<typename T>
 WorldObject* Spell::FindCorpseUsing()
 {
