@@ -13,7 +13,7 @@ public:
         creators["seal of the crusader"] = &seal_of_the_crusader;
         creators["seal of vengeance"] = &seal_of_vengeance;
         creators["seal of command"] = &seal_of_command;
-        creators["blessing of might"] = &blessing_of_might;
+        creators["blessing"] = &blessing;
         creators["crusader strike"] = &crusader_strike;
     }
 
@@ -39,11 +39,11 @@ private:
             /*A*/ NextAction::array(0, new NextAction("seal of righteousness"), NULL),
             /*C*/ NULL);
     }
-    static ActionNode* blessing_of_might(PlayerbotAI* ai)
+    static ActionNode* blessing(PlayerbotAI* ai)
     {
-        return new ActionNode ("blessing of might",
+        return new ActionNode ("blessing",
             /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("blessing of kings"), NULL),
+            /*A*/ NextAction::array(0, new NextAction("blessing of might"), NULL),
             /*C*/ NULL);
     }
     static ActionNode* crusader_strike(PlayerbotAI* ai)
@@ -78,7 +78,7 @@ void DpsPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("judgement of wisdom", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "blessing of might",
+        "blessing",
         NextAction::array(0, new NextAction("blessing of might", ACTION_HIGH + 8), NULL)));
 
     triggers.push_back(new TriggerNode(

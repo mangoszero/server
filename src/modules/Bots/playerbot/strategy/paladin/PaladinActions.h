@@ -405,4 +405,12 @@ namespace ai
     public:
         CastHammerOfJusticeOnEnemyHealerAction(PlayerbotAI* ai) : CastSpellOnEnemyHealerAction(ai, "hammer of justice") {}
     };
+
+    class CastBlessingOnPartyAction : public Action
+    {
+    public:
+        CastBlessingOnPartyAction(PlayerbotAI* ai) : Action(ai, "blessing on party") {}
+        virtual bool Execute(Event event);
+        virtual bool isUseful();
+    };
 }

@@ -25,9 +25,26 @@ namespace ai
     DEBUFF_TRIGGER(JudgementOfLightTrigger, "judgement of light", "judgement of light")
     DEBUFF_TRIGGER(JudgementOfWisdomTrigger, "judgement of wisdom", "judgement of wisdom")
 
-    BUFF_ON_PARTY_TRIGGER(BlessingOfKingsOnPartyTrigger, "blessing of kings", "blessing of kings on party")
-    BUFF_TRIGGER(BlessingTrigger, "blessing of sanctuary", "blessing of sanctuary")
-    BUFF_TRIGGER(BlessingOfMightTrigger, "blessing of might", "blessing of might")
+    inline bool HasAnyBlessing(PlayerbotAI* ai, Unit* target)
+    {
+        for (const char* b : {"blessing of kings", "blessing of might", "blessing of sanctuary",
+                              "blessing of wisdom", "blessing of salvation", "blessing of light",
+                               "greater blessing of kings", "greater blessing of might"})
+            if (ai->HasAura(b, target))
+                return true;
+        return false;
+    }
+
+    class BlessingTrigger : public Trigger
+    {
+    public:
+        BlessingTrigger(PlayerbotAI* ai) : Trigger(ai, "blessing") {}
+        virtual bool IsActive()
+        {
+            Unit* target = GetTarget();
+            return target && !HasAnyBlessing(ai, target);
+        }
+    };
 
     class AuraTrigger : public BuffTrigger
     {
