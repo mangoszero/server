@@ -27,6 +27,7 @@
 #define _WARDEN_WIN_H
 
 #include "Warden.h"
+#include <vector>
 
 #if defined(__GNUC__)
 #pragma pack(1)
@@ -87,10 +88,24 @@ class WardenWin : public Warden
         void HandleData(ByteBuffer &buff) override;
 
     private:
+        struct CustomCheckState
+        {
+            uint16 checkId;
+            std::vector<uint32> offsets;
+            size_t hopIndex;
+            uint32 currentAddress;
+            uint8  finalLength;
+        };
+
+        static bool ParseChainOffsets(const std::string& str, std::vector<uint32>& out);
+        void StartCustomChain(WardenCheck* wd);
+
         uint32 _serverTicks;
         std::list<uint16> _otherChecksTodo;
         std::list<uint16> _memChecksTodo;
         std::list<uint16> _currentChecks;
+        CustomCheckState _customChainInFlight;
+        bool _customChainActive;
 };
 
 #endif

@@ -65,7 +65,10 @@ enum WardenCheckType
     DRIVER_CHECK            = 0x71, // 113: uint Seed + byte[20] SHA1 + byte driverNameIndex (check to ensure driver isn't loaded)
     TIMING_CHECK            = 0x57, //  87: empty (check to ensure GetTickCount() isn't detoured)
     PROC_CHECK              = 0x7E, // 126: uint Seed + byte[20] SHA1 + byte moluleNameIndex + byte procNameIndex + uint Offset + byte Len (check to ensure proc isn't detoured)
-    MODULE_CHECK            = 0xD9  // 217: uint Seed + byte[20] SHA1 (check to ensure module isn't injected)
+    MODULE_CHECK            = 0xD9, // 217: uint Seed + byte[20] SHA1 (check to ensure module isn't injected)
+    CUSTOM_CHECK            = 0xF4  // 244: SERVER-SIDE ONLY. Wire format identical to MEM_CHECK (0xF3).
+                                    //      Drives multi-hop pointer-chain reads and custom validation;
+                                    //      never appears in any byte sent to or from the client module.
 };
 
 #if defined(__GNUC__)
