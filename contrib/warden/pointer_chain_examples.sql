@@ -18,6 +18,13 @@
 --                         Empty string = zero hops (degenerate single-read).
 --                         Each offset is added to the pointer dereferenced at
 --                         the previous hop to produce the next hop's address.
+--                         A leading '!' flips the terminal compare: instead of
+--                         "fail on mismatch" (verify expected bytes), the row
+--                         becomes "fail on match" (detect a forbidden cheat
+--                         signature, e.g. PQR landing in a dynamically
+--                         resolved memory region). The '!' is consumed before
+--                         the offsets are parsed, so '!0x4,0x8' is a 2-hop
+--                         chain in signature-detect mode.
 --   comment   string   -- free text
 --
 -- Walk semantics for offsets `o1, o2, ..., oN` and base `B`:
@@ -154,6 +161,45 @@ VALUES
 
 
 -- ----------------------------------------------------------------------------
+-- Example 5 — Signature-detect mode (third-party allocation scan)
+--
+-- Inspired by Krilliac/AdvancedWarden's MEM2_CHECK / GAGARIN pair pattern,
+-- which targets cheats that allocate executable memory in well-known
+-- dynamic regions and place their payload at a fixed offset within that
+-- region. Approach there: one MEM_CHECK reads the dynamic base address and
+-- caches it on the session; a paired MEM_CHECK then scans `base + small
+-- offset` and fails when bytes != 0 (i.e. the region is not empty as it
+-- should be on a clean client).
+--
+-- Our generalised equivalent: a single POINTER_CHAIN_CHECK row that walks
+-- to the suspect address and uses signature-detect mode (leading `!`) to
+-- fail when a known cheat-signature pattern appears.
+--
+-- Chain (1 hop, terminal reads 4 bytes; fails if pattern found):
+--     base = 0x009F348            ; static slot that holds the dynamic
+--                                 ;   allocation pointer for this cheat
+--                                 ;   family. (TODO: confirm against your
+--                                 ;   binary; the AdvancedWarden seed used
+--                                 ;   address=652040=0x9F348, length=4.)
+--     hop 0 (terminal): read 4 bytes at *base + 2 (or other small offset)
+--                       expected = the cheat's 4-byte signature
+--                       fail when read == expected (signature present)
+--
+-- The leading '!' on the offset string flips the terminal compare into
+-- signature-detect mode. Pick the offset value (here 0x2) to match the
+-- byte-window where the cheat is known to land. Length must equal the
+-- length of the signature in `result`.
+-- ----------------------------------------------------------------------------
+INSERT INTO `warden`
+    (`id`, `build`, `type`, `data`, `result`, `address`, `length`, `str`, `comment`)
+VALUES
+    (10005, 5875, 244, '',
+     '00003000', -- TODO: replace with the real cheat signature bytes
+     0x0009F348, 4, '!0x2',
+     'Signature detect: dynamic 3rd-party allocation scan (PQR-class)');
+
+
+-- ----------------------------------------------------------------------------
 -- Optional: action override per check id (only if you want non-default
 -- penalty for these). Default action comes from
 -- CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION (0=LOG, 1=KICK, 2=BAN). The
@@ -163,4 +209,5 @@ VALUES
 --     (10001, 1),  -- kick on vtable-hook detection
 --     (10002, 0),  -- log only on IAT check (more false-positive prone)
 --     (10003, 1),  -- kick on object-type spoof
---     (10004, 0);  -- log only on smoke test
+--     (10004, 0),  -- log only on smoke test
+--     (10005, 2);  -- ban on confirmed signature match

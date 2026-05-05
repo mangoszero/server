@@ -47,6 +47,7 @@ WardenWin::WardenWin() : Warden(), _serverTicks(0), _pointerChainActive(false)
     _pointerChainInFlight.hopIndex = 0;
     _pointerChainInFlight.currentAddress = 0;
     _pointerChainInFlight.finalLength = 0;
+    _pointerChainInFlight.invertMatch = false;
 }
 
 WardenWin::~WardenWin() { }
@@ -106,8 +107,21 @@ void WardenWin::StartPointerChain(WardenCheck* wd)
     _pointerChainInFlight.hopIndex = 0;
     _pointerChainInFlight.currentAddress = wd->Address;
     _pointerChainInFlight.finalLength = wd->Length;
+    _pointerChainInFlight.invertMatch = false;
 
-    if (!ParseChainOffsets(wd->Str, _pointerChainInFlight.offsets))
+    // Optional leading '!' on the offset string flips the terminal compare from
+    // "fail on mismatch" (verify expected bytes) to "fail on match" (detect a
+    // forbidden cheat-signature pattern, e.g. PQR landing in a dynamically
+    // resolved memory region).
+    std::string chain = wd->Str;
+    size_t firstNonSpace = chain.find_first_not_of(" \t\r\n");
+    if (firstNonSpace != std::string::npos && chain[firstNonSpace] == '!')
+    {
+        _pointerChainInFlight.invertMatch = true;
+        chain.erase(0, firstNonSpace + 1);
+    }
+
+    if (!ParseChainOffsets(chain, _pointerChainInFlight.offsets))
     {
         sLog.outWarden("POINTER_CHAIN_CHECK CheckId %u has malformed offset chain '%s'; skipping",
                        wd->CheckId, wd->Str.c_str());
@@ -552,12 +566,20 @@ void WardenWin::HandleData(ByteBuffer &buff)
                     break;
                 }
 
-                // Terminal hop: compare finalLength bytes against expected result.
-                if (memcmp(buff.contents() + buff.rpos(), rs->Result.AsByteArray(0, false),
-                           _pointerChainInFlight.finalLength) != 0)
+                // Terminal hop: memcmp the bytes at the resolved address against the expected
+                // result. Two interpretations driven by invertMatch:
+                //   invertMatch == false : verify-clean       — fail on mismatch
+                //   invertMatch == true  : signature detect   — fail on match
+                int cmp = memcmp(buff.contents() + buff.rpos(), rs->Result.AsByteArray(0, false),
+                                 _pointerChainInFlight.finalLength);
+                bool matched = (cmp == 0);
+                bool failed  = _pointerChainInFlight.invertMatch ? matched : !matched;
+
+                if (failed)
                 {
-                    sLog.outWarden("RESULT POINTER_CHAIN_CHECK fail CheckId %u account Id %u",
-                                   *itr, _session->GetAccountId());
+                    sLog.outWarden("RESULT POINTER_CHAIN_CHECK fail CheckId %u account Id %u (%s)",
+                                   *itr, _session->GetAccountId(),
+                                   _pointerChainInFlight.invertMatch ? "signature matched" : "bytes mismatch");
                     checkFailed = *itr;
                     buff.rpos(buff.rpos() + _pointerChainInFlight.finalLength);
                     _pointerChainActive = false;
@@ -565,8 +587,9 @@ void WardenWin::HandleData(ByteBuffer &buff)
                 }
 
                 buff.rpos(buff.rpos() + _pointerChainInFlight.finalLength);
-                sLog.outWarden("RESULT POINTER_CHAIN_CHECK passed CheckId %u account Id %u",
-                               *itr, _session->GetAccountId());
+                sLog.outWarden("RESULT POINTER_CHAIN_CHECK passed CheckId %u account Id %u (%s)",
+                               *itr, _session->GetAccountId(),
+                               _pointerChainInFlight.invertMatch ? "no signature" : "bytes match");
                 _pointerChainActive = false;
                 break;
             }

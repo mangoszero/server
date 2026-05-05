@@ -95,6 +95,7 @@ class WardenWin : public Warden
             size_t hopIndex;
             uint32 currentAddress;
             uint8  finalLength;
+            bool   invertMatch;     // true = fail when terminal bytes MATCH expected (signature detect)
         };
 
         static bool ParseChainOffsets(const std::string& str, std::vector<uint32>& out);
