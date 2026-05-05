@@ -58,8 +58,28 @@ void WardenCheckMgr::LoadWardenChecks()
         sLog.outString(">> Warden disabled, loading checks skipped.");
         return;
     }
-                                                  //  0   1      2     3     4       5        6       7    8
-    QueryResult *result = WorldDatabase.Query("SELECT `id`, `build`, `type`, `data`, `result`, `address`, `length`, `str`, `comment` FROM `warden` ORDER BY `build` ASC, `id` ASC");
+
+    // Detect whether the optional `groupid` column exists in this deployment's
+    // schema. If it does, include it in the SELECT so rotation can use it.
+    bool hasGroupId = false;
+    {
+        QueryResult* probe = WorldDatabase.Query("SHOW COLUMNS FROM `warden` LIKE 'groupid'");
+        if (probe)
+        {
+            hasGroupId = true;
+            delete probe;
+        }
+    }
+
+    QueryResult *result = NULL;
+    if (hasGroupId)
+    {                                             //  0     1        2       3       4         5          6         7      8          9
+        result = WorldDatabase.Query("SELECT `id`, `build`, `type`, `data`, `result`, `address`, `length`, `str`, `comment`, `groupid` FROM `warden` ORDER BY `build` ASC, `id` ASC");
+    }
+    else
+    {                                             //  0     1        2       3       4         5          6         7      8
+        result = WorldDatabase.Query("SELECT `id`, `build`, `type`, `data`, `result`, `address`, `length`, `str`, `comment` FROM `warden` ORDER BY `build` ASC, `id` ASC");
+    }
 
     if (!result)
     {
@@ -83,10 +103,12 @@ void WardenCheckMgr::LoadWardenChecks()
         uint8 length            = fields[6].GetUInt8();
         std::string str         = fields[7].GetString();
         std::string comment     = fields[8].GetString();
+        uint16 groupId          = hasGroupId ? fields[9].GetUInt16() : 0;
 
         WardenCheck* wardenCheck = new WardenCheck();
         wardenCheck->Type = checkType;
         wardenCheck->CheckId = id;
+        wardenCheck->GroupId = groupId;
 
         // Initialize action with default action from config
         wardenCheck->Action = WardenActions(sWorld.getConfig(CONFIG_UINT32_WARDEN_CLIENT_FAIL_ACTION));
@@ -242,23 +264,80 @@ WardenCheckResult* WardenCheckMgr::GetWardenResultById(uint16 build, uint16 id)
     return result;
 }
 
+// MEM_CHECK and MODULE_CHECK go through the dedicated memory queue. Every other
+// check type goes through the "other" queue. The two queues must be disjoint so
+// the same check id is never sent twice in the same cycle.
+static bool IsMemoryQueueCheck(uint8 type)
+{
+    return type == MEM_CHECK || type == MODULE_CHECK;
+}
+
 void WardenCheckMgr::GetWardenCheckIds(bool isMemCheck, uint16 build, std::list<uint16>& idl)
 {
     idl.clear(); //just to be sure
 
-    ACE_READ_GUARD(LOCK, g, m_lock)
-    for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
+    // Bucket by groupid so we can interleave when consuming. groupid 0 is treated
+    // as "no group" - one bucket per check.
+    typedef std::map<uint16, std::vector<uint16> > GroupBuckets;
+    GroupBuckets buckets;
+    std::vector<uint16> ungrouped;
+
     {
-        if (isMemCheck)
+        ACE_READ_GUARD(LOCK, g, m_lock)
+        for (CheckMap::iterator it = CheckStore.lower_bound(build); it != CheckStore.upper_bound(build); ++it)
         {
-            if ((it->second->Type == MEM_CHECK) || (it->second->Type == MODULE_CHECK))
+            const uint8 type = it->second->Type;
+            const bool isMem = IsMemoryQueueCheck(type);
+
+            if (isMemCheck)
             {
-                idl.push_back(it->second->CheckId);
+                if (!isMem)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                // Skip TIMING_CHECK - WardenWin::RequestData() appends a
+                // synthetic TIMING_CHECK per cycle.
+                if (isMem || type == TIMING_CHECK)
+                {
+                    continue;
+                }
+            }
+
+            if (it->second->GroupId == 0)
+            {
+                ungrouped.push_back(it->second->CheckId);
+            }
+            else
+            {
+                buckets[it->second->GroupId].push_back(it->second->CheckId);
             }
         }
-        else
+    }
+
+    // Round-robin across grouped buckets so checks belonging to the same group
+    // do not all get consumed back-to-back in a single cycle. This minimizes
+    // repeated coverage of similar checks.
+    bool madeProgress;
+    do
+    {
+        madeProgress = false;
+        for (GroupBuckets::iterator it = buckets.begin(); it != buckets.end(); ++it)
         {
-            idl.push_back(it->second->CheckId);
+            if (!it->second.empty())
+            {
+                idl.push_back(it->second.back());
+                it->second.pop_back();
+                madeProgress = true;
+            }
         }
+    } while (madeProgress);
+
+    // Ungrouped checks tail (insertion order).
+    for (std::vector<uint16>::iterator it = ungrouped.begin(); it != ungrouped.end(); ++it)
+    {
+        idl.push_back(*it);
     }
 }

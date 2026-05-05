@@ -1721,8 +1721,11 @@ QuestTracker.Enable= 0
 #        Description: Default action being taken if a client check failed. Actions can be
 #                     overwritten for each single check via warden_action table in characters
 #                     database.
-#        Default:     1 - (Kick)
-#                     0 - (Disabled, Logging only)
+#                     Recommendation: leave at 0 (log-only) until Warden has been validated
+#                     against your real client population. Switch to 1 (kick) or 2 (ban)
+#                     only after the Warden log shows no false positives.
+#        Default:     0 - (Disabled, Logging only)
+#                     1 - (Kick)
 #                     2 - (Ban)
 #
 #    Warden.BanDuration
@@ -1746,7 +1749,7 @@ Warden.NumMemChecks          = 3
 Warden.NumOtherChecks        = 7
 Warden.ClientResponseDelay   = 600
 Warden.ClientCheckHoldOff    = 30
-Warden.ClientCheckFailAction = 1
+Warden.ClientCheckFailAction = 0
 Warden.BanDuration           = 86400
 Warden.DBLogLevel            = 0
 

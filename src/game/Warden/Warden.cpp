@@ -212,6 +212,35 @@ void Warden::SetNewState(WardenState::Value state)
     _clientResponseTimer = 0;
 }
 
+bool Warden::IsValidIncomingOpcode(uint8 opcode) const
+{
+    switch (opcode)
+    {
+        case WARDEN_CMSG_MODULE_MISSING:
+        case WARDEN_CMSG_MODULE_OK:
+            // The client tells us whether it has the module after we sent
+            // WARDEN_SMSG_MODULE_USE.
+            return _state == WardenState::STATE_REQUESTED_MODULE;
+
+        case WARDEN_CMSG_MODULE_FAILED:
+            // Sent if loading the module we transferred fails on the client.
+            return _state == WardenState::STATE_REQUESTED_MODULE
+                || _state == WardenState::STATE_SENT_MODULE;
+
+        case WARDEN_CMSG_HASH_RESULT:
+            // Reply to WARDEN_SMSG_HASH_REQUEST.
+            return _state == WardenState::STATE_REQUESTED_HASH;
+
+        case WARDEN_CMSG_CHEAT_CHECKS_RESULT:
+        case WARDEN_CMSG_MEM_CHECKS_RESULT:
+            // Reply to WARDEN_SMSG_CHEAT_CHECKS_REQUEST.
+            return _state == WardenState::STATE_REQUESTED_DATA;
+
+        default:
+            return false;
+    }
+}
+
 bool Warden::IsValidCheckSum(uint32 checksum, const uint8* data, const uint16 length)
 {
     uint32 newChecksum = BuildChecksum(data, length);
@@ -314,6 +343,16 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
     sLog.outWarden("Got packet, opcode %02X, size %u", opcode, uint32(recvData.size()));
     recvData.hexlike();
 
+    if (!_warden->IsValidIncomingOpcode(opcode))
+    {
+        sLog.outWarden("Account %u sent Warden opcode %02X in unexpected state %s (latency %u, IP %s)",
+                       GetAccountId(), opcode, WardenState::to_string(_warden->GetState()),
+                       GetLatency(), GetRemoteAddress().c_str());
+        // Drain the packet so partial reads don't bleed into later handlers.
+        recvData.rpos(recvData.wpos());
+        return;
+    }
+
     switch (opcode)
     {
         case WARDEN_CMSG_MODULE_MISSING:
@@ -326,17 +365,27 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
             _warden->HandleData(recvData);
             break;
         case WARDEN_CMSG_MEM_CHECKS_RESULT:
-            sLog.outWarden("NYI WARDEN_CMSG_MEM_CHECKS_RESULT received!");
+            // Sent by the client when a MEM_CHECK byte sequence does not match.
+            // We treat that as a failed check and apply the configured penalty.
+            sLog.outWarden("Account %u (%s) reported MEM_CHECK mismatch via WARDEN_CMSG_MEM_CHECKS_RESULT. Action: %s",
+                           GetAccountId(), GetPlayerName(), _warden->Penalty().c_str());
+            recvData.rpos(recvData.wpos());
             break;
         case WARDEN_CMSG_HASH_RESULT:
             _warden->HandleHashResult(recvData);
             _warden->InitializeModule();
             break;
         case WARDEN_CMSG_MODULE_FAILED:
-            sLog.outWarden("NYI WARDEN_CMSG_MODULE_FAILED received!");
+            // Module failed to load on the client side - usually a cache fail.
+            // Log explicitly and apply penalty if configured.
+            sLog.outWarden("Account %u (%s) reported MODULE_FAILED. Action: %s",
+                           GetAccountId(), GetPlayerName(), _warden->Penalty().c_str());
+            recvData.rpos(recvData.wpos());
             break;
         default:
-            sLog.outWarden("Got unknown warden opcode %02X of size %u.", opcode, uint32(recvData.size() - 1));
+            sLog.outWarden("Got unknown warden opcode %02X of size %u from account %u.",
+                           opcode, uint32(recvData.size() - 1), GetAccountId());
+            recvData.rpos(recvData.wpos());
             break;
     }
 }
