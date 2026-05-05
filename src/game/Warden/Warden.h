@@ -168,6 +168,10 @@ class Warden
         void EncryptData(uint8* buffer, uint32 length);
 
     void SetNewState(WardenState::Value state);
+        WardenState::Value GetState() const { return _state; }
+
+        // Returns true if the given client opcode is valid given the current state.
+        bool IsValidIncomingOpcode(uint8 opcode) const;
 
         static bool IsValidCheckSum(uint32 checksum, const uint8 *data, const uint16 length);
         static uint32 BuildChecksum(const uint8 *data, uint32 length);
