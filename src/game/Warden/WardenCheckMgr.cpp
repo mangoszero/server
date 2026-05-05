@@ -106,21 +106,21 @@ void WardenCheckMgr::LoadWardenChecks()
             }
         }
 
-        if (checkType == MEM_CHECK || checkType == PAGE_CHECK_A || checkType == PAGE_CHECK_B || checkType == PROC_CHECK || checkType == CUSTOM_CHECK)
+        if (checkType == MEM_CHECK || checkType == PAGE_CHECK_A || checkType == PAGE_CHECK_B || checkType == PROC_CHECK || checkType == POINTER_CHAIN_CHECK)
         {
             wardenCheck->Address = address;
             wardenCheck->Length = length;
         }
 
         // PROC_CHECK support missing
-        if (checkType == MEM_CHECK || checkType == MPQ_CHECK || checkType == LUA_STR_CHECK || checkType == DRIVER_CHECK || checkType == MODULE_CHECK || checkType == CUSTOM_CHECK)
+        if (checkType == MEM_CHECK || checkType == MPQ_CHECK || checkType == LUA_STR_CHECK || checkType == DRIVER_CHECK || checkType == MODULE_CHECK || checkType == POINTER_CHAIN_CHECK)
         {
             wardenCheck->Str = str;
         }
 
         CheckStore.insert(std::pair<uint16, WardenCheck*>(build, wardenCheck));
 
-        if (checkType == MPQ_CHECK || checkType == MEM_CHECK || checkType == CUSTOM_CHECK)
+        if (checkType == MPQ_CHECK || checkType == MEM_CHECK || checkType == POINTER_CHAIN_CHECK)
         {
             WardenCheckResult* wr = new WardenCheckResult();
             wr->Id = id;
@@ -251,7 +251,7 @@ void WardenCheckMgr::GetWardenCheckIds(bool isMemCheck, uint16 build, std::list<
     {
         if (isMemCheck)
         {
-            if ((it->second->Type == MEM_CHECK) || (it->second->Type == MODULE_CHECK) || (it->second->Type == CUSTOM_CHECK))
+            if ((it->second->Type == MEM_CHECK) || (it->second->Type == MODULE_CHECK) || (it->second->Type == POINTER_CHAIN_CHECK))
             {
                 idl.push_back(it->second->CheckId);
             }

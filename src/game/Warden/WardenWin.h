@@ -88,7 +88,7 @@ class WardenWin : public Warden
         void HandleData(ByteBuffer &buff) override;
 
     private:
-        struct CustomCheckState
+        struct PointerChainState
         {
             uint16 checkId;
             std::vector<uint32> offsets;
@@ -98,14 +98,14 @@ class WardenWin : public Warden
         };
 
         static bool ParseChainOffsets(const std::string& str, std::vector<uint32>& out);
-        void StartCustomChain(WardenCheck* wd);
+        void StartPointerChain(WardenCheck* wd);
 
         uint32 _serverTicks;
         std::list<uint16> _otherChecksTodo;
         std::list<uint16> _memChecksTodo;
         std::list<uint16> _currentChecks;
-        CustomCheckState _customChainInFlight;
-        bool _customChainActive;
+        PointerChainState _pointerChainInFlight;
+        bool _pointerChainActive;
 };
 
 #endif
