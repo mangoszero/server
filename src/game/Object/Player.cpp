@@ -21085,8 +21085,10 @@ void Player::SetGroup(Group* group, int8 subgroup)
         m_group.setSubGroup((uint8)subgroup);
     }
 
+#ifdef ENABLE_PLAYERBOTS
     if (GetPlayerbotAI())
         GetPlayerbotAI()->ResetStrategies();
+#endif
 }
 
 /* Called by WorldSession::HandlePlayerLogin */
