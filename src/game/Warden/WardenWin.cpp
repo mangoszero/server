@@ -131,7 +131,7 @@ void WardenWin::InitializeModule()
 
     // Compute checksums AFTER all covered fields have been assigned.
     Request.CheckSumm1 = BuildChecksum(&Request.Unk1, 20);
-    Request.CheckSumm2 = BuildChecksum(&Request.Unk3, 8);
+    Request.CheckSumm2 = BuildChecksum(&Request.Unk2, 8);
     Request.CheckSumm3 = BuildChecksum(&Request.Unk5, 8);
 
     // Encrypt with warden RC4 key.
