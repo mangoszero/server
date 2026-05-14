@@ -22,6 +22,10 @@ bool CastCustomSpellAction::Execute(Event event)
     string text = event.getParam();
 
     uint32 spell = chat->parseSpell(text);
+    if(!spell)
+    {
+        spell = AI_VALUE2(uint32, "spell id", text);
+    }
 
     ostringstream msg;
     if (!ai->CanCastSpell(spell, target))
