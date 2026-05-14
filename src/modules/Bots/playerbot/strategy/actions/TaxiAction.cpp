@@ -19,6 +19,50 @@ bool TaxiAction::Execute(Event event)
         bot->GetSession()->HandleMoveSplineDoneOpcode(p1);
         movement.taxiNodes.clear();
         movement.Set(NULL);
+
+        if (bot->IsTaxiFlying() && bot->m_taxi.empty())
+        {
+            // ensure a clean drop off bird when landing
+            bot->GetMotionMaster()->Clear();
+
+            float x = bot->GetPositionX();
+            float y = bot->GetPositionY();
+            float z = bot->GetPositionZ();
+            float o = bot->GetOrientation();
+
+            float ground = z;
+            if (Map* map = bot->GetMap())
+            {
+                float terrainZ = map->GetHeight(x, y, z);
+                if (terrainZ > INVALID_HEIGHT && terrainZ < z)
+                    ground = terrainZ;
+            }
+
+            if (ground < z)
+            {
+                bot->m_movementInfo.SetMovementFlags(MOVEFLAG_FALLING);
+                bot->m_movementInfo.SetFallTime(0);
+                bot->SetFallInformation(0, z);
+
+                WorldPacket jumpPkt(MSG_MOVE_JUMP, 64);
+                jumpPkt << bot->GetPackGUID();
+                bot->m_movementInfo.Write(jumpPkt);
+                bot->SendMessageToSet(&jumpPkt, false);
+
+                bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_FALLING);
+                bot->m_movementInfo.ChangePosition(x, y, ground, o);
+
+                WorldPacket landPkt(MSG_MOVE_FALL_LAND, 64);
+                landPkt << bot->GetPackGUID();
+                bot->m_movementInfo.Write(landPkt);
+                bot->SendMessageToSet(&landPkt, false);
+
+                bot->SetFallInformation(0, ground);
+            }
+
+            bot->GetMap()->PlayerRelocation(bot, x, y, ground, o);
+        }
+
         return true;
     }
 
