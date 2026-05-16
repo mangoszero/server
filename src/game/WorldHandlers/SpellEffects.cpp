@@ -2633,6 +2633,11 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
         itemTarget->SetFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED);
     }
 
+    if (gameObjTarget)
+    {
+        gameObjTarget->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+    }
+
     SendLoot(guid, LOOT_SKINNING, LockType(m_spellInfo->EffectMiscValue[eff_idx]));
 
     // not allow use skill grow at item base open
