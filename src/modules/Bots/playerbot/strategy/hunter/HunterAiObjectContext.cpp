@@ -82,10 +82,12 @@ namespace ai
                 creators["aspect of the viper"] = &TriggerFactoryInternal::aspect_of_the_viper;
                 creators["trueshot aura"] = &TriggerFactoryInternal::trueshot_aura;
                 creators["serpent sting on attacker"] = &TriggerFactoryInternal::serpent_sting_on_attacker;
+                creators["has feign death"] = &TriggerFactoryInternal::has_feign_death;
             }
 
         private:
             static Trigger* serpent_sting_on_attacker(PlayerbotAI* ai) { return new SerpentStingOnAttackerTrigger(ai); }
+            static Trigger* has_feign_death(PlayerbotAI* ai) { return new FeignDeathTrigger(ai); }
             static Trigger* trueshot_aura(PlayerbotAI* ai) { return new TrueshotAuraTrigger(ai); }
             static Trigger* aspect_of_the_viper(PlayerbotAI* ai) { return new HunterAspectOfTheViperTrigger(ai); }
             static Trigger* black_arrow(PlayerbotAI* ai) { return new BlackArrowTrigger(ai); }
@@ -142,6 +144,7 @@ namespace ai
                 creators["aspect of the cheetah"] = &AiObjectContextInternal::aspect_of_the_cheetah;
                 creators["trueshot aura"] = &AiObjectContextInternal::trueshot_aura;
                 creators["feign death"] = &AiObjectContextInternal::feign_death;
+                creators["remove feign death"] = &AiObjectContextInternal::remove_feign_death;
                 creators["wing clip"] = &AiObjectContextInternal::wing_clip;
                 creators["disengage"] = &AiObjectContextInternal::disengage;
                 creators["immolation trap"] = &AiObjectContextInternal::immolation_trap;
@@ -157,6 +160,7 @@ namespace ai
 
         private:
             static Action* feign_death(PlayerbotAI* ai) { return new CastFeignDeathAction(ai); }
+            static Action* remove_feign_death(PlayerbotAI* ai) { return new RemoveFeignDeathAction(ai); }
             static Action* trueshot_aura(PlayerbotAI* ai) { return new CastTrueshotAuraAction(ai); }
             static Action* auto_shot(PlayerbotAI* ai) { return new CastAutoShotAction(ai); }
             static Action* aimed_shot(PlayerbotAI* ai) { return new CastAimedShotAction(ai); }
