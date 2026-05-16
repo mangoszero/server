@@ -82,7 +82,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
-    m_pendingJump(false), m_jumpRequestTime(0),
+    m_pendingJump(false), m_jumpHere(false), m_jumpRequestTime(0),
     m_jumpTargetX(0.f), m_jumpTargetY(0.f), m_jumpTargetZ(0.f), m_jumpTargetO(0.f)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -101,7 +101,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
-    m_pendingJump(false), m_jumpRequestTime(0),
+    m_pendingJump(false), m_jumpHere(false), m_jumpRequestTime(0),
     m_jumpTargetX(0.f), m_jumpTargetY(0.f), m_jumpTargetZ(0.f), m_jumpTargetO(0.f)
 {
     this->bot = bot;
@@ -175,7 +175,7 @@ PlayerbotAI::~PlayerbotAI()
 static const float BOT_JUMP_VELOCITY = 7.9557f;
 static const float BOT_JUMP_GRAVITY  = 19.2911f;
 
-void PlayerbotAI::RequestJump()
+void PlayerbotAI::RequestJump(bool here)
 {
     if (m_pendingJump || m_isJumping)
         return;
@@ -189,6 +189,7 @@ void PlayerbotAI::RequestJump()
     m_jumpTargetZ = master->GetPositionZ();
     m_jumpTargetO = master->GetOrientation();
     m_pendingJump = true;
+    m_jumpHere = here;
     m_jumpRequestTime = getMSTime();
 }
 
@@ -243,7 +244,10 @@ void PlayerbotAI::UpdateJump()
             if (dist2d <= 0.5f)
             {
                 m_pendingJump = false;
-                StartJump(true, m_jumpTargetO);
+                if (m_jumpHere)
+                    StartJump(false);
+                else
+                    StartJump(true, m_jumpTargetO);
             }
             else
             {

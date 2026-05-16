@@ -189,7 +189,7 @@ public:
     PlayerbotSecurity* GetSecurity() { return &security; }
 
     void StartJump(bool forward, float orientation = -1.f);
-    void RequestJump();
+    void RequestJump(bool here = false);
     bool IsJumping() const { return m_isJumping; }
     bool IsPendingJump() const { return m_pendingJump; }
 
@@ -232,6 +232,7 @@ protected:
     float  m_jumpStartX, m_jumpStartY, m_jumpStartZ;
     float  m_jumpSinAngle, m_jumpCosAngle, m_jumpXYSpeed;
     bool   m_pendingJump;
+    bool   m_jumpHere;
     uint32 m_jumpRequestTime;
     float  m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ, m_jumpTargetO;
 

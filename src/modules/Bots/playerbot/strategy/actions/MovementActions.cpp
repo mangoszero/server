@@ -643,15 +643,37 @@ bool SetFacingTargetAction::isUseful()
 
 bool JumpAction::Execute(Event event)
 {
-    if (ai->IsJumping() || ai->IsPendingJump())
-        return false;
+    string const param = event.getParam();
 
-    ai->RequestJump();
-    return ai->IsPendingJump();
-}
+    if (param == "forward")
+    {
+        if (ai->IsJumping())
+            return false;
+        ai->StartJump(true);
+        return true;
+    }
 
-bool JumpInPlaceAction::Execute(Event event)
-{
+    if (param == "master")
+    {
+        if (ai->IsJumping())
+            return false;
+        Player* master = ai->GetMaster();
+        if (!master)
+            return false;
+        float angle = bot->GetAngle(master);
+        bot->SetFacingTo(angle);
+        ai->StartJump(true, angle);
+        return true;
+    }
+
+    if (param == "here")
+    {
+        if (ai->IsJumping() || ai->IsPendingJump())
+            return false;
+        ai->RequestJump();
+        return ai->IsPendingJump();
+    }
+
     if (ai->IsJumping())
         return false;
 
