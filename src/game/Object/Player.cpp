@@ -18689,6 +18689,36 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         if (at)
         {
             Relocate(at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+
+            // Update group members' positions in DB so they also appear at the entrance
+            if (Group* group = GetGroup())
+            {
+                uint32 zoneId = sTerrainMgr.GetZoneId(GetMapId(), at->target_X, at->target_Y, at->target_Z);
+
+                std::ostringstream guidList;
+                bool first = true;
+                for (Group::MemberSlotList::const_iterator itr = group->GetMemberSlots().begin(); itr != group->GetMemberSlots().end(); ++itr)
+                {
+                    if (itr->guid != GetObjectGuid())
+                    {
+                        if (!first)
+                            guidList << ',';
+                        guidList << itr->guid.GetCounter();
+                        first = false;
+                    }
+                }
+
+                if (!first)
+                {
+                    CharacterDatabase.PExecute(
+                        "UPDATE `characters` SET `position_x`='%f',`position_y`='%f',`position_z`='%f',"
+                        "`orientation`='%f',`map`='%u',`zone`='%u',`trans_x`='0',`trans_y`='0',`trans_z`='0',"
+                        "`transguid`='0',`taxi_path`='' WHERE `guid` IN (%s) AND `map`='%u'",
+                        at->target_X, at->target_Y, at->target_Z, at->target_Orientation,
+                        GetMapId(), zoneId,
+                        guidList.str().c_str(), GetMapId());
+                }
+            }
         }
         else
         {
