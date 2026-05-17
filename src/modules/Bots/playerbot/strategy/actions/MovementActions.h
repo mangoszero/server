@@ -62,14 +62,18 @@ namespace ai
     class MoveRandomAction : public MovementAction
     {
     public:
-        MoveRandomAction(PlayerbotAI* ai) : MovementAction(ai, "move random") {}
+        MoveRandomAction(PlayerbotAI* ai) : MovementAction(ai, "move random"), m_hasFaceTarget(false), m_faceX(0.0f), m_faceY(0.0f) {}
         virtual bool Execute(Event event);
         virtual bool isPossible()
         {
-            return MovementAction::isPossible() &&
+            return !bot->GetGroup() &&
+                    MovementAction::isPossible() &&
                     AI_VALUE2(uint8, "health", "self target") > sPlayerbotAIConfig.mediumHealth &&
                     (!AI_VALUE2(uint8, "mana", "self target") || AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.mediumMana);
         }
+    private:
+        bool m_hasFaceTarget;
+        float m_faceX, m_faceY;
     };
 
     class MoveToLootAction : public MovementAction
