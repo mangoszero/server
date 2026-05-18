@@ -34,7 +34,6 @@
  * \todo Add more info about how the auction house system works.
  */
 
-
 #ifndef MANGOS_H_AUCTION_HOUSE_MGR
 #define MANGOS_H_AUCTION_HOUSE_MGR
 
@@ -122,7 +121,10 @@ class AuctionHouseObject
         typedef std::map<uint32, AuctionEntry*> AuctionEntryMap;
         typedef std::pair<AuctionEntryMap::const_iterator, AuctionEntryMap::const_iterator> AuctionEntryMapBounds;
 
-        uint32 GetCount() { return AuctionsMap.size(); }
+        uint32 GetCount()
+        {
+             return AuctionsMap.size();
+        }
 
         AuctionEntryMap const& GetAuctions() const { return AuctionsMap; }
         AuctionEntryMapBounds GetAuctionsBounds() const {return AuctionEntryMapBounds(AuctionsMap.begin(), AuctionsMap.end()); }

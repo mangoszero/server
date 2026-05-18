@@ -118,7 +118,10 @@ public:
     /**
      * @brief Default constructor for BIH.
      */
-    BIH() { init_empty(); }
+    BIH()
+    {
+         init_empty();
+    }
 
     /**
      * @brief Builds the BIH tree.
@@ -178,7 +181,10 @@ public:
      *
      * @return uint32 Number of primitives.
      */
-    uint32 primCount() { return objects.size(); }
+    uint32 primCount()
+    {
+         return objects.size();
+    }
 
     /**
      * @brief Intersects a ray with the BIH.
@@ -544,12 +550,18 @@ protected:
         /**
          * @brief Updates statistics for an inner node.
          */
-        void updateInner() { ++numNodes; }
+        void updateInner()
+        {
+             ++numNodes;
+        }
 
         /**
          * @brief Updates statistics for a BVH2 node.
          */
-        void updateBVH2() { ++numBVH2; }
+        void updateBVH2()
+        {
+             ++numBVH2;
+        }
 
         /**
          * @brief Updates statistics for a leaf node.

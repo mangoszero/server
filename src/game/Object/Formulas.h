@@ -270,7 +270,6 @@ namespace MaNGOS
         }
     }
 
-
     namespace XP
     {
         enum XPColorChar { RED, ORANGE, YELLOW, GREEN, GRAY };

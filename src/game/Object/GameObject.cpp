@@ -974,7 +974,6 @@ struct GameObjectRespawnDeleteWorker
     uint32 i_guid;
 };
 
-
 /**
  * @brief Deletes the static database spawn record for this game object.
  */

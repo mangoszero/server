@@ -529,7 +529,6 @@ struct LockEntry
     // uint32      Action[MAX_LOCK_CASE];                   // 25-32    m_Action
 };
 
-
 /**
 * \struct MailTemplateEntry
 * \brief Entry representing a mail template for quest result.
@@ -583,7 +582,6 @@ struct MapEntry
         return MapID == 0 || MapID == 1;
     }
 };
-
 
 struct MovieEntry
 {
@@ -1114,7 +1112,6 @@ struct TaxiNodesEntry
     // 13 string flags
     uint32    MountCreatureID[2];                           // 14-15    m_MountCreatureID[2] - Creature ID (indicates as well the Taxi Node type : horde[14]-alliance[15])
 };
-
 
 /**
 * \struct TaxiPathEntry

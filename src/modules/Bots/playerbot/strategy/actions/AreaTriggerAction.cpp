@@ -3,7 +3,6 @@
 #include "AreaTriggerAction.h"
 #include "../../PlayerbotAIConfig.h"
 
-
 using namespace ai;
 
 bool ReachAreaTriggerAction::Execute(Event event)
@@ -56,8 +55,6 @@ bool ReachAreaTriggerAction::Execute(Event event)
     context->GetValue<LastMovement&>("last movement")->Get().lastFollowState = wasFollowing;
     return true;
 }
-
-
 
 bool AreaTriggerAction::Execute(Event event)
 {

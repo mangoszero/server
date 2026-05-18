@@ -423,7 +423,6 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
             m_spellSchoolMask = GetSchoolMask(m_caster->GetWeaponDamageSchool(RANGED_ATTACK));
         }
 
-
     }
     // Set health leech amount to zero
     m_healthLeech = 0;
@@ -3802,7 +3801,6 @@ void Spell::update(uint32 difftime)
         }
     }
 
-
     if (m_targets.getUnitTarget() && (m_targets.getUnitTarget() != m_caster) && IsSingleTargetSpell(m_spellInfo) &&
         !IsNextMeleeSwingSpell() && !IsAutoRepeat() && !m_IsTriggeredSpell)
     {
@@ -4821,7 +4819,6 @@ void Spell::TakeAmmo()
         }
     }
 }
-
 
 /**
  * @brief Consumes spell reagents from the player caster inventory.
@@ -8286,7 +8283,6 @@ bool SpellEvent::IsDeletable() const
 bool Spell::IsLockInRange(GameObject* go)
 {
     const SpellRangeEntry* srange = sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex);
-
 
     // This check is not related to bounding radius
     float dx = m_caster->GetPositionX() - go->GetPositionX();

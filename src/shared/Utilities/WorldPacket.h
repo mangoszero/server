@@ -51,7 +51,7 @@ class WorldPacket : public ByteBuffer
          * @param opcode
          * @param res
          */
-        explicit WorldPacket(uint16 opcode, size_t res = 200) : ByteBuffer(res), m_opcode(opcode) { }
+        explicit WorldPacket(uint16 opcode, size_t res = 200) : ByteBuffer(res), m_opcode(opcode) {}
         /**
          * @brief copy constructor
          *

@@ -9,7 +9,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "potions"; }
+        virtual string getName()
+        {
+             return "potions";
+        }
     };
 
 }

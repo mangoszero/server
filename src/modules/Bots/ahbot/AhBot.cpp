@@ -16,7 +16,6 @@
 #include "AccountMgr.h"
 #include "playerbot/playerbot.h"
 
-
 using namespace ahbot;
 
 bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
@@ -649,7 +648,6 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     sAuctionMgr.AddAItem(item);
 
-
     auctionHouse->AddAuction(auctionEntry);
 
     auctionHouse->AddAuction(auctionEntry);
@@ -965,7 +963,6 @@ void AhBot::CheckCategoryMultipliers()
                 name.c_str(), categoryMultipliers[name], categoryMaxAuctionCount[name], categoryMultiplierExpireTimes[name]);
     }
 }
-
 
 void AhBot::updateMarketPrice(uint32 itemId, double price, uint32 auctionHouse)
 {

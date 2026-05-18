@@ -99,10 +99,16 @@ class ObjectGuid
         ObjectGuid(HighGuid, uint64 counter);               // no implementation, used for catch wrong type assign
 
     public:                                                 // modifiers
-        PackedGuidReader ReadAsPacked() { return PackedGuidReader(*this); }
+        PackedGuidReader ReadAsPacked()
+        {
+             return PackedGuidReader(*this);
+        }
 
         void Set(uint64 const& guid) { m_guid = guid; }
-        void Clear() { m_guid = 0; }
+        void Clear()
+        {
+             m_guid = 0;
+        }
 
         PackedGuid WriteAsPacked() const;
     public:                                                 // accessors

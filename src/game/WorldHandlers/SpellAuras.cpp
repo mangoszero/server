@@ -1872,7 +1872,6 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     // remove SPELL_AURA_EMPATHY
     target->RemoveSpellsCausingAura(SPELL_AURA_EMPATHY);
 
-
     switch (form)
     {
         case FORM_CAT:

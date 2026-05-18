@@ -110,8 +110,15 @@ public:
     }
 
 public:
-    string GetCommand() { return command; }
-    Player* GetOwner() { return owner; }
+    string GetCommand()
+    {
+         return command;
+    }
+
+    Player* GetOwner()
+    {
+         return owner;
+    }
     uint32 GetType() const { return type; }
 
 private:
@@ -179,14 +186,33 @@ public:
     bool canDispel(const SpellEntry* entry, uint32 dispelType);
 
 public:
-    Player* GetBot() { return bot; }
-    Player* GetMaster() { return master; }
+    Player* GetBot()
+    {
+         return bot;
+    }
+
+    Player* GetMaster()
+    {
+         return master;
+    }
+
     void SetMaster(Player* master) { this->master = master; }
-    AiObjectContext* GetAiObjectContext() { return aiObjectContext; }
-    ChatHelper* GetChatHelper() { return &chatHelper; }
+    AiObjectContext* GetAiObjectContext()
+    {
+         return aiObjectContext;
+    }
+
+    ChatHelper* GetChatHelper()
+    {
+         return &chatHelper;
+    }
+
     bool IsOpposing(Player* player);
     static bool IsOpposing(uint8 race1, uint8 race2);
-    PlayerbotSecurity* GetSecurity() { return &security; }
+    PlayerbotSecurity* GetSecurity()
+    {
+         return &security;
+    }
 
     void StartJump(bool forward, float orientation = -1.f);
     void RequestJump(bool here = false);
@@ -206,8 +232,14 @@ public:
         uint32 maxMana = bot->GetMaxPower(POWER_MANA);
         return now <= m_drinkingUntil && mana < maxMana;
     }
-    void SetEating() { m_eatingUntil = time(0) + 30; }
-    void SetDrinking() { m_drinkingUntil = time(0) + 30; }
+    void SetEating()
+    {
+         m_eatingUntil = time(0) + 30;
+    }
+    void SetDrinking()
+    {
+         m_drinkingUntil = time(0) + 30;
+    }
 
 protected:
     Player* bot;
@@ -238,4 +270,3 @@ protected:
 
     void UpdateJump();
 };
-

@@ -147,7 +147,10 @@ class HostileReference : public Reference<Unit, ThreatManager>
          * @brief Get temporary threat modifier
          * @return Temporary threat modifier
          */
-        float getTempThreatModifyer() { return iTempThreatModifyer; }
+        float getTempThreatModifyer()
+        {
+             return iTempThreatModifyer;
+        }
 
         /**
          * @brief Update online status
@@ -198,7 +201,10 @@ class HostileReference : public Reference<Unit, ThreatManager>
          * @brief Get next reference
          * @return Next hostile reference
          */
-        HostileReference* next() { return ((HostileReference*) Reference<Unit, ThreatManager>::next()); }
+        HostileReference* next()
+        {
+             return ((HostileReference*) Reference<Unit, ThreatManager>::next());
+        }
 
         /**
          * @brief Build link to target object
@@ -286,12 +292,18 @@ class ThreatContainer
         /**
          * @brief Constructor
          */
-        ThreatContainer() { iDirty = false; }
+        ThreatContainer()
+        {
+             iDirty = false;
+        }
 
         /**
          * @brief Destructor
          */
-        ~ThreatContainer() { clearReferences(); }
+        ~ThreatContainer()
+        {
+             clearReferences();
+        }
 
         /**
          * @brief Add threat
@@ -338,7 +350,10 @@ class ThreatContainer
          * @brief Get most hated reference
          * @return Most hated reference
          */
-        HostileReference* getMostHated() { return iThreatList.empty() ? NULL : iThreatList.front(); }
+        HostileReference* getMostHated()
+        {
+             return iThreatList.empty() ? NULL : iThreatList.front();
+        }
 
         /**
          * @brief Get reference by target
@@ -374,7 +389,10 @@ class ThreatManager
         /**
          * @brief Destructor
          */
-        ~ThreatManager() { clearReferences(); }
+        ~ThreatManager()
+        {
+             clearReferences();
+        }
 
         /**
          * @brief Clear all references
@@ -439,7 +457,10 @@ class ThreatManager
          * @brief Get current victim
          * @return Current victim reference
          */
-        HostileReference* getCurrentVictim() { return iCurrentVictim; }
+        HostileReference* getCurrentVictim()
+        {
+             return iCurrentVictim;
+        }
 
         /**
          * @brief Get owner unit

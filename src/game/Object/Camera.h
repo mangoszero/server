@@ -43,8 +43,14 @@ class Camera
         explicit Camera(Player* pl);
         ~Camera();
 
-        WorldObject* GetBody() { return m_source;}
-        Player* GetOwner() { return &m_owner;}
+        WorldObject* GetBody()
+        {
+             return m_source;
+        }
+        Player* GetOwner()
+        {
+             return &m_owner;
+        }
 
         // set camera's view to any worldobject
         // Note: this worldobject must be in same map, in same phase with camera's owner(player)
@@ -75,7 +81,11 @@ class Camera
         void UpdateForCurrentViewPoint();
 
     public:
-        GridReference<Camera>& GetGridRef() { return m_gridRef; }
+        GridReference<Camera>& GetGridRef()
+        {
+             return m_gridRef;
+        }
+
         bool isActiveObject() const { return false; }
     private:
         GridReference<Camera> m_gridRef;

@@ -25,7 +25,10 @@ namespace ai
         AiNamedObject(PlayerbotAI* ai, string name) : AiObject(ai), name(name) {}
 
     public:
-        virtual string getName() { return name; }
+        virtual string getName()
+        {
+             return name;
+        }
 
     protected:
         string name;

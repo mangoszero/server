@@ -58,7 +58,6 @@ bool WhoAction::Execute(Event event)
     return true;
 }
 
-
 string WhoAction::QueryTrade(string &text)
 {
     ostringstream out;
@@ -151,7 +150,6 @@ string WhoAction::QuerySpec(string &text)
 
     return out.str();
 }
-
 
 void WhoAction::InitSkills()
 {

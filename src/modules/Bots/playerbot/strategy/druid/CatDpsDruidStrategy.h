@@ -12,9 +12,16 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "cat"; }
+        virtual string getName()
+        {
+             return "cat";
+        }
+
         virtual NextAction** getDefaultActions();
-        virtual int GetType() { return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_MELEE; }
+        virtual int GetType()
+        {
+             return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_MELEE;
+        }
     };
 
     class CatAoeDruidStrategy : public CombatStrategy
@@ -24,6 +31,9 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "cat aoe"; }
+        virtual string getName()
+        {
+             return "cat aoe";
+        }
     };
 }

@@ -141,8 +141,6 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("jump", relevance), NULL)));
 }
 
-
-
 ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)
 {
     actionNodeFactories.Add(new ChatCommandActionNodeFactoryInternal());

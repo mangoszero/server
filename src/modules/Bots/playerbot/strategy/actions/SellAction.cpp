@@ -39,7 +39,6 @@ public:
     }
 };
 
-
 bool SellAction::Execute(Event event)
 {
     Player* master = GetMaster();
@@ -67,7 +66,6 @@ bool SellAction::Execute(Event event)
 
     return true;
 }
-
 
 void SellAction::Sell(FindItemVisitor* visitor)
 {

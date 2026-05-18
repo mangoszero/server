@@ -7,7 +7,11 @@ namespace ai
     {
     public:
         FollowMasterStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName() { return "follow master"; }
+        virtual string getName()
+        {
+             return "follow master";
+        }
+
         virtual NextAction** getDefaultActions();
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
 

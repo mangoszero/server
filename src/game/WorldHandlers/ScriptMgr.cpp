@@ -110,7 +110,6 @@ ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
     return NULL;
 }
 
-
 // /////////////////////////////////////////////////////////
 //              DB SCRIPTS (loaders of static data)
 // /////////////////////////////////////////////////////////
@@ -999,7 +998,6 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
         }
     }
 }
-
 
 /**
  * @brief Loads db_script_string records and checks their usage from scripts and waypoints.

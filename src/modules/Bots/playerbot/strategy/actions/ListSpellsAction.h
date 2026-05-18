@@ -2,7 +2,6 @@
 
 #include "../Action.h"
 
-
 namespace ai
 {
     class ListSpellsAction : public Action {

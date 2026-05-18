@@ -139,7 +139,10 @@ class Channel
 
             bool HasFlag(uint8 flag) { return flags & flag; }
             void SetFlag(uint8 flag) { if (!HasFlag(flag)) { flags |= flag; } }
-            bool IsOwner() { return flags & MEMBER_FLAG_OWNER; }
+            bool IsOwner()
+            {
+                 return flags & MEMBER_FLAG_OWNER;
+            }
             void SetOwner(bool state)
             {
                 if (state)
@@ -151,7 +154,10 @@ class Channel
                     flags &= ~MEMBER_FLAG_OWNER;
                 }
             }
-            bool IsModerator() { return flags & MEMBER_FLAG_MODERATOR; }
+            bool IsModerator()
+            {
+                 return flags & MEMBER_FLAG_MODERATOR;
+            }
             void SetModerator(bool state)
             {
                 if (state)
@@ -163,7 +169,10 @@ class Channel
                     flags &= ~MEMBER_FLAG_MODERATOR;
                 }
             }
-            bool IsMuted() { return flags & MEMBER_FLAG_MUTED; }
+            bool IsMuted()
+            {
+                 return flags & MEMBER_FLAG_MUTED;
+            }
             void SetMuted(bool state)
             {
                 if (state)

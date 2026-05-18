@@ -201,7 +201,11 @@ class Guild
         typedef UNORDERED_MAP<uint32, MemberSlot> MemberList;
         typedef std::vector<RankInfo> RankList;
 
-        uint32 GetId() { return m_Id; }
+        uint32 GetId()
+        {
+             return m_Id;
+        }
+
         ObjectGuid GetLeaderGuid() const { return m_LeaderGuid; }
         std::string const& GetName() const { return m_Name; }
         std::string const& GetMOTD() const { return MOTD; }
@@ -332,6 +336,10 @@ class Guild
         uint32 m_GuildEventLogNextGuid;
 
     private:
-        void UpdateAccountsNumber() { m_accountsNumber = 0;}// mark for lazy calculation at request in GetAccountsNumber
+        void UpdateAccountsNumber()
+        {
+             m_accountsNumber = 0;
+        }
+
 };
 #endif

@@ -28,7 +28,6 @@
 #include "SpellAuraDefines.h"
 #include "ObjectMgr.h"
 
-
 /**
  * Used to modify what an \ref Aura does to a player/npc.
  * Accessible through \ref Aura::m_modifier.
@@ -137,7 +136,10 @@ class SpellAuraHolder
         bool IsDeleted() const { return m_deleted;}
         bool IsEmptyHolder() const;
 
-        void SetDeleted() { m_deleted = true; }
+        void SetDeleted()
+        {
+             m_deleted = true;
+        }
 
         void SetInUse(bool state)
         {
@@ -443,7 +445,11 @@ class Aura
             }
         }
 
-        bool IsPositive() { return m_positive; }
+        bool IsPositive()
+        {
+             return m_positive;
+        }
+
         bool IsPersistent() const { return m_isPersistent; }
         bool IsAreaAura() const { return m_isAreaAura; }
         bool IsPeriodic() const { return m_isPeriodic; }
@@ -480,7 +486,10 @@ class Aura
         bool isAffectedOnSpell(SpellEntry const* spell) const;
         bool CanProcFrom(SpellEntry const* spell, uint32 EventProcEx, uint32 procEx, bool active, bool useClassMask) const;
 
-        SpellAuraHolder* GetHolder() { return m_spellAuraHolder; }
+        SpellAuraHolder* GetHolder()
+        {
+             return m_spellAuraHolder;
+        }
         SpellAuraHolder const* GetHolder() const { return m_spellAuraHolder; }
 
         bool IsLastAuraOnHolder();

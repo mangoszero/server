@@ -12,7 +12,6 @@
 
 using namespace ai;
 
-
 namespace ai
 {
     namespace rogue
@@ -73,7 +72,6 @@ namespace ai
         };
     };
 };
-
 
 namespace ai
 {

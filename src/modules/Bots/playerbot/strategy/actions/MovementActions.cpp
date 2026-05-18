@@ -347,7 +347,6 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             return FollowOnTransport(target, master);
     }
 
-
     if (bot->GetDistance2d(target->GetPositionX(), target->GetPositionY()) <= sPlayerbotAIConfig.sightDistance &&
             abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
     {

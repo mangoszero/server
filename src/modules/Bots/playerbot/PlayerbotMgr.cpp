@@ -463,9 +463,6 @@ uint32 PlayerbotHolder::GetAccountId(string name)
     return accountId;
 }
 
-
-
-
 /**
  * @brief Constructor for PlayerbotMgr.
  * @param master Pointer to the master player.

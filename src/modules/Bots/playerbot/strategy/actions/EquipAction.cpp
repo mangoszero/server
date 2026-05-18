@@ -28,7 +28,6 @@ void EquipAction::EquipItem(FindItemVisitor* visitor)
     if (!items.empty()) EquipItem(**items.begin());
 }
 
-
 void EquipAction::EquipItem(Item& item)
 {
     uint8 bagIndex = item.GetBagSlot();

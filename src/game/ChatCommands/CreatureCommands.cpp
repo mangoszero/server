@@ -189,7 +189,6 @@ bool ChatHandler::HandleModifyFactionCommand(char* args)
     return true;
 }
 
-
 /**
  * @brief Handler for HandleNpcAddCommand command.
  *

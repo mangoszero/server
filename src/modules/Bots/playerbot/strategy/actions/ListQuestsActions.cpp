@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "ListQuestsActions.h"
 
-
 using namespace ai;
 
 bool ListQuestsAction::Execute(Event event)

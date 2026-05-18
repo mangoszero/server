@@ -16,7 +16,6 @@
 #include "PlayerbotAIConfig.h"
 #include "RandomPlayerbotMgr.h"
 
-
 AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* ai)
 {
     switch (player->getClass())

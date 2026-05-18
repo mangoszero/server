@@ -53,7 +53,10 @@ class RefManager : public LinkedListHead
          * @brief
          *
          */
-        virtual ~RefManager() { clearReferences(); }
+        virtual ~RefManager()
+        {
+             clearReferences();
+        }
 
         /**
          * @brief
@@ -85,25 +88,40 @@ class RefManager : public LinkedListHead
          *
          * @return iterator
          */
-        iterator begin() { return iterator(getFirst()); }
+        iterator begin()
+        {
+             return iterator(getFirst());
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator end() { return iterator(NULL); }
+        iterator end()
+        {
+             return iterator(NULL);
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rbegin() { return iterator(getLast()); }
+        iterator rbegin()
+        {
+             return iterator(getLast());
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rend() { return iterator(NULL); }
+        iterator rend()
+        {
+             return iterator(NULL);
+        }
 
         /**
          * @brief

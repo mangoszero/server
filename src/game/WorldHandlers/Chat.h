@@ -31,7 +31,6 @@
 #include "ObjectGuid.h"
 #include "Language.h"
 
-
 struct AreaTrigger;
 struct AreaTriggerEntry;
 struct FactionEntry;
@@ -117,7 +116,6 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 #define RESET_MAIL_COMMAND_ARG_OPTION_ALL  "all"
 #define RESET_MAIL_COMMAND_ARG_OPTION_FROM "from"
 
-
 #define BITMASK_AND_SWITCH(x) \
     for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 
@@ -173,7 +171,10 @@ class ChatHandler
         ChatCommand const* FindCommand(char const* text);
 
         bool isValidChatMessage(const char* msg);
-        bool HasSentErrorMessage() { return sentErrorMessage;}
+        bool HasSentErrorMessage()
+        {
+             return sentErrorMessage;
+        }
 
         /**
         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT

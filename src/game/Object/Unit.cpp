@@ -79,7 +79,6 @@ void MovementInfo::Read(ByteBuffer& data)
     data >> moveFlags >> time;
     data >> pos.x >> pos.y >> pos.z >> pos.o;
 
-
     if (HasMovementFlag(MOVEFLAG_ONTRANSPORT))
     {
         data >> t_guid;
@@ -726,7 +725,6 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
 
     uint32 health = pVictim->GetHealth();
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "deal dmg:%d to health:%d ", damage, health);
-
 
     // Rage from Damage made (only from direct weapon damage)
     if (cleanDamage && damagetype == DIRECT_DAMAGE && this != pVictim && GetTypeId() == TYPEID_PLAYER && GetPowerType() == POWER_RAGE && cleanDamage->attackType != RANGED_ATTACK)
@@ -2467,7 +2465,6 @@ void Unit::CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolM
             continue;
         }
 
-
         // Max Amount can be absorbed by this aura
         int32  currentAbsorb = mod->m_amount;
 
@@ -2598,7 +2595,6 @@ void Unit::CalculateDamageAbsorbAndResist(Unit* pCaster, SpellSchoolMask schoolM
             }
 
             RemainingDamage -= currentAbsorb;
-
 
             uint32 splitted = currentAbsorb;
             uint32 splitted_absorb = 0;
@@ -4104,7 +4100,6 @@ bool Unit::IsClientControlled(Player const* exactClient /*= nullptr*/) const
     }
     return false;
 }
-
 
 /**
  * @brief Checks whether the unit is currently casting a non-melee spell.
@@ -8109,7 +8104,6 @@ uint32 Unit::SpellHealingBonusTaken(Unit* pCaster, SpellEntry const* spellProto,
             }
     }
 
-
     // use float as more appropriate for negative values and percent applying
     float heal = (healamount + TakenTotal * int32(stack)) * TakenTotalMod;
 
@@ -11803,7 +11797,6 @@ void Unit::SetIncapacitatedState(bool apply, uint32 state, ObjectGuid casterGuid
     }
 }
 
-
 /**
  * @brief Applies or removes feign death state handling.
  *
@@ -11822,7 +11815,6 @@ void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
         {
             ((Player*)this)->m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
         }
-
 
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNK_29);
         // blizz like 2.0.x

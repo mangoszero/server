@@ -11,5 +11,3 @@ void DpsAssistStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("dps assist", 50.0f), NULL)));
 }
 
-
-

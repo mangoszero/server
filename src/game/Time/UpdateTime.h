@@ -116,7 +116,7 @@ public:
     /**
      * @brief Constructor
      */
-    WorldUpdateTime() : UpdateTime(), _recordUpdateTimeInverval(0), _recordUpdateTimeMin(0), _lastRecordTime(0) { }
+    WorldUpdateTime() : UpdateTime(), _recordUpdateTimeInverval(0), _recordUpdateTimeMin(0), _lastRecordTime(0) {}
 
     /**
      * @brief Load configuration from config file

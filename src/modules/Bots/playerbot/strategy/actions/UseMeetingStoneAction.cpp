@@ -95,7 +95,6 @@ bool UseMeetingStoneAction::Execute(Event event)
     return Teleport();
 }
 
-
 bool SummonAction::Execute(Event event)
 {
     Player* master = GetMaster();

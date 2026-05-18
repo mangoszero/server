@@ -3,7 +3,6 @@
 #include "TellTargetAction.h"
 #include "ThreatManager.h"
 
-
 using namespace ai;
 
 bool TellTargetAction::Execute(Event event)

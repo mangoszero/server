@@ -1085,7 +1085,6 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
         return b; // nothing output more
     }
 
-
     for (uint8 i = 0; i < l.items.size(); ++i)
     {
         LootSlotType slot_type = l.items[i].GetSlotTypeForSharedLoot(lv.permission, lv.viewer, l.GetLootTarget());

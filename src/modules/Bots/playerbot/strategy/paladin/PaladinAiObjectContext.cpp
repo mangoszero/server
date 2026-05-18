@@ -277,7 +277,6 @@ namespace ai
     };
 };
 
-
 PaladinAiObjectContext::PaladinAiObjectContext(PlayerbotAI* ai) : AiObjectContext(ai)
 {
     strategyContexts.Add(new ai::paladin::StrategyFactoryInternal());

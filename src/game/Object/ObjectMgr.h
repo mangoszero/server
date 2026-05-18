@@ -119,7 +119,7 @@ static_assert(MAX_DB_SCRIPT_STRING_ID < ACE_INT32_MAX, "Must scope with int32 ra
 
 struct MangosStringLocale
 {
-    MangosStringLocale() : SoundId(0), Type(0), LanguageId(LANG_UNIVERSAL), Emote(0) { }
+    MangosStringLocale() : SoundId(0), Type(0), LanguageId(LANG_UNIVERSAL), Emote(0) {}
 
     std::vector<std::string> Content;                       // 0 -> default, i -> i-1 locale index
     uint32 SoundId;
@@ -536,7 +536,6 @@ class ObjectMgr
 
         typedef UNORDERED_MAP<uint32, PointOfInterest> PointOfInterestMap;
 
-
         typedef UNORDERED_MAP<uint32, PetCreateSpellEntry> PetCreateSpellMap;
 
         void LoadGameobjectInfo();
@@ -778,7 +777,6 @@ class ObjectMgr
 
         void LoadGossipMenus();
         void LoadCoreSideGossipTextIdCache();
-
 
         void LoadVendorTemplates();
         void LoadVendors()
@@ -1374,7 +1372,6 @@ class ObjectMgr
         typedef std::map<uint32, std::vector<std::string> > HalfNameMap;
         HalfNameMap PetHalfName0;
         HalfNameMap PetHalfName1;
-
 
         // Array to store creature stats, Max creature level + 1 (for data alignement with in game level)
         CreatureClassLvlStats m_creatureClassLvlStats[DEFAULT_MAX_CREATURE_LEVEL + 1][MAX_CREATURE_CLASS];

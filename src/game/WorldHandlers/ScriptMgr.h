@@ -602,7 +602,6 @@ class ScriptAction
         Player* GetPlayerTargetOrSourceAndLog(WorldObject* pSource, WorldObject* pTarget);
 };
 
-
 enum ScriptLoadResult
 {
     SCRIPT_LOAD_OK,

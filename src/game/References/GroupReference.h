@@ -64,13 +64,19 @@ class GroupReference : public Reference<Group, Player>
         /**
          * @brief Destructor
          */
-        ~GroupReference() { unlink(); }
+        ~GroupReference()
+        {
+             unlink();
+        }
 
         /**
          * @brief Get next reference
          * @return Next group reference
          */
-        GroupReference* next() { return (GroupReference*)Reference<Group, Player>::next(); }
+        GroupReference* next()
+        {
+             return (GroupReference*)Reference<Group, Player>::next();
+        }
 
         /**
          * @brief Get next reference (const)

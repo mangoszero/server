@@ -35,7 +35,10 @@ namespace ai
             Unit* target = AI_VALUE(Unit*, GetTargetName());
             return target && AI_VALUE2(float, "distance", GetTargetName()) > distance;
         }
-        virtual string GetTargetName() { return "current target"; }
+        virtual string GetTargetName()
+        {
+             return "current target";
+        }
 
     protected:
         float distance;
@@ -57,7 +60,10 @@ namespace ai
     {
     public:
         PartyMemberToHealOutOfSpellRangeTrigger(PlayerbotAI* ai) : OutOfRangeTrigger(ai, "party member to heal out of spell range", sPlayerbotAIConfig.spellDistance) {}
-        virtual string GetTargetName() { return "party member to heal"; }
+        virtual string GetTargetName()
+        {
+             return "party member to heal";
+        }
     };
 
     class FarFromMasterTrigger : public Trigger {

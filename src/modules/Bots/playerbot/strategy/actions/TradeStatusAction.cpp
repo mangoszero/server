@@ -11,8 +11,6 @@
 
 using namespace ai;
 
-
-
 bool TradeStatusAction::Execute(Event event)
 {
     Player* trader = bot->GetTrader();
@@ -77,7 +75,6 @@ bool TradeStatusAction::Execute(Event event)
 
     return false;
 }
-
 
 void TradeStatusAction::BeginTrade()
 {

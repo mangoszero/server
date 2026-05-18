@@ -133,7 +133,6 @@ void DpsWarriorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("death wish", ACTION_HIGH + 2), NULL)));
 }
 
-
 void DpsWarrirorAoeStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

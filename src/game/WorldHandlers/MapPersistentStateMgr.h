@@ -361,13 +361,20 @@ class MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateMan
         void CleanupInstances();
         void PackInstances();
 
-        DungeonResetScheduler& GetScheduler() { return m_Scheduler; }
+        DungeonResetScheduler& GetScheduler()
+        {
+             return m_Scheduler;
+        }
 
         static void DeleteInstanceFromDB(uint32 instanceid);
 
         void GetStatistics(uint32& numStates, uint32& numBoundPlayers, uint32& numBoundGroups);
 
-        void Update() { m_Scheduler.Update(); }
+        void Update()
+        {
+             m_Scheduler.Update();
+        }
+
     private:
         typedef UNORDERED_MAP < uint32 /*InstanceId or MapId*/, MapPersistentState* > PersistentStateMap;
 

@@ -32,7 +32,6 @@
 #include <G3D/AABox.h>
 #include <G3D/Ray.h>
 
-
 namespace VMAP
 {
     class WorldModel;
@@ -121,7 +120,10 @@ namespace VMAP
         /**
          * @brief Sets the model instance as unloaded.
          */
-        void setUnloaded() { iModel = 0; }
+        void setUnloaded()
+        {
+             iModel = 0;
+        }
 
         /**
          * @brief Intersects a ray with the model instance.

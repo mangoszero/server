@@ -2301,7 +2301,6 @@ BattleGroundPersistentState* BattleGroundMap::GetPersistanceState() const
     return (BattleGroundPersistentState*)Map::GetPersistentState();
 }
 
-
 /**
  * @brief Initializes battleground and arena visibility distance values.
  */
@@ -2756,7 +2755,6 @@ class StaticMonsterChatBuilder
         Unit const* i_target;
 };
 
-
 /**
  * Function simulates yell of creature
  *
@@ -2784,7 +2782,6 @@ void Map::MonsterYellToMap(ObjectGuid guid, int32 textId, Language language, Uni
         return;
     }
 }
-
 
 /**
  * Function simulates yell of creature

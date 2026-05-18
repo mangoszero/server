@@ -142,7 +142,6 @@ namespace MaNGOS
         va_list* i_args;
     };
 
-
     class BattleGround2ChatBuilder
     {
     public:

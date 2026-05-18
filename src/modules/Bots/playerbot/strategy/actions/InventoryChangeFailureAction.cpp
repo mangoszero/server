@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "InventoryChangeFailureAction.h"
 
-
 using namespace ai;
 
 bool InventoryChangeFailureAction::Execute(Event event)

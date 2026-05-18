@@ -306,7 +306,6 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
     return fits;
 }*/
 
-
 bool UseItemAction::isPossible()
 {
     return getName() == "use" || AI_VALUE2(uint8, "item count", getName()) > 0;

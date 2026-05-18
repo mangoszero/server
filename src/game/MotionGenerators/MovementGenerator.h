@@ -104,7 +104,7 @@ class MovementGenerator
         /**
          * @brief Called when the unit's speed changes
          */
-        virtual void unitSpeedChanged() { }
+        virtual void unitSpeedChanged() {}
 
         /**
          * @brief Get reset position for evade behavior
