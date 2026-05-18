@@ -13,6 +13,7 @@
 
 using namespace ai;
 
+
 namespace ai
 {
     namespace mage
@@ -68,6 +69,7 @@ namespace ai
         };
     };
 };
+
 
 namespace ai
 {
@@ -127,6 +129,7 @@ namespace ai
         };
     };
 };
+
 
 namespace ai
 {
@@ -219,6 +222,8 @@ namespace ai
         };
     };
 };
+
+
 
 MageAiObjectContext::MageAiObjectContext(PlayerbotAI* ai) : AiObjectContext(ai)
 {

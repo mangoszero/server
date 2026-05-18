@@ -80,10 +80,7 @@ namespace ai
     {
     public:
         CastMendPetAction(PlayerbotAI* ai) : CastAuraSpellAction(ai, "mend pet") {}
-        virtual string GetTargetName()
-        {
-             return "pet target";
-        }
+        virtual string GetTargetName() { return "pet target"; }
     };
 
     class CastRevivePetAction : public CastBuffSpellAction
@@ -170,25 +167,15 @@ namespace ai
     {
     public:
         CastBestialWrathAction(PlayerbotAI* ai) : CastAuraSpellAction(ai, "bestial wrath") {}
-        virtual string GetTargetName()
-        {
-             return "pet target";
-        }
-
-        virtual bool isUseful()
-        {
-             return CastAuraSpellAction::isUseful() && AI_VALUE(Unit*, "pet target") != NULL;
-        }
+        virtual string GetTargetName() { return "pet target"; }
+        virtual bool isUseful() { return CastAuraSpellAction::isUseful() && AI_VALUE(Unit*, "pet target") != NULL; }
     };
 
     class CastMongooseBiteAction : public CastMeleeSpellAction
     {
     public:
         CastMongooseBiteAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "mongoose bite") {}
-        virtual bool isPossible()
-        {
-             return bot->HasAuraState(AURA_STATE_DEFENSE) && CastMeleeSpellAction::isPossible();
-        }
+        virtual bool isPossible() { return bot->HasAuraState(AURA_STATE_DEFENSE) && CastMeleeSpellAction::isPossible(); }
     };
 
     class CastIntimidationAction : public CastSpellAction

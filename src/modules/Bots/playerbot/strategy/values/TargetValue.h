@@ -13,10 +13,7 @@ namespace ai
         }
 
     public:
-        Unit* GetResult()
-        {
-             return result;
-        }
+        Unit* GetResult() { return result; }
 
     public:
         virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager) = 0;

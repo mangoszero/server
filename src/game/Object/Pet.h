@@ -268,11 +268,7 @@ class Pet : public Creature
         uint32 GetMaxLoyaltyPoints(uint32 level);
         uint32 GetStartLoyaltyPoints(uint32 level);
         void KillLoyaltyBonus(uint32 level);
-        uint32 GetLoyaltyLevel()
-        {
-             return GetByteValue(UNIT_FIELD_BYTES_1, 1);
-        }
-
+        uint32 GetLoyaltyLevel() { return GetByteValue(UNIT_FIELD_BYTES_1, 1); }
         void SetLoyaltyLevel(LoyaltyLevel level);
         void GivePetXP(uint32 xp);
         void GivePetLevel(uint32 level);
@@ -282,10 +278,7 @@ class Pet : public Creature
         uint32 GetCurrentFoodBenefitLevel(uint32 itemlevel);
         void SetDuration(int32 dur) { m_duration = dur; }
 
-        int32 GetBonusDamage()
-        {
-             return m_bonusdamage;
-        }
+        int32 GetBonusDamage() { return m_bonusdamage; }
         void SetBonusDamage(int32 damage) { m_bonusdamage = damage; }
 
         bool UpdateStats(Stats stat) override;
@@ -344,10 +337,7 @@ class Pet : public Creature
 
         const uint64& GetAuraUpdateMask() const { return m_auraUpdateMask; }
         void SetAuraUpdateMask(uint8 slot) { m_auraUpdateMask |= (uint64(1) << slot); }
-        void ResetAuraUpdateMask()
-        {
-             m_auraUpdateMask = 0;
-        }
+        void ResetAuraUpdateMask() { m_auraUpdateMask = 0; }
 
         // overwrite Creature function for name localization back to WorldObject version without localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const override { return WorldObject::GetNameForLocaleIdx(locale_idx); }

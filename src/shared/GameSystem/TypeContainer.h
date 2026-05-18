@@ -37,6 +37,7 @@
 #include <unordered_map>
 #include "GameSystem/GridRefManager.h"
 
+
 // various metaprogramming primitives
 namespace Meta
 {
@@ -103,6 +104,7 @@ namespace Meta
   }
 
 } //Meta namespace end
+
 
 template<typename KEY_TYPE, typename TYPE_LIST>
 class TypeUnorderedMapContainer

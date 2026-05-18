@@ -5,12 +5,10 @@ namespace ai {
     public:
         CastBearFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "bear form") {}
 
-        virtual bool isPossible()
-{
+        virtual bool isPossible() {
             return CastBuffSpellAction::isPossible() && !ai->HasAura("dire bear form", GetTarget());
         }
-        virtual bool isUseful()
-{
+        virtual bool isUseful() {
             return CastBuffSpellAction::isUseful() && !ai->HasAura("dire bear form", GetTarget());
         }
     };
@@ -19,8 +17,7 @@ namespace ai {
     public:
         CastDireBearFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "dire bear form") {}
 
-        virtual NextAction** getAlternatives()
-{
+        virtual NextAction** getAlternatives() {
             return NextAction::merge(NextAction::array(0, new NextAction("bear form"), NULL), CastSpellAction::getAlternatives());
         }
     };
@@ -34,8 +31,7 @@ namespace ai {
     public:
         CastTreeFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "tree of life") {}
 
-        virtual bool isUseful()
-{
+        virtual bool isUseful() {
             return AI_VALUE2(uint32, "spell id", "tree of life") != 0 && CastBuffSpellAction::isUseful();
         }
     };
@@ -49,15 +45,11 @@ namespace ai {
     public:
         CastCasterFormAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "caster form") {}
 
-        virtual bool isUseful()
-{
+        virtual bool isUseful() {
             return ai->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form",
                 "flight form", "swift flight form", "moonkin form", "tree of life", NULL);
         }
-        virtual bool isPossible()
-        {
-             return true;
-        }
+        virtual bool isPossible() { return true; }
 
         virtual bool Execute(Event event);
     };

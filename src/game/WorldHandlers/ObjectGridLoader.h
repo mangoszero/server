@@ -49,7 +49,7 @@ class ObjectGridLoader
         void Visit(CreatureMapType& m);
         void Visit(CorpseMapType&) {}
 
-        void Visit(DynamicObjectMapType&) {}
+        void Visit(DynamicObjectMapType&) { }
 
         void LoadN(void);
 
@@ -110,5 +110,6 @@ class ObjectGridStoper
     private:
         NGridType& i_grid;
 };
+
 
 #endif

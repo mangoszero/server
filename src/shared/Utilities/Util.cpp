@@ -193,6 +193,7 @@ time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime)
     return hourLocal;
 }
 
+
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hoursOnly)
 {
     const time_t secs = timeInSecs % MINUTE;
@@ -249,7 +250,7 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
     }
     else if (timeFormat == TimeFormat::Numeric)
     {
-        // add "0:" when hoursOnly requested
+        // add “0:” when hoursOnly requested
         out += "0:";
     }
 
@@ -270,6 +271,7 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat, bool hour
 
     return out;
 }
+
 
 uint32 TimeStringToSecs(const std::string& timestring)
 {

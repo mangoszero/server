@@ -33,10 +33,7 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult()
-        {
-             return result;
-        }
+        list<Item*>& GetResult() { return result; }
 
     protected:
         virtual bool Accept(const ItemPrototype* proto) = 0;
@@ -71,6 +68,7 @@ namespace ai
     private:
         Player* bot;
     };
+
 
     class FindItemsByQualityVisitor : public IterateItemsVisitor
     {
@@ -182,15 +180,13 @@ namespace ai
             return true;
         }
 
-        int GetCount()
-        {
-             return count;
-        }
+        int GetCount() { return count; }
 
     protected:
         int count;
         uint32 itemId;
     };
+
 
     class QueryNamedItemCountVisitor : public QueryItemCountVisitor
     {

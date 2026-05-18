@@ -168,10 +168,7 @@ class GMTicket
          * \deprecated
          * \todo Change to resolved/not resolved instead, via the check in db
          */
-        bool HasResponse()
-        {
-             return !m_responseText.empty();
-        }
+        bool HasResponse() { return !m_responseText.empty(); }
 
         /**
          * This will take care of a \ref OpcodesList::CMSG_GMSURVEY_SUBMIT packet
@@ -217,10 +214,7 @@ class GMTicketMgr
         //TODO: Make the default value a config option instead
         GMTicketMgr() : m_TicketSystemOn(true), m_GMTicketMap(), m_GMTicketIdMap()
         {  }
-        ~GMTicketMgr()
-        {
-
-        }
+        ~GMTicketMgr() {  }
 
         /**
          * Loads all GM tickets from the database.

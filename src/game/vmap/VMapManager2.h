@@ -68,29 +68,17 @@ namespace VMAP
          *
          * @return WorldModel* Pointer to the WorldModel.
          */
-        WorldModel* getModel()
-        {
-             return iModel;
-        }
-
+        WorldModel* getModel() { return iModel; }
         /**
          * @brief Increments the reference count.
          */
-        void incRefCount()
-        {
-             ++iRefCount;
-        }
-
+        void incRefCount() { ++iRefCount; }
         /**
          * @brief Decrements the reference count.
          *
          * @return int The new reference count.
          */
-        int decRefCount()
-        {
-             return --iRefCount;
-        }
-
+        int decRefCount() { return --iRefCount; }
     protected:
         WorldModel* iModel; /**< Pointer to the WorldModel. */
         int iRefCount; /**< Reference count for the model. */

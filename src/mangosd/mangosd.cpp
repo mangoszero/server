@@ -115,6 +115,7 @@ static void clear_online_accounts()
     CharacterDatabase.Execute("UPDATE `character_battleground_data` SET `instance_id` = 0");
 }
 
+
 /**
  * @brief Initialize database connections
  * @return true if all databases connected successfully, false otherwise
@@ -287,6 +288,7 @@ static void unhook_signals()
 #endif
 }
 
+
 /// Print out the usage string for this program on the console.
 static void usage(const char* prog)
 {
@@ -450,6 +452,7 @@ int main(int argc, char** argv)
     }
 #endif
 
+
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
 
     ///- Set progress bars show mode
@@ -508,6 +511,7 @@ int main(int argc, char** argv)
     ///- Catch termination signals
     hook_signals();
 
+
     //************************************************************************************************************************
     // 1. Start the World thread
     //************************************************************************************************************************
@@ -517,6 +521,7 @@ int main(int argc, char** argv)
 
     WorldThread* worldThread = new WorldThread(port, host.c_str());
     worldThread->open(0);
+
 
     //************************************************************************************************************************
     // 2. Start the remote access listener thread
@@ -551,11 +556,13 @@ int main(int argc, char** argv)
     }
 #endif /* ENABLE_SOAP */
 
+
     //************************************************************************************************************************
     // 4. Start the freeze catcher thread
     //************************************************************************************************************************
     AntiFreezeThread* freezeThread = new AntiFreezeThread(1000 * sConfig.GetIntDefault("MaxCoreStuckTime", 0));
     freezeThread->open(NULL);
+
 
     //************************************************************************************************************************
     // 5. Start the console thread

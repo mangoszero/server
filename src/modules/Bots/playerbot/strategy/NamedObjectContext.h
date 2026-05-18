@@ -68,6 +68,7 @@ namespace ai
         }
     };
 
+
     template <class T> class NamedObjectContext : public NamedObjectFactory<T>
     {
     public:
@@ -120,14 +121,8 @@ namespace ai
             }
         }
 
-        bool IsShared()
-        {
-             return shared;
-        }
-        bool IsSupportsSiblings()
-        {
-             return supportsSiblings;
-        }
+        bool IsShared() { return shared; }
+        bool IsSupportsSiblings() { return supportsSiblings; }
 
         set<string> GetCreated()
         {

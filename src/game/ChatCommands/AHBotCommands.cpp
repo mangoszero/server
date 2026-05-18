@@ -37,6 +37,7 @@
 #include "Chat.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
+
  /**********************************************************************
      Useful constants definition
   **********************************************************************/

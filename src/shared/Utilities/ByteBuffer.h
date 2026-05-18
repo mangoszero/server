@@ -130,7 +130,7 @@ class ByteBuffer
          *
          * @param buf Source ByteBuffer to copy from
          */
-        ByteBuffer(const ByteBuffer& buf): _rpos(buf._rpos), _wpos(buf._wpos), _storage(buf._storage) {}
+        ByteBuffer(const ByteBuffer& buf): _rpos(buf._rpos), _wpos(buf._wpos), _storage(buf._storage) { }
 
         /**
          * @brief Clear the buffer and reset positions
@@ -513,6 +513,7 @@ class ByteBuffer
             return *this;
         }
 
+
         /**
          * @brief
          *
@@ -572,10 +573,7 @@ class ByteBuffer
          * @brief
          *
          */
-        void read_skip()
-        {
-             read_skip(sizeof(T));
-        }
+        void read_skip() { read_skip(sizeof(T)); }
 
         /**
          * @brief

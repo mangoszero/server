@@ -87,7 +87,7 @@ class LoginQueryHolder : public SqlQueryHolder
         ObjectGuid m_guid;
     public:
         LoginQueryHolder(uint32 accountId, ObjectGuid guid)
-            : m_accountId(accountId), m_guid(guid) {}
+            : m_accountId(accountId), m_guid(guid) { }
         ObjectGuid GetGuid() const { return m_guid; }
         uint32 GetAccountId() const { return m_accountId; }
         bool Initialize();
@@ -102,15 +102,11 @@ private:
 
 public:
     PlayerbotLoginQueryHolder(PlayerbotHolder* playerbotHolder, uint32 masterAccount, uint32 accountId, ObjectGuid guid)
-        : LoginQueryHolder(accountId, guid), masterAccountId(masterAccount), playerbotHolder(playerbotHolder) {}
+        : LoginQueryHolder(accountId, guid), masterAccountId(masterAccount), playerbotHolder(playerbotHolder) { }
 
 public:
     uint32 GetMasterAccountId() const { return masterAccountId; }
-    PlayerbotHolder* GetPlayerbotHolder()
-    {
-         return playerbotHolder;
-    }
-
+    PlayerbotHolder* GetPlayerbotHolder() { return playerbotHolder; }
 };
 #endif
 
@@ -945,6 +941,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
         }
     }
 #endif /* ENABLE_ELUNA */
+
 
     /* We've done what we need to, remove the flag */
     if (pCurrChar->HasAtLoginFlag(AT_LOGIN_FIRST))

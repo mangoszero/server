@@ -22,6 +22,7 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+
 #ifndef MANGOS_TYPECONTAINERVISITOR_H
 #define MANGOS_TYPECONTAINERVISITOR_H
 

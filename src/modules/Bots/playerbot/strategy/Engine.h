@@ -97,10 +97,7 @@ namespace ai
         std::string ListStrategies();
         bool ContainsStrategy(StrategyType type);
         void ChangeStrategy(string &names);
-        string GetLastAction()
-        {
-             return lastAction;
-        }
+        string GetLastAction() { return lastAction; }
 
     public:
         virtual bool DoNextAction(Unit*, int depth = 0);

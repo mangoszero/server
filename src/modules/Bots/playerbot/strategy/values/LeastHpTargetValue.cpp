@@ -27,6 +27,7 @@ protected:
     float minHealth;
 };
 
+
 Unit* LeastHpTargetValue::Calculate()
 {
     FindLeastHpTargetStrategy strategy(ai);

@@ -126,30 +126,19 @@ class SqlConnection
          *
          * @return bool
          */
-        virtual bool BeginTransaction()
-        {
-             return true;
-        }
-
+        virtual bool BeginTransaction() { return true; }
         /**
          * @brief
          *
          * @return bool
          */
-        virtual bool CommitTransaction()
-        {
-             return true;
-        }
-
+        virtual bool CommitTransaction() { return true; }
         /**
          * @brief can't rollback without transaction support
          *
          * @return bool
          */
-        virtual bool RollbackTransaction()
-        {
-             return true;
-        }
+        virtual bool RollbackTransaction() { return true; }
 
         /**
          * @brief methods to work with prepared statements
@@ -173,15 +162,11 @@ class SqlConnection
                  * @param conn
                  */
                 Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.acquire(); }
-
                 /**
                  * @brief
                  *
                  */
-                ~Lock()
-                {
-                     m_pConn->m_mutex.release();
-                }
+                ~Lock() { m_pConn->m_mutex.release(); }
 
                 /**
                  * @brief
@@ -199,10 +184,7 @@ class SqlConnection
          *
          * @return Database
          */
-        Database& DB()
-        {
-             return m_db;
-        }
+        Database& DB() { return m_db; }
 
     protected:
         /**
@@ -664,16 +646,12 @@ class Database
         * @return bool
         */
         bool CheckDatabaseVersion(DatabaseTypes database);
-
         /**
          * @brief
          *
          * @return uint32
          */
-        uint32 GetPingIntervall()
-        {
-             return m_pingIntervallms;
-        }
+        uint32 GetPingIntervall() { return m_pingIntervallms; }
 
         /**
          * @brief function to ping database connections
@@ -689,10 +667,7 @@ class Database
          * NO ASYNC TRANSACTIONS DURING SERVER STARTUP - ONLY DURING RUNTIME!!!
          *
          */
-        void AllowAsyncTransactions()
-        {
-             m_bAllowAsyncTransactions = true;
-        }
+        void AllowAsyncTransactions() { m_bAllowAsyncTransactions = true; }
 
     protected:
         /**

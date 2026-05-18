@@ -17,6 +17,8 @@ void DuelStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("attack duel opponent", 70.0f), NULL)));
 }
 
+
+
 DuelStrategy::DuelStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)
 {
 }

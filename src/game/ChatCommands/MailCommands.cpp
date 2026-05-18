@@ -75,6 +75,7 @@ bool ChatHandler::HandleSendMailCommand(char* args)
         }
     }
 
+
     // GM mail
     MailSender sender(MAIL_NORMAL, m_session ? m_session->GetPlayer()->GetGUIDLow() : (uint32)0, MAIL_STATIONERY_GM);
 
@@ -313,6 +314,7 @@ bool ChatHandler::HandleSendMassItemsCommand(char* args)
 
     // need dynamic object because it trasfered to mass mailer
     MailDraft* draft = new MailDraft;
+
 
     // fill mail
     if (!HandleSendItemsHelper(*draft, args))

@@ -28,6 +28,7 @@ public:
 
 };
 
+
 Unit* EnemyPlayerValue::Calculate()
 {
     FindEnemyPlayerStrategy strategy(ai);

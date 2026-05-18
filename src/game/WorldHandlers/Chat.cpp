@@ -4247,6 +4247,7 @@ void ChatHandler::BuildChatPacket(WorldPacket& data, ChatMsg msgtype, char const
     data << uint8(chatTag);
 }
 
+
 // Shared Helpers between command implementation files
 void ChatHandler::ShowFactionListHelper(FactionEntry const* factionEntry, LocaleConstant loc, FactionState const* repState /*= NULL*/, Player* target /*= NULL */)
 {
@@ -4453,6 +4454,7 @@ bool ChatHandler::ShowPlayerListHelper(QueryResult* result, uint32* limit, bool 
 
     return true;
 }
+
 
 // Instantiate template for helper function
 template void ChatHandler::ShowNpcOrGoSpawnInformation<Creature>(uint32 guid);

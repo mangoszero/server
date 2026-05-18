@@ -1306,6 +1306,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 return;
             }
 
+
             m_creature->SetFacingToObject(pCreature);
             m_creature->HandleEmote(action.emoteTarget.emoteId);
             break;

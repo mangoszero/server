@@ -6,7 +6,9 @@
 #include "../values/ItemUsageValue.h"
 #include "../../RandomPlayerbotMgr.h"
 
+
 using namespace ai;
+
 
 bool QueryItemUsageAction::Execute(Event event)
 {
@@ -162,6 +164,7 @@ void QueryItemUsageAction::QueryQuestItem(uint32 itemId)
         }
     }
 }
+
 
 void QueryItemUsageAction::QueryQuestItem(uint32 itemId, const Quest *questTemplate, const QuestStatusData *questStatus)
 {

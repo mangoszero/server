@@ -331,10 +331,7 @@ class SqlStatement
         /**
          * @brief Destructor.
          */
-        ~SqlStatement()
-        {
-             delete m_pParams;
-        }
+        ~SqlStatement() { delete m_pParams; }
 
         /**
          * @brief Copy constructor.
@@ -360,7 +357,6 @@ class SqlStatement
          * @return The ID of the statement.
          */
         int ID() const { return m_index.ID(); }
-
         /**
          * @brief Get the number of arguments for the statement.
          * @return The number of arguments.
@@ -372,7 +368,6 @@ class SqlStatement
          * @return True if the execution was successful, false otherwise.
          */
         bool Execute();
-
         /**
          * @brief Directly execute the statement.
          * @return True if the execution was successful, false otherwise.
@@ -381,7 +376,6 @@ class SqlStatement
 
         // templates to simplify 1-4 parameter bindings
         template<typename ParamType1>
-
         /**
          * @brief Execute the statement with one parameter.
          * @param param1 The parameter to execute with.
@@ -394,7 +388,6 @@ class SqlStatement
         }
 
         template<typename ParamType1, typename ParamType2>
-
         /**
          * @brief Execute the statement with two parameters.
          * @param param1 The first parameter to execute with.
@@ -409,7 +402,6 @@ class SqlStatement
         }
 
         template<typename ParamType1, typename ParamType2, typename ParamType3>
-
         /**
          * @brief Execute the statement with three parameters.
          * @param param1 The first parameter to execute with.
@@ -426,7 +418,6 @@ class SqlStatement
         }
 
         template<typename ParamType1, typename ParamType2, typename ParamType3, typename ParamType4>
-
         /**
          * @brief Execute the statement with four parameters.
          * @param param1 The first parameter to execute with.
@@ -450,73 +441,61 @@ class SqlStatement
          * @param var The boolean parameter to add.
          */
         void addBool(bool var) { arg(var); }
-
         /**
          * @brief Add an unsigned 8-bit integer parameter.
          * @param var The unsigned 8-bit integer parameter to add.
          */
         void addUInt8(uint8 var) { arg(var); }
-
         /**
          * @brief Add a signed 8-bit integer parameter.
          * @param var The signed 8-bit integer parameter to add.
          */
         void addInt8(int8 var) { arg(var); }
-
         /**
          * @brief Add an unsigned 16-bit integer parameter.
          * @param var The unsigned 16-bit integer parameter to add.
          */
         void addUInt16(uint16 var) { arg(var); }
-
         /**
          * @brief Add a signed 16-bit integer parameter.
          * @param var The signed 16-bit integer parameter to add.
          */
         void addInt16(int16 var) { arg(var); }
-
         /**
          * @brief Add an unsigned 32-bit integer parameter.
          * @param var The unsigned 32-bit integer parameter to add.
          */
         void addUInt32(uint32 var) { arg(var); }
-
         /**
          * @brief Add a signed 32-bit integer parameter.
          * @param var The signed 32-bit integer parameter to add.
          */
         void addInt32(int32 var) { arg(var); }
-
         /**
          * @brief Add an unsigned 64-bit integer parameter.
          * @param var The unsigned 64-bit integer parameter to add.
          */
         void addUInt64(uint64 var) { arg(var); }
-
         /**
          * @brief Add a signed 64-bit integer parameter.
          * @param var The signed 64-bit integer parameter to add.
          */
         void addInt64(int64 var) { arg(var); }
-
         /**
          * @brief Add a float parameter.
          * @param var The float parameter to add.
          */
         void addFloat(float var) { arg(var); }
-
         /**
          * @brief Add a double parameter.
          * @param var The double parameter to add.
          */
         void addDouble(double var) { arg(var); }
-
         /**
          * @brief Add a string parameter.
          * @param var The string parameter to add.
          */
         void addString(const char* var) { arg(var); }
-
         /**
          * @brief Add a string parameter from an ostringstream.
          * @param ss The ostringstream containing the string parameter to add.
@@ -569,7 +548,6 @@ class SqlStatement
         // helper function
         // use appropriate add* functions to bind specific data type
         template<typename ParamType>
-
         /**
          * @brief Bind a parameter to the statement.
          * @param val The parameter to bind.
@@ -601,7 +579,6 @@ class SqlPreparedStatement
          * @return True if the statement is prepared, false otherwise.
          */
         bool isPrepared() const { return m_bPrepared; }
-
         /**
          * @brief Check if the statement is a query.
          * @return True if the statement is a query, false otherwise.
@@ -613,7 +590,6 @@ class SqlPreparedStatement
          * @return The number of parameters.
          */
         uint32 params() const { return m_nParams; }
-
         /**
          * @brief Get the number of columns for the statement.
          * @return The number of columns.
@@ -625,7 +601,6 @@ class SqlPreparedStatement
          * @return True if the initialization was successful, false otherwise.
          */
         virtual bool prepare() = 0;
-
         /**
          * @brief Bind parameters for the prepared statement from the parameter placeholder.
          * @param holder The parameter holder.
@@ -669,7 +644,6 @@ class SqlPlainPreparedStatement : public SqlPreparedStatement
          * @param conn The SQL connection.
          */
         SqlPlainPreparedStatement(const std::string& fmt, SqlConnection& conn);
-
         /**
          * @brief Destructor.
          */

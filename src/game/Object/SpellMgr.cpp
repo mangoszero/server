@@ -1599,10 +1599,7 @@ struct DoSpellProcEvent
         }
     }
 
-    const char* TableName()
-    {
-         return "spell_proc_event";
-    }
+    const char* TableName() { return "spell_proc_event"; }
     bool IsValidCustomRank(SpellProcEventEntry const& spe, uint32 entry, uint32 first_id)
     {
         // let have independent data in table for spells with ppm rates (exist rank dependent ppm rate spells)
@@ -2304,10 +2301,7 @@ struct DoSpellThreat
             }
         }
     }
-    const char* TableName()
-    {
-         return "spell_threat";
-    }
+    const char* TableName() { return "spell_threat"; }
     bool IsValidCustomRank(SpellThreatEntry const& ste, uint32 entry, uint32 first_id)
     {
         if (!ste.threat)
@@ -2649,6 +2643,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     {
                         return false;
                     }
+
 
                     // Icon overload
                     // All Generic Spell with SpellIconID 958 et Scare Beast

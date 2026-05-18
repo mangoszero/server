@@ -12,10 +12,7 @@ namespace ahbot
         virtual ~CategoryList();
 
         Category* operator[](int index) { return categories[index]; }
-        int32 size()
-        {
-             return categories.size();
-        }
+        int32 size() { return categories.size(); }
         static CategoryList instance;
 
     private:
@@ -67,10 +64,7 @@ namespace ahbot
 
     protected:
         virtual void Load();
-        virtual string GetName()
-        {
-             return "available";
-        }
+        virtual string GetName() { return "available"; }
     };
 
     class InAuctionItemsBag : public ItemBag

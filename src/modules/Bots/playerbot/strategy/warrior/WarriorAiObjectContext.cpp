@@ -11,6 +11,7 @@
 
 using namespace ai;
 
+
 namespace ai
 {
     namespace warrior
@@ -91,6 +92,7 @@ namespace ai
         };
     };
 };
+
 
 namespace ai
 {

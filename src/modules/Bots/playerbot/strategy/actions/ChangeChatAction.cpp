@@ -2,7 +2,9 @@
 #include "../../playerbot.h"
 #include "ChangeChatAction.h"
 
+
 using namespace ai;
+
 
 /**
  * Changes the bot chat channel or reports the current chat channel.

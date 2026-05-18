@@ -481,10 +481,7 @@ struct TrainerSpellData
     uint32 trainerType;                                     // trainer type based at trainer spells, can be different from creature_template value.
     // req. for correct show non-prof. trainers like weaponmaster, allowed values 0 and 2.
     TrainerSpell const* Find(uint32 spell_id) const;
-    void Clear()
-    {
-         spellList.clear();
-    }
+    void Clear() { spellList.clear(); }
 };
 
 typedef std::map<uint32, time_t> CreatureSpellCooldowns;
@@ -647,10 +644,7 @@ class Creature : public Unit
 
         bool AIM_Initialize();
 
-        CreatureAI* AI()
-        {
-             return i_AI;
-        }
+        CreatureAI* AI() { return i_AI; }
 
         void SetWalk(bool enable, bool asDefault = true);
         void SetLevitate(bool enable) override;
@@ -765,10 +759,7 @@ class Creature : public Unit
         bool IsTappedBy(Player const* player) const;
         bool IsDamageEnoughForLootingAndReward() const { return m_PlayerDamageReq == 0; }
         void LowerPlayerDamageReq(uint32 unDamage);
-        void ResetPlayerDamageReq()
-        {
-             m_PlayerDamageReq = GetHealth() / 2;
-        }
+        void ResetPlayerDamageReq() { m_PlayerDamageReq = GetHealth() / 2; }
 
         /**
         * function indicating whether the whether the creature has a looter recipient defined (either a group ID, either a player GUID).
@@ -807,11 +798,7 @@ class Creature : public Unit
         void CallAssistance();
         void SetNoCallAssistance(bool val) { m_AlreadyCallAssistance = val; }
         void SetNoSearchAssistance(bool val) { m_AlreadySearchedAssistance = val; }
-        bool HasSearchedAssistance()
-        {
-             return m_AlreadySearchedAssistance;
-        }
-
+        bool HasSearchedAssistance() { return m_AlreadySearchedAssistance; }
         bool CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction = true) const;
         bool CanInitiateAttack();
 
@@ -867,21 +854,9 @@ class Creature : public Unit
         bool HasQuest(uint32 quest_id) const override;
         bool HasInvolvedQuest(uint32 quest_id)  const override;
 
-        GridReference<Creature>& GetGridRef()
-        {
-             return m_gridRef;
-        }
-
-        bool IsRegeneratingHealth()
-        {
-             return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH;
-        }
-
-        bool IsRegeneratingPower()
-        {
-             return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER;
-        }
-
+        GridReference<Creature>& GetGridRef() { return m_gridRef; }
+        bool IsRegeneratingHealth() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH; }
+        bool IsRegeneratingPower() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER; }
         virtual uint8 GetPetAutoSpellSize() const { return CREATURE_MAX_SPELLS; }
         virtual uint32 GetPetAutoSpellOnPos(uint8 pos) const
         {
@@ -907,10 +882,7 @@ class Creature : public Unit
 
         void SetFactionTemporary(uint32 factionId, uint32 tempFactionFlags = TEMPFACTION_ALL);
         void ClearTemporaryFaction();
-        uint32 GetTemporaryFactionFlags()
-        {
-             return m_temporaryFactionFlags;
-        }
+        uint32 GetTemporaryFactionFlags() { return m_temporaryFactionFlags; }
 
         void SendAreaSpiritHealerQueryOpcode(Player* pl);
 
@@ -918,11 +890,7 @@ class Creature : public Unit
         void SetVirtualItemRaw(VirtualItemSlot slot, uint32 display_id, uint32 info0, uint32 info1);
 
         void SetDisableReputationGain(bool disable) { DisableReputationGain = disable; }
-        bool IsReputationGainDisabled()
-        {
-             return DisableReputationGain;
-        }
-
+        bool IsReputationGainDisabled() { return DisableReputationGain; }
     protected:
         bool MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* pSpellInfo, uint32 selectFlags) const;
 
@@ -984,7 +952,7 @@ class Creature : public Unit
 class ForcedDespawnDelayEvent : public BasicEvent
 {
     public:
-        ForcedDespawnDelayEvent(Creature& owner) : BasicEvent(), m_owner(owner) {}
+        ForcedDespawnDelayEvent(Creature& owner) : BasicEvent(), m_owner(owner) { }
         bool Execute(uint64 e_time, uint32 p_time) override;
 
     private:

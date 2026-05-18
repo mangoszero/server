@@ -7,10 +7,7 @@ namespace ai
     {
     public:
         AttackRtiStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-             return "attack rti";
-        }
+        virtual string getName() { return "attack rti"; }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

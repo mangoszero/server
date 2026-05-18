@@ -101,6 +101,7 @@ inline std::tm safe_localtime(const time_t time)
  */
 time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true);
 
+
 /**
  * @brief
  *
@@ -137,6 +138,7 @@ inline uint32 secsToTimeBitFields(time_t secs)
     return (lt.tm_year - 100) << 24 | lt.tm_mon  << 20
          | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
 }
+
 
 inline std::string& ltrim(std::string& s)
 {

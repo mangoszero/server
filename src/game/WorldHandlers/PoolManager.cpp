@@ -342,6 +342,7 @@ void PoolGroup<T>::SetExcludeObject(uint32 guid, bool state)
     }
 }
 
+
 template <class T>
 /**
  * @brief Chooses one spawn candidate from the pool group.
@@ -763,6 +764,7 @@ template <>
 void PoolGroup<Pool>::ReSpawn1Object(MapPersistentState& /*mapState*/, PoolObject* /*obj*/)
 {
 }
+
 
 ////////////////////////////////////////////////////////////
 // Methods of class PoolManager

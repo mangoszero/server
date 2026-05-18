@@ -298,10 +298,7 @@ class Item : public Object
         void DeleteFromInventoryDB();
         void LoadLootFromDB(Field* fields);
 
-        Bag* ToBag()
-        {
-             if (IsBag()) return reinterpret_cast<Bag*>(this); else return NULL;
-        }
+        Bag* ToBag() { if (IsBag()) return reinterpret_cast<Bag*>(this); else return NULL; }
         const Bag* ToBag() const { if (IsBag()) return reinterpret_cast<const Bag*>(this); else return NULL; }
 
         bool IsLocked() const { return !HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED); }
@@ -322,11 +319,7 @@ class Item : public Object
         InventoryResult CanBeMergedPartlyWith(ItemPrototype const* proto) const;
 
         uint8 GetSlot() const {return m_slot;}
-        Bag* GetContainer()
-        {
-             return m_container;
-        }
-
+        Bag* GetContainer() { return m_container; }
         uint8 GetBagSlot() const;
         void SetSlot(uint8 slot) {m_slot = slot;}
         uint16 GetPos() const { return uint16(GetBagSlot()) << 8 | GetSlot(); }

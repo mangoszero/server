@@ -568,6 +568,7 @@ AuctionBotConfig::AuctionBotConfig()
     std::fill(std::begin(m_configUint32Values), std::end(m_configUint32Values), 0);
 }
 
+
 /**
  * @brief Initialize the AuctionBotConfig by loading from configuration file
  * @return True if initialization successful, false otherwise
@@ -2719,4 +2720,5 @@ void AuctionHouseBot::PurgeMailedItems()
         "DELETE FROM mail WHERE receiver = '%u'", ahbotGuid);
 }
 /** @} */
+
 

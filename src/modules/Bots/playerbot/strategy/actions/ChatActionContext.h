@@ -175,4 +175,5 @@ namespace ai
         static Action* gossip_hello(PlayerbotAI* ai) { return new GossipHelloAction(ai); }
     };
 
+
 };

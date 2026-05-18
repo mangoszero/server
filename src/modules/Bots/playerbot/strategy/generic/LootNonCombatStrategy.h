@@ -9,10 +9,7 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-             return "loot";
-        }
+        virtual string getName() { return "loot"; }
     };
 
     class GatherStrategy : public Strategy
@@ -22,9 +19,6 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-             return "gather";
-        }
+        virtual string getName() { return "gather"; }
     };
 }

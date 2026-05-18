@@ -153,6 +153,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     std::string target_name;
     sObjectMgr.GetPlayerNameByGUID(target_guid, target_name);
 
+
     if (!pPlayer && !sWorld.getConfig(CONFIG_BOOL_GM_TICKET_OFFLINE_CLOSING))
     {
         SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
@@ -194,6 +195,7 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     sTicketMgr.Delete(ticket->GetPlayerGuid());
 
     const char* gmNameReplacementWhenUsingCLI = "ADMIN";
+
 
     // Send system Message to All Connected GMs to inform them the ticket has been closed
     sObjectAccessor.DoForAllPlayers([&](Player* player)
@@ -483,6 +485,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
         strcpy(signature, "$B$BBest regards, $B$BThe Server Admin");
     }
 
+
     std::string  mailText = args;
     mailText = mailText + signature;
 
@@ -524,6 +527,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     // Close the ticket
     ticket->Close();
 
+
     // Remove ticket from ticket manager
     // Otherwise ticket will reappear in player UI if teleported or logout/login !
     sTicketMgr.Delete(ticket->GetPlayerGuid());
@@ -536,6 +540,7 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
                 ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
             }
         });
+
 
     if (!m_session)
     {

@@ -59,12 +59,12 @@
  *
  * Initializes the Mac-specific Warden implementation.
  */
-WardenMac::WardenMac() : Warden() {}
+WardenMac::WardenMac() : Warden() { }
 
 /**
  * @brief WardenMac destructor
  */
-WardenMac::~WardenMac() {}
+WardenMac::~WardenMac() { }
 
 /**
  * @brief Initialize Mac Warden

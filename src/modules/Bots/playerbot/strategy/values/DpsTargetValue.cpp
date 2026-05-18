@@ -37,6 +37,7 @@ protected:
     int minDpsCount;
 };
 
+
 Unit* DpsTargetValue::Calculate()
 {
     FindTargetForDpsStrategy strategy(ai);

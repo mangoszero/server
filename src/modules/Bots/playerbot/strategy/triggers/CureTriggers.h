@@ -11,10 +11,7 @@ namespace ai
           {
             this->dispelType = dispelType;
         }
-        virtual string GetTargetName()
-        {
-             return "self target";
-        }
+        virtual string GetTargetName() { return "self target"; }
         virtual bool IsActive();
 
     protected:
@@ -25,10 +22,7 @@ namespace ai
     public:
         TargetAuraDispelTrigger(PlayerbotAI* ai, string spell, uint32 dispelType) :
             NeedCureTrigger(ai, spell, dispelType) {}
-        virtual string GetTargetName()
-        {
-             return "current target";
-        }
+        virtual string GetTargetName() { return "current target"; }
     };
 
     class PartyMemberNeedCureTrigger : public NeedCureTrigger {

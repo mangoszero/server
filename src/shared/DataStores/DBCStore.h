@@ -45,15 +45,12 @@ class DBCStorage
          *
          * @param f
          */
-        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) {}
+        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) { }
         /**
          * @brief
          *
          */
-        ~DBCStorage()
-        {
-             Clear();
-        }
+        ~DBCStorage() { Clear(); }
 
         /**
         * @brief

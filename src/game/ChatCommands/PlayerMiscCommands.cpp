@@ -591,6 +591,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
         PSendSysMessage(LANG_COMMAND_RESET_ITEMS_ALLBAGS, equipedBagsCount, bankBagscount,player->GetName());
     }
 
+
     return true;
 }
 

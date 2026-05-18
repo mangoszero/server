@@ -62,30 +62,21 @@ namespace ai
          *
          * @return string The source of the event
          */
-        const string& getSource()
-        {
-             return source;
-        }
+        const string& getSource() { return source; }
 
         /**
          * @brief Get the parameter of the event
          *
          * @return string The parameter of the event
          */
-        const string& getParam()
-        {
-             return param;
-        }
+        const string& getParam() { return param; }
 
         /**
          * @brief Get the packet associated with the event
          *
          * @return WorldPacket& The packet associated with the event
          */
-        WorldPacket& getPacket()
-        {
-             return packet;
-        }
+        WorldPacket& getPacket() { return packet; }
 
         /**
          * @brief Get the object associated with the event
@@ -99,10 +90,7 @@ namespace ai
          *
          * @return Player* The owner of the event
          */
-        Player* getOwner()
-        {
-             return owner;
-        }
+        Player* getOwner() { return owner; }
 
         /**
          * @brief Check if the event is valid

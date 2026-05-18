@@ -59,8 +59,7 @@ namespace ai
     public:
         CastRebirthAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "rebirth") {}
 
-        virtual NextAction** getPrerequisites()
-{
+        virtual NextAction** getPrerequisites() {
             return NextAction::merge( NextAction::array(0, new NextAction("caster form"), NULL), ResurrectPartyMemberAction::getPrerequisites());
         }
     };
@@ -186,10 +185,7 @@ namespace ai
     public:
         CastInnervateAction(PlayerbotAI* ai) : CastSpellAction(ai, "innervate") {}
 
-        virtual string GetTargetName()
-        {
-             return "self target";
-        }
+        virtual string GetTargetName() { return "self target"; }
     };
 
     class CastTranquilityAction : public CastAoeHealSpellAction

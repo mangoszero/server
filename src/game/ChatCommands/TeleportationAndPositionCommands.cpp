@@ -306,6 +306,7 @@ bool ChatHandler::HandleAppearCommand(char* args)
         return false;
     }
 
+
     if (target)
     {
         // check online security

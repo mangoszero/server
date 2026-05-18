@@ -25,6 +25,7 @@ Unit* GrindTargetValue::Calculate()
     return target;
 }
 
+
 Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 {
     uint32 memberCount = 1;
@@ -118,6 +119,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
 
     return result;
 }
+
 
 int GrindTargetValue::GetTargetingPlayerCount( Unit* unit )
 {

@@ -376,6 +376,7 @@ bool TradeData::HasItem(ObjectGuid item_guid) const
     return false;
 }
 
+
 /**
  * @brief Gets the item used as the current trade spell reagent.
  *
@@ -1992,6 +1993,7 @@ bool Player::BuildEnumData(QueryResult* result, WorldPacket* p_data)
         *p_data << uint32(petFamily);
     }
 
+
     Tokens data = StrSplit(fields[19].GetCppString(), " ");
     for (uint8 slot = 0; slot < EQUIPMENT_SLOT_END; ++slot)
     {
@@ -2885,6 +2887,7 @@ void Player::SetGameMaster(bool on)
             pet->setFaction(getFaction());
             pet->GetHostileRefManager().setOnlineOfflineState(true);
         }
+
 
         CallForAllControlledUnits(SetGameMasterOffHelper(getFaction()), CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
 
@@ -8047,6 +8050,7 @@ void Player::UpdateHonor()
     uint32 RP = uint32(GetRankPoints() >= 0 ? GetRankPoints() : -1 * GetRankPoints());
     RP = int8(((RP - prk.minRP) / (prk.maxRP - prk.minRP)) * (prk.positive ? 255 : -255));
 
+
     // NEXT RANK BAR
     // PLAYER_FIELD_HONOR_BAR
     SetByteValue(PLAYER_FIELD_BYTES2, 0, RP);
@@ -9267,6 +9271,7 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
                            ? GetPPMProcChance(proto->Delay, ppmRate)
                            : pEnchant->amount[s] != 0 ? float(pEnchant->amount[s]) : GetWeaponProcChance();
 
+
             ApplySpellMod(spellInfo->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance);
 
             if (roll_chance_f(chance))
@@ -10422,6 +10427,7 @@ uint8 Player::FindEquipSlot(ItemPrototype const* proto, uint32 slot, bool swap) 
     return NULL_SLOT;
 }
 
+
 /**
  * @brief Lists all viable equipment slots for an item prototype.
  *
@@ -11162,6 +11168,7 @@ bool Player::IsValidPos(uint8 bag, uint8 slot, bool explicit_pos) const
     return false;
 }
 
+
 /**
  * @brief Checks whether the player owns at least a given count of an item.
  *
@@ -11320,6 +11327,7 @@ InventoryResult Player::_CanTakeMoreSimilarItems(uint32 entry, uint32 count, Ite
             return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
         }
     }
+
 
     return EQUIP_ERR_OK;
 }
@@ -17295,6 +17303,7 @@ void Player::GiveQuestSourceItemIfNeed(Quest const* pQuest)
     }
 }
 
+
 /**
  * @brief Removes a quest source item when the quest flow requires it.
  *
@@ -20165,6 +20174,7 @@ void Player::SendRaidInfo()
     size_t p_counter = data.wpos();
     data << uint32(counter);                                // placeholder
 
+
     for (BoundInstancesMap::const_iterator itr = m_boundInstances.begin(); itr != m_boundInstances.end(); ++itr)
     {
         if (itr->second.perm)
@@ -21361,6 +21371,7 @@ void Player::SendResetFailedNotify(uint32 mapid)
 void Player::ResetInstances(InstanceResetMethod method)
 {
     // method can be INSTANCE_RESET_ALL, INSTANCE_RESET_GROUP_JOIN
+
 
     for (BoundInstancesMap::iterator itr = m_boundInstances.begin(); itr != m_boundInstances.end();)
     {

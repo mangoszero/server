@@ -69,40 +69,24 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          *
          * @return iterator
          */
-        iterator begin()
-        {
-             return iterator(getFirst());
-        }
-
+        iterator begin() { return iterator(getFirst()); }
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator end()
-        {
-             return iterator(nullptr);
-        }
-
+        iterator end() { return iterator(nullptr); }
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rbegin()
-        {
-             return iterator(getLast());
-        }
-
+        iterator rbegin() { return iterator(getLast()); }
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rend()
-        {
-             return iterator(nullptr);
-        }
-
+        iterator rend() { return iterator(nullptr); }
 };
 #endif

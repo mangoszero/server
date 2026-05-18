@@ -20,10 +20,7 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_FLASK);
         }
 
-        virtual string GetName()
-        {
-             return "Alchemy";
-        }
+        virtual string GetName() { return "Alchemy"; }
     };
 
     class Scroll : public Consumable
@@ -39,10 +36,7 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_ITEM_ENHANCEMENT);
         }
 
-        virtual string GetName()
-        {
-             return "Scroll";
-        }
+        virtual string GetName() { return "Scroll"; }
     };
 
     class Food : public Consumable
@@ -57,10 +51,7 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_FOOD;
         }
 
-        virtual string GetName()
-        {
-             return "Food";
-        }
+        virtual string GetName() { return "Food"; }
     };
 
     class Bandage : public Consumable
@@ -75,10 +66,7 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_BANDAGE;
         }
 
-        virtual string GetName()
-        {
-             return "Bandage";
-        }
+        virtual string GetName() { return "Bandage"; }
     };
 
     class OtherConsumable : public Consumable
@@ -94,10 +82,6 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) && (proto->RequiredSkill);
         }
 
-        virtual string GetName()
-        {
-             return "OtherConsumable";
-        }
-
+        virtual string GetName() { return "OtherConsumable"; }
     };
 };

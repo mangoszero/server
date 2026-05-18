@@ -2,6 +2,7 @@
 #include "../../playerbot.h"
 #include "TalkToQuestGiverAction.h"
 
+
 using namespace ai;
 
 void TalkToQuestGiverAction::ProcessQuest(Quest const* quest, WorldObject* questGiver)

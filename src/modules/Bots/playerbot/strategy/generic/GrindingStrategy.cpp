@@ -4,6 +4,7 @@
 
 using namespace ai;
 
+
 NextAction** GrindingStrategy::getDefaultActions()
 {
     return NULL;

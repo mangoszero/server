@@ -8,10 +8,7 @@ namespace ai
     {
     public:
         RogueAmbushStrategy(PlayerbotAI* ai) : Strategy(ai) {}
-        virtual string getName()
-        {
-             return "ambush";
-        }
+        virtual string getName() { return "ambush"; }
 
         virtual NextAction** getDefaultActions()
         {

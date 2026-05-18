@@ -316,6 +316,7 @@ string ChatHelper::formatChat(ChatMsg chat)
     return "unknown";
 }
 
+
 uint32 ChatHelper::parseSpell(string& text)
 {
     PlayerbotChatHandler handler(ai->GetBot());
@@ -378,6 +379,7 @@ string ChatHelper::formatQuestObjective(string name, int available, int required
 
     return out.str();
 }
+
 
 uint32 ChatHelper::parseItemQuality(string text)
 {

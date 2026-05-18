@@ -12,15 +12,8 @@ namespace ai
     public:
         virtual NextAction** getDefaultActions();
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-             return "shadow";
-        }
-
-        virtual int GetType()
-        {
-             return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED;
-        }
+        virtual string getName() { return "shadow"; }
+        virtual int GetType() { return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED; }
     };
 
     class ShadowPriestAoeStrategy : public CombatStrategy
@@ -30,10 +23,7 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-             return "shadow aoe";
-        }
+        virtual string getName() { return "shadow aoe"; }
     };
 
     class ShadowPriestDebuffStrategy : public CombatStrategy
@@ -43,9 +33,6 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-             return "shadow debuff";
-        }
+        virtual string getName() { return "shadow debuff"; }
     };
 }

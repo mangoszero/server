@@ -67,6 +67,7 @@ DpsAoeWarlockStrategy::DpsAoeWarlockStrategy(PlayerbotAI* ai) : CombatStrategy(a
     actionNodeFactories.Add(new DpsAoeWarlockStrategyActionNodeFactory());
 }
 
+
 NextAction** DpsWarlockStrategy::getDefaultActions()
 {
     return NextAction::array(0, new NextAction("incinerate", 10.0f), new NextAction("shadow bolt", 10.0f), NULL);

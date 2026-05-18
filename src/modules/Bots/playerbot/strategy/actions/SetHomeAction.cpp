@@ -3,6 +3,7 @@
 #include "SetHomeAction.h"
 #include "../../PlayerbotAIConfig.h"
 
+
 using namespace ai;
 
 bool SetHomeAction::Execute(Event event)

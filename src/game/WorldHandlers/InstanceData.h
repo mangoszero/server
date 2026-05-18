@@ -111,7 +111,7 @@ class InstanceData
 
         // All-purpose data storage 64 bit
         virtual uint64 GetData64(uint32 /*Data*/) const { return 0; }
-        virtual void SetData64(uint32 /*Data*/, uint64 /*Value*/) {}
+        virtual void SetData64(uint32 /*Data*/, uint64 /*Value*/) { }
 
         // Guid data storage (wrapper for set/get from uint64 storage
         ObjectGuid GetGuid(uint32 dataIdx) const { return ObjectGuid(GetData64(dataIdx)); }

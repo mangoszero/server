@@ -276,6 +276,7 @@ inline bool IsPassiveSpellStackableWithRanks(SpellEntry const* spellProto)
     return !spellProto->HasSpellEffect(SPELL_EFFECT_APPLY_AURA);
 }
 
+
 inline bool IsDeathOnlySpell(SpellEntry const* spellInfo)
 {
     return spellInfo->HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD) || spellInfo->Id == 2584;
@@ -542,6 +543,7 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
             return true;
     }
 }
+
 
 inline bool IsAreaOfEffectSpell(SpellEntry const* spellInfo)
 {
@@ -1097,6 +1099,7 @@ typedef std::multimap < uint32 /*areaOrZoneId*/, SpellArea const* > SpellAreaFor
 typedef std::pair<SpellAreaMap::const_iterator, SpellAreaMap::const_iterator> SpellAreaMapBounds;
 typedef std::pair<SpellAreaForAuraMap::const_iterator, SpellAreaForAuraMap::const_iterator>  SpellAreaForAuraMapBounds;
 typedef std::pair<SpellAreaForAreaMap::const_iterator, SpellAreaForAreaMap::const_iterator>  SpellAreaForAreaMapBounds;
+
 
 // Spell rank chain  (accessed using SpellMgr functions)
 struct SpellChainNode

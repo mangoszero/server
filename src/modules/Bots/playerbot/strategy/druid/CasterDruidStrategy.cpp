@@ -130,6 +130,7 @@ void CasterDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "party member almost full health",
         NextAction::array(0, new NextAction("rejuvenation on party", ACTION_LIGHT_HEAL + 1), NULL)));
 
+
     triggers.push_back(new TriggerNode(
         "insect swarm",
         NextAction::array(0, new NextAction("insect swarm", ACTION_NORMAL + 5), NULL)));
@@ -149,6 +150,8 @@ void CasterDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "moonfire",
         NextAction::array(0, new NextAction("moonfire", ACTION_NORMAL + 4), NULL)));
+
+
 
     triggers.push_back(new TriggerNode(
         "nature's grasp",

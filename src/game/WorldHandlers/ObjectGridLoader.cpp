@@ -170,7 +170,7 @@ class ObjectWorldLoader
          */
         void Visit(CorpseMapType& m);
 
-        template<class T> void Visit(GridRefManager<T>&) {}
+        template<class T> void Visit(GridRefManager<T>&) { }
 
     private:
         Cell i_cell;                    ///< Cell coordinates

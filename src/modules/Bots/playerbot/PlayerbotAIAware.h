@@ -12,7 +12,7 @@ namespace ai
          * @brief Constructor for PlayerbotAIAware.
          * @param ai Pointer to the PlayerbotAI instance.
          */
-        PlayerbotAIAware(PlayerbotAI* const ai) : ai(ai) {}
+        PlayerbotAIAware(PlayerbotAI* const ai) : ai(ai) { }
 
     protected:
         PlayerbotAI* ai; ///< Pointer to the PlayerbotAI instance.

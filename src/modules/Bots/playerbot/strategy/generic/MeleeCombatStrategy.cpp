@@ -4,6 +4,7 @@
 
 using namespace ai;
 
+
 void MeleeCombatStrategy::InitTriggers(list<TriggerNode*> &triggers)
 {
     CombatStrategy::InitTriggers(triggers);

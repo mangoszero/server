@@ -452,6 +452,7 @@ int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
     return 0;
 }
 
+
 /**
  * @brief Parses and validates an incoming packet header.
  *

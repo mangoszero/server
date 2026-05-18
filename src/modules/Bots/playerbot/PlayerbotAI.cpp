@@ -1459,6 +1459,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         }
     }
 
+
     if (!bot->IsInFront(faceTo, sPlayerbotAIConfig.sightDistance))
     {
         bot->SetFacingTo(bot->GetAngle(faceTo));

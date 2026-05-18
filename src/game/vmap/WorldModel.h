@@ -113,21 +113,13 @@ namespace VMAP
          *
          * @return float* Pointer to the height storage array.
          */
-        float* GetHeightStorage()
-        {
-             return iHeight;
-        }
-
+        float* GetHeightStorage() { return iHeight; }
         /**
          * @brief Gets the flags storage array.
          *
          * @return uint8* Pointer to the flags storage array.
          */
-        uint8* GetFlagsStorage()
-        {
-             return iFlags;
-        }
-
+        uint8* GetFlagsStorage() { return iFlags; }
         /**
          * @brief Gets the file size of the liquid data.
          *
@@ -202,10 +194,7 @@ namespace VMAP
         /**
          * @brief Destructor for GroupModel.
          */
-        ~GroupModel()
-        {
-             delete iLiquid;
-        }
+        ~GroupModel() { delete iLiquid; }
 
         /**
          * @brief Pass mesh data to object and create BIH. Passed vectors get swapped with old geometry.

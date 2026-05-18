@@ -8,10 +8,7 @@ namespace ai
     {
     public:
         GenericRogueNonCombatStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-             return "nc";
-        }
+        virtual string getName() { return "nc"; }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

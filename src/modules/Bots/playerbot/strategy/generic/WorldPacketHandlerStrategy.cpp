@@ -107,6 +107,7 @@ WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("lfg role check");
 }
 
+
 void ReadyCheckStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

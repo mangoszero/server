@@ -2,7 +2,9 @@
 #include "../../playerbot.h"
 #include "LootStrategyAction.h"
 
+
 using namespace ai;
+
 
 bool LootStrategyAction::Execute(Event event)
 {
@@ -68,6 +70,7 @@ bool LootStrategyAction::Execute(Event event)
 
     return true;
 }
+
 
 LootStrategy LootStrategyAction::String2LootStrategy(string strategy)
 {

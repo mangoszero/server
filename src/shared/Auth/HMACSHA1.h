@@ -49,61 +49,46 @@ public:
      * @param seed Pointer to seed data
      */
     HMACSHA1(uint32 len, uint8 *seed);
-
     /**
      * @brief Destructor
      */
     ~HMACSHA1();
-
     /**
      * @brief Update hash with a BigNumber
      * @param bn BigNumber to add to hash
      */
     void UpdateBigNumber(BigNumber *bn);
-
     /**
      * @brief Update hash with raw data
      * @param data Pointer to data
      * @param length Length of data
      */
     void UpdateData(const uint8 *data, int length);
-
     /**
      * @brief Update hash with string data
      * @param str String to add to hash
      */
     void UpdateData(const std::string &str);
-
     /**
      * @brief Finalize the hash computation
      */
     void Finalize();
-
     /**
      * @brief Compute hash for a BigNumber
      * @param bn BigNumber to hash
      * @return Pointer to digest buffer
      */
     uint8 *ComputeHash(BigNumber *bn);
-
     /**
      * @brief Get the computed digest
      * @return Pointer to digest buffer
      */
-    uint8 *GetDigest()
-    {
-         return (uint8*)m_digest;
-    }
-
+    uint8 *GetDigest() { return (uint8*)m_digest; }
     /**
      * @brief Get the digest length
      * @return SHA_DIGEST_LENGTH (20 bytes)
      */
-    int GetLength()
-    {
-         return SHA_DIGEST_LENGTH;
-    }
-
+    int GetLength() { return SHA_DIGEST_LENGTH; }
 private:
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX m_ctx; /**< OpenSSL HMAC context (pre-1.1.0) */

@@ -19,10 +19,8 @@ namespace ai
 
     public:
         virtual void InitMultipliers(std::list<Multiplier*> &multipliers);
-        virtual string getName()
-        {
-             return "cast time";
-        }
+        virtual string getName() { return "cast time"; }
     };
+
 
 }

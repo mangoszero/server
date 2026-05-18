@@ -23,6 +23,7 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "power word: fortitude on party",
         NextAction::array(0, new NextAction("power word: fortitude on party", 11.0f), NULL)));
 
+
     triggers.push_back(new TriggerNode(
         "divine spirit",
         NextAction::array(0, new NextAction("divine spirit", 14.0f), NULL)));
@@ -31,9 +32,11 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "divine spirit on party",
         NextAction::array(0, new NextAction("divine spirit on party", 13.0f), NULL)));
 
+
     triggers.push_back(new TriggerNode(
         "inner fire",
         NextAction::array(0, new NextAction("inner fire", 10.0f), NULL)));
+
 
     triggers.push_back(new TriggerNode(
         "critical health",
@@ -59,6 +62,7 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         "party member dead",
         NextAction::array(0, new NextAction("resurrection", 30.0f), NULL)));
 
+
     triggers.push_back(new TriggerNode(
         "dispel magic",
         NextAction::array(0, new NextAction("dispel magic", 41.0f), NULL)));
@@ -66,6 +70,7 @@ void PriestNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "dispel magic on party",
         NextAction::array(0, new NextAction("dispel magic on party", 40.0f), NULL)));
+
 
     triggers.push_back(new TriggerNode(
         "cure disease",

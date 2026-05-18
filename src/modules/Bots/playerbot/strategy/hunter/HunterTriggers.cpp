@@ -28,6 +28,7 @@ bool HuntersPetDeadTrigger::IsActive()
     return status == PET_DB_DEAD || status == PET_DB_NO_PET;
 }
 
+
 bool HuntersPetLowHealthTrigger::IsActive()
 {
     Unit* pet = AI_VALUE(Unit*, "pet target");

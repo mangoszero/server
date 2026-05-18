@@ -7,14 +7,13 @@ namespace ai
     {
     public:
         GuardStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-             return "guard";
-        }
+        virtual string getName() { return "guard"; }
         NextAction** getDefaultActions();
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
+
+
 
 }

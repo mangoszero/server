@@ -557,6 +557,8 @@ void PlayerDumpWriter::DumpTableContent(std::string& dump, uint32 guid, char con
             return;
         }
 
+
+
         do
         {
             // collect guids

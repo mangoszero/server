@@ -104,6 +104,7 @@ ChatChannelsEntry const* GetChannelEntryFor(uint32 channel_id);
  */
 ChatChannelsEntry const* GetChannelEntryFor(const std::string& name);
 
+
 /**
  * Converts local zone coordinates into map coordinates for the specified zone.
  */

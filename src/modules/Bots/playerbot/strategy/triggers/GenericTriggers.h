@@ -114,15 +114,8 @@ namespace ai
             this->spell = spell;
         }
 
-        virtual string GetTargetName()
-        {
-             return "current target";
-        }
-
-        virtual string getName()
-        {
-             return spell;
-        }
+        virtual string GetTargetName() { return "current target"; }
+        virtual string getName() { return spell; }
         virtual bool IsActive();
 
     protected:
@@ -144,6 +137,7 @@ namespace ai
         virtual bool IsActive();
     };
 
+
     class AttackerCountTrigger : public Trigger
     {
     public:
@@ -157,10 +151,7 @@ namespace ai
         {
             return AI_VALUE(uint8, "attacker count") >= amount;
         }
-        virtual string getName()
-        {
-             return "attacker count";
-        }
+        virtual string getName() { return "attacker count"; }
 
     protected:
         int amount;
@@ -179,10 +170,7 @@ namespace ai
         MyAttackerCountTrigger(PlayerbotAI* ai, int amount) : AttackerCountTrigger(ai, amount) {}
     public:
         virtual bool IsActive();
-        virtual string getName()
-        {
-             return "my attacker count";
-        }
+        virtual string getName() { return "my attacker count"; }
     };
 
     class MediumThreatTrigger : public MyAttackerCountTrigger
@@ -200,10 +188,7 @@ namespace ai
         }
     public:
         virtual bool IsActive();
-        virtual string getName()
-        {
-             return "aoe";
-        }
+        virtual string getName() { return "aoe"; }
 
     private:
         float range;
@@ -212,37 +197,25 @@ namespace ai
     class NoFoodTrigger : public Trigger {
     public:
         NoFoodTrigger(PlayerbotAI* ai) : Trigger(ai, "no food trigger") {}
-        virtual bool IsActive()
-        {
-             return AI_VALUE2(list<Item*>, "inventory items", "food").empty();
-        }
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "food").empty(); }
     };
 
     class NoConjuredFoodTrigger : public Trigger {
     public:
         NoConjuredFoodTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured food trigger") {}
-        virtual bool IsActive()
-        {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
-        }
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty(); }
     };
 
     class NoDrinkTrigger : public Trigger {
     public:
         NoDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no drink trigger") {}
-        virtual bool IsActive()
-        {
-             return AI_VALUE2(list<Item*>, "inventory items", "drink").empty();
-        }
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "drink").empty(); }
     };
 
     class NoConjuredDrinkTrigger : public Trigger {
     public:
         NoConjuredDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured drink trigger") {}
-        virtual bool IsActive()
-        {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
-        }
+        virtual bool IsActive() { return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty(); }
     };
 
     class LightAoeTrigger : public AoeTrigger
@@ -268,11 +241,7 @@ namespace ai
     public:
         BuffTrigger(PlayerbotAI* ai, string spell) : SpellTrigger(ai, spell, 5) {}
     public:
-        virtual string GetTargetName()
-        {
-             return "self target";
-        }
-
+        virtual string GetTargetName() { return "self target"; }
         virtual bool IsActive();
     };
 
@@ -296,10 +265,7 @@ namespace ai
     class TargetInSightTrigger : public Trigger {
     public:
         TargetInSightTrigger(PlayerbotAI* ai) : Trigger(ai, "target in sight") {}
-        virtual bool IsActive()
-        {
-             return AI_VALUE(Unit*, "grind target");
-        }
+        virtual bool IsActive() { return AI_VALUE(Unit*, "grind target"); }
     };
 
     class DebuffTrigger : public BuffTrigger
@@ -309,11 +275,7 @@ namespace ai
             checkInterval = 1;
         }
     public:
-        virtual string GetTargetName()
-        {
-             return "current target";
-        }
-
+        virtual string GetTargetName() { return "current target"; }
         virtual bool IsActive();
     };
 
@@ -323,10 +285,7 @@ namespace ai
         DebuffOnAttackerTrigger(PlayerbotAI* ai, string spell) : DebuffTrigger(ai, spell) {}
     public:
         virtual Value<Unit*>* GetTargetValue();
-        virtual string getName()
-        {
-             return spell + " on attacker";
-        }
+        virtual string getName() { return spell + " on attacker"; }
     };
 
     class BoostTrigger : public BuffTrigger
@@ -352,10 +311,7 @@ namespace ai
         }
     public:
         virtual bool IsActive();
-        virtual string getName()
-        {
-             return "random";
-        }
+        virtual string getName() { return "random"; }
 
     protected:
         int probability;
@@ -365,20 +321,14 @@ namespace ai
     {
     public:
         SeldomTrigger(PlayerbotAI* ai) : RandomTrigger(ai, 9000) {}
-        virtual string getName()
-        {
-             return "seldom";
-        }
+        virtual string getName() { return "seldom"; }
     };
 
     class OftenTrigger : public RandomTrigger
     {
     public:
         OftenTrigger(PlayerbotAI* ai) : RandomTrigger(ai, 50) {}
-        virtual string getName()
-        {
-             return "often";
-        }
+        virtual string getName() { return "often"; }
     };
 
     class AndTrigger : public Trigger
@@ -409,10 +359,7 @@ namespace ai
         SnareTargetTrigger(PlayerbotAI* ai, string aura) : DebuffTrigger(ai, aura) {}
     public:
         virtual bool IsActive();
-        virtual string getName()
-        {
-             return "target is moving";
-        }
+        virtual string getName() { return "target is moving"; }
     };
 
     class LowManaTrigger : public Trigger
@@ -440,19 +387,16 @@ namespace ai
     };
 
     BEGIN_TRIGGER(PanicTrigger, Trigger)
-        virtual string getName()
-        {
-             return "panic";
-        }
+        virtual string getName() { return "panic"; }
     END_TRIGGER()
+
 
     class NoPetTrigger : public Trigger
     {
     public:
         NoPetTrigger(PlayerbotAI* ai) : Trigger(ai, "no pet", 5) {}
 
-        virtual bool IsActive()
-{
+        virtual bool IsActive() {
             return !AI_VALUE(Unit*, "pet target") && !AI_VALUE2(bool, "mounted", "self target");
         }
     };
@@ -465,10 +409,7 @@ namespace ai
         }
     public:
         virtual bool IsActive();
-        virtual string getName()
-        {
-             return "item count";
-        }
+        virtual string getName() { return "item count"; }
 
     protected:
         string item;
@@ -479,10 +420,7 @@ namespace ai
     public:
         HasAuraTrigger(PlayerbotAI* ai, string spell) : Trigger(ai, spell, 5) {}
 
-        virtual string GetTargetName()
-        {
-             return "self target";
-        }
+        virtual string GetTargetName() { return "self target"; }
         virtual bool IsActive();
 
     };
@@ -493,10 +431,7 @@ namespace ai
         TimerTrigger(PlayerbotAI* ai, int checkInterval = 5) : Trigger(ai, "timer", checkInterval) {}
 
     public:
-        virtual bool IsActive()
-        {
-             return true;
-        }
+        virtual bool IsActive() { return true; }
     };
 
     class TankAoeTrigger : public NoAttackersTrigger
@@ -544,6 +479,7 @@ namespace ai
     public:
         virtual bool IsActive();
     };
+
 
     class NoPossibleTargetsTrigger : public Trigger
     {
@@ -614,10 +550,7 @@ namespace ai
         InterruptEnemyHealerTrigger(PlayerbotAI* ai, string spell) : SpellTrigger(ai, spell) {}
     public:
         virtual Value<Unit*>* GetTargetValue();
-        virtual string getName()
-        {
-             return spell + " on enemy healer";
-        }
+        virtual string getName() { return spell + " on enemy healer"; }
     };
 
 }

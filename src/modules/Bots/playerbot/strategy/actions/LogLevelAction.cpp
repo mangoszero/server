@@ -2,6 +2,7 @@
 #include "../../playerbot.h"
 #include "LogLevelAction.h"
 
+
 using namespace ai;
 
 bool LogLevelAction::Execute(Event event)

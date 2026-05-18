@@ -37,8 +37,7 @@ namespace ai
     {
     public:
         HunterAspectOfThePackTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the pack") {}
-        virtual bool IsActive()
-        {
+        virtual bool IsActive() {
             return BuffTrigger::IsActive() && !ai->HasAura("aspect of the cheetah", GetTarget());
         };
     };
@@ -117,4 +116,5 @@ namespace ai
             return true;
         }
     };
+
 }

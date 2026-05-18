@@ -2,6 +2,7 @@
 #include "../../playerbot.h"
 #include "TellCastFailedAction.h"
 
+
 using namespace ai;
 
 bool TellCastFailedAction::Execute(Event event)
@@ -51,6 +52,7 @@ bool TellCastFailedAction::Execute(Event event)
     }
     return true;
 }
+
 
 bool TellSpellAction::Execute(Event event)
 {

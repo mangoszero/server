@@ -62,6 +62,7 @@ bool CastAoeHealSpellAction::isUseful()
     return CastSpellAction::isUseful() && AI_VALUE2(uint8, "aoe heal", "medium") > 0;
 }
 
+
 Value<Unit*>* CurePartyMemberAction::GetTargetValue()
 {
     return context->GetValue<Unit*>("party member to dispel", dispelType);

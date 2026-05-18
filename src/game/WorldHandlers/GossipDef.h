@@ -294,14 +294,8 @@ class PlayerMenu
         explicit PlayerMenu(WorldSession* Session);
         ~PlayerMenu();
 
-        GossipMenu& GetGossipMenu()
-        {
-             return mGossipMenu;
-        }
-        QuestMenu& GetQuestMenu()
-        {
-             return mQuestMenu;
-        }
+        GossipMenu& GetGossipMenu() { return mGossipMenu; }
+        QuestMenu& GetQuestMenu() { return mQuestMenu; }
 
         WorldSession* GetMenuSession() const { return mGossipMenu.GetMenuSession(); }
 

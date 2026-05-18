@@ -19,6 +19,7 @@ list<Item*> InventoryItemValueBase::Find(string qualifier)
     return result;
 }
 
+
 uint8 ItemCountValue::Calculate()
 {
     uint8 count = 0;

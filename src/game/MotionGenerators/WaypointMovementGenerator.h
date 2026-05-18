@@ -104,10 +104,7 @@ class WaypointMovementGenerator<Creature>
         /**
          * @brief Destructor
          */
-        ~WaypointMovementGenerator()
-        {
-             i_path = NULL;
-        }
+        ~WaypointMovementGenerator() { i_path = NULL; }
 
         /**
          * @brief Initialize the movement generator
@@ -315,10 +312,7 @@ class FlightPathMovementGenerator
          * @brief Get the flight path
          * @return Reference to path nodes
          */
-        TaxiPathNodeList const& GetPath()
-        {
-             return *i_path;
-        }
+        TaxiPathNodeList const& GetPath() { return *i_path; }
 
         /**
          * @brief Get node index at map end
@@ -340,10 +334,7 @@ class FlightPathMovementGenerator
         /**
          * @brief Skip current node
          */
-        void SkipCurrentNode()
-        {
-             ++i_currentNode;
-        }
+        void SkipCurrentNode() { ++i_currentNode; }
 
         /**
          * @brief Get reset position for evade

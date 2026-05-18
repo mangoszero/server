@@ -64,7 +64,7 @@ WorldUpdateTime sWorldUpdateTime;
  * parameter (default 100 entries for historical tracking).
  */
 UpdateTime::UpdateTime() : _averageUpdateTime(0), _totalUpdateTime(0), _updateTimeTableIndex(0), _maxUpdateTime(0),
-    _maxUpdateTimeOfLastTable(0), _maxUpdateTimeOfCurrentTable(0), _updateTimeDataTable() {}
+    _maxUpdateTimeOfLastTable(0), _maxUpdateTimeOfCurrentTable(0), _updateTimeDataTable() { }
 
 /**
  * @brief Get simple average update time

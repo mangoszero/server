@@ -18,6 +18,7 @@ void QuestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("accept quest share", relevance), NULL)));
 }
 
+
 void DefaultQuestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     QuestStrategy::InitTriggers(triggers);
@@ -40,6 +41,8 @@ void DefaultQuestStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 DefaultQuestStrategy::DefaultQuestStrategy(PlayerbotAI* ai) : QuestStrategy(ai)
 {
 }
+
+
 
 void AcceptAllQuestsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {

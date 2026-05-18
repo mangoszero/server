@@ -5,6 +5,7 @@
 
 using namespace ai;
 
+
 FrostMageStrategy::FrostMageStrategy(PlayerbotAI* ai) : GenericMageStrategy(ai)
 {
 }

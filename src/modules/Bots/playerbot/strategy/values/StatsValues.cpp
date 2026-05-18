@@ -24,6 +24,7 @@ bool IsDeadValue::Calculate()
     return target->GetDeathState() != ALIVE;
 }
 
+
 uint8 RageValue::Calculate()
 {
     Unit* target = GetTarget();
@@ -64,6 +65,7 @@ bool HasManaValue::Calculate()
     return target->GetPower(POWER_MANA);
 }
 
+
 uint8 ComboPointsValue::Calculate()
 {
     Unit *target = GetTarget();
@@ -85,6 +87,7 @@ bool IsMountedValue::Calculate()
 
     return target->IsMounted();
 }
+
 
 bool IsInCombatValue::Calculate()
 {

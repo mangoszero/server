@@ -131,10 +131,7 @@ class PathFinder
          * @brief Get the path points.
          * @return The path points.
          */
-        PointsArray& getPath()
-        {
-             return m_pathPoints;
-        }
+        PointsArray& getPath() { return m_pathPoints; }
 
         /**
          * @brief Get the type of the path.

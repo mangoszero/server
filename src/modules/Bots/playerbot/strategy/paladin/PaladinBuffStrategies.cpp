@@ -58,6 +58,7 @@ void PaladinFireResistanceStrategy::InitTriggers(std::list<TriggerNode*> &trigge
         NextAction::array(0, new NextAction("fire resistance aura", 90.0f), NULL)));
 }
 
+
 void PaladinBuffArmorStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

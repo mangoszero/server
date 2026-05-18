@@ -273,6 +273,8 @@ private:
     map<string, uint8> classNames;
 };
 
+
+
 CompositeChatFilter::CompositeChatFilter(PlayerbotAI* ai) : ChatFilter(ai)
 {
     filters.push_back(new StrategyChatFilter(ai));

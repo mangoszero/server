@@ -1014,6 +1014,7 @@ bool ChatHandler::HandleLookupSkillCommand(char* args)
     return true;
 }
 
+
 /**
  * @brief Handler for HandleLookupSpellCommand command.
  *

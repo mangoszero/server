@@ -13,10 +13,7 @@ namespace ai
     public:
         MeleeAction(PlayerbotAI* ai) : AttackAction(ai, "melee") {}
 
-        virtual string GetTargetName()
-        {
-             return "current target";
-        }
+        virtual string GetTargetName() { return "current target"; }
     };
 
 }

@@ -2,6 +2,7 @@
 #include "../../playerbot.h"
 #include "TellReputationAction.h"
 
+
 using namespace ai;
 
 bool TellReputationAction::Execute(Event event)

@@ -668,6 +668,7 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
         targetPlayer = (Player*)selectedTtarget;
     }
 
+
     const char* targetName = targetPlayer->GetName();
     Player * currentGM = m_session->GetPlayer();
 

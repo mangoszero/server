@@ -4,6 +4,7 @@
 
 using namespace ai;
 
+
 void EmoteStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

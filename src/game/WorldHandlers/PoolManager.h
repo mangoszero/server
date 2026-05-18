@@ -87,10 +87,7 @@ class SpawnedPoolData
         void RemoveSpawn(uint32 db_guid_or_pool_id, uint32 pool_id);
 
         bool IsInitialized() const { return m_isInitialized; }
-        void SetInitialized()
-        {
-             m_isInitialized = true;
-        }
+        void SetInitialized() { m_isInitialized = true; }
 
         SpawnedPoolObjects const& GetSpawnedCreatures() const { return mSpawnedCreatures; }
         SpawnedPoolObjects const& GetSpawnedGameobjects() const { return mSpawnedGameobjects; }
@@ -108,7 +105,7 @@ template <class T>
 class PoolGroup
 {
     public:
-        explicit PoolGroup() : poolId(0) {}
+        explicit PoolGroup() : poolId(0) { }
         void SetPoolId(uint32 pool_id) { poolId = pool_id; }
         ~PoolGroup() {};
         bool isEmpty() const { return ExplicitlyChanced.empty() && EqualChanced.empty(); }

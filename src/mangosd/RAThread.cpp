@@ -42,6 +42,7 @@
 #include "Config.h"
 #include "ObjectMgr.h"
 
+
 class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 {
     typedef ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH> Base;

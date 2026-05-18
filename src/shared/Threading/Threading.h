@@ -53,11 +53,7 @@ namespace ACE_Based
             /**
              * @brief Increment reference count
              */
-            void incReference()
-            {
-                 ++m_refs;
-            }
-
+            void incReference() { ++m_refs; }
             /**
              * @brief Decrement reference count, delete if zero
              */

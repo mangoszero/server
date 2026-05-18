@@ -4896,6 +4896,7 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
         ((Player*)m_caster)->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
     }
 
+
     // Improved Sap: a hacky way
     if (m_triggeredByAuraSpell && m_spellInfo->Id == 14093 && unitTarget->GetTypeId() == TYPEID_PLAYER)
     {
@@ -6501,6 +6502,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     }
 
     Map* cMap = m_caster->GetMap();
+
 
     // if gameobject is summoning object, it should be spawned right on caster's position
     if (goinfo->type == GAMEOBJECT_TYPE_SUMMONING_RITUAL)

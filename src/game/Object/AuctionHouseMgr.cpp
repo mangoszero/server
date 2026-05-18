@@ -89,6 +89,8 @@ AuctionHouseObject* AuctionHouseMgr::GetAuctionsMap(AuctionHouseEntry const* hou
     }
 }
 
+
+
 /**
  * @brief Calculates the auction deposit required for an item listing.
  *

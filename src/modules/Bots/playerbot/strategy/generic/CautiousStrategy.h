@@ -6,9 +6,6 @@ namespace ai
     {
     public:
         CautiousStrategy(PlayerbotAI* ai) : Strategy(ai) {}
-        virtual string getName()
-        {
-             return "cautious";
-        }
+        virtual string getName() { return "cautious"; }
     };
 }

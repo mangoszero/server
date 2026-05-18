@@ -1365,6 +1365,7 @@ void ObjectMgr::LoadCreatureSpells()
         return;
     }
 
+
     BarGoLink bar(result->GetRowCount());
 
     do
@@ -2534,6 +2535,7 @@ void ObjectMgr::LoadPetLevelInfo()
         //                                                 0               1      2   3     4    5    6    7     8    9
         QueryResult* result  = WorldDatabase.Query("SELECT `creature_entry`, `level`, `hp`, `mana`, `str`, `agi`, `sta`, `inte`, `spi`, `armor` FROM `pet_levelstats`");
 
+
         if (!result)
         {
             BarGoLink bar(1);
@@ -3513,6 +3515,7 @@ HonorStanding* ObjectMgr::GetHonorStandingByGUID(uint32 guid, uint32 side)
 
     return 0;
 }
+
 
 /**
  * @brief Finds a weekly honor standing entry by ranking position and faction side.
@@ -9533,6 +9536,7 @@ void ObjectMgr::LoadVendors(char const* tableName, bool isTemplates)
     sLog.outString(">> Loaded %u vendor %sitems", count, isTemplates ? "template " : "");
     sLog.outString();
 }
+
 
 /**
  * @brief Loads vendor templates and validates creature references.

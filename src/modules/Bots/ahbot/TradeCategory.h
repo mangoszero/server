@@ -20,10 +20,7 @@ namespace ahbot
                     proto->SubClass == ITEM_SUBCLASS_EXPLOSIVES);
         }
 
-        virtual string GetName()
-        {
-             return "Engineering";
-        }
+        virtual string GetName() { return "Engineering"; }
     };
 
     class OtherTrade : public Trade
@@ -40,10 +37,6 @@ namespace ahbot
                 proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
         }
 
-        virtual string GetName()
-        {
-             return "OtherTrade";
-        }
-
+        virtual string GetName() { return "OtherTrade"; }
     };
 };

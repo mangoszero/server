@@ -39,6 +39,7 @@
 
 #include <G3D/Quat.h>
 
+
 /**
  * @brief Loads local transports configured for the current map.
  */
@@ -154,6 +155,7 @@ void MapManager::LoadTransports()
     sLog.outString(">> Loaded %u global transports", count);
 }
 
+
 //*****************************//
 // Base Transport
 //*****************************//
@@ -221,6 +223,7 @@ bool Transport::RemovePassenger(Unit* passenger)
     }
     return true;
 }
+
 
 //*****************************//
 // LocalTransport

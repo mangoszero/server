@@ -75,6 +75,7 @@ namespace MMAP
         MMapTileSet mmapLoadedTiles;        // maps [map grid coords] to [dtTile]
     };
 
+
     typedef UNORDERED_MAP<uint32, MMapData*> MMapDataSet;
 
     // singelton class

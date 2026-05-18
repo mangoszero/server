@@ -1176,4 +1176,5 @@ inline const char* LookupOpcodeName(uint16 id)
  * \todo Is this correct? Is it really about a recent hit?
  */
 
+
 /// @}

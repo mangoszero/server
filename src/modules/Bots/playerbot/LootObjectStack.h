@@ -29,10 +29,7 @@ namespace ai
          *
          * @return true if the loot object is empty, false otherwise.
          */
-        bool IsEmpty()
-        {
-             return !guid;
-        }
+        bool IsEmpty() { return !guid; }
 
         /**
          * @brief Checks if looting is possible.

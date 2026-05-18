@@ -383,6 +383,7 @@ void PlayerbotAIConfig::SetValue(string &name, string value)
     }
 }
 
+
 void PlayerbotAIConfig::CreateRandomBots()
 {
     string randomBotAccountPrefix = config.GetStringDefault("AiPlayerbot.RandomBotAccountPrefix", "rndbot");

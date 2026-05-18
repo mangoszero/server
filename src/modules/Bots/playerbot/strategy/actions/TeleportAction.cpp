@@ -44,6 +44,7 @@ bool TeleportAction::Execute(Event event)
         return true;
     }
 
+
     LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
     if (movement.lastAreaTrigger)
     {

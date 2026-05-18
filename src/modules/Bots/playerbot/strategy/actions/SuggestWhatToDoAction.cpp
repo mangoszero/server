@@ -191,6 +191,7 @@ private:
     uint32 quality;
 };
 
+
 void SuggestWhatToDoAction::trade()
 {
     if (!sRandomPlayerbotMgr.IsRandomBot(bot))

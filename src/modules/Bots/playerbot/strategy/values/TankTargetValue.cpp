@@ -39,6 +39,7 @@ protected:
     int maxDpsCount;
 };
 
+
 Unit* TankTargetValue::Calculate()
 {
     FindTargetForTankStrategy strategy(ai);

@@ -100,6 +100,7 @@ static bool MapSessionFilterHelper(WorldSession* session, OpcodeHandler const& o
     return plr->IsInWorld();
 }
 
+
 /**
  * @brief Process packet in Map context
  * @param packet Packet to process

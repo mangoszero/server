@@ -76,10 +76,7 @@ class DynamicObject : public WorldObject
 
         bool IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const override;
 
-        GridReference<DynamicObject>& GetGridRef()
-        {
-             return m_gridRef;
-        }
+        GridReference<DynamicObject>& GetGridRef() { return m_gridRef; }
 
     protected:
         uint32 m_spellId;

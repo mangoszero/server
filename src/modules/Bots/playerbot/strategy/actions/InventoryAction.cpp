@@ -6,6 +6,7 @@
 
 using namespace ai;
 
+
 class FindPotionVisitor : public FindUsableItemVisitor
 {
 public:
@@ -89,6 +90,7 @@ public:
         return false;
     }
 };
+
 
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
 {
@@ -176,6 +178,7 @@ bool compare_items_by_level(const Item* item1, const Item* item2)
 {
     return compare_items(item1->GetProto(), item2->GetProto());
 }
+
 
 Item* InventoryAction::FindPlayerItem(Player *bot, FindItemVisitor *visitor)
 {

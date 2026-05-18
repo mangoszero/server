@@ -220,18 +220,11 @@ class BattleGroundWS : public BattleGround
         /**
          * @brief Clears the GUID of the alliance flag carrier.
          */
-        void ClearAllianceFlagCarrier()
-        {
-             m_flagCarrierAlliance.Clear();
-        }
-
+        void ClearAllianceFlagCarrier() { m_flagCarrierAlliance.Clear(); }
         /**
          * @brief Clears the GUID of the horde flag carrier.
          */
-        void ClearHordeFlagCarrier()
-        {
-             m_flagCarrierHorde.Clear();
-        }
+        void ClearHordeFlagCarrier() { m_flagCarrierHorde.Clear(); }
 
         /**
          * @brief Checks if the alliance flag is picked up.
