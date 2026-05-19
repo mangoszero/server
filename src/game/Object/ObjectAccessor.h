@@ -152,13 +152,19 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             ///
             /// @return Reference to the unordered_map
             /// @warning Caller must acquire lock separately before iterating
-            inline MapType& GetContainer() { return m_objectMap; }
+            inline MapType& GetContainer()
+            {
+                 return m_objectMap;
+            }
 
             /// @brief Get reference to the synchronization lock.
             ///
             /// @return Reference to the ACE RW thread mutex
             /// @note Use ACE guard macros when accessing this
-            inline LockType& GetLock() { return i_lock; }
+            inline LockType& GetLock()
+            {
+                 return i_lock;
+            }
 
             LockType i_lock;
             MapType  m_objectMap;

@@ -172,7 +172,6 @@ struct SpellModifier
      */
     SpellModifier() : op(SpellModOp()), type(SPELLMOD_FLAT), charges(0), value(0), spellId(0), lastAffected(NULL) {}
 
-
     /**
      * @brief Constructor with uint64 mask
      * @param _op Spell modifier operation
@@ -344,7 +343,7 @@ struct PlayerClassLevelInfo
 // Structure to hold player class info
 struct PlayerClassInfo
 {
-    PlayerClassInfo() : levelInfo(NULL) { }
+    PlayerClassInfo() : levelInfo(NULL) {}
 
     PlayerClassLevelInfo* levelInfo; // Level info array [level-1] 0..MaxPlayerLevel-1
 };
@@ -1006,7 +1005,7 @@ struct BGData
 struct TradeStatusInfo
 {
     TradeStatusInfo() : Status(TRADE_STATUS_BUSY), TraderGuid(), Result(EQUIP_ERR_OK),
-        IsTargetResult(false), ItemLimitCategoryId(0), Slot(0) { }
+        IsTargetResult(false), ItemLimitCategoryId(0), Slot(0) {}
 
     TradeStatus Status; // Status of the trade
     ObjectGuid TraderGuid; // GUID of the trader
@@ -1326,7 +1325,6 @@ class Player : public Unit
             return m_Played_time[PLAYED_TIME_LEVEL];
         }
 
-
         // Set the death state of the player
         void SetDeathState(DeathState s) override; // overwrite Unit::SetDeathState
 
@@ -1375,7 +1373,6 @@ class Player : public Unit
         // Remove the player's mini pet
         void RemoveMiniPet();
         Pet* GetMiniPet() const override;
-
 
         // Set the player's mini pet (used only in Pet::Unsummon/Spell::DoSummon)
         void _SetMiniPet(Pet* pet)
@@ -1441,7 +1438,10 @@ class Player : public Unit
         static uint32 GetAttackBySlot(uint8 slot);
 
         // Get the item update queue
-        std::vector<Item*>& GetItemUpdateQueue() { return m_itemUpdateQueue; }
+        std::vector<Item*>& GetItemUpdateQueue()
+        {
+             return m_itemUpdateQueue;
+        }
 
         // Check if the position is an inventory position
         static bool IsInventoryPos(uint16 pos) { return IsInventoryPos(pos >> 8, pos & 255); }
@@ -1765,7 +1765,6 @@ class Player : public Unit
         void SendPreparedGossip(WorldObject* pSource);
         void OnGossipSelect(WorldObject* pSource, uint32 gossipListId);
 
-
         // Get the gossip text ID for a menu
         uint32 GetGossipTextId(uint32 menuId, WorldObject* pSource);
 
@@ -1891,7 +1890,6 @@ class Player : public Unit
         // This is used to change the quest's rewarded state
         void SetQuestRewarded(uint32 quest_id, bool rewarded);
 
-
         // Find the quest slot for a quest
         uint16 FindQuestSlot(uint32 quest_id) const;
 
@@ -2005,10 +2003,16 @@ class Player : public Unit
         void SetDividerGuid(ObjectGuid guid) { m_dividerGuid = guid; }
 
         // Clear the divider GUID
-        void ClearDividerGuid() { m_dividerGuid.Clear(); }
+        void ClearDividerGuid()
+        {
+             m_dividerGuid.Clear();
+        }
 
         // Get the in-game time
-        uint32 GetInGameTime() { return m_ingametime; }
+        uint32 GetInGameTime()
+        {
+             return m_ingametime;
+        }
 
         // Set the in-game time
         void SetInGameTime(uint32 time) { m_ingametime = time; }
@@ -2141,7 +2145,6 @@ class Player : public Unit
         // Clear the player's combo points
         void ClearComboPoints();
         void SetComboPoints();
-
 
         // Send a mail result message
         void SendMailResult(uint32 mailId, MailResponseType mailAction, MailResponseResult mailError, uint32 equipError = 0, uint32 item_guid = 0, uint32 item_count = 0);
@@ -2420,7 +2423,10 @@ class Player : public Unit
         }
 
         // Clear resurrect request data
-        void clearResurrectRequestData() { setResurrectRequestData(ObjectGuid(), 0, 0.0f, 0.0f, 0.0f, 0, 0); }
+        void clearResurrectRequestData()
+        {
+             setResurrectRequestData(ObjectGuid(), 0, 0.0f, 0.0f, 0.0f, 0, 0);
+        }
 
         // Check if resurrect is requested by a specific GUID
         bool isRessurectRequestedBy(ObjectGuid guid) const { return m_resurrectGuid == guid; }
@@ -2538,7 +2544,10 @@ class Player : public Unit
         // Uninvite the player from the group
         void UninviteFromGroup();
         static void RemoveFromGroup(Group* group, ObjectGuid guid, uint8 removeMethod = GROUP_LEAVE);
-        void RemoveFromGroup() { RemoveFromGroup(GetGroup(), GetObjectGuid()); }
+        void RemoveFromGroup()
+        {
+             RemoveFromGroup(GetGroup(), GetObjectGuid());
+        }
 
         // Send update to out-of-range group members
         void SendUpdateToOutOfRangeGroupMembers();
@@ -2585,7 +2594,6 @@ class Player : public Unit
             return m_GuildIdInvited;
         }
         static void RemovePetitionsAndSigns(ObjectGuid guid);
-
 
         // Update the player's skill
         bool UpdateSkill(uint32 skill_id, uint32 step);
@@ -2641,7 +2649,6 @@ class Player : public Unit
         // Update the player's spell damage and healing bonus
         void UpdateSpellDamageAndHealingBonus();
 
-
         // Calculate the minimum and maximum damage
         void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, float& min_damage, float& max_damage);
 
@@ -2676,7 +2683,6 @@ class Player : public Unit
 
         // Update dodge percentage
         void UpdateDodgePercentage();
-
 
         // Update all spell critical chances
         void UpdateAllSpellCritChances();
@@ -2810,7 +2816,6 @@ class Player : public Unit
         uint32 DurabilityRepairAll(bool cost, float discountMod);
         uint32 DurabilityRepair(uint16 pos, bool cost, float discountMod);
 
-
         // Update mirror timers
         void UpdateMirrorTimers();
 
@@ -2895,7 +2900,10 @@ class Player : public Unit
         void learnSkillRewardedSpells(uint32 id, uint32 value);
 
         // Get the teleport destination
-        WorldLocation& GetTeleportDest() { return m_teleport_dest; }
+        WorldLocation& GetTeleportDest()
+        {
+             return m_teleport_dest;
+        }
 
         // Check if the player is being teleported
         bool IsBeingTeleported() const { return mSemaphoreTeleport_Near || mSemaphoreTeleport_Far; }
@@ -2952,7 +2960,10 @@ class Player : public Unit
         bool isHonorOrXPTarget(Unit* pVictim) const;
 
         // Get the player's reputation manager
-        ReputationMgr& GetReputationMgr() { return m_reputationMgr; }
+        ReputationMgr& GetReputationMgr()
+        {
+             return m_reputationMgr;
+        }
 
         // Get the player's reputation manager (const version)
         ReputationMgr const& GetReputationMgr() const { return m_reputationMgr; }
@@ -3013,7 +3024,6 @@ class Player : public Unit
         /*********************************************************/
         /***                  PVP SYSTEM                       ***/
         /*********************************************************/
-
 
         // End of PvP System
 
@@ -3329,7 +3339,6 @@ class Player : public Unit
         // Check if the player can join a battleground
         bool CanJoinToBattleground() const;
 
-
         // Check if the player has access to a battleground by level
         bool GetBGAccessByLevel(BattleGroundTypeId bgTypeId) const;
 
@@ -3466,7 +3475,10 @@ class Player : public Unit
         void SetHomebindToLocation(WorldLocation const& loc, uint32 area_id);
 
         // Relocate the player to the homebind location
-        void RelocateToHomebind() { SetLocationMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ); }
+        void RelocateToHomebind()
+        {
+             SetLocationMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ);
+        }
 
         // Teleport the player to the homebind location
         bool TeleportToHomebind(uint32 options = 0) { return TeleportTo(m_homebindMapId, m_homebindX, m_homebindY, m_homebindZ, GetOrientation(), options); }
@@ -3490,12 +3502,14 @@ class Player : public Unit
         void UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target);
         void UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* target, UpdateData& data, std::set<WorldObject*>& visibleNow);
 
-
         // Handle detection of stealthed units
         void HandleStealthedUnitsDetection();
 
         // Get the player's camera
-        Camera& GetCamera() { return m_camera; }
+        Camera& GetCamera()
+        {
+             return m_camera;
+        }
 
         // Forced speed changes
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
@@ -3537,7 +3551,11 @@ class Player : public Unit
         // permanent binds and solo binds
         BoundInstancesMap m_boundInstances;
         InstancePlayerBind* GetBoundInstance(uint32 mapid);
-        BoundInstancesMap& GetBoundInstances() { return m_boundInstances; }
+        BoundInstancesMap& GetBoundInstances()
+        {
+             return m_boundInstances;
+        }
+
         void UnbindInstance(uint32 mapid, bool unload = false);
         void UnbindInstance(BoundInstancesMap::iterator& itr, bool unload = false);
         InstancePlayerBind* BindToInstance(DungeonPersistentState* save, bool permanent, bool load = false);
@@ -3563,19 +3581,28 @@ class Player : public Unit
         /*********************************************************/
 
         // Get the group invite
-        Group* GetGroupInvite() { return m_groupInvite; }
+        Group* GetGroupInvite()
+        {
+             return m_groupInvite;
+        }
 
         // Set the group invite
         void SetGroupInvite(Group* group) { m_groupInvite = group; }
 
         // Get the group
-        Group* GetGroup() { return m_group.getTarget(); }
+        Group* GetGroup()
+        {
+             return m_group.getTarget();
+        }
 
         // Get the group (const version)
         const Group* GetGroup() const { return (const Group*)m_group.getTarget(); }
 
         // Get the group reference
-        GroupReference& GetGroupRef() { return m_group; }
+        GroupReference& GetGroupRef()
+        {
+             return m_group;
+        }
 
         // Set the group
         void SetGroup(Group* group, int8 subgroup = -1);
@@ -3608,10 +3635,16 @@ class Player : public Unit
         void RemoveFromBattleGroundRaid();
 
         // Get the original group
-        Group* GetOriginalGroup() { return m_originalGroup.getTarget(); }
+        Group* GetOriginalGroup()
+        {
+             return m_originalGroup.getTarget();
+        }
 
         // Get the original group reference
-        GroupReference& GetOriginalGroupRef() { return m_originalGroup; }
+        GroupReference& GetOriginalGroupRef()
+        {
+             return m_originalGroup;
+        }
 
         // Get the original subgroup
         uint8 GetOriginalSubGroup() const { return m_originalGroup.getSubGroup(); }
@@ -3620,10 +3653,16 @@ class Player : public Unit
         void SetOriginalGroup(Group* group, int8 subgroup = -1);
 
         // Get the grid reference
-        GridReference<Player>& GetGridRef() { return m_gridRef; }
+        GridReference<Player>& GetGridRef()
+        {
+             return m_gridRef;
+        }
 
         // Get the map reference
-        MapReference& GetMapRef() { return m_mapRef; }
+        MapReference& GetMapRef()
+        {
+             return m_mapRef;
+        }
 
         // Check if the player is tapped by the player or their group
         bool IsTappedByMeOrMyGroup(Creature* creature);
@@ -3638,16 +3677,26 @@ class Player : public Unit
         void SetPlayerbotAI(PlayerbotAI* ai) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotAI = ai; }
 
         // Get the player bot AI
-        PlayerbotAI* GetPlayerbotAI() { return m_playerbotAI; }
+        PlayerbotAI* GetPlayerbotAI()
+        {
+             return m_playerbotAI;
+        }
 
         // Set the player bot manager
         void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr = mgr; }
 
         // Get the player bot manager
-        PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
+        PlayerbotMgr* GetPlayerbotMgr()
+        {
+             return m_playerbotMgr;
+        }
 
         // Set the bot death timer
-        void SetBotDeathTimer() { m_deathTimer = 0; }
+        void SetBotDeathTimer()
+        {
+             m_deathTimer = 0;
+        }
+
 #endif
         void SaveMail();
     protected:
@@ -3849,7 +3898,6 @@ class Player : public Unit
         uint32 m_drunkTimer;
         uint16 m_drunk;
         uint32 m_weaponChangeTimer;
-
 
         uint32 m_zoneUpdateId; // Zone update ID
         uint32 m_zoneUpdateTimer; // Zone update timer

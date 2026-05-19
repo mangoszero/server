@@ -39,7 +39,7 @@ class UpdateMask
             CLIENT_UPDATE_MASK_BITS = sizeof(ClientUpdateMaskType) * 8,
         };
 
-        UpdateMask() : _fieldCount(0), _blockCount(0), _bits(NULL) { }
+        UpdateMask() : _fieldCount(0), _blockCount(0), _bits(NULL) {}
 
         UpdateMask(UpdateMask const& right)
         {
@@ -47,7 +47,10 @@ class UpdateMask
             memcpy(_bits, right._bits, sizeof(uint8) * _blockCount * 32);
         }
 
-        ~UpdateMask() { delete[] _bits; }
+        ~UpdateMask()
+        {
+             delete[] _bits;
+        }
 
         void SetBit(uint32 index) { _bits[index] = 1; }
         void UnsetBit(uint32 index) { _bits[index] = 0; }

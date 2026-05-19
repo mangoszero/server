@@ -256,7 +256,6 @@ class ThreatManagerEvent : public ThreatRefStatusChangeEvent
             iThreatContainer = nullptr;
         }
 
-
         /**
          * @brief Sets the threat container associated with the event.
          *

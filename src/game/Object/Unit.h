@@ -709,7 +709,11 @@ class MovementInfo
         }
         ObjectGuid const& GetTransportGuid() const { return t_guid; }
         Position const* GetTransportPos() const { return &t_pos; }
-        uint32 GetTime() { return time; }
+        uint32 GetTime()
+        {
+             return time;
+        }
+
         uint32 GetTransportTime() const { return t_time; }
         uint32 GetFallTime() const { return fallTime; }
         void ChangeOrientation(float o) { pos.o = o; }
@@ -730,21 +734,17 @@ class MovementInfo
         void SetFallTime(uint32 t) { fallTime = t; }
     private:
         // common
-        uint32   moveFlags;                                 // see enum MovementFlags
+        uint32   moveFlags;             // see enum MovementFlags
         uint32   time;
         Position pos;
-        // transport
-        ObjectGuid t_guid;
+        ObjectGuid t_guid;              // transport
         Position t_pos;
         uint32   t_time;
-        // swimming and unknown
-        float    s_pitch;
-        // last fall time
-        uint32   fallTime;
-        // jumping
-        JumpInfo jump;
-        // spline
-        float    u_unk1;
+        float    s_pitch;               // swimming and unknown
+
+        uint32   fallTime;              // last fall time
+        JumpInfo jump;                  // jumping
+        float    u_unk1;                // spline
 };
 
 inline ByteBuffer& operator<< (ByteBuffer& buf, MovementInfo const& mi)
@@ -1071,10 +1071,17 @@ struct CharmInfo
         void SetPetNumber(uint32 petnumber, bool statwindow);
 
         void SetCommandState(CommandStates st) { m_CommandState = st; }
-        CommandStates GetCommandState() { return m_CommandState; }
+        CommandStates GetCommandState()
+        {
+             return m_CommandState;
+        }
+
         bool HasCommandState(CommandStates state) { return (m_CommandState == state); }
         void SetReactState(ReactStates st) { m_reactState = st; }
-        ReactStates GetReactState() { return m_reactState; }
+        ReactStates GetReactState()
+        {
+             return m_reactState;
+        }
         bool HasReactState(ReactStates state) { return (m_reactState == state); }
 
         void InitPossessCreateSpells();
@@ -1098,7 +1105,10 @@ struct CharmInfo
 
         CharmSpellEntry* GetCharmSpell(uint8 index) { return &(m_charmspells[index]); }
 
-        GlobalCooldownMgr& GetGlobalCooldownMgr() { return m_GlobalCooldownMgr; }
+        GlobalCooldownMgr& GetGlobalCooldownMgr()
+        {
+             return m_GlobalCooldownMgr;
+        }
 
     private:
         Unit* m_unit;
@@ -1248,7 +1258,10 @@ class Unit : public WorldObject
         /**
          * Clears all the current diminishing returns for this Unit.
          */
-        void ClearDiminishings() { m_Diminishing.clear(); }
+        void ClearDiminishings()
+        {
+             m_Diminishing.clear();
+        }
 
         void Update(uint32 update_diff, uint32 time) override;
 
@@ -2468,7 +2481,6 @@ class Unit : public WorldObject
          */
         bool IsNearWaypoint(float currentPositionX, float currentPositionY, float currentPositionZ, float destinationPositionX, float destinationPositionY, float destinationPositionZ, float distanceX, float distanceY, float distanceZ);
 
-
         /**
          * Is this unit in combat?
          * @return true if the Unit has the flag \ref UNIT_FLAG_IN_COMBAT (is in combat), false otherwise
@@ -2654,7 +2666,10 @@ class Unit : public WorldObject
          * \ref UnitFlags::UNIT_FLAG_PASSIVE in \ref EUnitFields::UNIT_FIELD_FLAGS
          * @return true if the target is passive to hostile actions, false otherwise
          */
-        bool isPassiveToHostile() { return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE); }
+        bool isPassiveToHostile()
+        {
+             return HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PASSIVE);
+        }
 
         /**
          * Is this \ref Unit in water?
@@ -3229,7 +3244,11 @@ class Unit : public WorldObject
          * There's only \ref CharmInfo available if this \ref Unit is in fact charmed by someone
          * @return The \ref CharmInfo for this \ref Unit if any, NULL otherwise
          */
-        CharmInfo* GetCharmInfo() { return m_charmInfo; }
+        CharmInfo* GetCharmInfo()
+        {
+             return m_charmInfo;
+        }
+
         /**
          * Init the \ref CharmInfo struct with data about the \ref Unit that will be charmed
          * @param charm the \ref Unit that is to be charmed
@@ -3312,7 +3331,6 @@ class Unit : public WorldObject
          * @param aura the \ref Aura to add
          */
         void AddAuraToModList(Aura* aura);
-
 
         /**
          * Removes an \ref Aura and sets the reason for removal inside the \ref Aura.
@@ -3492,7 +3510,7 @@ class Unit : public WorldObject
         float GetCreateStat(Stats stat) const { return m_createStats[stat]; }
 
         void SetCurrentCastedSpell(Spell* pSpell);
-        virtual void ProhibitSpellSchool(SpellSchoolMask /*idSchoolMask*/, uint32 /*unTimeMs*/) { }
+        virtual void ProhibitSpellSchool(SpellSchoolMask /*idSchoolMask*/, uint32 /*unTimeMs*/) {}
         void InterruptSpell(CurrentSpellTypes spellType, bool withDelayed = true);
         void FinishSpell(CurrentSpellTypes spellType, bool ok = true);
 
@@ -3512,7 +3530,13 @@ class Unit : public WorldObject
         Spell* FindCurrentSpellBySpellId(uint32 spell_id) const;
 
         bool CheckAndIncreaseCastCounter();
-        void DecreaseCastCounter() { if (m_castCounter) { --m_castCounter; } }
+        void DecreaseCastCounter()
+        {
+             if (m_castCounter)
+             {
+                 --m_castCounter;
+             }
+        }
 
         ObjectGuid m_ObjectSlotGuid[4];
         uint32 m_detectInvisibilityMask;
@@ -3571,7 +3595,6 @@ class Unit : public WorldObject
         SpellSchools GetWeaponDamageSchool(WeaponAttackType attType, uint8 index = 0) const { return m_weaponDamageInfo.weapon[attType].damage[index].school; }
         void SetWeaponDamageSchool(WeaponAttackType attType, SpellSchools school, uint8 index = 0) { m_weaponDamageInfo.weapon[attType].damage[index].school = school; }
 
-
         // Visibility system
         UnitVisibility GetVisibility() const { return m_Visibility; }
         void SetVisibility(UnitVisibility x);
@@ -3602,11 +3625,18 @@ class Unit : public WorldObject
         void TauntFadeOut(Unit* taunter);
         void FixateTarget(Unit* pVictim);
         ObjectGuid GetFixateTargetGuid() const { return m_fixateTargetGuid; }
-        ThreatManager& GetThreatManager() { return m_ThreatManager; }
+        ThreatManager& GetThreatManager()
+        {
+             return m_ThreatManager;
+        }
+
         ThreatManager const& GetThreatManager() const { return m_ThreatManager; }
         void AddHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
         void RemoveHatedBy(HostileReference* /*pHostileReference*/) { /* nothing to do yet */ }
-        HostileRefManager& GetHostileRefManager() { return m_HostileRefManager; }
+        HostileRefManager& GetHostileRefManager()
+        {
+             return m_HostileRefManager;
+        }
 
         Aura* GetAura(uint32 spellId, SpellEffectIndex effindex);
         Aura* GetAura(AuraType type, SpellFamily family, uint64 familyFlag, ObjectGuid casterGuid = ObjectGuid());
@@ -3753,7 +3783,10 @@ class Unit : public WorldObject
         void AddFollower(FollowerReference* pRef) { m_FollowingRefManager.insertFirst(pRef); }
         void RemoveFollower(FollowerReference* /*pRef*/) { /* nothing to do yet */ }
 
-        MotionMaster* GetMotionMaster() { return &i_motionMaster; }
+        MotionMaster* GetMotionMaster()
+        {
+             return &i_motionMaster;
+        }
 
         bool IsStopped() const { return !(hasUnitState(UNIT_STAT_MOVING)); }
         void StopMoving(bool forceSendStop = false);
@@ -3789,7 +3822,10 @@ class Unit : public WorldObject
         void SendPetAIReaction();
         ///----------End of Pet responses methods----------
 
-        void PropagateSpeedChange() { GetMotionMaster()->PropagateSpeedChange(); }
+        void PropagateSpeedChange()
+        {
+             GetMotionMaster()->PropagateSpeedChange();
+        }
 
         // reactive attacks
         void ClearAllReactives();
@@ -3814,7 +3850,10 @@ class Unit : public WorldObject
         void _SetAINotifyScheduled(bool on) { m_AINotifyScheduled = on;}       // only for call from RelocationNotifyEvent code
         void OnRelocated();
 
-        bool IsLinkingEventTrigger() { return m_isCreatureLinkingTrigger; }
+        bool IsLinkingEventTrigger()
+        {
+             return m_isCreatureLinkingTrigger;
+        }
 
         virtual bool CanSwim() const = 0;
         virtual bool CanFly() const = 0;
@@ -3988,7 +4027,6 @@ void Unit::CallForAllControlledUnits(Func const& func, uint32 controlledMask)
             func(charm);
         }
 }
-
 
 template<typename Func>
 bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) const

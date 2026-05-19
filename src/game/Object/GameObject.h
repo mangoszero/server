@@ -730,7 +730,10 @@ class GameObject : public WorldObject
 
         void AddToSkillupList(Player* player);
         bool IsInSkillupList(Player* player) const;
-        void ClearSkillupList() { m_SkillupSet.clear(); }
+        void ClearSkillupList()
+        {
+             m_SkillupSet.clear();
+        }
         void ClearAllUsesData()
         {
             ClearSkillupList();
@@ -740,7 +743,10 @@ class GameObject : public WorldObject
         }
 
         void AddUniqueUse(Player* player);
-        void AddUse() { ++m_useTimes; }
+        void AddUse()
+        {
+             ++m_useTimes;
+        }
 
         uint32 GetUseCount() const { return m_useTimes; }
         uint32 GetUniqueUseCount() const { return m_UniqueUsers.size(); }
@@ -790,7 +796,10 @@ class GameObject : public WorldObject
 
         GameObjectAI* AI() const { return m_AI.get(); }
 
-        GridReference<GameObject>& GetGridRef() { return m_gridRef; }
+        GridReference<GameObject>& GetGridRef()
+        {
+             return m_gridRef;
+        }
 
         GameObjectModel* m_model;
 

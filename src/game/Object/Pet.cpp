@@ -35,7 +35,6 @@
 #include "movement/MoveSpline.h"
 #include "movement/MoveSplineInit.h"
 
-
 // numbers represent minutes * 100 while happy (you get 100 loyalty points per min while happy)
 uint32 const LevelUpLoyalty[6] =
 {
@@ -183,7 +182,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         delete result;
         return false;
     }
-
 
     uint32 summon_spell_id = fields[21].GetUInt32();
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(summon_spell_id);
@@ -503,7 +501,6 @@ void Pet::SavePetToDB(PetSaveMode mode)
         _SaveSpellCooldowns();
         _SaveAuras();
 
-
         uint32 ownerLow = GetOwnerGuid().GetCounter();
         // remove current data
         static SqlStatementID delPet ;
@@ -696,7 +693,6 @@ void Pet::Update(uint32 update_diff, uint32 diff)
                 Unsummon(PET_SAVE_REAGENTS);
                 return;
             }
-
 
             if (isControlled())
             {
@@ -2774,7 +2770,6 @@ void Pet::CastOwnerTalentAuras()
     {
         return;
     }
-
 
     // Add below code handling spells cast by pet when owner/player has aura from talent
 }

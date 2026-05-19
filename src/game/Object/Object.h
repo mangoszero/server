@@ -144,7 +144,6 @@ struct WorldLocation
         : mapid(loc.mapid), coord_x(loc.coord_x), coord_y(loc.coord_y), coord_z(loc.coord_z), orientation(loc.orientation) {}
 };
 
-
 /**
  * @brief World update counter
  *
@@ -176,7 +175,10 @@ class WorldUpdateCounter
         /**
          * @brief Reset the counter
          */
-        void Reset() { m_tmStart = GameTime::GetGameTimeMS(); }
+        void Reset()
+        {
+             m_tmStart = GameTime::GetGameTimeMS();
+        }
 
     private:
         uint32 m_tmStart; ///< Start time in milliseconds
@@ -351,23 +353,149 @@ class Object
 
         ObjectGuid const& GetGuidValue(uint16 index) const { return *reinterpret_cast<ObjectGuid const*>(&GetUInt64Value(index)); }
 
-        Player* ToPlayer() { if (GetTypeId() == TYPEID_PLAYER) return reinterpret_cast<Player*>(this); else return NULL; }
-        Player const* ToPlayer() const { if (GetTypeId() == TYPEID_PLAYER) return reinterpret_cast<Player const*>(this); else return NULL; }
+        Player* ToPlayer()
+        {
+             if (GetTypeId() == TYPEID_PLAYER)
+             {
+                return reinterpret_cast<Player*>(this);
+             }
+             else
+             {
+                return NULL;
+             }
+        }
 
-        Creature* ToCreature() { if (GetTypeId() == TYPEID_UNIT) return reinterpret_cast<Creature*>(this); else return NULL; }
-        Creature const* ToCreature() const { if (GetTypeId() == TYPEID_UNIT) return reinterpret_cast<Creature const*>(this); else return NULL; }
+        Player const* ToPlayer() const
+        {
+            if (GetTypeId() == TYPEID_PLAYER)
+            {
+                return reinterpret_cast<Player const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
 
-        Unit* ToUnit() { if (isType(TYPEMASK_UNIT)) return reinterpret_cast<Unit*>(this); else return NULL; }
-        Unit const* ToUnit() const { if (isType(TYPEMASK_UNIT)) return reinterpret_cast<Unit const*>(this); else return NULL; }
+        Creature* ToCreature()
+        {
+            if (GetTypeId() == TYPEID_UNIT)
+            {
+                return reinterpret_cast<Creature*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
 
-        GameObject* ToGameObject() { if (GetTypeId() == TYPEID_GAMEOBJECT) return reinterpret_cast<GameObject*>(this); else return NULL; }
-        GameObject const* ToGameObject() const { if (GetTypeId() == TYPEID_GAMEOBJECT) return reinterpret_cast<GameObject const*>(this); else return NULL; }
+        Creature const* ToCreature() const
+        {
+            if (GetTypeId() == TYPEID_UNIT)
+            {
+                return reinterpret_cast<Creature const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
 
-        Corpse* ToCorpse() { if (GetTypeId() == TYPEID_CORPSE) return reinterpret_cast<Corpse*>(this); else return NULL; }
-        Corpse const* ToCorpse() const { if (GetTypeId() == TYPEID_CORPSE) return reinterpret_cast<Corpse const*>(this); else return NULL; }
+        Unit* ToUnit()
+        {
+            if (isType(TYPEMASK_UNIT))
+            {
+                return reinterpret_cast<Unit*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
 
-        DynamicObject* ToDynObject() { if (GetTypeId() == TYPEID_DYNAMICOBJECT) return reinterpret_cast<DynamicObject*>(this); else return NULL; }
-        DynamicObject const* ToDynObject() const { if (GetTypeId() == TYPEID_DYNAMICOBJECT) return reinterpret_cast<DynamicObject const*>(this); else return NULL; }
+        Unit const* ToUnit() const
+        {
+            if (isType(TYPEMASK_UNIT))
+            {
+                return reinterpret_cast<Unit const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
+
+        GameObject* ToGameObject()
+        {
+             if (GetTypeId() == TYPEID_GAMEOBJECT)
+             {
+                return reinterpret_cast<GameObject*>(this);
+             }
+             else
+             {
+                return NULL;
+             }
+        }
+
+        GameObject const* ToGameObject() const
+        {
+            if (GetTypeId() == TYPEID_GAMEOBJECT)
+            {
+                return reinterpret_cast<GameObject const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
+
+        Corpse* ToCorpse()
+        {
+            if (GetTypeId() == TYPEID_CORPSE)
+            {
+                return reinterpret_cast<Corpse*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
+
+        Corpse const* ToCorpse() const
+        {
+            if (GetTypeId() == TYPEID_CORPSE)
+            {
+                return reinterpret_cast<Corpse const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
+
+        DynamicObject* ToDynObject()
+        {
+            if (GetTypeId() == TYPEID_DYNAMICOBJECT)
+            {
+                return reinterpret_cast<DynamicObject*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
+
+        DynamicObject const* ToDynObject() const
+        {
+            if (GetTypeId() == TYPEID_DYNAMICOBJECT)
+            {
+                return reinterpret_cast<DynamicObject const*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
+        }
 
         void SetInt32Value(uint16 index,        int32  value);
         void SetUInt32Value(uint16 index,       uint32  value);
@@ -623,7 +751,7 @@ class WorldObject : public Object
         {
             public:
                 explicit UpdateHelper(WorldObject* obj) : m_obj(obj) {}
-                ~UpdateHelper() { }
+                ~UpdateHelper() {}
 
                 void Update(uint32 time_diff)
                 {
@@ -656,14 +784,17 @@ class WorldObject : public Object
         {
             x = m_position.x; y = m_position.y; z = m_position.z;
         }
+
         void GetPosition(WorldLocation& loc) const
         {
             loc.mapid = m_mapId; GetPosition(loc.coord_x, loc.coord_y, loc.coord_z); loc.orientation = GetOrientation();
         }
+
         float GetOrientation() const { return m_position.o; }
 
         /// Gives a 2d-point in distance distance2d in direction absAngle around the current position (point-to-point)
         void GetNearPoint2D(float& x, float& y, float distance2d, float absAngle) const;
+
         /** Gives a "free" spot for searcher in distance distance2d in direction absAngle on "good" height
          * @param searcher          -           for whom a spot is searched for
          * @param x, y, z           -           position for the found spot of the searcher
@@ -672,6 +803,7 @@ class WorldObject : public Object
          * @param absAngle          -           angle in which the spot is preferred
          */
         void GetNearPoint(WorldObject const* searcher, float& x, float& y, float& z, float searcher_bounding_radius, float distance2d, float absAngle) const;
+
         /** Gives a "free" spot for a searcher on the distance (including bounding-radius calculation)
          * @param x, y, z           -           position for the found spot
          * @param bounding_radius   -           radius for the searcher
@@ -684,6 +816,7 @@ class WorldObject : public Object
             // angle calculated from current orientation
             GetNearPoint(obj, x, y, z, bounding_radius, distance2d, GetOrientation() + angle);
         }
+
         /** Gives a "free" spot for a searcher in contact-range of "this" (including bounding-radius calculation)
          * @param x, y, z           -           position for the found spot
          * @param obj               -           for whom to find a contact position. The position will be searched in direction from 'this' towards 'obj'
@@ -806,12 +939,15 @@ class WorldObject : public Object
 
         void SetActiveObjectState(bool active);
 
-        ViewPoint& GetViewPoint() { return m_viewPoint; }
+        ViewPoint& GetViewPoint()
+        {
+             return m_viewPoint;
+        }
 
         // ASSERT print helper
         bool PrintCoordinatesError(float x, float y, float z, char const* descr) const;
 
-        virtual void StartGroupLoot(Group* /*group*/, uint32 /*timer*/) { }
+        virtual void StartGroupLoot(Group* /*group*/, uint32 /*timer*/) {}
 
 #ifdef ENABLE_ELUNA
         ElunaEventProcessor* elunaEvents;

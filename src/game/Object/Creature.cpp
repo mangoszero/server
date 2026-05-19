@@ -61,7 +61,6 @@
 // apply implementation of the singletons
 #include "Policies/Singleton.h"
 
-
 /**
  * @brief Finds a trainer spell entry by spell id.
  *
@@ -2050,7 +2049,6 @@ bool Creature::HasInvolvedQuest(uint32 quest_id) const
     }
     return false;
 }
-
 
 struct CreatureRespawnDeleteWorker
 {
