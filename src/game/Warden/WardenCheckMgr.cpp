@@ -55,7 +55,7 @@
  *
  * Initializes the check manager with empty stores.
  */
-WardenCheckMgr::WardenCheckMgr() : m_lock(0), CheckStore(), CheckResultStore() { }
+WardenCheckMgr::WardenCheckMgr() : m_lock(0), CheckStore(), CheckResultStore() {}
 
 /**
  * @brief WardenCheckMgr destructor

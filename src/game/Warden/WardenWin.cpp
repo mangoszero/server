@@ -68,7 +68,7 @@ WardenWin::WardenWin() : Warden(), _serverTicks(0) {}
 /**
  * @brief WardenWin destructor
  */
-WardenWin::~WardenWin() { }
+WardenWin::~WardenWin() {}
 
 /**
  * @brief Initialize Windows Warden
