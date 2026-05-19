@@ -399,7 +399,6 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
         playerTarget = m_session->GetPlayer();
     }
 
-
     Group* grp = playerTarget->GetGroup();
 
     if (!grp)
@@ -501,7 +500,6 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
     {
         playerTarget = m_session->GetPlayer();
     }
-
 
     Group* grp = playerTarget->GetGroup();
 
