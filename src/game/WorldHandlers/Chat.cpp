@@ -1300,7 +1300,10 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
         ++text;
     }
 
-    while (*text == ' ') { ++text; }
+    while (*text == ' ')
+    {
+         ++text;
+    }
 
     // search first level command in table
     for (uint32 i = 0; table[i].Name != NULL; ++i)

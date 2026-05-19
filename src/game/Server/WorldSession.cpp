@@ -210,7 +210,8 @@ char const* WorldSession::GetPlayerName() const
 void WorldSession::SendPacket(WorldPacket const* packet)
 {
 #ifdef ENABLE_PLAYERBOTS
-    if (GetPlayer()) {
+    if (GetPlayer())
+    {
         if (GetPlayer()->GetPlayerbotAI())
         {
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);

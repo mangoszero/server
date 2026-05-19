@@ -9,7 +9,8 @@ class IsTargetOfHealingSpell : public SpellEntryPredicate
 {
 public:
     virtual bool Check(SpellEntry const* spell) {
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<3; i++)
+        {
             if (spell->Effect[i] == SPELL_EFFECT_HEAL ||
                 spell->Effect[i] == SPELL_EFFECT_HEAL_MAX_HEALTH ||
                 spell->Effect[i] == SPELL_EFFECT_HEAL_MECHANICAL)

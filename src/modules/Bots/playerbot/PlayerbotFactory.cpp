@@ -958,7 +958,8 @@ void PlayerbotFactory::InitSecondEquipmentSet()
     map<uint32, vector<uint32> > items;
 
     uint32 desiredQuality = itemQuality;
-    while (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance && desiredQuality > ITEM_QUALITY_NORMAL) {
+    while (urand(0, 100) < 100 * sPlayerbotAIConfig.randomGearLoweringChance && desiredQuality > ITEM_QUALITY_NORMAL)
+    {
         desiredQuality--;
     }
 

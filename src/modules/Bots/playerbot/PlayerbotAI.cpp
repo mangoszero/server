@@ -1243,9 +1243,11 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
     va_start(vl, player);
 
     const char* cur;
-    do {
+    do
+    {
         cur = va_arg(vl, const char*);
-        if (cur && HasAura(cur, player)) {
+        if (cur && HasAura(cur, player))
+        {
         {
             va_end(vl);
         }

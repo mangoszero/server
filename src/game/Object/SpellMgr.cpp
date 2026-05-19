@@ -534,10 +534,9 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2)
     }
 
     // Mighty Rage Potion + Elixir of giants
-    if ((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405)){
+    if ((spellId_1 == 11405 && spellId_2 == 17528) || (spellId_1 == 17528 && spellId_2 == 11405))
     {
         return false;
-    }
     }
 
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
@@ -2917,7 +2916,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         }
         case SPELLFAMILY_WARLOCK:
         {
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // All Generic Spell with SpellIconID 313 and Warlock Corruption
@@ -2962,7 +2962,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         }
         case SPELLFAMILY_WARRIOR:
         {
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                     // Defensive Stance and Scroll of Protection (multi-family check)
                     if (spellInfo_1->Id == 71 && spellInfo_2->SpellIconID == 276)
@@ -3056,7 +3057,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             break;
         }
         case SPELLFAMILY_PRIEST:
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // All Generic Spell with SpellIconID 207 and Shadow Protection.
@@ -3130,7 +3132,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             }
             break;
         case SPELLFAMILY_DRUID:
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // Rip and All Generic Spell with SpellIconID 108.
@@ -3203,7 +3206,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_ROGUE:
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                 {
                     // Icon overload
@@ -3272,7 +3276,8 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 
             break;
         case SPELLFAMILY_PALADIN:
-            switch (spellInfo_2->SpellFamilyName){
+            switch (spellInfo_2->SpellFamilyName)
+            {
                 case SPELLFAMILY_GENERIC:
                     // Icon overload
                     // Shadow Resistance Aura and All Generic Spell with SpellIconID 140.

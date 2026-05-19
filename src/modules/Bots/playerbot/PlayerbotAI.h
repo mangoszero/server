@@ -53,7 +53,8 @@ namespace ai
 
     public:
         void probe(float value, void* p) {
-            if (!param || minValue >= value) {
+            if (!param || minValue >= value)
+            {
             {
                 minValue = value;
             }

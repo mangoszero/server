@@ -203,7 +203,8 @@ static void SendTrainerSpellHelper(WorldPacket& data, TrainerSpell const* tSpell
     data << uint8(state == TRAINER_SPELL_GREEN_DISABLED ? TRAINER_SPELL_GREEN : state);
 
     // alter the cost of riding spells with the setting from the configuration file while preserving faction discounts
-    switch (tSpell->spell) {
+    switch (tSpell->spell)
+    {
         case 33388: // Apprentice Riding
         case 33389: // Apprentice Riding
             data << uint32(floor(AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRAIN_MOUNT_COST)) * fDiscountMod));
@@ -303,7 +304,8 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
             }
 
             // for riding spells, override the levels with the levels from the configuration file
-            switch (tSpell->spell) {
+            switch (tSpell->spell)
+            {
         case 33388:
                 case 33389: // Apprentice Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));

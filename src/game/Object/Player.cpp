@@ -12959,7 +12959,8 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
 
         // override mount level requirements with the settings from the configuration file
         uint32 requiredLevel = pProto->RequiredLevel;
-        switch (pProto->ItemId) {
+        switch (pProto->ItemId)
+        {
              case 1132: //regular mounts
              case 2411:
              case 2414:
@@ -24243,7 +24244,8 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
                 else                                        // check availble case at train
                 {
                     // for riding spells, override the required level with the level from the configuration file
-                    switch (spell_id) {
+                    switch (spell_id)
+                    {
                         case 33388: // Riding
                         case 33389: // Apprentice Riding
                             if (getLevel() < uint32(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL)))

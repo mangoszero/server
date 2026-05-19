@@ -159,7 +159,8 @@ bool TradeStatusAction::CheckTrade()
 
     if (playerMoney >= botMoney)
     {
-        switch (urand(0, 4)) {
+        switch (urand(0, 4))
+        {
         case 0:
             ai->TellMaster("A pleasure doing business with you");
             break;

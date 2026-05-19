@@ -59,7 +59,8 @@ uint32 SpellIdValue::Calculate()
 
         // if we already found a spell
         bool useThisSpell = true;
-        if (foundSpellId > 0) {
+        if (foundSpellId > 0)
+        {
             if (usesNoReagents && !foundMatchUsesNoReagents)
             {
 
@@ -73,7 +74,8 @@ uint32 SpellIdValue::Calculate()
                 useThisSpell = false;
             }
         }
-        if (useThisSpell) {
+        if (useThisSpell)
+        {
         {
             foundSpellId = spellId;
         }

@@ -47,7 +47,8 @@ void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questG
     {
         RewardSingleItem(quest, questGiver, out);
     }
-    else {
+    else
+    {
     {
         AskToSelectReward(quest, out);
     }

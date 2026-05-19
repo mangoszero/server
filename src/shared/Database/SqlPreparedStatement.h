@@ -156,7 +156,12 @@ class SqlStmtFieldData
          * @brief Get the value as a double.
          * @return The double value.
          */
-        double toDouble() const { MANGOS_ASSERT(m_type == FIELD_DOUBLE); return m_binaryData.d; }
+        double toDouble() const
+        {
+             MANGOS_ASSERT(m_type == FIELD_DOUBLE);
+             return m_binaryData.d;
+        }
+
         /**
          * @brief Get the value as a string.
          * @return The string value.

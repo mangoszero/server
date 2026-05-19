@@ -2379,8 +2379,8 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
         case SPELL_FILLING_EMPTY_JAR__CURSED_OOZE: // Spell 15698 (for Cursed Ooze)
         case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)
         {
-            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
-
+            if (unitTarget->GetTypeId() == TYPEID_UNIT)
+            {
                 Creature* creature = static_cast<Creature*>(unitTarget);
                 if (creature->IsDead() && (creature->GetEntry() == CREATURE_TAINTED_OOZE || creature->GetEntry() == CREATURE_CURSED_OOZE))
                 {
@@ -2392,8 +2392,8 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
         }
         case SPELL_FILLING_EMPTY_JAR__PURE_OOZE: // Spell 15702 (for Primal, Muculent and Glutonous Ooze):
         {
-            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
-
+            if (unitTarget->GetTypeId() == TYPEID_UNIT)
+            {
                 Creature* creature = static_cast<Creature*>(unitTarget);
                 if (creature->IsDead() && (
                     creature->GetEntry() == CREATURE_MUCULENT_OOZE ||

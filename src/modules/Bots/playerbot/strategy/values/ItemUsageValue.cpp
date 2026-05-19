@@ -73,7 +73,8 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemPrototype const * item)
         switch (item->Class)
         {
         case ITEM_CLASS_ARMOR:
-            if (oldItem->SubClass <= item->SubClass) {
+            if (oldItem->SubClass <= item->SubClass)
+            {
             {
                 return ITEM_USAGE_REPLACE;
             }

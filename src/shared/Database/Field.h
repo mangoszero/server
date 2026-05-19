@@ -105,7 +105,11 @@ class Field
         * @brief Get double value
         * @return Double value (0.0 if NULL)
         */
-        double GetDouble() const { return mValue ? static_cast<double>(atof(mValue)) : 0.0f; }
+        double GetDouble() const
+        {
+             return mValue ? static_cast<double>(atof(mValue)) : 0.0f;
+        }
+
         /**
         * @brief Get 8-bit signed integer value
         * @return 8-bit signed integer (0 if NULL)

@@ -388,7 +388,8 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
 
         // override mount level requirements with the settings from the configuration file
         uint32 requiredLevel = pProto->RequiredLevel;
-        switch (pProto->ItemId) {
+        switch (pProto->ItemId)
+        {
              case 1132: //regular mounts
              case 2411:
              case 2414:
@@ -1013,7 +1014,8 @@ void WorldSession::SendListInventory(ObjectGuid vendorguid)
 
                 uint32 price = 0;
                 // check if the item to sell is a mount
-                switch (itemId) {
+                switch (itemId)
+                {
                     case 1132: // all regular mounts
                     case 2411:
                     case 2414:
