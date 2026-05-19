@@ -182,7 +182,6 @@ void WorldSession::SendTrainerList(ObjectGuid guid)
     SendTrainerList(guid, str);
 }
 
-
 /**
  * @brief Writes a single trainer spell entry into a trainer list packet.
  *
@@ -582,7 +581,6 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
             DEBUG_LOG("WORLD: HandleGossipSelectOptionOpcode - item script for %s not found or you can't interact with it.", item->GetProto()->Name1);
             return;
         }
-
 
         // Used by Eluna
 #ifdef ENABLE_ELUNA
@@ -1095,7 +1093,6 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
     {
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
-
 
     Pet* pet = _player->GetPet();
 

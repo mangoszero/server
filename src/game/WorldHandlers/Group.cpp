@@ -716,7 +716,6 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
         return;
     }
 
-
     uint8 subGroup;
     // looking for player's subgroup
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
@@ -1331,7 +1330,6 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
 {
     Roll* roll = *rollI;
 
-
     if (!roll->isValid())                                   // is loot already deleted ?
     {
         rollI = RollId.erase(rollI);
@@ -1496,7 +1494,6 @@ bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
     {
         return true;
     }
-
 
     for (Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {

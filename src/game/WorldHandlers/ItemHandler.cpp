@@ -1178,7 +1178,6 @@ void WorldSession::HandleAutoStoreBagItemOpcode(WorldPacket& recv_data)
     _player->StoreItem(dest, pItem, true);
 }
 
-
 /**
  * @brief Verifies that a guid can be used as a banker interaction target.
  *

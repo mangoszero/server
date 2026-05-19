@@ -240,7 +240,6 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
         }
     }
 
-
     DEBUG_LOG("TicketCreate: map %u, x %f, y %f, z %f, text %s", mapId, x, y, z, ticketText.c_str());
 
     if (sTicketMgr.GetGMTicket(GetPlayer()->GetObjectGuid()))

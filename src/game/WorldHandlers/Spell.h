@@ -448,10 +448,17 @@ class Spell
         bool IsTriggered() const {return m_IsTriggeredSpell;}
 
         int32 GetCastTime() const { return m_casttime; }
-        uint32 GetCastedTime() { return m_timer; }
+        uint32 GetCastedTime()
+        {
+             return m_timer;
+        }
+
         bool IsAutoRepeat() const { return m_autoRepeat; }
         void SetAutoRepeat(bool rep) { m_autoRepeat = rep; }
-        void ReSetTimer() { m_timer = m_casttime > 0 ? m_casttime : 0; }
+        void ReSetTimer()
+        {
+             m_timer = m_casttime > 0 ? m_casttime : 0;
+        }
         bool IsNextMeleeSwingSpell() const
         {
             return m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_1) || m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_2);
@@ -505,7 +512,10 @@ class Spell
         typedef std::list<Unit*> UnitList;
 
         void SetSelfContainer(Spell** pCurrentContainer) { m_selfContainer = pCurrentContainer; }
-        Spell** GetSelfContainer() { return m_selfContainer; }
+        Spell** GetSelfContainer()
+        {
+             return m_selfContainer;
+        }
 
     protected:
         bool HasGlobalCooldown();
@@ -534,7 +544,10 @@ class Spell
         bool m_autoRepeat;
 
         uint8 m_delayAtDamageCount;
-        int32 GetNextDelayAtDamageMsTime() { return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200; }
+        int32 GetNextDelayAtDamageMsTime()
+        {
+             return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200;
+        }
 
         // Delayed spells system
         uint64 m_delayStart;                                // time of spell delay start, filled by event handler, zero = just started

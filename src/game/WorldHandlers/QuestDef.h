@@ -179,7 +179,10 @@ enum QuestRole
 
 struct QuestLocale
 {
-    QuestLocale() { ObjectiveText.resize(QUEST_OBJECTIVES_COUNT); }
+    QuestLocale()
+    {
+         ObjectiveText.resize(QUEST_OBJECTIVES_COUNT);
+    }
 
     std::vector<std::string> Title;
     std::vector<std::string> Details;

@@ -187,7 +187,7 @@ class Roll : public LootValidatorRef
         Roll(ObjectGuid _lootedTragetGuid, LootItem const& li)
             : lootedTargetGUID(_lootedTragetGuid), itemid(li.itemid), itemRandomPropId(li.randomPropertyId),
               totalPlayersRolling(0), totalNeed(0), totalGreed(0), totalPass(0), itemSlot(0) {}
-        ~Roll() { }
+        ~Roll() {}
         void setLoot(Loot* pLoot)
         {
             link(pLoot, this);
@@ -378,7 +378,11 @@ class Group
         }
 
         MemberSlotList const& GetMemberSlots() const { return m_memberSlots; }
-        GroupReference* GetFirstMember() { return m_memberMgr.getFirst(); }
+        GroupReference* GetFirstMember()
+        {
+             return m_memberMgr.getFirst();
+        }
+
         GroupReference const* GetFirstMember() const { return m_memberMgr.getFirst(); }
         uint32 GetMembersCount() const { return m_memberSlots.size(); }
         void GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level, Player* additional = NULL);
@@ -516,7 +520,7 @@ class Group
         {
             m_memberMgr.insertFirst(pRef);
         }
-        void DelinkMember(GroupReference* /*pRef*/) { }
+        void DelinkMember(GroupReference* /*pRef*/) {}
 
         InstanceGroupBind* BindToInstance(DungeonPersistentState* save, bool permanent, bool load = false);
         void UnbindInstance(uint32 mapid, bool unload = false);

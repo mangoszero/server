@@ -449,7 +449,10 @@ struct CliCommandHolder
         memcpy(m_command, command, len);
     }
 
-    ~CliCommandHolder() { delete[] m_command; }
+    ~CliCommandHolder()
+    {
+         delete[] m_command;
+    }
 };
 
 /// The World
@@ -549,9 +552,16 @@ class World
         void ShutdownServ(uint32 time, uint32 options, uint8 exitcode);
         void ShutdownCancel();
         void ShutdownMsg(bool show = false, Player* player = NULL);
-        static uint8 GetExitCode() { return m_ExitCode; }
+        static uint8 GetExitCode()
+        {
+             return m_ExitCode;
+        }
+
         static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
-        static bool IsStopped() { return m_stopEvent; }
+        static bool IsStopped()
+        {
+             return m_stopEvent;
+        }
 
         void Update(uint32 diff);
 
@@ -581,8 +591,15 @@ class World
         bool isForceLoadMap(uint32 id) const { return m_configForceLoadMapIds.find(id) != m_configForceLoadMapIds.end(); }
 
         /// Are we on a "Player versus Player" server?
-        bool IsPvPRealm() { return (getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_PVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_RPPVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP); }
-        bool IsFFAPvPRealm() { return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP; }
+        bool IsPvPRealm()
+        {
+             return (getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_PVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_RPPVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP);
+        }
+
+        bool IsFFAPvPRealm()
+        {
+             return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
+        }
 
         void KickAll();
         void KickAllLess(AccountTypes sec);
@@ -616,7 +633,10 @@ class World
 
         // used World DB version
         void LoadDBVersion();
-        char const* GetDBVersion() { return m_DBVersion.c_str(); }
+        char const* GetDBVersion()
+        {
+             return m_DBVersion.c_str();
+        }
 
         void LoadBroadcastStrings();
 

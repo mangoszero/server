@@ -1080,7 +1080,6 @@ void MapPersistentStateManager::_ResetInstance(uint32 mapid, uint32 instanceId)
         _ResetSave(m_instanceSaveByInstanceId, itr);
     }
 
-
     DeleteInstanceFromDB(instanceId);                       // even if state not loaded
 }
 
@@ -1208,7 +1207,6 @@ void MapPersistentStateManager::_CleanupExpiredInstancesAtTime(time_t t)
 {
     _DelHelper(CharacterDatabase, "id, map", "instance", "LEFT JOIN instance_reset ON mapid = map WHERE (instance.resettime < '" UI64FMTD "' AND instance.resettime > '0') OR (NOT instance_reset.resettime IS NULL AND instance_reset.resettime < '" UI64FMTD "')", (uint64)t, (uint64)t);
 }
-
 
 /**
  * @brief Creates persistent states for all non-instanceable world maps.

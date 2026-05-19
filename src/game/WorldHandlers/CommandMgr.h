@@ -20,14 +20,12 @@
 #ifndef COMMANDMGR_H
 #define COMMANDMGR_H
 
-
 struct CommandHelpLocale
 {
     std::vector<std::string> HelpText;
 };
 
 typedef UNORDERED_MAP<uint32, CommandHelpLocale> CommandHelpLocaleMap;
-
 
 class CommandMgr
 {
@@ -42,7 +40,6 @@ class CommandMgr
         CommandHelpLocale const* GetCommandLocale(uint32 commandId) const;
         CommandHelpLocaleMap m_CommandHelpLocaleMap;
 };
-
 
 #define sCommandMgr MaNGOS::Singleton<CommandMgr>::Instance()
 

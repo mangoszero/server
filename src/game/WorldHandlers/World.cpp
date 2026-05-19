@@ -592,7 +592,6 @@ void World::LoadConfigSettings(bool reload)
         m_broadcastTimer.SetInterval(getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) * IN_MILLISECONDS);
     }
 
-
     std::string forceLoadGridOnMaps = sConfig.GetStringDefault("LoadAllGridsOnMaps", "");
     if (!forceLoadGridOnMaps.empty())
     {
@@ -1533,7 +1532,6 @@ void World::SetInitialWorldSettings()
     ///- Initialize Outdoor PvP
     sLog.outString("Starting Outdoor PvP System");
     sOutdoorPvPMgr.InitOutdoorPvP();
-
 
     // Initialize Warden
     sLog.outString("Loading Warden Checks...");

@@ -67,7 +67,6 @@
 
 #define MOVEMENT_PACKET_TIME_DELAY 300
 
-
 /**
  * @brief Handles the packet-based worldport acknowledgement.
  *
