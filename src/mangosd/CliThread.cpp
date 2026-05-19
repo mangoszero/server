@@ -63,7 +63,6 @@ static int kb_hit_return()
 }
 #endif
 
-
 /**
  * Initializes the CLI thread with optional console beep support.
  */
