@@ -79,13 +79,19 @@ class MapReference : public Reference<Map, Player>
         /**
          * @brief Destructor
          */
-        ~MapReference() { unlink(); }
+        ~MapReference()
+        {
+             unlink();
+        }
 
         /**
          * @brief Get next reference
          * @return Next map reference
          */
-        MapReference* next() { return (MapReference*)Reference<Map, Player>::next(); }
+        MapReference* next()
+        {
+             return (MapReference*)Reference<Map, Player>::next();
+        }
 
         /**
          * @brief Get next reference (const)
@@ -97,7 +103,10 @@ class MapReference : public Reference<Map, Player>
          * @brief Get previous reference (no check)
          * @return Previous map reference
          */
-        MapReference* nockeck_prev() { return (MapReference*)Reference<Map, Player>::nocheck_prev(); }
+        MapReference* nockeck_prev()
+        {
+             return (MapReference*)Reference<Map, Player>::nocheck_prev();
+        }
 
         /**
          * @brief Get previous reference (no check, const)

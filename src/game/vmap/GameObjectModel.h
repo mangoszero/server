@@ -35,7 +35,6 @@
 #include "DBCStructure.h"
 #include "GameObject.h"
 
-
 namespace VMAP
 {
     class WorldModel;

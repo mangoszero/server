@@ -44,7 +44,10 @@ class MapRefManager : public RefManager<Map, Player>
          * @brief Get first map reference
          * @return First map reference
          */
-        MapReference* getFirst() { return (MapReference*)RefManager<Map, Player>::getFirst(); }
+        MapReference* getFirst()
+        {
+             return (MapReference*)RefManager<Map, Player>::getFirst();
+        }
 
         /**
          * @brief Get first map reference (const)
@@ -56,7 +59,10 @@ class MapRefManager : public RefManager<Map, Player>
          * @brief Get last map reference
          * @return Last map reference
          */
-        MapReference* getLast() { return (MapReference*)RefManager<Map, Player>::getLast(); }
+        MapReference* getLast()
+        {
+             return (MapReference*)RefManager<Map, Player>::getLast();
+        }
 
         /**
          * @brief Get last map reference (const)
@@ -68,25 +74,37 @@ class MapRefManager : public RefManager<Map, Player>
          * @brief Get iterator to beginning
          * @return Iterator to beginning
          */
-        iterator begin() { return iterator(getFirst()); }
+        iterator begin()
+        {
+             return iterator(getFirst());
+        }
 
         /**
          * @brief Get iterator to end
          * @return Iterator to end
          */
-        iterator end() { return iterator(NULL); }
+        iterator end()
+        {
+             return iterator(NULL);
+        }
 
         /**
          * @brief Get reverse iterator to beginning
          * @return Reverse iterator to beginning
          */
-        iterator rbegin() { return iterator(getLast()); }
+        iterator rbegin()
+        {
+             return iterator(getLast());
+        }
 
         /**
          * @brief Get reverse iterator to end
          * @return Reverse iterator to end
          */
-        iterator rend() { return iterator(NULL); }
+        iterator rend()
+        {
+             return iterator(NULL);
+        }
 
         /**
          * @brief Get const iterator to beginning
