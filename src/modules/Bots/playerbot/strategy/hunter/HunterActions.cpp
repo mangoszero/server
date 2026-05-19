@@ -50,6 +50,20 @@ bool CastIntimidationAction::isUseful()
     return CastSpellAction::isUseful() && AI_VALUE(Unit*, "pet target") != NULL;
 }
 
+bool FeedPetAction::isUseful()
+{
+    Unit* pet = GetTarget();
+    if (!pet || !pet->IsAlive())
+        return false;
+
+    // Pet already has the Feed Pet Effect aura
+    if (pet->HasAura(SPELL_ID_FEED_PET_EFFECT))
+        return false;
+
+    uint32 spellId = AI_VALUE2(uint32, "spell id", "feed pet");
+    return spellId && AI_VALUE2(Item*, "item for spell", spellId);
+}
+
 bool HunterMeleeAction::isUseful()
 {
     // Only swing if enemy is already in our face AND targeting us.

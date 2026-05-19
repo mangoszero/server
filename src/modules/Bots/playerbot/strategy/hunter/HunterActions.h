@@ -198,6 +198,14 @@ namespace ai
         virtual bool isUseful();
     };
 
+    class FeedPetAction : public CastSpellAction
+    {
+    public:
+        FeedPetAction(PlayerbotAI* ai) : CastSpellAction(ai, "feed pet") {}
+        virtual string GetTargetName() { return "pet target"; }
+        virtual bool isUseful();
+    };
+
     class HunterMeleeAction : public Action
     {
     public:

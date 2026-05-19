@@ -49,6 +49,14 @@ namespace ai
     BEGIN_TRIGGER(HuntersPetLowHealthTrigger, Trigger)
     END_TRIGGER()
 
+    class HuntersPetUnhappyTrigger : public Trigger
+    {
+    public:
+        HuntersPetUnhappyTrigger(PlayerbotAI* ai) : Trigger(ai, "hunters pet unhappy", 300) {}
+    public:
+        virtual bool IsActive();
+    };
+
     class BlackArrowTrigger : public DebuffTrigger
     {
     public:
