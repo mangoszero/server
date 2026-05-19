@@ -184,7 +184,10 @@ namespace Movement
             /**
              * @brief Interrupts the spline.
              */
-            void _Interrupt() { splineflags.done = true;}
+            void _Interrupt()
+            {
+                 splineflags.done = true;
+            }
 
         public:
             /**

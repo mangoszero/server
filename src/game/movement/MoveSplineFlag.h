@@ -91,7 +91,11 @@ namespace Movement
              * @brief Gets the raw flag value.
              * @return uint32& Reference to the raw flag value.
              */
-            inline uint32& raw() { return (uint32&) * this;}
+            inline uint32& raw()
+            {
+                 return (uint32&) * this;
+            }
+
             /**
              * @brief Gets the raw flag value.
              * @return const uint32& Reference to the raw flag value.
@@ -101,7 +105,11 @@ namespace Movement
             /**
              * @brief Default constructor for MoveSplineFlag.
              */
-            MoveSplineFlag() { raw() = 0; }
+            MoveSplineFlag()
+            {
+                 raw() = 0;
+            }
+
             /**
              * @brief Constructor for MoveSplineFlag with a flag value.
              * @param f The flag value.

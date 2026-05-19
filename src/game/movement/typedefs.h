@@ -70,7 +70,10 @@ namespace Movement
             /**
              * @brief Constructor for the counter class.
              */
-            counter() { init();}
+            counter()
+            {
+                 init();
+            }
 
             /**
              * @brief Increases the counter value.
@@ -91,7 +94,11 @@ namespace Movement
              * @brief Generates a new ID.
              * @return T The new ID.
              */
-            T NewId() { Increase(); return m_counter;}
+            T NewId()
+            {
+                 Increase(); return m_counter;
+            }
+
             /**
              * @brief Gets the current counter value.
              * @return T The current counter value.
@@ -102,7 +109,11 @@ namespace Movement
             /**
              * @brief Initializes the counter to zero.
              */
-            void init() { m_counter = 0; }
+            void init()
+            {
+                 m_counter = 0;
+            }
+
             T m_counter; /**< The current counter value. */
     };
 
