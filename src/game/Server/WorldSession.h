@@ -255,7 +255,6 @@ class WorldSession
             return m_playerLogout && m_playerSave;
         }
 
-
         void SizeError(WorldPacket const& packet, uint32 size) const;
 
         void SendPacket(WorldPacket const* packet);
@@ -836,7 +835,6 @@ class WorldSession
 
         // for Warden
         uint16 GetClientBuild() const { return _build; }
-
 
     private:
         // private trade methods
