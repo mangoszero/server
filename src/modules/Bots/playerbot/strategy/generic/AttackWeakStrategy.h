@@ -7,7 +7,10 @@ namespace ai
     {
     public:
         AttackWeakStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName() { return "attack weak"; }
+        virtual string getName()
+        {
+             return "attack weak";
+        }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

@@ -128,7 +128,6 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
     return result >= 1.0 ? result : 1.0;
 }
 
-
 double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auctionHouse)
 {
     double result = 1.0;
@@ -230,7 +229,6 @@ uint32 PricingStrategy::GetDefaultSellPrice(ItemPrototype const* proto)
 {
     return GetDefaultBuyPrice(proto);
 }
-
 
 uint32 BuyOnlyRarePricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint32 auctionHouse)
 {

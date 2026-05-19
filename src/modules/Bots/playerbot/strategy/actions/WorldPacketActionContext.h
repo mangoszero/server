@@ -94,5 +94,4 @@ namespace ai
         static Action* loot_roll(PlayerbotAI* ai) { return (QueryItemUsageAction*)new LootRollAction(ai); }
     };
 
-
 };

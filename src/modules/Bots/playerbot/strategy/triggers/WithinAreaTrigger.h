@@ -11,7 +11,6 @@ namespace ai
         virtual bool IsActive()
         {
 
-
             LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
             if (!movement.lastAreaTrigger)
             {

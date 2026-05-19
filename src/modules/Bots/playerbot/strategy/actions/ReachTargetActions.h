@@ -21,7 +21,11 @@ namespace ai
         {
             return AI_VALUE2(float, "distance", "current target") > distance;
         }
-        virtual string GetTargetName() { return "current target"; }
+
+        virtual string GetTargetName()
+        {
+             return "current target";
+        }
 
     protected:
         float distance;

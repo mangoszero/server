@@ -67,7 +67,6 @@ namespace ai
         CastCorruptionOnAttackerAction(PlayerbotAI* ai) : CastDebuffSpellOnAttackerAction(ai, "corruption") {}
     };
 
-
     class CastSummonVoidwalkerAction : public CastBuffSpellAction
     {
     public:
@@ -102,7 +101,11 @@ namespace ai
     {
     public:
         CastBanishAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "banish on cc") {}
-        virtual Value<Unit*>* GetTargetValue() { return context->GetValue<Unit*>("cc target", "banish"); }
+        virtual Value<Unit*>* GetTargetValue()
+        {
+             return context->GetValue<Unit*>("cc target", "banish");
+        }
+
         virtual bool Execute(Event event) { return ai->CastSpell("banish", GetTarget()); }
     };
 
@@ -143,7 +146,11 @@ namespace ai
     {
     public:
         CastFearOnCcAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "fear on cc") {}
-        virtual Value<Unit*>* GetTargetValue() { return context->GetValue<Unit*>("cc target", "fear"); }
+        virtual Value<Unit*>* GetTargetValue()
+        {
+             return context->GetValue<Unit*>("cc target", "fear");
+        }
+
         virtual bool Execute(Event event) { return ai->CastSpell("fear", GetTarget()); }
     };
 
@@ -151,8 +158,15 @@ namespace ai
     {
     public:
         CastLifeTapAction(PlayerbotAI* ai) : CastSpellAction(ai, "life tap") {}
-        virtual string GetTargetName() { return "self target"; }
-        virtual bool isUseful() { return AI_VALUE2(uint8, "health", "self target") > sPlayerbotAIConfig.lowHealth; }
+        virtual string GetTargetName()
+        {
+             return "self target";
+        }
+
+        virtual bool isUseful()
+        {
+             return AI_VALUE2(uint8, "health", "self target") > sPlayerbotAIConfig.lowHealth;
+        }
     };
 
 }

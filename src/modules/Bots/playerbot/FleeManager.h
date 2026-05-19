@@ -10,7 +10,8 @@ namespace ai
 
     class RangePair {
     public:
-        RangePair() {
+        RangePair()
+        {
             min = -1.0f;
             max = -1.0f;
         }

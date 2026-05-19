@@ -20,8 +20,14 @@ namespace ai
         }
 
     public:
-        string getName() { return name; }
-        float getRelevance() {return relevance;}
+        string getName()
+        {
+             return name;
+        }
+        float getRelevance()
+        {
+            return relevance;
+        }
 
     public:
         static int size(NextAction** actions);
@@ -49,23 +55,53 @@ namespace ai
     class Action : public AiNamedObject
     {
     public:
-        Action(PlayerbotAI* ai, string name = "action") : verbose(false), AiNamedObject(ai, name) { }
+        Action(PlayerbotAI* ai, string name = "action") : verbose(false), AiNamedObject(ai, name) {}
         virtual ~Action(void) {}
 
     public:
         virtual bool Execute(Event event) { return true; }
-        virtual bool isPossible() { return true; }
-        virtual bool isUseful() { return true; }
-        virtual NextAction** getPrerequisites() { return NULL; }
-        virtual NextAction** getAlternatives() { return NULL; }
-        virtual NextAction** getContinuers() { return NULL; }
-        virtual ActionThreatType getThreatType() { return ACTION_THREAT_NONE; }
+        virtual bool isPossible()
+        {
+             return true;
+        }
+
+        virtual bool isUseful()
+        {
+             return true;
+        }
+
+        virtual NextAction** getPrerequisites()
+        {
+             return NULL;
+        }
+
+        virtual NextAction** getAlternatives()
+        {
+             return NULL;
+        }
+
+        virtual NextAction** getContinuers()
+        {
+             return NULL;
+        }
+
+        virtual ActionThreatType getThreatType()
+        {
+             return ACTION_THREAT_NONE;
+        }
+
         void Update() {}
         void Reset() {}
         virtual Unit* GetTarget();
         virtual Value<Unit*>* GetTargetValue();
-        virtual string GetTargetName() { return "self target"; }
-        void MakeVerbose() { verbose = true; }
+        virtual string GetTargetName()
+        {
+             return "self target";
+        }
+        void MakeVerbose()
+        {
+             verbose = true;
+        }
 
     protected:
         bool verbose;
@@ -90,14 +126,32 @@ namespace ai
         }
 
     public:
-        Action* getAction() { return action; }
+        Action* getAction()
+        {
+             return action;
+        }
+
         void setAction(Action* action) { this->action = action; }
-        string getName() { return name; }
+        string getName()
+        {
+             return name;
+        }
 
     public:
-        NextAction** getContinuers() { return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL); }
-        NextAction** getAlternatives() { return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL); }
-        NextAction** getPrerequisites() { return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL); }
+        NextAction** getContinuers()
+        {
+             return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL);
+        }
+
+        NextAction** getAlternatives()
+        {
+             return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL);
+        }
+
+        NextAction** getPrerequisites()
+        {
+             return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL);
+        }
 
     private:
         string name;
@@ -116,10 +170,26 @@ namespace ai
           action(action), relevance(relevance), skipPrerequisites(skipPrerequisites), event(event) {}
         virtual ~ActionBasket(void) {}
     public:
-        float getRelevance() {return relevance;}
-        ActionNode* getAction() {return action;}
-        const Event& getEvent() { return event; }
-        bool isSkipPrerequisites() { return skipPrerequisites; }
+        float getRelevance()
+        {
+            return relevance;
+        }
+
+        ActionNode* getAction()
+        {
+            return action;
+        }
+
+        const Event& getEvent()
+        {
+             return event;
+        }
+
+        bool isSkipPrerequisites()
+        {
+             return skipPrerequisites;
+        }
+
         void AmendRelevance(float k) {relevance *= k; }
         void setRelevance(float relevance) { this->relevance = relevance; }
     private:
@@ -130,7 +200,6 @@ namespace ai
     };
 
     //---------------------------------------------------------------------------------------------------------------------
-
 
 }
 

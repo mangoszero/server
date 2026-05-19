@@ -7,7 +7,8 @@ namespace ai
     class CastBattleMeleeSpellAction : public CastMeleeSpellAction {
     public:
         CastBattleMeleeSpellAction(PlayerbotAI* ai, string spell) : CastMeleeSpellAction(ai, spell) {}
-        virtual NextAction** getPrerequisites() {
+        virtual NextAction** getPrerequisites()
+        {
             return NextAction::merge( NextAction::array(0, new NextAction("battle stance"), NULL), CastMeleeSpellAction::getPrerequisites());
         }
     };
@@ -16,7 +17,8 @@ namespace ai
     class CastDefensiveMeleeSpellAction : public CastMeleeSpellAction {
     public:
         CastDefensiveMeleeSpellAction(PlayerbotAI* ai, string spell) : CastMeleeSpellAction(ai, spell) {}
-        virtual NextAction** getPrerequisites() {
+        virtual NextAction** getPrerequisites()
+        {
             return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastMeleeSpellAction::getPrerequisites());
         }
     };
@@ -66,7 +68,8 @@ namespace ai
     class CastTauntAction : public CastSpellAction {
     public:
         CastTauntAction(PlayerbotAI* ai) : CastSpellAction(ai, "taunt") {}
-        virtual NextAction** getPrerequisites() {
+        virtual NextAction** getPrerequisites()
+        {
             return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
         }
     };
@@ -75,7 +78,8 @@ namespace ai
     class CastShieldBlockAction : public CastBuffSpellAction {
     public:
         CastShieldBlockAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "shield block") {}
-        virtual NextAction** getPrerequisites() {
+        virtual NextAction** getPrerequisites()
+        {
             return NextAction::merge( NextAction::array(0, new NextAction("defensive stance"), NULL), CastSpellAction::getPrerequisites());
         }
     };
@@ -107,7 +111,6 @@ namespace ai
     BEGIN_MELEE_SPELL_ACTION(CastRevengeAction, "revenge")
         virtual NextAction** getPrerequisites();
     END_SPELL_ACTION()
-
 
     //debuffs
     BEGIN_DEBUFF_ACTION(CastRendAction, "rend")
@@ -194,7 +197,8 @@ namespace ai
     class CastWhirlwindAction : public CastMeleeSpellAction {
     public:
         CastWhirlwindAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "whirlwind") {}
-        virtual NextAction** getPrerequisites() {
+        virtual NextAction** getPrerequisites()
+        {
             return NextAction::merge(NextAction::array(0, new NextAction("berserker stance"), NULL), CastMeleeSpellAction::getPrerequisites());
         }
     };

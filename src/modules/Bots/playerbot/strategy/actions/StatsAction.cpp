@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "StatsAction.h"
 
-
 using namespace ai;
 
 bool StatsAction::Execute(Event event)

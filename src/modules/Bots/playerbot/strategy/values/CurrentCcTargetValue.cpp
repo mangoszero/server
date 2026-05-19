@@ -25,7 +25,6 @@ private:
     string spell;
 };
 
-
 Unit* CurrentCcTargetValue::Calculate()
 {
     FindCurrentCcTargetStrategy strategy(ai, qualifier);

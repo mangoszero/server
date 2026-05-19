@@ -35,7 +35,6 @@ float CastTimeMultiplier::GetValue(Action* action)
     return 1.0f;
 }
 
-
 void CastTimeStrategy::InitMultipliers(std::list<Multiplier*> &multipliers)
 {
     multipliers.push_back(new CastTimeMultiplier(ai));

@@ -4,7 +4,10 @@
 #include "../PlayerbotAIAware.h"
 
 #define NEXT_TRIGGERS(name, relevance) \
-    virtual NextAction* getNextAction() { return new NextAction(name, relevance); }
+    virtual NextAction* getNextAction() \
+    { \
+         return new NextAction(name, relevance); \
+    } \
 
 #define BEGIN_TRIGGER(clazz, super) \
 class clazz : public super \
@@ -32,15 +35,27 @@ namespace ai
         virtual Event Check();
         virtual void ExternalEvent(string param, Player* owner = NULL) {}
         virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) {}
-        virtual bool IsActive() { return false; }
-        virtual NextAction** getHandlers() { return NULL; }
+        virtual bool IsActive()
+        {
+             return false;
+        }
+
+        virtual NextAction** getHandlers()
+        {
+             return NULL;
+        }
+
         void Update() {}
         virtual void Reset() {}
         virtual Unit* GetTarget();
         virtual Value<Unit*>* GetTargetValue();
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+             return "self target";
+        }
 
-        bool needCheck() {
+        bool needCheck()
+        {
             if (++ticksElapsed >= checkInterval)
             {
                 ticksElapsed = 0;
@@ -53,7 +68,6 @@ namespace ai
         int checkInterval;
         int ticksElapsed;
     };
-
 
     class TriggerNode
     {
@@ -70,12 +84,22 @@ namespace ai
         }
 
     public:
-        Trigger* getTrigger() { return trigger; }
+        Trigger* getTrigger()
+        {
+             return trigger;
+        }
+
         void setTrigger(Trigger* trigger) { this->trigger = trigger; }
-        string getName() { return name; }
+        string getName()
+        {
+             return name;
+        }
 
     public:
-        NextAction** getHandlers() { return NextAction::merge(NextAction::clone(handlers), trigger->getHandlers()); }
+        NextAction** getHandlers()
+        {
+             return NextAction::merge(NextAction::clone(handlers), trigger->getHandlers());
+        }
 
     private:
         Trigger* trigger;

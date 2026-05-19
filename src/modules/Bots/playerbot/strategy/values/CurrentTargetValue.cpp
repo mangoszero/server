@@ -7,7 +7,6 @@ using namespace ai;
 Unit* CurrentTargetValue::Get()
 {
 
-
     if (selection.IsEmpty())
     {
         return NULL;

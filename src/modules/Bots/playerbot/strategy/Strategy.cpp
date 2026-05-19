@@ -6,7 +6,6 @@
 using namespace ai;
 using namespace std;
 
-
 class ActionNodeFactoryInternal : public NamedObjectFactory<ActionNode>
 {
 public:

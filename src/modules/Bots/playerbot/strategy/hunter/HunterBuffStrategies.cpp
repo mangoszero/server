@@ -19,7 +19,6 @@ void HunterNatureResistanceStrategy::InitTriggers(std::list<TriggerNode*> &trigg
         NextAction::array(0, new NextAction("aspect of the wild", 90.0f), NULL)));
 }
 
-
 void HunterBuffSpeedStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

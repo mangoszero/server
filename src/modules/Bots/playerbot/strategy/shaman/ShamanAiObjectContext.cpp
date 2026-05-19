@@ -12,8 +12,6 @@
 
 using namespace ai;
 
-
-
 namespace ai
 {
     namespace shaman
@@ -147,7 +145,6 @@ namespace ai
     };
 };
 
-
 namespace ai
 {
     namespace shaman
@@ -249,8 +246,6 @@ namespace ai
         };
     };
 };
-
-
 
 ShamanAiObjectContext::ShamanAiObjectContext(PlayerbotAI* ai) : AiObjectContext(ai)
 {

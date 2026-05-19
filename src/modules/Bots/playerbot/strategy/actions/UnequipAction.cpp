@@ -20,7 +20,6 @@ bool UnequipAction::Execute(Event event)
     return true;
 }
 
-
 void UnequipAction::UnequipItem(FindItemVisitor* visitor)
 {
     IterateItems(visitor, ITERATE_ALL_ITEMS);
@@ -33,7 +32,6 @@ void UnequipAction::UnequipItem(Item& item)
     uint8 bagIndex = item.GetBagSlot();
     uint8 slot = item.GetSlot();
     uint8 dstBag = NULL_BAG;
-
 
     WorldPacket* const packet = new WorldPacket(CMSG_AUTOSTORE_BAG_ITEM, 3);
     *packet << bagIndex << slot << dstBag;

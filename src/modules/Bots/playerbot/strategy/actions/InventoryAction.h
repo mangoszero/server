@@ -6,7 +6,6 @@
 namespace ai
 {
 
-
     class InventoryAction : public Action {
     public:
         InventoryAction(PlayerbotAI* ai, string name) : Action(ai, name) {}

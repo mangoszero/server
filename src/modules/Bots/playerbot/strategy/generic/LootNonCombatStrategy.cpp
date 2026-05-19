@@ -26,4 +26,3 @@ void GatherStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
         NextAction::array(0, new NextAction("add gathering loot", 2.0f), NULL)));
 }
 
-

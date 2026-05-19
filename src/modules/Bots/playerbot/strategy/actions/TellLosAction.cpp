@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "TellLosAction.h"
 
-
 using namespace ai;
 
 bool TellLosAction::Execute(Event event)

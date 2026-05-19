@@ -79,7 +79,6 @@ namespace ai
                 creators["immolate"] = &TriggerFactoryInternal::immolate;
                 creators["target has immolate"] = &TriggerFactoryInternal::target_has_immolate;
 
-
             }
 
         private:
@@ -173,8 +172,6 @@ namespace ai
         };
     };
 };
-
-
 
 WarlockAiObjectContext::WarlockAiObjectContext(PlayerbotAI* ai) : AiObjectContext(ai)
 {

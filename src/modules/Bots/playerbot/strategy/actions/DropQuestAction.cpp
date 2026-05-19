@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "DropQuestAction.h"
 
-
 using namespace ai;
 
 bool DropQuestAction::Execute(Event event)

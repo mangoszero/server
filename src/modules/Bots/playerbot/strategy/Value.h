@@ -15,7 +15,10 @@ namespace ai
         UntypedValue(PlayerbotAI* ai, string name) : AiNamedObject(ai, name) {}
         virtual void Update() {}
         virtual void Reset() {}
-        virtual string Format() { return "?"; }
+        virtual string Format()
+        {
+             return "?";
+        }
     };
 
     /**
@@ -29,7 +32,10 @@ namespace ai
     public:
         virtual T Get() = 0;
         virtual void Set(T value) = 0;
-        operator T() { return Get(); }
+        operator T()
+        {
+             return Get();
+        }
     };
 
     /**
@@ -50,7 +56,7 @@ namespace ai
          */
         CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
             checkInterval(checkInterval), ticksElapsed(checkInterval)
-        { }
+        {}
 
         /**
          * @brief Destroy the Calculated Value object
@@ -100,7 +106,6 @@ namespace ai
         int ticksElapsed;
         T value; ///< The cached value.
     };
-
 
     /**
      * @brief Class for calculated uint8 values.
@@ -218,10 +223,17 @@ namespace ai
         virtual ~ManualSetValue() {}
 
     public:
-        virtual T Get() { return value; }
+        virtual T Get()
+        {
+             return value;
+        }
+
         virtual void Set(T value) { this->value = value; }
-        virtual void Update() { }
-        virtual void Reset() { value = defaultValue; }
+        virtual void Update() {}
+        virtual void Reset()
+        {
+             value = defaultValue;
+        }
 
     protected:
         T value; ///< The current value.
