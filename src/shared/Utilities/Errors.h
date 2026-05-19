@@ -27,7 +27,6 @@
 
 #include "Common/Common.h"
 
-
 #ifdef HAVE_ACE_STACK_TRACE_H
 #  include <ace/Stack_Trace.h>
 #endif

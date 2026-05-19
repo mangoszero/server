@@ -50,7 +50,11 @@ class SqlOperation
          * @brief
          *
          */
-        virtual void OnRemove() { delete this; }
+        virtual void OnRemove()
+        {
+             delete this;
+        }
+
         /**
          * @brief
          *
@@ -58,6 +62,7 @@ class SqlOperation
          * @return bool
          */
         virtual bool Execute(SqlConnection* conn) = 0;
+
         /**
          * @brief
          *
@@ -82,11 +87,17 @@ class SqlPlainRequest : public SqlOperation
          * @param sql
          */
         SqlPlainRequest(const char* sql) : m_sql(mangos_strdup(sql)) {}
+
         /**
          * @brief
          *
          */
-        ~SqlPlainRequest() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
+        ~SqlPlainRequest()
+        {
+             char* tofree = const_cast<char*>(m_sql);
+             delete[] tofree;
+        }
+
         /**
          * @brief
          *
@@ -111,6 +122,7 @@ class SqlTransaction : public SqlOperation
          *
          */
         SqlTransaction() {}
+
         /**
          * @brief
          *
@@ -147,6 +159,7 @@ class SqlPreparedRequest : public SqlOperation
          * @param arg
          */
         SqlPreparedRequest(int nIndex, SqlStmtParameters* arg);
+
         /**
          * @brief
          *
@@ -186,6 +199,7 @@ class SqlResultQueue : public ACE_Based::LockedQueue<MaNGOS::IQueryCallback* , A
          *
          */
         SqlResultQueue() {}
+
         /**
          * @brief
          *
@@ -213,11 +227,17 @@ class SqlQuery : public SqlOperation
          */
         SqlQuery(const char* sql, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_sql(mangos_strdup(sql)), m_callback(callback), m_queue(queue) {}
+
         /**
          * @brief
          *
          */
-        ~SqlQuery() { char* tofree = const_cast<char*>(m_sql); delete[] tofree; }
+        ~SqlQuery()
+        {
+             char* tofree = const_cast<char*>(m_sql);
+             delete[] tofree;
+        }
+
         /**
          * @brief
          *
@@ -242,16 +262,19 @@ class SqlQueryHolder
         typedef std::pair<const char*, QueryResult*> SqlResultPair;
         std::vector<SqlResultPair> m_queries; /**< TODO */
     public:
+
         /**
          * @brief
          *
          */
         SqlQueryHolder() {}
+
         /**
          * @brief
          *
          */
         ~SqlQueryHolder();
+
         /**
          * @brief
          *
@@ -260,6 +283,7 @@ class SqlQueryHolder
          * @return bool
          */
         bool SetQuery(size_t index, const char* sql);
+
         /**
          * @brief
          *
@@ -268,12 +292,14 @@ class SqlQueryHolder
          * @return bool
          */
         bool SetPQuery(size_t index, const char* format, ...) ATTR_PRINTF(3, 4);
+
         /**
          * @brief
          *
          * @param size
          */
         void SetSize(size_t size);
+
         /**
          * @brief
          *
@@ -281,6 +307,7 @@ class SqlQueryHolder
          * @return QueryResult
          */
         QueryResult* GetResult(size_t index);
+
         /**
          * @brief
          *
@@ -288,6 +315,7 @@ class SqlQueryHolder
          * @param result
          */
         void SetResult(size_t index, QueryResult* result);
+
         /**
          * @brief
          *
@@ -319,6 +347,7 @@ class SqlQueryHolderEx : public SqlOperation
          */
         SqlQueryHolderEx(SqlQueryHolder* holder, MaNGOS::IQueryCallback* callback, SqlResultQueue* queue)
             : m_holder(holder), m_callback(callback), m_queue(queue) {}
+
         /**
          * @brief
          *

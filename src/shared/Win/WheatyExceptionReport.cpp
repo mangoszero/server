@@ -828,7 +828,10 @@ char* WheatyExceptionReport::DumpTypeIndex(
     struct FINDCHILDREN : TI_FINDCHILDREN_PARAMS
     {
         ULONG   MoreChildIds[1024];
-        FINDCHILDREN() {Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);}
+        FINDCHILDREN()
+        {
+            Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);
+        }
     } children;
 
     children.Count = dwChildrenCount;

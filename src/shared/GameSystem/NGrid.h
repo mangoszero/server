@@ -82,16 +82,27 @@ class GridInfo
          * @param on
          */
         void setUnloadExplicitLock(bool on) { i_unloadExplicitLock = on; }
+
         /**
          * @brief
          *
          */
-        void incUnloadActiveLock() { ++i_unloadActiveLockCount; }
+        void incUnloadActiveLock()
+        {
+             ++i_unloadActiveLockCount;
+        }
+
         /**
          * @brief
          *
          */
-        void decUnloadActiveLock() { if (i_unloadActiveLockCount) { --i_unloadActiveLockCount; } }
+        void decUnloadActiveLock()
+        {
+             if (i_unloadActiveLockCount)
+             {
+                --i_unloadActiveLockCount;
+             }
+        }
 
         /**
          * @brief
@@ -264,41 +275,57 @@ class NGrid
          *
          * @return GridInfo
          */
-        GridInfo* getGridInfoRef() { return &i_GridInfo; }
+        GridInfo* getGridInfoRef()
+        {
+             return &i_GridInfo;
+        }
+
         /**
          * @brief
          *
          * @return const TimeTracker
          */
         const TimeTracker& getTimeTracker() const { return i_GridInfo.getTimeTracker(); }
+
         /**
          * @brief
          *
          * @return bool
          */
         bool getUnloadLock() const { return i_GridInfo.getUnloadLock(); }
+
         /**
          * @brief
          *
          * @param on
          */
         void setUnloadExplicitLock(bool on) { i_GridInfo.setUnloadExplicitLock(on); }
+
         /**
          * @brief
          *
          */
-        void incUnloadActiveLock() { i_GridInfo.incUnloadActiveLock(); }
+        void incUnloadActiveLock()
+        {
+             i_GridInfo.incUnloadActiveLock();
+        }
+
         /**
          * @brief
          *
          */
-        void decUnloadActiveLock() { i_GridInfo.decUnloadActiveLock(); }
+        void decUnloadActiveLock()
+        {
+             i_GridInfo.decUnloadActiveLock();
+        }
+
         /**
          * @brief
          *
          * @param interval
          */
         void ResetTimeTracker(time_t interval) { i_GridInfo.ResetTimeTracker(interval); }
+
         /**
          * @brief
          *
@@ -307,6 +334,7 @@ class NGrid
         void UpdateTimeTracker(time_t diff) { i_GridInfo.UpdateTimeTracker(diff); }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -320,6 +348,7 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -333,6 +362,7 @@ class NGrid
         }
 
         template<class T, class TT>
+
         /**
          * @brief
          *
@@ -349,6 +379,7 @@ class NGrid
         }
 
         template<class T, class TT>
+
         /**
          * @brief
          *
@@ -380,6 +411,7 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *
@@ -394,6 +426,7 @@ class NGrid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief
          *

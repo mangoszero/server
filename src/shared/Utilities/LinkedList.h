@@ -71,7 +71,10 @@ class LinkedListElement
          * Calls delink() to ensure the element is properly removed from its list
          * before being destroyed.
          */
-        ~LinkedListElement() { delink(); }
+        ~LinkedListElement()
+        {
+             delink();
+        }
 
         /**
          * @brief Checks if this element has a next element in the list
@@ -310,12 +313,19 @@ class LinkedListHead
          * @brief
          *
          */
-        void incSize() { ++iSize; }
+        void incSize()
+        {
+             ++iSize;
+        }
+
         /**
          * @brief
          *
          */
-        void decSize() { --iSize; }
+        void decSize()
+        {
+             --iSize;
+        }
 
         template<class _Ty>
         /**

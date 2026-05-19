@@ -45,26 +45,31 @@ class DBCStorage
          *
          * @param f
          */
-        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) { }
+        explicit DBCStorage(const char* f) : nCount(0), fieldCount(0), fmt(f), indexTable(NULL), m_dataTable(NULL) {}
+
         /**
          * @brief
          *
          */
-        ~DBCStorage() { Clear(); }
+        ~DBCStorage()
+        {
+             Clear();
+        }
 
         /**
         * @brief
         *
         * @return uint32
         */
-        //uint32  GetNumRows() const { return nCount; }
         uint32  GetNumRows() const { return loaded ? data.size() : nCount; }
+
         /**
          * @brief
          *
          * @return const char
          */
         char const* GetFormat() const { return fmt; }
+
         /**
          * @brief
          *
@@ -78,7 +83,6 @@ class DBCStorage
         * @param id
         * @return const T
         */
-        //T const* LookupEntry(uint32 id) const { return (id >= nCount) ? NULL : indexTable[id]; }
         T const* LookupEntry(uint32 id) const
         {
             if (loaded)
@@ -91,6 +95,7 @@ class DBCStorage
             }
             return (id >= nCount) ? NULL : indexTable[id];
         }
+
         /**
          * @brief
          *

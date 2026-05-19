@@ -68,6 +68,7 @@ class AuthCrypt
          * @param len Length of data to decrypt
          */
         void DecryptRecv(uint8*, size_t);
+
         /**
          * @brief Encrypt data to send to client
          * @param data Pointer to data buffer to encrypt
@@ -79,7 +80,10 @@ class AuthCrypt
          * @brief Check if the crypt object is initialized
          * @return True if initialized, false otherwise
          */
-        bool IsInitialized() { return _initialized; }
+        bool IsInitialized()
+        {
+             return _initialized;
+        }
 
     private:
         std::vector<uint8> _key; /**< Session key for encryption */

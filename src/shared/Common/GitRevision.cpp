@@ -69,7 +69,6 @@ char const* GitRevision::GetDepSD3Branch()
     return DEP_SD3_REVISION_BRANCH;
 }
 
-
 char const* GitRevision::GetCMakeVersion()
 {
     return CMAKE_VERSION;
