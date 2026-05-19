@@ -301,9 +301,6 @@ public:
      * @brief Virtual destructor for BattleGroundScore.
      * Used when deleting score from scores map.
      */
-    /**
-     * @brief Battle Ground Score.
-     */
     virtual ~BattleGroundScore() {}
 
     // Accessors
@@ -432,7 +429,11 @@ public:
      *
      * @return uint32 Instance ID of the battleground.
      */
-    uint32 GetInstanceID() { return m_Map ? GetBgMap()->GetInstanceId() : 0; }
+    uint32 GetInstanceID()
+    {
+         return m_Map ? GetBgMap()->GetInstanceId() : 0;
+    }
+
     /**
      * @brief Gets the status of the battleground.
      *
@@ -1010,7 +1011,6 @@ public:
      */
     void SendYell2ToAll(int32 entry, uint32 language, ObjectGuid guid, int32 arg1, int32 arg2);
 
-    /* Raid Group */
     /**
      * @brief Gets the raid group for the specified team.
      *
