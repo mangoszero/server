@@ -43,7 +43,7 @@
 #include "VMapFactory.h"
 #endif
  /*
-     All commands related to Teleportation
+    All commands related to Teleportation
  */
 
 /*

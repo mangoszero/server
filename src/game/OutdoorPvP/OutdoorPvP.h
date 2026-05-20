@@ -118,6 +118,7 @@ class OutdoorPvP
          * @param go Game object that was created
          */
         virtual void HandleGameObjectCreate(GameObject* /*go*/);
+
         /**
          * @brief Called when a game object is removed from the zone
          * @param go Game object that was removed
@@ -170,12 +171,14 @@ class OutdoorPvP
     protected:
 
         // Player related stuff
+
         /**
          * @brief Called when a player enters the zone
          * @param player Player entering the zone
          * @param isMainZone True if player entered main zone, false if subzone
          */
         virtual void HandlePlayerEnterZone(Player* /*player*/, bool /*isMainZone*/);
+
         /**
          * @brief Called when a player leaves the zone
          * @param player Player leaving the zone
@@ -228,6 +231,7 @@ class OutdoorPvP
          * @param animId Animation ID to play
          */
         void SetBannerVisual(const WorldObject* objRef, ObjectGuid goGuid, uint32 artKit, uint32 animId);
+
         /**
          * @brief Set banner visual directly on game object
          * @param go Game object to update

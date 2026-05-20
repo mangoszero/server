@@ -221,7 +221,7 @@ void HostileReference::updateOnlineStatus()
     // target is not in flight
     if (isValid() &&
         ((getTarget()->GetTypeId() != TYPEID_PLAYER || !((Player*)getTarget())->isGameMaster()) ||
-         !getTarget()->IsTaxiFlying()))
+        !getTarget()->IsTaxiFlying()))
     {
         Creature* creature = (Creature*) getSourceUnit();
         online = getTarget()->isInAccessablePlaceFor(creature);

@@ -46,7 +46,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         MapReference* getFirst()
         {
-             return (MapReference*)RefManager<Map, Player>::getFirst();
+            return (MapReference*)RefManager<Map, Player>::getFirst();
         }
 
         /**
@@ -61,7 +61,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         MapReference* getLast()
         {
-             return (MapReference*)RefManager<Map, Player>::getLast();
+            return (MapReference*)RefManager<Map, Player>::getLast();
         }
 
         /**
@@ -76,7 +76,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         iterator begin()
         {
-             return iterator(getFirst());
+            return iterator(getFirst());
         }
 
         /**
@@ -85,7 +85,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         iterator end()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 
         /**
@@ -94,7 +94,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         iterator rbegin()
         {
-             return iterator(getLast());
+            return iterator(getLast());
         }
 
         /**
@@ -103,7 +103,7 @@ class MapRefManager : public RefManager<Map, Player>
          */
         iterator rend()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 
         /**

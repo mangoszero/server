@@ -67,6 +67,7 @@ enum OutdoorPvPZones
  */
 struct CapturePointSlider
 {
+
     /**
      * @brief Default constructor
      */

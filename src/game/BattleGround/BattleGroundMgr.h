@@ -150,6 +150,7 @@ class BattleGroundQueue
          * @brief Constructor for BattleGroundQueue.
          */
         BattleGroundQueue();
+
         /**
          * @brief Destructor for BattleGroundQueue.
          */
@@ -256,10 +257,10 @@ class BattleGroundQueue
          * @brief Two dimensional array for storing all queued groups.
          * First dimension specifies the bgTypeId.
          * Second dimension specifies the player's group types.
-             BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
-             BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
-             BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
-             BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
+            BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
+            BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
+            BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
+            BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
          */
         GroupsQueueType m_QueuedGroups[MAX_BATTLEGROUND_BRACKETS][BG_QUEUE_GROUP_TYPES_COUNT]; /**< Two dimensional array for storing all queued groups. */
 
@@ -524,6 +525,7 @@ class BattleGroundMgr
          * @return BattleGround* Pointer to the battleground template.
          */
         BattleGround* GetBattleGroundTemplate(BattleGroundTypeId bgTypeId);
+
         /**
          * @brief Creates a new battleground instance.
          *
@@ -753,6 +755,7 @@ class BattleGroundMgr
         /* Battlegrounds */
         BattleGroundSet m_BattleGrounds[MAX_BATTLEGROUND_TYPE_ID]; /**< Array of maps storing battleground instances by type ID. */
         std::vector<uint32> m_QueueUpdateScheduler; /**< Vector for scheduling queue updates. */
+
         /**
          * @brief Set of client-visible battleground instance IDs.
          * The first dimension specifies the battleground type ID.

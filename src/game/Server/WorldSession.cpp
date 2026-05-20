@@ -467,6 +467,7 @@ bool WorldSession::Update(PacketFilter& updater)
 }
 
 #ifdef ENABLE_PLAYERBOTS
+
 /**
  * @brief Processes queued packets for a playerbot-controlled session.
  */

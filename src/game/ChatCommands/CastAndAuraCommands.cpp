@@ -442,9 +442,9 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
             AddAuraToPlayer(spellInfo, pl, m_session->GetPlayer());
             PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_APPLIED, spellInfo->Id, nameLink.c_str());
 
-         }
+        }
 
-         return true;
+        return true;
     }
 }
 

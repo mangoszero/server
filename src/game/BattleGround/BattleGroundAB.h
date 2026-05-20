@@ -227,6 +227,7 @@ public:
      * @brief Constructor for BattleGroundABScore.
      */
     BattleGroundABScore() : BasesAssaulted(0), BasesDefended(0) {};
+
     /**
      * @brief Destructor for BattleGroundABScore.
      */
@@ -237,6 +238,7 @@ public:
      * @return Number of bases assaulted.
      */
     uint32 GetAttr1() const { return BasesAssaulted; }
+
     /**
      * @brief Get the number of bases defended.
      * @return Number of bases defended.
@@ -259,6 +261,7 @@ public:
      * @brief Constructor for BattleGroundAB.
      */
     BattleGroundAB();
+
     /**
      * @brief Destructor for BattleGroundAB.
      */
@@ -269,21 +272,25 @@ public:
      * @param diff Time difference since the last update.
      */
     void Update(uint32 diff) override;
+
     /**
      * @brief Adds a player to the battleground.
      * @param plr The player to add.
      */
     void AddPlayer(Player* plr) override;
+
     /**
      * @brief Starts the event to open doors.
      */
     void StartingEventOpenDoors() override;
+
     /**
      * @brief Removes a player from the battleground.
      * @param plr The player to remove.
      * @param guid The GUID of the player.
      */
     void RemovePlayer(Player* plr, ObjectGuid guid) override;
+
     /**
      * @brief Handles area triggers.
      * @param source The player who triggered the area.
@@ -291,15 +298,18 @@ public:
      * @return True if the trigger was handled, false otherwise.
      */
     bool HandleAreaTrigger(Player* source, uint32 trigger) override;
+
     /**
      * @brief Resets the battleground state.
      */
     void Reset() override;
+
     /**
      * @brief Ends the battleground.
      * @param winner The winning team.
      */
     void EndBattleGround(Team winner) override;
+
     /**
      * @brief Gets the closest graveyard for a player.
      * @param player The player.
@@ -308,6 +318,7 @@ public:
     WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
     /* Scorekeeping */
+
     /**
      * @brief Updates the player score.
      * @param source The player.
@@ -324,6 +335,7 @@ public:
     void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
     /* Nodes occupying */
+
     /**
      * @brief Handles the event when a player clicks on a flag.
      * @param source The player who clicked the flag.
@@ -332,6 +344,7 @@ public:
     void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
 
     /* Premature finish */
+
     /**
      * @brief Gets the premature finish winning team.
      * @return The winning team.
@@ -340,6 +353,7 @@ public:
 
 private:
     /* Gameobject spawning/despawning */
+
     /**
      * @brief Creates a banner.
      * @param node The node.
@@ -348,6 +362,7 @@ private:
      * @param delay Whether to delay the creation.
      */
     void _CreateBanner(uint8 node, uint8 type, uint8 teamIndex, bool delay);
+
     /**
      * @brief Sends a node update.
      * @param node The node.
@@ -356,6 +371,7 @@ private:
 
     /* Creature spawning/despawning */
     // TODO: working, scripted peons spawning
+
     /**
      * @brief Handles node occupation.
      * @param node The node.

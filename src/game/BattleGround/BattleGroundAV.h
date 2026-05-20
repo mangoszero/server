@@ -300,6 +300,7 @@ const uint32 BG_AV_NodeWorldStates[BG_AV_NODES_MAX][4] = /**< alliance_control a
 };
 
 #define BG_AV_MAX_GRAVETYPES 4
+
 /**
  * @brief Through the armor scrap quest, 4 different grave defenders exist.
  *
@@ -369,6 +370,7 @@ class BattleGroundAVScore : public BattleGroundScore
          * @brief Constructor for BattleGroundAVScore.
          */
         BattleGroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), SecondaryObjectives(0), LieutnantCount(0), SecondaryNPC(0) {};
+
         /**
          * @brief Destructor for BattleGroundAVScore.
          */
@@ -413,6 +415,7 @@ class BattleGroundAV : public BattleGround
          * @brief Constructor for BattleGroundAV.
          */
         BattleGroundAV();
+
         /**
          * @brief Updates the battleground.
          *
@@ -431,6 +434,7 @@ class BattleGroundAV : public BattleGround
          * @brief Opens the doors at the start of the battleground.
          */
         void StartingEventOpenDoors() override;
+
         /**
          * @brief Fills the initial world states for the battleground.
          *
@@ -454,6 +458,7 @@ class BattleGroundAV : public BattleGround
         void Reset() override;
 
         /* General functions */
+
         /**
          * @brief Updates the score for a team.
          *
@@ -472,6 +477,7 @@ class BattleGroundAV : public BattleGround
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
         /* Event handling functions - these are are called from external scripts */
+
         /**
          * @brief Handles a player clicking on a flag.
          *
@@ -545,6 +551,7 @@ class BattleGroundAV : public BattleGround
 
     private:
         /* Node handling functions */
+
         /**
          * @brief Handles a player assaulting a point.
          *
@@ -632,6 +639,7 @@ class BattleGroundAV : public BattleGround
         bool IsGrave(BG_AV_Nodes node) const { return (node == BG_AV_NODES_ERROR) ? false : !m_Nodes[node].Tower; }
 
         /* Mine handling functions */
+
         /**
          * @brief Changes the owner of a mine.
          *
@@ -641,6 +649,7 @@ class BattleGroundAV : public BattleGround
         void ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx);
 
         /* World state handling functions */
+
         /**
          * @brief Gets the world state type for a node.
          *

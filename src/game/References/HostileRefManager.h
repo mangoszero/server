@@ -60,7 +60,7 @@ class HostileRefManager : public RefManager<Unit, ThreatManager>
          */
         Unit* getOwner()
         {
-             return iOwner;
+            return iOwner;
         }
 
         /**
@@ -102,7 +102,7 @@ class HostileRefManager : public RefManager<Unit, ThreatManager>
          */
         HostileReference* getFirst()
         {
-             return ((HostileReference*) RefManager<Unit, ThreatManager>::getFirst());
+            return ((HostileReference*) RefManager<Unit, ThreatManager>::getFirst());
         }
 
         /**

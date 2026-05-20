@@ -81,7 +81,7 @@ class MapReference : public Reference<Map, Player>
          */
         ~MapReference()
         {
-             unlink();
+            unlink();
         }
 
         /**
@@ -90,7 +90,7 @@ class MapReference : public Reference<Map, Player>
          */
         MapReference* next()
         {
-             return (MapReference*)Reference<Map, Player>::next();
+            return (MapReference*)Reference<Map, Player>::next();
         }
 
         /**
@@ -105,7 +105,7 @@ class MapReference : public Reference<Map, Player>
          */
         MapReference* nockeck_prev()
         {
-             return (MapReference*)Reference<Map, Player>::nocheck_prev();
+            return (MapReference*)Reference<Map, Player>::nocheck_prev();
         }
 
         /**

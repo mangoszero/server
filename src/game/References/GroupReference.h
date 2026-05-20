@@ -66,7 +66,7 @@ class GroupReference : public Reference<Group, Player>
          */
         ~GroupReference()
         {
-             unlink();
+            unlink();
         }
 
         /**
@@ -75,7 +75,7 @@ class GroupReference : public Reference<Group, Player>
          */
         GroupReference* next()
         {
-             return (GroupReference*)Reference<Group, Player>::next();
+            return (GroupReference*)Reference<Group, Player>::next();
         }
 
         /**

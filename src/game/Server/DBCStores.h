@@ -69,6 +69,7 @@ uint32 GetTalentSpellCost(TalentSpellPos const* pos);
 TalentSpellPos const* GetTalentSpellPos(uint32 spellId);
 
 int32 GetAreaFlagByAreaID(uint32 area_id);                  // -1 if not found
+
 /**
  * Returns the default area flag associated with the specified map id.
  */
@@ -130,7 +131,7 @@ uint32 const* /*[3]*/ GetTalentTabPages(uint32 cls);
  */
 bool IsPointInAreaTriggerZone(AreaTriggerEntry const* atEntry, uint32 mapid, float x, float y, float z, float delta = 0.0f);
 
- uint32 GetCreatureModelRace(uint32 model_id);
+uint32 GetCreatureModelRace(uint32 model_id);
 
 extern DBCStorage <AreaTableEntry>               sAreaStore;// recommend access using functions
 extern DBCStorage <AreaTriggerEntry>             sAreaTriggerStore;
@@ -197,11 +198,11 @@ extern DBCStorage <WorldSafeLocsEntry>           sWorldSafeLocsStore;
 void LoadDBCStores(const std::string& dataPath);
 
 // script support functions
- DBCStorage <SoundEntriesEntry>          const* GetSoundEntriesStore();
- DBCStorage <SpellEntry>                 const* GetSpellStore();
- DBCStorage <SpellRangeEntry>            const* GetSpellRangeStore();
- DBCStorage <FactionEntry>               const* GetFactionStore();
- DBCStorage <CreatureDisplayInfoEntry>   const* GetCreatureDisplayStore();
- DBCStorage <EmotesEntry>                const* GetEmotesStore();
- DBCStorage <EmotesTextEntry>            const* GetEmotesTextStore();
+DBCStorage <SoundEntriesEntry>          const* GetSoundEntriesStore();
+DBCStorage <SpellEntry>                 const* GetSpellStore();
+DBCStorage <SpellRangeEntry>            const* GetSpellRangeStore();
+DBCStorage <FactionEntry>               const* GetFactionStore();
+DBCStorage <CreatureDisplayInfoEntry>   const* GetCreatureDisplayStore();
+DBCStorage <EmotesEntry>                const* GetEmotesStore();
+DBCStorage <EmotesTextEntry>            const* GetEmotesTextStore();
 #endif

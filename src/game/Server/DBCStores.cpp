@@ -201,6 +201,7 @@ static bool LoadDBC_assert_print(uint32 fsize, uint32 rsize, const std::string& 
 }
 
 template<class T>
+
 /**
  * @brief Loads a DBC file and its localized string tables.
  *
@@ -1081,14 +1082,14 @@ uint32 GetCreatureModelRace(uint32 model_id)
 }
 
 // script support functions
- DBCStorage <SoundEntriesEntry>  const* GetSoundEntriesStore()   { return &sSoundEntriesStore;   }
- DBCStorage <SpellEntry>         const* GetSpellStore()          { return &sSpellStore;          }
- DBCStorage <SpellRangeEntry>    const* GetSpellRangeStore()     { return &sSpellRangeStore;     }
- DBCStorage <FactionEntry>       const* GetFactionStore()        { return &sFactionStore;        }
- DBCStorage <CreatureDisplayInfoEntry> const* GetCreatureDisplayStore()
- {
-      return &sCreatureDisplayInfoStore;
- }
+DBCStorage <SoundEntriesEntry>  const* GetSoundEntriesStore()   { return &sSoundEntriesStore;   }
+DBCStorage <SpellEntry>         const* GetSpellStore()          { return &sSpellStore;          }
+DBCStorage <SpellRangeEntry>    const* GetSpellRangeStore()     { return &sSpellRangeStore;     }
+DBCStorage <FactionEntry>       const* GetFactionStore()        { return &sFactionStore;        }
+DBCStorage <CreatureDisplayInfoEntry> const* GetCreatureDisplayStore()
+{
+    return &sCreatureDisplayInfoStore;
+}
 
- DBCStorage <EmotesEntry>        const* GetEmotesStore()         { return &sEmotesStore;         }
- DBCStorage <EmotesTextEntry>    const* GetEmotesTextStore()     { return &sEmotesTextStore;     }
+DBCStorage <EmotesEntry>        const* GetEmotesStore()         { return &sEmotesStore;         }
+DBCStorage <EmotesTextEntry>    const* GetEmotesTextStore()     { return &sEmotesTextStore;     }

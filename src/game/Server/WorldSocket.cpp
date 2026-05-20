@@ -775,19 +775,19 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     QueryResult* result =
         LoginDatabase.PQuery("SELECT "
-                             "`id`, "                      // 0
-                             "`gmlevel`, "                 // 1
-                             "`sessionkey`, "              // 2
-                             "`last_ip`, "                 // 3
-                             "`locked`, "                  // 4
-                             "`v`, "                       // 5
-                             "`s`, "                       // 6
-                             "`mutetime`, "                // 7
-                             "`locale`, "                   // 8
-                             "`os` "                        // 9
-                             "FROM `account` "
-                             "WHERE `username` = '%s'",
-                             safe_account.c_str());
+                            "`id`, "                      // 0
+                            "`gmlevel`, "                 // 1
+                            "`sessionkey`, "              // 2
+                            "`last_ip`, "                 // 3
+                            "`locked`, "                  // 4
+                            "`v`, "                       // 5
+                            "`s`, "                       // 6
+                            "`mutetime`, "                // 7
+                            "`locale`, "                  // 8
+                            "`os` "                       // 9
+                            "FROM `account` "
+                            "WHERE `username` = '%s'",
+                            safe_account.c_str());
 
     // Stop if the account is not found
     if (!result)

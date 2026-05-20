@@ -285,15 +285,19 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
                 uint32 q_min_level = leader->GetMinLevelForBattleGroundBracketId(bracketId, BgTypeId);
                 GroupsQueueType::const_iterator itr;
                 for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
+                {
                     if (!(*itr)->IsInvitedToBGInstanceGUID)
                     {
                         qAlliance += (*itr)->Players.size();
                     }
+                }
                 for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
+                {
                     if (!(*itr)->IsInvitedToBGInstanceGUID)
                     {
                         qHorde += (*itr)->Players.size();
                     }
+                }
 
                 // Show queue status to player only (when joining queue)
                 if (sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_QUEUE_ANNOUNCER_JOIN) == 1)
@@ -711,15 +715,20 @@ bool BattleGroundQueue::CheckPremadeMatch(BattleGroundBracketId bracket_id, uint
         // if groups aren't invited
         GroupsQueueType::const_iterator ali_group, horde_group;
         for (ali_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].begin(); ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end(); ++ali_group)
+        {
             if (!(*ali_group)->IsInvitedToBGInstanceGUID)
             {
                 break;
             }
+        }
+
         for (horde_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].begin(); horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end(); ++horde_group)
+        {
             if (!(*horde_group)->IsInvitedToBGInstanceGUID)
             {
                 break;
             }
+        }
 
         if (ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end() && horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end())
         {
@@ -809,10 +818,12 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint3
         for (; itr_team[j] != m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE + j].end(); ++(itr_team[j]))
         {
             if (!(*(itr_team[j]))->IsInvitedToBGInstanceGUID)
+            {
                 if (!m_SelectionPools[j].AddGroup(*(itr_team[j]), m_SelectionPools[(j + 1) % PVP_TEAM_COUNT].GetPlayerCount()))
                 {
                     break;
                 }
+            }
         }
         // do not allow to start bg with more than 2 players more on 1 faction
         if (abs((int32)(m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() - m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount())) > 2)
@@ -905,29 +916,30 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
     m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
     m_SelectionPools[TEAM_INDEX_HORDE].Init();
 
+    // check if there is premade against premade match
+    if (CheckPremadeMatch(bracket_id, MinPlayersPerTeam, MaxPlayersPerTeam))
     {
-        // check if there is premade against premade match
-        if (CheckPremadeMatch(bracket_id, MinPlayersPerTeam, MaxPlayersPerTeam))
+        // create new battleground
+        BattleGround* bg2 = sBattleGroundMgr.CreateNewBattleGround(bgTypeId, bracket_id);
+        if (!bg2)
         {
-            // create new battleground
-            BattleGround* bg2 = sBattleGroundMgr.CreateNewBattleGround(bgTypeId, bracket_id);
-            if (!bg2)
-            {
-                sLog.outError("BattleGroundQueue::Update - Can not create battleground: %u", bgTypeId);
-                return;
-            }
-            // invite those selection pools
-            for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
-                for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
-                {
-                    InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
-                }
-            // start bg
-            bg2->StartBattleGround();
-            // clear structures
-            m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
-            m_SelectionPools[TEAM_INDEX_HORDE].Init();
+            sLog.outError("BattleGroundQueue::Update - Can not create battleground: %u", bgTypeId);
+            return;
         }
+        // invite those selection pools
+        for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
+        {
+            for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
+            {
+                InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
+            }
+        }
+
+        // start bg
+        bg2->StartBattleGround();
+        // clear structures
+        m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
+        m_SelectionPools[TEAM_INDEX_HORDE].Init();
     }
 
     // now check if there are in queues enough players to start new game of (normal battleground, or non-rated arena)
@@ -945,10 +957,13 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
 
             // invite those selection pools
             for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
+            {
                 for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
                 {
                     InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
                 }
+            }
+
             // start bg
             bg2->StartBattleGround();
         }

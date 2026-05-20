@@ -69,7 +69,7 @@
  * Also initializes the opcode table for protocol handling.
  */
 WorldSocketMgr::WorldSocketMgr()
-  : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
+    : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
     reactor_(NULL), acceptor_(NULL)
 {
     InitializeOpcodes();

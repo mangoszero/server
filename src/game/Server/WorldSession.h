@@ -136,6 +136,7 @@ class PacketFilter
     protected:
         WorldSession* const m_pSession;
 };
+
 /**
  * @brief Map session filter class
  *

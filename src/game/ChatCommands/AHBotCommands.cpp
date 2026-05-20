@@ -38,7 +38,7 @@
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
  /**********************************************************************
-     Useful constants definition
+    Useful constants definition
   **********************************************************************/
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =

@@ -200,6 +200,7 @@ public:
     {
         m_minTime = value;
     }
+
     /**
      * @brief Get minimum auction duration
      * @return Minimum time in hours (at least 1, capped at max time)
@@ -225,12 +226,14 @@ public:
      * @param value Maximum time in hours
      */
     void SetMaxTime(uint32 value) { m_maxTime = value; }
+
     /**
      * @brief Get maximum auction duration
      * @return Maximum time in hours
      */
     uint32 GetMaxTime() const { return m_maxTime; }
     // Data access classified by item class and item quality //
+
     /**
      * @brief Set item amount for a specific class and quality
      * @param quality Item quality
@@ -238,6 +241,7 @@ public:
      * @param amount Amount to set
      */
     void SetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass, uint32 amount) { m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems = amount * m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
+
     /**
      * @brief Get item amount for a specific class and quality
      * @param quality Item quality
@@ -245,6 +249,7 @@ public:
      * @return Item amount
      */
     uint32 GetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems; }
+
     /**
      * @brief Set item quantity per stack for a specific class and quality
      * @param quality Item quality
@@ -252,6 +257,7 @@ public:
      * @param qty Quantity per stack
      */
     void SetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass, uint32 qty) { m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity = qty; }
+
     /**
      * @brief Get item quantity per stack for a specific class and quality
      * @param quality Item quality
@@ -259,6 +265,7 @@ public:
      * @return Quantity per stack
      */
     uint32 GetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
+
     /**
      * @brief Set missed items count for a specific class and quality
      * @param quality Item quality
@@ -276,6 +283,7 @@ public:
             m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = 0;
         }
     }
+
     /**
      * @brief Get missed items count for a specific class and quality
      * @param quality Item quality
@@ -285,24 +293,28 @@ public:
     uint32 GetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems; }
 
     // Data for every quality of item //
+
     /**
      * @brief Set item amount for a specific quality
      * @param quality Item quality
      * @param cnt Amount to set
      */
     void SetItemsAmountPerQuality(AuctionQuality quality, uint32 cnt) { m_ItemInfo[quality].AmountOfItems = cnt; }
+
     /**
      * @brief Get item amount for a specific quality
      * @param quality Item quality
      * @return Item amount
      */
     uint32 GetItemsAmountPerQuality(AuctionQuality quality) const { return m_ItemInfo[quality].AmountOfItems; }
+
     /**
      * @brief Set price ratio for a specific quality
      * @param quality Item quality
      * @param value Price ratio
      */
     void SetPriceRatioPerQuality(AuctionQuality quality, uint32 value) { m_ItemInfo[quality].PriceRatio = value; }
+
     /**
      * @brief Get price ratio for a specific quality
      * @param quality Item quality
@@ -337,6 +349,7 @@ public:
      * @return True if initialization successful, false otherwise
      */
     bool        Initialize() override;
+
     /**
      * @brief Update buyer operations for the specified auction house
      *
@@ -351,6 +364,7 @@ public:
      * @brief Load buyer configuration from config file
      */
     void        LoadConfig();
+
     /**
      * @brief Add new auction buyer bot bid
      * @param config Buyer configuration
@@ -366,6 +380,7 @@ private:
      * @param config Buyer configuration
      */
     void        LoadBuyerValues(AHB_Buyer_Config& config);
+
     /**
      * @brief Determine if an auction is buyable based on price criteria
      *
@@ -378,6 +393,7 @@ private:
      * @return True if entry is buyable, false otherwise
      */
     bool        IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice, double MaxBuyablePrice, uint32 MinBuyPrice, uint32 MaxChance, uint32 ChanceRatio);
+
     /**
      * @brief Determine if an auction is bidable based on price criteria
      *
@@ -390,22 +406,26 @@ private:
      * @return True if bot can bid on this entry, false otherwise
      */
     bool        IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, double MaxBidablePrice, uint32 MinBidPrice, uint32 MaxChance, uint32 ChanceRatio);
+
     /**
      * @brief Place a bid on an auction
      * @param auction Auction entry
      * @param bidPrice Bid price
      */
     void        PlaceBidToEntry(AuctionEntry* auction, uint32 bidPrice);
+
     /**
      * @brief Buy out an auction
      * @param auction Auction entry
      */
     void        BuyEntry(AuctionEntry* auction);
+
     /**
      * @brief Prepare list of auction entries to consider
      * @param config Buyer configuration
      */
     void        PrepareListOfEntry(AHB_Buyer_Config& config);
+
     /**
      * @brief Get a buyable auction entry
      * @param config Buyer configuration
@@ -427,10 +447,12 @@ class AuctionBotSeller : public AuctionBotAgent
 {
 public:
     typedef std::vector<uint32> ItemPool;
+
     /**
      * @brief Constructor
      */
     AuctionBotSeller();
+
     /**
      * @brief Destructor
      */
@@ -441,6 +463,7 @@ public:
      * @return True if initialization successful, false otherwise
      */
     bool Initialize() override;
+
     /**
      * @brief Update seller operations for the specified auction house
      *
@@ -450,6 +473,7 @@ public:
      * @return True if update was successful, false otherwise
      */
     bool Update(AuctionHouseType houseType) override;
+
     /**
      * @brief Add new auctions to an auction house
      *
@@ -458,6 +482,7 @@ public:
      * @param config Seller configuration
      */
     void addNewAuctions(AHB_Seller_Config& config);
+
     /**
      * @brief Set item ratios for all auction houses
      *
@@ -468,6 +493,7 @@ public:
      * @param ne Neutral item amount/ratio
      */
     void SetItemsRatio(uint32 al, uint32 ho, uint32 ne);
+
     /**
      * @brief Set item ratio for a specific auction house
      *
@@ -477,6 +503,7 @@ public:
      * @param val New ratio value
      */
     void SetItemsRatioForHouse(AuctionHouseType house, uint32 val);
+
     /**
      * @brief Set item amounts for all quality levels
      *
@@ -484,6 +511,7 @@ public:
      * @see AuctionQuality
      */
     void SetItemsAmount(uint32(&vals)[MAX_AUCTION_QUALITY]);
+
     /**
      * @brief Set item amount for a specific quality
      *
@@ -493,6 +521,7 @@ public:
      * @param val Number of items of this quality to be available
      */
     void SetItemsAmountForQuality(AuctionQuality quality, uint32 val);
+
     /**
      * @brief Load seller configuration from config file
      */
@@ -508,6 +537,7 @@ private:
      * @param config Seller configuration
      */
     void LoadSellerValues(AHB_Seller_Config& config);
+
     /**
      * @brief Set statistics for items on an auction house
      *
@@ -517,6 +547,7 @@ private:
      * @return Number of items processed
      */
     uint32 SetStat(AHB_Seller_Config& config);
+
     /**
      * @brief Generate random array for item selection
      *
@@ -528,6 +559,7 @@ private:
      * @return True if successful, false otherwise
      */
     bool getRandomArray(AHB_Seller_Config& config, RandomArray& ra, const std::vector<std::vector<uint32> >& addedItem);
+
     /**
      * @brief Set prices for an item
      *
@@ -540,6 +572,7 @@ private:
      * @param itemQuality Item quality
      */
     void SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, uint32& bidp, uint32 stackcnt, ItemQualities itemQuality);
+
     /**
      * @brief Load item quantities from configuration
      * @param config Seller configuration
@@ -2718,5 +2751,6 @@ void AuctionHouseBot::PurgeMailedItems()
     CharacterDatabase.PExecute(
         "DELETE FROM mail WHERE receiver = '%u'", ahbotGuid);
 }
+
 /** @} */
 

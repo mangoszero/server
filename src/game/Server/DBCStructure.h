@@ -574,7 +574,7 @@ struct MapEntry
     bool IsMountAllowed() const
     {
         return !IsDungeon() ||
-               MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
+                MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
     }
 
     bool IsContinent() const
@@ -589,6 +589,7 @@ struct MovieEntry
     // char*       filename;                                // 1        m_filename
     // uint32      unk2;                                    // 2        m_volume
 };
+
 /**
 * \struct QuestSortEntry
 * \brief Entry representing the type of quest within the game.

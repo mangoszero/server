@@ -40,6 +40,7 @@ class ThreatManager;
 struct SpellEntry;
 
 //==============================================================
+
 /**
  * @brief Threat calculation helper class
  *
@@ -62,6 +63,7 @@ class ThreatCalcHelper
 };
 
 //==============================================================
+
 /**
  * @brief Hostile reference class
  *
@@ -149,7 +151,7 @@ class HostileReference : public Reference<Unit, ThreatManager>
          */
         float getTempThreatModifyer()
         {
-             return iTempThreatModifyer;
+            return iTempThreatModifyer;
         }
 
         /**
@@ -203,7 +205,7 @@ class HostileReference : public Reference<Unit, ThreatManager>
          */
         HostileReference* next()
         {
-             return ((HostileReference*) Reference<Unit, ThreatManager>::next());
+            return ((HostileReference*) Reference<Unit, ThreatManager>::next());
         }
 
         /**
@@ -294,7 +296,7 @@ class ThreatContainer
          */
         ThreatContainer()
         {
-             iDirty = false;
+            iDirty = false;
         }
 
         /**
@@ -302,7 +304,7 @@ class ThreatContainer
          */
         ~ThreatContainer()
         {
-             clearReferences();
+            clearReferences();
         }
 
         /**
@@ -352,7 +354,7 @@ class ThreatContainer
          */
         HostileReference* getMostHated()
         {
-             return iThreatList.empty() ? NULL : iThreatList.front();
+            return iThreatList.empty() ? NULL : iThreatList.front();
         }
 
         /**
@@ -370,6 +372,7 @@ class ThreatContainer
 };
 
 //=================================================
+
 /**
  * @brief Threat manager class
  *
@@ -391,7 +394,7 @@ class ThreatManager
          */
         ~ThreatManager()
         {
-             clearReferences();
+            clearReferences();
         }
 
         /**
@@ -459,7 +462,7 @@ class ThreatManager
          */
         HostileReference* getCurrentVictim()
         {
-             return iCurrentVictim;
+            return iCurrentVictim;
         }
 
         /**

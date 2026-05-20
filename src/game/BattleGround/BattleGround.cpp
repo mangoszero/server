@@ -214,6 +214,7 @@ namespace MaNGOS
 } // namespace MaNGOS
 
 template<class Do>
+
 /**
  * @brief Broadcasts a worker function to all players in the battleground.
  *
