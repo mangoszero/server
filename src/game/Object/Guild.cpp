@@ -40,6 +40,7 @@
 #endif /* ENABLE_ELUNA */
 
 //// MemberSlot ////////////////////////////////////////////
+
 /**
  * @brief Refreshes cached member information from a player object.
  *
@@ -1144,6 +1145,7 @@ uint32 Guild::GetAccountsNumber()
 // Guild Eventlog part
 // *************************************************
 // Display guild eventlog
+
 /**
  * @brief Sends the guild event log to a session.
  *
@@ -1179,6 +1181,7 @@ void Guild::DisplayGuildEventLog(WorldSession* session)
 }
 
 // Load guild eventlog from DB
+
 /**
  * @brief Loads the guild event log from the database.
  */
@@ -1221,6 +1224,7 @@ void Guild::LoadGuildEventLogFromDB()
 }
 
 // Add entry to guild eventlog
+
 /**
  * @brief Appends a new guild event log entry and persists it.
  *

@@ -154,7 +154,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             /// @warning Caller must acquire lock separately before iterating
             inline MapType& GetContainer()
             {
-                 return m_objectMap;
+                return m_objectMap;
             }
 
             /// @brief Get reference to the synchronization lock.
@@ -163,7 +163,7 @@ class ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLev
             /// @note Use ACE guard macros when accessing this
             inline LockType& GetLock()
             {
-                 return i_lock;
+                return i_lock;
             }
 
             LockType i_lock;

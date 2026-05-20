@@ -109,7 +109,7 @@ class Corpse : public WorldObject
         time_t const& GetGhostTime() const { return m_time; }
         void ResetGhostTime()
         {
-             m_time = time(NULL);
+            m_time = time(NULL);
         }
         CorpseType GetType() const { return m_type; }
 
@@ -129,7 +129,7 @@ class Corpse : public WorldObject
 
         GridReference<Corpse>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
         bool IsExpired(time_t t) const;

@@ -37,6 +37,7 @@
 INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 
 // -------------------
+
 /**
  * @brief Loads EventAI text resources and optionally checks for unused entries.
  *
@@ -107,6 +108,7 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
 }
 
 // -------------------
+
 /**
  * @brief Loads EventAI summon definitions and optionally checks for unused entries.
  *
@@ -214,6 +216,7 @@ void CreatureEventAIMgr::CheckUnusedAISummons()
 }
 
 /// Helper function to check if a target-type is suitable for the event-type
+
 /**
  * @brief Validates whether an action target type is compatible with an event type.
  *
@@ -293,6 +296,7 @@ bool IsValidTargetType(EventAI_Type eventType, EventAI_ActionType actionType, ui
 }
 
 // -------------------
+
 /**
  * @brief Loads and validates all EventAI scripts from the database.
  */
@@ -794,9 +798,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             // used TARGET_T_ACTION_INVOKER, but likely should be _INVOKER_OWNER instead
                             if (action.cast.target == TARGET_T_ACTION_INVOKER &&
                                 (spell->HasSpellEffect(SPELL_EFFECT_QUEST_COMPLETE) || spell->HasSpellEffect(SPELL_EFFECT_DUMMY)))
-                                     {
-                                         sLog.outErrorEventAI("Event %u Action %u has TARGET_T_ACTION_INVOKER(%u) target type, but should have TARGET_T_ACTION_INVOKER_OWNER(%u).", i, j + 1, TARGET_T_ACTION_INVOKER, TARGET_T_ACTION_INVOKER_OWNER);
-                                     }
+                            {
+                                sLog.outErrorEventAI("Event %u Action %u has TARGET_T_ACTION_INVOKER(%u) target type, but should have TARGET_T_ACTION_INVOKER_OWNER(%u).", i, j + 1, TARGET_T_ACTION_INVOKER, TARGET_T_ACTION_INVOKER_OWNER);
+                            }
 
                             // Spell that should only target players, but could get any
                             if (spell->HasAttribute(SPELL_ATTR_EX3_TARGET_ONLY_PLAYER) &&

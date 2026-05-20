@@ -151,7 +151,7 @@ class LootStore
             : m_name(name), m_entryName(entryName), m_ratesAllowed(ratesAllowed) {}
         virtual ~LootStore()
         {
-             Clear();
+            Clear();
         }
 
         void Verify() const;
@@ -261,32 +261,32 @@ class LootValidatorRefManager : public RefManager<Loot, LootValidatorRef>
 
         LootValidatorRef* getFirst()
         {
-             return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getFirst();
+            return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getFirst();
         }
 
         LootValidatorRef* getLast()
         {
-             return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getLast();
+            return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getLast();
         }
 
         iterator begin()
         {
-             return iterator(getFirst());
+            return iterator(getFirst());
         }
 
         iterator end()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 
         iterator rbegin()
         {
-             return iterator(getLast());
+            return iterator(getLast());
         }
 
         iterator rend()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 };
 
@@ -319,7 +319,7 @@ struct Loot
         Loot(WorldObject const* lootTarget, uint32 _gold = 0) : gold(_gold), unlootedCount(0), loot_type(LOOT_CORPSE), m_lootTarget(lootTarget) {}
         ~Loot()
         {
-             clear();
+            clear();
         }
 
         // if loot becomes invalid this reference is used to inform the listener

@@ -123,7 +123,7 @@ class AuctionHouseObject
 
         uint32 GetCount()
         {
-             return AuctionsMap.size();
+            return AuctionsMap.size();
         }
 
         AuctionEntryMap const& GetAuctions() const { return AuctionsMap; }

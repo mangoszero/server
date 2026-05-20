@@ -45,12 +45,12 @@ class Camera
 
         WorldObject* GetBody()
         {
-             return m_source;
+            return m_source;
         }
 
         Player* GetOwner()
         {
-             return &m_owner;
+            return &m_owner;
         }
 
         // set camera's view to any worldobject
@@ -84,7 +84,7 @@ class Camera
     public:
         GridReference<Camera>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
         bool isActiveObject() const { return false; }

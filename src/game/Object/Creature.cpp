@@ -380,6 +380,7 @@ void Creature::RemoveCorpse(bool inPlace)
 /**
  * change the entry of creature until respawn
  */
+
 /**
  * @brief Initializes creature template-dependent data for the current entry.
  *
@@ -1317,8 +1318,8 @@ bool Creature::CanInteractWithBattleMaster(Player* pPlayer, bool msg) const
 bool Creature::CanTrainAndResetTalentsOf(Player* pPlayer) const
 {
     return pPlayer->getLevel() >= 10
-           && GetCreatureInfo()->TrainerType == TRAINER_TYPE_CLASS
-           && pPlayer->getClass() == GetCreatureInfo()->TrainerClass;
+        && GetCreatureInfo()->TrainerType == TRAINER_TYPE_CLASS
+        && pPlayer->getClass() == GetCreatureInfo()->TrainerClass;
 }
 
 /**
@@ -1344,9 +1345,9 @@ void Creature::PrepareBodyLootState()
     // if not have normal loot allow skinning if need
     if (!lootForSkin && GetCreatureInfo()->SkinningLootId)
     {
-      RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-      SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
-      return;
+        RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
+        return;
     }
 
     RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
@@ -1356,6 +1357,7 @@ void Creature::PrepareBodyLootState()
 /**
  * Return original player who tap creature, it can be different from player/group allowed to loot so not use it for loot code
  */
+
 /**
  * @brief Gets the original player who tapped the creature.
  *
@@ -1369,6 +1371,7 @@ Player* Creature::GetOriginalLootRecipient() const
 /**
  * Return group if player tap creature as group member, independent is player after leave group or stil be group member
  */
+
 /**
  * @brief Gets the original group loot recipient.
  *
@@ -1387,6 +1390,7 @@ Group* Creature::GetGroupLootRecipient() const
  * This is for example important if player after tap leave group.
  * If group not exist or disbanded or player tap creature not as group member return player
  */
+
 /**
  * @brief Gets the player who currently owns loot rights for this creature.
  *
@@ -1427,6 +1431,7 @@ Player* Creature::GetLootRecipient() const
 /**
  * Set player and group (if player group member) who tap creature
  */
+
 /**
  * @brief Assigns loot rights to a unit and its group if applicable.
  *
@@ -1481,6 +1486,7 @@ void Creature::SaveToDB()
 }
 
 // return true if this creature is tapped by the player or by a member of his group.
+
 /**
  * @brief Checks whether the creature is tapped by a player or that player's group.
  *
@@ -1571,22 +1577,22 @@ void Creature::SaveToDB(uint32 mapid)
 
     std::ostringstream ss;
     ss << "INSERT INTO `creature` VALUES ("
-       << GetGUIDLow() << ","
-       << data.id << ","
-       << data.mapid << ","
-       << data.modelid_override << ","
-       << data.equipmentId << ","
-       << data.posX << ","
-       << data.posY << ","
-       << data.posZ << ","
-       << data.orientation << ","
-       << data.spawntimesecs << ","                        // respawn time
-       << (float) data.spawndist << ","                    // spawn distance (float)
-       << data.currentwaypoint << ","                      // currentwaypoint
-       << data.curhealth << ","                            // curhealth
-       << data.curmana << ","                              // curmana
-       << (data.is_dead  ? 1 : 0) << ","                   // is_dead
-       << uint32(data.movementType) << ")";                // default movement generator type, cast to prevent save as symbol
+        << GetGUIDLow() << ","
+        << data.id << ","
+        << data.mapid << ","
+        << data.modelid_override << ","
+        << data.equipmentId << ","
+        << data.posX << ","
+        << data.posY << ","
+        << data.posZ << ","
+        << data.orientation << ","
+        << data.spawntimesecs << ","                        // respawn time
+        << (float) data.spawndist << ","                    // spawn distance (float)
+        << data.currentwaypoint << ","                      // currentwaypoint
+        << data.curhealth << ","                            // curhealth
+        << data.curmana << ","                              // curmana
+        << (data.is_dead  ? 1 : 0) << ","                   // is_dead
+        << uint32(data.movementType) << ")";                // default movement generator type, cast to prevent save as symbol
 
     WorldDatabase.PExecuteLog("%s", ss.str().c_str());
 
@@ -2391,8 +2397,7 @@ SpellEntry const* Creature::ReachWithSpellAttack(Unit* pVictim)
             if ((spellInfo->Effect[j] == SPELL_EFFECT_SCHOOL_DAMAGE)       ||
                 (spellInfo->Effect[j] == SPELL_EFFECT_INSTAKILL)            ||
                 (spellInfo->Effect[j] == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE) ||
-                (spellInfo->Effect[j] == SPELL_EFFECT_HEALTH_LEECH)
-               )
+                (spellInfo->Effect[j] == SPELL_EFFECT_HEALTH_LEECH))
             {
                 bcontinue = false;
                 break;
@@ -2595,6 +2600,7 @@ void Creature::CallForHelp(float fRadius)
 }
 
 /// if enemy provided, check for initial combat help against enemy
+
 /**
  * @brief Checks whether this creature may assist another unit against an enemy.
  *
@@ -2771,6 +2777,7 @@ CreatureDataAddon const* Creature::GetCreatureAddon() const
 }
 
 // creature_addon table
+
 /**
  * @brief Loads creature addon data such as mount, bytes, emote, and auras.
  *
@@ -2842,6 +2849,7 @@ bool Creature::LoadCreatureAddon(bool reload)
 }
 
 /// Sends a message to LocalDefense and WorldDefense channels for players of the other team
+
 /**
  * @brief Sends a zone-under-attack message for the opposing team.
  *
@@ -3466,6 +3474,7 @@ TrainerSpellData const* Creature::GetTrainerSpells() const
 }
 
 // overwrite WorldObject function for proper name localization
+
 /**
  * @brief Gets the localized creature name for a locale index.
  *

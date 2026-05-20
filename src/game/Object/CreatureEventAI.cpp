@@ -183,7 +183,7 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
 
 #define LOG_PROCESS_EVENT                                                                                                       \
     DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: Event type %u (script %u) triggered for %s (invoked by %s)",    \
-                     pHolder.Event.event_type, pHolder.Event.event_id, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>")
+                    pHolder.Event.event_type, pHolder.Event.event_id, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>")
 
 /**
  * @brief Checks whether an EventAI event type is driven by timer-style scheduling.

@@ -71,6 +71,7 @@ ObjectPosSelector::ObjectPosSelector(float x, float y, float dist, float searche
  *
  * Used circles data stored as projections to searcher dist size circle as angle coordinate and half angle size
  */
+
 /**
  * @brief Adds an occupied area that should be excluded from candidate positions.
  *
@@ -110,6 +111,7 @@ void ObjectPosSelector::AddUsedArea(WorldObject const* obj, float angle, float d
  *
  * @return true, if used circle not intercepted with searcher circle in terms projection angles
  */
+
 /**
  * @brief Checks whether a candidate angle conflicts with an occupied area.
  *
@@ -131,6 +133,7 @@ bool ObjectPosSelector::CheckAngle(UsedArea const& usedArea, UsedAreaSide side, 
  *
  * @return true, if 0.0f angle with m_searcher_halfangle*2 angle size not intercept with used circles
  */
+
 /**
  * @brief Checks whether the forward-facing angle is available.
  *
@@ -140,12 +143,13 @@ bool ObjectPosSelector::CheckOriginalAngle() const
 {
     // check first left/right used angles if exists
     return (m_UsedAreaLists[USED_POS_PLUS].empty()  || CheckAngle(*m_UsedAreaLists[USED_POS_PLUS].begin(), USED_POS_PLUS, 0.0f)) &&
-           (m_UsedAreaLists[USED_POS_MINUS].empty() || CheckAngle(*m_UsedAreaLists[USED_POS_MINUS].begin(), USED_POS_MINUS, 0.0f));
+            (m_UsedAreaLists[USED_POS_MINUS].empty() || CheckAngle(*m_UsedAreaLists[USED_POS_MINUS].begin(), USED_POS_MINUS, 0.0f));
 }
 
 /**
  * Initialize data for search angles starting from first possible angle at both sides
  */
+
 /**
  * @brief Initializes angle iteration state for both sides of the search arc.
  */
@@ -158,6 +162,7 @@ void ObjectPosSelector::InitializeAngle()
 /**
  * Initialize data for search angles starting from first possible angle at side
  */
+
 /**
  * @brief Initializes angle iteration state for one side of the search arc.
  *
@@ -189,6 +194,7 @@ void ObjectPosSelector::InitializeAngle(UsedAreaSide side)
  *
  * @return true, if angle found
  */
+
 /**
  * @brief Finds the next available free angle on either side.
  *
@@ -278,6 +284,7 @@ bool ObjectPosSelector::NextSideAngle(UsedAreaSide side, float& angle)
  *
  * @return true, if angle found
  */
+
 /**
  * @brief Finds the next angle inside previously occupied areas.
  *
@@ -293,9 +300,9 @@ bool ObjectPosSelector::NextUsedAngle(float& angle)
     }
 
     // ++ direction less updated
-    if (m_nextUsedAreaItr[USED_POS_PLUS] != m_UsedAreaLists[USED_POS_PLUS].end() &&
-        (m_nextUsedAreaItr[USED_POS_MINUS] == m_UsedAreaLists[USED_POS_MINUS].end() ||
-         m_nextUsedAreaItr[USED_POS_PLUS]->first <= m_nextUsedAreaItr[USED_POS_MINUS]->first))
+    if (m_nextUsedAreaItr[USED_POS_PLUS] != m_UsedAreaLists[USED_POS_PLUS].end()
+    && (m_nextUsedAreaItr[USED_POS_MINUS] == m_UsedAreaLists[USED_POS_MINUS].end()
+    || m_nextUsedAreaItr[USED_POS_PLUS]->first <= m_nextUsedAreaItr[USED_POS_MINUS]->first))
     {
         angle = m_nextUsedAreaItr[USED_POS_PLUS]->first * SignOf(USED_POS_PLUS);
         ++m_nextUsedAreaItr[USED_POS_PLUS];

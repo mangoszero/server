@@ -1242,6 +1242,7 @@ bool Item::IsLimitedToAnotherMapOrZone(uint32 cur_mapId, uint32 cur_zoneId) cons
 // Though the client has the information in the item's data field,
 // we have to send SMSG_ITEM_TIME_UPDATE to display the remaining
 // time.
+
 /**
  * @brief Sends the remaining duration update packet for a timed item.
  *

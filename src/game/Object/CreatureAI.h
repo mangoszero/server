@@ -129,6 +129,7 @@ class CreatureAI
         virtual ~CreatureAI();
 
         ///== Information about AI ========================
+
         /**
          * This function is used to display information about the AI.
          * It is called when the .npc aiinfo command is used.
@@ -248,6 +249,7 @@ class CreatureAI
          * @param reason The spell state (see SpellCastResult enum)
          */
         virtual void OnSpellCastChange(const SpellEntry* /*pSpell*/, SpellCastResult /*reason*/) {}
+
         /**
          * Called when spell hits creature's target
          * @param pTarget Target that we hit with the spell
@@ -383,7 +385,7 @@ class CreatureAI
         // Reset should be defined here, as it is called from out the AI ctor now
         virtual void Reset()
         {
-             m_combatMovement = COMBAT_MOVEMENT_SCRIPT;
+            m_combatMovement = COMBAT_MOVEMENT_SCRIPT;
         }
 
     protected:

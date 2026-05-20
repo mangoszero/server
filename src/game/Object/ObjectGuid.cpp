@@ -82,6 +82,7 @@ std::string ObjectGuid::GetString() const
 }
 
 template<HighGuid high>
+
 /**
  * @brief Generates the next GUID counter for a specific high GUID type.
  *

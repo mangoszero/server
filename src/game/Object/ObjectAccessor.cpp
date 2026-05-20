@@ -150,23 +150,24 @@ Player* ObjectAccessor::FindPlayerByName(const char* name)
 }
 
 //This method should not be here
+
 /**
  * @brief Saves all players currently present in the world.
  */
 void ObjectAccessor::SaveAllPlayers()
 {
-   SessionMap const& smap = sWorld.GetAllSessions();
-   SessionMap::const_iterator iter;
-   for (iter = smap.begin(); iter != smap.end(); ++iter)
-   {
-       if (Player* player = iter->second->GetPlayer())
-       {
-           if (player->IsInWorld())
-           {
-               player->SaveToDB();
-           }
-       }
-   }
+    SessionMap const& smap = sWorld.GetAllSessions();
+    SessionMap::const_iterator iter;
+    for (iter = smap.begin(); iter != smap.end(); ++iter)
+    {
+        if (Player* player = iter->second->GetPlayer())
+        {
+            if (player->IsInWorld())
+            {
+                player->SaveToDB();
+            }
+        }
+    }
 }
 
 /**
@@ -265,21 +266,23 @@ void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, 
     ACE_GUARD(LockType, guard, i_corpseGuard)
 
     for (Player2CorpsesMapType::iterator iter = i_player2corpse.begin(); iter != i_player2corpse.end(); ++iter)
-      if (iter->second->GetGrid() == gridpair)
-      {
-          // verify, if the corpse in our instance (add only corpses which are)
-          if (map->Instanceable())
-          {
-              if (iter->second->GetInstanceId() == map->GetInstanceId())
-              {
-                  grid.AddWorldObject(iter->second);
-              }
-          }
-          else
-          {
-              grid.AddWorldObject(iter->second);
-          }
-      }
+    {
+        if (iter->second->GetGrid() == gridpair)
+        {
+              // verify, if the corpse in our instance (add only corpses which are)
+            if (map->Instanceable())
+            {
+                if (iter->second->GetInstanceId() == map->GetInstanceId())
+                {
+                    grid.AddWorldObject(iter->second);
+                }
+            }
+            else
+            {
+                grid.AddWorldObject(iter->second);
+            }
+        }
+    }
 }
 
 /**

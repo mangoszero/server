@@ -203,7 +203,7 @@ class Guild
 
         uint32 GetId()
         {
-             return m_Id;
+            return m_Id;
         }
 
         ObjectGuid GetLeaderGuid() const { return m_LeaderGuid; }
@@ -338,7 +338,7 @@ class Guild
     private:
         void UpdateAccountsNumber()
         {
-             m_accountsNumber = 0;
+            m_accountsNumber = 0;
         }
 
 };

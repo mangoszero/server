@@ -691,8 +691,8 @@ class GameObject : public WorldObject
         bool isSpawned() const
         {
             return m_respawnDelayTime == 0 ||
-                   (m_respawnTime > 0 && !m_spawnedByDefault) ||
-                   (m_respawnTime == 0 && m_spawnedByDefault);
+                (m_respawnTime > 0 && !m_spawnedByDefault) ||
+                (m_respawnTime == 0 && m_spawnedByDefault);
         }
         bool isSpawnedByDefault() const { return m_spawnedByDefault; }
         void SetSpawnedByDefault(bool b) { m_spawnedByDefault = b; }
@@ -732,7 +732,7 @@ class GameObject : public WorldObject
         bool IsInSkillupList(Player* player) const;
         void ClearSkillupList()
         {
-             m_SkillupSet.clear();
+            m_SkillupSet.clear();
         }
         void ClearAllUsesData()
         {
@@ -745,7 +745,7 @@ class GameObject : public WorldObject
         void AddUniqueUse(Player* player);
         void AddUse()
         {
-             ++m_useTimes;
+            ++m_useTimes;
         }
 
         uint32 GetUseCount() const { return m_useTimes; }
@@ -798,7 +798,7 @@ class GameObject : public WorldObject
 
         GridReference<GameObject>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
         GameObjectModel* m_model;

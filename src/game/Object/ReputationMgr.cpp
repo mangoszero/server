@@ -238,6 +238,7 @@ struct rep
 };
 
 /* Called from Player::SendInitialPacketsBeforeAddToMap */
+
 /**
  * @brief Sends the initial reputation table to the client.
  */

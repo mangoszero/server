@@ -300,7 +300,14 @@ class Item : public Object
 
         Bag* ToBag()
         {
-             if (IsBag()) return reinterpret_cast<Bag*>(this); else return NULL;
+            if (IsBag())
+            {
+                return reinterpret_cast<Bag*>(this);
+            }
+            else
+            {
+                return NULL;
+            }
         }
         const Bag* ToBag() const { if (IsBag()) return reinterpret_cast<const Bag*>(this); else return NULL; }
 
@@ -324,7 +331,7 @@ class Item : public Object
         uint8 GetSlot() const {return m_slot;}
         Bag* GetContainer()
         {
-             return m_container;
+            return m_container;
         }
 
         uint8 GetBagSlot() const;

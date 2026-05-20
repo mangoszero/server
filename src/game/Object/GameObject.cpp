@@ -997,6 +997,7 @@ void GameObject::DeleteFromDB()
 /*********************************************************/
 /***                    QUEST SYSTEM                   ***/
 /*********************************************************/
+
 /**
  * @brief Checks whether the game object starts the specified quest.
  *
@@ -1324,7 +1325,7 @@ void GameObject::SummonLinkedTrapIfAny()
         linkedGO->SetUInt32Value(GAMEOBJECT_LEVEL, GetUInt32Value(GAMEOBJECT_LEVEL));
     }
 
-   linkedGO->AIM_Initialize();
+    linkedGO->AIM_Initialize();
     GetMap()->Add(linkedGO);
 }
 
@@ -2186,6 +2187,7 @@ void GameObject::Use(Unit* user)
 }
 
 // overwrite WorldObject function for proper name localization
+
 /**
  * @brief Gets the localized name for a locale index.
  *
@@ -3142,7 +3144,7 @@ bool  GameObject::AIM_Initialize()
         return false;
     }
 
-   m_AI.reset(sScriptMgr.GetGameObjectAI(this));
+m_AI.reset(sScriptMgr.GetGameObjectAI(this));
 
-   return true;
+return true;
 }

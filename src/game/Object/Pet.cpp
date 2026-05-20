@@ -465,7 +465,7 @@ void Pet::SavePetToDB(PetSaveMode mode)
         }
         // not save pet as current if another pet temporary unsummoned
         else if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
-                 pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
+                pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
         {
             // pet will lost anyway at restore temporary unsummoned
             if (getPetType() == HUNTER_PET)
@@ -2700,6 +2700,7 @@ bool Pet::HasSpell(uint32 spell) const
 }
 
 // Get all passive spells in our skill line
+
 /**
  * @brief Learns passive family spells for the pet.
  */

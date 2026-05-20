@@ -90,6 +90,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId);
 
 // Different spell properties
 inline float GetSpellRadius(SpellRadiusEntry const* radius) { return (radius ? radius->Radius : 0); }
+
 /**
  * Returns the effective cast time for the specified spell.
  */
@@ -113,6 +114,7 @@ inline float GetSpellMaxRange(SpellRangeEntry const* range)
     return (range ? range->maxRange : 0);
 }
 inline uint32 GetSpellRecoveryTime(SpellEntry const* spellInfo) { return spellInfo->RecoveryTime > spellInfo->CategoryRecoveryTime ? spellInfo->RecoveryTime : spellInfo->CategoryRecoveryTime; }
+
 /**
  * Returns the base duration of the specified spell.
  */
@@ -246,6 +248,7 @@ int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2);
 
 // order from less to more strict
 bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1, SpellSpecific spellSpec2);
+
 /**
  * Checks whether two spell specifics are restricted to a single ranked aura per target.
  */
@@ -799,6 +802,7 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
 
 // Diminishing Returns interaction with spells
 DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto, bool triggered);
+
 /**
  * Checks whether the specified diminishing returns group has a limited duration.
  */
@@ -857,24 +861,24 @@ enum ProcFlags
 };
 
 /// Proc flags for a melee based trigger
-#define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_SUCCESSFUL_MELEE_HIT        | \
-                                  PROC_FLAG_TAKEN_MELEE_HIT             | \
-                                  PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
-                                  PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
-                                  PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
-                                  PROC_FLAG_TAKEN_RANGED_HIT            | \
-                                  PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
-                                  PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
+#define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_SUCCESSFUL_MELEE_HIT          | \
+                                    PROC_FLAG_TAKEN_MELEE_HIT             | \
+                                    PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
+                                    PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
+                                    PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
+                                    PROC_FLAG_TAKEN_RANGED_HIT            | \
+                                    PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
+                                    PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
 
 /**
  * Proc flags mask for a negative trigger
  * \todo What is negative in this case?
  */
-#define NEGATIVE_TRIGGER_MASK (MELEE_BASED_TRIGGER_MASK                | \
-                               PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
-                               PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
-                               PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
-                               PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
+#define NEGATIVE_TRIGGER_MASK (MELEE_BASED_TRIGGER_MASK                 | \
+                                PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
+                                PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
+                                PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
+                                PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
 
 /**
  * Flags used for procing different spells, these flags tell when a proc should

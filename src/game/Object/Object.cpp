@@ -543,9 +543,9 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
 
                 // there are some float values which may be negative or can't get negative due to other checks
                 else if ((index >= PLAYER_FIELD_NEGSTAT0    && index <= PLAYER_FIELD_NEGSTAT4) ||
-                         (index >= PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE + 6)) ||
-                         (index >= PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE + 6)) ||
-                         (index >= PLAYER_FIELD_POSSTAT0    && index <= PLAYER_FIELD_POSSTAT4))
+                        (index >= PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSPOSITIVE + 6)) ||
+                        (index >= PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE  && index <= (PLAYER_FIELD_RESISTANCEBUFFMODSNEGATIVE + 6)) ||
+                        (index >= PLAYER_FIELD_POSSTAT0    && index <= PLAYER_FIELD_POSSTAT4))
                 {
                     *data << uint32(m_floatValues[index]);
                 }
@@ -2037,8 +2037,8 @@ void WorldObject::UpdateAllowedPositionZ(float x, float y, float& z, Map* atMap 
                 bool canSwim = ((Creature const*)this)->CanSwim() && ((Creature const*)this)->IsInWater();
                 float ground_z = z;
                 float max_z = canSwim
-                              ? atMap->GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK))
-                              : ((ground_z = atMap->GetHeight(x, y, z)));
+                            ? atMap->GetTerrain()->GetWaterOrGroundLevel(x, y, z, &ground_z, !((Unit const*)this)->HasAuraType(SPELL_AURA_WATER_WALK))
+                            : ((ground_z = atMap->GetHeight(x, y, z)));
                 if (max_z > INVALID_HEIGHT)
                 {
                     if (z > max_z)
@@ -2175,6 +2175,7 @@ void WorldObject::MonsterWhisper(const char* text, Unit const* target, bool IsBo
 
 namespace MaNGOS
 {
+
     /**
      * @brief Monster chat builder functor
      *
@@ -2235,6 +2236,7 @@ namespace MaNGOS
  *
  * Helper function to create localized chat around a source.
  */
+
 /**
  * @brief Sends localized monster chat packets to players around a source object.
  *
@@ -2261,6 +2263,7 @@ void _DoLocalizedTextAround(WorldObject const* source, MangosStringLocale const*
  * Sends a text message associated with a MangosString,
  * localized for each player's locale.
  */
+
 /**
  * @brief Sends a localized monster text defined by a Mangos string entry.
  *
@@ -2330,6 +2333,7 @@ void WorldObject::MonsterText(MangosStringLocale const* textData, Unit const* ta
  *
  * Broadcasts a packet to all players who can see this object.
  */
+
 /**
  * @brief Broadcasts a packet to all players in the object's visibility set.
  *
@@ -2354,6 +2358,7 @@ void WorldObject::SendMessageToSet(WorldPacket* data, bool /*bToSelf*/) const
  * Broadcasts a packet to all players within the specified distance
  * who can see this object.
  */
+
 /**
  * @brief Broadcasts a packet to players within a specified range.
  *
@@ -2378,6 +2383,7 @@ void WorldObject::SendMessageToSetInRange(WorldPacket* data, float dist, bool /*
  * Broadcasts a packet to all players who can see this object
  * except the specified player.
  */
+
 /**
  * @brief Broadcasts a packet to visible players except one receiver.
  *
@@ -2401,6 +2407,7 @@ void WorldObject::SendMessageToSetExcept(WorldPacket* data, Player const* skippe
  * Sends a despawn animation packet for the specified object
  * to all nearby players.
  */
+
 /**
  * @brief Sends a gameobject despawn animation packet.
  *
@@ -2419,6 +2426,7 @@ void WorldObject::SendObjectDeSpawnAnim(ObjectGuid guid)
  *
  * Sets the map for this object and updates map ID and instance ID.
  */
+
 /**
  * @brief Assigns the current map context to the world object.
  *
@@ -2438,6 +2446,7 @@ void WorldObject::SetMap(Map* map)
  *
  * Resets the map reference for this object.
  */
+
 /**
  * @brief Resets the world object's map state.
  */
@@ -2450,6 +2459,7 @@ void WorldObject::ResetMap()
  *
  * Adds this object to the map's remove list for cleanup.
  */
+
 /**
  * @brief Schedules the object for removal from the map.
  */
@@ -2473,6 +2483,7 @@ void WorldObject::AddObjectToRemoveList()
  *
  * Summons a creature at the specified position.
  */
+
 /**
  * @brief Summons a temporary creature near or at the requested position.
  *
@@ -2564,6 +2575,7 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
  *
  * Summons a game object at the specified position.
  */
+
 /**
  * @brief Summons a temporary game object at the requested position.
  *
@@ -2605,6 +2617,7 @@ GameObject* WorldObject::SummonGameObject(uint32 id, float x, float y, float z, 
 
 namespace MaNGOS
 {
+
     /**
      * @brief Near used position functor
      *
@@ -2733,6 +2746,7 @@ namespace MaNGOS
  * Calculates a 2D point at the specified distance and angle
  * from this object.
  */
+
 /**
  * @brief Computes a 2D point at a given distance and angle from the object.
  *
@@ -2763,6 +2777,7 @@ void WorldObject::GetNearPoint2D(float& x, float& y, float distance2d, float abs
  * Calculates a point at the specified distance and angle
  * from this object, accounting for collision detection.
  */
+
 /**
  * @brief Finds a nearby point while accounting for collisions and line of sight.
  *
@@ -3122,6 +3137,7 @@ void WorldObject::SetActiveObjectState(bool active)
 }
 
 #ifdef ENABLE_ELUNA
+
 /**
  * @brief Get Eluna instance
  * @return Eluna instance pointer or nullptr

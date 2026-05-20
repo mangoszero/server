@@ -190,7 +190,7 @@ void AggressorAI::UpdateAI(const uint32 diff)
 bool AggressorAI::IsVisible(Unit* pl) const
 {
     return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER))
-           && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
+        && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
 /**

@@ -535,7 +535,7 @@ float Unit::GetCombatReach(Unit const* pVictim, bool forMeleeRange /*=true*/, fl
 {
     // The measured values show BASE_MELEE_OFFSET in (1.3224, 1.342)
     float reach = GetFloatValue(UNIT_FIELD_COMBATREACH) + pVictim->GetFloatValue(UNIT_FIELD_COMBATREACH) +
-                  BASE_MELEERANGE_OFFSET + flat_mod;
+                BASE_MELEERANGE_OFFSET + flat_mod;
 
     if (forMeleeRange && reach < ATTACK_DISTANCE)
     {
@@ -3587,8 +3587,8 @@ uint32 Unit::GetDefenseSkillValue(Unit const* target) const
     {
         // in PvP use full skill instead current skill value
         uint32 value = (target && target->GetTypeId() == TYPEID_PLAYER)
-                       ? ((Player*)this)->GetMaxSkillValue(SKILL_DEFENSE)
-                       : ((Player*)this)->GetSkillValue(SKILL_DEFENSE);
+                    ? ((Player*)this)->GetMaxSkillValue(SKILL_DEFENSE)
+                    : ((Player*)this)->GetSkillValue(SKILL_DEFENSE);
         return value;
     }
     else
@@ -4126,7 +4126,7 @@ bool Unit::IsNonMeleeSpellCasted(bool withDelayed, bool skipChanneled, bool skip
 
     // channeled spells may be delayed, but they are still considered casted
     else if (!skipChanneled && m_currentSpells[CURRENT_CHANNELED_SPELL] &&
-             (m_currentSpells[CURRENT_CHANNELED_SPELL]->getState() != SPELL_STATE_FINISHED))
+            (m_currentSpells[CURRENT_CHANNELED_SPELL]->getState() != SPELL_STATE_FINISHED))
     {
         return true;
     }
@@ -7463,7 +7463,7 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
                 if (useTriggeredHealBonus)
                 {
                     coeff = donePart ? (bonus->direct_damage_done ? bonus->direct_damage_done : bonus->direct_damage)
-                                     : (bonus->direct_damage_taken ? bonus->direct_damage_taken : bonus->direct_damage);
+                                    : (bonus->direct_damage_taken ? bonus->direct_damage_taken : bonus->direct_damage);
                 }
                 break;
             case SPELL_DIRECT_DAMAGE:
@@ -7559,11 +7559,11 @@ int32 Unit::SpellBonusWithCoeffs(Unit* pCaster, SpellEntry const* spellProto, in
         coeff *= 100.0f;
         modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_SPELL_BONUS_DAMAGE, coeff);
         coeff /= 100.0f;
-     }
+    }
 
     total += int32(benefit * coeff * LvlPenalty);
 
-     return total;
+    return total;
 };
 
 /**
@@ -8334,7 +8334,7 @@ uint32 Unit::MeleeDamageBonusDone(Unit* pVictim, uint32 pdamage, WeaponAttackTyp
             if ((*i)->GetModifier()->m_miscvalue & schoolMask &&                         // schoolmask has to fit with the intrinsic spell school
                 (*i)->GetModifier()->m_miscvalue & GetMeleeDamageSchoolMask() &&         // AND schoolmask has to fit with weapon damage school (essential for non-physical spells)
                 (((*i)->GetSpellProto()->EquippedItemClass == -1) ||                     // general, weapon independent
-                 (pWeapon && pWeapon->IsFitToSpellRequirements((*i)->GetSpellProto()))))  // OR used weapon fits aura requirements
+                (pWeapon && pWeapon->IsFitToSpellRequirements((*i)->GetSpellProto()))))  // OR used weapon fits aura requirements
             {
                 DoneFlat += (*i)->GetModifier()->m_amount;
             }
@@ -8374,7 +8374,7 @@ uint32 Unit::MeleeDamageBonusDone(Unit* pVictim, uint32 pdamage, WeaponAttackTyp
         {
             if ((*i)->GetModifier()->m_miscvalue & schoolMask &&                         // schoolmask has to fit with the intrinsic spell school
                 (((*i)->GetSpellProto()->EquippedItemClass == -1) ||                     // general, weapon independent
-                 (pWeapon && pWeapon->IsFitToSpellRequirements((*i)->GetSpellProto()))))  // OR used weapon fits aura requirements
+                (pWeapon && pWeapon->IsFitToSpellRequirements((*i)->GetSpellProto()))))  // OR used weapon fits aura requirements
             {
                 DonePercent *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
             }
@@ -9970,8 +9970,8 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
     float basePointsPerLevel = spellProto->EffectRealPointsPerLevel[effect_index];
     float randomPointsPerLevel = spellProto->EffectDicePerLevel[effect_index];
     int32 basePoints = effBasePoints
-                       ? *effBasePoints - baseDice
-                       : spellProto->EffectBasePoints[effect_index];
+                    ? *effBasePoints - baseDice
+                    : spellProto->EffectBasePoints[effect_index];
 
     basePoints += int32(level * basePointsPerLevel);
     int32 randomPoints = int32(spellProto->EffectDieSides[effect_index] + level * randomPointsPerLevel);
@@ -9985,8 +9985,8 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
         {
             // range can have positive (1..rand) and negative (rand..1) values, so order its for irand
             int32 randvalue = baseDice >= randomPoints
-                              ? irand(randomPoints, baseDice)
-                              : irand(baseDice, randomPoints);
+                            ? irand(randomPoints, baseDice)
+                            : irand(baseDice, randomPoints);
 
             basePoints += randvalue;
             break;

@@ -2588,10 +2588,12 @@ void Player::Regenerate(Powers power)
     {
         AuraList const& ModPowerRegenPCTAuras = GetAurasByType(SPELL_AURA_MOD_POWER_REGEN_PERCENT);
         for (AuraList::const_iterator i = ModPowerRegenPCTAuras.begin(); i != ModPowerRegenPCTAuras.end(); ++i)
+        {
             if ((*i)->GetModifier()->m_miscvalue == int32(power))
             {
                 addvalue *= ((*i)->GetModifier()->m_amount + 100) / 100.0f;
             }
+        }
     }
 
     if (power != POWER_RAGE)
@@ -2968,8 +2970,9 @@ bool Player::IsGroupVisibleFor(Player* p) const
  */
 bool Player::IsInSameGroupWith(Player const* p) const
 {
-    return (p == this || (GetGroup() != NULL &&
-                          GetGroup()->SameSubGroup(this, p)));
+    return (p == this
+        || (GetGroup() != NULL
+        && GetGroup()->SameSubGroup(this, p)));
 }
 
 ///- If the player is invited, remove him. If the group if then only 1 person, disband the group.
@@ -3103,6 +3106,7 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 
 // Update player to next level
 // Current player experience not update (must be update by caller)
+
 /**
  * @brief Advances the player to a new level and reapplies level-based stats.
  *
@@ -3391,12 +3395,12 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     // cleanup unit flags (will be re-applied if need at aura load).
     RemoveFlag(UNIT_FIELD_FLAGS,
-               UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_CLIENT_CONTROL_LOST | UNIT_FLAG_NOT_ATTACKABLE_1 |
-               UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE  | UNIT_FLAG_LOOTING          |
-               UNIT_FLAG_PET_IN_COMBAT  | UNIT_FLAG_SILENCED     | UNIT_FLAG_PACIFIED         |
-               UNIT_FLAG_STUNNED        | UNIT_FLAG_IN_COMBAT    | UNIT_FLAG_DISARMED         |
-               UNIT_FLAG_CONFUSED       | UNIT_FLAG_FLEEING      | UNIT_FLAG_NOT_SELECTABLE   |
-               UNIT_FLAG_SKINNABLE      | UNIT_FLAG_TAXI_FLIGHT);
+                UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_CLIENT_CONTROL_LOST | UNIT_FLAG_NOT_ATTACKABLE_1 |
+                UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE  | UNIT_FLAG_LOOTING          |
+                UNIT_FLAG_PET_IN_COMBAT  | UNIT_FLAG_SILENCED     | UNIT_FLAG_PACIFIED         |
+                UNIT_FLAG_STUNNED        | UNIT_FLAG_IN_COMBAT    | UNIT_FLAG_DISARMED         |
+                UNIT_FLAG_CONFUSED       | UNIT_FLAG_FLEEING      | UNIT_FLAG_NOT_SELECTABLE   |
+                UNIT_FLAG_SKINNABLE      | UNIT_FLAG_TAXI_FLIGHT);
     SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);    // must be set
 
     // cleanup player flags (will be re-applied if need at aura load), to avoid have ghost flag without ghost aura, for example.
@@ -3447,6 +3451,7 @@ struct spell_cooldown_data
 };
 
 /* Used during Player::SendInitialPacketsBeforeAddToMap */
+
 /**
  * @brief Sends the initial spellbook and cooldown state to the client.
  */
@@ -3786,26 +3791,26 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
             disabled_case = true;
         }
         else switch (playerSpell.state)
+        {
+            case PLAYERSPELL_UNCHANGED:                 // known saved spell
+                return false;
+            case PLAYERSPELL_REMOVED:                   // re-learning removed not saved spell
             {
-                case PLAYERSPELL_UNCHANGED:                 // known saved spell
-                    return false;
-                case PLAYERSPELL_REMOVED:                   // re-learning removed not saved spell
-                {
-                    m_spells.erase(itr);
-                    state = PLAYERSPELL_CHANGED;
-                    break;                                  // need re-add
-                }
-                default:                                    // known not saved yet spell (new or modified)
-                {
-                    // can be in case spell loading but learned at some previous spell loading
-                    if (!IsInWorld() && !learning && !dependent_set)
-                    {
-                        playerSpell.state = PLAYERSPELL_UNCHANGED;
-                    }
-
-                    return false;
-                }
+                m_spells.erase(itr);
+                state = PLAYERSPELL_CHANGED;
+                break;                                  // need re-add
             }
+            default:                                    // known not saved yet spell (new or modified)
+            {
+                // can be in case spell loading but learned at some previous spell loading
+                if (!IsInWorld() && !learning && !dependent_set)
+                {
+                    playerSpell.state = PLAYERSPELL_UNCHANGED;
+                }
+
+                return false;
+            }
+        }
     }
 
     TalentSpellPos const* talentPos = GetTalentSpellPos(spell_id);
@@ -4120,10 +4125,12 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank)
     // unlearn non talent higher ranks (recursive)
     SpellChainMapNext const& nextMap = sSpellMgr.GetSpellChainNext();
     for (SpellChainMapNext::const_iterator itr2 = nextMap.lower_bound(spell_id); itr2 != nextMap.upper_bound(spell_id); ++itr2)
+    {
         if (HasSpell(itr2->second) && !GetTalentSpellPos(itr2->second))
         {
             removeSpell(itr2->second, disabled, false);
         }
+    }
 
     // re-search, it can be corrupted in prev loop
     itr = m_spells.find(spell_id);
@@ -4947,10 +4954,12 @@ TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell
 
     // check skill requirement
     if (!prof || GetSession()->GetSecurity() < AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRADE_SKILL_GMIGNORE_SKILL)))
+    {
         if (trainer_spell->reqSkill && GetBaseSkillValue(trainer_spell->reqSkill) < trainer_spell->reqSkillValue)
         {
             return TRAINER_SPELL_RED;
         }
+    }
 
     // exist, already checked at loading
 
@@ -5376,8 +5385,8 @@ void Player::SetHover(bool enable)
 }
 
 /* Preconditions:
-  - a resurrectable corpse must not be loaded for the player (only bones)
-  - the player must be in world
+    - a resurrectable corpse must not be loaded for the player (only bones)
+    - the player must be in world
 */
 void Player::BuildPlayerRepop()
 {
@@ -5617,10 +5626,12 @@ Corpse* Player::CreateCorpse()
 void Player::SpawnCorpseBones()
 {
     if (sObjectAccessor.ConvertCorpseForPlayer(GetObjectGuid()))
+    {
         if (!GetSession()->PlayerLogoutWithSave())          // at logout we will already store the player
         {
             SaveToDB(); // prevent loading as ghost without corpse
         }
+    }
 }
 
 /**
@@ -5642,10 +5653,12 @@ Corpse* Player::GetCorpse() const
 void Player::DurabilityLossAll(double percent, bool inventory)
 {
     for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
         {
             DurabilityLoss(pItem, percent);
         }
+    }
 
     if (inventory)
     {
@@ -5653,21 +5666,29 @@ void Player::DurabilityLossAll(double percent, bool inventory)
         // for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+        {
             if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             {
                 DurabilityLoss(pItem, percent);
             }
+        }
 
         // keys not have durability
         // for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 
         for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        {
             if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
                 for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                {
                     if (Item* pItem = GetItemByPos(i, j))
                     {
                         DurabilityLoss(pItem, percent);
                     }
+                }
+            }
+        }
     }
 }
 
@@ -5722,21 +5743,29 @@ void Player::DurabilityPointsLossAll(int32 points, bool inventory)
         // for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 
         for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+        {
             if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
             {
                 DurabilityPointsLoss(pItem, points);
             }
+        }
 
         // keys not have durability
         // for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 
         for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+        {
             if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+            {
                 for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+                {
                     if (Item* pItem = GetItemByPos(i, j))
                     {
                         DurabilityPointsLoss(pItem, points);
                     }
+                }
+            }
+        }
     }
 }
 
@@ -5814,10 +5843,12 @@ uint32 Player::DurabilityRepairAll(bool cost, float discountMod)
 
     // items in inventory bags
     for (int j = INVENTORY_SLOT_BAG_START; j < INVENTORY_SLOT_BAG_END; ++j)
+    {
         for (int i = 0; i < MAX_BAG_SIZE; ++i)
         {
             TotalCost += DurabilityRepair(((j << 8) | i), cost, discountMod);
         }
+    }
     return TotalCost;
 }
 
@@ -6192,38 +6223,38 @@ float Player::GetMeleeCritFromAgility()
     // critical
     switch (getClass())
     {
-    case CLASS_PALADIN:
-    case CLASS_SHAMAN:
-    case CLASS_DRUID:
-        valLevel1 = 4.6f;
-        valLevel60 = 20.0f;
-        break;
-    case CLASS_MAGE:
-        valLevel1 = 12.9f;
-        valLevel60 = 20.0f;
-        break;
-    case CLASS_ROGUE:
-        valLevel1 = 2.2f;
-        valLevel60 = 29.0f;
-        break;
-    case CLASS_HUNTER:
-        valLevel1 = 3.5f;
-        valLevel60 = 53.0f;
-        break;
-    case CLASS_PRIEST:
-        valLevel1 = 11.0f;
-        valLevel60 = 20.0f;
-        break;
-    case CLASS_WARLOCK:
-        valLevel1 = 8.4f;
-        valLevel60 = 20.0f;
-        break;
-    case CLASS_WARRIOR:
-        valLevel1 = 3.9f;
-        valLevel60 = 20.0f;
-        break;
-    default:
-        return 0.0f;
+        case CLASS_PALADIN:
+        case CLASS_SHAMAN:
+        case CLASS_DRUID:
+            valLevel1 = 4.6f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_MAGE:
+            valLevel1 = 12.9f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_ROGUE:
+            valLevel1 = 2.2f;
+            valLevel60 = 29.0f;
+            break;
+        case CLASS_HUNTER:
+            valLevel1 = 3.5f;
+            valLevel60 = 53.0f;
+            break;
+        case CLASS_PRIEST:
+            valLevel1 = 11.0f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_WARLOCK:
+            valLevel1 = 8.4f;
+            valLevel60 = 20.0f;
+            break;
+        case CLASS_WARRIOR:
+            valLevel1 = 3.9f;
+            valLevel60 = 20.0f;
+            break;
+        default:
+            return 0.0f;
     }
     float classrate = valLevel1 * float(60.0f - getLevel()) / 59.0f + valLevel60 * float(getLevel() - 1.0f) / 59.0f;
     return GetStat(STAT_AGILITY) / classrate;
@@ -6973,18 +7004,22 @@ void Player::SetSkill(uint16 id, uint16 currVal, uint16 maxVal, uint16 step /*=0
                 // temporary bonuses
                 AuraList const& mModSkill = GetAurasByType(SPELL_AURA_MOD_SKILL);
                 for (AuraList::const_iterator j = mModSkill.begin(); j != mModSkill.end(); ++j)
+                {
                     if ((*j)->GetModifier()->m_miscvalue == int32(id))
                     {
                         (*j)->ApplyModifier(true);
                     }
+                }
 
                 // permanent bonuses
                 AuraList const& mModSkillTalent = GetAurasByType(SPELL_AURA_MOD_SKILL_TALENT);
                 for (AuraList::const_iterator j = mModSkillTalent.begin(); j != mModSkillTalent.end(); ++j)
+                {
                     if ((*j)->GetModifier()->m_miscvalue == int32(id))
                     {
                         (*j)->ApplyModifier(true);
                     }
+                }
 
                 // Learn all spells for skill
                 learnSkillRewardedSpells(id, currVal);
@@ -7220,6 +7255,7 @@ int16 Player::GetSkillTempBonusValue(uint32 skill) const
 }
 
 /* Called from Player::SendInitialPacketsBeforeAddToMap */
+
 /**
  * @brief Sends the player's initial action bar state to the client.
  */
@@ -7567,6 +7603,7 @@ void Player::SendCinematicStart(uint32 CinematicSequenceId)
 }
 
 #if defined (WOTLK) || defined (CATA) || defined (MISTS)
+
 /**
  * @brief Starts a movie sequence for the player client.
  *
@@ -8398,13 +8435,13 @@ void Player::UpdateArea(uint32 newArea)
  */
 bool Player::CanUseCapturePoint()
 {
-    return IsAlive() &&                                     // living
-           !HasStealthAura() &&                             // not stealthed
-           !HasInvisibilityAura() &&                        // visible
-           (IsPvP() || sWorld.IsPvPRealm()) &&
-           !HasMovementFlag(MOVEFLAG_FLYING) &&
-           !IsTaxiFlying() &&
-           !isGameMaster();
+    return IsAlive()                           // living
+        && !HasStealthAura()                   // not stealthed
+        && !HasInvisibilityAura()              // visible
+        && (IsPvP() || sWorld.IsPvPRealm())
+        && !HasMovementFlag(MOVEFLAG_FLYING)
+        && !IsTaxiFlying()
+        && !isGameMaster();
 }
 
 /**
@@ -9264,8 +9301,8 @@ void Player::CastItemCombatSpell(Unit* Target, WeaponAttackType attType)
             float ppmRate = sSpellMgr.GetItemEnchantProcChance(spellInfo->Id);
 
             float chance = ppmRate
-                           ? GetPPMProcChance(proto->Delay, ppmRate)
-                           : pEnchant->amount[s] != 0 ? float(pEnchant->amount[s]) : GetWeaponProcChance();
+                        ? GetPPMProcChance(proto->Delay, ppmRate)
+                        : pEnchant->amount[s] != 0 ? float(pEnchant->amount[s]) : GetWeaponProcChance();
 
             ApplySpellMod(spellInfo->Id, SPELLMOD_CHANCE_OF_SUCCESS, chance);
 
@@ -9552,6 +9589,7 @@ bool Player::CheckAmmoCompatibility(const ItemPrototype* ammo_proto) const
 
 /*  If in a battleground a player dies, and an enemy removes the insignia, the player's bones is lootable
     Called by remove insignia spell effect    */
+
 /**
  * @brief Converts the player's battleground corpse into lootable bones after insignia removal.
  *
@@ -10168,7 +10206,9 @@ void Player::SendPetSkillWipeConfirm()
 }
 
 /*********************************************************/
+
 /***                    STORAGE SYSTEM                 ***/
+
 /*********************************************************/
 
 /**
@@ -10774,19 +10814,27 @@ uint32 Player::GetItemCount(uint32 item, bool inBankAlso, Item* skipItem) const
  */
 Item* Player::GetItemByEntry(uint32 item) const
 {
-     for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (pItem->GetEntry() == item)
             {
                 return pItem;
             }
+        }
+    }
 
     for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (Item* itemPtr = pBag->GetItemByEntry(item))
             {
                 return itemPtr;
             }
+        }
+    }
 
     return NULL;
 }
@@ -10800,43 +10848,71 @@ Item* Player::GetItemByEntry(uint32 item) const
 Item* Player::GetItemByGuid(ObjectGuid guid) const
 {
     for (int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (pItem->GetObjectGuid() == guid)
             {
                 return pItem;
             }
+        }
+    }
 
     for (int i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (pItem->GetObjectGuid() == guid)
             {
                 return pItem;
             }
+        }
+    }
 
     for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+    {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
                 if (Item* pItem = pBag->GetItemByPos(j))
+                {
                     if (pItem->GetObjectGuid() == guid)
                     {
                         return pItem;
                     }
+                }
+            }
+        }
+    }
 
     for (int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
+    {
         if (Item* pItem = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (pItem->GetObjectGuid() == guid)
             {
                 return pItem;
             }
+        }
+    }
 
     for (int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
+    {
         if (Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+            {
                 if (Item* pItem = pBag->GetItemByPos(j))
+                {
                     if (pItem->GetObjectGuid() == guid)
                     {
                         return pItem;
                     }
+                }
+            }
+        }
+    }
 
     return NULL;
 }
@@ -10863,17 +10939,15 @@ Item* Player::GetItemByPos(uint16 pos) const
  */
 Item* Player::GetItemByPos(uint8 bag, uint8 slot) const
 {
-    if (bag == INVENTORY_SLOT_BAG_0 &&
-       (slot < BANK_SLOT_BAG_END  || // Equiped, Default Bagpack Inventory, Default Bank SLots
-       slot >= BUYBACK_SLOT_START
-       )
-       && slot < KEYRING_SLOT_END
-       )
+    if (bag == INVENTORY_SLOT_BAG_0
+            && (slot < BANK_SLOT_BAG_END  || // Equiped, Default Bagpack Inventory, Default Bank SLots
+                slot >= BUYBACK_SLOT_START)
+            && slot < KEYRING_SLOT_END)
     {
         return m_items[slot];
     }
     else if ((bag >= INVENTORY_SLOT_BAG_START && bag < INVENTORY_SLOT_BAG_END)
-             || (bag >= BANK_SLOT_BAG_START && bag < BANK_SLOT_BAG_END))
+            || (bag >= BANK_SLOT_BAG_START && bag < BANK_SLOT_BAG_END))
     {
         Bag* pBag = (Bag*)GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
         if (pBag)
@@ -12486,8 +12560,8 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, Item* pItem, bool
                                 if (pBagProto->Class == pProto->Class && (!swap || pBag->GetSlot() != eslot))
                                 {
                                     return (pBagProto->SubClass == ITEM_SUBCLASS_AMMO_POUCH)
-                                           ? EQUIP_ERR_CAN_EQUIP_ONLY1_AMMOPOUCH
-                                           : EQUIP_ERR_CAN_EQUIP_ONLY1_QUIVER;
+                                                                ? EQUIP_ERR_CAN_EQUIP_ONLY1_AMMOPOUCH
+                                                                : EQUIP_ERR_CAN_EQUIP_ONLY1_QUIVER;
                                 }
                             }
                         }
@@ -12959,46 +13033,45 @@ InventoryResult Player::CanUseItem(ItemPrototype const* pProto, bool direct_acti
 
         // override mount level requirements with the settings from the configuration file
         uint32 requiredLevel = pProto->RequiredLevel;
-        switch (pProto->ItemId)
-        {
-             case 1132: //regular mounts
-             case 2411:
-             case 2414:
-             case 5655:
-             case 5656:
-             case 5665:
-             case 5668:
-             case 5864:
-             case 5872:
-             case 5873:
-             case 8563:
-             case 8588:
-             case 8591:
-             case 8592:
-             case 8595:
-             case 8629:
-             case 8631:
-             case 8632:
-             case 12325:
-             case 12326:
-             case 12327:
-             case 13321:
-             case 13322:
-             case 13331:
-             case 13332:
-             case 13333:
-             case 15277:
-             case 15290:
-             case 18241:
-             case 18242:
-             case 18243:
-             case 18244:
-             case 18245:
-             case 18246:
-             case 18247:
-             case 18248:
-                 requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
-                 break;
+        switch (pProto->ItemId) {
+            case 1132: //regular mounts
+            case 2411:
+            case 2414:
+            case 5655:
+            case 5656:
+            case 5665:
+            case 5668:
+            case 5864:
+            case 5872:
+            case 5873:
+            case 8563:
+            case 8588:
+            case 8591:
+            case 8592:
+            case 8595:
+            case 8629:
+            case 8631:
+            case 8632:
+            case 12325:
+            case 12326:
+            case 12327:
+            case 13321:
+            case 13322:
+            case 13331:
+            case 13332:
+            case 13333:
+            case 15277:
+            case 15290:
+            case 18241:
+            case 18242:
+            case 18243:
+            case 18244:
+            case 18245:
+            case 18246:
+            case 18247:
+            case 18248:
+                requiredLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
+                break;
             case 12302: // epic mounts
             case 12303:
             case 12330:
@@ -15262,7 +15335,9 @@ void Player::SendNewItem(Item* item, uint32 count, bool received, bool created, 
 }
 
 /*********************************************************/
+
 /***                    GOSSIP SYSTEM                  ***/
+
 /*********************************************************/
 
 /**
@@ -15750,7 +15825,9 @@ uint32 Player::GetDefaultGossipMenuForSource(WorldObject* pSource)
 }
 
 /*********************************************************/
+
 /***                    QUEST SYSTEM                   ***/
+
 /*********************************************************/
 
 /**
@@ -16042,13 +16119,19 @@ bool Player::CanSeeStartQuest(Quest const* pQuest) const
  */
 bool Player::CanTakeQuest(Quest const* pQuest, bool msg) const
 {
-    return !DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, pQuest->GetQuestId(), this) &&
-           SatisfyQuestStatus(pQuest, msg) && SatisfyQuestExclusiveGroup(pQuest, msg) &&
-           SatisfyQuestClass(pQuest, msg) && SatisfyQuestRace(pQuest, msg) && SatisfyQuestLevel(pQuest, msg) &&
-           SatisfyQuestSkill(pQuest, msg) && SatisfyQuestReputation(pQuest, msg) &&
-           SatisfyQuestPreviousQuest(pQuest, msg) && SatisfyQuestTimed(pQuest, msg) &&
-           SatisfyQuestNextChain(pQuest, msg) && SatisfyQuestPrevChain(pQuest, msg) &&
-           pQuest->IsActive();
+    return !DisableMgr::IsDisabledFor(DISABLE_TYPE_QUEST, pQuest->GetQuestId(), this)
+                                    && SatisfyQuestStatus(pQuest, msg)
+                                    && SatisfyQuestExclusiveGroup(pQuest, msg)
+                                    && SatisfyQuestClass(pQuest, msg)
+                                    && SatisfyQuestRace(pQuest, msg)
+                                    && SatisfyQuestLevel(pQuest, msg)
+                                    && SatisfyQuestSkill(pQuest, msg)
+                                    && SatisfyQuestReputation(pQuest, msg)
+                                    && SatisfyQuestPreviousQuest(pQuest, msg)
+                                    && SatisfyQuestTimed(pQuest, msg)
+                                    && SatisfyQuestNextChain(pQuest, msg)
+                                    && SatisfyQuestPrevChain(pQuest, msg)
+                                    && pQuest->IsActive();
 }
 
 /**
@@ -16600,10 +16683,12 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     RemoveTimedQuest(quest_id);
 
     if (BattleGround* bg = GetBattleGround())
+    {
         if (bg->GetTypeID() == BATTLEGROUND_AV)
         {
             ((BattleGroundAV*)bg)->HandleQuestComplete(pQuest->GetQuestId(), this);
         }
+    }
 
     if (pQuest->GetRewChoiceItemsCount() > 0)
     {
@@ -17450,10 +17535,12 @@ uint32 Player::GetReqKillOrCastCurrentCount(uint32 quest_id, int32 entry)
     }
 
     for (int j = 0; j < QUEST_OBJECTIVES_COUNT; ++j)
+    {
         if (qInfo->ReqCreatureOrGOId[j] == entry)
         {
             return mQuestStatus[quest_id].m_creatureOrGOcount[j];
         }
+    }
 
     return 0;
 }
@@ -17494,10 +17581,12 @@ void Player::AdjustQuestReqItemCount(Quest const* pQuest, QuestStatusData& quest
 uint16 Player::FindQuestSlot(uint32 quest_id) const
 {
     for (uint16 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
+    {
         if (GetQuestSlotQuestId(i) == quest_id)
         {
             return i;
         }
+    }
 
     return MAX_QUEST_LOG_SIZE;
 }
@@ -17694,10 +17783,12 @@ void Player::KilledMonster(CreatureInfo const* cInfo, ObjectGuid guid)
     }
 
     for (int i = 0; i < MAX_KILL_CREDIT; ++i)
+    {
         if (cInfo->KillCredit[i])
         {
             KilledMonsterCredit(cInfo->KillCredit[i], guid);
         }
+    }
 }
 
 /**
@@ -18307,7 +18398,9 @@ void Player::SendQuestUpdateAddCreatureOrGo(Quest const* pQuest, ObjectGuid guid
 }
 
 /*********************************************************/
+
 /***                   LOAD SYSTEM                     ***/
+
 /*********************************************************/
 
 /**
@@ -18328,10 +18421,10 @@ void Player::_LoadBGData(QueryResult* result)
     m_bgData.bgInstanceID = fields[0].GetUInt32();
     m_bgData.bgTeam       = Team(fields[1].GetUInt32());
     m_bgData.joinPos      = WorldLocation(fields[6].GetUInt32(),    // Map
-                                          fields[2].GetFloat(),     // X
-                                          fields[3].GetFloat(),     // Y
-                                          fields[4].GetFloat(),     // Z
-                                          fields[5].GetFloat());    // Orientation
+                            fields[2].GetFloat(),     // X
+                            fields[3].GetFloat(),     // Y
+                            fields[4].GetFloat(),     // Z
+                            fields[5].GetFloat());    // Orientation
 
     delete result;
 }
@@ -19055,15 +19148,16 @@ bool Player::IsTappedByMeOrMyGroup(Creature* creature)
     else
         /* Don't know what happened to the recipient, probably disconnected
          * Either way, it isn't us, so mark as tapped */
-         {
-             return false;
-         }
+    {
+        return false;
+    }
 
     return false;
 }
 
 /* Checks to see if the current player can loot the creature specified in arg1
  * Called from Object::BuildValuesUpdate */
+
 /**
  * @brief Checks whether the player is currently allowed to loot a creature.
  *
@@ -19857,10 +19951,10 @@ void Player::_LoadQuestStatus(QueryResult* result)
 
                 // add to quest log
                 if (slot < MAX_QUEST_LOG_SIZE &&
-                    ((questStatusData.m_status == QUEST_STATUS_INCOMPLETE ||
-                      questStatusData.m_status == QUEST_STATUS_COMPLETE ||
-                      questStatusData.m_status == QUEST_STATUS_FAILED) &&
-                     (!questStatusData.m_rewarded || pQuest->IsRepeatable())))
+                    ((questStatusData.m_status == QUEST_STATUS_INCOMPLETE
+                    || questStatusData.m_status == QUEST_STATUS_COMPLETE
+                    || questStatusData.m_status == QUEST_STATUS_FAILED)
+                    && (!questStatusData.m_rewarded || pQuest->IsRepeatable())))
                 {
                     SetQuestSlot(slot, quest_id, uint32(quest_time));
 
@@ -20339,7 +20433,9 @@ bool Player::_LoadHomeBind(QueryResult* result)
 }
 
 /*********************************************************/
+
 /***                   SAVE SYSTEM                     ***/
+
 /*********************************************************/
 
 void Player::SaveToDB()
@@ -21175,7 +21271,9 @@ void Player::outDebugStatsValues() const
 }
 
 /*********************************************************/
+
 /***               FLOOD FILTER SYSTEM                 ***/
+
 /*********************************************************/
 
 void Player::UpdateSpeakTime()
@@ -21227,7 +21325,9 @@ bool Player::CanSpeak() const
 }
 
 /*********************************************************/
+
 /***              LOW LEVEL FUNCTIONS:Notifiers        ***/
+
 /*********************************************************/
 
 void Player::SendAttackSwingNotInRange()
@@ -21250,10 +21350,11 @@ void Player::SendAttackSwingNotInRange()
 void Player::SavePositionInDB(ObjectGuid guid, uint32 mapid, float x, float y, float z, float o, uint32 zone)
 {
     std::ostringstream ss;
-    ss << "UPDATE `characters` SET `position_x`='" << x << "',`position_y`='" << y
-       << "',`position_z`='" << z << "',`orientation`='" << o << "',`map`='" << mapid
-       << "',`zone`='" << zone << "',`trans_x`='0',`trans_y`='0',`trans_z`='0',"
-       << "`transguid`='0',`taxi_path`='' WHERE `guid`='" << guid.GetCounter() << "'";
+    ss
+        << "UPDATE `characters` SET `position_x`='" << x << "',`position_y`='" << y
+        << "',`position_z`='" << z << "',`orientation`='" << o << "',`map`='" << mapid
+        << "',`zone`='" << zone << "',`trans_x`='0',`trans_y`='0',`trans_z`='0',"
+        << "`transguid`='0',`taxi_path`='' WHERE `guid`='" << guid.GetCounter() << "'";
     DEBUG_LOG("%s", ss.str().c_str());
     CharacterDatabase.Execute(ss.str().c_str());
 }
@@ -21385,10 +21486,12 @@ void Player::ResetInstances(InstanceResetMethod method)
 
         // if the map is loaded, reset it
         if (Map* map = sMapMgr.FindMap(state->GetMapId(), state->GetInstanceId()))
+        {
             if (map->IsDungeon())
             {
                 ((DungeonMap*)map)->Reset(method);
             }
+        }
 
         // since this is a solo instance there should not be any players inside
         if (method == INSTANCE_RESET_ALL)
@@ -21977,10 +22080,12 @@ void Player::AddSpellMod(SpellModifier* mod, bool apply)
 SpellModifier* Player::GetSpellMod(SpellModOp op, uint32 spellId) const
 {
     for (SpellModList::const_iterator itr = m_spellMods[op].begin(); itr != m_spellMods[op].end(); ++itr)
+    {
         if ((*itr)->spellId == spellId)
         {
             return *itr;
         }
+    }
 
     return NULL;
 }
@@ -22259,18 +22364,22 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
         }
 
         if (Spell* spell = GetCurrentSpell(CURRENT_GENERIC_SPELL))
+        {
             if (spell->m_spellInfo->Id != spellid)
             {
                 InterruptSpell(CURRENT_GENERIC_SPELL, false);
             }
+        }
 
         InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
 
         if (Spell* spell = GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        {
             if (spell->m_spellInfo->Id != spellid)
             {
                 InterruptSpell(CURRENT_CHANNELED_SPELL, true);
             }
+        }
     }
 
     uint32 sourcenode = nodes[0];
@@ -23378,7 +23487,9 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
             {
                 Creature* c = target->ToCreature();
                 if (c->IsPet() && GetPetGuid() == c->GetObjectGuid() && ((Pet*)c)->GetTransport())
+                {
                     return;
+                }
             }
 
             BeforeVisibilityDestroy(target, this);
@@ -23419,7 +23530,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
 void Player::InitPrimaryProfessions()
 {
     uint32 maxProfs = GetSession()->GetSecurity() < AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRADE_SKILL_GMIGNORE_MAX_PRIMARY_COUNT))
-                      ? sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL) : 10;
+                                                    ? sWorld.getConfig(CONFIG_UINT32_MAX_PRIMARY_TRADE_SKILL) : 10;
     SetFreePrimaryProfessions(maxProfs);
 }
 
@@ -23466,10 +23577,12 @@ void Player::AddComboPoints(Unit* target, int8 count)
     else
     {
         if (m_comboTargetGuid)
+        {
             if (Unit* target2 = sObjectAccessor.GetUnit(*this, m_comboTargetGuid))
             {
                 target2->RemoveComboPointHolder(GetGUIDLow());
             }
+        }
 
         m_comboTargetGuid = target->GetObjectGuid();
         m_comboPoints = count;
@@ -23536,7 +23649,9 @@ void Player::SetGroup(Group* group, int8 subgroup)
 
 #ifdef ENABLE_PLAYERBOTS
     if (GetPlayerbotAI())
+    {
         GetPlayerbotAI()->ResetStrategies();
+    }
 #endif
 }
 
@@ -24244,8 +24359,7 @@ bool Player::IsSpellFitByClassAndRace(uint32 spell_id, uint32* pReqlevel /*= NUL
                 else                                        // check availble case at train
                 {
                     // for riding spells, override the required level with the level from the configuration file
-                    switch (spell_id)
-                    {
+                    switch (spell_id) {
                         case 33388: // Riding
                         case 33389: // Apprentice Riding
                             if (getLevel() < uint32(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL)))
@@ -24480,36 +24594,48 @@ bool Player::HasItemFitToSpellReqirements(SpellEntry const* spellInfo, Item cons
         case ITEM_CLASS_WEAPON:
         {
             for (int i = EQUIPMENT_SLOT_MAINHAND; i < EQUIPMENT_SLOT_TABARD; ++i)
+            {
                 if (Item* item = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
                     if (item != ignoreItem && item->IsFitToSpellRequirements(spellInfo))
                     {
                         return true;
                     }
+                }
+            }
             break;
         }
         case ITEM_CLASS_ARMOR:
         {
             // tabard not have dependent spells
             for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_MAINHAND; ++i)
+            {
                 if (Item* item = GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+                {
                     if (item != ignoreItem && item->IsFitToSpellRequirements(spellInfo))
                     {
                         return true;
                     }
+                }
+            }
 
             // shields can be equipped to offhand slot
             if (Item* item = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+            {
                 if (item != ignoreItem && item->IsFitToSpellRequirements(spellInfo))
                 {
                     return true;
                 }
+            }
 
             // ranged slot can have some armor subclasses
             if (Item* item = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED))
+            {
                 if (item != ignoreItem && item->IsFitToSpellRequirements(spellInfo))
                 {
                     return true;
                 }
+            }
 
             break;
         }
@@ -24568,11 +24694,15 @@ void Player::RemoveItemDependentAurasAndCasts(Item* pItem)
 
     // currently casted spells can be dependent from item
     for (uint32 i = 0; i < CURRENT_MAX_SPELL; ++i)
+    {
         if (Spell* spell = GetCurrentSpell(CurrentSpellTypes(i)))
+        {
             if (spell->getState() != SPELL_STATE_DELAYED && !HasItemFitToSpellReqirements(spell->m_spellInfo, pItem))
             {
                 InterruptSpell(CurrentSpellTypes(i));
             }
+        }
+    }
 }
 
 /**
@@ -24640,9 +24770,9 @@ bool Player::isHonorOrXPTarget(Unit* pVictim) const
         if (((Creature*)pVictim)->IsTotem() ||
             ((Creature*)pVictim)->IsPet() ||
             ((Creature*)pVictim)->GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL)
-            {
-                return false;
-            }
+        {
+            return false;
+        }
     }
     return true;
 }
@@ -25293,10 +25423,12 @@ void Player::SetCanBlock(bool value)
 bool ItemPosCount::isContainedIn(ItemPosCountVec const& vec) const
 {
     for (ItemPosCountVec::const_iterator itr = vec.begin(); itr != vec.end(); ++itr)
+    {
         if (itr->pos == pos)
         {
             return true;
         }
+    }
 
     return false;
 }
@@ -25907,10 +26039,12 @@ bool Player::canSeeSpellClickOn(Creature const* c) const
 
     SpellClickInfoMapBounds clickPair = sObjectMgr.GetSpellClickInfoMapBounds(c->GetEntry());
     for (SpellClickInfoMap::const_iterator itr = clickPair.first; itr != clickPair.second; ++itr)
+    {
         if (itr->second.IsFitToRequirements(this, c))
         {
             return true;
         }
+    }
 
     return false;
 }

@@ -270,7 +270,7 @@ class Pet : public Creature
         void KillLoyaltyBonus(uint32 level);
         uint32 GetLoyaltyLevel()
         {
-             return GetByteValue(UNIT_FIELD_BYTES_1, 1);
+            return GetByteValue(UNIT_FIELD_BYTES_1, 1);
         }
 
         void SetLoyaltyLevel(LoyaltyLevel level);
@@ -284,7 +284,7 @@ class Pet : public Creature
 
         int32 GetBonusDamage()
         {
-             return m_bonusdamage;
+            return m_bonusdamage;
         }
         void SetBonusDamage(int32 damage) { m_bonusdamage = damage; }
 
@@ -346,7 +346,7 @@ class Pet : public Creature
         void SetAuraUpdateMask(uint8 slot) { m_auraUpdateMask |= (uint64(1) << slot); }
         void ResetAuraUpdateMask()
         {
-             m_auraUpdateMask = 0;
+            m_auraUpdateMask = 0;
         }
 
         // overwrite Creature function for name localization back to WorldObject version without localization

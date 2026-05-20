@@ -462,7 +462,7 @@ struct  LanguageDesc
 };
 
 extern LanguageDesc lang_description[LANGUAGES_COUNT];
- LanguageDesc const* GetLanguageDescByID(uint32 lang);
+LanguageDesc const* GetLanguageDescByID(uint32 lang);
 
 class PlayerDumpReader;
 
@@ -1403,12 +1403,12 @@ class ObjectMgr
 #define sObjectMgr MaNGOS::Singleton<ObjectMgr>::Instance()
 
 /// generic text function
- bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target = NULL);
+bool DoDisplayText(WorldObject* source, int32 entry, Unit const* target = NULL);
 
 // scripting access functions
- bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = std::numeric_limits<int32>::min(), bool extra_content = false);
- CreatureInfo const* GetCreatureTemplateStore(uint32 entry);
- Quest const* GetQuestTemplateStore(uint32 entry);
- MangosStringLocale const* GetMangosStringData(int32 entry);
+bool LoadMangosStrings(DatabaseType& db, char const* table, int32 start_value = MAX_CREATURE_AI_TEXT_STRING_ID, int32 end_value = std::numeric_limits<int32>::min(), bool extra_content = false);
+CreatureInfo const* GetCreatureTemplateStore(uint32 entry);
+Quest const* GetQuestTemplateStore(uint32 entry);
+MangosStringLocale const* GetMangosStringData(int32 entry);
 
 #endif

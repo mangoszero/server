@@ -483,7 +483,7 @@ struct TrainerSpellData
     TrainerSpell const* Find(uint32 spell_id) const;
     void Clear()
     {
-         spellList.clear();
+        spellList.clear();
     }
 };
 
@@ -649,7 +649,7 @@ class Creature : public Unit
 
         CreatureAI* AI()
         {
-             return i_AI;
+            return i_AI;
         }
 
         void SetWalk(bool enable, bool asDefault = true);
@@ -767,7 +767,7 @@ class Creature : public Unit
         void LowerPlayerDamageReq(uint32 unDamage);
         void ResetPlayerDamageReq()
         {
-             m_PlayerDamageReq = GetHealth() / 2;
+            m_PlayerDamageReq = GetHealth() / 2;
         }
 
         /**
@@ -809,7 +809,7 @@ class Creature : public Unit
         void SetNoSearchAssistance(bool val) { m_AlreadySearchedAssistance = val; }
         bool HasSearchedAssistance()
         {
-             return m_AlreadySearchedAssistance;
+            return m_AlreadySearchedAssistance;
         }
 
         bool CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction = true) const;
@@ -869,17 +869,17 @@ class Creature : public Unit
 
         GridReference<Creature>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
         bool IsRegeneratingHealth()
         {
-             return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH;
+            return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH;
         }
 
         bool IsRegeneratingPower()
         {
-             return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER;
+            return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER;
         }
 
         virtual uint8 GetPetAutoSpellSize() const { return CREATURE_MAX_SPELLS; }
@@ -909,7 +909,7 @@ class Creature : public Unit
         void ClearTemporaryFaction();
         uint32 GetTemporaryFactionFlags()
         {
-             return m_temporaryFactionFlags;
+            return m_temporaryFactionFlags;
         }
 
         void SendAreaSpiritHealerQueryOpcode(Player* pl);
@@ -920,7 +920,7 @@ class Creature : public Unit
         void SetDisableReputationGain(bool disable) { DisableReputationGain = disable; }
         bool IsReputationGainDisabled()
         {
-             return DisableReputationGain;
+            return DisableReputationGain;
         }
 
     protected:

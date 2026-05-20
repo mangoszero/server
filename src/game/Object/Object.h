@@ -101,6 +101,7 @@ typedef UNORDERED_MAP<Player*, UpdateData> UpdateDataMapType;
  */
 struct Position
 {
+
     /**
      * @brief Default constructor
      */
@@ -177,7 +178,7 @@ class WorldUpdateCounter
          */
         void Reset()
         {
-             m_tmStart = GameTime::GetGameTimeMS();
+            m_tmStart = GameTime::GetGameTimeMS();
         }
 
     private:
@@ -355,14 +356,14 @@ class Object
 
         Player* ToPlayer()
         {
-             if (GetTypeId() == TYPEID_PLAYER)
-             {
+            if (GetTypeId() == TYPEID_PLAYER)
+            {
                 return reinterpret_cast<Player*>(this);
-             }
-             else
-             {
+            }
+            else
+            {
                 return NULL;
-             }
+            }
         }
 
         Player const* ToPlayer() const
@@ -427,14 +428,14 @@ class Object
 
         GameObject* ToGameObject()
         {
-             if (GetTypeId() == TYPEID_GAMEOBJECT)
-             {
+            if (GetTypeId() == TYPEID_GAMEOBJECT)
+            {
                 return reinterpret_cast<GameObject*>(this);
-             }
-             else
-             {
+            }
+            else
+            {
                 return NULL;
-             }
+            }
         }
 
         GameObject const* ToGameObject() const
@@ -941,7 +942,7 @@ class WorldObject : public Object
 
         ViewPoint& GetViewPoint()
         {
-             return m_viewPoint;
+            return m_viewPoint;
         }
 
         // ASSERT print helper

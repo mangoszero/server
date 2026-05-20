@@ -114,6 +114,7 @@ uint32 AuctionHouseMgr::GetAuctionDeposit(AuctionHouseEntry const* entry, uint32
 }
 
 // does not clear ram
+
 /**
  * @brief Sends the winning bidder mail for a completed auction.
  *
@@ -217,6 +218,7 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
 }
 
 // call this method to send mail to auction owner, when auction is successful, it does not clear ram
+
 /**
  * @brief Sends the successful sale mail to the auction owner.
  *
@@ -264,6 +266,7 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction)
 }
 
 // does not clear ram
+
 /**
  * @brief Sends the expired auction mail returning the item to the owner.
  *
@@ -920,6 +923,7 @@ AuctionEntry* AuctionHouseObject::AddAuctionByGuid(AuctionHouseEntry const* auct
 }
 
 // this function inserts to WorldPacket auction's data
+
 /**
  * @brief Serializes auction information into a packet.
  *

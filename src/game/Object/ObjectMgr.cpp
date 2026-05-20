@@ -166,6 +166,7 @@ bool SpellClickInfo::IsFitToRequirements(Player const* player, Creature const* c
 }
 
 template<typename T>
+
 /**
  * @brief Generates the next identifier from the typed guid generator.
  *
@@ -1341,20 +1342,20 @@ void ObjectMgr::LoadCreatureSpells()
 
                                      //       0        1            2                3               4                 5                 6              7                    8                    9                   10                  11
     result.reset(WorldDatabase.Query("SELECT `entry`, `spellId_1`, `probability_1`, `castTarget_1`, `targetParam1_1`, `targetParam2_1`, `castFlags_1`, `delayInitialMin_1`, `delayInitialMax_1`, `delayRepeatMin_1`, `delayRepeatMax_1`, `scriptId_1`, "
-                                      //               12           13               14              15                16                17             18                   19                   20                  21                  22
-                                                     "`spellId_2`, `probability_2`, `castTarget_2`, `targetParam1_2`, `targetParam2_2`, `castFlags_2`, `delayInitialMin_2`, `delayInitialMax_2`, `delayRepeatMin_2`, `delayRepeatMax_2`, `scriptId_2`, "
-                                     //                23           24               25              26                27                28             29                   30                   31                  32                  33
-                                                     "`spellId_3`, `probability_3`, `castTarget_3`, `targetParam1_3`, `targetParam2_3`, `castFlags_3`, `delayInitialMin_3`, `delayInitialMax_3`, `delayRepeatMin_3`, `delayRepeatMax_3`, `scriptId_3`, "
-                                     //                34           35               36              37                38                39             40                   41                   42                  43                  44
-                                                     "`spellId_4`, `probability_4`, `castTarget_4`, `targetParam1_4`, `targetParam2_4`, `castFlags_4`, `delayInitialMin_4`, `delayInitialMax_4`, `delayRepeatMin_4`, `delayRepeatMax_4`, `scriptId_4`, "
-                                     //                45           46               47              48                49                50             51                   52                   53                  54                  55
-                                                     "`spellId_5`, `probability_5`, `castTarget_5`, `targetParam1_5`, `targetParam2_5`, `castFlags_5`, `delayInitialMin_5`, `delayInitialMax_5`, `delayRepeatMin_5`, `delayRepeatMax_5`, `scriptId_5`, "
-                                     //                56           57               58              59                60                61             62                   63                   64                  65                  66
-                                                     "`spellId_6`, `probability_6`, `castTarget_6`, `targetParam1_6`, `targetParam2_6`, `castFlags_6`, `delayInitialMin_6`, `delayInitialMax_6`, `delayRepeatMin_6`, `delayRepeatMax_6`, `scriptId_6`, "
-                                     //                67           68               69              70                71                72             73                   74                   75                  76                  77
-                                                     "`spellId_7`, `probability_7`, `castTarget_7`, `targetParam1_7`, `targetParam2_7`, `castFlags_7`, `delayInitialMin_7`, `delayInitialMax_7`, `delayRepeatMin_7`, `delayRepeatMax_7`, `scriptId_7`, "
-                                     //                78           79               80              81                82                83             84                   85                   86                  87                  88
-                                                     "`spellId_8`, `probability_8`, `castTarget_8`, `targetParam1_8`, `targetParam2_8`, `castFlags_8`, `delayInitialMin_8`, `delayInitialMax_8`, `delayRepeatMin_8`, `delayRepeatMax_8`, `scriptId_8` FROM `creature_spells`"));
+                                     //               12           13               14              15                16                17             18                   19                   20                  21                  22
+                                                    "`spellId_2`, `probability_2`, `castTarget_2`, `targetParam1_2`, `targetParam2_2`, `castFlags_2`, `delayInitialMin_2`, `delayInitialMax_2`, `delayRepeatMin_2`, `delayRepeatMax_2`, `scriptId_2`, "
+                                     //               23           24               25              26                27                28             29                   30                   31                  32                  33
+                                                    "`spellId_3`, `probability_3`, `castTarget_3`, `targetParam1_3`, `targetParam2_3`, `castFlags_3`, `delayInitialMin_3`, `delayInitialMax_3`, `delayRepeatMin_3`, `delayRepeatMax_3`, `scriptId_3`, "
+                                     //               34           35               36              37                38                39             40                   41                   42                  43                  44
+                                                    "`spellId_4`, `probability_4`, `castTarget_4`, `targetParam1_4`, `targetParam2_4`, `castFlags_4`, `delayInitialMin_4`, `delayInitialMax_4`, `delayRepeatMin_4`, `delayRepeatMax_4`, `scriptId_4`, "
+                                     //               45           46               47              48                49                50             51                   52                   53                  54                  55
+                                                    "`spellId_5`, `probability_5`, `castTarget_5`, `targetParam1_5`, `targetParam2_5`, `castFlags_5`, `delayInitialMin_5`, `delayInitialMax_5`, `delayRepeatMin_5`, `delayRepeatMax_5`, `scriptId_5`, "
+                                     //               56           57               58              59                60                61             62                   63                   64                  65                  66
+                                                    "`spellId_6`, `probability_6`, `castTarget_6`, `targetParam1_6`, `targetParam2_6`, `castFlags_6`, `delayInitialMin_6`, `delayInitialMax_6`, `delayRepeatMin_6`, `delayRepeatMax_6`, `scriptId_6`, "
+                                     //               67           68               69              70                71                72             73                   74                   75                  76                  77
+                                                    "`spellId_7`, `probability_7`, `castTarget_7`, `targetParam1_7`, `targetParam2_7`, `castFlags_7`, `delayInitialMin_7`, `delayInitialMax_7`, `delayRepeatMin_7`, `delayRepeatMax_7`, `scriptId_7`, "
+                                     //               78           79               80              81                82                83             84                   85                   86                  87                  88
+                                                    "`spellId_8`, `probability_8`, `castTarget_8`, `targetParam1_8`, `targetParam2_8`, `castFlags_8`, `delayInitialMin_8`, `delayInitialMax_8`, `delayRepeatMin_8`, `delayRepeatMax_8`, `scriptId_8` FROM `creature_spells`"));
     if (!result)
     {
         BarGoLink bar(1);
@@ -1462,18 +1463,19 @@ void ObjectMgr::LoadCreatureSpells()
 void ObjectMgr::LoadCreatures()
 {
     uint32 count = 0;
-    //                                                0                       1   2    3
-    QueryResult* result = WorldDatabase.Query("SELECT `creature`.`guid`, `creature`.`id`, `map`, `modelid`,"
-                          //   4             5           6           7           8            9              10         11
-                          "`equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`,"
-                          //   12         13       14          15            16
-                          "`curhealth`, `curmana`, `DeathState`, `MovementType`, `event`,"
-                          //   17                        18
-                          "`pool_creature`.`pool_entry`, `pool_creature_template`.`pool_entry` "
-                          "FROM `creature` "
-                          "LEFT OUTER JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid` "
-                          "LEFT OUTER JOIN `pool_creature` ON `creature`.`guid` = `pool_creature`.`guid` "
-                          "LEFT OUTER JOIN `pool_creature_template` ON `creature`.`id` = `pool_creature_template`.`id`");
+    QueryResult* result = WorldDatabase.Query(
+                        //                  0                  1     2      3
+                        "SELECT `creature`.`guid`, `creature`.`id`, `map`, `modelid`,"
+                        // 4              5             6             7             8              9                10           11
+                        "`equipment_id`, `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `spawndist`, `currentwaypoint`,"
+                        // 12          13         14            15              16
+                        "`curhealth`, `curmana`, `DeathState`, `MovementType`, `event`,"
+                        //                  17                                     18
+                        "`pool_creature`.`pool_entry`, `pool_creature_template`.`pool_entry` "
+                        "FROM `creature` "
+                        "LEFT OUTER JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid` "
+                        "LEFT OUTER JOIN `pool_creature` ON `creature`.`guid` = `pool_creature`.`guid` "
+                        "LEFT OUTER JOIN `pool_creature_template` ON `creature`.`id` = `pool_creature_template`.`id`");
 
     if (!result)
     {
@@ -1656,16 +1658,17 @@ void ObjectMgr::RemoveCreatureFromGrid(uint32 guid, CreatureData const* data)
  */
 void ObjectMgr::LoadGameObjects()
 {
-    //                                                           0                1              2               3                      4                      5                      6
-    QueryResult* result = WorldDatabase.Query("SELECT `gameobject`.`guid`, `gameobject`.`id`, `gameobject`.`map`, `gameobject`.`position_x`, `gameobject`.`position_y`, `gameobject`.`position_z`, `gameobject`.`orientation`, "
-                          //          7                     8                     9                     10                    11                        12                       13
-                          "`gameobject`.`rotation0`, `gameobject`.`rotation1`, `gameobject`.`rotation2`, `gameobject`.`rotation3`, `gameobject`.`spawntimesecs`, `gameobject`.`animprogress`, `gameobject`.`state`, "
-                          //                      14                      15                                   16
-                          "`game_event_gameobject`.`event`, `pool_gameobject`.`pool_entry`, `pool_gameobject_template`.`pool_entry` "
-                          "FROM `gameobject` "
-                          "LEFT OUTER JOIN `game_event_gameobject` ON `gameobject`.`guid` = `game_event_gameobject`.`guid` "
-                          "LEFT OUTER JOIN `pool_gameobject` ON `gameobject`.`guid` = `pool_gameobject`.`guid` "
-                          "LEFT OUTER JOIN `pool_gameobject_template` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
+    QueryResult* result = WorldDatabase.Query(
+                        //                    0                    1                  2                   3                          4                          5             6
+                        "SELECT `gameobject`.`guid`, `gameobject`.`id`, `gameobject`.`map`, `gameobject`.`position_x`, `gameobject`.`position_y`, `gameobject`.`position_z`, `gameobject`.`orientation`, "
+                        //             7                         8                         9                         10                        11                            12              13
+                        "`gameobject`.`rotation0`, `gameobject`.`rotation1`, `gameobject`.`rotation2`, `gameobject`.`rotation3`, `gameobject`.`spawntimesecs`, `gameobject`.`animprogress`, `gameobject`.`state`, "
+                        //                        14                         15                                       16
+                        "`game_event_gameobject`.`event`, `pool_gameobject`.`pool_entry`, `pool_gameobject_template`.`pool_entry` "
+                        "FROM `gameobject` "
+                        "LEFT OUTER JOIN `game_event_gameobject` ON `gameobject`.`guid` = `game_event_gameobject`.`guid` "
+                        "LEFT OUTER JOIN `pool_gameobject` ON `gameobject`.`guid` = `pool_gameobject`.`guid` "
+                        "LEFT OUTER JOIN `pool_gameobject_template` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
 
     if (!result)
     {
@@ -3703,6 +3706,7 @@ void ObjectMgr::BuildPlayerLevelInfo(uint8 race, uint8 _class, uint8 level, Play
 /* ********************************************************************************************* */
 /* *                                Static Wrappers                                              */
 /* ********************************************************************************************* */
+
 /**
  * @brief Gets static gameobject template data by entry id.
  *
@@ -3710,6 +3714,7 @@ void ObjectMgr::BuildPlayerLevelInfo(uint8 race, uint8 _class, uint8 level, Play
  * @return The gameobject template, or null if missing.
  */
 GameObjectInfo const* ObjectMgr::GetGameObjectInfo(uint32 id) { return sGOStorage.LookupEntry<GameObjectInfo>(id); }
+
 /**
  * @brief Finds an online player by name.
  *
@@ -3717,6 +3722,7 @@ GameObjectInfo const* ObjectMgr::GetGameObjectInfo(uint32 id) { return sGOStorag
  * @return The matching player, or null if not found.
  */
 Player* ObjectMgr::GetPlayer(const char* name) { return sObjectAccessor.FindPlayerByName(name); }
+
 /**
  * @brief Finds a player by GUID.
  *
@@ -3725,6 +3731,7 @@ Player* ObjectMgr::GetPlayer(const char* name) { return sObjectAccessor.FindPlay
  * @return The matching player, or null if not found.
  */
 Player* ObjectMgr::GetPlayer(ObjectGuid guid, bool inWorld /*=true*/) { return sObjectAccessor.FindPlayer(guid, inWorld); }
+
 /**
  * @brief Gets static creature template data by entry id.
  *
@@ -3732,6 +3739,7 @@ Player* ObjectMgr::GetPlayer(ObjectGuid guid, bool inWorld /*=true*/) { return s
  * @return The creature template, or null if missing.
  */
 CreatureInfo const* ObjectMgr::GetCreatureTemplate(uint32 id) { return sCreatureStorage.LookupEntry<CreatureInfo>(id); }
+
 /**
  * @brief Gets creature model metadata by display id.
  *
@@ -3739,6 +3747,7 @@ CreatureInfo const* ObjectMgr::GetCreatureTemplate(uint32 id) { return sCreature
  * @return The creature model info, or null if missing.
  */
 CreatureModelInfo const* ObjectMgr::GetCreatureModelInfo(uint32 modelid) { return sCreatureModelStorage.LookupEntry<CreatureModelInfo>(modelid); }
+
 /**
  * @brief Gets equipment template data by entry id.
  *
@@ -3746,6 +3755,7 @@ CreatureModelInfo const* ObjectMgr::GetCreatureModelInfo(uint32 modelid) { retur
  * @return The equipment template, or null if missing.
  */
 EquipmentInfo const* ObjectMgr::GetEquipmentInfo(uint32 entry) { return sEquipmentStorage.LookupEntry<EquipmentInfo>(entry); }
+
 /**
  * @brief Gets equipment item metadata by item entry id.
  *
@@ -3753,6 +3763,7 @@ EquipmentInfo const* ObjectMgr::GetEquipmentInfo(uint32 entry) { return sEquipme
  * @return The equipment item info, or null if missing.
  */
 EquipmentInfoItem const* ObjectMgr::GetEquipmentInfoItem(uint32 entry) { return sEquipmentStorageItem.LookupEntry<EquipmentInfoItem>(entry); }
+
 /**
  * @brief Gets raw deprecated equipment template data by entry id.
  *
@@ -3760,6 +3771,7 @@ EquipmentInfoItem const* ObjectMgr::GetEquipmentInfoItem(uint32 entry) { return 
  * @return The raw equipment info, or null if missing.
  */
 EquipmentInfoRaw const* ObjectMgr::GetEquipmentInfoRaw(uint32 entry) { return sEquipmentStorageRaw.LookupEntry<EquipmentInfoRaw>(entry); }
+
 /**
  * @brief Gets creature spawn addon data by low GUID.
  *
@@ -3767,6 +3779,7 @@ EquipmentInfoRaw const* ObjectMgr::GetEquipmentInfoRaw(uint32 entry) { return sE
  * @return The addon data, or null if missing.
  */
 CreatureDataAddon const* ObjectMgr::GetCreatureAddon(uint32 lowguid) { return sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(lowguid); }
+
 /**
  * @brief Gets creature template addon data by entry id.
  *
@@ -3774,6 +3787,7 @@ CreatureDataAddon const* ObjectMgr::GetCreatureAddon(uint32 lowguid) { return sC
  * @return The template addon data, or null if missing.
  */
 CreatureDataAddon const* ObjectMgr::GetCreatureTemplateAddon(uint32 entry) { return sCreatureInfoAddonStorage.LookupEntry<CreatureDataAddon>(entry); }
+
 /**
  * @brief Gets item prototype data by entry id.
  *
@@ -3781,6 +3795,7 @@ CreatureDataAddon const* ObjectMgr::GetCreatureTemplateAddon(uint32 entry) { ret
  * @return The item prototype, or null if missing.
  */
 ItemPrototype const* ObjectMgr::GetItemPrototype(uint32 id) { return sItemStorage.LookupEntry<ItemPrototype>(id); }
+
 /**
  * @brief Gets instance template data by map id.
  *
@@ -3792,6 +3807,7 @@ InstanceTemplate const* ObjectMgr::GetInstanceTemplate(uint32 map) { return sIns
 /* ********************************************************************************************* */
 /* *                                Loading Functions                                            */
 /* ********************************************************************************************* */
+
 /**
  * @brief Loads groups, group members, and group instance bindings from the database.
  */
@@ -3901,13 +3917,13 @@ void ObjectMgr::LoadGroups()
     // -- loading instances --
     count = 0;
     result = CharacterDatabase.Query(
-                 //      0                          1    2         3          4
-                 "SELECT `group_instance`.`leaderGuid`, `map`, `instance`, `permanent`, `resettime`, "
-                 // 5
-                 "(SELECT COUNT(*) FROM `character_instance` WHERE `guid` = `group_instance`.`leaderGuid` AND `instance` = `group_instance`.`instance` AND `permanent` = 1 LIMIT 1), "
-                 // 6
-                 " `groups`.`groupId` "
-                 "FROM `group_instance` LEFT JOIN `instance` ON `instance` = `id` LEFT JOIN `groups` ON `groups`.`leaderGUID` = `group_instance`.`leaderGUID` ORDER BY `leaderGuid`"
+                //                        0             1      2           3            4
+                "SELECT `group_instance`.`leaderGuid`, `map`, `instance`, `permanent`, `resettime`, "
+                // 5
+                "(SELECT COUNT(*) FROM `character_instance` WHERE `guid` = `group_instance`.`leaderGuid` AND `instance` = `group_instance`.`instance` AND `permanent` = 1 LIMIT 1), "
+                //          6
+                " `groups`.`groupId` "
+                "FROM `group_instance` LEFT JOIN `instance` ON `instance` = `id` LEFT JOIN `groups` ON `groups`.`leaderGUID` = `group_instance`.`leaderGUID` ORDER BY `leaderGuid`"
              );
 
     if (!result)
@@ -3977,41 +3993,42 @@ void ObjectMgr::LoadQuests()
 
     m_ExclusiveQuestGroups.clear();
 
-    //                                                0      1       2           3         4           5     6                7              8              9
-    QueryResult* result = WorldDatabase.Query("SELECT `entry`, `Method`, `ZoneOrSort`, `MinLevel`, `QuestLevel`, `Type`, `RequiredClasses`, `RequiredRaces`, `RequiredSkill`, `RequiredSkillValue`,"
-                          //   10                   11                 12                     13                   14                     15                   16                17
-                          "`RepObjectiveFaction`, `RepObjectiveValue`, `RequiredMinRepFaction`, `RequiredMinRepValue`, `RequiredMaxRepFaction`, `RequiredMaxRepValue`, `SuggestedPlayers`, `LimitTime`,"
-                          //   18          19            20           21           22              23                24         25            26
-                          "`QuestFlags`, `SpecialFlags`, `PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`, `SrcItemId`, `SrcItemCount`, `SrcSpell`,"
-                          //   27     28       29          30               31                32       33              34              35              36
-                          "`Title`, `Details`, `Objectives`, `OfferRewardText`, `RequestItemsText`, `EndText`, `ObjectiveText1`, `ObjectiveText2`, `ObjectiveText3`, `ObjectiveText4`,"
-                          //   37          38          39          40          41             42             43             44
-                          "`ReqItemId1`, `ReqItemId2`, `ReqItemId3`, `ReqItemId4`, `ReqItemCount1`, `ReqItemCount2`, `ReqItemCount3`, `ReqItemCount4`,"
-                          //   45            46            47            48            49               50               51               52
-                          "`ReqSourceId1`, `ReqSourceId2`, `ReqSourceId3`, `ReqSourceId4`, `ReqSourceCount1`, `ReqSourceCount2`, `ReqSourceCount3`, `ReqSourceCount4`,"
-                          //   53                  54                  55                  56                  57                     58                     59                     60
-                          "`ReqCreatureOrGOId1`, `ReqCreatureOrGOId2`, `ReqCreatureOrGOId3`, `ReqCreatureOrGOId4`, `ReqCreatureOrGOCount1`, `ReqCreatureOrGOCount2`, `ReqCreatureOrGOCount3`, `ReqCreatureOrGOCount4`,"
-                          //   61             62             63             64
-                          "`ReqSpellCast1`, `ReqSpellCast2`, `ReqSpellCast3`, `ReqSpellCast4`,"
-                          //   65                66                67                68                69                70
-                          "`RewChoiceItemId1`, `RewChoiceItemId2`, `RewChoiceItemId3`, `RewChoiceItemId4`, `RewChoiceItemId5`, `RewChoiceItemId6`,"
-                          //   71                   72                   73                   74                   75                   76
-                          "`RewChoiceItemCount1`, `RewChoiceItemCount2`, `RewChoiceItemCount3`, `RewChoiceItemCount4`, `RewChoiceItemCount5`, `RewChoiceItemCount6`,"
-                          //   77          78          79          80          81             82             83             84
-                          "`RewItemId1`, `RewItemId2`, `RewItemId3`, `RewItemId4`, `RewItemCount1`, `RewItemCount2`, `RewItemCount3`, `RewItemCount4`,"
-                          //   85              86              87              88              89              90            91            92            93            94
-                          "`RewRepFaction1`, `RewRepFaction2`, `RewRepFaction3`, `RewRepFaction4`, `RewRepFaction5`, `RewRepValue1`, `RewRepValue2`, `RewRepValue3`, `RewRepValue4`, `RewRepValue5`,"
-                          //   95             96                97        98            99                 100               101         102     103     104
-                          "`RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`, `RewSpellCast`, `RewMailTemplateId`, `RewMailDelaySecs`, `PointMapId`, `PointX`, `PointY`, `PointOpt`,"
-                          //   105            106            107            108            109                 110                 111                 112
-                          "`DetailsEmote1`, `DetailsEmote2`, `DetailsEmote3`, `DetailsEmote4`, `DetailsEmoteDelay1`, `DetailsEmoteDelay2`, `DetailsEmoteDelay3`, `DetailsEmoteDelay4`,"
-                          //   113              114            115                116                117                118
-                          "`IncompleteEmote`, `CompleteEmote`, `OfferRewardEmote1`, `OfferRewardEmote2`, `OfferRewardEmote3`, `OfferRewardEmote4`,"
-                          //   119                     120                     121                     122
-                          "`OfferRewardEmoteDelay1`, `OfferRewardEmoteDelay2`, `OfferRewardEmoteDelay3`, `OfferRewardEmoteDelay4`,"
-                          //   123          124
-                          "`StartScript`, `CompleteScript`"
-                          " FROM `quest_template`");
+    QueryResult* result = WorldDatabase.Query(
+                        //       0        1         2             3           4             5       6                  7                8                9
+                        "SELECT `entry`, `Method`, `ZoneOrSort`, `MinLevel`, `QuestLevel`, `Type`, `RequiredClasses`, `RequiredRaces`, `RequiredSkill`, `RequiredSkillValue`,"
+                        // 10                    11                   12                       13                     14                       15                     16                  17
+                        "`RepObjectiveFaction`, `RepObjectiveValue`, `RequiredMinRepFaction`, `RequiredMinRepValue`, `RequiredMaxRepFaction`, `RequiredMaxRepValue`, `SuggestedPlayers`, `LimitTime`,"
+                        // 18          19            20           21           22              23                24         25            26
+                        "`QuestFlags`, `SpecialFlags`, `PrevQuestId`, `NextQuestId`, `ExclusiveGroup`, `NextQuestInChain`, `SrcItemId`, `SrcItemCount`, `SrcSpell`,"
+                        // 27      28         29            30                 31                  32         33                34                35                36
+                        "`Title`, `Details`, `Objectives`, `OfferRewardText`, `RequestItemsText`, `EndText`, `ObjectiveText1`, `ObjectiveText2`, `ObjectiveText3`, `ObjectiveText4`,"
+                        // 37           38            39            40            41               42               43               44
+                        "`ReqItemId1`, `ReqItemId2`, `ReqItemId3`, `ReqItemId4`, `ReqItemCount1`, `ReqItemCount2`, `ReqItemCount3`, `ReqItemCount4`,"
+                        // 45             46              47              48              49                 50                 51                 52
+                        "`ReqSourceId1`, `ReqSourceId2`, `ReqSourceId3`, `ReqSourceId4`, `ReqSourceCount1`, `ReqSourceCount2`, `ReqSourceCount3`, `ReqSourceCount4`,"
+                        // 53                   54                    55                    56                    57                       58                       59                       60
+                        "`ReqCreatureOrGOId1`, `ReqCreatureOrGOId2`, `ReqCreatureOrGOId3`, `ReqCreatureOrGOId4`, `ReqCreatureOrGOCount1`, `ReqCreatureOrGOCount2`, `ReqCreatureOrGOCount3`, `ReqCreatureOrGOCount4`,"
+                        // 61              62               63               64
+                        "`ReqSpellCast1`, `ReqSpellCast2`, `ReqSpellCast3`, `ReqSpellCast4`,"
+                        // 65                 66                  67                  68                  69                  70
+                        "`RewChoiceItemId1`, `RewChoiceItemId2`, `RewChoiceItemId3`, `RewChoiceItemId4`, `RewChoiceItemId5`, `RewChoiceItemId6`,"
+                        // 71                    72                     73                     74                     75                     76
+                        "`RewChoiceItemCount1`, `RewChoiceItemCount2`, `RewChoiceItemCount3`, `RewChoiceItemCount4`, `RewChoiceItemCount5`, `RewChoiceItemCount6`,"
+                        // 77           78            79            80            81               82               83               84
+                        "`RewItemId1`, `RewItemId2`, `RewItemId3`, `RewItemId4`, `RewItemCount1`, `RewItemCount2`, `RewItemCount3`, `RewItemCount4`,"
+                        // 85               86                87                88                89                90              91              92              93              94
+                        "`RewRepFaction1`, `RewRepFaction2`, `RewRepFaction3`, `RewRepFaction4`, `RewRepFaction5`, `RewRepValue1`, `RewRepValue2`, `RewRepValue3`, `RewRepValue4`, `RewRepValue5`,"
+                        // 95              96                  97          98              99                   100                 101           102       103       104
+                        "`RewOrReqMoney`, `RewMoneyMaxLevel`, `RewSpell`, `RewSpellCast`, `RewMailTemplateId`, `RewMailDelaySecs`, `PointMapId`, `PointX`, `PointY`, `PointOpt`,"
+                        // 105             106              107              108              109                   110                   111                   112
+                        "`DetailsEmote1`, `DetailsEmote2`, `DetailsEmote3`, `DetailsEmote4`, `DetailsEmoteDelay1`, `DetailsEmoteDelay2`, `DetailsEmoteDelay3`, `DetailsEmoteDelay4`,"
+                        // 113               114              115                  116                  117                  118
+                        "`IncompleteEmote`, `CompleteEmote`, `OfferRewardEmote1`, `OfferRewardEmote2`, `OfferRewardEmote3`, `OfferRewardEmote4`,"
+                        // 119                      120                       121                       122
+                        "`OfferRewardEmoteDelay1`, `OfferRewardEmoteDelay2`, `OfferRewardEmoteDelay3`, `OfferRewardEmoteDelay4`,"
+                        // 123           124
+                        "`StartScript`, `CompleteScript`"
+                        " FROM `quest_template`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -5884,7 +5901,7 @@ WorldSafeLocsEntry const* ObjectMgr::GetClosestGraveYard(float x, float y, float
 
             // at entrance map calculate distance (2D);
             float dist2 = (entry->x - tempEntry->ghostEntranceX) * (entry->x - tempEntry->ghostEntranceX)
-                          + (entry->y - tempEntry->ghostEntranceY) * (entry->y - tempEntry->ghostEntranceY);
+                        + (entry->y - tempEntry->ghostEntranceY) * (entry->y - tempEntry->ghostEntranceY);
             if (foundEntr)
             {
                 if (dist2 < distEntr)
@@ -6910,12 +6927,13 @@ std::string ObjectMgr::GeneratePetName(uint32 entry)
 void ObjectMgr::LoadCorpses()
 {
     uint32 count = 0;
-    //                                                    0            1       2                  3                  4                  5                   6
-    QueryResult* result = CharacterDatabase.Query("SELECT `corpse`.`guid`, `player`, `corpse`.`position_x`, `corpse`.`position_y`, `corpse`.`position_z`, `corpse`.`orientation`, `corpse`.`map`, "
-                          //   7     8            9         10      11    12     13           14            15              16       17
-                          "`time`, `corpse_type`, `instance`, `gender`, `race`, `class`, `playerBytes`, `playerBytes2`, `equipmentCache`, `guildId`, `playerFlags` FROM `corpse` "
-                          "JOIN `characters` ON `player` = `characters`.`guid` "
-                          "LEFT JOIN `guild_member` ON `player`=`guild_member`.`guid` WHERE `corpse_type` <> 0");
+    QueryResult* result = CharacterDatabase.Query(
+                        //                  0      1                  2                      3                         4                      5                       6
+                        "SELECT `corpse`.`guid`, `player`, `corpse`.`position_x`, `corpse`.`position_y`, `corpse`.`position_z`, `corpse`.`orientation`, `corpse`.`map`, "
+                        // 7      8              9           10        11      12       13             14              15                16         17
+                        "`time`, `corpse_type`, `instance`, `gender`, `race`, `class`, `playerBytes`, `playerBytes2`, `equipmentCache`, `guildId`, `playerFlags` FROM `corpse` "
+                        "JOIN `characters` ON `player` = `characters`.`guid` "
+                        "LEFT JOIN `guild_member` ON `player`=`guild_member`.`guid` WHERE `corpse_type` <> 0");
 
     if (!result)
     {
@@ -7033,11 +7051,12 @@ void ObjectMgr::LoadReputationOnKill()
 {
     uint32 count = 0;
 
-    //                                                0            1                     2
-    QueryResult* result = WorldDatabase.Query("SELECT `creature_id`, `RewOnKillRepFaction1`, `RewOnKillRepFaction2`,"
-                          //   3             4             5                   6             7             8                   9
-                          "`IsTeamAward1`, `MaxStanding1`, `RewOnKillRepValue1`, `IsTeamAward2`, `MaxStanding2`, `RewOnKillRepValue2`, `TeamDependent` "
-                          "FROM `creature_onkill_reputation`");
+    QueryResult* result = WorldDatabase.Query(
+                        //       0              1                       2
+                        "SELECT `creature_id`, `RewOnKillRepFaction1`, `RewOnKillRepFaction2`,"
+                        // 3              4               5                     6               7               8                     9
+                        "`IsTeamAward1`, `MaxStanding1`, `RewOnKillRepValue1`, `IsTeamAward2`, `MaxStanding2`, `RewOnKillRepValue2`, `TeamDependent` "
+                        "FROM `creature_onkill_reputation`");
 
     if (!result)
     {
@@ -8552,9 +8571,9 @@ bool PlayerCondition::Meets(Player const* player, Map const* map, WorldObject co
         {
             switch (m_value2)
             {
-              case 0: return player->GetHonorRankInfo().rank == m_value1;
-              case 1: return player->GetHonorRankInfo().rank >= m_value1;
-              case 2: return player->GetHonorRankInfo().rank <= m_value1;
+                case 0: return player->GetHonorRankInfo().rank == m_value1;
+                case 1: return player->GetHonorRankInfo().rank >= m_value1;
+                case 2: return player->GetHonorRankInfo().rank <= m_value1;
             }
         }
         default:
@@ -9579,10 +9598,9 @@ void ObjectMgr::LoadVendorTemplates()
 void ObjectMgr::LoadGossipMenu(std::set<uint32>& gossipScriptSet)
 {
     m_mGossipMenusMap.clear();
-    //                                                0      1        2
-    QueryResult* result = WorldDatabase.Query("SELECT `entry`, `text_id`, `script_id`, "
-                          //   3
-                          "`condition_id` FROM `gossip_menu`");
+    QueryResult* result = WorldDatabase.Query(
+                        //       0        1          2              3
+                        "SELECT `entry`, `text_id`, `script_id`, `condition_id` FROM `gossip_menu`");
 
     if (!result)
     {
@@ -9697,10 +9715,10 @@ void ObjectMgr::LoadGossipMenuItems(std::set<uint32>& gossipScriptSet)
     m_mGossipMenuItemsMap.clear();
 
     QueryResult* result = WorldDatabase.Query(
-                              "SELECT `menu_id`, `id`, `option_icon`, `option_text`, `option_id`, `npc_option_npcflag`, "
-                              "`action_menu_id`, `action_poi_id`, `action_script_id`, `box_coded`, `box_money`, `box_text`, "
-                              "`condition_id` "
-                              "FROM `gossip_menu_option` ORDER BY `menu_id`, `id`");
+                            "SELECT `menu_id`, `id`, `option_icon`, `option_text`, `option_id`, `npc_option_npcflag`, "
+                            "`action_menu_id`, `action_poi_id`, `action_script_id`, `box_coded`, `box_money`, `box_text`, "
+                            "`condition_id` "
+                            "FROM `gossip_menu_option` ORDER BY `menu_id`, `id`");
 
     if (!result)
     {
@@ -9924,6 +9942,7 @@ void ObjectMgr::LoadGossipMenus()
     pPlayer->GetGossipTextId(pCreature)
     Otherwise the default
 */
+
 /**
  * @brief Builds the cache mapping creature entries to their default gossip text ids.
  */
@@ -9961,7 +9980,7 @@ void ObjectMgr::LoadCoreSideGossipTextIdCache()
     {
         bar.step();
         Field* fields = result->Fetch();
-       m_mCacheNpcTextIdMap[fields[0].GetUInt32()] =  fields[1].GetUInt32();
+        m_mCacheNpcTextIdMap[fields[0].GetUInt32()] =  fields[1].GetUInt32();
 
         ++count;
     }

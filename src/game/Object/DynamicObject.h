@@ -78,7 +78,7 @@ class DynamicObject : public WorldObject
 
         GridReference<DynamicObject>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
     protected:

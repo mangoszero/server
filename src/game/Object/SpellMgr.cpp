@@ -837,24 +837,24 @@ bool IsSingleFromSpellSpecificPerTarget(SpellSpecific spellSpec1, SpellSpecific 
             return spellSpec1 == spellSpec2;
         case SPELL_BATTLE_ELIXIR:
             return spellSpec2 == SPELL_BATTLE_ELIXIR
-                   || spellSpec2 == SPELL_FLASK_ELIXIR;
+                || spellSpec2 == SPELL_FLASK_ELIXIR;
         case SPELL_GUARDIAN_ELIXIR:
             return spellSpec2 == SPELL_GUARDIAN_ELIXIR
-                   || spellSpec2 == SPELL_FLASK_ELIXIR;
+                || spellSpec2 == SPELL_FLASK_ELIXIR;
         case SPELL_FLASK_ELIXIR:
             return spellSpec2 == SPELL_BATTLE_ELIXIR
-                   || spellSpec2 == SPELL_GUARDIAN_ELIXIR
-                   || spellSpec2 == SPELL_FLASK_ELIXIR;
+                || spellSpec2 == SPELL_GUARDIAN_ELIXIR
+                || spellSpec2 == SPELL_FLASK_ELIXIR;
         case SPELL_FOOD:
             return spellSpec2 == SPELL_FOOD
-                   || spellSpec2 == SPELL_FOOD_AND_DRINK;
+                || spellSpec2 == SPELL_FOOD_AND_DRINK;
         case SPELL_DRINK:
             return spellSpec2 == SPELL_DRINK
-                   || spellSpec2 == SPELL_FOOD_AND_DRINK;
+                || spellSpec2 == SPELL_FOOD_AND_DRINK;
         case SPELL_FOOD_AND_DRINK:
             return spellSpec2 == SPELL_FOOD
-                   || spellSpec2 == SPELL_DRINK
-                   || spellSpec2 == SPELL_FOOD_AND_DRINK;
+                || spellSpec2 == SPELL_DRINK
+                || spellSpec2 == SPELL_FOOD_AND_DRINK;
         default:
             return false;
     }
@@ -1277,8 +1277,10 @@ bool IsSingleTargetSpell(SpellEntry const* spellInfo)
         // Banish
         || (spellInfo->SpellIconID == 96 && spellInfo->SpellVisual == 1305)
         // Entangling roots
-        || spellInfo->IsFitToFamily(SPELLFAMILY_DRUID, ClassFamilyMask(UI64LIT(0x0200)))
-       ) { return true; }
+        || spellInfo->IsFitToFamily(SPELLFAMILY_DRUID, ClassFamilyMask(UI64LIT(0x0200))))
+    {
+        return true;
+    }
 
     // TODO - need found Judgements rule
     switch (GetSpellSpecific(spellInfo->Id))
@@ -1600,7 +1602,7 @@ struct DoSpellProcEvent
 
     const char* TableName()
     {
-         return "spell_proc_event";
+        return "spell_proc_event";
     }
 
     bool IsValidCustomRank(SpellProcEventEntry const& spe, uint32 entry, uint32 first_id)
@@ -2305,10 +2307,12 @@ struct DoSpellThreat
             }
         }
     }
+
     const char* TableName()
     {
-         return "spell_threat";
+        return "spell_threat";
     }
+
     bool IsValidCustomRank(SpellThreatEntry const& ste, uint32 entry, uint32 first_id)
     {
         if (!ste.threat)
@@ -3588,9 +3592,9 @@ SpellEntry const* SpellMgr::SelectAuraRankForLevel(SpellEntry const* spellInfo, 
     {
         // for simple aura in check apply to any non caster based targets, in rank search mode to any explicit targets
         if (((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA &&
-              (IsExplicitPositiveTarget(spellInfo->EffectImplicitTargetA[i]) ||
-               IsAreaEffectPossitiveTarget(Targets(spellInfo->EffectImplicitTargetA[i])))) ||
-             spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PARTY) &&
+            (IsExplicitPositiveTarget(spellInfo->EffectImplicitTargetA[i]) ||
+            IsAreaEffectPossitiveTarget(Targets(spellInfo->EffectImplicitTargetA[i])))) ||
+            spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PARTY) &&
             IsPositiveEffect(spellInfo, SpellEffectIndex(i)))
         {
             needRankSelection = true;
@@ -4351,7 +4355,7 @@ void SpellMgr::LoadSpellScriptTarget()
             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
             {
                 if (spellInfo->Effect[j] && (spellInfo->EffectImplicitTargetA[j] == TARGET_SCRIPT ||
-                                             (spellInfo->EffectImplicitTargetA[j] != TARGET_SELF && spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT)))
+                                            (spellInfo->EffectImplicitTargetA[j] != TARGET_SELF && spellInfo->EffectImplicitTargetB[j] == TARGET_SCRIPT)))
                 {
                     SQLMultiStorage::SQLMSIteratorBounds<SpellTargetEntry> bounds = sSpellScriptTargetStorage.getBounds<SpellTargetEntry>(i);
                     if (bounds.first == bounds.second)
@@ -4415,12 +4419,14 @@ void SpellMgr::LoadSpellPetAuras()
             }
             int i = 0;
             for (; i < MAX_EFFECT_INDEX; ++i)
-                if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA &&
-                     spellInfo->EffectApplyAuraName[i] == SPELL_AURA_DUMMY) ||
-                    spellInfo->Effect[i] == SPELL_EFFECT_DUMMY)
-                    {
-                        break;
-                    }
+            {
+                if ((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA
+                    && spellInfo->EffectApplyAuraName[i] == SPELL_AURA_DUMMY)
+                    || spellInfo->Effect[i] == SPELL_EFFECT_DUMMY)
+                {
+                    break;
+                }
+            }
 
             if (i == MAX_EFFECT_INDEX)
             {

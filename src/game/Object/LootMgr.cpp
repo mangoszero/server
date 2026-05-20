@@ -582,6 +582,7 @@ LootSlotType LootItem::GetSlotTypeForSharedLoot(PermissionTypes permission, Play
 //
 
 // Inserts the item into the loot (called by LootTemplate processors)
+
 /**
  * @brief Adds a generated loot store item to the loot container.
  *
@@ -615,6 +616,7 @@ void Loot::AddItem(LootStoreItem const& item)
 }
 
 // Calls processor of corresponding LootTemplate (which handles everything including references)
+
 /**
  * @brief Fills a loot container from a loot template.
  *
@@ -1168,6 +1170,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv)
 //
 
 // Adds an entry to the group (at loading stage)
+
 /**
  * @brief Adds a loot entry to a loot group.
  *
@@ -1186,6 +1189,7 @@ void LootTemplate::LootGroup::AddEntry(LootStoreItem& item)
 }
 
 // Rolls an item from the group, returns NULL if all miss their chances
+
 /**
  * @brief Rolls one item from a loot group.
  *
@@ -1220,6 +1224,7 @@ LootStoreItem const* LootTemplate::LootGroup::Roll() const
 }
 
 // True if group includes at least 1 quest drop entry
+
 /**
  * @brief Checks whether the group contains a quest drop.
  *
@@ -1241,6 +1246,7 @@ bool LootTemplate::LootGroup::HasQuestDrop() const
 }
 
 // True if group includes at least 1 quest drop entry for active quests of the player
+
 /**
  * @brief Checks whether the group contains a quest drop relevant to a player.
  *
@@ -1332,6 +1338,7 @@ bool LootTemplate::LootGroup::HasStartingQuestDropForPlayer(Player const* player
 }
 
 // Rolls an item from the group (if any takes its chance) and adds the item to the loot
+
 /**
  * @brief Processes the group and adds the rolled item to loot.
  *
@@ -1347,6 +1354,7 @@ void LootTemplate::LootGroup::Process(Loot& loot) const
 }
 
 // Overall chance for the group without equal chanced items
+
 /**
  * @brief Computes the raw total chance of explicitly-chanced group entries.
  *
@@ -1366,6 +1374,7 @@ float LootTemplate::LootGroup::RawTotalChance() const
 }
 
 // Overall chance for the group
+
 /**
  * @brief Computes the effective total chance of the group.
  *
@@ -1447,6 +1456,7 @@ void LootTemplate::LootGroup::CheckLootRefs(LootIdSet* ref_set) const
 //
 
 // Adds an entry to the group (at loading stage)
+
 /**
  * @brief Adds an item entry to the loot template.
  *
@@ -1469,6 +1479,7 @@ void LootTemplate::AddEntry(LootStoreItem& item)
 }
 
 // Rolls for every item in the template and adds the rolled items the the loot
+
 /**
  * @brief Processes the template and appends rolled items to loot.
  *
@@ -1532,6 +1543,7 @@ void LootTemplate::Process(Loot& loot, LootStore const& store, bool rate, uint8 
 }
 
 // True if template includes at least 1 quest drop entry
+
 /**
  * @brief Checks whether the template contains any quest drop.
  *
@@ -1581,6 +1593,7 @@ bool LootTemplate::HasQuestDrop(LootTemplateMap const& store, uint8 groupId) con
 }
 
 // True if template includes at least 1 quest drop for an active quest of the player
+
 /**
  * @brief Checks whether the template contains a quest drop relevant to a player.
  *
@@ -1740,6 +1753,7 @@ bool LootTemplate::HasStartingQuestDropForPlayer(LootTemplateMap const& store, P
 }
 
 // Checks integrity of the template
+
 /**
  * @brief Verifies consistency of the loot template.
  *

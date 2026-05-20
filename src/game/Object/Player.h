@@ -167,6 +167,7 @@ typedef UNORDERED_MAP<uint32, PlayerSpell> PlayerSpellMap;
  */
 struct SpellModifier
 {
+
     /**
      * @brief Constructor
      */
@@ -848,9 +849,9 @@ struct InstancePlayerBind
 {
     DungeonPersistentState* state;
     bool perm;
-    /* permanent PlayerInstanceBinds are created in Raid instances for players
-       that aren't already permanently bound when they are inside when a boss is killed
-       or when they enter an instance that the group leader is permanently bound to. */
+    /*  permanent PlayerInstanceBinds are created in Raid instances for players
+        that aren't already permanently bound when they are inside when a boss is killed
+        or when they enter an instance that the group leader is permanently bound to. */
     InstancePlayerBind() : state(NULL), perm(false) {}
 };
 
@@ -1440,7 +1441,7 @@ class Player : public Unit
         // Get the item update queue
         std::vector<Item*>& GetItemUpdateQueue()
         {
-             return m_itemUpdateQueue;
+            return m_itemUpdateQueue;
         }
 
         // Check if the position is an inventory position
@@ -2005,13 +2006,13 @@ class Player : public Unit
         // Clear the divider GUID
         void ClearDividerGuid()
         {
-             m_dividerGuid.Clear();
+            m_dividerGuid.Clear();
         }
 
         // Get the in-game time
         uint32 GetInGameTime()
         {
-             return m_ingametime;
+            return m_ingametime;
         }
 
         // Set the in-game time
@@ -2425,7 +2426,7 @@ class Player : public Unit
         // Clear resurrect request data
         void clearResurrectRequestData()
         {
-             setResurrectRequestData(ObjectGuid(), 0, 0.0f, 0.0f, 0.0f, 0, 0);
+            setResurrectRequestData(ObjectGuid(), 0, 0.0f, 0.0f, 0.0f, 0, 0);
         }
 
         // Check if resurrect is requested by a specific GUID
@@ -2510,6 +2511,7 @@ class Player : public Unit
         }
 
         // Check if the player is in a duel with another player
+
             /** todo: -maybe move UpdateDuelFlag+DuelComplete to independent DuelHandler.. **/
         DuelInfo* duel;
         bool IsInDuelWith(Player const* player) const
@@ -2546,7 +2548,7 @@ class Player : public Unit
         static void RemoveFromGroup(Group* group, ObjectGuid guid, uint8 removeMethod = GROUP_LEAVE);
         void RemoveFromGroup()
         {
-             RemoveFromGroup(GetGroup(), GetObjectGuid());
+            RemoveFromGroup(GetGroup(), GetObjectGuid());
         }
 
         // Send update to out-of-range group members
@@ -2902,7 +2904,7 @@ class Player : public Unit
         // Get the teleport destination
         WorldLocation& GetTeleportDest()
         {
-             return m_teleport_dest;
+            return m_teleport_dest;
         }
 
         // Check if the player is being teleported
@@ -2962,7 +2964,7 @@ class Player : public Unit
         // Get the player's reputation manager
         ReputationMgr& GetReputationMgr()
         {
-             return m_reputationMgr;
+            return m_reputationMgr;
         }
 
         // Get the player's reputation manager (const version)
@@ -3024,8 +3026,6 @@ class Player : public Unit
         /*********************************************************/
         /***                  PVP SYSTEM                       ***/
         /*********************************************************/
-
-        // End of PvP System
 
         // Set the player's drunk value
         void SetDrunkValue(uint16 newDrunkValue, uint32 itemid = 0);
@@ -3477,7 +3477,7 @@ class Player : public Unit
         // Relocate the player to the homebind location
         void RelocateToHomebind()
         {
-             SetLocationMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ);
+            SetLocationMapId(m_homebindMapId); Relocate(m_homebindX, m_homebindY, m_homebindZ);
         }
 
         // Teleport the player to the homebind location
@@ -3508,7 +3508,7 @@ class Player : public Unit
         // Get the player's camera
         Camera& GetCamera()
         {
-             return m_camera;
+            return m_camera;
         }
 
         // Forced speed changes
@@ -3553,7 +3553,7 @@ class Player : public Unit
         InstancePlayerBind* GetBoundInstance(uint32 mapid);
         BoundInstancesMap& GetBoundInstances()
         {
-             return m_boundInstances;
+            return m_boundInstances;
         }
 
         void UnbindInstance(uint32 mapid, bool unload = false);
@@ -3583,7 +3583,7 @@ class Player : public Unit
         // Get the group invite
         Group* GetGroupInvite()
         {
-             return m_groupInvite;
+            return m_groupInvite;
         }
 
         // Set the group invite
@@ -3592,7 +3592,7 @@ class Player : public Unit
         // Get the group
         Group* GetGroup()
         {
-             return m_group.getTarget();
+            return m_group.getTarget();
         }
 
         // Get the group (const version)
@@ -3601,7 +3601,7 @@ class Player : public Unit
         // Get the group reference
         GroupReference& GetGroupRef()
         {
-             return m_group;
+            return m_group;
         }
 
         // Set the group
@@ -3637,13 +3637,13 @@ class Player : public Unit
         // Get the original group
         Group* GetOriginalGroup()
         {
-             return m_originalGroup.getTarget();
+            return m_originalGroup.getTarget();
         }
 
         // Get the original group reference
         GroupReference& GetOriginalGroupRef()
         {
-             return m_originalGroup;
+            return m_originalGroup;
         }
 
         // Get the original subgroup
@@ -3655,13 +3655,13 @@ class Player : public Unit
         // Get the grid reference
         GridReference<Player>& GetGridRef()
         {
-             return m_gridRef;
+            return m_gridRef;
         }
 
         // Get the map reference
         MapReference& GetMapRef()
         {
-             return m_mapRef;
+            return m_mapRef;
         }
 
         // Check if the player is tapped by the player or their group
@@ -3679,7 +3679,7 @@ class Player : public Unit
         // Get the player bot AI
         PlayerbotAI* GetPlayerbotAI()
         {
-             return m_playerbotAI;
+            return m_playerbotAI;
         }
 
         // Set the player bot manager
@@ -3688,13 +3688,13 @@ class Player : public Unit
         // Get the player bot manager
         PlayerbotMgr* GetPlayerbotMgr()
         {
-             return m_playerbotMgr;
+            return m_playerbotMgr;
         }
 
         // Set the bot death timer
         void SetBotDeathTimer()
         {
-             m_deathTimer = 0;
+            m_deathTimer = 0;
         }
 
 #endif

@@ -101,13 +101,13 @@ class ObjectGuid
     public:                                                 // modifiers
         PackedGuidReader ReadAsPacked()
         {
-             return PackedGuidReader(*this);
+            return PackedGuidReader(*this);
         }
 
         void Set(uint64 const& guid) { m_guid = guid; }
         void Clear()
         {
-             m_guid = 0;
+            m_guid = 0;
         }
 
         PackedGuid WriteAsPacked() const;
@@ -118,15 +118,15 @@ class ObjectGuid
         uint32   GetCounter()  const
         {
             return HasEntry()
-                   ? uint32(m_guid & UI64LIT(0x0000000000FFFFFF))
-                   : uint32(m_guid & UI64LIT(0x00000000FFFFFFFF));
+                ? uint32(m_guid & UI64LIT(0x0000000000FFFFFF))
+                : uint32(m_guid & UI64LIT(0x00000000FFFFFFFF));
         }
 
         static uint32 GetMaxCounter(HighGuid high)
         {
             return HasEntry(high)
-                   ? uint32(0x00FFFFFF)
-                   : uint32(0xFFFFFFFF);
+                ? uint32(0x00FFFFFF)
+                : uint32(0xFFFFFFFF);
         }
 
         uint32 GetMaxCounter() const { return GetMaxCounter(GetHigh()); }

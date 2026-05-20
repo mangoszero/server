@@ -49,7 +49,7 @@ class UpdateMask
 
         ~UpdateMask()
         {
-             delete[] _bits;
+            delete[] _bits;
         }
 
         void SetBit(uint32 index) { _bits[index] = 1; }
