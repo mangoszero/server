@@ -54,7 +54,7 @@ bool LootRollAction::Execute(Event event)
             if (usage == ITEM_USAGE_SKILL || usage == ITEM_USAGE_USE)
             {
                 vote = ROLL_NEED;
-            {
+            }
             else if (proto->StartQuest || proto->Bonding == BIND_QUEST_ITEM ||
                     proto->Bonding == BIND_QUEST_ITEM1 || proto->Class == ITEM_CLASS_QUEST)
             {
