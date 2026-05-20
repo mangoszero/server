@@ -51,6 +51,7 @@
 
 namespace MMAP
 {
+
     /**
      * @namespace MMAP
      * @brief MoveMap pathfinding namespace

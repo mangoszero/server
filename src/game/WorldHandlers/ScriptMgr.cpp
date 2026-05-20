@@ -960,8 +960,8 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
                 {
                     if (GetSpellStartDBScriptPriority(spellInfo, SpellEffectIndex(i)))
                     {
-                      found =  true;
-                      break;
+                        found =  true;
+                        break;
                     }
                 }
                 if (!found)
@@ -1261,6 +1261,7 @@ bool ScriptAction::LogIfNotCreature(WorldObject* pWorldObject)
     }
     return false;
 }
+
 /**
  * @brief Logs an error when the provided world object is not a unit.
  *
@@ -1276,6 +1277,7 @@ bool ScriptAction::LogIfNotUnit(WorldObject* pWorldObject)
     }
     return false;
 }
+
 /**
  * @brief Logs an error when the provided world object is not a game object.
  *
@@ -1291,6 +1293,7 @@ bool ScriptAction::LogIfNotGameObject(WorldObject* pWorldObject)
     }
     return false;
 }
+
 /**
  * @brief Logs an error when the provided world object is not a player.
  *

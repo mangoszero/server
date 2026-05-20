@@ -388,6 +388,7 @@ void WorldSession::HandleMailDelete(WorldPacket& recv_data)
     }
     pl->SendMailResult(mailId, MAIL_DELETED, MAIL_OK);
 }
+
 /**
  * Handles the Packet sent by the client when returning a mail to sender.
  * This method is called when a player chooses to return a mail to its sender.
@@ -565,6 +566,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket& recv_data)
         pl->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_ERR_EQUIP_ERROR, msg);
     }
 }
+
 /**
  * Handles the packet sent by the client when taking money from the mail.
  */

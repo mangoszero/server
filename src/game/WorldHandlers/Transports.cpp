@@ -474,8 +474,8 @@ bool GlobalTransport::GenerateWaypoints()
         {
             keyFrames[i].distFromPrev =
                 sqrt(pow(keyFrames[i].node->x - keyFrames[i - 1].node->x, 2) +
-                     pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
-                     pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
+                    pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
+                    pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
         }
         if (keyFrames[i].node->actionFlag == 2)
         {

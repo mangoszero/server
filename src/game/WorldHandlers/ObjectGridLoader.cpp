@@ -205,6 +205,7 @@ template<> void addUnitState(Creature* obj, CellPair const& cell_pair)
 }
 
 template <class T>
+
 /**
  * @brief Loads database-backed grid objects of a specific type into a cell.
  *

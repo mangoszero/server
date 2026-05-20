@@ -181,7 +181,7 @@ struct QuestLocale
 {
     QuestLocale()
     {
-         ObjectiveText.resize(QUEST_OBJECTIVES_COUNT);
+        ObjectiveText.resize(QUEST_OBJECTIVES_COUNT);
     }
 
     std::vector<std::string> Title;

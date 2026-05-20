@@ -239,6 +239,7 @@ void Map::InitVisibilityDistance()
 }
 
 // Template specialization of utility methods
+
 /**
  * @brief Adds a grid object to the specified cell storage.
  *
@@ -248,6 +249,7 @@ void Map::InitVisibilityDistance()
  * @param cell The target cell inside the grid.
  */
 template<class T>
+
 /**
  * @brief Adds a grid object to the specified cell storage.
  *
@@ -269,6 +271,7 @@ void Map::AddToGrid(T* obj, NGridType* grid, Cell const& cell)
  * @param cell The target cell inside the grid.
  */
 template<>
+
 /**
  * @brief Adds a player to the world object storage of the target cell.
  *
@@ -289,6 +292,7 @@ void Map::AddToGrid(Player* obj, NGridType* grid, Cell const& cell)
  * @param cell The target cell inside the grid.
  */
 template<>
+
 /**
  * @brief Adds a corpse to either world or grid storage depending on its type.
  *
@@ -318,6 +322,7 @@ void Map::AddToGrid(Corpse* obj, NGridType* grid, Cell const& cell)
  * @param cell The target cell inside the grid.
  */
 template<>
+
 /**
  * @brief Adds a creature to the proper storage and updates its current cell.
  *
@@ -350,6 +355,7 @@ void Map::AddToGrid(Creature* obj, NGridType* grid, Cell const& cell)
  * @param cell The source cell inside the grid.
  */
 template<class T>
+
 /**
  * @brief Removes a grid object from the specified cell storage.
  *
@@ -371,6 +377,7 @@ void Map::RemoveFromGrid(T* obj, NGridType* grid, Cell const& cell)
  * @param cell The source cell inside the grid.
  */
 template<>
+
 /**
  * @brief Removes a player from the world object storage of the target cell.
  *
@@ -391,6 +398,7 @@ void Map::RemoveFromGrid(Player* obj, NGridType* grid, Cell const& cell)
  * @param cell The source cell inside the grid.
  */
 template<>
+
 /**
  * @brief Removes a corpse from either world or grid storage depending on its type.
  *
@@ -420,6 +428,7 @@ void Map::RemoveFromGrid(Corpse* obj, NGridType* grid, Cell const& cell)
  * @param cell The source cell inside the grid.
  */
 template<>
+
 /**
  * @brief Removes a creature from the proper storage container.
  *
@@ -2116,6 +2125,7 @@ void DungeonMap::Remove(Player* player, bool remove)
 /*
     Returns true if there are no players in the instance
 */
+
 /**
  * @brief Resets the dungeon now or after players leave depending on occupancy and reset mode.
  *
@@ -2409,6 +2419,7 @@ bool Map::CanEnter(Player* player)
 }
 
 /// Put scripts in the execution queue
+
 /**
  * @brief Queues all steps of a database script chain for later execution.
  *
@@ -2494,6 +2505,7 @@ void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* sou
 }
 
 /// Process queued scripts
+
 /**
  * @brief Processes queued scripts whose scheduled execution time has arrived.
  */
@@ -3165,6 +3177,7 @@ bool Map::GetReachableRandomPosition(Unit* unit, float& x, float& y, float& z, f
 }
 
 #ifdef ENABLE_ELUNA
+
 /**
  * @brief Returns the Eluna engine associated with this map.
  *

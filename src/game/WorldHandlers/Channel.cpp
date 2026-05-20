@@ -700,8 +700,8 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         return;
     }
     else if (m_players[guid].IsMuted() ||
-             (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
-             (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
+            (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
+            (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
     {
         WorldPacket data;
         MakeMuted(&data);

@@ -63,21 +63,21 @@ class ChatCommand
         ChatCommand* ChildCommands;
 
         ChatCommand(
-          const char* pName,
-          uint32 pSecurityLevel,
-          bool pAllowConsole,
-          bool (ChatHandler::* pHandler)(char* args),
-          std::string pHelp,
-          ChatCommand* pChildCommands
+            const char* pName,
+            uint32 pSecurityLevel,
+            bool pAllowConsole,
+            bool (ChatHandler::* pHandler)(char* args),
+            std::string pHelp,
+            ChatCommand* pChildCommands
         )
-         : Id(-1)
+        : Id(-1)
         {
-          Name = pName;
-          SecurityLevel = pSecurityLevel;
-          AllowConsole = pAllowConsole;
-          Handler = pHandler;
-          Help = pHelp;
-          ChildCommands = pChildCommands;
+            Name = pName;
+            SecurityLevel = pSecurityLevel;
+            AllowConsole = pAllowConsole;
+            Handler = pHandler;
+            Help = pHelp;
+            ChildCommands = pChildCommands;
         }
 };
 
@@ -128,13 +128,13 @@ enum  ResetItemCommandArgFlags
     RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING    = 0x08,
     RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK    = 0x10,
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL        =
-     (
-        RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
-      ),
+        (
+            RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
+        ),
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS = RESET_ITEMS_COMMAND_FLAG_OPTION_ALL << 1 | 1, // Will also delete bank bags and equiped bags
 };
 
@@ -173,7 +173,7 @@ class ChatHandler
         bool isValidChatMessage(const char* msg);
         bool HasSentErrorMessage()
         {
-             return sentErrorMessage;
+            return sentErrorMessage;
         }
 
         /**

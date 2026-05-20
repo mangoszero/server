@@ -196,17 +196,17 @@ class Referencable
     public:
         Referencable()
         {
-             m_count = 0;
+            m_count = 0;
         }
 
         void AddRef()
         {
-             ++m_count;
+            ++m_count;
         }
 
         bool Release()
         {
-             return (--m_count < 1);
+            return (--m_count < 1);
         }
         bool IsReferenced() const { return (m_count > 0); }
 

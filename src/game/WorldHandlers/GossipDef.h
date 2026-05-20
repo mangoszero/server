@@ -296,11 +296,12 @@ class PlayerMenu
 
         GossipMenu& GetGossipMenu()
         {
-             return mGossipMenu;
+            return mGossipMenu;
         }
+
         QuestMenu& GetQuestMenu()
         {
-             return mQuestMenu;
+            return mQuestMenu;
         }
 
         WorldSession* GetMenuSession() const { return mGossipMenu.GetMenuSession(); }

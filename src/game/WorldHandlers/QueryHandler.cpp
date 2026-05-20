@@ -85,10 +85,10 @@ void WorldSession::SendNameQueryOpcode(Player* p)
 void WorldSession::SendNameQueryOpcodeFromDB(ObjectGuid guid)
 {
     CharacterDatabase.AsyncPQuery(&WorldSession::SendNameQueryOpcodeFromDBCallBack, GetAccountId(),
-                                  //          0     1     2     3       4
-                                  "SELECT guid, name, race, gender, class "
-                                   "FROM characters WHERE guid = '%u'",
-                                   guid.GetCounter());
+                                //      0     1     2     3       4
+                                "SELECT guid, name, race, gender, class "
+                                "FROM characters WHERE guid = '%u'",
+                                guid.GetCounter());
 }
 
 /**

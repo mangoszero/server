@@ -62,18 +62,18 @@ class UpdateData
         void AddOutOfRangeGUID(ObjectGuid const& guid);
         void AddUpdateBlock()
         {
-             ++m_blockCount;
+            ++m_blockCount;
         }
 
         ByteBuffer& GetBuffer()
         {
-             return m_data;
+            return m_data;
         }
 
         bool BuildPacket(WorldPacket* packet, bool hasTransport = false);
         bool HasData()
         {
-             return m_blockCount > 0 || !m_outOfRangeGUIDs.empty();
+            return m_blockCount > 0 || !m_outOfRangeGUIDs.empty();
         }
         void Clear();
 

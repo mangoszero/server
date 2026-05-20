@@ -225,8 +225,8 @@ void SpellCastTargets::Update(Unit* caster)
 {
     m_GOTarget   = m_GOTargetGUID ? caster->GetMap()->GetGameObject(m_GOTargetGUID) : NULL;
     m_unitTarget = m_unitTargetGUID ?
-                   (m_unitTargetGUID == caster->GetObjectGuid() ? caster : sObjectAccessor.GetUnit(*caster, m_unitTargetGUID)) :
-                       NULL;
+                    (m_unitTargetGUID == caster->GetObjectGuid() ? caster : sObjectAccessor.GetUnit(*caster, m_unitTargetGUID)) :
+                    NULL;
 
     m_itemTarget = NULL;
     if (caster->GetTypeId() == TYPEID_PLAYER)
@@ -523,6 +523,7 @@ SpellEntry const* Spell::GetSpellBonusLevelPenaltySpell(SpellEntry const* spellP
 }
 
 template<typename T>
+
 /**
  * @brief Finds a nearby corpse-like world object matching the search predicate.
  *
@@ -1902,7 +1903,7 @@ struct ChainHealingOrder
             return 0;
         }
         else if (Target->GetTypeId() == TYPEID_PLAYER && MainTarget->GetTypeId() == TYPEID_PLAYER &&
-                 ((Player const*)Target)->IsInSameRaidWith((Player const*)MainTarget))
+                ((Player const*)Target)->IsInSameRaidWith((Player const*)MainTarget))
         {
             if (Target->GetHealth() == Target->GetMaxHealth())
             {
@@ -2780,7 +2781,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_AREAEFFECT_PARTY_AND_CLASS:
         {
             Player* targetPlayer = m_targets.getUnitTarget() && m_targets.getUnitTarget()->GetTypeId() == TYPEID_PLAYER
-                                   ? (Player*)m_targets.getUnitTarget() : NULL;
+                                ? (Player*)m_targets.getUnitTarget() : NULL;
 
             Group* pGroup = targetPlayer ? targetPlayer->GetGroup() : NULL;
             if (pGroup)
@@ -2969,17 +2970,17 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case SPELL_EFFECT_TELEPORT_UNITS:
                 case SPELL_EFFECT_SUMMON:
                     /*[-ZERO]  if (m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED ||
-                          m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED2)
-                      {
-                          if (m_targets.getUnitTarget())
-                          {
-                              targetUnitMap.push_back(m_targets.getUnitTarget());
-                          }
-                      }
-                      else */
-                      {
-                          targetUnitMap.push_back(m_caster);
-                      }
+                    m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED2)
+                    {
+                        if (m_targets.getUnitTarget())
+                        {
+                            targetUnitMap.push_back(m_targets.getUnitTarget());
+                        }
+                    }
+                    else */
+                    {
+                        targetUnitMap.push_back(m_caster);
+                    }
                     break;
                 case SPELL_EFFECT_SUMMON_CHANGE_ITEM:
                 case SPELL_EFFECT_SUMMON_WILD:
@@ -3707,8 +3708,8 @@ void Spell::_handle_immediate_phase()
     {
         // persistent area auras target only the ground
         if (m_spellInfo->Effect[j] == SPELL_EFFECT_PERSISTENT_AREA_AURA ||
-           //summon a gameobject at the spell's destination xyz
-           (m_spellInfo->Effect[j] == SPELL_EFFECT_TRANS_DOOR && m_spellInfo->EffectImplicitTargetA[j] == TARGET_AREAEFFECT_GO_AROUND_DEST))
+            //summon a gameobject at the spell's destination xyz
+            (m_spellInfo->Effect[j] == SPELL_EFFECT_TRANS_DOOR && m_spellInfo->EffectImplicitTargetA[j] == TARGET_AREAEFFECT_GO_AROUND_DEST))
         {
             HandleEffects(NULL, NULL, NULL, SpellEffectIndex(j));
         }
@@ -6288,15 +6289,15 @@ SpellCastResult Spell::CheckCast(bool strict)
                 {
                     if (Player* player = m_caster->ToPlayer())
                     {
-                      PetDatabaseStatus status = Pet::GetStatusFromDB(player);
-                      if (status == PET_DB_NO_PET)
-                      {
-                          return SPELL_FAILED_NO_PET;
-                      }
-                      else if (status == PET_DB_ALIVE)
-                      {
-                          return SPELL_FAILED_TARGET_NOT_DEAD;
-                      }
+                        PetDatabaseStatus status = Pet::GetStatusFromDB(player);
+                        if (status == PET_DB_NO_PET)
+                        {
+                            return SPELL_FAILED_NO_PET;
+                        }
+                        else if (status == PET_DB_ALIVE)
+                        {
+                            return SPELL_FAILED_TARGET_NOT_DEAD;
+                        }
                     }
                     else
                     {
@@ -7420,19 +7421,19 @@ SpellCastResult Spell::CheckItems()
         if (m_caster->GetTypeId() != TYPEID_PLAYER)
         {
             return m_IsTriggeredSpell && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                   ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_BAD_TARGETS;
+                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_BAD_TARGETS;
         }
 
         if (!m_targets.getItemTarget())
         {
             return m_IsTriggeredSpell  && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                   ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_ITEM_GONE;
+                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_ITEM_GONE;
         }
 
         if (!m_targets.getItemTarget()->IsFitToSpellRequirements(m_spellInfo))
         {
             return m_IsTriggeredSpell  && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                   ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
         }
     }
     // if not item target then required item must be equipped (for triggered case not report error)
@@ -8082,8 +8083,10 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
  */
 bool Spell::IsNeedSendToClient() const
 {
-    return m_spellInfo->SpellVisual != 0 || IsChanneledSpell(m_spellInfo) ||
-           m_spellInfo->speed > 0.0f || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
+    return m_spellInfo->SpellVisual != 0
+            || IsChanneledSpell(m_spellInfo)
+            || m_spellInfo->speed > 0.0f
+            || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
 }
 
 /**
@@ -8355,7 +8358,7 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
 
                     // castitem check: rogue using skeleton keys. the skill values should not be added in this case.
                     skillValue = m_CastItem || m_caster->GetTypeId() != TYPEID_PLAYER ?
-                                 0 : ((Player*)m_caster)->GetSkillValue(skillId);
+                                            0 : ((Player*)m_caster)->GetSkillValue(skillId);
 
                     skillValue += spellSkillBonus;
 

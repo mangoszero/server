@@ -50,6 +50,7 @@ namespace DisableMgr
 
 namespace
 {
+
     /**
      * @struct DisableData
      * @brief Stores disable configuration for a single entry
@@ -492,7 +493,7 @@ bool IsDisabledFor(DisableType type, uint32 entry, Unit const* unit, uint8 flags
         case DISABLE_TYPE_ITEM_DROP:
             return true;
         case DISABLE_TYPE_VMAP:
-           return (flags & itr->second.flags) != 0;
+        return (flags & itr->second.flags) != 0;
         case DISABLE_TYPE_CREATURE_SPAWN:
         case DISABLE_TYPE_GAMEOBJECT_SPAWN:
             return (itr->second.flags & SPAWN_DISABLE_CHECK_GUID) == 0 || itr->second.params[0].count(adData) > 0;

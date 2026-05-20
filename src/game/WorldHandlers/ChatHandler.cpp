@@ -135,8 +135,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     if (type != CHAT_MSG_AFK && type != CHAT_MSG_DND)
     {
         //prevent cheating, by sending LANG_UNIVERSAL
-        if ((langDesc->lang_id == LANG_UNIVERSAL && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) && GetSecurity() == SEC_PLAYER) ||
-             (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
+        if ((langDesc->lang_id == LANG_UNIVERSAL
+            && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT)
+            && GetSecurity() == SEC_PLAYER)
+            || (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
         {
             SendNotification(LANG_NOT_LEARNED_LANGUAGE);
             return;
@@ -252,7 +254,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     }
                 }
 #endif /* ENABLE_ELUNA */
-                 GetPlayer()->Say(msg, lang);
+                GetPlayer()->Say(msg, lang);
             }
             else if (type == CHAT_MSG_EMOTE)
             {
@@ -265,7 +267,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     }
                 }
 #endif /* ENABLE_ELUNA */
-                 GetPlayer()->TextEmote(msg);
+                GetPlayer()->TextEmote(msg);
             }
             else if (type == CHAT_MSG_YELL)
             {
@@ -278,9 +280,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     }
                 }
 #endif /* ENABLE_ELUNA */
-                 GetPlayer()->Yell(msg, lang);
+                GetPlayer()->Yell(msg, lang);
             }
-         } break;
+        } break;
 
         case CHAT_MSG_WHISPER:
         {

@@ -450,14 +450,14 @@ class Spell
         int32 GetCastTime() const { return m_casttime; }
         uint32 GetCastedTime()
         {
-             return m_timer;
+            return m_timer;
         }
 
         bool IsAutoRepeat() const { return m_autoRepeat; }
         void SetAutoRepeat(bool rep) { m_autoRepeat = rep; }
         void ReSetTimer()
         {
-             m_timer = m_casttime > 0 ? m_casttime : 0;
+            m_timer = m_casttime > 0 ? m_casttime : 0;
         }
         bool IsNextMeleeSwingSpell() const
         {
@@ -514,7 +514,7 @@ class Spell
         void SetSelfContainer(Spell** pCurrentContainer) { m_selfContainer = pCurrentContainer; }
         Spell** GetSelfContainer()
         {
-             return m_selfContainer;
+            return m_selfContainer;
         }
 
     protected:
@@ -546,7 +546,7 @@ class Spell
         uint8 m_delayAtDamageCount;
         int32 GetNextDelayAtDamageMsTime()
         {
-             return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200;
+            return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200;
         }
 
         // Delayed spells system

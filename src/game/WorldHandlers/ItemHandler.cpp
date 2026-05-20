@@ -390,44 +390,44 @@ void WorldSession::HandleItemQuerySingleOpcode(WorldPacket& recv_data)
         uint32 requiredLevel = pProto->RequiredLevel;
         switch (pProto->ItemId)
         {
-             case 1132: //regular mounts
-             case 2411:
-             case 2414:
-             case 5655:
-             case 5656:
-             case 5665:
-             case 5668:
-             case 5864:
-             case 5872:
-             case 5873:
-             case 8563:
-             case 8588:
-             case 8591:
-             case 8592:
-             case 8595:
-             case 8629:
-             case 8631:
-             case 8632:
-             case 12325:
-             case 12326:
-             case 12327:
-             case 13321:
-             case 13322:
-             case 13331:
-             case 13332:
-             case 13333:
-             case 15277:
-             case 15290:
-             case 18241:
-             case 18242:
-             case 18243:
-             case 18244:
-             case 18245:
-             case 18246:
-             case 18247:
-             case 18248:
-                 requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
-                 break;
+            case 1132: //regular mounts
+            case 2411:
+            case 2414:
+            case 5655:
+            case 5656:
+            case 5665:
+            case 5668:
+            case 5864:
+            case 5872:
+            case 5873:
+            case 8563:
+            case 8588:
+            case 8591:
+            case 8592:
+            case 8595:
+            case 8629:
+            case 8631:
+            case 8632:
+            case 12325:
+            case 12326:
+            case 12327:
+            case 13321:
+            case 13322:
+            case 13331:
+            case 13332:
+            case 13333:
+            case 15277:
+            case 15290:
+            case 18241:
+            case 18242:
+            case 18243:
+            case 18244:
+            case 18245:
+            case 18246:
+            case 18247:
+            case 18248:
+                requiredLevel = sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL);
+                break;
             case 12302: // epic mounts
             case 12303:
             case 12330:

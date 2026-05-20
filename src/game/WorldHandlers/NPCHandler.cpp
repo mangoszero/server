@@ -306,17 +306,17 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
             // for riding spells, override the levels with the levels from the configuration file
             switch (tSpell->spell)
             {
-        case 33388:
+                case 33388:
                 case 33389: // Apprentice Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
                     break;
-        case 33391:
+                case 33391:
                 case 33392: // Journeyman Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
                     break;
                 default: // any other spell requirement is read from DBC and the database
-                   reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
-                   break;
+                    reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
+                    break;
             }
 
             TrainerSpellState state = _player->GetTrainerSpellState(tSpell, reqLevel);
@@ -652,8 +652,9 @@ void WorldSession::SendSpiritResurrect()
     WorldSafeLocsEntry const* corpseGrave = NULL;
     Corpse* corpse = _player->GetCorpse();
     if (corpse)
-        corpseGrave = sObjectMgr.GetClosestGraveYard(
-                          corpse->GetPositionX(), corpse->GetPositionY(), corpse->GetPositionZ(), corpse->GetMapId(), _player->GetTeam());
+    {
+        corpseGrave = sObjectMgr.GetClosestGraveYard(corpse->GetPositionX(), corpse->GetPositionY(), corpse->GetPositionZ(), corpse->GetMapId(), _player->GetTeam());
+    }
 
     // now can spawn bones
     _player->SpawnCorpseBones();

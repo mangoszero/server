@@ -405,7 +405,9 @@ void PlayerMenu::SendTalking(char const* title, char const* text) const
 }
 
 /*********************************************************/
+
 /***                    QUEST SYSTEM                   ***/
+
 /*********************************************************/
 
 // Constructor for QuestMenu, reserves space for quest items

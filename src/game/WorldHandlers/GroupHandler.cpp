@@ -223,6 +223,7 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
     group->RemoveInvite(GetPlayer());
 
     /** error handling **/
+
     /********************/
 
     // not have place
@@ -407,6 +408,7 @@ void WorldSession::HandleGroupSetLeaderOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -432,6 +434,7 @@ void WorldSession::HandleGroupDisbandOpcode(WorldPacket& /*recv_data*/)
     }
 
     /** error handling **/
+
     /********************/
 
     // everything is fine, do it
@@ -463,6 +466,7 @@ void WorldSession::HandleLootMethodOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -522,6 +526,7 @@ void WorldSession::HandleMinimapPingOpcode(WorldPacket& recv_data)
     // DEBUG_LOG("Received opcode MSG_MINIMAP_PING X: %f, Y: %f", x, y);
 
     /** error handling **/
+
     /********************/
 
     // everything is fine, do it
@@ -548,6 +553,7 @@ void WorldSession::HandleRandomRollOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -587,6 +593,7 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
     }
 
     /** error handling **/
+
     /********************/
 
     // everything is fine, do it
@@ -631,6 +638,7 @@ void WorldSession::HandleGroupRaidConvertOpcode(WorldPacket& /*recv_data*/)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it (is it 0 (PARTY_OP_INVITE) correct code)
@@ -674,6 +682,7 @@ void WorldSession::HandleGroupChangeSubGroupOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -713,6 +722,7 @@ void WorldSession::HandleGroupAssistantLeaderOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -749,6 +759,7 @@ void WorldSession::HandlePartyAssignmentOpcode(WorldPacket& recv_data)
     {
         return;
     }
+
     /********************/
 
     // everything is fine, do it
@@ -783,6 +794,7 @@ void WorldSession::HandleRaidReadyCheckOpcode(WorldPacket& recv_data)
             {
                 return;
             }
+
         /********************/
 
         // everything is fine, do it

@@ -578,10 +578,10 @@ class ScriptAction
 
         bool IsSameScript(DBScriptType type, uint32 id, ObjectGuid sourceGuid, ObjectGuid targetGuid, ObjectGuid ownerGuid) const
         {
-            return type == m_type && id == GetId() &&
-                   (sourceGuid == m_sourceGuid || !sourceGuid) &&
-                   (targetGuid == m_targetGuid || !targetGuid) &&
-                   (ownerGuid == m_ownerGuid || !ownerGuid);
+            return type == m_type && id == GetId()
+                        && (sourceGuid == m_sourceGuid || !sourceGuid)
+                        && (targetGuid == m_targetGuid || !targetGuid)
+                        && (ownerGuid == m_ownerGuid || !ownerGuid);
         }
 
     private:

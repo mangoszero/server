@@ -451,7 +451,7 @@ struct CliCommandHolder
 
     ~CliCommandHolder()
     {
-         delete[] m_command;
+        delete[] m_command;
     }
 };
 
@@ -554,13 +554,13 @@ class World
         void ShutdownMsg(bool show = false, Player* player = NULL);
         static uint8 GetExitCode()
         {
-             return m_ExitCode;
+            return m_ExitCode;
         }
 
         static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
         static bool IsStopped()
         {
-             return m_stopEvent;
+            return m_stopEvent;
         }
 
         void Update(uint32 diff);
@@ -593,12 +593,12 @@ class World
         /// Are we on a "Player versus Player" server?
         bool IsPvPRealm()
         {
-             return (getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_PVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_RPPVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP);
+            return (getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_PVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_RPPVP || getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP);
         }
 
         bool IsFFAPvPRealm()
         {
-             return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
+            return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
         }
 
         void KickAll();
@@ -635,7 +635,7 @@ class World
         void LoadDBVersion();
         char const* GetDBVersion()
         {
-             return m_DBVersion.c_str();
+            return m_DBVersion.c_str();
         }
 
         void LoadBroadcastStrings();

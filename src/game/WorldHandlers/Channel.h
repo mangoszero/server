@@ -141,7 +141,7 @@ class Channel
             void SetFlag(uint8 flag) { if (!HasFlag(flag)) { flags |= flag; } }
             bool IsOwner()
             {
-                 return flags & MEMBER_FLAG_OWNER;
+                return flags & MEMBER_FLAG_OWNER;
             }
             void SetOwner(bool state)
             {
@@ -156,7 +156,7 @@ class Channel
             }
             bool IsModerator()
             {
-                 return flags & MEMBER_FLAG_MODERATOR;
+                return flags & MEMBER_FLAG_MODERATOR;
             }
             void SetModerator(bool state)
             {
@@ -171,7 +171,7 @@ class Channel
             }
             bool IsMuted()
             {
-                 return flags & MEMBER_FLAG_MUTED;
+                return flags & MEMBER_FLAG_MUTED;
             }
             void SetMuted(bool state)
             {
@@ -233,11 +233,13 @@ class Channel
          * \see HonorRankInfo
          */
         static const uint8 SPEAK_IN_LOCALDEFENSE_RANK = 4 + 9;
+
         /**
          * This denotes the PvP rank needed to speak in world defense, see
          * \ref Channel::SPEAK_IN_LOCALDEFENSE_RANK for more info on the 4 added.
          */
         static const uint8 SPEAK_IN_WORLDDEFENSE_RANK = 4 + 10;
+
         /**
         * This creates the packet informing client that the player is not on requested \ref name channel.
         * See also \ref MakeNotMember for non-static version.

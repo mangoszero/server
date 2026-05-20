@@ -56,7 +56,7 @@ struct NpcTextLocale
 {
     NpcTextLocale()
     {
-         Text_0.resize(8); Text_1.resize(8);
+        Text_0.resize(8); Text_1.resize(8);
     }
 
     std::vector<std::vector<std::string> > Text_0;

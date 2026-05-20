@@ -83,7 +83,7 @@ class WaypointManager
         WaypointManager() : m_externalTable("external.waypointTable") {}
         ~WaypointManager()
         {
-             Unload();
+            Unload();
         }
 
         void Load();

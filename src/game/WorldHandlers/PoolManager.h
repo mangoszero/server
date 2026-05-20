@@ -89,7 +89,7 @@ class SpawnedPoolData
         bool IsInitialized() const { return m_isInitialized; }
         void SetInitialized()
         {
-             m_isInitialized = true;
+            m_isInitialized = true;
         }
 
         SpawnedPoolObjects const& GetSpawnedCreatures() const { return mSpawnedCreatures; }

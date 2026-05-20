@@ -171,8 +171,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
     // no or incorrect quest giver
     if (!pObject
         || (pObject->GetTypeId() != TYPEID_PLAYER && !pObject->HasQuest(quest))
-        || (pObject->GetTypeId() == TYPEID_PLAYER && !((Player*)pObject)->CanShareQuest(quest))
-       )
+        || (pObject->GetTypeId() == TYPEID_PLAYER && !((Player*)pObject)->CanShareQuest(quest)))
     {
         _player->PlayerTalkClass->CloseGossip();
         _player->ClearDividerGuid();
@@ -671,6 +670,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
  *
  * @param recvPacket The received opcode packet.
  */
+
 /**
  * What - if any - kind of exclamation mark or question-mark should a quest-giver display for a player
  * @param pPlayer - for whom

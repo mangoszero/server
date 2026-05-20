@@ -125,10 +125,11 @@ void WaypointManager::Load()
         while (result->NextRow());
         delete result;
 
-        //                                   0   1      2           3           4           5         6
-        result = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
-                                     //   7        8        9        10       11       12     13     14           15      16
-                                     "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement`");
+        result = WorldDatabase.Query(
+                                    //       0     1        2             3             4             5           6
+                                    "SELECT `id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
+                                    // 7         8          9          10         11         12       13       14             15        16
+                                    "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement`");
 
         BarGoLink bar(result->GetRowCount());
 
@@ -302,10 +303,11 @@ void WaypointManager::Load()
         while (result->NextRow());
         delete result;
 
-        //                                   0      1      2           3           4           5         6
-        result = WorldDatabase.Query("SELECT `entry`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
-                                     //   7        8        9        10       11       12     13     14           15      16
-                                     "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement_template`");
+        result = WorldDatabase.Query(
+                                    //       0        1        2             3             4             5           6
+                                    "SELECT `entry`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
+                                    // 7         8          9          10         11         12       13       14             15        16
+                                    "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement_template`");
 
         BarGoLink bar(result->GetRowCount());
 

@@ -239,7 +239,7 @@ class Map : public GridRefManager<NGridType>
 
         void resetMarkedCells()
         {
-             marked_cells.reset();
+            marked_cells.reset();
         }
 
         bool isCellMarked(uint32 pCellId) { return marked_cells.test(pCellId); }
@@ -286,7 +286,7 @@ class Map : public GridRefManager<NGridType>
         using MapStoredObjectTypesContainer = TypeUnorderedMapContainer<ObjectGuid, TypeList<Creature, Pet, GameObject, DynamicObject>> ;
         MapStoredObjectTypesContainer& GetObjectsStore()
         {
-             return m_objectsStore;
+            return m_objectsStore;
         }
 
         void AddUpdateObject(Object* obj)
@@ -327,7 +327,7 @@ class Map : public GridRefManager<NGridType>
         // Get Holder for Creature Linking
         CreatureLinkingHolder* GetCreatureLinkingHolder()
         {
-             return &m_creatureLinkingHolder;
+            return &m_creatureLinkingHolder;
         }
 
         // Teleport all players in that map to choosed location
@@ -335,6 +335,7 @@ class Map : public GridRefManager<NGridType>
 
         // WeatherSystem
         WeatherSystem* GetWeatherSystem() const { return m_weatherSystem; }
+
         /** Set the weather in a zone on this map
          * @param zoneId set the weather for which zone
          * @param type What weather to set
@@ -516,7 +517,7 @@ class BattleGroundMap : public Map
         void InitVisibilityDistance() override;
         BattleGround* GetBG()
         {
-             return m_bg;
+            return m_bg;
         }
         void SetBG(BattleGround* bg) { m_bg = bg; }
 

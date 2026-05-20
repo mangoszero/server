@@ -214,12 +214,13 @@ struct InstanceGroupBind
 {
     DungeonPersistentState* state;
     bool perm;
-    /* permanent InstanceGroupBinds exist iff the leader has a permanent
-       PlayerInstanceBind for the same instance. */
+    /*  permanent InstanceGroupBinds exist iff the leader has a permanent
+        PlayerInstanceBind for the same instance. */
     InstanceGroupBind() : state(NULL), perm(false) {}
 };
 
 /** request member stats checken **/
+
 /** todo: uninvite people that not accepted invite **/
 class Group
 {
@@ -378,9 +379,10 @@ class Group
         }
 
         MemberSlotList const& GetMemberSlots() const { return m_memberSlots; }
+
         GroupReference* GetFirstMember()
         {
-             return m_memberMgr.getFirst();
+            return m_memberMgr.getFirst();
         }
 
         GroupReference const* GetFirstMember() const { return m_memberMgr.getFirst(); }

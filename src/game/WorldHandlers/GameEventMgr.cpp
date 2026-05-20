@@ -436,13 +436,14 @@ void GameEventMgr::LoadFromDB()
     }
 
     mGameEventCreatureData.resize(mGameEvent.size());
-    //                                   0              1                             2
-    result = WorldDatabase.Query("SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
-                                 //   3                                      4
-                                 "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
-                                 //   5                                     6
-                                 "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
-                                 "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
+    result = WorldDatabase.Query(
+                                //                  0                                  1                                   2
+                                "SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
+                                //                           3                                          4
+                                "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
+                                //                           5                                         6
+                                "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
+                                "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
 
     count = 0;
     if (!result)
@@ -1092,12 +1093,14 @@ void GameEventMgr::SendEventMails(int16 event_id)
         {
             // need special query
             std::ostringstream ss;
-            ss << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
-               "WHERE (1 << (`characters`.`race` - 1)) & "
-               << itr->raceMask
-               << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
-               << itr->questId
-               << " AND `character_queststatus`.`rewarded` <> 0";
+            ss
+                << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
+                "WHERE (1 << (`characters`.`race` - 1)) & "
+                << itr->raceMask
+                << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
+                << itr->questId
+                << " AND `character_queststatus`.`rewarded` <> 0";
+
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());
         }
         else
@@ -1109,6 +1112,7 @@ void GameEventMgr::SendEventMails(int16 event_id)
 
 // Get the Game Event ID for Creature by guid
 template <>
+
 /**
  * @brief Resolves the signed game event id associated with a creature guid.
  *
@@ -1128,6 +1132,7 @@ int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 
 // Get the Game Event ID for GameObject by guid
 template <>
+
 /**
  * @brief Resolves the signed game event id associated with a gameobject guid.
  *
@@ -1147,6 +1152,7 @@ int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 
 // Get the Game Event ID for Pool by pool ID
 template <>
+
 /**
  * @brief Resolves the game event id associated with a spawn pool id.
  *
@@ -1191,7 +1197,7 @@ bool GameEventMgr::IsActiveHoliday(HolidayIds id)
     return false;
 }
 
- bool IsHolidayActive(HolidayIds id)
+bool IsHolidayActive(HolidayIds id)
 {
     return sGameEventMgr.IsActiveHoliday(id);
 }

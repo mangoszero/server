@@ -151,7 +151,7 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
 
         uint32 GenerateInstanceId()
         {
-             return ++i_MaxInstanceId;
+            return ++i_MaxInstanceId;
         }
 
         void InitMaxInstanceId();

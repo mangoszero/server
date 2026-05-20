@@ -66,6 +66,7 @@ uint32 SpawnedPoolData::GetSpawnedObjects(uint32 pool_id) const
 
 // Method that tell if a creature is spawned currently
 template<>
+
 /**
  * @brief Checks whether a creature spawn is currently active in a pool state.
  *
@@ -79,6 +80,7 @@ bool SpawnedPoolData::IsSpawnedObject<Creature>(uint32 db_guid) const
 
 // Method that tell if a gameobject is spawned currently
 template<>
+
 /**
  * @brief Checks whether a gameobject spawn is currently active in a pool state.
  *
@@ -92,6 +94,7 @@ bool SpawnedPoolData::IsSpawnedObject<GameObject>(uint32 db_guid) const
 
 // Method that tell if a pool is spawned currently
 template<>
+
 /**
  * @brief Checks whether a child pool is currently active in a pool state.
  *
@@ -104,6 +107,7 @@ bool SpawnedPoolData::IsSpawnedObject<Pool>(uint32 sub_pool_id) const
 }
 
 template<>
+
 /**
  * @brief Marks a creature spawn as active in a pool.
  *
@@ -117,6 +121,7 @@ void SpawnedPoolData::AddSpawn<Creature>(uint32 db_guid, uint32 pool_id)
 }
 
 template<>
+
 /**
  * @brief Marks a gameobject spawn as active in a pool.
  *
@@ -130,6 +135,7 @@ void SpawnedPoolData::AddSpawn<GameObject>(uint32 db_guid, uint32 pool_id)
 }
 
 template<>
+
 /**
  * @brief Marks a child pool as active in a parent pool.
  *
@@ -143,6 +149,7 @@ void SpawnedPoolData::AddSpawn<Pool>(uint32 sub_pool_id, uint32 pool_id)
 }
 
 template<>
+
 /**
  * @brief Removes an active creature spawn from a pool.
  *
@@ -160,6 +167,7 @@ void SpawnedPoolData::RemoveSpawn<Creature>(uint32 db_guid, uint32 pool_id)
 }
 
 template<>
+
 /**
  * @brief Removes an active gameobject spawn from a pool.
  *
@@ -177,6 +185,7 @@ void SpawnedPoolData::RemoveSpawn<GameObject>(uint32 db_guid, uint32 pool_id)
 }
 
 template<>
+
 /**
  * @brief Removes an active child pool from a parent pool.
  *
@@ -196,6 +205,7 @@ void SpawnedPoolData::RemoveSpawn<Pool>(uint32 sub_pool_id, uint32 pool_id)
 ////////////////////////////////////////////////////////////
 // Methods of class PoolObject
 template<>
+
 /**
  * @brief Verifies creature event linkage for a pooled object.
  *
@@ -214,6 +224,7 @@ void PoolObject::CheckEventLinkAndReport<Creature>(uint32 poolId, int16 event_id
 }
 
 template<>
+
 /**
  * @brief Verifies gameobject event linkage for a pooled object.
  *
@@ -232,6 +243,7 @@ void PoolObject::CheckEventLinkAndReport<GameObject>(uint32 poolId, int16 event_
 }
 
 template<>
+
 /**
  * @brief Verifies event linkage for a child pool reference.
  *
@@ -250,6 +262,7 @@ void PoolObject::CheckEventLinkAndReport<Pool>(uint32 /*poolId*/, int16 event_id
 
 // Method to add a gameobject/creature guid to the proper list depending on pool type and chance value
 template <class T>
+
 /**
  * @brief Adds an entry to a pool group's equal-chance or explicit-chance list.
  *
@@ -270,6 +283,7 @@ void PoolGroup<T>::AddEntry(PoolObject& poolitem, uint32 maxentries)
 
 // Method to check the chances are proper in this object pool
 template <class T>
+
 /**
  * @brief Validates the configured probabilities for a pool group.
  *
@@ -294,6 +308,7 @@ bool PoolGroup<T>::CheckPool() const
 
 // Method to check event linking
 template <class T>
+
 /**
  * @brief Verifies event linkage for every entry in a pool group.
  *
@@ -315,6 +330,7 @@ void PoolGroup<T>::CheckEventLinkAndReport(int16 event_id, std::map<uint32, int1
 }
 
 template <class T>
+
 /**
  * @brief Marks an object in the pool group as excluded or included.
  *
@@ -343,6 +359,7 @@ void PoolGroup<T>::SetExcludeObject(uint32 guid, bool state)
 }
 
 template <class T>
+
 /**
  * @brief Chooses one spawn candidate from the pool group.
  *
@@ -386,6 +403,7 @@ PoolObject* PoolGroup<T>::RollOne(SpawnedPoolData& spawns, uint32 triggerFrom)
 // If no guid is passed, the pool is just removed (event end case)
 // If guid is filled, cache will be used and no removal will occur, it just fill the cache
 template<class T>
+
 /**
  * @brief Despawns pooled objects of a given type.
  *
@@ -425,6 +443,7 @@ void PoolGroup<T>::DespawnObject(MapPersistentState& mapState, uint32 guid)
 
 // Method that is actualy doing the removal job on one creature
 template<>
+
 /**
  * @brief Despawns one pooled creature.
  *
@@ -451,6 +470,7 @@ void PoolGroup<Creature>::Despawn1Object(MapPersistentState& mapState, uint32 gu
 
 // Same on one gameobject
 template<>
+
 /**
  * @brief Despawns one pooled gameobject.
  *
@@ -477,6 +497,7 @@ void PoolGroup<GameObject>::Despawn1Object(MapPersistentState& mapState, uint32 
 
 // Same on one pool
 template<>
+
 /**
  * @brief Despawns one pooled child pool.
  *
@@ -490,6 +511,7 @@ void PoolGroup<Pool>::Despawn1Object(MapPersistentState& mapState, uint32 child_
 
 // Method for a pool only to remove any found record causing a circular dependency loop
 template<>
+
 /**
  * @brief Removes one child-pool relation from a pool group.
  *
@@ -516,6 +538,7 @@ void PoolGroup<Pool>::RemoveOneRelation(uint16 child_pool_id)
 }
 
 template <class T>
+
 /**
  * @brief Spawns objects from the pool group up to its configured limit.
  *
@@ -583,6 +606,7 @@ void PoolGroup<T>::SpawnObject(MapPersistentState& mapState, uint32 limit, uint3
 
 // Method that is actualy doing the spawn job on 1 creature
 template <>
+
 /**
  * @brief Spawns one pooled creature.
  *
@@ -636,6 +660,7 @@ void PoolGroup<Creature>::Spawn1Object(MapPersistentState& mapState, PoolObject*
 
 // Same for 1 gameobject
 template <>
+
 /**
  * @brief Spawns one pooled gameobject.
  *
@@ -696,6 +721,7 @@ void PoolGroup<GameObject>::Spawn1Object(MapPersistentState& mapState, PoolObjec
 
 // Same for 1 pool
 template <>
+
 /**
  * @brief Spawns one pooled child pool.
  *
@@ -710,6 +736,7 @@ void PoolGroup<Pool>::Spawn1Object(MapPersistentState& mapState, PoolObject* obj
 
 // Method that does the respawn job on the specified creature
 template <>
+
 /**
  * @brief Re-adds an already selected pooled creature to the live map.
  *
@@ -732,6 +759,7 @@ void PoolGroup<Creature>::ReSpawn1Object(MapPersistentState& mapState, PoolObjec
 
 // Method that does the respawn job on the specified gameobject
 template <>
+
 /**
  * @brief Re-adds an already selected pooled gameobject to the live map.
  *
@@ -754,6 +782,7 @@ void PoolGroup<GameObject>::ReSpawn1Object(MapPersistentState& mapState, PoolObj
 
 // Nothing to do for a child Pool
 template <>
+
 /**
  * @brief No-op respawn handler for child pools.
  *
@@ -1294,23 +1323,24 @@ void PoolManager::LoadFromDB()
         uint32 max_autopool_entry = (max_pool_id + 3486 + 533);
         for (uint16 pool_entry = max_pool_id + 1; pool_entry < max_autopool_entry; ++pool_entry)
         {
-                PoolTemplateData& pPoolTemplate = mPoolTemplate[pool_entry];
-                pPoolTemplate.MaxLimit = 0;
-                std::ostringstream sZone;
-                sZone << "autopool zone " << pool_entry;
-                pPoolTemplate.description = sZone.str();
-                pPoolTemplate.AutoSpawn = true;          // will update and later data loading
+            PoolTemplateData& pPoolTemplate = mPoolTemplate[pool_entry];
+            pPoolTemplate.MaxLimit = 0;
+            std::ostringstream sZone;
+            sZone << "autopool zone " << pool_entry;
+            pPoolTemplate.description = sZone.str();
+            pPoolTemplate.AutoSpawn = true;          // will update and later data loading
         }
 
         count = 0;
 
-        //                                                0               1   2    3           4              5
-        result = WorldDatabase.Query("SELECT `gameobject`.`guid`, `gameobject`.`id`, `map`, `position_x`, `position_y`, `position_z`,"
-                                                       //   6                          7
-                              "`pool_gameobject`.`pool_entry`, `pool_gameobject_template`.`pool_entry` "
-                              "FROM `gameobject` "
-                              "LEFT OUTER JOIN `pool_gameobject` ON `gameobject`.`guid` = `pool_gameobject`.`guid` "
-                              "LEFT OUTER JOIN `pool_gameobject_template` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
+        result = WorldDatabase.Query(
+                            //                    0                    1     2      3             4             5
+                            "SELECT `gameobject`.`guid`, `gameobject`.`id`, `map`, `position_x`, `position_y`, `position_z`,"
+                            //                  6                                        7
+                            "`pool_gameobject`.`pool_entry`, `pool_gameobject_template`.`pool_entry` "
+                            "FROM `gameobject` "
+                            "LEFT OUTER JOIN `pool_gameobject` ON `gameobject`.`guid` = `pool_gameobject`.`guid` "
+                            "LEFT OUTER JOIN `pool_gameobject_template` ON `gameobject`.`id` = `pool_gameobject_template`.`id`");
 
         if (!result)
         {
@@ -1417,6 +1447,7 @@ void PoolManager::Initialize(MapPersistentState* state)
 // Call to spawn a pool, if cache if true the method will spawn only if cached entry is different
 // If it's same, the creature is respawned only (added back to map)
 template<>
+
 /**
  * @brief Spawns a creature pool group.
  *
@@ -1436,6 +1467,7 @@ void PoolManager::SpawnPoolGroup<Creature>(MapPersistentState& mapState, uint16 
 // Call to spawn a pool, if cache if true the method will spawn only if cached entry is different
 // If it's same, the gameobject is respawned only (added back to map)
 template<>
+
 /**
  * @brief Spawns a gameobject pool group.
  *
@@ -1455,6 +1487,7 @@ void PoolManager::SpawnPoolGroup<GameObject>(MapPersistentState& mapState, uint1
 // Call to spawn a pool, if cache if true the method will spawn only if cached entry is different
 // If it's same, the pool is respawned only
 template<>
+
 /**
  * @brief Spawns a child-pool group.
  *
@@ -1502,10 +1535,10 @@ void PoolManager::DespawnPool(MapPersistentState& mapState, uint16 pool_id)
 // Method that check chance integrity of the creatures and gameobjects in this pool
 bool PoolManager::CheckPool(uint16 pool_id) const
 {
-    return pool_id <= max_pool_id &&
-           mPoolGameobjectGroups[pool_id].CheckPool() &&
-           mPoolCreatureGroups[pool_id].CheckPool() &&
-           mPoolPoolGroups[pool_id].CheckPool();
+    return pool_id <= max_pool_id
+                && mPoolGameobjectGroups[pool_id].CheckPool()
+                && mPoolCreatureGroups[pool_id].CheckPool()
+                && mPoolPoolGroups[pool_id].CheckPool();
 }
 
 // Method that check linking all elements to event
@@ -1518,6 +1551,7 @@ void PoolManager::CheckEventLinkAndReport(uint16 pool_id, int16 event_id, std::m
 
 // Method that exclude some elements from next spawn
 template<>
+
 /**
  * @brief Sets the exclusion state for a creature within a pool.
  *
@@ -1531,6 +1565,7 @@ void PoolManager::SetExcludeObject<Creature>(uint16 pool_id, uint32 db_guid_or_p
 }
 
 template<>
+
 /**
  * @brief Sets the exclusion state for a gameobject within a pool.
  *
@@ -1547,6 +1582,7 @@ void PoolManager::SetExcludeObject<GameObject>(uint16 pool_id, uint32 db_guid_or
 // Here we cache only the creature/gameobject whose guid is passed as parameter
 // Then the spawn pool call will use this cache to decide
 template<typename T>
+
 /**
  * @brief Updates a pool after one of its members or child pools changes state.
  *
@@ -1661,6 +1697,7 @@ struct UpdatePoolInMapsWorker
 };
 
 template<typename T>
+
 /**
  * @brief Updates a pool across all matching persistent states.
  *

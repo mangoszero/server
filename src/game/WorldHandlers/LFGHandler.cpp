@@ -119,9 +119,9 @@ void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
         }
     }
 
-   GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(obj->GetEntry());
+    GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(obj->GetEntry());
 
-   sLFGMgr.AddToQueue(_player, gInfo->meetingstone.areaID);
+    sLFGMgr.AddToQueue(_player, gInfo->meetingstone.areaID);
 }
 
 /**

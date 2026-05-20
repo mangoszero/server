@@ -1302,7 +1302,7 @@ ChatCommandSearchResult ChatHandler::FindCommand(ChatCommand* table, char const*
 
     while (*text == ' ')
     {
-         ++text;
+        ++text;
     }
 
     // search first level command in table
@@ -4080,6 +4080,7 @@ int CliHandler::GetSessionDbLocaleIndex() const
 
 // Check/ Output if a NPC or GO (by guid) is part of a pool or game event
 template <typename T>
+
 /**
  * @brief Reports pool and game event ownership information for a creature or game object spawn.
  *
@@ -4133,6 +4134,7 @@ void ChatHandler::ShowNpcOrGoSpawnInformation(uint32 guid)
 
 // Prepare ShortString for a NPC or GO (by guid) with pool or game event IDs
 template <typename T>
+
 /**
  * @brief Builds a short descriptive string about pool or game event ownership for a spawn.
  *

@@ -108,7 +108,7 @@ public:
     uint32 GetMasterAccountId() const { return masterAccountId; }
     PlayerbotHolder* GetPlayerbotHolder()
     {
-         return playerbotHolder;
+        return playerbotHolder;
     }
 
 };
@@ -256,6 +256,7 @@ class CharacterHandler
 } chrHandler;
 
 #ifdef ENABLE_PLAYERBOTS
+
 /**
  * @brief Queues asynchronous login loading for a playerbot character.
  *
@@ -329,16 +330,16 @@ void WorldSession::HandleCharEnumOpcode(WorldPacket & /*recv_data*/)
 {
     /// get all the data necessary for loading all characters (along with their pets) on the account
     CharacterDatabase.AsyncPQuery(&chrHandler, &CharacterHandler::HandleCharEnumCallback, GetAccountId(),
-                                  //           0               1                2                3                 4                  5                       6                        7
-                                  "SELECT `characters`.`guid`, `characters`.`name`, `characters`.`race`, `characters`.`class`, `characters`.`gender`, `characters`.`playerBytes`, `characters`.`playerBytes2`, `characters`.`level`, "
-                                  //   8                9               10                     11                     12                     13                    14
-                                  "`characters`.`zone`, `characters`.`map`, `characters`.`position_x`, `characters`.`position_y`, `characters`.`position_z`, `guild_member`.`guildid`, `characters`.`playerFlags`, "
-                                  //  15                    16                   17                     18                   19
-                                  "`characters`.`at_login`, `character_pet`.`entry`, `character_pet`.`modelid`, `character_pet`.`level`, `characters`.`equipmentCache` "
-                                  "FROM `characters` LEFT JOIN `character_pet` ON `characters`.`guid`=`character_pet`.`owner` AND `character_pet`.`slot`='%u' "
-                                  "LEFT JOIN `guild_member` ON `characters`.`guid` = `guild_member`.`guid` "
-                                  "WHERE `characters`.`account` = '%u' ORDER BY `characters`.`guid`",
-                                  PET_SAVE_AS_CURRENT, GetAccountId());
+                                //                    0                    1                    2                    3                     4                      5                           6                            7
+                                "SELECT `characters`.`guid`, `characters`.`name`, `characters`.`race`, `characters`.`class`, `characters`.`gender`, `characters`.`playerBytes`, `characters`.`playerBytes2`, `characters`.`level`, "
+                                //             8                    9                   10                         11                         12                           13                      14
+                                "`characters`.`zone`, `characters`.`map`, `characters`.`position_x`, `characters`.`position_y`, `characters`.`position_z`, `guild_member`.`guildid`, `characters`.`playerFlags`, "
+                                //             15                          16                       17                         18                    19
+                                "`characters`.`at_login`, `character_pet`.`entry`, `character_pet`.`modelid`, `character_pet`.`level`, `characters`.`equipmentCache` "
+                                "FROM `characters` LEFT JOIN `character_pet` ON `characters`.`guid`=`character_pet`.`owner` AND `character_pet`.`slot`='%u' "
+                                "LEFT JOIN `guild_member` ON `characters`.`guid` = `guild_member`.`guid` "
+                                "WHERE `characters`.`account` = '%u' ORDER BY `characters`.`guid`",
+                                PET_SAVE_AS_CURRENT, GetAccountId());
 }
 
 /**
@@ -1177,7 +1178,7 @@ void WorldSession::HandleCharRenameOpcode(WorldPacket& recv_data)
                                   GetAccountId(), newname,
                                   "SELECT `guid`, `name` FROM `characters` WHERE `guid` = %u AND `account` = %u AND (`at_login` & %u) = %u AND NOT EXISTS (SELECT NULL FROM `characters` WHERE `name` = '%s')",
                                   guid.GetCounter(), GetAccountId(), AT_LOGIN_RENAME, AT_LOGIN_RENAME, escaped_newname.c_str()
-                                 );
+                                );
 }
 
 /**

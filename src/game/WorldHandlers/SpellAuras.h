@@ -38,12 +38,14 @@
  */
 struct Modifier
 {
+
     /**
      * Decides what the aura does, ie, it may have the
      * value \ref AuraType::SPELL_AURA_MOD_BASE_RESISTANCE_PCT which
      * would change the base armor of a player.
      */
     AuraType m_auraname;
+
     /**
      * By how much the aura should change the affected
      * value. Ie, -27 would make the value decided by \ref Modifier::m_miscvalue
@@ -51,6 +53,7 @@ struct Modifier
      * would have been used. And 27 would increase the value by 27%
      */
     int32 m_amount;
+
     /**
      * A miscvalue that is dependent on what the aura will do, this
      * is usually decided by the AuraType, ie:
@@ -61,6 +64,7 @@ struct Modifier
      * then m_miscvalue would have decided which model the mount should have
      */
     int32 m_miscvalue;
+
     /**
      * Decides how often the aura should be applied, if it is
      * set to 0 it's only applied once and then removed when
@@ -138,7 +142,7 @@ class SpellAuraHolder
 
         void SetDeleted()
         {
-             m_deleted = true;
+            m_deleted = true;
         }
 
         void SetInUse(bool state)
@@ -447,7 +451,7 @@ class Aura
 
         bool IsPositive()
         {
-             return m_positive;
+            return m_positive;
         }
 
         bool IsPersistent() const { return m_isPersistent; }
@@ -488,7 +492,7 @@ class Aura
 
         SpellAuraHolder* GetHolder()
         {
-             return m_spellAuraHolder;
+            return m_spellAuraHolder;
         }
         SpellAuraHolder const* GetHolder() const { return m_spellAuraHolder; }
 

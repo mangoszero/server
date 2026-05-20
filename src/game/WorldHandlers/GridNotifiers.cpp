@@ -241,6 +241,7 @@ void ObjectMessageDistDeliverer::Visit(CameraMapType& m)
 }
 
 template<class T>
+
 /**
  * @brief Updates all world objects referenced by a grid manager.
  *

@@ -324,7 +324,7 @@ Aura::~Aura()
 
 AreaAura::AreaAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target,
                    Unit* caster, Item* castItem, uint32 originalRankSpellId)
-                   : Aura(spellproto, eff, currentBasePoints, holder, target, caster, castItem), m_originalRankSpellId(originalRankSpellId)
+                    : Aura(spellproto, eff, currentBasePoints, holder, target, caster, castItem), m_originalRankSpellId(originalRankSpellId)
 {
     m_isAreaAura = true;
 
@@ -650,8 +650,7 @@ void AreaAura::Update(uint32 diff)
             caster->hasUnitState(UNIT_STAT_ISOLATED)               ||
             !caster->HasAura(originalRankSpellId, GetEffIndex())   ||
             !caster->IsWithinDistInMap(target, m_radius)           ||
-            caster->IsFriendlyTo(target) != needFriendly
-           )
+            caster->IsFriendlyTo(target) != needFriendly)
         {
             target->RemoveSingleAuraFromSpellAuraHolder(GetId(), GetEffIndex(), GetCasterGuid());
         }
@@ -1985,7 +1984,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
                 if ((aurMechMask & MECHANIC_NOT_REMOVED_BY_SHAPESHIFT) ||
                     // some Daze spells have these parameters instead of MECHANIC_DAZE (skip snare spells)
                     (aurSpellInfo->SpellIconID == 15 && aurSpellInfo->Dispel == 0 &&
-                     (aurMechMask & (1 << (MECHANIC_SNARE - 1))) == 0))
+                    (aurMechMask & (1 << (MECHANIC_SNARE - 1))) == 0))
                 {
                     ++iter;
                     continue;
@@ -6528,10 +6527,10 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Wor
     m_trackedAuraType = IsSingleTargetSpell(spellproto) ? TRACK_AURA_TYPE_SINGLE_TARGET : TRACK_AURA_TYPE_NOT_TRACKED;
     m_procCharges    = spellproto->procCharges;
 
-    m_isRemovedOnShapeLost = (GetCasterGuid() == m_target->GetObjectGuid() &&
-                              m_spellProto->Stances &&
-                              !m_spellProto->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT) &&
-                              !m_spellProto->HasAttribute(SPELL_ATTR_NOT_SHAPESHIFT));
+    m_isRemovedOnShapeLost = (GetCasterGuid() == m_target->GetObjectGuid()
+                            && m_spellProto->Stances
+                            && !m_spellProto->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT)
+                            && !m_spellProto->HasAttribute(SPELL_ATTR_NOT_SHAPESHIFT));
 
     Unit* unitCaster = caster && caster->isType(TYPEMASK_UNIT) ? (Unit*)caster : NULL;
 

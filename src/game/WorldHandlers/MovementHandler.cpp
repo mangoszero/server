@@ -367,8 +367,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     {
         Transport* transport = plMover->GetTransport();
         float visibilityDist = mover->GetMap()->GetVisibilityDistance();
-        for (UnitSet::const_iterator itr = transport->GetPassengers().begin();
-             itr != transport->GetPassengers().end(); ++itr)
+        for (UnitSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
         {
             if (*itr == mover || (*itr)->GetTypeId() != TYPEID_PLAYER)
             {
@@ -388,7 +387,6 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
             }
         }
     }
-
 }
 
 /**
@@ -416,7 +414,6 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
     {
         return;
     }
-    /*----------------*/
 
     // client ACK send one packet for mounted/run case and need skip all except last from its
     // in other cases anti-cheat check can be fail in false case

@@ -95,6 +95,7 @@ void MassMailMgr::AddMassMailTask(MailDraft* mailProto, const MailSender &sender
  */
 struct MassMailerQueryHandler
 {
+
     /**
      * @brief Process query results and add receivers to mass mail task
      * @param result Database query result containing character GUIDs
