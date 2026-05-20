@@ -67,8 +67,8 @@ int AntiFreezeThread::svc(void)
         // normal work
         if (w_loops != World::m_worldLoopCounter.value())
         {
-              w_lastchange = curtime;
-              w_loops = World::m_worldLoopCounter.value();
+            w_lastchange = curtime;
+            w_loops = World::m_worldLoopCounter.value();
         }
         // possible freeze
         else if (getMSTimeDiff(w_lastchange, curtime) > delaytime_)

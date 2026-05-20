@@ -33,7 +33,7 @@
 #include "Util.h"
 
 #ifdef _WIN32
-  #include <windows.h>
+    #include <windows.h>
 #endif
 
 /**
@@ -47,6 +47,7 @@ static void prompt(void* callback = NULL, bool status = true)
 
 // Non-blocking keypress detector, when return pressed, return 1, else always return 0
 #if (PLATFORM != PLATFORM_WINDOWS)
+
 /**
  * Checks whether console input is ready without blocking on non-Windows platforms.
  */
