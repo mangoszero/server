@@ -51,6 +51,7 @@
 
 namespace Movement
 {
+
     /**
      * @namespace Movement
      * @brief Movement system namespace
@@ -58,6 +59,7 @@ namespace Movement
      * Contains all movement-related classes and functions for
      * spline-based movement and packet construction.
      */
+
     /**
      * @brief Overloads the << operator to write a Vector3 to a ByteBuffer.
      * @param b The ByteBuffer to write to.

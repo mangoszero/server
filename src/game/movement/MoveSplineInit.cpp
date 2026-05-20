@@ -29,6 +29,7 @@
 
 namespace Movement
 {
+
     /**
      * @brief Selects the appropriate speed type based on movement flags.
      * @param moveFlags The movement flags.

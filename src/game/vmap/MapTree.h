@@ -40,6 +40,7 @@ namespace VMAP
      */
     struct LocationInfo
     {
+
         /**
          * @brief Default constructor for LocationInfo.
          */
@@ -54,10 +55,12 @@ namespace VMAP
      */
     class StaticMapTree
     {
+
         /**
          * @brief Type definition for loaded tile map.
          */
         typedef UNORDERED_MAP<uint32, bool> loadedTileMap;
+
         /**
          * @brief Type definition for loaded spawn map.
          */
@@ -98,6 +101,7 @@ namespace VMAP
          * @return std::string The generated tile file name.
          */
         static std::string getTileFileName(uint32 mapID, uint32 tileX, uint32 tileY);
+
         /**
          * @brief Packs the tile ID from tile X and tile Y coordinates.
          *
@@ -106,6 +110,7 @@ namespace VMAP
          * @return uint32 The packed tile ID.
          */
         static uint32 packTileID(uint32 tileX, uint32 tileY) { return tileX << 16 | tileY; }
+
         /**
          * @brief Unpacks the tile ID into tile X and tile Y coordinates.
          *
@@ -114,6 +119,7 @@ namespace VMAP
          * @param tileY The tile Y coordinate.
          */
         static void unpackTileID(uint32 ID, uint32& tileX, uint32& tileY) { tileX = ID >> 16; tileY = ID & 0xFF; }
+
         /**
          * @brief Checks if a map can be loaded.
          *
@@ -132,6 +138,7 @@ namespace VMAP
          * @param basePath The base path for map files.
          */
         StaticMapTree(uint32 mapID, const std::string& basePath);
+
         /**
          * @brief Destructor for StaticMapTree.
          */
@@ -145,6 +152,7 @@ namespace VMAP
          * @return bool True if there is a line of sight, false otherwise.
          */
         bool isInLineOfSight(const G3D::Vector3& pos1, const G3D::Vector3& pos2) const;
+
         /**
          * @brief Checks if an object is hit when moving from pos1 to pos2.
          *
@@ -155,6 +163,7 @@ namespace VMAP
          * @return bool True if an object is hit, false otherwise.
          */
         bool getObjectHitPos(const G3D::Vector3& pos1, const G3D::Vector3& pos2, G3D::Vector3& pResultHitPos, float pModifyDist) const;
+
         /**
          * @brief Retrieves the height at a given position.
          *
@@ -163,6 +172,7 @@ namespace VMAP
          * @return float The height at the position.
          */
         float getHeight(const G3D::Vector3& pPos, float maxSearchDist) const;
+
         /**
          * @brief Retrieves area information for a given position.
          *
@@ -174,6 +184,7 @@ namespace VMAP
          * @return bool True if area information was found, false otherwise.
          */
         bool getAreaInfo(G3D::Vector3& pos, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const;
+
         /**
          * @brief Retrieves location information for a given position.
          *
@@ -191,12 +202,14 @@ namespace VMAP
          * @return bool True if the map was successfully initialized, false otherwise.
          */
         bool InitMap(const std::string& fname, VMapManager2* vm);
+
         /**
          * @brief Unloads the map.
          *
          * @param vm The VMap manager.
          */
         void UnloadMap(VMapManager2* vm);
+
         /**
          * @brief Loads a map tile.
          *
@@ -206,6 +219,7 @@ namespace VMAP
          * @return bool True if the tile was successfully loaded, false otherwise.
          */
         bool LoadMapTile(uint32 tileX, uint32 tileY, VMapManager2* vm);
+
         /**
          * @brief Unloads a map tile.
          *
@@ -214,12 +228,14 @@ namespace VMAP
          * @param vm The VMap manager.
          */
         void UnloadMapTile(uint32 tileX, uint32 tileY, VMapManager2* vm);
+
         /**
          * @brief Checks if the map is tiled.
          *
          * @return bool True if the map is tiled, false otherwise.
          */
         bool isTiled() const { return iIsTiled; }
+
         /**
          * @brief Returns the number of loaded tiles.
          *
@@ -244,6 +260,7 @@ namespace VMAP
      */
     struct AreaInfo
     {
+
         /**
          * @brief Default constructor for AreaInfo.
          */

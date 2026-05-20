@@ -66,6 +66,7 @@ RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creat
 }
 
 template<>
+
 /**
  * @brief Chooses and starts movement toward a new random reachable location.
  *
@@ -103,6 +104,7 @@ void RandomMovementGenerator<Creature>::_setRandomLocation(Creature& creature)
 }
 
 template<>
+
 /**
  * @brief Initializes random roaming movement for a creature.
  *
@@ -121,6 +123,7 @@ void RandomMovementGenerator<Creature>::Initialize(Creature& creature)
 }
 
 template<>
+
 /**
  * @brief Resets random roaming by reinitializing the creature movement.
  *
@@ -132,6 +135,7 @@ void RandomMovementGenerator<Creature>::Reset(Creature& creature)
 }
 
 template<>
+
 /**
  * @brief Interrupts random roaming and restores the creature walk state.
  *
@@ -145,6 +149,7 @@ void RandomMovementGenerator<Creature>::Interrupt(Creature& creature)
 }
 
 template<>
+
 /**
  * @brief Finalizes random roaming and clears roaming movement flags.
  *
@@ -157,6 +162,7 @@ void RandomMovementGenerator<Creature>::Finalize(Creature& creature)
 }
 
 template<>
+
 /**
  * @brief Updates random roaming and starts a new move when the wait timer expires.
  *

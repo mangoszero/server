@@ -120,7 +120,7 @@ public:
      */
     BIH()
     {
-         init_empty();
+        init_empty();
     }
 
     /**
@@ -183,7 +183,7 @@ public:
      */
     uint32 primCount()
     {
-         return objects.size();
+        return objects.size();
     }
 
     /**
@@ -552,7 +552,7 @@ protected:
          */
         void updateInner()
         {
-             ++numNodes;
+            ++numNodes;
         }
 
         /**
@@ -560,7 +560,7 @@ protected:
          */
         void updateBVH2()
         {
-             ++numBVH2;
+            ++numBVH2;
         }
 
         /**

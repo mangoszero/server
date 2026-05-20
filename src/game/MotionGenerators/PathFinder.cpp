@@ -402,14 +402,14 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         // generate suffix
         uint32 suffixPolyLength = 0;
         dtResult = m_navMeshQuery->findPath(
-                       suffixStartPoly,    // start polygon
-                       endPoly,            // end polygon
-                       suffixEndPoint,     // start position
-                       endPoint,           // end position
-                       &m_filter,            // polygon search filter
-                       m_pathPolyRefs + prefixPolyLength - 1,    // [out] path
-                       (int*)&suffixPolyLength,
-                       MAX_PATH_LENGTH - prefixPolyLength); // max number of polygons in output path
+                    suffixStartPoly,    // start polygon
+                    endPoly,            // end polygon
+                    suffixEndPoint,     // start position
+                    endPoint,           // end position
+                    &m_filter,          // polygon search filter
+                    m_pathPolyRefs + prefixPolyLength - 1,    // [out] path
+                    (int*)&suffixPolyLength,
+                    MAX_PATH_LENGTH - prefixPolyLength); // max number of polygons in output path
 
         if (!suffixPolyLength || dtStatusFailed(dtResult))
         {
@@ -425,7 +425,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         // new path = prefix + suffix - overlap
         m_polyLength = prefixPolyLength + suffixPolyLength - 1;
     }
-     else
+    else
     {
         DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (!startPolyFound && !endPolyFound) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
@@ -438,14 +438,14 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         clear();
 
         dtResult = m_navMeshQuery->findPath(
-                       startPoly,          // start polygon
-                       endPoly,            // end polygon
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       &m_filter,           // polygon search filter
-                       m_pathPolyRefs,     // [out] path
-                       (int*)&m_polyLength,
-                       MAX_PATH_LENGTH);   // max number of polygons in output path
+                    startPoly,          // start polygon
+                    endPoly,            // end polygon
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    &m_filter,          // polygon search filter
+                    m_pathPolyRefs,     // [out] path
+                    (int*)&m_polyLength,
+                    MAX_PATH_LENGTH);   // max number of polygons in output path
 
         if (!m_polyLength || dtStatusFailed(dtResult))
         {
@@ -501,26 +501,26 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
     if (m_useStraightPath)
     {
         dtResult = m_navMeshQuery->findStraightPath(
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       m_pathPolyRefs,     // current path
-                       m_polyLength,       // length of current path
-                       pathPoints,         // [out] path corner points
-                       NULL,               // [out] flags
-                       NULL,               // [out] shortened path
-                       (int*)&pointCount,
-                       m_pointPathLimit);   // maximum number of points/polygons to use
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    m_pathPolyRefs,     // current path
+                    m_polyLength,       // length of current path
+                    pathPoints,         // [out] path corner points
+                    NULL,               // [out] flags
+                    NULL,               // [out] shortened path
+                    (int*)&pointCount,
+                    m_pointPathLimit);  // maximum number of points/polygons to use
     }
     else
     {
         dtResult = findSmoothPath(
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       m_pathPolyRefs,     // current path
-                       m_polyLength,       // length of current path
-                       pathPoints,         // [out] path corner points
-                       (int*)&pointCount,
-                       m_pointPathLimit);    // maximum number of points
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    m_pathPolyRefs,     // current path
+                    m_polyLength,       // length of current path
+                    pathPoints,         // [out] path corner points
+                    (int*)&pointCount,
+                    m_pointPathLimit);  // maximum number of points
     }
 
     if (pointCount < 2 || dtStatusFailed(dtResult))

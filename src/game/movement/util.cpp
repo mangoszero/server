@@ -49,6 +49,7 @@
 
 namespace Movement
 {
+
     /**
      * @var gravity
      * @brief Gravity constant in units per second squared
@@ -152,7 +153,7 @@ namespace Movement
         if (t_passed > terminal_time)
         {
             result = terminalVelocity * (t_passed - terminal_time) +
-                     start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
+                    start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
         }
         else
         {

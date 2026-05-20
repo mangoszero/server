@@ -29,6 +29,7 @@
 #include "movement/MoveSpline.h"
 
 template<class T>
+
 /**
  * @brief Initializes the confused movement state for a unit.
  *
@@ -51,6 +52,7 @@ void ConfusedMovementGenerator<T>::Initialize(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Interrupts confused movement while preserving the confused state.
  *
@@ -64,6 +66,7 @@ void ConfusedMovementGenerator<T>::Interrupt(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Resets confused movement timing and movement flags.
  *
@@ -83,6 +86,7 @@ void ConfusedMovementGenerator<T>::Reset(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Updates confused movement and launches new random short walks as needed.
  *
@@ -141,6 +145,7 @@ bool ConfusedMovementGenerator<T>::Update(T& unit, const uint32& diff)
 }
 
 template<>
+
 /**
  * @brief Finalizes confused movement for a player and stops active movement.
  *
@@ -153,6 +158,7 @@ void ConfusedMovementGenerator<Player>::Finalize(Player& unit)
 }
 
 template<>
+
 /**
  * @brief Finalizes confused movement for a creature.
  *

@@ -99,6 +99,7 @@ static DumpTable dumpTables[] =
 };
 
 // Low level functions
+
 /**
  * @brief Find nth token in a space-separated string
  * @param str String to search
@@ -608,8 +609,8 @@ std::string PlayerDumpWriter::GetDump(uint32 guid)
         + "." + std::to_string(fields[1].GetInt16()) + ".X "
         +" CHAR. DB VERSION ( "
         + fields[2].GetCppString() + " / "
-        + fields[3].GetCppString()  +
-         ")\n\n"
+        + fields[3].GetCppString()
+        + ")\n\n"
         ;
 
         delete result;
@@ -782,7 +783,7 @@ DumpReturn PlayerDumpReader::LoadDump(const std::string& file, uint32 account, s
 
                 std::string dbversionInDumpFile = line.substr(nw_pos+12, dbversionLen);
 
-               delete result;
+                delete result;
 
                 if (dbversionInDumpFile != dbversion)
                 {

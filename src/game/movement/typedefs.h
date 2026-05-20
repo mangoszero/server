@@ -61,6 +61,7 @@ namespace Movement
     }
 
     template<class T, T limit>
+
     /**
      * @brief A counter class that generates unique IDs up to a specified limit.
      */
@@ -72,7 +73,7 @@ namespace Movement
              */
             counter()
             {
-                 init();
+                init();
             }
 
             /**
@@ -96,7 +97,7 @@ namespace Movement
              */
             T NewId()
             {
-                 Increase(); return m_counter;
+                Increase(); return m_counter;
             }
 
             /**
@@ -111,7 +112,7 @@ namespace Movement
              */
             void init()
             {
-                 m_counter = 0;
+                m_counter = 0;
             }
 
             T m_counter; /**< The current counter value. */

@@ -50,6 +50,7 @@ using G3D::Ray;
 
 namespace VMAP
 {
+
     /**
      * @brief Constructor for ModelInstance.
      *

@@ -122,7 +122,7 @@ namespace VMAP
          */
         void setUnloaded()
         {
-             iModel = 0;
+            iModel = 0;
         }
 
         /**

@@ -32,6 +32,7 @@ class Unit;
 
 namespace Movement
 {
+
     /**
      * @brief Initializes and launches spline movement
      *
@@ -148,7 +149,7 @@ namespace Movement
              */
             PointsArray& Path()
             {
-                 return args.path;
+                return args.path;
             }
         protected:
 
@@ -162,7 +163,7 @@ namespace Movement
      */
     inline void MoveSplineInit::SetFly()
     {
-         args.flags.flying = true;
+        args.flags.flying = true;
     }
 
     /**
@@ -176,7 +177,7 @@ namespace Movement
      */
     inline void MoveSplineInit::SetCyclic()
     {
-         args.flags.cyclic = true;
+        args.flags.cyclic = true;
     }
 
     /**
@@ -184,7 +185,7 @@ namespace Movement
      */
     inline void MoveSplineInit::SetFall()
     {
-         args.flags.falling = true;
+        args.flags.falling = true;
     }
 
     /**

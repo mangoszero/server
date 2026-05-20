@@ -51,6 +51,7 @@ using namespace G3D;
 
 namespace VMAP
 {
+
     /**
      * @brief Trim whitespace and quotes from string ends
      * @param str String to modify in-place

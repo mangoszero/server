@@ -33,6 +33,7 @@
 //----- Point Movement Generator
 
 template<class T>
+
 /**
  * @brief Initializes movement toward the configured point destination.
  *
@@ -54,6 +55,7 @@ void PointMovementGenerator<T>::Initialize(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Finalizes point movement and notifies listeners if the spline completed.
  *
@@ -70,6 +72,7 @@ void PointMovementGenerator<T>::Finalize(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Interrupts point movement and clears roaming movement flags.
  *
@@ -82,6 +85,7 @@ void PointMovementGenerator<T>::Interrupt(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Resets point movement state without relaunching the path.
  *
@@ -94,6 +98,7 @@ void PointMovementGenerator<T>::Reset(T& unit)
 }
 
 template<class T>
+
 /**
  * @brief Updates point movement and relaunches the spline if needed.
  *
@@ -118,6 +123,7 @@ bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
 }
 
 template<>
+
 /**
  * @brief Handles point-movement completion for players.
  *
@@ -128,6 +134,7 @@ void PointMovementGenerator<Player>::MovementInform(Player&)
 }
 
 template <>
+
 /**
  * @brief Notifies creature AI and summon logic when point movement completes.
  *

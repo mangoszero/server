@@ -42,6 +42,7 @@ namespace Movement
              * @brief Type definition for index.
              */
             typedef int index_type;
+
             /**
              * @brief Type definition for control points array.
              */
@@ -89,6 +90,7 @@ namespace Movement
              * @param out Output vector for the evaluated point.
              */
             void EvaluateLinear(index_type index, float t, Vector3& out) const;
+
             /**
              * @brief Evaluates the spline using Catmull-Rom interpolation.
              * @param index Index of the segment.
@@ -96,6 +98,7 @@ namespace Movement
              * @param out Output vector for the evaluated point.
              */
             void EvaluateCatmullRom(index_type index, float t, Vector3& out) const;
+
             /**
              * @brief Evaluates the spline using Bezier interpolation.
              * @param index Index of the segment.
@@ -103,6 +106,7 @@ namespace Movement
              * @param out Output vector for the evaluated point.
              */
             void EvaluateBezier3(index_type index, float t, Vector3& out) const;
+
             /**
              * @brief Type definition for evaluation method pointers.
              */
@@ -116,6 +120,7 @@ namespace Movement
              * @param out Output vector for the evaluated derivative.
              */
             void EvaluateDerivativeLinear(index_type index, float t, Vector3& out) const;
+
             /**
              * @brief Evaluates the derivative of the spline using Catmull-Rom interpolation.
              * @param index Index of the segment.
@@ -123,6 +128,7 @@ namespace Movement
              * @param out Output vector for the evaluated derivative.
              */
             void EvaluateDerivativeCatmullRom(index_type index, float t, Vector3& out) const;
+
             /**
              * @brief Evaluates the derivative of the spline using Bezier interpolation.
              * @param index Index of the segment.
@@ -138,18 +144,21 @@ namespace Movement
              * @return Length of the segment.
              */
             float SegLengthLinear(index_type index) const;
+
             /**
              * @brief Calculates the length of a Catmull-Rom segment.
              * @param index Index of the segment.
              * @return Length of the segment.
              */
             float SegLengthCatmullRom(index_type index) const;
+
             /**
              * @brief Calculates the length of a Bezier segment.
              * @param index Index of the segment.
              * @return Length of the segment.
              */
             float SegLengthBezier3(index_type index) const;
+
             /**
              * @brief Type definition for segment length method pointers.
              */
@@ -164,6 +173,7 @@ namespace Movement
              * @param cyclic_point Index of the cyclic point.
              */
             void InitLinear(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
+
             /**
              * @brief Initializes the spline using Catmull-Rom interpolation.
              * @param controls Array of control points.
@@ -172,6 +182,7 @@ namespace Movement
              * @param cyclic_point Index of the cyclic point.
              */
             void InitCatmullRom(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
+
             /**
              * @brief Initializes the spline using Bezier interpolation.
              * @param controls Array of control points.
@@ -180,6 +191,7 @@ namespace Movement
              * @param cyclic_point Index of the cyclic point.
              */
             void InitBezier3(const Vector3* controls, index_type count, bool cyclic, index_type cyclic_point);
+
             /**
              * @brief Type definition for initialization method pointers.
              */
@@ -219,6 +231,7 @@ namespace Movement
              * @return Lower bound index.
              */
             index_type first() const { return index_lo;}
+
             /**
              * @brief Upper bound index.
              * @return Upper bound index.
@@ -230,11 +243,13 @@ namespace Movement
              * @return True if the spline is empty, false otherwise.
              */
             bool empty() const { return index_lo == index_hi;}
+
             /**
              * @brief Gets the evaluation mode of the spline.
              * @return Evaluation mode.
              */
             EvaluationMode mode() const { return (EvaluationMode)m_mode;}
+
             /**
              * @brief Checks if the spline is cyclic.
              * @return True if the spline is cyclic, false otherwise.
@@ -246,11 +261,13 @@ namespace Movement
              * @return Control points array.
              */
             const ControlArray& getPoints() const { return points;}
+
             /**
              * @brief Gets the number of control points.
              * @return Number of control points.
              */
             index_type getPointCount() const { return points.size();}
+
             /**
              * @brief Gets a specific control point.
              * @param i Index of the control point.
@@ -265,6 +282,7 @@ namespace Movement
              * @param m Evaluation mode.
              */
             void init_spline(const Vector3* controls, index_type count, EvaluationMode m);
+
             /**
              * @brief Initializes a cyclic spline.
              * @param controls Array of control points.
@@ -303,6 +321,7 @@ namespace Movement
     };
 
     template<typename length_type>
+
     /**
      * @brief Template class for handling splines with length information.
      * @tparam length_type Type for length information.
@@ -314,6 +333,7 @@ namespace Movement
              * @brief Type definition for length.
              */
             typedef length_type LengthType;
+
             /**
              * @brief Type definition for length array.
              */
@@ -371,6 +391,7 @@ namespace Movement
              * @return Computed index.
              */
             index_type computeIndexInBounds(float t) const;
+
             /**
              * @brief Computes the index and partial segment length for a given t.
              * @param t Percent of spline's length, assumes that t in range [0, 1].
@@ -386,6 +407,7 @@ namespace Movement
              * @param m Evaluation mode.
              */
             void init_spline(const Vector3* controls, index_type count, EvaluationMode m) { SplineBase::init_spline(controls, count, m);}
+
             /**
              * @brief Initializes a cyclic spline.
              * @param controls Array of control points.
@@ -431,6 +453,7 @@ namespace Movement
              * @return Length of the spline.
              */
             length_type length() const { return lengths[index_hi];}
+
             /**
              * @brief Returns the length between given nodes.
              * @param first Index of the first node.
@@ -438,6 +461,7 @@ namespace Movement
              * @return Length between the nodes.
              */
             length_type length(index_type first, index_type last) const { return lengths[last] - lengths[first];}
+
             /**
              * @brief Returns the length of a specific segment.
              * @param Idx Index of the segment.
@@ -451,6 +475,7 @@ namespace Movement
              * @param length Length to set.
              */
             void set_length(index_type i, length_type length) { lengths[i] = length;}
+
             /**
              * @brief Clears the spline.
              */

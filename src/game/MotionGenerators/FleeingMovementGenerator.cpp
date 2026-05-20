@@ -34,6 +34,7 @@
 #define MAX_QUIET_DISTANCE 43.0f
 
 template<class T>
+
 /**
  * @brief Chooses and launches a new fleeing destination for the owner.
  *
@@ -75,6 +76,7 @@ void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
 }
 
 template<class T>
+
 /**
  * @brief Computes a suitable flee point away from the frightening source.
  *
@@ -153,6 +155,7 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
 }
 
 template<class T>
+
 /**
  * @brief Initializes fleeing movement and clears creature targets when needed.
  *
@@ -173,6 +176,7 @@ void FleeingMovementGenerator<T>::Initialize(T& owner)
 }
 
 template<>
+
 /**
  * @brief Finalizes fleeing movement for a player.
  *
@@ -185,6 +189,7 @@ void FleeingMovementGenerator<Player>::Finalize(Player& owner)
 }
 
 template<>
+
 /**
  * @brief Finalizes fleeing movement for a creature and restores walk state.
  *
@@ -197,6 +202,7 @@ void FleeingMovementGenerator<Creature>::Finalize(Creature& owner)
 }
 
 template<class T>
+
 /**
  * @brief Interrupts fleeing movement while keeping the flee state active.
  *
@@ -210,6 +216,7 @@ void FleeingMovementGenerator<T>::Interrupt(T& owner)
 }
 
 template<class T>
+
 /**
  * @brief Resets fleeing movement by reinitializing the generator.
  *
@@ -221,6 +228,7 @@ void FleeingMovementGenerator<T>::Reset(T& owner)
 }
 
 template<class T>
+
 /**
  * @brief Updates fleeing movement and picks a new path when the timer expires.
  *

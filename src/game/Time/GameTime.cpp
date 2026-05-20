@@ -48,6 +48,7 @@
 
 namespace GameTime
 {
+
     /**
      * @var StartTime
      * @brief Server process start time (Unix timestamp)

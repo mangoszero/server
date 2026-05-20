@@ -34,6 +34,7 @@
  */
 namespace GameTime
 {
+
     /**
      * @brief Get the server start time
      * @return Server start time as Unix timestamp

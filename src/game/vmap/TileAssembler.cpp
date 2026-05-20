@@ -64,6 +64,7 @@ template<> struct BoundsTrait<VMAP::ModelSpawn*>
 
 namespace VMAP
 {
+
     /**
      * @brief Reads a chunk of data from a file and compares it with a given string.
      *

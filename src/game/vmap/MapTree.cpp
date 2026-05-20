@@ -54,6 +54,7 @@ using G3D::Vector3;
 
 namespace VMAP
 {
+
     /**
      * @brief Callback class for ray intersection with models.
      */

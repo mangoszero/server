@@ -36,6 +36,7 @@ This is the minimum interface to the VMapMamager.
 
 namespace VMAP
 {
+
     /**
      * @brief VMAP load result enumeration
      */
@@ -50,6 +51,7 @@ namespace VMAP
 #define VMAP_INVALID_HEIGHT_VALUE -200000.0f ///< Real assigned value in unknown height case
 
     //===========================================================
+
     /**
      * @brief Interface for VMap manager
      *
@@ -100,6 +102,7 @@ namespace VMAP
              * @param y
              */
             virtual void unloadMap(unsigned int pMapId, int x, int y) = 0;
+
             /**
              * @brief
              *
@@ -120,6 +123,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool isInLineOfSight(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2) = 0;
+
             /**
              * @brief
              *
@@ -131,6 +135,7 @@ namespace VMAP
              * @return float
              */
             virtual float getHeight(unsigned int pMapId, float x, float y, float z, float maxSearchDist) = 0;
+
             /**
              * @brief test if we hit an object. return true if we hit one. rx,ry,rz will hold the hit position or the dest position, if no intersection was found
              * return a position, that is pReduceDist closer to the origin
@@ -149,6 +154,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool getObjectHitPos(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2, float& rx, float& ry, float& rz, float pModifyDist) = 0;
+
             /**
              * @brief send debug commands
              *
@@ -165,6 +171,7 @@ namespace VMAP
              * @param pVal
              */
             void setEnableLineOfSightCalc(bool pVal) { iEnableLineOfSightCalc = pVal; }
+
             /**
              * @brief Enable/disable model height calculation
              *
@@ -180,12 +187,14 @@ namespace VMAP
              * @return bool
              */
             bool isLineOfSightCalcEnabled() const { return(iEnableLineOfSightCalc); }
+
             /**
              * @brief
              *
              * @return bool
              */
             bool isHeightCalcEnabled() const { return(iEnableHeightCalc); }
+
             /**
              * @brief
              *
@@ -202,6 +211,7 @@ namespace VMAP
              * @return std::string
              */
             virtual std::string getDirFileName(unsigned int pMapId, int x, int y) const = 0;
+
             /**
              * @brief Query world model area info.
              *
@@ -216,6 +226,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool getAreaInfo(unsigned int pMapId, float x, float y, float& z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const = 0;
+
             /**
              * @brief
              *

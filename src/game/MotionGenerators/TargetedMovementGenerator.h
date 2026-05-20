@@ -83,7 +83,7 @@ class TargetedMovementGeneratorMedium
          */
         ~TargetedMovementGeneratorMedium()
         {
-             delete i_path;
+            delete i_path;
         }
 
     public:
@@ -112,7 +112,7 @@ class TargetedMovementGeneratorMedium
          */
         void unitSpeedChanged()
         {
-             m_speedChanged = true;
+            m_speedChanged = true;
         }
 
     protected:

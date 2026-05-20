@@ -235,6 +235,7 @@ class MovementGeneratorMedium : public MovementGenerator
  */
 struct SelectableMovement : public FactoryHolder<MovementGenerator, MovementGeneratorType>
 {
+
     /**
      * @brief Constructor for SelectableMovement.
      * @param mgt Type of the movement generator.
@@ -249,6 +250,7 @@ struct SelectableMovement : public FactoryHolder<MovementGenerator, MovementGene
 template<class REAL_MOVEMENT>
 struct MovementGeneratorFactory : public SelectableMovement
 {
+
     /**
      * @brief Constructor for MovementGeneratorFactory.
      * @param mgt Type of the movement generator.

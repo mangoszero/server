@@ -234,6 +234,7 @@ namespace Movement
 
 // MONSTER_MOVE packet format limitation for not CatmullRom movement:
 // each vertex offset packed into 11 bytes
+
     /**
      * @brief Checks the bounds of the path for non-CatmullRom movement.
      * @return True if the path bounds are valid, false otherwise.

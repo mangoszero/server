@@ -106,7 +106,7 @@ class WaypointMovementGenerator<Creature>
          */
         ~WaypointMovementGenerator()
         {
-             i_path = NULL;
+            i_path = NULL;
         }
 
         /**
@@ -317,7 +317,7 @@ class FlightPathMovementGenerator
          */
         TaxiPathNodeList const& GetPath()
         {
-             return *i_path;
+            return *i_path;
         }
 
         /**
@@ -342,7 +342,7 @@ class FlightPathMovementGenerator
          */
         void SkipCurrentNode()
         {
-             ++i_currentNode;
+            ++i_currentNode;
         }
 
         /**

@@ -24,6 +24,7 @@
 
 namespace Movement
 {
+
     /**
      * @brief Evaluates the spline at a given percentage of its length.
      * @param t The percentage of the spline's length (0.0 to 1.0).

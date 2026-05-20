@@ -222,6 +222,7 @@ struct DynamicTreeIntersectionCallback_WithLogger
 };
 
 //=========================================================
+
 /**
 If intersection is found within pMaxDist, sets pMaxDist to intersection distance and returns true.
 Else, pMaxDist is not modified and returns false;
@@ -253,6 +254,7 @@ bool DynamicMapTree::getObjectHitPos(float x1, float y1, float z1, float x2, flo
 }
 
 //=========================================================
+
 /**
 When moving from pos1 to pos2 check if we hit an object. Return true and the position if we hit one
 Return the hit pos or the original dest pos

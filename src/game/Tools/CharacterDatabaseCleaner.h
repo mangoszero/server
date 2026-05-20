@@ -27,6 +27,7 @@
 
 namespace CharacterDatabaseCleaner
 {
+
     /**
      * @brief Cleaning flags enumeration
      */

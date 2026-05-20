@@ -95,7 +95,7 @@ namespace Movement
         Vector4 weights(tvec * matr);
 
         result = vertice[0] * weights[0] + vertice[1] * weights[1]
-                 + vertice[2] * weights[2] + vertice[3] * weights[3];
+                + vertice[2] * weights[2] + vertice[3] * weights[3];
     }
 
     /**
@@ -111,7 +111,7 @@ namespace Movement
         Vector4 weights(tvec * matr);
 
         result = vertice[0] * weights[0] + vertice[1] * weights[1]
-                 + vertice[2] * weights[2] + vertice[3] * weights[3];
+                + vertice[2] * weights[2] + vertice[3] * weights[3];
     }
 
     /**

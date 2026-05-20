@@ -60,6 +60,7 @@ template<> struct BoundsTrait<VMAP::GroupModel>
 
 namespace VMAP
 {
+
     /**
      * @brief Checks if a ray intersects with a triangle.
      *
@@ -134,6 +135,7 @@ namespace VMAP
          * @param vert Vector of vertices.
          */
         TriBoundFunc(std::vector<Vector3>& vert) : vertices(vert.begin()) {}
+
         /**
          * @brief Calculates the bounding box of a triangle.
          *
@@ -269,13 +271,13 @@ namespace VMAP
 
             ^ dy
             |
-          1 x---------x (1,1)
+        1 x---------x (1,1)
             | (b)   / |
             |     /   |
             |   /     |
             | /   (a) |
             x---------x---> dx
-          0           1
+        0           1
         */
         const uint32 rowOffset = iTilesX + 1;
         if (dx > dy) // case (a)
