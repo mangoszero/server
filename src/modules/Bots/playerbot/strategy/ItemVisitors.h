@@ -35,7 +35,7 @@ namespace ai
 
         list<Item*>& GetResult()
         {
-             return result;
+            return result;
         }
 
     protected:
@@ -184,7 +184,7 @@ namespace ai
 
         int GetCount()
         {
-             return count;
+            return count;
         }
 
     protected:
@@ -309,8 +309,8 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto)
         {
-            return proto->Class == ITEM_CLASS_CONSUMABLE &&
-                   proto->Spells[0].SpellCategory == spellCategory;
+            return proto->Class == ITEM_CLASS_CONSUMABLE
+                && proto->Spells[0].SpellCategory == spellCategory;
         }
     private:
         uint32 spellCategory;
@@ -356,8 +356,8 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto)
         {
-            return proto->IsConjuredConsumable() &&
-                  proto->Spells[0].SpellCategory == spellCategory;
+            return proto->IsConjuredConsumable()
+                && proto->Spells[0].SpellCategory == spellCategory;
         }
     private:
         uint32 spellCategory;

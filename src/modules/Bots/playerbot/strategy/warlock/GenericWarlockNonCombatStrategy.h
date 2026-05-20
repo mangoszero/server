@@ -10,7 +10,7 @@ namespace ai
         GenericWarlockNonCombatStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "nc";
+            return "nc";
         }
 
     public:

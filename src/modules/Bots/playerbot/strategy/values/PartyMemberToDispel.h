@@ -8,7 +8,7 @@ namespace ai
     {
     public:
         PartyMemberToDispel(PlayerbotAI* ai) :
-          PartyMemberValue(ai) {}
+        PartyMemberValue(ai) {}
 
     protected:
         virtual Unit* Calculate();

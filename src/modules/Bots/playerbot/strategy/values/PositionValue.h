@@ -10,12 +10,12 @@ namespace ai
         void Set(double x, double y, double z) { this->x = x; this->y = y; this->z = z; this->valueSet = true; }
         void Reset()
         {
-             valueSet = false;
+            valueSet = false;
         }
 
         bool isSet()
         {
-             return valueSet;
+            return valueSet;
         }
 
         double x, y, z;

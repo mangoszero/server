@@ -11,7 +11,7 @@ namespace ai
         HunterBuffSpeedStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "bspeed";
+            return "bspeed";
         }
 
     public:
@@ -24,7 +24,7 @@ namespace ai
         HunterBuffManaStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "bmana";
+            return "bmana";
         }
 
     public:
@@ -37,7 +37,7 @@ namespace ai
         HunterBuffDpsStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "bdps";
+            return "bdps";
         }
 
     public:
@@ -50,7 +50,7 @@ namespace ai
         HunterNatureResistanceStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "rnature";
+            return "rnature";
         }
 
     public:

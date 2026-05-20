@@ -10,7 +10,7 @@ namespace ai
         StayCircleStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "stay circle";
+            return "stay circle";
         }
 
         virtual NextAction** getDefaultActions();

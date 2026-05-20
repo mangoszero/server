@@ -31,7 +31,7 @@ namespace ai
          */
         bool IsEmpty()
         {
-             return !guid;
+            return !guid;
         }
 
         /**

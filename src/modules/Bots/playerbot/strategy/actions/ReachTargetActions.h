@@ -24,7 +24,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
     protected:

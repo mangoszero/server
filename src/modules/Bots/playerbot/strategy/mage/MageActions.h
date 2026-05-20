@@ -48,7 +48,7 @@ namespace ai
         CastFrostNovaAction(PlayerbotAI* ai) : CastSpellAction(ai, "frost nova") {}
         virtual bool isUseful()
         {
-             return AI_VALUE2(float, "distance", GetTargetName()) <= sPlayerbotAIConfig.tooCloseDistance;
+            return AI_VALUE2(float, "distance", GetTargetName()) <= sPlayerbotAIConfig.tooCloseDistance;
         }
     };
 
@@ -103,12 +103,12 @@ namespace ai
         CastConjureFoodAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "conjure food") {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool isUseful()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
         }
     };
 
@@ -118,12 +118,12 @@ namespace ai
         CastConjureWaterAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "conjure water") {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool isUseful()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
         }
     };
 
@@ -133,12 +133,12 @@ namespace ai
         CastConjureManaGemAction(PlayerbotAI* ai) : CastSpellAction(ai, "conjure mana gem"), m_bestSpellId(0) {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool isUseful()
         {
-             return AI_VALUE2(uint8, "item count", "mana gem") == 0;
+            return AI_VALUE2(uint8, "item count", "mana gem") == 0;
         }
 
         virtual bool Execute(Event event);
@@ -191,7 +191,7 @@ namespace ai
         CastEvocationAction(PlayerbotAI* ai) : CastSpellAction(ai, "evocation") {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 
@@ -249,7 +249,7 @@ namespace ai
         CastColdSnapAction(PlayerbotAI* ai) : CastSpellAction(ai, "cold snap") {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 

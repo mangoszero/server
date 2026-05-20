@@ -15,12 +15,12 @@ namespace ai
         virtual NextAction** getDefaultActions();
         virtual string getName()
         {
-             return "caster";
+            return "caster";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_DPS | STRATEGY_TYPE_RANGED;
+            return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_DPS | STRATEGY_TYPE_RANGED;
         }
     };
 
@@ -33,7 +33,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "caster aoe";
+            return "caster aoe";
         }
     };
 }

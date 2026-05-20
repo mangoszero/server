@@ -13,12 +13,12 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "heal";
+            return "heal";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_HEAL;
+            return STRATEGY_TYPE_HEAL;
         }
     };
 

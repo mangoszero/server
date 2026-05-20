@@ -2,6 +2,7 @@
 
 namespace ai
 {
+
     /**
      * @brief Represents an event in the AI system
      */
@@ -64,7 +65,7 @@ namespace ai
          */
         const string& getSource()
         {
-             return source;
+            return source;
         }
 
         /**
@@ -74,7 +75,7 @@ namespace ai
          */
         const string& getParam()
         {
-             return param;
+            return param;
         }
 
         /**
@@ -84,7 +85,7 @@ namespace ai
          */
         WorldPacket& getPacket()
         {
-             return packet;
+            return packet;
         }
 
         /**
@@ -101,7 +102,7 @@ namespace ai
          */
         Player* getOwner()
         {
-             return owner;
+            return owner;
         }
 
         /**

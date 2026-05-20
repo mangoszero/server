@@ -54,7 +54,7 @@ namespace ai
 
         virtual bool IsActive()
         {
-             return ItemCountTrigger::IsActive() && AI_VALUE2(uint8, "item count", "soul shard") > 0;
+            return ItemCountTrigger::IsActive() && AI_VALUE2(uint8, "item count", "soul shard") > 0;
         }
     };
 
@@ -88,7 +88,7 @@ namespace ai
         TargetHasImmolateTrigger(PlayerbotAI* ai) : Trigger(ai, "target has immolate", 1) {}
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
         virtual bool IsActive();

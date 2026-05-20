@@ -27,7 +27,7 @@ namespace ai
     public:
         virtual string getName()
         {
-             return name;
+            return name;
         }
 
     protected:

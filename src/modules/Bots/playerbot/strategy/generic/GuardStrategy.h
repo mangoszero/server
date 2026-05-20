@@ -9,7 +9,7 @@ namespace ai
         GuardStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "guard";
+            return "guard";
         }
         NextAction** getDefaultActions();
 

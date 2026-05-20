@@ -14,7 +14,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "frost";
+            return "frost";
         }
 
         virtual NextAction** getDefaultActions();
@@ -29,7 +29,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "frost aoe";
+            return "frost aoe";
         }
     };
 }

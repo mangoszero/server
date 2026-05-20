@@ -22,7 +22,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "Engineering";
+            return "Engineering";
         }
     };
 
@@ -42,7 +42,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "OtherTrade";
+            return "OtherTrade";
         }
 
     };

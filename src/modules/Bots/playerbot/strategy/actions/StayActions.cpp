@@ -98,177 +98,180 @@ bool StayAction::isUseful()
 }
 
 bool StayCircleAction::Execute(Event event)
- {
-Stay();
-
-float range = 2.0f;
-
-Unit* target = AI_VALUE(Unit*, "current target");
-Player* master = GetMaster();
-if (!target)
 {
-    target = master;
-}
+    Stay();
 
-if (!target)
-{
-    return false;
-}
+    float range = 2.0f;
 
-switch (bot->getClass())
- {
-case CLASS_HUNTER:
-case CLASS_MAGE:
-case CLASS_PRIEST:
-case CLASS_WARLOCK:
-range = sPlayerbotAIConfig.fleeDistance;
-break;
-case CLASS_DRUID:
-if (!ai->IsTank(bot))
-{
-    range = sPlayerbotAIConfig.fleeDistance;
-}
-break;
-case CLASS_SHAMAN:
-if (ai->IsHeal(bot))
-{
-    range = sPlayerbotAIConfig.fleeDistance;
-}
-break;
-}
+    Unit* target = AI_VALUE(Unit*, "current target");
+    Player* master = GetMaster();
+    if (!target)
+    {
+        target = master;
+    }
 
-float x = target->GetPositionX();
-float y = target->GetPositionY();
-float z = target->GetPositionZ();
-float angle = GetFollowAngle();
+    if (!target)
+    {
+        return false;
+    }
 
-return MoveTo(bot->GetMapId(), x + cos(angle) * range, y + sin(angle) * range, z);
+    switch (bot->getClass())
+    {
+        case CLASS_HUNTER:
+        case CLASS_MAGE:
+        case CLASS_PRIEST:
+        case CLASS_WARLOCK:
+            range = sPlayerbotAIConfig.fleeDistance;
+            break;
+        case CLASS_DRUID:
+            if (!ai->IsTank(bot))
+            {
+                range = sPlayerbotAIConfig.fleeDistance;
+            }
+            break;
+        case CLASS_SHAMAN:
+            if (ai->IsHeal(bot))
+            {
+                range = sPlayerbotAIConfig.fleeDistance;
+            }
+            break;
+    }
+
+    float x = target->GetPositionX();
+    float y = target->GetPositionY();
+    float z = target->GetPositionZ();
+    float angle = GetFollowAngle();
+
+    return MoveTo(bot->GetMapId(), x + cos(angle) * range, y + sin(angle) * range, z);
 }
 
 bool StayLineAction::Execute(Event event)
- {
-Group* group = bot->GetGroup();
-if (!group)
 {
-    return false;
-}
+    Group* group = bot->GetGroup();
+    if (!group)
+    {
+        return false;
+    }
 
-float range = 2.0f;
+    float range = 2.0f;
 
-Player* master = GetMaster();
-if (!master)
-{
-    return false;
-}
+    Player* master = GetMaster();
+    if (!master)
+    {
+        return false;
+    }
 
-float x = master->GetPositionX();
-float y = master->GetPositionY();
-float z = master->GetPositionZ();
-float orientation = master->GetOrientation();
+    float x = master->GetPositionX();
+    float y = master->GetPositionY();
+    float z = master->GetPositionZ();
+    float orientation = master->GetOrientation();
 
-vector<Player*> players;
-GroupReference *gref = group->GetFirstMember();
-while (gref)
-{
-Player* member = gref->getSource();
-if (member != master)
-{
-    players.push_back(member);
-}
+    vector<Player*> players;
+    GroupReference *gref = group->GetFirstMember();
+    while (gref)
+    {
+        Player* member = gref->getSource();
+        if (member != master)
+        {
+            players.push_back(member);
+        }
 
-gref = gref->next();
-}
+        gref = gref->next();
+    }
 
-players.insert(players.begin() + group->GetMembersCount() / 2, master);
+    players.insert(players.begin() + group->GetMembersCount() / 2, master);
 
-return StayLine(players, 0.0f, x, y, z, orientation, range);
+    return StayLine(players, 0.0f, x, y, z, orientation, range);
 }
 
 bool StayCombatAction::Execute(Event event)
- {
-Group* group = bot->GetGroup();
-if (!group)
 {
-    return false;
-}
+    Group* group = bot->GetGroup();
+    if (!group)
+    {
+        return false;
+    }
 
-float range = 2.0f;
+    float range = 2.0f;
 
-Player* master = GetMaster();
-if (!master)
-{
-    return false;
-}
+    Player* master = GetMaster();
+    if (!master)
+    {
+        return false;
+    }
 
-float x = master->GetPositionX();
-float y = master->GetPositionY();
-float z = master->GetPositionZ();
-float orientation = master->GetOrientation();
+    float x = master->GetPositionX();
+    float y = master->GetPositionY();
+    float z = master->GetPositionZ();
+    float orientation = master->GetOrientation();
 
-vector<Player*> tanks;
-vector<Player*> dps;
-GroupReference *gref = group->GetFirstMember();
-while (gref)
-{
-Player* member = gref->getSource();
-if (member != master)
- {
-if (ai->IsTank(member))
-{
-    tanks.push_back(member);
-}
-else
-{
-    dps.push_back(member);
-}
-}
+    vector<Player*> tanks;
+    vector<Player*> dps;
+    GroupReference *gref = group->GetFirstMember();
+    while (gref)
+    {
+        Player* member = gref->getSource();
+        if (member != master)
+        {
+            if (ai->IsTank(member))
+            {
+                tanks.push_back(member);
+            }
+            else
+            {
+                dps.push_back(member);
+            }
+        }
 
-gref = gref->next();
-}
+        gref = gref->next();
+    }
 
-if (ai->IsTank(master))
-{
-    tanks.insert(tanks.begin() + (tanks.size() + 1) / 2, master);
-}
-else
-{
-    dps.insert(dps.begin() + (dps.size() + 1) / 2, master);
-}
+    if (ai->IsTank(master))
+    {
+        tanks.insert(tanks.begin() + (tanks.size() + 1) / 2, master);
+    }
+    else
+    {
+        dps.insert(dps.begin() + (dps.size() + 1) / 2, master);
+    }
 
-switch (rand() % 50)
- {
-case 5:
-ai->TellMaster("Keep your eyes open!");
-break;
-case 15:
-ai->TellMaster("Stay alert!");
-break;
-case 30:
-ai->TellMaster("I hear something, keep order!");
-break;
-}
+    switch (rand() % 50)
+    {
+        case 5:
+            ai->TellMaster("Keep your eyes open!");
+            break;
+        case 15:
+            ai->TellMaster("Stay alert!");
+            break;
+        case 30:
+            ai->TellMaster("I hear something, keep order!");
+            break;
+    }
 
-if (ai->IsTank(bot) && ai->IsTank(master))
- {
-StayLine(tanks, 0.0f, x, y, z, orientation, range);
-return true;
-}
-if (!ai->IsTank(bot) && !ai->IsTank(master))
- {
-StayLine(dps, 0.0f, x, y, z, orientation, range);
-return true;
-}
-if (ai->IsTank(bot) && !ai->IsTank(master))
-{
-float diff = tanks.size() % 2 == 0 ? -range / 2.0f : 0.0f;
-StayLine(tanks, diff, x + cos(orientation) * range, y + sin(orientation) * range, z, orientation, range);
-return true;
-}
-if (!ai->IsTank(bot) && ai->IsTank(master))
- {
-float diff = dps.size() % 2 == 0 ? -range / 2.0f : 0.0f;
-StayLine(dps, diff, x - cos(orientation) * range, y - sin(orientation) * range, z, orientation, range);
-return true;
-}
-return true;
+    if (ai->IsTank(bot) && ai->IsTank(master))
+    {
+        StayLine(tanks, 0.0f, x, y, z, orientation, range);
+        return true;
+    }
+
+    if (!ai->IsTank(bot) && !ai->IsTank(master))
+    {
+        StayLine(dps, 0.0f, x, y, z, orientation, range);
+        return true;
+    }
+
+    if (ai->IsTank(bot) && !ai->IsTank(master))
+    {
+        float diff = tanks.size() % 2 == 0 ? -range / 2.0f : 0.0f;
+        StayLine(tanks, diff, x + cos(orientation) * range, y + sin(orientation) * range, z, orientation, range);
+        return true;
+    }
+
+    if (!ai->IsTank(bot) && ai->IsTank(master))
+    {
+        float diff = dps.size() % 2 == 0 ? -range / 2.0f : 0.0f;
+        StayLine(dps, diff, x - cos(orientation) * range, y - sin(orientation) * range, z, orientation, range);
+        return true;
+    }
+    return true;
 }

@@ -9,7 +9,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual int GetType()
         {
-             return STRATEGY_TYPE_COMBAT;
+            return STRATEGY_TYPE_COMBAT;
         }
     };
 

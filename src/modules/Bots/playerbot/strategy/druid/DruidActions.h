@@ -188,7 +188,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 

@@ -14,7 +14,7 @@ namespace ahbot
         Category* operator[](int index) { return categories[index]; }
         int32 size()
         {
-             return categories.size();
+            return categories.size();
         }
         static CategoryList instance;
 
@@ -69,7 +69,7 @@ namespace ahbot
         virtual void Load();
         virtual string GetName()
         {
-             return "available";
+            return "available";
         }
     };
 

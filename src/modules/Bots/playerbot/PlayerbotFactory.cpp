@@ -927,6 +927,7 @@ void PlayerbotFactory::InitEquipment(bool incremental)
         }
     }
 }
+
 /**
  * Checks if the given item is a desired replacement for the current item.
  * @param item The current item.
@@ -1951,7 +1952,7 @@ void PlayerbotFactory::InitPotions()
         {
             newItem->AddToUpdateQueueOf(bot);
         }
-   }
+    }
 }
 
 /**
@@ -2014,7 +2015,7 @@ void PlayerbotFactory::InitFood()
         {
             newItem->AddToUpdateQueueOf(bot);
         }
-   }
+    }
 }
 
 /**
@@ -2235,5 +2236,5 @@ void PlayerbotFactory::InitInventoryEquip()
         {
             break;
         }
-   }
+    }
 }

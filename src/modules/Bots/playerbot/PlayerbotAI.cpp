@@ -1645,6 +1645,7 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 }
 
 #ifndef WIN32
+
 /**
  * Case-insensitive string comparison.
  * @param s1 The first string.

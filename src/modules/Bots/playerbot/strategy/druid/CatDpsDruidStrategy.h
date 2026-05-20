@@ -14,13 +14,13 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "cat";
+            return "cat";
         }
 
         virtual NextAction** getDefaultActions();
         virtual int GetType()
         {
-             return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_MELEE;
+            return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_MELEE;
         }
     };
 
@@ -33,7 +33,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "cat aoe";
+            return "cat aoe";
         }
     };
 }

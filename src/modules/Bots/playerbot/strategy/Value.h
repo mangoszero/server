@@ -6,6 +6,7 @@
 
 namespace ai
 {
+
     /**
      * @brief Base class for untyped values.
      */
@@ -17,7 +18,7 @@ namespace ai
         virtual void Reset() {}
         virtual string Format()
         {
-             return "?";
+            return "?";
         }
     };
 
@@ -34,7 +35,7 @@ namespace ai
         virtual void Set(T value) = 0;
         operator T()
         {
-             return Get();
+            return Get();
         }
     };
 
@@ -225,14 +226,14 @@ namespace ai
     public:
         virtual T Get()
         {
-             return value;
+            return value;
         }
 
         virtual void Set(T value) { this->value = value; }
         virtual void Update() {}
         virtual void Reset()
         {
-             value = defaultValue;
+            value = defaultValue;
         }
 
     protected:

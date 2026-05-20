@@ -9,7 +9,7 @@ namespace ai
         StayStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "stay";
+            return "stay";
         }
 
         virtual NextAction** getDefaultActions();

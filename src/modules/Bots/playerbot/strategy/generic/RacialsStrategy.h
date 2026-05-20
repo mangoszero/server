@@ -8,7 +8,7 @@ namespace ai
         RacialsStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "racials";
+            return "racials";
         }
 
     public:

@@ -2,6 +2,7 @@
 
 namespace ai
 {
+
     /**
      * @brief A class that makes the AI aware of the PlayerbotAI instance.
      */

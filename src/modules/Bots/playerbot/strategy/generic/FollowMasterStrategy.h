@@ -9,7 +9,7 @@ namespace ai
         FollowMasterStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "follow master";
+            return "follow master";
         }
 
         virtual NextAction** getDefaultActions();

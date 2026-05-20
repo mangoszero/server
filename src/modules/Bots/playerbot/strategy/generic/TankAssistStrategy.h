@@ -9,12 +9,12 @@ namespace ai
         TankAssistStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "tank assist";
+            return "tank assist";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_TANK;
+            return STRATEGY_TYPE_TANK;
         }
 
     public:

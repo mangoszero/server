@@ -14,12 +14,12 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "holy";
+            return "holy";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED;
+            return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED;
         }
     };
 }

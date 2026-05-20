@@ -11,7 +11,7 @@ namespace ai
         GenericMageStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "mage";
+            return "mage";
         }
 
     public:

@@ -446,8 +446,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
             GameTele const* tele = &itr->second;
-            if (( tele->mapId == mapId) &&
-               (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
+            if (( tele->mapId == mapId)
+                && (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
             {
                 locs.push_back(tele);
             }

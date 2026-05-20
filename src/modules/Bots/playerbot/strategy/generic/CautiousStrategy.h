@@ -8,7 +8,7 @@ namespace ai
         CautiousStrategy(PlayerbotAI* ai) : Strategy(ai) {}
         virtual string getName()
         {
-             return "cautious";
+            return "cautious";
         }
     };
 }

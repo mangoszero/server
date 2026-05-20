@@ -16,7 +16,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "greater heal on party";
+            return "greater heal on party";
         }
     };
 
@@ -32,7 +32,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "lesser heal on party";
+            return "lesser heal on party";
         }
     };
 
@@ -48,7 +48,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "flash heal on party";
+            return "flash heal on party";
         }
     };
 
@@ -64,7 +64,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "heal on party";
+            return "heal on party";
         }
     };
 
@@ -80,7 +80,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "renew on party";
+            return "renew on party";
         }
     };
 
@@ -99,12 +99,12 @@ namespace ai
         CastRemoveShadowformAction(PlayerbotAI* ai) : Action(ai, "remove shadowform") {}
         virtual bool isUseful()
         {
-             return ai->HasAura("shadowform", AI_VALUE(Unit*, "self target"));
+            return ai->HasAura("shadowform", AI_VALUE(Unit*, "self target"));
         }
 
         virtual bool isPossible()
         {
-             return true;
+            return true;
         }
 
         virtual bool Execute(Event event) {
@@ -130,7 +130,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "power word: shield on party";
+            return "power word: shield on party";
         }
     };
 
@@ -215,7 +215,7 @@ namespace ai
         CastCureDiseaseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cure disease", DISPEL_DISEASE) {}
         virtual string getName()
         {
-             return "cure disease on party";
+            return "cure disease on party";
         }
     };
 
@@ -231,7 +231,7 @@ namespace ai
         CastAbolishDiseaseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "abolish disease", DISPEL_DISEASE) {}
         virtual string getName()
         {
-             return "abolish disease on party";
+            return "abolish disease on party";
         }
 
         virtual NextAction** getAlternatives();
@@ -253,7 +253,7 @@ namespace ai
         CastDispelMagicOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "dispel magic", DISPEL_MAGIC) {}
         virtual string getName()
         {
-             return "dispel magic on party";
+            return "dispel magic on party";
         }
     };
 
@@ -282,7 +282,7 @@ namespace ai
         }
         virtual string getName()
         {
-             return "shackle undead";
+            return "shackle undead";
         }
     };
 
@@ -292,7 +292,7 @@ namespace ai
         CastPowerInfusionAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "power infusion") {}
         virtual string getName()
         {
-             return "power infusion";
+            return "power infusion";
         }
     };
 
@@ -302,7 +302,7 @@ namespace ai
         CastCircleOfHealingAction(PlayerbotAI* ai) : HealPartyMemberAction(ai, "circle of healing") {}
         virtual string getName()
         {
-             return "circle of healing";
+            return "circle of healing";
         }
     };
 }

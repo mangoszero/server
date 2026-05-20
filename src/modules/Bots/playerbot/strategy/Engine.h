@@ -10,6 +10,7 @@
 
 namespace ai
 {
+
     /**
      * @brief Interface for action execution listeners
      */
@@ -99,7 +100,7 @@ namespace ai
         void ChangeStrategy(string &names);
         string GetLastAction()
         {
-             return lastAction;
+            return lastAction;
         }
 
     public:

@@ -27,7 +27,7 @@ namespace ai
     {
     public:
         HealthInRangeTrigger(PlayerbotAI* ai, string name, float maxValue, float minValue = 0) :
-          ValueInRangeTrigger(ai, name, maxValue, minValue) {}
+        ValueInRangeTrigger(ai, name, maxValue, minValue) {}
 
         virtual bool IsActive()
         {
@@ -46,7 +46,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 
@@ -91,7 +91,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "party member to heal";
+            return "party member to heal";
         }
     };
 
@@ -122,7 +122,7 @@ namespace ai
             HealthInRangeTrigger(ai, "target low health", value, minValue) {}
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
     };
 
@@ -137,7 +137,7 @@ namespace ai
         PartyMemberDeadTrigger(PlayerbotAI* ai) : Trigger(ai, "resurrect", 10) {}
         virtual string GetTargetName()
         {
-             return "party member to resurrect";
+            return "party member to resurrect";
         }
 
         virtual bool IsActive();
@@ -148,7 +148,7 @@ namespace ai
         DeadTrigger(PlayerbotAI* ai) : Trigger(ai, "bot dead", 10) {}
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool IsActive();

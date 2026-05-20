@@ -9,7 +9,7 @@ namespace ai
         AttackWeakStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "attack weak";
+            return "attack weak";
         }
 
     public:

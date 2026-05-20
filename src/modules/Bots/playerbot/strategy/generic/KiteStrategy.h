@@ -8,7 +8,7 @@ namespace ai
         KiteStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "kite";
+            return "kite";
         }
 
     public:

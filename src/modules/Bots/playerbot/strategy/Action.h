@@ -22,7 +22,7 @@ namespace ai
     public:
         string getName()
         {
-             return name;
+            return name;
         }
         float getRelevance()
         {
@@ -62,32 +62,32 @@ namespace ai
         virtual bool Execute(Event event) { return true; }
         virtual bool isPossible()
         {
-             return true;
+            return true;
         }
 
         virtual bool isUseful()
         {
-             return true;
+            return true;
         }
 
         virtual NextAction** getPrerequisites()
         {
-             return NULL;
+            return NULL;
         }
 
         virtual NextAction** getAlternatives()
         {
-             return NULL;
+            return NULL;
         }
 
         virtual NextAction** getContinuers()
         {
-             return NULL;
+            return NULL;
         }
 
         virtual ActionThreatType getThreatType()
         {
-             return ACTION_THREAT_NONE;
+            return ACTION_THREAT_NONE;
         }
 
         void Update() {}
@@ -96,11 +96,11 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
         void MakeVerbose()
         {
-             verbose = true;
+            verbose = true;
         }
 
     protected:
@@ -128,29 +128,29 @@ namespace ai
     public:
         Action* getAction()
         {
-             return action;
+            return action;
         }
 
         void setAction(Action* action) { this->action = action; }
         string getName()
         {
-             return name;
+            return name;
         }
 
     public:
         NextAction** getContinuers()
         {
-             return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL);
+            return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL);
         }
 
         NextAction** getAlternatives()
         {
-             return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL);
+            return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL);
         }
 
         NextAction** getPrerequisites()
         {
-             return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL);
+            return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL);
         }
 
     private:
@@ -167,7 +167,7 @@ namespace ai
     {
     public:
         ActionBasket(ActionNode* action, float relevance, bool skipPrerequisites, const Event& event) :
-          action(action), relevance(relevance), skipPrerequisites(skipPrerequisites), event(event) {}
+            action(action), relevance(relevance), skipPrerequisites(skipPrerequisites), event(event) {}
         virtual ~ActionBasket(void) {}
     public:
         float getRelevance()
@@ -182,12 +182,12 @@ namespace ai
 
         const Event& getEvent()
         {
-             return event;
+            return event;
         }
 
         bool isSkipPrerequisites()
         {
-             return skipPrerequisites;
+            return skipPrerequisites;
         }
 
         void AmendRelevance(float k) {relevance *= k; }

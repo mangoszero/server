@@ -21,7 +21,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "quest";
+            return "quest";
         }
     };
 
@@ -34,7 +34,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "accept all quests";
+            return "accept all quests";
         }
     };
 }

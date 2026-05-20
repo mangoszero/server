@@ -15,7 +15,7 @@ namespace ai
     public:
         Unit* GetResult()
         {
-             return result;
+            return result;
         }
 
     public:

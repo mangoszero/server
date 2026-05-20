@@ -8,12 +8,12 @@ namespace ai
     class NeedCureTrigger : public SpellTrigger {
     public:
         NeedCureTrigger(PlayerbotAI* ai, string spell, uint32 dispelType) : SpellTrigger(ai, spell)
-          {
+        {
             this->dispelType = dispelType;
         }
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
         virtual bool IsActive();
 
@@ -27,7 +27,7 @@ namespace ai
             NeedCureTrigger(ai, spell, dispelType) {}
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
     };
 

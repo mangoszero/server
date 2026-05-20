@@ -9,7 +9,7 @@ namespace ai
         MoveRandomStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "move random";
+            return "move random";
         }
 
     public:

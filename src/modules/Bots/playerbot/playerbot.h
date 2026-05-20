@@ -5,6 +5,7 @@
  */
 std::vector<std::string> split(const std::string &s, char delim);
 #ifndef WIN32
+
 /**
  * Performs a case-insensitive string comparison.
  */

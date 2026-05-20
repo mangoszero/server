@@ -9,7 +9,7 @@ namespace ai
         AttackEnemyPlayersStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "pvp";
+            return "pvp";
         }
 
     public:

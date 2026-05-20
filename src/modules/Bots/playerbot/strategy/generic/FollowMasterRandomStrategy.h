@@ -9,7 +9,7 @@ namespace ai
         FollowMasterRandomStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "be near";
+            return "be near";
         }
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
 

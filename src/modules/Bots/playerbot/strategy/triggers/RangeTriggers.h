@@ -37,7 +37,7 @@ namespace ai
         }
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
     protected:
@@ -62,7 +62,7 @@ namespace ai
         PartyMemberToHealOutOfSpellRangeTrigger(PlayerbotAI* ai) : OutOfRangeTrigger(ai, "party member to heal out of spell range", sPlayerbotAIConfig.spellDistance) {}
         virtual string GetTargetName()
         {
-             return "party member to heal";
+            return "party member to heal";
         }
     };
 

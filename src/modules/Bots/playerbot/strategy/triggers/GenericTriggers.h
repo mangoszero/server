@@ -116,12 +116,12 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
         virtual string getName()
         {
-             return spell;
+            return spell;
         }
         virtual bool IsActive();
 
@@ -159,7 +159,7 @@ namespace ai
         }
         virtual string getName()
         {
-             return "attacker count";
+            return "attacker count";
         }
 
     protected:
@@ -181,7 +181,7 @@ namespace ai
         virtual bool IsActive();
         virtual string getName()
         {
-             return "my attacker count";
+            return "my attacker count";
         }
     };
 
@@ -202,7 +202,7 @@ namespace ai
         virtual bool IsActive();
         virtual string getName()
         {
-             return "aoe";
+            return "aoe";
         }
 
     private:
@@ -214,7 +214,7 @@ namespace ai
         NoFoodTrigger(PlayerbotAI* ai) : Trigger(ai, "no food trigger") {}
         virtual bool IsActive()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "food").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "food").empty();
         }
     };
 
@@ -223,7 +223,7 @@ namespace ai
         NoConjuredFoodTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured food trigger") {}
         virtual bool IsActive()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
         }
     };
 
@@ -232,7 +232,7 @@ namespace ai
         NoDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no drink trigger") {}
         virtual bool IsActive()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "drink").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "drink").empty();
         }
     };
 
@@ -241,7 +241,7 @@ namespace ai
         NoConjuredDrinkTrigger(PlayerbotAI* ai) : Trigger(ai, "no conjured drink trigger") {}
         virtual bool IsActive()
         {
-             return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
+            return AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
         }
     };
 
@@ -270,7 +270,7 @@ namespace ai
     public:
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool IsActive();
@@ -298,7 +298,7 @@ namespace ai
         TargetInSightTrigger(PlayerbotAI* ai) : Trigger(ai, "target in sight") {}
         virtual bool IsActive()
         {
-             return AI_VALUE(Unit*, "grind target");
+            return AI_VALUE(Unit*, "grind target");
         }
     };
 
@@ -311,7 +311,7 @@ namespace ai
     public:
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
         virtual bool IsActive();
@@ -325,7 +325,7 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string getName()
         {
-             return spell + " on attacker";
+            return spell + " on attacker";
         }
     };
 
@@ -354,7 +354,7 @@ namespace ai
         virtual bool IsActive();
         virtual string getName()
         {
-             return "random";
+            return "random";
         }
 
     protected:
@@ -367,7 +367,7 @@ namespace ai
         SeldomTrigger(PlayerbotAI* ai) : RandomTrigger(ai, 9000) {}
         virtual string getName()
         {
-             return "seldom";
+            return "seldom";
         }
     };
 
@@ -377,7 +377,7 @@ namespace ai
         OftenTrigger(PlayerbotAI* ai) : RandomTrigger(ai, 50) {}
         virtual string getName()
         {
-             return "often";
+            return "often";
         }
     };
 
@@ -411,7 +411,7 @@ namespace ai
         virtual bool IsActive();
         virtual string getName()
         {
-             return "target is moving";
+            return "target is moving";
         }
     };
 
@@ -442,7 +442,7 @@ namespace ai
     BEGIN_TRIGGER(PanicTrigger, Trigger)
         virtual string getName()
         {
-             return "panic";
+            return "panic";
         }
     END_TRIGGER()
 
@@ -452,7 +452,7 @@ namespace ai
         NoPetTrigger(PlayerbotAI* ai) : Trigger(ai, "no pet", 5) {}
 
         virtual bool IsActive()
-{
+        {
             return !AI_VALUE(Unit*, "pet target") && !AI_VALUE2(bool, "mounted", "self target");
         }
     };
@@ -467,7 +467,7 @@ namespace ai
         virtual bool IsActive();
         virtual string getName()
         {
-             return "item count";
+            return "item count";
         }
 
     protected:
@@ -481,7 +481,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
         virtual bool IsActive();
 
@@ -495,7 +495,7 @@ namespace ai
     public:
         virtual bool IsActive()
         {
-             return true;
+            return true;
         }
     };
 
@@ -616,7 +616,7 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string getName()
         {
-             return spell + " on enemy healer";
+            return spell + " on enemy healer";
         }
     };
 

@@ -41,7 +41,7 @@ namespace ai
     public:
         virtual NextAction** getDefaultActions()
         {
-             return NULL;
+            return NULL;
         }
 
         virtual void InitTriggers(std::list<TriggerNode*> &triggers) {}
@@ -49,7 +49,7 @@ namespace ai
         virtual string getName() = 0;
         virtual int GetType()
         {
-             return STRATEGY_TYPE_GENERIC;
+            return STRATEGY_TYPE_GENERIC;
         }
 
         virtual ActionNode* GetAction(string name);

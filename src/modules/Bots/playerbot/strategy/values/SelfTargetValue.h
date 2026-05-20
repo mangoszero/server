@@ -10,7 +10,7 @@ namespace ai
 
         virtual Unit* Calculate()
         {
-             return ai->GetBot();
+            return ai->GetBot();
         }
     };
 }

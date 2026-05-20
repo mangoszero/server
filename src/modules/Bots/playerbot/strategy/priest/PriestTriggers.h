@@ -51,7 +51,7 @@ namespace ai
         ShadowformTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "shadowform") {}
         virtual bool IsActive()
         {
-             return !ai->HasAura("shadowform", bot);
+            return !ai->HasAura("shadowform", bot);
         }
     };
 

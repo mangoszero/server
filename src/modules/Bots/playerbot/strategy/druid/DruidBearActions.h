@@ -19,7 +19,7 @@ namespace ai {
         CastMaulAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "maul") {}
         virtual bool isUseful()
         {
-             return CastMeleeSpellAction::isUseful() && AI_VALUE2(uint8, "rage", "self target") >= 45;
+            return CastMeleeSpellAction::isUseful() && AI_VALUE2(uint8, "rage", "self target") >= 45;
         }
     };
 

@@ -12,7 +12,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "default";
+            return "default";
         }
     };
 
@@ -25,7 +25,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "ready check";
+            return "ready check";
         }
     };
 }

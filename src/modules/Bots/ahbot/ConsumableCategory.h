@@ -22,7 +22,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "Alchemy";
+            return "Alchemy";
         }
     };
 
@@ -41,7 +41,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "Scroll";
+            return "Scroll";
         }
     };
 
@@ -59,7 +59,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "Food";
+            return "Food";
         }
     };
 
@@ -77,7 +77,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "Bandage";
+            return "Bandage";
         }
     };
 
@@ -96,7 +96,7 @@ namespace ahbot
 
         virtual string GetName()
         {
-             return "OtherConsumable";
+            return "OtherConsumable";
         }
 
     };

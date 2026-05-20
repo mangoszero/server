@@ -41,6 +41,7 @@ public:
 
 namespace ai
 {
+
     /**
      * @brief Calculates the minimum value for a given parameter.
      */
@@ -113,12 +114,12 @@ public:
 public:
     string GetCommand()
     {
-         return command;
+        return command;
     }
 
     Player* GetOwner()
     {
-         return owner;
+        return owner;
     }
     uint32 GetType() const { return type; }
 
@@ -189,30 +190,30 @@ public:
 public:
     Player* GetBot()
     {
-         return bot;
+        return bot;
     }
 
     Player* GetMaster()
     {
-         return master;
+        return master;
     }
 
     void SetMaster(Player* master) { this->master = master; }
     AiObjectContext* GetAiObjectContext()
     {
-         return aiObjectContext;
+        return aiObjectContext;
     }
 
     ChatHelper* GetChatHelper()
     {
-         return &chatHelper;
+        return &chatHelper;
     }
 
     bool IsOpposing(Player* player);
     static bool IsOpposing(uint8 race1, uint8 race2);
     PlayerbotSecurity* GetSecurity()
     {
-         return &security;
+        return &security;
     }
 
     void StartJump(bool forward, float orientation = -1.f);
@@ -235,11 +236,11 @@ public:
     }
     void SetEating()
     {
-         m_eatingUntil = time(0) + 30;
+        m_eatingUntil = time(0) + 30;
     }
     void SetDrinking()
     {
-         m_drinkingUntil = time(0) + 30;
+        m_drinkingUntil = time(0) + 30;
     }
 
 protected:

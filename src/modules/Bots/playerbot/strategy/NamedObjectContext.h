@@ -122,12 +122,12 @@ namespace ai
 
         bool IsShared()
         {
-             return shared;
+            return shared;
         }
 
         bool IsSupportsSiblings()
         {
-             return supportsSiblings;
+            return supportsSiblings;
         }
 
         set<string> GetCreated()

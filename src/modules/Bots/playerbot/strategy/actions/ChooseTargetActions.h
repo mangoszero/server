@@ -12,7 +12,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "dps target";
+            return "dps target";
         }
     };
 
@@ -23,7 +23,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "tank target";
+            return "tank target";
         }
     };
 
@@ -34,7 +34,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "grind target";
+            return "grind target";
         }
         virtual bool Execute(Event event)
         {
@@ -60,7 +60,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "least hp target";
+            return "least hp target";
         }
     };
 
@@ -71,7 +71,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "enemy player target";
+            return "enemy player target";
         }
     };
 
@@ -81,7 +81,7 @@ namespace ai
         AttackRtiTargetAction(PlayerbotAI* ai) : AttackAction(ai, "attack rti target") {}
         virtual string GetTargetName()
         {
-             return "rti target";
+            return "rti target";
         }
     };
 

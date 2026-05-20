@@ -14,12 +14,12 @@ namespace ai
         virtual NextAction** getDefaultActions();
         virtual string getName()
         {
-             return "heal";
+            return "heal";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_HEAL;
+            return STRATEGY_TYPE_HEAL;
         }
     };
 }

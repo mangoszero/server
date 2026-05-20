@@ -82,7 +82,7 @@ namespace ai
         CastMendPetAction(PlayerbotAI* ai) : CastAuraSpellAction(ai, "mend pet") {}
         virtual string GetTargetName()
         {
-             return "pet target";
+            return "pet target";
         }
     };
 
@@ -172,12 +172,12 @@ namespace ai
         CastBestialWrathAction(PlayerbotAI* ai) : CastAuraSpellAction(ai, "bestial wrath") {}
         virtual string GetTargetName()
         {
-             return "pet target";
+            return "pet target";
         }
 
         virtual bool isUseful()
         {
-             return CastAuraSpellAction::isUseful() && AI_VALUE(Unit*, "pet target") != NULL;
+            return CastAuraSpellAction::isUseful() && AI_VALUE(Unit*, "pet target") != NULL;
         }
     };
 
@@ -187,7 +187,7 @@ namespace ai
         CastMongooseBiteAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "mongoose bite") {}
         virtual bool isPossible()
         {
-             return bot->HasAuraState(AURA_STATE_DEFENSE) && CastMeleeSpellAction::isPossible();
+            return bot->HasAuraState(AURA_STATE_DEFENSE) && CastMeleeSpellAction::isPossible();
         }
     };
 

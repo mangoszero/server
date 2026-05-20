@@ -6,7 +6,7 @@
 #define NEXT_TRIGGERS(name, relevance) \
     virtual NextAction* getNextAction() \
     { \
-         return new NextAction(name, relevance); \
+        return new NextAction(name, relevance); \
     } \
 
 #define BEGIN_TRIGGER(clazz, super) \
@@ -37,12 +37,12 @@ namespace ai
         virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) {}
         virtual bool IsActive()
         {
-             return false;
+            return false;
         }
 
         virtual NextAction** getHandlers()
         {
-             return NULL;
+            return NULL;
         }
 
         void Update() {}
@@ -51,7 +51,7 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         bool needCheck()
@@ -86,19 +86,19 @@ namespace ai
     public:
         Trigger* getTrigger()
         {
-             return trigger;
+            return trigger;
         }
 
         void setTrigger(Trigger* trigger) { this->trigger = trigger; }
         string getName()
         {
-             return name;
+            return name;
         }
 
     public:
         NextAction** getHandlers()
         {
-             return NextAction::merge(NextAction::clone(handlers), trigger->getHandlers());
+            return NextAction::merge(NextAction::clone(handlers), trigger->getHandlers());
         }
 
     private:

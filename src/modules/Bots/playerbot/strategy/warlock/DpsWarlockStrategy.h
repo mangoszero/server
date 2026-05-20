@@ -11,7 +11,7 @@ namespace ai
         DpsWarlockStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "dps";
+            return "dps";
         }
 
     public:
@@ -28,7 +28,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "aoe";
+            return "aoe";
         }
     };
 
@@ -41,7 +41,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "dps debuff";
+            return "dps debuff";
         }
     };
 

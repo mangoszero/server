@@ -14,12 +14,12 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "shadow";
+            return "shadow";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED;
+            return STRATEGY_TYPE_DPS|STRATEGY_TYPE_RANGED;
         }
     };
 
@@ -32,7 +32,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "shadow aoe";
+            return "shadow aoe";
         }
     };
 
@@ -45,7 +45,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "shadow debuff";
+            return "shadow debuff";
         }
     };
 }

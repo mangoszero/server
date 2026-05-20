@@ -10,7 +10,7 @@ namespace ai
         GenericRogueNonCombatStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "nc";
+            return "nc";
         }
 
     public:

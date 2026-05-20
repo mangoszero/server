@@ -14,6 +14,7 @@ class Object;
 class Item;
 
 using namespace std;
+
 /**
 * \struct AreaCreatureStats
 * \brief Entry representing creature levels within an area for playerbot spawning decisions

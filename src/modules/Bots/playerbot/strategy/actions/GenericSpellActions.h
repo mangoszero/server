@@ -68,7 +68,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "current target";
+            return "current target";
         }
 
         virtual bool Execute(Event event);
@@ -76,7 +76,7 @@ namespace ai
         virtual bool isUseful();
         virtual ActionThreatType getThreatType()
         {
-             return ACTION_THREAT_SINGLE;
+            return ACTION_THREAT_SINGLE;
         }
 
         virtual NextAction** getPrerequisites()
@@ -141,12 +141,12 @@ namespace ai
         }
         virtual string getName()
         {
-             return spell + " on attacker";
+            return spell + " on attacker";
         }
 
         virtual ActionThreatType getThreatType()
         {
-             return ACTION_THREAT_AOE;
+            return ACTION_THREAT_AOE;
         }
     };
 
@@ -160,7 +160,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 
@@ -175,7 +175,7 @@ namespace ai
         virtual bool isUseful();
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 
@@ -191,13 +191,13 @@ namespace ai
         }
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
 
         virtual bool isUseful();
         virtual ActionThreatType getThreatType()
         {
-             return ACTION_THREAT_AOE;
+            return ACTION_THREAT_AOE;
         }
 
     protected:
@@ -210,7 +210,7 @@ namespace ai
         CastAoeHealSpellAction(PlayerbotAI* ai, string spell, uint8 estAmount = 15.0f) : CastHealingSpellAction(ai, spell, estAmount) {}
         virtual string GetTargetName()
         {
-             return "party member to heal";
+            return "party member to heal";
         }
 
         virtual bool isUseful();
@@ -226,7 +226,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "self target";
+            return "self target";
         }
     };
 
@@ -239,7 +239,7 @@ namespace ai
 
         virtual string getName()
         {
-             return name;
+            return name;
         }
 
     private:
@@ -254,12 +254,12 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "party member to heal";
+            return "party member to heal";
         }
 
         virtual string getName()
         {
-             return PartyMemberActionNameSupport::getName();
+            return PartyMemberActionNameSupport::getName();
         }
     };
 
@@ -270,7 +270,7 @@ namespace ai
 
         virtual string GetTargetName()
         {
-             return "party member to resurrect";
+            return "party member to resurrect";
         }
 
     };
@@ -288,7 +288,7 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string getName()
         {
-             return PartyMemberActionNameSupport::getName();
+            return PartyMemberActionNameSupport::getName();
         }
 
     protected:
@@ -306,7 +306,7 @@ namespace ai
         virtual Value<Unit*>* GetTargetValue();
         virtual string getName()
         {
-             return PartyMemberActionNameSupport::getName();
+            return PartyMemberActionNameSupport::getName();
         }
     };
 
@@ -318,7 +318,7 @@ namespace ai
         CastShootAction(PlayerbotAI* ai) : CastSpellAction(ai, "shoot") {}
         virtual ActionThreatType getThreatType()
         {
-             return ACTION_THREAT_NONE;
+            return ACTION_THREAT_NONE;
         }
     };
 
@@ -351,7 +351,7 @@ namespace ai
 
         virtual string getName()
         {
-             return spell + " on enemy healer";
+            return spell + " on enemy healer";
         }
     };
 }

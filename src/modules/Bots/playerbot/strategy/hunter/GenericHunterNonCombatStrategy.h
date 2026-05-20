@@ -10,7 +10,7 @@ namespace ai
         GenericHunterNonCombatStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "nc";
+            return "nc";
         }
 
     public:

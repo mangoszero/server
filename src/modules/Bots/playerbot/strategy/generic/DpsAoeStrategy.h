@@ -9,12 +9,12 @@ namespace ai
         DpsAoeStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
         virtual string getName()
         {
-             return "dps aoe";
+            return "dps aoe";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_DPS;
+            return STRATEGY_TYPE_DPS;
         }
 
     public:

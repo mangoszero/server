@@ -40,7 +40,7 @@ namespace ai
 
         virtual bool isUseful()
         {
-             return AI_VALUE2(bool, "combat", "self target");
+            return AI_VALUE2(bool, "combat", "self target");
         }
     };
 
@@ -86,7 +86,7 @@ namespace ai
             if (AI_VALUE2(bool, "combat", "self target"))
                 return bot->getAttackers().empty();
             return bot->GetGroup() &&
-                   AI_VALUE2(list<Item*>, "inventory items", "food").empty();
+                AI_VALUE2(list<Item*>, "inventory items", "food").empty();
         }
 
     private:
@@ -100,7 +100,7 @@ namespace ai
 
         virtual bool isUseful()
         {
-             return AI_VALUE2(bool, "combat", "self target");
+            return AI_VALUE2(bool, "combat", "self target");
         }
         virtual bool Execute(Event event)
         {

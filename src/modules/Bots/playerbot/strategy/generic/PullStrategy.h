@@ -17,7 +17,7 @@ namespace ai
         virtual void InitMultipliers(std::list<Multiplier*> &multipliers);
         virtual string getName()
         {
-             return "pull";
+            return "pull";
         }
         virtual NextAction** getDefaultActions();
 

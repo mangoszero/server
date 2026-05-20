@@ -4,35 +4,36 @@
 
 namespace ai
 {
-    class ChatCommandTrigger : public Trigger {
-    public:
-        ChatCommandTrigger(PlayerbotAI* ai, string command) : Trigger(ai, command), triggered(false) {}
+    class ChatCommandTrigger : public Trigger
+    {
+        public:
+            ChatCommandTrigger(PlayerbotAI* ai, string command) : Trigger(ai, command), triggered(false) {}
 
-        virtual void ExternalEvent(string param, Player* owner = NULL)
-        {
-            this->param = param;
-            this->owner = owner;
-            triggered = true;
-        }
-
-        virtual Event Check()
-        {
-            if (!triggered)
+            virtual void ExternalEvent(string param, Player* owner = NULL)
             {
-                return Event();
+                this->param = param;
+                this->owner = owner;
+                triggered = true;
             }
 
-            return Event(getName(), param, owner);
-        }
+            virtual Event Check()
+            {
+                if (!triggered)
+                {
+                    return Event();
+                }
 
-        virtual void Reset()
-        {
-            triggered = false;
-        }
+                return Event(getName(), param, owner);
+            }
 
-   private:
-        string param;
-        bool triggered;
-        Player* owner;
+            virtual void Reset()
+            {
+                triggered = false;
+            }
+
+        private:
+            string param;
+            bool triggered;
+            Player* owner;
     };
 }

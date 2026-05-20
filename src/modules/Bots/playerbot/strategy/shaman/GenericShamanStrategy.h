@@ -24,7 +24,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "bdps";
+            return "bdps";
         }
 
     };
@@ -38,7 +38,7 @@ namespace ai
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
         virtual string getName()
         {
-             return "bmana";
+            return "bmana";
         }
 
     };

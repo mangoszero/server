@@ -11,7 +11,7 @@ namespace ai
         GenericWarlockStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "warlock";
+            return "warlock";
         }
 
     public:

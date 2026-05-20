@@ -144,7 +144,7 @@ namespace ai
         CastBlessingOfMightOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "blessing of might") {}
         virtual string getName()
         {
-             return "blessing of might on party";
+            return "blessing of might on party";
         }
     };
 
@@ -160,7 +160,7 @@ namespace ai
         CastBlessingOfWisdomOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "blessing of wisdom") {}
         virtual string getName()
         {
-             return "blessing of wisdom on party";
+            return "blessing of wisdom on party";
         }
     };
 
@@ -176,7 +176,7 @@ namespace ai
         CastBlessingOfKingsOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "blessing of kings") {}
         virtual string getName()
         {
-             return "blessing of kings on party";
+            return "blessing of kings on party";
         }
     };
 
@@ -192,7 +192,7 @@ namespace ai
         CastBlessingOfSanctuaryOnPartyAction(PlayerbotAI* ai) : BuffOnPartyAction(ai, "blessing of sanctuary") {}
         virtual string getName()
         {
-             return "blessing of sanctuary on party";
+            return "blessing of sanctuary on party";
         }
     };
 
@@ -209,7 +209,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "holy light on party";
+            return "holy light on party";
         }
     };
 
@@ -226,7 +226,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "flash of light on party";
+            return "flash of light on party";
         }
     };
 
@@ -243,7 +243,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "lay on hands on party";
+            return "lay on hands on party";
         }
     };
 
@@ -260,7 +260,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "divine protection on party";
+            return "divine protection on party";
         }
     };
 
@@ -313,7 +313,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "purify poison on party";
+            return "purify poison on party";
         }
     };
 
@@ -324,7 +324,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "purify disease on party";
+            return "purify disease on party";
         }
     };
 
@@ -353,7 +353,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "cleanse poison on party";
+            return "cleanse poison on party";
         }
     };
 
@@ -364,7 +364,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "cleanse disease on party";
+            return "cleanse disease on party";
         }
     };
 
@@ -375,7 +375,7 @@ namespace ai
 
         virtual string getName()
         {
-             return "cleanse magic on party";
+            return "cleanse magic on party";
         }
     };
 

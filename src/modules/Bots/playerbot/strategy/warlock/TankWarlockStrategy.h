@@ -10,12 +10,12 @@ namespace ai
         TankWarlockStrategy(PlayerbotAI* ai);
         virtual string getName()
         {
-             return "tank";
+            return "tank";
         }
 
         virtual int GetType()
         {
-             return STRATEGY_TYPE_TANK | STRATEGY_TYPE_RANGED;
+            return STRATEGY_TYPE_TANK | STRATEGY_TYPE_RANGED;
         }
 
     public:
