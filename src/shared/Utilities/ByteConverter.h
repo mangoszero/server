@@ -39,6 +39,7 @@
 
 namespace ByteConverter
 {
+
     /**
      * @brief Reverse byte order for a value of size T
      * @param val Pointer to value to convert
@@ -54,6 +55,7 @@ namespace ByteConverter
      * @brief Template specialization for size 0 (no-op)
      */
     template<> inline void convert<0>(char*) {}
+
     /**
      * @brief Template specialization for size 1 (no-op, single byte)
      */
@@ -71,11 +73,13 @@ namespace ByteConverter
 }
 
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
+
 /**
  * @brief Convert from host to little-endian byte order (big-endian host)
  * @param val Value to convert
  */
 template<typename T> inline void EndianConvert(T& val) { ByteConverter::apply<T>(&val); }
+
 /**
  * @brief Reverse byte order (no-op on big-endian host)
  * @param val Value to convert
@@ -90,6 +94,7 @@ template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::a
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvert(T*);
+
 /**
  * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
@@ -99,14 +104,17 @@ template<typename T> void EndianConvertReverse(T*);
  * @brief No-op for uint8 (single byte)
  */
 inline void EndianConvert(uint8&) {}
+
 /**
  * @brief No-op for int8 (single byte)
  */
 inline void EndianConvert(int8&)  {}
+
 /**
  * @brief No-op for uint8 (single byte)
  */
 inline void EndianConvertReverse(uint8&) {}
+
 /**
  * @brief No-op for int8 (single byte)
  */

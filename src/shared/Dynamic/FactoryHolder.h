@@ -31,6 +31,7 @@
 #include "Policies/Singleton.h"
 
 template < class T, class Key = std::string >
+
 /**
  * @brief FactoryHolder holds a factory object of a specific type
  *
@@ -43,6 +44,7 @@ class FactoryHolder
          *
          */
         typedef ObjectRegistry<FactoryHolder<T, Key >, Key > FactoryHolderRegistry;
+
         /**
          * @brief
          *
@@ -55,11 +57,13 @@ class FactoryHolder
          * @param k
          */
         FactoryHolder(Key k) : i_key(k) {}
+
         /**
          * @brief
          *
          */
         virtual ~FactoryHolder() {}
+
         /**
          * @brief
          *
@@ -72,6 +76,7 @@ class FactoryHolder
          *
          */
         void RegisterSelf(void) { FactoryHolderRepository::Instance().InsertItem(this, i_key); }
+
         /**
          * @brief
          *
@@ -90,6 +95,7 @@ class FactoryHolder
 };
 
 template<class T>
+
 /**
  * @brief Permissible is a classic way of letting the object decide whether how good they handle things.
  *
@@ -103,6 +109,7 @@ class Permissible
          *
          */
         virtual ~Permissible() {}
+
         /**
          * @brief
          *

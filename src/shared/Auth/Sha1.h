@@ -48,6 +48,7 @@ class Sha1Hash
          * @brief Constructor - initializes SHA-1 context
          */
         Sha1Hash();
+
         /**
          * @brief Destructor
          */
@@ -66,6 +67,7 @@ class Sha1Hash
          * @param len Length of data
          */
         void UpdateData(const uint8* dta, int len);
+
         /**
          * @brief Update hash with string data
          * @param str String to add to hash
@@ -76,6 +78,7 @@ class Sha1Hash
          * @brief Initialize/reset the SHA-1 context
          */
         void Initialize();
+
         /**
          * @brief Finalize the hash computation
          */
@@ -86,6 +89,7 @@ class Sha1Hash
          * @return Pointer to digest buffer (20 bytes)
          */
         uint8* GetDigest(void) { return mDigest; };
+
         /**
          * @brief Get the digest length
          * @return SHA_DIGEST_LENGTH (20 bytes)

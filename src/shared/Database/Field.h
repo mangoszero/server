@@ -55,6 +55,7 @@ class Field
          * @brief Default constructor - creates NULL field
          */
         Field() : mValue(NULL), mType(MYSQL_TYPE_NULL) {}
+
         /**
          * @brief Constructor with value and type
          * @param value Pointer to string value
@@ -72,6 +73,7 @@ class Field
          * @return MySQL field type enumeration
          */
         enum enum_field_types GetType() const { return mType; }
+
         /**
          * @brief Check if field value is NULL
          * @return True if NULL, false otherwise
@@ -83,6 +85,7 @@ class Field
          * @return Pointer to string value (may be NULL)
          */
         const char* GetString() const { return mValue; }
+
         /**
          * @brief Get C++ string value
          * @return String value (empty if NULL)
@@ -91,23 +94,26 @@ class Field
         {
             return mValue ? mValue : "";                    // std::string s = 0 have undefine result in C++
         }
+
         /**
          * @brief Get float value
          * @return Float value (0.0 if NULL)
          */
         float GetFloat() const { return mValue ? static_cast<float>(atof(mValue)) : 0.0f; }
+
         /**
          * @brief Get boolean value
          * @return Boolean value (false if NULL or 0)
          */
         bool GetBool() const { return mValue ? atoi(mValue) > 0 : false; }
+
         /**
         * @brief Get double value
         * @return Double value (0.0 if NULL)
         */
         double GetDouble() const
         {
-             return mValue ? static_cast<double>(atof(mValue)) : 0.0f;
+            return mValue ? static_cast<double>(atof(mValue)) : 0.0f;
         }
 
         /**
@@ -115,31 +121,37 @@ class Field
         * @return 8-bit signed integer (0 if NULL)
         */
         int8 GetInt8() const { return mValue ? static_cast<int8>(atol(mValue)) : int8(0); }
+
         /**
          * @brief Get 32-bit signed integer value
          * @return 32-bit signed integer (0 if NULL)
          */
         int32 GetInt32() const { return mValue ? static_cast<int32>(atol(mValue)) : int32(0); }
+
         /**
          * @brief Get 8-bit unsigned integer value
          * @return 8-bit unsigned integer (0 if NULL)
          */
         uint8 GetUInt8() const { return mValue ? static_cast<uint8>(atol(mValue)) : uint8(0); }
+
         /**
          * @brief Get 16-bit unsigned integer value
          * @return 16-bit unsigned integer (0 if NULL)
          */
         uint16 GetUInt16() const { return mValue ? static_cast<uint16>(atol(mValue)) : uint16(0); }
+
         /**
          * @brief Get 16-bit signed integer value
          * @return 16-bit signed integer (0 if NULL)
          */
         int16 GetInt16() const { return mValue ? static_cast<int16>(atol(mValue)) : int16(0); }
+
         /**
          * @brief Get 32-bit unsigned integer value
          * @return 32-bit unsigned integer (0 if NULL)
          */
         uint32 GetUInt32() const { return mValue ? static_cast<uint32>(atol(mValue)) : uint32(0); }
+
         /**
          * @brief Get 64-bit unsigned integer value
          * @return 64-bit unsigned integer (0 if NULL)
@@ -154,6 +166,7 @@ class Field
 
             return value;
         }
+
         /**
         * @brief Get 64-bit signed integer value
         * @return 64-bit signed integer (0 if NULL)
@@ -191,6 +204,7 @@ class Field
          * @brief Copy constructor (disabled)
          */
         Field(Field const&);
+
         /**
          * @brief Assignment operator (disabled)
          */

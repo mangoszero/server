@@ -44,21 +44,25 @@ class ARC4
          * @param len Length of the key in bytes
          */
         ARC4(uint8 len);
+
         /**
          * @brief Constructor with seed data
          * @param seed Pointer to the seed/key data
          * @param len Length of the seed data in bytes
          */
         ARC4(uint8 *seed, uint8 len);
+
         /**
          * @brief Destructor
          */
         ~ARC4();
+
         /**
          * @brief Initialize the cipher with seed data
          * @param seed Pointer to the seed/key data
          */
         void Init(uint8 *seed);
+
         /**
          * @brief Update/encrypt data using the cipher
          * @param len Length of the data to process

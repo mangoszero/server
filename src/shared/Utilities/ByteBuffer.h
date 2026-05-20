@@ -67,6 +67,7 @@ class ByteBufferException
 };
 
 template<class T>
+
 /**
  * @brief Template for marking unused template parameters
  *
@@ -76,6 +77,7 @@ template<class T>
  */
 struct Unused
 {
+
 /**
  * @brief Constructs an Unused instance
  */
@@ -501,6 +503,7 @@ class ByteBuffer
         }
 
         template<class T>
+
         /**
          * @brief
          *
@@ -568,13 +571,14 @@ class ByteBuffer
         }
 
         template<typename T>
+
         /**
          * @brief
          *
          */
         void read_skip()
         {
-             read_skip(sizeof(T));
+            read_skip(sizeof(T));
         }
 
         /**
@@ -680,6 +684,7 @@ class ByteBuffer
          * @return size_t
          */
         size_t size() const { return _storage.size(); }
+
         /**
          * @brief
          *
@@ -842,11 +847,13 @@ class ByteBuffer
          *
          */
         void print_storage() const;
+
         /**
          * @brief
          *
          */
         void textlike() const;
+
         /**
          * @brief
          *
@@ -871,6 +878,7 @@ class ByteBuffer
 };
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -889,6 +897,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::vector<T> const& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -911,6 +920,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::vector<T>& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -929,6 +939,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::list<T> const& v)
 }
 
 template <typename T>
+
 /**
  * @brief
  *
@@ -951,6 +962,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::list<T>& v)
 }
 
 template <typename K, typename V>
+
 /**
  * @brief
  *
@@ -970,6 +982,7 @@ inline ByteBuffer& operator<<(ByteBuffer& b, std::map<K, V>& m)
 }
 
 template <typename K, typename V>
+
 /**
  * @brief
  *
@@ -994,6 +1007,7 @@ inline ByteBuffer& operator>>(ByteBuffer& b, std::map<K, V>& m)
 }
 
 template<>
+
 /**
  * @brief
  *
@@ -1005,6 +1019,7 @@ inline void ByteBuffer::read_skip<char*>()
 }
 
 template<>
+
 /**
  * @brief
  *
@@ -1015,6 +1030,7 @@ inline void ByteBuffer::read_skip<char const*>()
 }
 
 template<>
+
 /**
  * @brief
  *

@@ -45,6 +45,7 @@ class AuthCrypt
          * @brief Constructor - initializes the crypt object
          */
         AuthCrypt();
+
         /**
          * @brief Destructor
          */
@@ -82,7 +83,7 @@ class AuthCrypt
          */
         bool IsInitialized()
         {
-             return _initialized;
+            return _initialized;
         }
 
     private:

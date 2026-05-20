@@ -226,6 +226,7 @@ void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::
  * @param param1 The value to set.
  */
 template<typename T1>
+
 /**
  * @brief Set the value of the field.
  * @param param1 The value to set.

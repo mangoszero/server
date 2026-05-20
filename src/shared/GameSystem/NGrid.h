@@ -89,7 +89,7 @@ class GridInfo
          */
         void incUnloadActiveLock()
         {
-             ++i_unloadActiveLockCount;
+            ++i_unloadActiveLockCount;
         }
 
         /**
@@ -98,10 +98,10 @@ class GridInfo
          */
         void decUnloadActiveLock()
         {
-             if (i_unloadActiveLockCount)
-             {
+            if (i_unloadActiveLockCount)
+            {
                 --i_unloadActiveLockCount;
-             }
+            }
         }
 
         /**
@@ -110,12 +110,14 @@ class GridInfo
          * @param pTimer
          */
         void setTimer(const TimeTracker& pTimer) { i_timer = pTimer; }
+
         /**
          * @brief
          *
          * @param interval
          */
         void ResetTimeTracker(time_t interval) { i_timer.Reset(interval); }
+
         /**
          * @brief
          *
@@ -146,10 +148,11 @@ typedef enum
 template
 <
 uint32 N,
-       class ACTIVE_OBJECT,
-       class WORLD_OBJECT_TYPES,
-       class GRID_OBJECT_TYPES
-       >
+        class ACTIVE_OBJECT,
+        class WORLD_OBJECT_TYPES,
+        class GRID_OBJECT_TYPES
+        >
+
 /**
  * @brief
  *
@@ -213,30 +216,35 @@ class NGrid
          * @return const uint32
          */
         const uint32& GetGridId() const { return i_gridId; }
+
         /**
          * @brief
          *
          * @param id
          */
         void SetGridId(const uint32 id) { i_gridId = id; }
+
         /**
          * @brief
          *
          * @return grid_state_t
          */
         grid_state_t GetGridState() const { return i_cellstate; }
+
         /**
          * @brief
          *
          * @param s
          */
         void SetGridState(grid_state_t s) { i_cellstate = s; }
+
         /**
          * @brief
          *
          * @return uint32
          */
         uint32 getX() const { return i_x; }
+
         /**
          * @brief
          *
@@ -263,6 +271,7 @@ class NGrid
          * @return bool
          */
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
+
         /**
          * @brief
          *
@@ -277,7 +286,7 @@ class NGrid
          */
         GridInfo* getGridInfoRef()
         {
-             return &i_GridInfo;
+            return &i_GridInfo;
         }
 
         /**
@@ -307,7 +316,7 @@ class NGrid
          */
         void incUnloadActiveLock()
         {
-             i_GridInfo.incUnloadActiveLock();
+            i_GridInfo.incUnloadActiveLock();
         }
 
         /**
@@ -316,7 +325,7 @@ class NGrid
          */
         void decUnloadActiveLock()
         {
-             i_GridInfo.decUnloadActiveLock();
+            i_GridInfo.decUnloadActiveLock();
         }
 
         /**

@@ -31,6 +31,7 @@
 #include "Utilities/LinkedReference/Reference.h"
 
 template <class TO, class FROM>
+
 /**
  * @brief
  *
@@ -44,18 +45,20 @@ class RefManager : public LinkedListHead
          *
          */
         typedef LinkedListHead::Iterator<Reference<TO, FROM> > iterator;
+
         /**
          * @brief
          *
          */
         RefManager() {}
+
         /**
          * @brief
          *
          */
         virtual ~RefManager()
         {
-             clearReferences();
+            clearReferences();
         }
 
         /**
@@ -64,18 +67,21 @@ class RefManager : public LinkedListHead
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       getFirst()       { return ((Reference<TO, FROM>*) LinkedListHead::getFirst()); }
+
         /**
          * @brief
          *
          * @return const Reference<TO, FROM>
          */
         Reference<TO, FROM> const* getFirst() const { return ((Reference<TO, FROM> const*) LinkedListHead::getFirst()); }
+
         /**
          * @brief
          *
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       getLast()       { return ((Reference<TO, FROM>*) LinkedListHead::getLast()); }
+
         /**
          * @brief
          *
@@ -90,7 +96,7 @@ class RefManager : public LinkedListHead
          */
         iterator begin()
         {
-             return iterator(getFirst());
+            return iterator(getFirst());
         }
 
         /**
@@ -100,7 +106,7 @@ class RefManager : public LinkedListHead
          */
         iterator end()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 
         /**
@@ -110,7 +116,7 @@ class RefManager : public LinkedListHead
          */
         iterator rbegin()
         {
-             return iterator(getLast());
+            return iterator(getLast());
         }
 
         /**
@@ -120,7 +126,7 @@ class RefManager : public LinkedListHead
          */
         iterator rend()
         {
-             return iterator(NULL);
+            return iterator(NULL);
         }
 
         /**

@@ -34,6 +34,7 @@
 namespace ACE_Based
 {
     template < class T, class LockType, typename StorageType = std::deque<T> >
+
     /**
      * @brief
      *
@@ -94,6 +95,7 @@ namespace ACE_Based
             }
 
             template<class Checker>
+
             /**
              * @brief
              *

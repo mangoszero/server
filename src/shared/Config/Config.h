@@ -47,6 +47,7 @@ class Config
          * Initializes the configuration manager with an empty configuration heap.
          */
         Config();
+
         /**
          * @brief Destructs the Config instance
          *
@@ -64,6 +65,7 @@ class Config
          * @return bool True if file was loaded successfully, false otherwise
          */
         bool SetSource(const char* file);
+
         /**
          * @brief Reloads the configuration from the source file
          *
@@ -85,6 +87,7 @@ class Config
          * @return std::string The configuration value or default value
          */
         std::string GetStringDefault(const char* name, const char* def);
+
         /**
          * @brief Retrieves a boolean configuration value with default fallback
          *
@@ -96,6 +99,7 @@ class Config
          * @return bool The configuration value or default value
          */
         bool GetBoolDefault(const char* name, const bool def = false);
+
         /**
          * @brief Retrieves an integer configuration value with default fallback
          *
@@ -107,6 +111,7 @@ class Config
          * @return int32 The configuration value or default value
          */
         int32 GetIntDefault(const char* name, const int32 def);
+
         /**
          * @brief Retrieves a floating-point configuration value with default fallback
          *

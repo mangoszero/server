@@ -52,7 +52,7 @@ class SqlOperation
          */
         virtual void OnRemove()
         {
-             delete this;
+            delete this;
         }
 
         /**
@@ -94,8 +94,8 @@ class SqlPlainRequest : public SqlOperation
          */
         ~SqlPlainRequest()
         {
-             char* tofree = const_cast<char*>(m_sql);
-             delete[] tofree;
+            char* tofree = const_cast<char*>(m_sql);
+            delete[] tofree;
         }
 
         /**
@@ -234,8 +234,8 @@ class SqlQuery : public SqlOperation
          */
         ~SqlQuery()
         {
-             char* tofree = const_cast<char*>(m_sql);
-             delete[] tofree;
+            char* tofree = const_cast<char*>(m_sql);
+            delete[] tofree;
         }
 
         /**

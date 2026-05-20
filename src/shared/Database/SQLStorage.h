@@ -44,6 +44,7 @@ class SQLStorageBase
          * @return const char
          */
         char const* GetTableName() const { return m_tableName; }
+
         /**
          * @brief
          *
@@ -58,12 +59,14 @@ class SQLStorageBase
          * @return FieldFormat
          */
         FieldFormat GetDstFormat(uint32 idx) const { return (FieldFormat)m_dst_format[idx]; }
+
         /**
          * @brief
          *
          * @return const char
          */
         const char* GetDstFormat() const { return m_dst_format; }
+
         /**
          * @brief
          *
@@ -71,6 +74,7 @@ class SQLStorageBase
          * @return FieldFormat
          */
         FieldFormat GetSrcFormat(uint32 idx) const { return (FieldFormat)m_src_format[idx]; }
+
         /**
          * @brief
          *
@@ -84,6 +88,7 @@ class SQLStorageBase
          * @return uint32
          */
         uint32 GetMaxEntry() const { return m_maxEntry; }
+
         /**
          * @brief
          *
@@ -92,6 +97,7 @@ class SQLStorageBase
         uint32 GetRecordCount() const { return m_recordCount; }
 
         template<typename T>
+
         /**
          * @brief
          *
@@ -114,7 +120,7 @@ class SQLStorageBase
                  */
                 void operator ++()
                 {
-                     pointer += recordSize;
+                    pointer += recordSize;
                 }
 
                 /**
@@ -188,7 +194,7 @@ class SQLStorageBase
          */
         virtual ~SQLStorageBase()
         {
-             Free();
+            Free();
         }
 
         /**
@@ -305,10 +311,11 @@ class SQLStorage : public SQLStorageBase
          */
         ~SQLStorage()
         {
-             Free();
+            Free();
         }
 
         template<class T>
+
         /**
          * @brief
          *
@@ -403,7 +410,7 @@ class SQLHashStorage : public SQLStorageBase
          */
         ~SQLHashStorage()
         {
-             Free();
+            Free();
         }
 
         template<class T>
@@ -516,13 +523,14 @@ class SQLMultiStorage : public SQLStorageBase
          */
         ~SQLMultiStorage()
         {
-             Free();
+            Free();
         }
 
         // forward declaration
         template<typename T> class SQLMSIteratorBounds;
 
         template<typename T>
+
         /**
          * @brief
          *
@@ -553,7 +561,7 @@ class SQLMultiStorage : public SQLStorageBase
                  */
                 void operator ++()
                 {
-                     ++citerator;
+                    ++citerator;
                 }
 
                 /**
@@ -597,6 +605,7 @@ class SQLMultiStorage : public SQLStorageBase
         };
 
         template<typename T>
+
         /**
          * @brief
          *
@@ -620,6 +629,7 @@ class SQLMultiStorage : public SQLStorageBase
         };
 
         template<typename T>
+
         /**
          * @brief
          *
@@ -673,6 +683,7 @@ class SQLMultiStorage : public SQLStorageBase
 };
 
 template <class DerivedLoader, class StorageClass>
+
 /**
  * @brief
  *

@@ -64,6 +64,7 @@ class DBCFileLoader
          * @brief Constructor
          */
         DBCFileLoader();
+
         /**
          * @brief Destructor - frees loaded data
          */
@@ -98,6 +99,7 @@ class DBCFileLoader
                     EndianConvert(val);
                     return val;
                 }
+
                 /**
                  * @brief Get unsigned 32-bit integer value from field
                  * @param field Field index
@@ -110,6 +112,7 @@ class DBCFileLoader
                     EndianConvert(val);
                     return val;
                 }
+
                 /**
                  * @brief Get unsigned 8-bit integer value from field
                  * @param field Field index
@@ -159,22 +162,26 @@ class DBCFileLoader
          * @return Record count
          */
         uint32 GetNumRows() const { return recordCount;}
+
         /**
          * @brief Get number of fields per record
          * @return Field count
          */
         uint32 GetCols() const { return fieldCount; }
+
         /**
          * @brief Get offset of a field within a record
          * @param id Field index
          * @return Byte offset from record start
          */
         uint32 GetOffset(size_t id) const { return (fieldsOffset != NULL && id < fieldCount) ? fieldsOffset[id] : 0; }
+
         /**
          * @brief Check if file is loaded
          * @return True if loaded, false otherwise
          */
         bool IsLoaded() const {return (data != NULL);}
+
         /**
          * @brief Automatically produce data array from DBC file
          * @param fmt Format string for conversion
@@ -183,6 +190,7 @@ class DBCFileLoader
          * @return Allocated data array
          */
         char* AutoProduceData(const char* fmt, uint32& count, char**& indexTable);
+
         /**
          * @brief Automatically produce string table from DBC file
          * @param fmt Format string for conversion
@@ -190,6 +198,7 @@ class DBCFileLoader
          * @return Allocated string table
          */
         char* AutoProduceStrings(const char* fmt, char* dataTable);
+
         /**
          * Calculate and return the total amount of memory required by the types specified within the format string
          *

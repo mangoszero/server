@@ -159,6 +159,7 @@ class BigNumber
          * @return Reference to this BigNumber
          */
         BigNumber operator/=(const BigNumber& bn);
+
         /**
          * @brief Division operator
          * @param bn BigNumber to divide by
@@ -221,7 +222,7 @@ class BigNumber
          */
         struct bignum_st* BN()
         {
-             return _bn;
+            return _bn;
         }
 
         /**

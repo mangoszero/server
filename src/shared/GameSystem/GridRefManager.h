@@ -30,6 +30,7 @@
 template<class OBJECT> class GridReference;
 
 template<class OBJECT>
+
 /**
  * @brief
  *
@@ -71,7 +72,7 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          */
         iterator begin()
         {
-             return iterator(getFirst());
+            return iterator(getFirst());
         }
 
         /**
@@ -81,7 +82,7 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          */
         iterator end()
         {
-             return iterator(nullptr);
+            return iterator(nullptr);
         }
 
         /**
@@ -91,7 +92,7 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          */
         iterator rbegin()
         {
-             return iterator(getLast());
+            return iterator(getLast());
         }
 
         /**
@@ -101,7 +102,7 @@ class GridRefManager : public RefManager<GridRefManager<OBJECT>, OBJECT>
          */
         iterator rend()
         {
-             return iterator(nullptr);
+            return iterator(nullptr);
         }
 
 };

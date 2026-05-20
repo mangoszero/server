@@ -76,6 +76,7 @@ class QueryResult
          * @return Field count
          */
         uint32 GetFieldCount() const { return mFieldCount; }
+
         /**
          * @brief Get number of rows in result set
          * @return Row count
@@ -115,17 +116,18 @@ class QueryNamedResult
          */
         ~QueryNamedResult()
         {
-             delete mQuery;
+            delete mQuery;
         }
 
         // compatible interface with QueryResult
+
         /**
          * @brief Move to next row
          * @return True if moved to next row, false if no more rows
          */
         bool NextRow()
         {
-             return mQuery->NextRow();
+            return mQuery->NextRow();
         }
 
         /**

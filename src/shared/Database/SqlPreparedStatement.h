@@ -83,6 +83,7 @@ class SqlStmtFieldData
          * @brief Default constructor.
          */
         SqlStmtFieldData() : m_type(FIELD_NONE) { m_binaryData.ui64 = 0; }
+
         /**
          * @brief Destructor.
          */
@@ -107,59 +108,69 @@ class SqlStmtFieldData
          * @return The boolean value.
          */
         bool toBool() const { MANGOS_ASSERT(m_type == FIELD_BOOL); return static_cast<bool>(m_binaryData.ui8); }
+
         /**
          * @brief Get the value as an unsigned 8-bit integer.
          * @return The unsigned 8-bit integer value.
          */
         uint8 toUint8() const { MANGOS_ASSERT(m_type == FIELD_UI8); return m_binaryData.ui8; }
+
         /**
          * @brief Get the value as a signed 8-bit integer.
          * @return The signed 8-bit integer value.
          */
         int8 toInt8() const { MANGOS_ASSERT(m_type == FIELD_I8); return m_binaryData.i8; }
+
         /**
          * @brief Get the value as an unsigned 16-bit integer.
          * @return The unsigned 16-bit integer value.
          */
         uint16 toUint16() const { MANGOS_ASSERT(m_type == FIELD_UI16); return m_binaryData.ui16; }
+
         /**
          * @brief Get the value as a signed 16-bit integer.
          * @return The signed 16-bit integer value.
          */
         int16 toInt16() const { MANGOS_ASSERT(m_type == FIELD_I16); return m_binaryData.i16; }
+
         /**
          * @brief Get the value as an unsigned 32-bit integer.
          * @return The unsigned 32-bit integer value.
          */
         uint32 toUint32() const { MANGOS_ASSERT(m_type == FIELD_UI32); return m_binaryData.ui32; }
+
         /**
          * @brief Get the value as a signed 32-bit integer.
          * @return The signed 32-bit integer value.
          */
         int32 toInt32() const { MANGOS_ASSERT(m_type == FIELD_I32); return m_binaryData.i32; }
+
         /**
          * @brief Get the value as an unsigned 64-bit integer.
          * @return The unsigned 64-bit integer value.
          */
         uint64 toUint64() const { MANGOS_ASSERT(m_type == FIELD_UI64); return m_binaryData.ui64; }
+
         /**
          * @brief Get the value as a signed 64-bit integer.
          * @return The signed 64-bit integer value.
          */
         int64 toInt64() const { MANGOS_ASSERT(m_type == FIELD_I64); return m_binaryData.i64; }
+
         /**
          * @brief Get the value as a float.
          * @return The float value.
          */
         float toFloat() const { MANGOS_ASSERT(m_type == FIELD_FLOAT); return m_binaryData.f; }
+
         /**
          * @brief Get the value as a double.
          * @return The double value.
          */
         double toDouble() const
         {
-             MANGOS_ASSERT(m_type == FIELD_DOUBLE);
-             return m_binaryData.d;
+            MANGOS_ASSERT(m_type == FIELD_DOUBLE);
+            return m_binaryData.d;
         }
 
         /**
@@ -173,6 +184,7 @@ class SqlStmtFieldData
          * @return The type of the field.
          */
         SqlStmtFieldType type() const { return m_type; }
+
         /**
          * @brief Get the underlying buffer of the field.
          * @return The buffer of the field.
@@ -264,11 +276,13 @@ class SqlStmtParameters
          * @param stmt The statement to reset the parameters for.
          */
         void reset(const SqlStatement& stmt);
+
         /**
          * @brief Swap the contents of the internal parameter container.
          * @param obj The object to swap with.
          */
         void swap(SqlStmtParameters& obj);
+
         /**
          * @brief Get the bound parameters.
          * @return The bound parameters.
@@ -302,11 +316,13 @@ class SqlStatementID
          * @return The ID of the statement.
          */
         int ID() const { return m_nIndex; }
+
         /**
          * @brief Get the number of arguments for the statement.
          * @return The number of arguments.
          */
         uint32 arguments() const { return m_nArguments; }
+
         /**
          * @brief Check if the statement is initialized.
          * @return True if the statement is initialized, false otherwise.
@@ -315,6 +331,7 @@ class SqlStatementID
 
     private:
         friend class Database;
+
         /**
          * @brief Initialize the statement ID.
          * @param nID The ID of the statement.
@@ -338,7 +355,7 @@ class SqlStatement
          */
         ~SqlStatement()
         {
-             delete m_pParams;
+            delete m_pParams;
         }
 
         /**
@@ -450,6 +467,7 @@ class SqlStatement
         }
 
         // bind parameters with specified type
+
         /**
          * @brief Add a boolean parameter.
          * @param var The boolean parameter to add.
@@ -532,11 +550,12 @@ class SqlStatement
          * @brief Add a string parameter from a string
          * @param ss The string containing the string parameter to add.
          */
-         void addString(const std::string& var) { arg(var.c_str()); } // Add this line
+        void addString(const std::string& var) { arg(var.c_str()); } // Add this line
 
     protected:
         // don't allow anyone except Database class to create static SqlStatement objects
         friend class Database;
+
         /**
          * @brief Constructor to create a SqlStatement object.
          * @param index The statement ID.

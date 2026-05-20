@@ -92,7 +92,7 @@ public:
      */
     uint8 *GetDigest()
     {
-         return (uint8*)m_digest;
+        return (uint8*)m_digest;
     }
 
     /**
@@ -101,7 +101,7 @@ public:
      */
     int GetLength()
     {
-         return SHA_DIGEST_LENGTH;
+        return SHA_DIGEST_LENGTH;
     }
 
 private:

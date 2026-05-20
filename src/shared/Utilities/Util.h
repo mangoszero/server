@@ -55,6 +55,7 @@ typedef std::vector<std::string> Tokens;
  * @return Tokens
  */
 Tokens StrSplit(const std::string& src, const std::string& sep);
+
 /**
  * @brief
  *
@@ -63,6 +64,7 @@ Tokens StrSplit(const std::string& src, const std::string& sep);
  * @return uint32
  */
 uint32 GetUInt32ValueFromArray(Tokens const& data, uint16 index);
+
 /**
  * @brief
  *
@@ -110,6 +112,7 @@ time_t GetLocalHourTimestamp(time_t time, uint8 hour, bool onlyAfterTime = true)
  * @return std::string
  */
 std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat = TimeFormat::FullText, bool hoursOnly = false);
+
 /**
  * @brief
  *
@@ -117,6 +120,7 @@ std::string secsToTimeString(time_t timeInSecs, TimeFormat timeFormat = TimeForm
  * @return uint32
  */
 uint32 TimeStringToSecs(const std::string& timestring);
+
 /**
  * @brief
  *
@@ -135,7 +139,7 @@ inline uint32 secsToTimeBitFields(time_t secs)
 {
     std::tm lt = safe_localtime(secs);
     return (lt.tm_year - 100) << 24 | lt.tm_mon  << 20
-         | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
+            | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
 }
 
 inline std::string& ltrim(std::string& s)
@@ -168,7 +172,7 @@ inline std::string& trim(std::string& s)
  * @param max
  * @return int32
  */
- int32 irand(int32 min, int32 max);
+int32 irand(int32 min, int32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -180,7 +184,7 @@ inline std::string& trim(std::string& s)
  * @param max
  * @return uint32
  */
- uint32 urand(uint32 min, uint32 max);
+uint32 urand(uint32 min, uint32 max);
 
 /**
  * @brief Return a random number in the range min..max (inclusive).
@@ -189,7 +193,7 @@ inline std::string& trim(std::string& s)
  * @param max
  * @return float
  */
- float frand(float min, float max);
+float frand(float min, float max);
 
 /**
  * @brief Return a random number in the range 0 .. RAND32_MAX.
@@ -207,14 +211,14 @@ uint32 rand32();
  *
  * @return double
  */
- double rand_norm(void);
+double rand_norm(void);
 
 /**
  * @brief
  *
  * @return float
  */
- float rand_norm_f(void);
+float rand_norm_f(void);
 
 /**
  * @brief Return a random double from 0.0 to 99.9999999999999.
@@ -225,14 +229,14 @@ uint32 rand32();
  *
  * @return double
  */
- double rand_chance(void);
+double rand_chance(void);
 
 /**
  * @brief
  *
  * @return float
  */
- float rand_chance_f(void);
+float rand_chance_f(void);
 
 /**
  * @brief Return true if a random roll gets above the given chance
@@ -326,6 +330,7 @@ bool Utf8ToUpperOnlyLatin(std::string& utf8String);
  * @return bool
  */
 bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
+
 /**
  * @brief
  *
@@ -336,6 +341,7 @@ bool Utf8toWStr(const std::string& utf8str, std::wstring& wstr);
  * @return bool
  */
 bool Utf8toWStr(char const* utf8str, size_t csize, wchar_t* wstr, size_t& wsize);
+
 /**
  * @brief
  *
@@ -357,6 +363,7 @@ inline bool Utf8toWStr(const std::string& utf8str, wchar_t* wstr, size_t& wsize)
  * @return bool
  */
 bool WStrToUtf8(std::wstring wstr, std::string& utf8str);
+
 /**
  * @brief
  *
@@ -374,6 +381,7 @@ bool WStrToUtf8(wchar_t* wstr, size_t size, std::string& utf8str);
  * @return size_t
  */
 size_t utf8length(std::string& utf8str);                    // set string to "" if invalid utf8 sequence
+
 /**
  * @brief
  *
@@ -822,6 +830,7 @@ inline void wstrToLower(std::wstring& str)
  * @return bool
  */
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
+
 /**
  * @brief
  *
@@ -830,6 +839,7 @@ bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
  * @return bool
  */
 bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
+
 /**
  * @brief
  *
@@ -838,6 +848,7 @@ bool consoleToUtf8(const std::string& conStr, std::string& utf8str);
  * @return bool
  */
 bool Utf8FitTo(const std::string& str, std::wstring search);
+
 /**
  * @brief
  *
@@ -845,12 +856,14 @@ bool Utf8FitTo(const std::string& str, std::wstring search);
  * @param str...
  */
 void utf8printf(FILE* out, const char* str, ...);
+
 /**
  * @brief
  *
  * @param str
  */
 void utf8print(void* /*arg*/, const char* str);
+
 /**
  * @brief
  *

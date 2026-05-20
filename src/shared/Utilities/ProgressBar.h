@@ -40,6 +40,7 @@ class BarGoLink
          * @param row_count
          */
         explicit BarGoLink(int row_count);
+
         /**
          * @brief
          *

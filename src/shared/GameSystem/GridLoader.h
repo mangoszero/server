@@ -32,9 +32,10 @@
 template
 <
 class ACTIVE_OBJECT,
-      class WORLD_OBJECT_TYPES,
-      class GRID_OBJECT_TYPES
-      >
+        class WORLD_OBJECT_TYPES,
+        class GRID_OBJECT_TYPES
+        >
+
 /**
  * @brief The GridLoader is working in conjuction with the Grid and responsible
  *        for loading and unloading object-types (one or more) when objects
@@ -50,6 +51,7 @@ class GridLoader
     public:
 
         template<class LOADER>
+
         /**
          * @brief Loads the grid
          *
@@ -64,6 +66,7 @@ class GridLoader
         }
 
         template<class STOPER>
+
         /**
          * @brief Stop the grid
          *
@@ -78,6 +81,7 @@ class GridLoader
         }
 
         template<class UNLOADER>
+
         /**
          * @brief Unloads the grid
          *

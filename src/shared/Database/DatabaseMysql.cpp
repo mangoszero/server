@@ -531,6 +531,7 @@ unsigned long MySQLConnection::escape_string(char* to, const char* from, unsigne
 }
 
 //////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Create a prepared statement
  * @param fmt SQL statement format string with ? placeholders
@@ -545,6 +546,7 @@ SqlPreparedStatement* MySQLConnection::CreateStatement(const std::string& fmt)
 }
 
 //////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Construct MySQL prepared statement
  * @param fmt SQL format string with ? placeholders

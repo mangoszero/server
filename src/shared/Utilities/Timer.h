@@ -102,6 +102,7 @@ struct IntervalTimer
             _current = 0;
         }
     }
+
         /**
          * @brief
          *
@@ -111,6 +112,7 @@ struct IntervalTimer
     {
         return _current >= _interval;
     }
+
         /**
          * @brief
          *

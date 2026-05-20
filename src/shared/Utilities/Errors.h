@@ -38,7 +38,7 @@
     { \
         ACE_Stack_Trace st; \
         printf("%s:%i: Error: Assertion in %s failed: %s\nStack Trace:\n%s", \
-               __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION), st.c_str()); \
+                __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION), st.c_str()); \
         assert(STRINGIZE(CONDITION) && 0); \
     }
 
@@ -48,7 +48,7 @@
     { \
         ACE_Stack_Trace st; \
         printf("%s:%i: Warning: Assertion in %s failed: %s\nStack Trace:\n%s",\
-               __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION), st.c_str()); \
+                __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION), st.c_str()); \
     }
 #else
 // Normal assert.
@@ -56,7 +56,7 @@
     if (!(CONDITION)) \
     { \
         printf("%s:%i: Error: Assertion in %s failed: %s", \
-               __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION)); \
+                __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION)); \
         assert(STRINGIZE(CONDITION) && 0); \
     }
 
@@ -65,7 +65,7 @@
     if (!(CONDITION)) \
     { \
         printf("%s:%i: Warning: Assertion in %s failed: %s",\
-               __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION)); \
+                __FILE__, __LINE__, __FUNCTION__, STRINGIZE(CONDITION)); \
     }
 #endif
 

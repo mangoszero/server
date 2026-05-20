@@ -39,6 +39,7 @@ class SqlConnection;
  */
 class SqlDelayThread : public ACE_Based::Runnable
 {
+
         /**
          * @brief
          *
@@ -65,6 +66,7 @@ class SqlDelayThread : public ACE_Based::Runnable
          * @param conn
          */
         SqlDelayThread(Database* db, SqlConnection* conn);
+
         /**
          * @brief
          *
@@ -84,6 +86,7 @@ class SqlDelayThread : public ACE_Based::Runnable
          *
          */
         virtual void Stop();
+
         /**
          * @brief Main Thread loop
          *

@@ -32,6 +32,7 @@
 
 namespace ACE_Based
 {
+
     /**
      * @brief Base class for runnable tasks
      *
@@ -45,6 +46,7 @@ namespace ACE_Based
              * @brief Virtual destructor
              */
             virtual ~Runnable() {}
+
             /**
              * @brief Main execution method for the task
              */
@@ -55,7 +57,7 @@ namespace ACE_Based
              */
             void incReference()
             {
-                 ++m_refs;
+                ++m_refs;
             }
 
             /**
@@ -101,6 +103,7 @@ namespace ACE_Based
              * @brief Constructor - initializes priority mappings
              */
             ThreadPriority();
+
             /**
              * @brief Get OS-specific priority value
              * @param p Platform-independent priority level
@@ -123,11 +126,13 @@ namespace ACE_Based
              * @brief Default constructor
              */
             Thread();
+
             /**
              * @brief Constructor with runnable task
              * @param instance Runnable task to execute
              */
             explicit Thread(Runnable* instance);
+
             /**
              * @brief Destructor
              */
@@ -138,11 +143,13 @@ namespace ACE_Based
              * @return True on success, false on failure
              */
             bool start();
+
             /**
              * @brief Wait for thread to finish
              * @return True on success, false on failure
              */
             bool wait();
+
             /**
              * @brief Destroy the thread
              */
@@ -152,6 +159,7 @@ namespace ACE_Based
              * @brief Suspend thread execution
              */
             void suspend();
+
             /**
              * @brief Resume thread execution
              */
@@ -174,6 +182,7 @@ namespace ACE_Based
              * @brief Copy constructor (disabled)
              */
             Thread(const Thread&);
+
             /**
              * @brief Assignment operator (disabled)
              */

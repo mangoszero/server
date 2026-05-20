@@ -53,6 +53,7 @@ class Grid
     public:
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief an object of interested enters the grid
          *
@@ -65,6 +66,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief an object of interested exits the grid
          *
@@ -77,6 +79,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief Inserts a container type object into the grid.
          *
@@ -94,6 +97,7 @@ class Grid
         }
 
         template<class SPECIFIC_OBJECT>
+
         /**
          * @brief Removes a container type object from the grid
          *

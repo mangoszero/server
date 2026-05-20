@@ -28,12 +28,14 @@
 #include "DBCFileLoader.h"
 
 template<class T>
+
 /**
  * @brief
  *
  */
 class DBCStorage
 {
+
         /**
          * @brief
          *
@@ -53,7 +55,7 @@ class DBCStorage
          */
         ~DBCStorage()
         {
-             Clear();
+            Clear();
         }
 
         /**
@@ -204,6 +206,7 @@ class DBCStorage
          * @param id
          */
         void EraseEntry(uint32 id) { assert(id < nCount && "Entry to be erased must be in bounds!") ; indexTable[id] = NULL; }
+
         /**
          * @brief
          *
