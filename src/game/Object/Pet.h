@@ -358,7 +358,7 @@ class Pet : public Creature
 
         Transport* GetTransport() const          { return m_transport; }
         void       SetTransport(Transport* t)    { m_transport = t; }
-        void       SetPendingTransportReboard()  { m_pendingTransportReboard = true; }
+        void       UpdateTransport(Player* plOwner);
 
     protected:
         uint32  m_happinessTimer;
@@ -371,7 +371,6 @@ class Pet : public Creature
         bool    m_loading;
 
     private:
-        void       UpdateTransport(Player* plOwner);
 
         bool       m_pendingTransportReboard;               ///< fires PetSpellInitialize + SMSG_MONSTER_MOVE_TRANSPORT on next tick after map re-add
         Transport* m_transport;                             ///< transport this pet is riding; set/cleared alongside AddPassenger/RemovePassenger
