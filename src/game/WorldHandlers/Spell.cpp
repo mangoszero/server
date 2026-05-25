@@ -6877,6 +6877,9 @@ SpellCastResult Spell::CheckCasterAuras() const
         prevented_reason = SPELL_FAILED_PACIFIED;
     }
 
+    if (m_caster->IsSchoolLockedOut(GetSpellSchoolMask(m_spellInfo)))
+        prevented_reason = SPELL_FAILED_SILENCED;
+
     // Attr must make flag drop spell totally immune from all effects
     if (prevented_reason != SPELL_CAST_OK)
     {

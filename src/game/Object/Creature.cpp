@@ -2428,6 +2428,10 @@ SpellEntry const* Creature::ReachWithSpellAttack(Unit* pVictim)
         {
             continue;
         }
+        if (IsSchoolLockedOut(GetSpellSchoolMask(spellInfo)))
+        {
+            continue;
+        }
         if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
         {
             continue;
@@ -2485,6 +2489,10 @@ SpellEntry const* Creature::ReachWithSpellCure(Unit* pVictim)
             continue;
         }
         if (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+        {
+            continue;
+        }
+        if (IsSchoolLockedOut(GetSpellSchoolMask(spellInfo)))
         {
             continue;
         }
