@@ -160,7 +160,7 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
         pCaster = pTarget;
     }
 
-    if (uiSpell == 53 || uiSpell == 2589 || uiSpell == 7159) // All Backstab variants
+    if (uiSpell == 53 || uiSpell == 2589 || uiSpell == 7159 || uiSpell == 15657) // All Backstab variants
     {
         if (pTarget && pTarget->HasInArc(M_PI_F, pCaster))
         {
