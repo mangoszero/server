@@ -26,6 +26,7 @@
 #include "Creature.h"
 #include "DBCStores.h"
 #include "Spell.h"
+#include "SpellMgr.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
@@ -93,6 +94,11 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry* pSpell, 
         }
 
         if (pSpell->PreventionType == SPELL_PREVENTION_TYPE_SILENCE && m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+        {
+            return CAST_FAIL_SILENCED;
+        }
+
+        if (m_creature->IsSchoolLockedOut(GetSpellSchoolMask(pSpell)))
         {
             return CAST_FAIL_SILENCED;
         }
