@@ -214,6 +214,13 @@ bool NotLeastHpTargetActiveTrigger::IsActive()
     return leastHp && target != leastHp;
 }
 
+bool NoTanksTargetActiveTrigger::IsActive()
+{
+    Unit* tanksTarget = AI_VALUE(Unit*, "dps tanks target");
+    Unit* target = AI_VALUE(Unit*, "current target");
+    return tanksTarget && target != tanksTarget;
+}
+
 bool EnemyPlayerIsAttacking::IsActive()
 {
     Unit* enemyPlayer = AI_VALUE(Unit*, "enemy player target");

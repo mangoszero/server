@@ -1,5 +1,5 @@
-#include "../generic/NonCombatStrategy.h"
 #pragma once
+#include "../generic/NonCombatStrategy.h"
 
 namespace ai
 {

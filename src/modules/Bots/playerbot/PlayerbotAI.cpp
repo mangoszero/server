@@ -907,6 +907,30 @@ bool PlayerbotAI::IsTank(Player* player)
  * @param player The player to check.
  * @return True if the player is a healer class, false otherwise.
  */
+Player* PlayerbotAI::GetGroupTank(Player* except)
+{
+    Group* group = except->GetGroup();
+    if (!group)
+        return nullptr;
+
+    Group::MemberSlotList const& slots = group->GetMemberSlots();
+    if (slots.size() < 5)
+        return nullptr;
+
+    for (Group::member_citerator itr = slots.begin(); itr != slots.end(); ++itr)
+    {
+        Player* member = sObjectMgr.GetPlayer(itr->guid);
+        if (member && member != except && IsTank(member))
+            return member;
+    }
+    return nullptr;
+}
+
+/**
+ * Checks if the player is a healer class.
+ * @param player The player to check.
+ * @return True if the player is a healer class, false otherwise.
+ */
 bool PlayerbotAI::IsHeal(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
