@@ -15,6 +15,7 @@ namespace ai
 
     private:
         Item* GetItemFitsToSpellRequirements(uint8 slot, SpellEntry const *spellInfo);
+        uint32 GetPetFoodScore(Pet *pet, Item *item, SpellEntry const *spellInfo);
 
     };
 }

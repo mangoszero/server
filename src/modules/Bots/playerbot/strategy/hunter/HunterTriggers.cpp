@@ -34,3 +34,12 @@ bool HuntersPetLowHealthTrigger::IsActive()
     return pet && AI_VALUE2(uint8, "health", "pet target") < 40 &&
         !AI_VALUE2(bool, "dead", "pet target") && !AI_VALUE2(bool, "mounted", "self target");
 }
+
+bool HuntersPetUnhappyTrigger::IsActive()
+{
+    if (AI_VALUE2(bool, "mounted", "self target"))
+        return false;
+
+    Pet* pet = bot->GetPet();
+    return pet && pet->IsAlive() && pet->GetHappinessState() == UNHAPPY;
+}
