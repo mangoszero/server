@@ -89,11 +89,38 @@ void AttackersValue::RemoveNonThreating(set<Unit*>& targets)
 
 bool AttackersValue::hasRealThreat(Unit *attacker)
 {
-    return attacker &&
-        attacker->IsInWorld() &&
-        attacker->IsAlive() &&
-        !attacker->IsPolymorphed() &&
-        !attacker->IsInRoots() &&
-        !attacker->IsFriendlyTo(bot) &&
-        (attacker->GetThreatManager().getCurrentVictim() || attacker->GetObjectGuid().IsPlayer());
+    if (!attacker ||
+        !attacker->IsInWorld() ||
+        !attacker->IsAlive() ||
+        attacker->IsPolymorphed() ||
+        attacker->IsInRoots() ||
+        attacker->IsFriendlyTo(bot))
+        return false;
+
+    if (attacker->GetObjectGuid().IsPlayer())
+        return true;
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return attacker->GetThreatManager().getCurrentVictim() != nullptr;
+
+    Unit* victim = attacker->getVictim();
+    if (!victim)
+        return false;
+
+    if (victim == bot)
+        return true;
+
+    Player* master = GetMaster();
+    if (master && victim == master)
+        return true;
+
+    if (victim->GetObjectGuid().IsPlayer())
+    {
+        Player* victimPlayer = sObjectMgr.GetPlayer(victim->GetObjectGuid());
+        if (victimPlayer && victimPlayer->GetGroup() == group)
+            return true;
+    }
+
+    return false;
 }
