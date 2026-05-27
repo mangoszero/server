@@ -108,7 +108,6 @@ class LFGQueue
 
             return playerRole;
         }
-
         RolesPriority getPriority(Classes playerClass, ClassRoles playerRoles);
 
     private:
