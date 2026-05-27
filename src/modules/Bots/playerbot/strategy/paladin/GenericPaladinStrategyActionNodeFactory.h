@@ -7,7 +7,7 @@ namespace ai
     public:
         GenericPaladinStrategyActionNodeFactory()
         {
-            creators["blessing of kings on party"] = &blessing_of_kings_on_party;
+            creators["blessing"] = &blessing;
             creators["seal of light"] = &seal_of_light;
             creators["cleanse poison"] = &cleanse_poison;
             creators["cleanse disease"] = &cleanse_disease;
@@ -28,11 +28,11 @@ namespace ai
             creators["lay on hands on party"] = &lay_on_hands_on_party;
         }
     private:
-        static ActionNode* blessing_of_kings_on_party(PlayerbotAI* ai)
+        static ActionNode* blessing(PlayerbotAI* ai)
         {
-            return new ActionNode ("blessing of kings on party",
+            return new ActionNode ("blessing",
                 /*P*/ NULL,
-                /*A*/ NextAction::array(0, new NextAction("blessing of might on party"), NULL),
+                /*A*/ NextAction::array(0, new NextAction("blessing on party"), NULL),
                 /*C*/ NULL);
         }
         static ActionNode* lay_on_hands(PlayerbotAI* ai)
