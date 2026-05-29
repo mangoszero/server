@@ -17,7 +17,7 @@
 #include "WheatyExceptionReport.h"
 #include "GitRevision.h"
 #define CrashFolder _T("Crashes")
-//#pragma comment(linker, "/defaultlib:dbghelp.lib")
+#pragma comment(linker, "/defaultlib:dbghelp.lib")
 
 inline LPTSTR ErrorMessage(DWORD dw)
 {
@@ -530,8 +530,7 @@ BOOL WheatyExceptionReport::GetLogicalAddress(
     for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; ++i, ++pSection)
     {
         DWORD_PTR sectionStart = pSection->VirtualAddress;
-        DWORD_PTR sectionEnd = sectionStart
-                            + DWORD_PTR(std::max(pSection->SizeOfRawData, pSection->Misc.VirtualSize));
+        DWORD_PTR sectionEnd = sectionStart + DWORD_PTR(pSection->SizeOfRawData > pSection->Misc.VirtualSize ? pSection->SizeOfRawData : pSection->Misc.VirtualSize);
 
         // Is the address in this section???
         if ((rva >= sectionStart) && (rva <= sectionEnd))
