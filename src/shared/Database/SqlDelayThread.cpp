@@ -35,6 +35,7 @@
 #include "Database/SqlDelayThread.h"
 #include "Database/SqlOperations.h"
 #include "DatabaseEnv.h"
+#include "Timer.h"
 
 /**
  * @brief Constructor for SqlDelayThread
@@ -96,7 +97,13 @@ void SqlDelayThread::run()
         // empty the queue before exiting
         ACE_Based::Thread::Sleep(loopSleepms);
 
+        uint32 start = getMSTime();
         ProcessRequests();
+        uint32 elapsed = getMSTimeDiff(start, getMSTime());
+        if (elapsed > 5000)
+        {
+            sLog.outError("SqlDelayThread: ProcessRequests took %u ms", elapsed);
+        }
 
         // Send periodic ping to keep connection alive
         if ((loopCounter++) >= pingEveryLoop)
