@@ -94,6 +94,12 @@ int WorldThread::svc()
 
         uint32 executionTimeDiff = getMSTimeDiff(realCurrTime, getMSTime());
 
+        if (executionTimeDiff > 1000)
+        {
+            sLog.outError("WorldThread::svc: sWorld.Update(diff=%u) took %u ms (loopCounter=%u, sessions=%u)",
+                          diff, executionTimeDiff, World::m_worldLoopCounter.value(), sWorld.GetActiveSessionCount());
+        }
+
         // we know exactly how long it took to update the world, if the update took less than WORLD_SLEEP_CONST, sleep for WORLD_SLEEP_CONST - world update time
         if (executionTimeDiff < WORLD_SLEEP_CONST)
         {

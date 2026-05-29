@@ -37,6 +37,7 @@
 #include "DelayExecutor.h"
 #include "Map.h"
 #include "DatabaseEnv.h"
+#include "Timer.h"
 
 #include <ace/Guard_T.h>
 #include <ace/Method_Request.h>
@@ -117,11 +118,18 @@ int MapUpdater::deactivate()
  */
 int MapUpdater::wait()
 {
-    ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, m_mutex, -1);
+    uint32 start = getMSTime();
+    {
+        ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, m_mutex, -1);
 
-    while (pending_requests > 0)
-        m_condition.wait();
-
+        while (pending_requests > 0)
+            m_condition.wait();
+    }
+    uint32 waited = getMSTimeDiff(start, getMSTime());
+    if (waited > 1000)
+    {
+        sLog.outError("MapUpdater::wait() took %u ms", waited);
+    }
     return 0;
 }
 
