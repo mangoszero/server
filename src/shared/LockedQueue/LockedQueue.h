@@ -132,6 +132,17 @@ namespace ACE_Based
                 ACE_GUARD_RETURN (LockType, g, this->_lock, false);
                 return _queue.empty();
             }
+
+            /**
+             * @brief Returns the number of elements in the queue with locks held
+             *
+             * @return size_t
+             */
+            size_t size()
+            {
+                ACE_GUARD_RETURN (LockType, g, this->_lock, 0);
+                return _queue.size();
+            }
     };
 }
 #endif
