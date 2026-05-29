@@ -33,7 +33,7 @@
 #include "Util.h"
 
 #ifdef _WIN32
-    #include <windows.h>
+#include <windows.h>
 #endif
 
 /**
@@ -101,11 +101,13 @@ int CliThread::svc()
         if (command_str != NULL)
         {
             for (int x = 0; command_str[x]; ++x)
+            {
                 if (command_str[x] == '\r' || command_str[x] == '\n')
                 {
                     command_str[x] = 0;
                     break;
                 }
+            }
 
             if (!*command_str)
             {
@@ -139,21 +141,21 @@ void CliThread::cli_shutdown()
 {
 #ifdef _WIN32
 
-        // send keyboard input to safely unblock the CLI thread, which is blocked on fgets
-        INPUT_RECORD b;
-        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+    // send keyboard input to safely unblock the CLI thread, which is blocked on fgets
+    INPUT_RECORD b;
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
 
-        b.EventType = KEY_EVENT;
-        b.Event.KeyEvent.bKeyDown = TRUE;
-        b.Event.KeyEvent.dwControlKeyState = 0;
-        b.Event.KeyEvent.uChar.AsciiChar = '\r';
-        b.Event.KeyEvent.wVirtualKeyCode = VK_RETURN;
-        b.Event.KeyEvent.wRepeatCount = 1;
-        b.Event.KeyEvent.wVirtualScanCode = 0x1c;
+    b.EventType = KEY_EVENT;
+    b.Event.KeyEvent.bKeyDown = TRUE;
+    b.Event.KeyEvent.dwControlKeyState = 0;
+    b.Event.KeyEvent.uChar.AsciiChar = '\r';
+    b.Event.KeyEvent.wVirtualKeyCode = VK_RETURN;
+    b.Event.KeyEvent.wRepeatCount = 1;
+    b.Event.KeyEvent.wVirtualScanCode = 0x1c;
 
-        DWORD numb = 0;
-        BOOL ret = WriteConsoleInput(hStdIn, &b, 1, &numb);
+    DWORD numb = 0;
+    BOOL ret = WriteConsoleInput(hStdIn, &b, 1, &numb);
 
-        wait();
+    wait();
 #endif
 }

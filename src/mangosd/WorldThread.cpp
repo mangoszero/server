@@ -23,8 +23,8 @@
  */
 
 /** \file
-    \ingroup mangosd
-*/
+ \ingroup mangosd
+ */
 
 #include "Common.h"
 #include "WorldSocket.h"
@@ -46,8 +46,8 @@
 #define WORLD_SLEEP_CONST 50
 
 #ifdef WIN32
-    #include "ServiceWin32.h"
-    extern int m_ServiceStatus;
+#include "ServiceWin32.h"
+extern int m_ServiceStatus;
 #endif
 
 /**
@@ -106,7 +106,9 @@ int WorldThread::svc()
         }
 
         while (m_ServiceStatus == 2) // service paused
+        {
             Sleep(1000);
+        }
 #endif
     }
     sWorld.KickAll();                                       // save and kick all players

@@ -72,20 +72,21 @@
 #include "RAThread.h"
 
 #ifdef ENABLE_SOAP
-    #include "SOAP/SoapThread.h"
+#include "SOAP/SoapThread.h"
 #endif
 
 #ifdef _WIN32
-    #include "ServiceWin32.h"
+#include "ServiceWin32.h"
+#include "WheatyExceptionReport.h"
 
-    char serviceName[]        = "MaNGOS";               // service short name
-    char serviceLongName[]    = "MaNGOS World Service"; // service long name
-    char serviceDescription[] = "MaNGOS World Service - no description available";
+char serviceName[]        = "MaNGOS";               // service short name
+char serviceLongName[]    = "MaNGOS World Service"; // service long name
+char serviceDescription[] = "MaNGOS World Service - no description available";
 
-    int m_ServiceStatus = -1;
+int m_ServiceStatus = -1;
 
 #else
-    #include "PosixDaemon.h"
+#include "PosixDaemon.h"
 #endif
 
 DatabaseType WorldDatabase;                                 ///< Accessor to the world database
@@ -291,25 +292,31 @@ static void unhook_signals()
 static void usage(const char* prog)
 {
     sLog.outString("Usage: \n %s [<options>]\n"
-                "    -v, --version              print version and exist\n\r"
-                "    -c <config_file>           use config_file as configuration file\n\r"
-                "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
+        "    -v, --version              print version and exist\n\r"
+        "    -c <config_file>           use config_file as configuration file\n\r"
+        "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
 #ifdef WIN32
-                "    Running as service functions:\n\r"
-                "    -s run                     run as service\n\r"
-                "    -s install                 install service\n\r"
-                "    -s uninstall               uninstall service\n\r"
+        "    Running as service functions:\n\r"
+        "    -s run                     run as service\n\r"
+        "    -s install                 install service\n\r"
+        "    -s uninstall               uninstall service\n\r"
 #else
-                "    Running as daemon functions:\n\r"
-                "    -s run                     run as daemon\n\r"
-                "    -s stop                    stop daemon\n\r"
+        "    Running as daemon functions:\n\r"
+        "    -s run                     run as daemon\n\r"
+        "    -s stop                    stop daemon\n\r"
 #endif
-                , prog);
+    , prog);
 }
 
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+	  // Install the exception handler for unhandled exceptions in the main thread
+		static WheatyExceptionReport exceptionReport;
+		SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
+#endif
+
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 

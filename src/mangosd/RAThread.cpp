@@ -84,7 +84,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
     protected:
         RASocket(void) : Base(),outBufferLock(), outActive(false), inputBufferLen(0),
-                         outputBufferLen(0), stage(NONE)
+            outputBufferLen(0), stage(NONE)
         {
             bSecure = sConfig.GetBoolDefault("RA.Secure", true);
             bStricted = sConfig.GetBoolDefault("RA.Stricted", false);
@@ -260,7 +260,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                             else
                             {
                                 CliCommandHolder* cmd = new CliCommandHolder(accId, accAccessLevel, this, inputBuffer,
-                                                                             &RASocket::zprint, &RASocket::commandFinished);
+                                    &RASocket::zprint, &RASocket::commandFinished);
                                 sWorld.QueueCliCommand(cmd);
                             }
                         }
@@ -312,7 +312,7 @@ class RASocket: protected ACE_Svc_Handler < ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         }
 
         int handle_close(ACE_HANDLE h = ACE_INVALID_HANDLE,
-                                 ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK) override
+            ACE_Reactor_Mask mask = ACE_Event_Handler::ALL_EVENTS_MASK) override
         {
             if (closing_)
             {
@@ -415,8 +415,8 @@ int RAThread::open(void* unused)
 int RAThread::svc()
 {
     sLog.outString("Remote Access Thread started (listening on %s:%d)",
-                    listen_addr.get_host_addr(),
-                    listen_addr.get_port_number());
+        listen_addr.get_host_addr(),
+        listen_addr.get_port_number());
 
     while (!m_Reactor->reactor_event_loop_done())
     {

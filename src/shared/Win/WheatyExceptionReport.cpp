@@ -11,6 +11,7 @@
 #include <tlhelp32.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <algorithm>
 #define _NO_CVCONST_H
 #include <dbghelp.h>
 #include "WheatyExceptionReport.h"
@@ -530,7 +531,7 @@ BOOL WheatyExceptionReport::GetLogicalAddress(
     {
         DWORD_PTR sectionStart = pSection->VirtualAddress;
         DWORD_PTR sectionEnd = sectionStart
-                            + DWORD_PTR(max(pSection->SizeOfRawData, pSection->Misc.VirtualSize));
+                            + DWORD_PTR(std::max(pSection->SizeOfRawData, pSection->Misc.VirtualSize));
 
         // Is the address in this section???
         if ((rva >= sectionStart) && (rva <= sectionEnd))
