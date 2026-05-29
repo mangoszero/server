@@ -312,9 +312,9 @@ static void usage(const char* prog)
 int main(int argc, char** argv)
 {
 #ifdef _WIN32
-	  // Install the exception handler for unhandled exceptions in the main thread
-		static WheatyExceptionReport exceptionReport;
-		SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
+      // Install the exception handler for unhandled exceptions in the main thread
+        static WheatyExceptionReport exceptionReport;
+        SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
 #endif
 
     ///- Command line parsing
