@@ -48,6 +48,9 @@
 
 #include "Common.h"
 #include "Auth/AuthCrypt.h"
+#ifdef _WIN32
+#include <atomic>
+#endif
 
 class ACE_Message_Block;
 class WorldPacket;
@@ -125,6 +128,11 @@ class WorldSocket : protected WorldHandler
 
         /// Remove reference to this object.
         long RemoveReference(void);
+
+#ifdef _WIN32
+        /// Number of currently open world TCP socket connections (observability).
+        static uint32 GetOpenConnectionCount() { return s_openConnections.load(std::memory_order_relaxed); }
+#endif
 
     protected:
         /// things called by ACE framework.
@@ -214,6 +222,11 @@ class WorldSocket : protected WorldHandler
         PacketQueueT m_PacketQueue;
 
         const uint32 m_Seed;
+
+#ifdef _WIN32
+        /// Live count of constructed WorldSocket objects (open connections). Observability only.
+        static std::atomic<uint32> s_openConnections;
+#endif
 };
 
 #endif  /* _WORLDSOCKET_H */
