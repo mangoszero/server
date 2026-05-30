@@ -390,7 +390,9 @@ void MapManager::UnloadAll()
 
     if (m_updater.activated())
     {
+        sLog.outString("[shutdown] MapManager::UnloadAll: deactivating MapUpdater...");
         m_updater.deactivate();
+        sLog.outString("[shutdown] MapManager::UnloadAll: MapUpdater deactivated");
     }
 }
 

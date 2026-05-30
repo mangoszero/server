@@ -117,11 +117,19 @@ int WorldThread::svc()
         }
 #endif
     }
+    sLog.outString("[shutdown] world loop stopped; entering world-thread shutdown tail");
+    sLog.outString("[shutdown] KickAll: saving + kicking players...");
     sWorld.KickAll();                                       // save and kick all players
+    sLog.outString("[shutdown] KickAll done");
+    sLog.outString("[shutdown] final UpdateSessions...");
     sWorld.UpdateSessions(1);                               // real players unload required UpdateSessions call
+    sLog.outString("[shutdown] final UpdateSessions done");
+    sLog.outString("[shutdown] StopNetwork: ending reactor + joining network threads...");
     sWorldSocketMgr->StopNetwork();
-
+    sLog.outString("[shutdown] StopNetwork done");
+    sLog.outString("[shutdown] UnloadAll: unloading maps + MapUpdater teardown...");
     sMapMgr.UnloadAll();                                    // unload all grids (including locked in memory)
+    sLog.outString("[shutdown] UnloadAll returned; world thread exiting");
 
     sLog.outString("World Updater Thread stopped");
     return 0;
