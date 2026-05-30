@@ -27,12 +27,14 @@
 
 #include <dbghelp.h>
 
+#ifndef countof
 #if _MSC_VER < 1400
 #   define countof(array)   (sizeof(array) / sizeof(array[0]))
 #else
 #   include <stdlib.h>
 #   define countof  _countof
 #endif                                                      // _MSC_VER < 1400
+#endif                                                      // countof
 
 enum BasicType                                              // Stolen from CVCONST.H in the DIA 2.0 SDK
 {
