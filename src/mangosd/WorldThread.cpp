@@ -48,6 +48,23 @@
 #ifdef WIN32
 #include "ServiceWin32.h"
 extern int m_ServiceStatus;
+#include <windows.h>
+#endif
+
+#ifdef _WIN32
+/// Update the console title with current player/connection counts, only if changed.
+static void UpdateConsoleTitle(uint32 players, uint32 connections)
+{
+    static std::string s_lastTitle;
+    char title[128];
+    snprintf(title, sizeof(title), "MaNGOS Zero (%u Players - %u Connections)", players, connections);
+    std::string newTitle(title);
+    if (s_lastTitle != newTitle)
+    {
+        s_lastTitle = newTitle;
+        SetConsoleTitleA(title);
+    }
+}
 #endif
 
 /**
@@ -91,6 +108,15 @@ int WorldThread::svc()
 
         sWorld.Update(diff);
         realPrevTime = realCurrTime;
+
+#ifdef _WIN32
+        static uint32 titleUpdateCounter = 0;
+        if ((++titleUpdateCounter) >= 60) // ~3 seconds at WORLD_SLEEP_CONST=50ms
+        {
+            titleUpdateCounter = 0;
+            UpdateConsoleTitle(sWorld.GetActiveSessionCount(), WorldSocket::GetOpenConnectionCount());
+        }
+#endif
 
         uint32 executionTimeDiff = getMSTimeDiff(realCurrTime, getMSTime());
 

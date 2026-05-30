@@ -109,6 +109,8 @@ struct ClientPktHeader
 #pragma pack(pop)
 #endif
 
+std::atomic<uint32> WorldSocket::s_openConnections{0};
+
 /**
  * @brief WorldSocket constructor
  *
@@ -133,6 +135,7 @@ WorldSocket::WorldSocket(void) :
     m_Seed(rand32())
 {
     reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
+    s_openConnections.fetch_add(1, std::memory_order_relaxed);
 }
 
 /**
@@ -158,6 +161,7 @@ WorldSocket::~WorldSocket(void)
     {
         delete pct;
     }
+    s_openConnections.fetch_sub(1, std::memory_order_relaxed);
 }
 
 /**
