@@ -582,6 +582,7 @@ int main(int argc, char** argv)
     }
 
     worldThread->wait();
+    sLog.outString("[shutdown] worldThread->wait() returned (world thread joined)");
 
     if (cliThread)
     {
@@ -589,7 +590,9 @@ int main(int argc, char** argv)
         delete cliThread;
     }
 
+    sLog.outString("[shutdown] joining all ACE task threads (ACE_Thread_Manager::wait)...");
     ACE_Thread_Manager::instance()->wait();
+    sLog.outString("[shutdown] all ACE task threads joined");
     sLog.outString("Halting process...");
 
     ///- Stop freeze protection before shutdown tasks
@@ -618,14 +621,18 @@ int main(int argc, char** argv)
     sMassMailMgr.Update(true);
 
     ///- Wait for DB delay threads to end
+    sLog.outString("[shutdown] halting DB delay threads (Character/World/Login)...");
     CharacterDatabase.HaltDelayThread();
     WorldDatabase.HaltDelayThread();
     LoginDatabase.HaltDelayThread();
+    sLog.outString("[shutdown] DB delay threads halted");
 
     // This is done to make sure that we cleanup our so file before it's
     // unloaded automatically, since the ~ScriptMgr() is called to late
     // as it's allocated with static storage.
+    sLog.outString("[shutdown] unloading script library...");
     sScriptMgr.UnloadScriptLibrary();
+    sLog.outString("[shutdown] script library unloaded");
 
     ///- Exit the process with specified return value
     int code = World::GetExitCode();

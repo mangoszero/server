@@ -50,6 +50,7 @@
 #include <ace/Log_Msg.h>
 
 #include "DelayExecutor.h"
+#include "Log.h"
 
 /**
  * @brief Get singleton instance
@@ -96,9 +97,10 @@ int DelayExecutor::deactivate()
     }
 
     activated(false);
+    sLog.outString("[shutdown] DelayExecutor::deactivate: deactivating activation queue + joining workers...");
     queue_.queue()->deactivate();
     wait();
-
+    sLog.outString("[shutdown] DelayExecutor::deactivate: workers joined");
     return 0;
 }
 

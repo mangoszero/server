@@ -108,8 +108,12 @@ int MapUpdater::activate(size_t num_threads)
  */
 int MapUpdater::deactivate()
 {
+    sLog.outString("[shutdown] MapUpdater::deactivate: draining pending map updates (pending=%zu)", pending_requests);
     wait();
-    return m_executor.deactivate();
+    sLog.outString("[shutdown] MapUpdater::deactivate: pending drained; joining worker threads");
+    int r = m_executor.deactivate();
+    sLog.outString("[shutdown] MapUpdater::deactivate: worker threads joined");
+    return r;
 }
 
 /**
