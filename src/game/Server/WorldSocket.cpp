@@ -821,9 +821,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     const char* sStr = s.AsHexStr();                        // Must be freed by OPENSSL_free()
     const char* vStr = v.AsHexStr();                        // Must be freed by OPENSSL_free()
 
-    DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) check s: %s v: %s",
-              sStr,
-              vStr);
+    DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) present: s=%s v=%s",
+              sStr && *sStr ? "yes" : "no",
+              vStr && *vStr ? "yes" : "no");
 
     OPENSSL_free((void*) sStr);
     OPENSSL_free((void*) vStr);
