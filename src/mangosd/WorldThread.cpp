@@ -27,6 +27,7 @@
  */
 
 #include "Common.h"
+#include "SystemConfig.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
 #include "World.h"
@@ -57,7 +58,7 @@ static void UpdateConsoleTitle(uint32 players, uint32 connections)
 {
     static std::string s_lastTitle;
     char title[128];
-    snprintf(title, sizeof(title), "MaNGOS Zero (%u Players - %u Connections)", players, connections);
+    snprintf(title, sizeof(title), "%s (%u Players - %u Connections)", MANGOS_PACKAGENAME, players, connections);
     std::string newTitle(title);
     if (s_lastTitle != newTitle)
     {
