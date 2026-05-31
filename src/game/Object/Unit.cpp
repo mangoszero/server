@@ -10797,7 +10797,7 @@ void Unit::AddToWorld()
     {
         if (!elunaEvents)
         {
-            elunaEvents = new ElunaEventProcessor(e, this);
+            elunaEvents = new ElunaEventProcessor(e->eventMgr.get(), this);
         }
     }
 #endif

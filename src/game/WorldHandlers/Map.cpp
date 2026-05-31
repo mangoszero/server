@@ -961,7 +961,7 @@ void Map::Update(const uint32& t_diff)
             e->UpdateEluna(t_diff);
         }
 
-        e->OnUpdate(this, t_diff);
+        e->OnMapUpdate(this, t_diff);
     }
 #endif /* ENABLE_ELUNA */
 
