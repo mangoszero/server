@@ -623,7 +623,9 @@ void MapManager::LoadActiveEntities(Map* m)
     {
         std::pair<ActiveCreatureGuidsOnMap::const_iterator, ActiveCreatureGuidsOnMap::const_iterator> activeBounds = sObjectMgr.GetActiveCreatureGuids()->equal_range(m->GetId());
         for (ActiveCreatureGuidsOnMap::const_iterator itr = activeBounds.first; itr != activeBounds.second; ++itr)
+        {
             ++activeCreatureGuids;
+        }
     }
 
     // Load grids for all objects on this map, if configured so
@@ -638,9 +640,13 @@ void MapManager::LoadActiveEntities(Map* m)
                 uniqueGrids.insert(std::make_pair(gridPair.x_coord, gridPair.y_coord));
 
                 if (m->IsLoaded(itr->second.posX, itr->second.posY))
+                {
                     ++alreadyLoaded;
+                }
                 else
+                {
                     ++newlyLoaded;
+                }
 
                 m->ForceLoadGrid(itr->second.posX, itr->second.posY);
             }
@@ -657,9 +663,13 @@ void MapManager::LoadActiveEntities(Map* m)
             uniqueGrids.insert(std::make_pair(gridPair.x_coord, gridPair.y_coord));
 
             if (m->IsLoaded(data->posX, data->posY))
+            {
                 ++alreadyLoaded;
+            }
             else
+            {
                 ++newlyLoaded;
+            }
 
             m->ForceLoadGrid(data->posX, data->posY);
         }
@@ -675,7 +685,9 @@ void MapManager::LoadActiveEntities(Map* m)
         s_livingWorldStats.totalNewlyLoaded += newlyLoaded;
         s_livingWorldStats.totalLocalTransports += localTransportCount;
         if (forceLoad)
+        {
             ++s_livingWorldStats.forcedMaps;
+        }
 
         // Per-map summary (O(1) log volume)
         if (forceLoad)
