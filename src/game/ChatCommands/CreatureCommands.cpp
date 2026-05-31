@@ -1219,8 +1219,8 @@ bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
     CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
     bool gridLoaded = target->GetMap()->IsLoaded(x, y);     // read-only: does NOT load the grid
 
-    PSendSysMessage("[LivingWorld] watch %s (entry %u) \"%s\"",
-                    target->GetGuidStr().c_str(), target->GetEntry(), target->GetName());
+    PSendSysMessage("[LivingWorld] watch %s \"%s\"",
+                    target->GetGuidStr().c_str(), target->GetName());
     PSendSysMessage("  map=%u instance=%u", target->GetMapId(), target->GetInstanceId());
     PSendSysMessage("  pos x=%.3f y=%.3f z=%.3f o=%.3f", x, y, z, o);
     PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s",
