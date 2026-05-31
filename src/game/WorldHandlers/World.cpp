@@ -1558,7 +1558,11 @@ void World::SetInitialWorldSettings()
     sLog.outString();
 
     sLog.outString("Loading grids for active creatures and local transports...");
-    sMapMgr.LoadContinents();
+    uint32 loadContinentsBegin = getMSTime();
+    MapManager::LivingWorldStartupStats lwStats = sMapMgr.LoadContinents();
+    uint32 loadContinentsMs = GetMSTimeDiffToNow(loadContinentsBegin);
+    sLog.outString("[LivingWorld] startup summary: maps-forced=%u, total-unique-grids=%u, total-newly-loaded=%u, total-local-transports=%u, LoadContinents=%u ms",
+                   lwStats.forcedMaps, lwStats.totalUniqueGrids, lwStats.totalNewlyLoaded, lwStats.totalLocalTransports, loadContinentsMs);
     sLog.outString();
 
     sLog.outString("Loading global transports...");
