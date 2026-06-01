@@ -1191,6 +1191,72 @@ bool ChatHandler::HandleNpcChangeEntryCommand(char* args)
 }
 
 /**
+ * @brief Handler for the .npc watch command (LivingWorld diagnostic, Phase 1).
+ *
+ * Read-only, one-shot snapshot of the currently selected creature. Inspects already-loaded
+ * state only via in-memory getters; performs no grid load, no map creation, and no
+ * movement/combat/AI/grid-state mutation.
+ *
+ * @param args Unused.
+ * @returns True on success; false (with the select-creature error) when nothing is selected.
+ */
+bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
+{
+    Creature* target = getSelectedCreature();
+    if (!target)
+    {
+        SendSysMessage(LANG_SELECT_CREATURE);
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    float x = target->GetPositionX();
+    float y = target->GetPositionY();
+    float z = target->GetPositionZ();
+    float o = target->GetOrientation();
+
+    GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
+    CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
+    bool gridLoaded = target->GetMap()->IsLoaded(x, y);     // read-only: does NOT load the grid
+
+    PSendSysMessage("[LivingWorld] watch %s \"%s\"",
+                    target->GetGuidStr().c_str(), target->GetName());
+    PSendSysMessage("  map=%u instance=%u", target->GetMapId(), target->GetInstanceId());
+    PSendSysMessage("  pos x=%.3f y=%.3f z=%.3f o=%.3f", x, y, z, o);
+    PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s",
+                    gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
+                    gridLoaded ? "yes" : "no");
+    PSendSysMessage("  in-world=%s active-object=%s",
+                    target->IsInWorld() ? "yes" : "no",
+                    target->IsActiveObject() ? "yes" : "no");
+    PSendSysMessage("  movement-generator-type=%u in-combat=%s combat-timer=%u",
+                    uint32(target->GetMotionMaster()->GetCurrentMovementGeneratorType()),
+                    target->IsInCombat() ? "yes" : "no",
+                    target->GetCombatTimer());
+
+    if (Unit* victim = target->getVictim())
+    {
+        PSendSysMessage("  victim=%s", victim->GetGuidStr().c_str());
+    }
+    else
+    {
+        SendSysMessage("  victim=none");
+    }
+
+    ObjectGuid const& watchTargetGuid = target->GetTargetGuid();
+    if (!watchTargetGuid.IsEmpty())
+    {
+        PSendSysMessage("  target=%s", watchTargetGuid.GetString().c_str());
+    }
+    else
+    {
+        SendSysMessage("  target=none");
+    }
+
+    return true;
+}
+
+/**
  * @brief Handler for HandleNpcInfoCommand command.
  *
  * @param args Command arguments.
