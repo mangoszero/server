@@ -1190,6 +1190,73 @@ bool ChatHandler::HandleNpcChangeEntryCommand(char* args)
     return true;
 }
 
+namespace
+{
+    /**
+     * @brief Prints read-only LivingWorld target diagnostics for an in-memory unit.
+     *
+     * Uses only the supplied live pointer and current map state. Does not look up
+     * objects, load grids, create maps, or mutate movement/combat/AI state.
+     */
+    void PrintNpcWatchUnitDetails(ChatHandler& handler, char const* label,
+                                  Creature const* watched, Unit const* unit)
+    {
+        float x = unit->GetPositionX();
+        float y = unit->GetPositionY();
+        float z = unit->GetPositionZ();
+        float o = unit->GetOrientation();
+
+        GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
+        CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
+        bool inWorld = unit->IsInWorld();
+        bool gridLoaded = inWorld && unit->GetMap()->IsLoaded(x, y);
+
+        handler.PSendSysMessage("  %s=%s", label, unit->GetGuidStr().c_str());
+
+        if (unit->GetTypeId() == TYPEID_UNIT)
+        {
+            handler.PSendSysMessage("    creature entry=%u name=\"%s\"",
+                                    unit->GetEntry(), unit->GetName());
+        }
+
+        handler.PSendSysMessage("    in-world=%s active-object=%s",
+                                inWorld ? "yes" : "no",
+                                unit->IsActiveObject() ? "yes" : "no");
+        handler.PSendSysMessage("    map=%u instance=%u",
+                                unit->GetMapId(), unit->GetInstanceId());
+        handler.PSendSysMessage("    pos x=%.3f y=%.3f z=%.3f o=%.3f",
+                                x, y, z, o);
+        handler.PSendSysMessage("    grid[%u,%u] cell[%u,%u] grid-loaded=%s%s",
+                                gridPair.x_coord, gridPair.y_coord,
+                                cellPair.x_coord, cellPair.y_coord,
+                                gridLoaded ? "yes" : "no",
+                                inWorld ? "" : " (not in world)");
+
+        if (watched->IsInMap(unit))
+        {
+            handler.PSendSysMessage("    distance=%.3f",
+                                    watched->GetDistance(unit));
+        }
+        else
+        {
+            handler.SendSysMessage("    distance=unavailable (different map or not in world)");
+        }
+    }
+
+    Unit* GetNpcWatchMapStoreTarget(Creature const* watched,
+                                    ObjectGuid const& guid)
+    {
+        if (!guid.IsAnyTypeCreature())
+        {
+            return NULL;
+        }
+
+        // Creature/pet object-store lookup only. Avoid Map::GetUnit because its
+        // player path uses ObjectAccessor rather than the map object store.
+        return watched->GetMap()->GetAnyTypeCreature(guid);
+    }
+}
+
 /**
  * @brief Handler for the .npc watch command (LivingWorld diagnostic, Phase 1).
  *
@@ -1234,9 +1301,10 @@ bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
                     target->IsInCombat() ? "yes" : "no",
                     target->GetCombatTimer());
 
-    if (Unit* victim = target->getVictim())
+    Unit* victim = target->getVictim();
+    if (victim)
     {
-        PSendSysMessage("  victim=%s", victim->GetGuidStr().c_str());
+        PrintNpcWatchUnitDetails(*this, "victim", target, victim);
     }
     else
     {
@@ -1246,7 +1314,21 @@ bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
     ObjectGuid const& watchTargetGuid = target->GetTargetGuid();
     if (!watchTargetGuid.IsEmpty())
     {
-        PSendSysMessage("  target=%s", watchTargetGuid.GetString().c_str());
+        if (victim && watchTargetGuid == victim->GetObjectGuid())
+        {
+            PSendSysMessage("  target=%s (same as victim; details above)",
+                            watchTargetGuid.GetString().c_str());
+        }
+        else if (Unit* watchTarget =
+                     GetNpcWatchMapStoreTarget(target, watchTargetGuid))
+        {
+            PrintNpcWatchUnitDetails(*this, "target", target, watchTarget);
+        }
+        else
+        {
+            PSendSysMessage("  target=%s", watchTargetGuid.GetString().c_str());
+            SendSysMessage("    target-details=details unavailable from safe current-map context");
+        }
     }
     else
     {
