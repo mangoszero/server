@@ -30,6 +30,7 @@
 
 namespace Movement
 {
+
     /**
      * @brief Enum representing different types of monster movement.
      */
@@ -47,6 +48,7 @@ namespace Movement
      */
     struct Location : public Vector3
     {
+
         /**
          * @brief Default constructor initializing orientation to 0.
          */
@@ -184,7 +186,10 @@ namespace Movement
             /**
              * @brief Interrupts the spline.
              */
-            void _Interrupt() { splineflags.done = true;}
+            void _Interrupt()
+            {
+                splineflags.done = true;
+            }
 
         public:
             /**
@@ -227,7 +232,10 @@ namespace Movement
             void updateState(int32 difftime)
             {
                 MANGOS_ASSERT(Initialized());
-                do { _updateState(difftime); }
+                do
+                {
+                    _updateState(difftime);
+                }
                 while (difftime > 0);
             }
 

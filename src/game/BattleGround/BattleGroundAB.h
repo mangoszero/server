@@ -22,6 +22,51 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
+
+/**
+ * @file BattleGroundAB.h
+ * @brief Arathi Basin battleground header
+ *
+ * This header defines the Arathi Basin battleground implementation including:
+ *
+ * - Node control and capture mechanics
+ * - Resource generation and scoring
+ * - World state management
+ * - Banner and visual effects
+ *
+ * Key features:
+ * - 5 capture points (Stables, Farm, LM, Mine, BS)
+ * - Resource generation based on controlled nodes
+ * - Victory points and scoring system
+ * - Team-based resource tracking
+ *
+ * @see BattleGroundAB for implementation
+ * @see BattleGround for base class
+ */
+
 #ifndef MANGOS_H_BATTLEGROUNDAB
 #define MANGOS_H_BATTLEGROUNDAB
 
@@ -82,7 +127,7 @@ const uint32 BG_AB_OP_NODEICONS[5] = { 1842, 1846, 1845, 1844, 1843 }; /**< Node
  */
 enum BG_AB_Timers
 {
-    BG_AB_FLAG_CAPTURING_TIME = 60000 /**< Time to capture a flag in milliseconds */
+    BG_AB_FLAG_CAPTURING_TIME = 60000    ///< Flag capture time (ms)
 };
 
 /**
@@ -90,8 +135,8 @@ enum BG_AB_Timers
  */
 enum BG_AB_Score
 {
-    BG_AB_WARNING_NEAR_VICTORY_SCORE = 1800, /**< Score at which a near victory warning is issued */
-    BG_AB_MAX_TEAM_SCORE = 2000  /**< Maximum score a team can achieve */
+    BG_AB_WARNING_NEAR_VICTORY_SCORE = 1800,    ///< Near victory warning score
+    BG_AB_MAX_TEAM_SCORE = 2000                 ///< Maximum team score
 };
 
 /**
@@ -167,9 +212,9 @@ const float BG_AB_BuffPositions[BG_AB_NODES_MAX][4] = /**< Buff positions for no
  */
 struct BG_AB_BannerTimer
 {
-    uint32      timer; /**< Timer for the banner */
-    uint8       type; /**< Type of the banner */
-    uint8       teamIndex; /**< Team index for the banner */
+    uint32      timer;      ///< Timer for the banner
+    uint8       type;       ///< Type of the banner
+    uint8       teamIndex;  ///< Team index for the banner
 };
 
 /**
@@ -182,6 +227,7 @@ public:
      * @brief Constructor for BattleGroundABScore.
      */
     BattleGroundABScore() : BasesAssaulted(0), BasesDefended(0) {};
+
     /**
      * @brief Destructor for BattleGroundABScore.
      */
@@ -192,6 +238,7 @@ public:
      * @return Number of bases assaulted.
      */
     uint32 GetAttr1() const { return BasesAssaulted; }
+
     /**
      * @brief Get the number of bases defended.
      * @return Number of bases defended.
@@ -214,6 +261,7 @@ public:
      * @brief Constructor for BattleGroundAB.
      */
     BattleGroundAB();
+
     /**
      * @brief Destructor for BattleGroundAB.
      */
@@ -224,21 +272,25 @@ public:
      * @param diff Time difference since the last update.
      */
     void Update(uint32 diff) override;
+
     /**
      * @brief Adds a player to the battleground.
      * @param plr The player to add.
      */
     void AddPlayer(Player* plr) override;
+
     /**
      * @brief Starts the event to open doors.
      */
     void StartingEventOpenDoors() override;
+
     /**
      * @brief Removes a player from the battleground.
      * @param plr The player to remove.
      * @param guid The GUID of the player.
      */
     void RemovePlayer(Player* plr, ObjectGuid guid) override;
+
     /**
      * @brief Handles area triggers.
      * @param source The player who triggered the area.
@@ -246,15 +298,18 @@ public:
      * @return True if the trigger was handled, false otherwise.
      */
     bool HandleAreaTrigger(Player* source, uint32 trigger) override;
+
     /**
      * @brief Resets the battleground state.
      */
     void Reset() override;
+
     /**
      * @brief Ends the battleground.
      * @param winner The winning team.
      */
     void EndBattleGround(Team winner) override;
+
     /**
      * @brief Gets the closest graveyard for a player.
      * @param player The player.
@@ -263,6 +318,7 @@ public:
     WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
     /* Scorekeeping */
+
     /**
      * @brief Updates the player score.
      * @param source The player.
@@ -279,6 +335,7 @@ public:
     void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
     /* Nodes occupying */
+
     /**
      * @brief Handles the event when a player clicks on a flag.
      * @param source The player who clicked the flag.
@@ -287,6 +344,7 @@ public:
     void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
 
     /* Premature finish */
+
     /**
      * @brief Gets the premature finish winning team.
      * @return The winning team.
@@ -295,6 +353,7 @@ public:
 
 private:
     /* Gameobject spawning/despawning */
+
     /**
      * @brief Creates a banner.
      * @param node The node.
@@ -303,6 +362,7 @@ private:
      * @param delay Whether to delay the creation.
      */
     void _CreateBanner(uint8 node, uint8 type, uint8 teamIndex, bool delay);
+
     /**
      * @brief Sends a node update.
      * @param node The node.
@@ -311,6 +371,7 @@ private:
 
     /* Creature spawning/despawning */
     // TODO: working, scripted peons spawning
+
     /**
      * @brief Handles node occupation.
      * @param node The node.

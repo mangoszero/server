@@ -22,14 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ListCommands.cpp
+ * @brief Implementation of listing and information display chat commands.
+ *
+ * This file contains chat command handlers for displaying lists including:
+ * - Aura listing
+ * - Item list display
+ * - NPC and creature listing
+ * - Quest and achievement lists
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellAuras.h"
 
- /**********************************************************************
-      CommandTable : listCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleListAurasCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListAurasCommand(char* /*args*/)
 {
     Unit* unit = getSelectedUnit();
@@ -115,6 +128,12 @@ bool ChatHandler::HandleListAurasCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListTalentsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListTalentsCommand(char* /*args*/)
 {
     Player* player = getSelectedPlayer();
@@ -158,6 +177,12 @@ bool ChatHandler::HandleListTalentsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListItemCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListItemCommand(char* args)
 {
     uint32 item_id;
@@ -199,11 +224,11 @@ bool ChatHandler::HandleListItemCommand(char* args)
     }
 
     result = CharacterDatabase.PQuery(
-                 //          0        1             2             3        4                  5
-                 "SELECT `ci`.`item`, `cibag`.`slot` AS bag, `ci`.`slot`, `ci`.`guid`, `characters`.`account`,`characters`.`name` "
-                 "FROM `character_inventory` AS `ci` LEFT JOIN `character_inventory` AS cibag ON (`cibag`.`item`=`ci`.`bag`),`characters` "
-                 "WHERE `ci`.`item_template`='%u' AND `ci`.`guid` = `characters`.`guid` LIMIT %u ",
-                 item_id, uint32(count));
+                //            0               1                   2            3                    4                      5
+                "SELECT `ci`.`item`, `cibag`.`slot` AS bag, `ci`.`slot`, `ci`.`guid`, `characters`.`account`,`characters`.`name` "
+                "FROM `character_inventory` AS `ci` LEFT JOIN `character_inventory` AS cibag ON (`cibag`.`item`=`ci`.`bag`),`characters` "
+                "WHERE `ci`.`item_template`='%u' AND `ci`.`guid` = `characters`.`guid` LIMIT %u ",
+                item_id, uint32(count));
 
     if (result)
     {
@@ -266,11 +291,11 @@ bool ChatHandler::HandleListItemCommand(char* args)
     if (count > 0)
     {
         result = CharacterDatabase.PQuery(
-                     //          0                     1            2              3               4            5               6
-                     "SELECT `mail_items`.`item_guid`, `mail`.`sender`, `mail`.`receiver`, `char_s`.`account`, `char_s`.`name`, `char_r`.`account`, `char_r`.`name` "
-                     "FROM `mail`,`mail_items`,`characters` as char_s,`characters` as char_r "
-                     "WHERE `mail_items`.`item_template`='%u' AND `char_s`.`guid` = `mail`.`sender` AND `char_r`.`guid` = `mail`.`receiver` AND `mail`.`id`=`mail_items`.`mail_id` LIMIT %u",
-                     item_id, uint32(count));
+                    //                    0                   1                2                    3                   4                5                   6
+                    "SELECT `mail_items`.`item_guid`, `mail`.`sender`, `mail`.`receiver`, `char_s`.`account`, `char_s`.`name`, `char_r`.`account`, `char_r`.`name` "
+                    "FROM `mail`,`mail_items`,`characters` as char_s,`characters` as char_r "
+                    "WHERE `mail_items`.`item_template`='%u' AND `char_s`.`guid` = `mail`.`sender` AND `char_r`.`guid` = `mail`.`receiver` AND `mail`.`id`=`mail_items`.`mail_id` LIMIT %u",
+                    item_id, uint32(count));
     }
     else
     {
@@ -323,10 +348,10 @@ bool ChatHandler::HandleListItemCommand(char* args)
     if (count > 0)
     {
         result = CharacterDatabase.PQuery(
-                     //           0                      1                       2                   3
-                     "SELECT  `auction`.`itemguid`, `auction`.`itemowner`, `characters`.`account`, `characters`.`name` "
-                     "FROM `auction`,`characters` WHERE `auction`.`item_template`='%u' AND `characters`.`guid` = `auction`.`itemowner` LIMIT %u",
-                     item_id, uint32(count));
+                    //                  0                     1                         2                       3
+                    "SELECT  `auction`.`itemguid`, `auction`.`itemowner`, `characters`.`account`, `characters`.`name` "
+                    "FROM `auction`,`characters` WHERE `auction`.`item_template`='%u' AND `characters`.`guid` = `auction`.`itemowner` LIMIT %u",
+                    item_id, uint32(count));
     }
     else
     {
@@ -364,6 +389,12 @@ bool ChatHandler::HandleListItemCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListPlayersCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListPlayersCommand(char* args)
 {
     uint32 limit;
@@ -403,6 +434,12 @@ bool ChatHandler::HandleListPlayersCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListObjectCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListObjectCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject_entry:go_id|h[name]|h|r
@@ -482,6 +519,12 @@ bool ChatHandler::HandleListObjectCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleListCreatureCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleListCreatureCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hcreature_entry:creature_id|h[name]|h|r

@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Channel.cpp
+ * @brief Chat channel implementation
+ *
+ * This file implements the Channel class which manages chat channels
+ * including built-in channels (General, Trade, etc.) and custom player-created
+ * channels. It handles:
+ *
+ * - Channel creation and initialization
+ * - Player join/leave operations
+ * - Channel moderation (kick, ban, mute)
+ * - Message broadcasting
+ * - Channel announcements
+ * - Built-in vs custom channel behavior
+ *
+ * @see Channel for the channel class
+ * @see ChannelMgr for channel management
+ */
+
 #include "Channel.h"
 #include "ObjectMgr.h"
 #include "World.h"
@@ -66,6 +85,12 @@ Channel::Channel(const std::string& name)
     }
 }
 
+/**
+ * @brief Adds a player to the channel after validating membership, bans, and password.
+ *
+ * @param player The player attempting to join.
+ * @param password The supplied channel password.
+ */
 void Channel::Join(Player* player, const char* password)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -128,6 +153,12 @@ void Channel::Join(Player* player, const char* password)
     }
 }
 
+/**
+ * @brief Removes a player from the channel and updates ownership if needed.
+ *
+ * @param player The player leaving the channel.
+ * @param send True to send leave notifications to the player.
+ */
 void Channel::Leave(Player* player, bool send)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -172,6 +203,13 @@ void Channel::Leave(Player* player, bool send)
     }
 }
 
+/**
+ * @brief Kicks or bans a target player from the channel.
+ *
+ * @param player The moderator issuing the command.
+ * @param targetName The target player name.
+ * @param ban True to ban the player in addition to removing them.
+ */
 void Channel::KickOrBan(Player* player, const char* targetName, bool ban)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -244,6 +282,12 @@ void Channel::KickOrBan(Player* player, const char* targetName, bool ban)
     }
 }
 
+/**
+ * @brief Removes a ban from the specified player.
+ *
+ * @param player The moderator issuing the unban.
+ * @param targetName The target player name.
+ */
 void Channel::UnBan(Player* player, const char* targetName)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -290,6 +334,12 @@ void Channel::UnBan(Player* player, const char* targetName)
     SendToAll(&data);
 }
 
+/**
+ * @brief Changes the channel password.
+ *
+ * @param player The moderator changing the password.
+ * @param password The new password string.
+ */
 void Channel::Password(Player* player, const char* password)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -318,6 +368,14 @@ void Channel::Password(Player* player, const char* password)
     SendToAll(&data);
 }
 
+/**
+ * @brief Sets or clears moderator or mute mode for a channel member.
+ *
+ * @param player The moderator issuing the change.
+ * @param targetName The target player name.
+ * @param moderator True to change moderator state, false to change mute state.
+ * @param set True to enable the mode, false to clear it.
+ */
 void Channel::SetMode(Player* player, const char* targetName, bool moderator, bool set)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -391,6 +449,12 @@ void Channel::SetMode(Player* player, const char* targetName, bool moderator, bo
     }
 }
 
+/**
+ * @brief Transfers channel ownership to another member.
+ *
+ * @param player The current owner or GM issuing the command.
+ * @param targetName The target player name.
+ */
 void Channel::SetOwner(Player* player, const char* targetName)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -442,6 +506,11 @@ void Channel::SetOwner(Player* player, const char* targetName)
     SetOwner(targetGuid);
 }
 
+/**
+ * @brief Sends the current channel owner information to a member.
+ *
+ * @param player The player requesting the owner information.
+ */
 void Channel::SendWhoOwner(Player* player)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -460,6 +529,11 @@ void Channel::SendWhoOwner(Player* player)
     SendToOne(&data, guid);
 }
 
+/**
+ * @brief Sends the visible channel member list to a player.
+ *
+ * @param player The player requesting the member list.
+ */
 void Channel::List(Player* player)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -503,6 +577,11 @@ void Channel::List(Player* player)
     SendToOne(&data, guid);
 }
 
+/**
+ * @brief Toggles join and leave announcements for the channel.
+ *
+ * @param player The moderator issuing the toggle.
+ */
 void Channel::Announce(Player* player)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -538,6 +617,11 @@ void Channel::Announce(Player* player)
     SendToAll(&data);
 }
 
+/**
+ * @brief Toggles moderated mode for the channel.
+ *
+ * @param player The moderator issuing the toggle.
+ */
 void Channel::Moderate(Player* player)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -573,6 +657,13 @@ void Channel::Moderate(Player* player)
     SendToAll(&data);
 }
 
+/**
+ * @brief Sends a chat message to all eligible channel members.
+ *
+ * @param player The player speaking in the channel.
+ * @param text The message text.
+ * @param lang The chat language identifier.
+ */
 void Channel::Say(Player* player, const char* text, uint32 lang)
 {
     if (!text)
@@ -609,8 +700,8 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         return;
     }
     else if (m_players[guid].IsMuted() ||
-             (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
-             (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
+            (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
+            (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
     {
         WorldPacket data;
         MakeMuted(&data);
@@ -636,6 +727,12 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
     SendToAll(&data, !m_players[guid].IsModerator() ? guid : ObjectGuid());
 }
 
+/**
+ * @brief Invites another player to the channel.
+ *
+ * @param player The player sending the invitation.
+ * @param targetName The target player name.
+ */
 void Channel::Invite(Player* player, const char* targetName)
 {
     ObjectGuid guid = player->GetObjectGuid();
@@ -695,6 +792,12 @@ void Channel::Invite(Player* player, const char* targetName)
     SendToOne(&data, guid);
 }
 
+/**
+ * @brief Updates the stored owner GUID and broadcasts ownership state changes.
+ *
+ * @param guid The new owner GUID.
+ * @param exclaim True to broadcast the owner changed notice.
+ */
 void Channel::SetOwner(ObjectGuid guid, bool exclaim)
 {
     if (m_ownerGuid)
@@ -726,6 +829,12 @@ void Channel::SetOwner(ObjectGuid guid, bool exclaim)
     }
 }
 
+/**
+ * @brief Sends a packet to all channel members, respecting ignores for an optional sender.
+ *
+ * @param data The packet to send.
+ * @param guid The optional sender GUID used for ignore filtering.
+ */
 void Channel::SendToAll(WorldPacket* data, ObjectGuid guid)
 {
     for (PlayerList::const_iterator i = m_players.begin(); i != m_players.end(); ++i)
@@ -740,6 +849,12 @@ void Channel::SendToAll(WorldPacket* data, ObjectGuid guid)
     }
 }
 
+/**
+ * @brief Sends a packet to a specific player.
+ *
+ * @param data The packet to send.
+ * @param who The recipient player GUID.
+ */
 void Channel::SendToOne(WorldPacket* data, ObjectGuid who)
 {
     if (Player* plr = ObjectMgr::GetPlayer(who))
@@ -748,14 +863,32 @@ void Channel::SendToOne(WorldPacket* data, ObjectGuid who)
     }
 }
 
+/**
+ * @brief Placeholder handler for granting channel voice.
+ *
+ * @param guid1 Unused source GUID.
+ * @param guid2 Unused target GUID.
+ */
 void Channel::Voice(ObjectGuid /*guid1*/, ObjectGuid /*guid2*/)
 {
 }
 
+/**
+ * @brief Placeholder handler for removing channel voice.
+ *
+ * @param guid1 Unused source GUID.
+ * @param guid2 Unused target GUID.
+ */
 void Channel::DeVoice(ObjectGuid /*guid1*/, ObjectGuid /*guid2*/)
 {
 }
 
+/**
+ * @brief Initializes a generic channel notify packet.
+ *
+ * @param data The packet to initialize.
+ * @param notify_type The channel notification opcode subtype.
+ */
 void Channel::MakeNotifyPacket(WorldPacket* data, uint8 notify_type)
 {
     data->Initialize(SMSG_CHANNEL_NOTIFY, 1 + m_name.size() + 1);
@@ -763,18 +896,35 @@ void Channel::MakeNotifyPacket(WorldPacket* data, uint8 notify_type)
     *data << m_name;
 }
 
+/**
+ * @brief Builds a packet announcing that a player joined the channel.
+ *
+ * @param data The packet to fill.
+ * @param guid The joining player GUID.
+ */
 void Channel::MakeJoined(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_JOINED_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds a packet announcing that a player left the channel.
+ *
+ * @param data The packet to fill.
+ * @param guid The leaving player GUID.
+ */
 void Channel::MakeLeft(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_LEFT_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the self-notification packet for joining the channel.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeYouJoined(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_YOU_JOINED_NOTICE);
@@ -783,55 +933,109 @@ void Channel::MakeYouJoined(WorldPacket* data)
     *data << uint8(0);                                      // CString max length 512, conditional read
 }
 
+/**
+ * @brief Builds the self-notification packet for leaving the channel.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeYouLeft(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_YOU_LEFT_NOTICE);
 }
 
+/**
+ * @brief Builds the wrong-password notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeWrongPassword(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_WRONG_PASSWORD_NOTICE);
 }
 
+/**
+ * @brief Builds the not-a-member notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeNotMember(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_NOT_MEMBER_NOTICE);
 }
 
+/**
+ * @brief Builds a not-on-channel notification packet using a channel name.
+ *
+ * @param data The packet to fill.
+ * @param name The channel name.
+ */
 void Channel::MakeNotOnPacket(WorldPacket* data, const std::string &name)
 {
     data->Initialize(SMSG_CHANNEL_NOTIFY, (1 + name.length() + 1));
     (*data) << (uint8)CHAT_NOT_MEMBER_NOTICE << name;
 }
 
+/**
+ * @brief Builds the not-a-moderator notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeNotModerator(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_NOT_MODERATOR_NOTICE);
 }
 
+/**
+ * @brief Builds the password-changed notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The GUID of the player who changed the password.
+ */
 void Channel::MakePasswordChanged(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_PASSWORD_CHANGED_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the owner-changed notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The new owner GUID.
+ */
 void Channel::MakeOwnerChanged(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_OWNER_CHANGED_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the player-not-found notification packet.
+ *
+ * @param data The packet to fill.
+ * @param name The unresolved player name.
+ */
 void Channel::MakePlayerNotFound(WorldPacket* data, const std::string& name)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_NOT_FOUND_NOTICE);
     *data << name;
 }
 
+/**
+ * @brief Builds the not-owner notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeNotOwner(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_NOT_OWNER_NOTICE);
 }
 
+/**
+ * @brief Builds the packet that reports the current channel owner.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeChannelOwner(WorldPacket* data)
 {
     std::string name = "";
@@ -845,6 +1049,13 @@ void Channel::MakeChannelOwner(WorldPacket* data)
     *data << ((IsConstant() || !m_ownerGuid) ? "Nobody" : name);
 }
 
+/**
+ * @brief Builds the packet describing a member flag change.
+ *
+ * @param data The packet to fill.
+ * @param guid The affected member GUID.
+ * @param oldflags The previous member flags.
+ */
 void Channel::MakeModeChange(WorldPacket* data, ObjectGuid guid, uint8 oldflags)
 {
     MakeNotifyPacket(data, CHAT_MODE_CHANGE_NOTICE);
@@ -853,35 +1064,71 @@ void Channel::MakeModeChange(WorldPacket* data, ObjectGuid guid, uint8 oldflags)
     *data << uint8(GetPlayerFlags(guid));
 }
 
+/**
+ * @brief Builds the announcements-enabled notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The GUID of the player who enabled announcements.
+ */
 void Channel::MakeAnnouncementsOn(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_ANNOUNCEMENTS_ON_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the announcements-disabled notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The GUID of the player who disabled announcements.
+ */
 void Channel::MakeAnnouncementsOff(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_ANNOUNCEMENTS_OFF_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the moderation-enabled notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The GUID of the player who enabled moderation.
+ */
 void Channel::MakeModerationOn(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_MODERATION_ON_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the moderation-disabled notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The GUID of the player who disabled moderation.
+ */
 void Channel::MakeModerationOff(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_MODERATION_OFF_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the muted notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeMuted(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_MUTED_NOTICE);
 }
 
+/**
+ * @brief Builds the player-kicked notification packet.
+ *
+ * @param data The packet to fill.
+ * @param target The removed player GUID.
+ * @param source The moderator GUID.
+ */
 void Channel::MakePlayerKicked(WorldPacket* data, ObjectGuid target, ObjectGuid source)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_KICKED_NOTICE);
@@ -889,11 +1136,23 @@ void Channel::MakePlayerKicked(WorldPacket* data, ObjectGuid target, ObjectGuid 
     *data << ObjectGuid(source);
 }
 
+/**
+ * @brief Builds the banned-from-channel notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeBanned(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_BANNED_NOTICE);
 }
 
+/**
+ * @brief Builds the player-banned notification packet.
+ *
+ * @param data The packet to fill.
+ * @param target The banned player GUID.
+ * @param source The moderator GUID.
+ */
 void Channel::MakePlayerBanned(WorldPacket* data, ObjectGuid target, ObjectGuid source)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_BANNED_NOTICE);
@@ -901,6 +1160,13 @@ void Channel::MakePlayerBanned(WorldPacket* data, ObjectGuid target, ObjectGuid 
     *data << ObjectGuid(source);
 }
 
+/**
+ * @brief Builds the player-unbanned notification packet.
+ *
+ * @param data The packet to fill.
+ * @param target The unbanned player GUID.
+ * @param source The moderator GUID.
+ */
 void Channel::MakePlayerUnbanned(WorldPacket* data, ObjectGuid target, ObjectGuid source)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_UNBANNED_NOTICE);
@@ -908,66 +1174,131 @@ void Channel::MakePlayerUnbanned(WorldPacket* data, ObjectGuid target, ObjectGui
     *data << ObjectGuid(source);
 }
 
+/**
+ * @brief Builds the player-not-banned notification packet.
+ *
+ * @param data The packet to fill.
+ * @param name The target player name.
+ */
 void Channel::MakePlayerNotBanned(WorldPacket* data, const std::string& name)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_NOT_BANNED_NOTICE);
     *data << name;
 }
 
+/**
+ * @brief Builds the already-a-member notification packet.
+ *
+ * @param data The packet to fill.
+ * @param guid The member GUID already in the channel.
+ */
 void Channel::MakePlayerAlreadyMember(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_ALREADY_MEMBER_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the invitation packet sent to the invited player.
+ *
+ * @param data The packet to fill.
+ * @param guid The inviter GUID.
+ */
 void Channel::MakeInvite(WorldPacket* data, ObjectGuid guid)
 {
     MakeNotifyPacket(data, CHAT_INVITE_NOTICE);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds the wrong-faction invitation failure packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeInviteWrongFaction(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_INVITE_WRONG_FACTION_NOTICE);
 }
 
+/**
+ * @brief Builds the wrong-faction notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeWrongFaction(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_WRONG_FACTION_NOTICE);
 }
 
+/**
+ * @brief Builds the invalid-channel-name notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeInvalidName(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_INVALID_NAME_NOTICE);
 }
 
+/**
+ * @brief Builds the not-moderated notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeNotModerated(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_NOT_MODERATED_NOTICE);
 }
 
+/**
+ * @brief Builds the invitation-confirmation packet for the inviter.
+ *
+ * @param data The packet to fill.
+ * @param name The invited player name.
+ */
 void Channel::MakePlayerInvited(WorldPacket* data, const std::string& name)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_INVITED_NOTICE);
     *data << name;
 }
 
+/**
+ * @brief Builds the invite-banned failure packet.
+ *
+ * @param data The packet to fill.
+ * @param name The banned player name.
+ */
 void Channel::MakePlayerInviteBanned(WorldPacket* data, const std::string& name)
 {
     MakeNotifyPacket(data, CHAT_PLAYER_INVITE_BANNED_NOTICE);
     *data << name;
 }
 
+/**
+ * @brief Builds the throttled notification packet.
+ *
+ * @param data The packet to fill.
+ */
 void Channel::MakeThrottled(WorldPacket* data)
 {
     MakeNotifyPacket(data, CHAT_THROTTLED_NOTICE);
 }
 
+/**
+ * @brief Placeholder join notification hook for client versions that support it.
+ *
+ * @param guid Unused joining player GUID.
+ */
 void Channel::JoinNotify(ObjectGuid /*guid*/)
 {
     // [-ZERO] Feature doesn't exist in 1.x.
 }
 
+/**
+ * @brief Placeholder leave notification hook for client versions that support it.
+ *
+ * @param guid Unused leaving player GUID.
+ */
 void Channel::LeaveNotify(ObjectGuid /*guid*/)
 {
     // [-ZERO] Feature doesn't exist in 1.x.

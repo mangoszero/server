@@ -32,32 +32,36 @@
 
 namespace ACE_Based
 {
+
     /**
-     * @brief
+     * @brief Base class for runnable tasks
      *
+     * Runnable provides an interface for tasks that can be executed
+     * in separate threads. Uses reference counting for automatic cleanup.
      */
     class Runnable
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Virtual destructor
              */
             virtual ~Runnable() {}
+
             /**
-             * @brief
-             *
+             * @brief Main execution method for the task
              */
             virtual void run() = 0;
 
             /**
-             * @brief
-             *
+             * @brief Increment reference count
              */
-            void incReference() { ++m_refs; }
+            void incReference()
+            {
+                ++m_refs;
+            }
+
             /**
-             * @brief
-             *
+             * @brief Decrement reference count, delete if zero
              */
             void decReference()
             {
@@ -67,12 +71,11 @@ namespace ACE_Based
                 }
             }
         private:
-            ACE_Atomic_Op<ACE_Thread_Mutex, long> m_refs; /**< TODO */
+            ACE_Atomic_Op<ACE_Thread_Mutex, long> m_refs; /**< Reference counter */
     };
 
     /**
-     * @brief
-     *
+     * @brief Thread priority levels
      */
     enum Priority
     {
@@ -88,27 +91,28 @@ namespace ACE_Based
 #define MAXPRIORITYNUM (Realtime + 1)
 
     /**
-     * @brief
+     * @brief Thread priority management
      *
+     * ThreadPriority maps platform-independent priority levels
+     * to OS-specific priority values.
      */
     class ThreadPriority
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Constructor - initializes priority mappings
              */
             ThreadPriority();
+
             /**
-             * @brief
-             *
-             * @param p
-             * @return int
+             * @brief Get OS-specific priority value
+             * @param p Platform-independent priority level
+             * @return OS-specific priority value
              */
             int getPriority(Priority p) const;
 
         private:
-            int m_priority[MAXPRIORITYNUM]; /**< TODO */
+            int m_priority[MAXPRIORITYNUM]; /**< Priority value array */
     };
 
     /**
@@ -119,97 +123,86 @@ namespace ACE_Based
     {
         public:
             /**
-             * @brief
-             *
+             * @brief Default constructor
              */
             Thread();
+
             /**
-             * @brief
-             *
-             * @param instance
+             * @brief Constructor with runnable task
+             * @param instance Runnable task to execute
              */
             explicit Thread(Runnable* instance);
+
             /**
-             * @brief
-             *
+             * @brief Destructor
              */
             ~Thread();
 
             /**
-             * @brief
-             *
-             * @return bool
+             * @brief Start the thread execution
+             * @return True on success, false on failure
              */
             bool start();
+
             /**
-             * @brief
-             *
-             * @return bool
+             * @brief Wait for thread to finish
+             * @return True on success, false on failure
              */
             bool wait();
+
             /**
-             * @brief
-             *
+             * @brief Destroy the thread
              */
             void destroy();
 
             /**
-             * @brief
-             *
+             * @brief Suspend thread execution
              */
             void suspend();
+
             /**
-             * @brief
-             *
+             * @brief Resume thread execution
              */
             void resume();
 
             /**
-             * @brief
-             *
-             * @param type
+             * @brief Set thread priority
+             * @param type Priority level
              */
             void setPriority(Priority type);
 
             /**
-             * @brief
-             *
-             * @param msecs
+             * @brief Sleep for specified milliseconds
+             * @param msecs Milliseconds to sleep
              */
             static void Sleep(unsigned long msecs);
 
         private:
             /**
-             * @brief
-             *
-             * @param
+             * @brief Copy constructor (disabled)
              */
             Thread(const Thread&);
+
             /**
-             * @brief
-             *
-             * @param
-             * @return Thread &operator
+             * @brief Assignment operator (disabled)
              */
             Thread& operator=(const Thread&);
 
             /**
-             * @brief
-             *
-             * @param param
-             * @return ACE_THR_FUNC_RETURN
+             * @brief Thread entry point function
+             * @param param Thread parameter
+             * @return Thread return value
              */
             static ACE_THR_FUNC_RETURN ThreadTask(void* param);
 
-            ACE_thread_t m_iThreadId; /**< TODO */
-            ACE_hthread_t m_hThreadHandle; /**< TODO */
-            Runnable* m_task; /**< TODO */
+            ACE_thread_t m_iThreadId; /**< Thread ID */
+            ACE_hthread_t m_hThreadHandle; /**< Thread handle */
+            Runnable* m_task; /**< Runnable task */
 
             /**
-             * @brief
-             *
+             * @brief Static priority mapping object
              */
-            static ThreadPriority m_TpEnum; /**< use this object to determine current OS thread priority values mapped to enum Priority{} */
+            static ThreadPriority m_TpEnum; /**< Maps Priority enum to OS-specific values */
     };
 }
 #endif

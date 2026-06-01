@@ -499,6 +499,7 @@ bool WaypointMovementGenerator<Creature>::SetNextWaypoint(uint32 pointId)
 }
 
 //----------------------------------------------------//
+
 /**
  * @brief Gets the path at the end of the map.
  * @return The path at the end of the map.

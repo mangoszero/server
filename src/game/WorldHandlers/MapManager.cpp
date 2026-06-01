@@ -22,6 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MapManager.cpp
+ * @brief Map manager implementation
+ *
+ * This file implements MapManager, a singleton that manages all map
+ * instances on the server. Key responsibilities:
+ *
+ * - Map instance creation and destruction
+ * - Map lookup by ID and instance ID
+ * - Continent map management (shared instances)
+ * - Instance map management (separate instances)
+ * - Player-to-map routing
+ * - Map update scheduling
+ * - Transport system management
+ *
+ * MapManager ensures proper cleanup of unused maps and efficient
+ * routing of players to their current map instance.
+ *
+ * @see MapManager for the manager class
+ * @see Map for individual map implementation
+ */
+
 #include "MapManager.h"
 #include "MapPersistentStateMgr.h"
 #include "Policies/Singleton.h"
@@ -86,6 +108,9 @@ MapManager::Initialize()
     InitMaxInstanceId();
 }
 
+/**
+ * @brief Creates the grid state machine instances used by map updates.
+ */
 void MapManager::InitStateMachine()
 {
     si_GridStates[GRID_STATE_INVALID] = new InvalidState;
@@ -94,6 +119,9 @@ void MapManager::InitStateMachine()
     si_GridStates[GRID_STATE_REMOVAL] = new RemovalState;
 }
 
+/**
+ * @brief Destroys the grid state machine instances.
+ */
 void MapManager::DeleteStateMachine()
 {
     delete si_GridStates[GRID_STATE_INVALID];
@@ -102,6 +130,17 @@ void MapManager::DeleteStateMachine()
     delete si_GridStates[GRID_STATE_REMOVAL];
 }
 
+/**
+ * @brief Updates a single grid through its current state handler.
+ *
+ * @param state The current grid state.
+ * @param map The owning map.
+ * @param ngrid The grid being updated.
+ * @param ginfo The grid info structure.
+ * @param x The grid X coordinate.
+ * @param y The grid Y coordinate.
+ * @param t_diff The elapsed update time.
+ */
 void MapManager::UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid, GridInfo& ginfo, const uint32& x, const uint32& y, const uint32& t_diff)
 {
     // TODO: The grid state array itself is static and therefore 100% safe, however, the data
@@ -111,6 +150,9 @@ void MapManager::UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid,
     si_GridStates[state]->Update(map, ngrid, ginfo, x, y, t_diff);
 }
 
+/**
+ * @brief Reinitializes visibility distance settings for all loaded maps.
+ */
 void MapManager::InitializeVisibilityDistanceInfo()
 {
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
@@ -162,6 +204,13 @@ Map* MapManager::CreateMap(uint32 id, const WorldObject* obj)
     return m;
 }
 
+/**
+ * @brief Creates a battleground map instance.
+ *
+ * @param mapid The battleground map id.
+ * @param bg The battleground owning the map.
+ * @return Map* The created battleground map.
+ */
 Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
 {
     sTerrainMgr.LoadTerrain(mapid);
@@ -170,6 +219,13 @@ Map* MapManager::CreateBgMap(uint32 mapid, BattleGround* bg)
     return CreateBattleGroundMap(mapid, sMapMgr.GenerateInstanceId(), bg);
 }
 
+/**
+ * @brief Finds a loaded map by map id and instance id.
+ *
+ * @param mapid The map id.
+ * @param instanceId The instance id.
+ * @return Map* The loaded map, or null if not found.
+ */
 Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
 {
     ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_lock, NULL)
@@ -190,6 +246,12 @@ Map* MapManager::FindMap(uint32 mapid, uint32 instanceId) const
     return iter->second;
 }
 
+/**
+ * @brief Deletes a loaded instance map.
+ *
+ * @param mapid The map id.
+ * @param instanceId The instance id.
+ */
 void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
 {
     ACE_GUARD(LOCK_TYPE, _guard, m_lock)
@@ -208,6 +270,11 @@ void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
     }
 }
 
+/**
+ * @brief Updates all loaded maps and transports.
+ *
+ * @param diff The elapsed update time.
+ */
 void MapManager::Update(uint32 diff)
 {
     i_timer.Update(diff);
@@ -261,6 +328,9 @@ void MapManager::Update(uint32 diff)
     i_timer.SetCurrent(0);
 }
 
+/**
+ * @brief Removes all objects pending deletion from all loaded maps.
+ */
 void MapManager::RemoveAllObjectsInRemoveList()
 {
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
@@ -269,6 +339,14 @@ void MapManager::RemoveAllObjectsInRemoveList()
     }
 }
 
+/**
+ * @brief Checks whether map and vmap data exist for a location.
+ *
+ * @param mapid The map id.
+ * @param x The X coordinate.
+ * @param y The Y coordinate.
+ * @return true if both map and vmap data exist; otherwise false.
+ */
 bool MapManager::ExistMapAndVMap(uint32 mapid, float x, float y)
 {
     GridPair p = MaNGOS::ComputeGridPair(x, y);
@@ -279,6 +357,12 @@ bool MapManager::ExistMapAndVMap(uint32 mapid, float x, float y)
     return GridMap::ExistMap(mapid, gx, gy) && GridMap::ExistVMap(mapid, gx, gy);
 }
 
+/**
+ * @brief Checks whether a map id is valid for loading.
+ *
+ * @param mapid The map id.
+ * @return true if the map is valid; otherwise false.
+ */
 bool MapManager::IsValidMAP(uint32 mapid)
 {
     MapEntry const* mEntry = sMapStore.LookupEntry(mapid);
@@ -286,6 +370,9 @@ bool MapManager::IsValidMAP(uint32 mapid)
     // TODO: add check for battleground template
 }
 
+/**
+ * @brief Unloads all maps and terrain data.
+ */
 void MapManager::UnloadAll()
 {
     for (MapMapType::iterator iter = i_maps.begin(); iter != i_maps.end(); ++iter)
@@ -303,10 +390,15 @@ void MapManager::UnloadAll()
 
     if (m_updater.activated())
     {
+        sLog.outString("[shutdown] MapManager::UnloadAll: deactivating MapUpdater...");
         m_updater.deactivate();
+        sLog.outString("[shutdown] MapManager::UnloadAll: MapUpdater deactivated");
     }
 }
 
+/**
+ * @brief Initializes the highest known instance id from the database.
+ */
 void MapManager::InitMaxInstanceId()
 {
     i_MaxInstanceId = 0;
@@ -319,6 +411,11 @@ void MapManager::InitMaxInstanceId()
     }
 }
 
+/**
+ * @brief Counts loaded dungeon instances.
+ *
+ * @return uint32 The number of loaded dungeon maps.
+ */
 uint32 MapManager::GetNumInstances()
 {
     uint32 ret = 0;
@@ -336,6 +433,11 @@ uint32 MapManager::GetNumInstances()
     return ret;
 }
 
+/**
+ * @brief Counts players currently inside loaded dungeon instances.
+ *
+ * @return uint32 The number of players in loaded instances.
+ */
 uint32 MapManager::GetNumPlayersInInstances()
 {
     uint32 ret = 0;
@@ -400,6 +502,14 @@ Map* MapManager::CreateInstance(uint32 id, Player* player)
     return map;
 }
 
+/**
+ * @brief Creates a dungeon map instance.
+ *
+ * @param id The map id.
+ * @param InstanceId The instance id.
+ * @param save The optional persistent state to load from.
+ * @return DungeonMap* The created dungeon map.
+ */
 DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPersistentState* save)
 {
     // make sure we have a valid map id
@@ -426,6 +536,14 @@ DungeonMap* MapManager::CreateDungeonMap(uint32 id, uint32 InstanceId, DungeonPe
     return map;
 }
 
+/**
+ * @brief Creates a battleground map instance and binds it to a battleground.
+ *
+ * @param id The map id.
+ * @param InstanceId The instance id.
+ * @param bg The battleground owning the map.
+ * @return BattleGroundMap* The created battleground map.
+ */
 BattleGroundMap* MapManager::CreateBattleGroundMap(uint32 id, uint32 InstanceId, BattleGround* bg)
 {
     DEBUG_LOG("MapInstanced::CreateBattleGroundMap: instance:%d for map:%d and bgType:%d created.", InstanceId, id, bg->GetTypeID());
@@ -444,8 +562,19 @@ BattleGroundMap* MapManager::CreateBattleGroundMap(uint32 id, uint32 InstanceId,
     return map;
 }
 
-void MapManager::LoadContinents()
+// Temporary startup accumulator for LivingWorld observability (written during LoadContinents only)
+static MapManager::LivingWorldStartupStats s_livingWorldStats;
+static bool s_livingWorldStartupPass = false;
+
+/**
+ * @brief Ensures the main continent maps are loaded.
+ */
+MapManager::LivingWorldStartupStats MapManager::LoadContinents()
 {
+    // Reset startup accumulator before continent creation
+    s_livingWorldStats = MapManager::LivingWorldStartupStats();
+    s_livingWorldStartupPass = true;
+
     uint32 continents[] = {0, 1, 369};
     Map* _map = NULL;
 
@@ -464,22 +593,61 @@ void MapManager::LoadContinents()
         }
     }
 
-    return;
+    s_livingWorldStartupPass = false;
+    return s_livingWorldStats;
 }
 
+/**
+ * @brief Loads active entities and forced grids for a map.
+ *
+ * @param m The map to prepare.
+ */
 void MapManager::LoadActiveEntities(Map* m)
 {
-
     // Create all local transporters for this map
     m->LoadLocalTransports();
 
+    uint32 localTransportCount = uint32(m->GetLocalTransports().size());
+
+    bool forceLoad = sWorld.isForceLoadMap(m->GetId());
+
+    uint32 forceLoadRequests = 0;
+    uint32 uniqueGridCount = 0;
+    uint32 newlyLoaded = 0;
+    uint32 alreadyLoaded = 0;
+
+    std::set<std::pair<uint32, uint32>> uniqueGrids;
+
+    // Count active-creature GUIDs present on this map (extra-active, NOT the load driver on force-load maps)
+    uint32 activeCreatureGuids = 0;
+    {
+        std::pair<ActiveCreatureGuidsOnMap::const_iterator, ActiveCreatureGuidsOnMap::const_iterator> activeBounds = sObjectMgr.GetActiveCreatureGuids()->equal_range(m->GetId());
+        for (ActiveCreatureGuidsOnMap::const_iterator itr = activeBounds.first; itr != activeBounds.second; ++itr)
+        {
+            ++activeCreatureGuids;
+        }
+    }
+
     // Load grids for all objects on this map, if configured so
-    if (sWorld.isForceLoadMap(m->GetId()))
+    if (forceLoad)
     {
         for (CreatureDataMap::const_iterator itr = sObjectMgr.GetCreatureDataMap()->begin(); itr != sObjectMgr.GetCreatureDataMap()->end(); ++itr)
         {
             if (itr->second.mapid == m->GetId())
             {
+                ++forceLoadRequests;
+                GridPair gridPair = MaNGOS::ComputeGridPair(itr->second.posX, itr->second.posY);
+                uniqueGrids.insert(std::make_pair(gridPair.x_coord, gridPair.y_coord));
+
+                if (m->IsLoaded(itr->second.posX, itr->second.posY))
+                {
+                    ++alreadyLoaded;
+                }
+                else
+                {
+                    ++newlyLoaded;
+                }
+
                 m->ForceLoadGrid(itr->second.posX, itr->second.posY);
             }
         }
@@ -490,11 +658,56 @@ void MapManager::LoadActiveEntities(Map* m)
         for (ActiveCreatureGuidsOnMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             CreatureData const* data = sObjectMgr.GetCreatureData(itr->second);
+            ++forceLoadRequests;
+            GridPair gridPair = MaNGOS::ComputeGridPair(data->posX, data->posY);
+            uniqueGrids.insert(std::make_pair(gridPair.x_coord, gridPair.y_coord));
+
+            if (m->IsLoaded(data->posX, data->posY))
+            {
+                ++alreadyLoaded;
+            }
+            else
+            {
+                ++newlyLoaded;
+            }
+
             m->ForceLoadGrid(data->posX, data->posY);
+        }
+    }
+
+    uniqueGridCount = uint32(uniqueGrids.size());
+
+    // Only emit startup summary and accumulate totals during the LoadContinents startup pass
+    if (s_livingWorldStartupPass)
+    {
+        // Accumulate to startup totals
+        s_livingWorldStats.totalUniqueGrids += uniqueGridCount;
+        s_livingWorldStats.totalNewlyLoaded += newlyLoaded;
+        s_livingWorldStats.totalLocalTransports += localTransportCount;
+        if (forceLoad)
+        {
+            ++s_livingWorldStats.forcedMaps;
+        }
+
+        // Per-map summary (O(1) log volume)
+        if (forceLoad)
+        {
+            sLog.outString("[LivingWorld] map %u: force-load=ON, creature-rows=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u, extra-active-creatures=%u, local-transports=%u",
+                           m->GetId(), forceLoadRequests, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded, activeCreatureGuids, localTransportCount);
+        }
+        else
+        {
+            sLog.outString("[LivingWorld] map %u: force-load=OFF, extra-active-creatures=%u, ForceLoadGrid-requests=%u, unique-grids=%u, newly-loaded=%u (explicit-locks-set), already-loaded=%u, local-transports=%u",
+                           m->GetId(), activeCreatureGuids, forceLoadRequests, uniqueGridCount, newlyLoaded, alreadyLoaded, localTransportCount);
         }
     }
 }
 
+/**
+ * @brief Executes a worker for every loaded map.
+ *
+ * @param worker The callback to run for each map.
+ */
 void MapManager::DoForAllMaps(const std::function<void(Map*)>& worker)
 {
     for (MapMapType::const_iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)

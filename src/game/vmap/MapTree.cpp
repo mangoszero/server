@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MapTree.cpp
+ * @brief Map tree implementation for VMap spatial indexing
+ *
+ * This file implements MapTree which manages the spatial index for
+ * a map's static geometry using BIH (Bounding Interval Hierarchy).
+ * It provides efficient queries for line-of-sight, height, and collision.
+ *
+ * Key features:
+ * - BIH-based spatial index
+ * - Ray intersection queries
+ * - Area information retrieval
+ * - Height/floor determination
+ *
+ * @see MapTree for the map tree class
+ * @see BIH for the spatial index structure
+ */
+
 #include "MapTree.h"
 #include "ModelInstance.h"
 #include "VMapManager2.h"
@@ -36,6 +54,7 @@ using G3D::Vector3;
 
 namespace VMAP
 {
+
     /**
      * @brief Callback class for ray intersection with models.
      */

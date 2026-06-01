@@ -22,13 +22,42 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file InstanceData.cpp
+ * @brief Instance script data persistence base implementation
+ *
+ * This file provides the base implementation for saving/loading instance
+ * script data. InstanceData is the abstract base class that all dungeon/raid
+ * scripts inherit from to persist state (boss kills, encounters, etc.) to the
+ * database.
+ *
+ * Data is stored in either:
+ * - `instance` table for dungeons/raids (instanced maps)
+ * - `world` table for continent/world state (non-instanced maps)
+ *
+ * @see InstanceData for the abstract interface
+ * @see Map for the owning map instance
+ */
+
 #include "InstanceData.h"
 #include "Database/DatabaseEnv.h"
 #include "Map.h"
 
+/**
+ * @brief Save instance state to database
+ *
+ * Persists the instance script data to the appropriate database table.
+ * Skips saving for:
+ * - Battlegrounds/Arenas (no persistence needed)
+ * - Instances with no data to save (Save() returns empty string)
+ *
+ * Data is escaped before storage to prevent SQL injection.
+ *
+ * @note Called periodically and on instance shutdown
+ */
 void InstanceData::SaveToDB() const
 {
-    // no reason to save BGs/Arenas
+    // No reason to save BGs/Arenas
     if (instance->IsBattleGround())
     {
         return;
@@ -52,6 +81,20 @@ void InstanceData::SaveToDB() const
     }
 }
 
+/**
+ * @brief Check if instance condition criteria are met
+ * @param source Player to check conditions for
+ * @param instance_condition_id Condition identifier from database
+ * @param conditionSource WorldObject triggering the condition check
+ * @param conditionSourceType Type of the condition source
+ * @return true if conditions are met, false otherwise
+ *
+ * Base implementation logs an error and returns false. Instance scripts
+ * should override this to implement custom condition checking logic for
+ * access requirements, quests, or other instance-specific conditions.
+ *
+ * @warning Derived classes must override this for condition system support
+ */
 bool InstanceData::CheckConditionCriteriaMeet(Player const* /*source*/, uint32 instance_condition_id, WorldObject const* /*conditionSource*/, uint32 conditionSourceType) const
 {
     sLog.outError("Condition system call InstanceData::CheckConditionCriteriaMeet but instance script for map %u not have implementation for player condition criteria with internal id %u (called from %u)",

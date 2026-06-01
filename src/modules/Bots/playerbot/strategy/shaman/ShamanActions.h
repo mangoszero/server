@@ -15,7 +15,6 @@ namespace ai
         CastLesserHealingWaveOnPartyAction(PlayerbotAI* ai) : HealPartyMemberAction(ai, "lesser healing wave") {}
     };
 
-
     class CastHealingWaveAction : public CastHealingSpellAction {
     public:
         CastHealingWaveAction(PlayerbotAI* ai) : CastHealingSpellAction(ai, "healing wave") {}
@@ -61,7 +60,10 @@ namespace ai
     {
     public:
         CastTotemAction(PlayerbotAI* ai, string spell) : CastBuffSpellAction(ai, spell) {}
-        virtual bool isUseful() { return CastBuffSpellAction::isUseful() && !AI_VALUE2(bool, "has totem", name); }
+        virtual bool isUseful()
+        {
+            return CastBuffSpellAction::isUseful() && !AI_VALUE2(bool, "has totem", name);
+        }
     };
 
     class CastStoneskinTotemAction : public CastTotemAction
@@ -92,7 +94,10 @@ namespace ai
     {
     public:
         CastManaTideTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "mana tide totem") {}
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
     };
 
     class CastHealingStreamTotemAction : public CastTotemAction
@@ -123,15 +128,25 @@ namespace ai
     {
     public:
         CastSearingTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "searing totem") {}
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
     };
 
     class CastMagmaTotemAction : public CastMeleeSpellAction
     {
     public:
         CastMagmaTotemAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "magma totem") {}
-        virtual string GetTargetName() { return "self target"; }
-        virtual bool isUseful() { return CastMeleeSpellAction::isUseful() && !AI_VALUE2(bool, "has totem", name); }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
+
+        virtual bool isUseful()
+        {
+            return CastMeleeSpellAction::isUseful() && !AI_VALUE2(bool, "has totem", name);
+        }
     };
 
     class CastAncestralSpiritAction : public ResurrectPartyMemberAction
@@ -139,7 +154,6 @@ namespace ai
     public:
         CastAncestralSpiritAction(PlayerbotAI* ai) : ResurrectPartyMemberAction(ai, "ancestral spirit") {}
     };
-
 
     class CastPurgeAction : public CastSpellAction
     {
@@ -224,42 +238,60 @@ namespace ai
     {
     public:
         CastCleanseSpiritAction(PlayerbotAI* ai) : CastSpellAction(ai, "cleanse spirit") {}
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
     };
 
     class CastCleanseSpiritPoisonOnPartyAction : public CurePartyMemberAction
     {
     public:
         CastCleanseSpiritPoisonOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_POISON) {}
-        virtual string getName() { return "cleanse spirit poison on party"; }
+        virtual string getName()
+        {
+            return "cleanse spirit poison on party";
+        }
     };
 
     class CastCleanseSpiritCurseOnPartyAction : public CurePartyMemberAction
     {
     public:
         CastCleanseSpiritCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_CURSE) {}
-        virtual string getName() { return "cleanse spirit curse on party"; }
+        virtual string getName()
+        {
+            return "cleanse spirit curse on party";
+        }
     };
 
     class CastCleanseSpiritDiseaseOnPartyAction : public CurePartyMemberAction
     {
     public:
         CastCleanseSpiritDiseaseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cleanse spirit", DISPEL_DISEASE) {}
-        virtual string getName() { return "cleanse spirit disease on party"; }
+        virtual string getName()
+        {
+            return "cleanse spirit disease on party";
+        }
     };
 
     class CastFireNovaAction : public CastSpellAction
     {
     public:
         CastFireNovaAction(PlayerbotAI* ai) : CastSpellAction(ai, "fire nova") {}
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
     };
 
     class CastThunderstormAction : public CastSpellAction
     {
     public:
         CastThunderstormAction(PlayerbotAI* ai) : CastSpellAction(ai, "thunderstorm") {}
-        virtual string GetTargetName() { return "self target"; }
+        virtual string GetTargetName()
+        {
+            return "self target";
+        }
     };
 
     class CastGhostWolfAction : public CastBuffSpellAction

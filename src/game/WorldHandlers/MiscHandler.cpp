@@ -22,6 +22,31 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MiscHandler.cpp
+ * @brief Miscellaneous opcode handlers
+ *
+ * This file handles miscellaneous opcodes that don't fit into
+ * other specific handler categories:
+ *
+ * - CMSG_NAME_QUERY: Query character name by GUID
+ * - CMSG_PING: Client ping/pong
+ * - CMSG_LOGOUT_REQUEST: Logout request
+ * - CMSG_LOGOUT_CANCEL: Cancel logout
+ * - CMSG_ZONE_UPDATE: Zone update
+ * - CMSG_SET_ACTIONBAR_TOGGLES: Set action bar toggles
+ * - CMSG_SET_ACTIONBAR_TEXT: Set action bar text
+ * - CMSG_MOVE_TIME_SKIPPED: Movement time skipped
+ * - CMSG_MOVE_FALL_RESET: Fall reset
+ * - CMSG_WORLD_STATE_UI_TIMER: UI timer
+ * - CMSG_NEXT_CINEMATIC_CAMERA: Cinematic camera
+ * - CMSG_COMPLETE_CINEMATIC: Complete cinematic
+ * - CMSG_SET_FACTION_AT_WAR: Set faction at war
+ * - CMSG_SET_WATCHED_FACTION: Set watched faction
+ * - CMSG_TOGGLE_PVP: Toggle PVP flag
+ * - CMSG_SET_PLAYER_DECLARED_NAME: Set player name
+ */
+
 #include <zlib.h>
 #include "Common.h"
 #include "Language.h"
@@ -85,6 +110,11 @@ void WorldSession::HandleRepopRequestOpcode(WorldPacket& /*recv_data*/)
     GetPlayer()->RepopAtGraveyard();
 }
 
+/**
+ * @brief Handles a /who query and sends matching player results.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHO");
@@ -323,6 +353,11 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Send SMSG_WHO Message");
 }
 
+/**
+ * @brief Starts the logout flow and validates whether logout is allowed.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_REQUEST, security %u", GetSecurity());
@@ -384,11 +419,21 @@ void WorldSession::HandleLogoutRequestOpcode(WorldPacket& /*recv_data*/)
     LogoutRequest(time(NULL));
 }
 
+/**
+ * @brief Acknowledges the client logout opcode.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandlePlayerLogoutOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_PLAYER_LOGOUT Message");
 }
 
+/**
+ * @brief Cancels a pending logout request.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LOGOUT_CANCEL Message");
@@ -420,6 +465,11 @@ void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
     DEBUG_LOG("WORLD: sent SMSG_LOGOUT_CANCEL_ACK Message");
 }
 
+/**
+ * @brief Toggles or explicitly sets the player's PvP flag.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTogglePvP(WorldPacket& recv_data)
 {
     // this opcode can be used in two ways: Either set explicit new status or toggle old status
@@ -450,6 +500,11 @@ void WorldSession::HandleTogglePvP(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Updates the player's cached zone and area.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleZoneUpdateOpcode(WorldPacket& recv_data)
 {
     uint32 newZone;
@@ -463,6 +518,11 @@ void WorldSession::HandleZoneUpdateOpcode(WorldPacket& recv_data)
     GetPlayer()->UpdateZone(newzone, newarea);
 }
 
+/**
+ * @brief Sets the player's current target selection.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
 {
     // When this packet send?
@@ -484,6 +544,11 @@ void WorldSession::HandleSetTargetOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Sets the player's selected object guid.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -510,6 +575,11 @@ void WorldSession::HandleSetSelectionOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Changes the player's stand state animation.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
 {
     // DEBUG_LOG("WORLD: Received opcode CMSG_STANDSTATECHANGE"); -- too many spam in log at lags/debug stop
@@ -519,12 +589,22 @@ void WorldSession::HandleStandStateChangeOpcode(WorldPacket& recv_data)
     _player->SetStandState(animstate);
 }
 
+/**
+ * @brief Sends the player's friend list.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleFriendListOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_FRIEND_LIST");
     _player->GetSocial()->SendFriendList();
 }
 
+/**
+ * @brief Starts an asynchronous add-friend lookup.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_ADD_FRIEND");
@@ -546,6 +626,12 @@ void WorldSession::HandleAddFriendOpcode(WorldPacket& recv_data)
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleAddFriendOpcodeCallBack, GetAccountId(), "SELECT `guid`, `race` FROM `characters` WHERE `name` = '%s'", friendName.c_str());
 }
 
+/**
+ * @brief Completes an add-friend request after the character lookup.
+ *
+ * @param result The async query result.
+ * @param accountId The requesting account id.
+ */
 void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 accountId)
 {
     if (!result)
@@ -611,6 +697,11 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult* result, uint32 acc
     DEBUG_LOG("WORLD: Sent (SMSG_FRIEND_STATUS)");
 }
 
+/**
+ * @brief Removes a friend from the player's social list.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleDelFriendOpcode(WorldPacket& recv_data)
 {
     ObjectGuid friendGuid;
@@ -626,6 +717,11 @@ void WorldSession::HandleDelFriendOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Sent motd (SMSG_FRIEND_STATUS)");
 }
 
+/**
+ * @brief Starts an asynchronous add-ignore lookup.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_ADD_IGNORE");
@@ -647,6 +743,12 @@ void WorldSession::HandleAddIgnoreOpcode(WorldPacket& recv_data)
     CharacterDatabase.AsyncPQuery(&WorldSession::HandleAddIgnoreOpcodeCallBack, GetAccountId(), "SELECT `guid` FROM `characters` WHERE `name` = '%s'", IgnoreName.c_str());
 }
 
+/**
+ * @brief Completes an add-ignore request after the character lookup.
+ *
+ * @param result The async query result.
+ * @param accountId The requesting account id.
+ */
 void WorldSession::HandleAddIgnoreOpcodeCallBack(QueryResult* result, uint32 accountId)
 {
     if (!result)
@@ -699,6 +801,11 @@ void WorldSession::HandleAddIgnoreOpcodeCallBack(QueryResult* result, uint32 acc
     DEBUG_LOG("WORLD: Sent (SMSG_FRIEND_STATUS)");
 }
 
+/**
+ * @brief Removes an ignored player from the social list.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleDelIgnoreOpcode(WorldPacket& recv_data)
 {
     ObjectGuid ignoreGuid;
@@ -714,6 +821,11 @@ void WorldSession::HandleDelIgnoreOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Sent motd (SMSG_FRIEND_STATUS)");
 }
 
+/**
+ * @brief Stores a bug report or suggestion from the client.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBugOpcode(WorldPacket& recv_data)
 {
     uint32 suggestion, contentlen, typelen;
@@ -740,6 +852,11 @@ void WorldSession::HandleBugOpcode(WorldPacket& recv_data)
     CharacterDatabase.PExecute("INSERT INTO `bugreport` (`type`,`content`) VALUES('%s', '%s')", type.c_str(), content.c_str());
 }
 
+/**
+ * @brief Attempts to reclaim the player's corpse.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_RECLAIM_CORPSE");
@@ -783,6 +900,11 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPacket& recv_data)
     GetPlayer()->SpawnCorpseBones();
 }
 
+/**
+ * @brief Accepts or rejects a pending resurrection request.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleResurrectResponseOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_RESURRECT_RESPONSE");
@@ -811,6 +933,11 @@ void WorldSession::HandleResurrectResponseOpcode(WorldPacket& recv_data)
     GetPlayer()->ResurectUsingRequestData();                // will call spawncorpsebones
 }
 
+/**
+ * @brief Processes an area trigger activation.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_AREATRIGGER");
@@ -964,6 +1091,11 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket& recv_data)
     player->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT, true);
 }
 
+/**
+ * @brief Consumes an account-data update packet.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_UPDATE_ACCOUNT_DATA");
@@ -971,12 +1103,22 @@ void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
     // recv_data.hexlike();
 }
 
+/**
+ * @brief Acknowledges an account-data request packet.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleRequestAccountData(WorldPacket& /*recv_data*/)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_REQUEST_ACCOUNT_DATA");
     // recv_data.hexlike();
 }
 
+/**
+ * @brief Updates one action button assignment.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_ACTION_BUTTON");
@@ -1015,16 +1157,31 @@ void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Acknowledges cinematic completion.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCompleteCinematic(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_COMPLETE_CINEMATIC");
 }
 
+/**
+ * @brief Advances the client's cinematic camera.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleNextCinematicCamera(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_NEXT_CINEMATIC_CAMERA");
 }
 
+/**
+ * @brief Consumes a feather-fall movement acknowledgement.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleFeatherFallAck(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_FEATHER_FALL_ACK");
@@ -1033,6 +1190,11 @@ void WorldSession::HandleFeatherFallAck(WorldPacket& recv_data)
     recv_data.rpos(recv_data.wpos());                       // prevent warnings spam
 }
 
+/**
+ * @brief Consumes a movement unroot acknowledgement.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveUnRootAck(WorldPacket& recv_data)
 {
     // no used
@@ -1057,6 +1219,11 @@ void WorldSession::HandleMoveUnRootAck(WorldPacket& recv_data)
     */
 }
 
+/**
+ * @brief Consumes a movement root acknowledgement.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveRootAck(WorldPacket& recv_data)
 {
     // no used
@@ -1081,6 +1248,11 @@ void WorldSession::HandleMoveRootAck(WorldPacket& recv_data)
     */
 }
 
+/**
+ * @brief Updates the player's action-bar toggle byte.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetActionBarTogglesOpcode(WorldPacket& recv_data)
 {
     uint8 ActionBar;
@@ -1099,6 +1271,11 @@ void WorldSession::HandleSetActionBarTogglesOpcode(WorldPacket& recv_data)
     GetPlayer()->SetByteValue(PLAYER_FIELD_BYTES, 2, ActionBar);
 }
 
+/**
+ * @brief Sends the player's total and current-level played time.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandlePlayedTime(WorldPacket& /*recv_data*/)
 {
     WorldPacket data(SMSG_PLAYED_TIME, 4 + 4);
@@ -1107,6 +1284,11 @@ void WorldSession::HandlePlayedTime(WorldPacket& /*recv_data*/)
     SendPacket(&data);
 }
 
+/**
+ * @brief Begins inspecting another nearby friendly player.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -1129,6 +1311,11 @@ void WorldSession::HandleInspectOpcode(WorldPacket& recv_data)
 
 }
 
+/**
+ * @brief Sends honor statistics for an inspected player.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -1171,6 +1358,11 @@ void WorldSession::HandleInspectHonorStatsOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Teleports an administrator to explicit world coordinates.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WORLD_TELEPORT from %s", GetPlayer()->GetGuidStr().c_str());
@@ -1213,6 +1405,11 @@ void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Teleports an administrator within the current map.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveSetRawPosition(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_SET_RAW_POSITION from %s", GetPlayer()->GetGuidStr().c_str());
@@ -1238,6 +1435,11 @@ void WorldSession::HandleMoveSetRawPosition(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Sends account identity information for a named player.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_WHOIS");
@@ -1301,6 +1503,11 @@ void WorldSession::HandleWhoisOpcode(WorldPacket& recv_data)
     DEBUG_LOG("Received whois command from player %s for character %s", GetPlayer()->GetName(), charname.c_str());
 }
 
+/**
+ * @brief Enables or disables farsight camera mode.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleFarSightOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_FAR_SIGHT");
@@ -1328,6 +1535,11 @@ void WorldSession::HandleFarSightOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Resets the player's or group's saved instances.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleResetInstancesOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_RESET_INSTANCES");
@@ -1345,6 +1557,11 @@ void WorldSession::HandleResetInstancesOpcode(WorldPacket& /*recv_data*/)
     }
 }
 
+/**
+ * @brief Cancels the player's mount aura when allowed.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleCancelMountAuraOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode  CMSG_CANCEL_MOUNT_AURA");
@@ -1366,6 +1583,11 @@ void WorldSession::HandleCancelMountAuraOpcode(WorldPacket& /*recv_data*/)
     _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 }
 
+/**
+ * @brief Placeholder handler for client pet-info requests.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleRequestPetInfoOpcode(WorldPacket& /*recv_data */)
 {
     /*
@@ -1374,6 +1596,11 @@ void WorldSession::HandleRequestPetInfoOpcode(WorldPacket& /*recv_data */)
     */
 }
 
+/**
+ * @brief Records client taxi benchmark mode changes.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetTaxiBenchmarkOpcode(WorldPacket& recv_data)
 {
     uint8 mode;

@@ -22,20 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file CommunicationCommands.cpp
+ * @brief Implementation of player communication and messaging chat commands.
+ *
+ * This file contains chat command handlers for communication features including:
+ * - Private messaging between players
+ * - System-wide announcements
+ * - Chat channel management
+ */
+
 #include "Chat.h"
 
 #include "World.h"
 #include "ObjectMgr.h"
 
-/*
-    All commands related to discussions
-*/
-
- /**********************************************************************
-     CommandTable : commandTable
- /***********************************************************************/
-
-// global announce
+/**
+ * @brief Handler for HandleAnnounceCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAnnounceCommand(char* args)
 {
     if (!*args)
@@ -47,7 +54,12 @@ bool ChatHandler::HandleAnnounceCommand(char* args)
     return true;
 }
 
-// notification player at the screen
+/**
+ * @brief Handler for HandleNotifyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleNotifyCommand(char* args)
 {
     if (!*args)
@@ -65,7 +77,12 @@ bool ChatHandler::HandleNotifyCommand(char* args)
     return true;
 }
 
-// mute player for some times
+/**
+ * @brief Handler for HandleMuteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleMuteCommand(char* args)
 {
     char* nameStr = ExtractOptNotLastArg(&args);
@@ -121,7 +138,12 @@ bool ChatHandler::HandleMuteCommand(char* args)
     return true;
 }
 
-// unmute player
+/**
+ * @brief Handler for HandleUnmuteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleUnmuteCommand(char* args)
 {
     Player* target;
@@ -174,7 +196,12 @@ bool ChatHandler::HandleUnmuteCommand(char* args)
     return true;
 }
 
-// Enable\Dissable accept whispers (for GM)
+/**
+ * @brief Handler for HandleWhispersCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleWhispersCommand(char* args)
 {
     if (!*args)
@@ -207,7 +234,12 @@ bool ChatHandler::HandleWhispersCommand(char* args)
     return true;
 }
 
-// Enables or disables hiding of the staff badge
+/**
+ * @brief Handler for HandleGMChatCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMChatCommand(char* args)
 {
     if (!*args)
@@ -245,11 +277,12 @@ bool ChatHandler::HandleGMChatCommand(char* args)
     return true;
 }
 
-
-/**********************************************************************
-    CommandTable : npcCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Handler for HandleNpcSayCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleNpcSayCommand(char* args)
 {
     if (!*args)
@@ -270,6 +303,12 @@ bool ChatHandler::HandleNpcSayCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleNpcYellCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleNpcYellCommand(char* args)
 {
     if (!*args)
@@ -290,7 +329,12 @@ bool ChatHandler::HandleNpcYellCommand(char* args)
     return true;
 }
 
-// show text emote by creature in chat
+/**
+ * @brief Handler for HandleNpcTextEmoteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleNpcTextEmoteCommand(char* args)
 {
     if (!*args)
@@ -312,7 +356,12 @@ bool ChatHandler::HandleNpcTextEmoteCommand(char* args)
     return true;
 }
 
-// make npc whisper to player
+/**
+ * @brief Handler for HandleNpcWhisperCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleNpcWhisperCommand(char* args)
 {
     Player* target;
@@ -345,7 +394,12 @@ bool ChatHandler::HandleNpcWhisperCommand(char* args)
     return true;
 }
 
-/// Send a message to a player in game
+/**
+ * @brief Handler for HandleSendMessageCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSendMessageCommand(char* args)
 {
     ///- Find the player

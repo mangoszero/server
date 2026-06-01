@@ -55,6 +55,7 @@
 
 template<class Class>
 bool
+
 /**
  * @brief
  *
@@ -71,6 +72,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*), const c
 
 template<class Class, typename ParamType1>
 bool
+
 /**
  * @brief
  *
@@ -89,6 +91,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 
 template<class Class, typename ParamType1, typename ParamType2>
 bool
+
 /**
  * @brief
  *
@@ -109,6 +112,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 
 template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
 bool
+
 /**
  * @brief
  *
@@ -132,6 +136,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 // -- Query / static --
 template<typename ParamType1>
 bool
+
 /**
  * @brief
  *
@@ -149,6 +154,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1
 
 template<typename ParamType1, typename ParamType2>
 bool
+
 /**
  * @brief
  *
@@ -168,6 +174,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2), Param
 
 template<typename ParamType1, typename ParamType2, typename ParamType3>
 bool
+
 /**
  * @brief
  *
@@ -190,6 +197,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamT
 // -- PQuery / member --
 template<class Class>
 bool
+
 /**
  * @brief
  *
@@ -206,6 +214,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*), const 
 
 template<class Class, typename ParamType1>
 bool
+
 /**
  * @brief
  *
@@ -224,6 +233,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 
 template<class Class, typename ParamType1, typename ParamType2>
 bool
+
 /**
  * @brief
  *
@@ -244,6 +254,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 
 template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
 bool
+
 /**
  * @brief
  *
@@ -267,6 +278,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 // -- PQuery / static --
 template<typename ParamType1>
 bool
+
 /**
  * @brief
  *
@@ -284,6 +296,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param
 
 template<typename ParamType1, typename ParamType2>
 bool
+
 /**
  * @brief
  *
@@ -303,6 +316,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2), Para
 
 template<typename ParamType1, typename ParamType2, typename ParamType3>
 bool
+
 /**
  * @brief
  *
@@ -325,6 +339,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2, Param
 // -- QueryHolder --
 template<class Class>
 bool
+
 /**
  * @brief
  *
@@ -342,6 +357,7 @@ Database::DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, Sq
 
 template<class Class, typename ParamType1>
 bool
+
 /**
  * @brief
  *

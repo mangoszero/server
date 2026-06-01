@@ -4,6 +4,9 @@
 
 using namespace ai;
 
+/**
+ * Executes a custom spell cast request against the selected or named target.
+ */
 bool CastCustomSpellAction::Execute(Event event)
 {
     Unit* target = NULL;
@@ -22,6 +25,10 @@ bool CastCustomSpellAction::Execute(Event event)
     string text = event.getParam();
 
     uint32 spell = chat->parseSpell(text);
+    if(!spell)
+    {
+        spell = AI_VALUE2(uint32, "spell id", text);
+    }
 
     ostringstream msg;
     if (!ai->CanCastSpell(spell, target))

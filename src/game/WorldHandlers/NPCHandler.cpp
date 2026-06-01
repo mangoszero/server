@@ -22,6 +22,31 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file NPCHandler.cpp
+ * @brief NPC interaction opcode handlers
+ *
+ * This file handles NPC-related opcodes including:
+ * - CMSG_NPC_TEXT_QUERY: Query NPC text/gossip
+ * - CMSG_GOSSIP_HELLO: Open gossip menu
+ * - CMSG_GOSSIP_SELECT_OPTION: Select gossip option
+ * - CMSG_NPC_WELCOME: NPC welcome
+ * - CMSG_TABARD_VENDOR_ACTIVATE: Activate tabard vendor
+ * - CMSG_BANKER_ACTIVATE: Activate banker
+ * - CMSG_BUY_BANK_SLOT: Buy bank slot
+ * - CMSG_TRAINER_LIST: Query trainer list
+ * - CMSG_TRAINER_BUY_SPELL: Buy spell from trainer
+ * - CMSG_PETITION_SHOW_LIST: Show petition list
+ * - CMSG_PETITION_BUY: Buy petition
+ * - CMSG_PETITION_SIGN: Sign petition
+ * - CMSG_PETITION_QUERY: Query petition
+ * - CMSG_OFFER_PETITION: Offer petition
+ * - CMSG_TURN_IN_PETITION: Turn in petition
+ * - CMSG_STABLE_PET: Stable pet
+ * - CMSG_UNSTABLE_PET: Unstable pet
+ * - CMSG_BUY_STABLE_SLOT: Buy stable slot
+ */
+
 #include "Common.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
@@ -55,6 +80,11 @@ enum StableResultCode
     STABLE_SUCCESS_BUY_SLOT = 0x0A,                         // buy slot success
 };
 
+/**
+ * @brief Opens the tabard vendor interface for the selected NPC.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTabardVendorActivateOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -76,6 +106,11 @@ void WorldSession::HandleTabardVendorActivateOpcode(WorldPacket& recv_data)
     SendTabardVendorActivate(guid);
 }
 
+/**
+ * @brief Sends the tabard vendor activation packet.
+ *
+ * @param guid The tabard vendor guid.
+ */
 void WorldSession::SendTabardVendorActivate(ObjectGuid guid)
 {
     WorldPacket data(MSG_TABARDVENDOR_ACTIVATE, 8);
@@ -83,6 +118,11 @@ void WorldSession::SendTabardVendorActivate(ObjectGuid guid)
     SendPacket(&data);
 }
 
+/**
+ * @brief Opens the bank window for the selected banker.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBankerActivateOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -105,6 +145,11 @@ void WorldSession::HandleBankerActivateOpcode(WorldPacket& recv_data)
     SendShowBank(guid);
 }
 
+/**
+ * @brief Sends the bank window packet.
+ *
+ * @param guid The banker guid.
+ */
 void WorldSession::SendShowBank(ObjectGuid guid)
 {
     WorldPacket data(SMSG_SHOW_BANK, 8);
@@ -112,6 +157,11 @@ void WorldSession::SendShowBank(ObjectGuid guid)
     SendPacket(&data);
 }
 
+/**
+ * @brief Requests the trainer list for a selected trainer.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTrainerListOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -121,13 +171,28 @@ void WorldSession::HandleTrainerListOpcode(WorldPacket& recv_data)
     SendTrainerList(guid);
 }
 
+/**
+ * @brief Sends a trainer list using the default localized title.
+ *
+ * @param guid The trainer guid.
+ */
 void WorldSession::SendTrainerList(ObjectGuid guid)
 {
     std::string str = GetMangosString(LANG_NPC_TAINER_HELLO);
     SendTrainerList(guid, str);
 }
 
-
+/**
+ * @brief Writes a single trainer spell entry into a trainer list packet.
+ *
+ * @param data The packet being built.
+ * @param tSpell The trainer spell entry.
+ * @param triggerSpell The spell actually learned or triggered.
+ * @param state The trainer spell state for the player.
+ * @param fDiscountMod The reputation price discount multiplier.
+ * @param can_learn_primary_prof Whether a primary profession can still be learned.
+ * @param reqLevel The required player level.
+ */
 static void SendTrainerSpellHelper(WorldPacket& data, TrainerSpell const* tSpell, uint32 triggerSpell, TrainerSpellState state, float fDiscountMod, bool can_learn_primary_prof, uint32 reqLevel)
 {
     bool primary_prof_first_rank = sSpellMgr.IsPrimaryProfessionFirstRankSpell(triggerSpell);
@@ -138,7 +203,8 @@ static void SendTrainerSpellHelper(WorldPacket& data, TrainerSpell const* tSpell
     data << uint8(state == TRAINER_SPELL_GREEN_DISABLED ? TRAINER_SPELL_GREEN : state);
 
     // alter the cost of riding spells with the setting from the configuration file while preserving faction discounts
-    switch (tSpell->spell) {
+    switch (tSpell->spell)
+    {
         case 33388: // Apprentice Riding
         case 33389: // Apprentice Riding
             data << uint32(floor(AccountTypes(sWorld.getConfig(CONFIG_UINT32_TRAIN_MOUNT_COST)) * fDiscountMod));
@@ -163,6 +229,12 @@ static void SendTrainerSpellHelper(WorldPacket& data, TrainerSpell const* tSpell
     data << uint32(0);
 }
 
+/**
+ * @brief Sends the trainer list with a custom title string.
+ *
+ * @param guid The trainer guid.
+ * @param strTitle The title displayed in the trainer window.
+ */
 void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
 {
     DEBUG_LOG("WORLD: SendTrainerList");
@@ -232,18 +304,19 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
             }
 
             // for riding spells, override the levels with the levels from the configuration file
-            switch (tSpell->spell) {
-        case 33388:
+            switch (tSpell->spell)
+            {
+                case 33388:
                 case 33389: // Apprentice Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_MOUNT_LEVEL));
                     break;
-        case 33391:
+                case 33391:
                 case 33392: // Journeyman Riding
                     reqLevel = AccountTypes(sWorld.getConfig(CONFIG_UINT32_MIN_TRAIN_EPIC_MOUNT_LEVEL));
                     break;
                 default: // any other spell requirement is read from DBC and the database
-                   reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
-                   break;
+                    reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
+                    break;
             }
 
             TrainerSpellState state = _player->GetTrainerSpellState(tSpell, reqLevel);
@@ -284,6 +357,11 @@ void WorldSession::SendTrainerList(ObjectGuid guid, const std::string& strTitle)
     SendPacket(&data);
 }
 
+/**
+ * @brief Purchases and casts a trainer spell for the player.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -392,6 +470,11 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recv_data)
     spell->prepare(&targets);
 }
 
+/**
+ * @brief Starts a gossip conversation with a creature.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_GOSSIP_HELLO");
@@ -426,6 +509,11 @@ void WorldSession::HandleGossipHelloOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles selection of a gossip menu option.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_GOSSIP_SELECT_OPTION");
@@ -496,7 +584,6 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
             return;
         }
 
-
         // Used by Eluna
 #ifdef ENABLE_ELUNA
         if (Eluna* e = GetPlayer()->GetEluna())
@@ -523,6 +610,11 @@ void WorldSession::HandleGossipSelectOptionOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Activates a spirit healer resurrection.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSpiritHealerActivateOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_SPIRIT_HEALER_ACTIVATE");
@@ -547,6 +639,9 @@ void WorldSession::HandleSpiritHealerActivateOpcode(WorldPacket& recv_data)
     SendSpiritResurrect();
 }
 
+/**
+ * @brief Resurrects the player through a spirit healer.
+ */
 void WorldSession::SendSpiritResurrect()
 {
     _player->ResurrectPlayer(0.5f, true);
@@ -557,8 +652,9 @@ void WorldSession::SendSpiritResurrect()
     WorldSafeLocsEntry const* corpseGrave = NULL;
     Corpse* corpse = _player->GetCorpse();
     if (corpse)
-        corpseGrave = sObjectMgr.GetClosestGraveYard(
-                          corpse->GetPositionX(), corpse->GetPositionY(), corpse->GetPositionZ(), corpse->GetMapId(), _player->GetTeam());
+    {
+        corpseGrave = sObjectMgr.GetClosestGraveYard(corpse->GetPositionX(), corpse->GetPositionY(), corpse->GetPositionZ(), corpse->GetMapId(), _player->GetTeam());
+    }
 
     // now can spawn bones
     _player->SpawnCorpseBones();
@@ -588,6 +684,11 @@ void WorldSession::SendSpiritResurrect()
     }
 }
 
+/**
+ * @brief Handles interaction with an innkeeper bind point.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBinderActivateOpcode(WorldPacket& recv_data)
 {
     ObjectGuid npcGuid;
@@ -614,6 +715,11 @@ void WorldSession::HandleBinderActivateOpcode(WorldPacket& recv_data)
     SendBindPoint(unit);
 }
 
+/**
+ * @brief Binds the player's home location at an innkeeper.
+ *
+ * @param npc The innkeeper creature.
+ */
 void WorldSession::SendBindPoint(Creature* npc)
 {
     // prevent set homebind to instances in any case
@@ -628,6 +734,11 @@ void WorldSession::SendBindPoint(Creature* npc)
     _player->PlayerTalkClass->CloseGossip();
 }
 
+/**
+ * @brief Requests the list of stabled pets.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleListStabledPetsOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recv MSG_LIST_STABLED_PETS");
@@ -651,6 +762,11 @@ void WorldSession::HandleListStabledPetsOpcode(WorldPacket& recv_data)
     SendStablePet(npcGUID);
 }
 
+/**
+ * @brief Sends the player's active and stabled pets.
+ *
+ * @param guid The stable master guid.
+ */
 void WorldSession::SendStablePet(ObjectGuid guid)
 {
     DEBUG_LOG("WORLD: Recv MSG_LIST_STABLED_PETS Send.");
@@ -707,6 +823,11 @@ void WorldSession::SendStablePet(ObjectGuid guid)
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends a stable operation result code.
+ *
+ * @param res The stable result code.
+ */
 void WorldSession::SendStableResult(uint8 res)
 {
     WorldPacket data(SMSG_STABLE_RESULT, 1);
@@ -714,6 +835,12 @@ void WorldSession::SendStableResult(uint8 res)
     SendPacket(&data);
 }
 
+/**
+ * @brief Verifies that a guid can be used as a stable master interaction target.
+ *
+ * @param guid The stable master or player guid.
+ * @return true if stable interaction is allowed; otherwise false.
+ */
 bool WorldSession::CheckStableMaster(ObjectGuid guid)
 {
     // spell case or GM
@@ -739,6 +866,11 @@ bool WorldSession::CheckStableMaster(ObjectGuid guid)
     return true;
 }
 
+/**
+ * @brief Moves the current hunter pet into the stable.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleStablePet(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recv CMSG_STABLE_PET");
@@ -810,6 +942,11 @@ void WorldSession::HandleStablePet(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Restores a pet from the stable.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleUnstablePet(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recv CMSG_UNSTABLE_PET.");
@@ -881,6 +1018,11 @@ void WorldSession::HandleUnstablePet(WorldPacket& recv_data)
     SendStableResult(STABLE_SUCCESS_UNSTABLE);
 }
 
+/**
+ * @brief Buys an additional stable slot.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleBuyStableSlot(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recv CMSG_BUY_STABLE_SLOT.");
@@ -920,11 +1062,21 @@ void WorldSession::HandleBuyStableSlot(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Placeholder for stable pet revival handling.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleStableRevivePet(WorldPacket& /* recv_data */)
 {
     DEBUG_LOG("HandleStableRevivePet: Not implemented");
 }
 
+/**
+ * @brief Swaps the current pet with a stabled pet.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Recv CMSG_STABLE_SWAP_PET.");
@@ -944,7 +1096,6 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
     {
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
     }
-
 
     Pet* pet = _player->GetPet();
 
@@ -998,6 +1149,11 @@ void WorldSession::HandleStableSwapPet(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Repairs one item or all equipped gear at a repair NPC.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleRepairItemOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_REPAIR_ITEM");

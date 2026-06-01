@@ -26,8 +26,12 @@
 #define MANGOS_BYTECONVERTER_H
 
 /**
- * ByteConverter reverse your byte order. This is used for cross platform
- * where they have different endians.
+ * @file ByteConverter.h
+ * @brief Byte order conversion utilities for cross-platform compatibility
+ *
+ * ByteConverter provides functions to reverse byte order for cross-platform
+ * compatibility where systems have different endianness (big-endian vs little-endian).
+ * This is essential for network protocol handling in World of Warcraft.
  */
 
 #include "Platform/Define.h"
@@ -35,12 +39,12 @@
 
 namespace ByteConverter
 {
-    template<size_t T>
+
     /**
-     * @brief
-     *
-     * @param val
+     * @brief Reverse byte order for a value of size T
+     * @param val Pointer to value to convert
      */
+    template<size_t T>
     inline void convert(char* val)
     {
         std::swap(*val, *(val + T - 1));
@@ -48,24 +52,20 @@ namespace ByteConverter
     }
 
     /**
-     * @brief
-     *
-     * @param
+     * @brief Template specialization for size 0 (no-op)
      */
     template<> inline void convert<0>(char*) {}
+
     /**
-     * @brief ignore central byte
-     *
-     * @param
+     * @brief Template specialization for size 1 (no-op, single byte)
      */
     template<> inline void convert<1>(char*) {}
 
-    template<typename T>
     /**
-     * @brief
-     *
-     * @param val
+     * @brief Apply byte conversion to a value
+     * @param val Pointer to value to convert
      */
+    template<typename T>
     inline void apply(T* val)
     {
         convert<sizeof(T)>((char*)(val));
@@ -73,59 +73,51 @@ namespace ByteConverter
 }
 
 #if MANGOS_ENDIAN == MANGOS_BIGENDIAN
+
 /**
- * @brief
- *
- * @param val
+ * @brief Convert from host to little-endian byte order (big-endian host)
+ * @param val Value to convert
  */
 template<typename T> inline void EndianConvert(T& val) { ByteConverter::apply<T>(&val); }
+
 /**
- * @brief
- *
- * @param
+ * @brief Reverse byte order (no-op on big-endian host)
+ * @param val Value to convert
  */
-template<typename T> inline void EndianConvertReverse(T&) { }
+template<typename T> inline void EndianConvertReverse(T&) {}
 #else
-template<typename T> inline void EndianConvert(T&) { }
+template<typename T> inline void EndianConvert(T&) {}
 template<typename T> inline void EndianConvertReverse(T& val) { ByteConverter::apply<T>(&val); }
 #endif
 
 /**
- * @brief will generate link error
- *
- * @param
+ * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvert(T*);
+
 /**
- * @brief will generate link error
- *
- * @param
+ * @brief Deleted template to prevent pointer conversion (will generate link error)
  */
 template<typename T> void EndianConvertReverse(T*);
 
 /**
- * @brief
- *
- * @param
+ * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvert(uint8&) { }
+inline void EndianConvert(uint8&) {}
+
 /**
- * @brief
- *
- * @param
+ * @brief No-op for int8 (single byte)
  */
-inline void EndianConvert(int8&)  { }
+inline void EndianConvert(int8&)  {}
+
 /**
- * @brief
- *
- * @param
+ * @brief No-op for uint8 (single byte)
  */
-inline void EndianConvertReverse(uint8&) { }
+inline void EndianConvertReverse(uint8&) {}
+
 /**
- * @brief
- *
- * @param
+ * @brief No-op for int8 (single byte)
  */
-inline void EndianConvertReverse(int8&) { }
+inline void EndianConvertReverse(int8&) {}
 
 #endif

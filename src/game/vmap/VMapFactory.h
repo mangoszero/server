@@ -28,47 +28,58 @@
 #include "IVMapManager.h"
 
 /**
-This is the access point to the VMapManager.
-*/
+ * This is the access point to the VMapManager.
+ */
 
 namespace VMAP
 {
     //===========================================================
 
     /**
-     * @brief
+     * @brief VMap factory class
      *
+     * Factory for creating and managing VMapManager instances.
      */
     class VMapFactory
     {
         public:
             /**
-             * @brief
-             *
-             * @return IVMapManager
+             * @brief Create or get VMap manager
+             * @return VMap manager instance
              */
             static IVMapManager* createOrGetVMapManager();
+
             /**
-             * @brief
-             *
+             * @brief Clear VMap manager
              */
             static void clear();
 
             /**
-             * @brief
-             *
-             * @param pSpellIdString
+             * @brief Prevent spells from being tested for line of sight
+             * @param pSpellIdString Spell ID string
              */
             static void preventSpellsFromBeingTestedForLoS(const char* pSpellIdString);
+
             /**
-             * @brief
-             *
-             * @param pSpellId
-             * @return bool
+             * @brief Check spell for line of sight
+             * @param pSpellId Spell ID
+             * @return True if spell should be tested for LoS
              */
             static bool checkSpellForLoS(unsigned int pSpellId);
 
+            /**
+             * @brief Chomp and trim string
+             * @param str String to process
+             */
             static void chompAndTrim(std::string& str);
+
+            /**
+             * @brief Get next ID from string
+             * @param pString Input string
+             * @param pStartPos Start position
+             * @param pId Output ID
+             * @return True if successful
+             */
             static bool getNextId(const std::string& pString, unsigned int& pStartPos, unsigned int& pId);
     };
 }

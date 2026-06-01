@@ -32,6 +32,7 @@ class Unit;
 
 namespace Movement
 {
+
     /**
      * @brief A typedef for a vector of Vector3 points representing a path.
      */
@@ -42,6 +43,7 @@ namespace Movement
      */
     union FacingInfo
     {
+
         /**
          * @brief A struct for storing coordinates.
          */
@@ -57,11 +59,13 @@ namespace Movement
          * @param o The angle to face.
          */
         FacingInfo(float o) : angle(o) {}
+
         /**
          * @brief Constructor for facing a target.
          * @param t The GUID of the target to face.
          */
         FacingInfo(uint64 t) : target(t) {}
+
         /**
          * @brief Default constructor.
          */
@@ -73,6 +77,7 @@ namespace Movement
      */
     struct MoveSplineInitArgs
     {
+
             /**
              * @brief Constructor for MoveSplineInitArgs.
              * @param path_capacity The initial capacity of the path vector.

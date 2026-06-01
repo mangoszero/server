@@ -41,8 +41,10 @@ Now we use symmetric bracket placement, closing bracket under the opening bracke
     switch (x)
     {
         case 1:
+        {
             printf("X is one!\n");
             break;
+        }
         case 2:
         {
             printf("X is two!\n");
@@ -67,10 +69,14 @@ like:
     if (...)
     {
         if (...)
+        {
             ...;
+        }
     }
     else
+    {
         ...;
+    }
 
 Also, please place one space before opening parenthesis. Before, but not after
 (the `if ( blah )` style is a no-no!).
@@ -88,7 +94,7 @@ Here is an example:
                 func();
             }
 
-           void func() {}
+            void func() {}
 
         private:
             int m_field;

@@ -31,10 +31,27 @@ class Group;
 class Player;
 class GroupReference;
 
+/**
+ * @brief Group reference manager class
+ *
+ * Manages group references for players.
+ */
 class GroupRefManager : public RefManager<Group, Player>
 {
     public:
-        GroupReference* getFirst() { return ((GroupReference*) RefManager<Group, Player>::getFirst()); }
+        /**
+         * @brief Get first group reference
+         * @return First group reference
+         */
+        GroupReference* getFirst()
+        {
+            return ((GroupReference*) RefManager<Group, Player>::getFirst());
+        }
+
+        /**
+         * @brief Get first group reference (const)
+         * @return First group reference (const)
+         */
         GroupReference const* getFirst() const { return ((GroupReference const*) RefManager<Group, Player>::getFirst()); }
 };
 #endif

@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file WorldSocket.cpp
+ * @brief World server network socket implementation
+ *
+ * This file implements WorldSocket which handles individual client
+ * connections to the world server. It manages:
+ *
+ * - TCP socket communication using ACE
+ * - Packet encryption/decryption (SRP6)
+ * - Packet fragmentation and reassembly
+ * - Ping/pong keepalive mechanism
+ * - Session creation and management
+ *
+ * The socket uses the SRP6 authentication protocol for secure
+ * client-server communication.
+ *
+ * @see WorldSocket for the socket class
+ * @see WorldSession for the player session
+ * @see WorldSocketMgr for the socket manager
+ */
+
 #include <ace/Message_Block.h>
 #include <ace/OS_NS_string.h>
 #include <ace/OS_NS_unistd.h>
@@ -60,16 +81,26 @@
 #pragma pack(push,1)
 #endif
 
+/**
+ * @brief Server packet header structure
+ *
+ * Header for packets sent from server to client.
+ */
 struct ServerPktHeader
 {
-    uint16 size;
-    uint16 cmd;
+    uint16 size; ///< Packet size
+    uint16 cmd;  ///< Opcode
 };
 
+/**
+ * @brief Client packet header structure
+ *
+ * Header for packets sent from client to server.
+ */
 struct ClientPktHeader
 {
-    uint16 size;
-    uint32 cmd;
+    uint16 size; ///< Packet size
+    uint32 cmd;  ///< Opcode
 };
 
 #if defined( __GNUC__ )
@@ -78,6 +109,20 @@ struct ClientPktHeader
 #pragma pack(pop)
 #endif
 
+#ifdef _WIN32
+std::atomic<uint32> WorldSocket::s_openConnections{0};
+#endif
+
+/**
+ * @brief WorldSocket constructor
+ *
+ * Initializes a new client socket with default values:
+ * - Last ping time: zero
+ * - Overspeed pings: 0
+ * - Session: NULL
+ * - Output buffer size: 64KB
+ * - Random seed for encryption
+ */
 WorldSocket::WorldSocket(void) :
     WorldHandler(),
     m_LastPingTime(ACE_Time_Value::zero),
@@ -92,8 +137,16 @@ WorldSocket::WorldSocket(void) :
     m_Seed(rand32())
 {
     reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
+#ifdef _WIN32
+    s_openConnections.fetch_add(1, std::memory_order_relaxed);
+#endif
 }
 
+/**
+ * @brief WorldSocket destructor
+ *
+ * Cleans up the receive packet and any allocated resources.
+ */
 WorldSocket::~WorldSocket(void)
 {
     delete m_RecvWPct;
@@ -112,13 +165,24 @@ WorldSocket::~WorldSocket(void)
     {
         delete pct;
     }
+#ifdef _WIN32
+    s_openConnections.fetch_sub(1, std::memory_order_relaxed);
+#endif
 }
 
+/**
+ * @brief Checks whether the socket is already marked as closing.
+ *
+ * @return true if the socket is closed or closing; otherwise false.
+ */
 bool WorldSocket::IsClosed(void) const
 {
     return closing_;
 }
 
+/**
+ * @brief Begins graceful shutdown of the socket writer side.
+ */
 void WorldSocket::CloseSocket(void)
 {
     ACE_GUARD(LockType, Guard, m_OutBufferLock);
@@ -134,11 +198,22 @@ void WorldSocket::CloseSocket(void)
     m_Session = NULL;
 }
 
+/**
+ * @brief Gets the cached remote address string for this connection.
+ *
+ * @return const std::string& The remote address.
+ */
 const std::string& WorldSocket::GetRemoteAddress(void) const
 {
     return m_Address;
 }
 
+/**
+ * @brief Sends a packet immediately or queues it for later flush.
+ *
+ * @param pkt The packet to send.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::SendPacket(const WorldPacket& pkt)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
@@ -175,16 +250,32 @@ int WorldSocket::SendPacket(const WorldPacket& pkt)
     return 0;
 }
 
+/**
+ * @brief Increments the socket reference count.
+ *
+ * @return long The new reference count.
+ */
 long WorldSocket::AddReference(void)
 {
     return static_cast<long>(add_reference());
 }
 
+/**
+ * @brief Decrements the socket reference count.
+ *
+ * @return long The new reference count.
+ */
 long WorldSocket::RemoveReference(void)
 {
     return static_cast<long>(remove_reference());
 }
 
+/**
+ * @brief Opens the socket handler and sends the authentication challenge.
+ *
+ * @param a The ACE open hook parameter.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::open(void* a)
 {
     ACE_UNUSED_ARG(a);
@@ -232,6 +323,11 @@ int WorldSocket::open(void* a)
     return SendPacket(packet);
 }
 
+/**
+ * @brief Closes the socket and releases its final ACE reference.
+ *
+ * @return int Always returns zero.
+ */
 int WorldSocket::close(u_long)
 {
     shutdown();
@@ -243,6 +339,11 @@ int WorldSocket::close(u_long)
     return 0;
 }
 
+/**
+ * @brief Processes readable socket input.
+ *
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::handle_input(ACE_HANDLE)
 {
     if (closing_)
@@ -271,6 +372,11 @@ int WorldSocket::handle_input(ACE_HANDLE)
     ACE_NOTREACHED(return -1);
 }
 
+/**
+ * @brief Flushes pending outbound socket data.
+ *
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::handle_output(ACE_HANDLE)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
@@ -331,6 +437,12 @@ int WorldSocket::handle_output(ACE_HANDLE)
     ACE_NOTREACHED(return 0);
 }
 
+/**
+ * @brief Handles socket closure and unregisters the handler from the reactor.
+ *
+ * @param h The closing handle.
+ * @return int Always returns zero.
+ */
 int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 {
     {
@@ -350,7 +462,11 @@ int WorldSocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
     return 0;
 }
 
-
+/**
+ * @brief Parses and validates an incoming packet header.
+ *
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::handle_input_header(void)
 {
     MANGOS_ASSERT(m_RecvWPct == NULL);
@@ -390,6 +506,11 @@ int WorldSocket::handle_input_header(void)
     return 0;
 }
 
+/**
+ * @brief Finalizes processing of a fully received packet payload.
+ *
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::handle_input_payload(void)
 {
     // set errno properly here on error !!!
@@ -415,6 +536,11 @@ int WorldSocket::handle_input_payload(void)
     return ret;
 }
 
+/**
+ * @brief Receives and assembles any missing header or payload data from the socket.
+ *
+ * @return int A receive state code, or -1 on error.
+ */
 int WorldSocket::handle_input_missing_data(void)
 {
     char buf [4096];
@@ -506,6 +632,12 @@ int WorldSocket::handle_input_missing_data(void)
     return size_t(n) == recv_size ? 1 : 2;
 }
 
+/**
+ * @brief Dispatches a fully assembled incoming packet.
+ *
+ * @param new_pct The packet to process.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
 {
     MANGOS_ASSERT(new_pct);
@@ -605,6 +737,12 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     ACE_NOTREACHED(return 0);
 }
 
+/**
+ * @brief Authenticates a new client session and creates the world session.
+ *
+ * @param recvPacket The authentication packet.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 {
     // NOTE: ATM the socket is singlethread, have this in mind ...
@@ -647,19 +785,19 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     QueryResult* result =
         LoginDatabase.PQuery("SELECT "
-                             "`id`, "                      // 0
-                             "`gmlevel`, "                 // 1
-                             "`sessionkey`, "              // 2
-                             "`last_ip`, "                 // 3
-                             "`locked`, "                  // 4
-                             "`v`, "                       // 5
-                             "`s`, "                       // 6
-                             "`mutetime`, "                // 7
-                             "`locale`, "                   // 8
-                             "`os` "                        // 9
-                             "FROM `account` "
-                             "WHERE `username` = '%s'",
-                             safe_account.c_str());
+                            "`id`, "                      // 0
+                            "`gmlevel`, "                 // 1
+                            "`sessionkey`, "              // 2
+                            "`last_ip`, "                 // 3
+                            "`locked`, "                  // 4
+                            "`v`, "                       // 5
+                            "`s`, "                       // 6
+                            "`mutetime`, "                // 7
+                            "`locale`, "                  // 8
+                            "`os` "                       // 9
+                            "FROM `account` "
+                            "WHERE `username` = '%s'",
+                            safe_account.c_str());
 
     // Stop if the account is not found
     if (!result)
@@ -683,9 +821,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     const char* sStr = s.AsHexStr();                        // Must be freed by OPENSSL_free()
     const char* vStr = v.AsHexStr();                        // Must be freed by OPENSSL_free()
 
-    DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) check s: %s v: %s",
-              sStr,
-              vStr);
+    DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) present: s=%s v=%s",
+              sStr && *sStr ? "yes" : "no",
+              vStr && *vStr ? "yes" : "no");
 
     OPENSSL_free((void*) sStr);
     OPENSSL_free((void*) vStr);
@@ -830,6 +968,12 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     return 0;
 }
 
+/**
+ * @brief Handles a client ping and replies with a pong.
+ *
+ * @param recvPacket The ping packet.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::HandlePing(WorldPacket& recvPacket)
 {
     uint32 ping;
@@ -893,6 +1037,12 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
     return SendPacket(packet);
 }
 
+/**
+ * @brief Serializes a packet into the outbound socket buffer.
+ *
+ * @param pct The packet to serialize.
+ * @return int Zero on success; otherwise -1.
+ */
 int WorldSocket::iSendPacket(const WorldPacket& pct)
 {
     if (m_OutBuffer->space() < pct.size() + sizeof(ServerPktHeader))
@@ -931,6 +1081,11 @@ int WorldSocket::iSendPacket(const WorldPacket& pct)
     return 0;
 }
 
+/**
+ * @brief Flushes queued packets into the outbound buffer while space remains.
+ *
+ * @return true if at least one packet was flushed; otherwise false.
+ */
 bool WorldSocket::iFlushPacketQueue()
 {
     WorldPacket* pct;

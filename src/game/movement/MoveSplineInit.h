@@ -32,6 +32,7 @@ class Unit;
 
 namespace Movement
 {
+
     /**
      * @brief Initializes and launches spline movement
      *
@@ -146,7 +147,10 @@ namespace Movement
              * @brief Gets the path points array.
              * @return PointsArray The path points array.
              */
-            PointsArray& Path() { return args.path; }
+            PointsArray& Path()
+            {
+                return args.path;
+            }
         protected:
 
             MoveSplineInitArgs args; /**< Arguments for initializing the spline movement. */
@@ -157,7 +161,10 @@ namespace Movement
      * @brief Enables CatmullRom spline interpolation mode, enables flying animation.
      * Disabled by default.
      */
-    inline void MoveSplineInit::SetFly() { args.flags.flying = true;}
+    inline void MoveSplineInit::SetFly()
+    {
+        args.flags.flying = true;
+    }
 
     /**
      * @brief Enables walk mode. Disabled by default.
@@ -168,12 +175,18 @@ namespace Movement
     /**
      * @brief Makes movement cyclic. Disabled by default.
      */
-    inline void MoveSplineInit::SetCyclic() { args.flags.cyclic = true;}
+    inline void MoveSplineInit::SetCyclic()
+    {
+        args.flags.cyclic = true;
+    }
 
     /**
      * @brief Enables falling mode. Disabled by default.
      */
-    inline void MoveSplineInit::SetFall() { args.flags.falling = true;}
+    inline void MoveSplineInit::SetFall()
+    {
+        args.flags.falling = true;
+    }
 
     /**
      * @brief Sets the velocity (in case you want to have custom movement velocity).

@@ -22,15 +22,47 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file SqlOperations.cpp
+ * @brief Implementation of asynchronous SQL operations
+ *
+ * This file implements various SQL operation classes for asynchronous
+ * database access. These include:
+ * - Plain SQL statements (SqlPlainRequest)
+ * - Transactions (SqlTransaction)
+ * - Prepared statements (SqlPreparedRequest)
+ * - Queries (SqlQuery, SqlQueryHolder)
+ *
+ * The operations support both immediate execution and deferred execution
+ * through the delay thread system for improved server performance.
+ */
+
 #include "SqlOperations.h"
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
 #include "DatabaseImpl.h"
 
+/**
+ * @def LOCK_DB_CONN
+ * @brief RAII lock macro for database connections
+ * @param conn The SqlConnection to lock
+ *
+ * Creates a SqlConnection::Lock guard that ensures thread-safe
+ * access to the database connection during operation execution.
+ */
 #define LOCK_DB_CONN(conn) SqlConnection::Lock guard(conn)
 
 /// ---- ASYNC STATEMENTS / TRANSACTIONS ----
 
+/**
+ * @brief Execute a plain SQL request
+ * @param conn The database connection to use
+ * @return true if execution succeeded, false otherwise
+ *
+ * Executes the stored SQL statement directly on the connection.
+ * The connection is locked during execution to ensure thread safety.
+ * This is the simplest form of SQL operation with no parameters or results.
+ */
 bool SqlPlainRequest::Execute(SqlConnection* conn)
 {
     /// just do it
@@ -38,6 +70,14 @@ bool SqlPlainRequest::Execute(SqlConnection* conn)
     return conn->Execute(m_sql);
 }
 
+/**
+ * @brief Destructor for SqlTransaction
+ *
+ * Cleans up any operations remaining in the transaction queue.
+ * This should normally not contain any operations (they should be
+ * executed or the transaction rolled back), but handles the edge case
+ * where the transaction is destroyed before completion.
+ */
 SqlTransaction::~SqlTransaction()
 {
     while (!m_queue.empty())
@@ -47,6 +87,19 @@ SqlTransaction::~SqlTransaction()
     }
 }
 
+/**
+ * @brief Execute a transaction containing multiple operations
+ * @param conn The database connection to use
+ * @return true if transaction committed successfully, false if rolled back
+ *
+ * Executes all queued operations atomically within a transaction:
+ * 1. Begins a database transaction
+ * 2. Executes each operation in order
+ * 3. If any operation fails, rolls back all changes
+ * 4. If all succeed, commits the transaction
+ *
+ * @note Empty transactions return true without doing anything.
+ */
 bool SqlTransaction::Execute(SqlConnection* conn)
 {
     if (m_queue.empty())
@@ -73,15 +126,38 @@ bool SqlTransaction::Execute(SqlConnection* conn)
     return conn->CommitTransaction();
 }
 
+/**
+ * @brief Constructor for SqlPreparedRequest
+ * @param nIndex Index of the prepared statement
+ * @param arg Pointer to the statement parameters
+ *
+ * Creates a prepared statement request with the given statement index
+ * and parameters. The parameters will be deleted when this request is
+ * destroyed or executed.
+ */
 SqlPreparedRequest::SqlPreparedRequest(int nIndex, SqlStmtParameters* arg) : m_nIndex(nIndex), m_param(arg)
 {
 }
 
+/**
+ * @brief Destructor for SqlPreparedRequest
+ *
+ * Deletes the stored statement parameters to prevent memory leaks.
+ */
 SqlPreparedRequest::~SqlPreparedRequest()
 {
     delete m_param;
 }
 
+/**
+ * @brief Execute a prepared statement
+ * @param conn The database connection to use
+ * @return true if execution succeeded, false otherwise
+ *
+ * Executes the prepared statement with the stored parameters on the
+ * given connection. Prepared statements are more efficient than plain
+ * SQL for repeated execution with different parameters.
+ */
 bool SqlPreparedRequest::Execute(SqlConnection* conn)
 {
     LOCK_DB_CONN(conn);
@@ -90,6 +166,17 @@ bool SqlPreparedRequest::Execute(SqlConnection* conn)
 
 /// ---- ASYNC QUERIES ----
 
+/**
+ * @brief Execute an asynchronous SQL query
+ * @param conn The database connection to use
+ * @return true if query executed and callback queued, false otherwise
+ *
+ * Executes a SELECT query and stores the results. The callback will be
+ * invoked on the originating thread when results are available.
+ * This provides asynchronous query execution to prevent blocking.
+ *
+ * @note The callback and result queue must be valid for this to succeed.
+ */
 bool SqlQuery::Execute(SqlConnection* conn)
 {
     if (!m_callback || !m_queue)
@@ -106,6 +193,15 @@ bool SqlQuery::Execute(SqlConnection* conn)
     return true;
 }
 
+/**
+ * @brief Process pending query callbacks
+ *
+ * Executes all callbacks that have been queued by completed queries.
+ * This should be called regularly (typically each server tick) to
+ * handle asynchronous query results on the main thread.
+ *
+ * Each callback is executed once and then deleted.
+ */
 void SqlResultQueue::Update()
 {
     /// execute the callbacks waiting in the synchronization queue
@@ -117,6 +213,17 @@ void SqlResultQueue::Update()
     }
 }
 
+/**
+ * @brief Execute all queries in the holder asynchronously
+ * @param callback Callback to invoke when all queries complete
+ * @param thread The delay thread to execute queries on
+ * @param queue The result queue for callback synchronization
+ * @return true if execution was scheduled, false if parameters invalid
+ *
+ * Schedules all queries for execution on the delay thread. When complete,
+ * the callback will be invoked via the result queue on the original thread.
+ * This batches multiple queries efficiently in a single operation.
+ */
 bool SqlQueryHolder::Execute(MaNGOS::IQueryCallback* callback, SqlDelayThread* thread, SqlResultQueue* queue)
 {
     if (!callback || !thread || !queue)
@@ -131,6 +238,18 @@ bool SqlQueryHolder::Execute(MaNGOS::IQueryCallback* callback, SqlDelayThread* t
     return true;
 }
 
+/**
+ * @brief Store a SQL query at a specific index
+ * @param index The slot to store the query in
+ * @param sql The SQL query string
+ * @return true if stored successfully, false if slot invalid or occupied
+ *
+ * Stores a query string for later execution. The string is duplicated
+ * so the original can be safely freed. The query is not executed until
+ * Execute() is called on the holder.
+ *
+ * @note The holder must have been sized appropriately with SetSize() first.
+ */
 bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
 {
     if (m_queries.size() <= index)
@@ -151,6 +270,18 @@ bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
     return true;
 }
 
+/**
+ * @brief Store a parameterized SQL query at a specific index
+ * @param index The slot to store the query in
+ * @param format printf-style format string
+ * @param ... Variable arguments for formatting
+ * @return true if stored successfully, false if formatting failed
+ *
+ * Creates a query string from the format and arguments, then stores it
+ * at the specified index. Handles variable argument formatting safely.
+ *
+ * @warning If the formatted query exceeds MAX_QUERY_LEN, it will fail.
+ */
 bool SqlQueryHolder::SetPQuery(size_t index, const char* format, ...)
 {
     if (!format)
@@ -174,6 +305,18 @@ bool SqlQueryHolder::SetPQuery(size_t index, const char* format, ...)
     return SetQuery(index, szQuery);
 }
 
+/**
+ * @brief Get the query result at a specific index
+ * @param index The slot to retrieve the result from
+ * @return Pointer to the QueryResult, or NULL if index invalid or no result
+ *
+ * Retrieves the result of a previously executed query. The query string
+ * is freed on first access (transferred to caller responsibility). The
+ * QueryResult pointer is also transferred to the caller who must delete it.
+ *
+ * @warning The caller is responsible for deleting the returned QueryResult!
+ * @note Query strings are freed on first GetResult call or in destructor.
+ */
 QueryResult* SqlQueryHolder::GetResult(size_t index)
 {
     if (index < m_queries.size())
@@ -193,6 +336,15 @@ QueryResult* SqlQueryHolder::GetResult(size_t index)
     }
 }
 
+/**
+ * @brief Store a query result at a specific index
+ * @param index The slot to store the result in
+ * @param result Pointer to the QueryResult
+ *
+ * Stores the result of a query execution. This is called internally
+ * by the execution system. If the index is out of range, the result
+ * is ignored.
+ */
 void SqlQueryHolder::SetResult(size_t index, QueryResult* result)
 {
     /// store the result in the holder
@@ -202,6 +354,16 @@ void SqlQueryHolder::SetResult(size_t index, QueryResult* result)
     }
 }
 
+/**
+ * @brief Destructor for SqlQueryHolder
+ *
+ * Cleans up all queries and results that weren't retrieved via GetResult().
+ * Any query strings still present are deleted, and any unretrieved results
+ * are also deleted to prevent memory leaks.
+ *
+ * @note Already-retrieved results (where first == NULL) are NOT deleted
+ * as they were transferred to the caller.
+ */
 SqlQueryHolder::~SqlQueryHolder()
 {
     for (size_t i = 0; i < m_queries.size(); ++i)
@@ -216,12 +378,33 @@ SqlQueryHolder::~SqlQueryHolder()
     }
 }
 
+/**
+ * @brief Set the number of queries this holder will contain
+ * @param size The number of query slots to allocate
+ *
+ * Resizes the internal storage to accommodate the specified number
+ * of queries. This should be called before adding queries with SetQuery()
+ * to avoid reallocations.
+ *
+ * @note This does not execute any queries, it only prepares storage.
+ */
 void SqlQueryHolder::SetSize(size_t size)
 {
     /// to optimize push_back, reserve the number of queries about to be executed
     m_queries.resize(size);
 }
 
+/**
+ * @brief Execute all queries in the extended holder
+ * @param conn The database connection to use
+ * @return true if all queries executed, false if parameters invalid
+ *
+ * Executes all queries stored in the holder and stores their results.
+ * This is the internal execution method called by the delay thread.
+ * After execution, the callback is queued for the originating thread.
+ *
+ * @note This is called internally by SqlDelayThread, not directly by users.
+ */
 bool SqlQueryHolderEx::Execute(SqlConnection* conn)
 {
     if (!m_holder || !m_callback || !m_queue)

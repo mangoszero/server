@@ -52,6 +52,7 @@ class Player;
 #define MAIL_BODY_ITEM_TEMPLATE 8383                        ///< - plain letter, A Dusty Unsent Letter: 889
 /// The maximal amount of items a mail can contain.
 #define MAX_MAIL_ITEMS 1
+
 /**
  * The type of the mail.
  * A mail can have 5 Different Types.
@@ -174,6 +175,7 @@ class MailReceiver
          *
          */
         Player* GetPlayer() const { return m_receiver; }
+
         /**
          * Gets the low part of the recievers GUID.
          *
@@ -190,6 +192,7 @@ class MailReceiver
  */
 class MailDraft
 {
+
         /**
          * Holds a Map of GUIDs of items and pointers to the items.
          */
@@ -202,6 +205,7 @@ class MailDraft
          */
         MailDraft()
             : m_mailTemplateId(0), m_mailTemplateItemsNeed(false), m_money(0), m_COD(0) {}
+
         /**
          * Creates a new MailDraft object using mail template id.
          *
@@ -212,6 +216,7 @@ class MailDraft
         explicit MailDraft(uint16 mailTemplateId, bool need_items = true)
             : m_mailTemplateId(mailTemplateId), m_mailTemplateItemsNeed(need_items), m_money(0), m_COD(0)
         {}
+
         /**
          * Creates a new MailDraft object using subject and content texts.
          *
@@ -238,12 +243,14 @@ class MailDraft
         MailDraft& SetMailTemplate(uint16 mailTemplateId, bool need_items = true) { m_mailTemplateId = mailTemplateId, m_mailTemplateItemsNeed = need_items; return *this; }
 
         MailDraft& AddItem(Item* item);
+
         /**
          * Modifies the amount of money in a MailDraft.
          *
          * @param money The amount of money included in this MailDraft.
          */
         MailDraft& SetMoney(uint32 money) { m_money = money; return *this; }
+
         /**
          * Modifies the cost of delivery of the MailDraft.
          *
@@ -289,6 +296,7 @@ struct MailItemInfo
 };
 
 typedef std::vector<MailItemInfo> MailItemInfoVec;
+
 /**
  * Structure that holds an actual mail.
  */

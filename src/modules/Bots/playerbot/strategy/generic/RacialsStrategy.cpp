@@ -4,7 +4,6 @@
 
 using namespace ai;
 
-
 class RacialsStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:

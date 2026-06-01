@@ -32,7 +32,6 @@ union TypePtr
 
 #define TAG(x) (DWORD)(  (((DWORD)x&0x0000ff00)<<8)+(((DWORD)x&0x000000ff)<<24)+(((DWORD)x&0x00ff0000)>>8)+(((DWORD)x&0xff000000)>>24) )
 
-
 //---------------------------------------------------------------------------
 class TFrmMain : public TForm
 {
@@ -86,7 +85,6 @@ class TFrmMain : public TForm
         void __fastcall btColClearClick(TObject* Sender);
         void __fastcall ToolButton4Click(TObject* Sender);
     private:    // User declarations
-
 
         thOpenFile*  thOpen;
         bool Term;

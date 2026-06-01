@@ -43,4 +43,3 @@ bool MoveToPositionAction::Execute(Event event)
     return MoveTo(bot->GetMapId(), pos.x, pos.y, pos.z, true);
 }
 
-

@@ -22,11 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file QuestCommands.cpp
+ * @brief Implementation of quest management chat commands.
+ *
+ * This file contains chat command handlers for quest operations including:
+ * - Quest adding and removal
+ * - Quest completion
+ * - Quest status management
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "SQLStorages.h"
 
+/**
+ * @brief Adds a quest to the selected player.
+ *
+ * @param args Command arguments: quest_id.
+ * @returns True if the quest was added successfully, false otherwise.
+ */
 bool ChatHandler::HandleQuestAddCommand(char* args)
 {
     Player* player = getSelectedPlayer();
@@ -84,6 +100,12 @@ bool ChatHandler::HandleQuestAddCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleQuestRemoveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleQuestRemoveCommand(char* args)
 {
     Player* player = getSelectedPlayer();
@@ -134,6 +156,12 @@ bool ChatHandler::HandleQuestRemoveCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleQuestCompleteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleQuestCompleteCommand(char* args)
 {
     Player* player = getSelectedPlayer();

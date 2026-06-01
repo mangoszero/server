@@ -11,7 +11,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "bmana"; }
+        virtual string getName()
+        {
+            return "bmana";
+        }
     };
 
     class PaladinBuffHealthStrategy : public Strategy
@@ -21,7 +24,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "bhealth"; }
+        virtual string getName()
+        {
+            return "bhealth";
+        }
     };
 
     class PaladinBuffDpsStrategy : public Strategy
@@ -31,7 +37,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "bdps"; }
+        virtual string getName()
+        {
+            return "bdps";
+        }
     };
 
     class PaladinBuffArmorStrategy : public Strategy
@@ -41,7 +50,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "barmor"; }
+        virtual string getName()
+        {
+            return "barmor";
+        }
     };
 
     class PaladinBuffSpeedStrategy : public Strategy
@@ -51,7 +63,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "bspeed"; }
+        virtual string getName()
+        {
+            return "bspeed";
+        }
     };
 
     class PaladinShadowResistanceStrategy : public Strategy
@@ -61,7 +76,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "rshadow"; }
+        virtual string getName()
+        {
+            return "rshadow";
+        }
     };
 
     class PaladinFrostResistanceStrategy : public Strategy
@@ -71,7 +89,10 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "rfrost"; }
+        virtual string getName()
+        {
+            return "rfrost";
+        }
     };
 
     class PaladinFireResistanceStrategy : public Strategy
@@ -81,6 +102,9 @@ namespace ai
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName() { return "rfire"; }
+        virtual string getName()
+        {
+            return "rfire";
+        }
     };
 }

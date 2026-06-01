@@ -214,6 +214,13 @@ bool NotLeastHpTargetActiveTrigger::IsActive()
     return leastHp && target != leastHp;
 }
 
+bool NoTanksTargetActiveTrigger::IsActive()
+{
+    Unit* tanksTarget = AI_VALUE(Unit*, "dps tanks target");
+    Unit* target = AI_VALUE(Unit*, "current target");
+    return tanksTarget && target != tanksTarget;
+}
+
 bool EnemyPlayerIsAttacking::IsActive()
 {
     Unit* enemyPlayer = AI_VALUE(Unit*, "enemy player target");
@@ -238,7 +245,6 @@ bool HasItemForSpellTrigger::IsActive()
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     return spellId && AI_VALUE2(Item*, "item for spell", spellId);
 }
-
 
 bool TargetChangedTrigger::IsActive()
 {

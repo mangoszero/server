@@ -33,6 +33,12 @@
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
+/**
+ * @brief Applies item set bonuses when an item is equipped.
+ *
+ * @param player The player receiving the set bonus.
+ * @param item The item being added.
+ */
 void AddItemsSetItem(Player* player, Item* item)
 {
     ItemPrototype const* proto = item->GetProto();
@@ -132,6 +138,12 @@ void AddItemsSetItem(Player* player, Item* item)
     }
 }
 
+/**
+ * @brief Removes item set bonuses when an item is unequipped.
+ *
+ * @param player The player losing the set bonus.
+ * @param proto The item prototype being removed.
+ */
 void RemoveItemsSetItem(Player* player, ItemPrototype const* proto)
 {
     uint32 setid = proto->ItemSet;
@@ -196,6 +208,13 @@ void RemoveItemsSetItem(Player* player, ItemPrototype const* proto)
     }
 }
 
+/**
+ * @brief Checks whether an item can be placed into a specific bag type.
+ *
+ * @param pProto The item prototype to place.
+ * @param pBagProto The bag prototype receiving the item.
+ * @return true if the item fits the bag restrictions; otherwise, false.
+ */
 bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProto)
 {
     if (!pProto || !pBagProto)
@@ -259,6 +278,9 @@ bool ItemCanGoIntoBag(ItemPrototype const* pProto, ItemPrototype const* pBagProt
     return false;
 }
 
+/**
+ * @brief Creates an empty item instance.
+ */
 Item::Item() :
     loot(NULL)
 {
@@ -275,10 +297,21 @@ Item::Item() :
     m_lootState = ITEM_LOOT_NONE;
 }
 
+/**
+ * @brief Destroys the item instance.
+ */
 Item::~Item()
 {
 }
 
+/**
+ * @brief Initializes a new item with prototype and owner data.
+ *
+ * @param guidlow The low GUID for the item.
+ * @param itemid The item entry identifier.
+ * @param owner The initial owner.
+ * @return true if creation succeeded; otherwise, false.
+ */
 bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
 {
     Object::_Create(guidlow, 0, HIGHGUID_ITEM);
@@ -309,6 +342,11 @@ bool Item::Create(uint32 guidlow, uint32 itemid, Player const* owner)
     return true;
 }
 
+/**
+ * @brief Checks whether this item is a bag that still contains items.
+ *
+ * @return true if the item is a non-empty bag; otherwise, false.
+ */
 bool Item::IsNotEmptyBag() const
 {
     if (Bag const* bag = ToBag())
@@ -318,6 +356,12 @@ bool Item::IsNotEmptyBag() const
     return false;
 }
 
+/**
+ * @brief Updates remaining duration for a temporary item.
+ *
+ * @param owner The owning player.
+ * @param diff Elapsed time in milliseconds.
+ */
 void Item::UpdateDuration(Player* owner, uint32 diff)
 {
     if (!GetUInt32Value(ITEM_FIELD_DURATION))
@@ -344,6 +388,9 @@ void Item::UpdateDuration(Player* owner, uint32 diff)
     SetState(ITEM_CHANGED, owner);                          // save new time in database
 }
 
+/**
+ * @brief Persists the item instance and saved loot state to the database.
+ */
 void Item::SaveToDB()
 {
     uint32 guid = GetGUIDLow();
@@ -477,6 +524,14 @@ void Item::SaveToDB()
     SetState(ITEM_UNCHANGED);
 }
 
+/**
+ * @brief Loads an item instance from database fields.
+ *
+ * @param guidLow The low GUID of the item.
+ * @param fields The database row fields.
+ * @param ownerGuid The expected owner GUID.
+ * @return true if the item loaded successfully; otherwise, false.
+ */
 bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
 {
     // create item before any checks for store correct guid
@@ -578,6 +633,11 @@ bool Item::LoadFromDB(uint32 guidLow, Field* fields, ObjectGuid ownerGuid)
     return true;
 }
 
+/**
+ * @brief Loads persisted item loot data from the database.
+ *
+ * @param fields The loot database row fields.
+ */
 void Item::LoadLootFromDB(Field* fields)
 {
     uint32 item_id     = fields[1].GetUInt32();
@@ -608,6 +668,9 @@ void Item::LoadLootFromDB(Field* fields)
     SetLootState(ITEM_LOOT_UNCHANGED);
 }
 
+/**
+ * @brief Deletes the item instance record from the database.
+ */
 void Item::DeleteFromDB()
 {
     static SqlStatementID delItem ;
@@ -616,6 +679,9 @@ void Item::DeleteFromDB()
     stmt.PExecute(GetGUIDLow());
 }
 
+/**
+ * @brief Deletes the character inventory link for this item.
+ */
 void Item::DeleteFromInventoryDB()
 {
     static SqlStatementID delInv ;
@@ -624,16 +690,31 @@ void Item::DeleteFromInventoryDB()
     stmt.PExecute(GetGUIDLow());
 }
 
+/**
+ * @brief Gets the prototype data for this item entry.
+ *
+ * @return The item prototype, or null if unavailable.
+ */
 ItemPrototype const* Item::GetProto() const
 {
     return ObjectMgr::GetItemPrototype(GetEntry());
 }
 
+/**
+ * @brief Gets the owning player of this item.
+ *
+ * @return The owner player, or null if offline or missing.
+ */
 Player* Item::GetOwner()const
 {
     return sObjectMgr.GetPlayer(GetOwnerGuid());
 }
 
+/**
+ * @brief Gets the skill associated with using this item.
+ *
+ * @return The skill identifier, or 0 if none applies.
+ */
 uint32 Item::GetSkill()
 {
     const static uint32 item_weapon_skills[MAX_ITEM_SUBCLASS_WEAPON] =
@@ -679,6 +760,11 @@ uint32 Item::GetSkill()
     }
 }
 
+/**
+ * @brief Gets the spell that teaches the skill for this item type.
+ *
+ * @return The teaching spell identifier, or 0 if none applies.
+ */
 uint32 Item::GetSpell()
 {
     ItemPrototype const* proto = GetProto();
@@ -719,6 +805,12 @@ uint32 Item::GetSpell()
     return 0;
 }
 
+/**
+ * @brief Generates a random property id for an item entry.
+ *
+ * @param item_id The item entry identifier.
+ * @return The generated random property id, or 0 if none applies.
+ */
 int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
 {
     ItemPrototype const* itemProto = sItemStorage.LookupEntry<ItemPrototype>(item_id);
@@ -745,6 +837,11 @@ int32 Item::GenerateItemRandomPropertyId(uint32 item_id)
     return 0;
 }
 
+/**
+ * @brief Applies random property enchantments to the item.
+ *
+ * @param randomPropId The random property identifier.
+ */
 void Item::SetItemRandomProperties(int32 randomPropId)
 {
     if (!randomPropId)
@@ -770,6 +867,12 @@ void Item::SetItemRandomProperties(int32 randomPropId)
     }
 }
 
+/**
+ * @brief Sets the item update state and queues it for owner persistence if needed.
+ *
+ * @param state The new update state.
+ * @param forplayer Optional player context for queue management.
+ */
 void Item::SetState(ItemUpdateState state, Player* forplayer)
 {
     if (uState == ITEM_NEW && state == ITEM_REMOVED)
@@ -805,6 +908,11 @@ void Item::SetState(ItemUpdateState state, Player* forplayer)
     }
 }
 
+/**
+ * @brief Adds the item to the owner's update queue.
+ *
+ * @param player Optional owner override.
+ */
 void Item::AddToUpdateQueueOf(Player* player)
 {
     if (IsInUpdateQueue())
@@ -839,6 +947,11 @@ void Item::AddToUpdateQueueOf(Player* player)
     uQueuePos = player->m_itemUpdateQueue.size() - 1;
 }
 
+/**
+ * @brief Removes the item from the owner's update queue.
+ *
+ * @param player Optional owner override.
+ */
 void Item::RemoveFromUpdateQueueOf(Player* player)
 {
     if (!IsInUpdateQueue())
@@ -873,16 +986,31 @@ void Item::RemoveFromUpdateQueueOf(Player* player)
     uQueuePos = -1;
 }
 
+/**
+ * @brief Gets the bag slot containing this item.
+ *
+ * @return The bag slot index, or the backpack slot for top-level items.
+ */
 uint8 Item::GetBagSlot() const
 {
     return m_container ? m_container->GetSlot() : uint8(INVENTORY_SLOT_BAG_0);
 }
 
+/**
+ * @brief Checks whether the item is equipped.
+ *
+ * @return true if the item occupies an equipment slot; otherwise, false.
+ */
 bool Item::IsEquipped() const
 {
     return !IsInBag() && m_slot < EQUIPMENT_SLOT_END;
 }
 
+/**
+ * @brief Checks whether the item can currently be traded.
+ *
+ * @return true if the item can be traded; otherwise, false.
+ */
 bool Item::CanBeTraded() const
 {
     if (IsSoulBound())
@@ -919,6 +1047,11 @@ bool Item::CanBeTraded() const
     return true;
 }
 
+/**
+ * @brief Checks whether any enchantment makes the item soulbound.
+ *
+ * @return true if an enchantment binds the item; otherwise, false.
+ */
 bool Item::IsBoundByEnchant() const
 {
     // Check all enchants for soulbound
@@ -944,6 +1077,12 @@ bool Item::IsBoundByEnchant() const
     return false;
 }
 
+/**
+ * @brief Checks whether the item satisfies a spell's equipment requirements.
+ *
+ * @param spellInfo The spell being evaluated.
+ * @return true if the item matches the spell requirements; otherwise, false.
+ */
 bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
 {
     ItemPrototype const* proto = GetProto();
@@ -983,6 +1122,12 @@ bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
     return true;
 }
 
+/**
+ * @brief Checks whether a unit is a valid target for using this item.
+ *
+ * @param pUnitTarget The candidate unit target.
+ * @return true if the target matches item target requirements; otherwise, false.
+ */
 bool Item::IsTargetValidForItemUse(Unit* pUnitTarget)
 {
     ItemRequiredTargetMapBounds bounds = sObjectMgr.GetItemRequiredTargetMapBounds(GetProto()->ItemId);
@@ -1006,6 +1151,14 @@ bool Item::IsTargetValidForItemUse(Unit* pUnitTarget)
     return false;
 }
 
+/**
+ * @brief Sets enchantment data for a slot.
+ *
+ * @param slot The enchantment slot.
+ * @param id The enchantment id.
+ * @param duration The enchantment duration.
+ * @param charges The remaining enchantment charges.
+ */
 void Item::SetEnchantment(EnchantmentSlot slot, uint32 id, uint32 duration, uint32 charges)
 {
     // Better lost small time at check in comparison lost time at item save to DB.
@@ -1020,6 +1173,12 @@ void Item::SetEnchantment(EnchantmentSlot slot, uint32 id, uint32 duration, uint
     SetState(ITEM_CHANGED);
 }
 
+/**
+ * @brief Updates the duration for an enchantment slot.
+ *
+ * @param slot The enchantment slot.
+ * @param duration The new duration.
+ */
 void Item::SetEnchantmentDuration(EnchantmentSlot slot, uint32 duration)
 {
     if (GetEnchantmentDuration(slot) == duration)
@@ -1031,6 +1190,12 @@ void Item::SetEnchantmentDuration(EnchantmentSlot slot, uint32 duration)
     SetState(ITEM_CHANGED);
 }
 
+/**
+ * @brief Updates the charges for an enchantment slot.
+ *
+ * @param slot The enchantment slot.
+ * @param charges The new charge count.
+ */
 void Item::SetEnchantmentCharges(EnchantmentSlot slot, uint32 charges)
 {
     if (GetEnchantmentCharges(slot) == charges)
@@ -1042,6 +1207,11 @@ void Item::SetEnchantmentCharges(EnchantmentSlot slot, uint32 charges)
     SetState(ITEM_CHANGED);
 }
 
+/**
+ * @brief Clears all enchantment data from a slot.
+ *
+ * @param slot The enchantment slot.
+ */
 void Item::ClearEnchantment(EnchantmentSlot slot)
 {
     if (!GetEnchantmentId(slot))
@@ -1056,6 +1226,13 @@ void Item::ClearEnchantment(EnchantmentSlot slot)
     SetState(ITEM_CHANGED);
 }
 
+/**
+ * @brief Checks whether the item is restricted to a different map or zone.
+ *
+ * @param cur_mapId The current map identifier.
+ * @param cur_zoneId The current zone identifier.
+ * @return true if the item is restricted elsewhere; otherwise, false.
+ */
 bool Item::IsLimitedToAnotherMapOrZone(uint32 cur_mapId, uint32 cur_zoneId) const
 {
     ItemPrototype const* proto = GetProto();
@@ -1065,6 +1242,12 @@ bool Item::IsLimitedToAnotherMapOrZone(uint32 cur_mapId, uint32 cur_zoneId) cons
 // Though the client has the information in the item's data field,
 // we have to send SMSG_ITEM_TIME_UPDATE to display the remaining
 // time.
+
+/**
+ * @brief Sends the remaining duration update packet for a timed item.
+ *
+ * @param owner The player receiving the update.
+ */
 void Item::SendTimeUpdate(Player* owner)
 {
 #ifdef ENABLE_PLAYERBOTS
@@ -1086,6 +1269,15 @@ void Item::SendTimeUpdate(Player* owner)
     owner->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Creates a new item or bag instance.
+ *
+ * @param item The item entry identifier.
+ * @param count The desired stack count.
+ * @param player The owning player.
+ * @param randomPropertyId Optional random property override.
+ * @return The created item instance, or null on failure.
+ */
 Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 randomPropertyId)
 {
     if (count < 1)
@@ -1121,6 +1313,13 @@ Item* Item::CreateItem(uint32 item, uint32 count, Player const* player, uint32 r
     return NULL;
 }
 
+/**
+ * @brief Creates a copy of the item with the requested count.
+ *
+ * @param count The stack count for the clone.
+ * @param player The target owner.
+ * @return The cloned item, or null on failure.
+ */
 Item* Item::CloneItem(uint32 count, Player const* player) const
 {
     Item* newItem = CreateItem(GetEntry(), count, player, GetItemRandomPropertyId());
@@ -1136,6 +1335,12 @@ Item* Item::CloneItem(uint32 count, Player const* player) const
     return newItem;
 }
 
+/**
+ * @brief Checks whether the item is bound to someone other than the given player.
+ *
+ * @param player The player attempting to use the item.
+ * @return true if the item is bound away from that player; otherwise, false.
+ */
 bool Item::IsBindedNotWith(Player const* player) const
 {
     // own item
@@ -1159,6 +1364,9 @@ bool Item::IsBindedNotWith(Player const* player) const
     return true;
 }
 
+/**
+ * @brief Adds the item to the map client update list.
+ */
 void Item::AddToClientUpdateList()
 {
     if (Player* pl = GetOwner())
@@ -1167,6 +1375,9 @@ void Item::AddToClientUpdateList()
     }
 }
 
+/**
+ * @brief Removes the item from the map client update list.
+ */
 void Item::RemoveFromClientUpdateList()
 {
     if (Player* pl = GetOwner())
@@ -1175,6 +1386,11 @@ void Item::RemoveFromClientUpdateList()
     }
 }
 
+/**
+ * @brief Builds update data for players who can observe the item.
+ *
+ * @param update_players The update packet aggregation map.
+ */
 void Item::BuildUpdateData(UpdateDataMapType& update_players)
 {
     if (Player* pl = GetOwner())
@@ -1185,6 +1401,12 @@ void Item::BuildUpdateData(UpdateDataMapType& update_players)
     ClearUpdateMask(false);
 }
 
+/**
+ * @brief Checks whether another stack can receive part of this item type.
+ *
+ * @param proto The prototype of the incoming item stack.
+ * @return The inventory result describing merge eligibility.
+ */
 InventoryResult Item::CanBeMergedPartlyWith(ItemPrototype const* proto) const
 {
     // check item type
@@ -1208,6 +1430,12 @@ InventoryResult Item::CanBeMergedPartlyWith(ItemPrototype const* proto) const
     return EQUIP_ERR_OK;
 }
 
+/**
+ * @brief Checks whether a unit satisfies the required item-use target rule.
+ *
+ * @param pUnitTarget The candidate target unit.
+ * @return true if the unit meets the stored requirements; otherwise, false.
+ */
 bool ItemRequiredTarget::IsFitToRequirements(Unit* pUnitTarget) const
 {
     if (pUnitTarget->GetTypeId() != TYPEID_UNIT)
@@ -1231,6 +1459,11 @@ bool ItemRequiredTarget::IsFitToRequirements(Unit* pUnitTarget) const
     }
 }
 
+/**
+ * @brief Updates the persisted loot state for the item.
+ *
+ * @param state The new loot update state.
+ */
 void Item::SetLootState(ItemLootUpdateState state)
 {
     // ITEM_LOOT_NONE -> ITEM_LOOT_TEMPORARY -> ITEM_LOOT_NONE
@@ -1283,6 +1516,11 @@ void Item::SetLootState(ItemLootUpdateState state)
     }
 }
 
+/**
+ * @brief Gets the bound script identifier for this item entry.
+ *
+ * @return The scripted item id.
+ */
 uint32 Item::GetScriptId() const
 {
     return sScriptMgr.GetBoundScriptId(SCRIPTED_ITEM, GetEntry());

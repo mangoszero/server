@@ -49,6 +49,9 @@ typedef UNORDERED_MAP<uint32, EnchStoreList> EnchantmentStore;
 
 static EnchantmentStore RandomItemEnch;
 
+/**
+ * @brief Loads random item enchantment templates from the database.
+ */
 void LoadRandomEnchantmentsTable()
 {
     RandomItemEnch.clear();                                 // for reload case
@@ -89,6 +92,12 @@ void LoadRandomEnchantmentsTable()
     sLog.outString();
 }
 
+/**
+ * @brief Selects a random enchantment id for a random property template.
+ *
+ * @param entry The random enchantment template entry id.
+ * @return The selected enchantment id, or 0 if none was selected.
+ */
 uint32 GetItemEnchantMod(uint32 entry)
 {
     if (!entry)

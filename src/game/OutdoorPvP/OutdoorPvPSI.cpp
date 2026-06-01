@@ -177,6 +177,13 @@ static SilithusSpawnLocation silithusFlagDropLocations[2] =
     { -7588.48f, 756.806f, -16.425f}    // horde
 };
 
+/**
+ * @brief Handles manual silithyst flag drops outside the hand-in trigger.
+ *
+ * @param player The player attempting to drop the flag.
+ * @param spellId The triggering spell id.
+ * @return true if the drop was handled; otherwise false.
+ */
 bool OutdoorPvPSI::HandleDropFlag(Player* player, uint32 spellId)
 {
     if (spellId != SPELL_SILITHYST)

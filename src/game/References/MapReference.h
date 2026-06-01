@@ -28,34 +28,90 @@
 #include "Utilities/LinkedReference/Reference.h"
 #include "Map.h"
 
+/**
+ * @brief Map reference class
+ *
+ * Manages the reference between a Map and a Player.
+ */
 class MapReference : public Reference<Map, Player>
 {
     protected:
+        /**
+         * @brief Build link to target object
+         *
+         * Called from link().
+         */
         void targetObjectBuildLink() override
         {
-            // called from link()
             getTarget()->m_mapRefManager.insertFirst(this);
             getTarget()->m_mapRefManager.incSize();
         }
+
+        /**
+         * @brief Destroy link to target object
+         *
+         * Called from unlink().
+         */
         void targetObjectDestroyLink() override
         {
-            // called from unlink()
             if (isValid())
             {
                 getTarget()->m_mapRefManager.decSize();
             }
         }
+
+        /**
+         * @brief Destroy link from source object
+         *
+         * Called from invalidate().
+         */
         void sourceObjectDestroyLink() override
         {
-            // called from invalidate()
             getTarget()->m_mapRefManager.decSize();
         }
+
     public:
+        /**
+         * @brief Constructor
+         */
         MapReference() : Reference<Map, Player>() {}
-        ~MapReference() { unlink(); }
-        MapReference* next() { return (MapReference*)Reference<Map, Player>::next(); }
+
+        /**
+         * @brief Destructor
+         */
+        ~MapReference()
+        {
+            unlink();
+        }
+
+        /**
+         * @brief Get next reference
+         * @return Next map reference
+         */
+        MapReference* next()
+        {
+            return (MapReference*)Reference<Map, Player>::next();
+        }
+
+        /**
+         * @brief Get next reference (const)
+         * @return Next map reference (const)
+         */
         MapReference const* next() const { return (MapReference const*)Reference<Map, Player>::next(); }
-        MapReference* nockeck_prev() { return (MapReference*)Reference<Map, Player>::nocheck_prev(); }
+
+        /**
+         * @brief Get previous reference (no check)
+         * @return Previous map reference
+         */
+        MapReference* nockeck_prev()
+        {
+            return (MapReference*)Reference<Map, Player>::nocheck_prev();
+        }
+
+        /**
+         * @brief Get previous reference (no check, const)
+         * @return Previous map reference (const)
+         */
         MapReference const* nocheck_prev() const { return (MapReference const*)Reference<Map, Player>::nocheck_prev(); }
 };
 #endif

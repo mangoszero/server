@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GameObjectModel.cpp
+ * @brief Game object model implementation for collision
+ *
+ * This file implements GameObjectModel which represents the 3D model
+ * of a game object used for collision detection. It loads model data
+ * from VMap files and provides intersection testing.
+ *
+ * Key features:
+ * - Model loading from VMap data
+ * - Bounding box calculations
+ * - Ray intersection testing
+ * - Position and orientation transforms
+ *
+ * @see GameObjectModel for the model class
+ * @see VMapManager2 for the VMap system
+ */
+
 #include "VMapFactory.h"
 #include "VMapManager2.h"
 #include "VMapDefinitions.h"
@@ -44,6 +62,9 @@ struct GameobjectModelData
 typedef UNORDERED_MAP<uint32, GameobjectModelData> ModelList;
 ModelList model_list;
 
+/**
+ * @brief Loads cached game object model bounds from the vmaps model list file.
+ */
 void LoadGameObjectModelList()
 {
     FILE* model_list_file = fopen((sWorld.GetDataPath() + "vmaps/" + VMAP::GAMEOBJECT_MODELS).c_str(), "rb");
@@ -104,6 +125,13 @@ GameObjectModel::~GameObjectModel()
     }
 }
 
+/**
+ * @brief Initializes a game object collision model from display information.
+ *
+ * @param pGo The owning game object.
+ * @param pDisplayInfo The display info record.
+ * @return true if the model was initialized; otherwise false.
+ */
 bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDisplayInfoEntry* const pDisplayInfo)
 {
     ModelList::const_iterator it = model_list.find(pDisplayInfo->Displayid);
@@ -140,6 +168,11 @@ bool GameObjectModel::initialize(const GameObject* const pGo, const GameObjectDi
     return true;
 }
 
+/**
+ * @brief Rebuilds the transformed bounds after a game object rotation change.
+ *
+ * @param q The new object rotation quaternion.
+ */
 void GameObjectModel::UpdateRotation(G3D::Quat const& q)
 {
     iQuat = q;
@@ -159,6 +192,12 @@ void GameObjectModel::UpdateRotation(G3D::Quat const& q)
     iBound = rotated_bounds + iPos;
 }
 
+/**
+ * @brief Creates and initializes a collision model for a game object.
+ *
+ * @param pGo The source game object.
+ * @return GameObjectModel* The created collision model, or NULL on failure.
+ */
 GameObjectModel* GameObjectModel::Create(const GameObject* const pGo)
 {
     const GameObjectDisplayInfoEntry* info = sGameObjectDisplayInfoStore.LookupEntry(pGo->GetDisplayId());
@@ -177,6 +216,14 @@ GameObjectModel* GameObjectModel::Create(const GameObject* const pGo)
     return mdl;
 }
 
+/**
+ * @brief Tests a ray against the game object model collision geometry.
+ *
+ * @param ray The ray to test.
+ * @param MaxDist Receives or limits the hit distance.
+ * @param StopAtFirstHit True to stop at the first collision.
+ * @return true if the ray intersects the model; otherwise false.
+ */
 bool GameObjectModel::IntersectRay(const G3D::Ray& ray, float& MaxDist, bool StopAtFirstHit) const
 {
     if (!isCollidable)

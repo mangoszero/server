@@ -140,7 +140,15 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
 
         void RemoveAllObjectsInRemoveList();
 
-        void LoadContinents();
+        struct LivingWorldStartupStats
+        {
+            uint32 forcedMaps = 0;
+            uint32 totalUniqueGrids = 0;
+            uint32 totalNewlyLoaded = 0;
+            uint32 totalLocalTransports = 0;
+        };
+
+        LivingWorldStartupStats LoadContinents();
         void LoadTransports();
 
         typedef std::set<Transport*> TransportSet;
@@ -149,14 +157,17 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         typedef std::map<uint32, TransportSet> TransportMap;
         TransportMap m_TransportsByMap;
 
-        uint32 GenerateInstanceId() { return ++i_MaxInstanceId; }
+        uint32 GenerateInstanceId()
+        {
+            return ++i_MaxInstanceId;
+        }
+
         void InitMaxInstanceId();
         void InitializeVisibilityDistanceInfo();
 
         /* statistics */
         uint32 GetNumInstances();
         uint32 GetNumPlayersInInstances();
-
 
         // get list of all maps
         const MapMapType& Maps() const { return i_maps; }

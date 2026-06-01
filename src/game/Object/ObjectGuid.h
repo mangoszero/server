@@ -99,10 +99,16 @@ class ObjectGuid
         ObjectGuid(HighGuid, uint64 counter);               // no implementation, used for catch wrong type assign
 
     public:                                                 // modifiers
-        PackedGuidReader ReadAsPacked() { return PackedGuidReader(*this); }
+        PackedGuidReader ReadAsPacked()
+        {
+            return PackedGuidReader(*this);
+        }
 
         void Set(uint64 const& guid) { m_guid = guid; }
-        void Clear() { m_guid = 0; }
+        void Clear()
+        {
+            m_guid = 0;
+        }
 
         PackedGuid WriteAsPacked() const;
     public:                                                 // accessors
@@ -112,15 +118,15 @@ class ObjectGuid
         uint32   GetCounter()  const
         {
             return HasEntry()
-                   ? uint32(m_guid & UI64LIT(0x0000000000FFFFFF))
-                   : uint32(m_guid & UI64LIT(0x00000000FFFFFFFF));
+                ? uint32(m_guid & UI64LIT(0x0000000000FFFFFF))
+                : uint32(m_guid & UI64LIT(0x00000000FFFFFFFF));
         }
 
         static uint32 GetMaxCounter(HighGuid high)
         {
             return HasEntry(high)
-                   ? uint32(0x00FFFFFF)
-                   : uint32(0xFFFFFFFF);
+                ? uint32(0x00FFFFFF)
+                : uint32(0xFFFFFFFF);
         }
 
         uint32 GetMaxCounter() const { return GetMaxCounter(GetHigh()); }
@@ -240,10 +246,24 @@ class ObjectGuidGenerator
         uint32 m_nextGuid;
 };
 
+/**
+ * Serializes an object guid into a byte buffer.
+ */
 ByteBuffer& operator<< (ByteBuffer& buf, ObjectGuid const& guid);
+
+/**
+ * Deserializes an object guid from a byte buffer.
+ */
 ByteBuffer& operator>> (ByteBuffer& buf, ObjectGuid&       guid);
 
+/**
+ * Serializes a packed guid into a byte buffer.
+ */
 ByteBuffer& operator<< (ByteBuffer& buf, PackedGuid const& guid);
+
+/**
+ * Deserializes a packed guid reader from a byte buffer.
+ */
 ByteBuffer& operator>> (ByteBuffer& buf, PackedGuidReader const& guid);
 
 inline PackedGuid ObjectGuid::WriteAsPacked() const { return PackedGuid(*this); }

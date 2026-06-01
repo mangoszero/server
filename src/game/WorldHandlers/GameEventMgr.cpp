@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GameEventMgr.cpp
+ * @brief Game event system implementation
+ *
+ * This file implements GameEventMgr which manages time-based game events
+ * such as holidays, special occasions, and scheduled content. Features:
+ *
+ * - Event scheduling with start/end times
+ * - Event occurrence patterns (daily, weekly, custom)
+ * - Event condition checking
+ * - Creature/gameobject spawning/despawning for events
+ * - Quest availability based on events
+ * - Mail distribution for event rewards
+ *
+ * Events are loaded from the `game_event` database tables.
+ *
+ * @see GameEventMgr for the manager class
+ */
+
 #include "GameEventMgr.h"
 #include "World.h"
 #include "ObjectMgr.h"
@@ -41,6 +60,13 @@
 
 INSTANTIATE_SINGLETON_1(GameEventMgr);
 
+/**
+ * @brief Checks whether a specific game event is active at the given time.
+ *
+ * @param entry The game event id.
+ * @param currenttime The time to evaluate.
+ * @return true if the event is active; otherwise false.
+ */
 bool GameEventMgr::CheckOneGameEvent(uint16 entry, time_t currenttime) const
 {
     // Get the event information
@@ -55,6 +81,12 @@ bool GameEventMgr::CheckOneGameEvent(uint16 entry, time_t currenttime) const
     }
 }
 
+/**
+ * @brief Calculates the next time interval before an event state may change.
+ *
+ * @param entry The game event id.
+ * @return uint32 The delay until the next check in seconds.
+ */
 uint32 GameEventMgr::NextCheck(uint16 entry) const
 {
     time_t currenttime = time(NULL);
@@ -93,6 +125,13 @@ uint32 GameEventMgr::NextCheck(uint16 entry) const
     }
 }
 
+/**
+ * @brief Activates a game event and optionally rewrites its timing window.
+ *
+ * @param event_id The event id to start.
+ * @param overwrite True to overwrite the stored timing window.
+ * @param resume True if the event is being resumed after shutdown.
+ */
 void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool resume /*=false*/)
 {
     ApplyNewEvent(event_id, resume);
@@ -115,6 +154,12 @@ void GameEventMgr::StartEvent(uint16 event_id, bool overwrite /*=false*/, bool r
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Deactivates a game event and optionally rewrites its timing window.
+ *
+ * @param event_id The event id to stop.
+ * @param overwrite True to overwrite the stored timing window.
+ */
 void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
 {
     UnApplyEvent(event_id);
@@ -137,6 +182,9 @@ void GameEventMgr::StopEvent(uint16 event_id, bool overwrite)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Loads all game event definitions and related data from the database.
+ */
 void GameEventMgr::LoadFromDB()
 {
     {
@@ -388,13 +436,14 @@ void GameEventMgr::LoadFromDB()
     }
 
     mGameEventCreatureData.resize(mGameEvent.size());
-    //                                   0              1                             2
-    result = WorldDatabase.Query("SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
-                                 //   3                                      4
-                                 "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
-                                 //   5                                     6
-                                 "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
-                                 "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
+    result = WorldDatabase.Query(
+                                //                  0                                  1                                   2
+                                "SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
+                                //                           3                                          4
+                                "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
+                                //                           5                                         6
+                                "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
+                                "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
 
     count = 0;
     if (!result)
@@ -636,6 +685,11 @@ uint32 GameEventMgr::Initialize()                           // return the next e
     return delay;
 }
 
+/**
+ * @brief Initializes event-controlled spawn pools for a persistent map state.
+ *
+ * @param state The persistent map state being initialized.
+ */
 void GameEventMgr::Initialize(MapPersistentState* state)
 {
     // At map persistent state creating need only apply pool spawn modifications
@@ -693,6 +747,11 @@ uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
     return (nextEventDelay + 1) * IN_MILLISECONDS;          // Add 1 second to be sure event has started/stopped at next call
 }
 
+/**
+ * @brief Removes an active event's gameplay effects from the world.
+ *
+ * @param event_id The event id to remove.
+ */
 void GameEventMgr::UnApplyEvent(uint16 event_id)
 {
     m_ActiveEvents.erase(event_id);
@@ -711,6 +770,12 @@ void GameEventMgr::UnApplyEvent(uint16 event_id)
     SendEventMails(event_nid);
 }
 
+/**
+ * @brief Applies a newly active event's gameplay effects to the world.
+ *
+ * @param event_id The event id to apply.
+ * @param resume True if the event is resuming after shutdown.
+ */
 void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
 {
     m_ActiveEvents.insert(event_id);
@@ -739,6 +804,11 @@ void GameEventMgr::ApplyNewEvent(uint16 event_id, bool resume)
     }
 }
 
+/**
+ * @brief Spawns creatures, gameobjects, and pools associated with an event state.
+ *
+ * @param event_id The signed event id to spawn for.
+ */
 void GameEventMgr::GameEventSpawn(int16 event_id)
 {
     int32 internal_event_id = mGameEvent.size() + event_id - 1;
@@ -818,6 +888,11 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
     }
 }
 
+/**
+ * @brief Unspawns creatures, gameobjects, and pools associated with an event state.
+ *
+ * @param event_id The signed event id to unspawn for.
+ */
 void GameEventMgr::GameEventUnspawn(int16 event_id)
 {
     int32 internal_event_id = mGameEvent.size() + event_id - 1;
@@ -897,6 +972,12 @@ void GameEventMgr::GameEventUnspawn(int16 event_id)
     }
 }
 
+/**
+ * @brief Gets active event-specific update data for a creature guid.
+ *
+ * @param lowguid The creature low guid.
+ * @return GameEventCreatureData const* The active event update data, or null if none applies.
+ */
 GameEventCreatureData const* GameEventMgr::GetCreatureUpdateDataForActiveEvent(uint32 lowguid) const
 {
     // only for active event, creature can be listed for many so search all
@@ -950,6 +1031,12 @@ struct GameEventUpdateCreatureDataInMapsWorker
     bool i_activate;
 };
 
+/**
+ * @brief Updates spawned creatures with event-specific template data.
+ *
+ * @param event_id The event id whose creature data should be applied.
+ * @param activate True to apply event data; false to remove it.
+ */
 void GameEventMgr::UpdateCreatureData(int16 event_id, bool activate)
 {
     for (GameEventCreatureDataList::iterator itr = mGameEventCreatureData[event_id].begin(); itr != mGameEventCreatureData[event_id].end(); ++itr)
@@ -967,6 +1054,12 @@ void GameEventMgr::UpdateCreatureData(int16 event_id, bool activate)
     }
 }
 
+/**
+ * @brief Toggles event-specific quest availability.
+ *
+ * @param event_id The event id whose quests should be toggled.
+ * @param Activate True to activate the quests; false to deactivate them.
+ */
 void GameEventMgr::UpdateEventQuests(uint16 event_id, bool Activate)
 {
     QuestList::iterator itr;
@@ -983,6 +1076,11 @@ void GameEventMgr::UpdateEventQuests(uint16 event_id, bool Activate)
     }
 }
 
+/**
+ * @brief Queues event-related mass mails for eligible characters.
+ *
+ * @param event_id The signed event id whose mails should be sent.
+ */
 void GameEventMgr::SendEventMails(int16 event_id)
 {
     int32 internal_event_id = mGameEvent.size() + event_id - 1;
@@ -995,12 +1093,14 @@ void GameEventMgr::SendEventMails(int16 event_id)
         {
             // need special query
             std::ostringstream ss;
-            ss << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
-               "WHERE (1 << (`characters`.`race` - 1)) & "
-               << itr->raceMask
-               << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
-               << itr->questId
-               << " AND `character_queststatus`.`rewarded` <> 0";
+            ss
+                << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
+                "WHERE (1 << (`characters`.`race` - 1)) & "
+                << itr->raceMask
+                << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
+                << itr->questId
+                << " AND `character_queststatus`.`rewarded` <> 0";
+
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());
         }
         else
@@ -1012,6 +1112,13 @@ void GameEventMgr::SendEventMails(int16 event_id)
 
 // Get the Game Event ID for Creature by guid
 template <>
+
+/**
+ * @brief Resolves the signed game event id associated with a creature guid.
+ *
+ * @param guid_or_poolid The creature guid.
+ * @return int16 The signed event id, or zero if none applies.
+ */
 int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventCreatureGuids.size(); ++i) // 0 <= i <= 2*(S := mGameEvent.size()) - 2
@@ -1025,6 +1132,13 @@ int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 
 // Get the Game Event ID for GameObject by guid
 template <>
+
+/**
+ * @brief Resolves the signed game event id associated with a gameobject guid.
+ *
+ * @param guid_or_poolid The gameobject guid.
+ * @return int16 The signed event id, or zero if none applies.
+ */
 int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventGameobjectGuids.size(); ++i)
@@ -1038,6 +1152,13 @@ int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 
 // Get the Game Event ID for Pool by pool ID
 template <>
+
+/**
+ * @brief Resolves the game event id associated with a spawn pool id.
+ *
+ * @param guid_or_poolid The pool id.
+ * @return int16 The event id, or zero if none applies.
+ */
 int16 GameEventMgr::GetGameEventId<Pool>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventSpawnPoolIds.size(); ++i)
@@ -1054,6 +1175,12 @@ GameEventMgr::GameEventMgr()
     m_IsGameEventsInit = false;
 }
 
+/**
+ * @brief Checks whether any active event matches the specified holiday id.
+ *
+ * @param id The holiday id to search for.
+ * @return true if the holiday is currently active; otherwise false.
+ */
 bool GameEventMgr::IsActiveHoliday(HolidayIds id)
 {
     if (id == HOLIDAY_NONE)
@@ -1070,7 +1197,7 @@ bool GameEventMgr::IsActiveHoliday(HolidayIds id)
     return false;
 }
 
- bool IsHolidayActive(HolidayIds id)
+bool IsHolidayActive(HolidayIds id)
 {
     return sGameEventMgr.IsActiveHoliday(id);
 }

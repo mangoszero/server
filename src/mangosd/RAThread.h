@@ -36,7 +36,6 @@
 
 #include "Common.h"
 
-
 class RASocket;
 class ACE_Reactor;
 

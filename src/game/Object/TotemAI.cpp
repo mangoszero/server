@@ -31,8 +31,13 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
-int
-TotemAI::Permissible(const Creature* creature)
+/**
+ * @brief Determines whether TotemAI can control the given creature.
+ *
+ * @param creature The creature being evaluated.
+ * @return The AI selection priority for totem creatures.
+ */
+int TotemAI::Permissible(const Creature* creature)
 {
     if (creature->IsTotem())
     {
@@ -42,22 +47,41 @@ TotemAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
+/**
+ * @brief Initializes a totem AI instance.
+ *
+ * @param c The creature controlled by this AI.
+ */
 TotemAI::TotemAI(Creature* c) : CreatureAI(c)
 {
 }
 
-void
-TotemAI::MoveInLineOfSight(Unit*)
+/**
+ * @brief Ignores line-of-sight events for totems.
+ *
+ * @param The unit entering line of sight.
+ */
+void TotemAI::MoveInLineOfSight(Unit*)
 {
 }
 
+/**
+ * @brief Stops totem combat when entering evade mode.
+ */
 void TotemAI::EnterEvadeMode()
 {
     m_creature->CombatStop(true);
 }
 
-void
-TotemAI::UpdateAI(const uint32 /*diff*/)
+/**
+ * @brief Updates active totem behavior.
+ *
+ * Searches for a valid hostile target within spell range and casts the totem's
+ * configured spell when possible.
+ *
+ * @param diff The elapsed time since the last update in milliseconds.
+ */
+void TotemAI::UpdateAI(const uint32 /*diff*/)
 {
     if (getTotem().GetTotemType() != TOTEM_ACTIVE)
     {
@@ -113,17 +137,31 @@ TotemAI::UpdateAI(const uint32 /*diff*/)
     }
 }
 
-bool
-TotemAI::IsVisible(Unit*) const
+/**
+ * @brief Totems do not use generic visibility checks in this AI.
+ *
+ * @param The unit being tested.
+ * @return false.
+ */
+bool TotemAI::IsVisible(Unit*) const
 {
     return false;
 }
 
-void
-TotemAI::AttackStart(Unit*)
+/**
+ * @brief Ignores direct attack start requests for totems.
+ *
+ * @param The target unit.
+ */
+void TotemAI::AttackStart(Unit*)
 {
 }
 
+/**
+ * @brief Retrieves the controlled creature as a totem.
+ *
+ * @return Reference to the controlled totem.
+ */
 Totem& TotemAI::getTotem()
 {
     return static_cast<Totem&>(*m_creature);

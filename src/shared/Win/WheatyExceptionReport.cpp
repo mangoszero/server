@@ -11,12 +11,13 @@
 #include <tlhelp32.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <algorithm>
 #define _NO_CVCONST_H
 #include <dbghelp.h>
 #include "WheatyExceptionReport.h"
 #include "GitRevision.h"
 #define CrashFolder _T("Crashes")
-//#pragma comment(linker, "/defaultlib:dbghelp.lib")
+#pragma comment(linker, "/defaultlib:dbghelp.lib")
 
 inline LPTSTR ErrorMessage(DWORD dw)
 {
@@ -124,6 +125,9 @@ LONG WINAPI WheatyExceptionReport::WheatyUnhandledExceptionFilter(
     }
 }
 
+/**
+ * Retrieves the processor name string from the Windows registry.
+ */
 BOOL WheatyExceptionReport::_GetProcessorName(TCHAR* sProcessorName, DWORD maxcount)
 {
     if (!sProcessorName)
@@ -159,6 +163,9 @@ BOOL WheatyExceptionReport::_GetProcessorName(TCHAR* sProcessorName, DWORD maxco
     return TRUE;
 }
 
+/**
+ * Formats the current Windows version into a human-readable string.
+ */
 BOOL WheatyExceptionReport::_GetWindowsVersion(TCHAR* szVersion, DWORD cntMax)
 {
     // Try calling GetVersionEx using the OSVERSIONINFOEX structure.
@@ -248,6 +255,9 @@ BOOL WheatyExceptionReport::_GetWindowsVersion(TCHAR* szVersion, DWORD cntMax)
     return TRUE;
 }
 
+/**
+ * Prints basic operating system, processor, and memory information.
+ */
 void WheatyExceptionReport::PrintSystemInfo()
 {
     SYSTEM_INFO SystemInfo;
@@ -375,7 +385,7 @@ void WheatyExceptionReport::GenerateExceptionReport(
     _tprintf(_T("\r\nRegisters:\r\n"));
 
     _tprintf(_T("EAX:%08X\r\nEBX:%08X\r\nECX:%08X\r\nEDX:%08X\r\nESI:%08X\r\nEDI:%08X\r\n")
-             , pCtx->Eax, pCtx->Ebx, pCtx->Ecx, pCtx->Edx,
+            ,pCtx->Eax, pCtx->Ebx, pCtx->Ecx, pCtx->Edx,
              pCtx->Esi, pCtx->Edi);
 
     _tprintf(_T("CS:EIP:%04X:%08X\r\n"), pCtx->SegCs, pCtx->Eip);
@@ -389,8 +399,8 @@ void WheatyExceptionReport::GenerateExceptionReport(
 #ifdef _M_X64
     _tprintf(_T("\r\nRegisters:\r\n"));
     _tprintf(_T("RAX:%016I64X\r\nRBX:%016I64X\r\nRCX:%016I64X\r\nRDX:%016I64X\r\nRSI:%016I64X\r\nRDI:%016I64X\r\n")
-             _T("R8: %016I64X\r\nR9: %016I64X\r\nR10:%016I64X\r\nR11:%016I64X\r\nR12:%016I64X\r\nR13:%016I64X\r\nR14:%016I64X\r\nR15:%016I64X\r\n")
-             , pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx,
+            _T("R8: %016I64X\r\nR9: %016I64X\r\nR10:%016I64X\r\nR11:%016I64X\r\nR12:%016I64X\r\nR13:%016I64X\r\nR14:%016I64X\r\nR15:%016I64X\r\n")
+            ,pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx,
              pCtx->Rsi, pCtx->Rdi , pCtx->R9, pCtx->R10, pCtx->R11, pCtx->R12, pCtx->R13, pCtx->R14, pCtx->R15);
     _tprintf(_T("CS:RIP:%04X:%016I64X\r\n"), pCtx->SegCs, pCtx->Rip);
     _tprintf(_T("SS:RSP:%04X:%016X  RBP:%08X\r\n"),
@@ -520,8 +530,7 @@ BOOL WheatyExceptionReport::GetLogicalAddress(
     for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; ++i, ++pSection)
     {
         DWORD_PTR sectionStart = pSection->VirtualAddress;
-        DWORD_PTR sectionEnd = sectionStart
-                               + DWORD_PTR(max(pSection->SizeOfRawData, pSection->Misc.VirtualSize));
+        DWORD_PTR sectionEnd = sectionStart + DWORD_PTR(pSection->SizeOfRawData > pSection->Misc.VirtualSize ? pSection->SizeOfRawData : pSection->Misc.VirtualSize);
 
         // Is the address in this section???
         if ((rva >= sectionStart) && (rva <= sectionEnd))
@@ -819,7 +828,10 @@ char* WheatyExceptionReport::DumpTypeIndex(
     struct FINDCHILDREN : TI_FINDCHILDREN_PARAMS
     {
         ULONG   MoreChildIds[1024];
-        FINDCHILDREN() {Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);}
+        FINDCHILDREN()
+        {
+            Count = sizeof(MoreChildIds) / sizeof(MoreChildIds[0]);
+        }
     } children;
 
     children.Count = dwChildrenCount;
@@ -917,7 +929,7 @@ char* WheatyExceptionReport::FormatOutputValue(char* pszCurrBuffer,
             if (!IsBadStringPtr(*(PSTR*)pAddress, 32))
             {
                 pszCurrBuffer += sprintf(pszCurrBuffer, " = \"%.31s\"",
-                                         *(PDWORD)pAddress);
+                                         *(PSTR*)pAddress);
             }
             else
                 pszCurrBuffer += sprintf(pszCurrBuffer, " = %X",
@@ -944,6 +956,10 @@ char* WheatyExceptionReport::FormatOutputValue(char* pszCurrBuffer,
 }
 
 BasicType
+
+/**
+ * Resolves the basic type metadata for a symbol type index.
+ */
 WheatyExceptionReport::GetBasicType(DWORD typeIndex, DWORD64 modBase)
 {
     BasicType basicType;

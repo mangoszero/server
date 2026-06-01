@@ -28,6 +28,8 @@ set(SRC_GRP_AUTH
   Auth/BigNumber.h
   Auth/HMACSHA1.cpp
   Auth/HMACSHA1.h
+  Auth/OpenSSLProvider.cpp
+  Auth/OpenSSLProvider.h
   Auth/Sha1.cpp
   Auth/Sha1.h
   Auth/WardenKeyGeneration.h
@@ -137,6 +139,8 @@ if(WIN32)
     set(SRC_GRP_SVC
       Win/ServiceWin32.cpp
       Win/ServiceWin32.h
+      Win/WheatyExceptionReport.cpp
+      Win/WheatyExceptionReport.h
     )
 else()
     set(SRC_GRP_SVC
@@ -236,4 +240,5 @@ target_link_libraries(shared
         ${CMAKE_DL_LIBS}
         OpenSSL::Crypto
         OpenSSL::SSL
+        $<$<BOOL:${WIN32}>:dbghelp>
 )

@@ -24,7 +24,8 @@ void FleeManager::calculateDistanceToPlayers(FleePoint *point)
 
         float d = player->GetDistance(point->x, point->y, point->z);
         point->toAllPlayers.probe(d);
-        switch (player->getClass()) {
+        switch (player->getClass())
+        {
             case CLASS_HUNTER:
             case CLASS_MAGE:
             case CLASS_PRIEST:

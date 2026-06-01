@@ -64,7 +64,7 @@ enum GroupLeaveMethod
 struct LFGPlayerQueueInfo
 {
     ClassRoles roleMask;
-   uint32 team;
+    uint32 team;
     uint32 areaId;
     uint32 timeInLFG;
     bool hasQueuePriority;
@@ -74,7 +74,7 @@ struct LFGGroupQueueInfo
 {
     uint32 availableRoles;
     uint32 dpsCount;
-   uint32 team;
+    uint32 team;
     uint32 areaId;
     uint32 groupTimer;
 };
@@ -85,7 +85,7 @@ class LFGQueue
         LFGQueue() {}
         ~LFGQueue() {}
 
-       void AddToQueue(Player* leader, uint32 queAreaID);
+        void AddToQueue(Player* leader, uint32 queAreaID);
         void RestoreOfflinePlayer(ObjectGuid plrGuid);
         bool FindRoleToGroup(Player* plr, Group* grp, ClassRoles role);
         void RemovePlayerFromQueue(ObjectGuid plrGuid, PlayerLeaveMethod leaveMethod = PLAYER_CLIENT_LEAVE); // 0 == by default system (cmsg, leader leave), 1 == by lfg system (no need report text you left queu)
@@ -108,7 +108,6 @@ class LFGQueue
 
             return playerRole;
         }
-
         RolesPriority getPriority(Classes playerClass, ClassRoles playerRoles);
 
     private:

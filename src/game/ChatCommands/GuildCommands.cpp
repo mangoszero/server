@@ -22,16 +22,23 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GuildCommands.cpp
+ * @brief Implementation of guild management chat commands.
+ *
+ * This file contains chat command handlers for guild operations including:
+ * - Guild creation and deletion
+ * - Guild member management
+ * - Guild property modification
+ * - Guild bank management
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "GuildMgr.h"
 #include "Guild.h"
 
- /**********************************************************************
-     CommandTable : guildCommandTable
- /***********************************************************************/
-
- /** \brief GM command level 3 - Create a guild.
+/** \brief GM command level 3 - Create a guild.
   *
   * This command allows a GM (level 3) to create a guild.
   *
@@ -77,6 +84,12 @@ bool ChatHandler::HandleGuildCreateCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGuildInviteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGuildInviteCommand(char* args)
 {
     // player name optional
@@ -111,6 +124,12 @@ bool ChatHandler::HandleGuildInviteCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGuildUninviteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGuildUninviteCommand(char* args)
 {
     Player* target;
@@ -141,6 +160,12 @@ bool ChatHandler::HandleGuildUninviteCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGuildRankCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGuildRankCommand(char* args)
 {
     char* nameStr = ExtractOptNotLastArg(&args);
@@ -186,6 +211,12 @@ bool ChatHandler::HandleGuildRankCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGuildDeleteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGuildDeleteCommand(char* args)
 {
     if (!*args)

@@ -22,9 +22,41 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file SQLStorages.cpp
+ * @brief SQL database storage format definitions
+ *
+ * This file defines the format strings and storage objects for loading
+ * static game data from the database. Format strings specify the binary
+ * layout of each record for the SQLStorage system.
+ *
+ * Format string characters (from DBCFileLoader.h):
+ * - 'x' / 'X' / 'F' / 'p' = ignore/default (4/1/float/pointer bytes)
+ * - 's' = char* (string)
+ * - 'f' = float
+ * - 'i' = uint32
+ * - 'b' = uint8
+ * - 'd' = sorted field (not included in output)
+ * - 'n' = sorted field (parsed to data)
+ * - 'l' = boolean
+ *
+ * Storage types:
+ * - SQLStorage: Array-based indexed storage (continuous IDs)
+ * - SQLHashStorage: Hash map based (sparse IDs)
+ * - SQLMultiStorage: Multi-map (duplicate keys allowed)
+ *
+ * @see SQLStorage for the storage container
+ * @see SQLStorages.h for the extern declarations
+ */
+
 #include "SQLStorages.h"
 
-// The meaning of the format strings:
+/**
+ * @section Format String Definitions
+ *
+ * Each format string defines the field layout for a database table.
+ * The strings are processed by SQLStorage to convert SQL rows to binary records.
+ */
 //
 // taken from DBCFileLoader.h
 //

@@ -22,7 +22,6 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-
 #ifndef MANGOSSERVER_LFGHANDLER_H
 #define MANGOSSERVER_LFGHANDLER_H
 

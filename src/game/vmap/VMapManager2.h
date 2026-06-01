@@ -57,28 +57,42 @@ namespace VMAP
          * @brief Constructor to initialize member variables.
          */
         ManagedModel() : iModel(0), iRefCount(0) {}
+
         /**
          * @brief Sets the model.
          *
          * @param model Pointer to the WorldModel.
          */
         void setModel(WorldModel* model) { iModel = model; }
+
         /**
          * @brief Gets the model.
          *
          * @return WorldModel* Pointer to the WorldModel.
          */
-        WorldModel* getModel() { return iModel; }
+        WorldModel* getModel()
+        {
+            return iModel;
+        }
+
         /**
          * @brief Increments the reference count.
          */
-        void incRefCount() { ++iRefCount; }
+        void incRefCount()
+        {
+            ++iRefCount;
+        }
+
         /**
          * @brief Decrements the reference count.
          *
          * @return int The new reference count.
          */
-        int decRefCount() { return --iRefCount; }
+        int decRefCount()
+        {
+            return --iRefCount;
+        }
+
     protected:
         WorldModel* iModel; /**< Pointer to the WorldModel. */
         int iRefCount; /**< Reference count for the model. */
@@ -88,6 +102,7 @@ namespace VMAP
      * @brief Map of instance trees.
      */
     typedef UNORDERED_MAP<uint32, StaticMapTree*> InstanceTreeMap;
+
     /**
      * @brief Map of loaded model files.
      */
@@ -135,6 +150,7 @@ namespace VMAP
          * @return G3D::Vector3 The converted position.
          */
         G3D::Vector3 convertPositionToInternalRep(float x, float y, float z) const;
+
         /**
          * @brief Generates the map file name based on the map ID.
          *
@@ -147,6 +163,7 @@ namespace VMAP
          * @brief Constructor for VMapManager2.
          */
         VMapManager2();
+
         /**
          * @brief Destructor for VMapManager2.
          */
@@ -171,6 +188,7 @@ namespace VMAP
          * @param y The y-coordinate of the tile.
          */
         void unloadMap(unsigned int pMapId, int x, int y) override;
+
         /**
          * @brief Unloads a map.
          *
@@ -191,6 +209,7 @@ namespace VMAP
          * @return bool True if there is a line of sight, false otherwise.
          */
         bool isInLineOfSight(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2) override;
+
         /**
          * @brief Gets the hit position of an object in the line of sight.
          *
@@ -208,6 +227,7 @@ namespace VMAP
          * @return bool True if an object was hit, false otherwise.
          */
         bool getObjectHitPos(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2, float& rx, float& ry, float& rz, float pModifyDist) override;
+
         /**
          * @brief Gets the height at a specific position.
          *
@@ -242,6 +262,7 @@ namespace VMAP
          * @return bool True if area information was retrieved, false otherwise.
          */
         bool getAreaInfo(unsigned int pMapId, float x, float y, float& z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const override;
+
         /**
          * @brief Gets the liquid level at a specific position.
          *
@@ -266,6 +287,7 @@ namespace VMAP
          * @return WorldModel* The acquired model instance.
          */
         WorldModel* acquireModelInstance(const std::string& basepath, const std::string& filename, uint32 flags = 0);
+
         /**
          * @brief Releases a model instance.
          *
@@ -285,6 +307,7 @@ namespace VMAP
         {
             return getMapFileName(pMapId);
         }
+
         /**
          * @brief Checks if a map exists.
          *

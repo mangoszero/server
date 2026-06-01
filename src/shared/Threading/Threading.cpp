@@ -22,6 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Threading.cpp
+ * @brief ACE-based threading implementation
+ *
+ * This file provides a platform-independent threading abstraction using
+ * the ACE (Adaptive Communication Environment) library. Features:
+ *
+ * - Thread priority management (Idle to Realtime)
+ * - Runnable-based task execution
+ * - Thread lifecycle management (start, wait, destroy, suspend, resume)
+ * - Reference counting for task safety
+ *
+ * The Thread class wraps ACE threads and provides a C++ interface for
+ * spawning and managing worker threads throughout the server.
+ *
+ * @see Thread for the main thread class
+ * @see Runnable for the task interface
+ * @see ThreadPriority for priority level management
+ */
+
 #include "Threading.h"
 #include "Utilities/Errors.h"
 #include <ace/OS_NS_unistd.h>
@@ -30,6 +50,18 @@
 
 using namespace ACE_Based;
 
+/**
+ * @brief Construct thread priority enumerator
+ *
+ * Initializes the priority mapping table by querying the OS scheduler
+ * for available priority levels. Maps the 7 priority enum values to
+ * OS-specific priority values:
+ * - Idle: Minimum priority
+ * - Lowest, Low: Below normal
+ * - Normal: Default priority
+ * - High, Highest: Above normal
+ * - Realtime: Maximum priority
+ */
 ThreadPriority::ThreadPriority()
 {
     for (int i = Idle; i < MAXPRIORITYNUM; ++i)
@@ -96,6 +128,14 @@ ThreadPriority::ThreadPriority()
     }
 }
 
+/**
+ * @brief Get OS-specific priority value
+ * @param p Priority level from enum
+ * @return OS-specific priority value for ACE_Thread
+ *
+ * Returns the platform-specific priority value mapped to the abstract
+ * priority level. Values are clamped to valid range.
+ */
 int ThreadPriority::getPriority(Priority p) const
 {
     if (p < Idle)
@@ -117,13 +157,29 @@ int ThreadPriority::getPriority(Priority p) const
 # define THREADFLAG (THR_NEW_LWP | THR_JOINABLE)
 #endif
 
+/**
+ * @brief Construct empty thread object
+ *
+ * Creates a thread object without an associated task.
+ * Use start() to assign and launch a runnable task later.
+ */
 Thread::Thread() : m_iThreadId(0), m_hThreadHandle(0), m_task(0)
 {
 }
 
+/**
+ * @brief Construct and start thread with runnable task
+ * @param instance Runnable task to execute (will be reference counted)
+ *
+ * Creates a thread and immediately starts it executing the provided
+ * Runnable. The runnable is reference-counted to prevent deletion
+ * while the thread is running.
+ *
+ * @note Assertion failure if start fails
+ */
 Thread::Thread(Runnable* instance) : m_iThreadId(0), m_hThreadHandle(0), m_task(instance)
 {
-    // register reference to m_task to prevent it deeltion until destructor
+    // Register reference to m_task to prevent deletion until destructor
     if (m_task)
     {
         m_task->incReference();
@@ -133,11 +189,18 @@ Thread::Thread(Runnable* instance) : m_iThreadId(0), m_hThreadHandle(0), m_task(
     MANGOS_ASSERT(_start);
 }
 
+/**
+ * @brief Destroy thread object
+ *
+ * Decrements reference count on the associated task (if any).
+ * Note: Does NOT wait for thread completion - caller must
+ * ensure proper synchronization before destruction.
+ */
 Thread::~Thread()
 {
-    // Wait();
+    // Note: No automatic wait() - caller must manage lifecycle
 
-    // deleted runnable object (if no other references)
+    // Delete runnable object if no other references exist
     if (m_task)
     {
         m_task->decReference();
@@ -147,6 +210,14 @@ Thread::~Thread()
 // initialize Thread's class static member
 ThreadPriority Thread::m_TpEnum;
 
+/**
+ * @brief Start the thread executing its task
+ * @return true on success, false if already running or no task
+ *
+ * Spawns a new OS thread that begins executing the ThreadTask
+ * function with the Runnable as parameter. The runnable's
+ * reference count is managed during the spawn process.
+ */
 bool Thread::start()
 {
     if (m_task == 0 || m_iThreadId != 0)
@@ -154,7 +225,7 @@ bool Thread::start()
         return false;
     }
 
-    // incRef before spawing the thread, otherwise Thread::ThreadTask() might call decRef and delete m_task
+    // incRef before spawning - otherwise Thread::ThreadTask() might call decRef and delete m_task
     m_task->incReference();
 
     bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
@@ -167,6 +238,13 @@ bool Thread::start()
     return res;
 }
 
+/**
+ * @brief Wait for thread completion
+ * @return true if successfully joined, false otherwise
+ *
+ * Blocks until the thread completes execution. After joining,
+ * the thread handle is reset to allow reuse or proper cleanup.
+ */
 bool Thread::wait()
 {
     if (!m_hThreadHandle || !m_task)
@@ -183,6 +261,13 @@ bool Thread::wait()
     return (_res == 0);
 }
 
+/**
+ * @brief Forcefully terminate the thread
+ *
+ * Sends a kill signal to force thread termination.
+ * @warning This is dangerous and should be avoided if possible
+ * @warning Does not allow proper cleanup of the task
+ */
 void Thread::destroy()
 {
     if (!m_iThreadId || !m_task)
@@ -198,20 +283,40 @@ void Thread::destroy()
     m_iThreadId = 0;
     m_hThreadHandle = 0;
 
-    // reference set at ACE_Thread::spawn
+    // Decrement reference added at ACE_Thread::spawn
     m_task->decReference();
 }
 
+/**
+ * @brief Suspend thread execution
+ *
+ * Pauses the thread's execution. Not supported on all platforms.
+ * @see resume() to continue execution
+ */
 void Thread::suspend()
 {
     ACE_Thread::suspend(m_hThreadHandle);
 }
 
+/**
+ * @brief Resume thread execution
+ *
+ * Continues a previously suspended thread.
+ * @see suspend() to pause execution
+ */
 void Thread::resume()
 {
     ACE_Thread::resume(m_hThreadHandle);
 }
 
+/**
+ * @brief Thread entry point function
+ * @param param Pointer to Runnable task
+ * @return Always returns 0
+ *
+ * Static function passed to ACE_Thread::spawn. Increments the
+ * task's reference count, calls run(), then decrements the count.
+ */
 ACE_THR_FUNC_RETURN Thread::ThreadTask(void* param)
 {
     Runnable* _task = static_cast<Runnable*>(param);
@@ -219,23 +324,38 @@ ACE_THR_FUNC_RETURN Thread::ThreadTask(void* param)
 
     _task->run();
 
-    // task execution complete, free referecne added at
+    // Task execution complete, free reference added at start
     _task->decReference();
 
     return (ACE_THR_FUNC_RETURN)0;
 }
 
+/**
+ * @brief Set thread priority
+ * @param type Priority level (Idle to Realtime)
+ *
+ * Changes the OS scheduling priority for this thread.
+ * Not supported on Solaris (__sun__).
+ *
+ * @warning Assertion failure if priority change fails
+ */
 void Thread::setPriority(Priority type)
 {
 #ifndef __sun__
     int _priority = m_TpEnum.getPriority(type);
     int _ok = ACE_Thread::setprio(m_hThreadHandle, _priority);
-    // remove this ASSERT in case you don't want to know is thread priority change was successful or not
+    // Remove this ASSERT if you don't need to know if priority change succeeded
     MANGOS_ASSERT(_ok == 0);
 #endif
-
 }
 
+/**
+ * @brief Sleep current thread
+ * @param msecs Milliseconds to sleep
+ *
+ * Suspends execution of the calling thread for the specified duration.
+ * Uses ACE_OS::sleep for cross-platform compatibility.
+ */
 void Thread::Sleep(unsigned long msecs)
 {
     ACE_OS::sleep(ACE_Time_Value(0, 1000 * msecs));

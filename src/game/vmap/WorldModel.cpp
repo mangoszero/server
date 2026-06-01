@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file WorldModel.cpp
+ * @brief World model implementation for VMap system
+ *
+ * This file implements WorldModel which represents the 3D geometry
+ * of a WMO (World Model Object) or M2 model loaded from VMap data.
+ * It provides triangle-level intersection testing for collision.
+ *
+ * Key features:
+ * - Triangle mesh representation
+ * - Ray-triangle intersection
+ * - Group model organization
+ * - Bounding box hierarchy
+ *
+ * @see WorldModel for the model class
+ * @see GroupModel for grouped triangles
+ */
+
 #include "WorldModel.h"
 #include "VMapDefinitions.h"
 #include "MapTree.h"
@@ -42,6 +60,7 @@ template<> struct BoundsTrait<VMAP::GroupModel>
 
 namespace VMAP
 {
+
     /**
      * @brief Checks if a ray intersects with a triangle.
      *
@@ -116,6 +135,7 @@ namespace VMAP
          * @param vert Vector of vertices.
          */
         TriBoundFunc(std::vector<Vector3>& vert) : vertices(vert.begin()) {}
+
         /**
          * @brief Calculates the bounding box of a triangle.
          *
@@ -251,13 +271,13 @@ namespace VMAP
 
             ^ dy
             |
-          1 x---------x (1,1)
+        1 x---------x (1,1)
             | (b)   / |
             |     /   |
             |   /     |
             | /   (a) |
             x---------x---> dx
-          0           1
+        0           1
         */
         const uint32 rowOffset = iTilesX + 1;
         if (dx > dy) // case (a)

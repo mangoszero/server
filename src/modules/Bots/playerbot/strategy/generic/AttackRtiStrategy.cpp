@@ -4,7 +4,6 @@
 
 using namespace ai;
 
-
 void AttackRtiStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(

@@ -74,7 +74,6 @@ void TrainerAction::List(Creature* creature, TrainerSpellAction action, SpellIds
     TellFooter(totalCost);
 }
 
-
 bool TrainerAction::Execute(Event event)
 {
     string text = event.getParam();

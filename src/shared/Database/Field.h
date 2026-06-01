@@ -29,16 +29,18 @@
 #include <mysql.h>
 
 /**
- * @brief
+ * @brief Wrapper for database field values
  *
+ * Field provides type-safe access to database query result values.
+ * It handles NULL values and converts between string representations
+ * and various C++ types (int, float, bool, string, etc.).
  */
 class Field
 {
     public:
 
         /**
-         * @brief
-         *
+         * @brief Simple data type enumeration for field classification
          */
         enum SimpleDataTypes
         {
@@ -50,110 +52,109 @@ class Field
         };
 
         /**
-         * @brief
-         *
+         * @brief Default constructor - creates NULL field
          */
         Field() : mValue(NULL), mType(MYSQL_TYPE_NULL) {}
+
         /**
-         * @brief
-         *
-         * @param value
-         * @param type
+         * @brief Constructor with value and type
+         * @param value Pointer to string value
+         * @param type MySQL field type
          */
         Field(const char* value, enum_field_types type) : mValue(value), mType(type) {}
 
         /**
-         * @brief
-         *
+         * @brief Destructor
          */
         ~Field() {}
 
         /**
-         * @brief
-         *
-         * @return enum_field_type
+         * @brief Get the MySQL field type
+         * @return MySQL field type enumeration
          */
         enum enum_field_types GetType() const { return mType; }
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Check if field value is NULL
+         * @return True if NULL, false otherwise
          */
         bool IsNULL() const { return mValue == NULL; }
 
         /**
-         * @brief
-         *
-         * @return const char
+         * @brief Get raw string value
+         * @return Pointer to string value (may be NULL)
          */
         const char* GetString() const { return mValue; }
+
         /**
-         * @brief
-         *
-         * @return std::string
+         * @brief Get C++ string value
+         * @return String value (empty if NULL)
          */
         std::string GetCppString() const
         {
             return mValue ? mValue : "";                    // std::string s = 0 have undefine result in C++
         }
+
         /**
-         * @brief
-         *
-         * @return float
+         * @brief Get float value
+         * @return Float value (0.0 if NULL)
          */
         float GetFloat() const { return mValue ? static_cast<float>(atof(mValue)) : 0.0f; }
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Get boolean value
+         * @return Boolean value (false if NULL or 0)
          */
         bool GetBool() const { return mValue ? atoi(mValue) > 0 : false; }
+
         /**
-        * @brief
-        *
-        * @return double
+        * @brief Get double value
+        * @return Double value (0.0 if NULL)
         */
-        double GetDouble() const { return mValue ? static_cast<double>(atof(mValue)) : 0.0f; }
+        double GetDouble() const
+        {
+            return mValue ? static_cast<double>(atof(mValue)) : 0.0f;
+        }
+
         /**
-        * @brief
-        *
-        * @return int8
+        * @brief Get 8-bit signed integer value
+        * @return 8-bit signed integer (0 if NULL)
         */
         int8 GetInt8() const { return mValue ? static_cast<int8>(atol(mValue)) : int8(0); }
+
         /**
-         * @brief
-         *
-         * @return int32
+         * @brief Get 32-bit signed integer value
+         * @return 32-bit signed integer (0 if NULL)
          */
         int32 GetInt32() const { return mValue ? static_cast<int32>(atol(mValue)) : int32(0); }
+
         /**
-         * @brief
-         *
-         * @return uint8
+         * @brief Get 8-bit unsigned integer value
+         * @return 8-bit unsigned integer (0 if NULL)
          */
         uint8 GetUInt8() const { return mValue ? static_cast<uint8>(atol(mValue)) : uint8(0); }
+
         /**
-         * @brief
-         *
-         * @return uint16
+         * @brief Get 16-bit unsigned integer value
+         * @return 16-bit unsigned integer (0 if NULL)
          */
         uint16 GetUInt16() const { return mValue ? static_cast<uint16>(atol(mValue)) : uint16(0); }
+
         /**
-         * @brief
-         *
-         * @return int16
+         * @brief Get 16-bit signed integer value
+         * @return 16-bit signed integer (0 if NULL)
          */
         int16 GetInt16() const { return mValue ? static_cast<int16>(atol(mValue)) : int16(0); }
+
         /**
-         * @brief
-         *
-         * @return uint32
+         * @brief Get 32-bit unsigned integer value
+         * @return 32-bit unsigned integer (0 if NULL)
          */
         uint32 GetUInt32() const { return mValue ? static_cast<uint32>(atol(mValue)) : uint32(0); }
+
         /**
-         * @brief
-         *
-         * @return uint64
+         * @brief Get 64-bit unsigned integer value
+         * @return 64-bit unsigned integer (0 if NULL)
          */
         uint64 GetUInt64() const
         {
@@ -165,11 +166,12 @@ class Field
 
             return value;
         }
+
         /**
-        * @brief
-        *
-        * @return int64
+        * @brief Get 64-bit signed integer value
+        * @return 64-bit signed integer (0 if NULL)
         */
+        // TODO: should this be int64 not uint64
         uint64 GetInt64() const
         {
             int64 value = 0;
@@ -182,37 +184,33 @@ class Field
         }
 
         /**
-         * @brief
-         *
-         * @param type
+         * @brief Set the MySQL field type
+         * @param type MySQL field type
          */
         void SetType(enum enum_field_types type) { mType = type; }
 
         /**
-         * @brief no need for memory allocations to store resultset field strings
+         * @brief Set the field value (no memory allocation, pointer only)
          *
-         * all we need is to cache pointers returned by different DBMS APIs
+         * This caches pointers returned by DBMS APIs without memory allocation.
+         * The caller must ensure the pointer remains valid.
          *
-         * @param value
+         * @param value Pointer to string value
          */
         void SetValue(const char* value) { mValue = value; }
 
     private:
         /**
-         * @brief
-         *
-         * @param
+         * @brief Copy constructor (disabled)
          */
         Field(Field const&);
+
         /**
-         * @brief
-         *
-         * @param
-         * @return Field &operator
+         * @brief Assignment operator (disabled)
          */
         Field& operator=(Field const&);
 
-        const char* mValue; /**< TODO */
-        enum_field_types mType; /**< TODO */
+        const char* mValue; /**< Pointer to field value string */
+        enum_field_types mType; /**< MySQL field type */
 };
 #endif

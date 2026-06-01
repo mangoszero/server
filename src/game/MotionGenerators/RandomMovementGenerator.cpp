@@ -65,11 +65,13 @@ RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creat
     i_verticalZ = 0.0f;
 }
 
-/**
- * @brief Sets a random location for the creature to move to.
- * @param creature Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Chooses and starts movement toward a new random reachable location.
+ *
+ * @param creature The creature using the movement generator.
+ */
 void RandomMovementGenerator<Creature>::_setRandomLocation(Creature& creature)
 {
     float destX = i_x;
@@ -101,11 +103,13 @@ void RandomMovementGenerator<Creature>::_setRandomLocation(Creature& creature)
     return;
 }
 
-/**
- * @brief Initializes the RandomMovementGenerator.
- * @param creature Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Initializes random roaming movement for a creature.
+ *
+ * @param creature The creature using the movement generator.
+ */
 void RandomMovementGenerator<Creature>::Initialize(Creature& creature)
 {
     creature.addUnitState(UNIT_STAT_ROAMING);               // _MOVE set in _setRandomLocation
@@ -118,21 +122,25 @@ void RandomMovementGenerator<Creature>::Initialize(Creature& creature)
     _setRandomLocation(creature);
 }
 
-/**
- * @brief Resets the RandomMovementGenerator.
- * @param creature Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Resets random roaming by reinitializing the creature movement.
+ *
+ * @param creature The creature using the movement generator.
+ */
 void RandomMovementGenerator<Creature>::Reset(Creature& creature)
 {
     Initialize(creature);
 }
 
-/**
- * @brief Interrupts the RandomMovementGenerator.
- * @param creature Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Interrupts random roaming and restores the creature walk state.
+ *
+ * @param creature The creature using the movement generator.
+ */
 void RandomMovementGenerator<Creature>::Interrupt(Creature& creature)
 {
     creature.InterruptMoving();
@@ -140,24 +148,28 @@ void RandomMovementGenerator<Creature>::Interrupt(Creature& creature)
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
 }
 
-/**
- * @brief Finalizes the RandomMovementGenerator.
- * @param creature Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Finalizes random roaming and clears roaming movement flags.
+ *
+ * @param creature The creature using the movement generator.
+ */
 void RandomMovementGenerator<Creature>::Finalize(Creature& creature)
 {
     creature.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
 }
 
-/**
- * @brief Updates the RandomMovementGenerator.
- * @param creature Reference to the creature.
- * @param diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
 template<>
+
+/**
+ * @brief Updates random roaming and starts a new move when the wait timer expires.
+ *
+ * @param creature The creature using the movement generator.
+ * @param diff The elapsed update time in milliseconds.
+ * @return true if the generator remains active; otherwise false.
+ */
 bool RandomMovementGenerator<Creature>::Update(Creature& creature, const uint32& diff)
 {
     if (creature.hasUnitState(UNIT_STAT_NOT_MOVE))

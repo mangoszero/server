@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ModelInstance.cpp
+ * @brief Model instance implementation for VMap system
+ *
+ * This file implements ModelInstance which represents a specific instance
+ * of a 3D model placed in the world with position, rotation, and scale.
+ * It transforms world-space queries to model-space for intersection testing.
+ *
+ * Key features:
+ * - Position, rotation, and scale transforms
+ * - Ray intersection with transformed model
+ * - Area information retrieval
+ * - Bounding box calculations
+ *
+ * @see ModelInstance for the instance class
+ * @see WorldModel for the model data
+ */
+
 #include "ModelInstance.h"
 #include "WorldModel.h"
 #include "MapTree.h"
@@ -32,6 +50,7 @@ using G3D::Ray;
 
 namespace VMAP
 {
+
     /**
      * @brief Constructor for ModelInstance.
      *

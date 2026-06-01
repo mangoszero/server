@@ -254,6 +254,8 @@ set(BOT_SRCS
     playerbot/strategy/generic/DpsAoeStrategy.h
     playerbot/strategy/generic/DpsAssistStrategy.cpp
     playerbot/strategy/generic/DpsAssistStrategy.h
+    playerbot/strategy/generic/DpsTanksTargetStrategy.cpp
+    playerbot/strategy/generic/DpsTanksTargetStrategy.h
     playerbot/strategy/generic/DuelStrategy.cpp
     playerbot/strategy/generic/DuelStrategy.h
     playerbot/strategy/generic/EmoteStrategy.cpp
@@ -475,6 +477,7 @@ set(BOT_SRCS
     playerbot/strategy/values/DistanceValue.h
     playerbot/strategy/values/DpsTargetValue.cpp
     playerbot/strategy/values/DpsTargetValue.h
+    playerbot/strategy/values/DpsTanksTargetValue.h
     playerbot/strategy/values/DuelTargetValue.cpp
     playerbot/strategy/values/DuelTargetValue.h
     playerbot/strategy/values/EnemyHealerTargetValue.cpp

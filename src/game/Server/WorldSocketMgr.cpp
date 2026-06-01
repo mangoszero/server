@@ -22,10 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/** \file WorldSocketMgr.cpp
-*  \ingroup u2w
-*  \author Derex <derex101@gmail.com>
-*/
+/**
+ * @file WorldSocketMgr.cpp
+ * @brief World server network socket manager
+ *
+ * This file implements WorldSocketMgr which manages the network layer
+ * for the world server. It handles:
+ *
+ * - TCP socket creation and acceptance
+ * - Network thread pool management
+ * - Socket option configuration (buffer sizes, TCP_NODELAY)
+ * - Integration with ACE reactor pattern for async I/O
+ *
+ * The manager uses ACE (Adaptive Communication Environment) for portable
+ * networking and the TP_Reactor for thread-per-connection handling.
+ *
+ * @see WorldSocketMgr for the manager class
+ * @see WorldSocket for individual socket handling
+ * @see WorldAcceptor for connection acceptance
+ */
 
 #include "Common.h"
 #include "Log.h"
@@ -43,13 +58,28 @@
 
 #include <set>
 
+/**
+ * @brief Construct WorldSocketMgr
+ *
+ * Initializes with default socket options:
+ * - Output kernel buffer: -1 (use default)
+ * - Output user buffer: 64KB
+ * - TCP_NODELAY: enabled
+ *
+ * Also initializes the opcode table for protocol handling.
+ */
 WorldSocketMgr::WorldSocketMgr()
-  : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
+    : m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true),
     reactor_(NULL), acceptor_(NULL)
 {
     InitializeOpcodes();
 }
 
+/**
+ * @brief Destroy WorldSocketMgr
+ *
+ * Cleans up the reactor and acceptor objects.
+ */
 WorldSocketMgr::~WorldSocketMgr()
 {
     if (reactor_)
@@ -62,7 +92,16 @@ WorldSocketMgr::~WorldSocketMgr()
     }
 }
 
-
+/**
+ * @brief Service thread main function
+ * @return Always returns 0
+ *
+ * Runs the ACE reactor event loop for handling network events.
+ * This method runs in each network thread and processes:
+ * - Socket read/write events
+ * - New connection acceptances
+ * - Timer events
+ */
 int WorldSocketMgr::svc()
 {
     DEBUG_LOG("Starting Network Thread");
@@ -73,8 +112,23 @@ int WorldSocketMgr::svc()
     return 0;
 }
 
-
-
+/**
+ * @brief Start the network layer
+ * @param addr Address and port to bind to
+ * @return 0 on success, -1 on failure
+ *
+ * Initializes and starts the network subsystem:
+ * 1. Reads configuration (threads, buffer sizes, TCP_NODELAY)
+ * 2. Creates ACE_TP_Reactor for thread-pool handling
+ * 3. Opens acceptor on specified address
+ * 4. Spawns network threads
+ *
+ * Configuration options:
+ * - Network.Threads: Number of network threads (default: 1)
+ * - Network.OutUBuff: Output user buffer size (default: 65536)
+ * - Network.OutKBuff: Output kernel buffer size (default: -1 = system default)
+ * - Network.TcpNodelay: Enable TCP_NODELAY (default: true)
+ */
 int WorldSocketMgr::StartNetwork(ACE_INET_Addr& addr)
 {
     int num_threads = sConfig.GetIntDefault("Network.Threads", 1);
@@ -95,7 +149,7 @@ int WorldSocketMgr::StartNetwork(ACE_INET_Addr& addr)
     m_SockOutKBuff = sConfig.GetIntDefault("Network.OutKBuff", -1);
     m_UseNoDelay = sConfig.GetBoolDefault("Network.TcpNodelay", true);
 
-
+    // Create thread-pool reactor for handling multiple connections
     ACE_Reactor_Impl* imp = 0;
     imp = new ACE_TP_Reactor();
     imp->max_notify_iterations(128);
@@ -118,6 +172,14 @@ int WorldSocketMgr::StartNetwork(ACE_INET_Addr& addr)
     return 0;
 }
 
+/**
+ * @brief Stop the network layer
+ *
+ * Gracefully shuts down the network:
+ * 1. Closes acceptor (stops accepting new connections)
+ * 2. Signals reactor to end event loop
+ * 3. Waits for all network threads to complete
+ */
 void WorldSocketMgr::StopNetwork()
 {
     if (acceptor_)
@@ -131,9 +193,20 @@ void WorldSocketMgr::StopNetwork()
     wait();
 }
 
+/**
+ * @brief Configure a newly opened socket
+ * @param sock Socket to configure
+ * @return 0 on success, -1 on failure
+ *
+ * Applies socket options to a new client connection:
+ * - Sets send buffer size (if configured)
+ * - Enables TCP_NODELAY to reduce latency (if configured)
+ * - Sets output buffer size
+ * - Associates socket with the reactor
+ */
 int WorldSocketMgr::OnSocketOpen(WorldSocket* sock)
 {
-    // set some options here
+    // Set kernel send buffer size if configured
     if (m_SockOutKBuff >= 0)
     {
         if (sock->peer().set_option(SOL_SOCKET, SO_SNDBUF, (void*)&m_SockOutKBuff, sizeof(int)) == -1 && errno != ENOTSUP)
@@ -145,7 +218,7 @@ int WorldSocketMgr::OnSocketOpen(WorldSocket* sock)
 
     static const int ndoption = 1;
 
-    // Set TCP_NODELAY.
+    // Set TCP_NODELAY to disable Nagle's algorithm for lower latency
     if (m_UseNoDelay)
     {
         if (sock->peer().set_option(ACE_IPPROTO_TCP, TCP_NODELAY, (void*)&ndoption, sizeof(int)) == -1)

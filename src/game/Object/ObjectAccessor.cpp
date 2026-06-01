@@ -41,10 +41,16 @@
 INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Recursive_Thread_Mutex);
 
+/**
+ * @brief Initializes the global object accessor.
+ */
 ObjectAccessor::ObjectAccessor() : i_playerMap(), i_corpseMap(), i_corpseGuard()
 {
 }
 
+/**
+ * @brief Destroys the object accessor and releases tracked corpses.
+ */
 ObjectAccessor::~ObjectAccessor()
 {
     for (Player2CorpsesMapType::const_iterator itr = i_player2corpse.begin(); itr != i_player2corpse.end(); ++itr)
@@ -54,8 +60,14 @@ ObjectAccessor::~ObjectAccessor()
     }
 }
 
-Unit*
-ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
+/**
+ * @brief Retrieves a unit by GUID relative to a world object.
+ *
+ * @param u The world object providing map context.
+ * @param guid The GUID of the unit to find.
+ * @return Pointer to the matching unit, or nullptr if not found.
+ */
+Unit* ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
 {
     if (!guid)
     {
@@ -75,6 +87,13 @@ ObjectAccessor::GetUnit(WorldObject const& u, ObjectGuid guid)
     return u.GetMap()->GetAnyTypeCreature(guid);
 }
 
+/**
+ * @brief Finds a corpse by GUID on a specific map.
+ *
+ * @param guid The corpse GUID.
+ * @param mapid The map identifier to validate against.
+ * @return Pointer to the corpse, or nullptr if not found on that map.
+ */
 Corpse* ObjectAccessor::GetCorpseInMap(ObjectGuid guid, uint32 mapid)
 {
     Corpse* ret = i_corpseMap.Find(guid);
@@ -90,6 +109,13 @@ Corpse* ObjectAccessor::GetCorpseInMap(ObjectGuid guid, uint32 mapid)
     return ret;
 }
 
+/**
+ * @brief Finds a player by GUID.
+ *
+ * @param guid The player GUID.
+ * @param inWorld true to require the player to be currently in world.
+ * @return Pointer to the player, or nullptr if not found.
+ */
 Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
 {
     if (!guid)
@@ -106,6 +132,12 @@ Player* ObjectAccessor::FindPlayer(ObjectGuid guid, bool inWorld /*= true*/)
     return plr;
 }
 
+/**
+ * @brief Finds an online player by character name.
+ *
+ * @param name The exact player name to search for.
+ * @return Pointer to the player, or nullptr if not found.
+ */
 Player* ObjectAccessor::FindPlayerByName(const char* name)
 {
     ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, i_playerMap.GetLock(), nullptr)
@@ -118,22 +150,31 @@ Player* ObjectAccessor::FindPlayerByName(const char* name)
 }
 
 //This method should not be here
+
+/**
+ * @brief Saves all players currently present in the world.
+ */
 void ObjectAccessor::SaveAllPlayers()
 {
-   SessionMap const& smap = sWorld.GetAllSessions();
-   SessionMap::const_iterator iter;
-   for (iter = smap.begin(); iter != smap.end(); ++iter)
-   {
-       if (Player* player = iter->second->GetPlayer())
-       {
-           if (player->IsInWorld())
-           {
-               player->SaveToDB();
-           }
-       }
-   }
+    SessionMap const& smap = sWorld.GetAllSessions();
+    SessionMap::const_iterator iter;
+    for (iter = smap.begin(); iter != smap.end(); ++iter)
+    {
+        if (Player* player = iter->second->GetPlayer())
+        {
+            if (player->IsInWorld())
+            {
+                player->SaveToDB();
+            }
+        }
+    }
 }
 
+/**
+ * @brief Disconnects and logs out a player by GUID.
+ *
+ * @param guid The GUID of the player to remove.
+ */
 void ObjectAccessor::KickPlayer(ObjectGuid guid)
 {
     if (Player* p = FindPlayer(guid, false))
@@ -144,6 +185,12 @@ void ObjectAccessor::KickPlayer(ObjectGuid guid)
     }
 }
 
+/**
+ * @brief Retrieves the active corpse assigned to a player.
+ *
+ * @param guid The player's GUID.
+ * @return Pointer to the corpse, or nullptr if none exists.
+ */
 Corpse* ObjectAccessor::GetCorpseForPlayerGUID(ObjectGuid guid)
 {
     ACE_GUARD_RETURN(LockType, guard, i_corpseGuard, nullptr)
@@ -159,6 +206,11 @@ Corpse* ObjectAccessor::GetCorpseForPlayerGUID(ObjectGuid guid)
     return iter->second;
 }
 
+/**
+ * @brief Removes a corpse from tracking and world storage.
+ *
+ * @param corpse The corpse to remove.
+ */
 void ObjectAccessor::RemoveCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
@@ -181,6 +233,11 @@ void ObjectAccessor::RemoveCorpse(Corpse* corpse)
     i_player2corpse.erase(iter);
 }
 
+/**
+ * @brief Adds a corpse to player and cell tracking.
+ *
+ * @param corpse The corpse to register.
+ */
 void ObjectAccessor::AddCorpse(Corpse* corpse)
 {
     MANGOS_ASSERT(corpse && corpse->GetType() != CORPSE_BONES);
@@ -197,28 +254,44 @@ void ObjectAccessor::AddCorpse(Corpse* corpse)
     sObjectMgr.AddCorpseCellData(corpse->GetMapId(), cell_id, corpse->GetOwnerGuid().GetCounter(), corpse->GetInstanceId());
 }
 
+/**
+ * @brief Adds corpses belonging to a grid into the active grid object store.
+ *
+ * @param gridpair The grid coordinates being populated.
+ * @param grid The grid container receiving the corpses.
+ * @param map The map owning the grid.
+ */
 void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, Map* map)
 {
     ACE_GUARD(LockType, guard, i_corpseGuard)
 
     for (Player2CorpsesMapType::iterator iter = i_player2corpse.begin(); iter != i_player2corpse.end(); ++iter)
-      if (iter->second->GetGrid() == gridpair)
-      {
-          // verify, if the corpse in our instance (add only corpses which are)
-          if (map->Instanceable())
-          {
-              if (iter->second->GetInstanceId() == map->GetInstanceId())
-              {
-                  grid.AddWorldObject(iter->second);
-              }
-          }
-          else
-          {
-              grid.AddWorldObject(iter->second);
-          }
-      }
+    {
+        if (iter->second->GetGrid() == gridpair)
+        {
+              // verify, if the corpse in our instance (add only corpses which are)
+            if (map->Instanceable())
+            {
+                if (iter->second->GetInstanceId() == map->GetInstanceId())
+                {
+                    grid.AddWorldObject(iter->second);
+                }
+            }
+            else
+            {
+                grid.AddWorldObject(iter->second);
+            }
+        }
+    }
 }
 
+/**
+ * @brief Converts a player's corpse into bones when appropriate.
+ *
+ * @param player_guid The owning player's GUID.
+ * @param insignia true when conversion is triggered by insignia handling.
+ * @return Pointer to the created bones corpse, or nullptr if no bones were created.
+ */
 Corpse* ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insignia)
 {
     Corpse* corpse = GetCorpseForPlayerGUID(player_guid);
@@ -289,6 +362,9 @@ Corpse* ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insi
     return bones;
 }
 
+/**
+ * @brief Converts expired corpses into bones.
+ */
 void ObjectAccessor::RemoveOldCorpses()
 {
     time_t now = time(nullptr);
@@ -307,6 +383,12 @@ void ObjectAccessor::RemoveOldCorpses()
     }
 }
 
+/**
+ * @brief Finds a corpse by GUID.
+ *
+ * @param guid The corpse GUID.
+ * @return Pointer to the corpse, or nullptr if not found.
+ */
 Corpse* ObjectAccessor::FindCorpse(ObjectGuid guid)
 {
     if (!guid)

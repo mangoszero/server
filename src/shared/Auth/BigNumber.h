@@ -30,160 +30,158 @@
 struct bignum_st;
 
 /**
- * @brief
+ * @brief Arbitrary precision integer arithmetic using OpenSSL BIGNUM
  *
+ * BigNumber provides a C++ wrapper around OpenSSL's BIGNUM structure,
+ * enabling arbitrary precision integer arithmetic for cryptographic operations.
+ * Used primarily for RSA key generation and cryptographic computations.
  */
 class BigNumber
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Default constructor - creates a zero BigNumber
          */
         BigNumber();
+
         /**
-         * @brief
-         *
-         * @param bn
+         * @brief Copy constructor
+         * @param bn BigNumber to copy from
          */
         BigNumber(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param uint32
+         * @brief Constructor from 32-bit unsigned integer
+         * @param uint32 Initial value
          */
         BigNumber(uint32);
+
         /**
-         * @brief
-         *
+         * @brief Destructor - frees OpenSSL BIGNUM resources
          */
         ~BigNumber();
 
         /**
-         * @brief
-         *
-         * @param uint32
+         * @brief Set value from 32-bit unsigned integer
+         * @param uint32 Value to set
          */
         void SetDword(uint32);
+
         /**
-         * @brief
-         *
-         * @param uint64
+         * @brief Set value from 64-bit unsigned integer
+         * @param uint64 Value to set
          */
         void SetQword(uint64);
+
         /**
-         * @brief
-         *
-         * @param bytes
-         * @param len
+         * @brief Set value from binary data
+         * @param bytes Pointer to binary data
+         * @param len Length of binary data in bytes
          */
         void SetBinary(const uint8* bytes, int len);
+
         /**
-         * @brief
-         *
-         * @param str
+         * @brief Set value from hexadecimal string
+         * @param str Hexadecimal string representation
          */
         void SetHexStr(const char* str);
 
         /**
-         * @brief
-         *
-         * @param numbits
+         * @brief Set to a random value
+         * @param numbits Number of bits for the random value
          */
         void SetRand(int numbits);
 
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Assignment operator
+         * @param bn BigNumber to assign from
+         * @return Reference to this BigNumber
          */
         BigNumber operator=(const BigNumber& bn);
 
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Addition assignment operator
+         * @param bn BigNumber to add
+         * @return Reference to this BigNumber
          */
         BigNumber operator+=(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Addition operator
+         * @param bn BigNumber to add
+         * @return New BigNumber with sum
          */
         BigNumber operator+(const BigNumber& bn)
         {
             BigNumber t(*this);
             return t += bn;
         }
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Subtraction assignment operator
+         * @param bn BigNumber to subtract
+         * @return Reference to this BigNumber
          */
         BigNumber operator-=(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Subtraction operator
+         * @param bn BigNumber to subtract
+         * @return New BigNumber with difference
          */
         BigNumber operator-(const BigNumber& bn)
         {
             BigNumber t(*this);
             return t -= bn;
         }
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Multiplication assignment operator
+         * @param bn BigNumber to multiply by
+         * @return Reference to this BigNumber
          */
         BigNumber operator*=(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Multiplication operator
+         * @param bn BigNumber to multiply by
+         * @return New BigNumber with product
          */
         BigNumber operator*(const BigNumber& bn)
         {
             BigNumber t(*this);
             return t *= bn;
         }
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Division assignment operator
+         * @param bn BigNumber to divide by
+         * @return Reference to this BigNumber
          */
         BigNumber operator/=(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Division operator
+         * @param bn BigNumber to divide by
+         * @return New BigNumber with quotient
          */
         BigNumber operator/(const BigNumber& bn)
         {
             BigNumber t(*this);
             return t /= bn;
         }
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Modulo assignment operator
+         * @param bn BigNumber for modulo operation
+         * @return Reference to this BigNumber
          */
         BigNumber operator%=(const BigNumber& bn);
+
         /**
-         * @brief
-         *
-         * @param bn
-         * @return BigNumber operator
+         * @brief Modulo operator
+         * @param bn BigNumber for modulo operation
+         * @return New BigNumber with remainder
          */
         BigNumber operator%(const BigNumber& bn)
         {
@@ -192,71 +190,76 @@ class BigNumber
         }
 
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Check if the BigNumber is zero
+         * @return True if value is zero, false otherwise
          */
         bool isZero() const;
 
         /**
-         * @brief
-         *
-         * @param bn1
-         * @param bn2
-         * @return BigNumber
+         * @brief Modular exponentiation: (this ^ bn1) mod bn2
+         * @param bn1 Exponent
+         * @param bn2 Modulus
+         * @return New BigNumber with result
          */
         BigNumber ModExp(const BigNumber& bn1, const BigNumber& bn2);
+
         /**
-         * @brief
-         *
-         * @param
-         * @return BigNumber
+         * @brief Exponentiation: this ^ bn
+         * @param Exponent value
+         * @return New BigNumber with result
          */
         BigNumber Exp(const BigNumber&);
 
         /**
-         * @brief
-         *
-         * @return int
+         * @brief Get the number of bytes needed to represent this value
+         * @return Number of bytes
          */
         int GetNumBytes(void);
 
         /**
-         * @brief
-         *
-         * @return bignum_st
+         * @brief Get the underlying OpenSSL BIGNUM structure
+         * @return Pointer to OpenSSL BIGNUM structure
          */
-        struct bignum_st* BN() { return _bn; }
+        struct bignum_st* BN()
+        {
+            return _bn;
+        }
 
         /**
-         * @brief
-         *
-         * @return uint32
+         * @brief Convert to 32-bit unsigned integer
+         * @return 32-bit unsigned integer value
          */
         uint32 AsDword();
+
         /**
-         * @brief
-         *
-         * @param minSize
-         * @return uint8
+         * @brief Convert to byte array
+         * @param minSize Minimum size of the array (pads with zeros if needed)
+         * @return Pointer to byte array
          */
         uint8* AsByteArray(int minSize = 0);
-        uint8* AsByteArray(int minSize, bool reverse);
+
         /**
-         * @brief
-         *
-         * @return const char
+         * @brief Convert to byte array with optional byte reversal
+         * @param minSize Minimum size of the array
+         * @param reverse If true, reverse byte order
+         * @return Pointer to byte array
+         */
+        uint8* AsByteArray(int minSize, bool reverse);
+
+        /**
+         * @brief Convert to hexadecimal string
+         * @return Hexadecimal string representation
          */
         const char* AsHexStr();
+
         /**
-         * @brief
-         *
-         * @return const char
+         * @brief Convert to decimal string
+         * @return Decimal string representation
          */
         const char* AsDecStr();
 
     private:
-        struct bignum_st* _bn; /**< TODO */
-        uint8* _array; /**< TODO */
+        struct bignum_st* _bn; /**< OpenSSL BIGNUM structure */
+        uint8* _array; /**< Cached byte array representation */
 };
 #endif

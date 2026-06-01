@@ -35,12 +35,27 @@
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
 
+/**
+ * @brief Initializes a totem creature instance.
+ */
 Totem::Totem() : Creature(CREATURE_SUBTYPE_TOTEM)
 {
     m_duration = 0;
     m_type = TOTEM_PASSIVE;
 }
 
+/**
+ * @brief Creates a totem from creature prototype data.
+ *
+ * Places the totem on the target map, adjusts its spawn height when needed, and
+ * registers it with instance data before loading creature addons.
+ *
+ * @param guidlow The low part of the totem GUID.
+ * @param cPos The desired creation position.
+ * @param cinfo The creature template used for creation.
+ * @param owner The unit that owns the totem.
+ * @return true if creation succeeded; otherwise, false.
+ */
 bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, Unit* owner)
 {
     SetMap(cPos.GetMap());
@@ -78,6 +93,15 @@ bool Totem::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* 
     return true;
 }
 
+/**
+ * @brief Updates the totem each server tick.
+ *
+ * Unsummons the totem when its owner dies, the totem dies, or its duration expires.
+ * Otherwise, forwards update processing to the base creature implementation.
+ *
+ * @param update_diff The elapsed time since the last update in milliseconds.
+ * @param time The current world update time.
+ */
 void Totem::Update(uint32 update_diff, uint32 time)
 {
     Unit* owner = GetOwner();
@@ -100,6 +124,14 @@ void Totem::Update(uint32 update_diff, uint32 time)
     Creature::Update(update_diff, time);
 }
 
+/**
+ * @brief Finalizes a totem summon.
+ *
+ * Adds the totem to the map, initializes AI, sends spawn animation data, and casts
+ * the configured spell for passive or statue totems.
+ *
+ * @param owner The unit that summoned the totem.
+ */
 void Totem::Summon(Unit* owner)
 {
     owner->GetMap()->Add((Creature*)this);
@@ -138,6 +170,12 @@ void Totem::Summon(Unit* owner)
     }
 }
 
+/**
+ * @brief Unsummons the totem and removes its effects.
+ *
+ * Stops combat, removes spell effects from the owner and nearby party members,
+ * notifies creature AI hooks, and schedules the totem for removal.
+ */
 void Totem::UnSummon()
 {
     SendObjectDeSpawnAnim(GetObjectGuid());
@@ -182,6 +220,13 @@ void Totem::UnSummon()
     AddObjectToRemoveList();
 }
 
+/**
+ * @brief Assigns the totem owner data.
+ *
+ * Copies creator, owner, faction, and level information from the summoning unit.
+ *
+ * @param owner The unit that owns the totem.
+ */
 void Totem::SetOwner(Unit* owner)
 {
     SetCreatorGuid(owner->GetObjectGuid());
@@ -190,6 +235,11 @@ void Totem::SetOwner(Unit* owner)
     SetLevel(owner->getLevel());
 }
 
+/**
+ * @brief Retrieves the unit that owns this totem.
+ *
+ * @return Pointer to the owning unit, or NULL if the owner cannot be found.
+ */
 Unit* Totem::GetOwner()
 {
     if (ObjectGuid ownerGuid = GetOwnerGuid())
@@ -200,6 +250,14 @@ Unit* Totem::GetOwner()
     return NULL;
 }
 
+/**
+ * @brief Determines the totem type from the summon spell.
+ *
+ * Uses the totem spell cast time and special icon handling to classify the totem
+ * as active, passive, or statue.
+ *
+ * @param spellProto The summon spell that created the totem.
+ */
 void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)
 {
     // Get spell casted by totem
@@ -218,6 +276,17 @@ void Totem::SetTypeBySummonSpell(SpellEntry const* spellProto)
     }
 }
 
+/**
+ * @brief Checks whether a spell effect is ignored by the totem.
+ *
+ * Totems reject most healing, energizing, and periodic regeneration effects, while
+ * allowing specific shaman spell interactions.
+ *
+ * @param spellInfo The spell being evaluated.
+ * @param index The effect index within the spell.
+ * @param castOnSelf Indicates whether the spell is cast on the totem itself.
+ * @return true if the effect is immune on the totem; otherwise, false.
+ */
 bool Totem::IsImmuneToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index, bool castOnSelf) const
 {
     // Totem may affected by some specific spells

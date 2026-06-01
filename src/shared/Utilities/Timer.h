@@ -102,6 +102,7 @@ struct IntervalTimer
             _current = 0;
         }
     }
+
         /**
          * @brief
          *
@@ -111,6 +112,7 @@ struct IntervalTimer
     {
         return _current >= _interval;
     }
+
         /**
          * @brief
          *
@@ -155,8 +157,8 @@ struct IntervalTimer
 struct TimeTracker
 {
 public:
-    TimeTracker(int32 expiry = 0) : _expiryTime(expiry) { }
-    TimeTracker(Milliseconds expiry) : _expiryTime(expiry) { }
+    TimeTracker(int32 expiry = 0) : _expiryTime(expiry) {}
+    TimeTracker(Milliseconds expiry) : _expiryTime(expiry) {}
 
     void Update(int32 diff)
     {
@@ -196,7 +198,7 @@ struct PeriodicTimer
 {
 public:
     PeriodicTimer(int32 period, int32 start_time) :
-        i_period(period), i_expireTime(start_time) { }
+        i_period(period), i_expireTime(start_time) {}
 
     bool Update(const uint32 diff)
     {

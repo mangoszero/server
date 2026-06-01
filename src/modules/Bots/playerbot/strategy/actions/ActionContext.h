@@ -56,6 +56,7 @@ namespace ai
             creators["stay combat"] = &ActionContext::stay_combat;
             creators["attack anything"] = &ActionContext::attack_anything;
             creators["attack least hp target"] = &ActionContext::attack_least_hp_target;
+            creators["attack tanks target"] = &ActionContext::attack_tanks_target;
             creators["attack enemy player"] = &ActionContext::enemy_player_target;
             creators["emote"] = &ActionContext::emote;
             creators["suggest what to do"] = &ActionContext::suggest_what_to_do;
@@ -68,7 +69,6 @@ namespace ai
             creators["attack duel opponent"] = &ActionContext::attack_duel_opponent;
             creators["drop target"] = &ActionContext::drop_target;
             creators["jump"] = &ActionContext::jump;
-            creators["jump up"] = &ActionContext::jump_up;
             creators["back off"] = &ActionContext::back_off;
         }
 
@@ -94,6 +94,7 @@ namespace ai
         static Action* suggest_what_to_do(PlayerbotAI* ai) { return new SuggestWhatToDoAction(ai); }
         static Action* attack_anything(PlayerbotAI* ai) { return new AttackAnythingAction(ai); }
         static Action* attack_least_hp_target(PlayerbotAI* ai) { return new AttackLeastHpTargetAction(ai); }
+        static Action* attack_tanks_target(PlayerbotAI* ai) { return new AttackTanksTargetAction(ai); }
         static Action* enemy_player_target(PlayerbotAI* ai) { return new AttackEnemyPlayerAction(ai); }
         static Action* stay_combat(PlayerbotAI* ai) { return new StayCombatAction(ai); }
         static Action* stay_line(PlayerbotAI* ai) { return new StayLineAction(ai); }
@@ -119,6 +120,6 @@ namespace ai
         static Action* move_out_of_enemy_contact(PlayerbotAI* ai) { return new MoveOutOfEnemyContactAction(ai); }
         static Action* set_facing(PlayerbotAI* ai) { return new SetFacingTargetAction(ai); }
         static Action* jump(PlayerbotAI* ai) { return new JumpAction(ai); }
-        static Action* jump_up(PlayerbotAI* ai) { return new JumpInPlaceAction(ai); }
+
     };
 };

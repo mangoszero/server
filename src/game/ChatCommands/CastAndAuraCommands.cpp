@@ -22,6 +22,16 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file CastAndAuraCommands.cpp
+ * @brief Implementation of spell casting and aura management chat commands.
+ *
+ * This file contains chat command handlers for spell and aura operations including:
+ * - Spell casting on players and creatures
+ * - Aura application and removal
+ * - Spell effect testing and debugging
+ */
+
 #include "Chat.h"
 #include "Language.h"
 #include "SpellAuras.h"
@@ -29,10 +39,16 @@
 
 /**********************************************************************
     CommandTable : castCommandTable
-/***********************************************************************/
+ ***********************************************************************/
 
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
+/**
+ * @brief Handler for HandleCastCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCastCommand(char* args)
 {
     if (!*args)
@@ -80,6 +96,12 @@ bool ChatHandler::HandleCastCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCastBackCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCastBackCommand(char* args)
 {
     Creature* caster = getSelectedCreature();
@@ -112,6 +134,12 @@ bool ChatHandler::HandleCastBackCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCastDistCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCastDistCommand(char* args)
 {
     if (!*args)
@@ -158,6 +186,12 @@ bool ChatHandler::HandleCastDistCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCastTargetCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCastTargetCommand(char* args)
 {
     Creature* caster = getSelectedCreature();
@@ -196,6 +230,12 @@ bool ChatHandler::HandleCastTargetCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCastSelfCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCastSelfCommand(char* args)
 {
     if (!*args)
@@ -243,10 +283,12 @@ bool ChatHandler::HandleCastSelfCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : Aura commands
-/***********************************************************************/
-
+/**
+ * @brief Handler for HandleAuraCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuraCommand(char* args)
 {
     Unit* target = getSelectedUnit();
@@ -277,6 +319,12 @@ bool ChatHandler::HandleAuraCommand(char* args)
     return AddAuraToPlayer(spellInfo, target, m_session->GetPlayer());
 }
 
+/**
+ * @brief Handler for HandleUnAuraCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleUnAuraCommand(char* args)
 {
     Unit* target = getSelectedUnit();
@@ -306,10 +354,12 @@ bool ChatHandler::HandleUnAuraCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : Main Command table
-/***********************************************************************/
-
+/**
+ * @brief Handler for HandleAuraGroupCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuraGroupCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hspell:spell_id|h[name]|h|r or Htalent form
@@ -348,7 +398,6 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
     {
         playerTarget = m_session->GetPlayer();
     }
-
 
     Group* grp = playerTarget->GetGroup();
 
@@ -393,12 +442,18 @@ bool ChatHandler::HandleAuraGroupCommand(char* args)
             AddAuraToPlayer(spellInfo, pl, m_session->GetPlayer());
             PSendSysMessage(LANG_COMMAND_AURAGROUP_AURA_APPLIED, spellInfo->Id, nameLink.c_str());
 
-         }
+        }
 
-         return true;
+        return true;
     }
 }
 
+/**
+ * @brief Handler for HandleUnAuraGroupCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleUnAuraGroupCommand(char* args)
 {
     // Must have args : spellId or "all"
@@ -445,7 +500,6 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
     {
         playerTarget = m_session->GetPlayer();
     }
-
 
     Group* grp = playerTarget->GetGroup();
 
@@ -513,4 +567,3 @@ bool ChatHandler::HandleUnAuraGroupCommand(char* args)
         return true;
     }
 }
-

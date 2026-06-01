@@ -30,8 +30,10 @@
 #include <cassert>
 
 /**
- * @brief
+ * @brief Field format enumeration for DBC file parsing
  *
+ * Defines the format codes used in DBC (Database Client) files
+ * for specifying field types during data loading and conversion.
  */
 enum FieldFormat
 {
@@ -49,44 +51,46 @@ enum FieldFormat
 };
 
 /**
- * @brief
+ * @brief DBC (Database Client) file loader
  *
+ * DBCFileLoader loads and parses World of Warcraft DBC files,
+ * which contain static game data. It provides access to records
+ * and handles endianness conversion for cross-platform compatibility.
  */
 class DBCFileLoader
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor
          */
         DBCFileLoader();
+
         /**
-         * @brief
-         *
+         * @brief Destructor - frees loaded data
          */
         ~DBCFileLoader();
 
         /**
-         * @brief
-         *
-         * @param filename
-         * @param fmt
-         * @return bool
+         * @brief Load a DBC file from disk
+         * @param filename Path to the DBC file
+         * @param fmt Format string describing field types
+         * @return True on success, false on failure
          */
         bool Load(const char* filename, const char* fmt);
 
         /**
-         * @brief
+         * @brief Represents a single record in the DBC file
          *
+         * Record provides access to individual fields within a DBC record,
+         * with automatic endianness conversion.
          */
         class Record
         {
             public:
                 /**
-                 * @brief
-                 *
-                 * @param field
-                 * @return float
+                 * @brief Get float value from field
+                 * @param field Field index
+                 * @return Float value
                  */
                 float getFloat(size_t field) const
                 {
@@ -95,11 +99,11 @@ class DBCFileLoader
                     EndianConvert(val);
                     return val;
                 }
+
                 /**
-                 * @brief
-                 *
-                 * @param field
-                 * @return uint32
+                 * @brief Get unsigned 32-bit integer value from field
+                 * @param field Field index
+                 * @return Unsigned 32-bit integer value
                  */
                 uint32 getUInt(size_t field) const
                 {
@@ -108,11 +112,11 @@ class DBCFileLoader
                     EndianConvert(val);
                     return val;
                 }
+
                 /**
-                 * @brief
-                 *
-                 * @param field
-                 * @return uint8
+                 * @brief Get unsigned 8-bit integer value from field
+                 * @param field Field index
+                 * @return Unsigned 8-bit integer value
                  */
                 uint8 getUInt8(size_t field) const
                 {
@@ -121,10 +125,9 @@ class DBCFileLoader
                 }
 
                 /**
-                 * @brief
-                 *
-                 * @param field
-                 * @return const char
+                 * @brief Get string value from field
+                 * @param field Field index
+                 * @return Pointer to string in string table
                  */
                 const char* getString(size_t field) const
                 {
@@ -136,68 +139,66 @@ class DBCFileLoader
 
             private:
                 /**
-                 * @brief
-                 *
-                 * @param file_
-                 * @param offset_
+                 * @brief Constructor (private, for DBCFileLoader use only)
+                 * @param file_ Parent DBCFileLoader reference
+                 * @param offset_ Offset to record data
                  */
                 Record(DBCFileLoader& file_, unsigned char* offset_): offset(offset_), file(file_) {}
-                unsigned char* offset; /**< TODO */
-                DBCFileLoader& file; /**< TODO */
+                unsigned char* offset; /**< Offset to record data */
+                DBCFileLoader& file; /**< Parent DBCFileLoader reference */
 
                 friend class DBCFileLoader;
         };
 
         /**
-         * @brief Get record by id
-         *
-         * @param id
-         * @return Record
+         * @brief Get record by index
+         * @param id Record index
+         * @return Record object
          */
         Record getRecord(size_t id);
 
         /**
-         * @brief Get begin iterator over records
-         *
-         * @return uint32
+         * @brief Get number of records in the file
+         * @return Record count
          */
         uint32 GetNumRows() const { return recordCount;}
+
         /**
-         * @brief
-         *
-         * @return uint32
+         * @brief Get number of fields per record
+         * @return Field count
          */
         uint32 GetCols() const { return fieldCount; }
+
         /**
-         * @brief
-         *
-         * @param id
-         * @return uint32
+         * @brief Get offset of a field within a record
+         * @param id Field index
+         * @return Byte offset from record start
          */
         uint32 GetOffset(size_t id) const { return (fieldsOffset != NULL && id < fieldCount) ? fieldsOffset[id] : 0; }
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Check if file is loaded
+         * @return True if loaded, false otherwise
          */
         bool IsLoaded() const {return (data != NULL);}
+
         /**
-         * @brief
-         *
-         * @param fmt
-         * @param count
-         * @param indexTable
-         * @return char
+         * @brief Automatically produce data array from DBC file
+         * @param fmt Format string for conversion
+         * @param count Output record count
+         * @param indexTable Output index table
+         * @return Allocated data array
          */
         char* AutoProduceData(const char* fmt, uint32& count, char**& indexTable);
+
         /**
-         * @brief
-         *
-         * @param fmt
-         * @param dataTable
-         * @return char
+         * @brief Automatically produce string table from DBC file
+         * @param fmt Format string for conversion
+         * @param dataTable Data table to reference
+         * @return Allocated string table
          */
         char* AutoProduceStrings(const char* fmt, char* dataTable);
+
         /**
          * Calculate and return the total amount of memory required by the types specified within the format string
          *
@@ -208,12 +209,12 @@ class DBCFileLoader
         static uint32 GetFormatRecordSize(const char* format, int32* index_pos = NULL);
     private:
 
-        uint32 recordSize; /**< TODO */
-        uint32 recordCount; /**< TODO */
-        uint32 fieldCount; /**< TODO */
-        uint32 stringSize; /**< TODO */
-        uint32* fieldsOffset; /**< TODO */
-        unsigned char* data; /**< TODO */
-        unsigned char* stringTable; /**< TODO */
+        uint32 recordSize; /**< Size of each record in bytes */
+        uint32 recordCount; /**< Number of records in file */
+        uint32 fieldCount; /**< Number of fields per record */
+        uint32 stringSize; /**< Size of string table in bytes */
+        uint32* fieldsOffset; /**< Array of field offsets */
+        unsigned char* data; /**< Raw record data */
+        unsigned char* stringTable; /**< String table data */
 };
 #endif

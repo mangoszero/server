@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ScriptMgr.cpp
+ * @brief Script system manager implementation
+ *
+ * This file implements ScriptMgr which manages all game scripts:
+ * - Creature AI scripts
+ * - GameObject scripts
+ * - Item scripts
+ * - Area trigger scripts
+ * - Spell scripts
+ * - Quest scripts
+ * - Instance scripts
+ *
+ * Scripts are loaded from script libraries and provide hooks for
+ * customizing game behavior. The script manager routes events to
+ * the appropriate script handlers.
+ *
+ * @see ScriptMgr for the manager class
+ * @see ScriptedInstance for instance script base
+ */
+
 #include "ScriptMgr.h"
 #include "Policies/Singleton.h"
 #include "Log.h"
@@ -72,6 +93,12 @@ ScriptMgr::~ScriptMgr()
     m_dbScripts.clear();
 }
 
+/**
+ * @brief Returns the script chain map for a database script type.
+ *
+ * @param type The database script type.
+ * @return ScriptChainMap const* The corresponding script chain map, or NULL for unsupported types.
+ */
 ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
 {
     ACE_GUARD_RETURN(ACE_Thread_Mutex, _guard, m_lock, NULL)
@@ -82,7 +109,6 @@ ScriptChainMap const* ScriptMgr::GetScriptChainMap(DBScriptType type)
 
     return NULL;
 }
-
 
 // /////////////////////////////////////////////////////////
 //              DB SCRIPTS (loaders of static data)
@@ -168,6 +194,11 @@ bool ScriptMgr::CanSpellEffectStartDBScript(SpellEntry const* spellinfo, SpellEf
     return true;
 }
 
+/**
+ * @brief Loads and validates raw db_script records for a specific script type.
+ *
+ * @param type The database script type to load.
+ */
 void ScriptMgr::LoadScripts(DBScriptType type)
 {
     if (IsScriptScheduled())                                // function don't must be called in time scripts use.
@@ -874,6 +905,11 @@ void ScriptMgr::LoadScripts(DBScriptType type)
     sLog.outString();
 }
 
+/**
+ * @brief Loads db scripts for a type and validates that their script ids refer to existing objects.
+ *
+ * @param t The database script type to load.
+ */
 void ScriptMgr::LoadDbScripts(DBScriptType t)
 {
     std::set<uint32> eventIds;                              // Store possible event ids
@@ -924,8 +960,8 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
                 {
                     if (GetSpellStartDBScriptPriority(spellInfo, SpellEffectIndex(i)))
                     {
-                      found =  true;
-                      break;
+                        found =  true;
+                        break;
                     }
                 }
                 if (!found)
@@ -963,7 +999,9 @@ void ScriptMgr::LoadDbScripts(DBScriptType t)
     }
 }
 
-
+/**
+ * @brief Loads db_script_string records and checks their usage from scripts and waypoints.
+ */
 void ScriptMgr::LoadDbScriptStrings()
 {
     sObjectMgr.LoadMangosStrings(WorldDatabase, "db_script_string", MIN_DB_SCRIPT_STRING_ID, MAX_DB_SCRIPT_STRING_ID, true);
@@ -985,6 +1023,11 @@ void ScriptMgr::LoadDbScriptStrings()
     }
 }
 
+/**
+ * @brief Validates script text ids referenced by db scripts and removes used ids from the provided set.
+ *
+ * @param ids The set of loaded string ids that will be trimmed as usages are found.
+ */
 void ScriptMgr::CheckScriptTexts(std::set<int32>& ids)
 {
     for (int t = DBS_START; t < DBS_END; ++t)
@@ -1218,6 +1261,13 @@ bool ScriptAction::LogIfNotCreature(WorldObject* pWorldObject)
     }
     return false;
 }
+
+/**
+ * @brief Logs an error when the provided world object is not a unit.
+ *
+ * @param pWorldObject The world object to validate.
+ * @return true if validation failed; otherwise false.
+ */
 bool ScriptAction::LogIfNotUnit(WorldObject* pWorldObject)
 {
     if (!pWorldObject || !pWorldObject->isType(TYPEMASK_UNIT))
@@ -1227,6 +1277,13 @@ bool ScriptAction::LogIfNotUnit(WorldObject* pWorldObject)
     }
     return false;
 }
+
+/**
+ * @brief Logs an error when the provided world object is not a game object.
+ *
+ * @param pWorldObject The world object to validate.
+ * @return true if validation failed; otherwise false.
+ */
 bool ScriptAction::LogIfNotGameObject(WorldObject* pWorldObject)
 {
     if (!pWorldObject || pWorldObject->GetTypeId() != TYPEID_GAMEOBJECT)
@@ -1236,6 +1293,13 @@ bool ScriptAction::LogIfNotGameObject(WorldObject* pWorldObject)
     }
     return false;
 }
+
+/**
+ * @brief Logs an error when the provided world object is not a player.
+ *
+ * @param pWorldObject The world object to validate.
+ * @return true if validation failed; otherwise false.
+ */
 bool ScriptAction::LogIfNotPlayer(WorldObject* pWorldObject)
 {
     if (!pWorldObject || pWorldObject->GetTypeId() != TYPEID_PLAYER)
@@ -2565,6 +2629,11 @@ void ScriptMgr::LoadScriptBinding()
     return;
 }
 
+/**
+ * @brief Reloads script bindings in debug builds.
+ *
+ * @return true if bindings were reloaded; otherwise false.
+ */
 bool ScriptMgr::ReloadScriptBinding()
 {
 #ifdef _DEBUG
@@ -2577,6 +2646,9 @@ bool ScriptMgr::ReloadScriptBinding()
 #endif /* _DEBUG */
 }
 
+/**
+ * @brief Loads and sorts the distinct script names referenced by script bindings.
+ */
 void ScriptMgr::LoadScriptNames()
 {
     m_scriptNames.push_back("");
@@ -2609,6 +2681,12 @@ void ScriptMgr::LoadScriptNames()
     sLog.outString();
 }
 
+/**
+ * @brief Resolves a script name to its internal script id.
+ *
+ * @param name The script name to search for.
+ * @return uint32 The resolved script id, or 0 if not found.
+ */
 uint32 ScriptMgr::GetScriptId(const char* name) const
 {
     // use binary search to find the script name in the sorted vector
@@ -2629,6 +2707,13 @@ uint32 ScriptMgr::GetScriptId(const char* name) const
     return uint32(itr - m_scriptNames.begin());
 }
 
+/**
+ * @brief Returns the script id bound to a specific scripted entity entry.
+ *
+ * @param entity The scripted object type.
+ * @param entry The object entry or binding key.
+ * @return uint32 The bound script id, or 0 if none exists.
+ */
 uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
 {
 #ifdef _DEBUG
@@ -2651,6 +2736,11 @@ uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
     return id;
 }
 
+/**
+ * @brief Returns the version string for the loaded script library.
+ *
+ * @return char const* The script library version, or NULL when unavailable.
+ */
 char const* ScriptMgr::GetScriptLibraryVersion() const
 {
 #ifdef ENABLE_SD3
@@ -2660,6 +2750,12 @@ char const* ScriptMgr::GetScriptLibraryVersion() const
 #endif
 }
 
+/**
+ * @brief Creates or retrieves scripted AI for a creature.
+ *
+ * @param pCreature The creature requiring AI.
+ * @return CreatureAI* The scripted AI instance, or NULL when none is available.
+ */
 CreatureAI* ScriptMgr::GetCreatureAI(Creature* pCreature)
 {
     // Used by Eluna
@@ -2680,6 +2776,12 @@ CreatureAI* ScriptMgr::GetCreatureAI(Creature* pCreature)
 #endif
 }
 
+/**
+ * @brief Creates or retrieves scripted AI for a game object.
+ *
+ * @param pGo The game object requiring AI.
+ * @return GameObjectAI* The scripted AI instance, or NULL when none is available.
+ */
 GameObjectAI* ScriptMgr::GetGameObjectAI(GameObject* pGo)
 {
     // TODO - expose in ELuna
@@ -2690,6 +2792,12 @@ GameObjectAI* ScriptMgr::GetGameObjectAI(GameObject* pGo)
     #endif
 }
 
+/**
+ * @brief Creates scripted instance data for a map.
+ *
+ * @param pMap The map requiring instance data.
+ * @return InstanceData* The scripted instance data, or NULL when unavailable.
+ */
 InstanceData* ScriptMgr::CreateInstanceData(Map* pMap)
 {
 #ifdef ENABLE_SD3
@@ -2699,6 +2807,13 @@ InstanceData* ScriptMgr::CreateInstanceData(Map* pMap)
 #endif
 }
 
+/**
+ * @brief Dispatches creature gossip hello hooks to scripting engines.
+ *
+ * @param pPlayer The player starting gossip.
+ * @param pCreature The creature handling gossip.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipHello(Player* pPlayer, Creature* pCreature)
 {
     // Used by Eluna
@@ -2719,6 +2834,13 @@ bool ScriptMgr::OnGossipHello(Player* pPlayer, Creature* pCreature)
 #endif
 }
 
+/**
+ * @brief Dispatches game object gossip hello hooks to scripting engines.
+ *
+ * @param pPlayer The player starting gossip.
+ * @param pGameObject The game object handling gossip.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipHello(Player* pPlayer, GameObject* pGameObject)
 {
     // Used by Eluna
@@ -2739,6 +2861,13 @@ bool ScriptMgr::OnGossipHello(Player* pPlayer, GameObject* pGameObject)
 #endif
 }
 
+/**
+ * @brief Dispatches item gossip hello hooks to scripting engines.
+ *
+ * @param pPlayer The player starting gossip.
+ * @param pItem The item handling gossip.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipHello(Player* pPlayer, Item* pItem)
 {
     // Used by Eluna
@@ -2753,6 +2882,16 @@ bool ScriptMgr::OnGossipHello(Player* pPlayer, Item* pItem)
 #endif
 }
 
+/**
+ * @brief Dispatches creature gossip selection hooks to scripting engines.
+ *
+ * @param pPlayer The player selecting the option.
+ * @param pCreature The gossip creature.
+ * @param sender The menu sender identifier.
+ * @param action The selected action identifier.
+ * @param code Optional code text entered by the player.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 sender, uint32 action, const char* code)
 {
 #ifdef ENABLE_ELUNA
@@ -2789,6 +2928,16 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 send
 #endif
 }
 
+/**
+ * @brief Dispatches game object gossip selection hooks to scripting engines.
+ *
+ * @param pPlayer The player selecting the option.
+ * @param pGameObject The gossip game object.
+ * @param sender The menu sender identifier.
+ * @param action The selected action identifier.
+ * @param code Optional code text entered by the player.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipSelect(Player* pPlayer, GameObject* pGameObject, uint32 sender, uint32 action, const char* code)
 {
     // Used by Eluna
@@ -2827,6 +2976,16 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, GameObject* pGameObject, uint32 
 #endif
 }
 
+/**
+ * @brief Dispatches item gossip selection hooks to scripting engines.
+ *
+ * @param pPlayer The player selecting the option.
+ * @param pItem The gossip item.
+ * @param sender The menu sender identifier.
+ * @param action The selected action identifier.
+ * @param code Optional code text entered by the player.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGossipSelect(Player* pPlayer, Item* pItem, uint32 sender, uint32 action, const char* code)
 {
     // Used by Eluna
@@ -2848,6 +3007,14 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, Item* pItem, uint32 sender, uint
 #endif
 }
 
+/**
+ * @brief Dispatches creature quest accept hooks to scripting engines.
+ *
+ * @param pPlayer The player accepting the quest.
+ * @param pCreature The quest giver creature.
+ * @param pQuest The accepted quest.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnQuestAccept(Player* pPlayer, Creature* pCreature, Quest const* pQuest)
 {
     // Used by Eluna
@@ -2868,6 +3035,14 @@ bool ScriptMgr::OnQuestAccept(Player* pPlayer, Creature* pCreature, Quest const*
 #endif
 }
 
+/**
+ * @brief Dispatches game object quest accept hooks to scripting engines.
+ *
+ * @param pPlayer The player accepting the quest.
+ * @param pGameObject The quest giver game object.
+ * @param pQuest The accepted quest.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnQuestAccept(Player* pPlayer, GameObject* pGameObject, Quest const* pQuest)
 {
     // Used by Eluna
@@ -2888,6 +3063,14 @@ bool ScriptMgr::OnQuestAccept(Player* pPlayer, GameObject* pGameObject, Quest co
 #endif
 }
 
+/**
+ * @brief Dispatches item quest accept hooks to scripting engines.
+ *
+ * @param pPlayer The player accepting the quest.
+ * @param pItem The quest-starting item.
+ * @param pQuest The accepted quest.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnQuestAccept(Player* pPlayer, Item* pItem, Quest const* pQuest)
 {
     // Used by Eluna
@@ -2908,6 +3091,15 @@ bool ScriptMgr::OnQuestAccept(Player* pPlayer, Item* pItem, Quest const* pQuest)
 #endif
 }
 
+/**
+ * @brief Dispatches creature quest reward hooks to scripting engines.
+ *
+ * @param pPlayer The player receiving the reward.
+ * @param pCreature The quest giver creature.
+ * @param pQuest The rewarded quest.
+ * @param reward The selected reward index or identifier.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnQuestRewarded(Player* pPlayer, Creature* pCreature, Quest const* pQuest, uint32 reward)
 {
     // Used by Eluna
@@ -2928,6 +3120,15 @@ bool ScriptMgr::OnQuestRewarded(Player* pPlayer, Creature* pCreature, Quest cons
 #endif
 }
 
+/**
+ * @brief Dispatches game object quest reward hooks to scripting engines.
+ *
+ * @param pPlayer The player receiving the reward.
+ * @param pGameObject The quest giver game object.
+ * @param pQuest The rewarded quest.
+ * @param reward The selected reward index or identifier.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnQuestRewarded(Player* pPlayer, GameObject* pGameObject, Quest const* pQuest, uint32 reward)
 {
     // Used by Eluna
@@ -2948,6 +3149,13 @@ bool ScriptMgr::OnQuestRewarded(Player* pPlayer, GameObject* pGameObject, Quest 
 #endif
 }
 
+/**
+ * @brief Queries scripted dialog status for a creature gossip source.
+ *
+ * @param pPlayer The player querying the dialog state.
+ * @param pCreature The creature being queried.
+ * @return uint32 The dialog status value.
+ */
 uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, Creature* pCreature)
 {
     // Used by Eluna
@@ -2965,6 +3173,13 @@ uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, Creature* pCreature)
 #endif
 }
 
+/**
+ * @brief Queries scripted dialog status for a game object gossip source.
+ *
+ * @param pPlayer The player querying the dialog state.
+ * @param pGameObject The game object being queried.
+ * @return uint32 The dialog status value.
+ */
 uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, GameObject* pGameObject)
 {
     // Used by Eluna
@@ -2982,6 +3197,13 @@ uint32 ScriptMgr::GetDialogStatus(Player* pPlayer, GameObject* pGameObject)
 #endif
 }
 
+/**
+ * @brief Dispatches player game object use hooks to scripting engines.
+ *
+ * @param pPlayer The player using the object.
+ * @param pGameObject The used game object.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGameObjectUse(Player* pPlayer, GameObject* pGameObject)
 {
 #ifdef ENABLE_ELUNA
@@ -3001,6 +3223,13 @@ bool ScriptMgr::OnGameObjectUse(Player* pPlayer, GameObject* pGameObject)
 #endif
 }
 
+/**
+ * @brief Dispatches non-player game object use hooks to scripting engines.
+ *
+ * @param pUnit The unit using the object.
+ * @param pGameObject The used game object.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnGameObjectUse(Unit* pUnit, GameObject* pGameObject)
 {
     // TODO Add Eluna support
@@ -3012,6 +3241,14 @@ bool ScriptMgr::OnGameObjectUse(Unit* pUnit, GameObject* pGameObject)
 #endif
 }
 
+/**
+ * @brief Dispatches item use hooks to scripting engines.
+ *
+ * @param pPlayer The player using the item.
+ * @param pItem The used item.
+ * @param targets The item spell cast targets.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& targets)
 {
     // Used by Eluna
@@ -3032,6 +3269,13 @@ bool ScriptMgr::OnItemUse(Player* pPlayer, Item* pItem, SpellCastTargets const& 
 #endif
 }
 
+/**
+ * @brief Dispatches area trigger hooks to scripting engines.
+ *
+ * @param pPlayer The player entering the trigger.
+ * @param atEntry The area trigger entry.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry)
 {
     // Used by Eluna
@@ -3052,6 +3296,14 @@ bool ScriptMgr::OnAreaTrigger(Player* pPlayer, AreaTriggerEntry const* atEntry)
 #endif
 }
 
+/**
+ * @brief Dispatches npc spell click hooks to scripting engines.
+ *
+ * @param pPlayer The player clicking the NPC spell interaction.
+ * @param pClickedCreature The clicked creature.
+ * @param spellId The triggering spell id.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnNpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uint32 spellId)
 {
 #ifdef ENABLE_SD3
@@ -3061,6 +3313,15 @@ bool ScriptMgr::OnNpcSpellClick(Player* pPlayer, Creature* pClickedCreature, uin
 #endif
 }
 
+/**
+ * @brief Dispatches generic scripted process events to scripting engines.
+ *
+ * @param eventId The event identifier.
+ * @param pSource The event source object.
+ * @param pTarget The event target object.
+ * @param isStart True when processing the start of the event chain.
+ * @return true if a script handled the event; otherwise false.
+ */
 bool ScriptMgr::OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget, bool isStart)
 {
 #ifdef ENABLE_SD3
@@ -3070,6 +3331,16 @@ bool ScriptMgr::OnProcessEvent(uint32 eventId, Object* pSource, Object* pTarget,
 #endif
 }
 
+/**
+ * @brief Dispatches dummy spell effect hooks for unit targets.
+ *
+ * @param pCaster The spell caster.
+ * @param spellId The triggering spell id.
+ * @param effIndex The spell effect index.
+ * @param pTarget The unit target.
+ * @param originalCasterGuid The original caster guid.
+ * @return true if a script handled the effect; otherwise false.
+ */
 bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Unit* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna
@@ -3091,6 +3362,16 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
 #endif
 }
 
+/**
+ * @brief Dispatches dummy spell effect hooks for game object targets.
+ *
+ * @param pCaster The spell caster.
+ * @param spellId The triggering spell id.
+ * @param effIndex The spell effect index.
+ * @param pTarget The game object target.
+ * @param originalCasterGuid The original caster guid.
+ * @return true if a script handled the effect; otherwise false.
+ */
 bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, GameObject* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna
@@ -3108,6 +3389,16 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
 #endif
 }
 
+/**
+ * @brief Dispatches dummy spell effect hooks for item targets.
+ *
+ * @param pCaster The spell caster.
+ * @param spellId The triggering spell id.
+ * @param effIndex The spell effect index.
+ * @param pTarget The item target.
+ * @param originalCasterGuid The original caster guid.
+ * @return true if a script handled the effect; otherwise false.
+ */
 bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Item* pTarget, ObjectGuid originalCasterGuid)
 {
     // Used by Eluna
@@ -3125,6 +3416,16 @@ bool ScriptMgr::OnEffectDummy(Unit* pCaster, uint32 spellId, SpellEffectIndex ef
 #endif
 }
 
+/**
+ * @brief Dispatches script-effect spell hooks for unit targets.
+ *
+ * @param pCaster The spell caster.
+ * @param spellId The triggering spell id.
+ * @param effIndex The spell effect index.
+ * @param pTarget The unit target.
+ * @param originalCasterGuid The original caster guid.
+ * @return true if a script handled the effect; otherwise false.
+ */
 bool ScriptMgr::OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectIndex effIndex, Unit* pTarget, ObjectGuid originalCasterGuid)
 {
 #ifdef ENABLE_SD3
@@ -3134,6 +3435,13 @@ bool ScriptMgr::OnEffectScriptEffect(Unit* pCaster, uint32 spellId, SpellEffectI
 #endif
 }
 
+/**
+ * @brief Dispatches dummy aura application and removal hooks.
+ *
+ * @param pAura The aura being processed.
+ * @param apply True when applying the aura; false when removing it.
+ * @return true if a script handled the aura event; otherwise false.
+ */
 bool ScriptMgr::OnAuraDummy(Aura const* pAura, bool apply)
 {
 #ifdef ENABLE_SD3
@@ -3143,6 +3451,12 @@ bool ScriptMgr::OnAuraDummy(Aura const* pAura, bool apply)
 #endif
 }
 
+/**
+ * @brief Loads or reloads the named script library.
+ *
+ * @param libName The script library name.
+ * @return ScriptLoadResult The library loading result.
+ */
 ScriptLoadResult ScriptMgr::LoadScriptLibrary(const char* libName)
 {
 #ifdef ENABLE_SD3
@@ -3157,6 +3471,9 @@ ScriptLoadResult ScriptMgr::LoadScriptLibrary(const char* libName)
     return SCRIPT_LOAD_ERR_NOT_FOUND;
 }
 
+/**
+ * @brief Unloads the currently active script library.
+ */
 void ScriptMgr::UnloadScriptLibrary()
 {
 #ifdef ENABLE_SD3
@@ -3166,6 +3483,11 @@ void ScriptMgr::UnloadScriptLibrary()
 #endif
 }
 
+/**
+ * @brief Collects event ids that can legally start database event scripts.
+ *
+ * @param eventIds The set that receives discovered event ids.
+ */
 void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
 {
     // Load all possible script entries from gameobjects
@@ -3331,21 +3653,50 @@ uint32 GetScriptId(const char* name)
     return sScriptMgr.GetScriptId(name);
 }
 
+/**
+ * @brief Returns the script name for a script id.
+ *
+ * @param id The internal script id.
+ * @return char const* The matching script name.
+ */
 char const* GetScriptName(uint32 id)
 {
     return sScriptMgr.GetScriptName(id);
 }
 
+/**
+ * @brief Returns the number of registered script ids.
+ *
+ * @return uint32 The count of registered script ids.
+ */
 uint32 GetScriptIdsCount()
 {
     return sScriptMgr.GetScriptIdsCount();
 }
 
+/**
+ * @brief Sets the external waypoint table used by the waypoint manager.
+ *
+ * @param tableName The external waypoint table name.
+ */
 void SetExternalWaypointTable(char const* tableName)
 {
     sWaypointMgr.SetExternalWPTable(tableName);
 }
 
+/**
+ * @brief Adds a waypoint node from an external waypoint table.
+ *
+ * @param entry The creature entry owning the path.
+ * @param pathId The path identifier.
+ * @param pointId The waypoint point identifier.
+ * @param x The waypoint X coordinate.
+ * @param y The waypoint Y coordinate.
+ * @param z The waypoint Z coordinate.
+ * @param o The waypoint orientation.
+ * @param waittime The wait time at the node.
+ * @return true if the waypoint was added; otherwise false.
+ */
 bool AddWaypointFromExternal(uint32 entry, int32 pathId, uint32 pointId, float x, float y, float z, float o, uint32 waittime)
 {
     return sWaypointMgr.AddExternalNode(entry, pathId, pointId, x, y, z, o, waittime);

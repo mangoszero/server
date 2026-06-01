@@ -30,6 +30,9 @@
 
 #include "soapStub.h"
 
+/**
+ * Runs the SOAP listener loop on the configured host and port.
+ */
 void SoapThread(const std::string& host, uint16 port)
 {
     struct soap soap;
@@ -67,6 +70,9 @@ void SoapThread(const std::string& host, uint16 port)
     soap_done(&soap);
 }
 
+/**
+ * Serves and disposes a single SOAP request context.
+ */
 void process_message(struct soap* soap_message)
 {
     soap_serve(soap_message);
@@ -75,6 +81,9 @@ void process_message(struct soap* soap_message)
     soap_free(soap_message);    // detach soap struct and free up memory
 }
 
+/**
+ * Authenticates and executes a remote SOAP command request.
+ */
 int ns1__executeCommand(soap* soap, char* command, char** result)
 {
     // security check
@@ -134,6 +143,9 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
     }
 }
 
+/**
+ * Records the completion status of a queued SOAP command.
+ */
 void SOAPCommand::commandFinished(void* soapconnection, bool success)
 {
     SOAPCommand* con = (SOAPCommand*)soapconnection;

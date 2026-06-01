@@ -22,6 +22,22 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file QueryHandler.cpp
+ * @brief Query opcode handlers for game data lookups
+ *
+ * This file handles query opcodes for requesting game data:
+ * - CMSG_NAME_QUERY: Query character name by GUID
+ * - CMSG_ITEM_QUERY: Query item info
+ * - CMSG_GAMEOBJECT_QUERY: Query gameobject info
+ * - CMSG_CREATURE_QUERY: Query creature info
+ * - CMSG_PAGE_TEXT_QUERY: Query page text
+ * - CMSG_QUERY_TIME: Query server time
+ *
+ * Query responses include name, display ID, and other metadata
+ * for the requested object type.
+ */
+
 #include "Common.h"
 #include "Language.h"
 #include "Database/DatabaseEnv.h"
@@ -37,6 +53,11 @@
 #include "NPCHandler.h"
 #include "SQLStorages.h"
 
+/**
+ * @brief Sends an in-memory name query response for a player.
+ *
+ * @param p The player being queried.
+ */
 void WorldSession::SendNameQueryOpcode(Player* p)
 {
     if (!p)
@@ -56,15 +77,26 @@ void WorldSession::SendNameQueryOpcode(Player* p)
     SendPacket(&data);
 }
 
+/**
+ * @brief Starts an asynchronous database lookup for a player name query.
+ *
+ * @param guid The queried player guid.
+ */
 void WorldSession::SendNameQueryOpcodeFromDB(ObjectGuid guid)
 {
     CharacterDatabase.AsyncPQuery(&WorldSession::SendNameQueryOpcodeFromDBCallBack, GetAccountId(),
-                                  //          0     1     2     3       4
-                                  "SELECT guid, name, race, gender, class "
-                                  "FROM characters WHERE guid = '%u'",
-                                  guid.GetCounter());
+                                //      0     1     2     3       4
+                                "SELECT guid, name, race, gender, class "
+                                "FROM characters WHERE guid = '%u'",
+                                guid.GetCounter());
 }
 
+/**
+ * @brief Completes an asynchronous player name query from the database.
+ *
+ * @param result The database result.
+ * @param accountId The requesting account id.
+ */
 void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32 accountId)
 {
     if (!result)
@@ -103,6 +135,11 @@ void WorldSession::SendNameQueryOpcodeFromDBCallBack(QueryResult* result, uint32
     delete result;
 }
 
+/**
+ * @brief Handles a client request to query another player's name.
+ *
+ * @param recv_data The incoming name query packet.
+ */
 void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -121,6 +158,11 @@ void WorldSession::HandleNameQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles a client request for the current server time.
+ *
+ * @param recv_data The unused incoming packet.
+ */
 void WorldSession::HandleQueryTimeOpcode(WorldPacket& /*recv_data*/)
 {
     SendQueryTimeResponse();
@@ -244,6 +286,11 @@ void WorldSession::HandleGameObjectQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles a corpse query and returns corpse or graveyard location data.
+ *
+ * @param recv_data The unused incoming packet.
+ */
 void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
 {
     DETAIL_LOG("WORLD: Received opcode MSG_CORPSE_QUERY");
@@ -294,6 +341,11 @@ void WorldSession::HandleCorpseQueryOpcode(WorldPacket& /*recv_data*/)
     SendPacket(&data);
 }
 
+/**
+ * @brief Handles an NPC text query and sends localized gossip text options.
+ *
+ * @param recv_data The incoming NPC text query packet.
+ */
 void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
 {
     uint32 textID;
@@ -377,6 +429,11 @@ void WorldSession::HandleNpcTextQueryOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Sent SMSG_NPC_TEXT_UPDATE");
 }
 
+/**
+ * @brief Handles an item page text query and sends all linked pages.
+ *
+ * @param recv_data The incoming page text query packet.
+ */
 void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("WORLD: Received opcode CMSG_PAGE_TEXT_QUERY");
@@ -425,6 +482,9 @@ void WorldSession::HandlePageTextQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Sends the current server time to the client.
+ */
 void WorldSession::SendQueryTimeResponse()
 {
     WorldPacket data(SMSG_QUERY_TIME_RESPONSE, 4);

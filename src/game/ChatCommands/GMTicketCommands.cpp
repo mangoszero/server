@@ -22,12 +22,21 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GMTicketCommands.cpp
+ * @brief Implementation of GM ticket management chat commands.
+ *
+ * This file contains chat command handlers for managing player support tickets including:
+ * - Ticket viewing and management
+ * - Ticket assignment and resolution
+ * - Ticket notification system
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "GMTicketMgr.h"
 #include "Mail.h"
-
 
 // show ticket (helper)
 void ChatHandler::ShowTicket(GMTicket const* ticket)
@@ -51,7 +60,12 @@ void ChatHandler::ShowTicket(GMTicket const* ticket)
     }
 }
 
-// ticket commands
+/**
+ * @brief Handler for HandleTicketAcceptCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketAcceptCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
@@ -82,6 +96,12 @@ bool ChatHandler::HandleTicketAcceptCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketCloseCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketCloseCommand(char* args)
 {
     GMTicket* ticket = NULL;
@@ -133,7 +153,6 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     std::string target_name;
     sObjectMgr.GetPlayerNameByGUID(target_guid, target_name);
 
-
     if (!pPlayer && !sWorld.getConfig(CONFIG_BOOL_GM_TICKET_OFFLINE_CLOSING))
     {
         SendSysMessage(LANG_COMMAND_TICKET_CANT_CLOSE);
@@ -176,7 +195,6 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
 
     const char* gmNameReplacementWhenUsingCLI = "ADMIN";
 
-
     // Send system Message to All Connected GMs to inform them the ticket has been closed
     sObjectAccessor.DoForAllPlayers([&](Player* player)
         {
@@ -195,7 +213,12 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
     return true;
 }
 
-// del tickets
+/**
+ * @brief Handler for HandleTicketDeleteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketDeleteCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
@@ -274,6 +297,12 @@ bool ChatHandler::HandleTicketDeleteCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketInfoCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketInfoCommand(char* args)
 {
     size_t count = sTicketMgr.GetTicketCount();
@@ -290,6 +319,12 @@ bool ChatHandler::HandleTicketInfoCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketListCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketListCommand(char* args)
 {
     uint16 numToShow = std::min(uint16(sTicketMgr.GetTicketCount()), uint16(sWorld.getConfig(CONFIG_UINT32_GM_TICKET_LIST_SIZE)));
@@ -304,6 +339,12 @@ bool ChatHandler::HandleTicketListCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketOnlineListCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketOnlineListCommand(char* args)
 {
     uint16 count = 0;
@@ -325,6 +366,12 @@ bool ChatHandler::HandleTicketOnlineListCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketMeAcceptCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketMeAcceptCommand(char* args)
 {
     char* px = ExtractLiteralArg(&args);
@@ -361,6 +408,12 @@ bool ChatHandler::HandleTicketMeAcceptCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketRespondCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketRespondCommand(char* args)
 {
     GMTicket* ticket = NULL;
@@ -430,7 +483,6 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
         strcpy(signature, "$B$BBest regards, $B$BThe Server Admin");
     }
 
-
     std::string  mailText = args;
     mailText = mailText + signature;
 
@@ -472,7 +524,6 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     // Close the ticket
     ticket->Close();
 
-
     // Remove ticket from ticket manager
     // Otherwise ticket will reappear in player UI if teleported or logout/login !
     sTicketMgr.Delete(ticket->GetPlayerGuid());
@@ -486,7 +537,6 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
             }
         });
 
-
     if (!m_session)
     {
         // In order to have message in CLI otherwise above code will only display to connected gms but not in console
@@ -496,6 +546,12 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTicketShowCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTicketShowCommand(char* args)
 {
     // ticket #num
@@ -547,6 +603,12 @@ bool ChatHandler::HandleTicketShowCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleTickerSurveyClose command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTickerSurveyClose(char* args)
 {
     GMTicket* ticket = NULL;

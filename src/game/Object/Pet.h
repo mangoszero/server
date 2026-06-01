@@ -22,6 +22,33 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Pet.h
+ * @brief Pet (summon and hunter pet) class definition.
+ *
+ * This file defines the Pet class which represents player-controlled pets and minions
+ * including summoned creatures, hunter pets, guardians, and companion pets.
+ *
+ * Key functionality includes:
+ * - Pet summoning and despawning
+ * - Hunter pet taming and stabling
+ * - Pet ability and talent management
+ * - Pet happiness/loyalty tracking
+ * - Pet training and spell learning
+ * - Pet aggression and assistance control
+ * - Pet resurrection and revival mechanics
+ * - Pet death and resurrection
+ * - Pet experience and leveling
+ * - Reactive ability triggers
+ *
+ * Pets can be of different types (summon, hunter, guardian, mini-pet) and have
+ * different behaviors, training mechanisms, and longevity depending on their type.
+ *
+ * @see Pet for the main pet implementation
+ * @see Creature for the base creature class
+ * @see Unit for combat mechanics
+ */
+
 #ifndef MANGOSSERVER_PET_H
 #define MANGOSSERVER_PET_H
 
@@ -32,6 +59,9 @@
 
 class Transport;
 
+/// @brief Pet type enumeration.
+///
+/// Defines the different categories of pets with distinct mechanics and rules.
 enum PetType
 {
     SUMMON_PET              = 0,
@@ -43,7 +73,10 @@ enum PetType
 
 #define MAX_PET_STABLES         2
 
-// stored in character_pet.slot
+// Pet storage location
+/// @brief Pet save mode enumeration.
+///
+/// Stored in character_pet.slot, indicates where/how a pet is saved in database.
 enum PetSaveMode
 {
     PET_SAVE_AS_DELETED        = -1,                        // not saved in fact
@@ -54,6 +87,9 @@ enum PetSaveMode
     PET_SAVE_REAGENTS          =  101                       // PET_SAVE_NOT_IN_SLOT with reagents return
 };
 
+/// @brief Pet database status enumeration.
+///
+/// Indicates the current save status of a pet in the database.
 enum PetDatabaseStatus
 {
     PET_DB_NO_PET       = 0,
@@ -62,6 +98,9 @@ enum PetDatabaseStatus
 };
 
 // There might be a lot more
+/// @brief Pet mode flags enumeration.
+///
+/// Controls pet behavior and enabled actions.
 enum PetModeFlags
 {
     PET_MODE_UNKNOWN_0         = 0x0000001,
@@ -69,9 +108,13 @@ enum PetModeFlags
     PET_MODE_DISABLE_ACTIONS   = 0x8000000,
 
     // autoset in client at summon
+    /// @brief Default pet mode flags (autoset by client at summon)
     PET_MODE_DEFAULT           = PET_MODE_UNKNOWN_0 | PET_MODE_UNKNOWN_2,
 };
 
+/// @brief Pet happiness state enumeration.
+///
+/// Represents hunter pet loyalty and happiness level affecting XP gains.
 enum HappinessState
 {
     UNHAPPY = 1,
@@ -225,7 +268,11 @@ class Pet : public Creature
         uint32 GetMaxLoyaltyPoints(uint32 level);
         uint32 GetStartLoyaltyPoints(uint32 level);
         void KillLoyaltyBonus(uint32 level);
-        uint32 GetLoyaltyLevel() { return GetByteValue(UNIT_FIELD_BYTES_1, 1); }
+        uint32 GetLoyaltyLevel()
+        {
+            return GetByteValue(UNIT_FIELD_BYTES_1, 1);
+        }
+
         void SetLoyaltyLevel(LoyaltyLevel level);
         void GivePetXP(uint32 xp);
         void GivePetLevel(uint32 level);
@@ -235,7 +282,10 @@ class Pet : public Creature
         uint32 GetCurrentFoodBenefitLevel(uint32 itemlevel);
         void SetDuration(int32 dur) { m_duration = dur; }
 
-        int32 GetBonusDamage() { return m_bonusdamage; }
+        int32 GetBonusDamage()
+        {
+            return m_bonusdamage;
+        }
         void SetBonusDamage(int32 damage) { m_bonusdamage = damage; }
 
         bool UpdateStats(Stats stat) override;
@@ -294,7 +344,10 @@ class Pet : public Creature
 
         const uint64& GetAuraUpdateMask() const { return m_auraUpdateMask; }
         void SetAuraUpdateMask(uint8 slot) { m_auraUpdateMask |= (uint64(1) << slot); }
-        void ResetAuraUpdateMask() { m_auraUpdateMask = 0; }
+        void ResetAuraUpdateMask()
+        {
+            m_auraUpdateMask = 0;
+        }
 
         // overwrite Creature function for name localization back to WorldObject version without localization
         const char* GetNameForLocaleIdx(int32 locale_idx) const override { return WorldObject::GetNameForLocaleIdx(locale_idx); }

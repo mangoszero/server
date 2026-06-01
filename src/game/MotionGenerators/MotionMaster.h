@@ -35,37 +35,45 @@ class Unit;
 // Creature Entry ID used for waypoints show, visible only for GMs
 #define VISUAL_WAYPOINT 1
 
-// Values 0 ... MAX_DB_MOTION_TYPE-1 used in DB
+/**
+ * @brief Movement generator type enumeration
+ *
+ * Values 0 ... MAX_DB_MOTION_TYPE-1 used in database.
+ * Values MAX_DB_MOTION_TYPE and above cannot be set in database.
+ */
 enum MovementGeneratorType
 {
-    IDLE_MOTION_TYPE                = 0,                    // IdleMovementGenerator.h
-    RANDOM_MOTION_TYPE              = 1,                    // RandomMovementGenerator.h
-    WAYPOINT_MOTION_TYPE            = 2,                    // WaypointMovementGenerator.h
-    MAX_DB_MOTION_TYPE              = 3,                    // *** this and below motion types can't be set in DB.
+    IDLE_MOTION_TYPE = 0,                  ///< Idle movement (IdleMovementGenerator.h)
+    RANDOM_MOTION_TYPE = 1,                ///< Random movement (RandomMovementGenerator.h)
+    WAYPOINT_MOTION_TYPE = 2,              ///< Waypoint movement (WaypointMovementGenerator.h)
+    MAX_DB_MOTION_TYPE = 3,                ///< Maximum database motion type (values below this can be set in DB)
 
-    CONFUSED_MOTION_TYPE            = 4,                    // ConfusedMovementGenerator.h
-    CHASE_MOTION_TYPE               = 5,                    // TargetedMovementGenerator.h
-    HOME_MOTION_TYPE                = 6,                    // HomeMovementGenerator.h
-    FLIGHT_MOTION_TYPE              = 7,                    // WaypointMovementGenerator.h
-    POINT_MOTION_TYPE               = 8,                    // PointMovementGenerator.h
-    FLEEING_MOTION_TYPE             = 9,                    // FleeingMovementGenerator.h
-    DISTRACT_MOTION_TYPE            = 10,                   // IdleMovementGenerator.h
-    ASSISTANCE_MOTION_TYPE          = 11,                   // PointMovementGenerator.h (first part of flee for assistance)
-    ASSISTANCE_DISTRACT_MOTION_TYPE = 12,                   // IdleMovementGenerator.h (second part of flee for assistance)
-    TIMED_FLEEING_MOTION_TYPE       = 13,                   // FleeingMovementGenerator.h (alt.second part of flee for assistance)
-    FOLLOW_MOTION_TYPE              = 14,                   // TargetedMovementGenerator.h
-    EFFECT_MOTION_TYPE              = 15,
+    CONFUSED_MOTION_TYPE = 4,              ///< Confused movement (ConfusedMovementGenerator.h)
+    CHASE_MOTION_TYPE = 5,                 ///< Chase movement (TargetedMovementGenerator.h)
+    HOME_MOTION_TYPE = 6,                  ///< Return home movement (HomeMovementGenerator.h)
+    FLIGHT_MOTION_TYPE = 7,                ///< Flight movement (WaypointMovementGenerator.h)
+    POINT_MOTION_TYPE = 8,                 ///< Point movement (PointMovementGenerator.h)
+    FLEEING_MOTION_TYPE = 9,               ///< Fleeing movement (FleeingMovementGenerator.h)
+    DISTRACT_MOTION_TYPE = 10,             ///< Distract movement (IdleMovementGenerator.h)
+    ASSISTANCE_MOTION_TYPE = 11,           ///< Assistance movement (PointMovementGenerator.h - first part of flee for assistance)
+    ASSISTANCE_DISTRACT_MOTION_TYPE = 12,  ///< Assistance distract (IdleMovementGenerator.h - second part of flee for assistance)
+    TIMED_FLEEING_MOTION_TYPE = 13,        ///< Timed fleeing (FleeingMovementGenerator.h - alternative second part of flee for assistance)
+    FOLLOW_MOTION_TYPE = 14,               ///< Follow movement (TargetedMovementGenerator.h)
+    EFFECT_MOTION_TYPE = 15,               ///< Effect movement
 
-    EXTERNAL_WAYPOINT_MOVE          = 256,                  // Only used in CreatureAI::MovementInform when a waypoint is reached. The pathId >= 0 is added as additional value
-    EXTERNAL_WAYPOINT_MOVE_START    = 512,                  // Only used in CreatureAI::MovementInform when a waypoint is started. The pathId >= 0 is added as additional value
-    EXTERNAL_WAYPOINT_FINISHED_LAST = 1024,                 // Only used in CreatureAI::MovementInform when the wait time of the last wp is finished. The pathId >= 0 is added as additional value
+    EXTERNAL_WAYPOINT_MOVE = 256,          ///< External waypoint move (used in CreatureAI::MovementInform when waypoint reached)
+    EXTERNAL_WAYPOINT_MOVE_START = 512,    ///< External waypoint move start (used in CreatureAI::MovementInform when waypoint started)
+    EXTERNAL_WAYPOINT_FINISHED_LAST = 1024 ///< External waypoint finished last (used in CreatureAI::MovementInform when last waypoint wait time finished)
 };
 
+/**
+ * @brief Motion master clean flags
+ */
 enum MMCleanFlag
 {
-    MMCF_NONE   = 0,
-    MMCF_UPDATE = 1,                                        // Clear or Expire called from update
-    MMCF_RESET  = 2                                         // Flag if need top()->Reset()
+    MMCF_NONE = 0,   ///< No clean flag
+    MMCF_UPDATE = 1, ///< Clear or Expire called from update
+    MMCF_RESET = 2   ///< Flag if need top()->Reset()
 };
 
 /**

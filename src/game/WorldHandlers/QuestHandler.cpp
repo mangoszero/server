@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file QuestHandler.cpp
+ * @brief Quest interaction opcode handlers
+ *
+ * This file handles quest-related opcodes including:
+ * - CMSG_QUESTGIVER_STATUS_QUERY: Query quest giver status
+ * - CMSG_QUESTGIVER_HELLO: Open quest menu
+ * - CMSG_QUESTGIVER_ACCEPT_QUEST: Accept quest
+ * - CMSG_QUESTGIVER_COMPLETE_QUEST: Complete quest
+ * - CMSG_QUESTGIVER_CHOOSE_REWARD: Choose quest reward
+ * - CMSG_QUESTGIVER_QUERY_QUEST: Query quest details
+ * - CMSG_QUESTLOG_REMOVE_QUEST: Abandon quest
+ * - CMSG_QUEST_QUERY: Query quest info
+ * - CMSG_QUEST_CONFIRM_ACCEPT: Confirm quest accept
+ *
+ * Quest handlers validate requirements, update quest state,
+ * and distribute rewards.
+ */
+
 #include "Common.h"
 #include "Log.h"
 #include "WorldPacket.h"
@@ -92,6 +111,11 @@ void WorldSession::HandleQuestgiverStatusQueryOpcode(WorldPacket& recv_data)
     _player->PlayerTalkClass->SendQuestGiverStatus(dialogStatus, guid);
 }
 
+/**
+ * @brief Handles the initial hello interaction with a quest giver.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverHelloOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -124,6 +148,11 @@ void WorldSession::HandleQuestgiverHelloOpcode(WorldPacket& recv_data)
     _player->SendPreparedGossip(pCreature);
 }
 
+/**
+ * @brief Handles accepting a quest from a quest giver or shared source.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -142,8 +171,7 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
     // no or incorrect quest giver
     if (!pObject
         || (pObject->GetTypeId() != TYPEID_PLAYER && !pObject->HasQuest(quest))
-        || (pObject->GetTypeId() == TYPEID_PLAYER && !((Player*)pObject)->CanShareQuest(quest))
-       )
+        || (pObject->GetTypeId() == TYPEID_PLAYER && !((Player*)pObject)->CanShareQuest(quest)))
     {
         _player->PlayerTalkClass->CloseGossip();
         _player->ClearDividerGuid();
@@ -216,6 +244,11 @@ void WorldSession::HandleQuestgiverAcceptQuestOpcode(WorldPacket& recv_data)
     _player->PlayerTalkClass->CloseGossip();
 }
 
+/**
+ * @brief Sends quest details for a specific quest offered by a quest giver.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverQueryQuestOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -238,6 +271,11 @@ void WorldSession::HandleQuestgiverQueryQuestOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Sends static quest template data for a quest id.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestQueryOpcode(WorldPacket& recv_data)
 {
     uint32 quest;
@@ -251,6 +289,11 @@ void WorldSession::HandleQuestQueryOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles reward selection when turning in a quest.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recv_data)
 {
     uint32 quest, reward;
@@ -301,6 +344,11 @@ void WorldSession::HandleQuestgiverChooseRewardOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Requests the reward dialog for a completed quest.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverRequestRewardOpcode(WorldPacket& recv_data)
 {
     uint32 quest;
@@ -336,6 +384,11 @@ void WorldSession::HandleQuestgiverRequestRewardOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Cancels the current quest giver gossip interaction.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverCancel(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_QUESTGIVER_CANCEL");
@@ -343,6 +396,11 @@ void WorldSession::HandleQuestgiverCancel(WorldPacket& /*recv_data*/)
     _player->PlayerTalkClass->CloseGossip();
 }
 
+/**
+ * @brief Swaps two quest log entries.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestLogSwapQuest(WorldPacket& recv_data)
 {
     uint8 slot1, slot2;
@@ -358,6 +416,11 @@ void WorldSession::HandleQuestLogSwapQuest(WorldPacket& recv_data)
     GetPlayer()->SwapQuestSlot(slot1, slot2);
 }
 
+/**
+ * @brief Removes a quest from the player's quest log.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
 {
     uint8 slot;
@@ -410,6 +473,11 @@ void WorldSession::HandleQuestLogRemoveQuest(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Confirms acceptance of a quest shared by another party member.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
 {
     uint32 quest;
@@ -455,6 +523,11 @@ void WorldSession::HandleQuestConfirmAccept(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Begins quest completion processing with a quest giver.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverCompleteQuest(WorldPacket& recv_data)
 {
     uint32 quest;
@@ -489,11 +562,21 @@ void WorldSession::HandleQuestgiverCompleteQuest(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles the client quest auto-launch notification.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverQuestAutoLaunch(WorldPacket& /*recvPacket*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_QUESTGIVER_QUEST_AUTOLAUNCH");
 }
 
+/**
+ * @brief Shares a quest with nearby party members.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
 {
     uint32 questId;
@@ -559,6 +642,11 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
     }
 }
 
+/**
+ * @brief Relays a quest sharing result back to the original sharer.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
 {
     ObjectGuid guid;
@@ -576,6 +664,12 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
         _player->ClearDividerGuid();
     }
 }
+
+/**
+ * @brief Relays a quest sharing result back to the original sharer.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 
 /**
  * What - if any - kind of exclamation mark or question-mark should a quest-giver display for a player
@@ -699,6 +793,11 @@ uint32 WorldSession::getDialogStatus(Player* pPlayer, Object* questgiver, uint32
     return dialogStatus;
 }
 
+/**
+ * @brief Queries quest status markers for all visible quest givers.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_QUESTGIVER_STATUS_MULTIPLE_QUERY");
@@ -767,6 +866,13 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
     SendPacket(&data);
 }
 
+/**
+ * @brief Checks whether the player can interact with the specified quest giver.
+ *
+ * @param guid The quest giver guid.
+ * @param descr The opcode description used for logging.
+ * @return true if interaction is allowed; otherwise false.
+ */
 bool WorldSession::CanInteractWithQuestGiver(ObjectGuid guid, char const* descr)
 {
     if (guid.IsCreature())

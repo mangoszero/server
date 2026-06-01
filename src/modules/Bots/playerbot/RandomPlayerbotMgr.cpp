@@ -12,6 +12,8 @@
 #include "GridDefines.h"
 #include "Map.h"
 #include "MapManager.h"
+#include "LFGMgr.h"
+#include "Group.h"
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
@@ -446,8 +448,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
             GameTele const* tele = &itr->second;
-            if (( tele->mapId == mapId) &&
-               (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
+            if (( tele->mapId == mapId)
+                && (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
             {
                 locs.push_back(tele);
             }
@@ -1097,6 +1099,58 @@ Player* RandomPlayerbotMgr::GetRandomPlayer()
     return players[index];
 }
 
+ClassRoles RandomPlayerbotMgr::FillRoleMap(Player *bot, int &heal, int &dps, int &tank)
+{
+    int spec = AiFactory::GetPlayerSpecTab(bot);
+    switch (bot->getClass())
+    {
+    case CLASS_DRUID:
+        if (spec == 2)
+        {
+            heal++;
+            return LFG_ROLE_HEALER;
+        }
+        break;
+    case CLASS_PALADIN:
+        if (spec == 1)
+        {
+            tank++;
+            return LFG_ROLE_TANK;
+        }
+        else if (spec == 0)
+        {
+            heal++;
+            return LFG_ROLE_HEALER;
+        }
+        break;
+    case CLASS_PRIEST:
+        if (spec != 2)
+        {
+            heal++;
+            return LFG_ROLE_HEALER;
+        }
+        break;
+    case CLASS_SHAMAN:
+        if (spec == 2)
+        {
+            heal++;
+            return LFG_ROLE_HEALER;
+        }
+        break;
+    case CLASS_WARRIOR:
+        if (spec == 2)
+        {
+            tank++;
+            return LFG_ROLE_TANK;
+        }
+        break;
+    default:
+        break;
+    }
+    dps++;
+    return LFG_ROLE_DPS;
+}
+
 void RandomPlayerbotMgr::PrintStats()
 {
     sLog.outString("%d Random Bots online", playerBots.size());
@@ -1139,67 +1193,7 @@ void RandomPlayerbotMgr::PrintStats()
             active++;
         }
 
-        int spec = AiFactory::GetPlayerSpecTab(bot);
-        switch (bot->getClass())
-        {
-        case CLASS_DRUID:
-            if (spec == 2)
-            {
-                heal++;
-            }
-            else
-            {
-                dps++;
-            }
-            break;
-        case CLASS_PALADIN:
-            if (spec == 1)
-            {
-                tank++;
-            }
-            else if (spec == 0)
-            {
-                heal++;
-            }
-            else
-            {
-                dps++;
-            }
-            break;
-        case CLASS_PRIEST:
-            if (spec != 2)
-            {
-                heal++;
-            }
-            else
-            {
-                dps++;
-            }
-            break;
-        case CLASS_SHAMAN:
-            if (spec == 2)
-            {
-                heal++;
-            }
-            else
-            {
-                dps++;
-            }
-            break;
-        case CLASS_WARRIOR:
-            if (spec == 2)
-            {
-                tank++;
-            }
-            else
-            {
-                dps++;
-            }
-            break;
-        default:
-            dps++;
-            break;
-        }
+        FillRoleMap(bot, heal, dps, tank);
     }
 
     sLog.outString("Per level:");
@@ -1287,4 +1281,104 @@ uint32 RandomPlayerbotMgr::GetTradeDiscount(Player* bot)
 {
     Group* group = bot->GetGroup();
     return GetLootAmount(bot) / (group ? group->GetMembersCount() : 10);
+}
+
+void RandomPlayerbotMgr::HandleMeetingStoneClick(Player* player, GameObject* obj)
+{
+    if (!player || !obj)
+        return;
+
+    if (!sPlayerbotAIConfig.randomBotJoinLfg)
+        return;
+
+    Group* grp = player->GetGroup();
+    if (!grp || !grp->IsLeader(player->GetObjectGuid()))
+    {
+        return;
+    }
+
+    float stoneX, stoneY, stoneZ;
+    obj->GetPosition(stoneX, stoneY, stoneZ);
+    GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(obj->GetEntry());
+    uint32 minLevel = gInfo->meetingstone.minLevel;
+    uint32 maxLevel = gInfo->meetingstone.maxLevel;
+
+    uint32 mapId = obj->GetMapId();
+    int healers = 0, tanks = 0, dpses = 0;
+    vector<ClassRoles> missingRoles = {LFG_ROLE_TANK, LFG_ROLE_HEALER, LFG_ROLE_DPS, LFG_ROLE_DPS, LFG_ROLE_DPS};
+    for (Group::member_citerator citr = grp->GetMemberSlots().begin();
+         citr != grp->GetMemberSlots().end(); ++citr)
+    {
+        Player* member = sObjectMgr.GetPlayer(citr->guid);
+        if(member)
+        {
+            ClassRoles role = FillRoleMap(member, healers, dpses, tanks);
+            auto it = find(missingRoles.begin(), missingRoles.end(), role);
+            if (it != missingRoles.end())
+                missingRoles.erase(it);
+
+            if (!member->GetPlayerbotAI() || member == player)
+                continue;
+
+            if (!player->IsWithinDistInMap(member, sPlayerbotAIConfig.sightDistance))
+            {
+                member->GetMotionMaster()->Clear();
+                member->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+            }
+        }
+    }
+
+    if (grp->IsFull())
+    {
+        return;
+    }
+
+    if (missingRoles.size() == 0)
+        return;
+
+    uint32 team = player->GetTeam();
+    std::list<Player*> eligibleBots;
+    for(uint32_t zoneChk : {player->GetZoneId(), -1u})
+    {
+        if (missingRoles.size() == 0)
+            break;
+        for (auto botit = GetPlayerBotsBegin(); botit != GetPlayerBotsEnd(); ++botit)
+        {
+            Player* bot = botit->second;
+            if (!bot || !bot->IsInWorld())
+                continue;
+            if (bot->GetGroup())
+                continue;
+            if (zoneChk != (uint32_t)-1 && bot->GetZoneId() != zoneChk)
+                continue;
+            if (bot->GetTeam() != team)
+                continue;
+            if(bot->getLevel() < minLevel || bot->getLevel() > maxLevel)
+                continue;
+
+            ClassRoles role = FillRoleMap(bot, healers, dpses, tanks);
+            auto it = find(missingRoles.begin(), missingRoles.end(), role);
+            if (it != missingRoles.end())
+            {
+                missingRoles.erase(it);
+                eligibleBots.push_back(bot);
+                if (missingRoles.size() == 0)
+                    break;
+            }
+        }
+    }
+
+    for (Player* bot : eligibleBots)
+    {
+        if (grp->IsFull())
+            break;
+
+        grp->AddMember(bot->GetObjectGuid(), bot->GetName(), GROUP_LFG);
+
+        if (PlayerbotAI* ai = bot->GetPlayerbotAI())
+            ai->SetMaster(player);
+
+        bot->GetMotionMaster()->Clear();
+        bot->TeleportTo(mapId, stoneX, stoneY, stoneZ, 0);
+    }
 }

@@ -40,6 +40,12 @@
 #endif /* ENABLE_ELUNA */
 
 //// MemberSlot ////////////////////////////////////////////
+
+/**
+ * @brief Refreshes cached member information from a player object.
+ *
+ * @param player The player whose current guild-visible data is copied.
+ */
 void MemberSlot::SetMemberStats(Player* player)
 {
     Name   = player->GetName();
@@ -48,11 +54,19 @@ void MemberSlot::SetMemberStats(Player* player)
     ZoneId = player->IsInWorld() ? player->GetZoneId() : player->GetCachedZoneId();
 }
 
+/**
+ * @brief Updates the stored logout time for the guild member.
+ */
 void MemberSlot::UpdateLogoutTime()
 {
     LogoutTime = time(NULL);
 }
 
+/**
+ * @brief Updates the public note for the guild member.
+ *
+ * @param pnote The new public note text.
+ */
 void MemberSlot::SetPNOTE(std::string pnote)
 {
     Pnote = pnote;
@@ -62,6 +76,11 @@ void MemberSlot::SetPNOTE(std::string pnote)
     CharacterDatabase.PExecute("UPDATE `guild_member` SET `pnote` = '%s' WHERE `guid` = '%u'", pnote.c_str(), guid.GetCounter());
 }
 
+/**
+ * @brief Updates the officer note for the guild member.
+ *
+ * @param offnote The new officer note text.
+ */
 void MemberSlot::SetOFFNOTE(std::string offnote)
 {
     OFFnote = offnote;
@@ -71,6 +90,11 @@ void MemberSlot::SetOFFNOTE(std::string offnote)
     CharacterDatabase.PExecute("UPDATE `guild_member` SET `offnote` = '%s' WHERE `guid` = '%u'", offnote.c_str(), guid.GetCounter());
 }
 
+/**
+ * @brief Changes the member rank and persists it.
+ *
+ * @param newRank The new guild rank identifier.
+ */
 void MemberSlot::ChangeRank(uint32 newRank)
 {
     RankId = newRank;
@@ -87,6 +111,9 @@ void MemberSlot::ChangeRank(uint32 newRank)
 
 //// Guild /////////////////////////////////////////////////
 
+/**
+ * @brief Initializes an empty guild instance.
+ */
 Guild::Guild()
 {
     m_Id = 0;
@@ -107,10 +134,20 @@ Guild::Guild()
     m_GuildEventLogNextGuid = 0;
 }
 
+/**
+ * @brief Destroys the guild instance.
+ */
 Guild::~Guild()
 {
 }
 
+/**
+ * @brief Creates a new guild and assigns the leader.
+ *
+ * @param leader The player creating the guild.
+ * @param gname The guild name.
+ * @return true if creation succeeded; otherwise, false.
+ */
 bool Guild::Create(Player* leader, std::string gname)
 {
     if (sGuildMgr.GetGuildByName(gname))
@@ -168,6 +205,11 @@ bool Guild::Create(Player* leader, std::string gname)
     return AddMember(m_LeaderGuid, (uint32)GR_GUILDMASTER);
 }
 
+/**
+ * @brief Creates the default guild rank set.
+ *
+ * @param locale_idx The locale used for rank name strings.
+ */
 void Guild::CreateDefaultGuildRanks(int locale_idx)
 {
     CharacterDatabase.PExecute("DELETE FROM `guild_rank` WHERE `guildid`='%u'", m_Id);
@@ -179,6 +221,13 @@ void Guild::CreateDefaultGuildRanks(int locale_idx)
     CreateRank(sObjectMgr.GetMangosString(LANG_GUILD_INITIATE, locale_idx), GR_RIGHT_GCHATLISTEN | GR_RIGHT_GCHATSPEAK);
 }
 
+/**
+ * @brief Adds a player to the guild.
+ *
+ * @param plGuid The GUID of the player to add.
+ * @param plRank The rank assigned to the player.
+ * @return true if the member was added; otherwise, false.
+ */
 bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
 {
     Player* pl = sObjectMgr.GetPlayer(plGuid);
@@ -276,6 +325,11 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
     return true;
 }
 
+/**
+ * @brief Updates the guild message of the day.
+ *
+ * @param motd The new MOTD text.
+ */
 void Guild::SetMOTD(std::string motd)
 {
     MOTD = motd;
@@ -293,6 +347,11 @@ void Guild::SetMOTD(std::string motd)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Updates the guild information text.
+ *
+ * @param ginfo The new guild information text.
+ */
 void Guild::SetGINFO(std::string ginfo)
 {
     GINFO = ginfo;
@@ -310,6 +369,12 @@ void Guild::SetGINFO(std::string ginfo)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Loads core guild data from the database.
+ *
+ * @param guildDataResult The query result containing guild header data.
+ * @return true if loading succeeded; otherwise, false.
+ */
 bool Guild::LoadGuildFromDB(QueryResult* guildDataResult)
 {
     if (!guildDataResult)
@@ -342,6 +407,11 @@ bool Guild::LoadGuildFromDB(QueryResult* guildDataResult)
     return true;
 }
 
+/**
+ * @brief Validates and repairs basic guild leadership structure.
+ *
+ * @return true if the guild remains valid; otherwise, false.
+ */
 bool Guild::CheckGuildStructure()
 {
     // Repair the structure of guild
@@ -373,6 +443,12 @@ bool Guild::CheckGuildStructure()
     return true;
 }
 
+/**
+ * @brief Loads guild ranks from the database.
+ *
+ * @param guildRanksResult The query result containing rank data.
+ * @return true if rank loading completed successfully; otherwise, false.
+ */
 bool Guild::LoadRanksFromDB(QueryResult* guildRanksResult)
 {
     if (!guildRanksResult)
@@ -458,6 +534,12 @@ bool Guild::LoadRanksFromDB(QueryResult* guildRanksResult)
     return true;
 }
 
+/**
+ * @brief Loads guild members from the database.
+ *
+ * @param guildMembersResult The query result containing member data.
+ * @return true if at least one valid member was loaded; otherwise, false.
+ */
 bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
 {
     if (!guildMembersResult)
@@ -543,6 +625,11 @@ bool Guild::LoadMembersFromDB(QueryResult* guildMembersResult)
     return true;
 }
 
+/**
+ * @brief Promotes a guild member to guild leader.
+ *
+ * @param guid The GUID of the new leader.
+ */
 void Guild::SetLeader(ObjectGuid guid)
 {
     MemberSlot* slot = GetMemberSlot(guid);
@@ -640,6 +727,13 @@ bool Guild::DelMember(ObjectGuid guid, bool isDisbanding)
     return members.empty();
 }
 
+/**
+ * @brief Changes the guild rank for a member.
+ *
+ * @param guid The member player GUID.
+ * @param newRank The new rank index.
+ * @return true if the member rank was changed; otherwise, false.
+ */
 bool Guild::ChangeMemberRank(ObjectGuid guid, uint8 newRank)
 {
     if (newRank <= GetLowestRank())                    // Validate rank (allow only existing ranks)
@@ -651,6 +745,13 @@ bool Guild::ChangeMemberRank(ObjectGuid guid, uint8 newRank)
     return false;
 }
 
+/**
+ * @brief Sends a guild chat message to eligible guild members.
+ *
+ * @param session The sender session.
+ * @param msg The message text.
+ * @param language The chat language identifier.
+ */
 void Guild::BroadcastToGuild(WorldSession* session, const std::string& msg, uint32 language)
 {
     if (!session)
@@ -678,6 +779,13 @@ void Guild::BroadcastToGuild(WorldSession* session, const std::string& msg, uint
     }
 }
 
+/**
+ * @brief Sends an officer chat message to eligible officers.
+ *
+ * @param session The sender session.
+ * @param msg The message text.
+ * @param language The chat language identifier.
+ */
 void Guild::BroadcastToOfficers(WorldSession* session, const std::string& msg, uint32 language)
 {
     if (!session)
@@ -705,6 +813,11 @@ void Guild::BroadcastToOfficers(WorldSession* session, const std::string& msg, u
     }
 }
 
+/**
+ * @brief Broadcasts a packet to all online guild members.
+ *
+ * @param packet The packet to send.
+ */
 void Guild::BroadcastPacket(WorldPacket* packet)
 {
     for (MemberList::const_iterator itr = members.begin(); itr != members.end(); ++itr)
@@ -717,6 +830,12 @@ void Guild::BroadcastPacket(WorldPacket* packet)
     }
 }
 
+/**
+ * @brief Broadcasts a packet to online guild members of a specific rank.
+ *
+ * @param packet The packet to send.
+ * @param rankId The rank that should receive the packet.
+ */
 void Guild::BroadcastPacketToRank(WorldPacket* packet, uint32 rankId)
 {
     for (MemberList::const_iterator itr = members.begin(); itr != members.end(); ++itr)
@@ -732,6 +851,12 @@ void Guild::BroadcastPacketToRank(WorldPacket* packet, uint32 rankId)
     }
 }
 
+/**
+ * @brief Creates and persists a new guild rank.
+ *
+ * @param name_ The rank name.
+ * @param rights The rights mask for the new rank.
+ */
 void Guild::CreateRank(std::string name_, uint32 rights)
 {
     if (m_Ranks.size() >= GUILD_RANKS_MAX_COUNT)
@@ -749,11 +874,20 @@ void Guild::CreateRank(std::string name_, uint32 rights)
     CharacterDatabase.PExecute("INSERT INTO `guild_rank` (`guildid`,`rid`,`rname`,`rights`) VALUES ('%u', '%u', '%s', '%u')", m_Id, new_rank_id, name_.c_str(), rights);
 }
 
+/**
+ * @brief Adds a rank to the in-memory rank list.
+ *
+ * @param name_ The rank name.
+ * @param rights The rights mask.
+ */
 void Guild::AddRank(const std::string& name_, uint32 rights)
 {
     m_Ranks.push_back(RankInfo(name_, rights));
 }
 
+/**
+ * @brief Deletes the lowest guild rank if allowed.
+ */
 void Guild::DelRank()
 {
     // client won't allow to have less than GUILD_RANKS_MIN_COUNT ranks in guild
@@ -769,6 +903,12 @@ void Guild::DelRank()
     m_Ranks.pop_back();
 }
 
+/**
+ * @brief Gets the name of a guild rank.
+ *
+ * @param rankId The rank identifier.
+ * @return The rank name, or a placeholder if the rank is invalid.
+ */
 std::string Guild::GetRankName(uint32 rankId)
 {
     if (rankId >= m_Ranks.size())
@@ -779,6 +919,12 @@ std::string Guild::GetRankName(uint32 rankId)
     return m_Ranks[rankId].Name;
 }
 
+/**
+ * @brief Gets the rights mask for a guild rank.
+ *
+ * @param rankId The rank identifier.
+ * @return The rights mask for the rank.
+ */
 uint32 Guild::GetRankRights(uint32 rankId)
 {
     if (rankId >= m_Ranks.size())
@@ -789,6 +935,12 @@ uint32 Guild::GetRankRights(uint32 rankId)
     return m_Ranks[rankId].Rights;
 }
 
+/**
+ * @brief Renames a guild rank.
+ *
+ * @param rankId The rank identifier.
+ * @param name_ The new rank name.
+ */
 void Guild::SetRankName(uint32 rankId, std::string name_)
 {
     if (rankId >= m_Ranks.size())
@@ -803,6 +955,12 @@ void Guild::SetRankName(uint32 rankId, std::string name_)
     CharacterDatabase.PExecute("UPDATE `guild_rank` SET `rname`='%s' WHERE `rid`='%u' AND `guildid`='%u'", name_.c_str(), rankId, m_Id);
 }
 
+/**
+ * @brief Updates the rights mask for a guild rank.
+ *
+ * @param rankId The rank identifier.
+ * @param rights The new rights mask.
+ */
 void Guild::SetRankRights(uint32 rankId, uint32 rights)
 {
     if (rankId >= m_Ranks.size())
@@ -847,6 +1005,11 @@ void Guild::Disband()
     sGuildMgr.RemoveGuild(m_Id);
 }
 
+/**
+ * @brief Sends the guild roster to one session or broadcasts it to the guild.
+ *
+ * @param session The target session, or null to broadcast.
+ */
 void Guild::Roster(WorldSession* session /*= NULL*/)
 {
     // we can only guess size
@@ -900,6 +1063,11 @@ void Guild::Roster(WorldSession* session /*= NULL*/)
     DEBUG_LOG("WORLD: Sent (SMSG_GUILD_ROSTER)");
 }
 
+/**
+ * @brief Sends guild query data to a session.
+ *
+ * @param session The session requesting guild information.
+ */
 void Guild::Query(WorldSession* session)
 {
     WorldPacket data(SMSG_GUILD_QUERY_RESPONSE, (4 + 48 + 10 * 32 + 5 * 4)); // guess size; max: name(96), rankname(64)
@@ -929,6 +1097,15 @@ void Guild::Query(WorldSession* session)
     DEBUG_LOG("WORLD: Sent (SMSG_GUILD_QUERY_RESPONSE)");
 }
 
+/**
+ * @brief Updates the guild tabard emblem information.
+ *
+ * @param emblemStyle The emblem style identifier.
+ * @param emblemColor The emblem color identifier.
+ * @param borderStyle The border style identifier.
+ * @param borderColor The border color identifier.
+ * @param backgroundColor The background color identifier.
+ */
 void Guild::SetEmblem(uint32 emblemStyle, uint32 emblemColor, uint32 borderStyle, uint32 borderColor, uint32 backgroundColor)
 {
     m_EmblemStyle = emblemStyle;
@@ -968,6 +1145,12 @@ uint32 Guild::GetAccountsNumber()
 // Guild Eventlog part
 // *************************************************
 // Display guild eventlog
+
+/**
+ * @brief Sends the guild event log to a session.
+ *
+ * @param session The session receiving the event log.
+ */
 void Guild::DisplayGuildEventLog(WorldSession* session)
 {
     // Sending result
@@ -998,6 +1181,10 @@ void Guild::DisplayGuildEventLog(WorldSession* session)
 }
 
 // Load guild eventlog from DB
+
+/**
+ * @brief Loads the guild event log from the database.
+ */
 void Guild::LoadGuildEventLogFromDB()
 {
     //                                                     0        1          2            3            4        5
@@ -1037,6 +1224,15 @@ void Guild::LoadGuildEventLogFromDB()
 }
 
 // Add entry to guild eventlog
+
+/**
+ * @brief Appends a new guild event log entry and persists it.
+ *
+ * @param EventType The guild event type.
+ * @param playerGuid1 The primary player GUID.
+ * @param playerGuid2 The secondary player GUID.
+ * @param newRank The rank associated with the event, if any.
+ */
 void Guild::LogGuildEvent(uint8 EventType, ObjectGuid playerGuid1, ObjectGuid playerGuid2, uint8 newRank)
 {
     GuildEventLogEntry NewEvent;
@@ -1061,6 +1257,15 @@ void Guild::LogGuildEvent(uint8 EventType, ObjectGuid playerGuid1, ObjectGuid pl
                                m_Id, m_GuildEventLogNextGuid, uint32(NewEvent.EventType), NewEvent.PlayerGuid1, NewEvent.PlayerGuid2, uint32(NewEvent.NewRank), NewEvent.TimeStamp);
 }
 
+/**
+ * @brief Broadcasts a guild event packet to members.
+ *
+ * @param event The guild event type.
+ * @param guid An optional player GUID associated with the event.
+ * @param str1 Optional event string.
+ * @param str2 Optional event string.
+ * @param str3 Optional event string.
+ */
 void Guild::BroadcastEvent(GuildEvents event, ObjectGuid guid, char const* str1 /*=NULL*/, char const* str2 /*=NULL*/, char const* str3 /*=NULL*/)
 {
     uint8 strCount = !str1 ? 0 : (!str2 ? 1 : (!str3 ? 2 : 3));

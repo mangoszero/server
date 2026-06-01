@@ -83,12 +83,27 @@ enum SpellSpecific
     SPELL_FOOD_AND_DRINK    = 22,
 };
 
+/**
+ * Returns the spell-specific classification for the specified spell id.
+ */
 SpellSpecific GetSpellSpecific(uint32 spellId);
 
 // Different spell properties
 inline float GetSpellRadius(SpellRadiusEntry const* radius) { return (radius ? radius->Radius : 0); }
+
+/**
+ * Returns the effective cast time for the specified spell.
+ */
 uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell = NULL);
+
+/**
+ * Returns the cast time used when calculating spell coefficient bonuses.
+ */
 uint32 GetSpellCastTimeForBonus(SpellEntry const* spellProto, DamageEffectType damagetype);
+
+/**
+ * Calculates the default spell power coefficient for the specified spell effect type.
+ */
 float CalculateDefaultCoefficient(SpellEntry const* spellProto, DamageEffectType const damagetype);
 inline float GetSpellMinRange(SpellRangeEntry const* range)
 {
@@ -99,11 +114,35 @@ inline float GetSpellMaxRange(SpellRangeEntry const* range)
     return (range ? range->maxRange : 0);
 }
 inline uint32 GetSpellRecoveryTime(SpellEntry const* spellInfo) { return spellInfo->RecoveryTime > spellInfo->CategoryRecoveryTime ? spellInfo->RecoveryTime : spellInfo->CategoryRecoveryTime; }
+
+/**
+ * Returns the base duration of the specified spell.
+ */
 int32 GetSpellDuration(SpellEntry const* spellInfo);
+
+/**
+ * Returns the maximum duration of the specified spell.
+ */
 int32 GetSpellMaxDuration(SpellEntry const* spellInfo);
+
+/**
+ * Calculates the spell duration after caster-based modifiers are applied.
+ */
 int32 CalculateSpellDuration(SpellEntry const* spellInfo, Unit const* caster = NULL);
+
+/**
+ * Returns the maximum number of aura ticks produced by the specified spell.
+ */
 uint16 GetSpellAuraMaxTicks(SpellEntry const* spellInfo);
+
+/**
+ * Returns the maximum number of aura ticks produced by the specified spell id.
+ */
 uint16 GetSpellAuraMaxTicks(uint32 spellId);
+
+/**
+ * Returns the weapon attack type used by the specified spell.
+ */
 WeaponAttackType GetWeaponAttackType(SpellEntry const* spellInfo);
 
 // workaround for not touching Eluna code
@@ -185,6 +224,9 @@ inline bool IsSpellLastAuraEffect(SpellEntry const* spellInfo, SpellEffectIndex 
     return true;
 }
 
+/**
+ * Checks whether two auras are prevented from stacking because of their aura definitions.
+ */
 bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2);
 
 inline bool IsSealSpell(SpellEntry const* spellInfo)
@@ -199,14 +241,32 @@ inline bool IsElementalShield(SpellEntry const* spellInfo)
     return (spellInfo->SpellFamilyFlags & UI64LIT(0x00000000400)) || spellInfo->Id == 23552;
 }
 
+/**
+ * Compares two aura ranks and returns their relative ordering.
+ */
 int32 CompareAuraRanks(uint32 spellId_1, uint32 spellId_2);
 
 // order from less to more strict
 bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1, SpellSpecific spellSpec2);
+
+/**
+ * Checks whether two spell specifics are restricted to a single ranked aura per target.
+ */
 bool IsSingleFromSpellSpecificSpellRanksPerTarget(SpellSpecific spellSpec1, SpellSpecific spellSpec2);
+
+/**
+ * Checks whether two spell specifics are restricted to a single aura per target.
+ */
 bool IsSingleFromSpellSpecificPerTarget(SpellSpecific spellSpec1, SpellSpecific spellSpec2);
 
+/**
+ * Checks whether the specified spell id is passive.
+ */
 bool IsPassiveSpell(uint32 spellId);
+
+/**
+ * Checks whether the specified spell entry is passive.
+ */
 bool IsPassiveSpell(SpellEntry const* spellProto);
 
 inline bool IsPassiveSpellStackableWithRanks(SpellEntry const* spellProto)
@@ -218,7 +278,6 @@ inline bool IsPassiveSpellStackableWithRanks(SpellEntry const* spellProto)
 
     return !spellProto->HasSpellEffect(SPELL_EFFECT_APPLY_AURA);
 }
-
 
 inline bool IsDeathOnlySpell(SpellEntry const* spellInfo)
 {
@@ -235,15 +294,44 @@ inline bool IsNonCombatSpell(SpellEntry const* spellInfo)
     return spellInfo->HasAttribute(SPELL_ATTR_CANT_USED_IN_COMBAT);
 }
 
+/**
+ * Checks whether the specified spell id is considered positive.
+ */
 bool IsPositiveSpell(uint32 spellId);
+
+/**
+ * Checks whether the specified spell entry is considered positive.
+ */
 bool IsPositiveSpell(SpellEntry const* spellproto);
+
+/**
+ * Checks whether the specified spell effect is considered positive.
+ */
 bool IsPositiveEffect(SpellEntry const* spellInfo, SpellEffectIndex effIndex);
+
+/**
+ * Checks whether the target descriptors represent a positive target selection.
+ */
 bool IsPositiveTarget(uint32 targetA, uint32 targetB);
 
+/**
+ * Checks whether the target descriptor is explicitly positive.
+ */
 bool IsExplicitPositiveTarget(uint32 targetA);
+
+/**
+ * Checks whether the target descriptor is explicitly negative.
+ */
 bool IsExplicitNegativeTarget(uint32 targetA);
 
+/**
+ * Checks whether the spell is limited to a single target.
+ */
 bool IsSingleTargetSpell(SpellEntry const* spellInfo);
+
+/**
+ * Checks whether two spells should be treated as sharing a single-target restriction.
+ */
 bool IsSingleTargetSpells(SpellEntry const* spellInfo1, SpellEntry const* spellInfo2);
 
 inline bool IsCasterSourceTarget(uint32 target)
@@ -458,7 +546,6 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
     }
 }
 
-
 inline bool IsAreaOfEffectSpell(SpellEntry const* spellInfo)
 {
     if (IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetA[EFFECT_INDEX_0])) || IsAreaEffectTarget(Targets(spellInfo->EffectImplicitTargetB[EFFECT_INDEX_0])))
@@ -571,6 +658,9 @@ inline bool IsSpellRequiresRangedAP(SpellEntry const* spellInfo)
     return (spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->DmgClass != SPELL_DAMAGE_CLASS_MELEE);
 }
 
+/**
+ * Returns the cast error produced when attempting to cast a spell in the specified form.
+ */
 SpellCastResult GetErrorAtShapeshiftedCast(SpellEntry const* spellInfo, uint32 form);
 
 inline bool IsChanneledSpell(SpellEntry const* spellInfo)
@@ -712,7 +802,15 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
 
 // Diminishing Returns interaction with spells
 DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto, bool triggered);
+
+/**
+ * Checks whether the specified diminishing returns group has a limited duration.
+ */
 bool IsDiminishingReturnsGroupDurationLimited(DiminishingGroup group);
+
+/**
+ * Returns the diminishing returns behavior type for the specified group.
+ */
 DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group);
 
 // Spell affects related declarations (accessed using SpellMgr functions)
@@ -763,24 +861,24 @@ enum ProcFlags
 };
 
 /// Proc flags for a melee based trigger
-#define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_SUCCESSFUL_MELEE_HIT        | \
-                                  PROC_FLAG_TAKEN_MELEE_HIT             | \
-                                  PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
-                                  PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
-                                  PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
-                                  PROC_FLAG_TAKEN_RANGED_HIT            | \
-                                  PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
-                                  PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
+#define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_SUCCESSFUL_MELEE_HIT          | \
+                                    PROC_FLAG_TAKEN_MELEE_HIT             | \
+                                    PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
+                                    PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
+                                    PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
+                                    PROC_FLAG_TAKEN_RANGED_HIT            | \
+                                    PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
+                                    PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
 
 /**
  * Proc flags mask for a negative trigger
  * \todo What is negative in this case?
  */
-#define NEGATIVE_TRIGGER_MASK (MELEE_BASED_TRIGGER_MASK                | \
-                               PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
-                               PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
-                               PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
-                               PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
+#define NEGATIVE_TRIGGER_MASK (MELEE_BASED_TRIGGER_MASK                 | \
+                                PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
+                                PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
+                                PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
+                                PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
 
 /**
  * Flags used for procing different spells, these flags tell when a proc should
@@ -1004,7 +1102,6 @@ typedef std::pair<SpellAreaMap::const_iterator, SpellAreaMap::const_iterator> Sp
 typedef std::pair<SpellAreaForAuraMap::const_iterator, SpellAreaForAuraMap::const_iterator>  SpellAreaForAuraMapBounds;
 typedef std::pair<SpellAreaForAreaMap::const_iterator, SpellAreaForAreaMap::const_iterator>  SpellAreaForAreaMapBounds;
 
-
 // Spell rank chain  (accessed using SpellMgr functions)
 struct SpellChainNode
 {
@@ -1044,6 +1141,9 @@ typedef std::pair<SkillLineAbilityMap::const_iterator, SkillLineAbilityMap::cons
 typedef std::multimap<uint32, SkillRaceClassInfoEntry const*> SkillRaceClassInfoMap;
 typedef std::pair<SkillRaceClassInfoMap::const_iterator, SkillRaceClassInfoMap::const_iterator> SkillRaceClassInfoMapBounds;
 
+/**
+ * Checks whether the specified skill is a primary profession.
+ */
 bool IsPrimaryProfessionSkill(uint32 skill);
 
 inline bool IsProfessionSkill(uint32 skill)

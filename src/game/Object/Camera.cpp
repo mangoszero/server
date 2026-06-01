@@ -29,11 +29,19 @@
 #include "Errors.h"
 #include "Player.h"
 
+/**
+ * @brief Creates a camera bound to a player.
+ *
+ * @param pl The player that owns this camera.
+ */
 Camera::Camera(Player* pl) : m_owner(*pl), m_source(pl)
 {
     m_source->GetViewPoint().Attach(this);
 }
 
+/**
+ * @brief Destroys the camera and detaches it from the current viewpoint.
+ */
 Camera::~Camera()
 {
     // view of camera should be already reseted to owner (RemoveFromWorld -> Event_RemovedFromWorld -> ResetView)
@@ -43,11 +51,21 @@ Camera::~Camera()
     m_source->GetViewPoint().Detach(this);
 }
 
+/**
+ * @brief Forwards a packet to the camera owner.
+ *
+ * @param data The packet to send.
+ */
 void Camera::ReceivePacket(WorldPacket* data)
 {
     m_owner.SendDirectMessage(data);
 }
 
+/**
+ * @brief Updates camera registration for the current viewpoint.
+ *
+ * Rebinds the camera to the source grid and refreshes owner visibility state.
+ */
 void Camera::UpdateForCurrentViewPoint()
 {
     m_gridRef.unlink();
@@ -60,6 +78,15 @@ void Camera::UpdateForCurrentViewPoint()
     UpdateVisibilityForOwner();
 }
 
+/**
+ * @brief Changes the camera viewpoint.
+ *
+ * Moves the camera from its current source to a new world object and optionally
+ * updates the player's farsight field.
+ *
+ * @param obj The new viewpoint object.
+ * @param update_far_sight_field true to update the player's farsight field; otherwise, false.
+ */
 void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
 {
     MANGOS_ASSERT(obj);
@@ -105,6 +132,11 @@ void Camera::SetView(WorldObject* obj, bool update_far_sight_field /*= true*/)
     UpdateForCurrentViewPoint();
 }
 
+/**
+ * @brief Handles visibility loss for the active viewpoint.
+ *
+ * Resets the camera when the owner can no longer see the current source object.
+ */
 void Camera::Event_ViewPointVisibilityChanged()
 {
     if (!m_owner.HaveAtClient(m_source))
@@ -113,11 +145,19 @@ void Camera::Event_ViewPointVisibilityChanged()
     }
 }
 
+/**
+ * @brief Restores the camera view to its owner.
+ *
+ * @param update_far_sight_field true to update the player's farsight field; otherwise, false.
+ */
 void Camera::ResetView(bool update_far_sight_field /*= true*/)
 {
     SetView(&m_owner, update_far_sight_field);
 }
 
+/**
+ * @brief Handles the camera being added to the world.
+ */
 void Camera::Event_AddedToWorld()
 {
     GridType* grid = m_source->GetViewPoint().m_grid;
@@ -127,6 +167,9 @@ void Camera::Event_AddedToWorld()
     UpdateVisibilityForOwner();
 }
 
+/**
+ * @brief Handles the camera being removed from the world.
+ */
 void Camera::Event_RemovedFromWorld()
 {
     if (m_source == &m_owner)
@@ -138,22 +181,40 @@ void Camera::Event_RemovedFromWorld()
     ResetView();
 }
 
+/**
+ * @brief Handles viewpoint movement updates.
+ */
 void Camera::Event_Moved()
 {
     m_gridRef.unlink();
     m_source->GetViewPoint().m_grid->AddWorldObject(this);
 }
 
+/**
+ * @brief Updates owner visibility for a specific target.
+ *
+ * @param target The world object whose visibility should be updated.
+ */
 void Camera::UpdateVisibilityOf(WorldObject* target)
 {
     m_owner.UpdateVisibilityOf(m_source, target);
 }
 
+/**
+ * @brief Updates owner visibility for a target using accumulated update data.
+ *
+ * @param target The world object whose visibility should be updated.
+ * @param data The update packet data being built.
+ * @param vis The set of currently visible objects.
+ */
 void Camera::UpdateVisibilityOf(WorldObject* target, UpdateData& data, std::set<WorldObject*>& vis)
 {
     m_owner.UpdateVisibilityOf(m_source, target, data, vis);
 }
 
+/**
+ * @brief Rebuilds visibility for the camera owner around the current source.
+ */
 void Camera::UpdateVisibilityForOwner()
 {
     MaNGOS::VisibleNotifier notifier(*this);
@@ -163,6 +224,9 @@ void Camera::UpdateVisibilityForOwner()
 
 //////////////////
 
+/**
+ * @brief Destroys a viewpoint instance.
+ */
 ViewPoint::~ViewPoint()
 {
     if (!m_cameras.empty())

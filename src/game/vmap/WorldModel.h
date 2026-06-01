@@ -48,6 +48,7 @@ namespace VMAP
          * @brief Default constructor for MeshTriangle.
          */
         MeshTriangle() : idx0(0), idx1(0), idx2(0) {}
+
         /**
          * @brief Constructor for MeshTriangle with indices.
          *
@@ -77,16 +78,19 @@ namespace VMAP
          * @param type The type of the liquid.
          */
         WmoLiquid(uint32 width, uint32 height, const Vector3& corner, uint32 type);
+
         /**
          * @brief Copy constructor for WmoLiquid.
          *
          * @param other The WmoLiquid to copy from.
          */
         WmoLiquid(const WmoLiquid& other);
+
         /**
          * @brief Destructor for WmoLiquid.
          */
         ~WmoLiquid();
+
         /**
          * @brief Assignment operator for WmoLiquid.
          *
@@ -94,6 +98,7 @@ namespace VMAP
          * @return WmoLiquid& Reference to the assigned WmoLiquid.
          */
         WmoLiquid& operator=(const WmoLiquid& other);
+
         /**
          * @brief Gets the liquid height at a specific position.
          *
@@ -102,30 +107,41 @@ namespace VMAP
          * @return bool True if the liquid height was retrieved, false otherwise.
          */
         bool GetLiquidHeight(const Vector3& pos, float& liqHeight) const;
+
         /**
          * @brief Gets the type of the liquid.
          *
          * @return uint32 The type of the liquid.
          */
         uint32 GetType() const { return iType; }
+
         /**
          * @brief Gets the height storage array.
          *
          * @return float* Pointer to the height storage array.
          */
-        float* GetHeightStorage() { return iHeight; }
+        float* GetHeightStorage()
+        {
+            return iHeight;
+        }
+
         /**
          * @brief Gets the flags storage array.
          *
          * @return uint8* Pointer to the flags storage array.
          */
-        uint8* GetFlagsStorage() { return iFlags; }
+        uint8* GetFlagsStorage()
+        {
+            return iFlags;
+        }
+
         /**
          * @brief Gets the file size of the liquid data.
          *
          * @return uint32 The file size of the liquid data.
          */
         uint32 GetFileSize() const;
+
         /**
          * @brief Writes the liquid data to a file.
          *
@@ -133,6 +149,7 @@ namespace VMAP
          * @return bool True if the write was successful, false otherwise.
          */
         bool WriteToFile(FILE* wf) const;
+
         /**
          * @brief Reads the liquid data from a file.
          *
@@ -176,12 +193,14 @@ namespace VMAP
          * @brief Default constructor for GroupModel.
          */
         GroupModel() : iMogpFlags(0), iGroupWMOID(0), iLiquid(0) {}
+
         /**
          * @brief Copy constructor for GroupModel.
          *
          * @param other The GroupModel to copy from.
          */
         GroupModel(const GroupModel& other);
+
         /**
          * @brief Constructor for GroupModel with parameters.
          *
@@ -191,10 +210,14 @@ namespace VMAP
          */
         GroupModel(uint32 mogpFlags, uint32 groupWMOID, const AABox& bound) :
             iBound(bound), iMogpFlags(mogpFlags), iGroupWMOID(groupWMOID), iLiquid(0) {}
+
         /**
          * @brief Destructor for GroupModel.
          */
-        ~GroupModel() { delete iLiquid; }
+        ~GroupModel()
+        {
+            delete iLiquid;
+        }
 
         /**
          * @brief Pass mesh data to object and create BIH. Passed vectors get swapped with old geometry.
@@ -203,12 +226,14 @@ namespace VMAP
          * @param tri Vector of triangles.
          */
         void SetMeshData(std::vector<Vector3>& vert, std::vector<MeshTriangle>& tri);
+
         /**
          * @brief Sets the liquid data.
          *
          * @param liquid Pointer to the WmoLiquid.
          */
         void SetLiquidData(WmoLiquid*& liquid) { iLiquid = liquid; liquid = NULL; }
+
         /**
          * @brief Checks if a ray intersects with the group model.
          *
@@ -218,6 +243,7 @@ namespace VMAP
          * @return bool True if the ray intersects, false otherwise.
          */
         bool IntersectRay(const G3D::Ray& ray, float& distance, bool stopAtFirstHit) const;
+
         /**
          * @brief Checks if a position is inside the object.
          *
@@ -227,6 +253,7 @@ namespace VMAP
          * @return bool True if the position is inside the object, false otherwise.
          */
         bool IsInsideObject(const Vector3& pos, const Vector3& down, float& z_dist) const;
+
         /**
          * @brief Gets the liquid level at a specific position.
          *
@@ -235,12 +262,14 @@ namespace VMAP
          * @return bool True if the liquid level was retrieved, false otherwise.
          */
         bool GetLiquidLevel(const Vector3& pos, float& liqHeight) const;
+
         /**
          * @brief Gets the type of the liquid.
          *
          * @return uint32 The type of the liquid.
          */
         uint32 GetLiquidType() const;
+
         /**
          * @brief Writes the group model data to a file.
          *
@@ -248,6 +277,7 @@ namespace VMAP
          * @return bool True if the write was successful, false otherwise.
          */
         bool WriteToFile(FILE* wf);
+
         /**
          * @brief Reads the group model data from a file.
          *
@@ -255,18 +285,21 @@ namespace VMAP
          * @return bool True if the read was successful, false otherwise.
          */
         bool ReadFromFile(FILE* rf);
+
         /**
          * @brief Gets the bounding box of the group model.
          *
          * @return const G3D::AABox& The bounding box of the group model.
          */
         const G3D::AABox& GetBound() const { return iBound; }
+
         /**
          * @brief Gets the flags of the group model.
          *
          * @return uint32 The flags of the group model.
          */
         uint32 GetMogpFlags() const { return iMogpFlags; }
+
         /**
          * @brief Gets the ID of the group WMO.
          *
@@ -312,12 +345,14 @@ namespace VMAP
          * @param models Vector of group models.
          */
         void SetGroupModels(std::vector<GroupModel>& models);
+
         /**
          * @brief Sets the root WMO ID.
          *
          * @param id The root WMO ID.
          */
         void SetRootWmoID(uint32 id) { RootWMOID = id; }
+
         /**
          * @brief Checks if a ray intersects with the world model.
          *
@@ -327,6 +362,7 @@ namespace VMAP
          * @return bool True if the ray intersects, false otherwise.
          */
         bool IntersectRay(const G3D::Ray& ray, float& distance, bool stopAtFirstHit) const;
+
         /**
          * @brief Gets area information at a specific position.
          *
@@ -337,6 +373,7 @@ namespace VMAP
          * @return bool True if area information was retrieved, false otherwise.
          */
         bool GetAreaInfo(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist, AreaInfo& info) const;
+
         /**
          * @brief Gets location information at a specific position.
          *
@@ -347,6 +384,7 @@ namespace VMAP
          * @return bool True if location information was retrieved, false otherwise.
          */
         bool GetLocationInfo(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist, LocationInfo& info) const;
+
         /**
          * @brief Gets the contact point at a specific position.
          *
@@ -356,6 +394,7 @@ namespace VMAP
          * @return bool True if a contact point was found, false otherwise.
          */
         bool GetContactPoint(const G3D::Vector3& point, const G3D::Vector3& dir, float& dist) const;
+
         /**
          * @brief Writes the world model data to a file.
          *
@@ -363,6 +402,7 @@ namespace VMAP
          * @return bool True if the write was successful, false otherwise.
          */
         bool WriteFile(const std::string& filename);
+
         /**
          * @brief Reads the world model data from a file.
          *

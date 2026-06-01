@@ -30,6 +30,7 @@
 //=====================================================
 
 template<class TO, class FROM>
+
 /**
  * @brief
  *
@@ -145,18 +146,21 @@ class Reference : public LinkedListElement
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       next()       { return((Reference<TO, FROM>*) LinkedListElement::next()); }
+
         /**
          * @brief
          *
          * @return const Reference<TO, FROM>
          */
         Reference<TO, FROM> const* next() const { return((Reference<TO, FROM> const*) LinkedListElement::next()); }
+
         /**
          * @brief
          *
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       prev()       { return((Reference<TO, FROM>*) LinkedListElement::prev()); }
+
         /**
          * @brief
          *
@@ -170,18 +174,21 @@ class Reference : public LinkedListElement
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       nocheck_next()       { return((Reference<TO, FROM>*) LinkedListElement::nocheck_next()); }
+
         /**
          * @brief
          *
          * @return const Reference<TO, FROM>
          */
         Reference<TO, FROM> const* nocheck_next() const { return((Reference<TO, FROM> const*) LinkedListElement::nocheck_next()); }
+
         /**
          * @brief
          *
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       nocheck_prev()       { return((Reference<TO, FROM>*) LinkedListElement::nocheck_prev()); }
+
         /**
          * @brief
          *
@@ -195,6 +202,7 @@ class Reference : public LinkedListElement
          * @return TO *operator ->
          */
         TO* operator->() const { return iRefTo; }
+
         /**
          * @brief
          *

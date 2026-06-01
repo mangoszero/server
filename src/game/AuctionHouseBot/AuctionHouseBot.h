@@ -30,17 +30,23 @@
 #include "SharedDefines.h"
 #include "Item.h"
 
- /**
-  * This is the AuctionHouseBot and it is used to make less populated servers
-  * appear more populated than they actually are by having auctions created by
-  * the mangos daemon itself instead of by players.
-  *
-  * This bot can both create auctions and buyout/bid on auctions to create a feel
-  * of a very active AH. The key classes for creating and buying auctions are
-  * \ref AuctionBotBuyer for buying and \ref AuctionBotSeller for selling.
-  *
-  * \todo Describe more of how it all works, ie algorithms etc.
-  */
+/**
+ * @file AuctionHouseBot.h
+ * @brief Auction House Bot implementation for World of Warcraft
+ *
+ * The AuctionHouseBot makes less populated servers appear more populated by
+ * creating auctions automatically. It can both create auctions and bid/buyout
+ * on existing auctions to simulate an active auction house economy.
+ *
+ * Key components:
+ * - AuctionBotConfig: Configuration management
+ * - AuctionBotAgent: Base interface for bot agents
+ * - AuctionBotBuyer: Handles buying items from auction houses
+ * - AuctionBotSeller: Handles selling items to auction houses
+ * - AuctionHouseBot: Main controller managing buyer and seller
+ *
+ * \todo Describe more of how it all works, ie algorithms etc.
+ */
 
   /** \addtogroup auctionbot
    * @{
@@ -48,8 +54,11 @@
    */
 
    /**
-    * @brief shadow of ItemQualities with skipped ITEM_QUALITY_HEIRLOOM, anything after ITEM_QUALITY_ARTIFACT(6) in fact
+    * @brief Auction item quality enumeration
     *
+    * Shadow of ItemQualities with skipped ITEM_QUALITY_HEIRLOOM and
+    * anything after ITEM_QUALITY_ARTIFACT(6). Used to categorize
+    * auction items by quality level.
     */
 enum AuctionQuality
 {
@@ -65,8 +74,11 @@ enum AuctionQuality
 #define MAX_AUCTION_QUALITY 7
 
 /**
- * @brief Enum for configuration values of type uint32 for AuctionBot
+ * @brief Configuration values of type uint32 for AuctionBot
  *
+ * This enumeration defines all uint32 configuration options for
+ * the auction house bot, including timing, item amounts, price ratios,
+ * and various item-specific settings.
  */
 enum AuctionBotConfigUInt32Values
 {
@@ -128,8 +140,10 @@ enum AuctionBotConfigUInt32Values
 };
 
 /**
- * @brief Enum for configuration values of type bool for AuctionBot
+ * @brief Configuration values of type bool for AuctionBot
  *
+ * This enumeration defines all boolean configuration options for
+ * the auction house bot, including feature toggles and debug flags.
  */
 enum AuctionBotConfigBoolValues
 {
@@ -155,222 +169,199 @@ enum AuctionBotConfigBoolValues
 };
 
 /**
- * @brief All basic config data used by other AHBot classes for self-configure.
+ * @brief Configuration manager for Auction House Bot
  *
+ * AuctionBotConfig loads and manages all configuration data used by
+ * other AHBot classes. It handles loading from the configuration file
+ * and provides access to various settings for item amounts, prices,
+ * buyer/seller behavior, and debug options.
  */
 class AuctionBotConfig
 {
 public:
     /**
-     * @brief Constructor for AuctionBotConfig
-     *
+     * @brief Constructor - initializes configuration with default values
      */
     AuctionBotConfig();
 
     /**
-     * @brief Sets the configuration file name
-     *
-     * @param filename The name of the configuration file
+     * @brief Set the configuration file name
+     * @param filename Path to the configuration file
      */
     void SetConfigFileName(char const* filename) { m_configFileName = filename; }
 
     /**
-     * @brief Initializes the AuctionBotConfig
-     *
-     * @return bool true if initialization was successful, false otherwise
+     * @brief Initialize the configuration by loading from file
+     * @return True if initialization successful, false otherwise
      */
     bool Initialize();
 
     /**
-     * @brief Gets the AHBot includes
-     *
-     * @return const char* The AHBot includes
+     * @brief Get the AHBot includes string
+     * @return Comma-separated list of included item IDs
      */
     const char* GetAHBotIncludes() const { return m_AHBotIncludes.c_str(); }
 
     /**
-     * @brief Gets the AHBot excludes
-     *
-     * @return const char* The AHBot excludes
+     * @brief Get the AHBot excludes string
+     * @return Comma-separated list of excluded item IDs
      */
     const char* GetAHBotExcludes() const { return m_AHBotExcludes.c_str(); }
 
     /**
-     * @brief Gets the AH Bot ID
-     *
-     * @return uint32 The AH Bot ID
+     * @brief Get the AH Bot character ID
+     * @return Bot character ID
      */
     uint32 GetAHBotId() const { return m_BotId; }
 
     /**
-     * @brief Gets a configuration value of type uint32
-     *
-     * @param index The index of the configuration value
-     * @return uint32 The configuration value
+     * @brief Get a uint32 configuration value
+     * @param index Configuration index
+     * @return Configuration value
      */
     uint32 getConfig(AuctionBotConfigUInt32Values index) const { return m_configUint32Values[index]; }
 
     /**
-     * @brief Gets a configuration value of type bool
-     *
-     * @param index The index of the configuration value
-     * @return bool The configuration value
+     * @brief Get a bool configuration value
+     * @param index Configuration index
+     * @return Configuration value
      */
     bool getConfig(AuctionBotConfigBoolValues index) const { return m_configBoolValues[index]; }
 
     /**
-     * @brief Sets a configuration value of type bool
-     *
-     * @param index The index of the configuration value
-     * @param value The value to set
+     * @brief Set a bool configuration value
+     * @param index Configuration index
+     * @param value Value to set
      */
     void setConfig(AuctionBotConfigBoolValues index, bool value) { m_configBoolValues[index] = value; }
 
     /**
-     * @brief Sets a configuration value of type uint32
-     *
-     * @param index The index of the configuration value
-     * @param value The value to set
+     * @brief Set a uint32 configuration value
+     * @param index Configuration index
+     * @param value Value to set
      */
     void setConfig(AuctionBotConfigUInt32Values index, uint32 value) { m_configUint32Values[index] = value; }
 
     /**
-     * @brief Gets the ratio of items to sell for a given auctionhouse type
-     *
-     * @param houseType Type of the house.
-     * @return uint32 a value between 0 and 10000 probably representing 0%-100%
+     * @brief Get the ratio of items to sell for a given auction house type
+     * @param houseType Auction house type (Alliance/Horde/Neutral)
+     * @return Item amount ratio (0-10000 representing 0%-100%)
      */
     uint32 getConfigItemAmountRatio(AuctionHouseType houseType) const;
 
     /**
-     * @brief Gets if a buyer is enabled for the given auctionhouse type
-     *
-     * @param houseType Type of the house, ie: alliance/horde/neutral
-     * @return bool true if a buyer is enabled, false otherwise
+     * @brief Check if buyer is enabled for a given auction house type
+     * @param houseType Auction house type
+     * @return True if buyer enabled, false otherwise
      */
     bool getConfigBuyerEnabled(AuctionHouseType houseType) const;
 
     /**
-     * @brief Gets the ratio for the amount of items of a certain quality to be sold
-     *
-     * @param quality quality of the item you want to know the ratio for
-     * @return uint32 probably a value between 0 and 10000 representing 0%-100% as the config values seem to be capped at this
+     * @brief Get the ratio for items of a certain quality to be sold
+     * @param quality Item quality
+     * @return Quality amount ratio (0-10000 representing 0%-100%)
      */
     uint32 getConfigItemQualityAmount(AuctionQuality quality) const;
 
     /**
-     * @brief Gets the number of items per cycle boost
-     *
-     * @return uint32 The number of items per cycle boost
+     * @brief Get the number of items to add per cycle during boost mode
+     * @return Items per cycle boost count
      */
     uint32 GetItemPerCycleBoost() const { return m_ItemsPerCycleBoost; }
 
     /**
-     * @brief Gets the number of items per cycle normal
-     *
-     * @return uint32 The number of items per cycle normal
+     * @brief Get the number of items to add per cycle during normal mode
+     * @return Items per cycle normal count
      */
     uint32 GetItemPerCycleNormal() const { return m_ItemsPerCycleNormal; }
 
     /**
-     * @brief Reloads the AhBot config.
-     *
-     * @return bool true if the config was successfully reloaded, false otherwise
+     * @brief Reload the AHBot configuration from file
+     * @return True if reload successful, false otherwise
      */
     bool Reload();
 
     /**
-     * @brief Gets the name of the item class.
-     *
-     * @param itemclass class of the item you want to lookup name for
-     * @return const char a string describing the name of the item class
+     * @brief Get the name of an item class
+     * @param itemclass Item class enum value
+     * @return String representation of the item class
      * \see ItemClass
      */
     static char const* GetItemClassName(ItemClass itemclass);
 
     /**
-     * @brief Does the same thing as \ref AuctionBotConfig::GetItemClassName converts a enum
-     * value to a readable string
-     *
-     * @param houseType the housetype you would like to "translate"
-     * @return const char the string representation of the num value
+     * @brief Get the name of an auction house type
+     * @param houseType Auction house type enum value
+     * @return String representation of the house type
      */
     static char const* GetHouseTypeName(AuctionHouseType houseType);
 
 private:
-    std::string m_configFileName; /**< The name of the configuration file */
-    std::string m_AHBotIncludes; /**< The AHBot includes */
-    std::string m_AHBotExcludes; /**< The AHBot excludes */
-    Config m_AhBotCfg; /**< The configuration object */
-    uint32 m_ItemsPerCycleBoost; /**< The number of items per cycle boost */
-    uint32 m_ItemsPerCycleNormal; /**< The number of items per cycle normal */
-    uint32 m_BotId; /**< The AH Bot ID */
+    std::string m_configFileName; /**< Path to the configuration file */
+    std::string m_AHBotIncludes; /**< Comma-separated list of included item IDs */
+    std::string m_AHBotExcludes; /**< Comma-separated list of excluded item IDs */
+    Config m_AhBotCfg; /**< Configuration object */
+    uint32 m_ItemsPerCycleBoost; /**< Items to add per cycle during boost mode */
+    uint32 m_ItemsPerCycleNormal; /**< Items to add per cycle during normal mode */
+    uint32 m_BotId; /**< Bot character ID */
     uint32 m_configUint32Values[CONFIG_UINT32_AHBOT_UINT32_COUNT]; /**< Array of uint32 configuration values */
     bool m_configBoolValues[CONFIG_UINT32_AHBOT_BOOL_COUNT]; /**< Array of bool configuration values */
 
     /**
-     * @brief Sets the AHBot includes
-     *
-     * @param AHBotIncludes The AHBot includes
+     * @brief Set the AHBot includes string
+     * @param AHBotIncludes Comma-separated list of included item IDs
      */
     void SetAHBotIncludes(const std::string& AHBotIncludes) { m_AHBotIncludes = AHBotIncludes; }
 
     /**
-     * @brief Sets the AHBot excludes
-     *
-     * @param AHBotExcludes The AHBot excludes
+     * @brief Set the AHBot excludes string
+     * @param AHBotExcludes Comma-separated list of excluded item IDs
      */
     void SetAHBotExcludes(const std::string& AHBotExcludes) { m_AHBotExcludes = AHBotExcludes; }
 
     /**
-     * @brief Sets the AH Bot ID
-     *
-     * @param BotCharName The AH Bot character name
+     * @brief Set the AH Bot character ID from character name
+     * @param BotCharName Bot character name
      */
     void SetAHBotId(const std::string& BotCharName);
 
     /**
-     * @brief Sets a certain config value to the given default value
-     *
-     * @param index index to set
-     * @param fieldname name of the field to set, ie: how it is represented in the config file
-     * @param defvalue the default value for the field
+     * @brief Set a uint32 config value with default
+     * @param index Configuration index
+     * @param fieldname Field name in config file
+     * @param defvalue Default value
      */
     void setConfig(AuctionBotConfigUInt32Values index, char const* fieldname, uint32 defvalue);
 
     /**
-     * @brief Sets a certain config value to given default value and a max it can have that it will cap at
-     *
-     * @param index index to set
-     * @param fieldname name of the field to set, ie: how it is represented in the config file
-     * @param defvalue the default value for the field
-     * @param maxvalue the maximum value this config can have
+     * @brief Set a uint32 config value with default and maximum cap
+     * @param index Configuration index
+     * @param fieldname Field name in config file
+     * @param defvalue Default value
+     * @param maxvalue Maximum allowed value
      */
     void setConfigMax(AuctionBotConfigUInt32Values index, char const* fieldname, uint32 defvalue, uint32 maxvalue);
 
     /**
-     * @brief Sets a certain config value to given default value and a max it can have that it will cap at
-     *
-     * @param index index to set
-     * @param fieldname name of the field to set, ie: how it is represented in the config file
-     * @param defvalue the default value for the field
-     * @param minvalue the minimal value this config can have
-     * @param maxvalue the maximum value this config can have
+     * @brief Set a uint32 config value with default, minimum, and maximum
+     * @param index Configuration index
+     * @param fieldname Field name in config file
+     * @param defvalue Default value
+     * @param minvalue Minimum allowed value
+     * @param maxvalue Maximum allowed value
      */
     void setConfigMinMax(AuctionBotConfigUInt32Values index, char const* fieldname, uint32 defvalue, uint32 minvalue, uint32 maxvalue);
 
     /**
-     * @brief Sets a certain config value to the given default value
-     *
-     * @param index index to set
-     * @param fieldname name of the field to set, ie: how it is represented in the config file
-     * @param defvalue the default value for this field
+     * @brief Set a bool config value with default
+     * @param index Configuration index
+     * @param fieldname Field name in config file
+     * @param defvalue Default value
      */
     void setConfig(AuctionBotConfigBoolValues index, char const* fieldname, bool defvalue);
 
     /**
-     * @brief Retrieves the configuration for the \ref AuctionHouseBot from a configuration file.
-     *
+     * @brief Load configuration from the configuration file
      */
     void GetConfigFromFile();
 };
@@ -378,182 +369,183 @@ private:
 #define sAuctionBotConfig MaNGOS::Singleton<AuctionBotConfig>::Instance()
 
 /**
- * @brief This is the base interface for the \ref AuctionBotSeller and \ref AuctionBotBuyer classes
- * which in itself only provides the possibility to use dynamic_cast in some of the
- * \ref AuctionHouseBot methods, ie: \ref AuctionHouseBot::SetItemsRatio uses it to cast it's
- * member AuctionHouseBot::m_Seller to a \ref AuctionBotSeller.
+ * @brief Base interface for auction bot agents
  *
+ * AuctionBotAgent is the base interface for AuctionBotSeller and AuctionBotBuyer.
+ * It provides the ability to use dynamic_cast in AuctionHouseBot methods,
+ * such as SetItemsRatio which casts m_Seller to AuctionBotSeller.
  */
 class AuctionBotAgent
 {
 public:
     /**
-     * @brief Constructor for AuctionBotAgent
-     *
+     * @brief Constructor
      */
     AuctionBotAgent() {}
 
     /**
-     * @brief Destructor for AuctionBotAgent
-     *
+     * @brief Virtual destructor
      */
     virtual ~AuctionBotAgent() {}
 
 public:
     /**
-     * @brief Initializes this agent/bot and makes sure that there's anything to actually do for it.
-     * If there's not it will return false and there's really no interest in keeping it for
-     * the moment, otherwise returns true and has atleast one active house where it will do
-     * business.
-     *
-     * @return bool true if we intialized with at least one auction house to do business in, false otherwise
+     * @brief Initialize the agent and check if there's work to do
+     * @return True if initialized with at least one active auction house, false otherwise
      */
     virtual bool Initialize() = 0;
 
     /**
-     * @brief This method updates what's going on on the AH for the bots, ie: if this is called for the
-     * \ref AuctionBotBuyer it will place bids on items etc if there's a config file for it. If
-     * the \ref AuctionBotSeller is called instead it would put up some new items if there's a
-     * config file for it.
+     * @brief Update the agent's operations for the specified auction house
      *
-     * @param houseType the house type we should work with while updating
-     * @return bool true if any update was actually done, ie: we put some items up/bought some, false otherwise
+     * For AuctionBotBuyer: places bids on items matching criteria
+     * For AuctionBotSeller: lists new items for auction
+     *
+     * @param houseType Auction house type to update
+     * @return True if any action was taken, false otherwise
      */
     virtual bool Update(AuctionHouseType houseType) = 0;
 };
 
 /**
- * @brief Structure used in \ref AuctionHouseBot::PrepareStatusInfos to show how many items there
- * are in each auction house and how many of each quality there are that were created by
- * one of the 2 agents \ref AuctionBotBuyer and \ref AuctionBotSeller
- * \see AuctionQuality
+ * @brief Status information for auction house bot per house type
  *
+ * Used in AuctionHouseBot::PrepareStatusInfos to show item counts
+ * per auction house and per quality level for items created by
+ * AuctionBotBuyer and AuctionBotSeller.
+ * \see AuctionQuality
  */
 struct AuctionHouseBotStatusInfoPerType
 {
-    uint32 ItemsCount;                          /**< How many items there are totally in this AH */
-    uint32 QualityInfo[MAX_AUCTION_QUALITY];    /**< How many items of each quality there are */
+    uint32 ItemsCount;                          /**< Total items in this auction house */
+    uint32 QualityInfo[MAX_AUCTION_QUALITY];    /**< Items count per quality level */
 };
 
 /**
- * @brief Used to get an array with all possible Action Houses, ie: neutral,ally,horde.
+ * @brief Array of status info for all auction house types
  *
+ * Provides status information for all possible auction houses:
+ * Alliance, Horde, and Neutral.
  */
 typedef AuctionHouseBotStatusInfoPerType AuctionHouseBotStatusInfo[MAX_AUCTION_HOUSE_TYPE];
 
 /**
- * @brief This class handle both Selling and Buying method
- * (holder of AuctionBotBuyer and AuctionBotSeller objects)
- * (Taken from comments in source)
+ * @brief Main auction house bot controller
+ *
+ * AuctionHouseBot manages both selling and buying operations by holding
+ * AuctionBotBuyer and AuctionBotSeller objects. It coordinates the
+ * overall auction house bot behavior and provides configuration management.
  */
 class AuctionHouseBot
 {
 public:
     /**
-     * @brief Initializes a new instance of the \ref AuctionHouseBot class.
-     *
+     * @brief Constructor
      */
     AuctionHouseBot();
 
     /**
-     * @brief Finalizes an instance of the \ref AuctionHouseBot class.
-     *
+     * @brief Destructor
      */
     ~AuctionHouseBot();
 
     /**
-     * @brief Updates the \ref AuctionHouseBot by checking if either the \ref AuctionBotSeller or
-     * \ref AuctionBotBuyer wants to sell/buy anything and in that case lets one of them do
-     * that and the other one will have to wait until the next call to \ref AuctionHouseBot::Update
+     * @brief Update the auction house bot
      *
+     * Checks if AuctionBotSeller or AuctionBotBuyer needs to perform
+     * operations and executes one of them. The other waits for the
+     * next Update call.
      */
     void Update();
 
     /**
-     * @brief Initializes this instance.
-     *
+     * @brief Initialize the auction house bot
      */
     void Initialize();
 
     // Followed method is mainly used by level3.cpp for ingame/console command
 
     /**
-     * @brief Sets the items ratio which probably decides how many items should
-     * appear in each of the auction houses
+     * @brief Set item ratios for all auction houses
      *
-     * @param al The alliance house ratio
-     * @param ho The horde house ratio
-     * @param ne The neutral house ratio
+     * Determines how many items should appear in each auction house.
+     *
+     * @param al Alliance house ratio
+     * @param ho Horde house ratio
+     * @param ne Neutral house ratio
      */
     void SetItemsRatio(uint32 al, uint32 ho, uint32 ne);
 
     /**
-     * @brief Sets the items ratio for a specific house, like \ref AuctionHouseBot::SetItemsRatio but
-     * only for one house.
-     *
-     * @param house The house
-     * @param val The new ratio
+     * @brief Set item ratio for a specific auction house
+     * @param house Auction house type
+     * @param val New ratio value
      */
     void SetItemsRatioForHouse(AuctionHouseType house, uint32 val);
 
     /**
-     * @brief Sets the items amount.
-     *
-     * @param vals The array of item amounts for each quality.
+     * @brief Set item amounts for all quality levels
+     * @param vals Array of item amounts for each quality
      */
     void SetItemsAmount(uint32(&vals)[MAX_AUCTION_QUALITY]);
 
     /**
-     * @brief Changes the ratio for how often a certain quality of items should show up at the
-     * AH. A specialised version of \ref AuctionHouseBot::SetItemsAmount
+     * @brief Set item amount ratio for a specific quality
      *
-     * @param quality quality of the items you want to change the ratio for
-     * @param val the new ratio you want as a value between 0-10000 probably representing 0%-100%
+     * Changes how often items of a certain quality should appear
+     * in the auction house.
+     *
+     * @param quality Item quality
+     * @param val New ratio (0-10000 representing 0%-100%)
      * \see AuctionQuality
      */
     void SetItemsAmountForQuality(AuctionQuality quality, uint32 val);
 
     /**
-     * @brief Reloads all the configurations, for the AH bot and for both \ref AuctionBotBuyer and
-     * \ref AuctionBotSeller and ourselves
+     * @brief Reload all configurations
      *
-     * @return bool true if it went well, false otherwise
+     * Reloads configuration for AHBot, AuctionBotBuyer, and AuctionBotSeller.
+     *
+     * @return True if reload successful, false otherwise
      */
     bool ReloadAllConfig();
 
     /**
-     * @brief Expires all the items currently created by the AH bot and they'll be replaced later on
-     * again. If parameter all is false only auctions without a bid are removed.
+     * @brief Rebuild auction house bot auctions
      *
-     * @param all Whether to expire all auctions or only those without a bid
+     * Expires all items created by the AH bot so they will be replaced later.
+     * If all is false, only auctions without a bid are removed.
+     *
+     * @param all True to expire all auctions, false for only those without bids
      */
     void Rebuild(bool all);
 
     /**
-     * @brief Fills a status info structure with data about how many items of each there
-     * currently are in the auction house that the auction bot has created
+     * @brief Prepare status information structure
      *
-     * @param statusInfo the structure to fill with data
+     * Fills status info with data about items currently in auction houses
+     * that were created by the auction bot.
+     *
+     * @param statusInfo Structure to fill with status data
      */
     void PrepareStatusInfos(AuctionHouseBotStatusInfo& statusInfo);
 
 private:
     /**
-     * @brief Initializes the agents, ie: the \ref AuctionBotBuyer and \ref AuctionBotSeller
-     *
+     * @brief Initialize the buyer and seller agents
      */
     void InitializeAgents();
 
     /**
-     * @Brief Purges mail of all the returned unsold items.
+     * @brief Purge mail of all returned unsold items
      */
     void PurgeMailedItems();
 
-    AuctionBotAgent* m_Buyer; /**< The buyer (\ref AuctionBotBuyer) for this \ref AuctionHouseBot */
-    AuctionBotAgent* m_Seller; /**< The seller (\ref AuctionBotSeller) for this \ref AuctionHouseBot */
+    AuctionBotAgent* m_Buyer; /**< Buyer agent (AuctionBotBuyer) */
+    AuctionBotAgent* m_Seller; /**< Seller agent (AuctionBotSeller) */
 
-    uint32 m_OperationSelector; /**< 0..2*MAX_AUCTION_HOUSE_TYPE-1 */
-    time_t m_lastMailCleanup;  /**< Last time we cleaned up mails */
+    uint32 m_OperationSelector; /**< Operation selector (0..2*MAX_AUCTION_HOUSE_TYPE-1) */
+    time_t m_lastMailCleanup; /**< Timestamp of last mail cleanup */
 };
 
 /// Convenience to easily access the singleton for the \ref AuctionHouseBot

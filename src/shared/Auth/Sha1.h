@@ -35,70 +35,69 @@
 class BigNumber;
 
 /**
- * @brief
+ * @brief SHA-1 hash computation for cryptographic operations
  *
+ * Sha1Hash provides SHA-1 (Secure Hash Algorithm 1) hash computation
+ * using OpenSSL. Used for password hashing, session key generation,
+ * and data integrity verification in World of Warcraft authentication.
  */
 class Sha1Hash
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor - initializes SHA-1 context
          */
         Sha1Hash();
+
         /**
-         * @brief
-         *
+         * @brief Destructor
          */
         ~Sha1Hash();
 
         /**
-         * @brief
-         *
-         * @param bn0...
+         * @brief Update hash with multiple BigNumbers (variadic)
+         * @param bn0 First BigNumber to add
+         * @param ... Additional BigNumbers (NULL terminated)
          */
         void UpdateBigNumbers(BigNumber* bn0, ...);
 
         /**
-         * @brief
-         *
-         * @param dta
-         * @param len
+         * @brief Update hash with raw data
+         * @param dta Pointer to data
+         * @param len Length of data
          */
         void UpdateData(const uint8* dta, int len);
+
         /**
-         * @brief
-         *
-         * @param str
+         * @brief Update hash with string data
+         * @param str String to add to hash
          */
         void UpdateData(const std::string& str);
 
         /**
-         * @brief
-         *
+         * @brief Initialize/reset the SHA-1 context
          */
         void Initialize();
+
         /**
-         * @brief
-         *
+         * @brief Finalize the hash computation
          */
         void Finalize();
 
         /**
-         * @brief
-         *
-         * @return uint8
+         * @brief Get the computed digest
+         * @return Pointer to digest buffer (20 bytes)
          */
         uint8* GetDigest(void) { return mDigest; };
+
         /**
-         * @brief
-         *
-         * @return int
+         * @brief Get the digest length
+         * @return SHA_DIGEST_LENGTH (20 bytes)
          */
         int GetLength(void) { return SHA_DIGEST_LENGTH; };
 
     private:
-        SHA_CTX mC; /**< TODO */
-        uint8 mDigest[SHA_DIGEST_LENGTH]{ 0 }; /**< TODO */
+        SHA_CTX mC; /**< OpenSSL SHA-1 context */
+        uint8 mDigest[SHA_DIGEST_LENGTH]{ 0 }; /**< Computed hash digest */
 };
 #endif

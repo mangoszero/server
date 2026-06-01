@@ -37,7 +37,11 @@ namespace ai
     class UseHealingPotion : public UseItemAction {
     public:
         UseHealingPotion(PlayerbotAI* ai) : UseItemAction(ai, "healing potion") {}
-        virtual bool isUseful() { return AI_VALUE2(bool, "combat", "self target"); }
+
+        virtual bool isUseful()
+        {
+            return AI_VALUE2(bool, "combat", "self target");
+        }
     };
 
     class UseBandage : public UseItemAction
@@ -82,7 +86,7 @@ namespace ai
             if (AI_VALUE2(bool, "combat", "self target"))
                 return bot->getAttackers().empty();
             return bot->GetGroup() &&
-                   AI_VALUE2(list<Item*>, "inventory items", "food").empty();
+                AI_VALUE2(list<Item*>, "inventory items", "food").empty();
         }
 
     private:
@@ -93,7 +97,11 @@ namespace ai
     {
     public:
         UseManaPotion(PlayerbotAI* ai) : UseItemAction(ai, "mana potion") {}
-        virtual bool isUseful() { return AI_VALUE2(bool, "combat", "self target"); }
+
+        virtual bool isUseful()
+        {
+            return AI_VALUE2(bool, "combat", "self target");
+        }
         virtual bool Execute(Event event)
         {
             list<Item*> gems = AI_VALUE2(list<Item*>, "inventory items", "mana gem");

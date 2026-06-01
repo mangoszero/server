@@ -31,8 +31,21 @@
 class LinkedListHead;
 
 /**
- * @brief
+ * @brief Intrusive doubly-linked list node element
  *
+ * LinkedListElement represents a single node in an intrusive doubly-linked list.
+ * This is an element that objects can inherit from or contain to become part of a linked list.
+ * The advantage of intrusive lists is that nodes are embedded in objects, avoiding extra
+ * memory allocations for list nodes.
+ *
+ * Features:
+ * - Bidirectional linking (next and previous pointers)
+ * - Automatic unlinking in destructor
+ * - Query methods to check list membership and navigation
+ * - Used in conjunction with LinkedListHead for managing lists
+ *
+ * @note Objects containing this element can be efficiently added/removed from lists
+ * @note Thread safety must be managed by the containing list/object
  */
 class LinkedListElement
 {
@@ -40,94 +53,124 @@ class LinkedListElement
 
         friend class LinkedListHead;
 
-        LinkedListElement* iNext; /**< TODO */
-        LinkedListElement* iPrev; /**< TODO */
+        LinkedListElement* iNext; /**< Pointer to next element in list (NULL if not in list) */
+        LinkedListElement* iPrev; /**< Pointer to previous element in list (NULL if not in list) */
 
     public:
 
         /**
-         * @brief
+         * @brief Constructs an unlinked LinkedListElement
          *
+         * Initializes both next and previous pointers to NULL, indicating
+         * the element is not yet part of any list.
          */
         LinkedListElement()  { iNext = NULL; iPrev = NULL; }
-        /**
-         * @brief
-         *
-         */
-        ~LinkedListElement() { delink(); }
 
         /**
-         * @brief
+         * @brief Destructs the element and automatically unlinks it from any list
          *
-         * @return bool
+         * Calls delink() to ensure the element is properly removed from its list
+         * before being destroyed.
+         */
+        ~LinkedListElement()
+        {
+            delink();
+        }
+
+        /**
+         * @brief Checks if this element has a next element in the list
+         *
+         * @return bool True if there is another element after this one, false otherwise
          */
         bool hasNext() const  { return (iNext->iNext != NULL); }
+
         /**
-         * @brief
+         * @brief Checks if this element has a previous element in the list
          *
-         * @return bool
+         * @return bool True if there is another element before this one, false otherwise
          */
         bool hasPrev() const  { return (iPrev->iPrev != NULL); }
+
         /**
-         * @brief
+         * @brief Checks if this element is currently part of a linked list
          *
-         * @return bool
+         * @return bool True if element is in a list, false if unlinked
          */
         bool isInList() const { return (iNext != NULL && iPrev != NULL); }
 
         /**
-         * @brief
+         * @brief Returns the next element in the list with bounds checking
          *
-         * @return LinkedListElement
+         * Returns the next element only if there is one, otherwise returns NULL.
+         * Safe for end-of-list detection.
+         *
+         * @return LinkedListElement* Pointer to next element or NULL
          */
         LinkedListElement*       next()       { return hasNext() ? iNext : NULL; }
+
         /**
-         * @brief
+         * @brief Returns the next element (const version)
          *
-         * @return const LinkedListElement
+         * @return LinkedListElement const* Pointer to next element or NULL
          */
         LinkedListElement const* next() const { return hasNext() ? iNext : NULL; }
+
         /**
-         * @brief
+         * @brief Returns the previous element in the list with bounds checking
          *
-         * @return LinkedListElement
+         * Returns the previous element only if there is one, otherwise returns NULL.
+         * Safe for beginning-of-list detection.
+         *
+         * @return LinkedListElement* Pointer to previous element or NULL
          */
         LinkedListElement*       prev()       { return hasPrev() ? iPrev : NULL; }
+
         /**
-         * @brief
+         * @brief Returns the previous element (const version)
          *
-         * @return const LinkedListElement
+         * @return LinkedListElement const* Pointer to previous element or NULL
          */
         LinkedListElement const* prev() const { return hasPrev() ? iPrev : NULL; }
 
         /**
-         * @brief
+         * @brief Returns the next element without bounds checking
          *
-         * @return LinkedListElement
+         * Returns the raw next pointer without checking for list boundaries.
+         * Use with caution; useful for internal iteration.
+         *
+         * @return LinkedListElement* Direct pointer to next element
          */
         LinkedListElement*       nocheck_next()       { return iNext; }
+
         /**
-         * @brief
+         * @brief Returns the next element without bounds checking (const version)
          *
-         * @return const LinkedListElement
+         * @return LinkedListElement const* Direct pointer to next element
          */
         LinkedListElement const* nocheck_next() const { return iNext; }
+
         /**
-         * @brief
+         * @brief Returns the previous element without bounds checking
          *
-         * @return LinkedListElement
+         * Returns the raw previous pointer without checking for list boundaries.
+         * Use with caution; useful for internal iteration.
+         *
+         * @return LinkedListElement* Direct pointer to previous element
          */
         LinkedListElement*       nocheck_prev()       { return iPrev; }
+
         /**
-         * @brief
+         * @brief Returns the previous element without bounds checking (const version)
          *
-         * @return const LinkedListElement
+         * @return LinkedListElement const* Direct pointer to previous element
          */
         LinkedListElement const* nocheck_prev() const { return iPrev; }
 
         /**
-         * @brief
+         * @brief Unlinks this element from its containing list
          *
+         * Removes this element from its linked list by updating the previous
+         * and next elements' pointers. Called automatically in destructor.
          */
         void delink()
         {
@@ -209,6 +252,7 @@ class LinkedListHead
          * @return LinkedListElement
          */
         LinkedListElement*       getFirst()       { return (isEmpty() ? NULL : iFirst.iNext); }
+
         /**
          * @brief
          *
@@ -222,6 +266,7 @@ class LinkedListHead
          * @return LinkedListElement
          */
         LinkedListElement*       getLast()        { return (isEmpty() ? NULL : iLast.iPrev); }
+
         /**
          * @brief
          *
@@ -279,14 +324,22 @@ class LinkedListHead
          * @brief
          *
          */
-        void incSize() { ++iSize; }
+        void incSize()
+        {
+            ++iSize;
+        }
+
         /**
          * @brief
          *
          */
-        void decSize() { --iSize; }
+        void decSize()
+        {
+            --iSize;
+        }
 
         template<class _Ty>
+
         /**
          * @brief
          *
@@ -300,36 +353,43 @@ class LinkedListHead
                  *
                  */
                 typedef std::bidirectional_iterator_tag iterator_category;
+
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty value_type;
+
                 /**
                  * @brief
                  *
                  */
                 typedef ptrdiff_t difference_type;
+
                 /**
                  * @brief
                  *
                  */
                 typedef ptrdiff_t distance_type;
+
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty* pointer;
+
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty const* const_pointer;
+
                 /**
                  * @brief
                  *
                  */
                 typedef _Ty& reference;
+
                 /**
                  * @brief
                  *

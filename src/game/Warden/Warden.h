@@ -36,40 +36,42 @@
 // the default client version with info in warden_checks; for other version checks, see warden_build_specific
 #define DEFAULT_CLIENT_BUILD  5875
 
+/**
+ * @brief Warden opcode enumeration
+ */
 enum WardenOpcodes
 {
     // Client->Server
-    WARDEN_CMSG_MODULE_MISSING                  = 0,
-    WARDEN_CMSG_MODULE_OK                       = 1,
-    WARDEN_CMSG_CHEAT_CHECKS_RESULT             = 2,
-    WARDEN_CMSG_MEM_CHECKS_RESULT               = 3,        // only sent if MEM_CHECK bytes doesn't match
-    WARDEN_CMSG_HASH_RESULT                     = 4,
-    WARDEN_CMSG_MODULE_FAILED                   = 5,        // this is sent when client failed to load uploaded module due to cache fail
+    WARDEN_CMSG_MODULE_MISSING = 0,      ///< Module missing
+    WARDEN_CMSG_MODULE_OK = 1,           ///< Module OK
+    WARDEN_CMSG_CHEAT_CHECKS_RESULT = 2, ///< Cheat checks result
+    WARDEN_CMSG_MEM_CHECKS_RESULT = 3,   ///< Memory checks result (only sent if MEM_CHECK bytes doesn't match)
+    WARDEN_CMSG_HASH_RESULT = 4,         ///< Hash result
+    WARDEN_CMSG_MODULE_FAILED = 5,       ///< Module failed (sent when client failed to load uploaded module due to cache fail)
 
     // Server->Client
-    WARDEN_SMSG_MODULE_USE                      = 0,
-    WARDEN_SMSG_MODULE_CACHE                    = 1,
-    WARDEN_SMSG_CHEAT_CHECKS_REQUEST            = 2,
-    WARDEN_SMSG_MODULE_INITIALIZE               = 3,
-    WARDEN_SMSG_MEM_CHECKS_REQUEST              = 4,        // byte len; while (!EOF) { byte unk(1); byte index(++); string module(can be 0); int offset; byte len; byte[] bytes_to_compare[len]; }
-    WARDEN_SMSG_HASH_REQUEST                    = 5
+    WARDEN_SMSG_MODULE_USE = 0,           ///< Use module
+    WARDEN_SMSG_MODULE_CACHE = 1,         ///< Module cache
+    WARDEN_SMSG_CHEAT_CHECKS_REQUEST = 2, ///< Cheat checks request
+    WARDEN_SMSG_MODULE_INITIALIZE = 3,    ///< Initialize module
+    WARDEN_SMSG_MEM_CHECKS_REQUEST = 4,   ///< Memory checks request (byte len; while (!EOF) { byte unk(1); byte index(++); string module(can be 0); int offset; byte len; byte[] bytes_to_compare[len]; })
+    WARDEN_SMSG_HASH_REQUEST = 5          ///< Hash request
 };
 
+/**
+ * @brief Warden check type enumeration
+ */
 enum WardenCheckType
 {
-    MEM_CHECK               = 0xF3, // 243: byte moduleNameIndex + uint Offset + byte Len (check to ensure memory isn't modified)
-    PAGE_CHECK_A            = 0xB2, // 178: uint Seed + byte[20] SHA1 + uint Addr + byte Len (scans all pages for specified hash)
-    PAGE_CHECK_B            = 0xBF, // 191: uint Seed + byte[20] SHA1 + uint Addr + byte Len (scans only pages starts with MZ+PE headers for specified hash)
-    MPQ_CHECK               = 0x98, // 152: byte fileNameIndex (check to ensure MPQ file isn't modified)
-    LUA_STR_CHECK           = 0x8B, // 139: byte luaNameIndex (check to ensure LUA string isn't used)
-    DRIVER_CHECK            = 0x71, // 113: uint Seed + byte[20] SHA1 + byte driverNameIndex (check to ensure driver isn't loaded)
-    TIMING_CHECK            = 0x57, //  87: empty (check to ensure GetTickCount() isn't detoured)
-    PROC_CHECK              = 0x7E, // 126: uint Seed + byte[20] SHA1 + byte moluleNameIndex + byte procNameIndex + uint Offset + byte Len (check to ensure proc isn't detoured)
-    MODULE_CHECK            = 0xD9, // 217: uint Seed + byte[20] SHA1 (check to ensure module isn't injected)
-    POINTER_CHAIN_CHECK     = 0xF4  // 244: SERVER-SIDE ONLY. Wire format identical to MEM_CHECK (0xF3).
-                                    //      Walks a pointer-deref chain across multiple Warden cycles
-                                    //      and memcmp-validates the bytes at the final resolved address.
-                                    //      Never appears in any byte sent to or from the client module.
+    MEM_CHECK = 0xF3,      ///< Memory check (243: byte moduleNameIndex + uint Offset + byte Len - check to ensure memory isn't modified)
+    PAGE_CHECK_A = 0xB2,   ///< Page check A (178: uint Seed + byte[20] SHA1 + uint Addr + byte Len - scans all pages for specified hash)
+    PAGE_CHECK_B = 0xBF,   ///< Page check B (191: uint Seed + byte[20] SHA1 + uint Addr + byte Len - scans only pages starts with MZ+PE headers for specified hash)
+    MPQ_CHECK = 0x98,      ///< MPQ check (152: byte fileNameIndex - check to ensure MPQ file isn't modified)
+    LUA_STR_CHECK = 0x8B,  ///< Lua string check (139: byte luaNameIndex - check to ensure LUA string isn't used)
+    DRIVER_CHECK = 0x71,   ///< Driver check (113: uint Seed + byte[20] SHA1 + byte driverNameIndex - check to ensure driver isn't loaded)
+    TIMING_CHECK = 0x57,   ///< Timing check (87: empty - check to ensure GetTickCount() isn't detoured)
+    PROC_CHECK = 0x7E,     ///< Procedure check (126: uint Seed + byte[20] SHA1 + byte moluleNameIndex + byte procNameIndex + uint Offset + byte Len - check to ensure proc isn't detoured)
+    MODULE_CHECK = 0xD9    ///< Module check (217: uint Seed + byte[20] SHA1 - check to ensure module isn't injected)
 };
 
 #if defined(__GNUC__)
@@ -78,25 +80,34 @@ enum WardenCheckType
 #pragma pack(push, 1)
 #endif
 
+/**
+ * @brief Warden module use structure
+ */
 struct WardenModuleUse
 {
-    uint8 Command;
-    uint8 ModuleId[16];
-    uint8 ModuleKey[16];
-    uint32 Size;
+    uint8 Command; ///< Command
+    uint8 ModuleId[16]; ///< Module ID
+    uint8 ModuleKey[16]; ///< Module key
+    uint32 Size; ///< Size
 };
 
+/**
+ * @brief Warden module transfer structure
+ */
 struct WardenModuleTransfer
 {
-    uint8 Command;
-    uint16 DataSize;
-    uint8 Data[500];
+    uint8 Command; ///< Command
+    uint16 DataSize; ///< Data size
+    uint8 Data[500]; ///< Data
 };
 
+/**
+ * @brief Warden hash request structure
+ */
 struct WardenHashRequest
 {
-    uint8 Command;
-    uint8 Seed[16];
+    uint8 Command; ///< Command
+    uint8 Seed[16]; ///< Seed
 };
 
 namespace WardenState

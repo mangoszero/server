@@ -22,20 +22,35 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PlayerMiscCommands.cpp
+ * @brief Implementation of miscellaneous player manipulation chat commands.
+ *
+ * This file contains chat command handlers for player operations including:
+ * - Player item management
+ * - Player property modification
+ * - Player state control
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "Mail.h"
 
  /**********************************************************************
-     CommandTable : commandTable
- /***********************************************************************/
-
+    CommandTable : commandTable
+  ***********************************************************************/
 enum
 {
     EARTH_STONE_ITEM = 6948,
 };
 
+/**
+ * @brief Handler for HandleBankCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleBankCommand(char* /*args*/)
 {
     m_session->SendShowBank(m_session->GetPlayer()->GetObjectGuid());
@@ -43,6 +58,12 @@ bool ChatHandler::HandleBankCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleStableCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleStableCommand(char* /*args*/)
 {
     m_session->SendStablePet(m_session->GetPlayer()->GetObjectGuid());
@@ -53,7 +74,6 @@ bool ChatHandler::HandleStableCommand(char* /*args*/)
 /**********************************************************************
     CommandTable : resetCommandTable
 /***********************************************************************/
-
 static bool HandleResetStatsOrLevelHelper(Player* player)
 {
     ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(player->getClass());
@@ -101,6 +121,12 @@ static bool HandleResetStatsOrLevelHelper(Player* player)
     return true;
 }
 
+/**
+ * @brief Handler for HandleResetLevelCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetLevelCommand(char* args)
 {
     Player* target;
@@ -132,6 +158,12 @@ bool ChatHandler::HandleResetLevelCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleResetStatsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetStatsCommand(char* args)
 {
     Player* target;
@@ -151,6 +183,12 @@ bool ChatHandler::HandleResetStatsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleResetSpellsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetSpellsCommand(char* args)
 {
     Player* target;
@@ -180,6 +218,12 @@ bool ChatHandler::HandleResetSpellsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleResetTalentsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetTalentsCommand(char* args)
 {
     Player* target;
@@ -215,6 +259,12 @@ bool ChatHandler::HandleResetTalentsCommand(char* args)
     return false;
 }
 
+/**
+ * @brief Handler for HandleResetAllCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetAllCommand(char* args)
 {
     if (!*args)
@@ -257,6 +307,12 @@ bool ChatHandler::HandleResetAllCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Parses reset-items command arguments into an option bitmask.
+ *
+ * @param args The raw command argument string.
+ * @return int The parsed reset-items option bitmask.
+ */
 int GetResetItemsBitMask(char* args)
 {
     int optionsBitMask = RESET_ITEMS_COMMAND_FLAG_OPTION_NONE;
@@ -316,6 +372,12 @@ int GetResetItemsBitMask(char* args)
     return optionsBitMask;
 }
 
+/**
+ * @brief Handler for HandleResetItemsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetItemsCommand(char* args)
 {
     if (!*args)
@@ -529,10 +591,15 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
         PSendSysMessage(LANG_COMMAND_RESET_ITEMS_ALLBAGS, equipedBagsCount, bankBagscount,player->GetName());
     }
 
-
     return true;
 }
 
+/**
+ * @brief Parses reset-mail command arguments into an option bitmask.
+ *
+ * @param args The raw command argument string.
+ * @return int The parsed reset-mail option bitmask.
+ */
 int GetResetMailBitMask(char* args)
 {
     int optionBitMask = RESET_MAIL_COMMAND_FLAG_OPTION_NONE;
@@ -573,17 +640,17 @@ int GetResetMailBitMask(char* args)
 /*
         HandleResetMailCommand
         Default behaviour :
-       -------------------
+        -------------------
         - delete checked mails (even if its is GM stationery and if it contains items in it, but not deleted COD)
 
-       Options :
-       ---------
+    Options :
+    ---------
         - cod : delete only cod mail (even if it is unchecked)
             TODO -> to improve => return cod to sender instead of delete
         - gm : delete only GM stationery emails (even if it is unchecked)
         - all : delete all mails (even if it is unchecked)
         - from XXXX : delete all mails from specific sender in the slected player mailbox, name or guid
-          TODO  -> to improve, if unchecked return letter to sender to inform it was not read and purged by GM for tech. reason.
+        TODO  -> to improve, if unchecked return letter to sender to inform it was not read and purged by GM for tech. reason.
 
         TODO : future => handle reset mail for Offline char ?
 */
@@ -692,10 +759,10 @@ bool ChatHandler::HandleResetMailCommand(char* args)
     }
 
     // Notification
-     Player * gm = m_session->GetPlayer();
+    Player * gm = m_session->GetPlayer();
 
-     BITMASK_AND_SWITCH(optionBitMask)
-     {
+    BITMASK_AND_SWITCH(optionBitMask)
+    {
             case RESET_MAIL_COMMAND_FLAG_OPTION_NONE:
             {
                 // Nothing specific to display
@@ -719,13 +786,13 @@ bool ChatHandler::HandleResetMailCommand(char* args)
                 PSendSysMessage(LANG_COMMAND_RESET_MAIL_FROM, deletedFromMailCount, from_sender_name.c_str(), player->GetName());
                 break;
             }
-     }
+    }
 
-     if (gm != player)
-     {
-         ChatHandler(player).PSendSysMessage(LANG_COMMAND_RESET_MAIL_PLAYER_NOTIF, m_session->GetPlayer()->GetName(), totalDeletedMailCount);
-     }
-     PSendSysMessage(LANG_COMMAND_RESET_MAIL_RECAP, totalDeletedMailCount, player->GetName());
+    if (gm != player)
+    {
+        ChatHandler(player).PSendSysMessage(LANG_COMMAND_RESET_MAIL_PLAYER_NOTIF, m_session->GetPlayer()->GetName(), totalDeletedMailCount);
+    }
+    PSendSysMessage(LANG_COMMAND_RESET_MAIL_RECAP, totalDeletedMailCount, player->GetName());
 
     return true;
 }

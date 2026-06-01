@@ -23,10 +23,11 @@
  */
 
 /** \file
-    \ingroup mangosd
-*/
+ \ingroup mangosd
+ */
 
 #include "Common.h"
+#include "SystemConfig.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
 #include "World.h"
@@ -46,14 +47,37 @@
 #define WORLD_SLEEP_CONST 50
 
 #ifdef WIN32
-  #include "ServiceWin32.h"
-  extern int m_ServiceStatus;
+#include "ServiceWin32.h"
+extern int m_ServiceStatus;
+#include <windows.h>
 #endif
 
+#ifdef _WIN32
+/// Update the console title with current player/connection counts, only if changed.
+static void UpdateConsoleTitle(uint32 players, uint32 connections)
+{
+    static std::string s_lastTitle;
+    char title[128];
+    snprintf(title, sizeof(title), "%s (%u Players - %u Connections)", MANGOS_PACKAGENAME, players, connections);
+    std::string newTitle(title);
+    if (s_lastTitle != newTitle)
+    {
+        s_lastTitle = newTitle;
+        SetConsoleTitleA(title);
+    }
+}
+#endif
+
+/**
+ * Initializes the world thread listener with the configured host and port.
+ */
 WorldThread::WorldThread(uint16 port, const char* host) : listen_addr(port, host)
 {
 }
 
+/**
+ * Starts the world socket network listener and activates the world thread.
+ */
 int WorldThread::open(void* unused)
 {
     if (sWorldSocketMgr->StartNetwork(listen_addr) == -1)
@@ -86,7 +110,22 @@ int WorldThread::svc()
         sWorld.Update(diff);
         realPrevTime = realCurrTime;
 
+#ifdef _WIN32
+        static uint32 titleUpdateCounter = 0;
+        if ((++titleUpdateCounter) >= 60) // ~3 seconds at WORLD_SLEEP_CONST=50ms
+        {
+            titleUpdateCounter = 0;
+            UpdateConsoleTitle(sWorld.GetActiveSessionCount(), WorldSocket::GetOpenConnectionCount());
+        }
+#endif
+
         uint32 executionTimeDiff = getMSTimeDiff(realCurrTime, getMSTime());
+
+        if (executionTimeDiff > 1000)
+        {
+            sLog.outError("WorldThread::svc: sWorld.Update(diff=%u) took %u ms (loopCounter=%u, sessions=%u)",
+                          diff, executionTimeDiff, World::m_worldLoopCounter.value(), sWorld.GetActiveSessionCount());
+        }
 
         // we know exactly how long it took to update the world, if the update took less than WORLD_SLEEP_CONST, sleep for WORLD_SLEEP_CONST - world update time
         if (executionTimeDiff < WORLD_SLEEP_CONST)
@@ -100,14 +139,24 @@ int WorldThread::svc()
         }
 
         while (m_ServiceStatus == 2) // service paused
+        {
             Sleep(1000);
+        }
 #endif
     }
+    sLog.outString("[shutdown] world loop stopped; entering world-thread shutdown tail");
+    sLog.outString("[shutdown] KickAll: saving + kicking players...");
     sWorld.KickAll();                                       // save and kick all players
+    sLog.outString("[shutdown] KickAll done");
+    sLog.outString("[shutdown] final UpdateSessions...");
     sWorld.UpdateSessions(1);                               // real players unload required UpdateSessions call
+    sLog.outString("[shutdown] final UpdateSessions done");
+    sLog.outString("[shutdown] StopNetwork: ending reactor + joining network threads...");
     sWorldSocketMgr->StopNetwork();
-
+    sLog.outString("[shutdown] StopNetwork done");
+    sLog.outString("[shutdown] UnloadAll: unloading maps + MapUpdater teardown...");
     sMapMgr.UnloadAll();                                    // unload all grids (including locked in memory)
+    sLog.outString("[shutdown] UnloadAll returned; world thread exiting");
 
     sLog.outString("World Updater Thread stopped");
     return 0;

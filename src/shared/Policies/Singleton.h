@@ -38,10 +38,11 @@ namespace MaNGOS
     template
     <
     typename T,
-             class ThreadingModel = MaNGOS::SingleThreaded<T>,
-             class CreatePolicy = MaNGOS::OperatorNew<T>,
-             class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
-             >
+                class ThreadingModel = MaNGOS::SingleThreaded<T>,
+                class CreatePolicy = MaNGOS::OperatorNew<T>,
+                class LifeTimePolicy = MaNGOS::ObjectLifeTime<T>
+                >
+
     /**
      * @brief Singleton class template
      *
@@ -112,6 +113,7 @@ namespace MaNGOS
     bool Singleton<T, ThreadingModel, CreatePolicy, LifeTimePolicy>::si_destroyed = false; /**< Initialize destroyed flag to false */
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
+
     /**
      * @brief Get the singleton instance
      *
@@ -141,6 +143,7 @@ namespace MaNGOS
     }
 
     template<typename T, class ThreadingModel, class CreatePolicy, class LifeTimePolicy>
+
     /**
      * @brief Destroy the singleton instance
      */

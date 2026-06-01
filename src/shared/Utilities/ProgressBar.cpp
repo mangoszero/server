@@ -22,11 +22,40 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ProgressBar.cpp
+ * @brief Console progress bar implementation
+ *
+ * This file implements BarGoLink, a lightweight console progress bar
+ * for displaying operation progress during long-running tasks like
+ * database loading, map initialization, or file processing.
+ *
+ * Features:
+ * - Visual progress indication with percentage
+ * - Cross-platform (Windows/Unix) character rendering
+ * - Optional output suppression for non-interactive modes
+ * - Automatic cleanup on destruction
+ *
+ * Usage pattern:
+ *   BarGoLink bar(total_items);
+ *   for (each item) {
+ *       process(item);
+ *       bar.step();
+ *   }
+ */
+
 #include <stdio.h>
 
 #include "ProgressBar.h"
 #include "Errors.h"
 
+/**
+ * @var BarGoLink::m_showOutput
+ * @brief Global flag controlling progress bar visibility
+ *
+ * When false, all progress bar output is suppressed. Used for
+ * non-interactive modes or when logging to file.
+ */
 bool BarGoLink::m_showOutput = true;
 
 char const* const BarGoLink::empty = " ";
@@ -36,11 +65,26 @@ char const* const BarGoLink::full  = "\x3D";
 char const* const BarGoLink::full  = "*";
 #endif
 
+/**
+ * @brief Construct progress bar
+ * @param row_count Total number of items to process
+ *
+ * Creates a progress bar and immediately displays the empty bar
+ * at 0% progress. The bar is 50 characters wide with percentage display.
+ *
+ * @note Does nothing if m_showOutput is false
+ */
 BarGoLink::BarGoLink(int row_count)
 {
     init(row_count);
 }
 
+/**
+ * @brief Destroy progress bar
+ *
+ * Outputs a final newline to complete the progress display.
+ * This ensures subsequent console output appears on a fresh line.
+ */
 BarGoLink::~BarGoLink()
 {
     if (!m_showOutput)
@@ -52,6 +96,15 @@ BarGoLink::~BarGoLink()
     fflush(stdout);
 }
 
+/**
+ * @brief Initialize progress bar state and display
+ * @param row_count Total number of items to process
+ *
+ * Sets up internal counters and renders the initial empty progress bar.
+ * Platform-specific characters are used:
+ * - Windows: Uses '=' for bar edges and fill
+ * - Unix: Uses '[', ']', '*' for bar display
+ */
 void BarGoLink::init(int row_count)
 {
     rec_no    = 0;
@@ -83,6 +136,17 @@ void BarGoLink::init(int row_count)
     fflush(stdout);
 }
 
+/**
+ * @brief Advance progress by one step
+ *
+ * Increments the internal counter and updates the display if the
+ * progress bar position has changed. Called once per processed item.
+ *
+ * The display only updates when the visual position changes to
+ * minimize console output overhead.
+ *
+ * @note Safe to call even when m_showOutput is false (no-op)
+ */
 void BarGoLink::step()
 {
     if (!m_showOutput)
@@ -127,7 +191,15 @@ void BarGoLink::step()
     }
 }
 
-// avoid use inline version because linking problems with private static field
+/**
+ * @brief Enable or disable progress bar output globally
+ * @param on true to enable output, false to suppress
+ *
+ * Controls whether all BarGoLink instances produce console output.
+ * Used for server modes where console feedback is not desired.
+ *
+ * @note This is a static method affecting all progress bars
+ */
 void BarGoLink::SetOutputState(bool on)
 {
     m_showOutput = on;

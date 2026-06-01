@@ -53,8 +53,9 @@ if (sWorld.getConfig(CONFIG_BOOL_OUTDOORPVP_##a##_ENABLED) && !DisableMgr::IsDis
         m_scripts[OPVP_ID_##a] = new OutdoorPvP##a();               \
         ++counter;                                                  \
     }
+
 /**
-   Function which loads all outdoor pvp scripts
+    Function which loads all outdoor pvp scripts
  */
 void OutdoorPvPMgr::InitOutdoorPvP()
 {
@@ -67,6 +68,12 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     sLog.outString();
 }
 
+/**
+ * @brief Returns the outdoor PvP script that directly owns a zone.
+ *
+ * @param zoneId The zone identifier.
+ * @return OutdoorPvP* The matching outdoor PvP script, or NULL if none exists.
+ */
 OutdoorPvP* OutdoorPvPMgr::GetScript(uint32 zoneId)
 {
     switch (zoneId)
@@ -80,6 +87,12 @@ OutdoorPvP* OutdoorPvPMgr::GetScript(uint32 zoneId)
     }
 }
 
+/**
+ * @brief Returns the outdoor PvP script that affects an indirectly related zone.
+ *
+ * @param zoneId The affected zone identifier.
+ * @return OutdoorPvP* The matching outdoor PvP script, or NULL if none exists.
+ */
 OutdoorPvP* OutdoorPvPMgr::GetScriptOfAffectedZone(uint32 zoneId)
 {
     switch (zoneId)
@@ -97,10 +110,10 @@ OutdoorPvP* OutdoorPvPMgr::GetScriptOfAffectedZone(uint32 zoneId)
 }
 
 /**
-   Function that handles the players which enters a specific zone
+    Function that handles the players which enters a specific zone
 
-   @param   player to be handled in the event
-   @param   zone id used for the current outdoor pvp script
+    @param   player to be handled in the event
+    @param   zone id used for the current outdoor pvp script
  */
 void OutdoorPvPMgr::HandlePlayerEnterZone(Player* player, uint32 zoneId)
 {
@@ -120,10 +133,10 @@ void OutdoorPvPMgr::HandlePlayerEnterZone(Player* player, uint32 zoneId)
 }
 
 /**
-   Function that handles the player who leaves a specific zone
+    Function that handles the player who leaves a specific zone
 
-   @param   player to be handled in the event
-   @param   zone id used for the current outdoor pvp script
+    @param   player to be handled in the event
+    @param   zone id used for the current outdoor pvp script
  */
 void OutdoorPvPMgr::HandlePlayerLeaveZone(Player* player, uint32 zoneId)
 {
@@ -143,6 +156,11 @@ void OutdoorPvPMgr::HandlePlayerLeaveZone(Player* player, uint32 zoneId)
     }
 }
 
+/**
+ * @brief Updates all active outdoor PvP scripts on the manager timer.
+ *
+ * @param diff The elapsed update time in milliseconds.
+ */
 void OutdoorPvPMgr::Update(uint32 diff)
 {
     m_updateTimer.Update(diff);

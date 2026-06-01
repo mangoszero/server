@@ -22,6 +22,30 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file UpdateData.cpp
+ * @brief Object update packet builder and compressor
+ *
+ * This file implements UpdateData, which accumulates object creation,
+ * destruction, and value updates for efficient network transmission.
+ *
+ * Features:
+ * - Accumulates object update blocks for batch transmission
+ * - Tracks out-of-range objects (visibility removal)
+ * - zlib compression for large packets (configurable threshold: 100 bytes)
+ * - Packed GUID encoding for bandwidth efficiency
+ *
+ * Packet structure:
+ * - Block count
+ * - Transport flag
+ * - Out-of-range GUID list (optional)
+ * - Update data blocks
+ *
+ * @see UpdateData for the data accumulator
+ * @see Object::BuildCreateUpdateBlockForPlayer for object creation
+ * @see Object::BuildValuesUpdateBlockForPlayer for value updates
+ */
+
 #include <zlib.h>
 #include "Common.h"
 #include "UpdateData.h"
@@ -32,20 +56,54 @@
 #include "World.h"
 #include "ObjectGuid.h"
 
+/**
+ * @brief Construct empty UpdateData
+ *
+ * Initializes an empty update data accumulator with zero blocks.
+ * Data buffers are allocated as needed during block accumulation.
+ */
 UpdateData::UpdateData() : m_blockCount(0)
 {
 }
 
+/**
+ * @brief Add multiple out-of-range GUIDs
+ * @param guids Set of GUIDs to add
+ *
+ * Adds a set of object GUIDs that the player can no longer see.
+ * These will be sent as out-of-range objects in the update packet,
+ * causing the client to remove them from the scene.
+ */
 void UpdateData::AddOutOfRangeGUID(GuidSet& guids)
 {
     m_outOfRangeGUIDs.insert(guids.begin(), guids.end());
 }
 
+/**
+ * @brief Add single out-of-range GUID
+ * @param guid Object GUID to add
+ *
+ * Adds a single object GUID that the player can no longer see.
+ * @see AddOutOfRangeGUID(GuidSet&)
+ */
 void UpdateData::AddOutOfRangeGUID(ObjectGuid const& guid)
 {
     m_outOfRangeGUIDs.insert(guid);
 }
 
+/**
+ * @brief Compress data using zlib deflate
+ * @param dst Destination buffer for compressed data
+ * @param dst_size In: max destination size, Out: actual compressed size
+ * @param src Source data to compress
+ * @param src_size Size of source data in bytes
+ *
+ * Compresses update data using zlib deflate algorithm.
+ * Compression level is controlled by CONFIG_UINT32_COMPRESSION config.
+ *
+ * @note On error, dst_size is set to 0
+ * @note Uses Z_BEST_SPEED (level 1) by default for CPU efficiency
+ */
 void UpdateData::Compress(void* dst, uint32* dst_size, void* src, int src_size)
 {
     z_stream c_stream;
@@ -102,15 +160,41 @@ void UpdateData::Compress(void* dst, uint32* dst_size, void* src, int src_size)
     *dst_size = c_stream.total_out;
 }
 
+/**
+ * @brief Build final update packet from accumulated data
+ * @param packet Output packet to build (must be empty)
+ * @param hasTransport If true, packet contains transport position data
+ * @return true on success, false on compression failure
+ *
+ * Builds the final network packet from accumulated update blocks:
+ * 1. Calculates buffer size (block count + transport flag + OOR data + blocks)
+ * 2. Writes header (block count, transport flag)
+ * 3. Writes out-of-range GUID list (if any)
+ * 4. Appends accumulated update blocks
+ * 5. Compresses if size > 100 bytes
+ *
+ * Packet format:
+ * - uint32: Block count
+ * - uint8: Transport flag (1 if transport in update, 0 otherwise)
+ * - (Optional) Out-of-range section:
+ *   - uint8: Update type (UPDATETYPE_OUT_OF_RANGE_OBJECTS)
+ *   - uint32: Count
+ *   - PackedGUID[]: GUIDs to remove
+ * - Byte[]: Update blocks data
+ *
+ * @note Packet must be empty before calling (assertion-checked)
+ */
 bool UpdateData::BuildPacket(WorldPacket* packet, bool hasTransport)
 {
     MANGOS_ASSERT(packet->empty());                         // shouldn't happen
 
+    // Calculate buffer size: header + OOR section (optional) + data blocks
     ByteBuffer buf(4 + 1 + (m_outOfRangeGUIDs.empty() ? 0 : 1 + 4 + 9 * m_outOfRangeGUIDs.size()) + m_data.wpos());
 
     buf << (uint32)(!m_outOfRangeGUIDs.empty() ? m_blockCount + 1 : m_blockCount);
     buf << (uint8)(hasTransport ? 1 : 0);
 
+    // Write out-of-range GUIDs if present
     if (!m_outOfRangeGUIDs.empty())
     {
         buf << (uint8) UPDATETYPE_OUT_OF_RANGE_OBJECTS;
@@ -126,7 +210,8 @@ bool UpdateData::BuildPacket(WorldPacket* packet, bool hasTransport)
 
     size_t pSize = buf.wpos();                              // use real used data size
 
-    if (pSize > 100)                                        // compress large packets
+    // Compress packets larger than 100 bytes
+    if (pSize > 100)
     {
         uint32 destsize = compressBound(pSize);
         packet->resize(destsize + sizeof(uint32));
@@ -150,6 +235,16 @@ bool UpdateData::BuildPacket(WorldPacket* packet, bool hasTransport)
     return true;
 }
 
+/**
+ * @brief Clear all accumulated data
+ *
+ * Resets the UpdateData to empty state:
+ * - Clears update data buffer
+ * - Clears out-of-range GUID set
+ * - Resets block counter to 0
+ *
+ * Called after the packet is built and sent.
+ */
 void UpdateData::Clear()
 {
     m_data.clear();

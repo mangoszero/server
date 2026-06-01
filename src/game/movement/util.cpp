@@ -22,16 +22,59 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file util.cpp
+ * @brief Movement physics utilities
+ *
+ * This file provides utility functions for movement physics calculations:
+ *
+ * - Fall time computation based on fall distance
+ * - Fall elevation calculation based on time
+ * - Terminal velocity constants
+ * - Safe fall calculations
+ *
+ * Physics constants:
+ * - Gravity: 19.29110527038574 units/s²
+ * - Terminal velocity: 60.148003 units/s (normal fall)
+ * - Safe fall terminal velocity: 7 units/s (with slow fall)
+ *
+ * Used by the movement system for accurate fall prediction and
+ * jump/parabolic trajectory calculations.
+ *
+ * @see Movement namespace for all utilities
+ */
+
 #include "MoveSplineFlag.h"
 #include <math.h>
 
 namespace Movement
 {
-    // Gravity constant used in movement calculations
+
+    /**
+     * @var gravity
+     * @brief Gravity constant in units per second squared
+     *
+     * Value: 19.29110527038574
+     * Used for fall time and parabolic trajectory calculations.
+     */
     double gravity = 19.29110527038574;
 
-    /// Velocity bounds that makes fall speed limited
+    /**
+     * @var terminalVelocity
+     * @brief Maximum fall speed in units per second
+     *
+     * Value: 60.148003f
+     * Standard falling terminal velocity without slow fall.
+     */
     float terminalVelocity = 60.148003f;
+
+    /**
+     * @var terminalSavefallVelocity
+     * @brief Maximum safe fall speed in units per second
+     *
+     * Value: 7.f
+     * Terminal velocity with slow fall effects (e.g., Levitate, Slow Fall).
+     */
     float terminalSavefallVelocity = 7.f;
 
     // Precomputed constants for terminal velocity and fall time
@@ -110,7 +153,7 @@ namespace Movement
         if (t_passed > terminal_time)
         {
             result = terminalVelocity * (t_passed - terminal_time) +
-                     start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
+                    start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
         }
         else
         {

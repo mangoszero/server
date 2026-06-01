@@ -36,63 +36,61 @@ This is the minimum interface to the VMapMamager.
 
 namespace VMAP
 {
+
     /**
-     * @brief
-     *
+     * @brief VMAP load result enumeration
      */
     enum VMAPLoadResult
     {
-        VMAP_LOAD_RESULT_ERROR,
-        VMAP_LOAD_RESULT_OK,
-        VMAP_LOAD_RESULT_IGNORED
+        VMAP_LOAD_RESULT_ERROR,  ///< Load error
+        VMAP_LOAD_RESULT_OK,     ///< Load successful
+        VMAP_LOAD_RESULT_IGNORED ///< Load ignored
     };
 
-#define VMAP_INVALID_HEIGHT       -100000.0f            // for check
-#define VMAP_INVALID_HEIGHT_VALUE -200000.0f            // real assigned value in unknown height case
+#define VMAP_INVALID_HEIGHT -100000.0f       ///< Invalid height for check
+#define VMAP_INVALID_HEIGHT_VALUE -200000.0f ///< Real assigned value in unknown height case
 
     //===========================================================
+
     /**
-     * @brief
+     * @brief Interface for VMap manager
      *
+     * This is the minimum interface to the VMapManager.
      */
     class IVMapManager
     {
         private:
-            bool iEnableLineOfSightCalc; /**< TODO */
-            bool iEnableHeightCalc; /**< TODO */
+            bool iEnableLineOfSightCalc; ///< Enable line of sight calculation
+            bool iEnableHeightCalc; ///< Enable height calculation
 
         public:
             /**
-             * @brief
-             *
+             * @brief Constructor
              */
             IVMapManager() : iEnableLineOfSightCalc(true), iEnableHeightCalc(true) {}
 
             /**
-             * @brief
-             *
+             * @brief Virtual destructor
              */
             virtual ~IVMapManager(void) {}
 
             /**
-             * @brief
-             *
-             * @param pBasePath
-             * @param pMapId
-             * @param x
-             * @param y
-             * @return VMAPLoadResult
+             * @brief Load map
+             * @param pBasePath Base path
+             * @param pMapId Map ID
+             * @param x X coordinate
+             * @param y Y coordinate
+             * @return VMAP load result
              */
             virtual VMAPLoadResult loadMap(const char* pBasePath, unsigned int pMapId, int x, int y) = 0;
 
             /**
-             * @brief
-             *
-             * @param pBasePath
-             * @param pMapId
-             * @param x
-             * @param y
-             * @return bool
+             * @brief Check if map exists
+             * @param pBasePath Base path
+             * @param pMapId Map ID
+             * @param x X coordinate
+             * @param y Y coordinate
+             * @return True if map exists
              */
             virtual bool existsMap(const char* pBasePath, unsigned int pMapId, int x, int y) = 0;
 
@@ -104,6 +102,7 @@ namespace VMAP
              * @param y
              */
             virtual void unloadMap(unsigned int pMapId, int x, int y) = 0;
+
             /**
              * @brief
              *
@@ -124,6 +123,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool isInLineOfSight(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2) = 0;
+
             /**
              * @brief
              *
@@ -135,6 +135,7 @@ namespace VMAP
              * @return float
              */
             virtual float getHeight(unsigned int pMapId, float x, float y, float z, float maxSearchDist) = 0;
+
             /**
              * @brief test if we hit an object. return true if we hit one. rx,ry,rz will hold the hit position or the dest position, if no intersection was found
              * return a position, that is pReduceDist closer to the origin
@@ -153,6 +154,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool getObjectHitPos(unsigned int pMapId, float x1, float y1, float z1, float x2, float y2, float z2, float& rx, float& ry, float& rz, float pModifyDist) = 0;
+
             /**
              * @brief send debug commands
              *
@@ -169,6 +171,7 @@ namespace VMAP
              * @param pVal
              */
             void setEnableLineOfSightCalc(bool pVal) { iEnableLineOfSightCalc = pVal; }
+
             /**
              * @brief Enable/disable model height calculation
              *
@@ -184,12 +187,14 @@ namespace VMAP
              * @return bool
              */
             bool isLineOfSightCalcEnabled() const { return(iEnableLineOfSightCalc); }
+
             /**
              * @brief
              *
              * @return bool
              */
             bool isHeightCalcEnabled() const { return(iEnableHeightCalc); }
+
             /**
              * @brief
              *
@@ -206,6 +211,7 @@ namespace VMAP
              * @return std::string
              */
             virtual std::string getDirFileName(unsigned int pMapId, int x, int y) const = 0;
+
             /**
              * @brief Query world model area info.
              *
@@ -220,6 +226,7 @@ namespace VMAP
              * @return bool
              */
             virtual bool getAreaInfo(unsigned int pMapId, float x, float y, float& z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const = 0;
+
             /**
              * @brief
              *

@@ -22,9 +22,14 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
- /*
-    CUSTOM COMMANDS HANDLERS
-    Code your custom command handlers here !
+/**
+ * @file ZZZ_CustomCommands.cpp
+ * @brief Implementation of custom server-specific chat commands.
+ *
+ * This file contains placeholder and custom chat command handlers for:
+ * - Server-specific features
+ * - Custom command implementations
+ * - Specialized functionality
  */
 
 #include "Chat.h"

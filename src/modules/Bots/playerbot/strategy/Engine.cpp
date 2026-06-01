@@ -161,7 +161,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
 
     int iterations = 0;
     int iterationsPerTick = queue.Size() * sPlayerbotAIConfig.iterationsPerTick;
-    do {
+    do
+    {
         basket = queue.Peek();
         if (basket)
         {
@@ -244,7 +245,8 @@ bool Engine::DoNextAction(Unit* unit, int depth)
         }
     }
 
-    if (time(0) - currentTime > 1) {
+    if (time(0) - currentTime > 1)
+    {
     {
         LogAction("too long execution");
     }

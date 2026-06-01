@@ -119,18 +119,31 @@ bool MovementAction::MoveTo(Unit* target, float distance)
     float dx = cos(angle) * needToGo + bx;
     float dy = sin(angle) * needToGo + by;
 
-    if (needToGo > 0)
+    if (needToGo != 0)
     {
-        float safeDist = CalculateAggroFreeDistance(bx, by, angle, needToGo);
-        if (safeDist < needToGo)
+        float travelAngle = needToGo > 0 ? angle : angle + M_PI;
+        float travelDist  = fabs(needToGo);
+
+        static const float deltas[] = { 0.0f, M_PI/6, -M_PI/6, M_PI/3, -M_PI/3, M_PI/2, -M_PI/2 };
+        float bestSafeDist = 0.0f;
+        float bestAngle    = travelAngle;
+        for (float delta : deltas)
         {
-            if(safeDist < sPlayerbotAIConfig.contactDistance)
+            float safe = CalculateAggroFreeDistance(bx, by, travelAngle + delta, travelDist);
+            if (safe > bestSafeDist)
             {
-                return false;
+                bestSafeDist = safe;
+                bestAngle    = travelAngle + delta;
             }
-            dx = cos(angle) * safeDist + bx;
-            dy = sin(angle) * safeDist + by;
+            if (bestSafeDist >= travelDist)
+                break;
         }
+
+        float moveDist = std::min(bestSafeDist, travelDist);
+        if (moveDist < sPlayerbotAIConfig.contactDistance)
+            return false;
+        dx = cos(bestAngle) * moveDist + bx;
+        dy = sin(bestAngle) * moveDist + by;
     }
     return MoveTo(target->GetMapId(), dx, dy, tz, true);
 }
@@ -273,6 +286,7 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         AI_VALUE(LastMovement&, "last movement").Set(target);
         return true;
     }
+    return false;
 }
 
 bool MovementAction::FollowOffTransport(Unit* target, Player* master)
@@ -332,7 +346,6 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
         if (master->GetTransport()) // master on transport
             return FollowOnTransport(target, master);
     }
-
 
     if (bot->GetDistance2d(target->GetPositionX(), target->GetPositionY()) <= sPlayerbotAIConfig.sightDistance &&
             abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
@@ -527,6 +540,16 @@ bool RunAwayAction::Execute(Event event)
 
 bool MoveRandomAction::Execute(Event event)
 {
+    if (m_hasFaceTarget)
+    {
+        if (bot->IsStopped())
+        {
+            m_hasFaceTarget = false;
+            bot->SetFacingTo(bot->GetAngle(m_faceX, m_faceY));
+        }
+        return true;
+    }
+
     WorldObject* target = NULL;
 
     if (!(rand() % 3))
@@ -561,7 +584,14 @@ bool MoveRandomAction::Execute(Event event)
 
     if (target)
     {
-        return MoveNear(target);
+        bool moved = MoveNear(target);
+        if (moved)
+        {
+            m_faceX = target->GetPositionX();
+            m_faceY = target->GetPositionY();
+            m_hasFaceTarget = true;
+        }
+        return moved;
     }
 
     for (int i = 0; i < 10; ++i)
@@ -630,15 +660,37 @@ bool SetFacingTargetAction::isUseful()
 
 bool JumpAction::Execute(Event event)
 {
-    if (ai->IsJumping() || ai->IsPendingJump())
-        return false;
+    string const param = event.getParam();
 
-    ai->RequestJump();
-    return ai->IsPendingJump();
-}
+    if (param == "forward")
+    {
+        if (ai->IsJumping())
+            return false;
+        ai->StartJump(true);
+        return true;
+    }
 
-bool JumpInPlaceAction::Execute(Event event)
-{
+    if (param == "master")
+    {
+        if (ai->IsJumping())
+            return false;
+        Player* master = ai->GetMaster();
+        if (!master)
+            return false;
+        float angle = bot->GetAngle(master);
+        bot->SetFacingTo(angle);
+        ai->StartJump(true, angle);
+        return true;
+    }
+
+    if (param == "here")
+    {
+        if (ai->IsJumping() || ai->IsPendingJump())
+            return false;
+        ai->RequestJump();
+        return ai->IsPendingJump();
+    }
+
     if (ai->IsJumping())
         return false;
 

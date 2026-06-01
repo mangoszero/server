@@ -22,6 +22,23 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file LFGHandler.cpp
+ * @brief Looking For Group (Meeting Stone) opcode handlers
+ *
+ * This file handles player interactions with meeting stones (LFG system).
+ * Meeting stones allow players/groups to queue for dungeons and be matched
+ * with other players automatically.
+ *
+ * Opcodes handled:
+ * - CMSG_MEETINGSTONE_JOIN: Join LFG queue at a meeting stone
+ * - CMSG_MEETINGSTONE_LEAVE: Leave LFG queue
+ * - CMSG_MEETINGSTONE_INFO: Request current queue status
+ *
+ * @see LFGMgr for the queue management implementation
+ * @see LFGQueue for matching algorithm
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -38,6 +55,25 @@
 #include "LFGHandler.h"
 #include "LFGMgr.h"
 
+#ifdef ENABLE_PLAYERBOTS
+#include "PlayerbotMgr.h"
+#include "RandomPlayerbotMgr.h"
+#endif
+
+/**
+ * @brief Handle meeting stone join request (CMSG_MEETINGSTONE_JOIN)
+ * @param recv_data World packet containing meeting stone GameObject GUID
+ *
+ * Player attempts to join the LFG queue at a meeting stone.
+ * Requirements:
+ * - Player must not be in remote control state
+ * - Target must be a valid meeting stone GameObject
+ * - If in group, player must be leader
+ * - Cannot be in a raid group
+ * - Group must not be full
+ *
+ * On success, adds player/group to LFGMgr queue for the stone's area.
+ */
 void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -88,12 +124,24 @@ void WorldSession::HandleMeetingStoneJoinOpcode(WorldPacket& recv_data)
         }
     }
 
+    GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(obj->GetEntry());
 
-   GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(obj->GetEntry());
+#ifdef ENABLE_PLAYERBOTS
+    sRandomPlayerbotMgr.HandleMeetingStoneClick(_player, obj);
+#endif
 
-   sLFGMgr.AddToQueue(_player, gInfo->meetingstone.areaID);
+    sLFGMgr.AddToQueue(_player, gInfo->meetingstone.areaID);
 }
 
+/**
+ * @brief Handle meeting stone leave request (CMSG_MEETINGSTONE_LEAVE)
+ * @param recv_data World packet (empty)
+ *
+ * Player leaves the LFG queue. Behavior depends on group status:
+ * - In group as leader: Removes entire group from queue
+ * - In group as member: Personal leave notification only
+ * - Solo player: Removes from queue
+ */
 void WorldSession::HandleMeetingStoneLeaveOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Recvd CMSG_MEETINGSTONE_LEAVE");
@@ -114,6 +162,18 @@ void WorldSession::HandleMeetingStoneLeaveOpcode(WorldPacket& /*recv_data*/)
     }
 }
 
+/**
+ * @brief Handle meeting stone info request (CMSG_MEETING_STONE_INFO)
+ * @param recv_data World packet (empty)
+ *
+ * Player requests current LFG queue status. Used after login or
+ * when reopening the meeting stone UI.
+ *
+ * Responses:
+ * - In group in LFG: Sends area ID and JOINED_QUEUE status
+ * - In group not in LFG: Sends empty queue status
+ * - Solo player: Attempts to restore offline queue status
+ */
 void WorldSession::HandleMeetingStoneInfoOpcode(WorldPacket & /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received CMSG_MEETING_STONE_INFO");
@@ -135,6 +195,13 @@ void WorldSession::HandleMeetingStoneInfoOpcode(WorldPacket & /*recv_data*/)
     }
 }
 
+/**
+ * @brief Send meeting stone failure response
+ * @param status Failure reason code (MEETINGSTONE_FAIL_*)
+ *
+ * Sends SMSG_MEETINGSTONE_JOINFAILED to indicate why a join attempt failed.
+ * Common reasons: not leader, raid group, group full.
+ */
 void WorldSession::SendMeetingstoneFailed(uint8 status)
 {
     WorldPacket data(SMSG_MEETINGSTONE_JOINFAILED, 1);
@@ -142,6 +209,14 @@ void WorldSession::SendMeetingstoneFailed(uint8 status)
     SendPacket(&data);
 }
 
+/**
+ * @brief Send meeting stone queue status
+ * @param areaid Area/dungeon ID in queue (0 if not in queue)
+ * @param status Queue status (MEETINGSTONE_STATUS_*)
+ *
+ * Sends SMSG_MEETINGSTONE_SETQUEUE to update client's queue status UI.
+ * Called when joining, leaving, or restoring queue status.
+ */
 void WorldSession::SendMeetingstoneSetqueue(uint32 areaid, uint8 status)
 {
     WorldPacket data(SMSG_MEETINGSTONE_SETQUEUE, 5);

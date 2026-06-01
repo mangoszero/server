@@ -82,7 +82,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
-    m_pendingJump(false), m_jumpRequestTime(0),
+    m_pendingJump(false), m_jumpHere(false), m_jumpRequestTime(0),
     m_jumpTargetX(0.f), m_jumpTargetY(0.f), m_jumpTargetZ(0.f), m_jumpTargetO(0.f)
 {
     for (int i = 0 ; i < BOT_STATE_MAX; i++)
@@ -101,7 +101,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     m_isJumping(false), m_jumpStartTime(0),
     m_jumpStartX(0.f), m_jumpStartY(0.f), m_jumpStartZ(0.f),
     m_jumpSinAngle(0.f), m_jumpCosAngle(1.f), m_jumpXYSpeed(0.f),
-    m_pendingJump(false), m_jumpRequestTime(0),
+    m_pendingJump(false), m_jumpHere(false), m_jumpRequestTime(0),
     m_jumpTargetX(0.f), m_jumpTargetY(0.f), m_jumpTargetZ(0.f), m_jumpTargetO(0.f)
 {
     this->bot = bot;
@@ -119,7 +119,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     //masterIncomingPacketHandlers.AddHandler(CMSG_GAMEOBJ_REPORT_USE, "use game object");
     masterIncomingPacketHandlers.AddHandler(CMSG_AREATRIGGER, "area trigger");
     masterIncomingPacketHandlers.AddHandler(CMSG_GAMEOBJ_USE, "use game object");
-    masterIncomingPacketHandlers.AddHandler(CMSG_LOOT_ROLL, "loot roll");
+    botOutgoingPacketHandlers.AddHandler(SMSG_LOOT_START_ROLL, "loot roll");
     masterIncomingPacketHandlers.AddHandler(CMSG_GOSSIP_HELLO, "gossip hello");
     masterIncomingPacketHandlers.AddHandler(CMSG_QUESTGIVER_HELLO, "gossip hello");
     masterIncomingPacketHandlers.AddHandler(CMSG_QUESTGIVER_COMPLETE_QUEST, "complete quest");
@@ -175,7 +175,7 @@ PlayerbotAI::~PlayerbotAI()
 static const float BOT_JUMP_VELOCITY = 7.9557f;
 static const float BOT_JUMP_GRAVITY  = 19.2911f;
 
-void PlayerbotAI::RequestJump()
+void PlayerbotAI::RequestJump(bool here)
 {
     if (m_pendingJump || m_isJumping)
         return;
@@ -189,6 +189,7 @@ void PlayerbotAI::RequestJump()
     m_jumpTargetZ = master->GetPositionZ();
     m_jumpTargetO = master->GetOrientation();
     m_pendingJump = true;
+    m_jumpHere = here;
     m_jumpRequestTime = getMSTime();
 }
 
@@ -243,7 +244,10 @@ void PlayerbotAI::UpdateJump()
             if (dist2d <= 0.5f)
             {
                 m_pendingJump = false;
-                StartJump(true, m_jumpTargetO);
+                if (m_jumpHere)
+                    StartJump(false);
+                else
+                    StartJump(true, m_jumpTargetO);
             }
             else
             {
@@ -903,6 +907,30 @@ bool PlayerbotAI::IsTank(Player* player)
  * @param player The player to check.
  * @return True if the player is a healer class, false otherwise.
  */
+Player* PlayerbotAI::GetGroupTank(Player* except)
+{
+    Group* group = except->GetGroup();
+    if (!group)
+        return nullptr;
+
+    Group::MemberSlotList const& slots = group->GetMemberSlots();
+    if (slots.size() < 5)
+        return nullptr;
+
+    for (Group::member_citerator itr = slots.begin(); itr != slots.end(); ++itr)
+    {
+        Player* member = sObjectMgr.GetPlayer(itr->guid);
+        if (member && member != except && IsTank(member))
+            return member;
+    }
+    return nullptr;
+}
+
+/**
+ * Checks if the player is a healer class.
+ * @param player The player to check.
+ * @return True if the player is a healer class, false otherwise.
+ */
 bool PlayerbotAI::IsHeal(Player* player)
 {
     PlayerbotAI* botAi = player->GetPlayerbotAI();
@@ -1239,9 +1267,11 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
     va_start(vl, player);
 
     const char* cur;
-    do {
+    do
+    {
         cur = va_arg(vl, const char*);
-        if (cur && HasAura(cur, player)) {
+        if (cur && HasAura(cur, player))
+        {
         {
             va_end(vl);
         }
@@ -1455,7 +1485,6 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
         }
     }
 
-
     if (!bot->IsInFront(faceTo, sPlayerbotAIConfig.sightDistance))
     {
         bot->SetFacingTo(bot->GetAngle(faceTo));
@@ -1640,6 +1669,7 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 }
 
 #ifndef WIN32
+
 /**
  * Case-insensitive string comparison.
  * @param s1 The first string.

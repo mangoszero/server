@@ -31,11 +31,13 @@
  * @param timeout
  */
 void startDaemon(uint32_t timeout = 10);
+
 /**
  * @brief
  *
  */
 void stopDaemon();
+
 /**
  * @brief
  *

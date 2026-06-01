@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file VMapManager2.cpp
+ * @brief VMap manager implementation
+ *
+ * This file implements VMapManager2 which manages loading and querying
+ * of VMap (Virtual Map) data for all game maps. It provides the main
+ * interface for line-of-sight, height, and collision queries.
+ *
+ * Key features:
+ * - Map tile loading/unloading
+ * - Line-of-sight queries
+ * - Height/floor determination
+ * - Area information retrieval
+ * - Model collision detection
+ *
+ * @see VMapManager2 for the manager class
+ * @see MapTree for individual map spatial index
+ */
+
 #include <iomanip>
 #include <string>
 #include <sstream>
@@ -35,6 +54,7 @@ using G3D::Vector3;
 
 namespace VMAP
 {
+
     /**
      * @brief Constructor for VMapManager2.
      */

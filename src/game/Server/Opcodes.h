@@ -964,6 +964,9 @@ enum OpcodesList
 // Don't forget to change this value and add opcode name to Opcodes.cpp when you add new opcode!
 #define NUM_MSG_TYPES 0x424
 
+/**
+ * Initializes opcode handler metadata tables.
+ */
 extern void InitializeOpcodes();
 
 /// Player state
@@ -1172,6 +1175,5 @@ inline const char* LookupOpcodeName(uint16 id)
  * \see VictimState
  * \todo Is this correct? Is it really about a recent hit?
  */
-
 
 /// @}

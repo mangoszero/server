@@ -22,9 +22,18 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/*
-*   Account related commands
-*/
+/**
+ * @file AccountCommands.cpp
+ * @brief Implementation of account management chat commands.
+ *
+ * This file contains chat command handlers for account-related operations including:
+ * - Account information display
+ * - Password management
+ * - Account locking
+ * - Account creation and deletion
+ * - Character listing
+ * - Account properties modification (addons, GM level, password)
+ */
 
 #include "World.h"
 #include "Chat.h"
@@ -32,11 +41,12 @@
 #include "Database/DatabaseEnv.h"
 #include "Player.h"
 
-
-/**********************************************************************
-    CommandTable : accountCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Displays the current account information and access level.
+ *
+ * @param args Command arguments (should be empty).
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountCommand(char* args)
 {
     // let show subcommands at unexpected data in args
@@ -50,6 +60,15 @@ bool ChatHandler::HandleAccountCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Changes the account password after verifying the old password.
+ *
+ * This command is only available through remote administration (RA) and requires
+ * the old password to be correct before the new password is accepted.
+ *
+ * @param args Command arguments: old_password new_password new_password_confirm.
+ * @returns True if the password was changed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountPasswordCommand(char* args)
 {
     // allow use from RA, but not from console (not have associated account id)
@@ -112,6 +131,14 @@ bool ChatHandler::HandleAccountPasswordCommand(char* args)
     return false;
 }
 
+/**
+ * @brief Locks or unlocks the current account to prevent or allow logins.
+ *
+ * This command is only available through remote administration (RA).
+ *
+ * @param args Command arguments: on/off value to lock or unlock the account.
+ * @returns True if the lock state was changed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountLockCommand(char* args)
 {
     // allow use from RA, but not from console (not have associated account id)
@@ -144,7 +171,12 @@ bool ChatHandler::HandleAccountLockCommand(char* args)
     return true;
 }
 
-/// Display info on users currently in the realm
+/**
+ * @brief Displays a list of accounts currently logged in to the realm.
+ *
+ * @param args Command arguments: optional limit (default 100) for maximum accounts to display.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountOnlineListCommand(char* args)
 {
     uint32 limit;
@@ -160,8 +192,14 @@ bool ChatHandler::HandleAccountOnlineListCommand(char* args)
     return ShowAccountListHelper(result, &limit);
 }
 
-/// Delete a user account and all associated characters in this realm
-/// \todo This function has to be enhanced to respect the login/realm split (delete char, delete account chars in realm, delete account chars in realm then delete account
+/**
+ * @brief Deletes an account and all associated characters in the realm.
+ *
+ * This command can only delete accounts with lower security level than the executor.
+ *
+ * @param args Command arguments: account name to delete.
+ * @returns True if the account was deleted successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountDeleteCommand(char* args)
 {
     if (!*args)
@@ -207,7 +245,12 @@ bool ChatHandler::HandleAccountDeleteCommand(char* args)
     return true;
 }
 
-/// Create an account
+/**
+ * @brief Creates a new account with optional expansion level.
+ *
+ * @param args Command arguments: account_name password [expansion_level].
+ * @returns True if the account was created successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountCreateCommand(char* args)
 {
     ///- %Parse the command line arguments
@@ -258,7 +301,12 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     return true;
 }
 
-/// Output list of character for account
+/**
+ * @brief Lists all characters for a specified account.
+ *
+ * @param args Command arguments: optional account name or target player to query their account.
+ * @returns True if the character list was displayed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountCharactersCommand(char* args)
 {
     ///- Get the command line arguments
@@ -276,11 +324,12 @@ bool ChatHandler::HandleAccountCharactersCommand(char* args)
     return ShowPlayerListHelper(result);
 }
 
-/**********************************************************************
-    CommandTable : accountSetCommandTable
-/***********************************************************************/
-
-/// Set/Unset the expansion level for an account
+/**
+ * @brief Sets the expansion level for an account.
+ *
+ * @param args Command arguments: account_name expansion_level.
+ * @returns True if the expansion level was set successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountSetAddonCommand(char* args)
 {
     ///- Get the command line arguments
@@ -312,6 +361,15 @@ bool ChatHandler::HandleAccountSetAddonCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Sets the GM level (security level) for an account.
+ *
+ * This command can only set security levels lower than the executor's level.
+ * Self-application is not allowed.
+ *
+ * @param args Command arguments: account_name gm_level.
+ * @returns True if the GM level was set successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountSetGmLevelCommand(char* args)
 {
     char* accountStr = ExtractOptNotLastArg(&args);
@@ -371,7 +429,15 @@ bool ChatHandler::HandleAccountSetGmLevelCommand(char* args)
     return true;
 }
 
-/// Set password for account
+/**
+ * @brief Sets the password for a specified account.
+ *
+ * This command can only set passwords for accounts with lower security level.
+ * Both passwords must match to be accepted.
+ *
+ * @param args Command arguments: account_name new_password new_password_confirm.
+ * @returns True if the password was set successfully, false otherwise.
+ */
 bool ChatHandler::HandleAccountSetPasswordCommand(char* args)
 {
     ///- Get the command line arguments

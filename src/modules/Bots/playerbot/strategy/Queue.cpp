@@ -5,7 +5,6 @@
 
 using namespace ai;
 
-
 void Queue::Push(ActionBasket *action)
 {
     if (action)

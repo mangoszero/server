@@ -45,7 +45,6 @@ public:
      */
         string CreateRandomBotName();
 
-
 private:
     uint32 accountId; ///< The account ID for the random player bot.
     static map<uint8, vector<uint8> > availableRaces; ///< Map of available races for each class.

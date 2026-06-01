@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file AddonHandler.cpp
+ * @brief Client addon information handler
+ *
+ * This file handles the client addon list sent during connection.
+ * The client sends a compressed list of installed addons with their
+ * CRC checksums. The server responds with SMSG_ADDON_INFO to indicate
+ * which addons are "standard" (Blizzard-approved) vs "custom".
+ *
+ * Process:
+ * 1. Client sends CMSG_ADDON_INFO with zlib-compressed addon list
+ * 2. Server decompresses and parses addon names and CRCs
+ * 3. Server responds with SMSG_ADDON_INFO for each addon
+ *
+ * The tdata array contains a standard response payload that marks
+ * addons as "Blizzard addons" (CRC 0x1c776d01).
+ *
+ * @note This implementation does not enforce addon restrictions,
+ * it only classifies them for the client's information.
+ */
+
 #include <zlib.h>
 #include "AddonHandler.h"
 #include "Database/DatabaseEnv.h"
@@ -31,14 +52,45 @@
 
 INSTANTIATE_SINGLETON_1(AddonHandler);
 
+/**
+ * @brief Construct AddonHandler singleton
+ *
+ * Initializes the addon handler. No database operations
+ * are performed during construction.
+ */
 AddonHandler::AddonHandler()
 {
 }
 
+/**
+ * @brief Destroy AddonHandler singleton
+ *
+ * Cleans up any allocated resources. Currently a no-op.
+ */
 AddonHandler::~AddonHandler()
 {
 }
 
+/**
+ * @brief Build addon info response packet
+ * @param Source Incoming packet with compressed addon data (CMSG_ADDON_INFO)
+ * @param Target Outgoing packet to build (SMSG_ADDON_INFO)
+ * @return true on success, false on decompression/parsing error
+ *
+ * Decompresses the client's addon list and builds the server's response.
+ * For each addon, the server indicates:
+ * - Standard addon (Blizzard official) - uses hardcoded CRC
+ * - Custom addon (user-installed) - marked with special flag
+ *
+ * The tdata array contains a 256-byte signature/payload that marks
+ * addons as "standard" when appended to the response.
+ *
+ * Validation:
+ * - Packet must have at least 4 bytes for size field
+ * - Size field must be non-zero
+ * - Size must not exceed 0xFFFFF (1MB)
+ * - ZLIB decompression must succeed
+ */
 bool AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target)
 {
     ByteBuffer AddOnPacked;
@@ -46,6 +98,14 @@ bool AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target)
     uint32 CurrentPosition;
     uint32 TempValue;
 
+    /**
+     * @var tdata
+     * @brief Standard addon signature payload
+     *
+     * This 256-byte array is sent in the addon response to mark
+     * addons as "Blizzard standard" (CRC 0x1c776d01).
+     * Contains cryptographic/signature data for addon validation.
+     */
     unsigned char tdata[256] =
     {
         0xC3, 0x5B, 0x50, 0x84, 0xB9, 0x3E, 0x32, 0x42, 0x8C, 0xD0, 0xC7, 0x48, 0xFA, 0x0E, 0x5D, 0x54,

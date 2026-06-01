@@ -8,8 +8,15 @@ namespace ai
     public:
         Position() : valueSet(false) {}
         void Set(double x, double y, double z) { this->x = x; this->y = y; this->z = z; this->valueSet = true; }
-        void Reset() { valueSet = false; }
-        bool isSet() { return valueSet; }
+        void Reset()
+        {
+            valueSet = false;
+        }
+
+        bool isSet()
+        {
+            return valueSet;
+        }
 
         double x, y, z;
         bool valueSet;

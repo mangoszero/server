@@ -16,7 +16,6 @@ vector<string>& split(const string &s, char delim, vector<string> &elems)
     return elems;
 }
 
-
 vector<string> split(const string &s, char delim)
 {
     vector<string> elems;
@@ -49,8 +48,6 @@ char *strstri(const char *haystack, const char *needle)
     }
     return 0;
 }
-
-
 
 uint64 extractGuid(WorldPacket& packet)
 {

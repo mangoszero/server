@@ -11,7 +11,6 @@
 
 using namespace ai;
 
-
 namespace ai
 {
     namespace priest
@@ -108,8 +107,6 @@ namespace ai
         };
     };
 };
-
-
 
 namespace ai
 {

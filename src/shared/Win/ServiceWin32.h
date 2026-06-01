@@ -26,8 +26,19 @@
 #ifndef _WIN32_SERVICE_
 #define _WIN32_SERVICE_
 
+/**
+ * Installs the MaNGOS service in the Windows service manager.
+ */
 bool WinServiceInstall();
+
+/**
+ * Removes the MaNGOS service from the Windows service manager.
+ */
 bool WinServiceUninstall();
+
+/**
+ * Runs the server under Windows service control.
+ */
 bool WinServiceRun();
 
 #endif                                                      // _WIN32_SERVICE_

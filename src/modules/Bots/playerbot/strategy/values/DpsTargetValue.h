@@ -11,6 +11,6 @@ namespace ai
         DpsTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
     public:
-        Unit* Calculate();
+        Unit* Calculate() override;
     };
 }

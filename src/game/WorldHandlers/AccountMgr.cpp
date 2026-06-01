@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file AccountMgr.cpp
+ * @brief Account management system implementation
+ *
+ * This file implements the AccountMgr singleton which provides centralized
+ * account management operations including:
+ * - Account creation with SHA1 password hashing
+ * - Account deletion with character cleanup
+ * - Username and password changes
+ * - Account ID/name lookups
+ * - GM level management
+ *
+ * All account data is stored in the LoginDatabase (account/realm tables).
+ * Passwords are stored as SHA1 hashes for security.
+ *
+ * @see AccountMgr for the singleton interface
+ */
+
 #include "AccountMgr.h"
 #include "Database/DatabaseEnv.h"
 #include "ObjectAccessor.h"
@@ -31,29 +49,52 @@
 #include "Util.h"
 #include "Auth/Sha1.h"
 
+/**
+ * @var LoginDatabase
+ * @brief External reference to realm authentication database
+ *
+ * Used for all account-related database operations including
+ * account creation, deletion, and password management.
+ */
 extern DatabaseType LoginDatabase;
 
 INSTANTIATE_SINGLETON_1(AccountMgr);
 
 /**
- * The AccountMgr constructor
+ * @brief Construct AccountMgr singleton
+ *
+ * Initializes the account manager. No database operations
+ * are performed during construction.
  */
 AccountMgr::AccountMgr()
 {}
 
 /**
- * The AccountMgr destructor
+ * @brief Destroy AccountMgr singleton
+ *
+ * Cleans up any allocated resources. Currently a no-op as
+ * all resources are managed elsewhere.
  */
 AccountMgr::~AccountMgr()
 {}
 
 /**
- * It creates an account
+ * @brief Create a new game account
+ * @param username Desired account username (converted to uppercase)
+ * @param password Plain-text password (converted to uppercase, SHA1 hashed for storage)
+ * @return Account operation result code (AOR_OK on success)
  *
- * @param username The username of the account to create.
- * @param password The password you want to set for the account.
+ * Creates a new account with default settings:
+ * - Username and password are uppercased for case-insensitive comparison
+ * - Password is stored as SHA1 hash
+ * - Account is automatically linked to all realms via realmcharacters table
  *
- * @return AOR_OK
+ * Validation checks:
+ * - Username length <= MAX_ACCOUNT_STR
+ * - Password length <= MAX_PASSWORD_STR
+ * - Username must not already exist
+ *
+ * @note This is the simplified version without expansion setting
  */
 AccountOpResult AccountMgr::CreateAccount(std::string username, std::string password)
 {
@@ -87,13 +128,16 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
 }
 
 /**
- * It creates an account
+ * @brief Create a new game account with expansion level
+ * @param username Desired account username (converted to uppercase)
+ * @param password Plain-text password (converted to uppercase, SHA1 hashed for storage)
+ * @param expansion Expansion level (0=Classic, 1=TBC, 2=WotLK, 3=Cata)
+ * @return Account operation result code (AOR_OK on success)
  *
- * @param username The username of the account to create.
- * @param password The password you want to set for the account.
- * @param expansion 0 = Classic, 1 = TBC, 2 = WOTLK, 3 = Cataclysm
+ * Extended version of CreateAccount that allows setting the account's
+ * expansion level, which controls which game content is accessible.
  *
- * @return AOR_OK
+ * @see CreateAccount(std::string, std::string) for base functionality
  */
 AccountOpResult AccountMgr::CreateAccount(std::string username, std::string password, uint32 expansion)
 {
@@ -120,11 +164,19 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
 }
 
 /**
- * It deletes an account from the database
+ * @brief Delete an account and all associated data
+ * @param accid Account ID to delete
+ * @return Account operation result code (AOR_OK on success)
  *
- * @param accid The account ID of the account to delete.
+ * Permanently removes an account and all related data:
+ * - Kicks the player if currently online
+ * - Deletes all characters on all realms
+ * - Removes character tutorial data
+ * - Deletes account record and realm character entries
  *
- * @return AOR_OK
+ * This operation uses a database transaction to ensure consistency.
+ *
+ * @warning This action is irreversible and deletes all character data
  */
 AccountOpResult AccountMgr::DeleteAccount(uint32 accid)
 {
@@ -174,13 +226,16 @@ AccountOpResult AccountMgr::DeleteAccount(uint32 accid)
 }
 
 /**
- * It changes the username and password of an account
+ * @brief Change both username and password for an account
+ * @param accid Account ID to modify
+ * @param new_uname New username (will be uppercased)
+ * @param new_passwd New password (will be uppercased and hashed)
+ * @return Account operation result code (AOR_OK on success)
  *
- * @param accid The account ID of the account you want to change the username of.
- * @param new_uname The new username
- * @param new_passwd The new password for the account.
+ * Updates both the username and password simultaneously.
+ * Also resets the SRP6 v/s values to force re-authentication at next login.
  *
- * @return AOR_OK
+ * @note The new username must not conflict with existing accounts
  */
 AccountOpResult AccountMgr::ChangeUsername(uint32 accid, std::string new_uname, std::string new_passwd)
 {
@@ -217,12 +272,15 @@ AccountOpResult AccountMgr::ChangeUsername(uint32 accid, std::string new_uname, 
 }
 
 /**
- * It takes a username and password, and updates the database with the new password
+ * @brief Change password for an existing account
+ * @param accid Account ID to modify
+ * @param new_passwd New password (will be uppercased and hashed)
+ * @return Account operation result code (AOR_OK on success)
  *
- * @param accid The account ID of the account you want to change the password of.
- * @param new_passwd The new password to set for the account.
+ * Updates the account password and resets SRP6 authentication values
+ * to force re-authentication at next login.
  *
- * @return AOR_OK
+ * @note Retrieves the username internally - cannot change username with this function
  */
 AccountOpResult AccountMgr::ChangePassword(uint32 accid, std::string new_passwd)
 {

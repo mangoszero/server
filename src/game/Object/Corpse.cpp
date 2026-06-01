@@ -30,6 +30,11 @@
 #include "World.h"
 #include "ObjectMgr.h"
 
+/**
+ * @brief Creates a corpse object of the specified type.
+ *
+ * @param type The corpse type to initialize.
+ */
 Corpse::Corpse(CorpseType type) : WorldObject(),
     loot(this),
     lootRecipient(NULL),
@@ -46,10 +51,16 @@ Corpse::Corpse(CorpseType type) : WorldObject(),
     m_time = time(NULL);
 }
 
+/**
+ * @brief Destroys the corpse instance.
+ */
 Corpse::~Corpse()
 {
 }
 
+/**
+ * @brief Adds the corpse to the world and registers it for lookup.
+ */
 void Corpse::AddToWorld()
 {
     ///- Register the corpse for guid lookup
@@ -61,6 +72,9 @@ void Corpse::AddToWorld()
     Object::AddToWorld();
 }
 
+/**
+ * @brief Removes the corpse from the world and unregisters it.
+ */
 void Corpse::RemoveFromWorld()
 {
     ///- Remove the corpse from the accessor
@@ -72,12 +86,25 @@ void Corpse::RemoveFromWorld()
     Object::RemoveFromWorld();
 }
 
+/**
+ * @brief Creates a corpse object from a GUID.
+ *
+ * @param guidlow The low part of the corpse GUID.
+ * @return true.
+ */
 bool Corpse::Create(uint32 guidlow)
 {
     Object::_Create(guidlow, 0, HIGHGUID_CORPSE);
     return true;
 }
 
+/**
+ * @brief Creates a corpse for a player at the player's current position.
+ *
+ * @param guidlow The low part of the corpse GUID.
+ * @param owner The player that owns the corpse.
+ * @return true if the corpse was created successfully; otherwise, false.
+ */
 bool Corpse::Create(uint32 guidlow, Player* owner)
 {
     MANGOS_ASSERT(owner);
@@ -108,6 +135,9 @@ bool Corpse::Create(uint32 guidlow, Player* owner)
     return true;
 }
 
+/**
+ * @brief Saves the corpse to the database.
+ */
 void Corpse::SaveToDB()
 {
     // bones should not be saved to DB (would be deleted on startup anyway)
@@ -133,6 +163,9 @@ void Corpse::SaveToDB()
     CharacterDatabase.CommitTransaction();
 }
 
+/**
+ * @brief Removes a bones corpse from the world.
+ */
 void Corpse::DeleteBonesFromWorld()
 {
     MANGOS_ASSERT(GetType() == CORPSE_BONES);
@@ -147,6 +180,9 @@ void Corpse::DeleteBonesFromWorld()
     AddObjectToRemoveList();
 }
 
+/**
+ * @brief Deletes the corpse record from the database.
+ */
 void Corpse::DeleteFromDB()
 {
     // bones should not be saved to DB (would be deleted on startup anyway)
@@ -159,6 +195,13 @@ void Corpse::DeleteFromDB()
     stmt.PExecute(GetOwnerGuid().GetCounter());
 }
 
+/**
+ * @brief Loads corpse data from the database.
+ *
+ * @param lowguid The low part of the corpse GUID.
+ * @param fields The database fields containing corpse data.
+ * @return true if the corpse was loaded successfully; otherwise, false.
+ */
 bool Corpse::LoadFromDB(uint32 lowguid, Field* fields)
 {
     ////                                                    0            1       2                  3                  4                  5                   6
@@ -265,11 +308,25 @@ bool Corpse::LoadFromDB(uint32 lowguid, Field* fields)
     return true;
 }
 
+/**
+ * @brief Checks whether the corpse is visible to a player in the current state.
+ *
+ * @param u The player evaluating visibility.
+ * @param viewPoint The viewpoint used for visibility checks.
+ * @param inVisibleList true when the corpse is already in the visible list.
+ * @return true if the corpse should be visible; otherwise, false.
+ */
 bool Corpse::IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const
 {
     return IsInWorld() && u->IsInWorld() && IsWithinDistInMap(viewPoint, GetMap()->GetVisibilityDistance() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
 }
 
+/**
+ * @brief Checks whether the corpse owner is hostile to a unit.
+ *
+ * @param unit The unit to test against.
+ * @return true if the owner is hostile to the unit; otherwise, false.
+ */
 bool Corpse::IsHostileTo(Unit const* unit) const
 {
     if (Player* owner = sObjectMgr.GetPlayer(GetOwnerGuid()))
@@ -282,6 +339,12 @@ bool Corpse::IsHostileTo(Unit const* unit) const
     }
 }
 
+/**
+ * @brief Checks whether the corpse owner is friendly to a unit.
+ *
+ * @param unit The unit to test against.
+ * @return true if the owner is friendly to the unit; otherwise, false.
+ */
 bool Corpse::IsFriendlyTo(Unit const* unit) const
 {
     if (Player* owner = sObjectMgr.GetPlayer(GetOwnerGuid()))
@@ -294,6 +357,12 @@ bool Corpse::IsFriendlyTo(Unit const* unit) const
     }
 }
 
+/**
+ * @brief Checks whether the corpse has expired.
+ *
+ * @param t The reference time to compare against.
+ * @return true if the corpse should expire; otherwise, false.
+ */
 bool Corpse::IsExpired(time_t t) const
 {
     if (m_type == CORPSE_BONES)

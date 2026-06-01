@@ -37,7 +37,8 @@ namespace ai
     {
     public:
         HunterAspectOfThePackTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the pack") {}
-        virtual bool IsActive() {
+        virtual bool IsActive()
+        {
             return BuffTrigger::IsActive() && !ai->HasAura("aspect of the cheetah", GetTarget());
         };
     };
@@ -47,6 +48,14 @@ namespace ai
 
     BEGIN_TRIGGER(HuntersPetLowHealthTrigger, Trigger)
     END_TRIGGER()
+
+    class HuntersPetUnhappyTrigger : public Trigger
+    {
+    public:
+        HuntersPetUnhappyTrigger(PlayerbotAI* ai) : Trigger(ai, "hunters pet unhappy", 300) {}
+    public:
+        virtual bool IsActive();
+    };
 
     class BlackArrowTrigger : public DebuffTrigger
     {
@@ -90,4 +99,30 @@ namespace ai
         SerpentStingOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "serpent sting") {}
     };
 
+    class FeignDeathTrigger : public Trigger
+    {
+    public:
+        FeignDeathTrigger(PlayerbotAI* ai) : Trigger(ai, "has feign death", 1) {}
+        virtual bool IsActive()
+        {
+            if (!bot->hasUnitState(UNIT_STAT_DIED))
+                return false;
+
+            if (AI_VALUE(uint8, "attacker count") > 0)
+                return false;
+
+            Unit::AuraList const& auras = bot->GetAurasByType(SPELL_AURA_FEIGN_DEATH);
+            if (auras.empty())
+                return false;
+
+            Aura* aura = auras.front();
+            int32 maxDuration = aura->GetAuraMaxDuration();
+            int32 remaining = aura->GetAuraDuration();
+
+            if (maxDuration > 0)
+                return (maxDuration - remaining) >= 5000;
+
+            return true;
+        }
+    };
 }

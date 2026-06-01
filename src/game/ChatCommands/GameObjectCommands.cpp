@@ -22,17 +22,29 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GameObjectCommands.cpp
+ * @brief Implementation of game object manipulation chat commands.
+ *
+ * This file contains chat command handlers for game objects including:
+ * - Game object spawning and removal
+ * - Game object property modification
+ * - Game object state control
+ * - Game object database management
+ */
+
 #include "Chat.h"
 #include "G3D/Quat.h"
 #include "MapManager.h"
 #include "GameEventMgr.h"
 #include "ObjectMgr.h"
 
- /**********************************************************************
-     CommandTable : gobjectCommandTable
- /***********************************************************************/
-
- // delete object by selection or guid
+/**
+ * @brief Handler for HandleGameObjectDeleteCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectDeleteCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject:go_guid|h[name]|h|r
@@ -84,7 +96,12 @@ bool ChatHandler::HandleGameObjectDeleteCommand(char* args)
     return true;
 }
 
-// turn selected object
+/**
+ * @brief Handler for HandleGameObjectTurnCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectTurnCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject:go_id|h[name]|h|r
@@ -152,7 +169,12 @@ bool ChatHandler::HandleGameObjectTurnCommand(char* args)
     return true;
 }
 
-// move selected object
+/**
+ * @brief Handler for HandleGameObjectMoveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectMoveCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject:go_guid|h[name]|h|r
@@ -242,7 +264,12 @@ bool ChatHandler::HandleGameObjectMoveCommand(char* args)
     return true;
 }
 
-// spawn go
+/**
+ * @brief Handler for HandleGameObjectAddCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectAddCommand(char* args)
 {
     // number or [name] Shift-click form |color|Hgameobject_entry:go_id|h[name]|h|r
@@ -328,6 +355,12 @@ bool ChatHandler::HandleGameObjectAddCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGameObjectAnimationCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
 {
     uint32 lowguid;
@@ -363,6 +396,12 @@ bool ChatHandler::HandleGameObjectAnimationCommand(char* args)
     return false;
 }
 
+/**
+ * @brief Handler for HandleGameObjectLootstateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
 {
     uint32 lowguid;
@@ -396,6 +435,12 @@ bool ChatHandler::HandleGameObjectLootstateCommand(char* args)
     return false;
 }
 
+/**
+ * @brief Handler for HandleGameObjectStateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectStateCommand(char* args)
 {
     uint32 lowguid;
@@ -431,6 +476,12 @@ bool ChatHandler::HandleGameObjectStateCommand(char* args)
     return false;
 }
 
+/**
+ * @brief Handler for HandleGameObjectNearCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectNearCommand(char* args)
 {
     float distance;
@@ -480,6 +531,12 @@ bool ChatHandler::HandleGameObjectNearCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGameObjectTargetCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGameObjectTargetCommand(char* args)
 {
     Player* pl = m_session->GetPlayer();
@@ -505,9 +562,9 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
             std::string name = cId;
             WorldDatabase.escape_string(name);
             result = WorldDatabase.PQuery(
-                         "SELECT `guid`, `id`, `position_x`, `position_y`, `position_z`, `orientation`, `map`, (POW(`position_x` - %f, 2) + POW(`position_y` - %f, 2) + POW(`position_z` - %f, 2)) AS order_ "
-                         "FROM `gameobject`,`gameobject_template` WHERE `gameobject_template`.`entry` = `gameobject`.`id` AND `map` = %i AND `name` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" ORDER BY order_ ASC LIMIT 1",
-                         pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), pl->GetMapId(), name.c_str());
+                        "SELECT `guid`, `id`, `position_x`, `position_y`, `position_z`, `orientation`, `map`, (POW(`position_x` - %f, 2) + POW(`position_y` - %f, 2) + POW(`position_z` - %f, 2)) AS order_ "
+                        "FROM `gameobject`,`gameobject_template` WHERE `gameobject_template`.`entry` = `gameobject`.`id` AND `map` = %i AND `name` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" ORDER BY order_ ASC LIMIT 1",
+                        pl->GetPositionX(), pl->GetPositionY(), pl->GetPositionZ(), pl->GetMapId(), name.c_str());
         }
     }
     else

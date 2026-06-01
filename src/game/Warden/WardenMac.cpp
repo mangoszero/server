@@ -23,6 +23,22 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file WardenMac.cpp
+ * @brief macOS-specific Warden implementation
+ *
+ * This file implements WardenMac which provides the macOS-specific
+ * implementation of the Warden anti-cheat system for Mac clients.
+ *
+ * Key differences from Windows:
+ * - Different module binary
+ * - Different seed value
+ * - MD5-based module verification
+ *
+ * @see WardenMac for the Mac-specific class
+ * @see Warden for the base class
+ */
+
 #include "WardenKeyGeneration.h"
 #include "Common.h"
 #include "WorldPacket.h"
@@ -38,10 +54,28 @@
 #include "WardenModuleMac.h"
 #include "GameTime.h"
 
-WardenMac::WardenMac() : Warden() { }
+/**
+ * @brief WardenMac constructor
+ *
+ * Initializes the Mac-specific Warden implementation.
+ */
+WardenMac::WardenMac() : Warden() {}
 
-WardenMac::~WardenMac() { }
+/**
+ * @brief WardenMac destructor
+ */
+WardenMac::~WardenMac() {}
 
+/**
+ * @brief Initialize Mac Warden
+ * @param pClient Client session
+ * @param K Session key
+ *
+ * Initializes the Mac-specific Warden with:
+ * - SHA1-based key generation from session key
+ * - Fixed Mac-specific seed
+ * - Mac-specific module loading
+ */
 void WardenMac::Init(WorldSession* pClient, BigNumber* K)
 {
     _session = pClient;
@@ -75,6 +109,13 @@ void WardenMac::Init(WorldSession* pClient, BigNumber* K)
     RequestModule();
 }
 
+/**
+ * @brief Get Mac Warden module
+ * @return Client Warden module
+ *
+ * Returns the Mac-specific Warden module with its
+ * compressed data, key, and MD5 hash.
+ */
 ClientWardenModule* WardenMac::GetModuleForClient()
 {
     ClientWardenModule *mod = new ClientWardenModule;
@@ -96,6 +137,11 @@ ClientWardenModule* WardenMac::GetModuleForClient()
     return mod;
 }
 
+/**
+ * @brief Initialize Mac Warden module
+ *
+ * Initializes the Mac-specific Warden module on the client.
+ */
 void WardenMac::InitializeModule()
 {
     sLog.outWarden("Initialize module");
@@ -117,6 +163,11 @@ struct keyData {
     };
 };
 
+/**
+ * @brief Validates the Mac client hash reply and initializes the session crypto keys.
+ *
+ * @param buff The received Warden payload buffer.
+ */
 void WardenMac::HandleHashResult(ByteBuffer &buff)
 {
 
@@ -181,6 +232,9 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     _previousTimestamp = GameTime::GetGameTimeMS();
 }
 
+/**
+ * @brief Sends a Mac Warden data request packet to the client.
+ */
 void WardenMac::RequestData()
 {
     sLog.outWarden("Request data");
@@ -205,6 +259,11 @@ void WardenMac::RequestData()
     Warden::RequestData();
 }
 
+/**
+ * @brief Processes a Mac Warden data response from the client.
+ *
+ * @param buff The received Warden payload buffer.
+ */
 void WardenMac::HandleData(ByteBuffer &buff)
 {
     sLog.outWarden("Handle data");

@@ -32,20 +32,27 @@ class Config;
 class ByteBuffer;
 
 /**
- * @brief various levels for logging
+ * @brief Logging severity levels for message filtering
  *
+ * Defines the verbosity levels for logging output. Messages are only logged
+ * if their severity level is less than or equal to the configured threshold.
  */
 enum LogLevel
 {
-    LOG_LVL_MINIMAL = 0,
-    LOG_LVL_BASIC   = 1,
-    LOG_LVL_DETAIL  = 2,
-    LOG_LVL_DEBUG   = 3
+    LOG_LVL_MINIMAL = 0,  /**< Only critical errors */
+    LOG_LVL_BASIC   = 1,  /**< Basic information and errors */
+    LOG_LVL_DETAIL  = 2,  /**< Detailed diagnostic information */
+    LOG_LVL_DEBUG   = 3   /**< Full debug output */
 };
 
 /**
- * @brief bitmask (not forgot update logFilterData content)
+ * @brief Bitmask flags for selective logging of different subsystems
  *
+ * Allows fine-grained control over which types of events are logged.
+ * Each flag represents a specific subsystem or type of event that can be
+ * independently enabled or disabled. Multiple flags can be combined using bitwise OR.
+ *
+ * @note When adding new filters, update logFilterData array and LOG_FILTER_COUNT
  */
 enum LogFilters
 {
@@ -73,59 +80,78 @@ enum LogFilters
 #define LOG_FILTER_COUNT            19
 
 /**
- * @brief
+ * @brief Configuration data for individual log filters
  *
+ * Defines the display name, configuration file parameter name, and default
+ * state for each log filter. This structure is used to manage filter settings
+ * from configuration files.
  */
 struct LogFilterData
 {
-    char const* name; /**< TODO */
-    char const* configName; /**< TODO */
-    bool defaultState; /**< TODO */
+    char const* name; /**< Display name for the log filter */
+    char const* configName; /**< Configuration file parameter name */
+    bool defaultState; /**< Default enabled/disabled state */
 };
 
-extern LogFilterData logFilterData[LOG_FILTER_COUNT]; /**< TODO */
+extern LogFilterData logFilterData[LOG_FILTER_COUNT]; /**< Array of log filter configuration data **/
 
 /**
- * @brief
+ * @brief Console text color enumeration
  *
+ * Defines the available colors for console output on supported platforms.
+ * Used to colorize log messages for improved readability in terminal windows.
  */
 enum Color
 {
-    BLACK,
-    RED,
-    GREEN,
-    BROWN,
-    BLUE,
-    MAGENTA,
-    CYAN,
-    GREY,
-    YELLOW,
-    LRED,
-    LGREEN,
-    LBLUE,
-    LMAGENTA,
-    LCYAN,
-    WHITE
+    BLACK,    /**< Black text */
+    RED,      /**< Red text */
+    GREEN,    /**< Green text */
+    BROWN,    /**< Brown/Yellow text */
+    BLUE,     /**< Blue text */
+    MAGENTA,  /**< Magenta text */
+    CYAN,     /**< Cyan text */
+    GREY,     /**< Grey text */
+    YELLOW,   /**< Bright yellow text */
+    LRED,     /**< Light red text */
+    LGREEN,   /**< Light green text */
+    LBLUE,    /**< Light blue text */
+    LMAGENTA, /**< Light magenta text */
+    LCYAN,    /**< Light cyan text */
+    WHITE     /**< White text */
 };
 
-const int Color_count = int(WHITE) + 1; /**< TODO */
+const int Color_count = int(WHITE) + 1; /**< Total number of available colors **/
 
 /**
- * @brief
+ * @brief Singleton log manager for server-wide logging
  *
+ * Log provides thread-safe, singleton-based logging functionality for the MaNGOS server.
+ * It manages multiple log files (standard, GM, character, debug) and provides various
+ * logging methods with filtering capabilities. Supports different log levels and selective
+ * output based on event type bitmasks.
+ *
+ * Features:
+ * - Multiple output files (main, GM commands, character actions, debug)
+ * - Configurable log levels and filters
+ * - Thread-safe singleton implementation
+ * - Console color support for improved readability
+ * - Formatted output with timestamps
  */
 class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Thread_Mutex> >
 {
         friend class MaNGOS::OperatorNew<Log>;
+
         /**
-         * @brief
+         * @brief Constructs the Log singleton instance
          *
+         * Initializes all log file handles and filter settings.
          */
         Log();
 
         /**
-         * @brief
+         * @brief Destructs the Log instance and closes all open files
          *
+         * Ensures all log files are properly closed and file handles are cleaned up.
          */
         ~Log()
         {
@@ -197,6 +223,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          *
          */
         void Initialize();
+
         /**
          * @brief
          *
@@ -211,75 +238,88 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param str...
          */
         void outCommand(uint32 account, const char* str, ...) ATTR_PRINTF(3, 4);
+
         /**
          * @brief any log level
          *
          */
         void outString();
+
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outString(const char* str, ...)      ATTR_PRINTF(2, 3);
+
         /**
          * @brief any log level
          *
          * @param err...
          */
         void outError(const char* err, ...)       ATTR_PRINTF(2, 3);
+
         /**
          * @brief log level >= 1
          *
          * @param str...
          */
         void outBasic(const char* str, ...)       ATTR_PRINTF(2, 3);
+
         /**
          * @brief log level >= 2
          *
          * @param str...
          */
         void outDetail(const char* str, ...)      ATTR_PRINTF(2, 3);
+
         /**
          * @brief log level >= 3
          *
          * @param str...
          */
         void outDebug(const char* str, ...)       ATTR_PRINTF(2, 3);
+
         /**
          * @brief any log level
          *
          */
         void outErrorDb();
+
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorDb(const char* str, ...)     ATTR_PRINTF(2, 3);
+
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outChar(const char* str, ...)        ATTR_PRINTF(2, 3);
+
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorEluna();
+
         /**
          * @brief any log level
          *
          * @param str...
          */
         void outErrorEluna(const char* str, ...)        ATTR_PRINTF(2, 3);
+
         /**
          * @brief any log level
          *
          */
         void outErrorEventAI();
+
         /**
          * @brief any log level
          *
@@ -292,6 +332,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          *
          */
         void outErrorScriptLib();
+
         /**
          * @brief any log level
          *
@@ -309,6 +350,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param incoming
          */
         void outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming);
+
         /**
          * @brief any log level
          *
@@ -318,41 +360,48 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param name
          */
         void outCharDump(const char* str, uint32 account_id, uint32 guid, const char* name);
+
         /**
          * @brief
          *
          * @param str...
          */
         void outRALog(const char* str, ...)       ATTR_PRINTF(2, 3);
+
         /**
         * @brief any log level
         *
         */
         void outWarden();
+
         /**
         * @brief any log level
         *
         * @param str...
         */
         void outWarden(const char* str, ...)      ATTR_PRINTF(2, 3);
+
         /**
          * @brief
          *
          * @return uint32
          */
         uint32 GetLogLevel() const { return m_logLevel; }
+
         /**
          * @brief
          *
          * @param Level
          */
         void SetLogLevel(char* Level);
+
         /**
          * @brief
          *
          * @param Level
          */
         void SetLogFileLevel(char* Level);
+
         /**
          * @brief
          *
@@ -360,29 +409,34 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param color
          */
         void SetColor(bool stdout_stream, Color color);
+
         /**
          * @brief
          *
          * @param stdout_stream
          */
         void ResetColor(bool stdout_stream);
+
         /**
          * @brief
          *
          */
         void outTime();
+
         /**
          * @brief
          *
          * @param file
          */
         static void outTimestamp(FILE* file);
+
         /**
          * @brief
          *
          * @return std::string
          */
         static std::string GetTimestampStr();
+
         /**
          * @brief
          *
@@ -390,6 +444,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @return bool
          */
         bool HasLogFilter(uint32 filter) const { return m_logFilter & filter; }
+
         /**
          * @brief
          *
@@ -397,6 +452,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param on
          */
         void SetLogFilter(LogFilters filter, bool on) { if (on) { m_logFilter |= filter; } else { m_logFilter &= ~filter; } }
+
         /**
          * @brief
          *
@@ -404,12 +460,14 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @return bool
          */
         bool HasLogLevelOrHigher(LogLevel loglvl) const { return m_logLevel >= loglvl || (m_logFileLevel >= loglvl && logfile); }
+
         /**
          * @brief
          *
          * @return bool
          */
         bool IsOutCharDump() const { return m_charLog_Dump; }
+
         /**
          * @brief
          *
@@ -441,6 +499,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @return FILE
          */
         FILE* openLogFile(char const* configFileName, char const* configTimeStampFlag, char const* mode);
+
         /**
          * @brief
          *
@@ -564,30 +623,35 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
  * @param str...
  */
 void  outstring_log(const char* str, ...) ATTR_PRINTF(1, 2);
+
 /**
  * @brief
  *
  * @param str...
  */
 void  detail_log(const char* str, ...) ATTR_PRINTF(1, 2);
+
 /**
  * @brief
  *
  * @param str...
  */
 void  debug_log(const char* str, ...) ATTR_PRINTF(1, 2);
+
 /**
  * @brief
  *
  * @param str...
  */
 void  error_log(const char* str, ...) ATTR_PRINTF(1, 2);
+
 /**
  * @brief
  *
  * @param str...
  */
 void  error_db_log(const char* str, ...) ATTR_PRINTF(1, 2);
+
 /**
  * @brief
  *
@@ -595,6 +659,7 @@ void  error_db_log(const char* str, ...) ATTR_PRINTF(1, 2);
  * @param libName
  */
 void  setScriptLibraryErrorFile(char const* fname, char const* libName);
+
 /**
  * @brief
  *

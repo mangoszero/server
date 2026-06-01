@@ -22,6 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Creature.h
+ * @brief Creature (NPC) class definition and related structures.
+ *
+ * This file defines the Creature class which represents non-player characters (NPCs)
+ * in the game world. It extends the Unit class with creature-specific functionality
+ * including:
+ * - Creature data storage and initialization
+ * - Loot management and drop handling
+ * - Movement AI and pathfinding
+ * - Respawn and despawn mechanics
+ * - Ability and skill management
+ * - Faction and reputation systems
+ *
+ * The file also contains CreatureInfo struct for storing static creature template data
+ * from the database, and various creature-related flags and enumerations.
+ *
+ * @see Creature for the main creature implementation
+ * @see Unit for the base unit class
+ * @see CreatureInfo for creature template data
+ */
+
 #ifndef MANGOSSERVER_CREATURE_H
 #define MANGOSSERVER_CREATURE_H
 
@@ -44,25 +66,30 @@ class WorldSession;
 
 struct GameEventCreatureData;
 
+/**
+ * @brief Creature extra flags enumeration
+ *
+ * Additional flags that modify creature behavior.
+ */
 enum CreatureFlagsExtra
 {
-    CREATURE_FLAG_EXTRA_INSTANCE_BIND          = 0x00000001,       // creature kill bind instance with killer and killer's group
-    CREATURE_FLAG_EXTRA_NO_AGGRO               = 0x00000002,       // not aggro (ignore faction/reputation hostility)
-    CREATURE_FLAG_EXTRA_NO_PARRY               = 0x00000004,       // creature can't parry
-    CREATURE_FLAG_EXTRA_NO_PARRY_HASTEN        = 0x00000008,       // creature can't counter-attack at parry
-    CREATURE_FLAG_EXTRA_NO_BLOCK               = 0x00000010,       // creature can't block
-    CREATURE_FLAG_EXTRA_NO_CRUSH               = 0x00000020,       // creature can't do crush attacks
-    CREATURE_FLAG_EXTRA_NO_XP_AT_KILL          = 0x00000040,       // creature kill not provide XP
-    CREATURE_FLAG_EXTRA_INVISIBLE              = 0x00000080,       // creature is always invisible for player (mostly trigger creatures)
-    CREATURE_FLAG_EXTRA_NOT_TAUNTABLE          = 0x00000100,       // creature is immune to taunt auras and effect attack me
-    CREATURE_FLAG_EXTRA_AGGRO_ZONE             = 0x00000200,       // creature sets itself in combat with zone on aggro
-    CREATURE_FLAG_EXTRA_GUARD                  = 0x00000400,       // creature is a guard
-    CREATURE_FLAG_EXTRA_NO_CALL_ASSIST         = 0x00000800,       // creature shouldn't call for assistance on aggro
-    CREATURE_FLAG_EXTRA_ACTIVE                 = 0x00001000,       // creature is active object. Grid of this creature will be loaded and creature set as active
-    CREATURE_FLAG_EXTRA_MMAP_FORCE_ENABLE      = 0x00002000,       // creature is forced to use MMaps
-    CREATURE_FLAG_EXTRA_MMAP_FORCE_DISABLE     = 0x00004000,       // creature is forced to NOT use MMaps
-    CREATURE_FLAG_EXTRA_WALK_IN_WATER          = 0x00008000,       // creature is forced to walk in water even it can swim
-    CREATURE_FLAG_EXTRA_HAVE_NO_SWIM_ANIMATION = 0x00010000,       // we have to not set "swim" animation or creature will have "no animation"
+    CREATURE_FLAG_EXTRA_INSTANCE_BIND = 0x00000001,         ///< Creature kill binds instance with killer and killer's group
+    CREATURE_FLAG_EXTRA_NO_AGGRO = 0x00000002,              ///< Not aggro (ignore faction/reputation hostility)
+    CREATURE_FLAG_EXTRA_NO_PARRY = 0x00000004,              ///< Creature can't parry
+    CREATURE_FLAG_EXTRA_NO_PARRY_HASTEN = 0x00000008,       ///< Creature can't counter-attack at parry
+    CREATURE_FLAG_EXTRA_NO_BLOCK = 0x00000010,              ///< Creature can't block
+    CREATURE_FLAG_EXTRA_NO_CRUSH = 0x00000020,              ///< Creature can't do crush attacks
+    CREATURE_FLAG_EXTRA_NO_XP_AT_KILL = 0x00000040,         ///< Creature kill doesn't provide XP
+    CREATURE_FLAG_EXTRA_INVISIBLE = 0x00000080,             ///< Creature is always invisible for player (mostly trigger creatures)
+    CREATURE_FLAG_EXTRA_NOT_TAUNTABLE = 0x00000100,         ///< Creature is immune to taunt auras and effect attack me
+    CREATURE_FLAG_EXTRA_AGGRO_ZONE = 0x00000200,            ///< Creature sets itself in combat with zone on aggro
+    CREATURE_FLAG_EXTRA_GUARD = 0x00000400,                 ///< Creature is a guard
+    CREATURE_FLAG_EXTRA_NO_CALL_ASSIST = 0x00000800,        ///< Creature shouldn't call for assistance on aggro
+    CREATURE_FLAG_EXTRA_ACTIVE = 0x00001000,                ///< Creature is active object (grid will be loaded and creature set as active)
+    CREATURE_FLAG_EXTRA_MMAP_FORCE_ENABLE = 0x00002000,     ///< Creature is forced to use MMaps
+    CREATURE_FLAG_EXTRA_MMAP_FORCE_DISABLE = 0x00004000,    ///< Creature is forced to NOT use MMaps
+    CREATURE_FLAG_EXTRA_WALK_IN_WATER = 0x00008000,         ///< Creature is forced to walk in water even if it can swim
+    CREATURE_FLAG_EXTRA_HAVE_NO_SWIM_ANIMATION = 0x00010000 ///< Creature has no swim animation (or creature will have "no animation")
 };
 
 // GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
@@ -76,89 +103,101 @@ enum CreatureFlagsExtra
 #define MAX_CREATURE_MODEL 4                                // only single send to client in static data
 #define USE_DEFAULT_DATABASE_LEVEL  0                       // just used to show we don't want to force the new creature level and use the level stored in db
 
-// from `creature_template` table
+/**
+ * @brief Creature information structure
+ *
+ * Data from `creature_template` table.
+ */
 struct CreatureInfo
 {
-    uint32  Entry;
-    char*   Name;
-    char*   SubName;
-    uint32  MinLevel;
-    uint32  MaxLevel;
-    uint32  ModelId[MAX_CREATURE_MODEL];
-    uint32  FactionAlliance;
-    uint32  FactionHorde;
-    float   Scale;
-    uint32  Family;                                         // enum CreatureFamily values (optional)
-    uint32  CreatureType;                                   // enum CreatureType values
-    uint32  InhabitType;
-    uint32  RegenerateStats;
-    bool    RacialLeader;
-    uint32  NpcFlags;
-    uint32  UnitFlags;                                      // enum UnitFlags mask values
-    uint32  DynamicFlags;
-    uint32  ExtraFlags;
-    uint32  CreatureTypeFlags;                              // enum CreatureTypeFlags mask values
-    float   SpeedWalk;
-    float   SpeedRun;
-    uint32  UnitClass;                                      // enum Classes. Note only 4 classes are known for creatures.
-    uint32  Rank;
-    float   HealthMultiplier;
-    float   PowerMultiplier;
-    float   DamageMultiplier;
-    float   DamageVariance;
-    float   ArmorMultiplier;
-    float   ExperienceMultiplier;
+    uint32 Entry; ///< Creature entry ID
+    char* Name; ///< Creature name
+    char* SubName; ///< Creature sub-name
+    uint32 MinLevel; ///< Minimum level
+    uint32 MaxLevel; ///< Maximum level
+    uint32 ModelId[MAX_CREATURE_MODEL]; ///< Model IDs
+    uint32 FactionAlliance; ///< Alliance faction
+    uint32 FactionHorde; ///< Horde faction
+    float Scale; ///< Scale factor
+    uint32 Family; ///< Creature family (enum CreatureFamily values, optional)
+    uint32 CreatureType; ///< Creature type (enum CreatureType values)
+    uint32 InhabitType; ///< Inhabit type
+    uint32 RegenerateStats; ///< Regenerate stats
+    bool RacialLeader; ///< Is racial leader
+    uint32 NpcFlags; ///< NPC flags
+    uint32 UnitFlags; ///< Unit flags (enum UnitFlags mask values)
+    uint32 DynamicFlags; ///< Dynamic flags
+    uint32 ExtraFlags; ///< Extra flags
+    uint32 CreatureTypeFlags; ///< Creature type flags (enum CreatureTypeFlags mask values)
+    float SpeedWalk; ///< Walk speed
+    float SpeedRun; ///< Run speed
+    uint32 UnitClass; ///< Unit class (enum Classes, note only 4 classes are known for creatures)
+    uint32 Rank; ///< Creature rank
+    float HealthMultiplier; ///< Health multiplier
+    float PowerMultiplier; ///< Power multiplier
+    float DamageMultiplier; ///< Damage multiplier
+    float DamageVariance; ///< Damage variance
+    float ArmorMultiplier; ///< Armor multiplier
+    float ExperienceMultiplier; ///< Experience multiplier
     uint32  MinLevelHealth;
     uint32  MaxLevelHealth;
     uint32  MinLevelMana;
     uint32  MaxLevelMana;
-    float   MinMeleeDmg;
-    float   MaxMeleeDmg;
-    float   MinRangedDmg;
-    float   MaxRangedDmg;
-    uint32  Armor;
-    uint32  MeleeAttackPower;
-    uint32  RangedAttackPower;
-    uint32  MeleeBaseAttackTime;
-    uint32  RangedBaseAttackTime;
-    uint32  DamageSchool;
-    uint32  MinLootGold;
-    uint32  MaxLootGold;
-    uint32  LootId;
-    uint32  PickpocketLootId;
-    uint32  SkinningLootId;
-    uint32  KillCredit[MAX_KILL_CREDIT];
-    uint32  MechanicImmuneMask;
-    uint32  SchoolImmuneMask;
-    int32   ResistanceHoly;
-    int32   ResistanceFire;
-    int32   ResistanceNature;
-    int32   ResistanceFrost;
-    int32   ResistanceShadow;
-    int32   ResistanceArcane;
-    uint32  SpellListId;
-    uint32  PetSpellDataId;
-    uint32  MovementType;
-    uint32  TrainerType;
-    uint32  TrainerSpell;
-    uint32  TrainerClass;
-    uint32  TrainerRace;
-    uint32  TrainerTemplateId;
-    uint32  VendorTemplateId;
-    uint32  GossipMenuId;
-    uint32  EquipmentTemplateId;
-    uint32  civilian;
-    char const* AIName;
+    float   MinMeleeDmg;                                      ///< Minimum melee damage
+    float   MaxMeleeDmg;                                      ///< Maximum melee damage
+    float   MinRangedDmg;                                     ///< Minimum ranged damage
+    float   MaxRangedDmg;                                     ///< Maximum ranged damage
+    uint32  Armor;                                            ///< Armor value
+    uint32  MeleeAttackPower;                                 ///< Melee attack power
+    uint32  RangedAttackPower;                                ///< Ranged attack power
+    uint32  MeleeBaseAttackTime;                              ///< Melee attack base time (milliseconds)
+    uint32  RangedBaseAttackTime;                             ///< Ranged attack base time (milliseconds)
+    uint32  DamageSchool;                                     ///< Primary damage school (enum SpellSchools)
+    uint32  MinLootGold;                                      ///< Minimum loot gold dropped
+    uint32  MaxLootGold;                                      ///< Maximum loot gold dropped
+    uint32  LootId;                                           ///< Loot table ID
+    uint32  PickpocketLootId;                                 ///< Pickpocket loot table ID
+    uint32  SkinningLootId;                                   ///< Skinning loot table ID
+    uint32  KillCredit[MAX_KILL_CREDIT];                      ///< Kill credit IDs for quest tracking
+    uint32  MechanicImmuneMask;                               ///< Mechanic immunity mask (enum Mechanics)
+    uint32  SchoolImmuneMask;                                 ///< School immunity mask (enum SpellSchools)
+    int32   ResistanceHoly;                                   ///< Holy resistance
+    int32   ResistanceFire;                                   ///< Fire resistance
+    int32   ResistanceNature;                                 ///< Nature resistance
+    int32   ResistanceFrost;                                  ///< Frost resistance
+    int32   ResistanceShadow;                                 ///< Shadow resistance
+    int32   ResistanceArcane;                                 ///< Arcane resistance
+    uint32  SpellListId;                                      ///< Creature spells list ID
+    uint32  PetSpellDataId;                                   ///< Pet spell data ID
+    uint32  MovementType;                                     ///< Movement type (enum MovementGeneratorType)
+    uint32  TrainerType;                                      ///< Trainer type (enum TrainerType)
+    uint32  TrainerSpell;                                     ///< Trainer spell ID
+    uint32  TrainerClass;                                     ///< Trainer class (enum Classes)
+    uint32  TrainerRace;                                      ///< Trainer race (enum Races)
+    uint32  TrainerTemplateId;                                ///< Trainer template ID
+    uint32  VendorTemplateId;                                 ///< Vendor template ID
+    uint32  GossipMenuId;                                     ///< Gossip menu ID
+    uint32  EquipmentTemplateId;                              ///< Equipment template ID
+    uint32  civilian;                                         ///< Civilian flag (2 = civilian npc)
+    char const* AIName;                                       ///< Custom AI name for special behavior
     //uint32  ScriptID;
 
-    // helpers
+    /// @brief Helper methods for CreatureInfo
+
+    /// @brief Get the high GUID type for creatures.
+    /// @return Always returns HIGHGUID_UNIT for creatures
     static HighGuid GetHighGuid()
     {
         return HIGHGUID_UNIT;                               // in pre-3.x always HIGHGUID_UNIT
     }
 
+    /// @brief Create a full ObjectGuid for this creature template.
+    /// @param lowguid The low GUID (unique creature instance identifier)
+    /// @return ObjectGuid combining creature entry and low GUID
     ObjectGuid GetObjectGuid(uint32 lowguid) const { return ObjectGuid(GetHighGuid(), Entry, lowguid); }
 
+    /// @brief Determine the required skill to loot this creature.
+    /// @return SkillType for herbalism, mining, or skinning based on creature type flags
     SkillType GetRequiredLootSkill() const
     {
         if (CreatureTypeFlags & CREATURE_TYPEFLAGS_HERBLOOT)
@@ -175,24 +214,35 @@ struct CreatureInfo
         }
     }
 
+    /// @brief Check if this creature can be tamed as a pet.
+    /// @return True if creature is tameable beast with valid family, false otherwise
     bool isTameable() const
     {
         return CreatureType == CREATURE_TYPE_BEAST && Family != 0 && (CreatureTypeFlags & CREATURE_TYPEFLAGS_TAMEABLE);
     }
 };
 
+/// @brief Creature spell list structure.
+///
+/// Stores spell IDs for creatures to cast during combat or special events.
 struct CreatureTemplateSpells
 {
-    uint32 entry;
-    uint32 spells[CREATURE_MAX_SPELLS];
+    uint32 entry;                          ///> Creature entry ID
+    uint32 spells[CREATURE_MAX_SPELLS];    ///> Spell IDs creature can cast (up to CREATURE_MAX_SPELLS)
 };
 
+/// @brief Equipment template structure.
+///
+/// Defines which items a creature should equip on spawn.
 struct EquipmentInfo
 {
-    uint32  entry;
-    uint32  equipentry[3];
+    uint32  entry;            ///> Creature entry ID
+    uint32  equipentry[3];    ///> Equipment entry IDs (main hand, off-hand, ranged)
 };
 
+/// @brief Equipment item information structure.
+///
+/// Detailed information for a specific piece of equipment.
 struct EquipmentInfoItem
 {
     uint32  entry;
@@ -431,7 +481,10 @@ struct TrainerSpellData
     uint32 trainerType;                                     // trainer type based at trainer spells, can be different from creature_template value.
     // req. for correct show non-prof. trainers like weaponmaster, allowed values 0 and 2.
     TrainerSpell const* Find(uint32 spell_id) const;
-    void Clear() { spellList.clear(); }
+    void Clear()
+    {
+        spellList.clear();
+    }
 };
 
 typedef std::map<uint32, time_t> CreatureSpellCooldowns;
@@ -594,7 +647,10 @@ class Creature : public Unit
 
         bool AIM_Initialize();
 
-        CreatureAI* AI() { return i_AI; }
+        CreatureAI* AI()
+        {
+            return i_AI;
+        }
 
         void SetWalk(bool enable, bool asDefault = true);
         void SetLevitate(bool enable) override;
@@ -709,7 +765,10 @@ class Creature : public Unit
         bool IsTappedBy(Player const* player) const;
         bool IsDamageEnoughForLootingAndReward() const { return m_PlayerDamageReq == 0; }
         void LowerPlayerDamageReq(uint32 unDamage);
-        void ResetPlayerDamageReq() { m_PlayerDamageReq = GetHealth() / 2; }
+        void ResetPlayerDamageReq()
+        {
+            m_PlayerDamageReq = GetHealth() / 2;
+        }
 
         /**
         * function indicating whether the whether the creature has a looter recipient defined (either a group ID, either a player GUID).
@@ -748,7 +807,11 @@ class Creature : public Unit
         void CallAssistance();
         void SetNoCallAssistance(bool val) { m_AlreadyCallAssistance = val; }
         void SetNoSearchAssistance(bool val) { m_AlreadySearchedAssistance = val; }
-        bool HasSearchedAssistance() { return m_AlreadySearchedAssistance; }
+        bool HasSearchedAssistance()
+        {
+            return m_AlreadySearchedAssistance;
+        }
+
         bool CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction = true) const;
         bool CanInitiateAttack();
 
@@ -804,9 +867,21 @@ class Creature : public Unit
         bool HasQuest(uint32 quest_id) const override;
         bool HasInvolvedQuest(uint32 quest_id)  const override;
 
-        GridReference<Creature>& GetGridRef() { return m_gridRef; }
-        bool IsRegeneratingHealth() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH; }
-        bool IsRegeneratingPower() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER; }
+        GridReference<Creature>& GetGridRef()
+        {
+            return m_gridRef;
+        }
+
+        bool IsRegeneratingHealth()
+        {
+            return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH;
+        }
+
+        bool IsRegeneratingPower()
+        {
+            return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER;
+        }
+
         virtual uint8 GetPetAutoSpellSize() const { return CREATURE_MAX_SPELLS; }
         virtual uint32 GetPetAutoSpellOnPos(uint8 pos) const
         {
@@ -832,7 +907,10 @@ class Creature : public Unit
 
         void SetFactionTemporary(uint32 factionId, uint32 tempFactionFlags = TEMPFACTION_ALL);
         void ClearTemporaryFaction();
-        uint32 GetTemporaryFactionFlags() { return m_temporaryFactionFlags; }
+        uint32 GetTemporaryFactionFlags()
+        {
+            return m_temporaryFactionFlags;
+        }
 
         void SendAreaSpiritHealerQueryOpcode(Player* pl);
 
@@ -840,7 +918,11 @@ class Creature : public Unit
         void SetVirtualItemRaw(VirtualItemSlot slot, uint32 display_id, uint32 info0, uint32 info1);
 
         void SetDisableReputationGain(bool disable) { DisableReputationGain = disable; }
-        bool IsReputationGainDisabled() { return DisableReputationGain; }
+        bool IsReputationGainDisabled()
+        {
+            return DisableReputationGain;
+        }
+
     protected:
         bool MeetsSelectAttackingRequirement(Unit* pTarget, SpellEntry const* pSpellInfo, uint32 selectFlags) const;
 
@@ -902,7 +984,7 @@ class Creature : public Unit
 class ForcedDespawnDelayEvent : public BasicEvent
 {
     public:
-        ForcedDespawnDelayEvent(Creature& owner) : BasicEvent(), m_owner(owner) { }
+        ForcedDespawnDelayEvent(Creature& owner) : BasicEvent(), m_owner(owner) {}
         bool Execute(uint64 e_time, uint32 p_time) override;
 
     private:

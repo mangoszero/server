@@ -22,6 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file WaypointCommands.cpp
+ * @brief Implementation of waypoint path editing chat commands.
+ *
+ * This file contains chat command handlers for waypoint operations including:
+ * - Waypoint path creation and editing
+ * - Waypoint property modification
+ * - Path movement testing
+ * - NPC path assignment
+ */
+
 #include "Chat.h"
 #include "Language.h"
 #include "PointMovementGenerator.h"
@@ -59,6 +70,12 @@ inline Creature* Helper_CreateWaypointFor(Creature* wpOwner, WaypointPathOrigin 
     return wpCreature;
 }
 
+/**
+ * @brief Despawns temporary visual waypoint creatures owned by a player.
+ *
+ * @param player The player used as the center of the search.
+ * @param ownerGuid The owner guid assigned to the visual waypoints.
+ */
 inline void UnsummonVisualWaypoints(Player const* player, ObjectGuid ownerGuid)
 {
     std::list<Creature*> waypoints;
@@ -763,7 +780,12 @@ bool ChatHandler::HandleWpShowCommand(char* args)
     return false;
 }                                                           // HandleWpShowCommand
 
-/// [Guid if no selected unit] <filename> [pathId [wpOrigin] ]
+/**
+ * @brief Handler for HandleWpExportCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleWpExportCommand(char* args)
 {
     if (!*args)

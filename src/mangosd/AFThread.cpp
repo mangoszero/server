@@ -27,6 +27,9 @@
 #include "World.h"
 #include "Log.h"
 
+/**
+ * Initializes the anti-freeze watchdog thread with the configured delay interval.
+ */
 AntiFreezeThread::AntiFreezeThread(uint32 delay) : delaytime_(delay)
 {
     m_loops = 0;
@@ -35,12 +38,18 @@ AntiFreezeThread::AntiFreezeThread(uint32 delay) : delaytime_(delay)
     w_lastchange = 0;
 }
 
+/**
+ * Activates the anti-freeze watchdog thread.
+ */
 int AntiFreezeThread::open(void* unused)
 {
     activate();
     return 0;
 }
 
+/**
+ * Monitors the main and world loops and terminates the server if they become stuck.
+ */
 int AntiFreezeThread::svc(void)
 {
     if (!delaytime_)
@@ -58,8 +67,8 @@ int AntiFreezeThread::svc(void)
         // normal work
         if (w_loops != World::m_worldLoopCounter.value())
         {
-              w_lastchange = curtime;
-              w_loops = World::m_worldLoopCounter.value();
+            w_lastchange = curtime;
+            w_loops = World::m_worldLoopCounter.value();
         }
         // possible freeze
         else if (getMSTimeDiff(w_lastchange, curtime) > delaytime_)

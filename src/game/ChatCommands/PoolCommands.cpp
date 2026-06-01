@@ -22,10 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PoolCommands.cpp
+ * @brief Implementation of creature and object pool management chat commands.
+ *
+ * This file contains chat command handlers for pool operations including:
+ * - Pool listing and information
+ * - Pool entry management
+ * - Pool respawn control
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 
-
+/**
+ * @brief Displays summary information for a pool template.
+ *
+ * @param pool_id The pool identifier to display.
+ */
 void ChatHandler::ShowPoolListHelper(uint16 pool_id)
 {
     PoolTemplateData const& pool_template = sPoolMgr.GetPoolTemplate(pool_id);
@@ -39,6 +53,12 @@ void ChatHandler::ShowPoolListHelper(uint16 pool_id)
                         sPoolMgr.GetPoolCreatures(pool_id).size(), sPoolMgr.GetPoolGameObjects(pool_id).size(), sPoolMgr.GetPoolPools(pool_id).size());
 }
 
+/**
+ * @brief Handler for HandlePoolListCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandlePoolListCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -72,6 +92,12 @@ bool ChatHandler::HandlePoolListCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandlePoolSpawnsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandlePoolSpawnsCommand(char* args)
 {
     Player* player = m_session->GetPlayer();
@@ -108,6 +134,12 @@ bool ChatHandler::HandlePoolSpawnsCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandlePoolInfoCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandlePoolInfoCommand(char* args)
 {
     // id or [name] Shift-click form |color|Hpool:id|h[name]|h|r

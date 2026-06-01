@@ -22,14 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file RACommands.cpp
+ * @brief Implementation of remote administration (RA) chat commands.
+ *
+ * This file contains chat command handlers for RA operations including:
+ * - Remote account management
+ * - Server administration via RA protocol
+ * - RA-specific utilities
+ */
+
 #include "Chat.h"
 
-
- /**********************************************************************
-     CommandTable : commandTable
- /***********************************************************************/
-
-/// Close RA connection
+/**
+ * @brief Handler for HandleQuitCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleQuitCommand(char* /*args*/)
 {
     // processed in RASocket

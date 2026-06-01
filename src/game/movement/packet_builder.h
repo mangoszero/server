@@ -37,6 +37,7 @@ namespace Movement
      */
     class PacketBuilder
     {
+
             /**
              * @brief Writes the common part of a monster move packet.
              * @param mov The MoveSpline object containing movement data.

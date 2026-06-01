@@ -48,6 +48,7 @@ class DynamicMapTree
          *
          */
         DynamicMapTree();
+
         /**
          * @brief
          *
@@ -66,6 +67,7 @@ class DynamicMapTree
          * @return bool
          */
         bool isInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const;
+
         /**
          * @brief
          *
@@ -75,6 +77,7 @@ class DynamicMapTree
          * @return bool
          */
         bool getIntersectionTime(const G3D::Ray& ray, const G3D::Vector3& endPos, float& maxDist) const;
+
         /**
          * @brief
          *
@@ -85,6 +88,7 @@ class DynamicMapTree
          * @return bool
          */
         bool getObjectHitPos(const G3D::Vector3& pPos1, const G3D::Vector3& pPos2, G3D::Vector3& pResultHitPos, float pModifyDist) const;
+
         /**
          * @brief
          *
@@ -101,6 +105,7 @@ class DynamicMapTree
          * @return bool
          */
         bool getObjectHitPos(float x1, float y1, float z1, float x2, float y2, float z2, float& rx, float& ry, float& rz, float pModifyDist) const;
+
         /**
          * @brief
          *
@@ -118,12 +123,14 @@ class DynamicMapTree
          * @param
          */
         void insert(const GameObjectModel&);
+
         /**
          * @brief
          *
          * @param
          */
         void remove(const GameObjectModel&);
+
         /**
          * @brief
          *
@@ -131,6 +138,7 @@ class DynamicMapTree
          * @return bool
          */
         bool contains(const GameObjectModel&) const;
+
         /**
          * @brief
          *
@@ -143,6 +151,7 @@ class DynamicMapTree
          *
          */
         void balance();
+
         /**
          * @brief
          *

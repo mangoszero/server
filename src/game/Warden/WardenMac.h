@@ -30,17 +30,57 @@
 
 class WorldSession;
 
+/**
+ * @brief Warden Mac class
+ *
+ * Platform-specific Warden implementation for Mac clients.
+ */
 class WardenMac : public Warden
 {
     public:
+        /**
+         * @brief Constructor
+         */
         WardenMac();
+
+        /**
+         * @brief Destructor
+         */
         ~WardenMac();
 
+        /**
+         * @brief Initialize Warden
+         * @param session World session
+         * @param k Key
+         */
         void Init(WorldSession* session, BigNumber* k) override;
+
+        /**
+         * @brief Get module for client
+         * @return Client warden module
+         */
         ClientWardenModule* GetModuleForClient() override;
+
+        /**
+         * @brief Initialize module
+         */
         void InitializeModule() override;
+
+        /**
+         * @brief Handle hash result
+         * @param buff Byte buffer
+         */
         void HandleHashResult(ByteBuffer& buff) override;
+
+        /**
+         * @brief Request data
+         */
         void RequestData() override;
+
+        /**
+         * @brief Handle data
+         * @param buff Byte buffer
+         */
         void HandleData(ByteBuffer& buff) override;
 };
 

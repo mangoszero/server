@@ -37,74 +37,74 @@
 #include <unordered_map>
 #include "GameSystem/GridRefManager.h"
 
-
 // various metaprogramming primitives
 namespace Meta
 {
-  // Gets the index of specified type T in a std::tuple
-  template <class T, class Tuple> struct IndexOf;
+    // Gets the index of specified type T in a std::tuple
+    template <class T, class Tuple> struct IndexOf;
 
-  template <class T, class... Types> struct IndexOf<T, std::tuple<T, Types...>>
-  {
-    static const std::size_t value = 0;
-  };
+    template <class T, class... Types> struct IndexOf<T, std::tuple<T, Types...>>
+    {
+        static const std::size_t value = 0;
+    };
 
-  template <class T, class U, class... Types> struct IndexOf<T, std::tuple<U, Types...>>
-  {
-    static const std::size_t value = 1 + IndexOf<T, std::tuple<Types...>>::value;
-  };
-  //----------------------------------------------------------------------------------------
+    template <class T, class U, class... Types> struct IndexOf<T, std::tuple<U, Types...>>
+    {
+        static const std::size_t value = 1 + IndexOf<T, std::tuple<Types...>>::value;
+    };
 
-  // apply a transformation on each element of a tuple
-  template<template<class...> class F, class L> struct Transform_Impl;
+    // apply a transformation on each element of a tuple
+    template<template<class...> class F, class L> struct Transform_Impl;
 
-  template<template<class...> class F, template<class...> class L, class... T>
-  struct Transform_Impl<F, L<T...>>
-  {
-    using type = L<F<T>...>;
-  };
+    template<template<class...> class F, template<class...> class L, class... T>
+    struct Transform_Impl<F, L<T...>>
+    {
+        using type = L<F<T>...>;
+    };
 
-  template<template<class...> class F, class L>
-  using Transform = typename Transform_Impl<F, L>::type;
-  //----------------------------------------------------------------------------------------
+    template<template<class...> class F, class L>
+    using Transform = typename Transform_Impl<F, L>::type;
 
-  // convert a tuple A into another tuple B
-  template<class A, template<class...> class B> struct Rename_Impl;
+    // convert a tuple A into another tuple B
+    template<class A, template<class...> class B> struct Rename_Impl;
 
-  template<template<class...> class A, class... T, template<class...> class B>
-  struct Rename_Impl<A<T...>, B>
-  {
-    using type = B<T...>;
-  };
+    template<template<class...> class A, class... T, template<class...> class B>
+    struct Rename_Impl<A<T...>, B>
+    {
+        using type = B<T...>;
+    };
 
-  template<class A, template<class...> class B>
-  using Rename = typename Rename_Impl<A, B>::type;
-  //----------------------------------------------------------------------------------------
+    template<class A, template<class...> class B>
+    using Rename = typename Rename_Impl<A, B>::type;
 
-  //tuple iteration
-  template<size_t index, typename F, typename... Ts>
-  struct iterate_tuple {
-     void operator() (std::tuple<Ts...>&& t, F&& callback) {
-         iterate_tuple<index - 1, F, Ts...>{}(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
-         callback.Visit(std::get<index>(t));
-     }
-  };
+    //tuple iteration
+    template<size_t index, typename F, typename... Ts>
+    struct iterate_tuple
+    {
+        void operator() (std::tuple<Ts...>&& t, F&& callback)
+        {
+            iterate_tuple<index - 1, F, Ts...>{}(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
+            callback.Visit(std::get<index>(t));
+        }
+    };
 
-  template<typename F, typename... Ts>
-  struct iterate_tuple<0, F, Ts...> {
-     void operator() (std::tuple<Ts...>&& t, F&& callback) {
-         callback.Visit(std::get<0>(t));
-     }
-  };
+    template<typename F, typename... Ts>
+    struct iterate_tuple<0, F, Ts...>
+    {
+        void operator() (std::tuple<Ts...>&& t, F&& callback)
+        {
+            callback.Visit(std::get<0>(t));
+        }
+    };
 
-  template<typename F, typename... Ts>
-  void for_each(std::tuple<Ts...>&& t, F&& callback) {
-     iterate_tuple<std::tuple_size<std::tuple<Ts...>>::value - 1, F, Ts...> it;
-     it(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
-  }
+    template<typename F, typename... Ts>
+    void for_each(std::tuple<Ts...>&& t, F&& callback)
+    {
+        iterate_tuple<std::tuple_size<std::tuple<Ts...>>::value - 1, F, Ts...> it;
+        it(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
+    }
 
 } //Meta namespace end
-
 
 template<typename KEY_TYPE, typename TYPE_LIST>
 class TypeUnorderedMapContainer
@@ -154,7 +154,7 @@ class TypeUnorderedMapContainer
         }
 
     private:
-      Container i_container;
+        Container i_container;
 };
 
 //TypeMapContainer
@@ -195,7 +195,7 @@ class TypeMapContainer
         }
 
     private:
-      Container i_container;
+        Container i_container;
 };
 
 #endif

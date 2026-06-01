@@ -22,6 +22,23 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ChannelMgr.cpp
+ * @brief Chat channel management system
+ *
+ * This file implements the ChannelMgr which manages custom chat channels
+ * (like "General", "Trade", or player-created channels). Features:
+ * - Separate channel managers per faction (Alliance/Horde)
+ * - Cross-faction channel support via configuration
+ * - Channel creation and lookup by name
+ * - Case-insensitive channel name handling
+ *
+ * Channel names are normalized to lowercase for consistent lookup.
+ *
+ * @see Channel for individual channel management
+ * @see ChannelMgr for the manager interface
+ */
+
 #include "ChannelMgr.h"
 #include "Policies/Singleton.h"
 #include "World.h"
@@ -29,6 +46,17 @@
 INSTANTIATE_SINGLETON_1(AllianceChannelMgr);
 INSTANTIATE_SINGLETON_1(HordeChannelMgr);
 
+/**
+ * @brief Get the appropriate channel manager for a team
+ * @param team Player's faction (ALLIANCE or HORDE)
+ * @return Channel manager for that faction, or NULL for invalid team
+ *
+ * Returns the channel manager instance for the specified faction.
+ * If cross-faction channels are enabled in configuration, all
+ * teams use the Alliance channel manager.
+ *
+ * @note Player-created channels are faction-specific by default
+ */
 ChannelMgr* channelMgr(Team team)
 {
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
@@ -48,6 +76,14 @@ ChannelMgr* channelMgr(Team team)
     return NULL;
 }
 
+/**
+ * @brief Destroy channel manager
+ *
+ * Cleans up all channels managed by this instance.
+ * Each Channel object is deleted and the map is cleared.
+ *
+ * @note Called on server shutdown
+ */
 ChannelMgr::~ChannelMgr()
 {
     for (ChannelMap::iterator itr = channels.begin(); itr != channels.end(); ++itr)
@@ -58,6 +94,18 @@ ChannelMgr::~ChannelMgr()
     channels.clear();
 }
 
+/**
+ * @brief Get or create a channel for joining
+ * @param name Channel name (case-insensitive)
+ * @return Channel instance (existing or newly created)
+ *
+ * Looks up a channel by name and creates it if it doesn't exist.
+ * This is used when a player attempts to join a channel.
+ *
+ * Channel names are normalized to lowercase for consistent lookup.
+ *
+ * @note Creates new Channel object if not found
+ */
 Channel* ChannelMgr::GetJoinChannel(const std::string &name)
 {
     std::wstring wname;
@@ -74,6 +122,19 @@ Channel* ChannelMgr::GetJoinChannel(const std::string &name)
     return channels[wname];
 }
 
+/**
+ * @brief Get an existing channel
+ * @param name Channel name (case-insensitive)
+ * @param p Player requesting the channel (for error packet)
+ * @param pkt If true, send "not on channel" error packet when channel not found
+ * @return Channel instance, or NULL if not found
+ *
+ * Looks up a channel by name. Unlike GetJoinChannel(), this does NOT
+ * create the channel if it doesn't exist.
+ *
+ * @param pkt controls whether an error packet is sent to the player
+ * @return NULL if channel doesn't exist, otherwise the Channel pointer
+ */
 Channel* ChannelMgr::GetChannel(const std::string &name, Player* p, bool pkt)
 {
     std::wstring wname;
@@ -99,6 +160,11 @@ Channel* ChannelMgr::GetChannel(const std::string &name, Player* p, bool pkt)
     }
 }
 
+/**
+ * @brief Removes an empty non-constant channel after a player leaves it.
+ *
+ * @param name The channel name.
+ */
 void ChannelMgr::LeftChannel(const std::string &name)
 {
     std::wstring wname;

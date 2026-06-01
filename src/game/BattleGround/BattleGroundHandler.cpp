@@ -22,6 +22,18 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGroundHandler.cpp
+ * @brief Handles battle ground related packet opcodes and world session operations.
+ *
+ * This file contains the implementation of packet handlers for battleground interactions,
+ * including:
+ * - Battlemaster interactions
+ * - Queue management operations
+ * - Battleground status requests
+ * - Join/Leave battleground operations
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "Opcodes.h"
@@ -40,6 +52,14 @@
 #include "DisableMgr.h"
 #include "GameTime.h"
 
+/**
+ * @brief Handles the CMSG_BATTLEMASTER_HELLO opcode.
+ *
+ * Processes when a player interacts with a battlemaster NPC. Validates the player's
+ * level for the available battlegrounds and sends the list of available instances.
+ *
+ * @param recv_data The received packet data containing the battlemaster GUID.
+ */
 void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -85,6 +105,15 @@ void WorldSession::HandleBattlemasterHelloOpcode(WorldPacket& recv_data)
     SendBattlegGroundList(guid, bgTypeId);
 }
 
+/**
+ * @brief Sends the battleground list to the player.
+ *
+ * Constructs and sends the list of available battleground instances of the specified
+ * type that the player can join.
+ *
+ * @param guid The GUID of the battlemaster.
+ * @param bgTypeId The type of battleground to list.
+ */
 void WorldSession::SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgTypeId)
 {
     WorldPacket data;
@@ -92,6 +121,15 @@ void WorldSession::SendBattlegGroundList(ObjectGuid guid, BattleGroundTypeId bgT
     SendPacket(&data);
 }
 
+/**
+ * @brief Handles the CMSG_BATTLEMASTER_JOIN opcode.
+ *
+ * Processes when a player requests to join a battleground through a battlemaster.
+ * Handles both solo and group joins, performs various validation checks (level, queue status,
+ * deserter debuff, group eligibility), and adds the player to the appropriate queue.
+ *
+ * @param recv_data The received packet data containing join request details.
+ */
 void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -241,6 +279,14 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
     sBattleGroundMgr.ScheduleQueueUpdate(bgQueueTypeId, bgTypeId, _player->GetBattleGroundBracketIdFromLevel(bgTypeId));
 }
 
+/**
+ * @brief Handles the MSG_BATTLEGROUND_PLAYER_POSITIONS opcode.
+ *
+ * Sends the positions of important players (flag carriers in WSG, objective players in AB, etc.)
+ * to all players in the battleground. Used for updating minimap and in-game position markers.
+ *
+ * @param recv_data The received packet data (empty for this opcode).
+ */
 void WorldSession::HandleBattleGroundPlayerPositionsOpcode(WorldPacket & /*recv_data*/)
 {
     // empty opcode
@@ -306,6 +352,14 @@ void WorldSession::HandleBattleGroundPlayerPositionsOpcode(WorldPacket & /*recv_
     }
 }
 
+/**
+ * @brief Handles the MSG_PVP_LOG_DATA opcode.
+ *
+ * Sends the player the battleground PvP statistics log, including all players' scores,
+ * kills, deaths, and objective-specific statistics.
+ *
+ * @param recv_data The received packet data (empty for this opcode).
+ */
 void WorldSession::HandlePVPLogDataOpcode(WorldPacket & /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode MSG_PVP_LOG_DATA");
@@ -323,6 +377,14 @@ void WorldSession::HandlePVPLogDataOpcode(WorldPacket & /*recv_data*/)
     DEBUG_LOG("WORLD: Sent MSG_PVP_LOG_DATA Message");
 }
 
+/**
+ * @brief Handles the CMSG_BATTLEFIELD_LIST opcode.
+ *
+ * Sends the player a list of available battleground instances for the requested map/type.
+ * This is used when the player browses available battlegrounds from the UI.
+ *
+ * @param recv_data The received packet data containing the map ID.
+ */
 void WorldSession::HandleBattlefieldListOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_BATTLEFIELD_LIST");
@@ -343,6 +405,14 @@ void WorldSession::HandleBattlefieldListOpcode(WorldPacket& recv_data)
     SendPacket(&data);
 }
 
+/**
+ * @brief Handles the CMSG_BATTLEFIELD_PORT opcode.
+ *
+ * Processes when a player accepts or declines an invitation to join a battleground instance.
+ * An action of 0x1 accepts and joins the battleground, while 0x0 leaves the queue.
+ *
+ * @param recv_data The received packet data containing map ID and action.
+ */
 void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_BATTLEFIELD_PORT");
@@ -475,6 +545,14 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles the CMSG_LEAVE_BATTLEFIELD opcode.
+ *
+ * Processes when a player requests to leave their current battleground.
+ * Validates that the player is not in combat before allowing departure.
+ *
+ * @param recv_data The received packet data.
+ */
 void WorldSession::HandleLeaveBattlefieldOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_LEAVE_BATTLEFIELD");
@@ -494,6 +572,15 @@ void WorldSession::HandleLeaveBattlefieldOpcode(WorldPacket& recv_data)
     _player->LeaveBattleground();
 }
 
+/**
+ * @brief Handles the CMSG_BATTLEFIELD_STATUS opcode.
+ *
+ * Sends the player their current battleground status for all queued battlegrounds.
+ * Includes status for active battles, invitations, and queued positions.
+ * This is typically sent as a status refresh request from the client.
+ *
+ * @param recv_data The received packet data (empty for this opcode).
+ */
 void WorldSession::HandleBattlefieldStatusOpcode(WorldPacket & /*recv_data*/)
 {
     // empty opcode
@@ -561,6 +648,14 @@ void WorldSession::HandleBattlefieldStatusOpcode(WorldPacket & /*recv_data*/)
     }
 }
 
+/**
+ * @brief Handles the CMSG_AREA_SPIRIT_HEALER_QUERY opcode.
+ *
+ * Processes queries from spirit healers in battlegrounds. Spirit healers are NPCs
+ * that allow players to resurrect at their graveyard positions.
+ *
+ * @param recv_data The received packet data containing the spirit healer GUID.
+ */
 void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_AREA_SPIRIT_HEALER_QUERY");
@@ -588,6 +683,14 @@ void WorldSession::HandleAreaSpiritHealerQueryOpcode(WorldPacket& recv_data)
     unit->SendAreaSpiritHealerQueryOpcode(GetPlayer());
 }
 
+/**
+ * @brief Handles the CMSG_AREA_SPIRIT_HEALER_QUEUE opcode.
+ *
+ * Processes when a player requests resurrection from a spirit healer in a battleground.
+ * Queues the player for resurrection at their designated graveyard location.
+ *
+ * @param recv_data The received packet data containing the spirit healer GUID.
+ */
 void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: CMSG_AREA_SPIRIT_HEALER_QUEUE");
@@ -615,6 +718,14 @@ void WorldSession::HandleAreaSpiritHealerQueueOpcode(WorldPacket& recv_data)
     sScriptMgr.OnGossipHello(GetPlayer(), unit);
 }
 
+/**
+ * @brief Sends a battleground join error message to the player.
+ *
+ * Converts error codes to appropriate language strings and sends them to the player
+ * when they fail to join a battleground (offline member, group too large, mixed faction, etc.).
+ *
+ * @param err The error code indicating why the join failed.
+ */
 void WorldSession::SendBattleGroundJoinError(uint8 err)
 {
     WorldPacket data;

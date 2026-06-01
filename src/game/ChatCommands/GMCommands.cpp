@@ -22,18 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GMCommands.cpp
+ * @brief Implementation of general GM (Game Master) utility chat commands.
+ *
+ * This file contains chat command handlers for basic GM operations including:
+ * - Help and command information display
+ * - GM level and security queries
+ * - General purpose administrative utilities
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "Weather.h"
 #include "SpellMgr.h"
 
-
- /**********************************************************************
-     CommandTable : commandTable
-  **********************************************************************/
-
-// show info of player
+/**
+ * @brief Handler for HandlePInfoCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandlePInfoCommand(char* args)
 {
     Player* target;
@@ -274,6 +284,12 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleWaterwalkCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleWaterwalkCommand(char* args)
 {
     bool value;
@@ -316,7 +332,12 @@ bool ChatHandler::HandleWaterwalkCommand(char* args)
     return true;
 }
 
-// Enable\Dissable GM Mode
+/**
+ * @brief Handler for HandleGMCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMCommand(char* args)
 {
     if (!*args)
@@ -363,7 +384,12 @@ bool ChatHandler::HandleGMCommand(char* args)
     return false;
 }
 
-// Enable\Dissable Invisible mode
+/**
+ * @brief Handler for HandleGMVisibleCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMVisibleCommand(char* args)
 {
     if (!*args)
@@ -409,6 +435,12 @@ bool ChatHandler::HandleGMVisibleCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGMFlyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMFlyCommand(char* args)
 {
     bool value;
@@ -433,6 +465,12 @@ bool ChatHandler::HandleGMFlyCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleGMListIngameCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
 {
     std::list< std::pair<std::string, bool> > names;
@@ -465,7 +503,12 @@ bool ChatHandler::HandleGMListIngameCommand(char* /*args*/)
     return true;
 }
 
-/// Display the list of GMs
+/**
+ * @brief Handler for HandleGMListFullCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleGMListFullCommand(char* /*args*/)
 {
     ///- Get the accounts with GM Level >0
@@ -495,7 +538,12 @@ bool ChatHandler::HandleGMListFullCommand(char* /*args*/)
     return true;
 }
 
-// change standstate
+/**
+ * @brief Handler for HandleModifyStandStateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyStandStateCommand(char* args)
 {
     uint32 anim_id;
@@ -514,6 +562,12 @@ bool ChatHandler::HandleModifyStandStateCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleChangeWeatherCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleChangeWeatherCommand(char* args)
 {
     // Weather is OFF
@@ -577,7 +631,12 @@ void unFreezePlayer(Player* player)
     player->RemoveAurasDueToSpell(SPELL_GM_FREEZE);
 }
 
-
+/**
+ * @brief Handler for HandleFreezePlayerCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleFreezePlayerCommand(char* args)
 {
     Player* targetPlayer = nullptr;
@@ -608,7 +667,6 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
         }
         targetPlayer = (Player*)selectedTtarget;
     }
-
 
     const char* targetName = targetPlayer->GetName();
     Player * currentGM = m_session->GetPlayer();
@@ -641,7 +699,12 @@ bool ChatHandler::HandleFreezePlayerCommand(char* args)
     return true;
 }
 
-
+/**
+ * @brief Handler for HandleUnfreezePlayerCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleUnfreezePlayerCommand(char* args)
 {
 

@@ -23,19 +23,22 @@
  */
 
 /**
- * @addtogroup npc_linking
- * @{
- *
  * @file CreatureLinkingMgr.cpp
- * This file contains the code needed for MaNGOS to link npcs together
- * Currently implemented
- * - Aggro on boss aggro, also reversed
- * - Despawning/ Selfkill on death of mob if the NPC it is linked to dies
- * - Respawning on leaving combat if the linked to NPC evades, also reversed
- * - Respawning on death of the linked to NPC
- * - (Re)Spawning dependend on boss Alive/ Dead
- * - Following NPCs
+ * @brief NPC linking system for coordinated creature behavior
  *
+ * This file implements the CreatureLinkingMgr which allows NPCs to be
+ * linked together for coordinated behavior. Supported linking types:
+ *
+ * - Aggro linking: NPCs aggro together when one is attacked
+ * - Death linking: NPCs die together when one dies
+ * - Evade linking: NPCs evade together when one evades
+ * - Respawn linking: NPCs respawn together
+ * - Following: NPCs follow each other
+ * - Boss dependency: NPCs depend on boss being alive/dead
+ *
+ * Linking rules are loaded from the `creature_linking` database table.
+ *
+ * @see CreatureLinkingMgr for the manager class
  */
 
 #include "CreatureLinkingMgr.h"
@@ -316,6 +319,13 @@ bool CreatureLinkingMgr::IsSpawnedByLinkedMob(Creature* pCreature) const
 {
     return IsSpawnedByLinkedMob(GetLinkedTriggerInformation(pCreature));
 }
+
+/**
+ * @brief Checks whether linked-creature spawn rules depend on a master creature.
+ *
+ * @param pInfo The linking information to evaluate.
+ * @return true if the creature is conditionally spawned by linked-mob rules; otherwise false.
+ */
 bool CreatureLinkingMgr::IsSpawnedByLinkedMob(CreatureLinkingInfo const* pInfo) const
 {
     return pInfo && pInfo->linkingFlag & (FLAG_CANT_SPAWN_IF_BOSS_DEAD | FLAG_CANT_SPAWN_IF_BOSS_ALIVE) && (pInfo->masterDBGuid || pInfo->searchRange);
@@ -327,6 +337,15 @@ CreatureLinkingInfo const* CreatureLinkingMgr::GetLinkedTriggerInformation(Creat
 {
     return GetLinkedTriggerInformation(pCreature->GetEntry(), pCreature->GetGUIDLow(), pCreature->GetMapId());
 }
+
+/**
+ * @brief Resolves linking metadata for a creature entry or database guid on a map.
+ *
+ * @param entry The creature entry.
+ * @param lowGuid The creature low guid.
+ * @param mapId The map identifier.
+ * @return CreatureLinkingInfo const* The resolved linking information, or NULL if none exists.
+ */
 CreatureLinkingInfo const* CreatureLinkingMgr::GetLinkedTriggerInformation(uint32 entry, uint32 lowGuid, uint32 mapId) const
 {
     // guid case
@@ -689,6 +708,16 @@ bool CreatureLinkingHolder::IsSlaveInRangeOfBoss(Creature const* pSlave, Creatur
     pSlave->GetRespawnCoord(sX, sY, sZ);
     return IsSlaveInRangeOfBoss(pBoss, sX, sY, searchRange);
 }
+
+/**
+ * @brief Checks whether a slave spawn position lies within a boss search radius.
+ *
+ * @param pBoss The boss creature used as the center point.
+ * @param sX The slave respawn X coordinate.
+ * @param sY The slave respawn Y coordinate.
+ * @param searchRange The allowed search radius.
+ * @return true if the slave lies within range, or if no range restriction exists.
+ */
 bool CreatureLinkingHolder::IsSlaveInRangeOfBoss(Creature const* pBoss, float sX, float sY, uint16 searchRange) const
 {
     if (!searchRange)

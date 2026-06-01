@@ -61,6 +61,9 @@ enum
     NPC_SLIPKIK_GUARD = 14323
 };
 
+/**
+ * @brief Creates a game object instance with default runtime state.
+ */
 GameObject::GameObject() : WorldObject(),
     loot(this),
     m_model(NULL),
@@ -94,11 +97,17 @@ GameObject::GameObject() : WorldObject(),
     m_AI_locked;
 }
 
+/**
+ * @brief Destroys the game object and its collision model.
+ */
 GameObject::~GameObject()
 {
     delete m_model;
 }
 
+/**
+ * @brief Adds the game object and its model to the world.
+ */
 void GameObject::AddToWorld()
 {
 #ifdef ENABLE_ELUNA
@@ -133,6 +142,9 @@ void GameObject::AddToWorld()
 
 }
 
+/**
+ * @brief Removes the game object and its model from the world.
+ */
 void GameObject::RemoveFromWorld()
 {
     ///- Remove the gameobject from the accessor
@@ -176,11 +188,32 @@ void GameObject::RemoveFromWorld()
     Object::RemoveFromWorld();
 }
 
+/**
+ * @brief Performs cleanup before deleting the game object.
+ */
 void GameObject::CleanupsBeforeDelete()
 {
     WorldObject::CleanupsBeforeDelete();
 }
 
+/**
+ * @brief Creates a game object from template and placement data.
+ *
+ * @param guidlow The low GUID to assign.
+ * @param name_id The gameobject entry id.
+ * @param map The target map.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
+ * @param ang The facing angle.
+ * @param r0 Quaternion x component.
+ * @param r1 Quaternion y component.
+ * @param r2 Quaternion z component.
+ * @param r3 Quaternion w component.
+ * @param animprogress The initial animation progress.
+ * @param go_state The initial gameobject state.
+ * @return true if creation succeeded; otherwise, false.
+ */
 bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map,float x, float y, float z, float ang,
                         float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
@@ -281,6 +314,12 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map,float x, float 
     return true;
 }
 
+/**
+ * @brief Updates game object state, timers, loot state, and AI.
+ *
+ * @param update_diff The elapsed AI update time in milliseconds.
+ * @param p_time The elapsed world time step in milliseconds.
+ */
 void GameObject::Update(uint32 update_diff, uint32 p_time)
 {
     if (GetObjectGuid().IsMOTransport())
@@ -723,6 +762,9 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
 
 }
 
+/**
+ * @brief Refreshes the game object spawn state on the map.
+ */
 void GameObject::Refresh()
 {
     // not refresh despawned not casted GO (despawned casted GO destroyed in all cases anyway)
@@ -737,6 +779,11 @@ void GameObject::Refresh()
     }
 }
 
+/**
+ * @brief Records a unique player use for this game object.
+ *
+ * @param player The player using the object.
+ */
 void GameObject::AddUniqueUse(Player* player)
 {
     AddUse();
@@ -749,6 +796,9 @@ void GameObject::AddUniqueUse(Player* player)
     m_UniqueUsers.insert(player->GetObjectGuid());
 }
 
+/**
+ * @brief Despawns or schedules removal of the game object.
+ */
 void GameObject::Delete()
 {
     SendObjectDeSpawnAnim(GetObjectGuid());
@@ -766,6 +816,9 @@ void GameObject::Delete()
     }
 }
 
+/**
+ * @brief Saves the loaded game object back to the database.
+ */
 void GameObject::SaveToDB()
 {
     // this should only be used when the gameobject has already been loaded
@@ -780,6 +833,11 @@ void GameObject::SaveToDB()
     SaveToDB(GetMapId());
 }
 
+/**
+ * @brief Saves the game object spawn data to the database for a map.
+ *
+ * @param mapid The map id to persist.
+ */
 void GameObject::SaveToDB(uint32 mapid)
 {
     const GameObjectInfo* goI = GetGOInfo();
@@ -831,6 +889,13 @@ void GameObject::SaveToDB(uint32 mapid)
     WorldDatabase.CommitTransaction();
 }
 
+/**
+ * @brief Loads a game object from static database spawn data.
+ *
+ * @param guid The database GUID.
+ * @param map The destination map.
+ * @return true if loading succeeded; otherwise, false.
+ */
 bool GameObject::LoadFromDB(uint32 guid, Map* map)
 {
     GameObjectData const* data = sObjectMgr.GetGOData(guid);
@@ -909,7 +974,9 @@ struct GameObjectRespawnDeleteWorker
     uint32 i_guid;
 };
 
-
+/**
+ * @brief Deletes the static database spawn record for this game object.
+ */
 void GameObject::DeleteFromDB()
 {
     if (!HasStaticDBSpawnData())
@@ -930,6 +997,13 @@ void GameObject::DeleteFromDB()
 /*********************************************************/
 /***                    QUEST SYSTEM                   ***/
 /*********************************************************/
+
+/**
+ * @brief Checks whether the game object starts the specified quest.
+ *
+ * @param quest_id The quest identifier.
+ * @return true if the quest is related to this game object; otherwise, false.
+ */
 bool GameObject::HasQuest(uint32 quest_id) const
 {
     QuestRelationsMapBounds bounds = sObjectMgr.GetGOQuestRelationsMapBounds(GetEntry());
@@ -943,6 +1017,12 @@ bool GameObject::HasQuest(uint32 quest_id) const
     return false;
 }
 
+/**
+ * @brief Checks whether the game object is involved in the specified quest.
+ *
+ * @param quest_id The quest identifier.
+ * @return true if the quest is an involved relation for this game object; otherwise, false.
+ */
 bool GameObject::HasInvolvedQuest(uint32 quest_id) const
 {
     QuestRelationsMapBounds bounds = sObjectMgr.GetGOQuestInvolvedRelationsMapBounds(GetEntry());
@@ -956,6 +1036,11 @@ bool GameObject::HasInvolvedQuest(uint32 quest_id) const
     return false;
 }
 
+/**
+ * @brief Checks whether the game object behaves as a transport.
+ *
+ * @return true if the game object is a transport type; otherwise, false.
+ */
 bool GameObject::IsTransport() const
 {
     // If something is marked as a transport, don't transmit an out of range packet for it.
@@ -967,11 +1052,19 @@ bool GameObject::IsTransport() const
     return gInfo->type == GAMEOBJECT_TYPE_TRANSPORT || gInfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT;
 }
 
+/**
+ * @brief Gets the unit that owns this game object.
+ *
+ * @return The owning unit, or null if none exists.
+ */
 Unit* GameObject::GetOwner() const
 {
     return sObjectAccessor.GetUnit(*this, GetOwnerGuid());
 }
 
+/**
+ * @brief Saves the current respawn time to persistent state if needed.
+ */
 void GameObject::SaveRespawnTime()
 {
     if (m_respawnTime > time(NULL) && m_spawnedByDefault)
@@ -980,6 +1073,14 @@ void GameObject::SaveRespawnTime()
     }
 }
 
+/**
+ * @brief Checks whether the game object is visible for a player in the current state.
+ *
+ * @param u The observing player.
+ * @param viewPoint The viewpoint used for distance checks.
+ * @param inVisibleList true when evaluating an already-visible object.
+ * @return true if the object should be visible; otherwise, false.
+ */
 bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const
 {
     // Not in world
@@ -1079,6 +1180,9 @@ bool GameObject::IsVisibleForInState(Player const* u, WorldObject const* viewPoi
     return IsWithinDistInMap(viewPoint, visibleDistance, false);
 }
 
+/**
+ * @brief Forces a respawn for a default-spawned game object.
+ */
 void GameObject::Respawn()
 {
     if (m_spawnedByDefault && m_respawnTime > 0)
@@ -1088,6 +1192,12 @@ void GameObject::Respawn()
     }
 }
 
+/**
+ * @brief Checks whether this game object should activate for a player's quests.
+ *
+ * @param pTarget The player using the object.
+ * @return true if the object should be quest-active; otherwise, false.
+ */
 bool GameObject::ActivateToQuest(Player* pTarget) const
 {
     // if GO is ReqCreatureOrGoN for quest
@@ -1187,6 +1297,9 @@ bool GameObject::ActivateToQuest(Player* pTarget) const
     return false;
 }
 
+/**
+ * @brief Summons the linked trap associated with this game object, if any.
+ */
 void GameObject::SummonLinkedTrapIfAny()
 {
     uint32 linkedEntry = GetGOInfo()->GetLinkedGameObjectEntry();
@@ -1212,10 +1325,15 @@ void GameObject::SummonLinkedTrapIfAny()
         linkedGO->SetUInt32Value(GAMEOBJECT_LEVEL, GetUInt32Value(GAMEOBJECT_LEVEL));
     }
 
-   linkedGO->AIM_Initialize();
+    linkedGO->AIM_Initialize();
     GetMap()->Add(linkedGO);
 }
 
+/**
+ * @brief Triggers the linked trap game object against a target.
+ *
+ * @param target The unit activating the trap.
+ */
 void GameObject::TriggerLinkedGameObject(Unit* target)
 {
     uint32 trapEntry = GetGOInfo()->GetLinkedGameObjectEntry();
@@ -1261,6 +1379,12 @@ void GameObject::TriggerLinkedGameObject(Unit* target)
     }
 }
 
+/**
+ * @brief Finds a nearby fishing hole around this game object.
+ *
+ * @param range The search radius.
+ * @return The nearest fishing hole, or null if none was found.
+ */
 GameObject* GameObject::LookupFishingHoleAround(float range)
 {
     GameObject* ok = NULL;
@@ -1272,6 +1396,11 @@ GameObject* GameObject::LookupFishingHoleAround(float range)
     return ok;
 }
 
+/**
+ * @brief Checks whether collision is currently enabled for the game object.
+ *
+ * @return true if the model should be collidable; otherwise, false.
+ */
 bool GameObject::IsCollisionEnabled() const
 {
     if (!isSpawned())
@@ -1290,6 +1419,9 @@ bool GameObject::IsCollisionEnabled() const
     }
 }
 
+/**
+ * @brief Resets a door or button back to its default state.
+ */
 void GameObject::ResetDoorOrButton()
 {
     if (m_lootState == GO_READY || m_lootState == GO_JUST_DEACTIVATED)
@@ -1302,6 +1434,12 @@ void GameObject::ResetDoorOrButton()
     m_cooldownTime = 0;
 }
 
+/**
+ * @brief Activates a door or button and schedules restoration.
+ *
+ * @param time_to_restore The delay before reset.
+ * @param alternative true to use the alternative active state.
+ */
 void GameObject::UseDoorOrButton(uint32 time_to_restore, bool alternative /* = false */)
 {
     if (m_lootState != GO_READY)
@@ -1320,6 +1458,12 @@ void GameObject::UseDoorOrButton(uint32 time_to_restore, bool alternative /* = f
     m_cooldownTime = time(NULL) + time_to_restore;
 }
 
+/**
+ * @brief Switches a door or button between active and ready states.
+ *
+ * @param activate true to activate; false to deactivate.
+ * @param alternative true to use the alternative active state.
+ */
 void GameObject::SwitchDoorOrButton(bool activate, bool alternative /* = false */)
 {
     if (activate)
@@ -1341,6 +1485,11 @@ void GameObject::SwitchDoorOrButton(bool activate, bool alternative /* = false *
     }
 }
 
+/**
+ * @brief Handles use interaction for this game object.
+ *
+ * @param user The unit using the object.
+ */
 void GameObject::Use(Unit* user)
 {
     // user must be provided
@@ -2038,6 +2187,13 @@ void GameObject::Use(Unit* user)
 }
 
 // overwrite WorldObject function for proper name localization
+
+/**
+ * @brief Gets the localized name for a locale index.
+ *
+ * @param loc_idx The locale index.
+ * @return The localized name, or the default name if unavailable.
+ */
 const char* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
 {
     if (loc_idx >= 0)
@@ -2055,6 +2211,11 @@ const char* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
     return GetName();
 }
 
+/**
+ * @brief Stores the object's rotation quaternion and updates the model.
+ *
+ * @param q The quaternion to apply.
+ */
 void GameObject::SetQuaternion(G3D::Quat const& q)
 {
     SetFloatValue(GAMEOBJECT_ROTATION + 0, q.x);
@@ -2068,6 +2229,11 @@ void GameObject::SetQuaternion(G3D::Quat const& q)
     }
 }
 
+/**
+ * @brief Reads the object's current rotation quaternion.
+ *
+ * @param q Receives the quaternion components.
+ */
 void GameObject::GetQuaternion(G3D::Quat& q) const
 {
     q.x = GetFloatValue(GAMEOBJECT_ROTATION + 0);
@@ -2076,6 +2242,12 @@ void GameObject::GetQuaternion(G3D::Quat& q) const
     q.w = GetFloatValue(GAMEOBJECT_ROTATION + 3);
 }
 
+/**
+ * @brief Converts a quaternion rotation to a facing orientation.
+ *
+ * @param q The quaternion to evaluate.
+ * @return The normalized orientation angle.
+ */
 float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
 {
     double t1 = +2.0f * (q.w * q.z + q.x * q.y);
@@ -2083,6 +2255,12 @@ float GameObject::GetOrientationFromQuat(G3D::Quat const& q)
     return MapManager::NormalizeOrientation(std::atan2(t1, t2));
 }
 
+/**
+ * @brief Checks whether the game object is hostile to a unit.
+ *
+ * @param unit The unit to test.
+ * @return true if hostile; otherwise, false.
+ */
 bool GameObject::IsHostileTo(Unit const* unit) const
 {
     // always non-hostile to GM in GM mode
@@ -2140,6 +2318,12 @@ bool GameObject::IsHostileTo(Unit const* unit) const
     return tester_faction->IsHostileTo(*target_faction);
 }
 
+/**
+ * @brief Checks whether the game object is friendly to a unit.
+ *
+ * @param unit The unit to test.
+ * @return true if friendly; otherwise, false.
+ */
 bool GameObject::IsFriendlyTo(Unit const* unit) const
 {
     // always friendly to GM in GM mode
@@ -2197,6 +2381,9 @@ bool GameObject::IsFriendlyTo(Unit const* unit) const
     return tester_faction->IsFriendlyTo(*target_faction);
 }
 
+/**
+ * @brief Rolls alternate mineral vein variants for chest-type nodes.
+ */
 void GameObject::RollIfMineralVein()
 {
     GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(GetEntry());
@@ -2212,6 +2399,12 @@ void GameObject::RollIfMineralVein()
     }
 }
 
+/**
+ * @brief Rolls a replacement mineral vein entry based on zone and rates.
+ *
+ * @param entry The base vein entry.
+ * @return The selected vein entry.
+ */
 uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodstone and indurium have alternate spawns?
 {
     uint32 entrynew = entry;
@@ -2318,6 +2511,11 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
         return entrynew;
 }
 
+/**
+ * @brief Sets the loot state and refreshes collision state.
+ *
+ * @param state The new loot state.
+ */
 void GameObject::SetLootState(LootState state)
 {
     m_lootState = state;
@@ -2330,6 +2528,11 @@ void GameObject::SetLootState(LootState state)
     UpdateCollisionState();
 }
 
+/**
+ * @brief Sets the gameobject state and refreshes collision state.
+ *
+ * @param state The new gameobject state.
+ */
 void GameObject::SetGoState(GOState state)
 {
     SetByteValue(GAMEOBJECT_STATE, 0, state);
@@ -2342,12 +2545,20 @@ void GameObject::SetGoState(GOState state)
     UpdateCollisionState();
 }
 
+/**
+ * @brief Sets the display id and refreshes the collision model.
+ *
+ * @param modelId The display model id.
+ */
 void GameObject::SetDisplayId(uint32 modelId)
 {
     SetUInt32Value(GAMEOBJECT_DISPLAYID, modelId);
     UpdateModel();
 }
 
+/**
+ * @brief Updates model collision enablement based on current state.
+ */
 void GameObject::UpdateCollisionState() const
 {
     if (!m_model || !IsInWorld())
@@ -2358,6 +2569,9 @@ void GameObject::UpdateCollisionState() const
     m_model->SetCollidable(IsCollisionEnabled());
 }
 
+/**
+ * @brief Rebuilds the collision model for the current display.
+ */
 void GameObject::UpdateModel()
 {
     if (m_model && IsInWorld() && GetMap()->ContainsGameObjectModel(*m_model))
@@ -2373,12 +2587,21 @@ void GameObject::UpdateModel()
     }
 }
 
+/**
+ * @brief Starts group loot tracking for this game object.
+ *
+ * @param group The recipient group.
+ * @param timer The loot roll timer.
+ */
 void GameObject::StartGroupLoot(Group* group, uint32 timer)
 {
     m_groupLootId = group->GetId();
     m_groupLootTimer = timer;
 }
 
+/**
+ * @brief Stops active group loot tracking for this game object.
+ */
 void GameObject::StopGroupLoot()
 {
     if (!m_groupLootId)
@@ -2395,17 +2618,32 @@ void GameObject::StopGroupLoot()
     m_groupLootId = 0;
 }
 
+/**
+ * @brief Gets the original player loot recipient.
+ *
+ * @return The original loot recipient player, or null if unavailable.
+ */
 Player* GameObject::GetOriginalLootRecipient() const
 {
     return m_lootRecipientGuid ? sObjectAccessor.FindPlayer(m_lootRecipientGuid) : NULL;
 }
 
+/**
+ * @brief Gets the original group loot recipient.
+ *
+ * @return The loot recipient group, or null if unavailable.
+ */
 Group* GameObject::GetGroupLootRecipient() const
 {
     // original recipient group if set and not disbanded
     return m_lootGroupRecipientId ? sObjectMgr.GetGroupById(m_lootGroupRecipientId) : NULL;
 }
 
+/**
+ * @brief Gets the active player loot recipient for this game object.
+ *
+ * @return The player who should currently receive loot rights, or null if none.
+ */
 Player* GameObject::GetLootRecipient() const
 {
     // original recipient group if set and not disbanded
@@ -2438,6 +2676,11 @@ Player* GameObject::GetLootRecipient() const
     return NULL;
 }
 
+/**
+ * @brief Assigns loot rights to a unit and its group if applicable.
+ *
+ * @param pUnit The unit receiving loot rights, or null to clear them.
+ */
 void GameObject::SetLootRecipient(Unit* pUnit)
 {
     // set the player whose group should receive the right
@@ -2467,17 +2710,33 @@ void GameObject::SetLootRecipient(Unit* pUnit)
     }
 }
 
+/**
+ * @brief Gets the object bounding radius used for visibility and interaction.
+ *
+ * @return The default game object radius.
+ */
 float GameObject::GetObjectBoundingRadius() const
 {
     // 1.12.1 GameObjectDisplayInfo.dbc not have any info related to size
     return DEFAULT_WORLD_OBJECT_SIZE;
 }
 
+/**
+ * @brief Checks whether a player has already received skillup credit from this object.
+ *
+ * @param player The player to test.
+ * @return true if the player is in the skillup list; otherwise, false.
+ */
 bool GameObject::IsInSkillupList(Player* player) const
 {
     return m_SkillupSet.find(player->GetObjectGuid()) != m_SkillupSet.end();
 }
 
+/**
+ * @brief Adds a player to the skillup tracking list.
+ *
+ * @param player The player to add.
+ */
 void GameObject::AddToSkillupList(Player* player)
 {
     m_SkillupSet.insert(player->GetObjectGuid());
@@ -2498,6 +2757,12 @@ struct AddGameObjectToRemoveListInMapsWorker
     ObjectGuid i_guid;
 };
 
+/**
+ * @brief Adds matching spawned instances to remove lists across loaded maps.
+ *
+ * @param db_guid The database GUID.
+ * @param data The static spawn data.
+ */
 void GameObject::AddToRemoveListInMaps(uint32 db_guid, GameObjectData const* data)
 {
     AddGameObjectToRemoveListInMapsWorker worker(ObjectGuid(HIGHGUID_GAMEOBJECT, data->id, db_guid));
@@ -2534,17 +2799,34 @@ struct SpawnGameObjectInMapsWorker
     GameObjectData const* i_data;
 };
 
+/**
+ * @brief Spawns this database game object across eligible loaded maps.
+ *
+ * @param db_guid The database GUID.
+ * @param data The static spawn data.
+ */
 void GameObject::SpawnInMaps(uint32 db_guid, GameObjectData const* data)
 {
     SpawnGameObjectInMapsWorker worker(db_guid, data);
     sMapMgr.DoForAllMapsWithMapId(data->mapid, worker);
 }
 
+/**
+ * @brief Checks whether this object has static database spawn data.
+ *
+ * @return true if the object has a saved DB spawn; otherwise, false.
+ */
 bool GameObject::HasStaticDBSpawnData() const
 {
     return sObjectMgr.GetGOData(GetGUIDLow()) != NULL;
 }
 
+/**
+ * @brief Sets the capture point slider and derived state.
+ *
+ * @param value The slider value.
+ * @param isLocked true if the capture point is locked.
+ */
 void GameObject::SetCapturePointSlider(float value, bool isLocked)
 {
     GameObjectInfo const* info = GetGOInfo();
@@ -2580,6 +2862,9 @@ void GameObject::SetCapturePointSlider(float value, bool isLocked)
     }
 }
 
+/**
+ * @brief Updates capture point progress and sends related world state changes.
+ */
 void GameObject::TickCapturePoint()
 {
     // TODO: On retail: Ticks every 5.2 seconds. slider value increase when new player enters on tick
@@ -2786,11 +3071,21 @@ void GameObject::TickCapturePoint()
     }
 }
 
+/**
+ * @brief Gets the bound script id for this game object.
+ *
+ * @return The script identifier.
+ */
 uint32 GameObject::GetScriptId()
 {
     return sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) ? sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, -int32(GetGUIDLow())) : sScriptMgr.GetBoundScriptId(SCRIPTED_GAMEOBJECT, GetEntry());
 }
 
+/**
+ * @brief Gets the interaction distance for this game object type.
+ *
+ * @return The maximum interaction distance.
+ */
 float GameObject::GetInteractionDistance() const
 {
     float maxdist = INTERACTION_DISTANCE;
@@ -2811,6 +3106,11 @@ float GameObject::GetInteractionDistance() const
     return maxdist;
 }
 
+/**
+ * @brief Sends a custom animation packet for this game object.
+ *
+ * @param animId The animation identifier.
+ */
 void GameObject::SendGameObjectCustomAnim(uint32 animId /*= 0*/)
 {
     WorldPacket data(SMSG_GAMEOBJECT_CUSTOM_ANIM, 8 + 4);
@@ -2819,6 +3119,9 @@ void GameObject::SendGameObjectCustomAnim(uint32 animId /*= 0*/)
     SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Sends a reset-state packet for this game object.
+ */
 void GameObject::SendGameObjectReset()
 {
     WorldPacket data(SMSG_GAMEOBJECT_RESET_STATE, 8);
@@ -2826,6 +3129,11 @@ void GameObject::SendGameObjectReset()
     SendMessageToSet(&data, true);
 }
 
+/**
+ * @brief Initializes the scripted AI instance for the game object.
+ *
+ * @return true if initialization succeeded; otherwise, false.
+ */
 bool  GameObject::AIM_Initialize()
 {
 
@@ -2836,7 +3144,7 @@ bool  GameObject::AIM_Initialize()
         return false;
     }
 
-   m_AI.reset(sScriptMgr.GetGameObjectAI(this));
+m_AI.reset(sScriptMgr.GetGameObjectAI(this));
 
-   return true;
+return true;
 }

@@ -22,14 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PlayerLearnCommands.cpp
+ * @brief Implementation of player skill and spell learning chat commands.
+ *
+ * This file contains chat command handlers for learning operations including:
+ * - Spell learning and unlearning
+ * - Skill training
+ * - Talent modification
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
 
- /**********************************************************************
-      CommandTable : learnCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleUnLearnCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleUnLearnCommand(char* args)
 {
     if (!*args)
@@ -75,6 +87,12 @@ bool ChatHandler::HandleUnLearnCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllCommand(char* /*args*/)
 {
     static const char* allSpellList[] =
@@ -706,6 +724,12 @@ bool ChatHandler::HandleLearnAllCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllGMCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllGMCommand(char* /*args*/)
 {
     static const char* gmSpellList[] =
@@ -745,6 +769,12 @@ bool ChatHandler::HandleLearnAllGMCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllMyClassCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllMyClassCommand(char* /*args*/)
 {
     HandleLearnAllMySpellsCommand((char*)"");
@@ -752,6 +782,12 @@ bool ChatHandler::HandleLearnAllMyClassCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllMySpellsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -814,6 +850,12 @@ bool ChatHandler::HandleLearnAllMySpellsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllMyTalentsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -869,6 +911,12 @@ bool ChatHandler::HandleLearnAllMyTalentsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllLangCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllLangCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -883,6 +931,12 @@ bool ChatHandler::HandleLearnAllLangCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllDefaultCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllDefaultCommand(char* args)
 {
     Player* target;
@@ -898,6 +952,12 @@ bool ChatHandler::HandleLearnAllDefaultCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnCommand(char* args)
 {
     Player* player = m_session->GetPlayer();
@@ -957,6 +1017,12 @@ bool ChatHandler::HandleLearnCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Teaches all recipes tied to a profession or skill line.
+ *
+ * @param player The player learning the recipes.
+ * @param skill_id The skill line identifier to scan.
+ */
 void ChatHandler::HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id)
 {
     uint32 classmask = player->getClassMask();
@@ -1003,6 +1069,12 @@ void ChatHandler::HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id)
     }
 }
 
+/**
+ * @brief Handler for HandleLearnAllCraftsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
 {
     for (uint32 i = 0; i < sSkillLineStore.GetNumRows(); ++i)
@@ -1032,6 +1104,12 @@ bool ChatHandler::HandleLearnAllCraftsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLearnAllRecipesCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLearnAllRecipesCommand(char* args)
 {
     //  Learns all recipes of specified profession and sets skill to max

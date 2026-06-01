@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GossipDef.cpp
+ * @brief NPC gossip menu implementation
+ *
+ * This file implements the gossip menu system used by NPCs to present
+ * interactive options to players. Features:
+ *
+ * - Gossip menu creation and management
+ * - Menu item addition with icons and actions
+ * - Quest gossip integration
+ * - Point-of-interest (POI) handling
+ * - Player choice processing
+ * - Scripted gossip options
+ *
+ * Gossip menus are loaded from the `gossip_menu` database tables
+ * and can be extended with scripts.
+ *
+ * @see GossipMenu for the menu class
+ * @see GossipMenuData for menu data
+ */
+
 #include "GossipDef.h"
 #include "QuestDef.h"
 #include "ObjectMgr.h"
@@ -384,7 +405,9 @@ void PlayerMenu::SendTalking(char const* title, char const* text) const
 }
 
 /*********************************************************/
+
 /***                    QUEST SYSTEM                   ***/
+
 /*********************************************************/
 
 // Constructor for QuestMenu, reserves space for quest items
@@ -744,6 +767,13 @@ void PlayerMenu::SendQuestQueryResponse(Quest const* pQuest) const
     DEBUG_LOG("WORLD: Sent SMSG_QUEST_QUERY_RESPONSE questid=%u", pQuest->GetQuestId());
 }
 
+/**
+ * @brief Sends the quest reward offer window for a completed quest.
+ *
+ * @param pQuest The quest being rewarded.
+ * @param npcGUID The quest giver guid.
+ * @param EnableNext True if the client should allow automatic progression to the next quest.
+ */
 void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGUID, bool EnableNext) const
 {
     // Retrieve the quest title and offer reward text
@@ -849,6 +879,14 @@ void PlayerMenu::SendQuestGiverOfferReward(Quest const* pQuest, ObjectGuid npcGU
     DEBUG_LOG("WORLD: Sent SMSG_QUESTGIVER_OFFER_REWARD NPCGuid = %s, questid = %u", npcGUID.GetString().c_str(), pQuest->GetQuestId());
 }
 
+/**
+ * @brief Sends the quest item request window for a quest turn-in.
+ *
+ * @param pQuest The quest being turned in.
+ * @param npcGUID The quest giver guid.
+ * @param Completable True if the player currently meets the quest completion requirements.
+ * @param CloseOnCancel True if canceling should close the gossip window.
+ */
 void PlayerMenu::SendQuestGiverRequestItems(Quest const* pQuest, ObjectGuid npcGUID, bool Completable, bool CloseOnCancel) const
 {
     // We can always call to RequestItems, but this packet only goes out if there are actually

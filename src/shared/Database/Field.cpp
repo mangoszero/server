@@ -22,4 +22,15 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-//#include "DatabaseEnv.h"
+/**
+ * @file Field.cpp
+ * @brief Database field implementation placeholder
+ *
+ * This file is intentionally minimal as the Field class is primarily
+ * implemented inline in Field.h. The Field class represents a single
+ * column value from a database query result and provides type conversion
+ * methods for accessing the data in various formats.
+ *
+ * @see Field.h for the complete class implementation
+ */
+

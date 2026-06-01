@@ -32,11 +32,13 @@
 
 //----- Point Movement Generator
 
-/**
- * @brief Initializes the PointMovementGenerator.
- * @param unit Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Initializes movement toward the configured point destination.
+ *
+ * @param unit The unit using the movement generator.
+ */
 void PointMovementGenerator<T>::Initialize(T& unit)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_NOT_MOVE))
@@ -52,11 +54,13 @@ void PointMovementGenerator<T>::Initialize(T& unit)
     init.Launch();
 }
 
-/**
- * @brief Finalizes the PointMovementGenerator.
- * @param unit Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Finalizes point movement and notifies listeners if the spline completed.
+ *
+ * @param unit The unit using the movement generator.
+ */
 void PointMovementGenerator<T>::Finalize(T& unit)
 {
     unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
@@ -67,35 +71,41 @@ void PointMovementGenerator<T>::Finalize(T& unit)
     }
 }
 
-/**
- * @brief Interrupts the PointMovementGenerator.
- * @param unit Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Interrupts point movement and clears roaming movement flags.
+ *
+ * @param unit The unit using the movement generator.
+ */
 void PointMovementGenerator<T>::Interrupt(T& unit)
 {
     unit.InterruptMoving();
     unit.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 }
 
-/**
- * @brief Resets the PointMovementGenerator.
- * @param unit Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Resets point movement state without relaunching the path.
+ *
+ * @param unit The unit using the movement generator.
+ */
 void PointMovementGenerator<T>::Reset(T& unit)
 {
     unit.StopMoving();
     unit.addUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
 }
 
-/**
- * @brief Updates the PointMovementGenerator.
- * @param unit Reference to the unit.
- * @param diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
 template<class T>
+
+/**
+ * @brief Updates point movement and relaunches the spline if needed.
+ *
+ * @param unit The unit using the movement generator.
+ * @param diff The elapsed update time in milliseconds.
+ * @return true while the generator remains active; otherwise false.
+ */
 bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
 {
     if (unit.hasUnitState(UNIT_STAT_CAN_NOT_MOVE))
@@ -112,20 +122,24 @@ bool PointMovementGenerator<T>::Update(T& unit, const uint32& /*diff*/)
     return !unit.movespline->Finalized();
 }
 
-/**
- * @brief Informs the player about the movement.
- * @param player Reference to the player.
- */
 template<>
+
+/**
+ * @brief Handles point-movement completion for players.
+ *
+ * @param player The player that reached the destination.
+ */
 void PointMovementGenerator<Player>::MovementInform(Player&)
 {
 }
 
-/**
- * @brief Informs the creature about the movement.
- * @param unit Reference to the creature.
- */
 template <>
+
+/**
+ * @brief Notifies creature AI and summon logic when point movement completes.
+ *
+ * @param unit The creature that reached the destination.
+ */
 void PointMovementGenerator<Creature>::MovementInform(Creature& unit)
 {
     if (unit.AI())

@@ -55,5 +55,4 @@ enum RealmFlags
     REALM_FLAG_FULL         = 0x80
 };
 
-
 #endif

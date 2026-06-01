@@ -3,6 +3,9 @@
 #include "DBCStore.h"
 #include "DBCStores.h"
 
+/**
+ * Performs a case-insensitive substring search in C strings.
+ */
 char * strstri (const char* str1, const char* str2);
 
 namespace ai
@@ -30,7 +33,10 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult() { return result; }
+        list<Item*>& GetResult()
+        {
+            return result;
+        }
 
     protected:
         virtual bool Accept(const ItemPrototype* proto) = 0;
@@ -65,7 +71,6 @@ namespace ai
     private:
         Player* bot;
     };
-
 
     class FindItemsByQualityVisitor : public IterateItemsVisitor
     {
@@ -177,13 +182,15 @@ namespace ai
             return true;
         }
 
-        int GetCount() { return count; }
+        int GetCount()
+        {
+            return count;
+        }
 
     protected:
         int count;
         uint32 itemId;
     };
-
 
     class QueryNamedItemCountVisitor : public QueryItemCountVisitor
     {
@@ -302,8 +309,8 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto)
         {
-            return proto->Class == ITEM_CLASS_CONSUMABLE &&
-                   proto->Spells[0].SpellCategory == spellCategory;
+            return proto->Class == ITEM_CLASS_CONSUMABLE
+                && proto->Spells[0].SpellCategory == spellCategory;
         }
     private:
         uint32 spellCategory;
@@ -349,8 +356,8 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto)
         {
-            return proto->IsConjuredConsumable() &&
-                  proto->Spells[0].SpellCategory == spellCategory;
+            return proto->IsConjuredConsumable()
+                && proto->Spells[0].SpellCategory == spellCategory;
         }
     private:
         uint32 spellCategory;

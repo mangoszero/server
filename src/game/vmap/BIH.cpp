@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BIH.cpp
+ * @brief Bounding Interval Hierarchy (BIH) spatial index implementation
+ *
+ * This file implements the BIH (Bounding Interval Hierarchy) tree structure
+ * used for efficient spatial queries in the VMap system. BIH is a hierarchical
+ * spatial partitioning structure similar to BVH but optimized for ray tracing.
+ *
+ * Key features:
+ * - Hierarchical bounding box tree
+ * - Fast ray intersection queries
+ * - Dynamic tree building and subdivision
+ * - Memory-efficient node representation
+ *
+ * @see BIH for the tree class
+ * @see MapTree for the map tree using BIH
+ */
+
 #include "BIH.h"
 
  /**

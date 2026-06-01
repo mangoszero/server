@@ -148,6 +148,10 @@ void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)
 
     SqlStmtParameters::ParameterContainer const& _args = holder.params();
 
+    // Pre-allocate string buffer to avoid repeated allocations
+    std::string tmp;
+    tmp.reserve(256); // Reserve space for typical parameter values
+
     SqlStmtParameters::ParameterContainer::const_iterator iter_last = _args.end();
     for (SqlStmtParameters::ParameterContainer::const_iterator iter = _args.begin(); iter != iter_last; ++iter)
     {
@@ -160,10 +164,13 @@ void SqlPlainPreparedStatement::bind(const SqlStmtParameters& holder)
         nLastPos = m_szPlainRequest.find('?', nLastPos);
         if (nLastPos != std::string::npos)
         {
-            std::string tmp = fmt.str();
+            tmp = fmt.str();
             m_szPlainRequest.replace(nLastPos, 1, tmp);
             nLastPos += tmp.length();
         }
+
+        // Clear buffer for next iteration
+        tmp.clear();
     }
 }
 
@@ -203,9 +210,11 @@ void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::
         case FIELD_DOUBLE:  fmt << "'" << data.toDouble() << "'";           break;
         case FIELD_STRING:
         {
-            std::string tmp = data.toStr();
-            m_pConn.DB().escape_string(tmp);
-            fmt << "'" << tmp << "'";
+            // Optimize string handling - reuse buffer and avoid unnecessary copies
+            static thread_local std::string escaped_string;
+            escaped_string = data.toStr();
+            m_pConn.DB().escape_string(escaped_string);
+            fmt << "'" << escaped_string << "'";
             break;
         }
         case FIELD_NONE:                                                    break;
@@ -217,6 +226,11 @@ void SqlPlainPreparedStatement::DataToString(const SqlStmtFieldData& data, std::
  * @param param1 The value to set.
  */
 template<typename T1>
+
+/**
+ * @brief Set the value of the field.
+ * @param param1 The value to set.
+ */
 void SqlStmtFieldData::set(T1 param1)
 {
     // Implementation for setting the value based on the type of param1

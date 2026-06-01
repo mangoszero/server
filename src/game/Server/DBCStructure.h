@@ -529,7 +529,6 @@ struct LockEntry
     // uint32      Action[MAX_LOCK_CASE];                   // 25-32    m_Action
 };
 
-
 /**
 * \struct MailTemplateEntry
 * \brief Entry representing a mail template for quest result.
@@ -575,7 +574,7 @@ struct MapEntry
     bool IsMountAllowed() const
     {
         return !IsDungeon() ||
-               MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
+                MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
     }
 
     bool IsContinent() const
@@ -584,13 +583,13 @@ struct MapEntry
     }
 };
 
-
 struct MovieEntry
 {
     uint32      Id;                                         // 0        m_ID
     // char*       filename;                                // 1        m_filename
     // uint32      unk2;                                    // 2        m_volume
 };
+
 /**
 * \struct QuestSortEntry
 * \brief Entry representing the type of quest within the game.
@@ -1114,7 +1113,6 @@ struct TaxiNodesEntry
     // 13 string flags
     uint32    MountCreatureID[2];                           // 14-15    m_MountCreatureID[2] - Creature ID (indicates as well the Taxi Node type : horde[14]-alliance[15])
 };
-
 
 /**
 * \struct TaxiPathEntry

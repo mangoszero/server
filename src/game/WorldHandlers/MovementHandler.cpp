@@ -22,6 +22,36 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MovementHandler.cpp
+ * @brief Movement opcode handlers
+ *
+ * This file handles movement-related opcodes including:
+ * - MSG_MOVE_WORLDPORT_ACK: Acknowledge map teleport
+ * - MSG_MOVE_TELEPORT_ACK: Acknowledge teleport
+ * - MSG_MOVE_HEARTBEAT: Movement heartbeat
+ * - MSG_MOVE_SET_FACING: Set facing direction
+ * - MSG_MOVE_JUMP: Jump
+ * - MSG_MOVE_START_FORWARD: Start moving forward
+ * - MSG_MOVE_START_BACKWARD: Start moving backward
+ * - MSG_MOVE_STOP: Stop movement
+ * - MSG_MOVE_START_STRAFE_LEFT: Start strafing left
+ * - MSG_MOVE_START_STRAFE_RIGHT: Start strafing right
+ * - MSG_MOVE_START_PITCH_UP: Start pitching up
+ * - MSG_MOVE_START_PITCH_DOWN: Start pitching down
+ * - MSG_MOVE_SET_RUN_MODE: Set run mode
+ * - MSG_MOVE_SET_WALK_MODE: Set walk mode
+ * - MSG_MOVE_FALL_LAND: Land after fall
+ * - MSG_MOVE_START_SWIM: Start swimming
+ * - MSG_MOVE_STOP_SWIM: Stop swimming
+ * - MSG_MOVE_SPLASH: Water splash
+ * - MSG_MOVE_ASCEND: Ascend (flying)
+ * - MSG_MOVE_DESCEND: Descend (flying)
+ *
+ * Movement packets are validated and synchronized with the server's
+ * authoritative position to prevent cheating.
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -37,13 +67,20 @@
 
 #define MOVEMENT_PACKET_TIME_DELAY 300
 
-
+/**
+ * @brief Handles the packet-based worldport acknowledgement.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: got MSG_MOVE_WORLDPORT_ACK.");
     HandleMoveWorldportAckOpcode();
 }
 
+/**
+ * @brief Finalizes a far teleport after the client acknowledges worldport.
+ */
 void WorldSession::HandleMoveWorldportAckOpcode()
 {
     // ignore unexpected far teleports
@@ -213,6 +250,11 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     GetPlayer()->ProcessDelayedOperations();
 }
 
+/**
+ * @brief Finalizes a near teleport after the client acknowledges it.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("MSG_MOVE_TELEPORT_ACK");
@@ -268,6 +310,11 @@ void WorldSession::HandleMoveTeleportAckOpcode(WorldPacket& recv_data)
     GetPlayer()->ProcessDelayedOperations();
 }
 
+/**
+ * @brief Processes standard client movement updates.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
 {
     uint16 opcode = recv_data.GetOpcode();
@@ -320,8 +367,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     {
         Transport* transport = plMover->GetTransport();
         float visibilityDist = mover->GetMap()->GetVisibilityDistance();
-        for (UnitSet::const_iterator itr = transport->GetPassengers().begin();
-             itr != transport->GetPassengers().end(); ++itr)
+        for (UnitSet::const_iterator itr = transport->GetPassengers().begin(); itr != transport->GetPassengers().end(); ++itr)
         {
             if (*itr == mover || (*itr)->GetTypeId() != TYPEID_PLAYER)
             {
@@ -341,9 +387,13 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
             }
         }
     }
-
 }
 
+/**
+ * @brief Verifies client acknowledgement packets for forced speed changes.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
 {
     uint16 opcode = recv_data.GetOpcode();
@@ -364,7 +414,6 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
     {
         return;
     }
-    /*----------------*/
 
     // client ACK send one packet for mounted/run case and need skip all except last from its
     // in other cases anti-cheat check can be fail in false case
@@ -414,6 +463,11 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Validates the active mover guid reported by the client.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_SET_ACTIVE_MOVER");
@@ -429,6 +483,11 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Stores movement info sent for a non-active mover.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_NOT_ACTIVE_MOVER");
@@ -454,6 +513,11 @@ void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket& recv_data)
     _player->m_movementInfo = mi;
 }
 
+/**
+ * @brief Broadcasts the player's mount special animation.
+ *
+ * @param recvdata The received opcode packet.
+ */
 void WorldSession::HandleMountSpecialAnimOpcode(WorldPacket& /*recvdata*/)
 {
     // DEBUG_LOG("WORLD: Received opcode CMSG_MOUNTSPECIAL_ANIM");
@@ -464,6 +528,11 @@ void WorldSession::HandleMountSpecialAnimOpcode(WorldPacket& /*recvdata*/)
     GetPlayer()->SendMessageToSet(&data, false);
 }
 
+/**
+ * @brief Handles knockback acknowledgement movement updates.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveKnockBackAck(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_MOVE_KNOCK_BACK_ACK");
@@ -503,6 +572,13 @@ void WorldSession::HandleMoveKnockBackAck(WorldPacket& recv_data)
     mover->SendMessageToSetExcept(&data, _player);
 }
 
+/**
+ * @brief Sends a knockback packet to the client.
+ *
+ * @param angle The horizontal knockback angle.
+ * @param horizontalSpeed The horizontal speed component.
+ * @param verticalSpeed The vertical speed component.
+ */
 void WorldSession::SendKnockBack(float angle, float horizontalSpeed, float verticalSpeed)
 {
     float vsin = sin(angle);
@@ -518,6 +594,11 @@ void WorldSession::SendKnockBack(float angle, float horizontalSpeed, float verti
     SendPacket(&data);
 }
 
+/**
+ * @brief Handles hover movement acknowledgement packets.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveHoverAck(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_MOVE_HOVER_ACK");
@@ -530,6 +611,11 @@ void WorldSession::HandleMoveHoverAck(WorldPacket& recv_data)
     recv_data >> Unused<uint32>();                          // unk2
 }
 
+/**
+ * @brief Handles water-walk acknowledgement packets.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveWaterWalkAck(WorldPacket& recv_data)
 {
     DEBUG_LOG("CMSG_MOVE_WATER_WALK_ACK");
@@ -542,6 +628,11 @@ void WorldSession::HandleMoveWaterWalkAck(WorldPacket& recv_data)
     recv_data >> Unused<uint32>();                          // unk2
 }
 
+/**
+ * @brief Handles the client's response to a summon request.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
 {
     if (!_player->IsAlive() || _player->IsInCombat())
@@ -555,6 +646,11 @@ void WorldSession::HandleSummonResponseOpcode(WorldPacket& recv_data)
     _player->SummonIfPossible(true);
 }
 
+/**
+ * @brief Logs client-reported skipped movement time.
+ *
+ * @param recv_data The received opcode packet.
+ */
 void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -564,6 +660,13 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
     DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_TIME_SKIPPED for %s, time_skipped: %u", guid.GetString().c_str(), time_skipped);
 }
 
+/**
+ * @brief Verifies movement data for a specific mover guid.
+ *
+ * @param movementInfo The movement state to validate.
+ * @param guid The expected mover guid.
+ * @return true if the movement data is valid; otherwise false.
+ */
 bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo, ObjectGuid const& guid) const
 {
     // ignore wrong guid (player attempt cheating own session for not own guid possible...)
@@ -575,6 +678,12 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo, ObjectGu
     return VerifyMovementInfo(movementInfo);
 }
 
+/**
+ * @brief Verifies movement coordinates and transport offsets.
+ *
+ * @param movementInfo The movement state to validate.
+ * @return true if the movement data is valid; otherwise false.
+ */
 bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
 {
     if (!MaNGOS::IsValidMapCoord(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o))
@@ -601,6 +710,11 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
     return true;
 }
 
+/**
+ * @brief Applies validated movement info to the current mover.
+ *
+ * @param movementInfo The movement state to apply.
+ */
 void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 {
     //uint32 mstime = GameTime::GetGameTimeMS();

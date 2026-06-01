@@ -90,21 +90,30 @@ namespace ai {
     {
     public:
         BearFormTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "bear form") {}
-        virtual bool IsActive() { return !ai->HasAnyAuraOf(bot, "bear form", "dire bear form", NULL); }
+        virtual bool IsActive()
+        {
+            return !ai->HasAnyAuraOf(bot, "bear form", "dire bear form", NULL);
+        }
     };
 
     class TreeFormTrigger : public BuffTrigger
     {
     public:
         TreeFormTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "tree of life") {}
-        virtual bool IsActive() { return !ai->HasAura("tree of life", bot); }
+        virtual bool IsActive()
+        {
+            return !ai->HasAura("tree of life", bot);
+        }
     };
 
     class CatFormTrigger : public BuffTrigger
     {
     public:
         CatFormTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "cat form") {}
-        virtual bool IsActive() { return !ai->HasAura("cat form", bot); }
+        virtual bool IsActive()
+        {
+            return !ai->HasAura("cat form", bot);
+        }
     };
 
     class EclipseSolarTrigger : public HasAuraTrigger

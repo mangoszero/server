@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ObjectGridLoader.cpp
+ * @brief Map grid object loading and unloading system
+ *
+ * This file implements ObjectGridLoader which manages the lifecycle of
+ * game objects within map grids (cells). Responsibilities:
+ *
+ * - Loading creatures, game objects, and corpses from database
+ * - Respawn coordination when grids unload/reload
+ * - World object persistence during grid transitions
+ * - Proper cleanup (stopping) of grid contents before unload
+ *
+ * The visitor pattern is used to process different object types efficiently.
+ * Grid loading is triggered when players approach, and unloading occurs
+ * when no players are nearby for a configured duration.
+ *
+ * @see ObjectGridLoader for the main loader class
+ * @see ObjectGridStoper for the grid cleanup class
+ * @see ObjectGridRespawnMover for respawn point correction
+ */
+
 #include "ObjectGridLoader.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -33,17 +54,43 @@
 #include "CellImpl.h"
 #include "BattleGround/BattleGround.h"
 
+/**
+ * @class ObjectGridRespawnMover
+ * @brief Helper to relocate creatures to their respawn points before grid unload
+ *
+ * When a grid is unloaded, any creatures in it with respawn points in other
+ * grids need to be moved to their respawn location. This prevents creatures
+ * from being "trapped" in an unloaded grid until it reloads.
+ *
+ * Uses the visitor pattern to process only Creature objects.
+ */
 class ObjectGridRespawnMover
 {
     public:
         ObjectGridRespawnMover() {}
 
+        /**
+         * @brief Process entire grid for respawn relocations
+         * @param grid Grid to process
+         */
         void Move(GridType& grid);
 
         template<class T> void Visit(GridRefManager<T>&) {}
+
+        /**
+         * @brief Visit and relocate creatures as needed
+         * @param m Creature container
+         *
+         * For each creature, checks if its respawn point is in a different
+         * grid. If so, initiates relocation to respawn coordinates.
+         */
         void Visit(CreatureMapType& m);
 };
 
+/**
+ * @brief Execute respawn relocation visit on grid
+ * @param grid Grid to process for respawn moves
+ */
 void
 ObjectGridRespawnMover::Move(GridType& grid)
 {
@@ -51,19 +98,32 @@ ObjectGridRespawnMover::Move(GridType& grid)
     grid.Visit(mover);
 }
 
+/**
+ * @brief Visit and relocate creatures to respawn points if needed
+ * @param m Creature container to process
+ *
+ * Iterates all creatures in the grid. For each creature, determines if
+ * its respawn coordinates are in a different grid than its current position.
+ * If so, calls CreatureRespawnRelocation to move it to the correct grid.
+ *
+ * This ensures creatures respawn in their proper location even if their
+ * corpse was in an unloaded grid.
+ *
+ * @warning Pets are not expected here (assertion enforced)
+ */
 void
 ObjectGridRespawnMover::Visit(CreatureMapType& m)
 {
-    // creature in unloading grid can have respawn point in another grid
-    // if it will be unloaded then it will not respawn in original grid until unload/load original grid
-    // move to respawn point to prevent this case. For player view in respawn grid this will be normal respawn.
+    // Creature in unloading grid can have respawn point in another grid.
+    // If it will be unloaded, it won't respawn in original grid until unload/load cycle.
+    // Move to respawn point to prevent this case.
     for (CreatureMapType::iterator iter = m.begin(), next; iter != m.end(); iter = next)
     {
         next = iter; ++next;
 
         Creature* c = iter->getSource();
 
-        MANGOS_ASSERT(!c->IsPet());                         // ObjectGridRespawnMover don't must be called for pets
+        MANGOS_ASSERT(!c->IsPet());                         // ObjectGridRespawnMover should not be called for pets
 
         Cell const& cur_cell  = c->GetCurrentCell();
 
@@ -75,35 +135,68 @@ ObjectGridRespawnMover::Visit(CreatureMapType& m)
         if (cur_cell.DiffGrid(resp_cell))
         {
             c->GetMap()->CreatureRespawnRelocation(c);
-            // false result ignored: will be unload with other creatures at grid
+            // false result ignored: will be unloaded with other creatures at grid
         }
     }
 }
 
-// for loading world object at grid loading (Corpses)
+/**
+ * @class ObjectWorldLoader
+ * @brief Visitor for loading world objects (corpses) into grid
+ *
+ * Loads persistent world objects that exist independently of grid state.
+ * Currently handles corpse loading from database when grid loads.
+ *
+ * @note Unlike creatures/GOs, corpses are world objects that must be loaded
+ *       separately as they persist across grid boundaries.
+ */
 class ObjectWorldLoader
 {
     public:
+        /**
+         * @brief Construct world loader for a grid
+         * @param gloader Parent grid loader with cell/grid/map references
+         */
         explicit ObjectWorldLoader(ObjectGridLoader& gloader)
             : i_cell(gloader.i_cell), i_grid(gloader.i_grid), i_map(gloader.i_map), i_corpses(0)
         {}
 
+        /**
+         * @brief Load corpses into grid
+         * @param m Corpse container to populate
+         *
+         * Queries database for corpses in this grid's cell range and
+         * loads them into the grid. Increments i_corpses counter.
+         */
         void Visit(CorpseMapType& m);
 
-        template<class T> void Visit(GridRefManager<T>&) { }
+        template<class T> void Visit(GridRefManager<T>&) {}
 
     private:
-        Cell i_cell;
-        NGridType& i_grid;
-        Map* i_map;
+        Cell i_cell;                    ///< Cell coordinates
+        NGridType& i_grid;              ///< Grid being loaded
+        Map* i_map;                     ///< Owning map
     public:
-        uint32 i_corpses;
+        uint32 i_corpses;               ///< Count of loaded corpses
 };
 
+/**
+ * @brief Default helper that leaves unit cell state unchanged for unsupported object types.
+ *
+ * @tparam T The object type.
+ * @param obj The object being loaded.
+ * @param cell_pair The destination cell coordinates.
+ */
 template<class T> void addUnitState(T* /*obj*/, CellPair const& /*cell_pair*/)
 {
 }
 
+/**
+ * @brief Assigns the current cell to a creature being loaded into a grid.
+ *
+ * @param obj The creature being loaded.
+ * @param cell_pair The destination cell coordinates.
+ */
 template<> void addUnitState(Creature* obj, CellPair const& cell_pair)
 {
     Cell cell(cell_pair);
@@ -112,6 +205,18 @@ template<> void addUnitState(Creature* obj, CellPair const& cell_pair)
 }
 
 template <class T>
+
+/**
+ * @brief Loads database-backed grid objects of a specific type into a cell.
+ *
+ * @tparam T The object type to load.
+ * @param guid_set The guids to load.
+ * @param cell The destination cell.
+ * @param m The type map container.
+ * @param count Receives the number of loaded objects.
+ * @param map The owning map.
+ * @param grid The target grid cell container.
+ */
 void LoadHelper(CellGuidSet const& guid_set, CellPair& cell, GridRefManager<T>& /*m*/, uint32& count, Map* map, GridType& grid)
 {
     BattleGround* bg = map->IsBattleGround() ? ((BattleGroundMap*)map)->GetBG() : nullptr;
@@ -149,6 +254,16 @@ void LoadHelper(CellGuidSet const& guid_set, CellPair& cell, GridRefManager<T>& 
     }
 }
 
+/**
+ * @brief Loads corpse objects for a cell into the world grid.
+ *
+ * @param cell_corpses The corpse ownership and instance mapping.
+ * @param cell The destination cell.
+ * @param m The corpse map container.
+ * @param count Receives the number of loaded corpses.
+ * @param map The owning map.
+ * @param grid The target grid cell container.
+ */
 void LoadHelper(CellCorpseSet const& cell_corpses, CellPair& cell, CorpseMapType& /*m*/, uint32& count, Map* map, GridType& grid)
 {
     if (cell_corpses.empty())
@@ -245,6 +360,9 @@ ObjectGridLoader::Load(GridType& grid)
     }
 }
 
+/**
+ * @brief Loads all cells in the current grid and reports loaded object counts.
+ */
 void ObjectGridLoader::LoadN(void)
 {
     i_gameObjects = 0; i_creatures = 0; i_corpses = 0;
@@ -263,6 +381,9 @@ void ObjectGridLoader::LoadN(void)
     DEBUG_LOG("%u GameObjects, %u Creatures, and %u Corpses/Bones loaded for grid %u on map %u", i_gameObjects, i_creatures, i_corpses, i_grid.GetGridId(), i_map->GetId());
 }
 
+/**
+ * @brief Moves respawnable objects in every cell of the grid back to their respawn state.
+ */
 void ObjectGridUnloader::MoveToRespawnN()
 {
     for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)

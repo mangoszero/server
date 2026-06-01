@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGroundAV.cpp
+ * @brief Implementation of Alterac Valley battleground.
+ *
+ * This file contains the implementation of the Alterac Valley battleground (BattleGroundAV),
+ * which features:
+ * - Tower and graveyard capture mechanics
+ * - Resource point management
+ * - Boss encounters and captain interactions
+ * - Score-based victory system (first to 1200 points)
+ * - Complex objective hierarchy and dependencies
+ * - NPC-driven gameplay with multiple factions
+ * - Integration with the base BattleGround class
+ *
+ * Alterac Valley is a large-scale battleground with multiple objectives, NPCs,
+ * towers, and graveyards competing for resource control and ultimate victory.
+ */
+
 #include "Player.h"
 #include "BattleGround.h"
 #include "BattleGroundAV.h"
@@ -33,6 +51,11 @@
 // TODO REMOVE this when graveyard handling for pvp is updated
 #include "DBCStores.h"
 
+/**
+ * @brief Constructor for BattleGroundAV.
+ *
+ * Initializes Alterac Valley with default start messages and game state.
+ */
 BattleGroundAV::BattleGroundAV()
 {
     m_StartMessageIds[BG_STARTING_EVENT_FIRST]  = 0;
@@ -41,6 +64,15 @@ BattleGroundAV::BattleGroundAV()
     m_StartMessageIds[BG_STARTING_EVENT_FOURTH] = LANG_BG_AV_HAS_BEGUN;
 }
 
+/**
+ * @brief Handles a player death in Alterac Valley.
+ *
+ * Processes player kill events and updates team scores based on losses.
+ * Adjusts reputation scores for each team death.
+ *
+ * @param player Pointer to the killed player.
+ * @param killer Pointer to the player who killed them.
+ */
 void BattleGroundAV::HandleKillPlayer(Player* player, Player* killer)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
@@ -52,6 +84,19 @@ void BattleGroundAV::HandleKillPlayer(Player* player, Player* killer)
     UpdateScore(GetTeamIndexByTeamId(player->GetTeam()), -1);
 }
 
+/**
+ * @brief Handles the death of an important creature in Alterac Valley.
+ *
+ * Processes kills of important NPCs using event-based system:
+ * - Boss NPCs (ends battle, grants reputation/honor)
+ * - Team captains (removes reinforcements, spawns death events)
+ * - Mine bosses (changes mine ownership)
+ *
+ * Uses creature event index to determine NPC type rather than entry.
+ *
+ * @param creature Pointer to the killed creature.
+ * @param killer Pointer to the player who killed the creature.
+ */
 void BattleGroundAV::HandleKillUnit(Creature* creature, Player* killer)
 {
     DEBUG_LOG("BattleGroundAV: HandleKillUnit %i", creature->GetEntry());
@@ -111,6 +156,19 @@ void BattleGroundAV::HandleKillUnit(Creature* creature, Player* killer)
     }
 }
 
+/**
+ * @brief Handles quest completion in Alterac Valley.
+ *
+ * Processes various quest types including:
+ * - Scrap collection quests (upgrades units)
+ * - Commander quests (unlocks upgrades)
+ * - Boss quests (turn-in items)
+ * - Mine quests (assault preparation)
+ * - Rider quests (cavalry preparation)
+ *
+ * @param questid The ID of the completed quest
+ * @param player The player who completed the quest
+ */
 void BattleGroundAV::HandleQuestComplete(uint32 questid, Player* player)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
@@ -244,6 +302,18 @@ void BattleGroundAV::HandleQuestComplete(uint32 questid, Player* player)
     }
 }
 
+/**
+ * @brief Updates team score in Alterac Valley.
+ *
+ * Manages reinforcement points and win conditions:
+ * - Negative points remove reinforcements
+ * - Positive points add reinforcements
+ * - Ends battle when team runs out
+ * - Shows near-loss warnings
+ *
+ * @param teamIdx The team index to update
+ * @param points The points to add (negative removes reinforcements)
+ */
 void BattleGroundAV::UpdateScore(PvpTeamIndex teamIdx, int32 points)
 {
     // note: to remove reinforcements points must be negative, for adding reinforcements points must be positive
@@ -269,6 +339,16 @@ void BattleGroundAV::UpdateScore(PvpTeamIndex teamIdx, int32 points)
     UpdateWorldState(((teamIdx == TEAM_INDEX_HORDE) ? BG_AV_Horde_Score : BG_AV_Alliance_Score), m_TeamScores[teamIdx]);
 }
 
+/**
+ * @brief Updates Alterac Valley battleground state.
+ *
+ * Processes timed events:
+ * - Mine resource generation and reclamation
+ * - Node capture timers and destruction
+ * - Base class update for core functionality
+ *
+ * @param diff Time difference since last update in milliseconds
+ */
 void BattleGroundAV::Update(uint32 diff)
 {
     BattleGround::Update(diff);
@@ -301,7 +381,7 @@ void BattleGroundAV::Update(uint32 diff)
         }
     }
 
-    // looks for all timers of the nodes and destroy the building (for graveyards the building wont get destroyed, it goes just to the other team
+    // looks for all timers of nodes and destroy the building (for graveyards the building wont get destroyed, it goes just to the other team
     for (BG_AV_Nodes i = BG_AV_NODES_FIRSTAID_STATION; i < BG_AV_NODES_MAX; ++i)
     {
         if (m_Nodes[i].State == POINT_ASSAULTED)
@@ -318,6 +398,12 @@ void BattleGroundAV::Update(uint32 diff)
     }
 }
 
+/**
+ * @brief Opens doors and starts Alterac Valley battle.
+ *
+ * Shows team scores and opens the main doors.
+ * Called when the countdown completes.
+ */
 void BattleGroundAV::StartingEventOpenDoors()
 {
     UpdateWorldState(BG_AV_SHOW_H_SCORE, WORLD_STATE_ADD);
@@ -326,6 +412,14 @@ void BattleGroundAV::StartingEventOpenDoors()
     OpenDoorEvent(BG_EVENT_DOOR);
 }
 
+/**
+ * @brief Adds a player to Alterac Valley.
+ *
+ * Creates AV-specific score tracking for the player
+ * and adds them to the battleground.
+ *
+ * @param plr The player to add
+ */
 void BattleGroundAV::AddPlayer(Player* plr)
 {
     BattleGround::AddPlayer(plr);
@@ -334,6 +428,18 @@ void BattleGroundAV::AddPlayer(Player* plr)
     m_PlayerScores[plr->GetObjectGuid()] = sc;
 }
 
+/**
+ * @brief Ends Alterac Valley battleground.
+ *
+ * Calculates and distributes rewards based on:
+ * - Surviving towers (bonus honor/reputation)
+ * - Controlled graveyards (reputation bonus)
+ * - Controlled mines (reputation bonus)
+ * - Surviving captains (honor/reputation bonus)
+ * - Map completion bonus
+ *
+ * @param winner The winning team
+ */
 void BattleGroundAV::EndBattleGround(Team winner)
 {
     // calculate bonuskills for both teams:
@@ -403,6 +509,19 @@ void BattleGroundAV::EndBattleGround(Team winner)
     BattleGround::EndBattleGround(winner);
 }
 
+/**
+ * @brief Handles area trigger in Alterac Valley.
+ *
+ * Processes team-specific area triggers:
+ * - Alliance-only areas (removes Horde players)
+ * - Horde-only areas (removes Alliance players)
+ *
+ * Note: Official implementation uses gameobject spells
+ *
+ * @param source The player triggering the area
+ * @param trigger The trigger ID
+ * @return true if trigger was handled, false otherwise
+ */
 bool BattleGroundAV::HandleAreaTrigger(Player* source, uint32 trigger)
 {
     // this is wrong way to implement these things. On official it done by gameobject spell cast.
@@ -435,6 +554,16 @@ bool BattleGroundAV::HandleAreaTrigger(Player* source, uint32 trigger)
     return true;
 }
 
+/**
+ * @brief Updates a player's score in Alterac Valley.
+ *
+ * Tracks AV-specific achievements like graveyards and towers assaulted/defended,
+ * as well as secondary objectives. Also handles generic battle ground score updates.
+ *
+ * @param source Pointer to the player.
+ * @param type The score type to update (SCORE_GRAVEYARDS_ASSAULTED, etc.).
+ * @param value The value to add to the score.
+ */
 void BattleGroundAV::UpdatePlayerScore(Player* source, uint32 type, uint32 value)
 {
     BattleGroundScoreMap::iterator itr = m_PlayerScores.find(source->GetObjectGuid());
@@ -466,6 +595,14 @@ void BattleGroundAV::UpdatePlayerScore(Player* source, uint32 type, uint32 value
     }
 }
 
+/**
+ * @brief Processes when a player destroys a point (tower/graveyard).
+ *
+ * Handles the destruction of controlled objectives, changing ownership,
+ * despawning banners, and populating the node with neutral creatures.
+ *
+ * @param node The node index that was destroyed.
+ */
 void BattleGroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
 {
     DEBUG_LOG("BattleGroundAV: player destroyed point node %i", node);
@@ -496,6 +633,16 @@ void BattleGroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
     }
 }
 
+/**
+ * @brief Changes ownership of an Alterac Valley mine.
+ *
+ * Updates mine ownership state, refreshes mine-related world states, spawns the
+ * correct mine events for the new owner, and announces the capture when a team
+ * successfully takes control.
+ *
+ * @param mine The mine index to update.
+ * @param teamIdx The team that will own the mine after the change.
+ */
 void BattleGroundAV::ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx)
 {
     m_Mine_Timer[mine] = BG_AV_MINE_TICK_TIMER;
@@ -526,6 +673,16 @@ void BattleGroundAV::ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx
     }
 }
 
+/**
+ * @brief Checks whether a player can interact with a mine quest object.
+ *
+ * Validates ownership of the north or south mine against the player's team.
+ * Non-mine objects are treated as valid.
+ *
+ * @param GOId The game object entry identifier.
+ * @param team The player's team.
+ * @return true if the player can use the quest object; otherwise, false.
+ */
 bool BattleGroundAV::PlayerCanDoMineQuest(int32 GOId, Team team)
 {
     if (GOId == BG_AV_OBJECTID_MINE_N)
@@ -603,6 +760,15 @@ void BattleGroundAV::EventPlayerClickedOnFlag(Player* source, GameObject* target
     }
 }
 
+/**
+ * @brief Handles when a player defends a point in Alterac Valley.
+ *
+ * Processes the successful defense of towers and graveyards, updating node ownership,
+ * populating defenders, sending announcements, and updating player scores.
+ *
+ * @param player Pointer to the player defending the point.
+ * @param node The node index being defended.
+ */
 void BattleGroundAV::EventPlayerDefendsPoint(Player* player, BG_AV_Nodes node)
 {
     MANGOS_ASSERT(GetStatus() == STATUS_IN_PROGRESS);
@@ -652,6 +818,15 @@ void BattleGroundAV::EventPlayerDefendsPoint(Player* player, BG_AV_Nodes node)
     }
 }
 
+/**
+ * @brief Handles when a player assaults a point in Alterac Valley.
+ *
+ * Processes the assault of towers and graveyards, updating node ownership from enemy control
+ * to a contested state. Sends announcements, updates player scores, and plays appropriate sounds.
+ *
+ * @param player Pointer to the player assaulting the point.
+ * @param node The node index being assaulted.
+ */
 void BattleGroundAV::EventPlayerAssaultsPoint(Player* player, BG_AV_Nodes node)
 {
     // TODO implement quest 7101, 7081
@@ -685,6 +860,15 @@ void BattleGroundAV::EventPlayerAssaultsPoint(Player* player, BG_AV_Nodes node)
     PlaySoundToAll((teamIdx == TEAM_INDEX_ALLIANCE) ? BG_AV_SOUND_ALLIANCE_ASSAULTS : BG_AV_SOUND_HORDE_ASSAULTS);
 }
 
+/**
+ * @brief Fills initial world state values for Alterac Valley.
+ *
+ * Sends all node state information to clients when they enter the battleground,
+ * including node ownership, captured towers, and graveyard status.
+ *
+ * @param data The packet to write world state data to.
+ * @param count Reference to the count of world state entries.
+ */
 void BattleGroundAV::FillInitialWorldStates(WorldPacket& data, uint32& count)
 {
     bool stateok;
@@ -731,6 +915,14 @@ void BattleGroundAV::FillInitialWorldStates(WorldPacket& data, uint32& count)
     }
 }
 
+/**
+ * @brief Updates the displayed world state for a single node.
+ *
+ * Adds the current node state to the client world state display and removes the
+ * previous one, including special handling for the neutral Snowfall graveyard.
+ *
+ * @param node The node whose world state should be refreshed.
+ */
 void BattleGroundAV::UpdateNodeWorldState(BG_AV_Nodes node)
 {
     UpdateWorldState(BG_AV_NodeWorldStates[node][GetWorldStateType(m_Nodes[node].State, m_Nodes[node].Owner)], WORLD_STATE_ADD);
@@ -744,6 +936,14 @@ void BattleGroundAV::UpdateNodeWorldState(BG_AV_Nodes node)
     }
 }
 
+/**
+ * @brief Sends mine ownership world state updates to all clients.
+ *
+ * Updates the world state to reflect which team currently owns a mine (North or South).
+ * Removes the previous owner's world state and adds the new owner's state.
+ *
+ * @param mine The mine index (BG_AV_NORTH_MINE or BG_AV_SOUTH_MINE).
+ */
 void BattleGroundAV::SendMineWorldStates(uint32 mine)
 {
     MANGOS_ASSERT(mine == BG_AV_NORTH_MINE || mine == BG_AV_SOUTH_MINE);
@@ -755,6 +955,16 @@ void BattleGroundAV::SendMineWorldStates(uint32 mine)
     }
 }
 
+/**
+ * @brief Finds the closest valid graveyard for a player.
+ *
+ * Searches all controlled graveyards for the player's team and returns the nearest
+ * available location. If no controlled graveyard is available, the team cave spawn
+ * is used as a fallback.
+ *
+ * @param plr The player requesting a graveyard location.
+ * @return Pointer to the closest valid graveyard entry.
+ */
 WorldSafeLocsEntry const* BattleGroundAV::GetClosestGraveYard(Player* plr)
 {
     float x = plr->GetPositionX();
@@ -793,6 +1003,14 @@ WorldSafeLocsEntry const* BattleGroundAV::GetClosestGraveYard(Player* plr)
     return good_entry;
 }
 
+/**
+ * @brief Gets the language string ID for a node name.
+ *
+ * Returns the appropriate language entry for the given node's display name.
+ *
+ * @param node The node index.
+ * @return The language entry ID for the node name.
+ */
 uint32 BattleGroundAV::GetNodeName(BG_AV_Nodes node) const
 {
     switch (node)
@@ -818,6 +1036,15 @@ uint32 BattleGroundAV::GetNodeName(BG_AV_Nodes node) const
     }
 }
 
+/**
+ * @brief Handles assault of a node in Alterac Valley.
+ *
+ * Updates node state to reflect ongoing assault. Sets appropriate capture timers based on
+ * previous ownership (neutral vs. previously owned).
+ *
+ * @param node The node index being assaulted.
+ * @param teamIdx The team assaulting the node.
+ */
 void BattleGroundAV::AssaultNode(BG_AV_Nodes node, PvpTeamIndex teamIdx)
 {
     MANGOS_ASSERT(m_Nodes[node].TotalOwner != BattleGroundAVTeamIndex(teamIdx));
@@ -832,6 +1059,14 @@ void BattleGroundAV::AssaultNode(BG_AV_Nodes node, PvpTeamIndex teamIdx)
     m_Nodes[node].State      = POINT_ASSAULTED;
 }
 
+/**
+ * @brief Destroys a node in Alterac Valley.
+ *
+ * Removes controlled nodes, despawning associated creatures and objects.
+ * Used when a node is captured or contested.
+ *
+ * @param node The node index to destroy.
+ */
 void BattleGroundAV::DestroyNode(BG_AV_Nodes node)
 {
     MANGOS_ASSERT(m_Nodes[node].State == POINT_ASSAULTED);
@@ -843,6 +1078,16 @@ void BattleGroundAV::DestroyNode(BG_AV_Nodes node)
     m_Nodes[node].Timer      = 0;
 }
 
+/**
+ * @brief Initializes a node to its starting ownership and state.
+ *
+ * Sets the initial owner, previous owner, control state, timer, and active event
+ * data for a node when Alterac Valley is reset or created.
+ *
+ * @param node The node to initialize.
+ * @param teamIdx The starting owner of the node.
+ * @param tower true if the node is a tower; otherwise, false.
+ */
 void BattleGroundAV::InitNode(BG_AV_Nodes node, BattleGroundAVTeamIndex teamIdx, bool tower)
 {
     m_Nodes[node].TotalOwner = teamIdx;
@@ -860,6 +1105,15 @@ void BattleGroundAV::InitNode(BG_AV_Nodes node, BattleGroundAVTeamIndex teamIdx,
     }
 }
 
+/**
+ * @brief Defends a node in Alterac Valley.
+ *
+ * Updates node state when a previously contested node is successfully defended
+ * and returns to full team control.
+ *
+ * @param node The node index being defended.
+ * @param teamIdx The team defending the node.
+ */
 void BattleGroundAV::DefendNode(BG_AV_Nodes node, PvpTeamIndex teamIdx)
 {
     MANGOS_ASSERT(m_Nodes[node].TotalOwner == BattleGroundAVTeamIndex(teamIdx));
@@ -872,6 +1126,12 @@ void BattleGroundAV::DefendNode(BG_AV_Nodes node, PvpTeamIndex teamIdx)
     m_Nodes[node].Timer      = 0;
 }
 
+/**
+ * @brief Resets Alterac Valley to initial state.
+ *
+ * Resets all node states, mine ownership, team scores, quest status, and reputation/honor
+ * values. Accounts for weekend event bonuses when calculating rewards.
+ */
 void BattleGroundAV::Reset()
 {
     BattleGround::Reset();

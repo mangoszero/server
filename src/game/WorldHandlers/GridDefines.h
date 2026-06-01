@@ -165,6 +165,7 @@ typedef CoordPair<TOTAL_NUMBER_OF_CELLS_PER_MAP> CellPair;
 
 namespace MaNGOS
 {
+
     /**
      * @brief Computes the grid or cell pair for given coordinates.
      *

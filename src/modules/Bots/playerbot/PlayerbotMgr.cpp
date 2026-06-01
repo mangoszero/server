@@ -250,6 +250,9 @@ bool PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, bool admin,
     return false;
 }
 
+/**
+ * Handles the playerbot chat command and dispatches bot management actions.
+ */
 bool ChatHandler::HandlePlayerbotCommand(char* args)
 {
     if (!sPlayerbotAIConfig.enabled)
@@ -459,9 +462,6 @@ uint32 PlayerbotHolder::GetAccountId(string name)
 
     return accountId;
 }
-
-
-
 
 /**
  * @brief Constructor for PlayerbotMgr.

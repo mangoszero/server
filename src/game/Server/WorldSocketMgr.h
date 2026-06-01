@@ -40,31 +40,61 @@
 
 class WorldSocket;
 
-/// This is a pool of threads designed to be used by an ACE_TP_Reactor.
-/// Manages all sockets connected to peers
-
+/**
+ * @brief World socket manager class
+ *
+ * This is a pool of threads designed to be used by an ACE_TP_Reactor.
+ * Manages all sockets connected to peers.
+ */
 class WorldSocketMgr : public ACE_Task_Base
 {
     friend class ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>;
     friend class WorldSocket;
+
     public:
+        /**
+         * @brief Start network
+         * @param addr Internet address
+         * @return Result code
+         */
         int StartNetwork(ACE_INET_Addr& addr);
+
+        /**
+         * @brief Stop network
+         */
         void StopNetwork();
 
     private:
+        /**
+         * @brief Handle socket open
+         * @param sock World socket
+         * @return Result code
+         */
         int OnSocketOpen(WorldSocket* sock);
+
+        /**
+         * @brief Service method (ACE thread pool)
+         * @return Result code
+         */
         virtual int svc();
 
+        /**
+         * @brief Constructor
+         */
         WorldSocketMgr();
+
+        /**
+         * @brief Virtual destructor
+         */
         virtual ~WorldSocketMgr();
 
     private:
-        int m_SockOutKBuff;
-        int m_SockOutUBuff;
-        bool m_UseNoDelay;
+        int m_SockOutKBuff; ///< Socket output kernel buffer size
+        int m_SockOutUBuff; ///< Socket output user buffer size
+        bool m_UseNoDelay; ///< Use TCP_NODELAY
 
-        ACE_Reactor   *reactor_;
-        WorldAcceptor *acceptor_;
+        ACE_Reactor* reactor_; ///< ACE reactor
+        WorldAcceptor* acceptor_; ///< World acceptor
 };
 
 #define sWorldSocketMgr ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>::instance()

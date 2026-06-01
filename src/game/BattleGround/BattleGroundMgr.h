@@ -22,6 +22,34 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGroundMgr.h
+ * @brief Battleground manager header
+ *
+ * This header defines the BattleGroundMgr singleton class which manages:
+ *
+ * - Battleground instance creation and destruction
+ * - Player queuing and matchmaking
+ * - Team balancing and selection pools
+ * - Queue status tracking
+ * - Event handling and timing
+ *
+ * The manager supports multiple battleground types:
+ * - Warsong Gulch (WS) - flag capture
+ * - Arathi Basin (AB) - resource control
+ * - Alterac Valley (AV) - large scale PvP
+ *
+ * Key features:
+ * - Multi-bracket support (level ranges)
+ * - Group and solo queue handling
+ * - Average wait time calculation
+ * - Premature ending detection
+ *
+ * @see BattleGroundMgr for implementation
+ * @see BattleGround for base battleground class
+ * @see Specific battleground classes for extensions
+ */
+
 #ifndef MANGOS_H_BATTLEGROUNDMGR
 #define MANGOS_H_BATTLEGROUNDMGR
 
@@ -122,6 +150,7 @@ class BattleGroundQueue
          * @brief Constructor for BattleGroundQueue.
          */
         BattleGroundQueue();
+
         /**
          * @brief Destructor for BattleGroundQueue.
          */
@@ -228,10 +257,10 @@ class BattleGroundQueue
          * @brief Two dimensional array for storing all queued groups.
          * First dimension specifies the bgTypeId.
          * Second dimension specifies the player's group types.
-             BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
-             BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
-             BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
-             BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
+            BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
+            BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
+            BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
+            BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
          */
         GroupsQueueType m_QueuedGroups[MAX_BATTLEGROUND_BRACKETS][BG_QUEUE_GROUP_TYPES_COUNT]; /**< Two dimensional array for storing all queued groups. */
 
@@ -496,6 +525,7 @@ class BattleGroundMgr
          * @return BattleGround* Pointer to the battleground template.
          */
         BattleGround* GetBattleGroundTemplate(BattleGroundTypeId bgTypeId);
+
         /**
          * @brief Creates a new battleground instance.
          *
@@ -725,6 +755,7 @@ class BattleGroundMgr
         /* Battlegrounds */
         BattleGroundSet m_BattleGrounds[MAX_BATTLEGROUND_TYPE_ID]; /**< Array of maps storing battleground instances by type ID. */
         std::vector<uint32> m_QueueUpdateScheduler; /**< Vector for scheduling queue updates. */
+
         /**
          * @brief Set of client-visible battleground instance IDs.
          * The first dimension specifies the battleground type ID.

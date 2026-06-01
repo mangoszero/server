@@ -9,7 +9,7 @@ namespace ai
     {
     public:
         PartyMemberWithoutAuraValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
-          PartyMemberValue(ai) {}
+        PartyMemberValue(ai) {}
 
     protected:
         virtual Unit* Calculate();

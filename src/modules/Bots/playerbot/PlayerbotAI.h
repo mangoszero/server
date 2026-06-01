@@ -15,6 +15,9 @@ class ChatHandler;
 using namespace std;
 using namespace ai;
 
+/**
+ * Checks whether the specified race belongs to the Alliance faction.
+ */
 bool IsAlliance(uint8 race);
 
 /**
@@ -38,6 +41,7 @@ public:
 
 namespace ai
 {
+
     /**
      * @brief Calculates the minimum value for a given parameter.
      */
@@ -50,7 +54,8 @@ namespace ai
 
     public:
         void probe(float value, void* p) {
-            if (!param || minValue >= value) {
+            if (!param || minValue >= value)
+            {
             {
                 minValue = value;
             }
@@ -107,8 +112,15 @@ public:
     }
 
 public:
-    string GetCommand() { return command; }
-    Player* GetOwner() { return owner; }
+    string GetCommand()
+    {
+        return command;
+    }
+
+    Player* GetOwner()
+    {
+        return owner;
+    }
     uint32 GetType() const { return type; }
 
 private:
@@ -147,6 +159,7 @@ public:
     void ReInitCurrentEngine();
     void Reset();
     bool IsTank(Player* player);
+    Player* GetGroupTank(Player* except);
     bool IsHeal(Player* player);
     bool IsRanged(Player* player);
     Creature* GetCreature(ObjectGuid guid);
@@ -176,17 +189,36 @@ public:
     bool canDispel(const SpellEntry* entry, uint32 dispelType);
 
 public:
-    Player* GetBot() { return bot; }
-    Player* GetMaster() { return master; }
+    Player* GetBot()
+    {
+        return bot;
+    }
+
+    Player* GetMaster()
+    {
+        return master;
+    }
+
     void SetMaster(Player* master) { this->master = master; }
-    AiObjectContext* GetAiObjectContext() { return aiObjectContext; }
-    ChatHelper* GetChatHelper() { return &chatHelper; }
+    AiObjectContext* GetAiObjectContext()
+    {
+        return aiObjectContext;
+    }
+
+    ChatHelper* GetChatHelper()
+    {
+        return &chatHelper;
+    }
+
     bool IsOpposing(Player* player);
     static bool IsOpposing(uint8 race1, uint8 race2);
-    PlayerbotSecurity* GetSecurity() { return &security; }
+    PlayerbotSecurity* GetSecurity()
+    {
+        return &security;
+    }
 
     void StartJump(bool forward, float orientation = -1.f);
-    void RequestJump();
+    void RequestJump(bool here = false);
     bool IsJumping() const { return m_isJumping; }
     bool IsPendingJump() const { return m_pendingJump; }
 
@@ -203,8 +235,14 @@ public:
         uint32 maxMana = bot->GetMaxPower(POWER_MANA);
         return now <= m_drinkingUntil && mana < maxMana;
     }
-    void SetEating() { m_eatingUntil = time(0) + 30; }
-    void SetDrinking() { m_drinkingUntil = time(0) + 30; }
+    void SetEating()
+    {
+        m_eatingUntil = time(0) + 30;
+    }
+    void SetDrinking()
+    {
+        m_drinkingUntil = time(0) + 30;
+    }
 
 protected:
     Player* bot;
@@ -229,9 +267,9 @@ protected:
     float  m_jumpStartX, m_jumpStartY, m_jumpStartZ;
     float  m_jumpSinAngle, m_jumpCosAngle, m_jumpXYSpeed;
     bool   m_pendingJump;
+    bool   m_jumpHere;
     uint32 m_jumpRequestTime;
     float  m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ, m_jumpTargetO;
 
     void UpdateJump();
 };
-

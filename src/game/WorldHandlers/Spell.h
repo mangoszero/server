@@ -22,6 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Spell.h
+ * @brief Spell casting system and spell-related structures.
+ *
+ * This file defines the Spell class which handles spell casting mechanics including:
+ * - Spell targeting and target validation
+ * - Spell effect execution
+ * - Aura and damage application
+ * - Projectile and animation handling
+ * - Interrupt and loss of control handling
+ * - Spell reflection and immunity
+ * - Cooldown and resource management
+ * - Triggered spell chains
+ *
+ * The file also contains SpellCastTargets for managing spell targets and related
+ * flags and enumerations for spell behavior control.
+ *
+ * @see Spell for the main spell implementation
+ * @see SpellCastTargets for spell target management
+ * @see SpellEntry for spell database structures
+ */
+
 #ifndef MANGOS_H_SPELL
 #define MANGOS_H_SPELL
 
@@ -42,31 +64,42 @@ class GameObject;
 class Group;
 class Aura;
 
+/// @brief Spell casting flag enumeration.
+///
+/// Contains various flags that modify spell casting behavior including
+/// visibility in combat log and special rendering effects.
 enum SpellCastFlags
 {
-    CAST_FLAG_NONE              = 0x00000000,
-    CAST_FLAG_HIDDEN_COMBATLOG  = 0x00000001,               // hide in combat log?
-    CAST_FLAG_UNKNOWN2          = 0x00000002,
-    CAST_FLAG_UNKNOWN3          = 0x00000004,
-    CAST_FLAG_UNKNOWN4          = 0x00000008,
-    CAST_FLAG_UNKNOWN5          = 0x00000010,
-    CAST_FLAG_AMMO              = 0x00000020,               // Projectiles visual
-    CAST_FLAG_UNKNOWN7          = 0x00000040,               // !0x41 mask used to call CGTradeSkillInfo::DoRecast
-    CAST_FLAG_UNKNOWN8          = 0x00000080,
-    CAST_FLAG_UNKNOWN9          = 0x00000100,
+    CAST_FLAG_NONE              = 0x00000000,    ///< No casting flags set
+    CAST_FLAG_HIDDEN_COMBATLOG  = 0x00000001,    ///< Hide spell from combat log
+    CAST_FLAG_UNKNOWN2          = 0x00000002,    ///< Unknown flag 2
+    CAST_FLAG_UNKNOWN3          = 0x00000004,    ///< Unknown flag 3
+    CAST_FLAG_UNKNOWN4          = 0x00000008,    ///< Unknown flag 4
+    CAST_FLAG_UNKNOWN5          = 0x00000010,    ///< Unknown flag 5
+    CAST_FLAG_AMMO              = 0x00000020,    ///< Display projectile visual for spell
+    CAST_FLAG_UNKNOWN7          = 0x00000040,    ///< Unknown flag 7 (used for trade skill recast)
+                                                 ///< !0x41 mask used to call CGTradeSkillInfo::DoRecast
+    CAST_FLAG_UNKNOWN8          = 0x00000080,    ///< @brief Unknown flag 8
+    CAST_FLAG_UNKNOWN9          = 0x00000100,    ///< @brief Unknown flag 9
 };
 
+/// @brief Spell knockback/push direction enumeration.
+///
+/// Defines the direction and method for pushing targets away from the spell impact.
 enum SpellNotifyPushType
 {
-    PUSH_IN_FRONT,
-    PUSH_IN_FRONT_90,
-    PUSH_IN_FRONT_15,
-    PUSH_IN_BACK,
-    PUSH_SELF_CENTER,
-    PUSH_DEST_CENTER,
-    PUSH_TARGET_CENTER
+    PUSH_IN_FRONT,        ///< Push target straight in front
+    PUSH_IN_FRONT_90,     ///< Push target at 90 degree angle
+    PUSH_IN_FRONT_15,     ///< Push target at 15 degree angle
+    PUSH_IN_BACK,         ///< Push target backwards
+    PUSH_SELF_CENTER,     ///< Push target from self center
+    PUSH_DEST_CENTER,     ///< Push target from spell destination
+    PUSH_TARGET_CENTER    ///< Push target from target center
 };
 
+/// @brief Check if spell is a taming spell for quest purposes.
+/// @param spellId Spell ID to check
+/// @return True if spell is a quest taming spell, false otherwise
 bool IsQuestTameSpell(uint32 spellId);
 
 namespace MaNGOS
@@ -77,25 +110,48 @@ namespace MaNGOS
 
 class SpellCastTargets;
 
+/// @brief Reader helper for deserializing spell cast targets.
+///
+/// Provides a mechanism to read spell targets from network data while
+/// maintaining reference to the caster for context.
 struct SpellCastTargetsReader
 {
+    /// @brief Constructor
+    /// @param _targets Reference to SpellCastTargets to populate
+    /// @param _caster Pointer to the unit casting the spell
     explicit SpellCastTargetsReader(SpellCastTargets& _targets, Unit* _caster) : targets(_targets), caster(_caster) {}
 
-    SpellCastTargets& targets;
-    Unit* caster;
+    SpellCastTargets& targets;    /// Reference to the targets structure being populated
+    Unit* caster;                 /// Pointer to casting unit for context
 };
 
+/// @brief Spell cast targets container and serialization.
+///
+/// Manages target selection for spells, including unit targets, game object targets,
+/// item targets, and location-based targets. Handles serialization to/from network packets.
 class SpellCastTargets
 {
     public:
-        SpellCastTargets();
-        ~SpellCastTargets();
+        SpellCastTargets();        /// Constructor initializes empty targets
+        ~SpellCastTargets();       /// Destructor
 
+        /// @brief Deserialize targets from network data
+        /// @param data ByteBuffer containing serialized target data
+        /// @param caster Unit casting the spell (for target validation)
         void read(ByteBuffer& data, Unit* caster);
+
+        /// @brief Serialize targets to network data
+        /// @param data ByteBuffer to write serialized targets
         void write(ByteBuffer& data) const;
 
+        /// @brief Create a reader helper for deserialization
+        /// @param caster Unit casting the spell
+        /// @return SpellCastTargetsReader for deserialization
         SpellCastTargetsReader ReadForCaster(Unit* caster) { return SpellCastTargetsReader(*this, caster); }
 
+        /// @brief Assignment operator
+        /// @param target Source targets to copy
+        /// @return Reference to this object
         SpellCastTargets& operator=(const SpellCastTargets& target)
         {
             m_unitTarget = target.m_unitTarget;
@@ -392,10 +448,17 @@ class Spell
         bool IsTriggered() const {return m_IsTriggeredSpell;}
 
         int32 GetCastTime() const { return m_casttime; }
-        uint32 GetCastedTime() { return m_timer; }
+        uint32 GetCastedTime()
+        {
+            return m_timer;
+        }
+
         bool IsAutoRepeat() const { return m_autoRepeat; }
         void SetAutoRepeat(bool rep) { m_autoRepeat = rep; }
-        void ReSetTimer() { m_timer = m_casttime > 0 ? m_casttime : 0; }
+        void ReSetTimer()
+        {
+            m_timer = m_casttime > 0 ? m_casttime : 0;
+        }
         bool IsNextMeleeSwingSpell() const
         {
             return m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_1) || m_spellInfo->HasAttribute(SPELL_ATTR_ON_NEXT_SWING_2);
@@ -449,7 +512,10 @@ class Spell
         typedef std::list<Unit*> UnitList;
 
         void SetSelfContainer(Spell** pCurrentContainer) { m_selfContainer = pCurrentContainer; }
-        Spell** GetSelfContainer() { return m_selfContainer; }
+        Spell** GetSelfContainer()
+        {
+            return m_selfContainer;
+        }
 
     protected:
         bool HasGlobalCooldown();
@@ -478,7 +544,10 @@ class Spell
         bool m_autoRepeat;
 
         uint8 m_delayAtDamageCount;
-        int32 GetNextDelayAtDamageMsTime() { return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200; }
+        int32 GetNextDelayAtDamageMsTime()
+        {
+            return m_delayAtDamageCount < 5 ? 1000 - (m_delayAtDamageCount++) * 200 : 200;
+        }
 
         // Delayed spells system
         uint64 m_delayStart;                                // time of spell delay start, filled by event handler, zero = just started

@@ -27,6 +27,14 @@
 #include "Player.h"
 #include "World.h"
 
+/**
+ * @brief Determines whether GuardAI can control the given creature.
+ *
+ * Guards receive this specialized AI so they can react to hostile targets near players.
+ *
+ * @param creature The creature being evaluated.
+ * @return The AI selection priority for this creature.
+ */
 int GuardAI::Permissible(const Creature* creature)
 {
     if (creature->IsGuard())
@@ -37,10 +45,22 @@ int GuardAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
+/**
+ * @brief Initializes a guard AI instance.
+ *
+ * @param c The creature controlled by this AI.
+ */
 GuardAI::GuardAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_tracker(TIME_INTERVAL_LOOK)
 {
 }
 
+/**
+ * @brief Handles units entering the guard's line of sight.
+ *
+ * Guards attack valid hostile targets that come within their engagement radius.
+ *
+ * @param u The unit that entered line of sight.
+ */
 void GuardAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
@@ -62,6 +82,11 @@ void GuardAI::MoveInLineOfSight(Unit* u)
     }
 }
 
+/**
+ * @brief Returns the guard to its evade state.
+ *
+ * Stops combat, clears threat, restores movement, and resets the configured spell list.
+ */
 void GuardAI::EnterEvadeMode()
 {
     if (!m_creature->IsAlive())
@@ -117,6 +142,13 @@ void GuardAI::EnterEvadeMode()
     SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
 }
 
+/**
+ * @brief Updates the guard AI each server tick.
+ *
+ * Refreshes current victim tracking, updates spell timers, and performs melee attacks.
+ *
+ * @param diff The elapsed time since the last update in milliseconds.
+ */
 void GuardAI::UpdateAI(const uint32 diff)
 {
     // update i_victimGuid if i_creature.getVictim() !=0 and changed
@@ -135,12 +167,25 @@ void GuardAI::UpdateAI(const uint32 diff)
     DoMeleeAttackIfReady();
 }
 
+/**
+ * @brief Checks whether a unit can be seen by this guard.
+ *
+ * @param pl The unit to test for visibility.
+ * @return true if the unit is within guard sight range and detectable; otherwise, false.
+ */
 bool GuardAI::IsVisible(Unit* pl) const
 {
     return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER))
            && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
+/**
+ * @brief Starts attacking a target unit.
+ *
+ * Adds threat, flags both units in combat, and begins movement toward the target.
+ *
+ * @param u The unit to attack.
+ */
 void GuardAI::AttackStart(Unit* u)
 {
     if (!u)
@@ -159,6 +204,13 @@ void GuardAI::AttackStart(Unit* u)
     }
 }
 
+/**
+ * @brief Handles guard death notifications.
+ *
+ * Sends a zone-under-attack message when the killer is associated with a player.
+ *
+ * @param killer The unit that killed the guard.
+ */
 void GuardAI::JustDied(Unit* killer)
 {
     if (Player* pkiller = killer->GetCharmerOrOwnerPlayerOrPlayerItself())

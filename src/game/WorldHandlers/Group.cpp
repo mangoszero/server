@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Group.cpp
+ * @brief Player group/party implementation
+ *
+ * This file implements the Group class which manages player parties:
+ *
+ * - Group creation and disbanding
+ * - Member invite/accept/decline/kick
+ * - Leadership transfer
+ * - Loot method and master selection
+ * - Experience sharing
+ * - Quest credit sharing
+ * - Group chat
+ * - Roll-based loot distribution
+ *
+ * Groups support up to 5 members (regular) or 40 members (raid).
+ *
+ * @see Group for the group class
+ * @see GroupMgr for group management
+ */
+
 #include "Common.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -104,6 +125,13 @@ Group::~Group()
     delete[] m_subGroupsCounts;
 }
 
+/**
+ * @brief Creates a new group with the specified leader and persists it when needed.
+ *
+ * @param guid The leader player GUID.
+ * @param name The leader player name.
+ * @return true if the group and its first member were created successfully; otherwise false.
+ */
 bool Group::Create(ObjectGuid guid, const char* name)
 {
     m_leaderGuid = guid;
@@ -165,6 +193,12 @@ bool Group::Create(ObjectGuid guid, const char* name)
     return true;
 }
 
+/**
+ * @brief Loads the core group record from a database row.
+ *
+ * @param fields The database fields containing group metadata.
+ * @return true if the group data was loaded successfully; otherwise false.
+ */
 bool Group::LoadGroupFromDB(Field* fields)
 {
     //                                          0         1              2           3           4              5      6      7      8      9      10     11     12     13      14          15
@@ -200,6 +234,14 @@ bool Group::LoadGroupFromDB(Field* fields)
     return true;
 }
 
+/**
+ * @brief Loads a member slot from database data and updates subgroup counters.
+ *
+ * @param guidLow The low GUID of the member player.
+ * @param subgroup The subgroup assignment.
+ * @param assistant True if the member is an assistant.
+ * @return true if the member was loaded successfully; otherwise false.
+ */
 bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant)
 {
     MemberSlot member;
@@ -221,6 +263,9 @@ bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant)
     return true;
 }
 
+/**
+ * @brief Converts the group to raid mode and refreshes related state.
+ */
 void Group::ConvertToRaid()
 {
     m_groupType = GROUPTYPE_RAID;
@@ -241,6 +286,12 @@ void Group::ConvertToRaid()
         }
 }
 
+/**
+ * @brief Adds a pending invitation for a player.
+ *
+ * @param player The invited player.
+ * @return true if the invite was recorded; otherwise false.
+ */
 bool Group::AddInvite(Player* player)
 {
     if (!player || player->GetGroupInvite())
@@ -274,6 +325,12 @@ bool Group::AddInvite(Player* player)
     return true;
 }
 
+/**
+ * @brief Adds an invitation and assigns the invited player as provisional leader.
+ *
+ * @param player The invited player.
+ * @return true if the invite was added; otherwise false.
+ */
 bool Group::AddLeaderInvite(Player* player)
 {
     if (!AddInvite(player))
@@ -286,6 +343,12 @@ bool Group::AddLeaderInvite(Player* player)
     return true;
 }
 
+/**
+ * @brief Removes a pending invitation from the group.
+ *
+ * @param player The player whose invite is being removed.
+ * @return uint32 The current member count.
+ */
 uint32 Group::RemoveInvite(Player* player)
 {
     m_invitees.erase(player);
@@ -294,6 +357,9 @@ uint32 Group::RemoveInvite(Player* player)
     return GetMembersCount();
 }
 
+/**
+ * @brief Clears all pending invitations from the group.
+ */
 void Group::RemoveAllInvites()
 {
     for (InvitesList::iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
@@ -304,6 +370,12 @@ void Group::RemoveAllInvites()
     m_invitees.clear();
 }
 
+/**
+ * @brief Finds an invited player by GUID.
+ *
+ * @param guid The invited player GUID.
+ * @return Player* The invited player if present; otherwise NULL.
+ */
 Player* Group::GetInvited(ObjectGuid guid) const
 {
     for (InvitesList::const_iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
@@ -315,6 +387,12 @@ Player* Group::GetInvited(ObjectGuid guid) const
     return NULL;
 }
 
+/**
+ * @brief Finds an invited player by name.
+ *
+ * @param name The invited player name.
+ * @return Player* The invited player if present; otherwise NULL.
+ */
 Player* Group::GetInvited(const std::string& name) const
 {
     for (InvitesList::const_iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
@@ -327,6 +405,14 @@ Player* Group::GetInvited(const std::string& name) const
     return NULL;
 }
 
+/**
+ * @brief Adds a member to the group and synchronizes related player and LFG state.
+ *
+ * @param guid The member player GUID.
+ * @param name The member player name.
+ * @param joinMethod The join source indicator.
+ * @return true if the member was added successfully; otherwise false.
+ */
 bool Group::AddMember(ObjectGuid guid, const char* name, uint8 joinMethod)
 {
     if (!_addMember(guid, name))
@@ -379,6 +465,13 @@ bool Group::AddMember(ObjectGuid guid, const char* name, uint8 joinMethod)
     return true;
 }
 
+/**
+ * @brief Removes a member from the group or disbands the group if too few members remain.
+ *
+ * @param guid The member player GUID.
+ * @param removeMethod The reason or removal method.
+ * @return uint32 The remaining member count.
+ */
 uint32 Group::RemoveMember(ObjectGuid guid, uint8 removeMethod)
 {
     // remove member and change leader (if need) only if strong more 2 members _before_ member remove
@@ -471,6 +564,11 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 removeMethod)
     return m_memberSlots.size();
 }
 
+/**
+ * @brief Transfers group leadership to another member.
+ *
+ * @param guid The new leader GUID.
+ */
 void Group::ChangeLeader(ObjectGuid guid)
 {
     member_citerator slot = _getMemberCSlot(guid);
@@ -495,6 +593,11 @@ void Group::ChangeLeader(ObjectGuid guid)
     SendUpdate();
 }
 
+/**
+ * @brief Disbands the group, removes all members, and clears persistent state.
+ *
+ * @param hideDestroy True to suppress the destroyed notification packet.
+ */
 void Group::Disband(bool hideDestroy)
 {
     Player* player;
@@ -613,7 +716,6 @@ void Group::SendUpdateToPlayer(Player* pPlayer)
         return;
     }
 
-
     uint8 subGroup;
     // looking for player's subgroup
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
@@ -702,6 +804,15 @@ void Group::CalculateLFGRoles(LFGGroupQueueInfo& data)
     data.dpsCount = dpsCount;
 }
 
+/**
+ * @brief Assigns a premade group member toward a required LFG role if appropriate.
+ *
+ * @param plrGuid The player GUID being evaluated.
+ * @param requiredRole The role currently being filled.
+ * @param InitRoles Bitmask of still-required roles.
+ * @param DpsCount Current number of assigned damage dealers.
+ * @param playersProcessed Collection of players already assigned.
+ */
 void Group::FillPremadeLFG(ObjectGuid plrGuid, ClassRoles requiredRole, uint32& InitRoles, uint32& DpsCount, std::vector<ObjectGuid>& playersProcessed)
 {
     Classes plrClass = (Classes)sObjectMgr.GetPlayerClassByGUID(plrGuid);
@@ -829,6 +940,14 @@ void Group::SendLootStartRoll(uint32 CountDown, const Roll& r)
     }
 }
 
+/**
+ * @brief Sends a roll result update to all players participating in a loot roll.
+ *
+ * @param targetGuid The player GUID associated with the roll update.
+ * @param rollNumber The rolled number or pass marker.
+ * @param rollType The roll type being reported.
+ * @param r The roll state.
+ */
 void Group::SendLootRoll(ObjectGuid const& targetGuid, uint8 rollNumber, uint8 rollType, const Roll& r)
 {
     WorldPacket data(SMSG_LOOT_ROLL, (8 + 4 + 8 + 4 + 4 + 4 + 1 + 1));
@@ -856,6 +975,14 @@ void Group::SendLootRoll(ObjectGuid const& targetGuid, uint8 rollNumber, uint8 r
     }
 }
 
+/**
+ * @brief Sends the final winner notification for a completed loot roll.
+ *
+ * @param targetGuid The winning player GUID.
+ * @param rollNumber The winning roll number.
+ * @param rollType The winning roll type.
+ * @param r The completed roll state.
+ */
 void Group::SendLootRollWon(ObjectGuid const& targetGuid, uint8 rollNumber, RollVote rollType, const Roll& r)
 {
     WorldPacket data(SMSG_LOOT_ROLL_WON, (8 + 4 + 4 + 4 + 4 + 8 + 1 + 1));
@@ -883,6 +1010,11 @@ void Group::SendLootRollWon(ObjectGuid const& targetGuid, uint8 rollNumber, Roll
     }
 }
 
+/**
+ * @brief Sends the notification that all players passed on a loot roll.
+ *
+ * @param r The completed roll state.
+ */
 void Group::SendLootAllPassed(Roll const& r)
 {
     WorldPacket data(SMSG_LOOT_ALL_PASSED, (8 + 4 + 4 + 4 + 4));
@@ -907,6 +1039,12 @@ void Group::SendLootAllPassed(Roll const& r)
     }
 }
 
+/**
+ * @brief Starts group-loot rolls for loot items above the threshold.
+ *
+ * @param pSource The looted world object.
+ * @param loot The loot container being processed.
+ */
 void Group::GroupLoot(WorldObject* pSource, Loot* loot)
 {
     for (uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
@@ -932,6 +1070,12 @@ void Group::GroupLoot(WorldObject* pSource, Loot* loot)
     }
 }
 
+/**
+ * @brief Starts need-before-greed rolls for loot items above the threshold.
+ *
+ * @param pSource The looted world object.
+ * @param loot The loot container being processed.
+ */
 void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
 {
     for (uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
@@ -957,6 +1101,12 @@ void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
     }
 }
 
+/**
+ * @brief Prepares master-loot distribution data for nearby group members.
+ *
+ * @param pSource The looted world object.
+ * @param loot The loot container being processed.
+ */
 void Group::MasterLoot(WorldObject* pSource, Loot* loot)
 {
     for (LootItemList::iterator i = loot->items.begin(); i != loot->items.end(); ++i)
@@ -1004,6 +1154,15 @@ void Group::MasterLoot(WorldObject* pSource, Loot* loot)
     }
 }
 
+/**
+ * @brief Records a loot-roll vote by locating the matching roll entry.
+ *
+ * @param player The player casting the vote.
+ * @param lootedTarget The GUID of the looted object.
+ * @param itemSlot The loot slot being rolled on.
+ * @param vote The selected roll vote.
+ * @return true if a matching roll was found; otherwise false.
+ */
 bool Group::CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32 itemSlot, RollVote vote)
 {
     Rolls::iterator rollI = RollId.begin();
@@ -1022,6 +1181,14 @@ bool Group::CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32
     return true;
 }
 
+/**
+ * @brief Applies a loot-roll vote to an existing roll entry.
+ *
+ * @param playerGUID The voting player GUID.
+ * @param rollI Iterator pointing to the roll entry.
+ * @param vote The selected roll vote.
+ * @return true if processing should continue safely; otherwise false.
+ */
 bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, RollVote vote)
 {
     Roll* roll = *rollI;
@@ -1075,6 +1242,14 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
+/**
+ * @brief Starts a loot roll for a specific item slot and eligible nearby members.
+ *
+ * @param lootTarget The looted world object.
+ * @param method The loot method driving the roll.
+ * @param loot The loot container.
+ * @param itemSlot The loot slot to roll on.
+ */
 void Group::StartLootRoll(WorldObject* lootTarget, LootMethod method, Loot* loot, uint8 itemSlot)
 {
     if (itemSlot >= loot->items.size())
@@ -1146,10 +1321,14 @@ void Group::EndRoll()
     }
 }
 
+/**
+ * @brief Resolves a completed loot roll and awards or unlocks the item.
+ *
+ * @param rollI Iterator pointing to the roll entry.
+ */
 void Group::CountTheRoll(Rolls::iterator& rollI)
 {
     Roll* roll = *rollI;
-
 
     if (!roll->isValid())                                   // is loot already deleted ?
     {
@@ -1302,13 +1481,19 @@ void Group::CountTheRoll(Rolls::iterator& rollI)
     delete roll;
 }
 
+/**
+ * @brief Checks whether rolling is complete for a specific loot item.
+ *
+ * @param pObject The looted world object.
+ * @param pItem The loot item being checked.
+ * @return true if no active multi-player roll remains for the item; otherwise false.
+ */
 bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
 {
     if (RollId.empty())
     {
         return true;
     }
-
 
     for (Rolls::iterator i = RollId.begin(); i != RollId.end(); ++i)
     {
@@ -1322,6 +1507,12 @@ bool Group::IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem)
     return true;
 }
 
+/**
+ * @brief Sets or clears a raid target icon and broadcasts the change.
+ *
+ * @param id The icon slot index.
+ * @param targetGuid The target GUID assigned to the icon.
+ */
 void Group::SetTargetIcon(uint8 id, ObjectGuid targetGuid)
 {
     if (id >= TARGET_ICON_COUNT)
@@ -1346,6 +1537,15 @@ void Group::SetTargetIcon(uint8 id, ObjectGuid targetGuid)
     BroadcastPacket(&data, true);
 }
 
+/**
+ * @brief Accumulates group XP reward data for a single qualifying player.
+ *
+ * @param player The player contributing to the calculation.
+ * @param victim The defeated unit.
+ * @param sum_level Running sum of qualifying player levels.
+ * @param member_with_max_level Tracks the highest-level qualifying member.
+ * @param not_gray_member_with_max_level Tracks the highest-level non-gray qualifying member.
+ */
 static void GetDataForXPAtKill_helper(Player* player, Unit const* victim, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level)
 {
     sum_level += player->getLevel();
@@ -1362,6 +1562,16 @@ static void GetDataForXPAtKill_helper(Player* player, Unit const* victim, uint32
     }
 }
 
+/**
+ * @brief Collects qualifying group member data used for XP distribution on kill.
+ *
+ * @param victim The defeated unit.
+ * @param count Running count of qualifying players.
+ * @param sum_level Running sum of qualifying player levels.
+ * @param member_with_max_level Tracks the highest-level qualifying member.
+ * @param not_gray_member_with_max_level Tracks the highest-level non-gray qualifying member.
+ * @param additional Optional extra player to include after iterating group members.
+ */
 void Group::GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level, Player* additional)
 {
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
@@ -1397,6 +1607,11 @@ void Group::GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_le
     }
 }
 
+/**
+ * @brief Sends the current raid target icon assignments to a session.
+ *
+ * @param session The session receiving the icon list.
+ */
 void Group::SendTargetIconList(WorldSession* session)
 {
     if (!session)
@@ -1421,6 +1636,9 @@ void Group::SendTargetIconList(WorldSession* session)
     session->SendPacket(&data);
 }
 
+/**
+ * @brief Sends a full group list update to every connected member.
+ */
 void Group::SendUpdate()
 {
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
@@ -1471,6 +1689,11 @@ void Group::SendUpdate()
     }
 }
 
+/**
+ * @brief Sends updated party member stats to members who do not currently see the player.
+ *
+ * @param pPlayer The player whose stats changed.
+ */
 void Group::UpdatePlayerOutOfRange(Player* pPlayer)
 {
     if (!pPlayer || !pPlayer->IsInWorld())
@@ -1494,6 +1717,14 @@ void Group::UpdatePlayerOutOfRange(Player* pPlayer)
             }
 }
 
+/**
+ * @brief Broadcasts a packet to group members with optional subgroup and ignore filters.
+ *
+ * @param packet The packet to broadcast.
+ * @param ignorePlayersInBGRaid True to skip players whose active group differs from this one.
+ * @param group The subgroup filter, or -1 for all members.
+ * @param ignore A player GUID to exclude from delivery.
+ */
 void Group::BroadcastPacket(WorldPacket* packet, bool ignorePlayersInBGRaid, int group, ObjectGuid ignore)
 {
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
@@ -1511,6 +1742,11 @@ void Group::BroadcastPacket(WorldPacket* packet, bool ignorePlayersInBGRaid, int
     }
 }
 
+/**
+ * @brief Sends a ready-check packet to the leader and assistants.
+ *
+ * @param packet The ready-check packet to broadcast.
+ */
 void Group::BroadcastReadyCheck(WorldPacket* packet)
 {
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
@@ -1524,6 +1760,9 @@ void Group::BroadcastReadyCheck(WorldPacket* packet)
     }
 }
 
+/**
+ * @brief Marks offline members as not ready during a ready check.
+ */
 void Group::OfflineReadyCheck()
 {
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
@@ -1539,6 +1778,14 @@ void Group::OfflineReadyCheck()
     }
 }
 
+/**
+ * @brief Adds a member to the first available subgroup.
+ *
+ * @param guid The member player GUID.
+ * @param name The member player name.
+ * @param isAssistant True if the member should be marked as assistant.
+ * @return true if a suitable subgroup was found and the member was added; otherwise false.
+ */
 bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant)
 {
     // get first not-full group
@@ -1564,6 +1811,15 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant)
     return _addMember(guid, name, isAssistant, groupid);
 }
 
+/**
+ * @brief Adds a member to a specific subgroup and updates player references.
+ *
+ * @param guid The member player GUID.
+ * @param name The member player name.
+ * @param isAssistant True if the member should be marked as assistant.
+ * @param group The subgroup assignment.
+ * @return true if the member was added; otherwise false.
+ */
 bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint8 group)
 {
     if (IsFull())
@@ -1636,6 +1892,12 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     return true;
 }
 
+/**
+ * @brief Removes a member from internal group state and updates leadership if needed.
+ *
+ * @param guid The member player GUID.
+ * @return true if the removed member was the leader and leadership changed; otherwise false.
+ */
 bool Group::_removeMember(ObjectGuid guid)
 {
     Player* player = sObjectMgr.GetPlayer(guid);
@@ -1687,6 +1949,11 @@ bool Group::_removeMember(ObjectGuid guid)
     return false;
 }
 
+/**
+ * @brief Updates the stored group leader and migrates instance bindings as needed.
+ *
+ * @param guid The new leader GUID.
+ */
 void Group::_setLeader(ObjectGuid guid)
 {
     member_citerator slot = _getMemberCSlot(guid);
@@ -1750,6 +2017,11 @@ void Group::_setLeader(ObjectGuid guid)
     m_leaderName = slot->name;
 }
 
+/**
+ * @brief Removes a player's participation from all active loot rolls.
+ *
+ * @param guid The player GUID to remove from roll tracking.
+ */
 void Group::_removeRolls(ObjectGuid guid)
 {
     for (Rolls::iterator it = RollId.begin(); it != RollId.end();)
@@ -1788,6 +2060,13 @@ void Group::_removeRolls(ObjectGuid guid)
     }
 }
 
+/**
+ * @brief Changes a member's stored subgroup assignment.
+ *
+ * @param guid The member player GUID.
+ * @param group The new subgroup.
+ * @return true if the subgroup was updated; otherwise false.
+ */
 bool Group::_setMembersGroup(ObjectGuid guid, uint8 group)
 {
     member_witerator slot = _getMemberWSlot(guid);
@@ -1808,6 +2087,13 @@ bool Group::_setMembersGroup(ObjectGuid guid, uint8 group)
     return true;
 }
 
+/**
+ * @brief Sets or clears the assistant flag for a member.
+ *
+ * @param guid The member player GUID.
+ * @param state The desired assistant state.
+ * @return true if the flag was updated; otherwise false.
+ */
 bool Group::_setAssistantFlag(ObjectGuid guid, const bool& state)
 {
     member_witerator slot = _getMemberWSlot(guid);
@@ -1824,6 +2110,12 @@ bool Group::_setAssistantFlag(ObjectGuid guid, const bool& state)
     return true;
 }
 
+/**
+ * @brief Sets the group's main tank designation.
+ *
+ * @param guid The selected main tank GUID, or an empty GUID to clear it.
+ * @return true if the designation changed; otherwise false.
+ */
 bool Group::_setMainTank(ObjectGuid guid)
 {
     if (m_mainTankGuid == guid)
@@ -1855,6 +2147,12 @@ bool Group::_setMainTank(ObjectGuid guid)
     return true;
 }
 
+/**
+ * @brief Sets the group's main assistant designation.
+ *
+ * @param guid The selected main assistant GUID, or an empty GUID to clear it.
+ * @return true if the designation changed; otherwise false.
+ */
 bool Group::_setMainAssistant(ObjectGuid guid)
 {
     if (m_mainAssistantGuid == guid)
@@ -1885,6 +2183,13 @@ bool Group::_setMainAssistant(ObjectGuid guid)
     return true;
 }
 
+/**
+ * @brief Checks whether two players belong to the same subgroup of this group.
+ *
+ * @param member1 The first player.
+ * @param member2 The second player.
+ * @return true if both players belong to this group and share a subgroup; otherwise false.
+ */
 bool Group::SameSubGroup(Player const* member1, Player const* member2) const
 {
     if (!member1 || !member2)
@@ -1964,6 +2269,12 @@ void Group::ChangeMembersGroup(Player* player, uint8 group)
     }
 }
 
+/**
+ * @brief Advances the round-robin looter to the next eligible nearby member.
+ *
+ * @param pSource The looted world object.
+ * @param ifneed True to keep the current looter when still eligible.
+ */
 void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
 {
     switch (GetLootMethod())
@@ -2043,6 +2354,15 @@ void Group::UpdateLooterGuid(WorldObject* pSource, bool ifneed)
     SendUpdate();
 }
 
+/**
+ * @brief Validates whether the full group can join a battleground queue together.
+ *
+ * @param bgTypeId The battleground type identifier.
+ * @param bgQueueTypeId The battleground queue type identifier.
+ * @param MinPlayerCount The minimum allowed group size.
+ * @param MaxPlayerCount The maximum allowed group size.
+ * @return uint32 A battleground join error code.
+ */
 uint32 Group::CanJoinBattleGroundQueue(BattleGroundTypeId bgTypeId, BattleGroundQueueTypeId bgQueueTypeId, uint32 MinPlayerCount, uint32 MaxPlayerCount)
 {
     // check for min / max count
@@ -2105,6 +2425,12 @@ uint32 Group::CanJoinBattleGroundQueue(BattleGroundTypeId bgTypeId, BattleGround
     return BG_JOIN_ERR_OK;
 }
 
+/**
+ * @brief Checks whether any group member is in combat inside a specific instance.
+ *
+ * @param instanceId The instance identifier to test.
+ * @return true if a member in that instance currently has attackers; otherwise false.
+ */
 bool Group::InCombatToInstance(uint32 instanceId)
 {
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
@@ -2118,6 +2444,12 @@ bool Group::InCombatToInstance(uint32 instanceId)
     return false;
 }
 
+/**
+ * @brief Resets or unbinds group dungeon instances according to the requested method.
+ *
+ * @param method The reset method to apply.
+ * @param SendMsgTo Optional player who should receive reset result messages.
+ */
 void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
 {
     if (isBGGroup())
@@ -2192,6 +2524,12 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
     }
 }
 
+/**
+ * @brief Retrieves the group's binding information for a dungeon map.
+ *
+ * @param mapid The map identifier.
+ * @return InstanceGroupBind* The bind information if present; otherwise NULL.
+ */
 InstanceGroupBind* Group::GetBoundInstance(uint32 mapid)
 {
     MapEntry const* mapEntry = sMapStore.LookupEntry(mapid);
@@ -2211,6 +2549,14 @@ InstanceGroupBind* Group::GetBoundInstance(uint32 mapid)
     }
 }
 
+/**
+ * @brief Binds the group to a dungeon instance persistent state.
+ *
+ * @param state The dungeon persistent state to bind.
+ * @param permanent True to create a permanent bind.
+ * @param load True when reconstructing binds from storage.
+ * @return InstanceGroupBind* The updated bind information, or NULL on failure.
+ */
 InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool permanent, bool load)
 {
     if (state && !isBGGroup())
@@ -2250,6 +2596,12 @@ InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool per
     }
 }
 
+/**
+ * @brief Removes the group's binding to a dungeon instance.
+ *
+ * @param mapid The map identifier to unbind.
+ * @param unload True when the unbind happens as part of loading or teardown logic.
+ */
 void Group::UnbindInstance(uint32 mapid, bool unload)
 {
     BoundInstancesMap::iterator itr = m_boundInstances.find(mapid);
@@ -2263,6 +2615,11 @@ void Group::UnbindInstance(uint32 mapid, bool unload)
     }
 }
 
+/**
+ * @brief Marks a player as invalid for their current instance when group removal requires homebinding.
+ *
+ * @param player The player leaving the group.
+ */
 void Group::_homebindIfInstance(Player* player)
 {
     if (player && !player->isGameMaster())
@@ -2281,6 +2638,20 @@ void Group::_homebindIfInstance(Player* player)
     }
 }
 
+/**
+ * @brief Awards honor, reputation, XP, pet XP, and kill credit to one group member.
+ *
+ * @param pGroupGuy The group member receiving rewards.
+ * @param pVictim The defeated unit.
+ * @param count The number of qualifying group members.
+ * @param PvP True when the kill is treated as PvP.
+ * @param group_rate The group XP scaling factor.
+ * @param sum_level The summed levels of qualifying members.
+ * @param is_dungeon True when the kill occurred in a dungeon.
+ * @param not_gray_member_with_max_level The highest-level member still eligible for XP.
+ * @param member_with_max_level The highest-level qualifying group member.
+ * @param xp The base XP amount for the kill.
+ */
 static void RewardGroupAtKill_helper(Player* pGroupGuy, Unit* pVictim, uint32 count, bool PvP, float group_rate, uint32 sum_level, bool is_dungeon, Player* not_gray_member_with_max_level, Player* member_with_max_level, uint32 xp)
 {
     // honor can be in PvP and !PvP (racial leader) cases (for alive)

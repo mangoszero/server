@@ -10,6 +10,9 @@ AiObject::AiObject(PlayerbotAI* ai) :
 {
 }
 
+/**
+ * Returns the bot master's player instance.
+ */
 Player* AiObject::GetMaster()
 {
     return ai->GetMaster();

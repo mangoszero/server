@@ -51,6 +51,9 @@ LocaleNameStr const fullLocaleNameList[] =
     { NULL,   LOCALE_enUS }
 };
 
+/**
+ * Resolves a locale constant from its string name.
+ */
 LocaleConstant GetLocaleByName(const std::string& name)
 {
     for (LocaleNameStr const* itr = &fullLocaleNameList[0]; itr->name; ++itr)

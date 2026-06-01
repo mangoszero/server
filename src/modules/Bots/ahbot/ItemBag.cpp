@@ -144,24 +144,24 @@ void AvailableItemsBag::Load()
 {
     set<uint32> vendorItems;
 
-      QueryResult* results = WorldDatabase.PQuery("SELECT `item` FROM `npc_vendor` WHERE `maxcount` = 0");
-      if (results != NULL)
-      {
-          do
-          {
-              Field* fields = results->Fetch();
-              vendorItems.insert(fields[0].GetUInt32());
-          } while (results->NextRow());
+    QueryResult* results = WorldDatabase.PQuery("SELECT `item` FROM `npc_vendor` WHERE `maxcount` = 0");
+    if (results != NULL)
+    {
+        do
+        {
+            Field* fields = results->Fetch();
+            vendorItems.insert(fields[0].GetUInt32());
+        } while (results->NextRow());
 
-          delete results;
-      }
+        delete results;
+    }
 
-      for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
-      {
-          if (vendorItems.find(itemId) != vendorItems.end())
-          {
-              continue;
-          }
+    for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+    {
+        if (vendorItems.find(itemId) != vendorItems.end())
+        {
+            continue;
+        }
 
         Add(sObjectMgr.GetItemPrototype(itemId));
     }

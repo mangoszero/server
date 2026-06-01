@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ThreatManager.cpp
+ * @brief Threat management system implementation
+ *
+ * This file implements the threat management system used by creatures/NPCs
+ * to determine which target to attack in combat. The system maintains threat
+ * values for all units in combat and applies the 110%/130% threat rules.
+ *
+ * Key components:
+ * - ThreatCalcHelper: Calculates threat values with modifiers
+ * - HostileReference: Individual threat relationship between units
+ * - ThreatContainer: Sorted list of threatening units
+ * - ThreatManager: Main threat management for a unit
+ *
+ * @see ThreatManager for the main manager class
+ * @see HostileReference for individual threat relationships
+ * @see ThreatContainer for threat list management
+ */
+
 #include "ThreatManager.h"
 #include "Unit.h"
 #include "Creature.h"
@@ -35,7 +54,19 @@
 //================= ThreatCalcHelper ===========================
 //==============================================================
 
-// The pHatingUnit is not used yet
+/**
+ * @brief Calculate threat value
+ * @param pHatedUnit Unit being threatened
+ * @param pHatingUnit Unit generating threat (unused)
+ * @param threat Base threat value
+ * @param crit If true, threat was from a critical hit
+ * @param schoolMask Spell school mask
+ * @param pThreatSpell Spell that generated threat
+ * @return Calculated threat value
+ *
+ * Calculates the final threat value after applying all modifiers
+ * including spell mods, critical threat multipliers, and aura modifiers.
+ */
 float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, Unit* /*pHatingUnit*/, float threat, bool crit, SpellSchoolMask schoolMask, SpellEntry const* pThreatSpell)
 {
     // all flat mods applied early
@@ -70,6 +101,14 @@ float ThreatCalcHelper::CalcThreat(Unit* pHatedUnit, Unit* /*pHatingUnit*/, floa
 //================= HostileReference ==========================
 //============================================================
 
+/**
+ * @brief HostileReference constructor
+ * @param pUnit Unit threatening the target
+ * @param pThreatManager Threat manager for the target
+ * @param pThreat Initial threat value
+ *
+ * Creates a new hostile reference linking a unit to its threat target.
+ */
 HostileReference::HostileReference(Unit* pUnit, ThreatManager* pThreatManager, float pThreat)
 {
     iThreat = pThreat;
@@ -80,31 +119,42 @@ HostileReference::HostileReference(Unit* pUnit, ThreatManager* pThreatManager, f
     iAccessible = true;
 }
 
-//============================================================
-// Tell our refTo (target) object that we have a link
+/**
+ * @brief Called when link is established to target
+ *
+ * Registers this hostile reference with the target unit.
+ */
 void HostileReference::targetObjectBuildLink()
 {
     getTarget()->AddHatedBy(this);
 }
 
-//============================================================
-// Tell our refTo (taget) object, that the link is cut
+/**
+ * @brief Called when target is being destroyed
+ *
+ * Removes this hostile reference from the target's list.
+ */
 void HostileReference::targetObjectDestroyLink()
 {
     getTarget()->RemoveHatedBy(this);
 }
 
-//============================================================
-// Tell our refFrom (source) object, that the link is cut (Target destroyed)
-
+/**
+ * @brief Called when source is being destroyed
+ *
+ * Sets the reference to offline state when the source unit is destroyed.
+ */
 void HostileReference::sourceObjectDestroyLink()
 {
     setOnlineOfflineState(false);
 }
 
-//============================================================
-// Inform the source, that the status of the reference changed
-
+/**
+ * @brief Fire status changed event
+ * @param pThreatRefStatusChangeEvent Event to fire
+ *
+ * Notifies the source unit that the reference status has changed.
+ */
 void HostileReference::fireStatusChanged(ThreatRefStatusChangeEvent& pThreatRefStatusChangeEvent)
 {
     if (getSource())
@@ -115,6 +165,13 @@ void HostileReference::fireStatusChanged(ThreatRefStatusChangeEvent& pThreatRefS
 
 //============================================================
 
+/**
+ * @brief Add threat to this reference
+ * @param pMod Threat modifier to add
+ *
+ * Adds threat to this reference and relinks if necessary.
+ * Also creates threat to pet owners when pets attack.
+ */
 void HostileReference::addThreat(float pMod)
 {
     iThreat += pMod;
@@ -140,9 +197,12 @@ void HostileReference::addThreat(float pMod)
     }
 }
 
-//============================================================
-// check, if source can reach target and set the status
-
+/**
+ * @brief Update online status
+ *
+ * Checks if the source can reach the target and updates the
+ * online/accessible status accordingly.
+ */
 void HostileReference::updateOnlineStatus()
 {
     bool online = false;
@@ -161,7 +221,7 @@ void HostileReference::updateOnlineStatus()
     // target is not in flight
     if (isValid() &&
         ((getTarget()->GetTypeId() != TYPEID_PLAYER || !((Player*)getTarget())->isGameMaster()) ||
-         !getTarget()->IsTaxiFlying()))
+        !getTarget()->IsTaxiFlying()))
     {
         Creature* creature = (Creature*) getSourceUnit();
         online = getTarget()->isInAccessablePlaceFor(creature);
@@ -181,9 +241,12 @@ void HostileReference::updateOnlineStatus()
     setOnlineOfflineState(online);
 }
 
-//============================================================
-// set the status and fire the event on status change
-
+/**
+ * @brief Set online/offline state
+ * @param pIsOnline New online state
+ *
+ * Sets the online state and fires an event if the state changes.
+ */
 void HostileReference::setOnlineOfflineState(bool pIsOnline)
 {
     if (iOnline != pIsOnline)
@@ -201,6 +264,12 @@ void HostileReference::setOnlineOfflineState(bool pIsOnline)
 
 //============================================================
 
+/**
+ * @brief Set accessible state
+ * @param pIsAccessible New accessible state
+ *
+ * Sets the accessible state and fires an event if the state changes.
+ */
 void HostileReference::setAccessibleState(bool pIsAccessible)
 {
     if (iAccessible != pIsAccessible)
@@ -212,10 +281,12 @@ void HostileReference::setAccessibleState(bool pIsAccessible)
     }
 }
 
-//============================================================
-// prepare the reference for deleting
-// this is called be the target
-
+/**
+ * @brief Remove reference
+ *
+ * Prepares the reference for deletion by invalidating it
+ * and firing a removal event.
+ */
 void HostileReference::removeReference()
 {
     invalidate();
@@ -226,6 +297,12 @@ void HostileReference::removeReference()
 
 //============================================================
 
+/**
+ * @brief Get source unit
+ * @return Source unit pointer
+ *
+ * Returns the unit that owns this reference's source.
+ */
 Unit* HostileReference::getSourceUnit()
 {
     return (getSource()->getOwner());
@@ -235,6 +312,11 @@ Unit* HostileReference::getSourceUnit()
 //================ ThreatContainer ===========================
 //============================================================
 
+/**
+ * @brief Clear all references
+ *
+ * Removes and deletes all hostile references from the container.
+ */
 void ThreatContainer::clearReferences()
 {
     for (ThreatList::const_iterator i = iThreatList.begin(); i != iThreatList.end(); ++i)
@@ -245,8 +327,13 @@ void ThreatContainer::clearReferences()
     iThreatList.clear();
 }
 
-//============================================================
-// Return the HostileReference of NULL, if not found
+/**
+ * @brief Get reference by target unit
+ * @param pVictim Target unit to find
+ * @return HostileReference or NULL if not found
+ *
+ * Searches for a hostile reference to the specified unit.
+ */
 HostileReference* ThreatContainer::getReferenceByTarget(Unit* pVictim)
 {
     HostileReference* result = NULL;
@@ -263,9 +350,14 @@ HostileReference* ThreatContainer::getReferenceByTarget(Unit* pVictim)
     return result;
 }
 
-//============================================================
-// Add the threat, if we find the reference
-
+/**
+ * @brief Add threat to target
+ * @param pVictim Target unit
+ * @param pThreat Threat to add
+ * @return HostileReference or NULL if not found
+ *
+ * Adds threat to the specified unit if a reference exists.
+ */
 HostileReference* ThreatContainer::addThreat(Unit* pVictim, float pThreat)
 {
     HostileReference* ref = getReferenceByTarget(pVictim);
@@ -278,6 +370,14 @@ HostileReference* ThreatContainer::addThreat(Unit* pVictim, float pThreat)
 
 //============================================================
 
+/**
+ * @brief Modify threat by percentage
+ * @param pVictim Target unit
+ * @param pPercent Percentage to modify (negative to reduce)
+ *
+ * Modifies the threat for the specified unit by a percentage.
+ * If reduction is more than 100%, the reference is removed.
+ */
 void ThreatContainer::modifyThreatPercent(Unit* pVictim, int32 pPercent)
 {
     if (HostileReference* ref = getReferenceByTarget(pVictim))
@@ -296,15 +396,25 @@ void ThreatContainer::modifyThreatPercent(Unit* pVictim, int32 pPercent)
 
 //============================================================
 
+/**
+ * @brief Hostile reference sort predicate
+ * @param lhs First reference
+ * @param rhs Second reference
+ * @return True if lhs has higher threat
+ *
+ * Sort predicate for ordering hostile references by threat (descending).
+ */
 bool HostileReferenceSortPredicate(const HostileReference* lhs, const HostileReference* rhs)
 {
     // std::list::sort ordering predicate must be: (Pred(x,y)&&Pred(y,x))==false
     return lhs->getThreat() > rhs->getThreat();             // reverse sorting
 }
 
-//============================================================
-// Check if the list is dirty and sort if necessary
-
+/**
+ * @brief Update threat container
+ *
+ * Sorts the threat list if it has been modified (dirty flag set).
+ */
 void ThreatContainer::update()
 {
     if (iDirty && iThreatList.size() > 1)
@@ -314,10 +424,16 @@ void ThreatContainer::update()
     iDirty = false;
 }
 
-//============================================================
-// return the next best victim
-// could be the current victim
-
+/**
+ * @brief Select next victim to attack
+ * @param pAttacker Creature selecting victim
+ * @param pCurrentVictim Current victim
+ * @return Next victim reference or NULL
+ *
+ * Selects the next victim based on threat values and the
+ * 110%/130% threat rules. Handles second choice targets and
+ * melee/ranged threat thresholds.
+ */
 HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, HostileReference* pCurrentVictim)
 {
     HostileReference* pCurrentRef = NULL;
@@ -423,6 +539,12 @@ HostileReference* ThreatContainer::selectNextVictim(Creature* pAttacker, Hostile
 //=================== ThreatManager ==========================
 //============================================================
 
+/**
+ * @brief ThreatManager constructor
+ * @param owner Unit that owns this threat manager
+ *
+ * Initializes the threat manager for the specified unit.
+ */
 ThreatManager::ThreatManager(Unit* owner)
     : iCurrentVictim(NULL), iOwner(owner)
 {
@@ -430,6 +552,11 @@ ThreatManager::ThreatManager(Unit* owner)
 
 //============================================================
 
+/**
+ * @brief Clear all threat references
+ *
+ * Removes all threat references from both online and offline containers.
+ */
 void ThreatManager::clearReferences()
 {
     iThreatContainer.clearReferences();
@@ -439,6 +566,17 @@ void ThreatManager::clearReferences()
 
 //============================================================
 
+/**
+ * @brief Add threat from a unit
+ * @param pVictim Unit generating threat
+ * @param pThreat Base threat value
+ * @param crit If true, threat was from a critical hit
+ * @param schoolMask Spell school mask
+ * @param pThreatSpell Spell that generated threat
+ *
+ * Adds threat from the specified unit after calculating the final
+ * threat value with all modifiers applied.
+ */
 void ThreatManager::addThreat(Unit* pVictim, float pThreat, bool crit, SpellSchoolMask schoolMask, SpellEntry const* pThreatSpell)
 {
     // function deals with adding threat and adding players and pets into ThreatList
@@ -471,6 +609,14 @@ void ThreatManager::addThreat(Unit* pVictim, float pThreat, bool crit, SpellScho
     addThreatDirectly(pVictim, threat);
 }
 
+/**
+ * @brief Add threat directly without calculation
+ * @param pVictim Unit generating threat
+ * @param threat Threat value to add
+ *
+ * Adds threat directly to the specified unit, creating a new
+ * reference if one doesn't exist.
+ */
 void ThreatManager::addThreatDirectly(Unit* pVictim, float threat)
 {
     HostileReference* ref = iThreatContainer.addThreat(pVictim, threat);
@@ -495,6 +641,13 @@ void ThreatManager::addThreatDirectly(Unit* pVictim, float threat)
 
 //============================================================
 
+/**
+ * @brief Modify threat by percentage
+ * @param pVictim Target unit
+ * @param pPercent Percentage to modify
+ *
+ * Modifies the threat for the specified unit by a percentage.
+ */
 void ThreatManager::modifyThreatPercent(Unit* pVictim, int32 pPercent)
 {
     iThreatContainer.modifyThreatPercent(pVictim, pPercent);
@@ -502,6 +655,13 @@ void ThreatManager::modifyThreatPercent(Unit* pVictim, int32 pPercent)
 
 //============================================================
 
+/**
+ * @brief Get current hostile target
+ * @return Target unit or NULL
+ *
+ * Updates the threat container and returns the current victim
+ * based on threat values.
+ */
 Unit* ThreatManager::getHostileTarget()
 {
     iThreatContainer.update();
@@ -512,6 +672,14 @@ Unit* ThreatManager::getHostileTarget()
 
 //============================================================
 
+/**
+ * @brief Get threat value for unit
+ * @param pVictim Target unit
+ * @param pAlsoSearchOfflineList If true, also search offline list
+ * @return Threat value
+ *
+ * Returns the threat value for the specified unit.
+ */
 float ThreatManager::getThreat(Unit* pVictim, bool pAlsoSearchOfflineList)
 {
     float threat = 0.0f;
@@ -529,6 +697,13 @@ float ThreatManager::getThreat(Unit* pVictim, bool pAlsoSearchOfflineList)
 
 //============================================================
 
+/**
+ * @brief Apply taunt effect
+ * @param pTaunter Unit using taunt
+ *
+ * Sets the taunter's temporary threat to match the current victim's
+ * threat if it's higher, forcing the creature to attack the taunter.
+ */
 void ThreatManager::tauntApply(Unit* pTaunter)
 {
     if (HostileReference* ref = iThreatContainer.getReferenceByTarget(pTaunter))
@@ -546,6 +721,12 @@ void ThreatManager::tauntApply(Unit* pTaunter)
 
 //============================================================
 
+/**
+ * @brief Remove taunt effect
+ * @param pTaunter Unit whose taunt is fading
+ *
+ * Resets the temporary threat modifier for the taunter.
+ */
 void ThreatManager::tauntFadeOut(Unit* pTaunter)
 {
     if (HostileReference* ref = iThreatContainer.getReferenceByTarget(pTaunter))
@@ -556,15 +737,24 @@ void ThreatManager::tauntFadeOut(Unit* pTaunter)
 
 //============================================================
 
+/**
+ * @brief Set current victim
+ * @param pHostileReference New victim reference
+ *
+ * Sets the current victim for threat management.
+ */
 void ThreatManager::setCurrentVictim(HostileReference* pHostileReference)
 {
     iCurrentVictim = pHostileReference;
 }
 
-//============================================================
-// The hated unit is gone, dead or deleted
-// return true, if the event is consumed
-
+/**
+ * @brief Process threat reference status change event
+ * @param threatRefStatusChangeEvent Event to process
+ *
+ * Handles threat reference status changes including threat modifications,
+ * online/offline status changes, and reference removal.
+ */
 void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStatusChangeEvent)
 {
     threatRefStatusChangeEvent->setThreatManager(this);     // now we can set the threat manager

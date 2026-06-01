@@ -22,6 +22,30 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Config.cpp
+ * @brief INI configuration file parser and storage
+ *
+ * This file implements the Config singleton for reading and accessing
+ * server configuration from INI format files using the ACE configuration
+ * framework.
+ *
+ * Features:
+ * - INI file format parsing
+ * - Section-based configuration organization
+ * - Type-safe value retrieval with defaults
+ * - Dynamic reload support
+ * - Singleton access pattern
+ *
+ * Supported value types:
+ * - String: Raw string values
+ * - Bool: true/false, yes/no, 1/0 (case-insensitive)
+ * - Int: 32-bit signed integers
+ * - Float: Floating point values
+ *
+ * @see Config for the main configuration interface
+ */
+
 #include "Config.h"
 #include <ace/Configuration_Import_Export.h>
 
@@ -29,6 +53,16 @@
 
 INSTANTIATE_SINGLETON_1(Config);
 
+/**
+ * @brief Search all sections for a configuration value
+ * @param mConf Configuration heap to search
+ * @param name Key name to find
+ * @param result Output string for value
+ * @return true if found, false otherwise
+ *
+ * Searches through all sections in the INI file to find the specified
+ * key. Returns the first match found (sections are enumerated in order).
+ */
 static bool GetValueHelper(ACE_Configuration_Heap* mConf, const char* name, ACE_TString& result)
 {
     if (!mConf)
@@ -54,16 +88,34 @@ static bool GetValueHelper(ACE_Configuration_Heap* mConf, const char* name, ACE_
     return false;
 }
 
+/**
+ * @brief Construct Config singleton
+ *
+ * Initializes with no loaded configuration. Use SetSource() to load a file.
+ */
 Config::Config()
     : mConf(NULL)
 {
 }
 
+/**
+ * @brief Destroy Config singleton
+ *
+ * Cleans up the ACE configuration heap.
+ */
 Config::~Config()
 {
     delete mConf;
 }
 
+/**
+ * @brief Set configuration source file
+ * @param file Path to INI configuration file
+ * @return true on successful load, false on error
+ *
+ * Sets the source file and immediately attempts to load it.
+ * If loading fails, the Config object remains without valid data.
+ */
 bool Config::SetSource(const char* file)
 {
     mFilename = file;
@@ -71,6 +123,15 @@ bool Config::SetSource(const char* file)
     return Reload();
 }
 
+/**
+ * @brief Reload configuration from file
+ * @return true on success, false on failure
+ *
+ * Reloads the configuration file, discarding any previous values.
+ * On failure, the Config object is left without valid configuration.
+ *
+ * @note Thread safety: Caller must ensure no concurrent access during reload
+ */
 bool Config::Reload()
 {
     delete mConf;
@@ -90,12 +151,31 @@ bool Config::Reload()
     return false;
 }
 
+/**
+ * @brief Get string configuration value
+ * @param name Key name to look up
+ * @param def Default value if key not found
+ * @return Configuration value or default
+ *
+ * Retrieves a string value from the configuration.
+ * Returns default if key doesn't exist.
+ */
 std::string Config::GetStringDefault(const char* name, const char* def)
 {
     ACE_TString val;
     return GetValueHelper(mConf, name, val) ? val.c_str() : def;
 }
 
+/**
+ * @brief Get boolean configuration value
+ * @param name Key name to look up
+ * @param def Default value if key not found or invalid
+ * @return Configuration value or default
+ *
+ * Parses boolean values case-insensitively:
+ * - True: "true", "TRUE", "yes", "YES", "1"
+ * - False: all other values
+ */
 bool Config::GetBoolDefault(const char* name, bool def)
 {
     ACE_TString val;
@@ -117,12 +197,28 @@ bool Config::GetBoolDefault(const char* name, bool def)
     }
 }
 
+/**
+ * @brief Get integer configuration value
+ * @param name Key name to look up
+ * @param def Default value if key not found or invalid
+ * @return Configuration value or default
+ *
+ * Parses value using atoi(). Returns default if key doesn't exist.
+ */
 int32 Config::GetIntDefault(const char* name, int32 def)
 {
     ACE_TString val;
     return GetValueHelper(mConf, name, val) ? atoi(val.c_str()) : def;
 }
 
+/**
+ * @brief Get float configuration value
+ * @param name Key name to look up
+ * @param def Default value if key not found or invalid
+ * @return Configuration value or default
+ *
+ * Parses value using atof(). Returns default if key doesn't exist.
+ */
 float Config::GetFloatDefault(const char* name, float def)
 {
     ACE_TString val;

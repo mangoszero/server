@@ -22,6 +22,22 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Log.cpp
+ * @brief Logging system implementation
+ *
+ * This file implements the logging system for MaNGOS, providing:
+ * - Multiple log levels (DEBUG, INFO, ERROR, etc.)
+ * - Colored console output (platform-specific)
+ * - File-based logging with automatic rotation
+ * - Specialized log files for different subsystems
+ * - Log filtering by category
+ * - Thread-safe logging operations
+ *
+ * The Log class is a singleton accessed via sLog throughout the codebase.
+ * It supports both formatted output and raw string logging.
+ */
+
 #include "Common/Common.h"
 #include "Log.h"
 #include "Policies/Singleton.h"
@@ -71,6 +87,17 @@ enum LogType
 
 const int LogType_count = int(LogError) + 1;
 
+/**
+ * @brief Construct the Log singleton
+ *
+ * Initializes all log file handles to NULL and sets default values:
+ * - No colored output initially
+ * - Time not included by default
+ * - GM log not split per account
+ * - Calls Initialize() to set up log filters
+ *
+ * @note This is called automatically when sLog is first accessed
+ */
 Log::Log() :
     raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
 #ifdef ENABLE_ELUNA
@@ -83,6 +110,16 @@ Log::Log() :
     Initialize();
 }
 
+/**
+ * @brief Initialize console colors from configuration string
+ * @param str Space-separated color indices (4 values for Normal, Details, Debug, Error)
+ *
+ * Parses color configuration and enables colored console output.
+ * Expected format: "<normal> <details> <debug> <error>" where each
+ * value is an index from the Color enum (0-15).
+ *
+ * @note If string is empty or invalid, colored output is disabled
+ */
 void Log::InitColors(const std::string& str)
 {
     if (str.empty())

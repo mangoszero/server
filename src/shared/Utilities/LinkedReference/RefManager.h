@@ -31,6 +31,7 @@
 #include "Utilities/LinkedReference/Reference.h"
 
 template <class TO, class FROM>
+
 /**
  * @brief
  *
@@ -44,16 +45,21 @@ class RefManager : public LinkedListHead
          *
          */
         typedef LinkedListHead::Iterator<Reference<TO, FROM> > iterator;
+
         /**
          * @brief
          *
          */
         RefManager() {}
+
         /**
          * @brief
          *
          */
-        virtual ~RefManager() { clearReferences(); }
+        virtual ~RefManager()
+        {
+            clearReferences();
+        }
 
         /**
          * @brief
@@ -61,18 +67,21 @@ class RefManager : public LinkedListHead
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       getFirst()       { return ((Reference<TO, FROM>*) LinkedListHead::getFirst()); }
+
         /**
          * @brief
          *
          * @return const Reference<TO, FROM>
          */
         Reference<TO, FROM> const* getFirst() const { return ((Reference<TO, FROM> const*) LinkedListHead::getFirst()); }
+
         /**
          * @brief
          *
          * @return Reference<TO, FROM>
          */
         Reference<TO, FROM>*       getLast()       { return ((Reference<TO, FROM>*) LinkedListHead::getLast()); }
+
         /**
          * @brief
          *
@@ -85,25 +94,40 @@ class RefManager : public LinkedListHead
          *
          * @return iterator
          */
-        iterator begin() { return iterator(getFirst()); }
+        iterator begin()
+        {
+            return iterator(getFirst());
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator end() { return iterator(NULL); }
+        iterator end()
+        {
+            return iterator(NULL);
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rbegin() { return iterator(getLast()); }
+        iterator rbegin()
+        {
+            return iterator(getLast());
+        }
+
         /**
          * @brief
          *
          * @return iterator
          */
-        iterator rend() { return iterator(NULL); }
+        iterator rend()
+        {
+            return iterator(NULL);
+        }
 
         /**
          * @brief

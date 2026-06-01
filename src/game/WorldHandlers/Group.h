@@ -22,6 +22,33 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Group.h
+ * @brief Player group/raid management and coordination.
+ *
+ * This file defines the Group class which manages collections of players in groups
+ * (up to 5 members) or raids (up to 40 members). Groups provide coordinated features including:
+ *
+ * - Member management (joining, leaving, kicking)
+ * - Loot distribution and roll systems
+ * - Experience and reputation sharing
+ * - Group-wide spell effects and auras
+ * - Raid target markers
+ * - Dungeon and raid lockout management
+ * - Battleground and arena participation
+ * - Group chat and communication
+ * - Summoning mechanics
+ * - Offline player tracking
+ * - Group role assignment (tank, healer, damage)
+ *
+ * Groups can be of different types: normal group, raid, raid sub-group, or battleground group.
+ * Various loot methods are supported: free-for-all, round-robin, master loot, group loot, and need-before-greed.
+ *
+ * @see Group for the main group implementation
+ * @see GroupReference for member references
+ * @see LootMgr for loot management
+ */
+
 #ifndef MANGOSSERVER_GROUP_H
 #define MANGOSSERVER_GROUP_H
 
@@ -48,6 +75,9 @@ class Unit;
 #define MAX_RAID_SUBGROUPS (MAX_RAID_SIZE / MAX_GROUP_SIZE)
 #define TARGET_ICON_COUNT 8
 
+/// @brief Loot distribution method enumeration.
+///
+/// Determines how loot is distributed among group members.
 enum LootMethod
 {
     FREE_FOR_ALL      = 0,
@@ -57,18 +87,27 @@ enum LootMethod
     NEED_BEFORE_GREED = 4
 };
 
+/// @brief Group removal method enumeration.
+///
+/// Indicates why a player was removed from the group.
 enum RemoveMethod
 {
     GROUP_LEAVE            = 0,
     GROUP_KICK             = 1
 };
 
+/// @brief Group join/invite method enumeration.
+///
+/// Indicates how a player joined the group.
 enum InviteMethod
 {
     GROUP_JOIN             = 0,
     GROUP_LFG              = 1
 };
 
+/// @brief Loot roll vote enumeration.
+///
+/// Represents a player's vote during loot distribution rolls.
 enum RollVote
 {
     ROLL_PASS              = 0,
@@ -82,6 +121,9 @@ enum RollVote
     ROLL_NOT_VALID         = 4                              // not send to client
 };
 
+/// @brief Group member online status flags.
+///
+/// Bit flags indicating the online status and state of group members.
 enum GroupMemberOnlineStatus
 {
     MEMBER_STATUS_OFFLINE   = 0x0000,
@@ -95,6 +137,9 @@ enum GroupMemberOnlineStatus
     MEMBER_STATUS_DND       = 0x0080,                       // Lua_UnitIsDND
 };
 
+/// @brief Group type enumeration.
+///
+/// Defines the type and size category of a group.
 enum GroupType
 {
     GROUPTYPE_NORMAL = 0,
@@ -142,7 +187,7 @@ class Roll : public LootValidatorRef
         Roll(ObjectGuid _lootedTragetGuid, LootItem const& li)
             : lootedTargetGUID(_lootedTragetGuid), itemid(li.itemid), itemRandomPropId(li.randomPropertyId),
               totalPlayersRolling(0), totalNeed(0), totalGreed(0), totalPass(0), itemSlot(0) {}
-        ~Roll() { }
+        ~Roll() {}
         void setLoot(Loot* pLoot)
         {
             link(pLoot, this);
@@ -169,12 +214,13 @@ struct InstanceGroupBind
 {
     DungeonPersistentState* state;
     bool perm;
-    /* permanent InstanceGroupBinds exist iff the leader has a permanent
-       PlayerInstanceBind for the same instance. */
+    /*  permanent InstanceGroupBinds exist iff the leader has a permanent
+        PlayerInstanceBind for the same instance. */
     InstanceGroupBind() : state(NULL), perm(false) {}
 };
 
 /** request member stats checken **/
+
 /** todo: uninvite people that not accepted invite **/
 class Group
 {
@@ -333,7 +379,12 @@ class Group
         }
 
         MemberSlotList const& GetMemberSlots() const { return m_memberSlots; }
-        GroupReference* GetFirstMember() { return m_memberMgr.getFirst(); }
+
+        GroupReference* GetFirstMember()
+        {
+            return m_memberMgr.getFirst();
+        }
+
         GroupReference const* GetFirstMember() const { return m_memberMgr.getFirst(); }
         uint32 GetMembersCount() const { return m_memberSlots.size(); }
         void GetDataForXPAtKill(Unit const* victim, uint32& count, uint32& sum_level, Player*& member_with_max_level, Player*& not_gray_member_with_max_level, Player* additional = NULL);
@@ -471,7 +522,7 @@ class Group
         {
             m_memberMgr.insertFirst(pRef);
         }
-        void DelinkMember(GroupReference* /*pRef*/) { }
+        void DelinkMember(GroupReference* /*pRef*/) {}
 
         InstanceGroupBind* BindToInstance(DungeonPersistentState* save, bool permanent, bool load = false);
         void UnbindInstance(uint32 mapid, bool unload = false);

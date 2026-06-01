@@ -48,6 +48,7 @@ enum AuraType
     SPELL_AURA_NONE = 0,
     SPELL_AURA_BIND_SIGHT = 1,
     SPELL_AURA_MOD_POSSESS = 2,
+
     /**
      * The aura should do periodic damage, the function that handles
      * this is \ref Aura::HandlePeriodicDamage, the amount is usually decided
@@ -55,10 +56,12 @@ enum AuraType
      * which increases/decreases the \ref Modifier::m_amount
      */
     SPELL_AURA_PERIODIC_DAMAGE = 3,
+
     /**
      * Used by \ref Aura::HandleAuraDummy
      */
     SPELL_AURA_DUMMY = 4,
+
     /**
      * Used by \ref Aura::HandleModConfuse, will either confuse or unconfuse
      * the target depending on whether the apply flag is set
@@ -66,12 +69,14 @@ enum AuraType
     SPELL_AURA_MOD_CONFUSE = 5,
     SPELL_AURA_MOD_CHARM = 6,
     SPELL_AURA_MOD_FEAR = 7,
+
     /**
      * The aura will do periodic heals of a target, handled by
      * \ref Aura::HandlePeriodicHeal, uses \ref Unit::SpellHealingBonusDone
      * to calculate whether to increase or decrease \ref Modifier::m_amount
      */
     SPELL_AURA_PERIODIC_HEAL = 8,
+
     /**
      * Changes the attackspeed, the \ref Modifier::m_amount decides
      * how much we change in percent, ie, if the m_amount is
@@ -81,6 +86,7 @@ enum AuraType
     //This doesn't make sense if you look at SpellAuras.cpp:2696
     //Where a bitwise check is made, but the SpellSchools enum is just
     //a normal enumeration, not in the style: 1 2 4 8 ...
+
     /**
      * Modifies the threat that the \ref Aura does in percent,
      * the \ref Modifier::m_miscvalue decides which of the SpellSchools
@@ -88,48 +94,57 @@ enum AuraType
      * \see SpellSchoolMask
      */
     SPELL_AURA_MOD_THREAT = 10,
+
     /**
      * Just applies a taunt which will change the threat a mob has
      * Taken care of in \ref Aura::HandleModThreat
      */
     SPELL_AURA_MOD_TAUNT = 11,
+
     /**
      * Stuns targets in different ways, taken care of in
      * \ref Aura::HandleAuraModStun
      */
     SPELL_AURA_MOD_STUN = 12,
+
     /**
      * Changes the damage done by a weapon in any hand, the \ref Modifier::m_miscvalue
      * will tell what school the damage is from, it's used as a bitmask
      * \see SpellSchoolMask
      */
     SPELL_AURA_MOD_DAMAGE_DONE = 13,
+
     /**
      * Not handled by the Aura class but instead this is implemented in
      * \ref Unit::MeleeDamageBonusTaken and \ref Unit::SpellBaseDamageBonusTaken
      */
     SPELL_AURA_MOD_DAMAGE_TAKEN = 14,
+
     /**
      * Not handled by the \ref Aura class, implemented in \ref Unit::DealMeleeDamage
      */
     SPELL_AURA_DAMAGE_SHIELD = 15,
+
     /**
      * Taken care of in \ref Aura::HandleModStealth, take note that this
      * is not the same thing as invisibility
      */
     SPELL_AURA_MOD_STEALTH = 16,
+
     /**
      * Not handled by the \ref Aura class, implemented in \ref Unit::IsVisibleForOrDetect
      * which does a lot of checks to determine whether the person is visible or not,
      * the \ref AuraType::SPELL_AURA_MOD_STEALTH seems to determine how in/visible ie a rogue is.
      */
     SPELL_AURA_MOD_STEALTH_DETECT = 17,
+
     /**
      * Handled by \ref Aura::HandleInvisibility, the \ref Modifier::m_miscvalue in the struct
      * seems to decide what kind of invisibility it is with a bitflag. the miscvalue
      * decides which bit is set, ie: 3 would make the 3rd bit be set.
      */
     SPELL_AURA_MOD_INVISIBILITY = 18,
+
     /**
      * Adds one of the kinds of detections to the possible detections.
      * As in \ref AuraType::SPEALL_AURA_MOD_INVISIBILITY the \ref Modifier::m_miscvalue seems to decide
@@ -138,6 +153,7 @@ enum AuraType
     SPELL_AURA_MOD_INVISIBILITY_DETECTION = 19,
     SPELL_AURA_OBS_MOD_HEALTH = 20,                         // 20,21 unofficial
     SPELL_AURA_OBS_MOD_MANA = 21,
+
     /**
      * Handled by \ref Aura::HandleAuraModResistance, changes the resistance for a \ref Unit
      * the field \ref Modifier::m_miscvalue decides which kind of resistance that should
@@ -145,25 +161,30 @@ enum AuraType
      * \see SpellSchools
      */
     SPELL_AURA_MOD_RESISTANCE = 22,
+
     /**
      * Currently just sets \ref Aura::m_isPeriodic to apply and has a special case
      * for Curse of the Plaguebringer.
      */
     SPELL_AURA_PERIODIC_TRIGGER_SPELL = 23,
+
     /**
      * Just sets \ref Aura::m_isPeriodic to apply
      */
     SPELL_AURA_PERIODIC_ENERGIZE = 24,
+
     /**
      * Changes whether the target is pacified or not depending on the apply flag.
      * Pacify makes the target silenced and have all it's attack skill disabled.
      * See: http://www.wowhead.com/spell=6462/pacified
      */
     SPELL_AURA_MOD_PACIFY = 25,
+
     /**
      * Roots or unroots the target
      */
     SPELL_AURA_MOD_ROOT = 26,
+
     /**
      * Silences the target and stops and spell casts that should be stopped,
      * they have the flag \ref SpellPreventionType::SPELL_PREVENTION_TYPE_SILENCE
@@ -341,5 +362,6 @@ enum AreaAuraType
     AREA_AURA_PARTY,
     AREA_AURA_PET
 };
+
 /** @} */
 #endif

@@ -31,6 +31,7 @@
 
 // Note: m_opcode and size stored in platfom dependent format
 // ignore endianess until send, and converted at receive
+
 /**
  * @brief
  *
@@ -45,13 +46,15 @@ class WorldPacket : public ByteBuffer
         WorldPacket() : ByteBuffer(0), m_opcode(MSG_NULL_ACTION)
         {
         }
+
         /**
          * @brief
          *
          * @param opcode
          * @param res
          */
-        explicit WorldPacket(uint16 opcode, size_t res = 200) : ByteBuffer(res), m_opcode(opcode) { }
+        explicit WorldPacket(uint16 opcode, size_t res = 200) : ByteBuffer(res), m_opcode(opcode) {}
+
         /**
          * @brief copy constructor
          *
@@ -80,12 +83,14 @@ class WorldPacket : public ByteBuffer
          * @return uint16
          */
         uint16 GetOpcode() const { return m_opcode; }
+
         /**
          * @brief
          *
          * @param opcode
          */
         void SetOpcode(uint16 opcode) { m_opcode = opcode; }
+
         /**
          * @brief
          *

@@ -49,6 +49,12 @@ OutdoorPvPEP::OutdoorPvPEP() : OutdoorPvP(),
     sObjectMgr.SetGraveYardLinkTeam(GRAVEYARD_ID_EASTERN_PLAGUE, GRAVEYARD_ZONE_EASTERN_PLAGUE, TEAM_INVALID);
 }
 
+/**
+ * @brief Appends the Eastern Plaguelands world states for a newly entering player.
+ *
+ * @param data The world-state packet being built.
+ * @param count The number of world states appended.
+ */
 void OutdoorPvPEP::FillInitialWorldStates(WorldPacket& data, uint32& count)
 {
     FillInitialWorldState(data, count, WORLD_STATE_EP_TOWER_COUNT_ALLIANCE, m_towersAlliance);
@@ -60,6 +66,11 @@ void OutdoorPvPEP::FillInitialWorldStates(WorldPacket& data, uint32& count)
     }
 }
 
+/**
+ * @brief Removes Eastern Plaguelands world states from a player leaving the zone.
+ *
+ * @param player The player to update.
+ */
 void OutdoorPvPEP::SendRemoveWorldStates(Player* player)
 {
     for (uint8 i = 0; i < MAX_EP_TOWERS; ++i)
@@ -68,6 +79,12 @@ void OutdoorPvPEP::SendRemoveWorldStates(Player* player)
     }
 }
 
+/**
+ * @brief Handles player entry into the Eastern Plaguelands outdoor PvP zone.
+ *
+ * @param player The entering player.
+ * @param isMainZone True when entering the primary zone rather than an affected zone.
+ */
 void OutdoorPvPEP::HandlePlayerEnterZone(Player* player, bool isMainZone)
 {
     OutdoorPvP::HandlePlayerEnterZone(player, isMainZone);
@@ -98,6 +115,12 @@ void OutdoorPvPEP::HandlePlayerEnterZone(Player* player, bool isMainZone)
     }
 }
 
+/**
+ * @brief Handles player exit from the Eastern Plaguelands outdoor PvP zone.
+ *
+ * @param player The leaving player.
+ * @param isMainZone True when leaving the primary zone rather than an affected zone.
+ */
 void OutdoorPvPEP::HandlePlayerLeaveZone(Player* player, bool isMainZone)
 {
     // remove the buff from the player
@@ -109,6 +132,11 @@ void OutdoorPvPEP::HandlePlayerLeaveZone(Player* player, bool isMainZone)
     OutdoorPvP::HandlePlayerLeaveZone(player, isMainZone);
 }
 
+/**
+ * @brief Tracks and initializes Eastern Plaguelands creatures relevant to tower control.
+ *
+ * @param creature The created creature.
+ */
 void OutdoorPvPEP::HandleCreatureCreate(Creature* creature)
 {
     switch (creature->GetEntry())
@@ -127,6 +155,11 @@ void OutdoorPvPEP::HandleCreatureCreate(Creature* creature)
     }
 }
 
+/**
+ * @brief Tracks and initializes Eastern Plaguelands game objects relevant to tower control.
+ *
+ * @param go The created game object.
+ */
 void OutdoorPvPEP::HandleGameObjectCreate(GameObject* go)
 {
     OutdoorPvP::HandleGameObjectCreate(go);
@@ -173,6 +206,13 @@ void OutdoorPvPEP::HandleGameObjectCreate(GameObject* go)
     }
 }
 
+/**
+ * @brief Rewards players when an Eastern Plaguelands tower objective completes.
+ *
+ * @param eventId The completed event id.
+ * @param players The nearby players considered for rewards.
+ * @param team The team receiving credit.
+ */
 void OutdoorPvPEP::HandleObjectiveComplete(uint32 eventId, const std::list<Player*> &players, Team team)
 {
     uint32 credit;
@@ -242,6 +282,15 @@ bool OutdoorPvPEP::HandleEvent(uint32 eventId, GameObject* go)
     return false;
 }
 
+/**
+ * @brief Applies state changes for a tower capture, loss, or neutralization event.
+ *
+ * @param go The capture point game object.
+ * @param towerId The tower identifier.
+ * @param team The new controlling team.
+ * @param newWorldState The new tower world-state id.
+ * @return true if the capture event was fully handled in code; otherwise false.
+ */
 bool OutdoorPvPEP::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team, uint32 newWorldState)
 {
     if (team == ALLIANCE)
@@ -367,6 +416,13 @@ bool OutdoorPvPEP::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team
     return eventHandled;
 }
 
+/**
+ * @brief Handles Eastern Plaguelands-specific game object use logic.
+ *
+ * @param player The player using the object.
+ * @param go The used game object.
+ * @return true if the use was fully handled; otherwise false.
+ */
 bool OutdoorPvPEP::HandleGameObjectUse(Player* /*player*/, GameObject* go)
 {
     // prevent despawning after go use
@@ -378,6 +434,12 @@ bool OutdoorPvPEP::HandleGameObjectUse(Player* /*player*/, GameObject* go)
     return false;
 }
 
+/**
+ * @brief Registers a tower banner and applies its current art kit.
+ *
+ * @param go The banner game object.
+ * @param towerId The associated tower identifier.
+ */
 void OutdoorPvPEP::InitBanner(GameObject* go, uint32 towerId)
 {
     m_towerBanners[towerId].push_back(go->GetObjectGuid());

@@ -22,6 +22,20 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGround.cpp
+ * @brief Core implementation of the battleground system.
+ *
+ * This file contains the implementation of the BattleGround base class, which provides:
+ * - Battleground state management (waiting, in-progress, finished)
+ * - Player management (joining, leaving, tracking)
+ * - Event handling and broadcasting
+ * - Reward distribution and scoring
+ * - World state synchronization
+ * - Team management and raid groups
+ * - Creature and game object spawning
+ */
+
 #include "Object.h"
 #include "Player.h"
 #include "BattleGround.h"
@@ -128,7 +142,6 @@ namespace MaNGOS
         va_list* i_args;
     };
 
-
     class BattleGround2ChatBuilder
     {
     public:
@@ -200,19 +213,22 @@ namespace MaNGOS
     };
 } // namespace MaNGOS
 
+template<class Do>
+
 /**
  * @brief Broadcasts a worker function to all players in the battleground.
  *
  * @param _do The worker function.
  */
-template<class Do>
 void BattleGround::BroadcastWorker(Do& _do)
 {
     for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
         if (Player* plr = sObjectAccessor.FindPlayer(itr->first))
         {
             _do(plr);
         }
+    }
 }
 
 /**

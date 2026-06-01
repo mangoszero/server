@@ -22,6 +22,21 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file AuctionHouseHandler.cpp
+ * @brief Auction house opcode handlers
+ *
+ * This file handles auction house-related opcodes including:
+ * - CMSG_AUCTION_HELLO: Open auction house interface
+ * - CMSG_AUCTION_LIST_ITEMS: List auction items
+ * - CMSG_AUCTION_SELL_ITEM: Sell item on auction
+ * - CMSG_AUCTION_BID: Bid on auction
+ * - CMSG_AUCTION_REMOVE_ITEM: Cancel auction
+ *
+ * The auction house allows players to buy and sell items
+ * with other players using the in-game currency.
+ */
+
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Opcodes.h"
@@ -220,6 +235,12 @@ void WorldSession::SendAuctionCancelledToBidderMail(AuctionEntry* auction)
     }
 }
 
+/**
+ * @brief Resolves the auction house entry for a player or auctioneer interaction.
+ *
+ * @param guid The guid of the player or auctioneer being used.
+ * @return AuctionHouseEntry const* The resolved auction house entry, or NULL when access is invalid.
+ */
 AuctionHouseEntry const* WorldSession::GetCheckedAuctionHouseForAuctioneer(ObjectGuid guid)
 {
     Unit* auctioneer;

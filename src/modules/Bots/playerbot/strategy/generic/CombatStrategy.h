@@ -7,7 +7,10 @@ namespace ai
     public:
         CombatStrategy(PlayerbotAI* ai) : Strategy(ai) {}
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual int GetType() { return STRATEGY_TYPE_COMBAT; }
+        virtual int GetType()
+        {
+            return STRATEGY_TYPE_COMBAT;
+        }
     };
 
 }

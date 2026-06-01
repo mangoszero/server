@@ -35,6 +35,7 @@
 #include "Database/QueryResultMysql.h"
 #include "Database/Database.h"
 #include "Database/DatabaseMysql.h"
+
 /**
  * @brief
  *

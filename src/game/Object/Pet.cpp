@@ -35,7 +35,6 @@
 #include "movement/MoveSpline.h"
 #include "movement/MoveSplineInit.h"
 
-
 // numbers represent minutes * 100 while happy (you get 100 loyalty points per min while happy)
 uint32 const LevelUpLoyalty[6] =
 {
@@ -57,6 +56,11 @@ uint32 const LevelStartLoyalty[6] =
     17500,
 };
 
+/**
+ * @brief Creates a pet instance of the specified type.
+ *
+ * @param type The pet type to initialize.
+ */
 Pet::Pet(PetType type) :
     Creature(CREATURE_SUBTYPE_PET),
     m_TrainingPoints(0), m_resetTalentsCost(0), m_resetTalentsTime(0),
@@ -80,10 +84,16 @@ Pet::Pet(PetType type) :
     }
 }
 
+/**
+ * @brief Destroys the pet instance.
+ */
 Pet::~Pet()
 {
 }
 
+/**
+ * @brief Adds the pet to the world and object store.
+ */
 void Pet::AddToWorld()
 {
     ///- Register the pet for guid lookup
@@ -95,6 +105,9 @@ void Pet::AddToWorld()
     Unit::AddToWorld();
 }
 
+/**
+ * @brief Removes the pet from the world and object store.
+ */
 void Pet::RemoveFromWorld()
 {
     ///- Remove the pet from the accessor
@@ -107,6 +120,15 @@ void Pet::RemoveFromWorld()
     Unit::RemoveFromWorld();
 }
 
+/**
+ * @brief Loads a pet from the database for an owner.
+ *
+ * @param owner The player owning the pet.
+ * @param petentry Optional creature entry filter.
+ * @param petnumber Optional pet number filter.
+ * @param current true to load the current pet.
+ * @return true if the pet was loaded successfully; otherwise, false.
+ */
 bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool current)
 {
     m_loading = true;
@@ -160,7 +182,6 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
         delete result;
         return false;
     }
-
 
     uint32 summon_spell_id = fields[21].GetUInt32();
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(summon_spell_id);
@@ -404,6 +425,11 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     return true;
 }
 
+/**
+ * @brief Saves the pet to the database using the specified save mode.
+ *
+ * @param mode The pet save mode to apply.
+ */
 void Pet::SavePetToDB(PetSaveMode mode)
 {
     if (!GetEntry())
@@ -439,7 +465,7 @@ void Pet::SavePetToDB(PetSaveMode mode)
         }
         // not save pet as current if another pet temporary unsummoned
         else if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
-                 pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
+                pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
         {
             // pet will lost anyway at restore temporary unsummoned
             if (getPetType() == HUNTER_PET)
@@ -474,7 +500,6 @@ void Pet::SavePetToDB(PetSaveMode mode)
         _SaveSpells();
         _SaveSpellCooldowns();
         _SaveAuras();
-
 
         uint32 ownerLow = GetOwnerGuid().GetCounter();
         // remove current data
@@ -562,6 +587,12 @@ void Pet::SavePetToDB(PetSaveMode mode)
     }
 }
 
+/**
+ * @brief Deletes pet-related database records.
+ *
+ * @param guidlow The pet number identifier.
+ * @param separate_transaction true to wrap deletion in its own transaction.
+ */
 void Pet::DeleteFromDB(uint32 guidlow, bool separate_transaction)
 {
     if (separate_transaction)
@@ -592,6 +623,11 @@ void Pet::DeleteFromDB(uint32 guidlow, bool separate_transaction)
     }
 }
 
+/**
+ * @brief Updates the pet death state and related pet-specific behavior.
+ *
+ * @param s The new death state.
+ */
 void Pet::SetDeathState(DeathState s)                       // overwrite virtual Creature::SetDeathState and Unit::SetDeathState
 {
     Creature::SetDeathState(s);
@@ -622,6 +658,12 @@ void Pet::SetDeathState(DeathState s)                       // overwrite virtual
     CastOwnerTalentAuras();
 }
 
+/**
+ * @brief Updates the pet each server tick.
+ *
+ * @param update_diff The elapsed time since the last update in milliseconds.
+ * @param diff The world update time forwarded to base update logic.
+ */
 void Pet::Update(uint32 update_diff, uint32 diff)
 {
     if (m_removed)                                          // pet already removed, just wait in remove queue, no updates
@@ -651,7 +693,6 @@ void Pet::Update(uint32 update_diff, uint32 diff)
                 Unsummon(PET_SAVE_REAGENTS);
                 return;
             }
-
 
             if (isControlled())
             {
@@ -687,6 +728,11 @@ void Pet::Update(uint32 update_diff, uint32 diff)
     Creature::Update(update_diff, diff);
 }
 
+/**
+ * @brief Synchronizes pet transport boarding state with its owner.
+ *
+ * @param plOwner The owning player.
+ */
 void Pet::UpdateTransport(Player* plOwner)
 {
     Transport* tr = plOwner->GetTransport();
@@ -752,6 +798,16 @@ void Pet::UpdateTransport(Player* plOwner)
     }
 }
 
+/**
+ * @brief Handles follow movement while the owner is on a transport.
+ *
+ * @param target The unit being followed.
+ * @param offset The follow distance offset.
+ * @param angle The follow angle.
+ * @param walking true to use walking speed.
+ * @param outMoved Receives whether a movement update was launched.
+ * @return true if transport-specific handling was applied; otherwise, false.
+ */
 bool Pet::HandleTransportFollow(Unit* target, float offset, float angle, bool walking, bool& outMoved)
 {
     outMoved = false;
@@ -825,6 +881,11 @@ bool Pet::HandleTransportFollow(Unit* target, float offset, float angle, bool wa
     return true;
 }
 
+/**
+ * @brief Regenerates pet health, power, happiness, and loyalty timers.
+ *
+ * @param update_diff The elapsed time since the last update in milliseconds.
+ */
 void Pet::RegenerateAll(uint32 update_diff)
 {
     // regenerate focus
@@ -870,6 +931,9 @@ void Pet::RegenerateAll(uint32 update_diff)
     }
 }
 
+/**
+ * @brief Decreases hunter pet happiness over time.
+ */
 void Pet::LooseHappiness()
 {
     uint32 curValue = GetPower(POWER_HAPPINESS);
@@ -885,6 +949,11 @@ void Pet::LooseHappiness()
     ModifyPower(POWER_HAPPINESS, -addvalue);
 }
 
+/**
+ * @brief Modifies hunter pet loyalty points and rank transitions.
+ *
+ * @param addvalue The loyalty delta to apply.
+ */
 void Pet::ModifyLoyalty(int32 addvalue)
 {
     uint32 loyaltylevel = GetLoyaltyLevel();
@@ -935,6 +1004,9 @@ void Pet::ModifyLoyalty(int32 addvalue)
     }
 }
 
+/**
+ * @brief Applies the periodic loyalty change based on the pet's happiness state.
+ */
 void Pet::TickLoyaltyChange()
 {
     int32 addvalue;
@@ -950,6 +1022,11 @@ void Pet::TickLoyaltyChange()
     ModifyLoyalty(addvalue);
 }
 
+/**
+ * @brief Grants a loyalty bonus after a kill.
+ *
+ * @param level The defeated creature level.
+ */
 void Pet::KillLoyaltyBonus(uint32 level)
 {
     if (level > 100)
@@ -962,6 +1039,11 @@ void Pet::KillLoyaltyBonus(uint32 level)
     ModifyLoyalty(bonus);
 }
 
+/**
+ * @brief Gets the current hunter pet happiness state.
+ *
+ * @return The happiness state.
+ */
 HappinessState Pet::GetHappinessState()
 {
     if (GetPower(POWER_HAPPINESS) < HAPPINESS_LEVEL_SIZE)
@@ -978,11 +1060,22 @@ HappinessState Pet::GetHappinessState()
     }
 }
 
+/**
+ * @brief Sets the hunter pet loyalty level field.
+ *
+ * @param level The loyalty level to store.
+ */
 void Pet::SetLoyaltyLevel(LoyaltyLevel level)
 {
     SetByteValue(UNIT_FIELD_BYTES_1, 1, level);
 }
 
+/**
+ * @brief Checks whether the pet can learn another active spell family.
+ *
+ * @param spellid The spell being evaluated.
+ * @return true if another active spell can be learned; otherwise, false.
+ */
 bool Pet::CanTakeMoreActiveSpells(uint32 spellid)
 {
     uint8  activecount = 1;
@@ -1032,6 +1125,12 @@ bool Pet::CanTakeMoreActiveSpells(uint32 spellid)
     return true;
 }
 
+/**
+ * @brief Checks whether the pet has enough training points for a spell.
+ *
+ * @param spellid The spell being evaluated.
+ * @return true if the pet can afford the spell; otherwise, false.
+ */
 bool Pet::HasTPForSpell(uint32 spellid)
 {
     int32 neededtrainp = GetTPForSpell(spellid);
@@ -1042,6 +1141,12 @@ bool Pet::HasTPForSpell(uint32 spellid)
     return true;
 }
 
+/**
+ * @brief Computes the net training point cost for learning a spell.
+ *
+ * @param spellid The spell to evaluate.
+ * @return The training point cost delta.
+ */
 int32 Pet::GetTPForSpell(uint32 spellid)
 {
     uint32 basetrainp = 0;
@@ -1086,6 +1191,12 @@ int32 Pet::GetTPForSpell(uint32 spellid)
     return int32(basetrainp) - int32(spenttrainp);
 }
 
+/**
+ * @brief Gets the maximum loyalty points for a loyalty rank.
+ *
+ * @param level The loyalty rank.
+ * @return The maximum loyalty points for that rank.
+ */
 uint32 Pet::GetMaxLoyaltyPoints(uint32 level)
 {
     if (level < 1)
@@ -1099,6 +1210,12 @@ uint32 Pet::GetMaxLoyaltyPoints(uint32 level)
     return LevelUpLoyalty[level - 1];
 }
 
+/**
+ * @brief Gets the starting loyalty points for a loyalty rank.
+ *
+ * @param level The loyalty rank.
+ * @return The starting loyalty points for that rank.
+ */
 uint32 Pet::GetStartLoyaltyPoints(uint32 level)
 {
     if (level < 1)
@@ -1112,12 +1229,22 @@ uint32 Pet::GetStartLoyaltyPoints(uint32 level)
     return LevelStartLoyalty[level - 1];
 }
 
+/**
+ * @brief Sets the pet training points and updates the display field.
+ *
+ * @param TP The new training point value.
+ */
 void Pet::SetTP(int32 TP)
 {
     m_TrainingPoints = TP;
     SetUInt32Value(UNIT_TRAINING_POINTS, (uint32)GetDispTP());
 }
 
+/**
+ * @brief Gets the client-visible training point display value.
+ *
+ * @return The displayed training point value.
+ */
 int32 Pet::GetDispTP()
 {
     if (getPetType() != HUNTER_PET)
@@ -1134,6 +1261,12 @@ int32 Pet::GetDispTP()
     }
 }
 
+/**
+ * @brief Unsummons the pet and optionally saves it.
+ *
+ * @param mode The pet save mode to use.
+ * @param owner Optional owner override.
+ */
 void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
 {
     if (!owner)
@@ -1236,6 +1369,11 @@ void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
     m_removed = true;
 }
 
+/**
+ * @brief Grants pet experience and handles leveling.
+ *
+ * @param xp The raw experience amount.
+ */
 void Pet::GivePetXP(uint32 xp)
 {
     xp *= sWorld.getConfig(CONFIG_FLOAT_RATE_XP_PETKILL);
@@ -1285,6 +1423,11 @@ void Pet::GivePetXP(uint32 xp)
     }
 }
 
+/**
+ * @brief Sets the pet to a new level and refreshes level-dependent stats.
+ *
+ * @param level The new level.
+ */
 void Pet::GivePetLevel(uint32 level)
 {
     if (!level || level == getLevel())
@@ -1302,6 +1445,12 @@ void Pet::GivePetLevel(uint32 level)
     SetTP(m_TrainingPoints + (GetLoyaltyLevel() - 1));
 }
 
+/**
+ * @brief Initializes base pet data from an existing creature.
+ *
+ * @param creature The source creature.
+ * @return true if initialization succeeded; otherwise, false.
+ */
 bool Pet::CreateBaseAtCreature(Creature* creature)
 {
     if (!creature)
@@ -1367,6 +1516,13 @@ bool Pet::CreateBaseAtCreature(Creature* creature)
     return true;
 }
 
+/**
+ * @brief Initializes pet stats for a given level.
+ *
+ * @param petlevel The target pet level.
+ * @param owner Optional owner override.
+ * @return true if initialization succeeded; otherwise, false.
+ */
 bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
 {
     CreatureInfo const* cinfo = GetCreatureInfo();
@@ -1594,6 +1750,12 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
     return true;
 }
 
+/**
+ * @brief Checks whether the pet can eat a specific food item.
+ *
+ * @param item The food item prototype.
+ * @return true if the food is valid for this pet; otherwise, false.
+ */
 bool Pet::HaveInDiet(ItemPrototype const* item) const
 {
     if (!item->FoodType)
@@ -1618,6 +1780,12 @@ bool Pet::HaveInDiet(ItemPrototype const* item) const
     return diet & FoodMask;
 }
 
+/**
+ * @brief Computes the happiness benefit gained from a food level.
+ *
+ * @param itemlevel The level of the consumed food item.
+ * @return The happiness benefit value.
+ */
 uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)
 {
     // -5 or greater food level
@@ -1642,6 +1810,9 @@ uint32 Pet::GetCurrentFoodBenefitLevel(uint32 itemlevel)
     }
 }
 
+/**
+ * @brief Loads saved pet spell cooldowns from the database.
+ */
 void Pet::_LoadSpellCooldowns()
 {
     m_CreatureSpellCooldowns.clear();
@@ -1693,6 +1864,9 @@ void Pet::_LoadSpellCooldowns()
     }
 }
 
+/**
+ * @brief Saves active pet spell cooldowns to the database.
+ */
 void Pet::_SaveSpellCooldowns()
 {
     static SqlStatementID delSpellCD ;
@@ -1719,6 +1893,9 @@ void Pet::_SaveSpellCooldowns()
     }
 }
 
+/**
+ * @brief Loads pet spells from the database.
+ */
 void Pet::_LoadSpells()
 {
     QueryResult* result = CharacterDatabase.PQuery("SELECT `spell`,`active` FROM `pet_spell` WHERE `guid` = '%u'", m_charmInfo->GetPetNumber());
@@ -1737,6 +1914,9 @@ void Pet::_LoadSpells()
     }
 }
 
+/**
+ * @brief Saves pet spells to the database.
+ */
 void Pet::_SaveSpells()
 {
     static SqlStatementID delSpell ;
@@ -1784,6 +1964,11 @@ void Pet::_SaveSpells()
     }
 }
 
+/**
+ * @brief Loads persistent pet auras from the database.
+ *
+ * @param timediff Time elapsed since last save, in seconds.
+ */
 void Pet::_LoadAuras(uint32 timediff)
 {
     RemoveAllAuras();
@@ -1896,6 +2081,9 @@ void Pet::_LoadAuras(uint32 timediff)
     }
 }
 
+/**
+ * @brief Saves persistent pet auras to the database.
+ */
 void Pet::_SaveAuras()
 {
     static SqlStatementID delAuras ;
@@ -1988,6 +2176,15 @@ void Pet::_SaveAuras()
     }
 }
 
+/**
+ * @brief Adds a spell to the pet spellbook.
+ *
+ * @param spell_id The spell to add.
+ * @param active The desired active state.
+ * @param state The persistence state of the spell.
+ * @param type The pet spell category.
+ * @return true if the spell was added; otherwise, false.
+ */
 bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpellState state /*= PETSPELL_NEW*/, PetSpellType type /*= PETSPELL_NORMAL*/)
 {
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id);
@@ -2111,6 +2308,12 @@ bool Pet::addSpell(uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpe
     return true;
 }
 
+/**
+ * @brief Learns a spell for the pet.
+ *
+ * @param spell_id The spell to learn.
+ * @return true if the spell was learned; otherwise, false.
+ */
 bool Pet::learnSpell(uint32 spell_id)
 {
     // prevent duplicated entires in spell book
@@ -2130,6 +2333,14 @@ bool Pet::learnSpell(uint32 spell_id)
     return true;
 }
 
+/**
+ * @brief Unlearns a pet spell.
+ *
+ * @param spell_id The spell to remove.
+ * @param learn_prev true to relearn the previous rank.
+ * @param clear_ab true to clear the action bar slot when needed.
+ * @return true if the spell was removed; otherwise, false.
+ */
 bool Pet::unlearnSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
 {
     if (removeSpell(spell_id, learn_prev, clear_ab))
@@ -2139,6 +2350,14 @@ bool Pet::unlearnSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
     return false;
 }
 
+/**
+ * @brief Removes a spell from the pet spellbook.
+ *
+ * @param spell_id The spell to remove.
+ * @param learn_prev true to relearn the previous rank.
+ * @param clear_ab true to clear the action bar slot when needed.
+ * @return true if the spell was removed; otherwise, false.
+ */
 bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
 {
     PetSpellMap::iterator itr = m_spells.find(spell_id);
@@ -2192,6 +2411,9 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
     return true;
 }
 
+/**
+ * @brief Removes unknown spells from the pet action bar.
+ */
 void Pet::CleanupActionBar()
 {
     for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
@@ -2203,6 +2425,9 @@ void Pet::CleanupActionBar()
                 }
 }
 
+/**
+ * @brief Initializes the pet spellbook and action bar for a newly created pet.
+ */
 void Pet::InitPetCreateSpells()
 {
     m_charmInfo->InitPetActionBar();
@@ -2269,6 +2494,11 @@ void Pet::InitPetCreateSpells()
     SetTP(-usedtrainpoints);
 }
 
+/**
+ * @brief Checks whether a teachable pet spell should teach the owner.
+ *
+ * @param spellid The pet spell that may trigger teaching.
+ */
 void Pet::CheckLearning(uint32 spellid)
 {
     // charmed case -> prevent crash
@@ -2297,6 +2527,11 @@ void Pet::CheckLearning(uint32 spellid)
     }
 }
 
+/**
+ * @brief Computes the current pet talent reset cost.
+ *
+ * @return The reset cost in copper.
+ */
 uint32 Pet::resetTalentsCost() const
 {
     uint32 days = uint32(sWorld.GetGameTime() - m_resetTalentsTime) / DAY;
@@ -2323,6 +2558,12 @@ uint32 Pet::resetTalentsCost() const
     }
 }
 
+/**
+ * @brief Enables or disables autocast for a pet spell.
+ *
+ * @param spellid The spell to update.
+ * @param apply true to enable autocast; false to disable it.
+ */
 void Pet::ToggleAutocast(uint32 spellid, bool apply)
 {
     if (IsPassiveSpell(spellid))
@@ -2379,6 +2620,12 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
     }
 }
 
+/**
+ * @brief Checks whether the pet is permanent for a player.
+ *
+ * @param owner The owning player.
+ * @return true if the pet should persist; otherwise, false.
+ */
 bool Pet::IsPermanentPetFor(Player* owner)
 {
     switch (getPetType())
@@ -2400,6 +2647,15 @@ bool Pet::IsPermanentPetFor(Player* owner)
     }
 }
 
+/**
+ * @brief Creates the pet world object from creature data.
+ *
+ * @param guidlow The low GUID to use.
+ * @param cPos The creation position.
+ * @param cinfo The creature template.
+ * @param pet_number The pet number identifier.
+ * @return true if creation succeeded; otherwise, false.
+ */
 bool Pet::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* cinfo, uint32 pet_number)
 {
     SetMap(cPos.GetMap());
@@ -2431,6 +2687,12 @@ bool Pet::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo const* ci
     return true;
 }
 
+/**
+ * @brief Checks whether the pet currently knows a spell.
+ *
+ * @param spell The spell identifier.
+ * @return true if the spell is present and not removed; otherwise, false.
+ */
 bool Pet::HasSpell(uint32 spell) const
 {
     PetSpellMap::const_iterator itr = m_spells.find(spell);
@@ -2438,6 +2700,10 @@ bool Pet::HasSpell(uint32 spell) const
 }
 
 // Get all passive spells in our skill line
+
+/**
+ * @brief Learns passive family spells for the pet.
+ */
 void Pet::LearnPetPassives()
 {
     CreatureInfo const* cInfo = GetCreatureInfo();
@@ -2462,6 +2728,11 @@ void Pet::LearnPetPassives()
     }
 }
 
+/**
+ * @brief Applies owner pet auras to the pet.
+ *
+ * @param current true if this is the currently summoned permanent pet.
+ */
 void Pet::CastPetAuras(bool current)
 {
     Unit* owner = GetOwner();
@@ -2491,6 +2762,9 @@ void Pet::CastPetAuras(bool current)
     }
 }
 
+/**
+ * @brief Applies owner talent auras that should affect the pet.
+ */
 void Pet::CastOwnerTalentAuras()
 {
     if (!GetOwner() || GetOwner()->GetTypeId() != TYPEID_PLAYER)
@@ -2498,10 +2772,14 @@ void Pet::CastOwnerTalentAuras()
         return;
     }
 
-
     // Add below code handling spells cast by pet when owner/player has aura from talent
 }
 
+/**
+ * @brief Casts a specific pet aura effect.
+ *
+ * @param aura The pet aura definition to apply.
+ */
 void Pet::CastPetAura(PetAura const* aura)
 {
     uint32 auraId = aura->GetAura(GetEntry());
@@ -2521,6 +2799,9 @@ void Pet::CastPetAura(PetAura const* aura)
     }
 }
 
+/**
+ * @brief Synchronizes pet level rules with the owner.
+ */
 void Pet::SynchronizeLevelWithOwner()
 {
     Unit* owner = GetOwner();
@@ -2547,6 +2828,12 @@ void Pet::SynchronizeLevelWithOwner()
     }
 }
 
+/**
+ * @brief Applies or removes pet mode flags and updates the owner client.
+ *
+ * @param mode The mode flag to modify.
+ * @param apply true to set the flag; false to clear it.
+ */
 void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
 {
     if (apply)
@@ -2570,6 +2857,13 @@ void Pet::ApplyModeFlags(PetModeFlags mode, bool apply)
     owner->ToPlayer()->SendDirectMessage(&data);
 }
 
+/**
+ * @brief Updates pet movement speed relative to owner modifiers.
+ *
+ * @param mtype The movement type to update.
+ * @param forced true to force an update packet.
+ * @param ratio Additional speed ratio multiplier.
+ */
 void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
 {
     Unit* unitOwner = GetOwner();
@@ -2676,6 +2970,12 @@ void Pet::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
     SetSpeedRate(mtype, speed * ratio, forced);
 }
 
+/**
+ * @brief Checks database state for an owner's current or available pet.
+ *
+ * @param owner The player whose pet data is being checked.
+ * @return The detected pet database status.
+ */
 PetDatabaseStatus Pet::GetStatusFromDB(Player* owner)
 {
     PetDatabaseStatus status = PET_DB_NO_PET;

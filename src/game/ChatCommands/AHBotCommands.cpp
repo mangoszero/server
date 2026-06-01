@@ -22,17 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
- /*
- *   AHBot related commands
+/**
+ * @file AHBotCommands.cpp
+ * @brief Implementation of auction house bot management chat commands.
+ *
+ * This file contains chat command handlers for configuring and managing the
+ * automated auction house bot system, including:
+ * - Bot rebuild and reload operations
+ * - Status information display
+ * - Item amount configuration by quality
+ * - Item distribution ratio settings
  */
 
 #include "Chat.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
-
  /**********************************************************************
-     Useful constants definition
- /***********************************************************************/
+    Useful constants definition
+  **********************************************************************/
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
@@ -42,10 +49,12 @@ static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
     LANG_AHBOT_QUALITY_YELLOW
 };
 
- /**********************************************************************
-     CommandTable : ahbotCommandTable
- /***********************************************************************/
-
+ /**
+ * @brief Rebuilds the auction house bot's inventory.
+ *
+ * @param args Command arguments: optional "all" flag to rebuild all auction houses.
+ * @returns True if the rebuild was initiated successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotRebuildCommand(char* args)
 {
     bool all = false;
@@ -62,6 +71,12 @@ bool ChatHandler::HandleAHBotRebuildCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Reloads the auction house bot configuration.
+ *
+ * @param args Command arguments (not used).
+ * @returns True if the reload was successful, false otherwise.
+ */
 bool ChatHandler::HandleAHBotReloadCommand(char* /*args*/)
 {
     if (sAuctionBot.ReloadAllConfig())
@@ -77,6 +92,12 @@ bool ChatHandler::HandleAHBotReloadCommand(char* /*args*/)
     }
 }
 
+/**
+ * @brief Displays the status of the auction house bot.
+ *
+ * @param args Command arguments: optional "all" flag for detailed status information.
+ * @returns True if the status was displayed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotStatusCommand(char* args)
 {
     bool all = false;
@@ -150,10 +171,12 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : ahbotItemsAmountCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Sets the item amounts for all auction quality levels.
+ *
+ * @param args Command arguments: seven values for each quality level (grey, white, green, blue, purple, orange, yellow).
+ * @returns True if the items amount was set successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
 {
     uint32 qVals[MAX_AUCTION_QUALITY];
@@ -173,7 +196,21 @@ bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Template function to set item amount for a specific quality level.
+ *
+ * @tparam Q The auction quality level to configure.
+ * @param args Command arguments: value for the specified quality level.
+ * @returns True if the quality item amount was set successfully, false otherwise.
+ */
 template<int Q>
+
+/**
+ * @brief Handler for HandleAHBotItemsAmountQualityCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotItemsAmountQualityCommand(char* args)
 {
     uint32 qVal;
@@ -195,10 +232,12 @@ template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_
 template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_ORANGE>(char*);
 template bool ChatHandler::HandleAHBotItemsAmountQualityCommand<AUCTION_QUALITY_YELLOW>(char*);
 
-/**********************************************************************
-    CommandTable : ahbotItemsRatioCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Sets the item distribution ratios for all auction houses.
+ *
+ * @param args Command arguments: three ratio values for alliance, horde, and neutral auction houses.
+ * @returns True if the item ratios were set successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
 {
     uint32 rVal[MAX_AUCTION_HOUSE_TYPE];
@@ -217,7 +256,21 @@ bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Template function to set item ratio for a specific auction house.
+ *
+ * @tparam H The auction house type to configure (alliance, horde, or neutral).
+ * @param args Command arguments: ratio value for the specified auction house.
+ * @returns True if the house item ratio was set successfully, false otherwise.
+ */
 template<int H>
+
+/**
+ * @brief Handler for HandleAHBotItemsRatioHouseCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAHBotItemsRatioHouseCommand(char* args)
 {
     uint32 rVal;

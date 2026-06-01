@@ -22,6 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MapUpdater.h
+ * @brief Header file for the MapUpdater class.
+ *
+ * This file contains the definition of the MapUpdater class which is responsible
+ * for managing and scheduling map updates. It includes:
+ * - MapUpdateRequest class for handling individual update requests
+ * - Thread management for concurrent map updates
+ * - Synchronization mechanisms for pending requests
+ */
+
 #ifndef _MAP_UPDATER_H_INCLUDED
 #define _MAP_UPDATER_H_INCLUDED
 
@@ -96,3 +107,4 @@ class MapUpdater
 };
 
 #endif //_MAP_UPDATER_H_INCLUDED
+

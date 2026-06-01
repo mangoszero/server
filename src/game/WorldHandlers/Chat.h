@@ -31,7 +31,6 @@
 #include "ObjectGuid.h"
 #include "Language.h"
 
-
 struct AreaTrigger;
 struct AreaTriggerEntry;
 struct FactionEntry;
@@ -64,21 +63,21 @@ class ChatCommand
         ChatCommand* ChildCommands;
 
         ChatCommand(
-          const char* pName,
-          uint32 pSecurityLevel,
-          bool pAllowConsole,
-          bool (ChatHandler::* pHandler)(char* args),
-          std::string pHelp,
-          ChatCommand* pChildCommands
+            const char* pName,
+            uint32 pSecurityLevel,
+            bool pAllowConsole,
+            bool (ChatHandler::* pHandler)(char* args),
+            std::string pHelp,
+            ChatCommand* pChildCommands
         )
-         : Id(-1)
+        : Id(-1)
         {
-          Name = pName;
-          SecurityLevel = pSecurityLevel;
-          AllowConsole = pAllowConsole;
-          Handler = pHandler;
-          Help = pHelp;
-          ChildCommands = pChildCommands;
+            Name = pName;
+            SecurityLevel = pSecurityLevel;
+            AllowConsole = pAllowConsole;
+            Handler = pHandler;
+            Help = pHelp;
+            ChildCommands = pChildCommands;
         }
 };
 
@@ -117,7 +116,6 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 #define RESET_MAIL_COMMAND_ARG_OPTION_ALL  "all"
 #define RESET_MAIL_COMMAND_ARG_OPTION_FROM "from"
 
-
 #define BITMASK_AND_SWITCH(x) \
     for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 
@@ -130,13 +128,13 @@ enum  ResetItemCommandArgFlags
     RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING    = 0x08,
     RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK    = 0x10,
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL        =
-     (
-        RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
-      | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
-      ),
+        (
+            RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
+            | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
+        ),
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS = RESET_ITEMS_COMMAND_FLAG_OPTION_ALL << 1 | 1, // Will also delete bank bags and equiped bags
 };
 
@@ -173,7 +171,10 @@ class ChatHandler
         ChatCommand const* FindCommand(char const* text);
 
         bool isValidChatMessage(const char* msg);
-        bool HasSentErrorMessage() { return sentErrorMessage;}
+        bool HasSentErrorMessage()
+        {
+            return sentErrorMessage;
+        }
 
         /**
         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
@@ -433,6 +434,7 @@ class ChatHandler
         bool HandleNpcFlagCommand(char* args);
         bool HandleNpcFollowCommand(char* args);
         bool HandleNpcInfoCommand(char* args);
+        bool HandleNpcWatchCommand(char* args);
         bool HandleNpcMoveCommand(char* args);
         bool HandleNpcPlayEmoteCommand(char* args);
         bool HandleNpcSayCommand(char* args);
@@ -837,6 +839,9 @@ class CliHandler : public ChatHandler
         Print* m_print;
 };
 
+/**
+ * Applies an aura spell directly to the target using the provided caster context.
+ */
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);
 
 #endif

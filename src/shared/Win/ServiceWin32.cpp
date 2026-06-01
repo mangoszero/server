@@ -57,6 +57,9 @@ SERVICE_STATUS_HANDLE serviceStatusHandle = 0;
 
 typedef WINADVAPI BOOL (WINAPI* CSD_T)(SC_HANDLE, DWORD, LPCVOID);
 
+/**
+ * Installs the MaNGOS Windows service and configures its recovery actions.
+ */
 bool WinServiceInstall()
 {
     CSD_T ChangeService_Config2;
@@ -80,19 +83,19 @@ bool WinServiceInstall()
     std::strcat(path, " -s run");
 
     SC_HANDLE service = CreateService(serviceControlManager,
-                                      serviceName,          // name of service
-                                      serviceLongName,      // service name to display
-                                      SERVICE_ALL_ACCESS,   // desired access
-                                      // service type
-                                      SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS,
-                                      SERVICE_AUTO_START,   // start type
-                                      SERVICE_ERROR_IGNORE, // error control type
-                                      path,                 // service's binary
-                                      0,                    // no load ordering group
-                                      0,                    // no tag identifier
-                                      0,                    // no dependencies
-                                      0,                    // LocalSystem account
-                                      0);                   // no password
+                                        serviceName,          // name of service
+                                        serviceLongName,      // service name to display
+                                        SERVICE_ALL_ACCESS,   // desired access
+                                        // service type
+                                        SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS,
+                                        SERVICE_AUTO_START,   // start type
+                                        SERVICE_ERROR_IGNORE, // error control type
+                                        path,                 // service's binary
+                                        0,                    // no load ordering group
+                                        0,                    // no tag identifier
+                                        0,                    // no dependencies
+                                        0,                    // LocalSystem account
+                                        0);                   // no password
 
     if (!service)
     {
@@ -144,6 +147,9 @@ bool WinServiceInstall()
     return true;
 }
 
+/**
+ * Uninstalls the MaNGOS Windows service if it is currently stopped.
+ */
 bool WinServiceUninstall()
 {
     SC_HANDLE serviceControlManager = OpenSCManager(0, 0, SC_MANAGER_CONNECT);
@@ -178,6 +184,9 @@ bool WinServiceUninstall()
     return true;
 }
 
+/**
+ * Handles Windows service control requests such as stop, pause, and continue.
+ */
 void WINAPI ServiceControlHandler(DWORD controlCode)
 {
     switch (controlCode)
@@ -221,6 +230,9 @@ void WINAPI ServiceControlHandler(DWORD controlCode)
     SetServiceStatus(serviceStatusHandle, &serviceStatus);
 }
 
+/**
+ * Entry point invoked by the Windows service manager for the MaNGOS service.
+ */
 void WINAPI ServiceMain(DWORD argc, char* argv[])
 {
     // initialise service status
@@ -284,6 +296,9 @@ void WINAPI ServiceMain(DWORD argc, char* argv[])
     }
 }
 
+/**
+ * Starts the Windows service control dispatcher for the MaNGOS service.
+ */
 bool WinServiceRun()
 {
     SERVICE_TABLE_ENTRY serviceTable[] =

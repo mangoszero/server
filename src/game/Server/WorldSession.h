@@ -59,44 +59,75 @@ class WorldSession;
 
 struct OpcodeHandler;
 
+/**
+ * @brief Party operation enumeration
+ */
 enum PartyOperation
 {
-    PARTY_OP_INVITE = 0,
-    PARTY_OP_LEAVE = 2,
+    PARTY_OP_INVITE = 0, ///< Invite to party
+    PARTY_OP_LEAVE = 2   ///< Leave party
 };
 
+/**
+ * @brief Party result enumeration
+ */
 enum PartyResult
 {
-    ERR_PARTY_RESULT_OK                 = 0,
-    ERR_BAD_PLAYER_NAME_S               = 1,
-    ERR_TARGET_NOT_IN_GROUP_S           = 2,
-    ERR_GROUP_FULL                      = 3,
-    ERR_ALREADY_IN_GROUP_S              = 4,
-    ERR_NOT_IN_GROUP                    = 5,
-    ERR_NOT_LEADER                      = 6,
-    ERR_PLAYER_WRONG_FACTION            = 7,
-    ERR_IGNORING_YOU_S                  = 8
+    ERR_PARTY_RESULT_OK = 0,       ///< Success
+    ERR_BAD_PLAYER_NAME_S = 1,     ///< Bad player name
+    ERR_TARGET_NOT_IN_GROUP_S = 2, ///< Target not in group
+    ERR_GROUP_FULL = 3,            ///< Group full
+    ERR_ALREADY_IN_GROUP_S = 4,    ///< Already in group
+    ERR_NOT_IN_GROUP = 5,          ///< Not in group
+    ERR_NOT_LEADER = 6,            ///< Not leader
+    ERR_PLAYER_WRONG_FACTION = 7,  ///< Player wrong faction
+    ERR_IGNORING_YOU_S = 8         ///< Ignoring you
 };
 
+/**
+ * @brief Tutorial data state enumeration
+ */
 enum TutorialDataState
 {
-    TUTORIALDATA_UNCHANGED = 0,
-    TUTORIALDATA_CHANGED   = 1,
-    TUTORIALDATA_NEW       = 2
+    TUTORIALDATA_UNCHANGED = 0, ///< Tutorial data unchanged
+    TUTORIALDATA_CHANGED = 1,   ///< Tutorial data changed
+    TUTORIALDATA_NEW = 2        ///< New tutorial data
 };
 
-// class to deal with packet processing
-// allows to determine if next packet is safe to be processed
+/**
+ * @brief Packet filter class
+ *
+ * Class to deal with packet processing.
+ * Allows to determine if next packet is safe to be processed.
+ */
 class PacketFilter
 {
     public:
+        /**
+         * @brief Constructor
+         * @param pSession World session
+         */
         explicit PacketFilter(WorldSession* pSession) : m_pSession(pSession) {}
+
+        /**
+         * @brief Virtual destructor
+         */
         virtual ~PacketFilter() {}
 
+        /**
+         * @brief Process packet
+         * @param packet World packet to process
+         * @return True if processed successfully
+         */
         virtual bool Process(WorldPacket* /*packet*/)
         {
             return true;
         }
+
+        /**
+         * @brief Process logout
+         * @return True if logout processed
+         */
         virtual bool ProcessLogout() const
         {
             return true;
@@ -105,54 +136,125 @@ class PacketFilter
     protected:
         WorldSession* const m_pSession;
 };
-// process only thread-safe packets in Map::Update()
+
+/**
+ * @brief Map session filter class
+ *
+ * Process only thread-safe packets in Map::Update().
+ */
 class MapSessionFilter : public PacketFilter
 {
     public:
+        /**
+         * @brief Constructor
+         * @param pSession World session
+         */
         explicit MapSessionFilter(WorldSession* pSession) : PacketFilter(pSession) {}
+
+        /**
+         * @brief Destructor
+         */
         ~MapSessionFilter() {}
 
+        /**
+         * @brief Process packet
+         * @param packet World packet to process
+         * @return True if processed successfully
+         */
         bool Process(WorldPacket* packet) override;
-        // in Map::Update() we do not process player logout!
+
+        /**
+         * @brief Process logout
+         *
+         * In Map::Update() we do not process player logout.
+         *
+         * @return False (logout not processed)
+         */
         bool ProcessLogout() const override
         {
             return false;
         }
 };
 
-// class used to filer only thread-unsafe packets from queue
-// in order to update only be used in World::UpdateSessions()
+/**
+ * @brief World session filter class
+ *
+ * Class used to filter only thread-unsafe packets from queue.
+ * Used in World::UpdateSessions().
+ */
 class WorldSessionFilter : public PacketFilter
 {
     public:
+        /**
+         * @brief Constructor
+         * @param pSession World session
+         */
         explicit WorldSessionFilter(WorldSession* pSession) : PacketFilter(pSession) {}
+
+        /**
+         * @brief Destructor
+         */
         ~WorldSessionFilter() {}
 
+        /**
+         * @brief Process packet
+         * @param packet World packet to process
+         * @return True if processed successfully
+         */
         bool Process(WorldPacket* packet) override;
 };
 
-/// Player session in the World
+/**
+ * @brief World session class
+ *
+ * Player session in the World.
+ */
 class WorldSession
 {
         friend class CharacterHandler;
 
     public:
+        /**
+         * @brief Constructor
+         * @param id Session ID
+         * @param sock World socket
+         * @param sec Account security level
+         * @param mute_time Mute time
+         * @param locale Locale
+         */
         WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_t mute_time, LocaleConstant locale);
+
+        /**
+         * @brief Destructor
+         */
         ~WorldSession();
 
+        /**
+         * @brief Check if player is loading
+         * @return True if loading
+         */
         bool PlayerLoading() const
         {
             return m_playerLoading;
         }
+
+        /**
+         * @brief Check if player is logging out
+         * @return True if logging out
+         */
         bool PlayerLogout() const
         {
             return m_playerLogout;
         }
+
+        /**
+         * @brief Check if player is logging out with save
+         * @return True if logging out with save
+         */
         bool PlayerLogoutWithSave() const
         {
             return m_playerLogout && m_playerSave;
         }
-
 
         void SizeError(WorldPacket const& packet, uint32 size) const;
 
@@ -734,7 +836,6 @@ class WorldSession
 
         // for Warden
         uint16 GetClientBuild() const { return _build; }
-
 
     private:
         // private trade methods

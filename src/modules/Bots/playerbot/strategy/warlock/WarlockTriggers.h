@@ -52,7 +52,10 @@ namespace ai
     public:
         WarlockConjuredItemTrigger(PlayerbotAI* ai, string item) : ItemCountTrigger(ai, item, 1) {}
 
-        virtual bool IsActive() { return ItemCountTrigger::IsActive() && AI_VALUE2(uint8, "item count", "soul shard") > 0; }
+        virtual bool IsActive()
+        {
+            return ItemCountTrigger::IsActive() && AI_VALUE2(uint8, "item count", "soul shard") > 0;
+        }
     };
 
     class HasSpellstoneTrigger : public WarlockConjuredItemTrigger
@@ -83,7 +86,11 @@ namespace ai
     {
     public:
         TargetHasImmolateTrigger(PlayerbotAI* ai) : Trigger(ai, "target has immolate", 1) {}
-        virtual string GetTargetName() { return "current target"; }
+        virtual string GetTargetName()
+        {
+            return "current target";
+        }
+
         virtual bool IsActive();
     };
 

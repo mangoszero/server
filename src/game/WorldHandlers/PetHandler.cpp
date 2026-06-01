@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PetHandler.cpp
+ * @brief Pet interaction opcode handlers
+ *
+ * This file handles pet-related opcodes including:
+ * - CMSG_PET_ACTION: Pet action (attack, follow, stay, etc.)
+ * - CMSG_PET_NAME_QUERY: Query pet name
+ * - CMSG_PET_ABANDON: Abandon pet
+ * - CMSG_PET_RENAME: Rename pet
+ * - CMSG_PET_SPELL_AUTOCAST: Toggle autocast
+ * - CMSG_PET_CANCEL_AURA: Cancel pet aura
+ * - CMSG_PET_STOP_ATTACK: Stop pet attack
+ * - CMSG_PET_SET_ACTION: Set pet action bar slot
+ *
+ * Pets include hunter pets, warlock minions, and temporary summons.
+ * Pet actions are validated and synchronized with the owner.
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -34,6 +52,11 @@
 #include "Util.h"
 #include "Pet.h"
 
+/**
+ * @brief Handles pet action bar commands, reactions, and spell casts.
+ *
+ * @param recv_data The incoming pet action packet.
+ */
 void WorldSession::HandlePetAction(WorldPacket& recv_data)
 {
     ObjectGuid petGuid;
@@ -340,6 +363,11 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles a request to stop the active pet attack.
+ *
+ * @param recv_data The incoming stop-attack packet.
+ */
 void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_PET_STOP_ATTACK");
@@ -368,6 +396,11 @@ void WorldSession::HandlePetStopAttack(WorldPacket& recv_data)
     pet->AttackStop();
 }
 
+/**
+ * @brief Handles a client request for a pet name query.
+ *
+ * @param recv_data The incoming pet name query packet.
+ */
 void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetNameQuery. CMSG_PET_NAME_QUERY");
@@ -381,6 +414,12 @@ void WorldSession::HandlePetNameQueryOpcode(WorldPacket& recv_data)
     SendPetNameQuery(petguid, petnumber);
 }
 
+/**
+ * @brief Sends pet name data for a specific pet number and guid.
+ *
+ * @param petguid The pet guid.
+ * @param petnumber The pet number.
+ */
 void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber)
 {
     Creature* pet = _player->GetMap()->GetAnyTypeCreature(petguid);
@@ -406,6 +445,11 @@ void WorldSession::SendPetNameQuery(ObjectGuid petguid, uint32 petnumber)
     _player->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Handles updates to the pet action bar layout and autocast states.
+ *
+ * @param recv_data The incoming pet set-action packet.
+ */
 void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetSetAction. CMSG_PET_SET_ACTION");
@@ -537,6 +581,11 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles hunter pet renaming and persists the new name.
+ *
+ * @param recv_data The incoming pet rename packet.
+ */
 void WorldSession::HandlePetRename(WorldPacket& recv_data)
 {
     DETAIL_LOG("HandlePetRename. CMSG_PET_RENAME");
@@ -586,6 +635,11 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     pet->SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(NULL)));
 }
 
+/**
+ * @brief Handles abandoning or dismissing a pet or charm.
+ *
+ * @param recv_data The incoming pet abandon packet.
+ */
 void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -617,6 +671,11 @@ void WorldSession::HandlePetAbandon(WorldPacket& recv_data)
     }
 }
 
+/**
+ * @brief Handles hunter pet talent reset and passive relearning.
+ *
+ * @param recvPacket The incoming pet unlearn packet.
+ */
 void WorldSession::HandlePetUnlearnOpcode(WorldPacket& recvPacket)
 {
     DETAIL_LOG("CMSG_PET_UNLEARN");
@@ -678,6 +737,11 @@ void WorldSession::HandlePetUnlearnOpcode(WorldPacket& recvPacket)
     GetPlayer()->PetSpellInitialize();
 }
 
+/**
+ * @brief Handles pet spell autocast toggles.
+ *
+ * @param recvPacket The incoming pet autocast packet.
+ */
 void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
 {
     DETAIL_LOG("CMSG_PET_SPELL_AUTOCAST");
@@ -720,6 +784,11 @@ void WorldSession::HandlePetSpellAutocastOpcode(WorldPacket& recvPacket)
     charmInfo->SetSpellAutocast(spellid, state);
 }
 
+/**
+ * @brief Handles an explicit pet spell cast request.
+ *
+ * @param recvPacket The incoming pet cast-spell packet.
+ */
 void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
 {
     DETAIL_LOG("WORLD: CMSG_PET_CAST_SPELL");
@@ -750,7 +819,6 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
     {
         return;
     }
-
 
     // do not cast not learned spells
     if (!pet->HasSpell(spellid) || IsPassiveSpell(spellInfo))
@@ -802,6 +870,12 @@ void WorldSession::HandlePetCastSpellOpcode(WorldPacket& recvPacket)
     }
 }
 
+/**
+ * @brief Sends a pet-name-invalid response to the client.
+ *
+ * @param error The invalid-name error code.
+ * @param name The rejected name.
+ */
 void WorldSession::SendPetNameInvalid(uint32 error, const std::string& name)
 {
     WorldPacket data(SMSG_PET_NAME_INVALID, 0);

@@ -22,13 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PlayerHonorCommands.cpp
+ * @brief Implementation of player honor and ranking chat commands.
+ *
+ * This file contains chat command handlers for honor operations including:
+ * - Honor point modification
+ * - Rank and rating management
+ * - Honor status display
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 
- /**********************************************************************
-     CommandTable : honorCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleHonorShow command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleHonorShow(char* /*args*/)
 {
     Player* target = getSelectedPlayer();
@@ -127,6 +139,12 @@ bool ChatHandler::HandleHonorShow(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleHonorAddCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleHonorAddCommand(char* args)
 {
     if (!*args)
@@ -154,6 +172,12 @@ bool ChatHandler::HandleHonorAddCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleHonorAddKillCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleHonorAddKillCommand(char* /*args*/)
 {
     Unit* target = getSelectedUnit();
@@ -174,6 +198,12 @@ bool ChatHandler::HandleHonorAddKillCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleHonorUpdateCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleHonorUpdateCommand(char* /*args*/)
 {
     Player* target = getSelectedPlayer();
@@ -188,10 +218,12 @@ bool ChatHandler::HandleHonorUpdateCommand(char* /*args*/)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : modifyCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Handler for HandleModifyHonorCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyHonorCommand(char* args)
 {
     if (!*args)
@@ -283,10 +315,12 @@ bool ChatHandler::HandleModifyHonorCommand(char* args)
     return true;
 }
 
-/**********************************************************************
-    CommandTable : resetCommandTable
-/***********************************************************************/
-
+/**
+ * @brief Handler for HandleResetHonorCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleResetHonorCommand(char* args)
 {
     Player* target;
@@ -298,4 +332,3 @@ bool ChatHandler::HandleResetHonorCommand(char* args)
     target->ResetHonor();
     return true;
 }
-

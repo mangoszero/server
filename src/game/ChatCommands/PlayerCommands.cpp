@@ -22,17 +22,29 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file PlayerCommands.cpp
+ * @brief Implementation of player character management chat commands.
+ *
+ * This file contains chat command handlers for player operations including:
+ * - Player property modification
+ * - Character information display
+ * - Player state management
+ * - Character customization
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
 #include "AccountMgr.h"
 #include "SQLStorages.h"
 
-
- /**********************************************************************
-     CommandTable : characterCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleCharacterEraseCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCharacterEraseCommand(char* args)
 {
     char* nameStr = ExtractLiteralArg(&args);
@@ -69,6 +81,12 @@ bool ChatHandler::HandleCharacterEraseCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCharacterLevelCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCharacterLevelCommand(char* args)
 {
     char* nameStr = ExtractOptNotLastArg(&args);
@@ -129,7 +147,12 @@ bool ChatHandler::HandleCharacterLevelCommand(char* args)
     return true;
 }
 
-// rename characters
+/**
+ * @brief Handler for HandleCharacterRenameCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCharacterRenameCommand(char* args)
 {
     Player* target;
@@ -169,6 +192,12 @@ bool ChatHandler::HandleCharacterRenameCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCharacterReputationCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCharacterReputationCommand(char* args)
 {
     Player* target;
@@ -191,7 +220,7 @@ bool ChatHandler::HandleCharacterReputationCommand(char* args)
 
 /**********************************************************************
     CommandTable : characterDeletedCommandTable
-/***********************************************************************/
+ ***********************************************************************/
 
 /**
  * Collects all GUIDs (and related info) from deleted characters which are still in the database.
@@ -537,7 +566,7 @@ bool ChatHandler::HandleCharacterDeletedOldCommand(char* args)
 
 /**********************************************************************
     CommandTable : commandTable
-/***********************************************************************/
+ ***********************************************************************/
 
 void ChatHandler::HandleCharacterLevel(Player* player, ObjectGuid player_guid, uint32 oldlevel, uint32 newlevel)
 {
@@ -570,6 +599,12 @@ void ChatHandler::HandleCharacterLevel(Player* player, ObjectGuid player_guid, u
     }
 }
 
+/**
+ * @brief Handler for HandleReviveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleReviveCommand(char* args)
 {
     Player* target;
@@ -592,6 +627,12 @@ bool ChatHandler::HandleReviveCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleDismountCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleDismountCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -616,6 +657,12 @@ bool ChatHandler::HandleDismountCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLinkGraveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLinkGraveCommand(char* args)
 {
     uint32 g_id;
@@ -676,7 +723,12 @@ bool ChatHandler::HandleLinkGraveCommand(char* args)
     return true;
 }
 
-// move item to other slot
+/**
+ * @brief Handler for HandleItemMoveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleItemMoveCommand(char* args)
 {
     if (!*args)
@@ -725,6 +777,12 @@ bool ChatHandler::HandleItemMoveCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCooldownCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCooldownCommand(char* args)
 {
     Player* target = getSelectedPlayer();
@@ -764,6 +822,12 @@ bool ChatHandler::HandleCooldownCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSaveCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSaveCommand(char* /*args*/)
 {
     Player* player = m_session->GetPlayer();
@@ -786,7 +850,12 @@ bool ChatHandler::HandleSaveCommand(char* /*args*/)
     return true;
 }
 
-// Save all players in the world
+/**
+ * @brief Handler for HandleSaveAllCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSaveAllCommand(char* /*args*/)
 {
     sObjectAccessor.SaveAllPlayers();
@@ -794,6 +863,12 @@ bool ChatHandler::HandleSaveAllCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleStartCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleStartCommand(char* /*args*/)
 {
     Player* chr = m_session->GetPlayer();
@@ -817,7 +892,12 @@ bool ChatHandler::HandleStartCommand(char* /*args*/)
     return true;
 }
 
-// Enable On\OFF all taxi paths
+/**
+ * @brief Handler for HandleTaxiCheatCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleTaxiCheatCommand(char* args)
 {
     bool value;
@@ -861,6 +941,12 @@ bool ChatHandler::HandleTaxiCheatCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleExploreCheatCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleExploreCheatCommand(char* args)
 {
     if (!*args)
@@ -910,6 +996,12 @@ bool ChatHandler::HandleExploreCheatCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleLevelUpCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleLevelUpCommand(char* args)
 {
     int32 addlevel = 1;
@@ -965,6 +1057,12 @@ bool ChatHandler::HandleLevelUpCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleShowAreaCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleShowAreaCommand(char* args)
 {
     if (!*args)
@@ -998,6 +1096,12 @@ bool ChatHandler::HandleShowAreaCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleHideAreaCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleHideAreaCommand(char* args)
 {
     if (!*args)
@@ -1031,6 +1135,12 @@ bool ChatHandler::HandleHideAreaCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleAddItemCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAddItemCommand(char* args)
 {
     char* cId = ExtractKeyFromLink(&args, "Hitem");
@@ -1164,6 +1274,12 @@ bool ChatHandler::HandleAddItemCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleAddItemSetCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAddItemSetCommand(char* args)
 {
     uint32 itemsetId;
@@ -1238,6 +1354,12 @@ bool ChatHandler::HandleAddItemSetCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleMaxSkillCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleMaxSkillCommand(char* /*args*/)
 {
     Player* SelectedPlayer = getSelectedPlayer();
@@ -1253,6 +1375,12 @@ bool ChatHandler::HandleMaxSkillCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSetSkillCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSetSkillCommand(char* args)
 {
     Player* target = getSelectedPlayer();
@@ -1323,6 +1451,12 @@ bool ChatHandler::HandleSetSkillCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleCombatStopCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleCombatStopCommand(char* args)
 {
     Player* target;
@@ -1342,6 +1476,12 @@ bool ChatHandler::HandleCombatStopCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleRepairitemsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleRepairitemsCommand(char* args)
 {
     Player* target;
@@ -1367,7 +1507,12 @@ bool ChatHandler::HandleRepairitemsCommand(char* args)
     return true;
 }
 
-// Edit Player HP
+/**
+ * @brief Handler for HandleModifyHPCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyHPCommand(char* args)
 {
     if (!*args)
@@ -1420,7 +1565,12 @@ bool ChatHandler::HandleModifyHPCommand(char* args)
     return true;
 }
 
-// Edit Player Mana
+/**
+ * @brief Handler for HandleModifyManaCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyManaCommand(char* args)
 {
     if (!*args)
@@ -1466,7 +1616,12 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
     return true;
 }
 
-// Edit Player Energy
+/**
+ * @brief Handler for HandleModifyEnergyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyEnergyCommand(char* args)
 {
     if (!*args)
@@ -1516,7 +1671,12 @@ bool ChatHandler::HandleModifyEnergyCommand(char* args)
     return true;
 }
 
-// Edit Player Rage
+/**
+ * @brief Handler for HandleModifyRageCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyRageCommand(char* args)
 {
     if (!*args)
@@ -1564,7 +1724,12 @@ bool ChatHandler::HandleModifyRageCommand(char* args)
     return true;
 }
 
-// Edit Player TP
+/**
+ * @brief Handler for HandleModifyTalentCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyTalentCommand(char* args)
 {
     if (!*args)
@@ -1596,7 +1761,12 @@ bool ChatHandler::HandleModifyTalentCommand(char* args)
     return true;
 }
 
-// Edit Player Aspeed
+/**
+ * @brief Handler for HandleModifyASpeedCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyASpeedCommand(char* args)
 {
     if (!*args)
@@ -1649,7 +1819,12 @@ bool ChatHandler::HandleModifyASpeedCommand(char* args)
     return true;
 }
 
-// Edit Player Speed
+/**
+ * @brief Handler for HandleModifySpeedCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifySpeedCommand(char* args)
 {
     if (!*args)
@@ -1700,7 +1875,12 @@ bool ChatHandler::HandleModifySpeedCommand(char* args)
     return true;
 }
 
-// Edit Player Swim Speed
+/**
+ * @brief Handler for HandleModifySwimCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifySwimCommand(char* args)
 {
     if (!*args)
@@ -1751,7 +1931,12 @@ bool ChatHandler::HandleModifySwimCommand(char* args)
     return true;
 }
 
-// Edit Player Walk Speed
+/**
+ * @brief Handler for HandleModifyBWalkCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyBWalkCommand(char* args)
 {
     if (!*args)
@@ -1802,7 +1987,12 @@ bool ChatHandler::HandleModifyBWalkCommand(char* args)
     return true;
 }
 
-// Edit Player Scale
+/**
+ * @brief Handler for HandleModifyScaleCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyScaleCommand(char* args)
 {
     if (!*args)
@@ -1847,7 +2037,12 @@ bool ChatHandler::HandleModifyScaleCommand(char* args)
     return true;
 }
 
-// Enable Player mount
+/**
+ * @brief Handler for HandleModifyMountCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyMountCommand(char* args)
 {
     if (!*args)
@@ -2111,7 +2306,12 @@ bool ChatHandler::HandleModifyMountCommand(char* args)
     return true;
 }
 
-// Edit Player money
+/**
+ * @brief Handler for HandleModifyMoneyCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyMoneyCommand(char* args)
 {
     if (!*args)
@@ -2190,6 +2390,12 @@ bool ChatHandler::HandleModifyMoneyCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleModifyDrunkCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyDrunkCommand(char* args)
 {
     if (!*args)
@@ -2210,6 +2416,12 @@ bool ChatHandler::HandleModifyDrunkCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleModifyRepCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyRepCommand(char* args)
 {
     if (!*args)
@@ -2322,6 +2534,12 @@ bool ChatHandler::HandleModifyRepCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleModifyGenderCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleModifyGenderCommand(char* args)
 {
     if (!*args)

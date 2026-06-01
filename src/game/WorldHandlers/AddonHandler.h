@@ -29,13 +29,28 @@
 #include "Policies/Singleton.h"
 #include "WorldPacket.h"
 
+/**
+ * @brief Addon handler class
+ */
 class AddonHandler
 {
     public:
-        /* Construction */
+        /**
+         * @brief Constructor
+         */
         AddonHandler();
+
+        /**
+         * @brief Destructor
+         */
         ~AddonHandler();
-        // built addon packet
+
+        /**
+         * @brief Build addon packet
+         * @param Source Source packet
+         * @param Target Target packet
+         * @return True if successful
+         */
         bool BuildAddonPacket(WorldPacket* Source, WorldPacket* Target);
 };
 #define sAddOnHandler MaNGOS::Singleton<AddonHandler>::Instance()

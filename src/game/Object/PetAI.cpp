@@ -36,6 +36,12 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
+/**
+ * @brief Determines whether PetAI can control the given creature.
+ *
+ * @param creature The creature being evaluated.
+ * @return The AI selection priority for pets.
+ */
 int PetAI::Permissible(const Creature* creature)
 {
     if (creature->IsPet())
@@ -46,12 +52,24 @@ int PetAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
+/**
+ * @brief Initializes a pet AI instance.
+ *
+ * @param c The creature controlled by this AI.
+ */
 PetAI::PetAI(Creature* c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inCombat(false), m_loiterUntilTime(0)
 {
     m_AllySet.clear();
     UpdateAllies();
 }
 
+/**
+ * @brief Handles units entering the pet's line of sight.
+ *
+ * Aggressive pets can automatically start attacking valid hostile targets.
+ *
+ * @param u The unit entering line of sight.
+ */
 void PetAI::MoveInLineOfSight(Unit* u)
 {
     if (m_creature->getVictim())
@@ -83,6 +101,11 @@ void PetAI::MoveInLineOfSight(Unit* u)
     }
 }
 
+/**
+ * @brief Starts pet combat against a target.
+ *
+ * @param u The unit to attack.
+ */
 void PetAI::AttackStart(Unit* u)
 {
     if (!u || (m_creature->IsPet() && ((Pet*)m_creature)->getPetType() == MINI_PET))
@@ -102,15 +125,29 @@ void PetAI::AttackStart(Unit* u)
     }
 }
 
+/**
+ * @brief Handles pet evade mode.
+ */
 void PetAI::EnterEvadeMode()
 {
 }
 
+/**
+ * @brief Checks whether a unit is visible to the pet.
+ *
+ * @param pl The unit to test for visibility.
+ * @return true if the unit is visible; otherwise, false.
+ */
 bool PetAI::IsVisible(Unit* pl) const
 {
     return _isVisible(pl);
 }
 
+/**
+ * @brief Checks whether the current attack should stop.
+ *
+ * @return true if the pet should stop attacking; otherwise, false.
+ */
 bool PetAI::_needToStop() const
 {
     // This is needed for charmed creatures, as once their target was reset other effects can trigger threat
@@ -122,6 +159,9 @@ bool PetAI::_needToStop() const
     return !m_creature->getVictim()->IsTargetableForAttack();
 }
 
+/**
+ * @brief Stops the current pet attack and enters a short loiter period.
+ */
 void PetAI::_stopAttack()
 {
     if (inCombat)
@@ -136,6 +176,11 @@ void PetAI::_stopAttack()
     m_creature->AttackStop();
 }
 
+/**
+ * @brief Selects the next target for the pet based on stance and nearby threats.
+ *
+ * @param owner The pet owner or charmer.
+ */
 void PetAI::SelectNextTarget(Unit* owner)
 {
     if (!m_creature->GetCharmInfo()->HasReactState(REACT_PASSIVE) && !m_creature->GetCharmInfo()->HasCommandState(COMMAND_STAY))
@@ -184,6 +229,11 @@ void PetAI::SelectNextTarget(Unit* owner)
 
 }
 
+/**
+ * @brief Updates pet combat, movement, and autocast behavior.
+ *
+ * @param diff The elapsed time since the last update in milliseconds.
+ */
 void PetAI::UpdateAI(const uint32 diff)
 {
     if (!m_creature->IsAlive())
@@ -456,12 +506,21 @@ void PetAI::UpdateAI(const uint32 diff)
     }
 }
 
+/**
+ * @brief Checks whether a unit is visible to the pet for guard-range logic.
+ *
+ * @param u The unit to evaluate.
+ * @return true if the unit is visible to the pet; otherwise false.
+ */
 bool PetAI::_isVisible(Unit* u) const
 {
     return m_creature->IsWithinDist(u, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER))
            && u->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
+/**
+ * @brief Refreshes the cached ally set used for group-aware pet support logic.
+ */
 void PetAI::UpdateAllies()
 {
     Unit* owner = m_creature->GetCharmerOrOwner();
@@ -515,6 +574,11 @@ void PetAI::UpdateAllies()
     }
 }
 
+/**
+ * @brief Reacts to an incoming attacker according to the pet's command and react states.
+ *
+ * @param attacker The unit that attacked the pet.
+ */
 void PetAI::AttackedBy(Unit* attacker)
 {
     // when attacked, fight back in case 1)no victim already AND 2)not set to passive AND 3)not set to stay, unless can it can reach attacker with melee attack anyway

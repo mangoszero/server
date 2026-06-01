@@ -27,6 +27,14 @@
 
 #include <chrono>
 
+/**
+ * @file Duration.h
+ * @brief Duration and time point type definitions
+ *
+ * Provides convenient typedefs for chrono duration types and time points,
+ * making time-related operations more readable and maintainable.
+ */
+
  /// Milliseconds shorthand typedef.
 typedef std::chrono::milliseconds Milliseconds;
 
@@ -43,6 +51,11 @@ typedef std::chrono::hours Hours;
 typedef std::chrono::steady_clock::time_point TimePoint;
 typedef std::chrono::system_clock::time_point SystemTimePoint;
 
+/**
+ * @brief User-defined literal for days
+ * @param days Number of days
+ * @return Hours equivalent (24 hours per day)
+ */
 constexpr std::chrono::hours operator "" _days(unsigned long long days)
 {
     return std::chrono::hours(days * Hours(24));

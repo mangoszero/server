@@ -22,20 +22,58 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file FollowerReference.cpp
+ * @brief Follower reference link management for unit following
+ *
+ * This file implements the FollowerReference class which manages the
+ * bidirectional link between a following unit (source) and its target.
+ *
+ * When a unit follows another (e.g., pets, escort NPCs, charmed units),
+ * a FollowerReference is created to maintain this relationship and handle
+ * proper cleanup when either unit is destroyed.
+ *
+ * The reference ensures:
+ * - Target knows who is following it
+ * - Follower stops when target is destroyed
+ * - Proper cleanup of movement generators
+ *
+ * @see FollowerReference for the reference class
+ * @see FollowerRefManager for the manager
+ */
+
 #include "Unit.h"
 #include "TargetedMovementGenerator.h"
 #include "FollowerReference.h"
 
+/**
+ * @brief Called when link is established to target
+ *
+ * Registers this reference with the target unit, allowing the target
+ * to know who is following it.
+ */
 void FollowerReference::targetObjectBuildLink()
 {
     getTarget()->AddFollower(this);
 }
 
+/**
+ * @brief Called when target is being destroyed
+ *
+ * Removes this reference from the target's follower list before
+ * the target is destroyed.
+ */
 void FollowerReference::targetObjectDestroyLink()
 {
     getTarget()->RemoveFollower(this);
 }
 
+/**
+ * @brief Called when source (follower) is being destroyed
+ *
+ * Stops the following behavior on the source unit when the
+ * follower is being destroyed.
+ */
 void FollowerReference::sourceObjectDestroyLink()
 {
     getSource()->stopFollowing();

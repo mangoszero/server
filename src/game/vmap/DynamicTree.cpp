@@ -22,6 +22,25 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file DynamicTree.cpp
+ * @brief Dynamic object tree for collision detection
+ *
+ * This file implements DynamicTree which manages dynamic game objects
+ * (like doors, bridges, destructible objects) that can move or change
+ * state during gameplay. It uses a spatial indexing structure for
+ * efficient collision queries.
+ *
+ * Key features:
+ * - Insert/remove dynamic objects
+ * - Automatic rebalancing when tree becomes unbalanced
+ * - Ray intersection queries
+ * - Area information queries
+ *
+ * @see DynamicTree for the tree class
+ * @see GameObjectModel for the model representation
+ */
+
 #include "DynamicTree.h"
 #include "Log.h"
 #include "Timer.h"
@@ -44,7 +63,6 @@ template<> struct BoundsTrait< GameObjectModel>
     static void getBounds(const GameObjectModel& g, G3D::AABox& out) { out = g.GetBounds();}
     static void getBounds2(const GameObjectModel* g, G3D::AABox& out) { out = g->GetBounds();}
 };
-
 
 //int UNBALANCED_TIMES_LIMIT = 5;
 int CHECK_TREE_PERIOD = 200;
@@ -111,31 +129,60 @@ DynamicMapTree::~DynamicMapTree()
     delete &impl;
 }
 
+/**
+ * @brief Inserts a game object model into the dynamic collision tree.
+ *
+ * @param mdl The model to insert.
+ */
 void DynamicMapTree::insert(const GameObjectModel& mdl)
 {
     impl.insert(mdl);
 }
 
+/**
+ * @brief Removes a game object model from the dynamic collision tree.
+ *
+ * @param mdl The model to remove.
+ */
 void DynamicMapTree::remove(const GameObjectModel& mdl)
 {
     impl.remove(mdl);
 }
 
+/**
+ * @brief Checks whether a model is currently stored in the dynamic collision tree.
+ *
+ * @param mdl The model to look up.
+ * @return true if the model is present; otherwise false.
+ */
 bool DynamicMapTree::contains(const GameObjectModel& mdl) const
 {
     return impl.contains(mdl);
 }
 
+/**
+ * @brief Rebalances the internal dynamic collision tree.
+ */
 void DynamicMapTree::balance()
 {
     impl.balance();
 }
 
+/**
+ * @brief Returns the number of models stored in the dynamic collision tree.
+ *
+ * @return int The number of stored models.
+ */
 int DynamicMapTree::size() const
 {
     return impl.size();
 }
 
+/**
+ * @brief Updates the dynamic collision tree with elapsed time.
+ *
+ * @param t_diff The elapsed update time in milliseconds.
+ */
 void DynamicMapTree::update(uint32 t_diff)
 {
     impl.update(t_diff);
@@ -175,6 +222,7 @@ struct DynamicTreeIntersectionCallback_WithLogger
 };
 
 //=========================================================
+
 /**
 If intersection is found within pMaxDist, sets pMaxDist to intersection distance and returns true.
 Else, pMaxDist is not modified and returns false;
@@ -206,6 +254,7 @@ bool DynamicMapTree::getObjectHitPos(float x1, float y1, float z1, float x2, flo
 }
 
 //=========================================================
+
 /**
 When moving from pos1 to pos2 check if we hit an object. Return true and the position if we hit one
 Return the hit pos or the original dest pos
@@ -253,6 +302,17 @@ bool DynamicMapTree::getObjectHitPos(const Vector3& pPos1, const Vector3& pPos2,
     return result;
 }
 
+/**
+ * @brief Checks whether two points have unobstructed line of sight through dynamic objects.
+ *
+ * @param x1 The source X coordinate.
+ * @param y1 The source Y coordinate.
+ * @param z1 The source Z coordinate.
+ * @param x2 The destination X coordinate.
+ * @param y2 The destination Y coordinate.
+ * @param z2 The destination Z coordinate.
+ * @return true if no dynamic object blocks the segment; otherwise false.
+ */
 bool DynamicMapTree::isInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2) const
 {
     Vector3 v1(x1, y1, z1), v2(x2, y2, z2);
@@ -271,6 +331,15 @@ bool DynamicMapTree::isInLineOfSight(float x1, float y1, float z1, float x2, flo
     return !callback.did_hit;
 }
 
+/**
+ * @brief Traces downward against dynamic objects to find the nearest hit height.
+ *
+ * @param x The query X coordinate.
+ * @param y The query Y coordinate.
+ * @param z The starting Z coordinate.
+ * @param maxSearchDist The downward search distance.
+ * @return float The hit height, or VMAP_INVALID_HEIGHT_VALUE if none was found.
+ */
 float DynamicMapTree::getHeight(float x, float y, float z, float maxSearchDist) const
 {
     Vector3 v(x, y, z);

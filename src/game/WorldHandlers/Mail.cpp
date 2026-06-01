@@ -23,12 +23,24 @@
  */
 
 /**
- * @addtogroup mailing
- * @{
- *
  * @file Mail.cpp
- * This file contains the code needed for MaNGOS to handle mails.
+ * @brief Mail system implementation
  *
+ * This file implements the Mail class which manages in-game mail:
+ *
+ * - Mail creation and sending
+ * - Mail with items and money
+ * - Mail expiration and deletion
+ * - COD (Cash on Delivery) payments
+ * - Mail reading and item retrieval
+ * - Auction house mail notifications
+ *
+ * Mails are stored in the `mail` database table and loaded
+ * when players log in. System mails can be sent for various
+ * game events (auctions, GM messages, etc.).
+ *
+ * @see Mail for the mail class
+ * @see MailHandler for network opcode handling
  */
 
 #include "Mail.h"
@@ -86,6 +98,7 @@ MailSender::MailSender(Object* sender, MailStationery stationery) : m_stationery
             break;
     }
 }
+
 /**
  * Creates a new MailSender object from an AuctionEntry.
  *
@@ -104,6 +117,7 @@ MailSender::MailSender(AuctionEntry* sender)
 MailReceiver::MailReceiver(Player* receiver) : m_receiver(receiver), m_receiver_guid(receiver->GetObjectGuid())
 {
 }
+
 /**
  * Creates a new MailReceiver object with a specified GUID.
  *
@@ -126,6 +140,7 @@ MailDraft& MailDraft::AddItem(Item* item)
     m_items[item->GetGUIDLow()] = item;
     return *this;
 }
+
 /**
  * Prepares the items in a MailDraft.
  */
@@ -158,6 +173,7 @@ bool MailDraft::prepareItems(Player* receiver)
 
     return true;
 }
+
 /**
  * Deletes the items included in a MailDraft.
  *
@@ -179,6 +195,7 @@ void MailDraft::deleteIncludedItems(bool inDB /**= false*/)
 
     m_items.clear();
 }
+
 /**
  * Clone MailDraft from another MailDraft.
  *
@@ -254,6 +271,7 @@ void MailDraft::SendReturnToSender(uint32 sender_acc, ObjectGuid sender_guid, Ob
     // will delete item or place to receiver mail list
     SendMailTo(MailReceiver(receiver, receiver_guid), MailSender(MAIL_NORMAL, sender_guid.GetCounter()), MAIL_CHECK_MASK_RETURNED, deliver_delay);
 }
+
 /**
  * Sends a mail.
  *

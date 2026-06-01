@@ -10,7 +10,6 @@
 
 using namespace ai;
 
-
 namespace ai
 {
     namespace hunter
@@ -55,7 +54,6 @@ namespace ai
     };
 };
 
-
 namespace ai
 {
     namespace hunter
@@ -72,6 +70,7 @@ namespace ai
                 creators["no stings"] = &TriggerFactoryInternal::NoStings;
                 creators["hunters pet dead"] = &TriggerFactoryInternal::hunters_pet_dead;
                 creators["hunters pet low health"] = &TriggerFactoryInternal::hunters_pet_low_health;
+                creators["hunters pet unhappy"] = &TriggerFactoryInternal::hunters_pet_unhappy;
                 creators["hunter's mark"] = &TriggerFactoryInternal::hunters_mark;
                 creators["freezing trap"] = &TriggerFactoryInternal::freezing_trap;
                 creators["aspect of the pack"] = &TriggerFactoryInternal::aspect_of_the_pack;
@@ -82,16 +81,19 @@ namespace ai
                 creators["aspect of the viper"] = &TriggerFactoryInternal::aspect_of_the_viper;
                 creators["trueshot aura"] = &TriggerFactoryInternal::trueshot_aura;
                 creators["serpent sting on attacker"] = &TriggerFactoryInternal::serpent_sting_on_attacker;
+                creators["has feign death"] = &TriggerFactoryInternal::has_feign_death;
             }
 
         private:
             static Trigger* serpent_sting_on_attacker(PlayerbotAI* ai) { return new SerpentStingOnAttackerTrigger(ai); }
+            static Trigger* has_feign_death(PlayerbotAI* ai) { return new FeignDeathTrigger(ai); }
             static Trigger* trueshot_aura(PlayerbotAI* ai) { return new TrueshotAuraTrigger(ai); }
             static Trigger* aspect_of_the_viper(PlayerbotAI* ai) { return new HunterAspectOfTheViperTrigger(ai); }
             static Trigger* black_arrow(PlayerbotAI* ai) { return new BlackArrowTrigger(ai); }
             static Trigger* NoStings(PlayerbotAI* ai) { return new HunterNoStingsActiveTrigger(ai); }
             static Trigger* hunters_pet_dead(PlayerbotAI* ai) { return new HuntersPetDeadTrigger(ai); }
             static Trigger* hunters_pet_low_health(PlayerbotAI* ai) { return new HuntersPetLowHealthTrigger(ai); }
+            static Trigger* hunters_pet_unhappy(PlayerbotAI* ai) { return new HuntersPetUnhappyTrigger(ai); }
             static Trigger* hunters_mark(PlayerbotAI* ai) { return new HuntersMarkTrigger(ai); }
             static Trigger* freezing_trap(PlayerbotAI* ai) { return new FreezingTrapTrigger(ai); }
             static Trigger* aspect_of_the_pack(PlayerbotAI* ai) { return new HunterAspectOfThePackTrigger(ai); }
@@ -102,8 +104,6 @@ namespace ai
         };
     };
 };
-
-
 
 namespace ai
 {
@@ -130,6 +130,7 @@ namespace ai
                 creators["viper sting"] = &AiObjectContextInternal::viper_sting;
                 creators["scorpid sting"] = &AiObjectContextInternal::scorpid_sting;
                 creators["hunter's mark"] = &AiObjectContextInternal::hunters_mark;
+                creators["feed pet"] = &AiObjectContextInternal::feed_pet;
                 creators["mend pet"] = &AiObjectContextInternal::mend_pet;
                 creators["revive pet"] = &AiObjectContextInternal::revive_pet;
                 creators["call pet"] = &AiObjectContextInternal::call_pet;
@@ -142,6 +143,7 @@ namespace ai
                 creators["aspect of the cheetah"] = &AiObjectContextInternal::aspect_of_the_cheetah;
                 creators["trueshot aura"] = &AiObjectContextInternal::trueshot_aura;
                 creators["feign death"] = &AiObjectContextInternal::feign_death;
+                creators["remove feign death"] = &AiObjectContextInternal::remove_feign_death;
                 creators["wing clip"] = &AiObjectContextInternal::wing_clip;
                 creators["disengage"] = &AiObjectContextInternal::disengage;
                 creators["immolation trap"] = &AiObjectContextInternal::immolation_trap;
@@ -157,6 +159,7 @@ namespace ai
 
         private:
             static Action* feign_death(PlayerbotAI* ai) { return new CastFeignDeathAction(ai); }
+            static Action* remove_feign_death(PlayerbotAI* ai) { return new RemoveFeignDeathAction(ai); }
             static Action* trueshot_aura(PlayerbotAI* ai) { return new CastTrueshotAuraAction(ai); }
             static Action* auto_shot(PlayerbotAI* ai) { return new CastAutoShotAction(ai); }
             static Action* aimed_shot(PlayerbotAI* ai) { return new CastAimedShotAction(ai); }
@@ -172,6 +175,7 @@ namespace ai
             static Action* viper_sting(PlayerbotAI* ai) { return new CastViperStingAction(ai); }
             static Action* scorpid_sting(PlayerbotAI* ai) { return new CastScorpidStingAction(ai); }
             static Action* hunters_mark(PlayerbotAI* ai) { return new CastHuntersMarkAction(ai); }
+            static Action* feed_pet(PlayerbotAI* ai) { return new FeedPetAction(ai); }
             static Action* mend_pet(PlayerbotAI* ai) { return new CastMendPetAction(ai); }
             static Action* revive_pet(PlayerbotAI* ai) { return new CastRevivePetAction(ai); }
             static Action* call_pet(PlayerbotAI* ai) { return new CastCallPetAction(ai); }

@@ -30,6 +30,7 @@
 template<class OBJECT> class GridRefManager;
 
 template<class OBJECT>
+
 /**
  * @brief
  *

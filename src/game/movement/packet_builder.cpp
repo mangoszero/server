@@ -22,12 +22,44 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file packet_builder.cpp
+ * @brief Movement spline network packet construction
+ *
+ * This file implements the PacketBuilder class which constructs network
+ * packets for movement spline data. Handles:
+ *
+ * - Monster movement packets (MSG_MONSTER_MOVE)
+ * - Linear and Catmull-Rom spline paths
+ * - Facing/targeting information
+ * - Path compression and packing
+ *
+ * The packet format includes:
+ * - Source position
+ * - Spline flags and duration
+ * - Path points (absolute or relative)
+ * - Final facing/target information
+ *
+ * @see PacketBuilder for the builder class
+ * @see MoveSpline for the movement spline data
+ * @see SMSG_MONSTER_MOVE for the opcode
+ */
+
 #include "packet_builder.h"
 #include "MoveSpline.h"
 #include "WorldPacket.h"
 
 namespace Movement
 {
+
+    /**
+     * @namespace Movement
+     * @brief Movement system namespace
+     *
+     * Contains all movement-related classes and functions for
+     * spline-based movement and packet construction.
+     */
+
     /**
      * @brief Overloads the << operator to write a Vector3 to a ByteBuffer.
      * @param b The ByteBuffer to write to.

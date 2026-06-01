@@ -33,11 +33,13 @@
 #define MIN_QUIET_DISTANCE 28.0f
 #define MAX_QUIET_DISTANCE 43.0f
 
-/**
- * @brief Sets the target location for the unit to flee to.
- * @param owner Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Chooses and launches a new fleeing destination for the owner.
+ *
+ * @param owner The unit using the movement generator.
+ */
 void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
 {
     // Ignore if the unit is in a state where it cannot react or move, except for fleeing
@@ -73,15 +75,17 @@ void FleeingMovementGenerator<T>::_setTargetLocation(T& owner)
     i_nextCheckTime.Reset(traveltime + urand(800, 1500));
 }
 
-/**
- * @brief Gets a point for the unit to flee to.
- * @param owner Reference to the unit.
- * @param x Reference to the x-coordinate.
- * @param y Reference to the y-coordinate.
- * @param z Reference to the z-coordinate.
- * @return True if the point was successfully obtained, false otherwise.
- */
 template<class T>
+
+/**
+ * @brief Computes a suitable flee point away from the frightening source.
+ *
+ * @param owner The unit using the movement generator.
+ * @param x Receives the destination X coordinate.
+ * @param y Receives the destination Y coordinate.
+ * @param z Receives the destination Z coordinate.
+ * @return true if a valid flee point was found; otherwise false.
+ */
 bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float& z)
 {
     float dist_from_caster, angle_to_caster;
@@ -150,11 +154,13 @@ bool FleeingMovementGenerator<T>::_getPoint(T& owner, float& x, float& y, float&
     return true;
 }
 
-/**
- * @brief Initializes the FleeingMovementGenerator.
- * @param owner Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Initializes fleeing movement and clears creature targets when needed.
+ *
+ * @param owner The unit using the movement generator.
+ */
 void FleeingMovementGenerator<T>::Initialize(T& owner)
 {
     owner.addUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
@@ -169,33 +175,39 @@ void FleeingMovementGenerator<T>::Initialize(T& owner)
     _setTargetLocation(owner);
 }
 
-/**
- * @brief Finalizes the FleeingMovementGenerator for a Player.
- * @param owner Reference to the player.
- */
 template<>
+
+/**
+ * @brief Finalizes fleeing movement for a player.
+ *
+ * @param owner The player using the movement generator.
+ */
 void FleeingMovementGenerator<Player>::Finalize(Player& owner)
 {
     owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
     owner.StopMoving();
 }
 
-/**
- * @brief Finalizes the FleeingMovementGenerator for a Creature.
- * @param owner Reference to the creature.
- */
 template<>
+
+/**
+ * @brief Finalizes fleeing movement for a creature and restores walk state.
+ *
+ * @param owner The creature using the movement generator.
+ */
 void FleeingMovementGenerator<Creature>::Finalize(Creature& owner)
 {
     owner.SetWalk(!owner.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
     owner.clearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
 }
 
-/**
- * @brief Interrupts the FleeingMovementGenerator.
- * @param owner Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Interrupts fleeing movement while keeping the flee state active.
+ *
+ * @param owner The unit using the movement generator.
+ */
 void FleeingMovementGenerator<T>::Interrupt(T& owner)
 {
     owner.InterruptMoving();
@@ -203,23 +215,27 @@ void FleeingMovementGenerator<T>::Interrupt(T& owner)
     owner.clearUnitState(UNIT_STAT_FLEEING_MOVE);
 }
 
-/**
- * @brief Resets the FleeingMovementGenerator.
- * @param owner Reference to the unit.
- */
 template<class T>
+
+/**
+ * @brief Resets fleeing movement by reinitializing the generator.
+ *
+ * @param owner The unit using the movement generator.
+ */
 void FleeingMovementGenerator<T>::Reset(T& owner)
 {
     Initialize(owner);
 }
 
-/**
- * @brief Updates the FleeingMovementGenerator.
- * @param owner Reference to the unit.
- * @param time_diff Time difference.
- * @return True if the update was successful, false otherwise.
- */
 template<class T>
+
+/**
+ * @brief Updates fleeing movement and picks a new path when the timer expires.
+ *
+ * @param owner The unit using the movement generator.
+ * @param time_diff The elapsed update time in milliseconds.
+ * @return true while the generator remains active; otherwise false.
+ */
 bool FleeingMovementGenerator<T>::Update(T& owner, const uint32& time_diff)
 {
     if (!owner.IsAlive())

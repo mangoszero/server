@@ -402,14 +402,14 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         // generate suffix
         uint32 suffixPolyLength = 0;
         dtResult = m_navMeshQuery->findPath(
-                       suffixStartPoly,    // start polygon
-                       endPoly,            // end polygon
-                       suffixEndPoint,     // start position
-                       endPoint,           // end position
-                       &m_filter,            // polygon search filter
-                       m_pathPolyRefs + prefixPolyLength - 1,    // [out] path
-                       (int*)&suffixPolyLength,
-                       MAX_PATH_LENGTH - prefixPolyLength); // max number of polygons in output path
+                    suffixStartPoly,    // start polygon
+                    endPoly,            // end polygon
+                    suffixEndPoint,     // start position
+                    endPoint,           // end position
+                    &m_filter,          // polygon search filter
+                    m_pathPolyRefs + prefixPolyLength - 1,    // [out] path
+                    (int*)&suffixPolyLength,
+                    MAX_PATH_LENGTH - prefixPolyLength); // max number of polygons in output path
 
         if (!suffixPolyLength || dtStatusFailed(dtResult))
         {
@@ -425,7 +425,7 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         // new path = prefix + suffix - overlap
         m_polyLength = prefixPolyLength + suffixPolyLength - 1;
     }
-     else
+    else
     {
         DEBUG_FILTER_LOG(LOG_FILTER_PATHFINDING, "++ BuildPolyPath :: (!startPolyFound && !endPolyFound) for %s\n", m_sourceUnit->GetGuidStr().c_str());
 
@@ -438,14 +438,14 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
         clear();
 
         dtResult = m_navMeshQuery->findPath(
-                       startPoly,          // start polygon
-                       endPoly,            // end polygon
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       &m_filter,           // polygon search filter
-                       m_pathPolyRefs,     // [out] path
-                       (int*)&m_polyLength,
-                       MAX_PATH_LENGTH);   // max number of polygons in output path
+                    startPoly,          // start polygon
+                    endPoly,            // end polygon
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    &m_filter,          // polygon search filter
+                    m_pathPolyRefs,     // [out] path
+                    (int*)&m_polyLength,
+                    MAX_PATH_LENGTH);   // max number of polygons in output path
 
         if (!m_polyLength || dtStatusFailed(dtResult))
         {
@@ -501,26 +501,26 @@ void PathFinder::BuildPointPath(const float* startPoint, const float* endPoint)
     if (m_useStraightPath)
     {
         dtResult = m_navMeshQuery->findStraightPath(
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       m_pathPolyRefs,     // current path
-                       m_polyLength,       // length of current path
-                       pathPoints,         // [out] path corner points
-                       NULL,               // [out] flags
-                       NULL,               // [out] shortened path
-                       (int*)&pointCount,
-                       m_pointPathLimit);   // maximum number of points/polygons to use
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    m_pathPolyRefs,     // current path
+                    m_polyLength,       // length of current path
+                    pathPoints,         // [out] path corner points
+                    NULL,               // [out] flags
+                    NULL,               // [out] shortened path
+                    (int*)&pointCount,
+                    m_pointPathLimit);  // maximum number of points/polygons to use
     }
     else
     {
         dtResult = findSmoothPath(
-                       startPoint,         // start position
-                       endPoint,           // end position
-                       m_pathPolyRefs,     // current path
-                       m_polyLength,       // length of current path
-                       pathPoints,         // [out] path corner points
-                       (int*)&pointCount,
-                       m_pointPathLimit);    // maximum number of points
+                    startPoint,         // start position
+                    endPoint,           // end position
+                    m_pathPolyRefs,     // current path
+                    m_polyLength,       // length of current path
+                    pathPoints,         // [out] path corner points
+                    (int*)&pointCount,
+                    m_pointPathLimit);  // maximum number of points
     }
 
     if (pointCount < 2 || dtStatusFailed(dtResult))
@@ -953,6 +953,15 @@ dtStatus PathFinder::findSmoothPath(const float* startPos, const float* endPos,
     return nsmoothPath < MAX_POINT_PATH_LENGTH ? DT_SUCCESS : DT_FAILURE;
 }
 
+/**
+ * @brief Checks whether two YZX points are within horizontal range and vertical tolerance.
+ *
+ * @param v1 The first point.
+ * @param v2 The second point.
+ * @param r The maximum horizontal range.
+ * @param h The maximum vertical difference.
+ * @return true if the points are within range; otherwise false.
+ */
 bool PathFinder::inRangeYZX(const float* v1, const float* v2, float r, float h) const
 {
     const float dx = v2[0] - v1[0];
@@ -961,17 +970,38 @@ bool PathFinder::inRangeYZX(const float* v1, const float* v2, float r, float h) 
     return (dx * dx + dz * dz) < r * r && fabsf(dy) < h;
 }
 
+/**
+ * @brief Checks whether two path points are within horizontal range and vertical tolerance.
+ *
+ * @param p1 The first point.
+ * @param p2 The second point.
+ * @param r The maximum horizontal range.
+ * @param h The maximum vertical difference.
+ * @return true if the points are within range; otherwise false.
+ */
 bool PathFinder::inRange(const Vector3& p1, const Vector3& p2, float r, float h) const
 {
     Vector3 d = p1 - p2;
     return (d.x * d.x + d.y * d.y) < r * r && fabsf(d.z) < h;
 }
 
+/**
+ * @brief Returns the squared three-dimensional distance between two points.
+ *
+ * @param p1 The first point.
+ * @param p2 The second point.
+ * @return float The squared distance.
+ */
 float PathFinder::dist3DSqr(const Vector3& p1, const Vector3& p2) const
 {
     return (p1 - p2).squaredLength();
 }
 
+/**
+ * @brief Normalizes computed path points against allowed terrain heights.
+ *
+ * @param size Receives the final normalized path size.
+ */
 void PathFinder::NormalizePath(uint32& size)
 {
     for (uint32 i = 0; i < m_pathPoints.size(); ++i)

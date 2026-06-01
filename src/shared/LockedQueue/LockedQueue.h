@@ -34,6 +34,7 @@
 namespace ACE_Based
 {
     template < class T, class LockType, typename StorageType = std::deque<T> >
+
     /**
      * @brief
      *
@@ -94,6 +95,7 @@ namespace ACE_Based
             }
 
             template<class Checker>
+
             /**
              * @brief
              *
@@ -120,7 +122,6 @@ namespace ACE_Based
                 return true;
             }
 
-
             /**
              * @brief Checks if we're empty or not with locks held
              *
@@ -130,6 +131,17 @@ namespace ACE_Based
             {
                 ACE_GUARD_RETURN (LockType, g, this->_lock, false);
                 return _queue.empty();
+            }
+
+            /**
+             * @brief Returns the number of elements in the queue with locks held
+             *
+             * @return size_t
+             */
+            size_t size()
+            {
+                ACE_GUARD_RETURN (LockType, g, this->_lock, 0);
+                return _queue.size();
             }
     };
 }

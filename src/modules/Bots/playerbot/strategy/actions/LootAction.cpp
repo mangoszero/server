@@ -103,6 +103,23 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     }
 
     bot->GetMotionMaster()->Clear();
+
+    if (go && go->GetGoState() == GO_STATE_ACTIVE)
+    {
+        if (bot->GetLootGuid() == lootObject.guid)
+            return false;
+
+        WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
+        *packet << lootObject.guid;
+        bot->GetSession()->QueuePacket(packet);
+        return true;
+    }
+
+    if (bot->IsNonMeleeSpellCasted(false))
+    {
+        return false;
+    }
+
     if (lootObject.skillId == SKILL_MINING)
     {
         return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(MINING, bot) : false;
@@ -286,7 +303,7 @@ bool StoreLootAction::Execute(Event event)
             continue;
         }
 
-        if (loot_type != LOOT_SKINNING && !IsLootAllowed(itemid))
+        if (!IsLootAllowed(itemid))
         {
             continue;
         }

@@ -22,15 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file SelectCommands.cpp
+ * @brief Implementation of target selection chat commands.
+ *
+ * This file contains chat command handlers for selection operations including:
+ * - Selecting players by various criteria
+ * - Selecting creatures and objects
+ * - Target area of effect selection
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Language.h"
 
- /**********************************************************************
-     CommandTable : selectCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleSelectPlayerCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSelectPlayerCommand(char* args)
 {
     if (!*args)
@@ -87,6 +99,12 @@ bool ChatHandler::HandleSelectPlayerCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleSelectClearCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleSelectClearCommand(char* /*args*/)
 {
     if (!m_session)

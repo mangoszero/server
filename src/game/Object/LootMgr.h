@@ -149,7 +149,10 @@ class LootStore
     public:
         explicit LootStore(char const* name, char const* entryName, bool ratesAllowed)
             : m_name(name), m_entryName(entryName), m_ratesAllowed(ratesAllowed) {}
-        virtual ~LootStore() { Clear(); }
+        virtual ~LootStore()
+        {
+            Clear();
+        }
 
         void Verify() const;
 
@@ -256,19 +259,48 @@ class LootValidatorRefManager : public RefManager<Loot, LootValidatorRef>
     public:
         typedef LinkedListHead::Iterator< LootValidatorRef > iterator;
 
-        LootValidatorRef* getFirst() { return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getFirst(); }
-        LootValidatorRef* getLast() { return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getLast(); }
+        LootValidatorRef* getFirst()
+        {
+            return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getFirst();
+        }
 
-        iterator begin() { return iterator(getFirst()); }
-        iterator end() { return iterator(NULL); }
-        iterator rbegin() { return iterator(getLast()); }
-        iterator rend() { return iterator(NULL); }
+        LootValidatorRef* getLast()
+        {
+            return (LootValidatorRef*)RefManager<Loot, LootValidatorRef>::getLast();
+        }
+
+        iterator begin()
+        {
+            return iterator(getFirst());
+        }
+
+        iterator end()
+        {
+            return iterator(NULL);
+        }
+
+        iterator rbegin()
+        {
+            return iterator(getLast());
+        }
+
+        iterator rend()
+        {
+            return iterator(NULL);
+        }
 };
 
 //=====================================================
 struct LootView;
 
+/**
+ * Serializes a loot item entry into a byte buffer.
+ */
 ByteBuffer& operator<<(ByteBuffer& b, LootItem const& li);
+
+/**
+ * Serializes a loot view into a byte buffer.
+ */
 ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv);
 
 struct Loot
@@ -285,7 +317,10 @@ struct Loot
         LootType loot_type;                                 // required for for proper item loot finish (store internal loot types in different from 3.x version, in fact this meaning that it send same loot types for interesting cases like 3.x version code, skip pre-3.x client loot type limitaitons)
 
         Loot(WorldObject const* lootTarget, uint32 _gold = 0) : gold(_gold), unlootedCount(0), loot_type(LOOT_CORPSE), m_lootTarget(lootTarget) {}
-        ~Loot() { clear(); }
+        ~Loot()
+        {
+            clear();
+        }
 
         // if loot becomes invalid this reference is used to inform the listener
         void addLootValidatorRef(LootValidatorRef* pLootValidatorRef)
@@ -388,15 +423,49 @@ extern LootStore LootTemplates_Pickpocketing;
 extern LootStore LootTemplates_Skinning;
 extern LootStore LootTemplates_Disenchant;
 
+/**
+ * Loads creature loot templates.
+ */
 void LoadLootTemplates_Creature();
+
+/**
+ * Loads fishing loot templates.
+ */
 void LoadLootTemplates_Fishing();
+
+/**
+ * Loads gameobject loot templates.
+ */
 void LoadLootTemplates_Gameobject();
+
+/**
+ * Loads item loot templates.
+ */
 void LoadLootTemplates_Item();
+
+/**
+ * Loads mail loot templates.
+ */
 void LoadLootTemplates_Mail();
+
+/**
+ * Loads pickpocketing loot templates.
+ */
 void LoadLootTemplates_Pickpocketing();
+
+/**
+ * Loads skinning loot templates.
+ */
 void LoadLootTemplates_Skinning();
+
+/**
+ * Loads disenchant loot templates.
+ */
 void LoadLootTemplates_Disenchant();
 
+/**
+ * Loads reference loot templates used by other loot tables.
+ */
 void LoadLootTemplates_Reference();
 
 inline void LoadLootTables()

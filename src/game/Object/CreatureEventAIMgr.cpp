@@ -37,6 +37,12 @@
 INSTANTIATE_SINGLETON_1(CreatureEventAIMgr);
 
 // -------------------
+
+/**
+ * @brief Loads EventAI text resources and optionally checks for unused entries.
+ *
+ * @param check_entry_use true to validate text usage after loading.
+ */
 void CreatureEventAIMgr::LoadCreatureEventAI_Texts(bool check_entry_use)
 {
     // Load EventAI Text
@@ -48,6 +54,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Texts(bool check_entry_use)
     }
 }
 
+/**
+ * @brief Scans loaded EventAI texts and reports entries that are never referenced.
+ */
 void CreatureEventAIMgr::CheckUnusedAITexts()
 {
     if (m_usedTextsAmount == sObjectMgr.GetLoadedStringsCount(MIN_CREATURE_AI_TEXT_STRING_ID))
@@ -99,6 +108,12 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
 }
 
 // -------------------
+
+/**
+ * @brief Loads EventAI summon definitions and optionally checks for unused entries.
+ *
+ * @param check_entry_use true to validate summon usage after loading.
+ */
 void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
 {
     // Drop Existing EventSummon Map
@@ -156,6 +171,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons(bool check_entry_use)
     }
 }
 
+/**
+ * @brief Reports EventAI summon entries that are loaded but never referenced.
+ */
 void CreatureEventAIMgr::CheckUnusedAISummons()
 {
     std::set<int32> idx_set;
@@ -198,6 +216,17 @@ void CreatureEventAIMgr::CheckUnusedAISummons()
 }
 
 /// Helper function to check if a target-type is suitable for the event-type
+
+/**
+ * @brief Validates whether an action target type is compatible with an event type.
+ *
+ * @param eventType The triggering event type.
+ * @param actionType The action being validated.
+ * @param targetType The requested target type.
+ * @param eventId The script event id.
+ * @param action The action slot number.
+ * @return true if the target type is acceptable; otherwise, false.
+ */
 bool IsValidTargetType(EventAI_Type eventType, EventAI_ActionType actionType, uint32 targetType, uint32 eventId, uint8 action)
 {
     switch (targetType)
@@ -267,6 +296,10 @@ bool IsValidTargetType(EventAI_Type eventType, EventAI_ActionType actionType, ui
 }
 
 // -------------------
+
+/**
+ * @brief Loads and validates all EventAI scripts from the database.
+ */
 void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
 {
     // Drop Existing EventAI List
@@ -765,9 +798,9 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
                             // used TARGET_T_ACTION_INVOKER, but likely should be _INVOKER_OWNER instead
                             if (action.cast.target == TARGET_T_ACTION_INVOKER &&
                                 (spell->HasSpellEffect(SPELL_EFFECT_QUEST_COMPLETE) || spell->HasSpellEffect(SPELL_EFFECT_DUMMY)))
-                                     {
-                                         sLog.outErrorEventAI("Event %u Action %u has TARGET_T_ACTION_INVOKER(%u) target type, but should have TARGET_T_ACTION_INVOKER_OWNER(%u).", i, j + 1, TARGET_T_ACTION_INVOKER, TARGET_T_ACTION_INVOKER_OWNER);
-                                     }
+                            {
+                                sLog.outErrorEventAI("Event %u Action %u has TARGET_T_ACTION_INVOKER(%u) target type, but should have TARGET_T_ACTION_INVOKER_OWNER(%u).", i, j + 1, TARGET_T_ACTION_INVOKER, TARGET_T_ACTION_INVOKER_OWNER);
+                            }
 
                             // Spell that should only target players, but could get any
                             if (spell->HasAttribute(SPELL_ATTR_EX3_TARGET_ONLY_PLAYER) &&

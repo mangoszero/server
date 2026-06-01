@@ -34,16 +34,29 @@
 
 INSTANTIATE_SINGLETON_1(SocialMgr);
 
+/**
+ * @brief Creates an empty social list for a player.
+ */
 PlayerSocial::PlayerSocial()
 {
 }
 
+/**
+ * @brief Destroys the social list container.
+ */
 PlayerSocial::~PlayerSocial()
 {
     m_playerSocialMap.clear();
 }
 
 /* Called by PlayerSocial::SendFriendList */
+
+/**
+ * @brief Counts social entries matching a given flag.
+ *
+ * @param flag The social flag to count.
+ * @return The number of matching social entries.
+ */
 uint32 PlayerSocial::GetNumberOfSocialsWithFlag(SocialFlag flag)
 {
     /* This is the value we return
@@ -63,6 +76,13 @@ uint32 PlayerSocial::GetNumberOfSocialsWithFlag(SocialFlag flag)
     return counter;
 }
 
+/**
+ * @brief Adds a friend or ignored player to the social list.
+ *
+ * @param friend_guid The GUID of the target player.
+ * @param ignore true to add to the ignore list; false to add as a friend.
+ * @return true if the entry was added or updated; otherwise, false.
+ */
 bool PlayerSocial::AddToSocialList(ObjectGuid friend_guid, bool ignore)
 {
     // check client limits
@@ -103,6 +123,12 @@ bool PlayerSocial::AddToSocialList(ObjectGuid friend_guid, bool ignore)
     return true;
 }
 
+/**
+ * @brief Removes a friend or ignored player from the social list.
+ *
+ * @param friend_guid The GUID of the target player.
+ * @param ignore true to remove from the ignore list; false to remove from friends.
+ */
 void PlayerSocial::RemoveFromSocialList(ObjectGuid friend_guid, bool ignore)
 {
     PlayerSocialMap::iterator itr = m_playerSocialMap.find(friend_guid.GetCounter());
@@ -140,6 +166,10 @@ struct friend_
     uint32 class_; // Class player is
 };
 /* Called by WorldSession::HandlePlayerLogin */
+
+/**
+ * @brief Sends the friend list packet to the owning player.
+ */
 void PlayerSocial::SendFriendList()
 {
     Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, m_playerLowGuid));
@@ -174,6 +204,9 @@ void PlayerSocial::SendFriendList()
     DEBUG_LOG("WORLD: Sent SMSG_FRIEND_LIST");
 }
 
+/**
+ * @brief Sends the ignore list packet to the owning player.
+ */
 void PlayerSocial::SendIgnoreList()
 {
     /* Make sure the player ID is actually valid */
@@ -204,6 +237,12 @@ void PlayerSocial::SendIgnoreList()
     DEBUG_LOG("WORLD: Sent SMSG_IGNORE_LIST");
 }
 
+/**
+ * @brief Checks whether a player is on the friend list.
+ *
+ * @param friend_guid The GUID of the target player.
+ * @return true if the player is a friend; otherwise, false.
+ */
 bool PlayerSocial::HasFriend(ObjectGuid friend_guid)
 {
     PlayerSocialMap::const_iterator itr = m_playerSocialMap.find(friend_guid.GetCounter());
@@ -214,6 +253,12 @@ bool PlayerSocial::HasFriend(ObjectGuid friend_guid)
     return false;
 }
 
+/**
+ * @brief Checks whether a player is on the ignore list.
+ *
+ * @param ignore_guid The GUID of the target player.
+ * @return true if the player is ignored; otherwise, false.
+ */
 bool PlayerSocial::HasIgnore(ObjectGuid ignore_guid)
 {
     PlayerSocialMap::const_iterator itr = m_playerSocialMap.find(ignore_guid.GetCounter());
@@ -224,14 +269,27 @@ bool PlayerSocial::HasIgnore(ObjectGuid ignore_guid)
     return false;
 }
 
+/**
+ * @brief Initializes the social manager.
+ */
 SocialMgr::SocialMgr()
 {
 }
 
+/**
+ * @brief Destroys the social manager.
+ */
 SocialMgr::~SocialMgr()
 {
 }
 
+/**
+ * @brief Populates friend information for social notifications.
+ *
+ * @param player The player requesting friend information.
+ * @param friend_lowguid The low GUID of the friend.
+ * @param friendInfo The structure to populate.
+ */
 void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo& friendInfo)
 {
     if (!player)
@@ -251,10 +309,10 @@ void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo&
     {
         // PLAYER see his team only and PLAYER can't see MODERATOR, GAME MASTER, ADMINISTRATOR characters
         // MODERATOR, GAME MASTER, ADMINISTRATOR can see all
-        if (pFriend && pFriend->GetName() &&
-            (security > SEC_PLAYER ||
-             ((pFriend->GetTeam() == team || allowTwoSideWhoList) && (pFriend->GetSession()->GetSecurity() <= gmLevelInWhoList))) &&
-            pFriend->IsVisibleGloballyFor(player))
+        if (pFriend && pFriend->GetName()
+            && (security > SEC_PLAYER
+            || ((pFriend->GetTeam() == team || allowTwoSideWhoList) && (pFriend->GetSession()->GetSecurity() <= gmLevelInWhoList)))
+            && pFriend->IsVisibleGloballyFor(player))
         {
             friendInfo.Status = FRIEND_STATUS_ONLINE;
             if (pFriend->isAFK())
@@ -279,6 +337,13 @@ void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo&
     }
 }
 
+/**
+ * @brief Builds a friend status packet header.
+ *
+ * @param result The friend status result code.
+ * @param guid The low GUID of the related player.
+ * @param data The packet to initialize.
+ */
 void SocialMgr::MakeFriendStatusPacket(FriendsResult result, uint32 guid, WorldPacket* data)
 {
     data->Initialize(SMSG_FRIEND_STATUS, 5);
@@ -286,6 +351,14 @@ void SocialMgr::MakeFriendStatusPacket(FriendsResult result, uint32 guid, WorldP
     *data << ObjectGuid(HIGHGUID_PLAYER, guid);
 }
 
+/**
+ * @brief Sends a friend status update to one player or all listers.
+ *
+ * @param player The player associated with the update.
+ * @param result The friend status result code.
+ * @param friend_guid The GUID of the related friend.
+ * @param broadcast true to send the update to all friend listers; otherwise, false.
+ */
 void SocialMgr::SendFriendStatus(Player* player, FriendsResult result, ObjectGuid friend_guid, bool broadcast)
 {
     uint32 friend_lowguid = friend_guid.GetCounter();
@@ -319,6 +392,12 @@ void SocialMgr::SendFriendStatus(Player* player, FriendsResult result, ObjectGui
     }
 }
 
+/**
+ * @brief Broadcasts a social update packet to players who list this player as a friend.
+ *
+ * @param player The player whose status changed.
+ * @param packet The packet to broadcast.
+ */
 void SocialMgr::BroadcastToFriendListers(Player* player, WorldPacket* packet)
 {
     if (!player)
@@ -343,7 +422,7 @@ void SocialMgr::BroadcastToFriendListers(Player* player, WorldPacket* packet)
             // MODERATOR, GAME MASTER, ADMINISTRATOR can see all
             if (pFriend && pFriend->IsInWorld() &&
                 (pFriend->GetSession()->GetSecurity() > SEC_PLAYER ||
-                 ((pFriend->GetTeam() == team || allowTwoSideWhoList) && security <= gmLevelInWhoList)) &&
+                ((pFriend->GetTeam() == team || allowTwoSideWhoList) && security <= gmLevelInWhoList)) &&
                 player->IsVisibleGloballyFor(pFriend))
             {
                 pFriend->GetSession()->SendPacket(packet);
@@ -352,6 +431,13 @@ void SocialMgr::BroadcastToFriendListers(Player* player, WorldPacket* packet)
     }
 }
 
+/**
+ * @brief Loads a player's social list from database rows.
+ *
+ * @param result The query result containing social entries.
+ * @param guid The player GUID owning the social data.
+ * @return The loaded player social record.
+ */
 PlayerSocial* SocialMgr::LoadFromDB(QueryResult* result, ObjectGuid guid)
 {
     PlayerSocial* social = &m_socialMap[guid.GetCounter()];

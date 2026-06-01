@@ -27,38 +27,126 @@
 
 #include "Common.h"
 
-/* An enumeration of the possible results of an account operation. */
+/**
+ * @brief Account operation result enumeration
+ *
+ * An enumeration of the possible results of an account operation.
+ */
 enum AccountOpResult
 {
-    AOR_OK,
-    AOR_NAME_TOO_LONG,
-    AOR_PASS_TOO_LONG,
-    AOR_NAME_ALREADY_EXIST,
-    AOR_NAME_NOT_EXIST,
-    AOR_DB_INTERNAL_ERROR
+    AOR_OK,                 ///< Success
+    AOR_NAME_TOO_LONG,      ///< Name too long
+    AOR_PASS_TOO_LONG,      ///< Password too long
+    AOR_NAME_ALREADY_EXIST, ///< Name already exists
+    AOR_NAME_NOT_EXIST,     ///< Name does not exist
+    AOR_DB_INTERNAL_ERROR   ///< Database internal error
 };
 
 #define MAX_ACCOUNT_STR 16
 #define MAX_PASSWORD_STR 16
 
-/* A class that is used to manage accounts. */
+/**
+ * @brief Account manager class
+ *
+ * A class that is used to manage accounts.
+ */
 class AccountMgr
 {
     public:
+        /**
+         * @brief Constructor
+         */
         AccountMgr();
+
+        /**
+         * @brief Destructor
+         */
         ~AccountMgr();
 
+        /**
+         * @brief Create account
+         * @param username Username
+         * @param password Password
+         * @return Account operation result
+         */
         AccountOpResult CreateAccount(std::string username, std::string password);
+
+        /**
+         * @brief Create account with expansion
+         * @param username Username
+         * @param password Password
+         * @param expansion Expansion level
+         * @return Account operation result
+         */
         AccountOpResult CreateAccount(std::string username, std::string password, uint32 expansion);
+
+        /**
+         * @brief Delete account
+         * @param accid Account ID
+         * @return Account operation result
+         */
         AccountOpResult DeleteAccount(uint32 accid);
+
+        /**
+         * @brief Change username
+         * @param accid Account ID
+         * @param new_uname New username
+         * @param new_passwd New password
+         * @return Account operation result
+         */
         AccountOpResult ChangeUsername(uint32 accid, std::string new_uname, std::string new_passwd);
+
+        /**
+         * @brief Change password
+         * @param accid Account ID
+         * @param new_passwd New password
+         * @return Account operation result
+         */
         AccountOpResult ChangePassword(uint32 accid, std::string new_passwd);
+
+        /**
+         * @brief Check password
+         * @param accid Account ID
+         * @param passwd Password to check
+         * @return True if password matches
+         */
         bool CheckPassword(uint32 accid, std::string passwd);
 
+        /**
+         * @brief Get account ID by username
+         * @param username Username
+         * @return Account ID
+         */
         uint32 GetId(std::string username);
+
+        /**
+         * @brief Get security level
+         * @param acc_id Account ID
+         * @return Account security type
+         */
         AccountTypes GetSecurity(uint32 acc_id);
+
+        /**
+         * @brief Get account name
+         * @param acc_id Account ID
+         * @param name Output name
+         * @return True if successful
+         */
         bool GetName(uint32 acc_id, std::string& name);
+
+        /**
+         * @brief Get character count
+         * @param acc_id Account ID
+         * @return Character count
+         */
         uint32 GetCharactersCount(uint32 acc_id);
+
+        /**
+         * @brief Calculate SHA password hash
+         * @param name Account name
+         * @param password Password
+         * @return SHA hash string
+         */
         std::string CalculateShaPassHash(std::string& name, std::string& password);
 };
 

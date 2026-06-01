@@ -22,15 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file InstanceCommands.cpp
+ * @brief Implementation of instance and dungeon management chat commands.
+ *
+ * This file contains chat command handlers for instance operations including:
+ * - Instance bindings management
+ * - Instance reset operations
+ * - Instance difficulty configuration
+ * - Instance data manipulation
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "MapManager.h"
 #include "InstanceData.h"
 
- /**********************************************************************
-     CommandTable : instanceCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleInstanceListBindsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
 {
     Player* player = getSelectedPlayer();
@@ -86,6 +99,12 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleInstanceUnbindCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleInstanceUnbindCommand(char* args)
 {
     if (!*args)
@@ -149,6 +168,12 @@ bool ChatHandler::HandleInstanceUnbindCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleInstanceStatsCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleInstanceStatsCommand(char* /*args*/)
 {
     PSendSysMessage("instances loaded: %d", sMapMgr.GetNumInstances());
@@ -162,6 +187,12 @@ bool ChatHandler::HandleInstanceStatsCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleInstanceSaveDataCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleInstanceSaveDataCommand(char* /*args*/)
 {
     Player* pl = m_session->GetPlayer();
@@ -179,4 +210,3 @@ bool ChatHandler::HandleInstanceSaveDataCommand(char* /*args*/)
     iData->SaveToDB();
     return true;
 }
-

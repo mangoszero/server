@@ -6,7 +6,6 @@
 
 using namespace ai;
 
-
 class FindPotionVisitor : public FindUsableItemVisitor
 {
 public:
@@ -44,13 +43,13 @@ private:
 
 class FindBandageVisitor : public FindUsableItemVisitor
 {
-public:
-   explicit FindBandageVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
+    public:
+    explicit FindBandageVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
 
     virtual bool Accept(const ItemPrototype* proto)
     {
-        return proto->Class == ITEM_CLASS_CONSUMABLE &&
-               proto->SubClass == ITEM_SUBCLASS_BANDAGE;
+        return proto->Class == ITEM_CLASS_CONSUMABLE
+            && proto->SubClass == ITEM_SUBCLASS_BANDAGE;
     }
 };
 
@@ -90,7 +89,6 @@ public:
         return false;
     }
 };
-
 
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
 {
@@ -178,7 +176,6 @@ bool compare_items_by_level(const Item* item1, const Item* item2)
 {
     return compare_items(item1->GetProto(), item2->GetProto());
 }
-
 
 Item* InventoryAction::FindPlayerItem(Player *bot, FindItemVisitor *visitor)
 {

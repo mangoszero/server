@@ -22,6 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GridNotifiers.cpp
+ * @brief Visitor pattern implementations for grid object notifications
+ *
+ * This file implements visitor classes that notify objects within
+ * a grid of changes and events. Notifiers handle:
+ *
+ * - Visibility changes (objects entering/leaving view)
+ * - Object creation/destruction
+ * - Movement updates
+ * - AI updates for creatures
+ * - Player presence notifications
+ *
+ * The visitor pattern allows efficient iteration over grid objects
+ * without coupling the grid to specific object types.
+ *
+ * @see GridNotifiers for notifier declarations
+ * @see Map for grid management
+ */
+
 #include "GridNotifiers.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -34,6 +54,11 @@
 
 using namespace MaNGOS;
 
+/**
+ * @brief Updates visibility for cameras affected by an object's visible changes.
+ *
+ * @param m The camera map to visit.
+ */
 void VisibleChangesNotifier::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -42,6 +67,9 @@ void VisibleChangesNotifier::Visit(CameraMapType& m)
     }
 }
 
+/**
+ * @brief Finalizes visibility updates for a player camera and sends the resulting packets.
+ */
 void VisibleNotifier::Notify()
 {
     Player& player = *i_camera.GetOwner();
@@ -110,6 +138,11 @@ void VisibleNotifier::Notify()
     }
 }
 
+/**
+ * @brief Delivers a packet to cameras in range of the source player.
+ *
+ * @param m The camera map to visit.
+ */
 void MessageDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -126,6 +159,11 @@ void MessageDeliverer::Visit(CameraMapType& m)
     }
 }
 
+/**
+ * @brief Delivers a packet to nearby cameras except one skipped receiver.
+ *
+ * @param m The camera map to visit.
+ */
 void MessageDelivererExcept::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -144,6 +182,11 @@ void MessageDelivererExcept::Visit(CameraMapType& m)
     }
 }
 
+/**
+ * @brief Delivers an object-scoped packet to all camera owners in the visited set.
+ *
+ * @param m The camera map to visit.
+ */
 void ObjectMessageDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -155,6 +198,11 @@ void ObjectMessageDeliverer::Visit(CameraMapType& m)
     }
 }
 
+/**
+ * @brief Delivers a packet to nearby cameras within an optional distance filter.
+ *
+ * @param m The camera map to visit.
+ */
 void MessageDistDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -173,6 +221,11 @@ void MessageDistDeliverer::Visit(CameraMapType& m)
     }
 }
 
+/**
+ * @brief Delivers an object-scoped packet to cameras within an optional distance filter.
+ *
+ * @param m The camera map to visit.
+ */
 void ObjectMessageDistDeliverer::Visit(CameraMapType& m)
 {
     for (CameraMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -188,6 +241,13 @@ void ObjectMessageDistDeliverer::Visit(CameraMapType& m)
 }
 
 template<class T>
+
+/**
+ * @brief Updates all world objects referenced by a grid manager.
+ *
+ * @tparam T The grid object type.
+ * @param m The grid reference manager.
+ */
 void ObjectUpdater::Visit(GridRefManager<T>& m)
 {
     for (typename GridRefManager<T>::iterator iter = m.begin(); iter != m.end(); ++iter)
@@ -197,6 +257,12 @@ void ObjectUpdater::Visit(GridRefManager<T>& m)
     }
 }
 
+/**
+ * @brief Checks whether a corpse is a valid cannibalize target.
+ *
+ * @param u The corpse candidate.
+ * @return true if the corpse can be cannibalized.
+ */
 bool CannibalizeObjectCheck::operator()(Corpse* u)
 {
     // ignore bones
@@ -220,6 +286,11 @@ bool CannibalizeObjectCheck::operator()(Corpse* u)
     return false;
 }
 
+/**
+ * @brief Respawns a creature if battleground event rules allow it.
+ *
+ * @param u The creature to respawn.
+ */
 void MaNGOS::RespawnDo::operator()(Creature* u) const
 {
     // prevent respawn creatures for not active BG event
@@ -236,6 +307,11 @@ void MaNGOS::RespawnDo::operator()(Creature* u) const
     u->Respawn();
 }
 
+/**
+ * @brief Respawns a game object if battleground event rules allow it.
+ *
+ * @param u The game object to respawn.
+ */
 void MaNGOS::RespawnDo::operator()(GameObject* u) const
 {
     // prevent respawn gameobject for not active BG event
@@ -252,6 +328,11 @@ void MaNGOS::RespawnDo::operator()(GameObject* u) const
     u->Respawn();
 }
 
+/**
+ * @brief Calls nearby assist-capable creatures to attack an enemy.
+ *
+ * @param u The nearby creature to test.
+ */
 void MaNGOS::CallOfHelpCreatureInRangeDo::operator()(Creature* u)
 {
     if (u == i_funit)
@@ -282,6 +363,12 @@ void MaNGOS::CallOfHelpCreatureInRangeDo::operator()(Creature* u)
     }
 }
 
+/**
+ * @brief Checks whether a nearby creature can assist against an enemy.
+ *
+ * @param u The nearby creature to test.
+ * @return true if the creature can assist.
+ */
 bool MaNGOS::AnyAssistCreatureInRangeCheck::operator()(Creature* u)
 {
     if (u == i_funit)

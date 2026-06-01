@@ -39,36 +39,35 @@ class Unit;
 class Creature;
 
 /**
- * @brief
- *
+ * @brief Capture point art kit IDs for different factions
  */
 enum CapturePointArtKits
 {
-    CAPTURE_ARTKIT_ALLIANCE = 2,
-    CAPTURE_ARTKIT_HORDE    = 1,
-    CAPTURE_ARTKIT_NEUTRAL  = 21
+    CAPTURE_ARTKIT_ALLIANCE = 2, ///< Alliance capture point art kit
+    CAPTURE_ARTKIT_HORDE    = 1, ///< Horde capture point art kit
+    CAPTURE_ARTKIT_NEUTRAL  = 21 ///< Neutral capture point art kit
 };
 
 /**
- * @brief
- *
+ * @brief Capture point animation IDs for different factions
  */
 enum CapturePointAnimations
 {
-    CAPTURE_ANIM_ALLIANCE   = 1,
-    CAPTURE_ANIM_HORDE      = 0,
-    CAPTURE_ANIM_NEUTRAL    = 2
+    CAPTURE_ANIM_ALLIANCE   = 1, ///< Alliance capture animation
+    CAPTURE_ANIM_HORDE      = 0, ///< Horde capture animation
+    CAPTURE_ANIM_NEUTRAL    = 2  ///< Neutral capture animation
 };
 
 /**
- * @brief
- *
+ * @brief Map of player GUIDs to zone status
  */
 typedef std::map < ObjectGuid /*playerGuid*/, bool /*isMainZone*/ > GuidZoneMap;
 
 /**
- * @brief
+ * @brief Base class for outdoor PvP zones
  *
+ * Provides framework for managing outdoor PvP areas including
+ * capture points, player tracking, and zone-specific events.
  */
 class OutdoorPvP
 {
@@ -76,200 +75,180 @@ class OutdoorPvP
 
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor
          */
         OutdoorPvP() {}
+
         /**
-         * @brief
-         *
+         * @brief Destructor
          */
         virtual ~OutdoorPvP() {}
 
         /**
-         * @brief called when the zone is initialized
-         *
-         * @param
-         * @param
+         * @brief Fill initial world states when zone is initialized
+         * @param data World packet to fill with state data
+         * @param count Count of world states added
          */
         virtual void FillInitialWorldStates(WorldPacket& /*data*/, uint32& /*count*/) {}
 
         /**
-         * @brief Process Capture event
-         *
-         * @param uint32
-         * @param
-         * @return bool
+         * @brief Process capture event
+         * @param eventId Event ID to handle
+         * @param go Game object involved in the event
+         * @return True if event was handled, false otherwise
          */
         virtual bool HandleEvent(uint32 /*eventId*/, GameObject* /*go*/) { return false; }
 
         /**
-         * @brief handle capture objective complete
-         *
-         * @param uint32
-         * @param >
-         * @param Team
+         * @brief Handle capture objective complete event
+         * @param eventId Event ID for objective completion
+         * @param players List of players involved in the objective
+         * @param team Team that completed the objective
          */
         virtual void HandleObjectiveComplete(uint32 /*eventId*/, const std::list<Player*> &/*players*/, Team /*team*/) {}
 
         /**
-         * @brief Called when a creature is created
-         *
-         * @param
+         * @brief Called when a creature is created in the zone
+         * @param creature Creature that was created
          */
         virtual void HandleCreatureCreate(Creature* /*creature*/) {}
 
         /**
-         * @brief Called when a gameobject is created or removed
-         *
-         * @param
+         * @brief Called when a game object is created in the zone
+         * @param go Game object that was created
          */
         virtual void HandleGameObjectCreate(GameObject* /*go*/);
+
         /**
-         * @brief
-         *
-         * @param
+         * @brief Called when a game object is removed from the zone
+         * @param go Game object that was removed
          */
         virtual void HandleGameObjectRemove(GameObject* /*go*/);
 
         /**
-         * @brief Called on creature death
-         *
-         * @param
+         * @brief Called when a creature dies in the zone
+         * @param creature Creature that died
          */
         virtual void HandleCreatureDeath(Creature* /*creature*/) {}
 
         /**
-         * @brief called when a player uses a gameobject related to outdoor pvp events
-         *
-         * @param
-         * @param
-         * @return bool
+         * @brief Called when a player uses a game object related to outdoor PvP
+         * @param player Player using the game object
+         * @param go Game object being used
+         * @return True if event was handled, false otherwise
          */
         virtual bool HandleGameObjectUse(Player* /*player*/, GameObject* /*go*/) { return false; }
 
         /**
-         * @brief called when a player triggers an areatrigger
-         *
-         * @param
-         * @param uint32
-         * @return bool
+         * @brief Called when a player triggers an area trigger
+         * @param player Player triggering the area trigger
+         * @param triggerId Area trigger ID
+         * @return True if event was handled, false otherwise
          */
         virtual bool HandleAreaTrigger(Player* /*player*/, uint32 /*triggerId*/) { return false; }
 
         /**
-         * @brief called when a player drops a flag
-         *
-         * @param
-         * @param uint32
-         * @return bool
+         * @brief Called when a player drops a flag
+         * @param player Player dropping the flag
+         * @param spellId Spell ID associated with the flag
+         * @return True if event was handled, false otherwise
          */
         virtual bool HandleDropFlag(Player* /*player*/, uint32 /*spellId*/) { return false; }
 
         /**
-         * @brief update - called by the OutdoorPvPMgr
-         *
-         * @param uint32
+         * @brief Update outdoor PvP zone state
+         * @param diff Time difference since last update in milliseconds
          */
         virtual void Update(uint32 /*diff*/) {}
 
         /**
-         * @brief Handle player kill
-         *
-         * @param killer
-         * @param victim
+         * @brief Handle player kill event
+         * @param killer Player who killed the victim
+         * @param victim Player who was killed
          */
         void HandlePlayerKill(Player* killer, Player* victim);
 
     protected:
 
         // Player related stuff
+
         /**
-         * @brief
-         *
-         * @param
-         * @param bool
+         * @brief Called when a player enters the zone
+         * @param player Player entering the zone
+         * @param isMainZone True if player entered main zone, false if subzone
          */
         virtual void HandlePlayerEnterZone(Player* /*player*/, bool /*isMainZone*/);
+
         /**
-         * @brief
-         *
-         * @param
-         * @param bool
+         * @brief Called when a player leaves the zone
+         * @param player Player leaving the zone
+         * @param isMainZone True if player left main zone, false if subzone
          */
         virtual void HandlePlayerLeaveZone(Player* /*player*/, bool /*isMainZone*/);
 
-        //
         /**
-         * @brief remove world states
-         *
-         * @param
+         * @brief Remove world states for a player
+         * @param player Player to remove world states for
          */
         virtual void SendRemoveWorldStates(Player* /*player*/) {}
 
         /**
-         * @brief handle npc/player kill
-         *
-         * @param
+         * @brief Handle player kill inside area
+         * @param killer Player who made the kill
          */
         virtual void HandlePlayerKillInsideArea(Player* /*killer*/) {}
 
         /**
-         * @brief send world state update to all players present
-         *
-         * @param field
-         * @param value
+         * @brief Send world state update to all players in the zone
+         * @param field World state field ID
+         * @param value World state value
          */
         void SendUpdateWorldState(uint32 field, uint32 value);
 
         /**
-         * @brief applies buff to a team inside the specific zone
-         *
-         * @param team
-         * @param spellId
-         * @param remove
+         * @brief Apply or remove buff to a team in the zone
+         * @param team Team to apply buff to
+         * @param spellId Spell ID of the buff
+         * @param remove True to remove buff, false to apply
          */
         void BuffTeam(Team team, uint32 spellId, bool remove = false);
 
         /**
-         * @brief get banner artkit based on controlling team
-         *
-         * @param team
-         * @param artKitAlliance
-         * @param artKitHorde
-         * @param artKitNeutral
-         * @return uint32
+         * @brief Get banner art kit based on controlling team
+         * @param team Controlling team
+         * @param artKitAlliance Art kit for Alliance control
+         * @param artKitHorde Art kit for Horde control
+         * @param artKitNeutral Art kit for neutral control
+         * @return Appropriate art kit ID
          */
         uint32 GetBannerArtKit(Team team, uint32 artKitAlliance = CAPTURE_ARTKIT_ALLIANCE, uint32 artKitHorde = CAPTURE_ARTKIT_HORDE, uint32 artKitNeutral = CAPTURE_ARTKIT_NEUTRAL);
 
         /**
-         * @brief set banner visual
-         *
-         * @param objRef
-         * @param goGuid
-         * @param artKit
-         * @param animId
+         * @brief Set banner visual by GUID
+         * @param objRef Reference world object for context
+         * @param goGuid GUID of the game object to update
+         * @param artKit Art kit to apply
+         * @param animId Animation ID to play
          */
         void SetBannerVisual(const WorldObject* objRef, ObjectGuid goGuid, uint32 artKit, uint32 animId);
+
         /**
-         * @brief
-         *
-         * @param go
-         * @param artKit
-         * @param animId
+         * @brief Set banner visual directly on game object
+         * @param go Game object to update
+         * @param artKit Art kit to apply
+         * @param animId Animation ID to play
          */
         void SetBannerVisual(GameObject* go, uint32 artKit, uint32 animId);
 
         /**
-         * @brief Handle gameobject spawn / despawn
-         *
-         * @param objRef
-         * @param goGuid
-         * @param respawn
+         * @brief Handle game object spawn or despawn
+         * @param objRef Reference world object for context
+         * @param goGuid GUID of the game object to respawn
+         * @param respawn True to spawn, false to despawn
          */
         void RespawnGO(const WorldObject* objRef, ObjectGuid goGuid, bool respawn);
 
-        GuidZoneMap m_zonePlayers; /**< store the players inside the area */
+        GuidZoneMap m_zonePlayers; ///< Map of players inside the area
 };
 
 #endif

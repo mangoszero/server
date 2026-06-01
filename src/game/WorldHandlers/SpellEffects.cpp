@@ -190,21 +190,41 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS] =
     &Spell::EffectUnused,                                   // 129 SPELL_EFFECT_129                      future SPELL_EFFECT_APPLY_AREA_AURA_ENEMY, now only one test spell
 };
 
+/**
+ * @brief Handles a no-op spell effect used only as a marker.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectEmpty(SpellEffectIndex /*eff_idx*/)
 {
     // NOT NEED ANY IMPLEMENTATION CODE, EFFECT POSISBLE USED AS MARKER OR CLIENT INFORM
 }
 
+/**
+ * @brief Handles a legacy null spell effect placeholder.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectNULL(SpellEffectIndex /*eff_idx*/)
 {
     DEBUG_LOG("WORLD: Spell Effect DUMMY");
 }
 
+/**
+ * @brief Handles an unused spell effect slot.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectUnused(SpellEffectIndex /*eff_idx*/)
 {
     // NOT USED BY ANY SPELL OR USELESS OR IMPLEMENTED IN DIFFERENT WAY IN MANGOS
 }
 
+/**
+ * @brief Sends a resurrection request to a dead player target.
+ *
+ * @param eff_idx The effect index providing resurrection values.
+ */
 void Spell::EffectResurrectNew(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->IsAlive())
@@ -235,6 +255,11 @@ void Spell::EffectResurrectNew(SpellEffectIndex eff_idx)
     SendResurrectRequest(pTarget);
 }
 
+/**
+ * @brief Instantly kills the unit target and handles spell-specific side effects.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || !unitTarget->IsAlive())
@@ -273,6 +298,11 @@ void Spell::EffectInstaKill(SpellEffectIndex /*eff_idx*/)
     m_caster->DealDamage(unitTarget, unitTarget->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 }
 
+/**
+ * @brief Applies environmental damage to the caster.
+ *
+ * @param eff_idx The effect index used to calculate the base damage.
+ */
 void Spell::EffectEnvironmentalDMG(SpellEffectIndex eff_idx)
 {
     uint32 absorb = 0;
@@ -292,6 +322,11 @@ void Spell::EffectEnvironmentalDMG(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Computes school-damage special cases and accumulates resulting damage.
+ *
+ * @param effect_idx The damage effect index.
+ */
 void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 {
     if (unitTarget && unitTarget->IsAlive())
@@ -412,6 +447,11 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
     }
 }
 
+/**
+ * @brief Executes spell-specific dummy effect behavior.
+ *
+ * @param eff_idx The dummy effect index.
+ */
 void Spell::EffectDummy(SpellEffectIndex eff_idx)
 {
     if (!unitTarget && !gameObjTarget && !itemTarget)
@@ -626,23 +666,23 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 }
                 case 13278:                                // Gnomish Death Ray charging
                 {
-                   if (unitTarget)
-                   {
-                       m_caster->CastSpell(m_caster, 13493, true, NULL);
-                   }
+                    if (unitTarget)
+                    {
+                        m_caster->CastSpell(m_caster, 13493, true, NULL);
+                    }
 
-                   return;
+                    return;
                 }
                 case 13280:                                // Gnomish Death Ray ending charge
                 {
-                   if (unitTarget)
-                      {
-                          uint32 roll = urand(0,7);
-                          int32 dmg[8] = {900, 1200, 1500, 1800, 2100, 2400, 2700, 3000};
+                    if (unitTarget)
+                    {
+                        uint32 roll = urand(0,7);
+                        int32 dmg[8] = {900, 1200, 1500, 1800, 2100, 2400, 2700, 3000};
 
-                          m_caster->CastCustomSpell(unitTarget, 13279, &dmg[roll], NULL, NULL, true);
-                      }
-                  return;
+                        m_caster->CastCustomSpell(unitTarget, 13279, &dmg[roll], NULL, NULL, true);
+                    }
+                    return;
                 }
                 case 13535:                                 // Tame Beast
                 {
@@ -837,8 +877,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     }
 
                     uint32 spell_id = urand(0, 1)
-                                      ? 17269               // Create Resonating Skull
-                                      : 17270;              // Create Bone Dust
+                                    ? 17269               // Create Resonating Skull
+                                    : 17270;              // Create Bone Dust
 
                     m_caster->CastSpell(m_caster, spell_id, true, NULL);
                     return;
@@ -1576,6 +1616,11 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
     m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->Id, m_caster, unitTarget);
 }
 
+/**
+ * @brief Triggers another spell on the current unit target.
+ *
+ * @param eff_idx The effect index providing the triggered spell id.
+ */
 void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
 {
     // only unit case known
@@ -1750,6 +1795,11 @@ void Spell::EffectTriggerSpell(SpellEffectIndex eff_idx)
     caster->CastSpell(unitTarget, spellInfo, true, m_CastItem, NULL, m_originalCasterGUID, m_spellInfo);
 }
 
+/**
+ * @brief Triggers a missile spell at the stored destination coordinates.
+ *
+ * @param effect_idx The effect index providing the triggered spell id.
+ */
 void Spell::EffectTriggerMissileSpell(SpellEffectIndex effect_idx)
 {
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effect_idx];
@@ -1879,6 +1929,11 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)   // TODO - Use target
     }
 }
 
+/**
+ * @brief Creates and attaches an aura effect to the current unit target.
+ *
+ * @param eff_idx The aura effect index.
+ */
 void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -1921,6 +1976,11 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
     m_spellAuraHolder->AddAura(aur, eff_idx);
 }
 
+/**
+ * @brief Drains power from the unit target and optionally restores mana to the caster.
+ *
+ * @param eff_idx The effect index defining the drained power type.
+ */
 void Spell::EffectPowerDrain(SpellEffectIndex eff_idx)
 {
     if (m_spellInfo->EffectMiscValue[eff_idx] < 0 || m_spellInfo->EffectMiscValue[eff_idx] >= MAX_POWERS)
@@ -1985,6 +2045,11 @@ void Spell::EffectPowerDrain(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Starts a scripted event defined by the spell effect.
+ *
+ * @param effectIndex The effect index providing the event identifier.
+ */
 void Spell::EffectSendEvent(SpellEffectIndex effectIndex)
 {
     /*
@@ -1996,6 +2061,11 @@ void Spell::EffectSendEvent(SpellEffectIndex effectIndex)
     StartEvents_Event(m_caster->GetMap(), m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject, true, m_caster);
 }
 
+/**
+ * @brief Burns target power and converts it into spell damage.
+ *
+ * @param eff_idx The effect index defining the burned power type.
+ */
 void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
 {
     if (m_spellInfo->EffectMiscValue[eff_idx] < 0 || m_spellInfo->EffectMiscValue[eff_idx] >= MAX_POWERS)
@@ -2038,6 +2108,11 @@ void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
     m_damage += new_damage;
 }
 
+/**
+ * @brief Accumulates healing for the current unit target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget && unitTarget->IsAlive() && damage >= 0)
@@ -2105,6 +2180,11 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Heals a mechanical target immediately.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectHealMechanical(SpellEffectIndex /*eff_idx*/)
 {
     // Mechanic creature type should be correctly checked by targetCreatureType field
@@ -2124,6 +2204,11 @@ void Spell::EffectHealMechanical(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Damages the target and heals the caster for a portion of the damage dealt.
+ *
+ * @param eff_idx The effect index providing the leech multiplier.
+ */
 void Spell::EffectHealthLeech(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -2165,6 +2250,12 @@ void Spell::EffectHealthLeech(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Creates an item and stores it in the player's inventory.
+ *
+ * @param eff_idx The effect index creating the item.
+ * @param itemtype The item entry to create.
+ */
 void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -2276,6 +2367,11 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
     }
 }
 
+/**
+ * @brief Handles item-creation effects and related special target cleanup.
+ *
+ * @param eff_idx The effect index creating the item.
+ */
 void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
 {
     switch (m_spellInfo->Id)
@@ -2283,8 +2379,8 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
         case SPELL_FILLING_EMPTY_JAR__CURSED_OOZE: // Spell 15698 (for Cursed Ooze)
         case SPELL_FILLING_EMPTY_JAR__TAINTED_OOZE: // Spell 15699 (for Tainted Ooze)
         {
-            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
-
+            if (unitTarget->GetTypeId() == TYPEID_UNIT)
+            {
                 Creature* creature = static_cast<Creature*>(unitTarget);
                 if (creature->IsDead() && (creature->GetEntry() == CREATURE_TAINTED_OOZE || creature->GetEntry() == CREATURE_CURSED_OOZE))
                 {
@@ -2296,8 +2392,8 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
         }
         case SPELL_FILLING_EMPTY_JAR__PURE_OOZE: // Spell 15702 (for Primal, Muculent and Glutonous Ooze):
         {
-            if (unitTarget->GetTypeId() == TYPEID_UNIT) {
-
+            if (unitTarget->GetTypeId() == TYPEID_UNIT)
+            {
                 Creature* creature = static_cast<Creature*>(unitTarget);
                 if (creature->IsDead() && (
                     creature->GetEntry() == CREATURE_MUCULENT_OOZE ||
@@ -2315,6 +2411,11 @@ void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
     DoCreateItem(eff_idx, m_spellInfo->EffectItemType[eff_idx]);
 }
 
+/**
+ * @brief Creates a persistent area aura dynamic object.
+ *
+ * @param eff_idx The persistent area aura effect index.
+ */
 void Spell::EffectPersistentAA(SpellEffectIndex eff_idx)
 {
     Unit* pCaster = GetAffectiveCaster();
@@ -2343,6 +2444,11 @@ void Spell::EffectPersistentAA(SpellEffectIndex eff_idx)
     pCaster->GetMap()->Add(dynObj);
 }
 
+/**
+ * @brief Restores power to the current unit target.
+ *
+ * @param eff_idx The effect index defining the power type.
+ */
 void Spell::EffectEnergize(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -2400,6 +2506,13 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
     m_caster->EnergizeBySpell(unitTarget, m_spellInfo->Id, damage, power);
 }
 
+/**
+ * @brief Opens or sends loot for the specified object guid.
+ *
+ * @param guid The loot source guid.
+ * @param loottype The loot type to open.
+ * @param lockType The lock interaction type.
+ */
 void Spell::SendLoot(ObjectGuid guid, LootType loottype, LockType lockType)
 {
     if (gameObjTarget)
@@ -2442,6 +2555,11 @@ void Spell::SendLoot(ObjectGuid guid, LootType loottype, LockType lockType)
     ((Player*)m_caster)->SendLoot(guid, loottype);
 }
 
+/**
+ * @brief Opens a locked game object or item and awards related skill progress.
+ *
+ * @param eff_idx The open-lock effect index.
+ */
 void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
 {
     if (!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2515,6 +2633,11 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
         itemTarget->SetFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED);
     }
 
+    if (gameObjTarget)
+    {
+        gameObjTarget->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_LOCKED);
+    }
+
     SendLoot(guid, LOOT_SKINNING, LockType(m_spellInfo->EffectMiscValue[eff_idx]));
 
     // not allow use skill grow at item base open
@@ -2541,6 +2664,11 @@ void Spell::EffectOpenLock(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Replaces the cast item with another item entry.
+ *
+ * @param eff_idx The effect index defining the replacement item.
+ */
 void Spell::EffectSummonChangeItem(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2576,6 +2704,11 @@ void Spell::EffectSummonChangeItem(SpellEffectIndex eff_idx)
     player->ConvertItem(oldItem, newitemid);
 }
 
+/**
+ * @brief Grants weapon or armor proficiency to a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectProficiency(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -2597,6 +2730,11 @@ void Spell::EffectProficiency(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Creates and attaches an area aura for the current unit target.
+ *
+ * @param eff_idx The area aura effect index.
+ */
 void Spell::EffectApplyAreaAura(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -2612,6 +2750,11 @@ void Spell::EffectApplyAreaAura(SpellEffectIndex eff_idx)
     m_spellAuraHolder->AddAura(Aur, eff_idx);
 }
 
+/**
+ * @brief Summons a controllable pet or guardian creature for the caster.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummon(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetPetGuid())
@@ -2740,6 +2883,11 @@ void Spell::EffectSummon(SpellEffectIndex eff_idx)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Teaches a spell to the target player or pet.
+ *
+ * @param eff_idx The effect index containing the learned spell id.
+ */
 void Spell::EffectLearnSpell(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -2768,6 +2916,11 @@ void Spell::EffectLearnSpell(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Dispels matching auras from the target and sends result logs.
+ *
+ * @param eff_idx The dispel effect index.
+ */
 void Spell::EffectDispel(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -2937,6 +3090,11 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Enables dual wielding for a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectDualWield(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget && unitTarget->GetTypeId() == TYPEID_PLAYER)
@@ -2945,12 +3103,22 @@ void Spell::EffectDualWield(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Placeholder for pull-style spell effects.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectPull(SpellEffectIndex /*eff_idx*/)
 {
     // TODO: create a proper pull towards distract spell center for distract
     DEBUG_LOG("WORLD: Spell Effect DUMMY");
 }
 
+/**
+ * @brief Turns and distracts a non-combat unit target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
 {
     // Check for possible target
@@ -2976,6 +3144,11 @@ void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Attempts to pickpocket a valid creature target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3010,6 +3183,11 @@ void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Creates a farsight focus object and switches the player's camera to it.
+ *
+ * @param eff_idx The farsight effect index.
+ */
 void Spell::EffectAddFarsight(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3034,6 +3212,11 @@ void Spell::EffectAddFarsight(SpellEffectIndex eff_idx)
     ((Player*)m_caster)->GetCamera().SetView(dynObj);
 }
 
+/**
+ * @brief Summons a temporary wild creature defined by the spell effect.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonWild(SpellEffectIndex eff_idx)
 {
     uint32 creature_entry = m_spellInfo->EffectMiscValue[eff_idx];
@@ -3132,6 +3315,11 @@ void Spell::EffectSummonWild(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Summons one or more guardian pets for the caster.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
 {
     uint32 pet_entry = m_spellInfo->EffectMiscValue[eff_idx];
@@ -3272,6 +3460,11 @@ void Spell::EffectSummonGuardian(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Teleports the target near the caster and turns it to face away from the caster.
+ *
+ * @param eff_idx The teleport effect index.
+ */
 void Spell::EffectTeleUnitsFaceCaster(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -3298,6 +3491,11 @@ void Spell::EffectTeleUnitsFaceCaster(SpellEffectIndex eff_idx)
     unitTarget->NearTeleportTo(fx, fy, fz, m_caster->GetOrientation() + M_PI_F, unitTarget == m_caster);
 }
 
+/**
+ * @brief Teaches or updates a skill for a player target.
+ *
+ * @param eff_idx The effect index containing the skill identifier.
+ */
 void Spell::EffectLearnSkill(SpellEffectIndex eff_idx)
 {
     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -3320,6 +3518,11 @@ void Spell::EffectLearnSkill(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Awards a fixed amount of honor to a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectAddHonor(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -3333,6 +3536,11 @@ void Spell::EffectAddHonor(SpellEffectIndex /*eff_idx*/)
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "SpellEffect::AddHonor (spell_id %u) rewards %u honor points (non scale) for player: %u", m_spellInfo->Id, damage, ((Player*)unitTarget)->GetGUIDLow());
 }
 
+/**
+ * @brief Placeholder handler for trade-skill effects.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectTradeSkill(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -3344,6 +3552,11 @@ void Spell::EffectTradeSkill(SpellEffectIndex /*eff_idx*/)
     // ((Player*)unitTarget)->SetSkill(skillid,skillval?skillval:1,skillmax+75);
 }
 
+/**
+ * @brief Applies a permanent enchantment to the target item.
+ *
+ * @param eff_idx The effect index providing the enchantment id.
+ */
 void Spell::EffectEnchantItemPerm(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3396,6 +3609,11 @@ void Spell::EffectEnchantItemPerm(SpellEffectIndex eff_idx)
     item_owner->ApplyEnchantment(itemTarget, PERM_ENCHANTMENT_SLOT, true);
 }
 
+/**
+ * @brief Applies a temporary enchantment to the target item.
+ *
+ * @param eff_idx The effect index providing the enchantment id.
+ */
 void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3476,6 +3694,11 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     item_owner->ApplyEnchantment(itemTarget, TEMP_ENCHANTMENT_SLOT, true);
 }
 
+/**
+ * @brief Converts the creature target into a hunter pet for the caster.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectTameCreature(SpellEffectIndex /*eff_idx*/)
 {
     // Caster must be player, checked in Spell::CheckCast
@@ -3539,6 +3762,11 @@ void Spell::EffectTameCreature(SpellEffectIndex /*eff_idx*/)
     plr->PetSpellInitialize();
 }
 
+/**
+ * @brief Summons, recalls, or replaces the caster's pet.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
 {
     uint32 petentry = m_spellInfo->EffectMiscValue[eff_idx];
@@ -3720,6 +3948,11 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Teaches a new spell to the caster's pet.
+ *
+ * @param eff_idx The effect index containing the learned spell id.
+ */
 void Spell::EffectLearnPetSpell(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -3757,6 +3990,11 @@ void Spell::EffectLearnPetSpell(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Prepares taunt threat adjustments before the taunt aura is applied.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectTaunt(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -3782,6 +4020,11 @@ void Spell::EffectTaunt(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Computes weapon-based spell damage and accumulates it for application.
+ *
+ * @param eff_idx The weapon damage effect index.
+ */
 void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -3921,6 +4164,11 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Adds flat threat from the caster to the unit target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectThreat(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || !unitTarget->IsAlive() || !m_caster->IsAlive())
@@ -3936,6 +4184,11 @@ void Spell::EffectThreat(SpellEffectIndex /*eff_idx*/)
     unitTarget->AddThreat(m_caster, float(damage), false, GetSpellSchoolMask(m_spellInfo), m_spellInfo);
 }
 
+/**
+ * @brief Heals the target for an amount equal to the caster's maximum health.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectHealMaxHealth(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -3952,6 +4205,11 @@ void Spell::EffectHealMaxHealth(SpellEffectIndex /*eff_idx*/)
     m_healing += heal;
 }
 
+/**
+ * @brief Interrupts interruptible non-melee spells on the unit target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectInterruptCast(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -3980,6 +4238,11 @@ void Spell::EffectInterruptCast(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Summons a wild game object at the destination or near the caster.
+ *
+ * @param eff_idx The summon object effect index.
+ */
 void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
 {
     uint32 gameobject_id = m_spellInfo->EffectMiscValue[eff_idx];
@@ -4052,6 +4315,11 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Executes script-driven spell effect behavior for special cases.
+ *
+ * @param eff_idx The script effect index.
+ */
 void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 {
     // TODO: we must implement hunter pet summon at login there (spell 6962)
@@ -4606,6 +4874,11 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
     m_caster->GetMap()->ScriptsStart(DBS_ON_SPELL, m_spellInfo->Id, m_caster, unitTarget);
 }
 
+/**
+ * @brief Clears combat and threat state for the target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -4622,7 +4895,6 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
     {
         ((Player*)m_caster)->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
     }
-
 
     // Improved Sap: a hacky way
     if (m_triggeredByAuraSpell && m_spellInfo->Id == 14093 && unitTarget->GetTypeId() == TYPEID_PLAYER)
@@ -4648,6 +4920,11 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Adds combo points to the caster for the unit target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -4668,6 +4945,11 @@ void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
     ((Player*)m_caster)->AddComboPoints(unitTarget, damage);
 }
 
+/**
+ * @brief Creates a duel flag object and starts a duel request between two players.
+ *
+ * @param eff_idx The effect index containing the duel flag game object id.
+ */
 void Spell::EffectDuel(SpellEffectIndex eff_idx)
 {
     if (!m_caster || !unitTarget || m_caster->GetTypeId() != TYPEID_PLAYER || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -4760,6 +5042,11 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Teleports a player target to its homebind as an unstuck action.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectStuck(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -4795,6 +5082,11 @@ void Spell::EffectStuck(SpellEffectIndex /*eff_idx*/)
     spell.SendSpellCooldown();
 }
 
+/**
+ * @brief Sends a summon request to a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSummonPlayer(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -4820,6 +5112,11 @@ void Spell::EffectSummonPlayer(SpellEffectIndex /*eff_idx*/)
     ((Player*)unitTarget)->GetSession()->SendPacket(&data);
 }
 
+/**
+ * @brief Builds the default script command used to activate a game object.
+ *
+ * @return ScriptInfo Preconfigured activation command data.
+ */
 static ScriptInfo generateActivateCommand()
 {
     ScriptInfo si;
@@ -4831,6 +5128,11 @@ static ScriptInfo generateActivateCommand()
     return si;
 }
 
+/**
+ * @brief Activates or manipulates the targeted game object based on the effect misc value.
+ *
+ * @param eff_idx The activation effect index.
+ */
 void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
 {
     if (!gameObjTarget)
@@ -4923,6 +5225,11 @@ void Spell::EffectActivateObject(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Summons a totem into the appropriate totem slot.
+ *
+ * @param eff_idx The totem summon effect index.
+ */
 void Spell::EffectSummonTotem(SpellEffectIndex eff_idx)
 {
     int slot = 0;
@@ -4998,6 +5305,11 @@ void Spell::EffectSummonTotem(SpellEffectIndex eff_idx)
     pTotem->Summon(m_caster);
 }
 
+/**
+ * @brief Summons a possessed creature and transfers control to the caster.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
 {
     uint32 creatureEntry = m_spellInfo->EffectMiscValue[eff_idx];
@@ -5063,6 +5375,11 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Applies a temporary enchantment to the main-hand item of the player target.
+ *
+ * @param eff_idx The enchant effect index.
+ */
 void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
 {
     // this is only item spell effect applied to main-hand weapon of target player (players in area)
@@ -5119,6 +5436,11 @@ void Spell::EffectEnchantHeldItem(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Starts disenchanting loot generation for the target item.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -5139,6 +5461,11 @@ void Spell::EffectDisEnchant(SpellEffectIndex /*eff_idx*/)
     // item will be removed at disenchanting end
 }
 
+/**
+ * @brief Increases the drunk state of a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectInebriate(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5160,6 +5487,11 @@ void Spell::EffectInebriate(SpellEffectIndex /*eff_idx*/)
     player->SetDrunkValue(currentDrunk, m_CastItem ? m_CastItem->GetEntry() : 0);
 }
 
+/**
+ * @brief Feeds the caster's pet and triggers the associated benefit spell.
+ *
+ * @param eff_idx The effect index containing the triggered spell id.
+ */
 void Spell::EffectFeedPet(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -5199,6 +5531,11 @@ void Spell::EffectFeedPet(SpellEffectIndex eff_idx)
     m_caster->CastCustomSpell(m_caster, m_spellInfo->EffectTriggerSpell[eff_idx], &benefit, NULL, NULL, true);
 }
 
+/**
+ * @brief Dismisses the caster's living pet.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectDismissPet(SpellEffectIndex /*eff_idx*/)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -5217,6 +5554,11 @@ void Spell::EffectDismissPet(SpellEffectIndex /*eff_idx*/)
     pet->Unsummon(PET_SAVE_NOT_IN_SLOT, m_caster);
 }
 
+/**
+ * @brief Summons a persistent object into one of the caster's object slots.
+ *
+ * @param eff_idx The summon object effect index.
+ */
 void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
 {
     uint32 go_id = m_spellInfo->EffectMiscValue[eff_idx];
@@ -5288,6 +5630,11 @@ void Spell::EffectSummonObject(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Sends a resurrection request with percentage-based health and mana restoration.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectResurrect(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5341,6 +5688,11 @@ void Spell::EffectResurrect(SpellEffectIndex /*eff_idx*/)
     SendResurrectRequest(pTarget);
 }
 
+/**
+ * @brief Adds queued extra attacks to the target unit.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectAddExtraAttacks(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget || !unitTarget->IsAlive())
@@ -5361,6 +5713,11 @@ void Spell::EffectAddExtraAttacks(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Grants the ability to parry to a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectParry(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget && unitTarget->GetTypeId() == TYPEID_PLAYER)
@@ -5369,6 +5726,11 @@ void Spell::EffectParry(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Grants the ability to block to a player target.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectBlock(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget && unitTarget->GetTypeId() == TYPEID_PLAYER)
@@ -5377,6 +5739,11 @@ void Spell::EffectBlock(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Teleports the target forward while avoiding steep terrain, water edges, and obstacles.
+ *
+ * @param eff_idx The effect index providing the leap distance.
+ */
 void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
 {
     float dist = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[eff_idx]));
@@ -5545,6 +5912,11 @@ void Spell::EffectLeapForward(SpellEffectIndex eff_idx)
     unitTarget->NearTeleportTo(nextPos.x, nextPos.y, nextPos.z, orientation, unitTarget == m_caster);
 }
 
+/**
+ * @brief Modifies player reputation for the faction referenced by the effect.
+ *
+ * @param eff_idx The effect index containing faction and reputation values.
+ */
 void Spell::EffectReputation(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5569,6 +5941,11 @@ void Spell::EffectReputation(SpellEffectIndex eff_idx)
     _player->GetReputationMgr().ModifyReputation(factionEntry, rep_change);
 }
 
+/**
+ * @brief Marks the referenced quest objective as completed for the player target.
+ *
+ * @param eff_idx The effect index containing the quest id.
+ */
 void Spell::EffectQuestComplete(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5580,6 +5957,11 @@ void Spell::EffectQuestComplete(SpellEffectIndex eff_idx)
     ((Player*)unitTarget)->AreaExploredOrEventHappens(quest_id);
 }
 
+/**
+ * @brief Resurrects the target player with flat or percentage-based health and mana.
+ *
+ * @param eff_idx The effect index containing resurrection resource data.
+ */
 void Spell::EffectSelfResurrect(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->IsAlive())
@@ -5625,6 +6007,11 @@ void Spell::EffectSelfResurrect(SpellEffectIndex eff_idx)
     plr->SpawnCorpseBones();
 }
 
+/**
+ * @brief Opens skinning loot for a creature and updates the player's gathering skill.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
 {
     if (unitTarget->GetTypeId() != TYPEID_UNIT)
@@ -5653,6 +6040,11 @@ void Spell::EffectSkinning(SpellEffectIndex /*eff_idx*/)
     ((Player*)m_caster)->UpdateGatherSkill(skill, skillValue, reqValue, creature->IsElite() ? 2 : 1);
 }
 
+/**
+ * @brief Moves the caster into melee contact with the target and starts attacking if appropriate.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -5680,6 +6072,11 @@ void Spell::EffectCharge(SpellEffectIndex /*eff_idx*/)
     }
 }
 
+/**
+ * @brief Summons or toggles the caster's vanity critter companion.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -5787,6 +6184,11 @@ void Spell::EffectSummonCritter(SpellEffectIndex eff_idx)
 #endif /* ENABLE_ELUNA */
 }
 
+/**
+ * @brief Applies a knockback to a player target.
+ *
+ * @param eff_idx The effect index containing horizontal speed data.
+ */
 void Spell::EffectKnockBack(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5797,6 +6199,11 @@ void Spell::EffectKnockBack(SpellEffectIndex eff_idx)
     ((Player*)unitTarget)->KnockBackFrom(m_caster, float(m_spellInfo->EffectMiscValue[eff_idx]) / 10, float(damage) / 10);
 }
 
+/**
+ * @brief Starts the taxi path referenced by the spell effect for a player target.
+ *
+ * @param eff_idx The effect index containing the taxi path id.
+ */
 void Spell::EffectSendTaxi(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5807,6 +6214,11 @@ void Spell::EffectSendTaxi(SpellEffectIndex eff_idx)
     ((Player*)unitTarget)->ActivateTaxiPathTo(m_spellInfo->EffectMiscValue[eff_idx], m_spellInfo->Id);
 }
 
+/**
+ * @brief Pulls a player target toward the caster using reverse knockback.
+ *
+ * @param eff_idx The effect index containing vertical speed data.
+ */
 void Spell::EffectPlayerPull(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5823,6 +6235,11 @@ void Spell::EffectPlayerPull(SpellEffectIndex eff_idx)
     ((Player*)unitTarget)->KnockBackFrom(m_caster, -dist, float(m_spellInfo->EffectMiscValue[eff_idx]) / 10);
 }
 
+/**
+ * @brief Removes auras from the target that match the specified mechanic.
+ *
+ * @param eff_idx The effect index containing the mechanic id.
+ */
 void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
 {
     if (!unitTarget)
@@ -5853,6 +6270,11 @@ void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Restores the caster's dead pet and revives it with percentage-based health.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
 {
     Player* _player = m_caster->ToPlayer();
@@ -5909,6 +6331,11 @@ void Spell::EffectSummonDeadPet(SpellEffectIndex /*eff_idx*/)
     pet->SavePetToDB(PET_SAVE_AS_CURRENT);
 }
 
+/**
+ * @brief Unsummons all totems currently owned by the caster.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectDestroyAllTotems(SpellEffectIndex /*eff_idx*/)
 {
     for (int slot = 0;  slot < MAX_TOTEM_SLOT; ++slot)
@@ -5918,6 +6345,11 @@ void Spell::EffectDestroyAllTotems(SpellEffectIndex /*eff_idx*/)
         }
 }
 
+/**
+ * @brief Removes a fixed number of durability points from one or more player items.
+ *
+ * @param eff_idx The effect index containing the inventory slot selector.
+ */
 void Spell::EffectDurabilityDamage(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5947,6 +6379,11 @@ void Spell::EffectDurabilityDamage(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Removes a percentage of durability from one or more player items.
+ *
+ * @param eff_idx The effect index containing the inventory slot selector.
+ */
 void Spell::EffectDurabilityDamagePCT(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -5981,6 +6418,11 @@ void Spell::EffectDurabilityDamagePCT(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Modifies the caster's threat on the target by a percentage.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectModifyThreatPercent(SpellEffectIndex /*eff_idx*/)
 {
     if (!unitTarget)
@@ -5991,6 +6433,11 @@ void Spell::EffectModifyThreatPercent(SpellEffectIndex /*eff_idx*/)
     unitTarget->GetThreatManager().modifyThreatPercent(m_caster, damage);
 }
 
+/**
+ * @brief Summons a transmitted game object such as fishing nodes, rituals, or spell casters.
+ *
+ * @param eff_idx The effect index containing the game object entry.
+ */
 void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 {
     uint32 name_id = m_spellInfo->EffectMiscValue[eff_idx];
@@ -6054,7 +6501,6 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     }
 
     Map* cMap = m_caster->GetMap();
-
 
     // if gameobject is summoning object, it should be spawned right on caster's position
     if (goinfo->type == GAMEOBJECT_TYPE_SUMMONING_RITUAL)
@@ -6139,11 +6585,21 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Placeholder handler for generic skill effects.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSkill(SpellEffectIndex /*eff_idx*/)
 {
     DEBUG_LOG("WORLD: SkillEFFECT");
 }
 
+/**
+ * @brief Summons a demon creature at the destination point and applies special inferno behavior.
+ *
+ * @param eff_idx The summon effect index.
+ */
 void Spell::EffectSummonDemon(SpellEffectIndex eff_idx)
 {
     float px = m_targets.m_destX;
@@ -6171,6 +6627,11 @@ void Spell::EffectSummonDemon(SpellEffectIndex eff_idx)
     }
 }
 
+/**
+ * @brief Fully resurrects a dead player target as part of a spirit heal effect.
+ *
+ * @param eff_idx Unused effect index.
+ */
 void Spell::EffectSpiritHeal(SpellEffectIndex /*eff_idx*/)
 {
     // TODO player can't see the heal-animation - he should respawn some ticks later
@@ -6206,6 +6667,12 @@ void Spell::EffectSkinPlayerCorpse(SpellEffectIndex /*eff_idx*/)
 
     ((Player*)unitTarget)->RemovedInsignia((Player*)m_caster);
 }
+
+/**
+ * @brief Sets the player's homebind location to the current position.
+ *
+ * @param eff_idx The bind effect index.
+ */
 void Spell::EffectBind(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -6244,6 +6711,11 @@ void Spell::EffectBind(SpellEffectIndex eff_idx)
     player->SendDirectMessage(&data);
 }
 
+/**
+ * @brief Sends a battleground player target to its graveyard.
+ *
+ * @param eff_idx The teleport effect index.
+ */
 void Spell::EffectTeleportGraveyard(SpellEffectIndex eff_idx)
 {
     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER || !unitTarget->GetMap()->IsBattleGround())

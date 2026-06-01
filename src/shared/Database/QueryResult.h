@@ -30,146 +30,148 @@
 #include "Field.h"
 
 /**
- * @brief
+ * @brief Abstract base class for database query results
  *
+ * QueryResult provides the interface for accessing database query results.
+ * It supports row iteration and field access. Concrete implementations
+ * (like QueryResultMysql) provide the actual database-specific functionality.
  */
 class QueryResult
 {
     public:
         /**
-         * @brief
-         *
-         * @param rowCount
-         * @param fieldCount
+         * @brief Constructor with row and field count
+         * @param rowCount Number of rows in result set
+         * @param fieldCount Number of fields per row
          */
         QueryResult(uint64 rowCount, uint32 fieldCount)
             : mFieldCount(fieldCount), mRowCount(rowCount), mCurrentRow{} {}
 
         /**
-         * @brief
-         *
+         * @brief Virtual destructor
          */
         virtual ~QueryResult() {}
 
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Move to next row in result set
+         * @return True if moved to next row, false if no more rows
          */
         virtual bool NextRow() = 0;
 
         /**
-         * @brief
-         *
-         * @return Field
+         * @brief Get current row fields
+         * @return Pointer to current row field array
          */
         Field* Fetch() const { return mCurrentRow; }
 
         /**
-         * @brief
-         *
-         * @param index
-         * @return const Field &operator
+         * @brief Get field by index from current row
+         * @param index Field index
+         * @return Reference to field at index
          */
         const Field& operator [](int index) const { return mCurrentRow[index]; }
 
         /**
-         * @brief
-         *
-         * @return uint32
+         * @brief Get number of fields per row
+         * @return Field count
          */
         uint32 GetFieldCount() const { return mFieldCount; }
+
         /**
-         * @brief
-         *
-         * @return uint64
+         * @brief Get number of rows in result set
+         * @return Row count
          */
         uint64 GetRowCount() const { return mRowCount; }
 
     protected:
-        Field* mCurrentRow; /**< TODO */
-        uint32 mFieldCount; /**< TODO */
-        uint64 mRowCount; /**< TODO */
+        Field* mCurrentRow; /**< Current row field array */
+        uint32 mFieldCount; /**< Number of fields per row */
+        uint64 mRowCount; /**< Total number of rows */
 };
 
 /**
- * @brief
- *
+ * @brief Vector of field names for named query results
  */
 typedef std::vector<std::string> QueryFieldNames;
 
 /**
- * @brief
+ * @brief Query result with named field access
  *
+ * QueryNamedResult wraps a QueryResult and adds the ability to
+ * access fields by name instead of just by index. This provides
+ * more readable and maintainable code.
  */
 class QueryNamedResult
 {
     public:
         /**
-         * @brief
-         *
-         * @param query
-         * @param names
+         * @brief Constructor from QueryResult and field names
+         * @param query QueryResult to wrap (takes ownership)
+         * @param names Vector of field names
          */
         explicit QueryNamedResult(QueryResult* query, QueryFieldNames const& names) : mQuery(query), mFieldNames(names) {}
+
         /**
-         * @brief
-         *
+         * @brief Destructor - deletes wrapped QueryResult
          */
-        ~QueryNamedResult() { delete mQuery; }
+        ~QueryNamedResult()
+        {
+            delete mQuery;
+        }
 
         // compatible interface with QueryResult
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Move to next row
+         * @return True if moved to next row, false if no more rows
          */
-        bool NextRow() { return mQuery->NextRow(); }
+        bool NextRow()
+        {
+            return mQuery->NextRow();
+        }
+
         /**
-         * @brief
-         *
-         * @return Field
+         * @brief Get current row fields
+         * @return Pointer to current row field array
          */
         Field* Fetch() const { return mQuery->Fetch(); }
+
         /**
-         * @brief
-         *
-         * @return uint32
+         * @brief Get field count
+         * @return Number of fields per row
          */
         uint32 GetFieldCount() const { return mQuery->GetFieldCount(); }
+
         /**
-         * @brief
-         *
-         * @return uint64
+         * @brief Get row count
+         * @return Total number of rows
          */
         uint64 GetRowCount() const { return mQuery->GetRowCount(); }
+
         /**
-         * @brief
-         *
-         * @param index
-         * @return const Field &operator
+         * @brief Get field by index
+         * @param index Field index
+         * @return Reference to field at index
          */
         Field const& operator[](int index) const { return (*mQuery)[index]; }
 
         /**
-         * @brief named access
-         *
-         * @param name
-         * @return const Field &operator
+         * @brief Get field by name (named access)
+         * @param name Field name
+         * @return Reference to field with given name
          */
         Field const& operator[](const std::string& name) const { return mQuery->Fetch()[GetField_idx(name)]; }
+
         /**
-         * @brief
-         *
-         * @return const QueryFieldNames
+         * @brief Get all field names
+         * @return Const reference to field names vector
          */
         QueryFieldNames const& GetFieldNames() const { return mFieldNames; }
 
         /**
-         * @brief
-         *
-         * @param name
-         * @return uint32
+         * @brief Get field index by name
+         * @param name Field name to look up
+         * @return Field index, or -1 if not found
          */
         uint32 GetField_idx(const std::string& name) const
         {
@@ -185,8 +187,8 @@ class QueryNamedResult
         }
 
     protected:
-        QueryResult* mQuery; /**< TODO */
-        QueryFieldNames mFieldNames; /**< TODO */
+        QueryResult* mQuery; /**< Wrapped QueryResult (owned) */
+        QueryFieldNames mFieldNames; /**< Field name to index mapping */
 };
 
 #endif

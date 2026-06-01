@@ -91,7 +91,11 @@ namespace Movement
              * @brief Gets the raw flag value.
              * @return uint32& Reference to the raw flag value.
              */
-            inline uint32& raw() { return (uint32&) * this;}
+            inline uint32& raw()
+            {
+                return (uint32&) * this;
+            }
+
             /**
              * @brief Gets the raw flag value.
              * @return const uint32& Reference to the raw flag value.
@@ -101,12 +105,17 @@ namespace Movement
             /**
              * @brief Default constructor for MoveSplineFlag.
              */
-            MoveSplineFlag() { raw() = 0; }
+            MoveSplineFlag()
+            {
+                raw() = 0;
+            }
+
             /**
              * @brief Constructor for MoveSplineFlag with a flag value.
              * @param f The flag value.
              */
             MoveSplineFlag(uint32 f) { raw() = f; }
+
             /**
              * @brief Copy constructor for MoveSplineFlag.
              * @param f The MoveSplineFlag to copy.
@@ -120,6 +129,7 @@ namespace Movement
              * @return bool True if the movement is smooth, false otherwise.
              */
             bool isSmooth() const { return raw() & Mask_CatmullRom;}
+
             /**
              * @brief Checks if the movement has a final facing.
              * @return bool True if the movement has a final facing, false otherwise.
@@ -132,18 +142,21 @@ namespace Movement
              * @return bool True if all specified flags are set, false otherwise.
              */
             bool hasAllFlags(uint32 f) const { return (raw() & f) == f;}
+
             /**
              * @brief Bitwise AND operator for flags.
              * @param f The flags to AND.
              * @return uint32 The result of the AND operation.
              */
             uint32 operator & (uint32 f) const { return (raw() & f);}
+
             /**
              * @brief Bitwise OR operator for flags.
              * @param f The flags to OR.
              * @return uint32 The result of the OR operation.
              */
             uint32 operator | (uint32 f) const { return (raw() | f);}
+
             /**
              * @brief Converts the flags to a string representation.
              * @return std::string The string representation of the flags.
@@ -157,6 +170,7 @@ namespace Movement
              * @param f The flags to AND.
              */
             void operator &= (uint32 f) { raw() &= f;}
+
             /**
              * @brief Bitwise OR assignment operator for flags.
              * @param f The flags to OR.
@@ -167,10 +181,12 @@ namespace Movement
              * @brief Enables facing a point.
              */
             void EnableFacingPoint()    { raw() = (raw() & ~Mask_Final_Facing) | Final_Point;}
+
             /**
              * @brief Enables facing an angle.
              */
             void EnableFacingAngle()    { raw() = (raw() & ~Mask_Final_Facing) | Final_Angle;}
+
             /**
              * @brief Enables facing a target.
              */

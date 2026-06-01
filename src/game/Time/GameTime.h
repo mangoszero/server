@@ -29,26 +29,51 @@
 
 #include <chrono>
 
+/**
+ * @brief GameTime namespace provides time-related functions for the game server
+ */
 namespace GameTime
 {
-    // Server Start Time
+
+    /**
+     * @brief Get the server start time
+     * @return Server start time as Unix timestamp
+     */
     time_t GetStartTime();
 
-    // Current Server Time (unix) in seconds
+    /**
+     * @brief Get the current server time (Unix timestamp in seconds)
+     * @return Current server time as Unix timestamp
+     */
     time_t GetGameTime();
 
-    // Milliseconds since Server Start
+    /**
+     * @brief Get milliseconds since server start
+     * @return Milliseconds elapsed since server start
+     */
     uint32 GetGameTimeMS();
 
-    // Current chrono system_clock time point
+    /**
+     * @brief Get current chrono system_clock time point
+     * @return Current system_clock time point
+     */
     std::chrono::system_clock::time_point GetGameTimeSystemPoint();
 
-    // Current chrono steady_clock time point
+    /**
+     * @brief Get current chrono steady_clock time point
+     * @return Current steady_clock time point
+     */
     std::chrono::steady_clock::time_point GetGameTimeSteadyPoint();
 
-    // Uptime (in seconds)
+    /**
+     * @brief Get server uptime in seconds
+     * @return Server uptime in seconds
+     */
     uint32 GetUptime();
 
+    /**
+     * @brief Update game timers
+     */
     void UpdateGameTimers();
 }
 

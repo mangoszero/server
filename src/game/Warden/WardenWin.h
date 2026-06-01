@@ -35,34 +35,37 @@
 #pragma pack(push, 1)
 #endif
 
+/**
+ * @brief Warden init module request structure
+ */
 struct WardenInitModuleRequest
 {
-    uint8 Command1;
-    uint16 Size1;
-    uint32 CheckSumm1;
-    uint8 Unk1;
-    uint8 Unk2;
-    uint8 Type;
-    uint8 String_library1;
-    uint32 Function1[4];
+    uint8 Command1; ///< Command 1
+    uint16 Size1; ///< Size 1
+    uint32 CheckSumm1; ///< Checksum 1
+    uint8 Unk1; ///< Unknown 1
+    uint8 Unk2; ///< Unknown 2
+    uint8 Type; ///< Type
+    uint8 String_library1; ///< String library 1
+    uint32 Function1[4]; ///< Function 1 array
 
-    uint8 Command2;
-    uint16 Size2;
-    uint32 CheckSumm2;
-    uint8 Unk3;
-    uint8 Unk4;
-    uint8 String_library2;
-    uint32 Function2;
-    uint8 Function2_set;
+    uint8 Command2; ///< Command 2
+    uint16 Size2; ///< Size 2
+    uint32 CheckSumm2; ///< Checksum 2
+    uint8 Unk3; ///< Unknown 3
+    uint8 Unk4; ///< Unknown 4
+    uint8 String_library2; ///< String library 2
+    uint32 Function2; ///< Function 2
+    uint8 Function2_set; ///< Function 2 set
 
-    uint8 Command3;
-    uint16 Size3;
-    uint32 CheckSumm3;
-    uint8 Unk5;
-    uint8 Unk6;
-    uint8 String_library3;
-    uint32 Function3;
-    uint8 Function3_set;
+    uint8 Command3; ///< Command 3
+    uint16 Size3; ///< Size 3
+    uint32 CheckSumm3; ///< Checksum 3
+    uint8 Unk5; ///< Unknown 5
+    uint8 Unk6; ///< Unknown 6
+    uint8 String_library3; ///< String library 3
+    uint32 Function3; ///< Function 3
+    uint8 Function3_set; ///< Function 3 set
 };
 
 #if defined(__GNUC__)
@@ -72,41 +75,65 @@ struct WardenInitModuleRequest
 #endif
 
 class WorldSession;
-//class Warden;
 
+/**
+ * @brief Warden Windows class
+ *
+ * Platform-specific Warden implementation for Windows clients.
+ */
 class WardenWin : public Warden
 {
     public:
+        /**
+         * @brief Constructor
+         */
         WardenWin();
+
+        /**
+         * @brief Destructor
+         */
         ~WardenWin();
 
+        /**
+         * @brief Initialize Warden
+         * @param session World session
+         * @param K Key
+         */
         void Init(WorldSession* session, BigNumber* K) override;
+
+        /**
+         * @brief Get module for client
+         * @return Client warden module
+         */
         ClientWardenModule* GetModuleForClient() override;
+
+        /**
+         * @brief Initialize module
+         */
         void InitializeModule() override;
+
+        /**
+         * @brief Handle hash result
+         * @param buff Byte buffer
+         */
         void HandleHashResult(ByteBuffer &buff) override;
+
+        /**
+         * @brief Request data
+         */
         void RequestData() override;
+
+        /**
+         * @brief Handle data
+         * @param buff Byte buffer
+         */
         void HandleData(ByteBuffer &buff) override;
 
     private:
-        struct PointerChainState
-        {
-            uint16 checkId;
-            std::vector<uint32> offsets;
-            size_t hopIndex;
-            uint32 currentAddress;
-            uint8  finalLength;
-            bool   invertMatch;     // true = fail when terminal bytes MATCH expected (signature detect)
-        };
-
-        static bool ParseChainOffsets(const std::string& str, std::vector<uint32>& out);
-        void StartPointerChain(WardenCheck* wd);
-
-        uint32 _serverTicks;
-        std::list<uint16> _otherChecksTodo;
-        std::list<uint16> _memChecksTodo;
-        std::list<uint16> _currentChecks;
-        PointerChainState _pointerChainInFlight;
-        bool _pointerChainActive;
+        uint32 _serverTicks; ///< Server ticks
+        std::list<uint16> _otherChecksTodo; ///< Other checks to do
+        std::list<uint16> _memChecksTodo; ///< Memory checks to do
+        std::list<uint16> _currentChecks; ///< Current checks
 };
 
 #endif

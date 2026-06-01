@@ -28,17 +28,52 @@
 
 #include <openssl/evp.h>
 #include "Common/Common.h"
+#include "OpenSSLProvider.h"
 
+/**
+ * @brief ARC4 encryption/decryption cipher implementation
+ *
+ * ARC4 is a stream cipher that uses a key to generate a keystream.
+ * This class provides ARC4 encryption and decryption functionality using OpenSSL.
+ */
 class ARC4
 {
     public:
+        /**
+         * @brief Constructor with key length specification
+         * @param len Length of the key in bytes
+         */
         ARC4(uint8 len);
+
+        /**
+         * @brief Constructor with seed data
+         * @param seed Pointer to the seed/key data
+         * @param len Length of the seed data in bytes
+         */
         ARC4(uint8 *seed, uint8 len);
+
+        /**
+         * @brief Destructor
+         */
         ~ARC4();
+
+        /**
+         * @brief Initialize the cipher with seed data
+         * @param seed Pointer to the seed/key data
+         */
         void Init(uint8 *seed);
+
+        /**
+         * @brief Update/encrypt data using the cipher
+         * @param len Length of the data to process
+         * @param data Pointer to the data to encrypt/decrypt
+         */
         void UpdateData(int len, uint8 *data);
     private:
-        EVP_CIPHER_CTX* m_ctx;
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+        OpenSSLProviderManager m_providerManager;  /**< RAII provider management */
+#endif
+        OpenSSLCipherContext m_cipherContext;        /**< RAII cipher context */
 };
 
 #endif

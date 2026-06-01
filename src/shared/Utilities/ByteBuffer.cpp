@@ -22,9 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ByteBuffer.cpp
+ * @brief ByteBuffer debugging and utility implementations
+ *
+ * This file provides debugging output functions for the ByteBuffer
+ * class, including hex dumps and formatted storage displays.
+ */
+
 #include "ByteBuffer.h"
 #include "Log/Log.h"
 
+/**
+ * @brief Print exception details with position information
+ *
+ * Logs the error message including the operation (read/write),
+ * position in buffer, buffer size, and attempted value size.
+ * Includes stack trace if ACE stack trace is available.
+ */
 void ByteBufferException::PrintPosError() const
 {
     char const* traceStr;
@@ -43,6 +58,13 @@ void ByteBufferException::PrintPosError() const
         traceStr ? "\n" : "", traceStr ? traceStr : "");
 }
 
+/**
+ * @brief Print buffer contents as decimal values
+ *
+ * Outputs the entire buffer content as decimal numbers to the debug log.
+ * Only outputs if debug log level is enabled to avoid performance impact.
+ * Format: "STORAGE_SIZE: N" followed by each byte as decimal.
+ */
 void ByteBuffer::print_storage() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output
@@ -66,6 +88,14 @@ void ByteBuffer::print_storage() const
     sLog.outDebug("%s", ss.str().c_str());
 }
 
+/**
+ * @brief Print buffer contents as text/ASCII
+ *
+ * Outputs the buffer content interpreted as ASCII text to the debug log.
+ * Non-printable characters will be output as-is, which may appear garbled.
+ * Only outputs if debug log level is enabled.
+ * Useful for reading text-based packet contents.
+ */
 void ByteBuffer::textlike() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output
@@ -89,6 +119,19 @@ void ByteBuffer::textlike() const
     sLog.outDebug("%s", ss.str().c_str());
 }
 
+/**
+ * @brief Print buffer contents as formatted hexadecimal
+ *
+ * Outputs the buffer content as formatted hexadecimal to the debug log.
+ * Format includes:
+ * - 16 bytes per line
+ * - Separator line after 8 bytes ("|")
+ * - Newline every 16 bytes
+ * - Two-digit uppercase hex values
+ *
+ * This is the most common format for analyzing binary packet data.
+ * Only outputs if debug log level is enabled.
+ */
 void ByteBuffer::hexlike() const
 {
     if (!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))   // optimize disabled debug output

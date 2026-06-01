@@ -35,93 +35,125 @@ class Creature;
 class Player;
 
 /**
- * @brief Base class for all movement generators.
+ * @brief Base class for all movement generators
+ *
+ * Provides the interface for all movement generator implementations.
+ * Movement generators control how units (players, creatures, NPCs) move
+ * through the game world.
  */
 class MovementGenerator
 {
     public:
+        /**
+         * @brief Virtual destructor
+         */
         virtual ~MovementGenerator();
 
         /**
-         * @brief Called before adding movement generator to motion stack.
-         * @param owner Reference to the unit.
+         * @brief Initialize the movement generator
+         *
+         * Called before adding movement generator to motion stack.
+         *
+         * @param owner Reference to the unit
          */
         virtual void Initialize(Unit&) = 0;
 
         /**
-         * @brief Called after removing movement generator from motion stack.
-         * @param owner Reference to the unit.
+         * @brief Finalize the movement generator
+         *
+         * Called after removing movement generator from motion stack.
+         *
+         * @param owner Reference to the unit
          */
         virtual void Finalize(Unit&) = 0;
 
         /**
-         * @brief Called before losing top position (before pushing new movement generator above).
-         * @param owner Reference to the unit.
+         * @brief Interrupt the movement generator
+         *
+         * Called before losing top position (before pushing new
+         * movement generator above).
+         *
+         * @param owner Reference to the unit
          */
         virtual void Interrupt(Unit&) = 0;
 
         /**
-         * @brief Called after returning movement generator to top position (after removing above movement generator).
-         * @param owner Reference to the unit.
+         * @brief Reset the movement generator
+         *
+         * Called after returning movement generator to top position
+         * (after removing above movement generator).
+         *
+         * @param owner Reference to the unit
          */
         virtual void Reset(Unit&) = 0;
 
         /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param time_diff Time difference.
-         * @return True if the update was successful, false otherwise.
+         * @brief Update the movement generator
+         * @param owner Reference to the unit
+         * @param time_diff Time difference in milliseconds
+         * @return True if update successful, false otherwise
          */
         virtual bool Update(Unit&, const uint32& time_diff) = 0;
 
         /**
-         * @brief Gets the type of the movement generator.
-         * @return The type of the movement generator.
+         * @brief Get the type of the movement generator
+         * @return Movement generator type
          */
         virtual MovementGeneratorType GetMovementGeneratorType() const = 0;
 
         /**
-         * @brief Called when the unit's speed changes.
+         * @brief Called when the unit's speed changes
          */
-        virtual void unitSpeedChanged() { }
+        virtual void unitSpeedChanged() {}
 
         /**
-         * @brief Used by Evade code to select point to evade with expected restart default movement.
-         * @param owner Reference to the unit.
-         * @param x Reference to the X-coordinate.
-         * @param y Reference to the Y-coordinate.
-         * @param z Reference to the Z-coordinate.
-         * @param o Reference to the orientation.
-         * @return True if the reset position was successfully obtained, false otherwise.
+         * @brief Get reset position for evade behavior
+         *
+         * Used by evade code to select point to evade with expected
+         * restart of default movement.
+         *
+         * @param owner Reference to the unit
+         * @param x X-coordinate output
+         * @param y Y-coordinate output
+         * @param z Z-coordinate output
+         * @param o Orientation output
+         * @return True if reset position obtained, false otherwise
          */
         virtual bool GetResetPosition(Unit&, float& /*x*/, float& /*y*/, float& /*z*/, float& /*o*/) const { return false; }
 
         /**
-         * @brief Checks if the given destination is unreachable due to pathfinding or other reasons.
-         * @return True if the destination is reachable, false otherwise.
+         * @brief Check if destination is reachable
+         * @return True if reachable, false otherwise
          */
         virtual bool IsReachable() const { return true; }
 
         /**
-         * @brief Checks if the movement generator is still active (top movement generator) after some not safe for this calls.
-         * @param owner Reference to the unit.
-         * @return True if the movement generator is still active, false otherwise.
+         * @brief Check if movement generator is still active
+         *
+         * Checks if this is the top movement generator after calls
+         * that may not be safe for this generator.
+         *
+         * @param u Reference to the unit
+         * @return True if still active, false otherwise
          */
         bool IsActive(Unit& u);
 };
 
 /**
- * @brief Template class for medium movement generators.
- * @tparam T Type of the unit (Player or Creature).
- * @tparam D Derived class type.
+ * @brief Template class for medium movement generators
+ *
+ * Provides type-safe casting for unit-specific movement generators.
+ *
+ * @tparam T Type of the unit (Player or Creature)
+ * @tparam D Derived class type
  */
 template<class T, class D>
 class MovementGeneratorMedium : public MovementGenerator
 {
     public:
         /**
-         * @brief Initializes the movement generator.
-         * @param owner Reference to the unit.
+         * @brief Initialize the movement generator
+         * @param u Reference to the unit
          */
         void Initialize(Unit& u) override
         {
@@ -130,8 +162,8 @@ class MovementGeneratorMedium : public MovementGenerator
         }
 
         /**
-         * @brief Finalizes the movement generator.
-         * @param owner Reference to the unit.
+         * @brief Finalize the movement generator
+         * @param u Reference to the unit
          */
         void Finalize(Unit& u) override
         {
@@ -140,8 +172,8 @@ class MovementGeneratorMedium : public MovementGenerator
         }
 
         /**
-         * @brief Interrupts the movement generator.
-         * @param owner Reference to the unit.
+         * @brief Interrupt the movement generator
+         * @param u Reference to the unit
          */
         void Interrupt(Unit& u) override
         {
@@ -150,8 +182,8 @@ class MovementGeneratorMedium : public MovementGenerator
         }
 
         /**
-         * @brief Resets the movement generator.
-         * @param owner Reference to the unit.
+         * @brief Reset the movement generator
+         * @param u Reference to the unit
          */
         void Reset(Unit& u) override
         {
@@ -160,10 +192,10 @@ class MovementGeneratorMedium : public MovementGenerator
         }
 
         /**
-         * @brief Updates the movement generator.
-         * @param owner Reference to the unit.
-         * @param time_diff Time difference.
-         * @return True if the update was successful, false otherwise.
+         * @brief Update the movement generator
+         * @param u Reference to the unit
+         * @param time_diff Time difference in milliseconds
+         * @return True if update successful, false otherwise
          */
         bool Update(Unit& u, const uint32& time_diff) override
         {
@@ -172,13 +204,13 @@ class MovementGeneratorMedium : public MovementGenerator
         }
 
         /**
-         * @brief Gets the reset position for the unit.
-         * @param owner Reference to the unit.
-         * @param x Reference to the X-coordinate.
-         * @param y Reference to the Y-coordinate.
-         * @param z Reference to the Z-coordinate.
-         * @param o Reference to the orientation.
-         * @return True if the reset position was successfully obtained, false otherwise.
+         * @brief Get reset position for the unit
+         * @param u Reference to the unit
+         * @param x X-coordinate output
+         * @param y Y-coordinate output
+         * @param z Z-coordinate output
+         * @param o Orientation output
+         * @return True if reset position obtained, false otherwise
          */
         bool GetResetPosition(Unit& u, float& x, float& y, float& z, float& o) const override
         {
@@ -203,6 +235,7 @@ class MovementGeneratorMedium : public MovementGenerator
  */
 struct SelectableMovement : public FactoryHolder<MovementGenerator, MovementGeneratorType>
 {
+
     /**
      * @brief Constructor for SelectableMovement.
      * @param mgt Type of the movement generator.
@@ -217,6 +250,7 @@ struct SelectableMovement : public FactoryHolder<MovementGenerator, MovementGene
 template<class REAL_MOVEMENT>
 struct MovementGeneratorFactory : public SelectableMovement
 {
+
     /**
      * @brief Constructor for MovementGeneratorFactory.
      * @param mgt Type of the movement generator.

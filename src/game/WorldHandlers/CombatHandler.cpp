@@ -22,6 +22,19 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file CombatHandler.cpp
+ * @brief Basic combat opcode handlers
+ *
+ * This file handles fundamental combat-related opcodes:
+ * - CMSG_ATTACKSWING: Initiate auto-attack on a target
+ * - CMSG_ATTACKSTOP: Stop auto-attacking
+ * - CMSG_SETSHEATHED: Change weapon sheath state
+ *
+ * These handlers validate targets and initiate combat state changes.
+ * Actual combat calculations (damage, hit/miss) are handled elsewhere.
+ */
+
 #include "Common.h"
 #include "Log.h"
 #include "WorldPacket.h"
@@ -29,6 +42,20 @@
 #include "ObjectGuid.h"
 #include "Player.h"
 
+/**
+ * @brief Handle auto-attack initiation (CMSG_ATTACKSWING)
+ * @param recv_data World packet containing target GUID
+ *
+ * Validates the target and starts auto-attacking if allowed.
+ * Validation checks:
+ * - Target must be a valid Unit
+ * - Target must exist in the map
+ * - Target must not be friendly
+ * - Target must be alive
+ * - Target must not have non-attackable flags
+ *
+ * On failure, sends SMSG_ATTACKSTOP to cancel the attack on client.
+ */
 void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
 {
     ObjectGuid guid;
@@ -73,11 +100,29 @@ void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
     _player->Attack(pEnemy, true);
 }
 
+/**
+ * @brief Handle attack stop request (CMSG_ATTACKSTOP)
+ * @param recv_data World packet (empty)
+ *
+ * Immediately stops the player's auto-attack. Called when player
+ * releases the attack button or switches targets.
+ */
 void WorldSession::HandleAttackStopOpcode(WorldPacket& /*recv_data*/)
 {
     GetPlayer()->AttackStop();
 }
 
+/**
+ * @brief Handle weapon sheath state change (CMSG_SETSHEATHED)
+ * @param recv_data World packet containing sheath state value
+ *
+ * Updates the player's weapon display state:
+ * - 0 = Unequipped (bare hands)
+ * - 1 = Melee weapons drawn
+ * - 2 = Ranged weapon drawn
+ *
+ * @note Invalid sheath values are logged but ignored
+ */
 void WorldSession::HandleSetSheathedOpcode(WorldPacket& recv_data)
 {
     uint32 sheathed;
@@ -94,6 +139,18 @@ void WorldSession::HandleSetSheathedOpcode(WorldPacket& recv_data)
     GetPlayer()->SetSheath(SheathState(sheathed));
 }
 
+/**
+ * @brief Send attack stop notification to client
+ * @param enemy Target that was being attacked (can be NULL)
+ *
+ * Sends SMSG_ATTACKSTOP to inform the client to stop the attack animation.
+ * Used when:
+ * - Attack is interrupted (target dies, becomes friendly, etc.)
+ * - Attack validation fails
+ * - Player manually stops attacking
+ *
+ * @param enemy NULL if target is unknown or no longer valid
+ */
 void WorldSession::SendAttackStop(Unit const* enemy)
 {
     WorldPacket data(SMSG_ATTACKSTOP, (4 + 20));            // we guess size

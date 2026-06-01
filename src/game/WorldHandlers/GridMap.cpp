@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file GridMap.cpp
+ * @brief Map grid data loading and management
+ *
+ * This file implements GridMap which loads and manages terrain data
+ * for a single map grid (64x64 yard cell). Features:
+ *
+ * - Height map loading from .map files
+ * - Area/zone ID loading
+ * - Liquid data (water, lava) loading
+ * - Hole data for terrain gaps
+ * - Terrain height queries
+ * - Area ID queries
+ * - Liquid level queries
+ *
+ * GridMaps are loaded on-demand and cached by the Map system.
+ *
+ * @see GridMap for the grid class
+ * @see Map for the map container
+ */
+
 #include "Log.h"
 #include "CellImpl.h"
 #include "Map.h"
@@ -75,6 +96,12 @@ GridMap::~GridMap()
     unloadData();
 }
 
+/**
+ * @brief Loads all grid data sections from a map file.
+ *
+ * @param filename The .map filename to load.
+ * @return true if loading succeeded or the file was absent; otherwise false.
+ */
 bool GridMap::loadData(char* filename)
 {
     // Unload old data if exist
@@ -134,6 +161,9 @@ bool GridMap::loadData(char* filename)
     return false;
 }
 
+/**
+ * @brief Releases all loaded area, height, and liquid data.
+ */
 void GridMap::unloadData()
 {
     delete[] m_area_map;
@@ -152,6 +182,14 @@ void GridMap::unloadData()
     m_gridGetHeight = &GridMap::getHeightFromFlat;
 }
 
+/**
+ * @brief Loads area id data for the grid.
+ *
+ * @param in The opened map file.
+ * @param offset The section offset.
+ * @param size The section size.
+ * @return true if the section was loaded successfully; otherwise false.
+ */
 bool GridMap::loadAreaData(FILE* in, uint32 offset, uint32 /*size*/)
 {
     GridMapAreaHeader header;
@@ -180,6 +218,14 @@ bool GridMap::loadAreaData(FILE* in, uint32 offset, uint32 /*size*/)
     return true;
 }
 
+/**
+ * @brief Loads terrain height data for the grid.
+ *
+ * @param in The opened map file.
+ * @param offset The section offset.
+ * @param size The section size.
+ * @return true if the section was loaded successfully; otherwise false.
+ */
 bool GridMap::loadHeightData(FILE* in, uint32 offset, uint32 /*size*/)
 {
     GridMapHeightHeader header;
@@ -256,6 +302,14 @@ bool GridMap::loadHeightData(FILE* in, uint32 offset, uint32 /*size*/)
     return true;
 }
 
+/**
+ * @brief Loads terrain hole masks for the grid.
+ *
+ * @param in The opened map file.
+ * @param offset The section offset.
+ * @param size The section size.
+ * @return true if the section was loaded successfully; otherwise false.
+ */
 bool GridMap::loadHolesData(FILE* in, uint32 offset, uint32 /*size*/)
 {
     if (fseek(in, offset, SEEK_SET) != 0)
@@ -270,6 +324,14 @@ bool GridMap::loadHolesData(FILE* in, uint32 offset, uint32 /*size*/)
     return true;
 }
 
+/**
+ * @brief Loads liquid metadata and height data for the grid.
+ *
+ * @param in The opened map file.
+ * @param offset The section offset.
+ * @param size The section size.
+ * @return true if the section was loaded successfully; otherwise false.
+ */
 bool GridMap::loadGridMapLiquidData(FILE* in, uint32 offset, uint32 /*size*/)
 {
     GridMapLiquidHeader header;
@@ -321,6 +383,13 @@ bool GridMap::loadGridMapLiquidData(FILE* in, uint32 offset, uint32 /*size*/)
     return true;
 }
 
+/**
+ * @brief Returns the area flag at the given grid coordinates.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The area flag id.
+ */
 uint16 GridMap::getArea(float x, float y)
 {
     if (!m_area_map)
@@ -335,11 +404,25 @@ uint16 GridMap::getArea(float x, float y)
     return m_area_map[lx * 16 + ly];
 }
 
+/**
+ * @brief Returns the constant flat-grid height.
+ *
+ * @param x Unused world x coordinate.
+ * @param y Unused world y coordinate.
+ * @return The grid height value.
+ */
 float GridMap::getHeightFromFlat(float /*x*/, float /*y*/) const
 {
     return m_gridHeight;
 }
 
+/**
+ * @brief Checks whether a height-map square is marked as a terrain hole.
+ *
+ * @param row The height-map row.
+ * @param col The height-map column.
+ * @return true if the square is a hole; otherwise false.
+ */
 bool GridMap::isHole(int row, int col) const
 {
     int cellRow = row / 8;     // 8 squares per cell
@@ -352,6 +435,13 @@ bool GridMap::isHole(int row, int col) const
     return (hole & holetab_h[holeCol] & holetab_v[holeRow]) != 0;
 }
 
+/**
+ * @brief Interpolates height from floating-point height-map data.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The interpolated terrain height.
+ */
 float GridMap::getHeightFromFloat(float x, float y) const
 {
     if (!m_V8 || !m_V9)
@@ -441,6 +531,13 @@ float GridMap::getHeightFromFloat(float x, float y) const
     return a * x + b * y + c;
 }
 
+/**
+ * @brief Interpolates height from uint8-compressed height-map data.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The interpolated terrain height.
+ */
 float GridMap::getHeightFromUint8(float x, float y) const
 {
     if (!m_uint8_V8 || !m_uint8_V9)
@@ -511,6 +608,13 @@ float GridMap::getHeightFromUint8(float x, float y) const
     return (float)((a * x) + (b * y) + c) * m_gridIntHeightMultiplier + m_gridHeight;
 }
 
+/**
+ * @brief Interpolates height from uint16-compressed height-map data.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The interpolated terrain height.
+ */
 float GridMap::getHeightFromUint16(float x, float y) const
 {
     if (!m_uint16_V8 || !m_uint16_V9)
@@ -581,6 +685,13 @@ float GridMap::getHeightFromUint16(float x, float y) const
     return (float)((a * x) + (b * y) + c) * m_gridIntHeightMultiplier + m_gridHeight;
 }
 
+/**
+ * @brief Returns the liquid level at the given coordinates.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The liquid surface level or an invalid height marker.
+ */
 float GridMap::getLiquidLevel(float x, float y)
 {
     if (!m_liquid_map)
@@ -607,6 +718,13 @@ float GridMap::getLiquidLevel(float x, float y)
     return m_liquid_map[cx_int * m_liquid_width + cy_int];
 }
 
+/**
+ * @brief Returns the terrain liquid type flags for a position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The terrain liquid type flags.
+ */
 uint8 GridMap::getTerrainType(float x, float y)
 {
     if (!m_liquidFlags)
@@ -746,6 +864,14 @@ GridMapLiquidStatus GridMap::getLiquidStatus(float x, float y, float z, uint8 Re
     return LIQUID_MAP_ABOVE_WATER;
 }
 
+/**
+ * @brief Checks whether a compatible .map file exists for a grid.
+ *
+ * @param mapid The map id.
+ * @param gx The grid x index.
+ * @param gy The grid y index.
+ * @return true if the map file exists and matches the expected format; otherwise false.
+ */
 bool GridMap::ExistMap(uint32 mapid, int gx, int gy)
 {
     int len = sWorld.GetDataPath().length() + strlen("maps/%03u%02u%02u.map") + 1;
@@ -785,6 +911,14 @@ bool GridMap::ExistMap(uint32 mapid, int gx, int gy)
     return true;
 }
 
+/**
+ * @brief Checks whether a compatible VMap file exists for a grid.
+ *
+ * @param mapid The map id.
+ * @param gx The grid x index.
+ * @param gy The grid y index.
+ * @return true if the VMap exists or VMap loading is disabled; otherwise false.
+ */
 bool GridMap::ExistVMap(uint32 mapid, int gx, int gy)
 {
     if (VMAP::IVMapManager* vmgr = VMAP::VMapFactory::createOrGetVMapManager())
@@ -838,6 +972,13 @@ TerrainInfo::~TerrainInfo()
     MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
 }
 
+/**
+ * @brief Loads and references a grid by grid indices.
+ *
+ * @param x The grid x index.
+ * @param y The grid y index.
+ * @return The loaded grid map.
+ */
 GridMap* TerrainInfo::Load(const uint32 x, const uint32 y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
@@ -908,6 +1049,13 @@ void TerrainInfo::CleanUpGrids(const uint32 diff)
     i_timer.Reset();
 }
 
+/**
+ * @brief Increments the reference count for a loaded grid.
+ *
+ * @param x The grid x index.
+ * @param y The grid y index.
+ * @return The new reference count, or -1 on lock failure.
+ */
 int TerrainInfo::RefGrid(const uint32& x, const uint32& y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
@@ -917,6 +1065,13 @@ int TerrainInfo::RefGrid(const uint32& x, const uint32& y)
     return (m_GridRef[x][y] += 1);
 }
 
+/**
+ * @brief Decrements the reference count for a loaded grid.
+ *
+ * @param x The grid x index.
+ * @param y The grid y index.
+ * @return The new reference count, or -1 on lock failure.
+ */
 int TerrainInfo::UnrefGrid(const uint32& x, const uint32& y)
 {
     MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
@@ -933,6 +1088,16 @@ int TerrainInfo::UnrefGrid(const uint32& x, const uint32& y)
     return 0;
 }
 
+/**
+ * @brief Computes static terrain height from map and VMap data.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The search reference z coordinate.
+ * @param useVmaps Whether VMaps should be consulted.
+ * @param maxSearchDist The maximum VMap search distance.
+ * @return The best matching terrain height.
+ */
 float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=true*/, float maxSearchDist/*=DEFAULT_HEIGHT_SEARCH*/) const
 {
     float mapHeight = VMAP_INVALID_HEIGHT_VALUE;            // Store Height obtained by maps
@@ -1003,11 +1168,25 @@ float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=tr
     return mapHeight;
 }
 
+/**
+ * @brief Checks whether a WMO group is flagged as outdoors.
+ *
+ * @param mogpFlags The WMO group flags.
+ * @return true if the WMO group is outdoors; otherwise false.
+ */
 inline bool IsOutdoorWMO(uint32 mogpFlags)
 {
     return mogpFlags & 0x8000;
 }
 
+/**
+ * @brief Determines whether the given position is outdoors.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @return true if the location is outdoors; otherwise false.
+ */
 bool TerrainInfo::IsOutdoors(float x, float y, float z) const
 {
     uint32 mogpFlags;
@@ -1022,6 +1201,18 @@ bool TerrainInfo::IsOutdoors(float x, float y, float z) const
     return IsOutdoorWMO(mogpFlags);
 }
 
+/**
+ * @brief Retrieves WMO area information for a position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @param flags Receives the WMO flags.
+ * @param adtId Receives the ADT id.
+ * @param rootId Receives the root WMO id.
+ * @param groupId Receives the WMO group id.
+ * @return true if area info was found; otherwise false.
+ */
 bool TerrainInfo::GetAreaInfo(float x, float y, float z, uint32& flags, int32& adtId, int32& rootId, int32& groupId) const
 {
     float vmap_z = z;
@@ -1043,6 +1234,15 @@ bool TerrainInfo::GetAreaInfo(float x, float y, float z, uint32& flags, int32& a
     return false;
 }
 
+/**
+ * @brief Returns the area flag for a position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @param isOutdoors Optional outdoor-state output.
+ * @return The resolved area flag.
+ */
 uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) const
 {
     uint32 mogpFlags;
@@ -1093,6 +1293,13 @@ uint16 TerrainInfo::GetAreaFlag(float x, float y, float z, bool* isOutdoors) con
     return areaflag;
 }
 
+/**
+ * @brief Returns terrain liquid flags for a world position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The terrain type flags.
+ */
 uint8 TerrainInfo::GetTerrainType(float x, float y) const
 {
     if (GridMap* gmap = const_cast<TerrainInfo*>(this)->GetGrid(x, y))
@@ -1105,21 +1312,56 @@ uint8 TerrainInfo::GetTerrainType(float x, float y) const
     }
 }
 
+/**
+ * @brief Returns the area id at the given position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @return The resolved area id.
+ */
 uint32 TerrainInfo::GetAreaId(float x, float y, float z) const
 {
     return TerrainManager::GetAreaIdByAreaFlag(GetAreaFlag(x, y, z), m_mapId);
 }
 
+/**
+ * @brief Returns the zone id at the given position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @return The resolved zone id.
+ */
 uint32 TerrainInfo::GetZoneId(float x, float y, float z) const
 {
     return TerrainManager::GetZoneIdByAreaFlag(GetAreaFlag(x, y, z), m_mapId);
 }
 
+/**
+ * @brief Returns both zone id and area id for a position.
+ *
+ * @param zoneid Receives the zone id.
+ * @param areaid Receives the area id.
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ */
 void TerrainInfo::GetZoneAndAreaId(uint32& zoneid, uint32& areaid, float x, float y, float z) const
 {
     TerrainManager::GetZoneAndAreaIdByAreaFlag(zoneid, areaid, GetAreaFlag(x, y, z), m_mapId);
 }
 
+/**
+ * @brief Returns liquid interaction status for a world position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @param ReqLiquidType The accepted liquid type mask.
+ * @param data Optional liquid data output.
+ * @return The liquid status at the position.
+ */
 GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z, uint8 ReqLiquidType, GridMapLiquidData* data) const
 {
     GridMapLiquidStatus result = LIQUID_MAP_NO_WATER;
@@ -1187,6 +1429,15 @@ GridMapLiquidStatus TerrainInfo::getLiquidStatus(float x, float y, float z, uint
     return result;
 }
 
+/**
+ * @brief Checks whether the position is inside any liquid.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param pZ The world z coordinate.
+ * @param data Optional liquid data output.
+ * @return true if liquid is present; otherwise false.
+ */
 bool TerrainInfo::IsInWater(float x, float y, float pZ, GridMapLiquidData* data) const
 {
     // Check surface in x, y point for liquid
@@ -1222,6 +1473,14 @@ bool TerrainInfo::IsSwimmable(float x, float y, float pZ, float radius /*= 1.5f*
     return false;
 }
 
+/**
+ * @brief Checks whether the position is underwater.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @return true if the position is underwater; otherwise false.
+ */
 bool TerrainInfo::IsUnderWater(float x, float y, float z) const
 {
     if (const_cast<TerrainInfo*>(this)->GetGrid(x, y))
@@ -1266,6 +1525,13 @@ float TerrainInfo::GetWaterOrGroundLevel(float x, float y, float z, float* pGrou
     return VMAP_INVALID_HEIGHT_VALUE;
 }
 
+/**
+ * @brief Returns the loaded grid for a world position, loading it if needed.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @return The loaded grid map.
+ */
 GridMap* TerrainInfo::GetGrid(const float x, const float y)
 {
     // half opt method
@@ -1282,6 +1548,13 @@ GridMap* TerrainInfo::GetGrid(const float x, const float y)
     return pMap;
 }
 
+/**
+ * @brief Loads terrain, VMap, and MMap data for a grid.
+ *
+ * @param x The grid x index.
+ * @param y The grid y index.
+ * @return The loaded grid map.
+ */
 GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
 {
     // double checked lock pattern
@@ -1334,6 +1607,15 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
     return  m_GridMaps[x][y];
 }
 
+/**
+ * @brief Returns the liquid surface level at a position.
+ *
+ * @param x The world x coordinate.
+ * @param y The world y coordinate.
+ * @param z The world z coordinate.
+ * @param pGround Optional ground-height output.
+ * @return The liquid level or an invalid height marker.
+ */
 float TerrainInfo::GetWaterLevel(float x, float y, float z, float* pGround /*= NULL*/) const
 {
     if (const_cast<TerrainInfo*>(this)->GetGrid(x, y))
@@ -1377,6 +1659,12 @@ TerrainManager::~TerrainManager()
     }
 }
 
+/**
+ * @brief Loads or creates terrain information for a map.
+ *
+ * @param mapId The map id.
+ * @return The terrain info instance.
+ */
 TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
 {
     ACE_GUARD_RETURN(LOCK_TYPE, _guard, m_mutex, NULL)
@@ -1391,6 +1679,11 @@ TerrainInfo* TerrainManager::LoadTerrain(const uint32 mapId)
     return (*iter).second;
 }
 
+/**
+ * @brief Unloads terrain information for a map when no longer referenced.
+ *
+ * @param mapId The map id.
+ */
 void TerrainManager::UnloadTerrain(const uint32 mapId)
 {
     if (sWorld.getConfig(CONFIG_BOOL_GRID_UNLOAD) == 0)
@@ -1413,6 +1706,11 @@ void TerrainManager::UnloadTerrain(const uint32 mapId)
     }
 }
 
+/**
+ * @brief Updates terrain cleanup timers for all loaded maps.
+ *
+ * @param diff Elapsed update time in milliseconds.
+ */
 void TerrainManager::Update(const uint32 diff)
 {
     // global garbage collection for GridMap objects and VMaps
@@ -1422,6 +1720,9 @@ void TerrainManager::Update(const uint32 diff)
     }
 }
 
+/**
+ * @brief Unloads all cached terrain information.
+ */
 void TerrainManager::UnloadAll()
 {
     for (TerrainDataMap::iterator it = i_TerrainMap.begin(); it != i_TerrainMap.end(); ++it)
@@ -1432,6 +1733,13 @@ void TerrainManager::UnloadAll()
     i_TerrainMap.clear();
 }
 
+/**
+ * @brief Resolves an area id from an explore flag and map id.
+ *
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
+ * @return The resolved area id.
+ */
 uint32 TerrainManager::GetAreaIdByAreaFlag(uint16 areaflag, uint32 map_id)
 {
     AreaTableEntry const* entry = GetAreaEntryByAreaFlagAndMap(areaflag, map_id);
@@ -1446,6 +1754,13 @@ uint32 TerrainManager::GetAreaIdByAreaFlag(uint16 areaflag, uint32 map_id)
     }
 }
 
+/**
+ * @brief Resolves a zone id from an explore flag and map id.
+ *
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
+ * @return The resolved zone id.
+ */
 uint32 TerrainManager::GetZoneIdByAreaFlag(uint16 areaflag, uint32 map_id)
 {
     AreaTableEntry const* entry = GetAreaEntryByAreaFlagAndMap(areaflag, map_id);
@@ -1460,6 +1775,14 @@ uint32 TerrainManager::GetZoneIdByAreaFlag(uint16 areaflag, uint32 map_id)
     }
 }
 
+/**
+ * @brief Resolves both zone id and area id from an explore flag and map id.
+ *
+ * @param zoneid Receives the zone id.
+ * @param areaid Receives the area id.
+ * @param areaflag The area explore flag.
+ * @param map_id The map id.
+ */
 void TerrainManager::GetZoneAndAreaIdByAreaFlag(uint32& zoneid, uint32& areaid, uint16 areaflag, uint32 map_id)
 {
     AreaTableEntry const* entry = GetAreaEntryByAreaFlagAndMap(areaflag, map_id);

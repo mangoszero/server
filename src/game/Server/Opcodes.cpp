@@ -22,13 +22,40 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/** \file
-    \ingroup u2w
-*/
+/**
+ * @file Opcodes.cpp
+ * @brief Network opcode handler registration
+ *
+ * This file registers all network packet handlers for the world server.
+ * It maps each opcode to its corresponding handler function in WorldSession,
+ * along with session status requirements and processing mode.
+ *
+ * Opcode processing modes:
+ * - PROCESS_INPLACE: Process immediately in network thread
+ * - PROCESS_THREADUNSAFE: Process in world update thread
+ *
+ * Session status requirements:
+ * - STATUS_NEVER: Never process (deprecated/debug opcodes)
+ * - STATUS_LOGGEDIN: Require player to be logged in
+ * - STATUS_UNHANDLED: No handler assigned
+ *
+ * @see Opcodes.h for opcode definitions
+ * @see WorldSession for packet handler implementations
+ */
 
 #include "Opcodes.h"
 #include "WorldSession.h"
 
+/**
+ * @brief Define opcode handler
+ * @param opcode Opcode number
+ * @param name Opcode name string
+ * @param status Required session status
+ * @param packetProcessing Processing mode
+ * @param handler Handler function pointer
+ *
+ * Registers an opcode with its handler in the opcode table.
+ */
 static void DefineOpcode(uint16 opcode, const char* name, SessionStatus status, PacketProcessing packetProcessing, void (WorldSession::*handler)(WorldPacket& recvPacket))
 {
     opcodeTable[opcode].name = name;
@@ -43,8 +70,11 @@ static void DefineOpcode(uint16 opcode, const char* name, SessionStatus status, 
 OpcodeHandler opcodeTable[NUM_MSG_TYPES];
 
 /**
- * Registers all handlers for the different packets that may come in. See the source for more info.
- * \see Opcodes::StoreOpcode
+ * @brief Initialize opcode table
+ *
+ * Registers all packet handlers for the world server.
+ * Initializes all opcodes to STATUS_UNHANDLED, then registers
+ * specific handlers for each supported opcode.
  */
 void InitializeOpcodes()
 {

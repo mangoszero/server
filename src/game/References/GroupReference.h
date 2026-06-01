@@ -30,19 +30,70 @@
 class Group;
 class Player;
 
+/**
+ * @brief Group reference class
+ *
+ * Manages the reference between a Group and a Player.
+ */
 class GroupReference : public Reference<Group, Player>
 {
     protected:
-        uint8 iSubGroup;
+        uint8 iSubGroup; ///< Sub-group ID
+
+        /**
+         * @brief Build link to target object
+         */
         void targetObjectBuildLink() override;
+
+        /**
+         * @brief Destroy link to target object
+         */
         void targetObjectDestroyLink() override;
+
+        /**
+         * @brief Destroy link from source object
+         */
         void sourceObjectDestroyLink() override;
+
     public:
+        /**
+         * @brief Constructor
+         */
         GroupReference() : Reference<Group, Player>(), iSubGroup(0) {}
-        ~GroupReference() { unlink(); }
-        GroupReference* next() { return (GroupReference*)Reference<Group, Player>::next(); }
+
+        /**
+         * @brief Destructor
+         */
+        ~GroupReference()
+        {
+            unlink();
+        }
+
+        /**
+         * @brief Get next reference
+         * @return Next group reference
+         */
+        GroupReference* next()
+        {
+            return (GroupReference*)Reference<Group, Player>::next();
+        }
+
+        /**
+         * @brief Get next reference (const)
+         * @return Next group reference (const)
+         */
         GroupReference const* next() const { return (GroupReference const*)Reference<Group, Player>::next(); }
+
+        /**
+         * @brief Get sub-group ID
+         * @return Sub-group ID
+         */
         uint8 getSubGroup() const { return iSubGroup; }
+
+        /**
+         * @brief Set sub-group ID
+         * @param pSubGroup Sub-group ID to set
+         */
         void setSubGroup(uint8 pSubGroup) { iSubGroup = pSubGroup; }
 };
 #endif

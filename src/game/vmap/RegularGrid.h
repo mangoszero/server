@@ -38,12 +38,14 @@ using G3D::AABox;
 using G3D::Ray;
 
 template<class Node>
+
 /**
  * @brief
  *
  */
 struct NodeCreator
 {
+
     /**
      * @brief
      *
@@ -55,11 +57,12 @@ struct NodeCreator
 };
 
 template < class T,
-         class Node,
-         class NodeCreatorFunc = NodeCreator<Node>,
-         /*class BoundsFunc = BoundsTrait<T>,*/
-         class PositionFunc = PositionTrait<T>
-         >
+            class Node,
+            class NodeCreatorFunc = NodeCreator<Node>,
+            /*class BoundsFunc = BoundsTrait<T>,*/
+            class PositionFunc = PositionTrait<T>
+            >
+
 /**
  * @brief
  *
@@ -158,6 +161,7 @@ class RegularGrid2D
          * @return bool
          */
         bool contains(const T& value) const { return memberTable.containsKey(&value); }
+
         /**
          * @brief
          *
@@ -172,6 +176,7 @@ class RegularGrid2D
         struct Cell
         {
             int x, y; /**< TODO */
+
             /**
              * @brief
              *
@@ -232,6 +237,7 @@ class RegularGrid2D
         }
 
         template<typename RayCallback>
+
         /**
          * @brief
          *
@@ -245,6 +251,7 @@ class RegularGrid2D
         }
 
         template<typename RayCallback>
+
         /**
          * @brief
          *
@@ -336,6 +343,7 @@ class RegularGrid2D
         }
 
         template<typename IsectCallback>
+
         /**
          * @brief
          *
@@ -356,6 +364,7 @@ class RegularGrid2D
         }
 
         template<typename RayCallback>
+
         /**
          * @brief Optimized verson of intersectRay function for rays with vertical directions
          *

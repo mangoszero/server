@@ -66,6 +66,11 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
         return false;
     }
 
+    if (bot->GetMap()->IsDungeon() && loot.skillId != SKILL_LOCKPICKING)
+    {
+        return false;
+    }
+
     if (!loot.IsLootPossible(bot))
     {
         return false;
@@ -76,12 +81,6 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
 
 bool AddGatheringLootAction::isUseful()
 {
-    // Don't gather in dungeons or raids
-    if (bot->GetMap()->IsDungeon())
-    {
-        return false;
-    }
-
     // NC gathering is a problem if you are supposed to be following
     Player* master = ai->GetMaster();
     if (master && bot->GetGroup())

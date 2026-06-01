@@ -22,6 +22,20 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGroundMgr.cpp
+ * @brief Implementation of the battleground manager and queue system.
+ *
+ * This file contains the implementation of the BattleGroundMgr singleton class and
+ * the BattleGroundQueue class, which handle:
+ * - Battleground instance creation and management
+ * - Player queue management and matching
+ * - Team balancing for battleground invitations
+ * - Average wait time calculations
+ * - Bracket-based queue organization
+ * - Premade group matching
+ */
+
 #include "Common.h"
 #include "SharedDefines.h"
 #include "Player.h"
@@ -52,6 +66,12 @@ INSTANTIATE_SINGLETON_1(BattleGroundMgr);
 /***            BATTLEGROUND QUEUE SYSTEM              ***/
 /*********************************************************/
 
+/**
+ * @brief Constructor for BattleGroundQueue.
+ *
+ * Initializes the queue system by zeroing out all wait time tracking arrays
+ * for each team and bracket combination.
+ */
 BattleGroundQueue::BattleGroundQueue()
 {
     for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
@@ -68,6 +88,12 @@ BattleGroundQueue::BattleGroundQueue()
     }
 }
 
+/**
+ * @brief Destructor for BattleGroundQueue.
+ *
+ * Cleans up all queued players and group information, deallocating memory
+ * for all group queue info structures across all brackets and queue types.
+ */
 BattleGroundQueue::~BattleGroundQueue()
 {
     m_QueuedPlayers.clear();
@@ -88,17 +114,28 @@ BattleGroundQueue::~BattleGroundQueue()
 /***      BATTLEGROUND QUEUE SELECTION POOLS           ***/
 /*********************************************************/
 
-// selection pool initialization, used to clean up from prev selection
+/**
+ * @brief Initializes the selection pool for team balancing.
+ *
+ * Clears the list of selected groups and resets the player count to prepare
+ * for a new team building cycle.
+ */
 void BattleGroundQueue::SelectionPool::Init()
 {
     SelectedGroups.clear();
     PlayerCount = 0;
 }
 
-// remove group info from selection pool
-// returns true when we need to try to add new group to selection pool
-// returns false when selection pool is ok or when we kicked smaller group than we need to kick
-// sometimes it can be called on empty selection pool
+/**
+ * @brief Removes a group from the selection pool.
+ *
+ * Attempts to remove a group of approximately the specified size from the selection pool
+ * to balance team composition. Prefers to remove larger groups or groups of similar size
+ * to the target size.
+ *
+ * @param size The target group size to remove.
+ * @return true if more groups should be added to maintain balance, false otherwise.
+ */
 bool BattleGroundQueue::SelectionPool::KickGroup(uint32 size)
 {
     // find maxgroup or LAST group with size == size and kick it
@@ -132,10 +169,17 @@ bool BattleGroundQueue::SelectionPool::KickGroup(uint32 size)
     return true;
 }
 
-// add group to selection pool
-// used when building selection pools
-// returns true if we can invite more players, or when we added group to selection pool
-// returns false when selection pool is full
+/**
+ * @brief Adds a group to the selection pool if space is available.
+ *
+ * Attempts to add a group to the selection pool for battleground invitation.
+ * Only adds the group if doing so won't exceed the desired player count, or
+ * if the pool still needs more players to reach the desired count.
+ *
+ * @param ginfo Pointer to the group queue info to add.
+ * @param desiredCount The target number of players for this team.
+ * @return true if the group was added or if more players are still needed, false if pool is full.
+ */
 bool BattleGroundQueue::SelectionPool::AddGroup(GroupQueueInfo* ginfo, uint32 desiredCount)
 {
     // if group is larger than desired count - don't allow to add it to pool
@@ -157,7 +201,20 @@ bool BattleGroundQueue::SelectionPool::AddGroup(GroupQueueInfo* ginfo, uint32 de
 /***               BATTLEGROUND QUEUES                 ***/
 /*********************************************************/
 
-// add group or player (grp == NULL) to bg queue with the given leader and bg specifications
+/**
+ * @brief Adds a group or solo player to the battleground queue.
+ *
+ * Creates a new group queue info structure and adds all players from the group
+ * (or the solo player if grp is NULL) to the appropriate bracket and queue type.
+ * Handles queue announcements if configured.
+ *
+ * @param leader The group leader or solo player joining the queue.
+ * @param grp The group joining (NULL for solo players).
+ * @param BgTypeId The type of battleground being queued for.
+ * @param bracketId The level bracket for this group.
+ * @param isPremade Whether this is a premade group (rated, etc.).
+ * @return GroupQueueInfo* Pointer to the created group queue info structure.
+ */
 GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGroundTypeId BgTypeId, BattleGroundBracketId bracketId, bool isPremade)
 {
     // create new ginfo
@@ -228,15 +285,19 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
                 uint32 q_min_level = leader->GetMinLevelForBattleGroundBracketId(bracketId, BgTypeId);
                 GroupsQueueType::const_iterator itr;
                 for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
+                {
                     if (!(*itr)->IsInvitedToBGInstanceGUID)
                     {
                         qAlliance += (*itr)->Players.size();
                     }
+                }
                 for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
+                {
                     if (!(*itr)->IsInvitedToBGInstanceGUID)
                     {
                         qHorde += (*itr)->Players.size();
                     }
+                }
 
                 // Show queue status to player only (when joining queue)
                 if (sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_QUEUE_ANNOUNCER_JOIN) == 1)
@@ -258,6 +319,16 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
     return ginfo;
 }
 
+/**
+ * @brief Updates the average wait time for a group after invitation.
+ *
+ * Records the time this group spent in the queue and updates the rolling average
+ * wait times for their team and bracket. This data is used to show queue wait
+ * estimates to new players.
+ *
+ * @param ginfo Pointer to the group queue info to update.
+ * @param bracket_id The bracket the group is in.
+ */
 void BattleGroundQueue::PlayerInvitedToBGUpdateAverageWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id)
 {
     uint32 timeInQueue = getMSTimeDiff(ginfo->JoinTime, GameTime::GetGameTimeMS());
@@ -281,6 +352,17 @@ void BattleGroundQueue::PlayerInvitedToBGUpdateAverageWaitTime(GroupQueueInfo* g
     (*lastPlayerAddedPointer) %= COUNT_OF_PLAYERS_TO_AVERAGE_WAIT_TIME;
 }
 
+/**
+ * @brief Calculates the average queue wait time for a team and bracket.
+ *
+ * Returns the rolling average of wait times for players who were recently
+ * invited to battlegrounds in this team/bracket combination. Useful for
+ * showing queue wait estimates to new players.
+ *
+ * @param ginfo Pointer to the group queue info (for team identification).
+ * @param bracket_id The bracket to get wait time for.
+ * @return uint32 The average queue wait time in milliseconds, or 0 if not enough data.
+ */
 uint32 BattleGroundQueue::GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleGroundBracketId bracket_id)
 {
     uint8 team_index = TEAM_INDEX_ALLIANCE;                    // default set to BG_TEAM_ALLIANCE - or non rated arenas!
@@ -300,7 +382,16 @@ uint32 BattleGroundQueue::GetAverageQueueWaitTime(GroupQueueInfo* ginfo, BattleG
     }
 }
 
-// remove player from queue and from group info, if group info is empty then remove it too
+/**
+ * @brief Removes a player from the battleground queue.
+ *
+ * Locates and removes a player from their group's queue information. If the group
+ * becomes empty, removes the group as well. Optionally decreases the invited count
+ * for the battleground if the group has been invited but not yet accepted.
+ *
+ * @param guid The GUID of the player to remove.
+ * @param decreaseInvitedCount If true, decreases the invited count for their team's battleground.
+ */
 void BattleGroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
 {
     // Player *plr = sObjectMgr.GetPlayer(guid);
@@ -384,7 +475,18 @@ void BattleGroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
     }
 }
 
-// returns true when player pl_guid is in queue and is invited to bgInstanceGuid
+/**
+ * @brief Checks if a player is invited to a specific battleground instance.
+ *
+ * Verifies that the player is in the queue and has been invited to the specified
+ * battleground instance with the matching removal time, indicating the invitation
+ * is still valid and hasn't expired.
+ *
+ * @param pl_guid The GUID of the player to check.
+ * @param bgInstanceGuid The instance GUID of the battleground.
+ * @param removeTime The invitation removal time to verify.
+ * @return true if the player is invited to this battleground instance, false otherwise.
+ */
 bool BattleGroundQueue::IsPlayerInvited(ObjectGuid pl_guid, const uint32 bgInstanceGuid, const uint32 removeTime)
 {
     // ACE_Guard<ACE_Recursive_Thread_Mutex> g(m_Lock);
@@ -394,6 +496,16 @@ bool BattleGroundQueue::IsPlayerInvited(ObjectGuid pl_guid, const uint32 bgInsta
             && qItr->second.GroupInfo->RemoveInviteTime == removeTime);
 }
 
+/**
+ * @brief Retrieves the group queue information for a player.
+ *
+ * Looks up the player in the queue and copies their group's queue information
+ * to the provided output parameter.
+ *
+ * @param guid The GUID of the player to look up.
+ * @param[out] ginfo Pointer to a GroupQueueInfo structure to fill with the player's group data.
+ * @return true if the player was found and data was copied, false if player not in queue.
+ */
 bool BattleGroundQueue::GetPlayerGroupInfoData(ObjectGuid guid, GroupQueueInfo* ginfo)
 {
     // ACE_Guard<ACE_Recursive_Thread_Mutex> g(m_Lock);
@@ -406,6 +518,18 @@ bool BattleGroundQueue::GetPlayerGroupInfoData(ObjectGuid guid, GroupQueueInfo* 
     return true;
 }
 
+/**
+ * @brief Invites a group to a battleground instance.
+ *
+ * Sends an invitation to all players in the group to join a specific battleground.
+ * Updates the group's invitation status and creates reminder and auto-removal events
+ * for the invitation. Also updates the battleground's invited count for team balancing.
+ *
+ * @param ginfo Pointer to the group queue info to invite.
+ * @param bg Pointer to the battleground instance to invite to.
+ * @param side Optional team to assign to the group (overrides their current team).
+ * @return true if the group was successfully invited, false if already invited.
+ */
 bool BattleGroundQueue::InviteGroupToBG(GroupQueueInfo* ginfo, BattleGround* bg, Team side)
 {
     // set side if needed
@@ -469,11 +593,17 @@ bool BattleGroundQueue::InviteGroupToBG(GroupQueueInfo* ginfo, BattleGround* bg,
     return false;
 }
 
-/*
-This function is inviting players to already running battlegrounds
-Invitation type is based on config file
-large groups are disadvantageous, because they will be kicked first if invitation type = 1
-*/
+/**
+ * @brief Fills a battleground with players from the queue.
+ *
+ * Attempts to populate an in-progress battleground with additional players from the queue.
+ * Selects groups based on available slots for each team, attempting to balance team composition
+ * using the selection pool system. Large groups may be broken apart to maintain balance
+ * based on configuration settings.
+ *
+ * @param bg Pointer to the battleground to fill with players.
+ * @param bracket_id The bracket to select players from.
+ */
 void BattleGroundQueue::FillPlayersToBG(BattleGround* bg, BattleGroundBracketId bracket_id)
 {
     int32 hordeFree = bg->GetFreeSlotsForTeam(HORDE);
@@ -563,9 +693,19 @@ void BattleGroundQueue::FillPlayersToBG(BattleGround* bg, BattleGroundBracketId 
     }
 }
 
-// this method checks if premade versus premade battleground is possible
-// then after 30 mins (default) in queue it moves premade group to normal queue
-// it tries to invite as much players as it can - to MaxPlayersPerTeam, because premade groups have more than MinPlayersPerTeam players
+/**
+ * @brief Checks if a premade versus premade battleground match can be made.
+ *
+ * Attempts to create a premade versus premade battleground match between groups that have
+ * been waiting. After 30 minutes (default), premade groups are moved to the normal queue
+ * if a premade match cannot be created. Groups are invited to a new battleground instance
+ * up to the maximum players per team.
+ *
+ * @param bracket_id The bracket to check for premade matches.
+ * @param MinPlayersPerTeam The minimum players required per team.
+ * @param MaxPlayersPerTeam The maximum players allowed per team.
+ * @return true if a match was successfully created or handled, false otherwise.
+ */
 bool BattleGroundQueue::CheckPremadeMatch(BattleGroundBracketId bracket_id, uint32 MinPlayersPerTeam, uint32 MaxPlayersPerTeam)
 {
     // check match
@@ -575,15 +715,20 @@ bool BattleGroundQueue::CheckPremadeMatch(BattleGroundBracketId bracket_id, uint
         // if groups aren't invited
         GroupsQueueType::const_iterator ali_group, horde_group;
         for (ali_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].begin(); ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end(); ++ali_group)
+        {
             if (!(*ali_group)->IsInvitedToBGInstanceGUID)
             {
                 break;
             }
+        }
+
         for (horde_group = m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].begin(); horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end(); ++horde_group)
+        {
             if (!(*horde_group)->IsInvitedToBGInstanceGUID)
             {
                 break;
             }
+        }
 
         if (ali_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_ALLIANCE].end() && horde_group != m_QueuedGroups[bracket_id][BG_QUEUE_PREMADE_HORDE].end())
         {
@@ -629,7 +774,18 @@ bool BattleGroundQueue::CheckPremadeMatch(BattleGroundBracketId bracket_id, uint
     return false;
 }
 
-// this method tries to create battleground or arena with MinPlayersPerTeam against MinPlayersPerTeam
+/**
+ * @brief Checks if a normal (non-premade) match can be created.
+ *
+ * Attempts to build balanced teams from the normal queue with at least minPlayers on each side.
+ * Uses selection pools to collect groups and balance team sizes. If configured to allow
+ * invitation type balancing, may invite additional groups to the team with fewer players.
+ *
+ * @param bracket_id The bracket to check for normal matches.
+ * @param minPlayers The minimum players required per team.
+ * @param maxPlayers The maximum players allowed per team.
+ * @return true if a match was successfully created, false otherwise.
+ */
 bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint32 minPlayers, uint32 maxPlayers)
 {
     GroupsQueueType::const_iterator itr_team[PVP_TEAM_COUNT];
@@ -662,10 +818,12 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint3
         for (; itr_team[j] != m_QueuedGroups[bracket_id][BG_QUEUE_NORMAL_ALLIANCE + j].end(); ++(itr_team[j]))
         {
             if (!(*(itr_team[j]))->IsInvitedToBGInstanceGUID)
+            {
                 if (!m_SelectionPools[j].AddGroup(*(itr_team[j]), m_SelectionPools[(j + 1) % PVP_TEAM_COUNT].GetPlayerCount()))
                 {
                     break;
                 }
+            }
         }
         // do not allow to start bg with more than 2 players more on 1 faction
         if (abs((int32)(m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() - m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount())) > 2)
@@ -758,29 +916,30 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
     m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
     m_SelectionPools[TEAM_INDEX_HORDE].Init();
 
+    // check if there is premade against premade match
+    if (CheckPremadeMatch(bracket_id, MinPlayersPerTeam, MaxPlayersPerTeam))
     {
-        // check if there is premade against premade match
-        if (CheckPremadeMatch(bracket_id, MinPlayersPerTeam, MaxPlayersPerTeam))
+        // create new battleground
+        BattleGround* bg2 = sBattleGroundMgr.CreateNewBattleGround(bgTypeId, bracket_id);
+        if (!bg2)
         {
-            // create new battleground
-            BattleGround* bg2 = sBattleGroundMgr.CreateNewBattleGround(bgTypeId, bracket_id);
-            if (!bg2)
-            {
-                sLog.outError("BattleGroundQueue::Update - Can not create battleground: %u", bgTypeId);
-                return;
-            }
-            // invite those selection pools
-            for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
-                for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
-                {
-                    InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
-                }
-            // start bg
-            bg2->StartBattleGround();
-            // clear structures
-            m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
-            m_SelectionPools[TEAM_INDEX_HORDE].Init();
+            sLog.outError("BattleGroundQueue::Update - Can not create battleground: %u", bgTypeId);
+            return;
         }
+        // invite those selection pools
+        for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
+        {
+            for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
+            {
+                InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
+            }
+        }
+
+        // start bg
+        bg2->StartBattleGround();
+        // clear structures
+        m_SelectionPools[TEAM_INDEX_ALLIANCE].Init();
+        m_SelectionPools[TEAM_INDEX_HORDE].Init();
     }
 
     // now check if there are in queues enough players to start new game of (normal battleground, or non-rated arena)
@@ -798,10 +957,13 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
 
             // invite those selection pools
             for (uint8 i = 0; i < PVP_TEAM_COUNT; ++i)
+            {
                 for (GroupsQueueType::const_iterator citr = m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.begin(); citr != m_SelectionPools[TEAM_INDEX_ALLIANCE + i].SelectedGroups.end(); ++citr)
                 {
                     InviteGroupToBG((*citr), bg2, (*citr)->GroupTeam);
                 }
+            }
+
             // start bg
             bg2->StartBattleGround();
         }
@@ -812,6 +974,16 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
 /***            BATTLEGROUND QUEUE EVENTS              ***/
 /*********************************************************/
 
+/**
+ * @brief Executes the queue invitation reminder event.
+ *
+ * Sends a reminder notification to the player about their pending battleground invitation.
+ * Only proceeds if the player is online and the invitation is still valid.
+ *
+ * @param e_time The event execution time (unused).
+ * @param p_time The processing time (unused).
+ * @return true to delete the event, false to keep it.
+ */
 bool BGQueueInviteEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 {
     Player* plr = sObjectMgr.GetPlayer(m_PlayerGuid);
@@ -845,6 +1017,13 @@ bool BGQueueInviteEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
     return true;                                            // event will be deleted
 }
 
+/**
+ * @brief Aborts the queue invitation reminder event.
+ *
+ * Called when the invitation reminder event is aborted before execution. No action is needed.
+ *
+ * @param e_time The event execution time (unused).
+ */
 void BGQueueInviteEvent::Abort(uint64 /*e_time*/)
 {
     // do nothing
@@ -859,6 +1038,18 @@ void BGQueueInviteEvent::Abort(uint64 /*e_time*/)
     5. player is invited to bg and he didn't choose what to do and timer expired - only in this condition we should call queue::RemovePlayer
     we must remove player in the 5. case even if battleground object doesn't exist!
 */
+
+/**
+ * @brief Executes the queue removal event for an invited player.
+ *
+ * Removes a player from the battleground queue if they don't accept the invitation
+ * within the timeout period. Handles multiple scenarios including logging off, rejoining,
+ * and accepting the invitation.
+ *
+ * @param e_time The event execution time (unused).
+ * @param p_time The processing time (unused).
+ * @return true to delete the event, false to keep it.
+ */
 bool BGQueueRemoveEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 {
     Player* plr = sObjectMgr.GetPlayer(m_PlayerGuid);
@@ -899,6 +1090,13 @@ bool BGQueueRemoveEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
     return true;
 }
 
+/**
+ * @brief Aborts the queue removal event.
+ *
+ * Called when the event is aborted before execution. No action is needed for this event type.
+ *
+ * @param e_time The event execution time (unused).
+ */
 void BGQueueRemoveEvent::Abort(uint64 /*e_time*/)
 {
     // do nothing
@@ -908,6 +1106,11 @@ void BGQueueRemoveEvent::Abort(uint64 /*e_time*/)
 /***            BATTLEGROUND MANAGER                   ***/
 /*********************************************************/
 
+/**
+ * @brief Constructor for BattleGroundMgr.
+ *
+ * Initializes all battleground containers and sets testing mode to false.
+ */
 BattleGroundMgr::BattleGroundMgr()
 {
     for (uint8 i = BATTLEGROUND_TYPE_NONE; i < MAX_BATTLEGROUND_TYPE_ID; ++i)
@@ -917,11 +1120,22 @@ BattleGroundMgr::BattleGroundMgr()
     m_Testing = false;
 }
 
+/**
+ * @brief Destructor for BattleGroundMgr.
+ *
+ * Cleans up all active and template battlegrounds.
+ */
 BattleGroundMgr::~BattleGroundMgr()
 {
     DeleteAllBattleGrounds();
 }
 
+/**
+ * @brief Deletes all battleground instances.
+ *
+ * Safely removes all active battlegrounds and template battlegrounds from memory.
+ * This includes template battlegrounds that are only used as templates for creating instances.
+ */
 void BattleGroundMgr::DeleteAllBattleGrounds()
 {
     // will also delete template bgs:
@@ -936,7 +1150,15 @@ void BattleGroundMgr::DeleteAllBattleGrounds()
     }
 }
 
-// used to update running battlegrounds, and delete finished ones
+/**
+ * @brief Updates all active battlegrounds and processes queue operations.
+ *
+ * Performs the main update loop for all active battleground instances, processes
+ * scheduled queue updates based on the update scheduler, and removes finished
+ * battlegrounds from memory. Called once per world tick.
+ *
+ * @param diff The time elapsed since the last update in milliseconds (unused).
+ */
 void BattleGroundMgr::Update(uint32 /*diff*/)
 {
     // update scheduled queues
@@ -962,6 +1184,20 @@ void BattleGroundMgr::Update(uint32 /*diff*/)
     }
 }
 
+/**
+ * @brief Builds a battlefield status packet for sending to the player.
+ *
+ * Constructs the network packet for SMSG_BATTLEFIELD_STATUS that informs the player
+ * of their queue status, position, estimated wait time, and other relevant information.
+ * Handles different status types: waiting in queue, invited to join, and in progress.
+ *
+ * @param data Pointer to the WorldPacket to write data to.
+ * @param bg Pointer to the battleground (may be NULL for status clear).
+ * @param QueueSlot The queue slot index (0-2, player can be in multiple queues).
+ * @param StatusID The status identifier (0=clear, STATUS_WAIT_QUEUE, STATUS_WAIT_JOIN, STATUS_IN_PROGRESS).
+ * @param Time1 Status-specific time value (wait time, invitation timeout, or auto-leave time).
+ * @param Time2 Secondary time value (queue time or elapsed battle time).
+ */
 void BattleGroundMgr::BuildBattleGroundStatusPacket(WorldPacket* data, BattleGround* bg, uint8 QueueSlot, uint8 StatusID, uint32 Time1, uint32 Time2)
 {
     // we can be in 3 queues in same time...
@@ -999,6 +1235,16 @@ void BattleGroundMgr::BuildBattleGroundStatusPacket(WorldPacket* data, BattleGro
     }
 }
 
+/**
+ * @brief Builds a PvP log data packet with player statistics.
+ *
+ * Constructs the network packet for MSG_PVP_LOG_DATA that contains the battleground
+ * statistics for all players, including scores, kills, deaths, and battleground-specific
+ * objective data. Indicates whether the battleground has finished.
+ *
+ * @param data Pointer to the WorldPacket to write data to.
+ * @param bg Pointer to the battleground instance.
+ */
 void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround* bg)
 {
     data->Initialize(MSG_PVP_LOG_DATA, (1 + 4 + 40 * bg->GetPlayerScoresSize()));
@@ -1059,6 +1305,15 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket* data, BattleGround* bg)
     }
 }
 
+/**
+ * @brief Builds the group battleground join result packet.
+ *
+ * Writes the battleground join status code returned to grouped players after a
+ * join request is processed.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param status The battleground group join status code.
+ */
 void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, int32 status)
 {
     data->Initialize(SMSG_GROUP_JOINED_BATTLEGROUND, 4);
@@ -1066,6 +1321,16 @@ void BattleGroundMgr::BuildGroupJoinedBattlegroundPacket(WorldPacket* data, int3
     *data << int32(status);
 }
 
+/**
+ * @brief Builds a world state update packet.
+ *
+ * Populates a packet with a world state field identifier and its new value so
+ * clients can refresh battleground UI state.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param field The world state field identifier.
+ * @param value The value to assign to the field.
+ */
 void BattleGroundMgr::BuildUpdateWorldStatePacket(WorldPacket* data, uint32 field, uint32 value)
 {
     data->Initialize(SMSG_UPDATE_WORLD_STATE, 4 + 4);
@@ -1073,24 +1338,60 @@ void BattleGroundMgr::BuildUpdateWorldStatePacket(WorldPacket* data, uint32 fiel
     *data << uint32(value);
 }
 
+/**
+ * @brief Builds a packet to play a sound effect.
+ *
+ * Constructs the SMSG_PLAY_SOUND packet that instructs clients to play a specific sound.
+ *
+ * @param data Pointer to the WorldPacket to write data to.
+ * @param soundid The sound ID to play.
+ */
 void BattleGroundMgr::BuildPlaySoundPacket(WorldPacket* data, uint32 soundid)
 {
     data->Initialize(SMSG_PLAY_SOUND, 4);
     *data << uint32(soundid);
 }
 
+/**
+ * @brief Builds a packet for when a player leaves a battleground.
+ *
+ * Constructs the SMSG_BATTLEGROUND_PLAYER_LEFT packet that notifies other players
+ * about a player leaving the battleground.
+ *
+ * @param data Pointer to the WorldPacket to write data to.
+ * @param guid The GUID of the player who left.
+ */
 void BattleGroundMgr::BuildPlayerLeftBattleGroundPacket(WorldPacket* data, ObjectGuid guid)
 {
     data->Initialize(SMSG_BATTLEGROUND_PLAYER_LEFT, 8);
     *data << ObjectGuid(guid);
 }
 
+/**
+ * @brief Builds a packet for when a player joins a battleground.
+ *
+ * Constructs the SMSG_BATTLEGROUND_PLAYER_JOINED packet that notifies other players
+ * about a new player joining the battleground.
+ *
+ * @param data Pointer to the WorldPacket to write data to.
+ * @param plr Pointer to the player who joined.
+ */
 void BattleGroundMgr::BuildPlayerJoinedBattleGroundPacket(WorldPacket* data, Player* plr)
 {
     data->Initialize(SMSG_BATTLEGROUND_PLAYER_JOINED, 8);
     *data << plr->GetObjectGuid();
 }
 
+/**
+ * @brief Retrieves a battleground instance by client instance ID.
+ *
+ * Searches for a battleground instance using the client-side instance ID that was
+ * sent in the SMSG_BATTLEFIELD_LIST packet. This is used when a player joins from the UI.
+ *
+ * @param instanceId The client-side instance ID.
+ * @param bgTypeId The battleground type to search in.
+ * @return Pointer to the battleground instance, or NULL if not found.
+ */
 BattleGround* BattleGroundMgr::GetBattleGroundThroughClientInstance(uint32 instanceId, BattleGroundTypeId bgTypeId)
 {
     // cause at HandleBattleGroundJoinOpcode the clients sends the instanceid he gets from
@@ -1111,6 +1412,16 @@ BattleGround* BattleGroundMgr::GetBattleGroundThroughClientInstance(uint32 insta
     return NULL;
 }
 
+/**
+ * @brief Retrieves a battleground instance by instance ID.
+ *
+ * Searches for an active battleground instance by its server instance ID. If bgTypeId
+ * is BATTLEGROUND_TYPE_NONE, searches across all battleground types.
+ *
+ * @param InstanceID The server instance ID.
+ * @param bgTypeId The battleground type to search in, or BATTLEGROUND_TYPE_NONE for all types.
+ * @return Pointer to the battleground instance, or NULL if not found.
+ */
 BattleGround* BattleGroundMgr::GetBattleGround(uint32 InstanceID, BattleGroundTypeId bgTypeId)
 {
     // search if needed
@@ -1131,12 +1442,32 @@ BattleGround* BattleGroundMgr::GetBattleGround(uint32 InstanceID, BattleGroundTy
     return ((itr != m_BattleGrounds[bgTypeId].end()) ? itr->second : NULL);
 }
 
+/**
+ * @brief Retrieves the template battleground for a given type.
+ *
+ * Returns the template battleground for the specified type. The template is the lowest-ID
+ * battleground in the container and is used as a reference for creating new instances.
+ *
+ * @param bgTypeId The battleground type.
+ * @return Pointer to the template battleground, or NULL if none exists.
+ */
 BattleGround* BattleGroundMgr::GetBattleGroundTemplate(BattleGroundTypeId bgTypeId)
 {
     // map is sorted and we can be sure that lowest instance id has only BG template
     return m_BattleGrounds[bgTypeId].empty() ? NULL : m_BattleGrounds[bgTypeId].begin()->second;
 }
 
+/**
+ * @brief Creates a unique client-visible instance ID for a battleground.
+ *
+ * Generates a new unique client-facing instance ID for the specified battleground type and bracket.
+ * Client IDs are sequential starting from 1, filling any gaps in the ID sequence. These IDs are
+ * sent to clients in the battleground list packet and used when players join via the UI.
+ *
+ * @param bgTypeId The battleground type.
+ * @param bracket_id The bracket level.
+ * @return A unique client-visible instance ID.
+ */
 uint32 BattleGroundMgr::CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
     // we create here an instanceid, which is just for
@@ -1159,7 +1490,17 @@ uint32 BattleGroundMgr::CreateClientVisibleInstanceId(BattleGroundTypeId bgTypeI
     return lastId + 1;
 }
 
-// create a new battleground that will really be used to play
+/**
+ * @brief Creates a new battleground instance.
+ *
+ * Creates a new playable battleground instance by copying the template and initializing
+ * it with a new instance ID, bracket ID, and game map. The new battleground is placed in
+ * queue waiting for players to join.
+ *
+ * @param bgTypeId The type of battleground to create.
+ * @param bracket_id The bracket the battleground belongs to.
+ * @return Pointer to the newly created battleground, or NULL if creation failed.
+ */
 BattleGround* BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
     // get the template BG
@@ -1203,7 +1544,31 @@ BattleGround* BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeId
     return bg;
 }
 
-// used to create the BG templates
+/**
+ * @brief Creates a battleground template.
+ *
+ * Creates a template battleground that serves as the prototype for all instances of this type.
+ * The template stores configuration like player limits, level requirements, and spawn locations.
+ * New instances are created by copying this template.
+ *
+ * @param bgTypeId The battleground type.
+ * @param MinPlayersPerTeam Minimum players required per team.
+ * @param MaxPlayersPerTeam Maximum players allowed per team.
+ * @param LevelMin Minimum level to queue for this battleground.
+ * @param LevelMax Maximum level for this battleground.
+ * @param BattleGroundName The name of the battleground.
+ * @param MapID The map ID for this battleground.
+ * @param Team1StartLocX Alliance spawn location X coordinate.
+ * @param Team1StartLocY Alliance spawn location Y coordinate.
+ * @param Team1StartLocZ Alliance spawn location Z coordinate.
+ * @param Team1StartLocO Alliance spawn location orientation.
+ * @param Team2StartLocX Horde spawn location X coordinate.
+ * @param Team2StartLocY Horde spawn location Y coordinate.
+ * @param Team2StartLocZ Horde spawn location Z coordinate.
+ * @param Team2StartLocO Horde spawn location orientation.
+ * @param StartMaxDist Maximum distance from spawn location for initial positioning.
+ * @return The instance ID of the created template battleground.
+ */
 uint32 BattleGroundMgr::CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 MinPlayersPerTeam, uint32 MaxPlayersPerTeam, uint32 LevelMin, uint32 LevelMax, char const* BattleGroundName, uint32 MapID, float Team1StartLocX, float Team1StartLocY, float Team1StartLocZ, float Team1StartLocO, float Team2StartLocX, float Team2StartLocY, float Team2StartLocZ, float Team2StartLocO, float StartMaxDist)
 {
     // Create the BG
@@ -1235,6 +1600,13 @@ uint32 BattleGroundMgr::CreateBattleGround(BattleGroundTypeId bgTypeId, uint32 M
     return bgTypeId;
 }
 
+/**
+ * @brief Creates initial battleground templates from the database.
+ *
+ * Loads battleground template configurations from the database table `battleground_template`
+ * and creates the template instances for each configured battleground type. These templates
+ * are used as prototypes for all new battleground instances.
+ */
 void BattleGroundMgr::CreateInitialBattleGrounds()
 {
     uint32 count = 0;
@@ -1337,6 +1709,17 @@ void BattleGroundMgr::CreateInitialBattleGrounds()
     sLog.outString();
 }
 
+/**
+ * @brief Builds the battleground instance list packet for a player.
+ *
+ * Enumerates the client-visible battleground instances available for the player's
+ * bracket and writes them into the battlefield list response.
+ *
+ * @param data Pointer to the packet being filled.
+ * @param guid The battlemaster GUID associated with the request.
+ * @param plr The player receiving the list.
+ * @param bgTypeId The battleground type being listed.
+ */
 void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid guid, Player* plr, BattleGroundTypeId bgTypeId)
 {
     if (!plr)
@@ -1370,6 +1753,16 @@ void BattleGroundMgr::BuildBattleGroundListPacket(WorldPacket* data, ObjectGuid 
     }
 }
 
+/**
+ * @brief Teleports a player to their assigned battleground location.
+ *
+ * Moves the player to the battleground map and their team's spawn location. Handles
+ * retrieving the correct start location for the player's team.
+ *
+ * @param pl Pointer to the player to teleport.
+ * @param instanceId The battleground instance ID.
+ * @param bgTypeId The battleground type.
+ */
 void BattleGroundMgr::SendToBattleGround(Player* pl, uint32 instanceId, BattleGroundTypeId bgTypeId)
 {
     BattleGround* bg = GetBattleGround(instanceId, bgTypeId);
@@ -1393,6 +1786,15 @@ void BattleGroundMgr::SendToBattleGround(Player* pl, uint32 instanceId, BattleGr
     }
 }
 
+/**
+ * @brief Converts a battleground type ID to a queue type ID.
+ *
+ * Maps a battleground type ID to its corresponding queue type ID. Different queue types
+ * have separate queues in the matchmaking system.
+ *
+ * @param bgTypeId The battleground type ID.
+ * @return The corresponding queue type ID, or BATTLEGROUND_QUEUE_NONE if invalid.
+ */
 BattleGroundQueueTypeId BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId bgTypeId)
 {
     switch (bgTypeId)
@@ -1408,6 +1810,15 @@ BattleGroundQueueTypeId BattleGroundMgr::BGQueueTypeId(BattleGroundTypeId bgType
     }
 }
 
+/**
+ * @brief Converts a battleground queue type to its template battleground type.
+ *
+ * Maps queue identifiers back to the battleground template type used to create
+ * or reference battleground instances.
+ *
+ * @param bgQueueTypeId The battleground queue type identifier.
+ * @return The corresponding battleground type identifier.
+ */
 BattleGroundTypeId BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId bgQueueTypeId)
 {
     switch (bgQueueTypeId)
@@ -1423,6 +1834,11 @@ BattleGroundTypeId BattleGroundMgr::BGTemplateId(BattleGroundQueueTypeId bgQueue
     }
 }
 
+/**
+ * @brief Toggles battleground debug testing mode.
+ *
+ * Enables or disables testing mode and broadcasts the status change to the world.
+ */
 void BattleGroundMgr::ToggleTesting()
 {
     m_Testing = !m_Testing;
@@ -1436,6 +1852,17 @@ void BattleGroundMgr::ToggleTesting()
     }
 }
 
+/**
+ * @brief Schedules a queue update for a specific battleground queue.
+ *
+ * Adds a queue update to the scheduler so that the next world update cycle will
+ * process matchmaking and invitations for this queue. Multiple requests for the same
+ * queue are consolidated to avoid duplicate processing.
+ *
+ * @param bgQueueTypeId The battleground queue type to update.
+ * @param bgTypeId The battleground type.
+ * @param bracket_id The bracket to update.
+ */
 void BattleGroundMgr::ScheduleQueueUpdate(BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
     // ACE_Guard<ACE_Thread_Mutex> guard(SchedulerLock);
@@ -1456,11 +1883,25 @@ void BattleGroundMgr::ScheduleQueueUpdate(BattleGroundQueueTypeId bgQueueTypeId,
     }
 }
 
+/**
+ * @brief Gets the premature finish timer duration.
+ *
+ * Returns the configured duration in milliseconds after which a battleground can be
+ * finished prematurely if one team is significantly outnumbered or defeated.
+ *
+ * @return The premature finish timer duration in milliseconds.
+ */
 uint32 BattleGroundMgr::GetPrematureFinishTime() const
 {
     return sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMATURE_FINISH_TIMER);
 }
 
+/**
+ * @brief Loads battle master creature entries from the database.
+ *
+ * Populates the battle master map from the `battlemaster_entry` database table,
+ * which maps creature entries to their respective battleground types.
+ */
 void BattleGroundMgr::LoadBattleMastersEntry()
 {
     mBattleMastersMap.clear();                              // need for reload case
@@ -1505,6 +1946,15 @@ void BattleGroundMgr::LoadBattleMastersEntry()
     sLog.outString();
 }
 
+/**
+ * @brief Converts a battleground type to its weekend holiday ID.
+ *
+ * Maps battleground types to their associated "Call to Arms" weekend holiday events that
+ * provide bonus rewards for participating in that battleground type.
+ *
+ * @param bgTypeId The battleground type to convert.
+ * @return The corresponding holiday ID, or HOLIDAY_NONE if not a recognized type.
+ */
 HolidayIds BattleGroundMgr::BGTypeToWeekendHolidayId(BattleGroundTypeId bgTypeId)
 {
     switch (bgTypeId)
@@ -1516,6 +1966,14 @@ HolidayIds BattleGroundMgr::BGTypeToWeekendHolidayId(BattleGroundTypeId bgTypeId
     }
 }
 
+/**
+ * @brief Converts a battleground type to its weekend holiday ID.
+ *
+ * Maps battleground types to their associated "Call to Arms" weekend holiday events.
+ *
+ * @param holiday The holiday ID to convert.
+ * @return The corresponding battleground type, or BATTLEGROUND_TYPE_NONE if invalid.
+ */
 BattleGroundTypeId BattleGroundMgr::WeekendHolidayIdToBGType(HolidayIds holiday)
 {
     switch (holiday)
@@ -1527,11 +1985,27 @@ BattleGroundTypeId BattleGroundMgr::WeekendHolidayIdToBGType(HolidayIds holiday)
     }
 }
 
+/**
+ * @brief Checks if a battleground type is active for the weekend.
+ *
+ * Determines whether the specified battleground type has an active "Call to Arms"
+ * weekend event that provides bonus experience and reputation.
+ *
+ * @param bgTypeId The battleground type to check.
+ * @return true if the battleground is currently featured for the weekend, false otherwise.
+ */
 bool BattleGroundMgr::IsBGWeekend(BattleGroundTypeId bgTypeId)
 {
     return sGameEventMgr.IsActiveHoliday(BGTypeToWeekendHolidayId(bgTypeId));
 }
 
+/**
+ * @brief Loads battleground event indexes from the database.
+ *
+ * Populates the game object and creature event index maps from the database,
+ * associating spawned objects and creatures with their battleground events.
+ * This enables proper spawning and despawning of objectives during battles.
+ */
 void BattleGroundMgr::LoadBattleEventIndexes()
 {
     BattleGroundEventIdx events;

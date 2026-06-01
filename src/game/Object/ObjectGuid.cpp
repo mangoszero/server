@@ -29,6 +29,12 @@
 
 #include <sstream>
 
+/**
+ * @brief Gets a human-readable type name for a high GUID category.
+ *
+ * @param high The high GUID type.
+ * @return The textual type name.
+ */
 char const* ObjectGuid::GetTypeName(HighGuid high)
 {
     switch (high)
@@ -47,6 +53,11 @@ char const* ObjectGuid::GetTypeName(HighGuid high)
     }
 }
 
+/**
+ * @brief Builds a readable string representation of the object GUID.
+ *
+ * @return The formatted GUID string.
+ */
 std::string ObjectGuid::GetString() const
 {
     std::ostringstream str;
@@ -71,6 +82,12 @@ std::string ObjectGuid::GetString() const
 }
 
 template<HighGuid high>
+
+/**
+ * @brief Generates the next GUID counter for a specific high GUID type.
+ *
+ * @return The generated counter value.
+ */
 uint32 ObjectGuidGenerator<high>::Generate()
 {
     if (m_nextGuid >= ObjectGuid::GetMaxCounter(high) - 1)
@@ -81,24 +98,52 @@ uint32 ObjectGuidGenerator<high>::Generate()
     return m_nextGuid++;
 }
 
+/**
+ * @brief Writes an object GUID to a byte buffer.
+ *
+ * @param buf The destination buffer.
+ * @param guid The GUID to write.
+ * @return The updated buffer.
+ */
 ByteBuffer& operator<< (ByteBuffer& buf, ObjectGuid const& guid)
 {
     buf << uint64(guid.GetRawValue());
     return buf;
 }
 
+/**
+ * @brief Reads an object GUID from a byte buffer.
+ *
+ * @param buf The source buffer.
+ * @param guid The GUID to populate.
+ * @return The updated buffer.
+ */
 ByteBuffer& operator>>(ByteBuffer& buf, ObjectGuid& guid)
 {
     guid.Set(buf.read<uint64>());
     return buf;
 }
 
+/**
+ * @brief Writes a packed GUID to a byte buffer.
+ *
+ * @param buf The destination buffer.
+ * @param guid The packed GUID wrapper.
+ * @return The updated buffer.
+ */
 ByteBuffer& operator<< (ByteBuffer& buf, PackedGuid const& guid)
 {
     buf.append(guid.m_packedGuid);
     return buf;
 }
 
+/**
+ * @brief Reads a packed GUID from a byte buffer.
+ *
+ * @param buf The source buffer.
+ * @param guid The packed GUID reader wrapper.
+ * @return The updated buffer.
+ */
 ByteBuffer& operator>>(ByteBuffer& buf, PackedGuidReader const& guid)
 {
     guid.m_guidPtr->Set(buf.readPackGUID());

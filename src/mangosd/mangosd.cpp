@@ -22,14 +22,31 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/// \addtogroup mangosd Mangos Daemon
-/// @{
-/// \file
+/**
+ * @file mangosd.cpp
+ * @brief World server daemon entry point
+ *
+ * This file implements the main entry point for the MaNGOS world server
+ * daemon (mangosd). It handles:
+ * - Command line argument parsing
+ * - Service/daemon mode initialization
+ * - Database connections (World, Character, Login)
+ * - Server subsystem initialization
+ * - Multiple thread management (World, CLI, Auto-freeze, SOAP)
+ * - Main event loop and shutdown
+ *
+ * The world server is responsible for running the game simulation,
+ * handling player connections, and managing game state.
+ *
+ * @addtogroup mangosd Mangos Daemon
+ * @{
+ */
 
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
 #  include <openssl/provider.h>
+#  include "Auth/OpenSSLProvider.h"
 #endif
 #include <ace/Version.h>
 #include <ace/Get_Opt.h>
@@ -55,32 +72,38 @@
 #include "RAThread.h"
 
 #ifdef ENABLE_SOAP
-  #include "SOAP/SoapThread.h"
+#include "SOAP/SoapThread.h"
 #endif
 
 #ifdef _WIN32
- #include "ServiceWin32.h"
+#include "ServiceWin32.h"
+#include "WheatyExceptionReport.h"
 
-  char serviceName[]        = "MaNGOS";               // service short name
-  char serviceLongName[]    = "MaNGOS World Service"; // service long name
-  char serviceDescription[] = "MaNGOS World Service - no description available";
+char serviceName[]        = "MaNGOS";               // service short name
+char serviceLongName[]    = "MaNGOS World Service"; // service long name
+char serviceDescription[] = "MaNGOS World Service - no description available";
 
-  int m_ServiceStatus = -1;
+int m_ServiceStatus = -1;
 
 #else
- #include "PosixDaemon.h"
+#include "PosixDaemon.h"
 #endif
 
-//*******************************************************************************************************//
 DatabaseType WorldDatabase;                                 ///< Accessor to the world database
 DatabaseType CharacterDatabase;                             ///< Accessor to the character database
 DatabaseType LoginDatabase;                                 ///< Accessor to the realm/login database
 
 uint32 realmID = 0;                                         ///< Id of the realm
-//*******************************************************************************************************//
 
-
-/// Clear 'online' status for all accounts with characters in this realm
+/**
+ * @brief Clear online status for realm accounts on startup
+ *
+ * Resets the 'online' status for all accounts that were marked as
+ * connected to this realm. This handles cases where the server
+ * crashed without properly logging out all players.
+ *
+ * Also resets character online status and battleground instance data.
+ */
 static void clear_online_accounts()
 {
     // Cleanup online status for characters hosted at current realm
@@ -93,8 +116,18 @@ static void clear_online_accounts()
     CharacterDatabase.Execute("UPDATE `character_battleground_data` SET `instance_id` = 0");
 }
 
-
-/// Initialize connection to the databases
+/**
+ * @brief Initialize database connections
+ * @return true if all databases connected successfully, false otherwise
+ *
+ * Connects to three databases:
+ * - World Database: Contains game data (creatures, items, quests, etc.)
+ * - Character Database: Contains player character data
+ * - Login Database: References realm authentication data
+ *
+ * Validates database versions and connection counts from configuration.
+ * On failure, properly cleans up any connections that were established.
+ */
 static bool start_db()
 {
     ///- Get world database info from configuration file
@@ -255,30 +288,35 @@ static void unhook_signals()
 #endif
 }
 
-
 /// Print out the usage string for this program on the console.
 static void usage(const char* prog)
 {
     sLog.outString("Usage: \n %s [<options>]\n"
-                   "    -v, --version              print version and exist\n\r"
-                   "    -c <config_file>           use config_file as configuration file\n\r"
-                   "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
+        "    -v, --version              print version and exist\n\r"
+        "    -c <config_file>           use config_file as configuration file\n\r"
+        "    -a, --ahbot <config_file>  use config_file as ahbot configuration file\n\r"
 #ifdef WIN32
-                   "    Running as service functions:\n\r"
-                   "    -s run                     run as service\n\r"
-                   "    -s install                 install service\n\r"
-                   "    -s uninstall               uninstall service\n\r"
+        "    Running as service functions:\n\r"
+        "    -s run                     run as service\n\r"
+        "    -s install                 install service\n\r"
+        "    -s uninstall               uninstall service\n\r"
 #else
-                   "    Running as daemon functions:\n\r"
-                   "    -s run                     run as daemon\n\r"
-                   "    -s stop                    stop daemon\n\r"
+        "    Running as daemon functions:\n\r"
+        "    -s run                     run as daemon\n\r"
+        "    -s stop                    stop daemon\n\r"
 #endif
-                   , prog);
+    , prog);
 }
 
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+      // Install the exception handler for unhandled exceptions in the main thread
+        static WheatyExceptionReport exceptionReport;
+        SetUnhandledExceptionFilter(WheatyExceptionReport::WheatyUnhandledExceptionFilter);
+#endif
+
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
@@ -403,25 +441,11 @@ int main(int argc, char** argv)
     DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    OSSL_PROVIDER* legacy;
-    OSSL_PROVIDER* deflt;
+    // RAII provider management - automatically handles cleanup
+    OpenSSLProviderManager providerManager;
 
-    /* Load Multiple providers into the default (NULL) library context */
-    legacy = OSSL_PROVIDER_load(NULL, "legacy");
-    if (legacy == NULL) {
-        sLog.outError("Failed to load OpenSSL 3.x Legacy provider\n");
-#ifdef WIN32
-        sLog.outError("\nPlease check you have set the following Enviroment Varible:\n");
-        sLog.outError("OPENSSL_MODULES=C:\\OpenSSL-Win64\\bin\n");
-        sLog.outError("(where C:\\OpenSSL-Win64\\bin is the location you installed OpenSSL\n");
-#endif
-        Log::WaitBeforeContinueIfNeed();
-        return 0;
-    }
-    deflt = OSSL_PROVIDER_load(NULL, "default");
-    if (deflt == NULL) {
-        sLog.outError("Failed to load OpenSSL 3.x Default provider\n");
-        OSSL_PROVIDER_unload(legacy);
+    if (!providerManager.IsInitialized())
+    {
         Log::WaitBeforeContinueIfNeed();
         return 0;
     }
@@ -432,7 +456,6 @@ int main(int argc, char** argv)
         DETAIL_LOG("WARNING: Minimal required version [OpenSSL 1.1.x] and Maximum supported version [OpenSSL 1.2]");
     }
 #endif
-
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
 
@@ -492,7 +515,6 @@ int main(int argc, char** argv)
     ///- Catch termination signals
     hook_signals();
 
-
     //************************************************************************************************************************
     // 1. Start the World thread
     //************************************************************************************************************************
@@ -502,7 +524,6 @@ int main(int argc, char** argv)
 
     WorldThread* worldThread = new WorldThread(port, host.c_str());
     worldThread->open(0);
-
 
     //************************************************************************************************************************
     // 2. Start the remote access listener thread
@@ -537,13 +558,13 @@ int main(int argc, char** argv)
     }
 #endif /* ENABLE_SOAP */
 
-
     //************************************************************************************************************************
     // 4. Start the freeze catcher thread
     //************************************************************************************************************************
-    AntiFreezeThread* freezeThread = new AntiFreezeThread(1000 * sConfig.GetIntDefault("MaxCoreStuckTime", 0));
+    uint32 stuckTime = sConfig.GetIntDefault("MaxCoreStuckTime", 0);
+    sLog.outString("AntiFreezeThread: MaxCoreStuckTime = %u, watchdog %s", stuckTime, stuckTime > 0 ? "ARMED" : "DISABLED");
+    AntiFreezeThread* freezeThread = new AntiFreezeThread(1000 * stuckTime);
     freezeThread->open(NULL);
-
 
     //************************************************************************************************************************
     // 5. Start the console thread
@@ -561,6 +582,7 @@ int main(int argc, char** argv)
     }
 
     worldThread->wait();
+    sLog.outString("[shutdown] worldThread->wait() returned (world thread joined)");
 
     if (cliThread)
     {
@@ -568,7 +590,9 @@ int main(int argc, char** argv)
         delete cliThread;
     }
 
+    sLog.outString("[shutdown] joining all ACE task threads (ACE_Thread_Manager::wait)...");
     ACE_Thread_Manager::instance()->wait();
+    sLog.outString("[shutdown] all ACE task threads joined");
     sLog.outString("Halting process...");
 
     ///- Stop freeze protection before shutdown tasks
@@ -597,14 +621,18 @@ int main(int argc, char** argv)
     sMassMailMgr.Update(true);
 
     ///- Wait for DB delay threads to end
+    sLog.outString("[shutdown] halting DB delay threads (Character/World/Login)...");
     CharacterDatabase.HaltDelayThread();
     WorldDatabase.HaltDelayThread();
     LoginDatabase.HaltDelayThread();
+    sLog.outString("[shutdown] DB delay threads halted");
 
     // This is done to make sure that we cleanup our so file before it's
     // unloaded automatically, since the ~ScriptMgr() is called to late
     // as it's allocated with static storage.
+    sLog.outString("[shutdown] unloading script library...");
     sScriptMgr.UnloadScriptLibrary();
+    sLog.outString("[shutdown] script library unloaded");
 
     ///- Exit the process with specified return value
     int code = World::GetExitCode();

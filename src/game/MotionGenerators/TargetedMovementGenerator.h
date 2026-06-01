@@ -47,7 +47,7 @@ class TargetedMovementGeneratorBase
         /**
          * @brief Stops following the target.
          */
-        void stopFollowing() { }
+        void stopFollowing() {}
 
     protected:
         FollowerReference i_target; ///< Reference to the target unit.
@@ -81,7 +81,10 @@ class TargetedMovementGeneratorMedium
         /**
          * @brief Destructor for TargetedMovementGeneratorMedium.
          */
-        ~TargetedMovementGeneratorMedium() { delete i_path; }
+        ~TargetedMovementGeneratorMedium()
+        {
+            delete i_path;
+        }
 
     public:
         /**
@@ -107,7 +110,10 @@ class TargetedMovementGeneratorMedium
         /**
          * @brief Called when the unit's speed changes.
          */
-        void unitSpeedChanged() { m_speedChanged = true; }
+        void unitSpeedChanged()
+        {
+            m_speedChanged = true;
+        }
 
     protected:
         /**

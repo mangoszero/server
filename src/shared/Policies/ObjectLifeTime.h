@@ -36,6 +36,7 @@ typedef void (* Destroyer)(void);
 
 namespace MaNGOS
 {
+
     /**
      * @brief
      *
@@ -44,6 +45,7 @@ namespace MaNGOS
     void  at_exit(void (*func)());
 
     template<class T>
+
     /**
      * @brief
      *
@@ -70,6 +72,7 @@ namespace MaNGOS
     };
 
     template <class T>
+
     /**
      * @brief We don't handle Dead Reference for now
      *

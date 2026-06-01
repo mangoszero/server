@@ -52,32 +52,50 @@ enum DatabaseTypes
 };
 
 /**
- * @brief
+ * @brief Abstract base class for database connections
  *
+ * SqlConnection provides the interface for all database operations in MaNGOS.
+ * It handles connection management, query execution, and transaction support.
+ * This is the base class that specific database implementations (MySQL, etc.)
+ * must inherit from.
+ *
+ * Features:
+ * - Database connection initialization and management
+ * - SQL query execution with result handling
+ * - Transaction support (begin/commit/rollback)
+ * - Prepared statement support for performance
+ * - Thread-safe operations with locking mechanism
+ * - String escaping for SQL injection prevention
+ *
+ * @note This is an abstract class - use concrete implementations like DatabaseMysql
+ * @note All database operations should use the Lock class for thread safety
  */
 class SqlConnection
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Virtual destructor for proper cleanup of derived classes
          */
         virtual ~SqlConnection() {}
 
         /**
-         * @brief method for initializing DB connection
-         *
-         * @param infoString
-         * @return bool
+         * @brief Initialize database connection with connection string
+         * @param infoString Database connection string (host:port,user,password,database)
+         * @return true if connection successful, false otherwise
          */
         virtual bool Initialize(const char* infoString) = 0;
+
         /**
-         * @brief public methods for making queries
+         * @brief Execute SQL query and return results
          *
-         * @param sql
-         * @return QueryResult
+         * This method executes a SELECT query and returns the result set.
+         * Used for queries that return data (SELECT, SHOW, etc.).
+         *
+         * @param sql SQL query string to execute
+         * @return QueryResult pointer containing result data, NULL if error
          */
         virtual QueryResult* Query(const char* sql) = 0;
+
         /**
          * @brief
          *
@@ -109,19 +127,30 @@ class SqlConnection
          *
          * @return bool
          */
-        virtual bool BeginTransaction() { return true; }
+        virtual bool BeginTransaction()
+        {
+            return true;
+        }
+
         /**
          * @brief
          *
          * @return bool
          */
-        virtual bool CommitTransaction() { return true; }
+        virtual bool CommitTransaction()
+        {
+            return true;
+        }
+
         /**
          * @brief can't rollback without transaction support
          *
          * @return bool
          */
-        virtual bool RollbackTransaction() { return true; }
+        virtual bool RollbackTransaction()
+        {
+            return true;
+        }
 
         /**
          * @brief methods to work with prepared statements
@@ -145,11 +174,15 @@ class SqlConnection
                  * @param conn
                  */
                 Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.acquire(); }
+
                 /**
                  * @brief
                  *
                  */
-                ~Lock() { m_pConn->m_mutex.release(); }
+                ~Lock()
+                {
+                    m_pConn->m_mutex.release();
+                }
 
                 /**
                  * @brief
@@ -167,7 +200,10 @@ class SqlConnection
          *
          * @return Database
          */
-        Database& DB() { return m_db; }
+        Database& DB()
+        {
+            return m_db;
+        }
 
     protected:
         /**
@@ -184,6 +220,7 @@ class SqlConnection
          * @return SqlPreparedStatement
          */
         virtual SqlPreparedStatement* CreateStatement(const std::string& fmt);
+
         /**
          * @brief allocate prepared statement and return statement ID
          *
@@ -237,11 +274,13 @@ class Database
          * @return bool
          */
         virtual bool Initialize(const char* infoString, int nConns = 1);
+
         /**
          * @brief start worker thread for async DB request execution
          *
          */
         virtual void InitDelayThread();
+
         /**
          * @brief stop worker thread
          *
@@ -279,6 +318,7 @@ class Database
          * @return QueryResult
          */
         QueryResult* PQuery(const char* format, ...) ATTR_PRINTF(2, 3);
+
         /**
          * @brief
          *
@@ -316,6 +356,7 @@ class Database
 
         // Query / member
         template<class Class>
+
         /**
          * @brief
          *
@@ -326,6 +367,7 @@ class Database
          */
         bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*), const char* sql);
         template<class Class, typename ParamType1>
+
         /**
          * @brief
          *
@@ -338,6 +380,7 @@ class Database
          */
         bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1), ParamType1 param1, const char* sql);
         template<class Class, typename ParamType1, typename ParamType2>
+
         /**
          * @brief
          *
@@ -352,6 +395,7 @@ class Database
          */
         bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* sql);
         template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
+
         /**
          * @brief
          *
@@ -369,6 +413,7 @@ class Database
         bool AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* sql);
         // Query / static
         template<typename ParamType1>
+
         /**
          * @brief
          *
@@ -380,6 +425,7 @@ class Database
          */
         bool AsyncQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1, const char* sql);
         template<typename ParamType1, typename ParamType2>
+
         /**
          * @brief
          *
@@ -393,6 +439,7 @@ class Database
          */
         bool AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* sql);
         template<typename ParamType1, typename ParamType2, typename ParamType3>
+
         /**
          * @brief
          *
@@ -409,6 +456,7 @@ class Database
         bool AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* sql);
         // PQuery / member
         template<class Class>
+
         /**
          * @brief
          *
@@ -419,6 +467,7 @@ class Database
          */
         bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*), const char* format, ...) ATTR_PRINTF(4, 5);
         template<class Class, typename ParamType1>
+
         /**
          * @brief
          *
@@ -431,6 +480,7 @@ class Database
          */
         bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1), ParamType1 param1, const char* format, ...) ATTR_PRINTF(5, 6);
         template<class Class, typename ParamType1, typename ParamType2>
+
         /**
          * @brief
          *
@@ -445,6 +495,7 @@ class Database
          */
         bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* format, ...) ATTR_PRINTF(6, 7);
         template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
+
         /**
          * @brief
          *
@@ -462,6 +513,7 @@ class Database
         bool AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* format, ...) ATTR_PRINTF(7, 8);
         // PQuery / static
         template<typename ParamType1>
+
         /**
          * @brief
          *
@@ -473,6 +525,7 @@ class Database
          */
         bool AsyncPQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1, const char* format, ...) ATTR_PRINTF(4, 5);
         template<typename ParamType1, typename ParamType2>
+
         /**
          * @brief
          *
@@ -486,6 +539,7 @@ class Database
          */
         bool AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2), ParamType1 param1, ParamType2 param2, const char* format, ...) ATTR_PRINTF(5, 6);
         template<typename ParamType1, typename ParamType2, typename ParamType3>
+
         /**
          * @brief
          *
@@ -502,6 +556,7 @@ class Database
         bool AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* format, ...) ATTR_PRINTF(6, 7);
         template<class Class>
         // QueryHolder
+
         /**
          * @brief
          *
@@ -513,6 +568,7 @@ class Database
          */
         bool DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, SqlQueryHolder*), SqlQueryHolder* holder);
         template<class Class, typename ParamType1>
+
         /**
          * @brief
          *
@@ -533,6 +589,7 @@ class Database
          * @return bool
          */
         bool Execute(const char* sql);
+
         /**
          * @brief
          *
@@ -555,18 +612,21 @@ class Database
          * @return bool
          */
         bool BeginTransaction();
+
         /**
          * @brief
          *
          * @return bool
          */
         bool CommitTransaction();
+
         /**
          * @brief
          *
          * @return bool
          */
         bool RollbackTransaction();
+
         /**
          * @brief for sync transaction execution
          *
@@ -575,6 +635,7 @@ class Database
         bool CommitTransactionDirect();
 
         // PREPARED STATEMENT API
+
         /**
          * @brief allocate index for prepared statement with SQL request 'fmt'
          *
@@ -583,6 +644,7 @@ class Database
          * @return SqlStatement
          */
         SqlStatement CreateStatement(SqlStatementID& index, const char* fmt);
+
         /**
          * @brief get prepared statement format string
          *
@@ -610,6 +672,7 @@ class Database
          *
          */
         virtual void ThreadStart();
+
         /**
          * @brief must be called before finish thread run (one time for thread using one from existing Database objects)
          *
@@ -629,12 +692,16 @@ class Database
         * @return bool
         */
         bool CheckDatabaseVersion(DatabaseTypes database);
+
         /**
          * @brief
          *
          * @return uint32
          */
-        uint32 GetPingIntervall() { return m_pingIntervallms; }
+        uint32 GetPingIntervall()
+        {
+            return m_pingIntervallms;
+        }
 
         /**
          * @brief function to ping database connections
@@ -650,7 +717,10 @@ class Database
          * NO ASYNC TRANSACTIONS DURING SERVER STARTUP - ONLY DURING RUNTIME!!!
          *
          */
-        void AllowAsyncTransactions() { m_bAllowAsyncTransactions = true; }
+        void AllowAsyncTransactions()
+        {
+            m_bAllowAsyncTransactions = true;
+        }
 
     protected:
         /**
@@ -677,6 +747,7 @@ class Database
          * @return SqlConnection
          */
         virtual SqlConnection* CreateConnection() = 0;
+
         /**
          * @brief factory method to create SqlDelayThread objects
          *
@@ -696,6 +767,7 @@ class Database
                  *
                  */
                 TransHelper() : m_pTrans(NULL) {}
+
                 /**
                  * @brief
                  *
@@ -708,6 +780,7 @@ class Database
                  * @return SqlTransaction
                  */
                 SqlTransaction* init();
+
                 /**
                  * @brief gets pointer on current transaction object. Returns NULL if transaction was not initiated
                  *
@@ -724,6 +797,7 @@ class Database
                  * @return SqlTransaction
                  */
                 SqlTransaction* detach();
+
                 /**
                  * @brief destroyes SqlTransaction allocated by init() function
                  *
@@ -742,12 +816,14 @@ class Database
         Database::DBTransHelperTSS *m_TransStorage; /**< TODO */
 
         ///< DB connections
+
         /**
          * @brief round-robin connection selection
          *
          * @return SqlConnection
          */
         SqlConnection* getQueryConnection();
+
         /**
          * @brief for now return one single connection for async requests
          *
@@ -757,6 +833,7 @@ class Database
 
         friend class SqlStatement;
         // PREPARED STATEMENT API
+
         /**
          * @brief query function for prepared statements
          *
@@ -765,6 +842,7 @@ class Database
          * @return bool
          */
         bool ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params);
+
         /**
          * @brief
          *
@@ -795,11 +873,13 @@ class Database
         bool m_bAllowAsyncTransactions;                     /**< flag which specifies if async transactions are enabled */
 
         // PREPARED STATEMENT REGISTRY
+
         /**
          * @brief
          *
          */
         typedef ACE_Thread_Mutex LOCK_TYPE;
+
         /**
          * @brief
          *

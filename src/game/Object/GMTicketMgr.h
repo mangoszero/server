@@ -116,6 +116,7 @@ class GMTicket
         {
             return m_guid;
         }
+
         /**
          * Get the tickets question
          * @return the question this ticket had
@@ -124,6 +125,7 @@ class GMTicket
         {
             return m_text.c_str();
         }
+
         /**
          * Get the response given to this ticket, if any
          * @return the response that was made to this tickets question
@@ -132,6 +134,7 @@ class GMTicket
         {
             return m_responseText.c_str();
         }
+
         /**
          * Tells us when the last update was done as a UNIX timestamp.
          * @return Time since last update in seconds since UNIX epoch
@@ -140,6 +143,7 @@ class GMTicket
         {
             return m_lastUpdate;
         }
+
         /**
          * Gets the id for this \ref GMTicket, as represented in the database
          * table characters.character_ticket
@@ -155,6 +159,7 @@ class GMTicket
          * @param text the text to change the question to
          */
         void SetText(const char* text);
+
         /**
          * Changes the response to the ticket
          * @param text the response to give
@@ -168,7 +173,10 @@ class GMTicket
          * \deprecated
          * \todo Change to resolved/not resolved instead, via the check in db
          */
-        bool HasResponse() { return !m_responseText.empty(); }
+        bool HasResponse()
+        {
+            return !m_responseText.empty();
+        }
 
         /**
          * This will take care of a \ref OpcodesList::CMSG_GMSURVEY_SUBMIT packet
@@ -177,16 +185,19 @@ class GMTicket
          * \todo Implement saving this to DB
          */
         void SaveSurveyData(WorldPacket& recvData) const;
+
         /**
          * Close this ticket so that the window showing in the client for the \ref Player
          * disappears.
          */
         void Close() const;
+
         /**
          * This closes the ticket aswell, but this is called when the client itself closed it
          * because they figured out the solution to their question
          */
         void CloseByClient() const;
+
         /**
          * This does the same thing as \ref GMTicket::Close but it also shows a survey window to the
          * \ref Player so that they can answer how well the GM behaved and such.
@@ -212,9 +223,8 @@ class GMTicketMgr
 {
     public:
         //TODO: Make the default value a config option instead
-        GMTicketMgr() : m_TicketSystemOn(true), m_GMTicketMap(), m_GMTicketIdMap()
-        {  }
-        ~GMTicketMgr() {  }
+        GMTicketMgr() : m_TicketSystemOn(true), m_GMTicketMap(), m_GMTicketIdMap() {}
+        ~GMTicketMgr() {}
 
         /**
          * Loads all GM tickets from the database.
@@ -316,6 +326,7 @@ class GMTicketMgr
          * @param accept True to accept tickets, false to not accept tickets
          */
         void SetAcceptTickets(bool accept) { m_TicketSystemOn = accept; }
+
         /**
          * Checks if we accept tickets globally.
          * @return True if we are accepting tickets globally, false otherwise

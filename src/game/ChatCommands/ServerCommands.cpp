@@ -22,6 +22,17 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file ServerCommands.cpp
+ * @brief Implementation of server management chat commands.
+ *
+ * This file contains chat command handlers for server operations including:
+ * - Server status and information
+ * - Player count display
+ * - Server configuration queries
+ * - Shutdown and restart operations
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "World.h"
@@ -31,11 +42,12 @@
 #include "UpdateTime.h"
 #include "revision_data.h"
 
- /**********************************************************************
-     CommandTable : serverCommandTable
- /***********************************************************************/
-
-
+/**
+ * @brief Handler for HandleServerInfoCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
 {
     uint32 activeClientsNum = sWorld.GetActiveSessionCount();
@@ -79,19 +91,36 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     return true;
 }
 
-/// Display the 'Message of the day' for the realm
+/**
+ * @brief Handler for HandleServerMotdCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerMotdCommand(char* /*args*/)
 {
     PSendSysMessage(LANG_MOTD_CURRENT, sWorld.GetMotd());
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerShutDownCancelCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerShutDownCancelCommand(char* /*args*/)
 {
     sWorld.ShutdownCancel();
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerShutDownCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerShutDownCommand(char* args)
 {
     if (!*args)
@@ -138,6 +167,12 @@ bool ChatHandler::HandleServerShutDownCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerRestartCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerRestartCommand(char* args)
 {
     if (!*args)
@@ -184,6 +219,12 @@ bool ChatHandler::HandleServerRestartCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerIdleRestartCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerIdleRestartCommand(char* args)
 {
     if (!*args)
@@ -230,6 +271,12 @@ bool ChatHandler::HandleServerIdleRestartCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerIdleShutDownCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerIdleShutDownCommand(char* args)
 {
     if (!*args)
@@ -276,7 +323,12 @@ bool ChatHandler::HandleServerIdleShutDownCommand(char* args)
     return true;
 }
 
-/// Exit the realm
+/**
+ * @brief Handler for HandleServerExitCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerExitCommand(char* /*args*/)
 {
     SendSysMessage(LANG_COMMAND_EXIT);
@@ -284,7 +336,12 @@ bool ChatHandler::HandleServerExitCommand(char* /*args*/)
     return true;
 }
 
-/// Set the filters of logging
+/**
+ * @brief Handler for HandleServerLogFilterCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerLogFilterCommand(char* args)
 {
     if (!*args)
@@ -337,7 +394,12 @@ bool ChatHandler::HandleServerLogFilterCommand(char* args)
     return false;
 }
 
-/// Set the level of logging
+/**
+ * @brief Handler for HandleServerLogLevelCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerLogLevelCommand(char* args)
 {
     if (!*args)
@@ -350,13 +412,24 @@ bool ChatHandler::HandleServerLogLevelCommand(char* args)
     return true;
 }
 
-/// Triggering corpses expire check in world
+/**
+ * @brief Handler for HandleServerCorpsesCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerCorpsesCommand(char* /*args*/)
 {
     sObjectAccessor.RemoveOldCorpses();
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerResetAllRaidCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerResetAllRaidCommand(char* args)
 {
     PSendSysMessage("Global raid instances reset, all players in raid instances will be teleported to homebind!");
@@ -364,7 +437,12 @@ bool ChatHandler::HandleServerResetAllRaidCommand(char* args)
     return true;
 }
 
-/// Define the 'Message of the day' for the realm
+/**
+ * @brief Handler for HandleServerSetMotdCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerSetMotdCommand(char* args)
 {
     sWorld.SetMotd(args);
@@ -372,6 +450,12 @@ bool ChatHandler::HandleServerSetMotdCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleServerPLimitCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleServerPLimitCommand(char* args)
 {
     if (*args)

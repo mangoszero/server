@@ -22,6 +22,24 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file DatabaseMysql.cpp
+ * @brief MySQL database driver implementation
+ *
+ * This file implements the MySQL-specific database layer:
+ * - DatabaseMysql: Factory for MySQL connections
+ * - MySQLConnection: Per-thread MySQL connection handling
+ *
+ * Features:
+ * - Thread-safe MySQL library initialization
+ * - Connection pooling with multiple threads
+ * - UTF-8 encoding enforcement
+ * - Automatic reconnection support
+ * - Prepared statement caching
+ *
+ * @note This file is only compiled when DO_POSTGRESQL is not defined
+ */
+
 #ifndef DO_POSTGRESQL
 
 #include "Utilities/Util.h"
@@ -31,18 +49,54 @@
 #include "DatabaseEnv.h"
 #include "Utilities/Timer.h"
 
+/**
+ * @var DatabaseMysql::db_count
+ * @brief Reference counter for MySQL library initialization
+ *
+ * Tracks how many DatabaseMysql instances exist. The MySQL client
+ * library is initialized when the first instance is created and
+ * cleaned up when the last instance is destroyed.
+ */
 size_t DatabaseMysql::db_count = 0;
 
+/**
+ * @brief Initialize MySQL thread-local data
+ *
+ * Must be called in each thread that will use MySQL before
+ * performing any MySQL operations. Sets up thread-local
+ * variables required by the MySQL client library.
+ *
+ * @note Called automatically by database worker threads
+ */
 void DatabaseMysql::ThreadStart()
 {
     mysql_thread_init();
 }
 
+/**
+ * @brief Clean up MySQL thread-local data
+ *
+ * Releases thread-local resources allocated by mysql_thread_init().
+ * Must be called before a thread exits to prevent memory leaks.
+ *
+ * @note Called automatically when database worker threads exit
+ */
 void DatabaseMysql::ThreadEnd()
 {
     mysql_thread_end();
 }
 
+/**
+ * @brief Construct MySQL database interface
+ *
+ * Initializes the MySQL library if this is the first instance:
+ * - Calls mysql_library_init() for global initialization
+ * - Verifies MySQL library is thread-safe (critical for MaNGOS)
+ * - Exits the process if initialization fails
+ *
+ * Uses reference counting to ensure library is only initialized once
+ * and cleaned up only after all instances are destroyed.
+ */
 DatabaseMysql::DatabaseMysql()
 {
     // before first connection
@@ -63,6 +117,13 @@ DatabaseMysql::DatabaseMysql()
     }
 }
 
+/**
+ * @brief Destroy MySQL database interface
+ *
+ * Stops all worker threads and cleans up connections.
+ * If this is the last DatabaseMysql instance, also calls
+ * mysql_library_end() to clean up global MySQL resources.
+ */
 DatabaseMysql::~DatabaseMysql()
 {
     StopServer();
@@ -74,17 +135,47 @@ DatabaseMysql::~DatabaseMysql()
     }
 }
 
+/**
+ * @brief Create a new MySQL connection
+ * @return New MySQLConnection instance
+ *
+ * Factory method used by the database connection pool to create
+ * new MySQL-specific connections on demand.
+ */
 SqlConnection* DatabaseMysql::CreateConnection()
 {
     return new MySQLConnection(*this);
 }
 
+/**
+ * @brief Destroy MySQL connection
+ *
+ * Cleans up all prepared statements and closes the MySQL connection.
+ * Called when a database worker thread exits or connection is lost.
+ */
 MySQLConnection::~MySQLConnection()
 {
     FreePreparedStatements();
     mysql_close(mMysql);
 }
 
+/**
+ * @brief Initialize MySQL connection from connection string
+ * @param infoString Connection string in format: host;port_or_socket;user;password;database
+ * @return true on successful connection, false otherwise
+ *
+ * Parses the connection string and establishes a MySQL connection.
+ * Supports both TCP connections (hostname:port) and Unix sockets/socket files.
+ * Configures UTF-8 encoding and enables auto-reconnect.
+ *
+ * Connection string format:
+ *   hostname;port_or_socket;username;password;database
+ *
+ * Special cases:
+ *   - host="." uses named pipe (Windows) or Unix socket (Linux)
+ *   - Auto-commit is enabled for atomic operations
+ *   - Character set is set to UTF-8
+ */
 bool MySQLConnection::Initialize(const char* infoString)
 {
     MYSQL* mysqlInit = mysql_init(NULL);
@@ -200,6 +291,22 @@ bool MySQLConnection::Initialize(const char* infoString)
     return true;
 }
 
+/**
+ * @brief Execute a SQL query and return raw MySQL results
+ * @param sql SQL query string
+ * @param pResult Output: MySQL result handle
+ * @param pFields Output: Field metadata array
+ * @param pRowCount Output: Number of rows in result
+ * @param pFieldCount Output: Number of fields per row
+ * @return true if query succeeded and has rows, false otherwise
+ *
+ * Internal query execution method that handles:
+ * - Query timing and logging
+ * - Error reporting
+ * - Result set extraction
+ *
+ * @note Caller must free the result with mysql_free_result()
+ */
 bool MySQLConnection::_Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD** pFields, uint64* pRowCount, uint32* pFieldCount)
 {
     if (!mMysql)
@@ -239,6 +346,16 @@ bool MySQLConnection::_Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD**
     return true;
 }
 
+/**
+ * @brief Execute a SELECT query and return results
+ * @param sql SELECT query string
+ * @return QueryResult with row data, or NULL on failure/no rows
+ *
+ * Executes a SQL query and returns a QueryResult object for iterating
+ * over the results. Automatically fetches the first row.
+ *
+ * @note Caller is responsible for deleting the returned QueryResult
+ */
 QueryResult* MySQLConnection::Query(const char* sql)
 {
     MYSQL_RES* result = NULL;
@@ -257,6 +374,17 @@ QueryResult* MySQLConnection::Query(const char* sql)
     return queryResult;
 }
 
+/**
+ * @brief Execute a SELECT query with named field access
+ * @param sql SELECT query string
+ * @return QueryNamedResult with row data and field names, or NULL on failure
+ *
+ * Similar to Query() but returns a QueryNamedResult that allows accessing
+ * fields by name rather than index. Field names are extracted from the
+ * MySQL result metadata.
+ *
+ * @note Caller is responsible for deleting the returned QueryNamedResult
+ */
 QueryNamedResult* MySQLConnection::QueryNamed(const char* sql)
 {
     MYSQL_RES* result = NULL;
@@ -281,6 +409,17 @@ QueryNamedResult* MySQLConnection::QueryNamed(const char* sql)
     return new QueryNamedResult(queryResult, names);
 }
 
+/**
+ * @brief Execute a non-SELECT SQL statement
+ * @param sql SQL statement (INSERT, UPDATE, DELETE, etc.)
+ * @return true on success, false on error
+ *
+ * Executes a SQL statement that doesn't return a result set.
+ * Commonly used for data modification operations.
+ *
+ * Execution time is logged when SQL text filtering is enabled.
+ * Errors are logged to the database error log.
+ */
 bool MySQLConnection::Execute(const char* sql)
 {
     if (!mMysql)
@@ -307,6 +446,14 @@ bool MySQLConnection::Execute(const char* sql)
     return true;
 }
 
+/**
+ * @brief Execute a transaction command
+ * @param sql Transaction SQL command (START TRANSACTION, COMMIT, ROLLBACK)
+ * @return true on success, false on error
+ *
+ * Internal helper for executing transaction control statements.
+ * Used by BeginTransaction(), CommitTransaction(), and RollbackTransaction().
+ */
 bool MySQLConnection::_TransactionCmd(const char* sql)
 {
     if (mysql_query(mMysql, sql))
@@ -322,21 +469,57 @@ bool MySQLConnection::_TransactionCmd(const char* sql)
     return true;
 }
 
+/**
+ * @brief Begin a database transaction
+ * @return true on success, false on error
+ *
+ * Starts a new transaction. All subsequent SQL statements will be
+ * part of this transaction until CommitTransaction() or RollbackTransaction()
+ * is called.
+ *
+ * @note Requires table storage engine with transaction support (InnoDB)
+ */
 bool MySQLConnection::BeginTransaction()
 {
     return _TransactionCmd("START TRANSACTION");
 }
 
+/**
+ * @brief Commit the current transaction
+ * @return true on success, false on error
+ *
+ * Commits all changes made since BeginTransaction() was called.
+ * Changes become permanent in the database.
+ */
 bool MySQLConnection::CommitTransaction()
 {
     return _TransactionCmd("COMMIT");
 }
 
+/**
+ * @brief Rollback the current transaction
+ * @return true on success, false on error
+ *
+ * Reverts all changes made since BeginTransaction() was called.
+ * The database state is restored to what it was before the transaction.
+ */
 bool MySQLConnection::RollbackTransaction()
 {
     return _TransactionCmd("ROLLBACK");
 }
 
+/**
+ * @brief Escape a string for safe SQL usage
+ * @param to Destination buffer for escaped string
+ * @param from Source string to escape
+ * @param length Length of source string
+ * @return Length of escaped string
+ *
+ * Escapes special characters in a string to prevent SQL injection attacks.
+ * The destination buffer must be at least (length * 2 + 1) bytes.
+ *
+ * @note Uses MySQL's mysql_real_escape_string for proper escaping
+ */
 unsigned long MySQLConnection::escape_string(char* to, const char* from, unsigned long length)
 {
     if (!mMysql || !to || !from || !length)
@@ -348,22 +531,56 @@ unsigned long MySQLConnection::escape_string(char* to, const char* from, unsigne
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Create a prepared statement
+ * @param fmt SQL statement format string with ? placeholders
+ * @return New prepared statement instance
+ *
+ * Factory method that creates MySQL-specific prepared statements.
+ * The format string uses ? for parameter placeholders.
+ */
 SqlPreparedStatement* MySQLConnection::CreateStatement(const std::string& fmt)
 {
     return new MySqlPreparedStatement(fmt, *this, mMysql);
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief Construct MySQL prepared statement
+ * @param fmt SQL format string with ? placeholders
+ * @param conn Database connection reference
+ * @param mysql MySQL connection handle
+ *
+ * Initializes a prepared statement for the given SQL format.
+ * The statement is not actually prepared until prepare() is called.
+ */
 MySqlPreparedStatement::MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL* mysql) : SqlPreparedStatement(fmt, conn),
     m_pMySQLConn(mysql), m_stmt(NULL), m_pInputArgs(NULL), m_pResult(NULL), m_pResultMetadata(NULL)
 {
 }
 
+/**
+ * @brief Destroy MySQL prepared statement
+ *
+ * Cleans up all allocated resources including bound parameters,
+ * statement handle, and result metadata.
+ */
 MySqlPreparedStatement::~MySqlPreparedStatement()
 {
     RemoveBinds();
 }
 
+/**
+ * @brief Prepare the statement for execution
+ * @return true on success, false on error
+ *
+ * Prepares the SQL statement on the MySQL server. This parses the SQL,
+ * creates a statement handle, and allocates resources for parameter binding.
+ *
+ * @note Safe to call multiple times - returns true if already prepared
+ */
 bool MySqlPreparedStatement::prepare()
 {
     if (isPrepared())
@@ -425,6 +642,9 @@ bool MySqlPreparedStatement::prepare()
     return true;
 }
 
+/**
+ * Binds the prepared statement input parameters from the supplied holder.
+ */
 void MySqlPreparedStatement::bind(const SqlStmtParameters& holder)
 {
     if (!isPrepared())
@@ -464,6 +684,9 @@ void MySqlPreparedStatement::bind(const SqlStmtParameters& holder)
     }
 }
 
+/**
+ * Adds a single bound parameter to the MySQL bind array at the given index.
+ */
 void MySqlPreparedStatement::addParam(unsigned int nIndex, const SqlStmtFieldData& data)
 {
     MANGOS_ASSERT(m_pInputArgs);
@@ -482,6 +705,9 @@ void MySqlPreparedStatement::addParam(unsigned int nIndex, const SqlStmtFieldDat
     pData.buffer_length = data.type() == FIELD_STRING ? data.size() : 0;
 }
 
+/**
+ * Releases MySQL statement handles and bind buffers.
+ */
 void MySqlPreparedStatement::RemoveBinds()
 {
     if (!m_stmt)
@@ -503,6 +729,9 @@ void MySqlPreparedStatement::RemoveBinds()
     m_bPrepared = false;
 }
 
+/**
+ * Executes the prepared MySQL statement.
+ */
 bool MySqlPreparedStatement::execute()
 {
     if (!isPrepared())
@@ -520,6 +749,9 @@ bool MySqlPreparedStatement::execute()
     return true;
 }
 
+/**
+ * Maps an internal prepared statement field type to a MySQL field type.
+ */
 enum_field_types MySqlPreparedStatement::ToMySQLType(const SqlStmtFieldData& data, bool& bUnsigned)
 {
     bUnsigned = 0;

@@ -31,62 +31,64 @@
 class BigNumber;
 
 /**
- * @brief
+ * @brief Authentication encryption/decryption for World of Warcraft protocol
  *
+ * AuthCrypt handles the session key-based encryption and decryption of
+ * World of Warcraft client-server packets using a modified version of ARC4.
+ * It maintains separate encryption and decryption states for bidirectional
+ * communication.
  */
 class AuthCrypt
 {
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor - initializes the crypt object
          */
         AuthCrypt();
+
         /**
-         * @brief
-         *
+         * @brief Destructor
          */
         ~AuthCrypt();
 
         /**
-         * @brief
-         *
+         * @brief Initialize the encryption/decryption state
          */
         void Init();
 
         /**
-        * @brief
-        *
-        * @param key
-        * @param len
-        */
+         * @brief Set the session key for encryption/decryption
+         * @param key Pointer to the session key data
+         * @param len Length of the key in bytes
+         */
         void SetKey(uint8* key, size_t len);
 
         /**
-         * @brief
-         *
-         * @param
-         * @param size_t
+         * @brief Decrypt received data from client
+         * @param data Pointer to data buffer to decrypt
+         * @param len Length of data to decrypt
          */
         void DecryptRecv(uint8*, size_t);
+
         /**
-         * @brief
-         *
-         * @param
-         * @param size_t
+         * @brief Encrypt data to send to client
+         * @param data Pointer to data buffer to encrypt
+         * @param len Length of data to encrypt
          */
         void EncryptSend(uint8*, size_t);
 
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Check if the crypt object is initialized
+         * @return True if initialized, false otherwise
          */
-        bool IsInitialized() { return _initialized; }
+        bool IsInitialized()
+        {
+            return _initialized;
+        }
 
     private:
-        std::vector<uint8> _key; /**< TODO */
-        uint8 _send_i, _send_j, _recv_i, _recv_j; /**< TODO */
-        bool _initialized; /**< TODO */
+        std::vector<uint8> _key; /**< Session key for encryption */
+        uint8 _send_i, _send_j, _recv_i, _recv_j; /**< ARC4 state variables for send/recv */
+        bool _initialized; /**< Initialization status */
 };
 #endif

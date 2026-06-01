@@ -90,6 +90,7 @@ class PathFinder
         bool calculate(float destX, float destY, float destZ, bool forceDest = false);
 
         // Option setters - use optional
+
         /**
          * @brief Set whether to use a straight path.
          * @param useStraightPath Whether to use a straight path.
@@ -103,6 +104,7 @@ class PathFinder
         void setPathLengthLimit(float distance) { m_pointPathLimit = std::min<uint32>(uint32(distance / SMOOTH_PATH_STEP_SIZE), MAX_POINT_PATH_LENGTH); };
 
         // Result getters
+
         /**
          * @brief Get the start position of the path.
          * @return The start position of the path.
@@ -131,7 +133,10 @@ class PathFinder
          * @brief Get the path points.
          * @return The path points.
          */
-        PointsArray& getPath() { return m_pathPoints; }
+        PointsArray& getPath()
+        {
+            return m_pathPoints;
+        }
 
         /**
          * @brief Get the type of the path.
@@ -280,6 +285,7 @@ class PathFinder
         void updateFilter();
 
         // Smooth path auxiliary functions
+
         /**
          * @brief Fix up the corridor path.
          * @param path The path.

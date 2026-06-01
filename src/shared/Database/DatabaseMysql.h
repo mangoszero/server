@@ -39,95 +39,91 @@
 #endif
 
 /**
- * @brief MySQL prepared statement class
+ * @brief MySQL-specific prepared statement implementation
  *
+ * MySqlPreparedStatement provides MySQL-specific implementation of
+ * prepared statements for efficient SQL query execution with parameter binding.
  */
 class MySqlPreparedStatement : public SqlPreparedStatement
 {
     public:
         /**
-         * @brief
-         *
-         * @param fmt
-         * @param conn
-         * @param mysql
+         * @brief Constructor with SQL format and connection
+         * @param fmt SQL format string
+         * @param conn Database connection reference
+         * @param mysql MySQL connection handle
          */
         MySqlPreparedStatement(const std::string& fmt, SqlConnection& conn, MYSQL* mysql);
+
         /**
-         * @brief
-         *
+         * @brief Destructor - cleans up MySQL resources
          */
         ~MySqlPreparedStatement();
 
         /**
-         * @brief prepare statement
-         *
-         * @return bool
+         * @brief Prepare the statement for execution
+         * @return True on success, false on failure
          */
         bool prepare() override;
 
         /**
-         * @brief bind input parameters
-         *
-         * @param holder
+         * @brief Bind input parameters to the statement
+         * @param holder Parameter holder containing values
          */
         void bind(const SqlStmtParameters& holder) override;
 
         /**
-         * @brief execute DML statement
-         *
-         * @return bool
+         * @brief Execute the prepared DML statement
+         * @return True on success, false on failure
          */
         bool execute() override;
 
     protected:
         /**
-         * @brief bind parameters
-         *
-         * @param nIndex
-         * @param data
+         * @brief Add a parameter to the bind array
+         * @param nIndex Parameter index
+         * @param data Field data to bind
          */
         void addParam(unsigned int nIndex, const SqlStmtFieldData& data);
 
         /**
-         * @brief
-         *
-         * @param data
-         * @param bUnsigned
-         * @return enum_field_types
+         * @brief Convert field data type to MySQL type
+         * @param data Field data to convert
+         * @param bUnsigned Set to true if type is unsigned
+         * @return MySQL field type
          */
         static enum_field_types ToMySQLType(const SqlStmtFieldData& data, bool& bUnsigned);
 
     private:
         /**
-         * @brief
-         *
+         * @brief Remove and free parameter bindings
          */
         void RemoveBinds();
 
-        MYSQL* m_pMySQLConn; /**< TODO */
-        MYSQL_STMT* m_stmt; /**< TODO */
-        MYSQL_BIND* m_pInputArgs; /**< TODO */
-        MYSQL_BIND* m_pResult; /**< TODO */
-        MYSQL_RES* m_pResultMetadata; /**< TODO */
+        MYSQL* m_pMySQLConn; /**< MySQL connection handle */
+        MYSQL_STMT* m_stmt; /**< MySQL prepared statement handle */
+        MYSQL_BIND* m_pInputArgs; /**< Input parameter bindings */
+        MYSQL_BIND* m_pResult; /**< Result bindings */
+        MYSQL_RES* m_pResultMetadata; /**< Result metadata */
 };
 
 /**
- * @brief
+ * @brief MySQL-specific database connection implementation
  *
+ * MySQLConnection provides MySQL-specific implementation of database
+ * connection, query execution, and transaction management.
  */
 class MySQLConnection : public SqlConnection
 {
     public:
         /**
-         * @brief
-         *
-         * @param db
+         * @brief Constructor
+         * @param db Database reference
          */
         MySQLConnection(Database& db) : SqlConnection(db), mMysql(NULL) {}
+
         /**
-         * @brief
-         *
+         * @brief Destructor - closes MySQL connection
          */
         ~MySQLConnection();
 
@@ -140,91 +136,88 @@ class MySQLConnection : public SqlConnection
         bool Initialize(const char* infoString) override;
 
         /**
-         * @brief
-         *
-         * @param sql
-         * @return QueryResult
+         * @brief Execute SELECT query and return results
+         * @param sql SQL query string
+         * @return QueryResult pointer or NULL on error
          */
         QueryResult* Query(const char* sql) override;
+
         /**
-         * @brief
-         *
-         * @param sql
-         * @return QueryNamedResult
+         * @brief Execute SELECT query with named field access
+         * @param sql SQL query string
+         * @return QueryNamedResult pointer or NULL on error
          */
         QueryNamedResult* QueryNamed(const char* sql) override;
+
         /**
-         * @brief
-         *
-         * @param sql
-         * @return bool
+         * @brief Execute non-SELECT query (INSERT, UPDATE, DELETE)
+         * @param sql SQL query string
+         * @return True on success, false on failure
          */
         bool Execute(const char* sql) override;
 
         /**
-         * @brief
-         *
-         * @param to
-         * @param from
-         * @param length
-         * @return unsigned long
+         * @brief Escape string for SQL safety
+         * @param to Destination buffer
+         * @param from Source string
+         * @param length Length of source string
+         * @return Length of escaped string
          */
         unsigned long escape_string(char* to, const char* from, unsigned long length) override;
 
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Begin a transaction
+         * @return True on success, false on failure
          */
         bool BeginTransaction() override;
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Commit the current transaction
+         * @return True on success, false on failure
          */
         bool CommitTransaction() override;
+
         /**
-         * @brief
-         *
-         * @return bool
+         * @brief Rollback the current transaction
+         * @return True on success, false on failure
          */
         bool RollbackTransaction() override;
 
     protected:
         /**
-         * @brief
-         *
-         * @param fmt
-         * @return SqlPreparedStatement
+         * @brief Create a MySQL prepared statement
+         * @param fmt SQL format string
+         * @return SqlPreparedStatement pointer
          */
         SqlPreparedStatement* CreateStatement(const std::string& fmt) override;
 
     private:
         /**
-         * @brief
-         *
-         * @param sql
-         * @return bool
+         * @brief Execute a transaction command
+         * @param sql Transaction SQL command
+         * @return True on success, false on failure
          */
         bool _TransactionCmd(const char* sql);
+
         /**
-         * @brief
-         *
-         * @param sql
-         * @param pResult
-         * @param pFields
-         * @param pRowCount
-         * @param pFieldCount
-         * @return bool
+         * @brief Internal query execution
+         * @param sql SQL query string
+         * @param pResult Output result set pointer
+         * @param pFields Output field array pointer
+         * @param pRowCount Output row count
+         * @param pFieldCount Output field count
+         * @return True on success, false on failure
          */
         bool _Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD** pFields, uint64* pRowCount, uint32* pFieldCount);
 
-        MYSQL* mMysql; /**< TODO */
+        MYSQL* mMysql; /**< MySQL connection handle */
 };
 
 /**
- * @brief
+ * @brief MySQL database implementation
  *
+ * DatabaseMysql provides the MySQL-specific implementation of the
+ * Database interface, managing MySQL connections and thread initialization.
  */
 class DatabaseMysql : public Database
 {
@@ -232,37 +225,36 @@ class DatabaseMysql : public Database
 
     public:
         /**
-         * @brief
-         *
+         * @brief Constructor
          */
         DatabaseMysql();
+
         /**
-         * @brief
-         *
+         * @brief Destructor
          */
         ~DatabaseMysql();
 
         /**
-         * @brief must be call before first query in thread
-         *
+         * @brief Initialize MySQL library for current thread
+         * Must be called before first query in thread
          */
         void ThreadStart() override;
+
         /**
-         * @brief must be call before finish thread run
-         *
+         * @brief Cleanup MySQL library for current thread
+         * Must be called before thread termination
          */
         void ThreadEnd() override;
 
     protected:
         /**
-         * @brief
-         *
-         * @return SqlConnection
+         * @brief Create a new MySQL connection
+         * @return SqlConnection pointer
          */
         SqlConnection* CreateConnection() override;
 
     private:
-        static size_t db_count; /**< TODO */
+        static size_t db_count; /**< Number of active database instances */
 };
 
 #endif

@@ -22,15 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file EventCommands.cpp
+ * @brief Implementation of game event management chat commands.
+ *
+ * This file contains chat command handlers for controlling game events including:
+ * - Event start and stop
+ * - Event status display
+ * - Event configuration
+ * - Holiday and seasonal event management
+ */
+
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "GameEventMgr.h"
 
-
- /**********************************************************************
-     CommandTable : eventCommandTable
- /***********************************************************************/
-
+/**
+ * @brief Handler for HandleEventListCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleEventListCommand(char* args)
 {
     uint32 counter = 0;
@@ -89,6 +101,12 @@ bool ChatHandler::HandleEventListCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleEventInfoCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleEventInfoCommand(char* args)
 {
     if (!*args)
@@ -132,6 +150,12 @@ bool ChatHandler::HandleEventInfoCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleEventStartCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleEventStartCommand(char* args)
 {
     if (!*args)
@@ -175,6 +199,12 @@ bool ChatHandler::HandleEventStartCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleEventStopCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleEventStopCommand(char* args)
 {
     if (!*args)
@@ -217,4 +247,3 @@ bool ChatHandler::HandleEventStopCommand(char* args)
     sGameEventMgr.StopEvent(event_id, true);
     return true;
 }
-

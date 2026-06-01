@@ -40,98 +40,211 @@ class ThreatManager;
 struct SpellEntry;
 
 //==============================================================
-// Class to calculate the real threat based
 
+/**
+ * @brief Threat calculation helper class
+ *
+ * Class to calculate the real threat based on various factors.
+ */
 class ThreatCalcHelper
 {
     public:
+        /**
+         * @brief Calculate threat
+         * @param pHatedUnit Unit being hated
+         * @param pHatingUnit Unit doing the hating
+         * @param threat Base threat value
+         * @param crit Whether the attack was a critical hit
+         * @param schoolMask Spell school mask
+         * @param threatSpell Spell causing threat
+         * @return Calculated threat value
+         */
         static float CalcThreat(Unit* pHatedUnit, Unit* pHatingUnit, float threat, bool crit, SpellSchoolMask schoolMask, SpellEntry const* threatSpell);
 };
 
 //==============================================================
+
+/**
+ * @brief Hostile reference class
+ *
+ * Manages a hostile reference between a Unit and a ThreatManager.
+ */
 class HostileReference : public Reference<Unit, ThreatManager>
 {
     public:
+        /**
+         * @brief Constructor
+         * @param pUnit Unit reference
+         * @param pThreatManager Threat manager
+         * @param pThreat Initial threat value
+         */
         HostileReference(Unit* pUnit, ThreatManager* pThreatManager, float pThreat);
 
-        //=================================================
+        /**
+         * @brief Add threat
+         * @param pMod Threat modifier
+         */
         void addThreat(float pMod);
 
+        /**
+         * @brief Set threat
+         * @param pThreat Threat value to set
+         */
         void setThreat(float pThreat) { addThreat(pThreat - getThreat()); }
 
+        /**
+         * @brief Add threat percentage
+         * @param pPercent Percentage to add
+         */
         void addThreatPercent(int32 pPercent)
         {
-            // for special -100 case avoid rounding
+            // For special -100 case avoid rounding
             addThreat(pPercent == -100 ? -iThreat : iThreat * pPercent / 100.0f);
         }
 
+        /**
+         * @brief Get threat
+         * @return Current threat value
+         */
         float getThreat() const { return iThreat; }
 
+        /**
+         * @brief Check if online
+         * @return True if online
+         */
         bool isOnline() const { return iOnline; }
 
-        // The Unit might be in water and the creature can not enter the water, but has range attack
-        // in this case online = true, but accessable = false
+        /**
+         * @brief Check if accessible
+         *
+         * The Unit might be in water and the creature cannot enter the water,
+         * but has range attack. In this case online = true, but accessible = false.
+         *
+         * @return True if accessible
+         */
         bool isAccessable() const { return iAccessible; }
 
-        // used for temporary setting a threat and reducting it later again.
-        // the threat modification is stored
-        void setTempThreat(float pThreat) { iTempThreatModifyer = pThreat - getThreat(); if (iTempThreatModifyer != 0.0f) { addThreat(iTempThreatModifyer); }  }
+        /**
+         * @brief Set temporary threat
+         *
+         * Used for temporarily setting a threat and reducing it later again.
+         * The threat modification is stored.
+         *
+         * @param pThreat Temporary threat value
+         */
+        void setTempThreat(float pThreat) { iTempThreatModifyer = pThreat - getThreat(); if (iTempThreatModifyer != 0.0f) { addThreat(iTempThreatModifyer); } }
 
+        /**
+         * @brief Reset temporary threat
+         */
         void resetTempThreat()
         {
             if (iTempThreatModifyer != 0.0f)
             {
-                addThreat(-iTempThreatModifyer);  iTempThreatModifyer = 0.0f;
+                addThreat(-iTempThreatModifyer); iTempThreatModifyer = 0.0f;
             }
         }
 
-        float getTempThreatModifyer() { return iTempThreatModifyer; }
+        /**
+         * @brief Get temporary threat modifier
+         * @return Temporary threat modifier
+         */
+        float getTempThreatModifyer()
+        {
+            return iTempThreatModifyer;
+        }
 
-        //=================================================
-        // check, if source can reach target and set the status
+        /**
+         * @brief Update online status
+         *
+         * Check if source can reach target and set the status.
+         */
         void updateOnlineStatus();
 
+        /**
+         * @brief Set online/offline state
+         * @param pIsOnline Online state
+         */
         void setOnlineOfflineState(bool pIsOnline);
 
+        /**
+         * @brief Set accessible state
+         * @param pIsAccessible Accessible state
+         */
         void setAccessibleState(bool pIsAccessible);
-        //=================================================
 
+        /**
+         * @brief Equality operator
+         * @param pHostileReference Reference to compare
+         * @return True if equal
+         */
         bool operator ==(const HostileReference& pHostileReference) const { return pHostileReference.getUnitGuid() == getUnitGuid(); }
 
-        //=================================================
-
+        /**
+         * @brief Get unit GUID
+         * @return Unit GUID
+         */
         ObjectGuid const& getUnitGuid() const { return iUnitGuid; }
 
+        /**
+         * @brief Get source unit
+         * @return Source unit
+         */
         Unit* getSourceUnit();
 
-        //=================================================
-        // reference is not needed anymore. realy delete it !
-
+        /**
+         * @brief Remove reference
+         *
+         * Reference is not needed anymore, really delete it.
+         */
         void removeReference();
 
-        //=================================================
+        /**
+         * @brief Get next reference
+         * @return Next hostile reference
+         */
+        HostileReference* next()
+        {
+            return ((HostileReference*) Reference<Unit, ThreatManager>::next());
+        }
 
-        HostileReference* next() { return ((HostileReference*) Reference<Unit, ThreatManager>::next()); }
-
-        //=================================================
-
-        // Tell our refTo (target) object that we have a link
+        /**
+         * @brief Build link to target object
+         *
+         * Tell our refTo (target) object that we have a link.
+         */
         void targetObjectBuildLink() override;
 
-        // Tell our refTo (taget) object, that the link is cut
+        /**
+         * @brief Destroy link to target object
+         *
+         * Tell our refTo (target) object that the link is cut.
+         */
         void targetObjectDestroyLink() override;
 
-        // Tell our refFrom (source) object, that the link is cut (Target destroyed)
+        /**
+         * @brief Destroy link from source object
+         *
+         * Tell our refFrom (source) object that the link is cut (Target destroyed).
+         */
         void sourceObjectDestroyLink() override;
+
     private:
-        // Inform the source, that the status of that reference was changed
+        /**
+         * @brief Fire status changed event
+         *
+         * Inform the source that the status of that reference was changed.
+         *
+         * @param pThreatRefStatusChangeEvent Status change event
+         */
         void fireStatusChanged(ThreatRefStatusChangeEvent& pThreatRefStatusChangeEvent);
+
     private:
-        float iThreat;
-        float iTempThreatModifyer;                          // used for taunt
-        ObjectGuid iUnitGuid;
-        bool iOnline;
-        bool iAccessible;
+        float iThreat; ///< Current threat
+        float iTempThreatModifyer; ///< Temporary threat modifier (used for taunt)
+        ObjectGuid iUnitGuid; ///< Unit GUID
+        bool iOnline; ///< Online status
+        bool iAccessible; ///< Accessible status
 };
 
 //==============================================================
@@ -139,89 +252,272 @@ class ThreatManager;
 
 typedef std::list<HostileReference*> ThreatList;
 
+/**
+ * @brief Threat container class
+ *
+ * Manages a list of hostile references and provides threat-related operations.
+ */
 class ThreatContainer
 {
     private:
-        ThreatList iThreatList;
-        bool iDirty;
+        ThreatList iThreatList; ///< Threat list
+        bool iDirty; ///< Dirty flag (needs sorting)
+
     protected:
         friend class ThreatManager;
 
+        /**
+         * @brief Remove reference
+         * @param pRef Reference to remove
+         */
         void remove(HostileReference* pRef) { iThreatList.remove(pRef); }
-        void addReference(HostileReference* pHostileReference) { iThreatList.push_back(pHostileReference); }
-        void clearReferences();
-        // Sort the list if necessary
-        void update();
-    public:
-        ThreatContainer() { iDirty = false; }
-        ~ThreatContainer() { clearReferences(); }
 
+        /**
+         * @brief Add reference
+         * @param pHostileReference Reference to add
+         */
+        void addReference(HostileReference* pHostileReference) { iThreatList.push_back(pHostileReference); }
+
+        /**
+         * @brief Clear all references
+         */
+        void clearReferences();
+
+        /**
+         * @brief Update container
+         *
+         * Sort the list if necessary.
+         */
+        void update();
+
+    public:
+        /**
+         * @brief Constructor
+         */
+        ThreatContainer()
+        {
+            iDirty = false;
+        }
+
+        /**
+         * @brief Destructor
+         */
+        ~ThreatContainer()
+        {
+            clearReferences();
+        }
+
+        /**
+         * @brief Add threat
+         * @param pVictim Victim unit
+         * @param pThreat Threat amount
+         * @return Hostile reference
+         */
         HostileReference* addThreat(Unit* pVictim, float pThreat);
 
+        /**
+         * @brief Modify threat percentage
+         * @param pVictim Victim unit
+         * @param percent Percentage to modify
+         */
         void modifyThreatPercent(Unit* pVictim, int32 percent);
 
+        /**
+         * @brief Select next victim
+         * @param pAttacker Attacking creature
+         * @param pCurrentVictim Current victim
+         * @return Next victim reference
+         */
         HostileReference* selectNextVictim(Creature* pAttacker, HostileReference* pCurrentVictim);
 
+        /**
+         * @brief Set dirty flag
+         * @param pDirty Dirty state
+         */
         void setDirty(bool pDirty) { iDirty = pDirty; }
 
+        /**
+         * @brief Check if dirty
+         * @return True if dirty
+         */
         bool isDirty() const { return iDirty; }
 
+        /**
+         * @brief Check if empty
+         * @return True if empty
+         */
         bool empty() const { return(iThreatList.empty()); }
 
-        HostileReference* getMostHated() { return iThreatList.empty() ? NULL : iThreatList.front(); }
+        /**
+         * @brief Get most hated reference
+         * @return Most hated reference
+         */
+        HostileReference* getMostHated()
+        {
+            return iThreatList.empty() ? NULL : iThreatList.front();
+        }
 
+        /**
+         * @brief Get reference by target
+         * @param pVictim Victim unit
+         * @return Hostile reference
+         */
         HostileReference* getReferenceByTarget(Unit* pVictim);
 
+        /**
+         * @brief Get threat list
+         * @return Threat list
+         */
         ThreatList const& getThreatList() const { return iThreatList; }
 };
 
 //=================================================
 
+/**
+ * @brief Threat manager class
+ *
+ * Manages threat for a unit, including threat calculation and target selection.
+ */
 class ThreatManager
 {
     public:
         friend class HostileReference;
 
+        /**
+         * @brief Constructor
+         * @param pOwner Owner unit
+         */
         explicit ThreatManager(Unit* pOwner);
 
-        ~ThreatManager() { clearReferences(); }
+        /**
+         * @brief Destructor
+         */
+        ~ThreatManager()
+        {
+            clearReferences();
+        }
 
+        /**
+         * @brief Clear all references
+         */
         void clearReferences();
 
+        /**
+         * @brief Add threat
+         * @param pVictim Victim unit
+         * @param threat Threat amount
+         * @param crit Whether the attack was a critical hit
+         * @param schoolMask Spell school mask
+         * @param threatSpell Spell causing threat
+         */
         void addThreat(Unit* pVictim, float threat, bool crit, SpellSchoolMask schoolMask, SpellEntry const* threatSpell);
+
+        /**
+         * @brief Add threat (simplified)
+         * @param pVictim Victim unit
+         * @param threat Threat amount
+         */
         void addThreat(Unit* pVictim, float threat) { addThreat(pVictim, threat, false, SPELL_SCHOOL_MASK_NONE, NULL); }
 
-        // add threat as raw value (ignore redirections and expection all mods applied already to it
+        /**
+         * @brief Add threat directly
+         *
+         * Add threat as raw value (ignore redirections and expect all mods applied already to it).
+         *
+         * @param pVictim Victim unit
+         * @param threat Threat amount
+         */
         void addThreatDirectly(Unit* pVictim, float threat);
 
+        /**
+         * @brief Modify threat percentage
+         * @param pVictim Victim unit
+         * @param pPercent Percentage to modify
+         */
         void modifyThreatPercent(Unit* pVictim, int32 pPercent);
 
+        /**
+         * @brief Get threat
+         * @param pVictim Victim unit
+         * @param pAlsoSearchOfflineList Also search offline list
+         * @return Threat value
+         */
         float getThreat(Unit* pVictim, bool pAlsoSearchOfflineList = false);
 
+        /**
+         * @brief Check if threat list is empty
+         * @return True if empty
+         */
         bool isThreatListEmpty() const { return iThreatContainer.empty(); }
 
+        /**
+         * @brief Process threat event
+         * @param threatRefStatusChangeEvent Threat reference status change event
+         */
         void processThreatEvent(ThreatRefStatusChangeEvent* threatRefStatusChangeEvent);
 
-        HostileReference* getCurrentVictim() { return iCurrentVictim; }
+        /**
+         * @brief Get current victim
+         * @return Current victim reference
+         */
+        HostileReference* getCurrentVictim()
+        {
+            return iCurrentVictim;
+        }
 
-        Unit*  getOwner() const { return iOwner; }
+        /**
+         * @brief Get owner unit
+         * @return Owner unit
+         */
+        Unit* getOwner() const
+        {
+            return iOwner;
+        }
 
+        /**
+         * @brief Get hostile target
+         * @return Hostile target unit
+         */
         Unit* getHostileTarget();
 
+        /**
+         * @brief Apply taunt
+         * @param pTaunter Taunting unit
+         */
         void tauntApply(Unit* pTaunter);
+
+        /**
+         * @brief Fade out taunt
+         * @param pTaunter Taunting unit
+         */
         void tauntFadeOut(Unit* pTaunter);
 
+        /**
+         * @brief Set current victim
+         * @param pHostileReference Hostile reference to set as current victim
+         */
         void setCurrentVictim(HostileReference* pHostileReference);
 
+        /**
+         * @brief Set dirty flag
+         * @param pDirty Dirty state
+         */
         void setDirty(bool pDirty) { iThreatContainer.setDirty(pDirty); }
 
-        // Don't must be used for explicit modify threat values in iterator return pointers
+        /**
+         * @brief Get threat list
+         *
+         * Don't use for explicit modify threat values in iterator return pointers.
+         *
+         * @return Threat list
+         */
         ThreatList const& getThreatList() const { return iThreatContainer.getThreatList(); }
+
     private:
-        HostileReference* iCurrentVictim;
-        Unit* iOwner;
-        ThreatContainer iThreatContainer;
-        ThreatContainer iThreatOfflineContainer;
+        HostileReference* iCurrentVictim; ///< Current victim
+        Unit* iOwner; ///< Owner unit
+        ThreatContainer iThreatContainer; ///< Threat container
+        ThreatContainer iThreatOfflineContainer; ///< Offline threat container
 };
 
 //=================================================

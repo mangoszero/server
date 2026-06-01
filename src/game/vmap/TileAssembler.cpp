@@ -22,6 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file TileAssembler.cpp
+ * @brief VMap tile assembler for building map data
+ *
+ * This file implements TileAssembler which processes raw ADT/WMO/M2
+ * files from the client and assembles them into VMap tiles for use
+ * by the server. This is typically run as a separate tool during
+ * server setup.
+ *
+ * Key features:
+ * - ADT file parsing
+ * - WMO (World Model Object) processing
+ * - M2 (Model) processing
+ * - BIH tree construction
+ * - Tile file output (.vmtree, .vmtile)
+ *
+ * @see TileAssembler for the assembler class
+ * @see MapTree for the resulting map tree
+ */
+
 #include "TileAssembler.h"
 #include "MapTree.h"
 #include "BIH.h"
@@ -44,6 +64,7 @@ template<> struct BoundsTrait<VMAP::ModelSpawn*>
 
 namespace VMAP
 {
+
     /**
      * @brief Reads a chunk of data from a file and compares it with a given string.
      *

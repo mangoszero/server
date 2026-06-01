@@ -49,7 +49,10 @@ namespace ai
     class ShadowformTrigger : public BuffTrigger {
     public:
         ShadowformTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "shadowform") {}
-        virtual bool IsActive() { return !ai->HasAura("shadowform", bot); }
+        virtual bool IsActive()
+        {
+            return !ai->HasAura("shadowform", bot);
+        }
     };
 
     class ShackleUndeadTrigger : public DebuffOnAttackerTrigger

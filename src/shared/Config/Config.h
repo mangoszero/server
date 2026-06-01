@@ -32,81 +32,109 @@
 class ACE_Configuration_Heap;
 
 /**
- * @brief
+ * @brief Manages configuration file loading and value retrieval
  *
+ * Config class provides a singleton interface for reading and managing server configuration
+ * settings from configuration files. It supports multiple data types (string, bool, int, float)
+ * with default values and automatic caching.
  */
 class Config
 {
     public:
         /**
-         * @brief
+         * @brief Constructs a new Config instance
          *
+         * Initializes the configuration manager with an empty configuration heap.
          */
         Config();
+
         /**
-         * @brief
+         * @brief Destructs the Config instance
          *
+         * Cleans up the internal ACE_Configuration_Heap pointer.
          */
         ~Config();
 
         /**
-         * @brief
+         * @brief Sets the source configuration file
          *
-         * @param file
-         * @return bool
+         * Loads configuration from the specified file. The file is parsed and stored
+         * for subsequent value retrievals.
+         *
+         * @param file Path to the configuration file to load
+         * @return bool True if file was loaded successfully, false otherwise
          */
         bool SetSource(const char* file);
+
         /**
-         * @brief
+         * @brief Reloads the configuration from the source file
          *
-         * @return bool
+         * Refreshes all configuration values from the previously set source file.
+         * Useful for applying configuration changes without restarting the server.
+         *
+         * @return bool True if reload was successful, false otherwise
          */
         bool Reload();
 
         /**
-         * @brief
+         * @brief Retrieves a string configuration value with default fallback
          *
-         * @param name
-         * @param def
-         * @return std::string
+         * Looks up a configuration parameter by name and returns its string value.
+         * If the parameter is not found, returns the provided default value.
+         *
+         * @param name Configuration parameter name
+         * @param def Default string value if parameter not found
+         * @return std::string The configuration value or default value
          */
         std::string GetStringDefault(const char* name, const char* def);
+
         /**
-         * @brief
+         * @brief Retrieves a boolean configuration value with default fallback
          *
-         * @param name
-         * @param def
-         * @return bool
+         * Looks up a configuration parameter by name and interprets it as a boolean.
+         * If the parameter is not found, returns the provided default value.
+         *
+         * @param name Configuration parameter name
+         * @param def Default boolean value if parameter not found (default: false)
+         * @return bool The configuration value or default value
          */
         bool GetBoolDefault(const char* name, const bool def = false);
+
         /**
-         * @brief
+         * @brief Retrieves an integer configuration value with default fallback
          *
-         * @param name
-         * @param def
-         * @return int32
+         * Looks up a configuration parameter by name and interprets it as a 32-bit integer.
+         * If the parameter is not found, returns the provided default value.
+         *
+         * @param name Configuration parameter name
+         * @param def Default integer value if parameter not found
+         * @return int32 The configuration value or default value
          */
         int32 GetIntDefault(const char* name, const int32 def);
+
         /**
-         * @brief
+         * @brief Retrieves a floating-point configuration value with default fallback
          *
-         * @param name
-         * @param def
-         * @return float
+         * Looks up a configuration parameter by name and interprets it as a float.
+         * If the parameter is not found, returns the provided default value.
+         *
+         * @param name Configuration parameter name
+         * @param def Default floating-point value if parameter not found
+         * @return float The configuration value or default value
          */
         float GetFloatDefault(const char* name, const float def);
 
         /**
-         * @brief
+         * @brief Gets the source configuration filename
          *
-         * @return std::string
+         * @return std::string The path to the currently loaded configuration file
          */
         std::string GetFilename() const { return mFilename; }
 
     private:
 
-        std::string mFilename; /**< TODO */
-        ACE_Configuration_Heap* mConf; /**< TODO */
+        std::string mFilename; /**< Path to the currently loaded configuration file */
+        ACE_Configuration_Heap* mConf; /**< ACE configuration heap object for storing and retrieving configuration values */
 };
 
 #define sConfig MaNGOS::Singleton<Config>::Instance()

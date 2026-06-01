@@ -107,6 +107,10 @@ endif()
 # =============================================================================
 include(GNUInstallDirs)
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}_install CACHE PATH "Default install directory" FORCE)
+endif()
+
 if(UNIX)
     set(BIN_DIR "${CMAKE_INSTALL_FULL_BINDIR}")
     set(CONF_INSTALL_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")

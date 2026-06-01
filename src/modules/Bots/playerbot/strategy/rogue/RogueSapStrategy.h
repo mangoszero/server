@@ -10,7 +10,10 @@ namespace ai
     public:
         RogueSapStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-        virtual string getName() { return "sap"; }
+        virtual string getName()
+        {
+            return "sap";
+        }
 
         virtual NextAction** getDefaultActions()
         {

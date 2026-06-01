@@ -30,6 +30,7 @@
 #include <G3D/Set.h>
 
 template<class T, class BoundsFunc = BoundsTrait<T> >
+
 /**
  * @brief
  *
@@ -37,6 +38,7 @@ template<class T, class BoundsFunc = BoundsTrait<T> >
 class BIHWrap
 {
         template<class RayCallback>
+
         /**
          * @brief
          *
@@ -169,6 +171,7 @@ class BIHWrap
         }
 
         template<typename RayCallback>
+
         /**
          * @brief
          *
@@ -184,6 +187,7 @@ class BIHWrap
         }
 
         template<typename IsectCallback>
+
         /**
          * @brief
          *

@@ -22,6 +22,27 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file MoveMap.cpp
+ * @brief Navigation mesh (MMAP) pathfinding system
+ *
+ * This file implements the MMAP (MoveMap) system which provides
+ * pathfinding capabilities using Recast/Detour navigation meshes.
+ *
+ * Features:
+ * - Navigation mesh loading and management per map tile
+ * - Pathfinding query interface for units
+ * - Configurable pathfinding per map/unit type
+ * - Height and slope limit validation
+ *
+ * Pathfinding can be disabled globally via config, per map via
+ * database, or per unit via creature flags.
+ *
+ * @see MMapManager for the singleton manager
+ * @see MMapFactory for creation utilities
+ * @see DetourNavMesh for underlying navigation mesh
+ */
+
 #include "Log.h"
 #include "World.h"
 #include "Creature.h"
@@ -30,13 +51,41 @@
 
 namespace MMAP
 {
-    // ######################## MMapFactory ########################
-    // our global singelton copy
+
+    /**
+     * @namespace MMAP
+     * @brief MoveMap pathfinding namespace
+     *
+     * Contains all MMAP-related classes and functions for navigation
+     * mesh pathfinding. Key components:
+     *
+     * - MMapFactory: Factory for creating/accessing MMapManager
+     * - MMapManager: Singleton managing all navigation meshes
+     * - MMapData: Per-map navigation mesh data container
+     */
+
+    /**
+     * @var g_MMapManager
+     * @brief Global singleton MMapManager instance
+     */
     MMapManager* g_MMapManager = NULL;
 
-    // stores list of mapids which do not use pathfinding
+    /**
+     * @var g_mmapDisabledIds
+     * @brief Set of map IDs with disabled pathfinding
+     *
+     * Maps in this set will not load navigation meshes and all
+     * pathfinding requests will fall back to legacy methods.
+     */
     std::set<uint32>* g_mmapDisabledIds = NULL;
 
+    /**
+     * @brief Create or retrieve the MMapManager singleton
+     * @return Pointer to the MMapManager instance
+     *
+     * Creates the manager on first call. All subsequent calls return
+     * the existing instance.
+     */
     MMapManager* MMapFactory::createOrGetMMapManager()
     {
         if (g_MMapManager == NULL)
@@ -47,6 +96,16 @@ namespace MMAP
         return g_MMapManager;
     }
 
+    /**
+     * @brief Disable pathfinding on specified maps
+     * @param ignoreMapIds Comma-separated list of map IDs
+     *
+     * Parses the configuration string and adds each map ID to the
+     * disabled set. Maps in this set will not use pathfinding.
+     *
+     * Example: "0,1,489" disables pathfinding for Eastern Kingdoms,
+     * Kalimdor, and Warsong Gulch.
+     */
     void MMapFactory::preventPathfindingOnMaps(const char* ignoreMapIds)
     {
         if (!g_mmapDisabledIds)
@@ -68,6 +127,20 @@ namespace MMAP
         delete[] mapList;
     }
 
+    /**
+     * @brief Check if pathfinding is enabled for a map and unit
+     * @param mapId Map ID to check
+     * @param unit Unit requesting path (optional, affects per-unit checks)
+     * @return true if pathfinding should be used
+     *
+     * Pathfinding is enabled if:
+     * - Global MMAP config is enabled
+     * - Map is not in disabled list
+     * - Unit-specific checks pass (players always enabled, pets inherit,
+     *   creatures check flags)
+     *
+     * @note Players always have pathfinding enabled if global config is on
+     */
     bool MMapFactory::IsPathfindingEnabled(uint32 mapId, const Unit* unit = NULL)
     {
         if (!sWorld.getConfig(CONFIG_BOOL_MMAP_ENABLED))
@@ -77,7 +150,7 @@ namespace MMAP
 
         if (unit)
         {
-            // always use mmaps for players
+            // Always use mmaps for players
             if (unit->GetTypeId() == TYPEID_PLAYER)
             {
                 return true;
@@ -93,7 +166,7 @@ namespace MMAP
                 return true;
             }
 
-            // always use mmaps for pets of players (can still be disabled by extra-flag for pet creature)
+            // Always use mmaps for pets of players
             if (unit->GetTypeId() == TYPEID_UNIT && ((Creature*)unit)->IsPet() && unit->GetOwner() &&
                 unit->GetOwner()->GetTypeId() == TYPEID_PLAYER)
                 {

@@ -39,7 +39,9 @@
 
 #include <G3D/Quat.h>
 
-
+/**
+ * @brief Loads local transports configured for the current map.
+ */
 void Map::LoadLocalTransports()
 {
     //load local transports for this map
@@ -75,6 +77,9 @@ void Map::LoadLocalTransports()
     }
 }
 
+/**
+ * @brief Loads and initializes all configured global transports.
+ */
 void MapManager::LoadTransports()
 {
     QueryResult* result = WorldDatabase.Query("SELECT `entry`, `name`, `period` FROM `transports`");
@@ -149,7 +154,6 @@ void MapManager::LoadTransports()
     sLog.outString(">> Loaded %u global transports", count);
 }
 
-
 //*****************************//
 // Base Transport
 //*****************************//
@@ -162,6 +166,9 @@ Transport::~Transport()
 {
 }
 
+/**
+ * @brief Recomputes world positions for creature passengers riding this transport.
+ */
 void Transport::UpdateCreaturePassengerPositions()
 {
     float tx = GetPositionX();
@@ -184,6 +191,12 @@ void Transport::UpdateCreaturePassengerPositions()
     }
 }
 
+/**
+ * @brief Adds a passenger unit to the transport.
+ *
+ * @param passenger The unit boarding the transport.
+ * @return true when the passenger is tracked successfully.
+ */
 bool Transport::AddPassenger(Unit* passenger)
 {
     if (m_passengers.find(passenger) == m_passengers.end())
@@ -194,6 +207,12 @@ bool Transport::AddPassenger(Unit* passenger)
     return true;
 }
 
+/**
+ * @brief Removes a passenger unit from the transport.
+ *
+ * @param passenger The unit leaving the transport.
+ * @return true when the removal has been processed.
+ */
 bool Transport::RemovePassenger(Unit* passenger)
 {
     if (m_passengers.erase(passenger))
@@ -202,7 +221,6 @@ bool Transport::RemovePassenger(Unit* passenger)
     }
     return true;
 }
-
 
 //*****************************//
 // LocalTransport
@@ -216,6 +234,13 @@ LocalTransport::~LocalTransport()
     //sLog.outString("Deleting %s, map %u", GetGuidStr().c_str(), GetMap()->GetId());
 }
 
+/**
+ * @brief Initializes a local transport from gameobject data on a map.
+ *
+ * @param guid The transport gameobject guid.
+ * @param m The owning map.
+ * @return true if the transport was initialized successfully.
+ */
 bool LocalTransport::Initialize(uint32 guid, Map* m)
 {
     if (m == NULL)
@@ -295,6 +320,14 @@ GlobalTransport::~GlobalTransport()
 {
 }
 
+/**
+ * @brief Initializes a global transport using transport template data.
+ *
+ * @param entry The transport gameobject entry.
+ * @param period The full path period in milliseconds.
+ * @param name The transport display name.
+ * @return true if initialization succeeded.
+ */
 bool GlobalTransport::Initialize(uint32 entry, uint32 period, std::string const& name)
 {
     const GameObjectInfo* goinfo = ObjectMgr::GetGameObjectInfo(entry);
@@ -378,6 +411,11 @@ struct keyFrame
     float tFrom, tTo;
 };
 
+/**
+ * @brief Builds the waypoint timeline used by a global transport route.
+ *
+ * @return true if waypoint generation succeeded.
+ */
 bool GlobalTransport::GenerateWaypoints()
 {
     uint32 pathid = GetGOInfo()->moTransport.taxiPathId;
@@ -436,8 +474,8 @@ bool GlobalTransport::GenerateWaypoints()
         {
             keyFrames[i].distFromPrev =
                 sqrt(pow(keyFrames[i].node->x - keyFrames[i - 1].node->x, 2) +
-                     pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
-                     pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
+                    pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
+                    pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
         }
         if (keyFrames[i].node->actionFlag == 2)
         {
@@ -625,6 +663,9 @@ bool GlobalTransport::GenerateWaypoints()
     return true;
 }
 
+/**
+ * @brief Advances the current and next transport waypoint pointers.
+ */
 void GlobalTransport::MoveToNextWayPoint()
 {
     m_curr = m_next;
@@ -636,6 +677,14 @@ void GlobalTransport::MoveToNextWayPoint()
     }
 }
 
+/**
+ * @brief Teleports the transport and its player passengers to another map position.
+ *
+ * @param newMapid The destination map id.
+ * @param x The destination X coordinate.
+ * @param y The destination Y coordinate.
+ * @param z The destination Z coordinate.
+ */
 void GlobalTransport::TeleportTransport(uint32 newMapid, float x, float y, float z)
 {
     Map const* oldMap = GetMap();
@@ -691,6 +740,12 @@ void GlobalTransport::TeleportTransport(uint32 newMapid, float x, float y, float
     }
 }
 
+/**
+ * @brief Updates global transport position along its generated path.
+ *
+ * @param update_diff The elapsed update time.
+ * @param p_time The current path time parameter.
+ */
 void GlobalTransport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
 {
     if (m_WayPoints.size() <= 1)
@@ -748,6 +803,11 @@ void GlobalTransport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
     }
 }
 
+/**
+ * @brief Sends create or out-of-range updates for this transport to players on a map.
+ *
+ * @param targetMap The map whose players should receive transport visibility updates.
+ */
 void GlobalTransport::UpdateForMap(Map const* targetMap)
 {
     Map::PlayerList const& pl = targetMap->GetPlayers();

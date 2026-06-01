@@ -47,6 +47,9 @@ class ChannelMgr
 class AllianceChannelMgr : public ChannelMgr {};
 class HordeChannelMgr    : public ChannelMgr {};
 
+/**
+ * Returns the channel manager instance for the specified faction team.
+ */
 ChannelMgr* channelMgr(Team team);
 
 #endif

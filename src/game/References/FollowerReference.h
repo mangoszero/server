@@ -30,11 +30,27 @@
 class TargetedMovementGeneratorBase;
 class Unit;
 
+/**
+ * @brief Follower reference class
+ *
+ * Manages the reference between a Unit (follower) and a TargetedMovementGeneratorBase.
+ */
 class FollowerReference : public Reference<Unit, TargetedMovementGeneratorBase>
 {
     protected:
+        /**
+         * @brief Build link to target object
+         */
         void targetObjectBuildLink() override;
+
+        /**
+         * @brief Destroy link to target object
+         */
         void targetObjectDestroyLink() override;
+
+        /**
+         * @brief Destroy link from source object
+         */
         void sourceObjectDestroyLink() override;
 };
 #endif

@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "TellReputationAction.h"
 
-
 using namespace ai;
 
 bool TellReputationAction::Execute(Event event)
@@ -34,7 +33,8 @@ bool TellReputationAction::Execute(Event event)
     out << entry->name[0] << ": ";
     out << "|cff";
     ReputationRank rank = bot->GetReputationMgr().GetRank(entry);
-    switch (rank) {
+    switch (rank)
+    {
         case REP_HATED:
             out << "cc2222hated";
             break;

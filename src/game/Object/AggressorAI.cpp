@@ -30,6 +30,14 @@
 #include "Map.h"
 #include "Log.h"
 
+/**
+ * @brief Determines whether AggressorAI can control the given creature.
+ *
+ * Selects this AI for hostile creatures that are allowed to aggro nearby targets.
+ *
+ * @param creature The creature being evaluated.
+ * @return The AI selection priority for this creature.
+ */
 int AggressorAI::Permissible(const Creature* creature)
 {
     // have some hostile factions, it will be selected by IsHostileTo check at MoveInLineOfSight
@@ -41,10 +49,23 @@ int AggressorAI::Permissible(const Creature* creature)
     return PERMIT_BASE_NO;
 }
 
+/**
+ * @brief Initializes an aggressive creature AI instance.
+ *
+ * @param c The creature controlled by this AI.
+ */
 AggressorAI::AggressorAI(Creature* c) : CreatureAI(c), i_state(STATE_NORMAL), i_tracker(TIME_INTERVAL_LOOK)
 {
 }
 
+/**
+ * @brief Handles units entering the creature's line of sight.
+ *
+ * Starts combat against valid hostile targets and, in dungeons, can add threat to
+ * nearby hostile units even when the creature already has a victim.
+ *
+ * @param u The unit that entered line of sight.
+ */
 void AggressorAI::MoveInLineOfSight(Unit* u)
 {
     // Ignore Z for flying creatures
@@ -72,6 +93,12 @@ void AggressorAI::MoveInLineOfSight(Unit* u)
     }
 }
 
+/**
+ * @brief Returns the creature to its evade state.
+ *
+ * Clears threat, stops combat, restores movement toward home, and resets the
+ * configured spell list when the creature leaves combat.
+ */
 void AggressorAI::EnterEvadeMode()
 {
     if (!m_creature->IsAlive())
@@ -128,6 +155,14 @@ void AggressorAI::EnterEvadeMode()
     SetSpellsList(m_creature->GetCreatureInfo()->SpellListId);
 }
 
+/**
+ * @brief Updates the aggressive AI each server tick.
+ *
+ * Refreshes the current victim tracking, updates creature spell timers, and
+ * performs melee attacks when ready.
+ *
+ * @param diff The elapsed time since the last update in milliseconds.
+ */
 void AggressorAI::UpdateAI(const uint32 diff)
 {
     // update i_victimGuid if m_creature->getVictim() !=0 and changed
@@ -146,12 +181,25 @@ void AggressorAI::UpdateAI(const uint32 diff)
     DoMeleeAttackIfReady();
 }
 
+/**
+ * @brief Checks whether a unit can be seen by this creature AI.
+ *
+ * @param pl The unit to test for visibility.
+ * @return true if the unit is within sight range and detectable; otherwise, false.
+ */
 bool AggressorAI::IsVisible(Unit* pl) const
 {
     return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER))
-           && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
+        && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
+/**
+ * @brief Starts attacking a target unit.
+ *
+ * Adds initial threat, flags both units in combat, and starts movement toward the target.
+ *
+ * @param u The unit to attack.
+ */
 void AggressorAI::AttackStart(Unit* u)
 {
     if (!u)

@@ -22,11 +22,38 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file QueryResultMysql.cpp
+ * @brief MySQL-specific query result implementation
+ *
+ * This file implements the QueryResultMysql class which wraps MySQL
+ * query results (MYSQL_RES) and provides MaNGOS-compatible access
+ * to row data. It handles:
+ * - Result set iteration
+ * - Field type mapping from MySQL to MaNGOS types
+ * - Memory management for MySQL result structures
+ *
+ * @note This file is only compiled when DO_POSTGRESQL is not defined
+ */
+
 #ifndef DO_POSTGRESQL
 
 #include "DatabaseEnv.h"
 #include "Utilities/Errors.h"
 
+/**
+ * @brief Construct a MySQL query result wrapper
+ * @param result MySQL result handle (MYSQL_RES*)
+ * @param fields MySQL field metadata array
+ * @param rowCount Number of rows in result set
+ * @param fieldCount Number of fields per row
+ *
+ * Initializes the query result with MySQL data. Creates a Field array
+ * for the current row and sets up field type information for proper
+ * data conversion.
+ *
+ * @note The MYSQL_RES* ownership is transferred to this object
+ */
 QueryResultMysql::QueryResultMysql(MYSQL_RES* result, MYSQL_FIELD* fields, uint64 rowCount, uint32 fieldCount) :
     QueryResult(rowCount, fieldCount), mResult(result)
 {
@@ -39,11 +66,28 @@ QueryResultMysql::QueryResultMysql(MYSQL_RES* result, MYSQL_FIELD* fields, uint6
     }
 }
 
+/**
+ * @brief Destroy the MySQL query result
+ *
+ * Cleans up all associated resources by calling EndQuery(), which:
+ * - Deletes the current row Field array
+ * - Frees the MySQL result structure
+ */
 QueryResultMysql::~QueryResultMysql()
 {
     EndQuery();
 }
 
+/**
+ * @brief Fetch the next row from the result set
+ * @return true if a row was fetched, false if no more rows
+ *
+ * Retrieves the next row from the MySQL result set using mysql_fetch_row().
+ * If successful, populates the mCurrentRow Field array with the row data.
+ * Automatically cleans up when no more rows are available.
+ *
+ * @note Must be called before accessing row data after construction
+ */
 bool QueryResultMysql::NextRow()
 {
     MYSQL_ROW row;
@@ -68,6 +112,16 @@ bool QueryResultMysql::NextRow()
     return true;
 }
 
+/**
+ * @brief Clean up query resources
+ *
+ * Frees all memory associated with this query result:
+ * - Deletes the Field array for current row
+ * - Frees the MySQL result structure with mysql_free_result()
+ *
+ * Called automatically by destructor and NextRow() when done.
+ * Safe to call multiple times (idempotent).
+ */
 void QueryResultMysql::EndQuery()
 {
     delete[] mCurrentRow;
@@ -80,6 +134,20 @@ void QueryResultMysql::EndQuery()
     }
 }
 
+/**
+ * @brief Convert MySQL field type to simplified MaNGOS type
+ * @param type MySQL field type enum (enum_field_types)
+ * @return Simplified type classification (STRING, INTEGER, FLOAT, RAW)
+ *
+ * Maps the various MySQL field types to four basic categories used
+ * by MaNGOS for data handling:
+ * - DB_TYPE_STRING: Text types, dates, blobs
+ * - DB_TYPE_INTEGER: Integer numeric types
+ * - DB_TYPE_FLOAT: Floating point types
+ * - DB_TYPE_RAW: Binary data (decimal, bit fields)
+ *
+ * This mapping ensures consistent handling across different MySQL versions.
+ */
 Field::SimpleDataTypes QueryResultMysql::GetSimpleType(enum_field_types type)
 {
     switch (type)

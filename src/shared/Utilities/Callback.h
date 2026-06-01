@@ -58,6 +58,7 @@ struct null { null() {} };
 namespace MaNGOS
 {
     template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
+
     /**
      * @brief
      *
@@ -77,11 +78,15 @@ namespace MaNGOS
             ParamType2 m_param2; /**< TODO */
             ParamType3 m_param3; /**< TODO */
             ParamType4 m_param4; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (m_object->*m_method)(m_param1, m_param2, m_param3, m_param4); }
+            void _Execute()
+            {
+                (m_object->*m_method)(m_param1, m_param2, m_param3, m_param4);
+            }
 
         public:
 
@@ -118,6 +123,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
+
     /**
      * @brief
      *
@@ -136,11 +142,15 @@ namespace MaNGOS
             ParamType1 m_param1; /**< TODO */
             ParamType2 m_param2; /**< TODO */
             ParamType3 m_param3; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (m_object->*m_method)(m_param1, m_param2, m_param3); }
+            void _Execute()
+            {
+                (m_object->*m_method)(m_param1, m_param2, m_param3);
+            }
 
         public:
             /**
@@ -174,6 +184,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1, typename ParamType2>
+
     /**
      * @brief
      *
@@ -191,11 +202,15 @@ namespace MaNGOS
             Method m_method; /**< TODO */
             ParamType1 m_param1; /**< TODO */
             ParamType2 m_param2; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (m_object->*m_method)(m_param1, m_param2); }
+            void _Execute()
+            {
+                (m_object->*m_method)(m_param1, m_param2);
+            }
 
         public:
 
@@ -228,6 +243,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1>
+
     /**
      * @brief
      *
@@ -244,11 +260,15 @@ namespace MaNGOS
             Class* m_object; /**< TODO */
             Method m_method; /**< TODO */
             ParamType1 m_param1; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (m_object->*m_method)(m_param1); }
+            void _Execute()
+            {
+                (m_object->*m_method)(m_param1);
+            }
 
         public:
 
@@ -279,6 +299,7 @@ namespace MaNGOS
     };
 
     template<class Class>
+
     /**
      * @brief
      *
@@ -294,11 +315,15 @@ namespace MaNGOS
             typedef void (Class::*Method)();
             Class* m_object; /**< TODO */
             Method m_method; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (m_object->*m_method)(); }
+            void _Execute()
+            {
+                (m_object->*m_method)();
+            }
 
         public:
             /**
@@ -311,6 +336,7 @@ namespace MaNGOS
                 : m_object(object), m_method(method)
             {
             }
+
             /**
              * @brief
              *
@@ -325,6 +351,7 @@ namespace MaNGOS
     /// ---- Statics ----
 
     template < typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
+
     /**
      * @brief
      *
@@ -343,11 +370,15 @@ namespace MaNGOS
             ParamType2 m_param2; /**< TODO */
             ParamType3 m_param3; /**< TODO */
             ParamType4 m_param4; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (*m_method)(m_param1, m_param2, m_param3, m_param4); }
+            void _Execute()
+            {
+                (*m_method)(m_param1, m_param2, m_param3, m_param4);
+            }
 
         public:
 
@@ -382,6 +413,7 @@ namespace MaNGOS
     };
 
     template<typename ParamType1, typename ParamType2, typename ParamType3>
+
     /**
      * @brief
      *
@@ -399,11 +431,15 @@ namespace MaNGOS
             ParamType1 m_param1; /**< TODO */
             ParamType2 m_param2; /**< TODO */
             ParamType3 m_param3; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (*m_method)(m_param1, m_param2, m_param3); }
+            void _Execute()
+            {
+                (*m_method)(m_param1, m_param2, m_param3);
+            }
 
         public:
             /**
@@ -419,6 +455,7 @@ namespace MaNGOS
                   m_param1(param1), m_param2(param2), m_param3(param3)
             {
             }
+
             /**
              * @brief
              *
@@ -434,6 +471,7 @@ namespace MaNGOS
     };
 
     template<typename ParamType1, typename ParamType2>
+
     /**
      * @brief
      *
@@ -450,11 +488,15 @@ namespace MaNGOS
             Method m_method; /**< TODO */
             ParamType1 m_param1; /**< TODO */
             ParamType2 m_param2; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (*m_method)(m_param1, m_param2); }
+            void _Execute()
+            {
+                (*m_method)(m_param1, m_param2);
+            }
 
         public:
             /**
@@ -484,6 +526,7 @@ namespace MaNGOS
     };
 
     template<typename ParamType1>
+
     /**
      * @brief
      *
@@ -499,11 +542,15 @@ namespace MaNGOS
             typedef void (*Method)(ParamType1);
             Method m_method; /**< TODO */
             ParamType1 m_param1; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (*m_method)(m_param1); }
+            void _Execute()
+            {
+                (*m_method)(m_param1);
+            }
 
         public:
             /**
@@ -531,6 +578,7 @@ namespace MaNGOS
     };
 
     template<>
+
     /**
      * @brief
      *
@@ -545,11 +593,15 @@ namespace MaNGOS
              */
             typedef void (*Method)();
             Method m_method; /**< TODO */
+
             /**
              * @brief
              *
              */
-            void _Execute() { (*m_method)(); }
+            void _Execute()
+            {
+                (*m_method)();
+            }
 
         public:
 
@@ -579,6 +631,7 @@ namespace MaNGOS
 
 namespace MaNGOS
 {
+
     /**
      * @brief
      *
@@ -592,6 +645,7 @@ namespace MaNGOS
              *
              */
             virtual void Execute() = 0;
+
             /**
              * @brief
              *
@@ -600,6 +654,7 @@ namespace MaNGOS
     };
 
     template<class CB>
+
     /**
      * @brief
      *
@@ -621,10 +676,14 @@ namespace MaNGOS
              * @brief
              *
              */
-            void Execute() { CB::_Execute(); }
+            void Execute()
+            {
+                CB::_Execute();
+            }
     };
 
     template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void, typename ParamType4 = void >
+
     /**
      * @brief
      *
@@ -657,6 +716,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
+
     /**
      * @brief
      *
@@ -688,6 +748,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1, typename ParamType2>
+
     /**
      * @brief
      *
@@ -718,6 +779,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1>
+
     /**
      * @brief
      *
@@ -748,6 +810,7 @@ namespace MaNGOS
     };
 
     template<class Class>
+
     /**
      * @brief
      *
@@ -783,6 +846,7 @@ class QueryResult;
 
 namespace MaNGOS
 {
+
     /**
      * @brief
      *
@@ -796,17 +860,20 @@ namespace MaNGOS
              *
              */
             virtual void Execute() = 0;
+
             /**
              * @brief
              *
              */
             virtual ~IQueryCallback() {}
+
             /**
              * @brief
              *
              * @param result
              */
             virtual void SetResult(QueryResult* result) = 0;
+
             /**
              * @brief
              *
@@ -816,6 +883,7 @@ namespace MaNGOS
     };
 
     template<class CB>
+
     /**
      * @brief
      *
@@ -837,22 +905,31 @@ namespace MaNGOS
              * @brief
              *
              */
-            void Execute() { CB::_Execute(); }
+            void Execute()
+            {
+                CB::_Execute();
+            }
+
             /**
              * @brief
              *
              * @param result
              */
             void SetResult(QueryResult* result) { CB::m_param1 = result; }
+
             /**
              * @brief
              *
              * @return QueryResult
              */
-            QueryResult* GetResult() { return CB::m_param1; }
+            QueryResult* GetResult()
+            {
+                return CB::m_param1;
+            }
     };
 
     template < class Class, typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void >
+
     /**
      * @brief
      *
@@ -886,6 +963,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1, typename ParamType2>
+
     /**
      * @brief
      *
@@ -918,6 +996,7 @@ namespace MaNGOS
     };
 
     template<class Class, typename ParamType1>
+
     /**
      * @brief
      *
@@ -949,6 +1028,7 @@ namespace MaNGOS
     };
 
     template<class Class>
+
     /**
      * @brief
      *
@@ -980,6 +1060,7 @@ namespace MaNGOS
     /// ---- Statics ----
 
     template < typename ParamType1 = void, typename ParamType2 = void, typename ParamType3 = void >
+
     /**
      * @brief
      *
@@ -1012,6 +1093,7 @@ namespace MaNGOS
     };
 
     template<typename ParamType1, typename ParamType2>
+
     /**
      * @brief
      *
@@ -1043,6 +1125,7 @@ namespace MaNGOS
     };
 
     template<typename ParamType1>
+
     /**
      * @brief
      *
@@ -1073,6 +1156,7 @@ namespace MaNGOS
     };
 
     template<>
+
     /**
      * @brief
      *

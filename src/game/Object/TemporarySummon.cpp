@@ -26,11 +26,24 @@
 #include "Log.h"
 #include "CreatureAI.h"
 
+/**
+ * @brief Creates a temporary summon instance.
+ *
+ * @param summoner The GUID of the summoning object.
+ */
 TemporarySummon::TemporarySummon(ObjectGuid summoner) :
     Creature(CREATURE_SUBTYPE_TEMPORARY_SUMMON), m_type(TEMPSPAWN_TIMED_OOC_OR_CORPSE_DESPAWN), m_timer(0), m_lifetime(0), m_summoner(summoner)
 {
 }
 
+/**
+ * @brief Updates the temporary summon lifetime state.
+ *
+ * Handles despawn policies based on timers, combat state, death state, and charm distance.
+ *
+ * @param update_diff The elapsed time since the last update in milliseconds.
+ * @param diff The world update time forwarded to the base creature update.
+ */
 void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
 {
     switch (m_type)
@@ -214,6 +227,12 @@ void TemporarySummon::Update(uint32 update_diff,  uint32 diff)
     Creature::Update(update_diff, diff);
 }
 
+/**
+ * @brief Activates the summon with a despawn policy and lifetime.
+ *
+ * @param type The temporary spawn despawn policy.
+ * @param lifetime The lifetime in milliseconds.
+ */
 void TemporarySummon::Summon(TempSpawnType type, uint32 lifetime)
 {
     m_type = type;
@@ -224,6 +243,9 @@ void TemporarySummon::Summon(TempSpawnType type, uint32 lifetime)
     AIM_Initialize();
 }
 
+/**
+ * @brief Unsummons the creature and notifies the summoner AI.
+ */
 void TemporarySummon::UnSummon()
 {
     if (GetSummonerGuid().IsCreature())
@@ -236,10 +258,16 @@ void TemporarySummon::UnSummon()
     AddObjectToRemoveList();
 }
 
+/**
+ * @brief Temporary summons are not persisted to the database.
+ */
 void TemporarySummon::SaveToDB()
 {
 }
 
+/**
+ * @brief Removes the summon from the world and clears charm control if needed.
+ */
 void TemporarySummon::RemoveFromWorld()
 {
     if (IsInWorld())
@@ -264,6 +292,14 @@ void TemporarySummon::RemoveFromWorld()
     Creature::RemoveFromWorld();
 }
 
+/**
+ * @brief Creates a waypoint-based temporary summon instance.
+ *
+ * @param summoner The GUID of the summoning object.
+ * @param waypoint_id The starting waypoint identifier.
+ * @param path_id The path identifier.
+ * @param pathOrigin The origin source for the waypoint path.
+ */
 TemporarySummonWaypoint::TemporarySummonWaypoint(ObjectGuid summoner, uint32 waypoint_id, int32 path_id, uint32 pathOrigin) :
     TemporarySummon(summoner),
     m_waypoint_id(waypoint_id),

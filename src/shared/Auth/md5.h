@@ -1,13 +1,13 @@
 /*
-  Copyright (C) 1999, 2002 Aladdin Enterprises.  All rights reserved.
+    Copyright (C) 1999, 2002 Aladdin Enterprises.  All rights reserved.
 
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
 
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not
 claim that you wrote the original software. If you use this software
@@ -23,15 +23,15 @@ ghost@aladdin.com
 */
 /* $Id: md5.h,v 1.4 2002/04/13 19:20:28 lpd Exp $ */
 /*
-  Independent implementation of MD5 (RFC 1321).
+    Independent implementation of MD5 (RFC 1321).
 
-  This code implements the MD5 Algorithm defined in RFC 1321, whose
-  text is available at
+    This code implements the MD5 Algorithm defined in RFC 1321, whose
+    text is available at
     http://www.ietf.org/rfc/rfc1321.txt
-  The code is derived from the text of the RFC, including the test suite
-  (section A.5) but excluding the rest of Appendix A.  It does not include
-  any code or documentation that is identified in the RFC as being
-  copyrighted.
+    The code is derived from the text of the RFC, including the test suite
+    (section A.5) but excluding the rest of Appendix A.  It does not include
+    any code or documentation that is identified in the RFC as being
+    copyrighted.
 
 The original and principal author of md5.h is L. Peter Deutsch
 <ghost@aladdin.com>.  Other authors are noted in the change history

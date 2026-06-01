@@ -33,6 +33,12 @@
 
 const int32 ReputationMgr::PointsInRank[MAX_REPUTATION_RANK] = {36000, 3000, 3000, 3000, 6000, 12000, 21000, 1000};
 
+/**
+ * @brief Converts a raw reputation value into a reputation rank.
+ *
+ * @param standing The raw reputation standing.
+ * @return The matching reputation rank.
+ */
 ReputationRank ReputationMgr::ReputationToRank(int32 standing)
 {
     int32 limit = Reputation_Cap + 1;
@@ -47,6 +53,12 @@ ReputationRank ReputationMgr::ReputationToRank(int32 standing)
     return MIN_REPUTATION_RANK;
 }
 
+/**
+ * @brief Gets a player's reputation for a faction by faction ID.
+ *
+ * @param faction_id The faction identifier.
+ * @return The effective reputation value.
+ */
 int32 ReputationMgr::GetReputation(uint32 faction_id) const
 {
     FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id);
@@ -60,6 +72,12 @@ int32 ReputationMgr::GetReputation(uint32 faction_id) const
     return GetReputation(factionEntry);
 }
 
+/**
+ * @brief Gets the base reputation for a faction based on race and class.
+ *
+ * @param factionEntry The faction entry to inspect.
+ * @return The base reputation value.
+ */
 int32 ReputationMgr::GetBaseReputation(FactionEntry const* factionEntry) const
 {
     if (!factionEntry)
@@ -75,6 +93,12 @@ int32 ReputationMgr::GetBaseReputation(FactionEntry const* factionEntry) const
     return idx >= 0 ? factionEntry->BaseRepValue[idx] : 0;
 }
 
+/**
+ * @brief Gets the effective reputation for a faction entry.
+ *
+ * @param factionEntry The faction entry to inspect.
+ * @return The effective reputation value.
+ */
 int32 ReputationMgr::GetReputation(FactionEntry const* factionEntry) const
 {
     // Faction without recorded reputation. Just ignore.
@@ -91,18 +115,37 @@ int32 ReputationMgr::GetReputation(FactionEntry const* factionEntry) const
     return 0;
 }
 
+/**
+ * @brief Gets the current reputation rank for a faction.
+ *
+ * @param factionEntry The faction entry to inspect.
+ * @return The current reputation rank.
+ */
 ReputationRank ReputationMgr::GetRank(FactionEntry const* factionEntry) const
 {
     int32 reputation = GetReputation(factionEntry);
     return ReputationToRank(reputation);
 }
 
+/**
+ * @brief Gets the base reputation rank for a faction.
+ *
+ * @param factionEntry The faction entry to inspect.
+ * @return The base reputation rank.
+ */
 ReputationRank ReputationMgr::GetBaseRank(FactionEntry const* factionEntry) const
 {
     int32 reputation = GetBaseReputation(factionEntry);
     return ReputationToRank(reputation);
 }
 
+/**
+ * @brief Applies or removes a forced reaction rank for a faction.
+ *
+ * @param faction_id The faction identifier.
+ * @param rank The forced rank to apply.
+ * @param apply true to apply the forced reaction; false to remove it.
+ */
 void ReputationMgr::ApplyForceReaction(uint32 faction_id, ReputationRank rank, bool apply)
 {
     if (apply)
@@ -115,6 +158,12 @@ void ReputationMgr::ApplyForceReaction(uint32 faction_id, ReputationRank rank, b
     }
 }
 
+/**
+ * @brief Gets the default reputation state flags for a faction.
+ *
+ * @param factionEntry The faction entry to inspect.
+ * @return The default reputation flags.
+ */
 uint32 ReputationMgr::GetDefaultStateFlags(FactionEntry const* factionEntry) const
 {
     if (!factionEntry)
@@ -130,6 +179,9 @@ uint32 ReputationMgr::GetDefaultStateFlags(FactionEntry const* factionEntry) con
     return idx >= 0 ? factionEntry->ReputationFlags[idx] : 0;
 }
 
+/**
+ * @brief Sends forced reaction states to the client.
+ */
 void ReputationMgr::SendForceReactions()
 {
     WorldPacket data;
@@ -143,6 +195,11 @@ void ReputationMgr::SendForceReactions()
     m_player->SendDirectMessage(&data);
 }
 
+/**
+ * @brief Sends updated faction standing data to the client.
+ *
+ * @param faction The primary faction state being reported.
+ */
 void ReputationMgr::SendState(FactionState const* faction)
 {
     uint32 count = 1;
@@ -181,6 +238,10 @@ struct rep
 };
 
 /* Called from Player::SendInitialPacketsBeforeAddToMap */
+
+/**
+ * @brief Sends the initial reputation table to the client.
+ */
 void ReputationMgr::SendInitialReputations()
 {
     WorldPacket data(SMSG_INITIALIZE_FACTIONS, (4 + 64 * 5));
@@ -216,6 +277,11 @@ void ReputationMgr::SendInitialReputations()
     m_player->SendDirectMessage(&data);
 }
 
+/**
+ * @brief Marks a faction as visible in the client reputation list.
+ *
+ * @param faction The faction state to reveal.
+ */
 void ReputationMgr::SendVisible(FactionState const* faction) const
 {
     if (m_player->GetSession()->PlayerLoading())
@@ -229,6 +295,9 @@ void ReputationMgr::SendVisible(FactionState const* faction) const
     m_player->SendDirectMessage(&data);
 }
 
+/**
+ * @brief Initializes all tracked faction states for the player.
+ */
 void ReputationMgr::Initialize()
 {
     m_factions.clear();
@@ -252,6 +321,14 @@ void ReputationMgr::Initialize()
     }
 }
 
+/**
+ * @brief Sets reputation for a faction and applies spillover if configured.
+ *
+ * @param factionEntry The faction entry to modify.
+ * @param standing The new reputation value or delta.
+ * @param incremental true if the standing value is a delta; otherwise, false.
+ * @return true if the faction state was updated; otherwise, false.
+ */
 bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standing, bool incremental)
 {
     // Used by Eluna
@@ -290,6 +367,14 @@ bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standi
     return res;
 }
 
+/**
+ * @brief Sets reputation for a single faction without spillover handling.
+ *
+ * @param factionEntry The faction entry to modify.
+ * @param standing The new reputation value or delta.
+ * @param incremental true if the standing value is a delta; otherwise, false.
+ * @return true if the faction state was updated; otherwise, false.
+ */
 bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, int32 standing, bool incremental)
 {
     FactionStateList::iterator itr = m_factions.find(factionEntry->reputationListID);
@@ -331,6 +416,11 @@ bool ReputationMgr::SetOneFactionReputation(FactionEntry const* factionEntry, in
     return false;
 }
 
+/**
+ * @brief Makes the faction referenced by a faction template visible.
+ *
+ * @param factionTemplateEntry The faction template entry to inspect.
+ */
 void ReputationMgr::SetVisible(FactionTemplateEntry const* factionTemplateEntry)
 {
     if (!factionTemplateEntry->faction)
@@ -344,6 +434,11 @@ void ReputationMgr::SetVisible(FactionTemplateEntry const* factionTemplateEntry)
     }
 }
 
+/**
+ * @brief Marks a faction visible using its faction entry.
+ *
+ * @param factionEntry The faction entry to reveal.
+ */
 void ReputationMgr::SetVisible(FactionEntry const* factionEntry)
 {
     if (factionEntry->reputationListID < 0)
@@ -360,6 +455,11 @@ void ReputationMgr::SetVisible(FactionEntry const* factionEntry)
     SetVisible(&itr->second);
 }
 
+/**
+ * @brief Marks a faction state as visible and schedules updates.
+ *
+ * @param faction The faction state to reveal.
+ */
 void ReputationMgr::SetVisible(FactionState* faction)
 {
     // always invisible or hidden faction can't be make visible
@@ -381,6 +481,12 @@ void ReputationMgr::SetVisible(FactionState* faction)
     SendVisible(faction);
 }
 
+/**
+ * @brief Sets or clears the at-war flag for a faction list id.
+ *
+ * @param repListID The reputation list identifier.
+ * @param on true to declare war; false to clear it.
+ */
 void ReputationMgr::SetAtWar(RepListID repListID, bool on)
 {
     FactionStateList::iterator itr = m_factions.find(repListID);
@@ -398,6 +504,12 @@ void ReputationMgr::SetAtWar(RepListID repListID, bool on)
     SetAtWar(&itr->second, on);
 }
 
+/**
+ * @brief Sets or clears the at-war flag for a faction state.
+ *
+ * @param faction The faction state to update.
+ * @param atWar true to declare war; false to clear it.
+ */
 void ReputationMgr::SetAtWar(FactionState* faction, bool atWar)
 {
     // not allow declare war to faction unless already hated or less
@@ -425,6 +537,12 @@ void ReputationMgr::SetAtWar(FactionState* faction, bool atWar)
     faction->needSave = true;
 }
 
+/**
+ * @brief Sets or clears inactive status for a faction list id.
+ *
+ * @param repListID The reputation list identifier.
+ * @param on true to mark inactive; false to activate.
+ */
 void ReputationMgr::SetInactive(RepListID repListID, bool on)
 {
     FactionStateList::iterator itr = m_factions.find(repListID);
@@ -436,6 +554,12 @@ void ReputationMgr::SetInactive(RepListID repListID, bool on)
     SetInactive(&itr->second, on);
 }
 
+/**
+ * @brief Sets or clears inactive status for a faction state.
+ *
+ * @param faction The faction state to update.
+ * @param inactive true to mark inactive; false to activate it.
+ */
 void ReputationMgr::SetInactive(FactionState* faction, bool inactive)
 {
     // always invisible or hidden faction can't be inactive
@@ -463,6 +587,11 @@ void ReputationMgr::SetInactive(FactionState* faction, bool inactive)
     faction->needSave = true;
 }
 
+/**
+ * @brief Loads saved reputation standings and flags from the database.
+ *
+ * @param result The query result containing saved faction rows.
+ */
 void ReputationMgr::LoadFromDB(QueryResult* result)
 {
     // Set initial reputations (so everything is nifty before DB data load)
@@ -537,6 +666,9 @@ void ReputationMgr::LoadFromDB(QueryResult* result)
     }
 }
 
+/**
+ * @brief Saves changed reputation standings and flags to the database.
+ */
 void ReputationMgr::SaveToDB()
 {
     static SqlStatementID delRep ;

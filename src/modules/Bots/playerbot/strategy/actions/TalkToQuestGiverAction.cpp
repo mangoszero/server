@@ -2,7 +2,6 @@
 #include "../../playerbot.h"
 #include "TalkToQuestGiverAction.h"
 
-
 using namespace ai;
 
 void TalkToQuestGiverAction::ProcessQuest(Quest const* quest, WorldObject* questGiver)
@@ -48,7 +47,8 @@ void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questG
     {
         RewardSingleItem(quest, questGiver, out);
     }
-    else {
+    else
+    {
     {
         AskToSelectReward(quest, out);
     }

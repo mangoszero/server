@@ -22,6 +22,29 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file BattleGroundAV.h
+ * @brief Alterac Valley battleground header
+ *
+ * This header defines the Alterac Valley battleground implementation including:
+ * - Tower and graveyard capture mechanics
+ * - Boss encounter management
+ * - Captain and commander NPC interactions
+ * - Resource point generation
+ * - Scoring and victory conditions
+ * - Multiple objective tracks and dependencies
+ *
+ * Key features:
+ * - Multiple towers and graveyards for each faction
+ * - Boss battles determining final outcome
+ * - Dynamic NPC armies based on objective control
+ * - Resource management and reputation system
+ * - Victory condition: First to 1200 points or boss defeat
+ *
+ * @see BattleGroundAV for implementation
+ * @see BattleGround for base class
+ */
+
 #ifndef MANGOS_H_BATTLEGROUNDAV
 #define MANGOS_H_BATTLEGROUNDAV
 
@@ -79,16 +102,14 @@
  */
 enum BG_AV_Sounds
 {
-    BG_AV_SOUND_NEAR_LOSE               = 8456,             // not confirmed yet
-
-    BG_AV_SOUND_ALLIANCE_ASSAULTS       = 8212,             // tower, grave + enemy boss if someone tries to attack him
-    BG_AV_SOUND_HORDE_ASSAULTS          = 8174,
-    BG_AV_SOUND_ALLIANCE_GOOD           = 8173,             // if something good happens for the team: wins, captures mine or grave, destroys tower and defends grave
-    BG_AV_SOUND_HORDE_GOOD              = 8213,
-    BG_AV_SOUND_BOTH_TOWER_DEFEND       = 8192,
-
-    BG_AV_SOUND_ALLIANCE_CAPTAIN        = 8232,             // gets called when someone attacks them and at the beginning after 3min + rand(x) * 10sec (maybe buff)
-    BG_AV_SOUND_HORDE_CAPTAIN           = 8333
+    BG_AV_SOUND_NEAR_LOSE               = 8456,             ///< Near loss warning
+    BG_AV_SOUND_ALLIANCE_ASSAULTS       = 8212,             ///< Alliance assaults (tower + graveyard + boss)
+    BG_AV_SOUND_HORDE_ASSAULTS          = 8174,             ///< Horde assaults (tower + graveyard + boss)
+    BG_AV_SOUND_ALLIANCE_GOOD           = 8173,             ///< Alliance good events (wins, captures, defenses)
+    BG_AV_SOUND_HORDE_GOOD              = 8213,             ///< Horde good events (wins, captures, defenses)
+    BG_AV_SOUND_BOTH_TOWER_DEFEND       = 8192,             ///< Both teams defend towers
+    BG_AV_SOUND_ALLIANCE_CAPTAIN        = 8232,             ///< Alliance captain under attack
+    BG_AV_SOUND_HORDE_CAPTAIN           = 8333              ///< Horde captain under attack
 };
 
 /**
@@ -96,12 +117,12 @@ enum BG_AV_Sounds
  */
 enum BG_AV_OTHER_VALUES
 {
-    BG_AV_NORTH_MINE            = 0,
-    BG_AV_SOUTH_MINE            = 1,
-    BG_AV_MINE_TICK_TIMER       = 45000,
-    BG_AV_MINE_RECLAIM_TIMER    = 1200000,                  // TODO: get the right value.. this is currently 20 minutes
-    BG_AV_FACTION_A             = 730,
-    BG_AV_FACTION_H             = 729
+    BG_AV_NORTH_MINE            = 0,        ///< Northern mine
+    BG_AV_SOUTH_MINE            = 1,        ///< Southern mine
+    BG_AV_MINE_TICK_TIMER       = 45000,    ///< Time between mine ticks
+    BG_AV_MINE_RECLAIM_TIMER    = 1200000,  ///< Time to reclaim a mine
+    BG_AV_FACTION_A             = 730,      ///< Alliance faction ID
+    BG_AV_FACTION_H             = 729       ///< Horde faction ID
 };
 #define BG_AV_MAX_MINES 2
 
@@ -139,43 +160,37 @@ enum BG_AV_Nodes
 };
 #define BG_AV_NODES_MAX                 15
 
-// for node events we will use event1=node
-// event2 is related to BG_AV_States
-// 0 = alliance assaulted
-// 1 = alliance control
-// 2 = horde assaulted
-// 3 = horde control
-// 4 = neutral assaulted
-// 5 = neutral control
+/**
+ * @brief Event constants for Alterac Valley battleground.
+ *
+ * Used for creature and gameobject event indexing:
+ * - Node events use event1=node, event2=BG_AV_States
+ * - Event2 values: 0=Alliance assaulted, 1=Alliance control, 2=Horde assaulted, 3=Horde control, 4=Neutral assaulted, 5=Neutral control
+ * - Graveyard defenders use event1=BG_AV_NODES_MAX+node (15-21), event2=type
+ */
+#define BG_AV_MINE_BOSSES            46                    ///< Base event for mine bosses (+ mineid)
+#define BG_AV_MINE_BOSSES_NORTH      46                    ///< North mine boss event
+#define BG_AV_MINE_BOSSES_SOUTH      47                    ///< South mine boss event
+#define BG_AV_CAPTAIN_A              48                    ///< Alliance captain event
+#define BG_AV_CAPTAIN_H              49                    ///< Horde captain event
+#define BG_AV_MINE_EVENT             50                    ///< Base event for mine events (+ mineid)
+#define BG_AV_MINE_EVENT_NORTH       50                    ///< North mine event
+#define BG_AV_MINE_EVENT_SOUTH       51                    ///< South mine event
 
-// graves have special creatures - their defenders can be in 4 different states
-// through some quests with armor scraps
-// so i use event1=BG_AV_NODES_MAX+node (15-21)
-// and event2=type
+#define BG_AV_MARSHAL_A_SOUTH        52                    ///< Alliance South Marshal
+#define BG_AV_MARSHAL_A_NORTH        53                    ///< Alliance North Marshal
+#define BG_AV_MARSHAL_A_ICE          54                    ///< Alliance Iceblood Marshal
+#define BG_AV_MARSHAL_A_STONE        55                    ///< Alliance Stoneheart Marshal
+#define BG_AV_MARSHAL_H_ICE          56                    ///< Horde Iceblood Marshal
+#define BG_AV_MARSHAL_H_TOWER        57                    ///< Horde Tower Point Marshal
+#define BG_AV_MARSHAL_H_ETOWER       58                    ///< Horde East Tower Marshal
+#define BG_AV_MARSHAL_H_WTOWER       59                    ///< Horde West Tower Marshal
 
-#define BG_AV_MINE_BOSSES       46                          // + mineid will be exact event
-#define BG_AV_MINE_BOSSES_NORTH 46
-#define BG_AV_MINE_BOSSES_SOUTH 47
-#define BG_AV_CAPTAIN_A         48
-#define BG_AV_CAPTAIN_H         49
-#define BG_AV_MINE_EVENT        50                          // + mineid will be exact event
-#define BG_AV_MINE_EVENT_NORTH  50
-#define BG_AV_MINE_EVENT_SOUTH  51
-
-#define BG_AV_MARSHAL_A_SOUTH   52
-#define BG_AV_MARSHAL_A_NORTH   53
-#define BG_AV_MARSHAL_A_ICE     54
-#define BG_AV_MARSHAL_A_STONE   55
-#define BG_AV_MARSHAL_H_ICE     56
-#define BG_AV_MARSHAL_H_TOWER   57
-#define BG_AV_MARSHAL_H_ETOWER  58
-#define BG_AV_MARSHAL_H_WTOWER  59
-
-#define BG_AV_HERALD            60
-#define BG_AV_BOSS_A            61
-#define BG_AV_BOSS_H            62
-#define BG_AV_NodeEventCaptainDead_A 63
-#define BG_AV_NodeEventCaptainDead_H 64
+#define BG_AV_HERALD                 60                    ///< Herald NPC event
+#define BG_AV_BOSS_A                 61                    ///< Alliance Boss event
+#define BG_AV_BOSS_H                 62                    ///< Horde Boss event
+#define BG_AV_NodeEventCaptainDead_A 63                    ///< Alliance Captain Death event
+#define BG_AV_NodeEventCaptainDead_H 64                    ///< Horde Captain Death event
 
 /**
  * @brief Enum for graveyards in the battleground.
@@ -193,17 +208,17 @@ enum BG_AV_Graveyards
     BG_AV_GRAVE_MAIN_HORDE         = 610
 };
 
-const uint32 BG_AV_GraveyardIds[9] = /**< TODO */
+const uint32 BG_AV_GraveyardIds[9] = /**< Graveyard IDs array */
 {
-    BG_AV_GRAVE_STORM_AID,
-    BG_AV_GRAVE_STORM_GRAVE,
-    BG_AV_GRAVE_STONE_GRAVE,
-    BG_AV_GRAVE_SNOWFALL,
-    BG_AV_GRAVE_ICE_GRAVE,
-    BG_AV_GRAVE_FROSTWOLF,
-    BG_AV_GRAVE_FROST_HUT,
-    BG_AV_GRAVE_MAIN_ALLIANCE,
-    BG_AV_GRAVE_MAIN_HORDE
+    BG_AV_GRAVE_STORM_AID,        ///< Stormpike First Aid Station
+    BG_AV_GRAVE_STORM_GRAVE,      ///< Stormpike Graveyard
+    BG_AV_GRAVE_STONE_GRAVE,      ///< Stoneheart Graveyard
+    BG_AV_GRAVE_SNOWFALL,         ///< Snowfall Graveyard
+    BG_AV_GRAVE_ICE_GRAVE,        ///< Iceblood Graveyard
+    BG_AV_GRAVE_FROSTWOLF,        ///< Frostwolf Graveyard
+    BG_AV_GRAVE_FROST_HUT,        ///< Frostwolf Hut
+    BG_AV_GRAVE_MAIN_ALLIANCE,    ///< Alliance starting graveyard
+    BG_AV_GRAVE_MAIN_HORDE        ///< Horde starting graveyard
 };
 
 /**
@@ -211,8 +226,8 @@ const uint32 BG_AV_GraveyardIds[9] = /**< TODO */
  */
 enum BG_AV_States
 {
-    POINT_ASSAULTED             = 0,
-    POINT_CONTROLLED            = 1
+    POINT_ASSAULTED             = 0,        ///< Node is being assaulted
+    POINT_CONTROLLED            = 1         ///< Node is controlled by a team
 };
 #define BG_AV_MAX_STATES 2
 
@@ -221,11 +236,11 @@ enum BG_AV_States
  */
 enum BG_AV_WorldStates
 {
-    BG_AV_Alliance_Score        = 3127,
-    BG_AV_Horde_Score           = 3128,
-    BG_AV_SHOW_H_SCORE          = 3133,
-    BG_AV_SHOW_A_SCORE          = 3134,
-    AV_SNOWFALL_N               = 1966
+    BG_AV_Alliance_Score        = 3127,     ///< Alliance score
+    BG_AV_Horde_Score           = 3128,     ///< Horde score
+    BG_AV_SHOW_H_SCORE          = 3133,     ///< Show Horde score
+    BG_AV_SHOW_A_SCORE          = 3134,     ///< Show Alliance score
+    AV_SNOWFALL_N               = 1966      ///< Snowfall node
 };
 
 /**
@@ -237,82 +252,84 @@ enum BG_AV_WorldStates
  */
 enum BattleGroundAVTeamIndex
 {
-    BG_AV_TEAM_ALLIANCE        = TEAM_INDEX_ALLIANCE,
-    BG_AV_TEAM_HORDE           = TEAM_INDEX_HORDE,
-    BG_AV_TEAM_NEUTRAL         = TEAM_INDEX_NEUTRAL,                         // this is the neutral owner of snowfall
+    BG_AV_TEAM_ALLIANCE        = TEAM_INDEX_ALLIANCE,    ///< Alliance team index
+    BG_AV_TEAM_HORDE           = TEAM_INDEX_HORDE,       ///< Horde team index
+    BG_AV_TEAM_NEUTRAL         = TEAM_INDEX_NEUTRAL,     ///< Neutral team (snowfall owner)
 };
 
 #define BG_AV_TEAMS_COUNT 3
 
 const uint32 BG_AV_MineWorldStates[2][BG_AV_TEAMS_COUNT] = /**< alliance_control horde_control neutral_control */
 {
-    {1358, 1359, 1360},
-    {1355, 1356, 1357}
+    {1358, 1359, 1360},    ///< North mine world states
+    {1355, 1356, 1357}     ///< South mine world states
 };
 
 const uint32 BG_AV_NodeWorldStates[BG_AV_NODES_MAX][4] = /**< alliance_control alliance_assault h_control h_assault */
 {
     // Stormpike first aid station
-    {1326, 1325, 1328, 1327},
+    {1326, 1325, 1328, 1327},    ///< Alliance control, assault, Horde control, assault
     // Stormpike Graveyard
-    {1335, 1333, 1336, 1334},
+    {1335, 1333, 1336, 1334},    ///< Alliance control, assault, Horde control, assault
     // Stoneheart Grave
-    {1304, 1302, 1303, 1301},
+    {1304, 1302, 1303, 1301},    ///< Alliance control, assault, Horde control, assault
     // Snowfall Grave
-    {1343, 1341, 1344, 1342},
+    {1343, 1341, 1344, 1342},    ///< Alliance control, assault, Horde control, assault
     // Iceblood grave
-    {1348, 1346, 1349, 1347},
+    {1348, 1346, 1349, 1347},    ///< Alliance control, assault, Horde control, assault
     // Frostwolf Grave
-    {1339, 1337, 1340, 1338},
+    {1339, 1337, 1340, 1338},    ///< Alliance control, assault, Horde control, assault
     // Frostwolf Hut
-    {1331, 1329, 1332, 1330},
+    {1331, 1329, 1332, 1330},    ///< Alliance control, assault, Horde control, assault
     // Dunbaldar South Bunker
-    {1375, 1361, 1378, 1370},
+    {1375, 1361, 1378, 1370},    ///< Alliance control, assault, Horde control, assault
     // Dunbaldar North Bunker
-    {1374, 1362, 1379, 1371},
+    {1374, 1362, 1379, 1371},    ///< Alliance control, assault, Horde control, assault
     // Icewing Bunker
-    {1376, 1363, 1380, 1372},
+    {1376, 1363, 1380, 1372},    ///< Alliance control, assault, Horde control, assault
     // Stoneheart Bunker
-    {1377, 1364, 1381, 1373},
+    {1377, 1364, 1381, 1373},    ///< Alliance control, assault, Horde control, assault
     // Iceblood Tower
-    {1390, 1368, 1395, 1385},
+    {1390, 1368, 1395, 1385},    ///< Alliance control, assault, Horde control, assault
     // Tower Point
-    {1389, 1367, 1394, 1384},
+    {1389, 1367, 1394, 1384},    ///< Alliance control, assault, Horde control, assault
     // Frostwolf East
-    {1388, 1366, 1393, 1383},
+    {1388, 1366, 1393, 1383},    ///< Alliance control, assault, Horde control, assault
     // Frostwolf West
-    {1387, 1365, 1392, 1382},
+    {1387, 1365, 1392, 1382},    ///< Alliance control, assault, Horde control, assault
 };
 
 #define BG_AV_MAX_GRAVETYPES 4
+
 /**
- * @brief Through the armorscap-quest 4 different grave defender exist.
+ * @brief Through the armor scrap quest, 4 different grave defenders exist.
  *
+ * Graveyard defenders can be in 4 different states through armor scrap quests.
  */
 enum BG_AV_QuestIds
 {
-    BG_AV_QUEST_A_SCRAPS1       = 7223,                     // first quest
-    BG_AV_QUEST_A_SCRAPS2       = 6781,                     // repeatable
-    BG_AV_QUEST_H_SCRAPS1       = 7224,
-    BG_AV_QUEST_H_SCRAPS2       = 6741,
-    BG_AV_QUEST_A_COMMANDER1    = 6942,                     // soldier
-    BG_AV_QUEST_H_COMMANDER1    = 6825,
-    BG_AV_QUEST_A_COMMANDER2    = 6941,                     // lieutenant
-    BG_AV_QUEST_H_COMMANDER2    = 6826,
-    BG_AV_QUEST_A_COMMANDER3    = 6943,                     // commander
-    BG_AV_QUEST_H_COMMANDER3    = 6827,
-    BG_AV_QUEST_A_BOSS1         = 7386,                     // 5 crystal/blood
-    BG_AV_QUEST_H_BOSS1         = 7385,
-    BG_AV_QUEST_A_BOSS2         = 6881,                     // 1
-    BG_AV_QUEST_H_BOSS2         = 6801,
-    BG_AV_QUEST_A_NEAR_MINE     = 5892,                     // the mine near start location of team
-    BG_AV_QUEST_H_NEAR_MINE     = 5893,
-    BG_AV_QUEST_A_OTHER_MINE    = 6982,                     // the other mine ;)
-    BG_AV_QUEST_H_OTHER_MINE    = 6985,
-    BG_AV_QUEST_A_RIDER_HIDE    = 7026,
-    BG_AV_QUEST_H_RIDER_HIDE    = 7002,
-    BG_AV_QUEST_A_RIDER_TAME    = 7027,
-    BG_AV_QUEST_H_RIDER_TAME    = 7001
+    BG_AV_QUEST_A_SCRAPS1       = 7223,                     ///< Alliance scrap quest 1
+    BG_AV_QUEST_A_SCRAPS2       = 6781,                     ///< Alliance scrap quest 2
+    BG_AV_QUEST_H_SCRAPS1       = 7224,                     ///< Horde scrap quest 1
+    BG_AV_QUEST_H_SCRAPS2       = 6741,                     ///< Horde scrap quest 2
+    BG_AV_QUEST_A_COMMANDER1    = 6942,                     ///< Alliance commander quest 1
+    BG_AV_QUEST_H_COMMANDER1    = 6825,                     ///< Horde commander quest 1
+    BG_AV_QUEST_A_COMMANDER2    = 6941,                     ///< Alliance commander quest 2
+    BG_AV_QUEST_H_COMMANDER2    = 6826,                     ///< Horde commander quest 2
+    BG_AV_QUEST_A_COMMANDER3    = 6943,                     ///< Alliance commander quest 3
+    BG_AV_QUEST_H_COMMANDER3    = 6827,                     ///< Horde commander quest 3
+    BG_AV_QUEST_A_BOSS1         = 7386,                     ///< Alliance boss quest 1
+    BG_AV_QUEST_H_BOSS1         = 7385,                     ///< Horde boss quest 1
+    BG_AV_QUEST_A_BOSS2         = 6881,                     ///< Alliance boss quest 2
+    BG_AV_QUEST_H_BOSS2         = 6801,                     ///< Horde boss quest 2
+    BG_AV_QUEST_A_NEAR_MINE     = 5892,                     ///< Alliance near mine quest
+    BG_AV_QUEST_H_NEAR_MINE     = 5893,                     ///< Horde near mine quest
+    BG_AV_QUEST_A_OTHER_MINE    = 6982,                     ///< Alliance other mine quest
+    BG_AV_QUEST_H_OTHER_MINE    = 6985,                     ///< Horde other mine quest
+    BG_AV_QUEST_A_RIDER_HIDE    = 7026,                     ///< Alliance rider hide quest
+    BG_AV_QUEST_H_RIDER_HIDE    = 7002,                     ///< Horde rider hide quest
+    BG_AV_QUEST_A_RIDER_TAME    = 7027,                     ///< Alliance rider tame quest
+    BG_AV_QUEST_H_RIDER_TAME    = 7001                      ///< Horde rider tame quest
 };
 
 /**
@@ -320,13 +337,13 @@ enum BG_AV_QuestIds
  */
 struct BG_AV_NodeInfo
 {
-    BattleGroundAVTeamIndex TotalOwner; /**< The total owner of the node. */
-    BattleGroundAVTeamIndex Owner; /**< The current owner of the node. */
-    BattleGroundAVTeamIndex PrevOwner; /**< The previous owner of the node. */
-    BG_AV_States State; /**< The current state of the node. */
-    BG_AV_States PrevState; /**< The previous state of the node. */
-    uint32       Timer; /**< The timer for the node. */
-    bool         Tower; /**< Whether the node is a tower. */
+    BattleGroundAVTeamIndex TotalOwner; ///< The total owner of the node
+    BattleGroundAVTeamIndex Owner;      ///< The current owner of the node
+    BattleGroundAVTeamIndex PrevOwner;  ///< The previous owner of the node
+    BG_AV_States State;                 ///< The current state of the node
+    BG_AV_States PrevState;             ///< The previous state of the node
+    uint32       Timer;                 ///< The timer for the node
+    bool         Tower;                 ///< Whether the node is a tower
 };
 
 /**
@@ -341,7 +358,10 @@ inline BG_AV_Nodes& operator++(BG_AV_Nodes& i)
 }
 
 /**
- * @brief Class to hold the score for a player in the battleground.
+ * Extends BattleGroundScore with AV-specific attributes:
+ * - Graveyard assaults/defenses
+ * - Tower assaults/defenses
+ * - Complex multi-objective scoring
  */
 class BattleGroundAVScore : public BattleGroundScore
 {
@@ -350,16 +370,18 @@ class BattleGroundAVScore : public BattleGroundScore
          * @brief Constructor for BattleGroundAVScore.
          */
         BattleGroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), SecondaryObjectives(0), LieutnantCount(0), SecondaryNPC(0) {};
+
         /**
          * @brief Destructor for BattleGroundAVScore.
          */
         virtual ~BattleGroundAVScore() {};
 
-        uint32 GetAttr1() const { return GraveyardsAssaulted; }
-        uint32 GetAttr2() const { return GraveyardsDefended; }
-        uint32 GetAttr3() const { return TowersAssaulted; }
-        uint32 GetAttr4() const { return TowersDefended; }
-        uint32 GetAttr5() const { return SecondaryObjectives; }
+        // Accessors for AV-specific attributes
+        uint32 GetAttr1() const { return GraveyardsAssaulted; }  ///< Number of assaulted graveyards
+        uint32 GetAttr2() const { return GraveyardsDefended; }   ///< Number of defended graveyards
+        uint32 GetAttr3() const { return TowersAssaulted; }      ///< Number of assaulted towers
+        uint32 GetAttr4() const { return TowersDefended; }       ///< Number of defended towers
+        uint32 GetAttr5() const { return SecondaryObjectives; }  ///< Number of secondary objectives completed
 
         uint32 GraveyardsAssaulted; /**< Number of graveyards assaulted. */
         uint32 GraveyardsDefended; /**< Number of graveyards defended. */
@@ -372,6 +394,17 @@ class BattleGroundAVScore : public BattleGroundScore
 
 /**
  * @brief Class for the Alterac Valley battleground.
+ *
+ * Extends BattleGround with AV-specific mechanics:
+ * - Large 40v40 battlefield with multiple objectives
+ * - Captain NPCs and boss encounters
+ * - Tower capture and reinforcement system
+ * - Graveyard control and spirit healers
+ * - Resource generation and scoring
+ * - Complex multi-objective tracking
+ *
+ * @see BattleGround for base class
+ * @see BattleGroundAVScore for scoring
  */
 class BattleGroundAV : public BattleGround
 {
@@ -382,6 +415,7 @@ class BattleGroundAV : public BattleGround
          * @brief Constructor for BattleGroundAV.
          */
         BattleGroundAV();
+
         /**
          * @brief Updates the battleground.
          *
@@ -400,6 +434,7 @@ class BattleGroundAV : public BattleGround
          * @brief Opens the doors at the start of the battleground.
          */
         void StartingEventOpenDoors() override;
+
         /**
          * @brief Fills the initial world states for the battleground.
          *
@@ -423,6 +458,7 @@ class BattleGroundAV : public BattleGround
         void Reset() override;
 
         /* General functions */
+
         /**
          * @brief Updates the score for a team.
          *
@@ -441,6 +477,7 @@ class BattleGroundAV : public BattleGround
         void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
         /* Event handling functions - these are are called from external scripts */
+
         /**
          * @brief Handles a player clicking on a flag.
          *
@@ -514,6 +551,7 @@ class BattleGroundAV : public BattleGround
 
     private:
         /* Node handling functions */
+
         /**
          * @brief Handles a player assaulting a point.
          *
@@ -601,6 +639,7 @@ class BattleGroundAV : public BattleGround
         bool IsGrave(BG_AV_Nodes node) const { return (node == BG_AV_NODES_ERROR) ? false : !m_Nodes[node].Tower; }
 
         /* Mine handling functions */
+
         /**
          * @brief Changes the owner of a mine.
          *
@@ -610,6 +649,7 @@ class BattleGroundAV : public BattleGround
         void ChangeMineOwner(uint8 mine, BattleGroundAVTeamIndex teamIdx);
 
         /* World state handling functions */
+
         /**
          * @brief Gets the world state type for a node.
          *
@@ -634,7 +674,7 @@ class BattleGroundAV : public BattleGround
         void UpdateNodeWorldState(BG_AV_Nodes node);
 
         /* Variables */
-        uint32 m_Team_QuestStatus[PVP_TEAM_COUNT][9];       /**< The quest status for each team. [x][y] x=team y=quest counter. */
+        uint32 m_Team_QuestStatus[PVP_TEAM_COUNT][9];       /**< Quest status for each team. [x][y] x=team y=quest counter. */
 
         BG_AV_NodeInfo m_Nodes[BG_AV_NODES_MAX]; /**< Information about each node. */
 

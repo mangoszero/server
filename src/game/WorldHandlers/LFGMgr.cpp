@@ -22,6 +22,30 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file LFGMgr.cpp
+ * @brief Looking For Group (LFG) queue management system
+ *
+ * This file implements the LFG (Meeting Stone) system which matches players
+ * and groups for dungeons. Key features:
+ *
+ * - Role-based matching (Tank, Healer, DPS)
+ * - Solo player and group queue support
+ * - Priority system based on class/role suitability
+ * - Offline player queue restoration
+ * - Automatic group formation when match found
+ *
+ * Queue process:
+ * 1. Players join queue at meeting stone (solo or as group leader)
+ * 2. System calculates needed roles based on party composition
+ * 3. Update() matches queued groups with solo players to fill roles
+ * 4. When suitable match found, groups are formed and teleported
+ *
+ * @see LFGMgr for the global manager
+ * @see LFGQueue for individual queue management
+ * @see LFGHandler for network opcode handling
+ */
+
 #include "Common.h"
 #include "ProgressBar.h"
 #include "SharedDefines.h"
@@ -38,7 +62,21 @@
 #include "LFGHandler.h"
 #include "DisableMgr.h"
 
-// Add group or player into queue. If player has group and he's a leader then whole party will be added to queue.
+/**
+ * @brief Add player or group to LFG queue
+ * @param leader Player attempting to join (group leader if in group)
+ * @param queAreaID Area/dungeon ID to queue for
+ *
+ * Adds a player or entire group to the LFG queue. If the player is a
+ * group leader, the entire party is queued with calculated role needs.
+ * Solo players are queued with their individual role capabilities.
+ *
+ * Validation:
+ * - Map must not be disabled
+ * - Player must be leader if in a group
+ *
+ * On success, broadcasts queue status to group members or sends to solo player.
+ */
 void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
 {
     if (!leader)
@@ -65,7 +103,7 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
         LFGGroupQueueInfo& i_Group = m_QueuedGroups[grp->GetId()];
 
         grp->CalculateLFGRoles(i_Group);
-       i_Group.team = leader->GetTeam();
+        i_Group.team = leader->GetTeam();
         i_Group.areaId = queAreaID;
         i_Group.groupTimer = 5 * MINUTE * IN_MILLISECONDS; // Minute timer for SMSG_MEETINGSTONE_IN_PROGRESS
 
@@ -82,7 +120,7 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
         LFGPlayerQueueInfo& i_Player = m_QueuedPlayers[leader->GetObjectGuid()];
 
         i_Player.roleMask = CalculateRoles((Classes)leader->getClass());
-       i_Player.team = leader->GetTeam();
+        i_Player.team = leader->GetTeam();
         i_Player.areaId = queAreaID;
         i_Player.hasQueuePriority = false;
 
@@ -94,6 +132,16 @@ void LFGQueue::AddToQueue(Player* leader, uint32 queAreaID)
     }
 }
 
+/**
+ * @brief Restore queue status for player who went offline
+ * @param plrGuid ObjectGuid of player logging back in
+ *
+ * When a player disconnects while in LFG queue, their status is preserved
+ * in m_OfflinePlayers. On login, this function restores them to the active
+ * queue if they were queued.
+ *
+ * @note Called from LFGHandler when player requests queue status
+ */
 void LFGQueue::RestoreOfflinePlayer(ObjectGuid plrGuid)
 {
     Player* plr = sObjectMgr.GetPlayer(plrGuid);
@@ -118,6 +166,18 @@ void LFGQueue::RestoreOfflinePlayer(ObjectGuid plrGuid)
     }
 }
 
+/**
+ * @brief Calculate possible roles for a class
+ * @param playerClass Player's class (CLASS_* constant)
+ * @return Bitmask of possible roles (LFG_ROLE_*)
+ *
+ * Determines which LFG roles a class can fulfill based on their abilities:
+ * - TANK: Can taunt and absorb damage
+ * - HEALER: Can restore health
+ * - DPS: Can deal damage
+ *
+ * Returns a bitmask that may include multiple roles (e.g., Druid can be all three).
+ */
 ClassRoles LFGQueue::CalculateRoles(Classes playerClass)
 {
     switch (playerClass)
@@ -135,6 +195,21 @@ ClassRoles LFGQueue::CalculateRoles(Classes playerClass)
     }
 }
 
+/**
+ * @brief Get role priority for a class/role combination
+ * @param playerClass Player's class
+ * @param playerRoles Specific role being evaluated
+ * @return Priority level (LFG_PRIORITY_*)
+ *
+ * Determines how well a class performs in a specific role.
+ * Priorities:
+ * - HIGH: Class is excellent at this role (e.g., Warrior tank, Priest healer)
+ * - NORMAL: Class can perform role adequately (e.g., Druid DPS)
+ * - LOW: Class can do it but poorly (e.g., Paladin DPS in Classic)
+ * - NONE: Class cannot perform this role
+ *
+ * Used for matching optimization - high priority roles are preferred.
+ */
 RolesPriority LFGQueue::getPriority(Classes playerClass, ClassRoles playerRoles)
 {
     switch (playerRoles)
@@ -187,6 +262,11 @@ RolesPriority LFGQueue::getPriority(Classes playerClass, ClassRoles playerRoles)
     }
 }
 
+/**
+ * @brief Recalculates available LFG roles for a queued group.
+ *
+ * @param groupId The queued group identifier.
+ */
 void LFGQueue::UpdateGroup(uint32 groupId)
 {
     QueuedGroupsMap::iterator qGroup = m_QueuedGroups.find(groupId);
@@ -203,6 +283,11 @@ void LFGQueue::UpdateGroup(uint32 groupId)
     }
 }
 
+/**
+ * @brief Updates queue timers and tries to match queued players into groups.
+ *
+ * @param diff The elapsed update time in milliseconds.
+ */
 void LFGQueue::Update(uint32 diff)
 {
     if (m_QueuedGroups.empty() && m_QueuedPlayers.empty())
@@ -258,8 +343,8 @@ void LFGQueue::Update(uint32 diff)
                 Player* plr = sObjectMgr.GetPlayer(qPlayer->first);
 
                 // Check here that players team and areaId they're in queue are same
-                if (qPlayer->second.team == qGroup->second.team &&
-                   qPlayer->second.areaId == qGroup->second.areaId)
+                if (qPlayer->second.team == qGroup->second.team
+                    && qPlayer->second.areaId == qGroup->second.areaId)
                 {
                     // Check if player can perform tank role
                     if ((canPerformRole(qPlayer->second.roleMask, LFG_ROLE_TANK) & qGroup->second.availableRoles) == LFG_ROLE_TANK)
@@ -383,6 +468,14 @@ void LFGQueue::Update(uint32 diff)
     }
 }
 
+/**
+ * @brief Attempts to assign a player to a queued group for a specific role.
+ *
+ * @param plr The player to add.
+ * @param grp The destination group.
+ * @param role The role to satisfy.
+ * @return true if the player was added to the group; otherwise false.
+ */
 bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
 {
     // Safe check
@@ -556,6 +649,12 @@ bool LFGQueue::FindRoleToGroup(Player* plr, Group* grp, ClassRoles role)
     return false;
 }
 
+/**
+ * @brief Removes a queued player and optionally updates the client queue state.
+ *
+ * @param plrGuid The player guid.
+ * @param leaveMethod The reason for leaving the queue.
+ */
 void LFGQueue::RemovePlayerFromQueue(ObjectGuid plrGuid, PlayerLeaveMethod leaveMethod)
 {
     Player * plr = sObjectMgr.GetPlayer(plrGuid);
@@ -581,6 +680,12 @@ void LFGQueue::RemovePlayerFromQueue(ObjectGuid plrGuid, PlayerLeaveMethod leave
     }
 }
 
+/**
+ * @brief Removes a queued group and sends the appropriate queue status packets.
+ *
+ * @param groupId The queued group identifier.
+ * @param leaveMethod The reason for leaving the queue.
+ */
 void LFGQueue::RemoveGroupFromQueue(uint32 groupId, GroupLeaveMethod leaveMethod)
 {
     Group* grp = sObjectMgr.GetGroupById(groupId);
@@ -618,6 +723,13 @@ void LFGQueue::RemoveGroupFromQueue(uint32 groupId, GroupLeaveMethod leaveMethod
     }
 }
 
+/**
+ * @brief Builds the LFG queue status packet for a meeting stone area.
+ *
+ * @param data The packet to populate.
+ * @param areaId The meeting stone area identifier.
+ * @param status The queue status code.
+ */
 void LFGQueue::BuildSetQueuePacket(WorldPacket &data, uint32 areaId, uint8 status)
 {
     data.Initialize(SMSG_MEETINGSTONE_SETQUEUE, 5);
@@ -625,17 +737,33 @@ void LFGQueue::BuildSetQueuePacket(WorldPacket &data, uint32 areaId, uint8 statu
     data << uint8(status);
 }
 
+/**
+ * @brief Builds the packet announcing a new member added to an LFG group.
+ *
+ * @param data The packet to populate.
+ * @param plrGuid The added player guid.
+ */
 void LFGQueue::BuildMemberAddedPacket(WorldPacket &data, ObjectGuid plrGuid)
 {
     data.Initialize(SMSG_MEETINGSTONE_MEMBER_ADDED, 8);
     data << uint64(plrGuid);
 }
 
+/**
+ * @brief Builds the packet informing a group that queue assembly is still in progress.
+ *
+ * @param data The packet to populate.
+ */
 void LFGQueue::BuildInProgressPacket(WorldPacket &data)
 {
     data.Initialize(SMSG_MEETINGSTONE_IN_PROGRESS, 0);
 }
 
+/**
+ * @brief Builds the packet informing a group that queue assembly completed.
+ *
+ * @param data The packet to populate.
+ */
 void LFGQueue::BuildCompletePacket(WorldPacket &data)
 {
     data.Initialize(SMSG_MEETINGSTONE_COMPLETE, 0);

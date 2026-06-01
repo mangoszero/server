@@ -6,6 +6,9 @@
 
 using namespace ai;
 
+/**
+ * Executes the buy action for the item link provided in the event.
+ */
 bool BuyAction::Execute(Event event)
 {
     string link = event.getParam();

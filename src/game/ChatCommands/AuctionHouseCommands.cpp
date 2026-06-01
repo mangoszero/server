@@ -22,15 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file AuctionHouseCommands.cpp
+ * @brief Implementation of auction house management chat commands.
+ *
+ * This file contains chat command handlers for auction house operations including:
+ * - Auction house access and management
+ * - Item posting to auctions
+ * - Auction manipulation for administrative purposes
+ */
+
 #include "Chat.h"
 #include "Language.h"
 #include "ObjectMgr.h"
 
-
- /**********************************************************************
-     CommandTable : auctionCommandTable
- ***********************************************************************/
-
+/**
+ * @brief Opens the auction house interface for the player.
+ *
+ * @param args Command arguments (not used).
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuctionCommand(char* /*args*/)
 {
     m_session->GetPlayer()->SetAuctionAccessMode(0);
@@ -39,6 +50,12 @@ bool ChatHandler::HandleAuctionCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Posts an item to a specified auction house.
+ *
+ * @param args Command arguments: house_type item[:count] price [buyout] [duration].
+ * @returns True if the item was posted successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuctionItemCommand(char* args)
 {
     // format: (alliance|horde|goblin) item[:count] price [buyout] [short|long|verylong]
@@ -154,6 +171,12 @@ bool ChatHandler::HandleAuctionItemCommand(char* args)
     return true;
 }
 
+/**
+ * @brief Handler for HandleAuctionHordeCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuctionHordeCommand(char* /*args*/)
 {
     m_session->GetPlayer()->SetAuctionAccessMode(m_session->GetPlayer()->GetTeam() != HORDE ? -1 : 0);
@@ -161,6 +184,12 @@ bool ChatHandler::HandleAuctionHordeCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Handler for HandleAuctionGoblinCommand command.
+ *
+ * @param args Command arguments.
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuctionGoblinCommand(char* /*args*/)
 {
     m_session->GetPlayer()->SetAuctionAccessMode(1);
@@ -168,6 +197,12 @@ bool ChatHandler::HandleAuctionGoblinCommand(char* /*args*/)
     return true;
 }
 
+/**
+ * @brief Opens the auction house interface for the Alliance faction.
+ *
+ * @param args Command arguments (not used).
+ * @returns True if the command executed successfully, false otherwise.
+ */
 bool ChatHandler::HandleAuctionAllianceCommand(char* /*args*/)
 {
     m_session->GetPlayer()->SetAuctionAccessMode(m_session->GetPlayer()->GetTeam() != ALLIANCE ? -1 : 0);

@@ -23,6 +23,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file Warden.cpp
+ * @brief Warden anti-cheat system base implementation
+ *
+ * This file implements the base Warden class which provides anti-cheat
+ * functionality for the World of Warcraft client. Warden is Blizzard's
+ * anti-cheat system that runs on the client and reports back to the server.
+ *
+ * Key features:
+ * - Module initialization and loading
+ * - Encrypted communication using RC4
+ * - Memory and process checks
+ * - Hash verification
+ * - Check timing and response handling
+ *
+ * @see Warden for the base class
+ * @see WardenWin for Windows-specific implementation
+ * @see WardenMac for macOS-specific implementation
+ */
+
 #include "Common.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -37,6 +57,14 @@
 #include "AccountMgr.h"
 #include "GameTime.h"
 
+/**
+ * @brief Warden constructor
+ *
+ * Initializes the Warden system with default values:
+ * - Check timer: 10 seconds
+ * - State: STATE_INITIAL
+ * - Keys and seed: zeroed
+ */
 Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTimer(10000/*10 sec*/), _clientResponseTimer(0),
                    _module(NULL), _state(WardenState::STATE_INITIAL)
 {
@@ -46,6 +74,11 @@ Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTi
     _previousTimestamp = GameTime::GetGameTimeMS();
 }
 
+/**
+ * @brief Warden destructor
+ *
+ * Cleans up the Warden module data.
+ */
 Warden::~Warden()
 {
     delete[] _module->CompressedData;
@@ -53,11 +86,24 @@ Warden::~Warden()
     _module = NULL;
 }
 
+/**
+ * @brief Initialize Warden module
+ *
+ * Sets the state to STATE_INITIALIZE_MODULE to begin
+ * the module initialization process.
+ */
 void Warden::InitializeModule()
 {
     SetNewState(WardenState::STATE_INITIALIZE_MODULE);
 }
 
+/**
+ * @brief Request hash from client
+ *
+ * Sends a hash request packet to the client to verify
+ * the module's integrity. The client will respond with
+ * a hash computed using the provided seed.
+ */
 void Warden::RequestHash()
 {
     sLog.outWarden("Request hash");
@@ -77,6 +123,12 @@ void Warden::RequestHash()
     SetNewState(WardenState::STATE_REQUESTED_HASH);
 }
 
+/**
+ * @brief Send Warden module to client
+ *
+ * Transfers the Warden module to the client in 500-byte bursts.
+ * The module is sent encrypted using the Warden RC4 key.
+ */
 void Warden::SendModuleToClient()
 {
     sLog.outWarden("Send module to client");
@@ -105,6 +157,9 @@ void Warden::SendModuleToClient()
     SetNewState(WardenState::STATE_SENT_MODULE);
 }
 
+/**
+ * @brief Requests that the client load and use the active Warden module.
+ */
 void Warden::RequestModule()
 {
     sLog.outWarden("Request module");
@@ -127,6 +182,9 @@ void Warden::RequestModule()
     SetNewState(WardenState::STATE_REQUESTED_MODULE);
 }
 
+/**
+ * @brief Advances Warden timers and requests new checks when appropriate.
+ */
 void Warden::Update()
 {
     uint32 currentTimestamp = GameTime::GetGameTimeMS();
@@ -180,16 +238,33 @@ void Warden::Update()
     }
 }
 
+/**
+ * @brief Decrypts an incoming Warden payload.
+ *
+ * @param buffer The encrypted buffer.
+ * @param length The buffer length.
+ */
 void Warden::DecryptData(uint8* buffer, uint32 length)
 {
     _inputCrypto.UpdateData(length, buffer);
 }
 
+/**
+ * @brief Encrypts an outgoing Warden payload.
+ *
+ * @param buffer The plaintext buffer.
+ * @param length The buffer length.
+ */
 void Warden::EncryptData(uint8* buffer, uint32 length)
 {
     _outputCrypto.UpdateData(length, buffer);
 }
 
+/**
+ * @brief Changes Warden runtime state and resets related timers.
+ *
+ * @param state The new Warden state.
+ */
 void Warden::SetNewState(WardenState::Value state)
 {
     //if we pass all initial checks, allow change
@@ -212,6 +287,14 @@ void Warden::SetNewState(WardenState::Value state)
     _clientResponseTimer = 0;
 }
 
+/**
+ * @brief Validates a Warden payload checksum.
+ *
+ * @param checksum The received checksum.
+ * @param data The payload data.
+ * @param length The payload length.
+ * @return true if the checksum matches; otherwise false.
+ */
 bool Warden::IsValidCheckSum(uint32 checksum, const uint8* data, const uint16 length)
 {
     uint32 newChecksum = BuildChecksum(data, length);
@@ -243,6 +326,13 @@ struct keyData {
     };
 };
 
+/**
+ * @brief Builds the XOR-folded SHA1 checksum used by Warden packets.
+ *
+ * @param data The payload data.
+ * @param length The payload length.
+ * @return uint32 The calculated checksum.
+ */
 uint32 Warden::BuildChecksum(const uint8* data, uint32 length)
 {
     keyData hash;
@@ -256,6 +346,12 @@ uint32 Warden::BuildChecksum(const uint8* data, uint32 length)
     return checkSum;
 }
 
+/**
+ * @brief Applies the configured penalty for a Warden failure.
+ *
+ * @param check The Warden check that triggered the penalty, if any.
+ * @return std::string A textual description of the applied penalty.
+ */
 std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
 {
     WardenActions action;
@@ -301,6 +397,11 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
     return "Undefined";
 }
 
+/**
+ * @brief Handles an incoming Warden data packet from the client.
+ *
+ * @param recvData The incoming Warden packet.
+ */
 void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
 {
     if (!_warden || recvData.empty())
@@ -341,16 +442,29 @@ void WorldSession::HandleWardenDataOpcode(WorldPacket& recvData)
     }
 }
 
+/**
+ * @brief Marks Warden as waiting for the next data response.
+ */
 void Warden::RequestData()
 {
     SetNewState(WardenState::STATE_REQUESTED_DATA);
 }
 
+/**
+ * @brief Handles a generic Warden data response and returns to resting state.
+ *
+ * @param buff The received payload buffer.
+ */
 void Warden::HandleData(ByteBuffer& /*buff*/)
 {
     SetNewState(WardenState::STATE_RESTING);
 }
 
+/**
+ * @brief Logs a positive Warden detection to the database.
+ *
+ * @param check The Warden check that triggered logging.
+ */
 void Warden::LogPositiveToDB(WardenCheck* check)
 {
     if (!check || !_session)

@@ -16,7 +16,6 @@
 #include "PlayerbotAIConfig.h"
 #include "RandomPlayerbotMgr.h"
 
-
 AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* ai)
 {
     switch (player->getClass())
@@ -268,7 +267,8 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 {
     int tab = GetPlayerSpecTab(player);
 
-    switch (player->getClass()){
+    switch (player->getClass())
+    {
         case CLASS_PALADIN:
         case CLASS_HUNTER:
         case CLASS_SHAMAN:

@@ -53,7 +53,6 @@ class Transport : public GameObject
 
 };
 
-
 class LocalTransport : public Transport
 {
     public:
@@ -63,7 +62,6 @@ class LocalTransport : public Transport
     private:
         uint32 m_period;
 };
-
 
 class GlobalTransport : public Transport
 {

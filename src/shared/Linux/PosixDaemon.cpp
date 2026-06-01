@@ -30,6 +30,9 @@
 
 pid_t parent_pid = 0, sid = 0;
 
+/**
+ * Handles daemon lifecycle signals during process startup and shutdown.
+ */
 void daemonSignal(int s)
 {
 
@@ -51,6 +54,9 @@ void daemonSignal(int s)
     exit(EXIT_FAILURE);
 }
 
+/**
+ * Forks and detaches the current process into a background daemon.
+ */
 void startDaemon(uint32_t timeout)
 {
     parent_pid = getpid();
@@ -103,6 +109,9 @@ void startDaemon(uint32_t timeout)
     }
 }
 
+/**
+ * Stops the daemon process using the configured pid file.
+ */
 void stopDaemon()
 {
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
@@ -126,6 +135,9 @@ void stopDaemon()
     exit(EXIT_SUCCESS);
 }
 
+/**
+ * Signals the parent process that daemon detachment completed successfully.
+ */
 void detachDaemon()
 {
     if (parent_pid)
@@ -134,6 +146,9 @@ void detachDaemon()
     }
 }
 
+/**
+ * Signals the parent process that daemon startup failed.
+ */
 void exitDaemon()
 {
     if (parent_pid && parent_pid != getpid())

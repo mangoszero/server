@@ -1290,8 +1290,8 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Player* u)
             {
-                return u->CanUseCapturePoint() &&
-                       i_obj->IsWithinDistInMap(u, i_range);
+                return u->CanUseCapturePoint()
+                    && i_obj->IsWithinDistInMap(u, i_range);
             }
         private:
             WorldObject const* i_obj;

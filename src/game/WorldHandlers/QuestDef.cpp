@@ -22,6 +22,26 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
+/**
+ * @file QuestDef.cpp
+ * @brief Quest data structure implementation
+ *
+ * This file implements the Quest class which represents quest data
+ * loaded from the quest database tables. Features:
+ *
+ * - Quest data loading from database
+ * - Quest requirement validation
+ * - Quest reward calculation
+ * - Quest objective checking
+ * - Quest condition evaluation
+ *
+ * Quest data includes requirements, objectives, rewards, and
+ * conditions that determine quest eligibility and completion.
+ *
+ * @see Quest for the quest class
+ * @see QuestMgr for quest management
+ */
+
 #include "QuestDef.h"
 #include "Player.h"
 #include "World.h"
@@ -211,6 +231,12 @@ Quest::Quest(Field* questRecord)
     }
 }
 
+/**
+ * @brief Calculates the quest experience reward for a specific player.
+ *
+ * @param pPlayer The player receiving the quest reward.
+ * @return uint32 The adjusted quest experience reward.
+ */
 uint32 Quest::XPValue(Player* pPlayer) const
 {
     if (pPlayer)
@@ -275,6 +301,11 @@ uint32 Quest::XPValue(Player* pPlayer) const
     return 0;
 }
 
+/**
+ * @brief Returns the quest reward or required money after server rate adjustments.
+ *
+ * @return int32 The adjusted reward or required money value.
+ */
 int32  Quest::GetRewOrReqMoney() const
 {
     if (RewOrReqMoney <= 0)
@@ -285,6 +316,11 @@ int32  Quest::GetRewOrReqMoney() const
     return int32(RewOrReqMoney * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
 }
 
+/**
+ * @brief Checks whether the quest may be completed while the player is in a raid.
+ *
+ * @return true if raid completion is allowed; otherwise false.
+ */
 bool Quest::IsAllowedInRaid() const
 {
     if (Type == QUEST_TYPE_RAID)

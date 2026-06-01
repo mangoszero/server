@@ -9,7 +9,10 @@ namespace ai
     {
     public:
         GenericMageStrategy(PlayerbotAI* ai);
-        virtual string getName() { return "mage"; }
+        virtual string getName()
+        {
+            return "mage";
+        }
 
     public:
         virtual void InitTriggers(std::list<TriggerNode*> &triggers);

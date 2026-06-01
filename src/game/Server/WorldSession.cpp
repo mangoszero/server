@@ -22,9 +22,28 @@
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
 
-/** \file
-    \ingroup u2w
-*/
+/**
+ * @file WorldSession.cpp
+ * @brief World session implementation
+ *
+ * This file implements WorldSession which manages a player's connection
+ * to the world server. It handles:
+ *
+ * - Packet processing and opcode dispatch
+ * - Player authentication and login
+ * - Character management
+ * - Movement and action handling
+ * - Chat and social interactions
+ * - Warden anti-cheat integration
+ *
+ * The session filters packets based on thread safety and context:
+ * - Map::Update() context: Only process thread-safe packets
+ * - World::UpdateSessions() context: Process all packets
+ *
+ * @see WorldSession for the session class
+ * @see WorldSocket for the network socket
+ * @see Opcodes.cpp for opcode registration
+ */
 
 #include "WorldSocket.h"                                    // must be first to make ACE happy with ACE includes in it
 #include "Common.h"
@@ -53,7 +72,15 @@
 #include "WardenWin.h"
 #include "WardenMac.h"
 
-// select opcodes appropriate for processing in Map::Update context for current session state
+/**
+ * @brief Helper for Map session filtering
+ * @param session World session
+ * @param opHandle Opcode handler
+ * @return True if packet can be processed in Map::Update
+ *
+ * Determines if an opcode can be safely processed in the Map::Update
+ * thread context based on thread safety requirements.
+ */
 static bool MapSessionFilterHelper(WorldSession* session, OpcodeHandler const& opHandle)
 {
     // we do not process thread-unsafe packets
@@ -73,7 +100,14 @@ static bool MapSessionFilterHelper(WorldSession* session, OpcodeHandler const& o
     return plr->IsInWorld();
 }
 
-
+/**
+ * @brief Process packet in Map context
+ * @param packet Packet to process
+ * @return True if packet should be processed
+ *
+ * Filters packets for processing in Map::Update context.
+ * Only processes thread-safe packets when player is in world.
+ */
 bool MapSessionFilter::Process(WorldPacket* packet)
 {
     OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
@@ -86,8 +120,15 @@ bool MapSessionFilter::Process(WorldPacket* packet)
     return MapSessionFilterHelper(m_pSession, opHandle);
 }
 
-// we should process ALL packets when player is not in world/logged in
-// OR packet handler is not thread-safe!
+/**
+ * @brief Process packet in World context
+ * @param packet Packet to process
+ * @return True if packet should be processed
+ *
+ * Filters packets for processing in World::UpdateSessions context.
+ * Processes all packets when player is not in world or when
+ * packet handler is not thread-safe.
+ */
 bool WorldSessionFilter::Process(WorldPacket* packet)
 {
     OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
@@ -147,6 +188,12 @@ WorldSession::~WorldSession()
     }
 }
 
+/**
+ * @brief Logs an invalid client packet size for the current opcode.
+ *
+ * @param packet The offending packet.
+ * @param size The expected packet size.
+ */
 void WorldSession::SizeError(WorldPacket const& packet, uint32 size) const
 {
     sLog.outError("Client (account %u) send packet %s (%u) with size %zu but expected %u (attempt crash server?), skipped",
@@ -163,7 +210,8 @@ char const* WorldSession::GetPlayerName() const
 void WorldSession::SendPacket(WorldPacket const* packet)
 {
 #ifdef ENABLE_PLAYERBOTS
-    if (GetPlayer()) {
+    if (GetPlayer())
+    {
         if (GetPlayer()->GetPlayerbotAI())
         {
             GetPlayer()->GetPlayerbotAI()->HandleBotOutgoingPacket(*packet);
@@ -419,6 +467,10 @@ bool WorldSession::Update(PacketFilter& updater)
 }
 
 #ifdef ENABLE_PLAYERBOTS
+
+/**
+ * @brief Processes queued packets for a playerbot-controlled session.
+ */
 void WorldSession::HandleBotPackets()
 {
     WorldPacket* packet;
@@ -703,6 +755,11 @@ void WorldSession::SendAreaTriggerMessage(const char* Text, ...)
     SendPacket(&data);
 }
 
+/**
+ * @brief Sends a formatted notification message to the client.
+ *
+ * @param format The printf-style message format.
+ */
 void WorldSession::SendNotification(const char* format, ...)
 {
     if (format)
@@ -720,6 +777,11 @@ void WorldSession::SendNotification(const char* format, ...)
     }
 }
 
+/**
+ * @brief Sends a localized formatted notification message to the client.
+ *
+ * @param string_id The localization string identifier.
+ */
 void WorldSession::SendNotification(int32 string_id, ...)
 {
     char const* format = GetMangosString(string_id);
@@ -738,11 +800,22 @@ void WorldSession::SendNotification(int32 string_id, ...)
     }
 }
 
+/**
+ * @brief Resolves a localized MaNGOS string for this session locale.
+ *
+ * @param entry The localization entry id.
+ * @return const char* The localized string text.
+ */
 const char* WorldSession::GetMangosString(int32 entry) const
 {
     return sObjectMgr.GetMangosString(entry, GetSessionDbLocaleIndex());
 }
 
+/**
+ * @brief Logs receipt of an unimplemented opcode handler.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::Handle_NULL(WorldPacket& recvPacket)
 {
     DEBUG_LOG("SESSION: received unimplemented opcode %s (0x%.4X)",
@@ -750,6 +823,11 @@ void WorldSession::Handle_NULL(WorldPacket& recvPacket)
               recvPacket.GetOpcode());
 }
 
+/**
+ * @brief Logs receipt of an opcode that should be handled earlier in socket processing.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::Handle_EarlyProccess(WorldPacket& recvPacket)
 {
     sLog.outError("SESSION: received opcode %s (0x%.4X) that must be processed in WorldSocket::OnRead",
@@ -757,6 +835,11 @@ void WorldSession::Handle_EarlyProccess(WorldPacket& recvPacket)
                   recvPacket.GetOpcode());
 }
 
+/**
+ * @brief Logs receipt of an opcode reserved for server-side use.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::Handle_ServerSide(WorldPacket& recvPacket)
 {
     sLog.outError("SESSION: received server-side opcode %s (0x%.4X)",
@@ -764,6 +847,11 @@ void WorldSession::Handle_ServerSide(WorldPacket& recvPacket)
                   recvPacket.GetOpcode());
 }
 
+/**
+ * @brief Logs receipt of a deprecated client opcode.
+ *
+ * @param recvPacket The received opcode packet.
+ */
 void WorldSession::Handle_Deprecated(WorldPacket& recvPacket)
 {
     sLog.outError("SESSION: received deprecated opcode %s (0x%.4X)",
@@ -771,6 +859,11 @@ void WorldSession::Handle_Deprecated(WorldPacket& recvPacket)
                   recvPacket.GetOpcode());
 }
 
+/**
+ * @brief Sends the authentication response or queue position to the client.
+ *
+ * @param position The queue position, or zero when login may proceed immediately.
+ */
 void WorldSession::SendAuthWaitQue(uint32 position)
 {
     if (position == 0)
@@ -788,6 +881,9 @@ void WorldSession::SendAuthWaitQue(uint32 position)
     }
 }
 
+/**
+ * @brief Loads tutorial flag state for the current account.
+ */
 void WorldSession::LoadTutorialsData()
 {
     for (int aX = 0 ; aX < 8 ; ++aX)
@@ -819,6 +915,9 @@ void WorldSession::LoadTutorialsData()
     m_tutorialState = TUTORIALDATA_UNCHANGED;
 }
 
+/**
+ * @brief Sends the current tutorial flags to the client.
+ */
 void WorldSession::SendTutorialsData()
 {
     WorldPacket data(SMSG_TUTORIAL_FLAGS, 4 * 8);
@@ -829,6 +928,9 @@ void WorldSession::SendTutorialsData()
     SendPacket(&data);
 }
 
+/**
+ * @brief Persists tutorial flag state changes for the current account.
+ */
 void WorldSession::SaveTutorialsData()
 {
     static SqlStatementID updTutorial ;
@@ -877,6 +979,12 @@ void WorldSession::SendTransferAborted(uint32 mapid, uint8 reason, uint8 arg)
     SendPacket(&data);
 }
 
+/**
+ * @brief Executes a validated opcode handler with delayed-teleport protection.
+ *
+ * @param opHandle The opcode handler metadata.
+ * @param packet The packet to process.
+ */
 void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* packet)
 {
 #ifdef ENABLE_ELUNA
@@ -917,6 +1025,12 @@ void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* pac
     }
 }
 
+/**
+ * @brief Sends a spell visual kit to be played on a target object.
+ *
+ * @param guid The target object guid.
+ * @param spellArtKit The spell visual kit id.
+ */
 void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
 {
     WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 8 + 4);        // visual effect on guid
@@ -925,6 +1039,13 @@ void WorldSession::SendPlaySpellVisual(ObjectGuid guid, uint32 spellArtKit)
     SendPacket(&data);
 }
 
+/**
+ * @brief Initializes Warden for the authenticated client platform.
+ *
+ * @param build The client build number.
+ * @param k The session key material.
+ * @param os The reported client operating system.
+ */
 void WorldSession::InitWarden(uint16 build, BigNumber* k, std::string const& os)
 {
     _build = build;
