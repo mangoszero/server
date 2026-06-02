@@ -226,10 +226,16 @@ enum LocaleConstant
     LOCALE_zhTW = 5,
     LOCALE_esES = 6,
     LOCALE_esMX = 7,
-
+#if !defined(CLASSIC)
+    LOCALE_ruRU = 8,
+#endif
 };
 
+#if defined(CLASSIC)
 #define MAX_LOCALE 8
+#else
+#define MAX_LOCALE 9
+#endif
 #define DEFAULT_LOCALE LOCALE_enUS
 
 /**

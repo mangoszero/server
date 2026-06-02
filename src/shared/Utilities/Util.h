@@ -833,6 +833,10 @@ inline void wstrToLower(std::wstring& str)
     std::transform(str.begin(), str.end(), str.begin(), [](wchar_t w) {return wcharToLower(w); });
 }
 
+#if !defined(CLASSIC)
+std::wstring GetMainPartOfName(std::wstring wname, uint32 declension);
+#endif
+
 /**
  * @brief
  *

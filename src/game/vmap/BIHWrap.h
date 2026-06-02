@@ -37,80 +37,80 @@ template<class T, class BoundsFunc = BoundsTrait<T> >
  */
 class BIHWrap
 {
-        template<class RayCallback>
+    template<class RayCallback>
+
+    /**
+     * @brief
+     *
+     */
+    struct MDLCallback
+    {
+        RayCallback& cb; /**< TODO */
+        const T* const* objects; /**< TODO */
+        uint32 objects_size;
 
         /**
          * @brief
          *
+         * @param callback
+         * @param constobjects_array
          */
-        struct MDLCallback
+        MDLCallback(RayCallback& callback, const T* const* obj_array, uint32 obj_size ) : cb(callback), objects(obj_array), objects_size(obj_size) {}
+
+        /**
+         * @brief
+         *
+         * @param r
+         * @param Idx
+         * @param MaxDist
+         * @param bool
+         * @return bool operator
+         */
+        bool operator()(const Ray& r, uint32 Idx, float& MaxDist, bool /*stopAtFirst*/)
         {
-            RayCallback& cb; /**< TODO */
-            const T* const* objects; /**< TODO */
-            uint32 objects_size;
-
-            /**
-             * @brief
-             *
-             * @param callback
-             * @param constobjects_array
-             */
-            MDLCallback(RayCallback& callback, const T* const* obj_array, uint32 obj_size ) : cb(callback), objects(obj_array), objects_size(obj_size) {}
-
-            /**
-             * @brief
-             *
-             * @param r
-             * @param Idx
-             * @param MaxDist
-             * @param bool
-             * @return bool operator
-             */
-            bool operator()(const Ray& r, uint32 Idx, float& MaxDist, bool /*stopAtFirst*/)
+            if (Idx >= objects_size)
             {
-                if (Idx >= objects_size)
-                {
-                    return false;
-                }
-
-                if (const T* obj = objects[Idx])
-                {
-                    return cb(r, *obj, MaxDist/*, stopAtFirst*/);
-                }
                 return false;
             }
 
-            /**
-             * @brief
-             *
-             * @param p
-             * @param Idx
-             */
-            void operator()(const Vector3& p, uint32 Idx)
+            if (const T* obj = objects[Idx])
             {
-                if (Idx >= objects_size)
-                {
-                    return;
-                }
-
-                if (const T* obj = objects[Idx])
-                {
-                    cb(p, *obj);
-                }
+                return cb(r, *obj, MaxDist/*, stopAtFirst*/);
             }
-        };
+            return false;
+        }
 
         /**
          * @brief
          *
+         * @param p
+         * @param Idx
          */
-        typedef G3D::Array<const T*> ObjArray;
+        void operator()(const Vector3& p, uint32 Idx)
+        {
+            if (Idx >= objects_size)
+            {
+                return;
+            }
 
-        BIH m_tree; /**< TODO */
-        ObjArray m_objects; /**< TODO */
-        G3D::Table<const T*, uint32> m_obj2Idx; /**< TODO */
-        G3D::Set<const T*> m_objects_to_push; /**< TODO */
-        int unbalanced_times; /**< TODO */
+            if (const T* obj = objects[Idx])
+            {
+                cb(p, *obj);
+            }
+        }
+    };
+
+    /**
+     * @brief
+     *
+     */
+    typedef G3D::Array<const T*> ObjArray;
+
+    BIH m_tree; /**< TODO */
+    ObjArray m_objects; /**< TODO */
+    G3D::Table<const T*, uint32> m_obj2Idx; /**< TODO */
+    G3D::Set<const T*> m_objects_to_push; /**< TODO */
+    int unbalanced_times; /**< TODO */
 
     public:
 

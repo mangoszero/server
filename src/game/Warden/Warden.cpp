@@ -66,7 +66,7 @@
  * - Keys and seed: zeroed
  */
 Warden::Warden() : _session(NULL), _inputCrypto(16), _outputCrypto(16), _checkTimer(10000/*10 sec*/), _clientResponseTimer(0),
-                   _module(NULL), _state(WardenState::STATE_INITIAL)
+    _module(NULL), _state(WardenState::STATE_INITIAL)
 {
     memset(_inputKey, 0, sizeof(_inputKey));
     memset(_outputKey, 0, sizeof(_outputKey));
@@ -208,7 +208,7 @@ void Warden::Update()
                 if (_clientResponseTimer > maxClientResponseDelay * IN_MILLISECONDS)
                 {
                     sLog.outWarden("%s (latency: %u, IP: %s) exceeded Warden module response delay on state %s for more than %s - disconnecting client",
-                                   _session->GetPlayerName(), _session->GetLatency(), _session->GetRemoteAddress().c_str(), WardenState::to_string(_state), secsToTimeString(maxClientResponseDelay, TimeFormat::ShortText).c_str());
+                        _session->GetPlayerName(), _session->GetLatency(), _session->GetRemoteAddress().c_str(), WardenState::to_string(_state), secsToTimeString(maxClientResponseDelay, TimeFormat::ShortText).c_str());
                     _session->KickPlayer();
                 }
                 else
@@ -367,14 +367,14 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
 
     switch (action)
     {
-    case WARDEN_ACTION_LOG:
-        return "None";
-        break;
-    case WARDEN_ACTION_KICK:
-        _session->KickPlayer();
-        return "Kick";
-        break;
-    case WARDEN_ACTION_BAN:
+        case WARDEN_ACTION_LOG:
+            return "None";
+            break;
+        case WARDEN_ACTION_KICK:
+            _session->KickPlayer();
+            return "Kick";
+            break;
+        case WARDEN_ACTION_BAN:
         {
             std::stringstream duration;
             std::string accountName;
@@ -391,8 +391,8 @@ std::string Warden::Penalty(WardenCheck* check /*= NULL*/)
 
             return "Ban";
         }
-    default:
-        break;
+        default:
+            break;
     }
     return "Undefined";
 }

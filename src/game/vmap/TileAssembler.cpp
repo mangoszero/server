@@ -648,12 +648,12 @@ namespace VMAP
         return(false); \
     }
 
-/**
- * @brief Reads group data from a raw file, including bounding box, indices, vertices, and liquid.
- *
- * @param rf The file handle to read from.
- * @return bool True if the read was successful, otherwise false.
- */
+    /**
+     * @brief Reads group data from a raw file, including bounding box, indices, vertices, and liquid.
+     *
+     * @param rf The file handle to read from.
+     * @return bool True if the read was successful, otherwise false.
+     */
     bool GroupModel_Raw::Read(FILE* rf)
     {
         char blockId[5];

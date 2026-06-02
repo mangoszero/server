@@ -31,19 +31,19 @@
 #include "SQLStorages.h"
 #include "World.h"
 
- /** \addtogroup auctionbot
-  * @{
-  * \file
-  */
+/** \addtogroup auctionbot
+ * @{
+ * \file
+ */
 
 #include "Policies/Singleton.h"
 
-  /**
-   * @brief Structure to track auction evaluation state for buyer
-   *
-   * Stores information about auctions that have been checked by the buyer bot
-   * to avoid reprocessing the same auctions too frequently.
-   */
+/**
+ * @brief Structure to track auction evaluation state for buyer
+ *
+ * Stores information about auctions that have been checked by the buyer bot
+ * to avoid reprocessing the same auctions too frequently.
+ */
 struct BuyerAuctionEval
 {
     BuyerAuctionEval() : AuctionId(0), LastChecked(0), LastExist(0) {}
@@ -81,37 +81,36 @@ typedef std::map<uint32, BuyerAuctionEval > CheckEntryMap;
  */
 struct AHB_Buyer_Config
 {
-public:
-    AHB_Buyer_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL),
-        BuyerEnabled(false),
-        BuyerPriceRatio(0),
-        FactionChance(0) {
-    }
+    public:
+        AHB_Buyer_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL),
+            BuyerEnabled(false),
+            BuyerPriceRatio(0),
+            FactionChance(0) {}
 
-    /**
-     * @brief Initialize configuration for a specific auction house
-     * @param houseType Auction house type
-     */
-    void Initialize(AuctionHouseType houseType)
-    {
-        m_houseType = houseType;
-    }
+        /**
+         * @brief Initialize configuration for a specific auction house
+         * @param houseType Auction house type
+         */
+        void Initialize(AuctionHouseType houseType)
+        {
+            m_houseType = houseType;
+        }
 
-    /**
-     * @brief Get the auction house type
-     * @return Auction house type
-     */
-    AuctionHouseType GetHouseType() const { return m_houseType; }
+        /**
+         * @brief Get the auction house type
+         * @return Auction house type
+         */
+        AuctionHouseType GetHouseType() const { return m_houseType; }
 
-public:
-    BuyerItemInfoMap SameItemInfo; /**< Map of item IDs to their pricing info */
-    CheckEntryMap    CheckedEntry; /**< Map of checked auction entries */
-    uint32           FactionChance; /**< Chance to buy from opposite faction */
-    bool             BuyerEnabled; /**< Whether buyer is enabled for this house */
-    uint32           BuyerPriceRatio; /**< Price ratio for buying decisions */
+    public:
+        BuyerItemInfoMap SameItemInfo; /**< Map of item IDs to their pricing info */
+        CheckEntryMap    CheckedEntry; /**< Map of checked auction entries */
+        uint32           FactionChance; /**< Chance to buy from opposite faction */
+        bool             BuyerEnabled; /**< Whether buyer is enabled for this house */
+        uint32           BuyerPriceRatio; /**< Price ratio for buying decisions */
 
-private:
-    AuctionHouseType m_houseType; /**< Auction house type */
+    private:
+        AuctionHouseType m_houseType; /**< Auction house type */
 };
 
 /**
@@ -168,165 +167,164 @@ struct SellerItemInfo
  */
 class AHB_Seller_Config
 {
-public:
-    AHB_Seller_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL), LastMissedItem(0), m_minTime(0), m_maxTime(0)
-    {
-    }
+    public:
+        AHB_Seller_Config() : m_houseType(AUCTION_HOUSE_NEUTRAL), LastMissedItem(0), m_minTime(0), m_maxTime(0)
+        {}
 
-    ~AHB_Seller_Config() {}
+        ~AHB_Seller_Config() {}
 
-    /**
-     * @brief Initialize configuration for a specific auction house
-     * @param houseType Auction house type
-     */
-    void Initialize(AuctionHouseType houseType)
-    {
-        m_houseType = houseType;
-    }
-
-    /**
-     * @brief Get the auction house type
-     * @return Auction house type
-     */
-    AuctionHouseType GetHouseType() const { return m_houseType; }
-
-    uint32 LastMissedItem; /**< Last item ID that was missed */
-
-    /**
-     * @brief Set minimum auction duration
-     * @param value Minimum time in hours
-     */
-    void SetMinTime(uint32 value)
-    {
-        m_minTime = value;
-    }
-
-    /**
-     * @brief Get minimum auction duration
-     * @return Minimum time in hours (at least 1, capped at max time)
-     */
-    uint32 GetMinTime() const
-    {
-        if (m_minTime < 1)
+        /**
+         * @brief Initialize configuration for a specific auction house
+         * @param houseType Auction house type
+         */
+        void Initialize(AuctionHouseType houseType)
         {
-            return 1;
+            m_houseType = houseType;
         }
-        else if ((m_maxTime) && (m_minTime > m_maxTime))
+
+        /**
+         * @brief Get the auction house type
+         * @return Auction house type
+         */
+        AuctionHouseType GetHouseType() const { return m_houseType; }
+
+        uint32 LastMissedItem; /**< Last item ID that was missed */
+
+        /**
+         * @brief Set minimum auction duration
+         * @param value Minimum time in hours
+         */
+        void SetMinTime(uint32 value)
         {
-            return m_maxTime;
+            m_minTime = value;
         }
-        else
+
+        /**
+         * @brief Get minimum auction duration
+         * @return Minimum time in hours (at least 1, capped at max time)
+         */
+        uint32 GetMinTime() const
         {
-            return m_minTime;
+            if (m_minTime < 1)
+            {
+                return 1;
+            }
+            else if ((m_maxTime) && (m_minTime > m_maxTime))
+            {
+                return m_maxTime;
+            }
+            else
+            {
+                return m_minTime;
+            }
         }
-    }
 
-    /**
-     * @brief Set maximum auction duration
-     * @param value Maximum time in hours
-     */
-    void SetMaxTime(uint32 value) { m_maxTime = value; }
+        /**
+         * @brief Set maximum auction duration
+         * @param value Maximum time in hours
+         */
+        void SetMaxTime(uint32 value) { m_maxTime = value; }
 
-    /**
-     * @brief Get maximum auction duration
-     * @return Maximum time in hours
-     */
-    uint32 GetMaxTime() const { return m_maxTime; }
-    // Data access classified by item class and item quality //
+        /**
+         * @brief Get maximum auction duration
+         * @return Maximum time in hours
+         */
+        uint32 GetMaxTime() const { return m_maxTime; }
+        // Data access classified by item class and item quality //
 
-    /**
-     * @brief Set item amount for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @param amount Amount to set
-     */
-    void SetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass, uint32 amount) { m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems = amount * m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
+        /**
+         * @brief Set item amount for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @param amount Amount to set
+         */
+        void SetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass, uint32 amount) { m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems = amount * m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
 
-    /**
-     * @brief Get item amount for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @return Item amount
-     */
-    uint32 GetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems; }
+        /**
+         * @brief Get item amount for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @return Item amount
+         */
+        uint32 GetItemsAmountPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems; }
 
-    /**
-     * @brief Set item quantity per stack for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @param qty Quantity per stack
-     */
-    void SetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass, uint32 qty) { m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity = qty; }
+        /**
+         * @brief Set item quantity per stack for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @param qty Quantity per stack
+         */
+        void SetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass, uint32 qty) { m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity = qty; }
 
-    /**
-     * @brief Get item quantity per stack for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @return Quantity per stack
-     */
-    uint32 GetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
+        /**
+         * @brief Get item quantity per stack for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @return Quantity per stack
+         */
+        uint32 GetItemsQuantityPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].Quantity; }
 
-    /**
-     * @brief Set missed items count for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @param found Number of items found
-     */
-    void SetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass, uint32 found)
-    {
-        if (m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems > found)
+        /**
+         * @brief Set missed items count for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @param found Number of items found
+         */
+        void SetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass, uint32 found)
         {
-            m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems - found;
+            if (m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems > found)
+            {
+                m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = m_ItemInfo[quality].ItemClassInfos[itemclass].AmountOfItems - found;
+            }
+            else
+            {
+                m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = 0;
+            }
         }
-        else
-        {
-            m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems = 0;
-        }
-    }
 
-    /**
-     * @brief Get missed items count for a specific class and quality
-     * @param quality Item quality
-     * @param itemclass Item class
-     * @return Missed items count
-     */
-    uint32 GetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems; }
+        /**
+         * @brief Get missed items count for a specific class and quality
+         * @param quality Item quality
+         * @param itemclass Item class
+         * @return Missed items count
+         */
+        uint32 GetMissedItemsPerClass(AuctionQuality quality, ItemClass itemclass) const { return m_ItemInfo[quality].ItemClassInfos[itemclass].MissItems; }
 
-    // Data for every quality of item //
+        // Data for every quality of item //
 
-    /**
-     * @brief Set item amount for a specific quality
-     * @param quality Item quality
-     * @param cnt Amount to set
-     */
-    void SetItemsAmountPerQuality(AuctionQuality quality, uint32 cnt) { m_ItemInfo[quality].AmountOfItems = cnt; }
+        /**
+         * @brief Set item amount for a specific quality
+         * @param quality Item quality
+         * @param cnt Amount to set
+         */
+        void SetItemsAmountPerQuality(AuctionQuality quality, uint32 cnt) { m_ItemInfo[quality].AmountOfItems = cnt; }
 
-    /**
-     * @brief Get item amount for a specific quality
-     * @param quality Item quality
-     * @return Item amount
-     */
-    uint32 GetItemsAmountPerQuality(AuctionQuality quality) const { return m_ItemInfo[quality].AmountOfItems; }
+        /**
+         * @brief Get item amount for a specific quality
+         * @param quality Item quality
+         * @return Item amount
+         */
+        uint32 GetItemsAmountPerQuality(AuctionQuality quality) const { return m_ItemInfo[quality].AmountOfItems; }
 
-    /**
-     * @brief Set price ratio for a specific quality
-     * @param quality Item quality
-     * @param value Price ratio
-     */
-    void SetPriceRatioPerQuality(AuctionQuality quality, uint32 value) { m_ItemInfo[quality].PriceRatio = value; }
+        /**
+         * @brief Set price ratio for a specific quality
+         * @param quality Item quality
+         * @param value Price ratio
+         */
+        void SetPriceRatioPerQuality(AuctionQuality quality, uint32 value) { m_ItemInfo[quality].PriceRatio = value; }
 
-    /**
-     * @brief Get price ratio for a specific quality
-     * @param quality Item quality
-     * @return Price ratio
-     */
-    uint32 GetPriceRatioPerQuality(AuctionQuality quality) const { return m_ItemInfo[quality].PriceRatio; }
+        /**
+         * @brief Get price ratio for a specific quality
+         * @param quality Item quality
+         * @return Price ratio
+         */
+        uint32 GetPriceRatioPerQuality(AuctionQuality quality) const { return m_ItemInfo[quality].PriceRatio; }
 
-private:
-    AuctionHouseType m_houseType; /**< Auction house type */
-    uint32 m_minTime; /**< Minimum auction duration in hours */
-    uint32 m_maxTime; /**< Maximum auction duration in hours */
-    SellerItemInfo m_ItemInfo[MAX_AUCTION_QUALITY]; /**< Item info per quality */
+    private:
+        AuctionHouseType m_houseType; /**< Auction house type */
+        uint32 m_minTime; /**< Minimum auction duration in hours */
+        uint32 m_maxTime; /**< Maximum auction duration in hours */
+        SellerItemInfo m_ItemInfo[MAX_AUCTION_QUALITY]; /**< Item info per quality */
 };
 
 /**
@@ -340,98 +338,98 @@ private:
  */
 class AuctionBotBuyer : public AuctionBotAgent
 {
-public:
-    AuctionBotBuyer();
-    ~AuctionBotBuyer();
+    public:
+        AuctionBotBuyer();
+        ~AuctionBotBuyer();
 
-    /**
-     * @brief Initialize the buyer agent
-     * @return True if initialization successful, false otherwise
-     */
-    bool        Initialize() override;
+        /**
+         * @brief Initialize the buyer agent
+         * @return True if initialization successful, false otherwise
+         */
+        bool        Initialize() override;
 
-    /**
-     * @brief Update buyer operations for the specified auction house
-     *
-     * Will buy items if there are any that match certain criteria.
-     *
-     * @param houseType Auction house type
-     * @return True if update was successful, false otherwise
-     */
-    bool        Update(AuctionHouseType houseType) override;
+        /**
+         * @brief Update buyer operations for the specified auction house
+         *
+         * Will buy items if there are any that match certain criteria.
+         *
+         * @param houseType Auction house type
+         * @return True if update was successful, false otherwise
+         */
+        bool        Update(AuctionHouseType houseType) override;
 
-    /**
-     * @brief Load buyer configuration from config file
-     */
-    void        LoadConfig();
+        /**
+         * @brief Load buyer configuration from config file
+         */
+        void        LoadConfig();
 
-    /**
-     * @brief Add new auction buyer bot bid
-     * @param config Buyer configuration
-     */
-    void        addNewAuctionBuyerBotBid(AHB_Buyer_Config& config);
+        /**
+         * @brief Add new auction buyer bot bid
+         * @param config Buyer configuration
+         */
+        void        addNewAuctionBuyerBotBid(AHB_Buyer_Config& config);
 
-private:
-    uint32              m_CheckInterval; /**< Interval between auction checks */
-    AHB_Buyer_Config    m_HouseConfig[MAX_AUCTION_HOUSE_TYPE]; /**< Configuration per house type */
+    private:
+        uint32              m_CheckInterval; /**< Interval between auction checks */
+        AHB_Buyer_Config    m_HouseConfig[MAX_AUCTION_HOUSE_TYPE]; /**< Configuration per house type */
 
-    /**
-     * @brief Load buyer values from configuration
-     * @param config Buyer configuration
-     */
-    void        LoadBuyerValues(AHB_Buyer_Config& config);
+        /**
+         * @brief Load buyer values from configuration
+         * @param config Buyer configuration
+         */
+        void        LoadBuyerValues(AHB_Buyer_Config& config);
 
-    /**
-     * @brief Determine if an auction is buyable based on price criteria
-     *
-     * @param buyoutPrice Auction buyout price
-     * @param InGame_BuyPrice In-game vendor buy price
-     * @param MaxBuyablePrice Maximum buyable price
-     * @param MinBuyPrice Minimum buy price
-     * @param MaxChance Maximum chance to buy
-     * @param ChanceRatio Chance ratio
-     * @return True if entry is buyable, false otherwise
-     */
-    bool        IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice, double MaxBuyablePrice, uint32 MinBuyPrice, uint32 MaxChance, uint32 ChanceRatio);
+        /**
+         * @brief Determine if an auction is buyable based on price criteria
+         *
+         * @param buyoutPrice Auction buyout price
+         * @param InGame_BuyPrice In-game vendor buy price
+         * @param MaxBuyablePrice Maximum buyable price
+         * @param MinBuyPrice Minimum buy price
+         * @param MaxChance Maximum chance to buy
+         * @param ChanceRatio Chance ratio
+         * @return True if entry is buyable, false otherwise
+         */
+        bool        IsBuyableEntry(uint32 buyoutPrice, double InGame_BuyPrice, double MaxBuyablePrice, uint32 MinBuyPrice, uint32 MaxChance, uint32 ChanceRatio);
 
-    /**
-     * @brief Determine if an auction is bidable based on price criteria
-     *
-     * @param bidPrice Current bid price
-     * @param InGame_BuyPrice In-game vendor buy price
-     * @param MaxBidablePrice Maximum bidable price
-     * @param MinBidPrice Minimum bid price
-     * @param MaxChance Maximum chance to bid
-     * @param ChanceRatio Chance ratio
-     * @return True if bot can bid on this entry, false otherwise
-     */
-    bool        IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, double MaxBidablePrice, uint32 MinBidPrice, uint32 MaxChance, uint32 ChanceRatio);
+        /**
+         * @brief Determine if an auction is bidable based on price criteria
+         *
+         * @param bidPrice Current bid price
+         * @param InGame_BuyPrice In-game vendor buy price
+         * @param MaxBidablePrice Maximum bidable price
+         * @param MinBidPrice Minimum bid price
+         * @param MaxChance Maximum chance to bid
+         * @param ChanceRatio Chance ratio
+         * @return True if bot can bid on this entry, false otherwise
+         */
+        bool        IsBidableEntry(uint32 bidPrice, double InGame_BuyPrice, double MaxBidablePrice, uint32 MinBidPrice, uint32 MaxChance, uint32 ChanceRatio);
 
-    /**
-     * @brief Place a bid on an auction
-     * @param auction Auction entry
-     * @param bidPrice Bid price
-     */
-    void        PlaceBidToEntry(AuctionEntry* auction, uint32 bidPrice);
+        /**
+         * @brief Place a bid on an auction
+         * @param auction Auction entry
+         * @param bidPrice Bid price
+         */
+        void        PlaceBidToEntry(AuctionEntry* auction, uint32 bidPrice);
 
-    /**
-     * @brief Buy out an auction
-     * @param auction Auction entry
-     */
-    void        BuyEntry(AuctionEntry* auction);
+        /**
+         * @brief Buy out an auction
+         * @param auction Auction entry
+         */
+        void        BuyEntry(AuctionEntry* auction);
 
-    /**
-     * @brief Prepare list of auction entries to consider
-     * @param config Buyer configuration
-     */
-    void        PrepareListOfEntry(AHB_Buyer_Config& config);
+        /**
+         * @brief Prepare list of auction entries to consider
+         * @param config Buyer configuration
+         */
+        void        PrepareListOfEntry(AHB_Buyer_Config& config);
 
-    /**
-     * @brief Get a buyable auction entry
-     * @param config Buyer configuration
-     * @return Auction entry ID
-     */
-    uint32      GetBuyableEntry(AHB_Buyer_Config& config);
+        /**
+         * @brief Get a buyable auction entry
+         * @param config Buyer configuration
+         * @return Auction entry ID
+         */
+        uint32      GetBuyableEntry(AHB_Buyer_Config& config);
 };
 
 /**
@@ -445,139 +443,139 @@ private:
  */
 class AuctionBotSeller : public AuctionBotAgent
 {
-public:
-    typedef std::vector<uint32> ItemPool;
+    public:
+        typedef std::vector<uint32> ItemPool;
 
-    /**
-     * @brief Constructor
-     */
-    AuctionBotSeller();
+        /**
+         * @brief Constructor
+         */
+        AuctionBotSeller();
 
-    /**
-     * @brief Destructor
-     */
-    ~AuctionBotSeller();
+        /**
+         * @brief Destructor
+         */
+        ~AuctionBotSeller();
 
-    /**
-     * @brief Initialize the seller agent
-     * @return True if initialization successful, false otherwise
-     */
-    bool Initialize() override;
+        /**
+         * @brief Initialize the seller agent
+         * @return True if initialization successful, false otherwise
+         */
+        bool Initialize() override;
 
-    /**
-     * @brief Update seller operations for the specified auction house
-     *
-     * Puts up new items for sale if there's a need for it.
-     *
-     * @param houseType Auction house type
-     * @return True if update was successful, false otherwise
-     */
-    bool Update(AuctionHouseType houseType) override;
+        /**
+         * @brief Update seller operations for the specified auction house
+         *
+         * Puts up new items for sale if there's a need for it.
+         *
+         * @param houseType Auction house type
+         * @return True if update was successful, false otherwise
+         */
+        bool Update(AuctionHouseType houseType) override;
 
-    /**
-     * @brief Add new auctions to an auction house
-     *
-     * Faction and settings are passed via the config parameter.
-     *
-     * @param config Seller configuration
-     */
-    void addNewAuctions(AHB_Seller_Config& config);
+        /**
+         * @brief Add new auctions to an auction house
+         *
+         * Faction and settings are passed via the config parameter.
+         *
+         * @param config Seller configuration
+         */
+        void addNewAuctions(AHB_Seller_Config& config);
 
-    /**
-     * @brief Set item ratios for all auction houses
-     *
-     * Value should be between 0 and 10000 representing 0-100%.
-     *
-     * @param al Alliance item amount/ratio
-     * @param ho Horde item amount/ratio
-     * @param ne Neutral item amount/ratio
-     */
-    void SetItemsRatio(uint32 al, uint32 ho, uint32 ne);
+        /**
+         * @brief Set item ratios for all auction houses
+         *
+         * Value should be between 0 and 10000 representing 0-100%.
+         *
+         * @param al Alliance item amount/ratio
+         * @param ho Horde item amount/ratio
+         * @param ne Neutral item amount/ratio
+         */
+        void SetItemsRatio(uint32 al, uint32 ho, uint32 ne);
 
-    /**
-     * @brief Set item ratio for a specific auction house
-     *
-     * Works like SetItemsRatio but only for one house.
-     *
-     * @param house Auction house type
-     * @param val New ratio value
-     */
-    void SetItemsRatioForHouse(AuctionHouseType house, uint32 val);
+        /**
+         * @brief Set item ratio for a specific auction house
+         *
+         * Works like SetItemsRatio but only for one house.
+         *
+         * @param house Auction house type
+         * @param val New ratio value
+         */
+        void SetItemsRatioForHouse(AuctionHouseType house, uint32 val);
 
-    /**
-     * @brief Set item amounts for all quality levels
-     *
-     * @param vals Array of size MAX_AUCTION_QUALITY with item amounts
-     * @see AuctionQuality
-     */
-    void SetItemsAmount(uint32(&vals)[MAX_AUCTION_QUALITY]);
+        /**
+         * @brief Set item amounts for all quality levels
+         *
+         * @param vals Array of size MAX_AUCTION_QUALITY with item amounts
+         * @see AuctionQuality
+         */
+        void SetItemsAmount(uint32(&vals)[MAX_AUCTION_QUALITY]);
 
-    /**
-     * @brief Set item amount for a specific quality
-     *
-     * Works like SetItemsAmount but for one quality only.
-     *
-     * @param quality Item quality
-     * @param val Number of items of this quality to be available
-     */
-    void SetItemsAmountForQuality(AuctionQuality quality, uint32 val);
+        /**
+         * @brief Set item amount for a specific quality
+         *
+         * Works like SetItemsAmount but for one quality only.
+         *
+         * @param quality Item quality
+         * @param val Number of items of this quality to be available
+         */
+        void SetItemsAmountForQuality(AuctionQuality quality, uint32 val);
 
-    /**
-     * @brief Load seller configuration from config file
-     */
-    void LoadConfig();
+        /**
+         * @brief Load seller configuration from config file
+         */
+        void LoadConfig();
 
-private:
-    AHB_Seller_Config   m_HouseConfig[MAX_AUCTION_HOUSE_TYPE]; /**< Configuration per house type */
+    private:
+        AHB_Seller_Config   m_HouseConfig[MAX_AUCTION_HOUSE_TYPE]; /**< Configuration per house type */
 
-    ItemPool m_ItemPool[MAX_AUCTION_QUALITY][MAX_ITEM_CLASS]; /**< Item pool per quality and class */
+        ItemPool m_ItemPool[MAX_AUCTION_QUALITY][MAX_ITEM_CLASS]; /**< Item pool per quality and class */
 
-    /**
-     * @brief Load seller values from configuration
-     * @param config Seller configuration
-     */
-    void LoadSellerValues(AHB_Seller_Config& config);
+        /**
+         * @brief Load seller values from configuration
+         * @param config Seller configuration
+         */
+        void LoadSellerValues(AHB_Seller_Config& config);
 
-    /**
-     * @brief Set statistics for items on an auction house
-     *
-     * Fills ItemInfo objects with current auction house content.
-     *
-     * @param config Seller configuration
-     * @return Number of items processed
-     */
-    uint32 SetStat(AHB_Seller_Config& config);
+        /**
+         * @brief Set statistics for items on an auction house
+         *
+         * Fills ItemInfo objects with current auction house content.
+         *
+         * @param config Seller configuration
+         * @return Number of items processed
+         */
+        uint32 SetStat(AHB_Seller_Config& config);
 
-    /**
-     * @brief Generate random array for item selection
-     *
-     * Allows adding any missed item in place of the first to last one.
-     *
-     * @param config Seller configuration
-     * @param ra Random array to fill
-     * @param addedItem Vector of added items
-     * @return True if successful, false otherwise
-     */
-    bool getRandomArray(AHB_Seller_Config& config, RandomArray& ra, const std::vector<std::vector<uint32> >& addedItem);
+        /**
+         * @brief Generate random array for item selection
+         *
+         * Allows adding any missed item in place of the first to last one.
+         *
+         * @param config Seller configuration
+         * @param ra Random array to fill
+         * @param addedItem Vector of added items
+         * @return True if successful, false otherwise
+         */
+        bool getRandomArray(AHB_Seller_Config& config, RandomArray& ra, const std::vector<std::vector<uint32> >& addedItem);
 
-    /**
-     * @brief Set prices for an item
-     *
-     * Important values are passed by reference.
-     *
-     * @param config Seller configuration
-     * @param buyp Buy price (output)
-     * @param bidp Bid price (output)
-     * @param stackcnt Stack count
-     * @param itemQuality Item quality
-     */
-    void SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, uint32& bidp, uint32 stackcnt, ItemQualities itemQuality);
+        /**
+         * @brief Set prices for an item
+         *
+         * Important values are passed by reference.
+         *
+         * @param config Seller configuration
+         * @param buyp Buy price (output)
+         * @param bidp Bid price (output)
+         * @param stackcnt Stack count
+         * @param itemQuality Item quality
+         */
+        void SetPricesOfItem(AHB_Seller_Config& config, uint32& buyp, uint32& bidp, uint32 stackcnt, ItemQualities itemQuality);
 
-    /**
-     * @brief Load item quantities from configuration
-     * @param config Seller configuration
-     */
-    void LoadItemsQuantity(AHB_Seller_Config& config);
+        /**
+         * @brief Load item quantities from configuration
+         * @param config Seller configuration
+         */
+        void LoadItemsQuantity(AHB_Seller_Config& config);
 };
 
 INSTANTIATE_SINGLETON_1(AuctionHouseBot);
@@ -805,6 +803,10 @@ void AuctionBotConfig::GetConfigFromFile()
     setConfigMax(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT      , "AuctionHouseBot.Class.Quest"                 ,  1, 10);
     setConfigMax(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT        , "AuctionHouseBot.Class.Key"                   ,  1, 10);
     setConfigMax(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT       , "AuctionHouseBot.Class.Misc"                  ,  5, 10);
+#if !defined(CLASSIC)
+    setConfigMax(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT        , "AuctionHouseBot.Class.Gem"                   ,  3, 10);
+    setConfigMax(CONFIG_UINT32_AHBOT_CLASS_GENERIC_AMOUNT    , "AuctionHouseBot.Class.Generic"               ,  1, 10);
+#endif
 
     setConfig(CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO       , "AuctionHouseBot.Alliance.Price.Ratio"        , 200);
     setConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO          , "AuctionHouseBot.Horde.Price.Ratio"           , 200);
@@ -979,18 +981,18 @@ void AuctionBotBuyer::LoadBuyerValues(AHB_Buyer_Config& config)
     uint32 FactionChance;
     switch (config.GetHouseType())
     {
-    case AUCTION_HOUSE_ALLIANCE:
-        config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO) + 50;
-        FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_ALLIANCE);
-        break;
-    case AUCTION_HOUSE_HORDE:
-        config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO) + 50;
-        FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_HORDE);
-        break;
-    default:
-        config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_PRICE_RATIO) + 50;
-        FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_NEUTRAL);
-        break;
+        case AUCTION_HOUSE_ALLIANCE:
+            config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO) + 50;
+            FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_ALLIANCE);
+            break;
+        case AUCTION_HOUSE_HORDE:
+            config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO) + 50;
+            FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_HORDE);
+            break;
+        default:
+            config.BuyerPriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_PRICE_RATIO) + 50;
+            FactionChance = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_BUYER_CHANCE_RATIO_NEUTRAL);
+            break;
     }
     config.FactionChance = 5000 * FactionChance;
 }
@@ -1417,6 +1419,7 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
             if (IsBuyableEntry(buyoutPrice, InGame_BuyPrice, MaxBuyablePrice, minBuyPrice, MaxChance, config.FactionChance))
             {
                 if (IsBidableEntry(bidPriceByItem, InGame_BuyPrice, MaxBidablePrice, minBidPrice, MaxChance / 2, config.FactionChance))
+                {
                     if (urand(0, 5) == 0)
                     {
                         PlaceBidToEntry(auction, bidPrice);
@@ -1425,6 +1428,7 @@ void AuctionBotBuyer::addNewAuctionBuyerBotBid(AHB_Buyer_Config& config)
                     {
                         BuyEntry(auction);
                     }
+                }
                 else
                 {
                     BuyEntry(auction);
@@ -1558,13 +1562,16 @@ bool AuctionBotSeller::Initialize()
     // Load loot items for filtering
     sLog.outString("Loading loot items for filter..");
     if (QueryResult* result = WorldDatabase.PQuery(
-        "SELECT `item` FROM `creature_loot_template` UNION "
-        "SELECT `item` FROM `disenchant_loot_template` UNION "
-        "SELECT `item` FROM `fishing_loot_template` UNION "
-        "SELECT `item` FROM `gameobject_loot_template` UNION "
-        "SELECT `item` FROM `item_loot_template` UNION "
-        "SELECT `item` FROM `pickpocketing_loot_template` UNION "
-        "SELECT `item` FROM `skinning_loot_template`"))
+            "SELECT `item` FROM `creature_loot_template` UNION "
+            "SELECT `item` FROM `disenchant_loot_template` UNION "
+            "SELECT `item` FROM `fishing_loot_template` UNION "
+            "SELECT `item` FROM `gameobject_loot_template` UNION "
+            "SELECT `item` FROM `item_loot_template` UNION "
+            "SELECT `item` FROM `pickpocketing_loot_template` UNION "
+#if !defined(CLASSIC)
+        "SELECT `item` FROM `prospecting_loot_template` UNION "
+#endif
+            "SELECT `item` FROM `skinning_loot_template`"))
     {
         BarGoLink bar(result->GetRowCount());
         do
@@ -1617,10 +1624,12 @@ bool AuctionBotSeller::Initialize()
         // Apply forced exclude filter
         bool isExcludeItem = false;
         for (size_t i = 0; (i < excludeItems.size() && (!isExcludeItem)); ++i)
+        {
             if (itemID == excludeItems[i])
             {
                 isExcludeItem = true;
             }
+        }
         if (isExcludeItem)
         {
             continue;
@@ -1629,11 +1638,12 @@ bool AuctionBotSeller::Initialize()
         // Apply forced include filter
         bool isForcedIncludeItem = false;
         for (size_t i = 0; (i < includeItems.size() && (!isForcedIncludeItem)); ++i)
+        {
             if (itemID == includeItems[i])
             {
                 isForcedIncludeItem = true;
             }
-
+        }
         if (isForcedIncludeItem)
         {
             m_ItemPool[prototype->Quality][prototype->Class].push_back(itemID);
@@ -1644,38 +1654,38 @@ bool AuctionBotSeller::Initialize()
         // Apply bonding filters
         switch (prototype->Bonding)
         {
-        case NO_BIND:
-            if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_NO))
-            {
+            case NO_BIND:
+                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_NO))
+                {
+                    continue;
+                }
+                break;
+            case BIND_WHEN_PICKED_UP:
+                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_PICKUP))
+                {
+                    continue;
+                }
+                break;
+            case BIND_WHEN_EQUIPPED:
+                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_EQUIP))
+                {
+                    continue;
+                }
+                break;
+            case BIND_WHEN_USE:
+                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_USE))
+                {
+                    continue;
+                }
+                break;
+            case BIND_QUEST_ITEM:
+                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_QUEST))
+                {
+                    continue;
+                }
+                break;
+            default:
                 continue;
-            }
-            break;
-        case BIND_WHEN_PICKED_UP:
-            if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_PICKUP))
-            {
-                continue;
-            }
-            break;
-        case BIND_WHEN_EQUIPPED:
-            if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_EQUIP))
-            {
-                continue;
-            }
-            break;
-        case BIND_WHEN_USE:
-            if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_USE))
-            {
-                continue;
-            }
-            break;
-        case BIND_QUEST_ITEM:
-            if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BIND_QUEST))
-            {
-                continue;
-            }
-            break;
-        default:
-            continue;
         }
 
         // Apply price filter
@@ -1699,11 +1709,12 @@ bool AuctionBotSeller::Initialize()
         {
             bool IsVendorItem = false;
             for (size_t i = 0; (i < npcItems.size()) && (!IsVendorItem); ++i)
+            {
                 if (itemID == npcItems[i])
                 {
                     IsVendorItem = true;
                 }
-
+            }
             if (IsVendorItem)
             {
                 continue;
@@ -1715,10 +1726,12 @@ bool AuctionBotSeller::Initialize()
         {
             bool isLootItem = false;
             for (size_t i = 0; (i < lootItems.size()) && (!isLootItem); ++i)
+            {
                 if (itemID == lootItems[i])
                 {
                     isLootItem = true;
                 }
+            }
             if (isLootItem)
             {
                 continue;
@@ -1732,16 +1745,20 @@ bool AuctionBotSeller::Initialize()
             bool isLootItem = false;
 
             for (size_t i = 0; (i < npcItems.size()) && (!IsVendorItem); ++i)
+            {
                 if (itemID == npcItems[i])
                 {
                     IsVendorItem = true;
                 }
+            }
 
             for (size_t i = 0; (i < lootItems.size()) && (!isLootItem); ++i)
+            {
                 if (itemID == lootItems[i])
                 {
                     isLootItem = true;
                 }
+            }
 
             if ((!isLootItem) && (!IsVendorItem))
             {
@@ -1752,135 +1769,169 @@ bool AuctionBotSeller::Initialize()
         // Apply item class/subclass specific filters
         switch (prototype->Class)
         {
-        case ITEM_CLASS_ARMOR:
-        case ITEM_CLASS_WEAPON:
-        {
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_ITEM_LEVEL))
+            case ITEM_CLASS_ARMOR:
+            case ITEM_CLASS_WEAPON:
             {
-                if (prototype->ItemLevel < value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_ITEM_LEVEL))
                 {
-                    continue;
+                    if (prototype->ItemLevel < value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_ITEM_LEVEL))
-            {
-                if (prototype->ItemLevel > value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_ITEM_LEVEL))
                 {
-                    continue;
+                    if (prototype->ItemLevel > value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
-            {
-                if (prototype->RequiredLevel < value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
                 {
-                    continue;
+                    if (prototype->RequiredLevel < value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
-            {
-                if (prototype->RequiredLevel > value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
                 {
-                    continue;
+                    if (prototype->RequiredLevel > value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
-            {
-                if (prototype->RequiredSkillRank < value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
                 {
-                    continue;
+                    if (prototype->RequiredSkillRank < value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
-            {
-                if (prototype->RequiredSkillRank > value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
                 {
-                    continue;
+                    if (prototype->RequiredSkillRank > value)
+                    {
+                        continue;
+                    }
                 }
+                break;
             }
-            break;
-        }
-        case ITEM_CLASS_RECIPE:
-        case ITEM_CLASS_CONSUMABLE:
-        case ITEM_CLASS_PROJECTILE:
-        {
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
+            case ITEM_CLASS_RECIPE:
+            case ITEM_CLASS_CONSUMABLE:
+            case ITEM_CLASS_PROJECTILE:
             {
-                if (prototype->RequiredLevel < value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_REQ_LEVEL))
                 {
-                    continue;
+                    if (prototype->RequiredLevel < value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
-            {
-                if (prototype->RequiredLevel > value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_REQ_LEVEL))
                 {
-                    continue;
+                    if (prototype->RequiredLevel > value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
-            {
-                if (prototype->RequiredSkillRank < value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MIN_SKILL_RANK))
                 {
-                    continue;
+                    if (prototype->RequiredSkillRank < value)
+                    {
+                        continue;
+                    }
                 }
-            }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
-            {
-                if (prototype->RequiredSkillRank > value)
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ITEM_MAX_SKILL_RANK))
                 {
-                    continue;
+                    if (prototype->RequiredSkillRank > value)
+                    {
+                        continue;
+                    }
                 }
+                break;
             }
-            break;
-        }
-        case ITEM_CLASS_MISC:
-            if (prototype->Flags & ITEM_FLAG_LOOTABLE)
-            {
-                // Skip any not locked lootable items (mostly quest specific or reward cases)
-                if (!prototype->LockID)
+            case ITEM_CLASS_MISC:
+#if !defined(CLASSIC)
+                if (prototype->SubClass == ITEM_SUBCLASS_JUNK_MOUNT)
                 {
-                    continue;
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MIN_REQ_LEVEL))
+                        if (prototype->RequiredLevel < value)
+                        {
+                            continue;
+                        }
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MAX_REQ_LEVEL))
+                        if (prototype->RequiredLevel > value)
+                        {
+                            continue;
+                        }
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MIN_SKILL_RANK))
+                        if (prototype->RequiredSkillRank < value)
+                        {
+                            continue;
+                        }
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MAX_SKILL_RANK))
+                        if (prototype->RequiredSkillRank > value)
+                        {
+                            continue;
+                        }
+                }
+#endif
+
+                if (prototype->Flags & ITEM_FLAG_LOOTABLE)
+                {
+                    // Skip any not locked lootable items (mostly quest specific or reward cases)
+                    if (!prototype->LockID)
+                    {
+                        continue;
+                    }
+
+                    if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_LOCKBOX_ENABLED))
+                    {
+                        continue;
+                    }
                 }
 
-                if (!sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_LOCKBOX_ENABLED))
+                break;
+            case ITEM_CLASS_TRADE_GOODS:
+            {
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MIN_ITEM_LEVEL))
                 {
-                    continue;
+                    if (prototype->ItemLevel < value)
+                    {
+                        continue;
+                    }
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MAX_ITEM_LEVEL))
+                    {
+                        if (prototype->ItemLevel > value)
+                        {
+                            continue;
+                        }
+                        break;
+                    }
+                }
+            }
+            case ITEM_CLASS_CONTAINER:
+            case ITEM_CLASS_QUIVER:
+            {
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MIN_ITEM_LEVEL))
+                {
+                    if (prototype->ItemLevel < value)
+                    {
+                        continue;
+                    }
+                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MAX_ITEM_LEVEL))
+                    {
+                        if (prototype->ItemLevel > value)
+                        {
+                            continue;
+                        }
+                        break;
+                    }
                 }
             }
 
-            break;
-        case ITEM_CLASS_TRADE_GOODS:
-        {
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MIN_ITEM_LEVEL))
-                if (prototype->ItemLevel < value)
-                {
-                    continue;
-                }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MAX_ITEM_LEVEL))
-                if (prototype->ItemLevel > value)
-                {
-                    continue;
-                }
-            break;
-        }
-        case ITEM_CLASS_CONTAINER:
-        case ITEM_CLASS_QUIVER:
-        {
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MIN_ITEM_LEVEL))
-                if (prototype->ItemLevel < value)
-                {
-                    continue;
-                }
-            if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MAX_ITEM_LEVEL))
-                if (prototype->ItemLevel > value)
-                {
-                    continue;
-                }
-            break;
-        }
-
-        default:
-            continue;
+            default:
+                continue;
         }
 
         // Add item to the pool
@@ -1965,6 +2016,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREY, ITEM_CLASS_QUEST, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREY, ITEM_CLASS_KEY, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREY, ITEM_CLASS_MISC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREY, ITEM_CLASS_GEM, 0);
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREY, ITEM_CLASS_GENERIC, 0);
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_CONSUMABLE, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONSUMABLE_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_CONTAINER, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_AMOUNT));
@@ -1978,6 +2033,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_QUEST, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_KEY, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_MISC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_GEM, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT));
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_WHITE, ITEM_CLASS_GENERIC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GENERIC_AMOUNT));
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_CONSUMABLE, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONSUMABLE_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_CONTAINER, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_AMOUNT));
@@ -1991,6 +2050,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_QUEST, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_KEY, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_MISC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_GEM, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT));
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_GREEN, ITEM_CLASS_GENERIC, 0);
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_CONSUMABLE, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONSUMABLE_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_CONTAINER, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_AMOUNT));
@@ -2004,6 +2067,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_QUEST, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_KEY, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_MISC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_GEM, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT));
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_BLUE, ITEM_CLASS_GENERIC, 0);
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_CONSUMABLE, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONSUMABLE_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_CONTAINER, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_AMOUNT));
@@ -2017,6 +2084,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_QUEST, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT));
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_KEY, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_MISC, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_GEM, sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT));
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_PURPLE, ITEM_CLASS_GENERIC, 0);
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_CONSUMABLE, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_CONTAINER, 0);
@@ -2030,6 +2101,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_QUEST, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_KEY, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_MISC, 0);
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_GEM, 0);
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_ORANGE, ITEM_CLASS_GENERIC, 0);
+#endif
 
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_CONSUMABLE, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_CONTAINER, 0);
@@ -2043,6 +2118,11 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_QUEST, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_KEY, 0);
     config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_MISC, 0);
+#if !defined(CLASSIC)
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_GEM, 0);
+    config.SetItemsQuantityPerClass(AUCTION_QUALITY_YELLOW, ITEM_CLASS_GENERIC, 0);
+#endif
+
     // ============================================================================================
 
     // Set the best value to get the nearest amount of items wanted
@@ -2050,10 +2130,10 @@ void AuctionBotSeller::LoadItemsQuantity(AHB_Seller_Config& config)
     {
         uint32 indice = config.GetItemsAmountPerQuality(AuctionQuality(j)) /
             (sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONSUMABLE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_WEAPON_AMOUNT) +
-                sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_ARMOR_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_REAGENT_AMOUNT) +
-                sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_PROJECTILE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GENERIC_AMOUNT) +
-                sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_RECIPE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUIVER_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT) +
-                sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GEM_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_ARMOR_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_REAGENT_AMOUNT) +
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_PROJECTILE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_GENERIC_AMOUNT) +
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_RECIPE_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUIVER_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_QUEST_AMOUNT) +
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_KEY_AMOUNT) + sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_AMOUNT));
         for (uint32 i = 0; i < MAX_ITEM_CLASS; ++i)
         {
             config.SetItemsAmountPerClass(AuctionQuality(j), ItemClass(i), indice);
@@ -2074,15 +2154,15 @@ void AuctionBotSeller::LoadSellerValues(AHB_Seller_Config& config)
     // Determine the price ratio based on the auction house type
     switch (config.GetHouseType())
     {
-    case AUCTION_HOUSE_ALLIANCE:
-        PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO);
-        break;
-    case AUCTION_HOUSE_HORDE:
-        PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO);
-        break;
-    default:
-        PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_PRICE_RATIO);
-        break;
+        case AUCTION_HOUSE_ALLIANCE:
+            PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO);
+            break;
+        case AUCTION_HOUSE_HORDE:
+            PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO);
+            break;
+        default:
+            PriceRatio = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_PRICE_RATIO);
+            break;
     }
 
     // Set the price ratio for each item quality
@@ -2284,9 +2364,9 @@ void AuctionBotSeller::SetItemsRatioForHouse(AuctionHouseType house, uint32 val)
     // Set the item ratio for the specified auction house type
     switch (house)
     {
-    case AUCTION_HOUSE_ALLIANCE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO, val); break;
-    case AUCTION_HOUSE_HORDE:    sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO, val); break;
-    default:                     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO, val); break;
+        case AUCTION_HOUSE_ALLIANCE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO, val); break;
+        case AUCTION_HOUSE_HORDE:    sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO, val); break;
+        default:                     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO, val); break;
     }
 
     // Load the item quantities for the specified auction house type
@@ -2330,13 +2410,13 @@ void AuctionBotSeller::SetItemsAmountForQuality(AuctionQuality quality, uint32 v
     // Set the item amount for the specified quality
     switch (quality)
     {
-    case AUCTION_QUALITY_GREY:   sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_GREY_AMOUNT, val); break;
-    case AUCTION_QUALITY_WHITE:  sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_WHITE_AMOUNT, val); break;
-    case AUCTION_QUALITY_GREEN:  sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_GREEN_AMOUNT, val); break;
-    case AUCTION_QUALITY_BLUE:   sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_BLUE_AMOUNT, val); break;
-    case AUCTION_QUALITY_PURPLE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_PURPLE_AMOUNT, val); break;
-    case AUCTION_QUALITY_ORANGE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_ORANGE_AMOUNT, val); break;
-    default:                     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_YELLOW_AMOUNT, val); break;
+        case AUCTION_QUALITY_GREY:   sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_GREY_AMOUNT, val); break;
+        case AUCTION_QUALITY_WHITE:  sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_WHITE_AMOUNT, val); break;
+        case AUCTION_QUALITY_GREEN:  sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_GREEN_AMOUNT, val); break;
+        case AUCTION_QUALITY_BLUE:   sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_BLUE_AMOUNT, val); break;
+        case AUCTION_QUALITY_PURPLE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_PURPLE_AMOUNT, val); break;
+        case AUCTION_QUALITY_ORANGE: sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_ORANGE_AMOUNT, val); break;
+        default:                     sAuctionBotConfig.setConfig(CONFIG_UINT32_AHBOT_ITEM_YELLOW_AMOUNT, val); break;
     }
 
     // Load the item quantities for each auction house type
@@ -2372,9 +2452,9 @@ void AuctionBotSeller::addNewAuctions(AHB_Seller_Config& config)
     uint32 houseid;
     switch (config.GetHouseType())
     {
-    case AUCTION_HOUSE_ALLIANCE: houseid = 1; break;
-    case AUCTION_HOUSE_HORDE:    houseid = 6; break;
-    default:                     houseid = 7; break;
+        case AUCTION_HOUSE_ALLIANCE: houseid = 1; break;
+        case AUCTION_HOUSE_HORDE:    houseid = 6; break;
+        default:                     houseid = 7; break;
     }
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(houseid);
@@ -2734,23 +2814,25 @@ void AuctionHouseBot::PurgeMailedItems()
 
     time_t now = time(nullptr);
     if (now - m_lastMailCleanup < 3600)
+    {
         return;
+    }
     m_lastMailCleanup = now;
 
     CharacterDatabase.PExecute(
-        "DELETE ii FROM item_instance ii "
-        "INNER JOIN mail_items mi ON ii.guid = mi.item_guid "
-        "INNER JOIN mail m ON mi.mail_id = m.id "
-        "WHERE m.receiver = '%u'", ahbotGuid);
+            "DELETE ii FROM item_instance ii "
+            "INNER JOIN mail_items mi ON ii.guid = mi.item_guid "
+            "INNER JOIN mail m ON mi.mail_id = m.id "
+            "WHERE m.receiver = '%u'", ahbotGuid);
 
     CharacterDatabase.PExecute(
-        "DELETE mi FROM mail_items mi "
-        "INNER JOIN mail m ON mi.mail_id = m.id "
-        "WHERE m.receiver = '%u'", ahbotGuid);
+            "DELETE mi FROM mail_items mi "
+            "INNER JOIN mail m ON mi.mail_id = m.id "
+            "WHERE m.receiver = '%u'", ahbotGuid);
 
     CharacterDatabase.PExecute(
-        "DELETE FROM mail WHERE receiver = '%u'", ahbotGuid);
+            "DELETE FROM mail WHERE receiver = '%u'", ahbotGuid);
 }
 
-/** @} */
+/* END */
 

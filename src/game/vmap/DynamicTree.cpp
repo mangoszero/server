@@ -74,8 +74,8 @@ struct DynTreeImpl : public ParentTree/*, public Intersectable*/
     typedef GameObjectModel Model;
     typedef ParentTree base;
 
-    DynTreeImpl() :
-        rebalance_timer(CHECK_TREE_PERIOD),
+    DynTreeImpl()
+        : rebalance_timer(CHECK_TREE_PERIOD),
         unbalanced_times(0)
     {
     }
@@ -224,9 +224,9 @@ struct DynamicTreeIntersectionCallback_WithLogger
 //=========================================================
 
 /**
-If intersection is found within pMaxDist, sets pMaxDist to intersection distance and returns true.
-Else, pMaxDist is not modified and returns false;
-*/
+ If intersection is found within pMaxDist, sets pMaxDist to intersection distance and returns true.
+ Else, pMaxDist is not modified and returns false;
+ */
 
 bool DynamicMapTree::getIntersectionTime(const G3D::Ray& ray, const Vector3& endPos, float& pMaxDist) const
 {
@@ -256,9 +256,9 @@ bool DynamicMapTree::getObjectHitPos(float x1, float y1, float z1, float x2, flo
 //=========================================================
 
 /**
-When moving from pos1 to pos2 check if we hit an object. Return true and the position if we hit one
-Return the hit pos or the original dest pos
-*/
+ When moving from pos1 to pos2 check if we hit an object. Return true and the position if we hit one
+ Return the hit pos or the original dest pos
+ */
 bool DynamicMapTree::getObjectHitPos(const Vector3& pPos1, const Vector3& pPos2, Vector3& pResultHitPos, float pModifyDist) const
 {
     bool result = false;

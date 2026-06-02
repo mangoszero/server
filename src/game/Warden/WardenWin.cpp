@@ -346,15 +346,16 @@ void WardenWin::RequestData()
                 buff.append(hmac.GetDigest(), hmac.GetLength());
                 break;
             }
-            /*case PROC_CHECK:
-            {
-                buff.append(wd->i.AsByteArray(0, false).get(), wd->i.GetNumBytes());
-                buff << uint8(index++);
-                buff << uint8(index++);
-                buff << uint32(wd->Address);
-                buff << uint8(wd->Length);
-                break;
-            }*/
+            /** case PROC_CHECK:
+             *  {
+             *     buff.append(wd->i.AsByteArray(0, false).get(), wd->i.GetNumBytes());
+             *     buff << uint8(index++);
+             *     buff << uint8(index++);
+             *     buff << uint32(wd->Address);
+             *     buff << uint8(wd->Length);
+             *     break;
+             *  }
+             */
             default:
                 break;                                      // Should never happen
         }

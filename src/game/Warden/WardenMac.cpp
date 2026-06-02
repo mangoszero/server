@@ -83,13 +83,13 @@ void WardenMac::Init(WorldSession* pClient, BigNumber* K)
     SHA1Randx WK(K->AsByteArray(), K->GetNumBytes());
     WK.Generate(_inputKey, 16);
     WK.Generate(_outputKey, 16);
-    /*
-    Seed: 4D808D2C77D905C41A6380EC08586AFE (0x05 packet)
-    Hash: <?> (0x04 packet)
-    Module MD5: 0DBBF209A27B1E279A9FEC5C168A15F7
-    New Client Key: <?>
-    New Cerver Key: <?>
-    */
+    /**
+     * Seed: 4D808D2C77D905C41A6380EC08586AFE (0x05 packet)
+     * Hash: <?> (0x04 packet)
+     * Module MD5: 0DBBF209A27B1E279A9FEC5C168A15F7
+     * New Client Key: <?>
+     * New Cerver Key: <?>
+     */
     uint8 mod_seed[16] = { 0x4D, 0x80, 0x8D, 0x2C, 0x77, 0xD9, 0x05, 0xC4, 0x1A, 0x63, 0x80, 0xEC, 0x08, 0x58, 0x6A, 0xFE };
 
     memcpy(_seed, mod_seed, 16);
@@ -201,8 +201,6 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     sha1.UpdateData((uint8*)keyIn, 16);
     sha1.Finalize();
 
-    //const uint8 validHash[20] = { 0x56, 0x8C, 0x05, 0x4C, 0x78, 0x1A, 0x97, 0x2A, 0x60, 0x37, 0xA2, 0x29, 0x0C, 0x22, 0xB5, 0x25, 0x71, 0xA0, 0x6F, 0x4E };
-
     // Verify key
     if (memcmp(buff.contents() + 1, sha1.GetDigest(), 20) != 0)
     {
@@ -215,12 +213,6 @@ void WardenMac::HandleHashResult(ByteBuffer &buff)
     }
 
     sLog.outWarden("Request hash reply: succeed");
-
-    // client 7F96EEFDA5B63D20A4DF8E00CBF48304
-    //const uint8 client_key[16] = { 0x7F, 0x96, 0xEE, 0xFD, 0xA5, 0xB6, 0x3D, 0x20, 0xA4, 0xDF, 0x8E, 0x00, 0xCB, 0xF4, 0x83, 0x04 };
-
-    // server C2B7ADEDFCCCA9C2BFB3F85602BA809B
-    //const uint8 server_key[16] = { 0xC2, 0xB7, 0xAD, 0xED, 0xFC, 0xCC, 0xA9, 0xC2, 0xBF, 0xB3, 0xF8, 0x56, 0x02, 0xBA, 0x80, 0x9B };
 
     // change keys here
     memcpy(_inputKey, keyIn, 16);
@@ -267,19 +259,6 @@ void WardenMac::RequestData()
 void WardenMac::HandleData(ByteBuffer &buff)
 {
     sLog.outWarden("Handle data");
-
-    //uint16 Length;
-    //buff >> Length;
-    //uint32 Checksum;
-    //buff >> Checksum;
-
-    //if (!IsValidCheckSum(Checksum, buff.contents() + buff.rpos(), Length))
-    //{
-    //    buff.rpos(buff.wpos());
-    //    if (sWorld->getBoolConfig(CONFIG_BOOL_WARDEN_KICK))
-    //        Client->KickPlayer();
-    //    return;
-    //}
 
     bool found = false;
 

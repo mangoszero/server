@@ -28,15 +28,11 @@
 #include <string>
 #include <Platform/Define.h>
 
-//===========================================================
-
 /**
-This is the minimum interface to the VMapMamager.
-*/
-
+ This is the minimum interface to the VMapMamager.
+ */
 namespace VMAP
 {
-
     /**
      * @brief VMAP load result enumeration
      */
@@ -49,8 +45,6 @@ namespace VMAP
 
 #define VMAP_INVALID_HEIGHT -100000.0f       ///< Invalid height for check
 #define VMAP_INVALID_HEIGHT_VALUE -200000.0f ///< Real assigned value in unknown height case
-
-    //===========================================================
 
     /**
      * @brief Interface for VMap manager
