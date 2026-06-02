@@ -1190,18 +1190,183 @@ bool ChatHandler::HandleNpcChangeEntryCommand(char* args)
     return true;
 }
 
+namespace
+{
+    /**
+     * @brief Prints read-only LivingWorld target diagnostics for an in-memory unit.
+     *
+     * Uses only the supplied live pointer and current map state. Does not look up
+     * objects, load grids, create maps, or mutate movement/combat/AI state.
+     */
+    void PrintNpcWatchUnitDetails(ChatHandler& handler, char const* label,
+                                  Creature const* watched, Unit const* unit)
+    {
+        float x = unit->GetPositionX();
+        float y = unit->GetPositionY();
+        float z = unit->GetPositionZ();
+        float o = unit->GetOrientation();
+
+        GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
+        CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
+        bool inWorld = unit->IsInWorld();
+        bool gridLoaded = inWorld && unit->GetMap()->IsLoaded(x, y);
+
+        handler.PSendSysMessage("  %s=%s", label, unit->GetGuidStr().c_str());
+
+        if (unit->GetTypeId() == TYPEID_UNIT)
+        {
+            handler.PSendSysMessage("    creature entry=%u name=\"%s\"",
+                                    unit->GetEntry(), unit->GetName());
+        }
+
+        handler.PSendSysMessage("    in-world=%s active-object=%s",
+                                inWorld ? "yes" : "no",
+                                unit->IsActiveObject() ? "yes" : "no");
+        handler.PSendSysMessage("    map=%u instance=%u",
+                                unit->GetMapId(), unit->GetInstanceId());
+        handler.PSendSysMessage("    pos x=%.3f y=%.3f z=%.3f o=%.3f",
+                                x, y, z, o);
+        handler.PSendSysMessage("    grid[%u,%u] cell[%u,%u] grid-loaded=%s%s",
+                                gridPair.x_coord, gridPair.y_coord,
+                                cellPair.x_coord, cellPair.y_coord,
+                                gridLoaded ? "yes" : "no",
+                                inWorld ? "" : " (not in world)");
+
+        if (watched->IsInMap(unit))
+        {
+            handler.PSendSysMessage("    distance=%.3f",
+                                    watched->GetDistance(unit));
+        }
+        else
+        {
+            handler.SendSysMessage("    distance=unavailable (different map or not in world)");
+        }
+    }
+
+    Unit* GetNpcWatchMapStoreTarget(Creature const* watched,
+                                    ObjectGuid const& guid)
+    {
+        if (!guid.IsAnyTypeCreature())
+        {
+            return NULL;
+        }
+
+        // Creature/pet object-store lookup only. Avoid Map::GetUnit because its
+        // player path uses ObjectAccessor rather than the map object store.
+        return watched->GetMap()->GetAnyTypeCreature(guid);
+    }
+
+    void PrintNpcWatchCreatureDetails(ChatHandler& handler, Creature* target)
+    {
+        float x = target->GetPositionX();
+        float y = target->GetPositionY();
+        float z = target->GetPositionZ();
+        float o = target->GetOrientation();
+
+        GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
+        CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
+        bool gridLoaded = target->GetMap()->IsLoaded(x, y); // read-only: does NOT load the grid
+
+        handler.PSendSysMessage("[LivingWorld] watch %s \"%s\"",
+                                target->GetGuidStr().c_str(), target->GetName());
+        handler.PSendSysMessage("  map=%u instance=%u", target->GetMapId(), target->GetInstanceId());
+        handler.PSendSysMessage("  pos x=%.3f y=%.3f z=%.3f o=%.3f", x, y, z, o);
+        handler.PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s",
+                                gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
+                                gridLoaded ? "yes" : "no");
+        handler.PSendSysMessage("  in-world=%s active-object=%s",
+                                target->IsInWorld() ? "yes" : "no",
+                                target->IsActiveObject() ? "yes" : "no");
+        handler.PSendSysMessage("  movement-generator-type=%u in-combat=%s combat-timer=%u",
+                                uint32(target->GetMotionMaster()->GetCurrentMovementGeneratorType()),
+                                target->IsInCombat() ? "yes" : "no",
+                                target->GetCombatTimer());
+
+        Unit* victim = target->getVictim();
+        if (victim)
+        {
+            PrintNpcWatchUnitDetails(handler, "victim", target, victim);
+        }
+        else
+        {
+            handler.SendSysMessage("  victim=none");
+        }
+
+        ObjectGuid const& watchTargetGuid = target->GetTargetGuid();
+        if (!watchTargetGuid.IsEmpty())
+        {
+            if (victim && watchTargetGuid == victim->GetObjectGuid())
+            {
+                handler.PSendSysMessage("  target=%s (same as victim; details above)",
+                                        watchTargetGuid.GetString().c_str());
+            }
+            else if (Unit* watchTarget =
+                         GetNpcWatchMapStoreTarget(target, watchTargetGuid))
+            {
+                PrintNpcWatchUnitDetails(handler, "target", target, watchTarget);
+            }
+            else
+            {
+                handler.PSendSysMessage("  target=%s", watchTargetGuid.GetString().c_str());
+                handler.SendSysMessage("    target-details=details unavailable from safe current-map context");
+            }
+        }
+        else
+        {
+            handler.SendSysMessage("  target=none");
+        }
+    }
+}
+
 /**
- * @brief Handler for the .npc watch command (LivingWorld diagnostic, Phase 1).
+ * @brief Handler for the .npc watch command (LivingWorld diagnostic).
  *
- * Read-only, one-shot snapshot of the currently selected creature. Inspects already-loaded
- * state only via in-memory getters; performs no grid load, no map creation, and no
- * movement/combat/AI/grid-state mutation.
+ * Read-only, one-shot snapshot of the currently selected creature or the last
+ * watched creature if still resident in the current map object store. Inspects
+ * already-loaded state only via in-memory getters; performs no grid load, no
+ * map creation, and no movement/combat/AI/grid-state mutation.
  *
- * @param args Unused.
+ * @param args Optional "last" argument.
  * @returns True on success; false (with the select-creature error) when nothing is selected.
  */
-bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
+bool ChatHandler::HandleNpcWatchCommand(char* args)
 {
+    if (char* watchArg = ExtractLiteralArg(&args))
+    {
+        if (strcmp(watchArg, "last") == 0)
+        {
+            if (args && *args)
+            {
+                SendSysMessage("Usage: .npc watch last");
+                SetSentErrorMessage(true);
+                return false;
+            }
+
+            ObjectGuid const& lastGuid = m_session->GetNpcWatchLastGuid();
+            if (lastGuid.IsEmpty())
+            {
+                SendSysMessage("[LivingWorld] watch last: no last watched creature for this session. Select a creature and run .npc watch first.");
+                return true;
+            }
+
+            Creature* target = m_session->GetPlayer()->GetMap()->GetAnyTypeCreature(lastGuid);
+            if (!target)
+            {
+                PSendSysMessage("[LivingWorld] watch last %s: not resident in safe current-map context",
+                                lastGuid.GetString().c_str());
+                SendSysMessage("  details unavailable from safe current-map context");
+                return true;
+            }
+
+            PrintNpcWatchCreatureDetails(*this, target);
+            return true;
+        }
+
+        SendSysMessage("Usage: .npc watch [last]");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
     Creature* target = getSelectedCreature();
     if (!target)
     {
@@ -1210,49 +1375,8 @@ bool ChatHandler::HandleNpcWatchCommand(char* /*args*/)
         return false;
     }
 
-    float x = target->GetPositionX();
-    float y = target->GetPositionY();
-    float z = target->GetPositionZ();
-    float o = target->GetOrientation();
-
-    GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
-    CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
-    bool gridLoaded = target->GetMap()->IsLoaded(x, y);     // read-only: does NOT load the grid
-
-    PSendSysMessage("[LivingWorld] watch %s \"%s\"",
-                    target->GetGuidStr().c_str(), target->GetName());
-    PSendSysMessage("  map=%u instance=%u", target->GetMapId(), target->GetInstanceId());
-    PSendSysMessage("  pos x=%.3f y=%.3f z=%.3f o=%.3f", x, y, z, o);
-    PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s",
-                    gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
-                    gridLoaded ? "yes" : "no");
-    PSendSysMessage("  in-world=%s active-object=%s",
-                    target->IsInWorld() ? "yes" : "no",
-                    target->IsActiveObject() ? "yes" : "no");
-    PSendSysMessage("  movement-generator-type=%u in-combat=%s combat-timer=%u",
-                    uint32(target->GetMotionMaster()->GetCurrentMovementGeneratorType()),
-                    target->IsInCombat() ? "yes" : "no",
-                    target->GetCombatTimer());
-
-    if (Unit* victim = target->getVictim())
-    {
-        PSendSysMessage("  victim=%s", victim->GetGuidStr().c_str());
-    }
-    else
-    {
-        SendSysMessage("  victim=none");
-    }
-
-    ObjectGuid const& watchTargetGuid = target->GetTargetGuid();
-    if (!watchTargetGuid.IsEmpty())
-    {
-        PSendSysMessage("  target=%s", watchTargetGuid.GetString().c_str());
-    }
-    else
-    {
-        SendSysMessage("  target=none");
-    }
-
+    m_session->SetNpcWatchLastGuid(target->GetObjectGuid());
+    PrintNpcWatchCreatureDetails(*this, target);
     return true;
 }
 
