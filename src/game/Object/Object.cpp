@@ -414,6 +414,25 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
         if (unit->IsStopped() && unit->m_movementInfo.HasMovementFlag(MOVEFLAG_SPLINE_ENABLED))
         {
             sLog.outError("%s is not moving but have spline movement enabled!", GetGuidStr().c_str());
+            std::string victimGuid = "none";
+            if (Unit const* victim = unit->getVictim())
+            {
+                victimGuid = victim->GetGuidStr();
+            }
+
+            ObjectGuid const& targetGuid = unit->GetTargetGuid();
+            std::string targetGuidString = targetGuid.IsEmpty() ? "none" : targetGuid.GetString();
+            GridPair gridPair = MaNGOS::ComputeGridPair(unit->GetPositionX(), unit->GetPositionY());
+            CellPair cellPair = MaNGOS::ComputeCellPair(unit->GetPositionX(), unit->GetPositionY());
+
+            sLog.outError("[LivingWorld] spline-stall %s map=%u inst=%u pos=(%.2f,%.2f,%.2f o=%.2f) grid[%u,%u] cell[%u,%u] active-object=%s moveflags=0x%X movegen=%u in-combat=%s combat-timer=%u victim=%s target=%s",
+                          unit->GetGuidStr().c_str(), unit->GetMapId(), unit->GetInstanceId(),
+                          unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ(), unit->GetOrientation(),
+                          gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
+                          unit->IsActiveObject() ? "yes" : "no", uint32(moveflags),
+                          uint32(const_cast<Unit*>(unit)->GetMotionMaster()->GetCurrentMovementGeneratorType()),
+                          unit->IsInCombat() ? "yes" : "no", unit->GetCombatTimer(),
+                          victimGuid.c_str(), targetGuidString.c_str());
             ((Unit*)this)->m_movementInfo.RemoveMovementFlag(MovementFlags(MOVEFLAG_SPLINE_ENABLED | MOVEFLAG_FORWARD));
         }
 
