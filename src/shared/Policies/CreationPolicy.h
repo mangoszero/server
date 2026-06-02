@@ -69,31 +69,30 @@ namespace MaNGOS
      */
     class LocalStaticCreation
     {
+        /**
+         * @brief
+         *
+         */
+        union MaxAlign
+        {
+            char t_[sizeof(T)]; /**< TODO */
+            short int shortInt_; /**< TODO */
+            int int_; /**< TODO */
+            long int longInt_; /**< TODO */
+            float float_; /**< TODO */
+            double double_; /**< TODO */
+            long double longDouble_; /**< TODO */
+            struct Test;
+            int Test::* pMember_; /**< TODO */
 
             /**
              * @brief
              *
+             * @param Test::pMemberFn_)(int
+             * @return int
              */
-            union MaxAlign
-            {
-                char t_[sizeof(T)]; /**< TODO */
-                short int shortInt_; /**< TODO */
-                int int_; /**< TODO */
-                long int longInt_; /**< TODO */
-                float float_; /**< TODO */
-                double double_; /**< TODO */
-                long double longDouble_; /**< TODO */
-                struct Test;
-                int Test::* pMember_; /**< TODO */
-
-                /**
-                 * @brief
-                 *
-                 * @param Test::pMemberFn_)(int
-                 * @return int
-                 */
-                int (Test::*pMemberFn_)(int);
-            };
+            int (Test::*pMemberFn_)(int);
+        };
 
         public:
 

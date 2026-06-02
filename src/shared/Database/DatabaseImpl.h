@@ -32,29 +32,28 @@
 #define ASYNC_QUERY_BODY(sql) if (!sql || !m_pResultQueue) return false;
 #define ASYNC_DELAYHOLDER_BODY(holder) if (!holder || !m_pResultQueue) return false;
 
-#define ASYNC_PQUERY_BODY(format, szQuery) \
-    if (!format) return false; \
-    \
-    char szQuery [MAX_QUERY_LEN]; \
-    \
-    { \
-        va_list ap; \
-        \
-        va_start(ap, format); \
-        int res = vsnprintf( szQuery, MAX_QUERY_LEN, format, ap ); \
-        va_end(ap); \
-        \
-        if (res==-1) \
-        { \
-            sLog.outError("SQL Query truncated (and not execute) for format: %s",format); \
-            return false; \
-        } \
-    }
-
-// -- Query / member --
+#define ASYNC_PQUERY_BODY(format, szQuery)                                   \
+if (!(format))                                                               \
+{                                                                            \
+    return false;                                                            \
+}                                                                            \
+char szQuery[MAX_QUERY_LEN];                                                 \
+{                                                                            \
+    va_list ap;                                                              \
+    va_start(ap, format);                                                    \
+    int res = vsnprintf(szQuery, MAX_QUERY_LEN, format, ap);                 \
+    va_end(ap);                                                              \
+    if (res == -1)                                                           \
+    {                                                                        \
+        sLog.outError(                                                       \
+                "SQL Query truncated (and not executed) for format: %s",     \
+            format);                                                         \
+        return false;                                                        \
+    }                                                                        \
+}
 
 template<class Class>
-bool
+    bool
 
 /**
  * @brief
@@ -71,7 +70,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*), const c
 }
 
 template<class Class, typename ParamType1>
-bool
+    bool
 
 /**
  * @brief
@@ -90,7 +89,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 }
 
 template<class Class, typename ParamType1, typename ParamType2>
-bool
+    bool
 
 /**
  * @brief
@@ -111,7 +110,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 }
 
 template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
-bool
+    bool
 
 /**
  * @brief
@@ -135,7 +134,7 @@ Database::AsyncQuery(Class* object, void (Class::*method)(QueryResult*, ParamTyp
 
 // -- Query / static --
 template<typename ParamType1>
-bool
+    bool
 
 /**
  * @brief
@@ -153,7 +152,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param1
 }
 
 template<typename ParamType1, typename ParamType2>
-bool
+    bool
 
 /**
  * @brief
@@ -173,7 +172,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2), Param
 }
 
 template<typename ParamType1, typename ParamType2, typename ParamType3>
-bool
+    bool
 
 /**
  * @brief
@@ -196,7 +195,7 @@ Database::AsyncQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamT
 
 // -- PQuery / member --
 template<class Class>
-bool
+    bool
 
 /**
  * @brief
@@ -213,7 +212,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*), const 
 }
 
 template<class Class, typename ParamType1>
-bool
+    bool
 
 /**
  * @brief
@@ -232,7 +231,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 }
 
 template<class Class, typename ParamType1, typename ParamType2>
-bool
+    bool
 
 /**
  * @brief
@@ -253,7 +252,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 }
 
 template<class Class, typename ParamType1, typename ParamType2, typename ParamType3>
-bool
+    bool
 
 /**
  * @brief
@@ -277,7 +276,7 @@ Database::AsyncPQuery(Class* object, void (Class::*method)(QueryResult*, ParamTy
 
 // -- PQuery / static --
 template<typename ParamType1>
-bool
+    bool
 
 /**
  * @brief
@@ -295,7 +294,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1), ParamType1 param
 }
 
 template<typename ParamType1, typename ParamType2>
-bool
+    bool
 
 /**
  * @brief
@@ -315,7 +314,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2), Para
 }
 
 template<typename ParamType1, typename ParamType2, typename ParamType3>
-bool
+    bool
 
 /**
  * @brief
@@ -338,7 +337,7 @@ Database::AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2, Param
 
 // -- QueryHolder --
 template<class Class>
-bool
+    bool
 
 /**
  * @brief
@@ -356,7 +355,7 @@ Database::DelayQueryHolder(Class* object, void (Class::*method)(QueryResult*, Sq
 }
 
 template<class Class, typename ParamType1>
-bool
+    bool
 
 /**
  * @brief

@@ -555,7 +555,6 @@ class Database
          */
         bool AsyncPQuery(void (*method)(QueryResult*, ParamType1, ParamType2, ParamType3), ParamType1 param1, ParamType2 param2, ParamType3 param3, const char* format, ...) ATTR_PRINTF(6, 7);
         template<class Class>
-        // QueryHolder
 
         /**
          * @brief
@@ -686,11 +685,11 @@ class Database
         void ProcessResultQueue();
 
         /**
-        * @brief Function to check that the database version matches expected core version
-        *
-        * @param DatabaseTypes
-        * @return bool
-        */
+         * @brief Function to check that the database version matches expected core version
+         *
+         * @param DatabaseTypes
+         * @return bool
+         */
         bool CheckDatabaseVersion(DatabaseTypes database);
 
         /**
@@ -727,8 +726,8 @@ class Database
          * @brief
          *
          */
-        Database() :
-            m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
+        Database()
+            : m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
             m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
             m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0)
         {

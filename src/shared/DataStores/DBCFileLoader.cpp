@@ -179,16 +179,16 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char* format, int32* index_pos)
 
 char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**& indexTable)
 {
-    /*
-    format STRING, NA, FLOAT,NA,INT <=>
-    struct{
-    char* field0,
-    float field1,
-    int field2
-    }entry;
-
-    this func will generate  entry[rows] data;
-    */
+    /**
+     * format STRING, NA, FLOAT,NA,INT <=>
+     * struct{
+     *     char* field0,
+     *     float field1,
+     *     int field2
+     * } entry;
+     *
+     * this func will generate  entry[rows] data;
+     */
 
     typedef char* ptr;
     if (strlen(format) != fieldCount)

@@ -39,14 +39,14 @@
 class ByteBufferException
 {
     public:
-    /**
-     * @brief Constructs a new ByteBufferException
-     *
-     * @param _add True if exception occurred during append/write operation, false for read
-     * @param _pos Current position in buffer where overflow occurred
-     * @param _esize Size of element that was being added/read
-     * @param _size Total size of the buffer
-     */
+        /**
+         * @brief Constructs a new ByteBufferException
+         *
+         * @param _add True if exception occurred during append/write operation, false for read
+         * @param _pos Current position in buffer where overflow occurred
+         * @param _esize Size of element that was being added/read
+         * @param _size Total size of the buffer
+         */
         ByteBufferException(bool _add, size_t _pos, size_t _esize, size_t _size)
             : add(_add), pos(_pos), esize(_esize), size(_size)
         {
@@ -78,9 +78,9 @@ template<class T>
 struct Unused
 {
 
-/**
- * @brief Constructs an Unused instance
- */
+    /**
+     * @brief Constructs an Unused instance
+     */
     Unused() {}
 };
 

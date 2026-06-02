@@ -48,8 +48,8 @@
  * The actual initialization of table name and formats is done via
  * the Initialize() method.
  */
-SQLStorageBase::SQLStorageBase() :
-    m_tableName(NULL),
+SQLStorageBase::SQLStorageBase()
+    : m_tableName(NULL),
     m_entry_field(NULL),
     m_src_format(NULL),
     m_dst_format(NULL),

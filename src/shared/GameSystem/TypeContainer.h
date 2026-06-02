@@ -25,7 +25,7 @@
 #ifndef MANGOS_TYPECONTAINER_H
 #define MANGOS_TYPECONTAINER_H
 
-/*
+/**
  * Here, you'll find a series of containers that allow you to hold multiple
  * types of object at the same time.
  *
@@ -57,29 +57,29 @@ namespace Meta
     template<template<class...> class F, class L> struct Transform_Impl;
 
     template<template<class...> class F, template<class...> class L, class... T>
-    struct Transform_Impl<F, L<T...>>
+        struct Transform_Impl<F, L<T...>>
     {
         using type = L<F<T>...>;
     };
 
     template<template<class...> class F, class L>
-    using Transform = typename Transform_Impl<F, L>::type;
+        using Transform = typename Transform_Impl<F, L>::type;
 
     // convert a tuple A into another tuple B
     template<class A, template<class...> class B> struct Rename_Impl;
 
     template<template<class...> class A, class... T, template<class...> class B>
-    struct Rename_Impl<A<T...>, B>
+        struct Rename_Impl<A<T...>, B>
     {
         using type = B<T...>;
     };
 
     template<class A, template<class...> class B>
-    using Rename = typename Rename_Impl<A, B>::type;
+        using Rename = typename Rename_Impl<A, B>::type;
 
     //tuple iteration
     template<size_t index, typename F, typename... Ts>
-    struct iterate_tuple
+        struct iterate_tuple
     {
         void operator() (std::tuple<Ts...>&& t, F&& callback)
         {
@@ -89,7 +89,7 @@ namespace Meta
     };
 
     template<typename F, typename... Ts>
-    struct iterate_tuple<0, F, Ts...>
+        struct iterate_tuple<0, F, Ts...>
     {
         void operator() (std::tuple<Ts...>&& t, F&& callback)
         {
@@ -98,7 +98,7 @@ namespace Meta
     };
 
     template<typename F, typename... Ts>
-    void for_each(std::tuple<Ts...>&& t, F&& callback)
+        void for_each(std::tuple<Ts...>&& t, F&& callback)
     {
         iterate_tuple<std::tuple_size<std::tuple<Ts...>>::value - 1, F, Ts...> it;
         it(std::forward<std::tuple<Ts...>>(t), std::forward<F>(callback));
@@ -107,7 +107,7 @@ namespace Meta
 } //Meta namespace end
 
 template<typename KEY_TYPE, typename TYPE_LIST>
-class TypeUnorderedMapContainer
+    class TypeUnorderedMapContainer
 {
     using Tuple = Meta::Rename<TYPE_LIST,std::tuple>;
     template <typename T> using add_pointer = T*;
@@ -117,7 +117,7 @@ class TypeUnorderedMapContainer
 
     public:
         template <typename T>
-        bool insert(KEY_TYPE handle, T* object)
+            bool insert(KEY_TYPE handle, T* object)
         {
             auto&& _element = std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
             if (_element.end() == _element.find(handle))
@@ -132,14 +132,14 @@ class TypeUnorderedMapContainer
             }
         }
         template <typename T>
-        bool erase(KEY_TYPE handle, T*)
+            bool erase(KEY_TYPE handle, T*)
         {
             std::get<Meta::IndexOf<T,Tuple>::value>(i_container).erase(handle);
             return true;
         }
 
         template <typename T>
-        T* find (KEY_TYPE handle, T*)
+            T* find (KEY_TYPE handle, T*)
         {
             auto&& _element = std::get<Meta::IndexOf<T,Tuple>::value>(i_container);
             auto&& iter = _element.find(handle);
@@ -160,7 +160,7 @@ class TypeUnorderedMapContainer
 //TypeMapContainer
 
 template<typename TYPE_LIST>
-class TypeMapContainer
+    class TypeMapContainer
 {
     using Tuple = Meta::Rename<TYPE_LIST,std::tuple>;
     template <typename T> using add_wrap = GridRefManager<T>;
@@ -169,27 +169,27 @@ class TypeMapContainer
 
     public:
         template <typename T>
-        size_t count(T*) const
+            size_t count(T*) const
         {
             return std::get<Meta::IndexOf<T,Tuple>::value>(i_container).getSize();
         }
 
         template <typename T>
-        T* insert(T* obj)
+            T* insert(T* obj)
         {
             obj->GetGridRef().link(&std::get<Meta::IndexOf<T,Tuple>::value>(i_container), obj);
             return obj;
         }
 
         template <typename T>
-        T* remove(T* obj)
+            T* remove(T* obj)
         {
             obj->GetGridRef().unlink();
             return obj;
         }
 
         template <typename Visitor>
-        void accept(Visitor&& v)
+            void accept(Visitor&& v)
         {
             Meta::for_each(std::forward<Container>(i_container), std::forward<Visitor>(v));
         }

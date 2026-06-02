@@ -49,8 +49,7 @@ class BasicEvent
          * Override destructor to perform some actions on event removal.
          */
         virtual ~BasicEvent()
-        {
-        };
+        {};
 
         /**
          * @brief This method executes when the event is triggered

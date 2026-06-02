@@ -36,11 +36,12 @@ template<class T>
 class DBCStorage
 {
 
-        /**
-         * @brief
-         *
-         */
-        typedef std::list<char*> StringPoolList;
+    /**
+     * @brief
+     *
+     */
+    typedef std::list<char*> StringPoolList;
+
     public:
         /**
          * @brief
@@ -59,10 +60,10 @@ class DBCStorage
         }
 
         /**
-        * @brief
-        *
-        * @return uint32
-        */
+         * @brief
+         *
+         * @return uint32
+         */
         uint32  GetNumRows() const { return loaded ? data.size() : nCount; }
 
         /**
@@ -80,11 +81,11 @@ class DBCStorage
         uint32 GetFieldCount() const { return fieldCount; }
 
         /**
-        * @brief
-        *
-        * @param id
-        * @return const T
-        */
+         * @brief
+         *
+         * @param id
+         * @return const T
+         */
         T const* LookupEntry(uint32 id) const
         {
             if (loaded)

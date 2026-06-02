@@ -139,84 +139,84 @@ const int Color_count = int(WHITE) + 1; /**< Total number of available colors **
  */
 class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Thread_Mutex> >
 {
-        friend class MaNGOS::OperatorNew<Log>;
+    friend class MaNGOS::OperatorNew<Log>;
 
-        /**
-         * @brief Constructs the Log singleton instance
-         *
-         * Initializes all log file handles and filter settings.
-         */
-        Log();
+    /**
+     * @brief Constructs the Log singleton instance
+     *
+     * Initializes all log file handles and filter settings.
+     */
+    Log();
 
-        /**
-         * @brief Destructs the Log instance and closes all open files
-         *
-         * Ensures all log files are properly closed and file handles are cleaned up.
-         */
-        ~Log()
+    /**
+     * @brief Destructs the Log instance and closes all open files
+     *
+     * Ensures all log files are properly closed and file handles are cleaned up.
+     */
+    ~Log()
+    {
+        if (logfile != NULL)
         {
-            if (logfile != NULL)
-            {
-                fclose(logfile);
-            }
-            logfile = NULL;
+            fclose(logfile);
+        }
+        logfile = NULL;
 
-            if (gmLogfile != NULL)
-            {
-                fclose(gmLogfile);
-            }
-            gmLogfile = NULL;
+        if (gmLogfile != NULL)
+        {
+            fclose(gmLogfile);
+        }
+        gmLogfile = NULL;
 
-            if (charLogfile != NULL)
-            {
-                fclose(charLogfile);
-            }
-            charLogfile = NULL;
+        if (charLogfile != NULL)
+        {
+            fclose(charLogfile);
+        }
+        charLogfile = NULL;
 
-            if (dberLogfile != NULL)
-            {
-                fclose(dberLogfile);
-            }
-            dberLogfile = NULL;
+        if (dberLogfile != NULL)
+        {
+            fclose(dberLogfile);
+        }
+        dberLogfile = NULL;
 
 #ifdef ENABLE_ELUNA
-            if (elunaErrLogfile != NULL)
-            {
-                fclose(elunaErrLogfile);
-            }
-            elunaErrLogfile = NULL;
+        if (elunaErrLogfile != NULL)
+        {
+            fclose(elunaErrLogfile);
+        }
+        elunaErrLogfile = NULL;
 #endif /* ENABLE_ELUNA */
 
-            if (eventAiErLogfile != NULL)
-            {
-                fclose(eventAiErLogfile);
-            }
-            eventAiErLogfile = NULL;
-
-            if (scriptErrLogFile != NULL)
-            {
-                fclose(scriptErrLogFile);
-            }
-            scriptErrLogFile = NULL;
-
-            if (raLogfile != NULL)
-            {
-                fclose(raLogfile);
-            }
-            raLogfile = NULL;
-
-            if (worldLogfile != NULL)
-            {
-                fclose(worldLogfile);
-            }
-            worldLogfile = NULL;
-
-            if (wardenLogfile != NULL)
-            {
-                fclose(wardenLogfile);
-            }
-            wardenLogfile = NULL;
+        if (eventAiErLogfile != NULL)
+        {
+            fclose(eventAiErLogfile);
         }
+        eventAiErLogfile = NULL;
+
+        if (scriptErrLogFile != NULL)
+        {
+            fclose(scriptErrLogFile);
+        }
+        scriptErrLogFile = NULL;
+
+        if (raLogfile != NULL)
+        {
+            fclose(raLogfile);
+        }
+        raLogfile = NULL;
+
+        if (worldLogfile != NULL)
+        {
+            fclose(worldLogfile);
+        }
+        worldLogfile = NULL;
+
+        if (wardenLogfile != NULL)
+        {
+            fclose(wardenLogfile);
+        }
+        wardenLogfile = NULL;
+    }
     public:
         /**
          * @brief
@@ -369,16 +369,16 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         void outRALog(const char* str, ...)       ATTR_PRINTF(2, 3);
 
         /**
-        * @brief any log level
-        *
-        */
+         * @brief any log level
+         *
+         */
         void outWarden();
 
         /**
-        * @brief any log level
-        *
-        * @param str...
-        */
+         * @brief any log level
+         *
+         * @param str...
+         */
         void outWarden(const char* str, ...)      ATTR_PRINTF(2, 3);
 
         /**
@@ -546,76 +546,76 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
 
 #define sLog MaNGOS::Singleton<Log>::Instance()
 
-#define BASIC_LOG(...)                                  \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC))    \
-        {                                               \
-            sLog.outBasic(__VA_ARGS__);                 \
-        }                                               \
-    } while (0)
+#define BASIC_LOG(...)                              \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC))    \
+    {                                               \
+        sLog.outBasic(__VA_ARGS__);                 \
+    }                                               \
+} while (0)
 
-#define BASIC_FILTER_LOG(F,...)                         \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC) && !sLog.HasLogFilter(F)) \
-        {                                               \
-            sLog.outBasic(__VA_ARGS__);                 \
-        }                                               \
-    } while (0)
+#define BASIC_FILTER_LOG(F,...)                     \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_BASIC) && !sLog.HasLogFilter(F)) \
+    {                                               \
+        sLog.outBasic(__VA_ARGS__);                 \
+    }                                               \
+} while (0)
 
-#define DETAIL_LOG(...)                                 \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL))   \
-        {                                               \
-            sLog.outDetail(__VA_ARGS__);                \
-        }                                               \
-    }                                                   \
-    while (0)
+#define DETAIL_LOG(...)                             \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL))   \
+    {                                               \
+        sLog.outDetail(__VA_ARGS__);                \
+    }                                               \
+}                                                   \
+while (0)
 
-#define DETAIL_FILTER_LOG(F,...)                        \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL) && !sLog.HasLogFilter(F)) \
-        {                                               \
-            sLog.outDetail(__VA_ARGS__);                \
-        }                                               \
-    }                                                   \
-    while (0)
+#define DETAIL_FILTER_LOG(F,...)                    \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_DETAIL) && !sLog.HasLogFilter(F)) \
+    {                                               \
+        sLog.outDetail(__VA_ARGS__);                \
+    }                                               \
+}                                                   \
+while (0)
 
-#define DEBUG_LOG(...)                                  \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))    \
-        {                                               \
-            sLog.outDebug(__VA_ARGS__);                 \
-        }                                               \
-    }                                                   \
-    while (0)
+#define DEBUG_LOG(...)                              \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))    \
+    {                                               \
+        sLog.outDebug(__VA_ARGS__);                 \
+    }                                               \
+}                                                   \
+while (0)
 
-#define DEBUG_FILTER_LOG(F,...)                         \
-    do                                                  \
-    {                                                   \
-        if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG) && !sLog.HasLogFilter(F)) \
-        {                                               \
-            sLog.outDebug(__VA_ARGS__);                 \
-        }                                               \
-    }                                                   \
-    while (0)
+#define DEBUG_FILTER_LOG(F,...)                     \
+do                                                  \
+{                                                   \
+    if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG) && !sLog.HasLogFilter(F)) \
+    {                                               \
+        sLog.outDebug(__VA_ARGS__);                 \
+    }                                               \
+}                                                   \
+while (0)
 
-#define ERROR_DB_FILTER_LOG(F,...)                      \
-    do                                                  \
-    {                                                   \
-        if (!sLog.HasLogFilter(F))                      \
-        {                                               \
-            sLog.outErrorDb(__VA_ARGS__);               \
-        }                                               \
-    }                                                   \
-    while (0)
+#define ERROR_DB_FILTER_LOG(F,...)                  \
+do                                                  \
+{                                                   \
+    if (!sLog.HasLogFilter(F))                      \
+    {                                               \
+        sLog.outErrorDb(__VA_ARGS__);               \
+    }                                               \
+}                                                   \
+while (0)
 
 #define ERROR_DB_STRICT_LOG(...) \
-    ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)
+ERROR_DB_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, __VA_ARGS__)
 
 /**
  * @brief primary for script library

@@ -29,12 +29,7 @@
 #include "Grid.h"
 #include "TypeContainerVisitor.h"
 
-template
-<
-class ACTIVE_OBJECT,
-        class WORLD_OBJECT_TYPES,
-        class GRID_OBJECT_TYPES
-        >
+template <class ACTIVE_OBJECT, class WORLD_OBJECT_TYPES, class GRID_OBJECT_TYPES>
 
 /**
  * @brief The GridLoader is working in conjuction with the Grid and responsible

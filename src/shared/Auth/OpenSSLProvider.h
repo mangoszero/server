@@ -45,45 +45,45 @@
  */
 class OpenSSLCipherContext
 {
-public:
-    /**
-     * @brief Constructor - creates new cipher context
-     */
-    OpenSSLCipherContext();
+    public:
+        /**
+         * @brief Constructor - creates new cipher context
+         */
+        OpenSSLCipherContext();
 
-    /**
-     * @brief Destructor - automatically frees context
-     */
-    ~OpenSSLCipherContext();
+        /**
+         * @brief Destructor - automatically frees context
+         */
+        ~OpenSSLCipherContext();
 
-    /**
-     * @brief Get the underlying cipher context
-     * @return EVP_CIPHER_CTX pointer
-     */
-    EVP_CIPHER_CTX* Get() const { return m_ctx; }
+        /**
+         * @brief Get the underlying cipher context
+         * @return EVP_CIPHER_CTX pointer
+         */
+        EVP_CIPHER_CTX* Get() const { return m_ctx; }
 
-    /**
-     * @brief Check if context is valid
-     * @return true if context is valid, false otherwise
-     */
-    bool IsValid() const { return m_ctx != nullptr; }
+        /**
+         * @brief Check if context is valid
+         * @return true if context is valid, false otherwise
+         */
+        bool IsValid() const { return m_ctx != nullptr; }
 
-    /**
-     * @brief Move constructor
-     */
-    OpenSSLCipherContext(OpenSSLCipherContext&& other) noexcept;
+        /**
+         * @brief Move constructor
+         */
+        OpenSSLCipherContext(OpenSSLCipherContext&& other) noexcept;
 
-    /**
-     * @brief Move assignment operator
-     */
-    OpenSSLCipherContext& operator=(OpenSSLCipherContext&& other) noexcept;
+        /**
+         * @brief Move assignment operator
+         */
+        OpenSSLCipherContext& operator=(OpenSSLCipherContext&& other) noexcept;
 
-    // Delete copy operations
-    OpenSSLCipherContext(const OpenSSLCipherContext&) = delete;
-    OpenSSLCipherContext& operator=(const OpenSSLCipherContext&) = delete;
+        // Delete copy operations
+        OpenSSLCipherContext(const OpenSSLCipherContext&) = delete;
+        OpenSSLCipherContext& operator=(const OpenSSLCipherContext&) = delete;
 
-private:
-    EVP_CIPHER_CTX* m_ctx;    /**< OpenSSL cipher context */
+    private:
+        EVP_CIPHER_CTX* m_ctx;    /**< OpenSSL cipher context */
 };
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
@@ -98,48 +98,48 @@ private:
  */
 class OpenSSLProvider
 {
-public:
-    /**
-     * @brief Constructor - loads specified provider
-     * @param name Provider name (e.g., "legacy", "default")
-     * @param libraryContext Library context (NULL for default)
-     */
-    OpenSSLProvider(const char* name, OSSL_LIB_CTX* libraryContext = nullptr);
+    public:
+        /**
+         * @brief Constructor - loads specified provider
+         * @param name Provider name (e.g., "legacy", "default")
+         * @param libraryContext Library context (NULL for default)
+         */
+        OpenSSLProvider(const char* name, OSSL_LIB_CTX* libraryContext = nullptr);
 
-    /**
-     * @brief Destructor - automatically unloads provider
-     */
-    ~OpenSSLProvider();
+        /**
+         * @brief Destructor - automatically unloads provider
+         */
+        ~OpenSSLProvider();
 
-    /**
-     * @brief Check if provider is successfully loaded
-     * @return true if provider is loaded, false otherwise
-     */
-    bool IsLoaded() const { return m_provider != nullptr; }
+        /**
+         * @brief Check if provider is successfully loaded
+         * @return true if provider is loaded, false otherwise
+         */
+        bool IsLoaded() const { return m_provider != nullptr; }
 
-    /**
-     * @brief Get the underlying provider handle
-     * @return OSSL_PROVIDER pointer or nullptr if not loaded
-     */
-    OSSL_PROVIDER* Get() const { return m_provider; }
+        /**
+         * @brief Get the underlying provider handle
+         * @return OSSL_PROVIDER pointer or nullptr if not loaded
+         */
+        OSSL_PROVIDER* Get() const { return m_provider; }
 
-    /**
-     * @brief Move constructor
-     */
-    OpenSSLProvider(OpenSSLProvider&& other) noexcept;
+        /**
+         * @brief Move constructor
+         */
+        OpenSSLProvider(OpenSSLProvider&& other) noexcept;
 
-    /**
-     * @brief Move assignment operator
-     */
-    OpenSSLProvider& operator=(OpenSSLProvider&& other) noexcept;
+        /**
+         * @brief Move assignment operator
+         */
+        OpenSSLProvider& operator=(OpenSSLProvider&& other) noexcept;
 
-    // Delete copy operations to prevent double-free
-    OpenSSLProvider(const OpenSSLProvider&) = delete;
-    OpenSSLProvider& operator=(const OpenSSLProvider&) = delete;
+        // Delete copy operations to prevent double-free
+        OpenSSLProvider(const OpenSSLProvider&) = delete;
+        OpenSSLProvider& operator=(const OpenSSLProvider&) = delete;
 
-private:
-    OSSL_PROVIDER* m_provider;    /**< OpenSSL provider handle */
-    std::string m_providerName;   /**< Provider name for logging */
+    private:
+        OSSL_PROVIDER* m_provider;    /**< OpenSSL provider handle */
+        std::string m_providerName;   /**< Provider name for logging */
 };
 
 /**
@@ -151,39 +151,39 @@ private:
  */
 class OpenSSLProviderManager
 {
-public:
-    /**
-     * @brief Constructor - loads legacy and default providers
-     */
-    OpenSSLProviderManager();
+    public:
+        /**
+         * @brief Constructor - loads legacy and default providers
+         */
+        OpenSSLProviderManager();
 
-    /**
-     * @brief Destructor - automatically unloads providers
-     */
-    ~OpenSSLProviderManager();
+        /**
+         * @brief Destructor - automatically unloads providers
+         */
+        ~OpenSSLProviderManager();
 
-    /**
-     * @brief Check if providers are successfully loaded
-     * @return true if both providers loaded successfully
-     */
-    bool IsInitialized() const { return m_initialized; }
+        /**
+         * @brief Check if providers are successfully loaded
+         * @return true if both providers loaded successfully
+         */
+        bool IsInitialized() const { return m_initialized; }
 
-    /**
-     * @brief Get legacy provider
-     * @return Reference to legacy provider
-     */
-    const OpenSSLProvider& GetLegacyProvider() const { return m_legacyProvider; }
+        /**
+         * @brief Get legacy provider
+         * @return Reference to legacy provider
+         */
+        const OpenSSLProvider& GetLegacyProvider() const { return m_legacyProvider; }
 
-    /**
-     * @brief Get default provider
-     * @return Reference to default provider
-     */
-    const OpenSSLProvider& GetDefaultProvider() const { return m_defaultProvider; }
+        /**
+         * @brief Get default provider
+         * @return Reference to default provider
+         */
+        const OpenSSLProvider& GetDefaultProvider() const { return m_defaultProvider; }
 
-private:
-    OpenSSLProvider m_legacyProvider;   /**< Legacy provider for compatibility */
-    OpenSSLProvider m_defaultProvider;    /**< Default provider */
-    bool m_initialized;                    /**< Initialization status */
+    private:
+        OpenSSLProvider m_legacyProvider;   /**< Legacy provider for compatibility */
+        OpenSSLProvider m_defaultProvider;    /**< Default provider */
+        bool m_initialized;                    /**< Initialization status */
 };
 
 #endif // OPENSSL_VERSION_MAJOR >= 3

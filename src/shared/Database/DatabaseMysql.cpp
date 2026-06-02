@@ -248,12 +248,12 @@ bool MySQLConnection::Initialize(const char* infoString)
 #endif
 
     mMysql = mysql_real_connect(mysqlInit, host.c_str(), user.c_str(),
-                                password.c_str(), database.c_str(), port, unix_socket, 0);
+        password.c_str(), database.c_str(), port, unix_socket, 0);
 
     if (!mMysql)
     {
         sLog.outError("Could not connect to MySQL database at %s: %s\n",
-                      host.c_str(), mysql_error(mysqlInit));
+            host.c_str(), mysql_error(mysqlInit));
         mysql_close(mysqlInit);
         return false;
     }
@@ -760,7 +760,7 @@ enum_field_types MySqlPreparedStatement::ToMySQLType(const SqlStmtFieldData& dat
     switch (data.type())
     {
         case FIELD_NONE:    dataType = MYSQL_TYPE_NULL;                     break;
-            // MySQL does not support MYSQL_TYPE_BIT as input type
+        // MySQL does not support MYSQL_TYPE_BIT as input type
         case FIELD_BOOL:    // dataType = MYSQL_TYPE_BIT;      bUnsigned = 1;  break;
         case FIELD_UI8:     dataType = MYSQL_TYPE_TINY;     bUnsigned = 1;  break;
         case FIELD_I8:      dataType = MYSQL_TYPE_TINY;                     break;

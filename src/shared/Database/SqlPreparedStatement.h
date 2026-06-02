@@ -94,14 +94,14 @@ class SqlStmtFieldData
          * @param param The value to initialize with.
          */
         template<typename T>
-        SqlStmtFieldData(T param) { set(param); }
+            SqlStmtFieldData(T param) { set(param); }
 
         /**
          * @brief Set the value of the field.
          * @param param1 The value to set.
          */
         template<typename T1>
-        void set(T1 param1);
+            void set(T1 param1);
 
         /**
          * @brief Get the value as a boolean.
@@ -668,8 +668,8 @@ class SqlPreparedStatement
          * @param fmt The format string for the statement.
          * @param conn The SQL connection.
          */
-        SqlPreparedStatement(const std::string& fmt, SqlConnection& conn) :
-            m_nParams(0), m_nColumns(0), m_bIsQuery(false),
+        SqlPreparedStatement(const std::string& fmt, SqlConnection& conn)
+            : m_nParams(0), m_nColumns(0), m_bIsQuery(false),
             m_bPrepared(false), m_szFmt(fmt), m_pConn(conn)
         {}
 

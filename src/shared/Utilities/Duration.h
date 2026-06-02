@@ -35,7 +35,7 @@
  * making time-related operations more readable and maintainable.
  */
 
- /// Milliseconds shorthand typedef.
+/// Milliseconds shorthand typedef.
 typedef std::chrono::milliseconds Milliseconds;
 
 /// Seconds shorthand typedef.

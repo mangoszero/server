@@ -253,7 +253,8 @@ class SqlQuery : public SqlOperation
  */
 class SqlQueryHolder
 {
-        friend class SqlQueryHolderEx;
+    friend class SqlQueryHolderEx;
+
     private:
         /**
          * @brief

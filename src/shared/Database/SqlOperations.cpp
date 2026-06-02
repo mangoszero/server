@@ -261,7 +261,7 @@ bool SqlQueryHolder::SetQuery(size_t index, const char* sql)
     if (m_queries[index].first != NULL)
     {
         sLog.outError("Attempt assign query to holder index (%zu) where other query stored (Old: [%s] New: [%s])",
-                      index, m_queries[index].first, sql);
+            index, m_queries[index].first, sql);
         return false;
     }
 

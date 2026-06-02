@@ -108,18 +108,18 @@ class Field
         bool GetBool() const { return mValue ? atoi(mValue) > 0 : false; }
 
         /**
-        * @brief Get double value
-        * @return Double value (0.0 if NULL)
-        */
+         * @brief Get double value
+         * @return Double value (0.0 if NULL)
+         */
         double GetDouble() const
         {
             return mValue ? static_cast<double>(atof(mValue)) : 0.0f;
         }
 
         /**
-        * @brief Get 8-bit signed integer value
-        * @return 8-bit signed integer (0 if NULL)
-        */
+         * @brief Get 8-bit signed integer value
+         * @return 8-bit signed integer (0 if NULL)
+         */
         int8 GetInt8() const { return mValue ? static_cast<int8>(atol(mValue)) : int8(0); }
 
         /**
@@ -168,9 +168,9 @@ class Field
         }
 
         /**
-        * @brief Get 64-bit signed integer value
-        * @return 64-bit signed integer (0 if NULL)
-        */
+         * @brief Get 64-bit signed integer value
+         * @return 64-bit signed integer (0 if NULL)
+         */
         // TODO: should this be int64 not uint64
         uint64 GetInt64() const
         {

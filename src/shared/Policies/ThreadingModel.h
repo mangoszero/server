@@ -273,6 +273,5 @@ namespace MaNGOS
 template<class T, class MUTEX> MUTEX MaNGOS::ClassLevelLockable<T, MUTEX>::si_mtx; /**< TODO */
 
 #define INSTANTIATE_CLASS_MUTEX(CTYPE, MUTEX) \
-    template class MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
-
+template class MaNGOS::ClassLevelLockable<CTYPE, MUTEX>
 #endif

@@ -45,10 +45,10 @@ template<class A, class T, class O> class GridLoader;
  */
 
 template <typename ACTIVE_OBJECT, typename WORLD_CONTAINER, typename GRID_CONTAINER>
-class Grid
+    class Grid
 {
-        // allows the GridLoader to access its internals
-        template<class A, class T, class O> friend class GridLoader;
+    // allows the GridLoader to access its internals
+    template<class A, class T, class O> friend class GridLoader;
 
     public:
 
@@ -115,13 +115,13 @@ class Grid
         }
 
         template<class T>
-        void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
+            void Visit(TypeContainerVisitor<T, GRID_CONTAINER>& visitor)
         {
             visitor.Visit(i_gridContainer);
         }
 
         template<class T>
-        void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
+            void Visit(TypeContainerVisitor<T, WORLD_CONTAINER>& visitor)
         {
             visitor.Visit(i_worldContainer);
         }

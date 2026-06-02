@@ -45,7 +45,7 @@ namespace ByteConverter
      * @param val Pointer to value to convert
      */
     template<size_t T>
-    inline void convert(char* val)
+        inline void convert(char* val)
     {
         std::swap(*val, *(val + T - 1));
         convert < T - 2 > (val + 1);
@@ -66,7 +66,7 @@ namespace ByteConverter
      * @param val Pointer to value to convert
      */
     template<typename T>
-    inline void apply(T* val)
+        inline void apply(T* val)
     {
         convert<sizeof(T)>((char*)(val));
     }

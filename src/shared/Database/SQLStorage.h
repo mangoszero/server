@@ -35,7 +35,7 @@
  */
 class SQLStorageBase
 {
-        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -104,7 +104,7 @@ class SQLStorageBase
          */
         class SQLSIterator
         {
-                friend class SQLStorageBase;
+            friend class SQLStorageBase;
 
             public:
                 /**
@@ -283,7 +283,7 @@ class SQLStorageBase
  */
 class SQLStorage : public SQLStorageBase
 {
-        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -382,7 +382,7 @@ class SQLStorage : public SQLStorageBase
  */
 class SQLHashStorage : public SQLStorageBase
 {
-        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
 
     public:
         /**
@@ -486,9 +486,9 @@ class SQLHashStorage : public SQLStorageBase
  */
 class SQLMultiStorage : public SQLStorageBase
 {
-        template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
-        template<typename T> friend class SQLMultiSIterator;
-        template<typename T> friend class SQLMSIteratorBounds;
+    template<class DerivedLoader, class StorageClass> friend class SQLStorageLoaderBase;
+    template<typename T> friend class SQLMultiSIterator;
+    template<typename T> friend class SQLMSIteratorBounds;
 
     private:
         /**
@@ -537,8 +537,8 @@ class SQLMultiStorage : public SQLStorageBase
          */
         class SQLMultiSIterator
         {
-                friend class SQLMultiStorage;
-                friend class SQLMSIteratorBounds<T>;
+            friend class SQLMultiStorage;
+            friend class SQLMSIteratorBounds<T>;
 
             public:
                 /**
@@ -612,7 +612,7 @@ class SQLMultiStorage : public SQLStorageBase
          */
         class SQLMSIteratorBounds
         {
-                friend class SQLMultiStorage;
+            friend class SQLMultiStorage;
 
             public:
                 const SQLMultiSIterator<T> first; /**< TODO */

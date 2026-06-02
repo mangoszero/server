@@ -98,13 +98,13 @@ const int LogType_count = int(LogError) + 1;
  *
  * @note This is called automatically when sLog is first accessed
  */
-Log::Log() :
-    raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
+Log::Log()
+    : raLogfile(NULL), logfile(NULL), gmLogfile(NULL), charLogfile(NULL), dberLogfile(NULL),
 #ifdef ENABLE_ELUNA
     elunaErrLogfile(NULL),
 #endif /* ENABLE_ELUNA */
 
-    eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
+eventAiErLogfile(NULL), scriptErrLogFile(NULL), worldLogfile(NULL), wardenLogfile(NULL), m_colored(false),
     m_includeTime(false), m_gmlog_per_account(false), m_scriptLibName(NULL)
 {
     Initialize();
@@ -346,11 +346,15 @@ void Log::Initialize()
 
     m_logFilter = 0;
     for (int i = 0; i < LOG_FILTER_COUNT; ++i)
+    {
         if (*logFilterData[i].name)
+        {
             if (sConfig.GetBoolDefault(logFilterData[i].configName, logFilterData[i].defaultState))
             {
                 m_logFilter |= (1 << i);
             }
+        }
+    }
 
     // Char log settings
     m_charLog_Dump = sConfig.GetBoolDefault("CharLogDump", false);
@@ -1218,8 +1222,8 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
     outTimestamp(worldLogfile);
 
     fprintf(worldLogfile, "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
-            incoming ? "CLIENT" : "SERVER",
-            socket, packet->size(), opcodeName, opcode);
+        incoming ? "CLIENT" : "SERVER",
+        socket, packet->size(), opcodeName, opcode);
 
     size_t p = 0;
     while (p < packet->size())

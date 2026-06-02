@@ -41,8 +41,8 @@ namespace ACE_Based
      */
     class LockedQueue
     {
-            LockType _lock; /**< Lock access to the queue. */
-            StorageType _queue; /**< Storage backing the queue. */
+        LockType _lock; /**< Lock access to the queue. */
+        StorageType _queue; /**< Storage backing the queue. */
 
         public:
 

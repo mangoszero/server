@@ -33,45 +33,45 @@
 
 class RNGen
 {
-public:
-    RNGen()
-    {
-        std::random_device rd;
-        gen_.seed(rd());
-    }
+    public:
+        RNGen()
+        {
+            std::random_device rd;
+            gen_.seed(rd());
+        }
 
-    int32 rand_i(int32 min, int32 max)
-    {
-        std::uniform_int_distribution<int32> dist{min, max};
-        return dist(gen_);
-    }
+        int32 rand_i(int32 min, int32 max)
+        {
+            std::uniform_int_distribution<int32> dist{min, max};
+            return dist(gen_);
+        }
 
-    uint32 rand_u(uint32 min, uint32 max)
-    {
-        std::uniform_int_distribution<uint32> dist{min, max};
-        return dist(gen_);
-    }
+        uint32 rand_u(uint32 min, uint32 max)
+        {
+            std::uniform_int_distribution<uint32> dist{min, max};
+            return dist(gen_);
+        }
 
-    uint32 rand()
-    {
-        std::uniform_int_distribution<uint32> dist;
-        return dist(gen_);
-    }
+        uint32 rand()
+        {
+            std::uniform_int_distribution<uint32> dist;
+            return dist(gen_);
+        }
 
-    float rand_f(float min, float max)
-    {
-        std::uniform_real_distribution<float> dist{min, max};
-        return dist(gen_);
-    }
+        float rand_f(float min, float max)
+        {
+            std::uniform_real_distribution<float> dist{min, max};
+            return dist(gen_);
+        }
 
-    double rand_d(double min, double max)
-    {
-        std::uniform_real_distribution<double> dist{min, max};
-        return dist(gen_);
-    }
+        double rand_d(double min, double max)
+        {
+            std::uniform_real_distribution<double> dist{min, max};
+            return dist(gen_);
+        }
 
-private:
-    std::mt19937 gen_;
+    private:
+        std::mt19937 gen_;
 };
 
 typedef ACE_TSS_Singleton<RNGen, ACE_SYNCH_MUTEX> RNG;

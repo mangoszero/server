@@ -138,8 +138,8 @@ std::string TimeToTimestampStr(time_t t);
 inline uint32 secsToTimeBitFields(time_t secs)
 {
     std::tm lt = safe_localtime(secs);
-    return (lt.tm_year - 100) << 24 | lt.tm_mon  << 20
-            | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
+    return (lt.tm_year - 100) << 24 | lt.tm_mon  <<
+        20 | (lt.tm_mday - 1) << 14 | lt.tm_wday << 11 | lt.tm_hour << 6 | lt.tm_min;
 }
 
 inline std::string& ltrim(std::string& s)
@@ -154,9 +154,9 @@ inline std::string& ltrim(std::string& s)
 inline std::string& rtrim(std::string& s)
 {
     s.erase(std::find_if (s.rbegin(), s.rend(), [](unsigned char ch)
-        {
-            return !std::isspace(ch);
-        }).base(), s.end());
+    {
+        return !std::isspace(ch);
+    }).base(), s.end());
     return s;
 }
 
@@ -575,11 +575,12 @@ inline bool isNumericOrSpace(wchar_t wchar)
 inline bool isNumeric(char const* str)
 {
     for (char const* c = str; *c; ++c)
+    {
         if (!isNumeric(*c))
         {
             return false;
         }
-
+    }
     return true;
 }
 
@@ -592,11 +593,12 @@ inline bool isNumeric(char const* str)
 inline bool isNumeric(std::string const& str)
 {
     for (std::string::const_iterator itr = str.begin(); itr != str.end(); ++itr)
+    {
         if (!isNumeric(*itr))
         {
             return false;
         }
-
+    }
     return true;
 }
 
@@ -609,11 +611,12 @@ inline bool isNumeric(std::string const& str)
 inline bool isNumeric(std::wstring const& str)
 {
     for (std::wstring::const_iterator itr = str.begin(); itr != str.end(); ++itr)
+    {
         if (!isNumeric(*itr))
         {
             return false;
         }
-
+    }
     return true;
 }
 
@@ -627,10 +630,12 @@ inline bool isNumeric(std::wstring const& str)
 inline bool isBasicLatinString(const std::wstring &wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
+    {
         if (!isBasicLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -644,10 +649,12 @@ inline bool isBasicLatinString(const std::wstring &wstr, bool numericOrSpace)
 inline bool isExtendedLatinString(const std::wstring &wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
+    {
         if (!isExtendedLatinCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -661,10 +668,12 @@ inline bool isExtendedLatinString(const std::wstring &wstr, bool numericOrSpace)
 inline bool isCyrillicString(const std::wstring &wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
+    {
         if (!isCyrillicCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -678,10 +687,12 @@ inline bool isCyrillicString(const std::wstring &wstr, bool numericOrSpace)
 inline bool isEastAsianString(const std::wstring &wstr, bool numericOrSpace)
 {
     for (size_t i = 0; i < wstr.size(); ++i)
+    {
         if (!isEastAsianCharacter(wstr[i]) && (!numericOrSpace || !isNumericOrSpace(wstr[i])))
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -915,15 +926,15 @@ std::string ByteArrayToHexStr(uint8 const* bytes, uint32 length, bool reverse = 
 void HexStrToByteArray(std::string const& str, uint8* out, bool reverse = false);
 
 /**
-* @brief Define iCoreNumber to be set for the currently defined core
-*
-* @return int
-*/
+ * @brief Define iCoreNumber to be set for the currently defined core
+ *
+ * @return int
+ */
 int return_iCoreNumber();
 
 /**
-* @brief Display the startup banner
-*/
+ * @brief Display the startup banner
+ */
 void print_banner();
 
 /**

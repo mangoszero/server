@@ -221,7 +221,7 @@ class MySQLConnection : public SqlConnection
  */
 class DatabaseMysql : public Database
 {
-        friend class MaNGOS::OperatorNew<DatabaseMysql>;
+    friend class MaNGOS::OperatorNew<DatabaseMysql>;
 
     public:
         /**
