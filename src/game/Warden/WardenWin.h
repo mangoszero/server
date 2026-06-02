@@ -27,6 +27,7 @@
 #define _WARDEN_WIN_H
 
 #include "Warden.h"
+#include <vector>
 
 #if defined(__GNUC__)
 #pragma pack(1)
