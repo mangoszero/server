@@ -49,13 +49,13 @@ OutdoorPvPMgr::~OutdoorPvPMgr()
 
 #define LOAD_OPVP_ZONE(a)                                           \
 if (sWorld.getConfig(CONFIG_BOOL_OUTDOORPVP_##a##_ENABLED) && !DisableMgr::IsDisabledFor(DISABLE_TYPE_OUTDOORPVP, OPVP_ID_##a))     \
-    {                                                               \
-        m_scripts[OPVP_ID_##a] = new OutdoorPvP##a();               \
-        ++counter;                                                  \
-    }
+{                                                               \
+    m_scripts[OPVP_ID_##a] = new OutdoorPvP##a();               \
+    ++counter;                                                  \
+}
 
 /**
-    Function which loads all outdoor pvp scripts
+ * Function which loads all outdoor pvp scripts
  */
 void OutdoorPvPMgr::InitOutdoorPvP()
 {
@@ -110,10 +110,9 @@ OutdoorPvP* OutdoorPvPMgr::GetScriptOfAffectedZone(uint32 zoneId)
 }
 
 /**
-    Function that handles the players which enters a specific zone
-
-    @param   player to be handled in the event
-    @param   zone id used for the current outdoor pvp script
+ * Function that handles the players which enters a specific zone
+ * @param   player to be handled in the event
+ * @param   zone id used for the current outdoor pvp script
  */
 void OutdoorPvPMgr::HandlePlayerEnterZone(Player* player, uint32 zoneId)
 {
@@ -133,10 +132,10 @@ void OutdoorPvPMgr::HandlePlayerEnterZone(Player* player, uint32 zoneId)
 }
 
 /**
-    Function that handles the player who leaves a specific zone
+ * Function that handles the player who leaves a specific zone
 
-    @param   player to be handled in the event
-    @param   zone id used for the current outdoor pvp script
+ * @param   player to be handled in the event
+ * @param   zone id used for the current outdoor pvp script
  */
 void OutdoorPvPMgr::HandlePlayerLeaveZone(Player* player, uint32 zoneId)
 {
@@ -170,10 +169,11 @@ void OutdoorPvPMgr::Update(uint32 diff)
     }
 
     for (uint8 i = 0; i < MAX_OPVP_ID; ++i)
+    {
         if (m_scripts[i])
         {
             m_scripts[i]->Update(m_updateTimer.GetCurrent());
         }
-
+    }
     m_updateTimer.Reset();
 }

@@ -52,7 +52,7 @@
 #include "ByteBuffer.h"
 #include "ObjectGuid.h"
 
- // magic event-numbers
+// magic event-numbers
 #define BG_EVENT_NONE 255
 // those generic events should get a high event id
 #define BG_EVENT_DOOR 254
@@ -296,7 +296,7 @@ class BattleGroundScore
          */
         BattleGroundScore() : KillingBlows(0), Deaths(0), HonorableKills(0),
             DishonorableKills(0), BonusHonor(0)
-            {}
+        {}
 
         /**
          * @brief Virtual destructor for BattleGroundScore.

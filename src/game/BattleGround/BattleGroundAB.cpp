@@ -47,7 +47,7 @@
 #include "BattleGroundMgr.h"
 #include "Language.h"
 #include "WorldPacket.h"
- // TODO REMOVE this when graveyard handling for pvp is updated
+// TODO REMOVE this when graveyard handling for pvp is updated
 #include "DBCStores.h"
 
 /**
@@ -171,10 +171,12 @@ void BattleGroundAB::Update(uint32 diff)
 
             // Accumulate team points
             for (uint8 team = 0; team < PVP_TEAM_COUNT; ++team)
+            {
                 if (m_Nodes[node] == team + BG_AB_NODE_TYPE_OCCUPIED)
                 {
                     ++team_points[team];
                 }
+            }
         }
 
         // Accumulate points for each team
@@ -298,28 +300,28 @@ bool BattleGroundAB::HandleAreaTrigger(Player* source, uint32 trigger)
 {
     switch (trigger)
     {
-    case 3948: // Arathi Basin Alliance Exit
-        if (source->GetTeam() != ALLIANCE)
-        {
-            source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_ALLIANCE_USE);
-        }
-        else
-        {
-            source->LeaveBattleground();
-        }
-        break;
-    case 3949: // Arathi Basin Horde Exit
-        if (source->GetTeam() != HORDE)
-        {
-            source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_HORDE_USE);
-        }
-        else
-        {
-            source->LeaveBattleground();
-        }
-        break;
-    default:
-        return false;
+        case 3948: // Arathi Basin Alliance Exit
+            if (source->GetTeam() != ALLIANCE)
+            {
+                source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_ALLIANCE_USE);
+            }
+            else
+            {
+                source->LeaveBattleground();
+            }
+            break;
+        case 3949: // Arathi Basin Horde Exit
+            if (source->GetTeam() != HORDE)
+            {
+                source->GetSession()->SendNotification(LANG_BATTLEGROUND_ONLY_HORDE_USE);
+            }
+            else
+            {
+                source->LeaveBattleground();
+            }
+            break;
+        default:
+            return false;
     }
     return true;
 }
@@ -366,13 +368,13 @@ int32 BattleGroundAB::_GetNodeNameId(uint8 node)
 {
     switch (node)
     {
-    case BG_AB_NODE_STABLES:    return LANG_BG_AB_NODE_STABLES;
-    case BG_AB_NODE_BLACKSMITH: return LANG_BG_AB_NODE_BLACKSMITH;
-    case BG_AB_NODE_FARM:       return LANG_BG_AB_NODE_FARM;
-    case BG_AB_NODE_LUMBER_MILL: return LANG_BG_AB_NODE_LUMBER_MILL;
-    case BG_AB_NODE_GOLD_MINE:  return LANG_BG_AB_NODE_GOLD_MINE;
-    default:
-        MANGOS_ASSERT(0);
+        case BG_AB_NODE_STABLES:    return LANG_BG_AB_NODE_STABLES;
+        case BG_AB_NODE_BLACKSMITH: return LANG_BG_AB_NODE_BLACKSMITH;
+        case BG_AB_NODE_FARM:       return LANG_BG_AB_NODE_FARM;
+        case BG_AB_NODE_LUMBER_MILL: return LANG_BG_AB_NODE_LUMBER_MILL;
+        case BG_AB_NODE_GOLD_MINE:  return LANG_BG_AB_NODE_GOLD_MINE;
+        default:
+            MANGOS_ASSERT(0);
     }
     return 0;
 }
@@ -398,14 +400,17 @@ void BattleGroundAB::FillInitialWorldStates(WorldPacket& data, uint32& count)
 
     // Node occupied states
     for (uint8 node = 0; node < BG_AB_NODES_MAX; ++node)
+    {
         for (uint8 i = 1; i < BG_AB_NODES_MAX; ++i)
         {
             FillInitialWorldState(data, count, BG_AB_OP_NODESTATES[node] + plusArray[i], m_Nodes[node] == i);
         }
+    }
 
     // How many bases each team owns
     uint8 ally = 0, horde = 0;
     for (uint8 node = 0; node < BG_AB_NODES_MAX; ++node)
+    {
         if (m_Nodes[node] == BG_AB_NODE_STATUS_ALLY_OCCUPIED)
         {
             ++ally;
@@ -414,6 +419,7 @@ void BattleGroundAB::FillInitialWorldStates(WorldPacket& data, uint32& count)
         {
             ++horde;
         }
+    }
 
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     FillInitialWorldState(data, count, BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
@@ -451,6 +457,7 @@ void BattleGroundAB::_SendNodeUpdate(uint8 node)
     // How many bases each team owns
     uint8 ally = 0, horde = 0;
     for (uint8 i = 0; i < BG_AB_NODES_MAX; ++i)
+    {
         if (m_Nodes[i] == BG_AB_NODE_STATUS_ALLY_OCCUPIED)
         {
             ++ally;
@@ -459,6 +466,7 @@ void BattleGroundAB::_SendNodeUpdate(uint8 node)
         {
             ++horde;
         }
+    }
 
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_ALLY, ally);
     UpdateWorldState(BG_AB_OP_OCCUPIED_BASES_HORDE, horde);
@@ -717,10 +725,12 @@ WorldSafeLocsEntry const* BattleGroundAB::GetClosestGraveYard(Player* player)
     // Check if there are any occupied nodes for this team
     std::vector<uint8> nodes;
     for (uint8 i = 0; i < BG_AB_NODES_MAX; ++i)
+    {
         if (m_Nodes[i] == teamIndex + 3)
         {
             nodes.push_back(i);
         }
+    }
 
     WorldSafeLocsEntry const* good_entry = NULL;
     // If there are occupied nodes, select the closest one to place the ghost
@@ -777,15 +787,15 @@ void BattleGroundAB::UpdatePlayerScore(Player* source, uint32 type, uint32 value
     // Update the appropriate score type
     switch (type)
     {
-    case SCORE_BASES_ASSAULTED:
-        ((BattleGroundABScore*)itr->second)->BasesAssaulted += value;
-        break;
-    case SCORE_BASES_DEFENDED:
-        ((BattleGroundABScore*)itr->second)->BasesDefended += value;
-        break;
-    default:
-        BattleGround::UpdatePlayerScore(source, type, value);
-        break;
+        case SCORE_BASES_ASSAULTED:
+            ((BattleGroundABScore*)itr->second)->BasesAssaulted += value;
+            break;
+        case SCORE_BASES_DEFENDED:
+            ((BattleGroundABScore*)itr->second)->BasesDefended += value;
+            break;
+        default:
+            BattleGround::UpdatePlayerScore(source, type, value);
+            break;
     }
 }
 

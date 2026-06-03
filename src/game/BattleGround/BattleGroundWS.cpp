@@ -440,8 +440,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player* source, GameObject* target
     uint8 event = (sBattleGroundMgr.GetGameObjectEventIndex(target_obj->GetGUIDLow())).event1;
 
     // alliance flag picked up from base
-    if (source->GetTeam() == HORDE && GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_BASE
-        && event == WS_EVENT_FLAG_A)
+    if (source->GetTeam() == HORDE && GetFlagState(ALLIANCE) == BG_WS_FLAG_STATE_ON_BASE &&
+        event == WS_EVENT_FLAG_A)
     {
         message_id = LANG_BG_WS_PICKEDUP_AF;
         type = CHAT_MSG_BG_SYSTEM_HORDE;
@@ -456,8 +456,8 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player* source, GameObject* target
     }
 
     // horde flag picked up from base
-    if (source->GetTeam() == ALLIANCE && GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_BASE
-        && event == WS_EVENT_FLAG_H)
+    if (source->GetTeam() == ALLIANCE && GetFlagState(HORDE) == BG_WS_FLAG_STATE_ON_BASE &&
+        event == WS_EVENT_FLAG_H)
     {
         message_id = LANG_BG_WS_PICKEDUP_HF;
         type = CHAT_MSG_BG_SYSTEM_ALLIANCE;
@@ -638,17 +638,21 @@ bool BattleGroundWS::HandleAreaTrigger(Player* source, uint32 trigger)
     {
         case 3646:                                          // Alliance Flag spawn
             if (m_FlagState[TEAM_INDEX_HORDE] && !m_FlagState[TEAM_INDEX_ALLIANCE])
+            {
                 if (GetHordeFlagCarrierGuid() == source->GetObjectGuid())
                 {
                     EventPlayerCapturedFlag(source);
                 }
+            }
             break;
         case 3647:                                          // Horde Flag spawn
             if (m_FlagState[TEAM_INDEX_ALLIANCE] && !m_FlagState[TEAM_INDEX_HORDE])
+            {
                 if (GetAllianceFlagCarrierGuid() == source->GetObjectGuid())
                 {
                     EventPlayerCapturedFlag(source);
                 }
+            }
             break;
         case 3669: // horde portal
             if (source->GetTeam() != HORDE)

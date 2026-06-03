@@ -222,7 +222,7 @@ void WorldSession::HandleBattlemasterJoinOpcode(WorldPacket& recv_data)
         }
         uint32 err = grp->CanJoinBattleGroundQueue(bgTypeId, bgQueueTypeId, 0, bg->GetMaxPlayersPerTeam());
         isPremade = sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_PREMADE_GROUP_WAIT_FOR_MATCH) &&
-                    (grp->GetMembersCount() >= bg->GetMinPlayersPerTeam());
+            (grp->GetMembersCount() >= bg->GetMinPlayersPerTeam());
         if (err != BG_JOIN_ERR_OK)
         {
             SendBattleGroundJoinError(err);
@@ -482,7 +482,7 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket& recv_data)
         if (_player->getLevel() > bg->GetMaxLevel())
         {
             sLog.outError("Battleground: Player %s (%u) has level (%u) higher than maxlevel (%u) of battleground (%u)! Do not port him to battleground!",
-                          _player->GetName(), _player->GetGUIDLow(), _player->getLevel(), bg->GetMaxLevel(), bg->GetTypeID());
+                _player->GetName(), _player->GetGUIDLow(), _player->getLevel(), bg->GetMaxLevel(), bg->GetTypeID());
             action = 0;
         }
     }
@@ -563,11 +563,15 @@ void WorldSession::HandleLeaveBattlefieldOpcode(WorldPacket& recv_data)
 
     // not allow leave battleground in combat
     if (_player->IsInCombat())
+    {
         if (BattleGround* bg = _player->GetBattleGround())
+        {
             if (bg->GetStatus() != STATUS_WAIT_LEAVE)
             {
                 return;
             }
+        }
+    }
 
     _player->LeaveBattleground();
 }
@@ -756,7 +760,7 @@ void WorldSession::SendBattleGroundJoinError(uint8 err)
         case BG_JOIN_ERR_GROUP_NOT_ENOUGH:
             // case BG_JOIN_ERR_MIXED_ARENATEAM:
         default:
-            return;
+            return;  // TODO: Don't think this is needed as well as break; below
             break;
     }
     ChatHandler::BuildChatPacket(data, CHAT_MSG_BG_SYSTEM_NEUTRAL, GetMangosString(msg), LANG_UNIVERSAL);
