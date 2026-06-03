@@ -396,7 +396,8 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint8 updateFlags) const
             {
                 ((Unit*)this)->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
             }
-            break;
+
+        // fall through to TYPEID_UNIT — unit must be set for UPDATEFLAG_LIVING
         case TYPEID_UNIT:
             unit = static_cast<Unit const*>(this);
             moveflags = unit->m_movementInfo.GetMovementFlags();
