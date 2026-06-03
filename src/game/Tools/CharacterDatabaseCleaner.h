@@ -33,10 +33,10 @@ namespace CharacterDatabaseCleaner
      */
     enum CleaningFlags
     {
-//      Reserved for next version = 0x1,
+        //                     0x1       Reserved for next version
         CLEANING_FLAG_SKILLS = 0x2,      ///< Clean skills
         CLEANING_FLAG_SPELLS = 0x4,      ///< Clean spells
-//      Reserved for next version = 0x8
+        //                     0x8       Reserved for next version
     };
 
     /**

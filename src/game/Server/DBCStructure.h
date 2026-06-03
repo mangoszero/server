@@ -44,12 +44,12 @@
 #endif
 
 /**
-* \struct AreaTableEntry
-* \brief Entry representing area within the game.
-*
-* AreaTableEntry is an entry indicating the main information about the areas within the game.
-* They are used to defined XP rewards of PvP Flags.
-*/
+ * \struct AreaTableEntry
+ * \brief Entry representing area within the game.
+ *
+ * AreaTableEntry is an entry indicating the main information about the areas within the game.
+ * They are used to defined XP rewards of PvP Flags.
+ */
 struct AreaTableEntry
 {
     uint32  ID;                                             // 0        m_ID - ID of the Area within the DBC.
@@ -71,9 +71,9 @@ struct AreaTableEntry
 };
 
 /**
-* \struct AreaTriggerEntry
-* \brief Entry representing an area which need to send a specific trigger for quest/resting/..
-*/
+ * \struct AreaTriggerEntry
+ * \brief Entry representing an area which need to send a specific trigger for quest/resting/..
+ */
 struct AreaTriggerEntry
 {
     uint32    id;                                           // 0 - ID of the Area within the DBC.
@@ -89,9 +89,9 @@ struct AreaTriggerEntry
 };
 
 /**
-* \struct AuctionHouseEntry
-* \brief Entry representing the different type of Auction House existing within the game and their comission.
-*/
+ * \struct AuctionHouseEntry
+ * \brief Entry representing the different type of Auction House existing within the game and their comission.
+ */
 struct AuctionHouseEntry
 {
     uint32    houseId;                                      // 0        m_ID - ID of the Auction House in the DBC.
@@ -103,9 +103,9 @@ struct AuctionHouseEntry
 };
 
 /**
-* \struct BankBagSlotProcesEntry
-* \brief Entry representing the bank bag slot price.
-*/
+ * \struct BankBagSlotProcesEntry
+ * \brief Entry representing the bank bag slot price.
+ */
 struct BankBagSlotPricesEntry
 {
     uint32  ID;                                             // 0        m_ID - ID of the Bank Bag Slot in the DBC.
@@ -115,10 +115,10 @@ struct BankBagSlotPricesEntry
 #define MAX_OUTFIT_ITEMS 12
 
 /**
-* \struct CharStartOutfitEntry
-* \brief
-*
-*/
+ * \struct CharStartOutfitEntry
+ * \brief
+ *
+ */
 struct CharStartOutfitEntry
 {
     // uint32 Id;                                           // 0        m_ID
@@ -132,9 +132,9 @@ struct CharStartOutfitEntry
 };
 
 /**
-* \struct ChatChannelsEntry
-* \brief Entry representing default chat channels available in game.
-*/
+ * \struct ChatChannelsEntry
+ * \brief Entry representing default chat channels available in game.
+ */
 struct ChatChannelsEntry
 {
     uint32  ChannelID;                                      // 0        m_ID - ID of the Channel in DBC.
@@ -147,9 +147,9 @@ struct ChatChannelsEntry
 };
 
 /**
-* \struct ChrClassesEntry
-* \brief Entry representing the classes available in game.
-*/
+ * \struct ChrClassesEntry
+ * \brief Entry representing the classes available in game.
+ */
 struct ChrClassesEntry
 {
     uint32  ClassID;                                        // 0        m_ID - ID of the Char Class in DBC.
@@ -165,9 +165,9 @@ struct ChrClassesEntry
 };
 
 /**
-* \struct ChrRacesEntry
-* \brief Entry rerepsenting
-*/
+ * \struct ChrRacesEntry
+ * \brief Entry rerepsenting
+ */
 struct ChrRacesEntry
 {
     uint32      RaceID;                                     // 0        m_ID - ID of the Char Race in DBC.
@@ -194,8 +194,8 @@ struct ChrRacesEntry
 };
 
 /**
-* \struct CinematicSequencesEntry
-*/
+ * \struct CinematicSequencesEntry
+ */
 struct CinematicSequencesEntry
 {
     uint32      Id;                                         // 0        m_ID - ID in DBC.
@@ -204,9 +204,9 @@ struct CinematicSequencesEntry
 };
 
 /**
-* \struct CreatureDisplayInfoEntry
-* \brief Entry representing the display info.
-*/
+ * \struct CreatureDisplayInfoEntry
+ * \brief Entry representing the display info.
+ */
 struct CreatureDisplayInfoEntry
 {
     uint32      Displayid;                                  // 0        m_ID - ID in DBC.
@@ -222,9 +222,9 @@ struct CreatureDisplayInfoEntry
 };
 
 /**
-* \struct CreatureDisplayInfoExtraEntry
-* \brief Entry extending the CreatureDisplayInfoEntry.
-*/
+ * \struct CreatureDisplayInfoExtraEntry
+ * \brief Entry extending the CreatureDisplayInfoEntry.
+ */
 struct CreatureDisplayInfoExtraEntry
 {
     uint32      DisplayExtraId;                             // 0        m_ID - ID in DBC.
@@ -240,9 +240,9 @@ struct CreatureDisplayInfoExtraEntry
 };
 
 /**
-* \struct CreatureFamilyEntry
-* \brief Entry representing the different pet available for players.
-*/
+ * \struct CreatureFamilyEntry
+ * \brief Entry representing the different pet available for players.
+ */
 struct CreatureFamilyEntry
 {
     uint32    ID;                                           // 0 - ID in DBC.
@@ -258,9 +258,9 @@ struct CreatureFamilyEntry
 #define MAX_CREATURE_SPELL_DATA_SLOT 4
 
 /**
-* \struct CreatureSpellDataEntry
-* \brief Entry representing the different spell available for player's pet.
-*/
+ * \struct CreatureSpellDataEntry
+ * \brief Entry representing the different spell available for player's pet.
+ */
 struct CreatureSpellDataEntry
 {
     uint32    ID;                                           // 0        m_ID - ID in DBC.
@@ -269,9 +269,9 @@ struct CreatureSpellDataEntry
 };
 
 /**
-* \struct CreatureTypeEntry
-* \brief Entry representing the different creature type available for player's pet.
-*/
+ * \struct CreatureTypeEntry
+ * \brief Entry representing the different creature type available for player's pet.
+ */
 struct CreatureTypeEntry
 {
     uint32    ID;                                           // 0        m_ID
@@ -281,9 +281,9 @@ struct CreatureTypeEntry
 };
 
 /**
-* \struct DurabilityCostsEntry
-* \brief Entry representing the multipliers for item reparation cost.
-*/
+ * \struct DurabilityCostsEntry
+ * \brief Entry representing the multipliers for item reparation cost.
+ */
 struct DurabilityCostsEntry
 {
     uint32    Itemlvl;                                      // 0        m_ID - ID in DBC.
@@ -291,9 +291,9 @@ struct DurabilityCostsEntry
 };
 
 /**
-* \struct DurabilityQualityEntry
-* \brief Entry representing the quality modifier for item reparation cost.
-*/
+ * \struct DurabilityQualityEntry
+ * \brief Entry representing the quality modifier for item reparation cost.
+ */
 struct DurabilityQualityEntry
 {
     uint32    Id;                                           // 0        m_ID - ID in DBC.
@@ -301,9 +301,9 @@ struct DurabilityQualityEntry
 };
 
 /**
-* \struct EmotesEntry
-* \brief Entry representing the emotes available.
-*/
+ * \struct EmotesEntry
+ * \brief Entry representing the emotes available.
+ */
 struct EmotesEntry
 {
     uint32  Id;                                             // 0        m_ID - ID in DBC.
@@ -316,9 +316,9 @@ struct EmotesEntry
 };
 
 /**
-* \struct EmotesTextEntry
-* \brief Entry repsenting the text for given emote.
-*/
+ * \struct EmotesTextEntry
+ * \brief Entry repsenting the text for given emote.
+ */
 struct EmotesTextEntry
 {
     uint32  Id;                                             //          m_ID - ID in DBC.
@@ -328,9 +328,9 @@ struct EmotesTextEntry
 };
 
 /**
-* \struct FactionEntry
-* \brief Entry representing all the factions available.
-*/
+ * \struct FactionEntry
+ * \brief Entry representing all the factions available.
+ */
 struct FactionEntry
 {
     uint32      ID;                                         // 0        m_ID - ID in DBC.
@@ -363,9 +363,9 @@ struct FactionEntry
 };
 
 /**
-* \struct FactionTemplateEntry
-* \brief Entry representing the type of faction that exists.
-*/
+ * \struct FactionTemplateEntry
+ * \brief Entry representing the type of faction that exists.
+ */
 struct FactionTemplateEntry
 {
     /// 0
@@ -392,52 +392,67 @@ struct FactionTemplateEntry
         if (entry.faction)
         {
             for (int i = 0; i < 4; ++i)
+            {
                 if (enemyFaction[i]  == entry.faction)
                 {
                     return false;
                 }
+            }
+
             for (int i = 0; i < 4; ++i)
+            {
                 if (friendFaction[i] == entry.faction)
                 {
                     return true;
                 }
+            }
         }
         return (friendlyMask & entry.ourMask) || (ourMask & entry.friendlyMask);
     }
+
     bool IsHostileTo(FactionTemplateEntry const& entry) const
     {
         if (entry.faction)
         {
             for (int i = 0; i < 4; ++i)
+            {
                 if (enemyFaction[i]  == entry.faction)
                 {
                     return true;
                 }
+            }
+
             for (int i = 0; i < 4; ++i)
+            {
                 if (friendFaction[i] == entry.faction)
                 {
                     return false;
                 }
+            }
         }
         return (hostileMask & entry.ourMask) != 0;
     }
+
     bool IsHostileToPlayers() const { return (hostileMask & FACTION_MASK_PLAYER) != 0; }
     bool IsNeutralToAll() const
     {
         for (int i = 0; i < 4; ++i)
+        {
             if (enemyFaction[i] != 0)
             {
                 return false;
             }
+        }
         return hostileMask == 0 && friendlyMask == 0;
     }
+
     bool IsContestedGuardFaction() const { return (factionFlags & FACTION_TEMPLATE_FLAG_CONTESTED_GUARD) != 0; }
 };
 
 /**
-* \struct GameObjectDisplayInfoEntry
-* \brief Entry representing the info for the game object to be displayed on the client.
-*/
+ * \struct GameObjectDisplayInfoEntry
+ * \brief Entry representing the info for the game object to be displayed on the client.
+ */
 struct GameObjectDisplayInfoEntry
 {
     uint32      Displayid;                                  // 0        m_ID - ID in DBC.
@@ -449,9 +464,9 @@ struct GameObjectDisplayInfoEntry
 #define GT_MAX_LEVEL    100
 
 /**
-* \struct ItemBagFamilyEntry
-* \brief Entry representing the existing bag family.
-*/
+ * \struct ItemBagFamilyEntry
+ * \brief Entry representing the existing bag family.
+ */
 struct ItemBagFamilyEntry
 {
     uint32   ID;                                            // 0        m_ID
@@ -460,9 +475,9 @@ struct ItemBagFamilyEntry
 };
 
 /**
-* \struct ItemClassEntry
-* \brief Entry representing the item class type.
-*/
+ * \struct ItemClassEntry
+ * \brief Entry representing the item class type.
+ */
 struct ItemClassEntry
 {
     uint32   ID;                                            // 0        m_ID
@@ -473,9 +488,9 @@ struct ItemClassEntry
 };
 
 /**
-* \struct ItemRandomPropertiesEntry
-* \brief Entry representing the random enchant for Items.
-*/
+ * \struct ItemRandomPropertiesEntry
+ * \brief Entry representing the random enchant for Items.
+ */
 struct ItemRandomPropertiesEntry
 {
     uint32    ID;                                           // 0        m_ID
@@ -487,9 +502,9 @@ struct ItemRandomPropertiesEntry
 };
 
 /**
-* \struct ItemSetEntry
-* \brief Entry representing the Set of items within the game.
-*/
+ * \struct ItemSetEntry
+ * \brief Entry representing the Set of items within the game.
+ */
 struct ItemSetEntry
 {
     // uint32    id                                         // 0        m_ID
@@ -503,9 +518,9 @@ struct ItemSetEntry
 };
 
 /**
-* \struct LiquidTypeEntry
-* \brief Entry representing the type of liquid within the game.
-*/
+ * \struct LiquidTypeEntry
+ * \brief Entry representing the type of liquid within the game.
+ */
 struct LiquidTypeEntry
 {
     uint32 Id;                                              // 0
@@ -517,9 +532,9 @@ struct LiquidTypeEntry
 #define MAX_LOCK_CASE 8
 
 /**
-* \struct LockEntry
-* \brief Entry representing the different "locks" existing in game (chest, veins, herbs, ...).
-*/
+ * \struct LockEntry
+ * \brief Entry representing the different "locks" existing in game (chest, veins, herbs, ...).
+ */
 struct LockEntry
 {
     uint32      ID;                                         // 0        m_ID
@@ -530,9 +545,9 @@ struct LockEntry
 };
 
 /**
-* \struct MailTemplateEntry
-* \brief Entry representing a mail template for quest result.
-*/
+ * \struct MailTemplateEntry
+ * \brief Entry representing a mail template for quest result.
+ */
 struct MailTemplateEntry
 {
     uint32      ID;                                         // 0        m_ID
@@ -541,9 +556,9 @@ struct MailTemplateEntry
 };
 
 /**
-* \struct MapEntry
-* \brief Entry representing maps existing within the game.
-*/
+ * \struct MapEntry
+ * \brief Entry representing maps existing within the game.
+ */
 struct MapEntry
 {
     uint32  MapID;                                          // 0        m_ID
@@ -574,7 +589,7 @@ struct MapEntry
     bool IsMountAllowed() const
     {
         return !IsDungeon() ||
-                MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
+            MapID == 309 || MapID == 209 || MapID == 509 || MapID == 269;
     }
 
     bool IsContinent() const
@@ -591,9 +606,9 @@ struct MovieEntry
 };
 
 /**
-* \struct QuestSortEntry
-* \brief Entry representing the type of quest within the game.
-*/
+ * \struct QuestSortEntry
+ * \brief Entry representing the type of quest within the game.
+ */
 struct QuestSortEntry
 {
     uint32      id;                                         // 0        m_ID
@@ -602,9 +617,9 @@ struct QuestSortEntry
 };
 
 /**
-* \struct SkillRaceClassInfoEntry
-* \brief Entry representing the available skills for classes (weapons, gear, ..)
-*/
+ * \struct SkillRaceClassInfoEntry
+ * \brief Entry representing the available skills for classes (weapons, gear, ..)
+ */
 struct SkillRaceClassInfoEntry
 {
     // uint32    id;                                        // 0        m_ID
@@ -618,9 +633,9 @@ struct SkillRaceClassInfoEntry
 };
 
 /**
-* \struct SkillLineEntry
-* \brief Entry representing the type of skill line (fire, frost, racial, ...).
-*/
+ * \struct SkillLineEntry
+ * \brief Entry representing the type of skill line (fire, frost, racial, ...).
+ */
 struct SkillLineEntry
 {
     uint32    id;                                           // 0        m_ID
@@ -634,9 +649,9 @@ struct SkillLineEntry
 };
 
 /**
-* \struct SkillLineAbilityEntry
-* \brief Entry representing the skill line abilities, also contains information about learning conditions.
-*/
+ * \struct SkillLineAbilityEntry
+ * \brief Entry representing the skill line abilities, also contains information about learning conditions.
+ */
 struct SkillLineAbilityEntry
 {
     uint32    id;                                           // 0, INDEX
@@ -656,9 +671,9 @@ struct SkillLineAbilityEntry
 };
 
 /**
-* \struct SoundEntriesEntry
-* \brief Entry representing sound for client, used for validation.
-*/
+ * \struct SoundEntriesEntry
+ * \brief Entry representing sound for client, used for validation.
+ */
 struct SoundEntriesEntry
 {
     uint32    Id;                                           // 0        m_ID
@@ -675,71 +690,71 @@ struct SoundEntriesEntry
 };
 
 /**
-* \struct ClassFamilyMask
-* \brief Used to compare spells and determine if they belong to the same family.
-*/
+ * \struct ClassFamilyMask
+ * \brief Used to compare spells and determine if they belong to the same family.
+ */
 struct ClassFamilyMask
 {
     // Flags of the class family.
     uint64 Flags;
 
     /**
-    * Default constructor.
-    */
+     * Default constructor.
+     */
     ClassFamilyMask() : Flags(0) {}
 
     /**
-    * Constructor taking familyFlags as parameter.
-    */
+     * Constructor taking familyFlags as parameter.
+     */
     explicit ClassFamilyMask(uint64 familyFlags) : Flags(familyFlags) {}
 
     /**
-    * function indicating whether the class is empty ( = 0) or not.
-    * Returns a boolean value.
-    */
+     * function indicating whether the class is empty ( = 0) or not.
+     * Returns a boolean value.
+     */
     bool Empty() const { return Flags == 0; }
 
     /**
-    * function overloading the operator !
-    * Returns a boolean value.
-    */
+     * function overloading the operator !
+     * Returns a boolean value.
+     */
     bool operator!() const { return Empty(); }
 
     operator void const* () const { return Empty() ? NULL : this; } // for allow normal use in if (mask)
 
     /**
-    * function indicating whether a familyFlags belongs to a Spell Family.
-    * Does a bitwise comparison between current Flags and familyFlags given in parameter.
-    * Returns a boolean value.
-    * \param familyFlags The familyFlags to compare.
-    */
+     * function indicating whether a familyFlags belongs to a Spell Family.
+     * Does a bitwise comparison between current Flags and familyFlags given in parameter.
+     * Returns a boolean value.
+     * \param familyFlags The familyFlags to compare.
+     */
     bool IsFitToFamilyMask(uint64 familyFlags) const
     {
         return Flags & familyFlags;
     }
 
     /**
-    * function indicating whether a ClassFamilyMask belongs to a Spell Family.
-    * Does a bitwise comparison between current Flags and mask's flags.
-    * Returns a boolean value.
-    * \param mask The ClassFamilyMask to compare.
-    */
+     * function indicating whether a ClassFamilyMask belongs to a Spell Family.
+     * Does a bitwise comparison between current Flags and mask's flags.
+     * Returns a boolean value.
+     * \param mask The ClassFamilyMask to compare.
+     */
     bool IsFitToFamilyMask(ClassFamilyMask const& mask) const
     {
         return Flags & mask.Flags;
     }
 
     /**
-    * function overloading the operator & for bitwise comparison.
-    */
+     * function overloading the operator & for bitwise comparison.
+     */
     uint64 operator& (uint64 mask) const                    // possible will removed at finish convertion code use IsFitToFamilyMask
     {
         return Flags & mask;
     }
 
     /**
-    * function overloading operator |=.
-    */
+     * function overloading operator |=.
+     */
     ClassFamilyMask& operator|= (ClassFamilyMask const& mask)
     {
         Flags |= mask.Flags;
@@ -751,211 +766,214 @@ struct ClassFamilyMask
 #define MAX_SPELL_TOTEMS 2
 
 /**
-* \struct SpellEntry
-* \brief Entry representing each spell of the game.
-*
-* This structure also contains flags about spell family, attributes, spell effects
-* enchantement, cast conditions, proc conditions, mechanic, cast time, damage range, ...
-*
-* All we need to know about spells is represented by such entry and used for every effect within the game
-* such as elixir, potion, buff, heal, damage, ..
-*/
+ * \struct SpellEntry
+ * \brief Entry representing each spell of the game.
+ *
+ * This structure also contains flags about spell family, attributes, spell effects
+ * enchantement, cast conditions, proc conditions, mechanic, cast time, damage range, ...
+ *
+ * All we need to know about spells is represented by such entry and used for every effect within the game
+ * such as elixir, potion, buff, heal, damage, ..
+ */
 struct SpellEntry
 {
-        uint32    Id;                                       // 0 normally counted from 0 field (but some tools start counting from 1, check this before tool use for data view!)
-        uint32    School;                                   // 1 not schoolMask from 2.x - just school type so everything linked with SpellEntry::SchoolMask must be rewrited
-        uint32    Category;                                 // 2
-        // uint32 castUI;                                   // 3 not used
-        uint32    Dispel;                                   // 4
-        uint32    Mechanic;                                 // 5
-        uint32    Attributes;                               // 6
-        uint32    AttributesEx;                             // 7
-        uint32    AttributesEx2;                            // 8
-        uint32    AttributesEx3;                            // 9
-        uint32    AttributesEx4;                            // 10
-        uint32    Stances;                                  // 11
-        uint32    StancesNot;                               // 12
-        uint32    Targets;                                  // 13
-        uint32    TargetCreatureType;                       // 14
-        uint32    RequiresSpellFocus;                       // 15
-        uint32    CasterAuraState;                          // 16
-        uint32    TargetAuraState;                          // 17
-        uint32    CastingTimeIndex;                         // 18
-        uint32    RecoveryTime;                             // 19
-        uint32    CategoryRecoveryTime;                     // 20
-        uint32    InterruptFlags;                           // 21
-        uint32    AuraInterruptFlags;                       // 22
-        uint32    ChannelInterruptFlags;                    // 23
-        uint32    procFlags;                                // 24
-        uint32    procChance;                               // 25
-        uint32    procCharges;                              // 26
-        uint32    maxLevel;                                 // 27
-        uint32    baseLevel;                                // 28
-        uint32    spellLevel;                               // 29
-        uint32    DurationIndex;                            // 30
-        uint32    powerType;                                // 31
-        uint32    manaCost;                                 // 32
-        uint32    manaCostPerlevel;                         // 33
-        uint32    manaPerSecond;                            // 34
-        uint32    manaPerSecondPerLevel;                    // 35
-        uint32    rangeIndex;                               // 36
-        float     speed;                                    // 37
-        uint32    modalNextSpell;                           // 38 not used
-        uint32    StackAmount;                              // 39
-        uint32    Totem[MAX_SPELL_TOTEMS];                  // 40-41
-        int32     Reagent[MAX_SPELL_REAGENTS];              // 42-49
-        uint32    ReagentCount[MAX_SPELL_REAGENTS];         // 50-57
-        int32     EquippedItemClass;                        // 58 (value)
-        int32     EquippedItemSubClassMask;                 // 59 (mask)
-        int32     EquippedItemInventoryTypeMask;            // 60 (mask)
-        uint32    Effect[MAX_EFFECT_INDEX];                 ///< 61-63 TODO DOCUMENT
-        int32     EffectDieSides[MAX_EFFECT_INDEX];         // 64-66
-        uint32    EffectBaseDice[MAX_EFFECT_INDEX];         // 67-69
-        float     EffectDicePerLevel[MAX_EFFECT_INDEX];     // 70-72
-        float     EffectRealPointsPerLevel[MAX_EFFECT_INDEX];   // 73-75
-        int32     EffectBasePoints[MAX_EFFECT_INDEX];       // 76-78 (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
-        uint32    EffectMechanic[MAX_EFFECT_INDEX];         // 79-81
-        uint32    EffectImplicitTargetA[MAX_EFFECT_INDEX];  // 82-84
-        uint32    EffectImplicitTargetB[MAX_EFFECT_INDEX];  // 85-87
-        uint32    EffectRadiusIndex[MAX_EFFECT_INDEX];      // 88-90 - spellradius.dbc
-        uint32    EffectApplyAuraName[MAX_EFFECT_INDEX];    // 91-93
-        uint32    EffectAmplitude[MAX_EFFECT_INDEX];        // 94-96
-        float     EffectMultipleValue[MAX_EFFECT_INDEX];    // 97-99
-        uint32    EffectChainTarget[MAX_EFFECT_INDEX];      // 100-102
-        uint32    EffectItemType[MAX_EFFECT_INDEX];         // 103-105
-        int32     EffectMiscValue[MAX_EFFECT_INDEX];        // 106-108
-        uint32    EffectTriggerSpell[MAX_EFFECT_INDEX];     // 109-111
-        float     EffectPointsPerComboPoint[MAX_EFFECT_INDEX];  // 112-114
-        uint32    SpellVisual;                              // 115
-        // uint32    SpellVisual2                           // 116 not used
-        uint32    SpellIconID;                              // 117
-        uint32    activeIconID;                             // 118
-        // uint32    spellPriority;                         // 119
-        char*     SpellName[8];                             // 120-127
-        // uint32    SpellNameFlag;                         // 128
-        char*     Rank[8];                                  // 129-136
-        // uint32    RankFlags;                             // 137
-        // char*     Description[8];                        // 138-145 not used
-        // uint32    DescriptionFlags;                      // 146     not used
-        // char*     ToolTip[8];                            // 147-154 not used
-        // uint32    ToolTipFlags;                          // 155     not used
-        uint32    ManaCostPercentage;                       // 156
-        uint32    StartRecoveryCategory;                    // 157
-        uint32    StartRecoveryTime;                        // 158
-        uint32    MaxTargetLevel;                           // 159
-        uint32    SpellFamilyName;                          // 160
-        ClassFamilyMask SpellFamilyFlags;                   // 161+162
-        uint32    MaxAffectedTargets;                       // 163
-        uint32    DmgClass;                                 // 164 defenseType
-        uint32    PreventionType;                           // 165
-        // uint32    StanceBarOrder;                        // 166 not used
-        float     DmgMultiplier[MAX_EFFECT_INDEX];          // 167-169
-        // uint32    MinFactionId;                          // 170 not used, and 0 in 2.4.2
-        // uint32    MinReputation;                         // 171 not used, and 0 in 2.4.2
-        // uint32    RequiredAuraVision;                    // 172 not used
+    uint32    Id;                                       // 0 normally counted from 0 field (but some tools start counting from 1, check this before tool use for data view!)
+    uint32    School;                                   // 1 not schoolMask from 2.x - just school type so everything linked with SpellEntry::SchoolMask must be rewrited
+    uint32    Category;                                 // 2
+    // uint32 castUI;                                   // 3 not used
+    uint32    Dispel;                                   // 4
+    uint32    Mechanic;                                 // 5
+    uint32    Attributes;                               // 6
+    uint32    AttributesEx;                             // 7
+    uint32    AttributesEx2;                            // 8
+    uint32    AttributesEx3;                            // 9
+    uint32    AttributesEx4;                            // 10
+    uint32    Stances;                                  // 11
+    uint32    StancesNot;                               // 12
+    uint32    Targets;                                  // 13
+    uint32    TargetCreatureType;                       // 14
+    uint32    RequiresSpellFocus;                       // 15
+    uint32    CasterAuraState;                          // 16
+    uint32    TargetAuraState;                          // 17
+    uint32    CastingTimeIndex;                         // 18
+    uint32    RecoveryTime;                             // 19
+    uint32    CategoryRecoveryTime;                     // 20
+    uint32    InterruptFlags;                           // 21
+    uint32    AuraInterruptFlags;                       // 22
+    uint32    ChannelInterruptFlags;                    // 23
+    uint32    procFlags;                                // 24
+    uint32    procChance;                               // 25
+    uint32    procCharges;                              // 26
+    uint32    maxLevel;                                 // 27
+    uint32    baseLevel;                                // 28
+    uint32    spellLevel;                               // 29
+    uint32    DurationIndex;                            // 30
+    uint32    powerType;                                // 31
+    uint32    manaCost;                                 // 32
+    uint32    manaCostPerlevel;                         // 33
+    uint32    manaPerSecond;                            // 34
+    uint32    manaPerSecondPerLevel;                    // 35
+    uint32    rangeIndex;                               // 36
+    float     speed;                                    // 37
+    uint32    modalNextSpell;                           // 38 not used
+    uint32    StackAmount;                              // 39
+    uint32    Totem[MAX_SPELL_TOTEMS];                  // 40-41
+    int32     Reagent[MAX_SPELL_REAGENTS];              // 42-49
+    uint32    ReagentCount[MAX_SPELL_REAGENTS];         // 50-57
+    int32     EquippedItemClass;                        // 58 (value)
+    int32     EquippedItemSubClassMask;                 // 59 (mask)
+    int32     EquippedItemInventoryTypeMask;            // 60 (mask)
+    uint32    Effect[MAX_EFFECT_INDEX];                 ///< 61-63 TODO DOCUMENT
+    int32     EffectDieSides[MAX_EFFECT_INDEX];         // 64-66
+    uint32    EffectBaseDice[MAX_EFFECT_INDEX];         // 67-69
+    float     EffectDicePerLevel[MAX_EFFECT_INDEX];     // 70-72
+    float     EffectRealPointsPerLevel[MAX_EFFECT_INDEX];   // 73-75
+    int32     EffectBasePoints[MAX_EFFECT_INDEX];       // 76-78 (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
+    uint32    EffectMechanic[MAX_EFFECT_INDEX];         // 79-81
+    uint32    EffectImplicitTargetA[MAX_EFFECT_INDEX];  // 82-84
+    uint32    EffectImplicitTargetB[MAX_EFFECT_INDEX];  // 85-87
+    uint32    EffectRadiusIndex[MAX_EFFECT_INDEX];      // 88-90 - spellradius.dbc
+    uint32    EffectApplyAuraName[MAX_EFFECT_INDEX];    // 91-93
+    uint32    EffectAmplitude[MAX_EFFECT_INDEX];        // 94-96
+    float     EffectMultipleValue[MAX_EFFECT_INDEX];    // 97-99
+    uint32    EffectChainTarget[MAX_EFFECT_INDEX];      // 100-102
+    uint32    EffectItemType[MAX_EFFECT_INDEX];         // 103-105
+    int32     EffectMiscValue[MAX_EFFECT_INDEX];        // 106-108
+    uint32    EffectTriggerSpell[MAX_EFFECT_INDEX];     // 109-111
+    float     EffectPointsPerComboPoint[MAX_EFFECT_INDEX];  // 112-114
+    uint32    SpellVisual;                              // 115
+    // uint32    SpellVisual2                           // 116 not used
+    uint32    SpellIconID;                              // 117
+    uint32    activeIconID;                             // 118
+    // uint32    spellPriority;                         // 119
+    char*     SpellName[8];                             // 120-127
+    // uint32    SpellNameFlag;                         // 128
+    char*     Rank[8];                                  // 129-136
+    // uint32    RankFlags;                             // 137
+    // char*     Description[8];                        // 138-145 not used
+    // uint32    DescriptionFlags;                      // 146     not used
+    // char*     ToolTip[8];                            // 147-154 not used
+    // uint32    ToolTipFlags;                          // 155     not used
+    uint32    ManaCostPercentage;                       // 156
+    uint32    StartRecoveryCategory;                    // 157
+    uint32    StartRecoveryTime;                        // 158
+    uint32    MaxTargetLevel;                           // 159
+    uint32    SpellFamilyName;                          // 160
+    ClassFamilyMask SpellFamilyFlags;                   // 161+162
+    uint32    MaxAffectedTargets;                       // 163
+    uint32    DmgClass;                                 // 164 defenseType
+    uint32    PreventionType;                           // 165
+    // uint32    StanceBarOrder;                        // 166 not used
+    float     DmgMultiplier[MAX_EFFECT_INDEX];          // 167-169
+    // uint32    MinFactionId;                          // 170 not used, and 0 in 2.4.2
+    // uint32    MinReputation;                         // 171 not used, and 0 in 2.4.2
+    // uint32    RequiredAuraVision;                    // 172 not used
 
-        /**
-        * function calculating the basic damage/snare/... points for a given Spell Effect.
-        * Returns an int32 value representing the basic points.
-        * \param eff INDEX of the Spell Effect.
-        */
-        int32 CalculateSimpleValue(SpellEffectIndex eff) const { return EffectBasePoints[eff] + int32(EffectBaseDice[eff]); }
+    /**
+     * function calculating the basic damage/snare/... points for a given Spell Effect.
+     * Returns an int32 value representing the basic points.
+     * \param eff INDEX of the Spell Effect.
+     */
+    int32 CalculateSimpleValue(SpellEffectIndex eff) const { return EffectBasePoints[eff] + int32(EffectBaseDice[eff]); }
 
-        /**
-        * function indicating whether a spell fits to a spell family.
-        * Returns a bool value.
-        * \param familyFlags The uint64 value of Spell Family Flags.
-        */
-        bool IsFitToFamilyMask(uint64 familyFlags) const
+    /**
+     * function indicating whether a spell fits to a spell family.
+     * Returns a bool value.
+     * \param familyFlags The uint64 value of Spell Family Flags.
+     */
+    bool IsFitToFamilyMask(uint64 familyFlags) const
+    {
+        return SpellFamilyFlags.IsFitToFamilyMask(familyFlags);
+    }
+
+    /**
+     * function indicating whether a spell fits to a spell family based on arguments.
+     * Returns a bool value.
+     * \param family SpellFamily to which the spell should belong to.
+     * \param familyFlags The uint64 value of Spell Family Flags.
+     */
+    bool IsFitToFamily(SpellFamily family, uint64 familyFlags) const
+    {
+        return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(familyFlags);
+    }
+
+    /**
+     * function indicating whether a spell fits to a spell class family based on a ClassFamilyMask.
+     * Returns a bool value.
+     * \param mask ClassFamilyMask representing the class family.
+     */
+    bool IsFitToFamilyMask(ClassFamilyMask const& mask) const
+    {
+        return SpellFamilyFlags.IsFitToFamilyMask(mask);
+    }
+
+    /**
+     * function indicating whether a spell fits to a spell class family based on arguments.
+     * Returns a bool value.
+     * \param family SpellFamily to which the spell should belong to.
+     * \param masl ClassFamilyMask representing the class family.
+     */
+    bool IsFitToFamily(SpellFamily family, ClassFamilyMask const& mask) const
+    {
+        return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(mask);
+    }
+
+    /**
+     * function indicating whether a spell has an attribute doing bitwise comparison.
+     * Returns a bool value.
+     * \param attribute SpellAttributes to compare to actual attribute.
+     */
+    inline bool HasAttribute(SpellAttributes attribute) const { return Attributes & attribute; }
+
+    /**
+     * function indicating whether a spell has an attribute doing bitwise comparison.
+     * Returns a bool value.
+     * \param attribute SpellAttributesEx to compare to actual attributeEx.
+     */
+    inline bool HasAttribute(SpellAttributesEx attribute) const { return AttributesEx & attribute; }
+
+    /**
+     * function indicating whether a spell has an attribute doing bitwise comparison.
+     * Returns a bool value.
+     * \param attribute SpellAttributesEx2 to compare to actual attributeEx2.
+     */
+    inline bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesEx2 & attribute; }
+
+    /**
+     * function indicating whether a spell has an attribute doing bitwise comparison.
+     * Returns a bool value.
+     * \param attribute SpellAttributesEx3 to compare to actual attributeEx3.
+     */
+    inline bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesEx3 & attribute; }
+
+    /**
+     * function indicating whether a spell has an attribute doing bitwise comparison.
+     * Returns a bool value.
+     * \param attribute SpellAttributesEx4 to compare to actual attributeEx4.
+     */
+    inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
+
+    inline bool HasSpellEffect(SpellEffects effect) const
+    {
+        for (uint8 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; ++i)
         {
-            return SpellFamilyFlags.IsFitToFamilyMask(familyFlags);
+            if (Effect[i] == effect)
+            {
+                return true;
+            }
         }
+        return false;
+    }
 
-        /**
-        * function indicating whether a spell fits to a spell family based on arguments.
-        * Returns a bool value.
-        * \param family SpellFamily to which the spell should belong to.
-        * \param familyFlags The uint64 value of Spell Family Flags.
-        */
-        bool IsFitToFamily(SpellFamily family, uint64 familyFlags) const
-        {
-            return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(familyFlags);
-        }
-
-        /**
-        * function indicating whether a spell fits to a spell class family based on a ClassFamilyMask.
-        * Returns a bool value.
-        * \param mask ClassFamilyMask representing the class family.
-        */
-        bool IsFitToFamilyMask(ClassFamilyMask const& mask) const
-        {
-            return SpellFamilyFlags.IsFitToFamilyMask(mask);
-        }
-
-        /**
-        * function indicating whether a spell fits to a spell class family based on arguments.
-        * Returns a bool value.
-        * \param family SpellFamily to which the spell should belong to.
-        * \param masl ClassFamilyMask representing the class family.
-        */
-        bool IsFitToFamily(SpellFamily family, ClassFamilyMask const& mask) const
-        {
-            return SpellFamily(SpellFamilyName) == family && IsFitToFamilyMask(mask);
-        }
-
-        /**
-        * function indicating whether a spell has an attribute doing bitwise comparison.
-        * Returns a bool value.
-        * \param attribute SpellAttributes to compare to actual attribute.
-        */
-        inline bool HasAttribute(SpellAttributes attribute) const { return Attributes & attribute; }
-
-        /**
-        * function indicating whether a spell has an attribute doing bitwise comparison.
-        * Returns a bool value.
-        * \param attribute SpellAttributesEx to compare to actual attributeEx.
-        */
-        inline bool HasAttribute(SpellAttributesEx attribute) const { return AttributesEx & attribute; }
-
-        /**
-        * function indicating whether a spell has an attribute doing bitwise comparison.
-        * Returns a bool value.
-        * \param attribute SpellAttributesEx2 to compare to actual attributeEx2.
-        */
-        inline bool HasAttribute(SpellAttributesEx2 attribute) const { return AttributesEx2 & attribute; }
-
-        /**
-        * function indicating whether a spell has an attribute doing bitwise comparison.
-        * Returns a bool value.
-        * \param attribute SpellAttributesEx3 to compare to actual attributeEx3.
-        */
-        inline bool HasAttribute(SpellAttributesEx3 attribute) const { return AttributesEx3 & attribute; }
-
-        /**
-        * function indicating whether a spell has an attribute doing bitwise comparison.
-        * Returns a bool value.
-        * \param attribute SpellAttributesEx4 to compare to actual attributeEx4.
-        */
-        inline bool HasAttribute(SpellAttributesEx4 attribute) const { return AttributesEx4 & attribute; }
-
-        inline bool HasSpellEffect(SpellEffects effect) const
-        {
-            for (uint8 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; ++i)
-                if (Effect[i] == effect)
-                {
-                    return true;
-                }
-            return false;
-        }
     private:
         // prevent creating custom entries (copy data from original in fact)
         SpellEntry(SpellEntry const&);                      // DON'T must have implementation
 };
 
 /**
-* \struct SpellCastTimesEntry
-* \brief Entry representing the spell cast time for a given spell.
-*/
+ * \struct SpellCastTimesEntry
+ * \brief Entry representing the spell cast time for a given spell.
+ */
 struct SpellCastTimesEntry
 {
     uint32    ID;                                           // 0        m_ID
@@ -965,9 +983,9 @@ struct SpellCastTimesEntry
 };
 
 /**
-* \struct SpellRadiusEntry
-* \brief Entry representing the radius of action of some spells.
-*/
+ * \struct SpellRadiusEntry
+ * \brief Entry representing the radius of action of some spells.
+ */
 struct SpellRadiusEntry
 {
     uint32    ID;                                           //          m_ID
@@ -977,9 +995,9 @@ struct SpellRadiusEntry
 };
 
 /**
-* \struct SpellRangeEntry
-* \brief Entry representing the spell range of spells between which the spellcast is possible.
-*/
+ * \struct SpellRangeEntry
+ * \brief Entry representing the spell range of spells between which the spellcast is possible.
+ */
 struct SpellRangeEntry
 {
     uint32    ID;                                           // 0        m_ID
@@ -993,9 +1011,9 @@ struct SpellRangeEntry
 };
 
 /**
-* \struct SpellShapeshiftFormEntry
-* \brief Entry representing the valid shape shift within the game (stealth, bear, ...).
-*/
+ * \struct SpellShapeshiftFormEntry
+ * \brief Entry representing the valid shape shift within the game (stealth, bear, ...).
+ */
 struct SpellShapeshiftFormEntry
 {
     uint32 ID;                                              // 0        m_ID
@@ -1008,9 +1026,9 @@ struct SpellShapeshiftFormEntry
 };
 
 /**
-* \struct SpellDurationEntry
-* \brief Entry representing the spell duration.
-*/
+ * \struct SpellDurationEntry
+ * \brief Entry representing the spell duration.
+ */
 struct SpellDurationEntry
 {
     uint32    ID;                                           //          m_ID
@@ -1018,9 +1036,9 @@ struct SpellDurationEntry
 };
 
 /**
-* \struct SpellFocusObjectEntry
-* \brief
-*/
+ * \struct SpellFocusObjectEntry
+ * \brief
+ */
 struct SpellFocusObjectEntry
 {
     uint32    ID;                                           // 0        m_ID
@@ -1029,9 +1047,9 @@ struct SpellFocusObjectEntry
 };
 
 /**
-* \struct SpellItemEnchantmentEntry
-* \brief Entry representing the link between a Spell Trigger Enchantement and its enchant.
-*/
+ * \struct SpellItemEnchantmentEntry
+ * \brief Entry representing the link between a Spell Trigger Enchantement and its enchant.
+ */
 struct SpellItemEnchantmentEntry
 {
     uint32      ID;                                         // 0        m_ID
@@ -1046,9 +1064,9 @@ struct SpellItemEnchantmentEntry
 };
 
 /**
-* \struct StableSlotPricesEntry
-* \brief Entry representing the price for a stable slot.
-*/
+ * \struct StableSlotPricesEntry
+ * \brief Entry representing the price for a stable slot.
+ */
 struct StableSlotPricesEntry
 {
     uint32 Slot;                                            //          m_ID
@@ -1058,9 +1076,9 @@ struct StableSlotPricesEntry
 #define MAX_TALENT_RANK 5
 
 /**
-* \struct TalentEntry
-* \brief Entry representing the talent tree and the links between each of them (conditions, ..)
-*/
+ * \struct TalentEntry
+ * \brief Entry representing the talent tree and the links between each of them (conditions, ..)
+ */
 struct TalentEntry
 {
     uint32    TalentID;                                     // 0        m_ID
@@ -1078,9 +1096,9 @@ struct TalentEntry
 };
 
 /**
-* \struct TalentTabEntry
-* \brief Entry representing the available talents tab for each classes.
-*/
+ * \struct TalentTabEntry
+ * \brief Entry representing the available talents tab for each classes.
+ */
 struct TalentTabEntry
 {
     uint32  TalentTabID;                                    // 0        m_ID
@@ -1094,14 +1112,14 @@ struct TalentTabEntry
 };
 
 /**
-* \struct TaxiNodesEntry
-* \brief Entry representing a taxi node point coming from DBC.
-*
-* Each Taxi Node is used to be stored as a location for a taxi node NPC inside the game.
-* The Taxi Node ID is used within a bitwise comparison with Character.taximask to determine whether the
-* nearby Node is known by the player.
-*
-*/
+ * \struct TaxiNodesEntry
+ * \brief Entry representing a taxi node point coming from DBC.
+ *
+ * Each Taxi Node is used to be stored as a location for a taxi node NPC inside the game.
+ * The Taxi Node ID is used within a bitwise comparison with Character.taximask to determine whether the
+ * nearby Node is known by the player.
+ *
+ */
 struct TaxiNodesEntry
 {
     uint32    ID;                                           // 0        ID - ID of the Taxi Node in DBC.
@@ -1115,11 +1133,11 @@ struct TaxiNodesEntry
 };
 
 /**
-* \struct TaxiPathEntry
-* \brief Entry representing a taxi path between two taxi nodes.
-*
-* Each Taxi Path is used within the game to determine the price between 2 taxi nodes.
-*/
+ * \struct TaxiPathEntry
+ * \brief Entry representing a taxi path between two taxi nodes.
+ *
+ * Each Taxi Path is used within the game to determine the price between 2 taxi nodes.
+ */
 struct TaxiPathEntry
 {
     uint32    ID;                                            // 0        ID - ID of the Taxi Path in DBC.
@@ -1129,9 +1147,9 @@ struct TaxiPathEntry
 };
 
 /**
-* \struct TaxiPathNodeEntry
-* \brief Entry representing a Taxi Path Node - It is not loaded from the DBC but generated from it.
-*/
+ * \struct TaxiPathNodeEntry
+ * \brief Entry representing a Taxi Path Node - It is not loaded from the DBC but generated from it.
+ */
 struct TaxiPathNodeEntry
 {
     // 0        m_ID - ID in the DBC.
@@ -1146,9 +1164,9 @@ struct TaxiPathNodeEntry
 };
 
 /**
-* \struct WMOAreaTableEntry
-* \brief Entry representing the links between area, area's name, area's location, ...
-*/
+ * \struct WMOAreaTableEntry
+ * \brief Entry representing the links between area, area's name, area's location, ...
+ */
 struct WMOAreaTableEntry
 {
     uint32 Id;                                              // 0        m_ID index
@@ -1167,9 +1185,9 @@ struct WMOAreaTableEntry
 };
 
 /**
-* \struct WorldMapAreaEntry
-* \brief Entry representing the location of World Map Area.
-*/
+ * \struct WorldMapAreaEntry
+ * \brief Entry representing the location of World Map Area.
+ */
 struct WorldMapAreaEntry
 {
     // uint32  ID;                                          // 0        m_ID
@@ -1183,9 +1201,9 @@ struct WorldMapAreaEntry
 };
 
 /**
-* \struct WorldSafeLocsEntry
-* \brief Entry representing safe location within the world.
-*/
+ * \struct WorldSafeLocsEntry
+ * \brief Entry representing safe location within the world.
+ */
 struct WorldSafeLocsEntry
 {
     uint32    ID;                                           // 0        m_ID

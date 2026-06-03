@@ -37,13 +37,13 @@ namespace Movement
      */
     class PacketBuilder
     {
+        /**
+         * @brief Writes the common part of a monster move packet.
+         * @param mov The MoveSpline object containing movement data.
+         * @param data The WorldPacket to write the data to.
+         */
+        static void WriteCommonMonsterMovePart(const MoveSpline& mov, WorldPacket& data);
 
-            /**
-             * @brief Writes the common part of a monster move packet.
-             * @param mov The MoveSpline object containing movement data.
-             * @param data The WorldPacket to write the data to.
-             */
-            static void WriteCommonMonsterMovePart(const MoveSpline& mov, WorldPacket& data);
         public:
 
             /**

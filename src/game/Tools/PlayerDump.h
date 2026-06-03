@@ -35,20 +35,20 @@ enum DumpTableType
     DTT_CHARACTER,    ///< Character data (guid, name) -> characters
 
     DTT_CHAR_TABLE,   ///< Character table data (character_action, character_aura, character_homebind, character_queststatus, character_reputation, character_spell, character_spell_cooldown, character_ticket, character_tutorial)
-                      ///< character_queststatus, character_reputation,
-                      ///< character_spell, character_spell_cooldown, character_ticket,
-                      ///< character_tutorial
+    ///<                   character_queststatus, character_reputation,
+    ///<                   character_spell, character_spell_cooldown, character_ticket,
+    ///<                   character_tutorial
 
     DTT_INVENTORY,    ///< Inventory data (item guids collection) -> character_inventory
 
     DTT_MAIL,         ///< Mail data (mail ids collection) -> mail, item_text
-                      ///<    -> item_text
+    ///<                   -> item_text
 
     DTT_MAIL_ITEM,    ///< Mail item data (mail ids) -> mail_items, item guids collection
-                      ///<    -> item guids collection
+    ///<                   -> item guids collection
 
     DTT_ITEM,         ///< Item data (item guids) -> item_instance, item_text
-                      ///<    -> item_text
+    ///<                   -> item_text
 
     DTT_ITEM_GIFT,    ///< Item gift data (item guids) -> character_gifts
 

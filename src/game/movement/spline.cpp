@@ -65,8 +65,6 @@ namespace Movement
         (InitMethtod)& SplineBase::UninitializedSpline,
     };
 
-///////////
-
     using G3D::Matrix4;
     // Catmull-Rom spline coefficients
     static const Matrix4 s_catmullRomCoeffs(
@@ -94,8 +92,8 @@ namespace Movement
         Vector4 tvec(t * t * t, t * t, t, 1.f);
         Vector4 weights(tvec * matr);
 
-        result = vertice[0] * weights[0] + vertice[1] * weights[1]
-                + vertice[2] * weights[2] + vertice[3] * weights[3];
+        result = vertice[0] * weights[0] + vertice[1] * weights[1] +
+            vertice[2] * weights[2] + vertice[3] * weights[3];
     }
 
     /**
@@ -110,8 +108,8 @@ namespace Movement
         Vector4 tvec(3.f * t * t, 2.f * t, 1.f, 0.f);
         Vector4 weights(tvec * matr);
 
-        result = vertice[0] * weights[0] + vertice[1] * weights[1]
-                + vertice[2] * weights[2] + vertice[3] * weights[3];
+        result = vertice[0] * weights[0] + vertice[1] * weights[1] +
+            vertice[2] * weights[2] + vertice[3] * weights[3];
     }
 
     /**

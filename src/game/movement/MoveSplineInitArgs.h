@@ -77,30 +77,29 @@ namespace Movement
      */
     struct MoveSplineInitArgs
     {
+        /**
+         * @brief Constructor for MoveSplineInitArgs.
+         * @param path_capacity The initial capacity of the path vector.
+         */
+        MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
+            velocity(0.f), splineId(0), facing(), flags()
+        {
+            path.reserve(path_capacity);
+        }
 
-            /**
-             * @brief Constructor for MoveSplineInitArgs.
-             * @param path_capacity The initial capacity of the path vector.
-             */
-            MoveSplineInitArgs(size_t path_capacity = 16) : path_Idx_offset(0),
-                velocity(0.f), splineId(0), facing(), flags()
-            {
-                path.reserve(path_capacity);
-            }
+        PointsArray path; /**< The path points for the spline. */
+        FacingInfo facing; /**< The facing information. */
+        MoveSplineFlag flags; /**< The flags for the spline. */
+        int32 path_Idx_offset; /**< The path index offset. */
+        float velocity; /**< The velocity of the spline movement. */
+        uint32 splineId; /**< The ID of the spline. */
 
-            PointsArray path; /**< The path points for the spline. */
-            FacingInfo facing; /**< The facing information. */
-            MoveSplineFlag flags; /**< The flags for the spline. */
-            int32 path_Idx_offset; /**< The path index offset. */
-            float velocity; /**< The velocity of the spline movement. */
-            uint32 splineId; /**< The ID of the spline. */
-
-            /**
-             * @brief Validates the MoveSplineInitArgs.
-             * @param unit The unit to validate against.
-             * @return bool True if the arguments are valid, false otherwise.
-             */
-            bool Validate(Unit* unit) const;
+        /**
+         * @brief Validates the MoveSplineInitArgs.
+         * @param unit The unit to validate against.
+         * @return bool True if the arguments are valid, false otherwise.
+         */
+        bool Validate(Unit* unit) const;
         private:
             /**
              * @brief Checks if the path bounds are valid.

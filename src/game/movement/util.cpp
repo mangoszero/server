@@ -153,7 +153,7 @@ namespace Movement
         if (t_passed > terminal_time)
         {
             result = terminalVelocity * (t_passed - terminal_time) +
-                    start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
+                start_velocity * terminal_time + gravity * terminal_time * terminal_time * 0.5f;
         }
         else
         {
@@ -288,7 +288,7 @@ namespace Movement
      * @param str The string to append the flag names to.
      */
     template<class Flags, int N>
-    void print_flags(Flags t, const char * (&names)[N], std::string& str)
+        void print_flags(Flags t, const char * (&names)[N], std::string& str)
     {
         for (int i = 0; i < N; ++i)
         {
