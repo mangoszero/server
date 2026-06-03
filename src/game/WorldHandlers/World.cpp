@@ -92,6 +92,7 @@
 #include "GitRevision.h"
 #include "UpdateTime.h"
 #include "GameTime.h"
+#include "ScheduledExit.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -158,6 +159,8 @@ World::World()
     m_maxActiveSessionCount = 0;
     m_maxQueuedSessionCount = 0;
     m_MaintenanceTimeChecker = 0;
+    m_scheduledExitDelay = 0;
+    m_scheduledExitCountdownActive = false;
     m_broadcastEnable = false;
     m_broadcastList.clear();
     m_broadcastWeight = 0;
@@ -591,6 +594,8 @@ void World::LoadConfigSettings(bool reload)
     {
         m_broadcastTimer.SetInterval(getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) * IN_MILLISECONDS);
     }
+
+    LoadScheduledExitConfig();
 
     std::string forceLoadGridOnMaps = sConfig.GetStringDefault("LoadAllGridsOnMaps", "");
     if (!forceLoadGridOnMaps.empty())
@@ -2201,9 +2206,20 @@ void World::_UpdateGameTime()
         {
             m_ShutdownTimer -= elapsed;
 
-            ShutdownMsg();
+            MaNGOS::ScheduledExitCountdownActions actions = MaNGOS::GetScheduledExitCountdownActions(m_scheduledExitCountdownActive);
+            if (actions.sendShutdownTimer)
+            {
+                ShutdownMsg();
+            }
+
+            if (actions.sendConfiguredWarnings)
+            {
+                SendScheduledExitWarnings();
+            }
         }
     }
+
+    CheckScheduledExit();
 }
 
 /// Shutdown the server
@@ -2251,6 +2267,181 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
 #endif /* ENABLE_ELUNA */
 }
 
+void World::LoadScheduledExitConfig()
+{
+    m_scheduledExit = MaNGOS::ScheduledExitSchedule();
+    m_scheduledExitDelay = 0;
+    m_scheduledExitWarnings.clear();
+    m_scheduledExitCountdownActive = false;
+
+    if (!sConfig.GetBoolDefault("ScheduledExit.Enable", false))
+    {
+        sLog.outString("ScheduledExit: disabled");
+        return;
+    }
+
+    std::string dayText = sConfig.GetStringDefault("ScheduledExit.DayOfWeek", "3");
+    uint32 dayOfWeek = 0;
+    if (!MaNGOS::ParseScheduledExitUInt32(dayText, dayOfWeek) || dayOfWeek > 6)
+    {
+        sLog.outError("ScheduledExit: invalid ScheduledExit.DayOfWeek '%s'; disabling scheduled exit", dayText.c_str());
+        return;
+    }
+
+    std::string timeText = sConfig.GetStringDefault("ScheduledExit.Time", "05:00");
+    uint32 hour = 0;
+    uint32 minute = 0;
+    if (!MaNGOS::ParseScheduledExitTime(timeText, hour, minute))
+    {
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Time '%s'; disabling scheduled exit", timeText.c_str());
+        return;
+    }
+
+    std::string modeText = sConfig.GetStringDefault("ScheduledExit.Mode", "restart");
+    MaNGOS::ScheduledExitMode mode = MaNGOS::SCHEDULED_EXIT_MODE_RESTART;
+    if (!MaNGOS::ParseScheduledExitMode(modeText, mode))
+    {
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Mode '%s'; disabling scheduled exit", modeText.c_str());
+        return;
+    }
+
+    std::string delayText = sConfig.GetStringDefault("ScheduledExit.Delay", "900");
+    uint32 delay = 0;
+    if (!MaNGOS::ParseScheduledExitUInt32(delayText, delay))
+    {
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Delay '%s'; disabling scheduled exit", delayText.c_str());
+        return;
+    }
+
+    std::vector<std::string> warningErrors;
+    std::vector<uint32> warningTimes = MaNGOS::ParseScheduledExitWarningTimes(
+        sConfig.GetStringDefault("ScheduledExit.WarningTimes", "900,600,300,60"), delay, warningErrors);
+
+    for (std::vector<std::string>::const_iterator itr = warningErrors.begin(); itr != warningErrors.end(); ++itr)
+    {
+        sLog.outError("ScheduledExit: ignoring %s", itr->c_str());
+    }
+
+    for (std::vector<uint32>::const_iterator itr = warningTimes.begin(); itr != warningTimes.end(); ++itr)
+    {
+        if (*itr == 0)
+        {
+            sLog.outError("ScheduledExit: ignoring warning milestone 0");
+            continue;
+        }
+
+        std::ostringstream configKey;
+        configKey << "ScheduledExit.WarningText." << *itr;
+
+        ScheduledExitWarning warning;
+        warning.remainingSeconds = *itr;
+        warning.text = sConfig.GetStringDefault(configKey.str().c_str(), "");
+        if (warning.text.empty())
+        {
+            warning.text = MaNGOS::BuildScheduledExitWarningText(mode, *itr);
+        }
+        warning.sent = false;
+        m_scheduledExitWarnings.push_back(warning);
+    }
+
+    m_scheduledExit.enabled = true;
+    m_scheduledExit.dayOfWeek = dayOfWeek;
+    m_scheduledExit.hour = hour;
+    m_scheduledExit.minute = minute;
+    m_scheduledExit.mode = mode;
+    m_scheduledExitDelay = delay;
+
+    if (MaNGOS::MarkScheduledExitHandledIfMatching(m_scheduledExit, safe_localtime(time(NULL)), m_scheduledExitState))
+    {
+        sLog.outString("ScheduledExit: startup minute matches configured schedule; suppressing this minute to avoid restart loop");
+    }
+
+    std::ostringstream milestones;
+    for (std::vector<ScheduledExitWarning>::const_iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    {
+        if (itr != m_scheduledExitWarnings.begin())
+        {
+            milestones << ",";
+        }
+        milestones << itr->remainingSeconds;
+    }
+
+    sLog.outString("ScheduledExit: enabled day=%u time=%02u:%02u mode=%s delay=%u warningTimes=%s",
+        m_scheduledExit.dayOfWeek, m_scheduledExit.hour, m_scheduledExit.minute,
+        MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode), m_scheduledExitDelay,
+        milestones.str().c_str());
+}
+
+void World::CheckScheduledExit()
+{
+    if (!m_scheduledExit.enabled || m_stopEvent)
+    {
+        return;
+    }
+
+    if (!MaNGOS::CheckAndMarkScheduledExit(m_scheduledExit, safe_localtime(m_gameTime), m_scheduledExitState))
+    {
+        return;
+    }
+
+    if (m_ShutdownTimer > 0)
+    {
+        sLog.outString("ScheduledExit: %s scheduled for day=%u time=%02u:%02u skipped because shutdown/restart is already in progress",
+            MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode), m_scheduledExit.dayOfWeek, m_scheduledExit.hour, m_scheduledExit.minute);
+        return;
+    }
+
+    StartScheduledExit();
+}
+
+void World::StartScheduledExit()
+{
+    uint32 mask = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART ? SHUTDOWN_MASK_RESTART : SHUTDOWN_MASK_STOP;
+    uint8 exitCode = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART ? RESTART_EXIT_CODE : SHUTDOWN_EXIT_CODE;
+
+    sLog.outString("ScheduledExit: firing scheduled %s with delay %u seconds",
+        MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode), m_scheduledExitDelay);
+
+    ResetScheduledExitWarnings();
+    m_scheduledExitCountdownActive = m_scheduledExitDelay > 0;
+    ShutdownServ(m_scheduledExitDelay, mask, exitCode);
+
+    if (m_scheduledExitCountdownActive)
+    {
+        SendScheduledExitWarnings();
+    }
+}
+
+void World::ResetScheduledExitWarnings()
+{
+    for (std::vector<ScheduledExitWarning>::iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    {
+        itr->sent = false;
+    }
+}
+
+void World::SendScheduledExitWarnings()
+{
+    if (!m_scheduledExitCountdownActive || !m_ShutdownTimer)
+    {
+        return;
+    }
+
+    for (std::vector<ScheduledExitWarning>::iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    {
+        if (!itr->sent && m_ShutdownTimer <= itr->remainingSeconds)
+        {
+            SendScheduledExitWarning(*itr);
+        }
+    }
+}
+
+void World::SendScheduledExitWarning(ScheduledExitWarning& warning)
+{
+    warning.sent = true;
+    SendServerMessage(SERVER_MSG_CUSTOM, warning.text.c_str());
+}
+
 /// Display a shutdown message to the user(s)
 void World::ShutdownMsg(bool show /*= false*/, Player* player /*= NULL*/)
 {
@@ -2290,6 +2481,8 @@ void World::ShutdownCancel()
 
     m_ShutdownMask = 0;
     m_ShutdownTimer = 0;
+    m_scheduledExitCountdownActive = false;
+    ResetScheduledExitWarnings();
     m_ExitCode = SHUTDOWN_EXIT_CODE;                       // to default value
     SendServerMessage(msgid);
 
