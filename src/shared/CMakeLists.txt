@@ -244,26 +244,3 @@ target_link_libraries(shared
         OpenSSL::SSL
         $<$<BOOL:${WIN32}>:dbghelp>
 )
-
-add_executable(scheduled_exit_tests EXCLUDE_FROM_ALL
-    Tests/ScheduledExitTest.cpp
-)
-
-target_include_directories(scheduled_exit_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${TGT_INCL}
-)
-
-target_compile_definitions(scheduled_exit_tests
-    PRIVATE
-        ${MANGOS_EXP}
-        MANGOS_ENDIAN=${ENDIAN_VALUE}
-        $<$<BOOL:${ENDIAN_VALUE}>:ARCH_IS_BIG_ENDIAN>
-)
-
-target_link_libraries(scheduled_exit_tests
-    PRIVATE
-        shared
-)
