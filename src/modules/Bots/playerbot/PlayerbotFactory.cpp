@@ -189,7 +189,9 @@ void PlayerbotFactory::Randomize(bool incremental)
 void PlayerbotFactory::InitPet()
 {
     if (bot->getClass() != CLASS_HUNTER)
+    {
         return;
+    }
 
     Pet* pet = bot->GetPet();
 
@@ -201,10 +203,14 @@ void PlayerbotFactory::InitPet()
         {
             pet = bot->GetPet();
             if (!pet)
+            {
                 delete loadPet;
+            }
         }
         else
+        {
             delete loadPet;
+        }
     }
 
     if (!pet)
@@ -278,7 +284,9 @@ void PlayerbotFactory::InitPet()
             pet->SetMaxPower(POWER_HAPPINESS, pet->GetCreatePowers(POWER_HAPPINESS));
             pet->SetPower(POWER_HAPPINESS, pet->GetMaxPower(POWER_HAPPINESS) / 2);
             if (bot->IsPvP())
+            {
                 pet->SetPvP(true);
+            }
             map->Add((Creature*)pet);
             pet->AIM_Initialize();
             pet->InitPetCreateSpells();
@@ -299,10 +307,10 @@ void PlayerbotFactory::InitPet()
 
     // Teach all pet trainer skills appropriate for this pet's level.
     QueryResult* trainerSpells = WorldDatabase.PQuery(
-        "SELECT DISTINCT nt.spell"
-        " FROM npc_trainer nt"
-        " JOIN creature_template ct ON nt.entry = ct.Entry AND ct.TrainerType = 3"
-        " WHERE nt.reqlevel <= %u",
+            "SELECT DISTINCT nt.spell"
+            " FROM npc_trainer nt"
+            " JOIN creature_template ct ON nt.entry = ct.Entry AND ct.TrainerType = 3"
+            " WHERE nt.reqlevel <= %u",
         pet->getLevel());
 
     if (trainerSpells)
@@ -312,7 +320,10 @@ void PlayerbotFactory::InitPet()
             uint32 trainerSpellId = (*trainerSpells)[0].GetUInt32();
             SpellEntry const* trainerSpellInfo = sSpellStore.LookupEntry(trainerSpellId);
             if (!trainerSpellInfo)
+            {
                 continue;
+            }
+
             for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
             {
                 if (trainerSpellInfo->Effect[i] == SPELL_EFFECT_LEARN_PET_SPELL &&
@@ -337,14 +348,25 @@ void PlayerbotFactory::InitPet()
             {
                 SkillLineAbilityEntry const* slab = sSkillLineAbilityStore.LookupEntry(j);
                 if (!slab || !slab->spellId)
+                {
                     continue;
+                }
+
                 if (slab->skillId != cFamily->skillLine[0] && slab->skillId != cFamily->skillLine[1])
+                {
                     continue;
+                }
+
                 SpellEntry const* spellInfo = sSpellStore.LookupEntry(slab->spellId);
                 if (!spellInfo || IsPassiveSpell(spellInfo))
+                {
                     continue;
+                }
+
                 if (spellInfo->spellLevel > pet->getLevel())
+                {
                     continue;
+                }
                 pet->learnSpell(slab->spellId);
             }
         }
@@ -427,47 +449,47 @@ void PlayerbotFactory::InitTalents()
  */
 class DestroyItemsVisitor : public IterateItemsVisitor
 {
-public:
-    DestroyItemsVisitor(Player* bot) : IterateItemsVisitor(), bot(bot) {}
+    public:
+        DestroyItemsVisitor(Player* bot) : IterateItemsVisitor(), bot(bot) {}
 
-    virtual bool Visit(Item* item)
-    {
-        uint32 id = item->GetProto()->ItemId;
-        if (CanKeep(id))
+        virtual bool Visit(Item* item)
         {
-            keep.insert(id);
+            uint32 id = item->GetProto()->ItemId;
+            if (CanKeep(id))
+            {
+                keep.insert(id);
+                return true;
+            }
+
+            bot->DestroyItem(item->GetBagSlot(), item->GetSlot(), true);
             return true;
         }
 
-        bot->DestroyItem(item->GetBagSlot(), item->GetSlot(), true);
-        return true;
-    }
-
-private:
-    bool CanKeep(uint32 id)
-    {
-        if (keep.find(id) != keep.end())
+    private:
+        bool CanKeep(uint32 id)
         {
+            if (keep.find(id) != keep.end())
+            {
+                return false;
+            }
+
+            if (sPlayerbotAIConfig.IsInRandomQuestItemList(id))
+            {
+                return true;
+            }
+
+            ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(id);
+            if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK)
+            {
+                return true;
+            }
+
             return false;
         }
 
-        if (sPlayerbotAIConfig.IsInRandomQuestItemList(id))
-        {
-            return true;
-        }
-
-        ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(id);
-        if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-private:
-    Player* bot;
-    set<uint32> keep;
+    private:
+        Player* bot;
+        set<uint32> keep;
 };
 
 /**
@@ -573,22 +595,22 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
 {
     switch (mod)
     {
-            //FOEREAPER
+        //FOEREAPER
         //case ITEM_MOD_HIT_RATING:
         //case ITEM_MOD_CRIT_RATING:
         //case ITEM_MOD_HASTE_RATING:
         case ITEM_MOD_HEALTH:
         case ITEM_MOD_STAMINA:
-        //case ITEM_MOD_HEALTH_REGEN:
+            //case ITEM_MOD_HEALTH_REGEN:
         case ITEM_MOD_MANA:
         case ITEM_MOD_INTELLECT:
         case ITEM_MOD_SPIRIT:
-        //case ITEM_MOD_MANA_REGENERATION:
-        //case ITEM_MOD_SPELL_POWER:
-        //case ITEM_MOD_SPELL_PENETRATION:
-        //case ITEM_MOD_HIT_SPELL_RATING:
-        //case ITEM_MOD_CRIT_SPELL_RATING:
-        //case ITEM_MOD_HASTE_SPELL_RATING:
+            //case ITEM_MOD_MANA_REGENERATION:
+            //case ITEM_MOD_SPELL_POWER:
+            //case ITEM_MOD_SPELL_PENETRATION:
+            //case ITEM_MOD_HIT_SPELL_RATING:
+            //case ITEM_MOD_CRIT_SPELL_RATING:
+            //case ITEM_MOD_HASTE_SPELL_RATING:
             sp++;
             break;
     }
@@ -602,21 +624,21 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
         case ITEM_MOD_STRENGTH:
         case ITEM_MOD_HEALTH:
         case ITEM_MOD_STAMINA:
-        //case ITEM_MOD_HEALTH_REGEN:
-        //case ITEM_MOD_DEFENSE_SKILL_RATING:
-        //case ITEM_MOD_DODGE_RATING:
-        //case ITEM_MOD_PARRY_RATING:
-        //case ITEM_MOD_BLOCK_RATING:
-        //case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
-        //case ITEM_MOD_HIT_TAKEN_RANGED_RATING:
-        //case ITEM_MOD_HIT_TAKEN_SPELL_RATING:
-        //case ITEM_MOD_CRIT_TAKEN_MELEE_RATING:
-        //case ITEM_MOD_CRIT_TAKEN_RANGED_RATING:
-        //case ITEM_MOD_CRIT_TAKEN_SPELL_RATING:
-        //case ITEM_MOD_HIT_TAKEN_RATING:
-        //case ITEM_MOD_CRIT_TAKEN_RATING:
-        //case ITEM_MOD_RESILIENCE_RATING:
-        //case ITEM_MOD_BLOCK_VALUE:
+            //case ITEM_MOD_HEALTH_REGEN:
+            //case ITEM_MOD_DEFENSE_SKILL_RATING:
+            //case ITEM_MOD_DODGE_RATING:
+            //case ITEM_MOD_PARRY_RATING:
+            //case ITEM_MOD_BLOCK_RATING:
+            //case ITEM_MOD_HIT_TAKEN_MELEE_RATING:
+            //case ITEM_MOD_HIT_TAKEN_RANGED_RATING:
+            //case ITEM_MOD_HIT_TAKEN_SPELL_RATING:
+            //case ITEM_MOD_CRIT_TAKEN_MELEE_RATING:
+            //case ITEM_MOD_CRIT_TAKEN_RANGED_RATING:
+            //case ITEM_MOD_CRIT_TAKEN_SPELL_RATING:
+            //case ITEM_MOD_HIT_TAKEN_RATING:
+            //case ITEM_MOD_CRIT_TAKEN_RATING:
+            //case ITEM_MOD_RESILIENCE_RATING:
+            //case ITEM_MOD_BLOCK_VALUE:
             tank++;
             break;
     }
@@ -625,22 +647,22 @@ void PlayerbotFactory::AddItemStats(uint32 mod, uint8 &sp, uint8 &ap, uint8 &tan
     {
         case ITEM_MOD_HEALTH:
         case ITEM_MOD_STAMINA:
-        //case ITEM_MOD_HEALTH_REGEN:
+            //case ITEM_MOD_HEALTH_REGEN:
         case ITEM_MOD_AGILITY:
         case ITEM_MOD_STRENGTH:
-        //case ITEM_MOD_HIT_MELEE_RATING:
-        //case ITEM_MOD_HIT_RANGED_RATING:
-        //case ITEM_MOD_CRIT_MELEE_RATING:
-        //case ITEM_MOD_CRIT_RANGED_RATING:
-        //case ITEM_MOD_HASTE_MELEE_RATING:
-        //case ITEM_MOD_HASTE_RANGED_RATING:
-        //case ITEM_MOD_HIT_RATING:
-        //case ITEM_MOD_CRIT_RATING:
-        //case ITEM_MOD_HASTE_RATING:
-        //case ITEM_MOD_EXPERTISE_RATING:
-        //case ITEM_MOD_ATTACK_POWER:
-        //case ITEM_MOD_RANGED_ATTACK_POWER:
-        //case ITEM_MOD_ARMOR_PENETRATION_RATING:
+            //case ITEM_MOD_HIT_MELEE_RATING:
+            //case ITEM_MOD_HIT_RANGED_RATING:
+            //case ITEM_MOD_CRIT_MELEE_RATING:
+            //case ITEM_MOD_CRIT_RANGED_RATING:
+            //case ITEM_MOD_HASTE_MELEE_RATING:
+            //case ITEM_MOD_HASTE_RANGED_RATING:
+            //case ITEM_MOD_HIT_RATING:
+            //case ITEM_MOD_CRIT_RATING:
+            //case ITEM_MOD_HASTE_RATING:
+            //case ITEM_MOD_EXPERTISE_RATING:
+            //case ITEM_MOD_ATTACK_POWER:
+            //case ITEM_MOD_RANGED_ATTACK_POWER:
+            //case ITEM_MOD_ARMOR_PENETRATION_RATING:
             ap++;
             break;
     }
@@ -664,32 +686,32 @@ bool PlayerbotFactory::CanEquipWeapon(ItemPrototype const* proto)
         case CLASS_MAGE:
         case CLASS_WARLOCK:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_WAND &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_WAND &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD)
                 return false;
             break;
         case CLASS_WARRIOR:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_THROWN)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_THROWN)
                 return false;
             break;
         case CLASS_PALADIN:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD)
                 return false;
             break;
         case CLASS_SHAMAN:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE2 &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_STAFF)
                 return false;
             break;
         case CLASS_DRUID:
@@ -701,20 +723,20 @@ bool PlayerbotFactory::CanEquipWeapon(ItemPrototype const* proto)
             break;
         case CLASS_HUNTER:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_AXE2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD2 &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW)
                 return false;
             break;
         case CLASS_ROGUE:
             if (proto->SubClass != ITEM_SUBCLASS_WEAPON_DAGGER &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW &&
-                    proto->SubClass != ITEM_SUBCLASS_WEAPON_THROWN)
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_SWORD &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_MACE &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_GUN &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_CROSSBOW &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_BOW &&
+                proto->SubClass != ITEM_SUBCLASS_WEAPON_THROWN)
                 return false;
             break;
     }
@@ -1281,14 +1303,15 @@ void PlayerbotFactory::InitTradeSkills()
             SetRandomSkill(SKILL_HERBALISM);
             SetRandomSkill(SKILL_ALCHEMY);
             break;
-        /*case 1:
-            SetRandomSkill(SKILL_HERBALISM);
-            SetRandomSkill(SKILL_INSCRIPTION);
-            break;
-        case 2:
-            SetRandomSkill(SKILL_MINING);
-            SetRandomSkill(SKILL_JEWELCRAFTING);
-            break;*/
+        /** case 1:
+         *      SetRandomSkill(SKILL_HERBALISM);
+         *      SetRandomSkill(SKILL_INSCRIPTION);
+         *      break;
+         *  case 2:
+         *      SetRandomSkill(SKILL_MINING);
+         *      SetRandomSkill(SKILL_JEWELCRAFTING);
+         *      break;
+         */
         case 1://3:
             SetRandomSkill(firstSkills[urand(0, firstSkills.size() - 1)]);
             SetRandomSkill(secondSkills[urand(0, secondSkills.size() - 1)]);
@@ -1580,7 +1603,10 @@ void PlayerbotFactory::InitQuestSpells()
             // Totem quests - these vary by race/level but add common ones
             if (level >= 10)
             {
-                if (!bot->HasSpell(8012))  bot->learnSpell(8012, false);  // Purge (often quest)
+                if (!bot->HasSpell(8012))
+                {
+                    bot->learnSpell(8012, false);  // Purge (often quest)
+                }
             }
             break;
         case CLASS_PRIEST:
@@ -1709,7 +1735,7 @@ ObjectGuid PlayerbotFactory::GetRandomBot()
 void PlayerbotFactory::InitQuests()
 {
     QueryResult *results = WorldDatabase.PQuery("SELECT `entry`, `RequiredClasses`, `RequiredRaces` FROM `quest_template` WHERE `QuestLevel` = -1 and `MinLevel` <= '%u'",
-            bot->getLevel());
+        bot->getLevel());
     if (!results)
     {
         return;
@@ -1740,8 +1766,8 @@ void PlayerbotFactory::InitQuests()
             bot->SetQuestStatus(questId, QUEST_STATUS_NONE);
 
             if (!bot->SatisfyQuestClass(quest, false) ||
-                    !bot->SatisfyQuestRace(quest, false) ||
-                    !bot->SatisfyQuestStatus(quest, false))
+                !bot->SatisfyQuestRace(quest, false) ||
+                !bot->SatisfyQuestStatus(quest, false))
                 continue;
 
             if (quest->IsRepeatable())
@@ -1786,13 +1812,13 @@ void PlayerbotFactory::InitAmmo()
     // Determine the type of ammo required based on the ranged weapon
     switch (pItem->GetProto()->SubClass)
     {
-    case ITEM_SUBCLASS_WEAPON_GUN:
-        subClass = ITEM_SUBCLASS_BULLET;
-        break;
-    case ITEM_SUBCLASS_WEAPON_BOW:
-    case ITEM_SUBCLASS_WEAPON_CROSSBOW:
-        subClass = ITEM_SUBCLASS_ARROW;
-        break;
+        case ITEM_SUBCLASS_WEAPON_GUN:
+            subClass = ITEM_SUBCLASS_BULLET;
+            break;
+        case ITEM_SUBCLASS_WEAPON_BOW:
+        case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+            subClass = ITEM_SUBCLASS_ARROW;
+            break;
     }
 
     if (!subClass)
@@ -1802,7 +1828,7 @@ void PlayerbotFactory::InitAmmo()
 
     // Query the database for the highest level ammo that the bot can use
     QueryResult *results = WorldDatabase.PQuery("select max(`entry`), max(`RequiredLevel`) from `item_template` where `class` = '%u' and `subclass` = '%u' and `RequiredLevel` <= '%u'",
-            ITEM_CLASS_PROJECTILE, subClass, bot->getLevel());
+        ITEM_CLASS_PROJECTILE, subClass, bot->getLevel());
     if (!results)
     {
         return;
@@ -2064,9 +2090,10 @@ void PlayerbotFactory::InitInventorySkill()
     {
         StoreItem(16207, 1); // Runed Arcanite Rod
     }
-    /*if (bot->HasSkill(SKILL_INSCRIPTION)) {
-        StoreItem(39505, 1); // Virtuoso Inking Set
-    }*/
+    /** if (bot->HasSkill(SKILL_INSCRIPTION)) {
+     *      StoreItem(39505, 1); // Virtuoso Inking Set
+     *  }
+     */
     if (bot->HasSkill(SKILL_SKINNING))
     {
         StoreItem(7005, 1); // Skinning Knife
@@ -2197,7 +2224,7 @@ void PlayerbotFactory::InitInventoryEquip()
 
         // Check if the item is armor or weapon and if it can be equipped by the bot
         if (proto->Class != ITEM_CLASS_ARMOR && proto->Class != ITEM_CLASS_WEAPON || (proto->Bonding == BIND_WHEN_PICKED_UP ||
-                proto->Bonding == BIND_WHEN_USE))
+            proto->Bonding == BIND_WHEN_USE))
         {
             continue;
         }

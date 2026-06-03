@@ -161,18 +161,18 @@ bool TradeStatusAction::CheckTrade()
     {
         switch (urand(0, 4))
         {
-        case 0:
-            ai->TellMaster("A pleasure doing business with you");
-            break;
-        case 1:
-            ai->TellMaster("Fair trade");
-            break;
-        case 2:
-            ai->TellMaster("Thanks");
-            break;
-        case 3:
-            ai->TellMaster("Off with you");
-            break;
+            case 0:
+                ai->TellMaster("A pleasure doing business with you");
+                break;
+            case 1:
+                ai->TellMaster("Fair trade");
+                break;
+            case 2:
+                ai->TellMaster("Thanks");
+                break;
+            case 3:
+                ai->TellMaster("Off with you");
+                break;
         }
         return true;
     }

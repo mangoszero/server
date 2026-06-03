@@ -17,9 +17,9 @@ class Item;
 using namespace std;
 
 /**
-* \struct AreaCreatureStats
-* \brief Entry representing creature levels within an area for playerbot spawning decisions
-*/
+ * \struct AreaCreatureStats
+ * \brief Entry representing creature levels within an area for playerbot spawning decisions
+ */
 struct AreaCreatureStats
 {
     uint8   minLevel;

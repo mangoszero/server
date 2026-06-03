@@ -9,14 +9,14 @@ namespace ai
 
     class Qualified
     {
-    public:
-        Qualified() {};
+        public:
+            Qualified() {};
 
-    public:
-        void Qualify(string qualifier) { this->qualifier = qualifier; }
+        public:
+            void Qualify(string qualifier) { this->qualifier = qualifier; }
 
-    protected:
-        string qualifier;
+        protected:
+            string qualifier;
     };
 
     template <class T> class NamedObjectFactory
@@ -71,8 +71,8 @@ namespace ai
     template <class T> class NamedObjectContext : public NamedObjectFactory<T>
     {
     public:
-        NamedObjectContext(bool shared = false, bool supportsSiblings = false) :
-            NamedObjectFactory<T>(), shared(shared), supportsSiblings(supportsSiblings) {}
+        NamedObjectContext(bool shared = false, bool supportsSiblings = false)
+            : NamedObjectFactory<T>(), shared(shared), supportsSiblings(supportsSiblings) {}
 
         T* create(string name, PlayerbotAI* ai)
         {
@@ -81,7 +81,9 @@ namespace ai
                 T* obj = NamedObjectFactory<T>::create(name, ai);
                 created[name] = obj;
                 if (obj)
+                {
                     createdList.push_back(obj);
+                }
                 return obj;
             }
 
@@ -172,7 +174,10 @@ namespace ai
             for (typename list<NamedObjectContext<T>*>::iterator i = contexts.begin(); i != contexts.end(); i++)
             {
                 T* object = (*i)->create(name, ai);
-                if (object) return object;
+                if (object)
+                {
+                    return object;
+                }
             }
             return NULL;
         }
@@ -276,7 +281,10 @@ namespace ai
             for (typename list<NamedObjectFactory<T>*>::iterator i = factories.begin(); i != factories.end(); i++)
             {
                 T* object = (*i)->create(name, ai);
-                if (object) return object;
+                if (object)
+                {
+                    return object;
+                }
             }
             return NULL;
         }

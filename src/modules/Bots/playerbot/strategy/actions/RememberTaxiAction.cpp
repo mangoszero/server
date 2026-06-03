@@ -12,7 +12,7 @@ bool RememberTaxiAction::Execute(Event event)
 
     switch (p.GetOpcode())
     {
-    case CMSG_ACTIVATETAXI:
+        case CMSG_ACTIVATETAXI:
         {
             LastMovement& movement = context->GetValue<LastMovement&>("last movement")->Get();
             movement.taxiNodes.clear();
@@ -28,7 +28,7 @@ bool RememberTaxiAction::Execute(Event event)
             }
             return true;
         }
-    case CMSG_ACTIVATETAXIEXPRESS:
+        case CMSG_ACTIVATETAXIEXPRESS:
         {
             ObjectGuid guid;
             uint32 node_count;
@@ -55,6 +55,5 @@ bool RememberTaxiAction::Execute(Event event)
             }
         }
     }
-
     return false;
 }

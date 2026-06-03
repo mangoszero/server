@@ -8,86 +8,86 @@ using namespace ai;
 
 class FindPotionVisitor : public FindUsableItemVisitor
 {
-public:
-    FindPotionVisitor(Player* bot, uint32 effectId) : FindUsableItemVisitor(bot), effectId(effectId) {}
+    public:
+        FindPotionVisitor(Player* bot, uint32 effectId) : FindUsableItemVisitor(bot), effectId(effectId) {}
 
-    virtual bool Accept(const ItemPrototype* proto)
-    {
-        if (proto->Class == ITEM_CLASS_CONSUMABLE &&
-            proto->SubClass == ITEM_SUBCLASS_POTION &&
-            proto->Spells[0].SpellCategory == 4)
+        virtual bool Accept(const ItemPrototype* proto)
         {
-            for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
+            if (proto->Class == ITEM_CLASS_CONSUMABLE &&
+                proto->SubClass == ITEM_SUBCLASS_POTION &&
+                proto->Spells[0].SpellCategory == 4)
             {
-                const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
-                if (!spellInfo)
+                for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
                 {
-                    return false;
-                }
-
-                for (int i = 0 ; i < 3; i++)
-                {
-                    if (spellInfo->Effect[i] == effectId)
+                    const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
+                    if (!spellInfo)
                     {
-                        return true;
+                        return false;
+                    }
+
+                    for (int i = 0 ; i < 3; i++)
+                    {
+                        if (spellInfo->Effect[i] == effectId)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
+            return false;
         }
-        return false;
-    }
 
-private:
-    uint32 effectId;
+    private:
+        uint32 effectId;
 };
 
 class FindBandageVisitor : public FindUsableItemVisitor
 {
     public:
-    explicit FindBandageVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
+        explicit FindBandageVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
 
-    virtual bool Accept(const ItemPrototype* proto)
-    {
-        return proto->Class == ITEM_CLASS_CONSUMABLE
+        virtual bool Accept(const ItemPrototype* proto)
+        {
+            return proto->Class == ITEM_CLASS_CONSUMABLE
             && proto->SubClass == ITEM_SUBCLASS_BANDAGE;
-    }
+        }
 };
 
 class FindManaGemVisitor : public FindUsableItemVisitor
 {
-public:
-    FindManaGemVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
+    public:
+        FindManaGemVisitor(Player* bot) : FindUsableItemVisitor(bot) {}
 
-    virtual bool Accept(const ItemPrototype* proto)
-    {
-        if (proto->Class == ITEM_CLASS_CONSUMABLE &&
-            (proto->Flags & ITEM_FLAG_CONJURED) &&
-            proto->SubClass != ITEM_SUBCLASS_POTION)
+        virtual bool Accept(const ItemPrototype* proto)
         {
-            for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
+            if (proto->Class == ITEM_CLASS_CONSUMABLE &&
+                (proto->Flags & ITEM_FLAG_CONJURED) &&
+                proto->SubClass != ITEM_SUBCLASS_POTION)
             {
-                if (!proto->Spells[j].SpellId)
+                for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
                 {
-                    continue;
-                }
-
-                const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
-                if (!spellInfo)
-                {
-                    continue;
-                }
-
-                for (int i = 0; i < 3; i++)
-                {
-                    if (spellInfo->Effect[i] == SPELL_EFFECT_ENERGIZE)
+                    if (!proto->Spells[j].SpellId)
                     {
-                        return true;
+                        continue;
+                    }
+
+                    const SpellEntry* const spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
+                    if (!spellInfo)
+                    {
+                        continue;
+                    }
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        if (spellInfo->Effect[i] == SPELL_EFFECT_ENERGIZE)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
+            return false;
         }
-        return false;
-    }
 };
 
 void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMask mask)
@@ -106,11 +106,15 @@ void InventoryAction::IterateItems(IterateItemsVisitor* visitor, IterateItemsMas
 void InventoryAction::IterateItemsInBags(IterateItemsVisitor* visitor)
 {
     for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+    {
         if (Item *pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             if (!visitor->Visit(pItem))
             {
                 return;
             }
+        }
+    }
 
     for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
@@ -182,7 +186,9 @@ Item* InventoryAction::FindPlayerItem(Player *bot, FindItemVisitor *visitor)
     for (int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; ++i)
     {
         if (Item* pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+        {
             visitor->Visit(pItem);
+        }
     }
     for (int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
@@ -191,7 +197,9 @@ Item* InventoryAction::FindPlayerItem(Player *bot, FindItemVisitor *visitor)
             for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
             {
                 if (Item* pItem = pBag->GetItemByPos(j))
+                {
                     visitor->Visit(pItem);
+                }
             }
         }
     }
@@ -218,42 +226,42 @@ void InventoryAction::TellItems(map<uint32, int> itemMap)
             oldClass = proto->Class;
             switch (proto->Class)
             {
-            case ITEM_CLASS_CONSUMABLE:
-                ai->TellMaster("--- consumable ---");
-                break;
-            case ITEM_CLASS_CONTAINER:
-                ai->TellMaster("--- container ---");
-                break;
-            case ITEM_CLASS_WEAPON:
-                ai->TellMaster("--- weapon ---");
-                break;
-            case ITEM_CLASS_ARMOR:
-                ai->TellMaster("--- armor ---");
-                break;
-            case ITEM_CLASS_REAGENT:
-                ai->TellMaster("--- reagent ---");
-                break;
-            case ITEM_CLASS_PROJECTILE:
-                ai->TellMaster("--- projectile ---");
-                break;
-            case ITEM_CLASS_TRADE_GOODS:
-                ai->TellMaster("--- trade goods ---");
-                break;
-            case ITEM_CLASS_RECIPE:
-                ai->TellMaster("--- recipe ---");
-                break;
-            case ITEM_CLASS_QUIVER:
-                ai->TellMaster("--- quiver ---");
-                break;
-            case ITEM_CLASS_QUEST:
-                ai->TellMaster("--- quest items ---");
-                break;
-            case ITEM_CLASS_KEY:
-                ai->TellMaster("--- keys ---");
-                break;
-            case ITEM_CLASS_MISC:
-                ai->TellMaster("--- other ---");
-                break;
+                case ITEM_CLASS_CONSUMABLE:
+                    ai->TellMaster("--- consumable ---");
+                    break;
+                case ITEM_CLASS_CONTAINER:
+                    ai->TellMaster("--- container ---");
+                    break;
+                case ITEM_CLASS_WEAPON:
+                    ai->TellMaster("--- weapon ---");
+                    break;
+                case ITEM_CLASS_ARMOR:
+                    ai->TellMaster("--- armor ---");
+                    break;
+                case ITEM_CLASS_REAGENT:
+                    ai->TellMaster("--- reagent ---");
+                    break;
+                case ITEM_CLASS_PROJECTILE:
+                    ai->TellMaster("--- projectile ---");
+                    break;
+                case ITEM_CLASS_TRADE_GOODS:
+                    ai->TellMaster("--- trade goods ---");
+                    break;
+                case ITEM_CLASS_RECIPE:
+                    ai->TellMaster("--- recipe ---");
+                    break;
+                case ITEM_CLASS_QUIVER:
+                    ai->TellMaster("--- quiver ---");
+                    break;
+                case ITEM_CLASS_QUEST:
+                    ai->TellMaster("--- quest items ---");
+                    break;
+                case ITEM_CLASS_KEY:
+                    ai->TellMaster("--- keys ---");
+                    break;
+                case ITEM_CLASS_MISC:
+                    ai->TellMaster("--- other ---");
+                    break;
             }
         }
 

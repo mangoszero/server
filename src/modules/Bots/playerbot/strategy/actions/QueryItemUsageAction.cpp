@@ -22,15 +22,22 @@ bool QueryItemUsageAction::Execute(Event event)
             return false;
         }
 
-        uint32 received, created, isShowChatMessage, notUsed, itemId,
-            suffixFactor, itemRandomPropertyId, count, invCount;
+        uint32 received;
+        uint32 created;
+        uint32 isShowChatMessage;
+        uint32 notUsed;
+        uint32 itemId;
+        uint32 suffixFactor;
+        uint32 itemRandomPropertyId;
+        uint32 count;
+        uint32 invCount;
         uint8 bagSlot;
 
         data >> received;                               // 0=looted, 1=from npc
         data >> created;                                // 0=received, 1=created
         data >> isShowChatMessage;                                      // IsShowChatMessage
         data >> bagSlot;
-                                                                // item slot, but when added to stack: 0xFFFFFFFF
+        // item slot, but when added to stack: 0xFFFFFFFF
         data >> notUsed;
         data >> itemId;
         data >> suffixFactor;
@@ -72,18 +79,18 @@ bool QueryItemUsageAction::QueryItemUsage(ItemPrototype const *item)
     ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", out.str());
     switch (usage)
     {
-    case ITEM_USAGE_EQUIP:
-        ai->TellMaster("Equip");
-        return true;
-    case ITEM_USAGE_REPLACE:
-        ai->TellMaster("Equip (replace)");
-        return true;
-    case ITEM_USAGE_SKILL:
-        ai->TellMaster("Tradeskill");
-        return true;
-    case ITEM_USAGE_USE:
-        ai->TellMaster("Use");
-        return true;
+        case ITEM_USAGE_EQUIP:
+            ai->TellMaster("Equip");
+            return true;
+        case ITEM_USAGE_REPLACE:
+            ai->TellMaster("Equip (replace)");
+            return true;
+        case ITEM_USAGE_SKILL:
+            ai->TellMaster("Tradeskill");
+            return true;
+        case ITEM_USAGE_USE:
+            ai->TellMaster("Use");
+            return true;
     }
 
     return false;

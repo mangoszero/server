@@ -7,31 +7,30 @@ namespace ai
 {
     class PositionAction : public Action
     {
-    public:
-        PositionAction(PlayerbotAI* ai) : Action(ai, "position")
-        {}
+        public:
+            PositionAction(PlayerbotAI* ai) : Action(ai, "position")
+            {}
 
-        virtual bool Execute(Event event);
+            virtual bool Execute(Event event);
 
     };
 
     class MoveToPositionAction : public MovementAction
     {
-    public:
-        MoveToPositionAction(PlayerbotAI* ai, string qualifier) : MovementAction(ai, "move to position"), qualifier(qualifier)
-        {}
+        public:
+            MoveToPositionAction(PlayerbotAI* ai, string qualifier) : MovementAction(ai, "move to position"), qualifier(qualifier)
+            {}
 
-        virtual bool Execute(Event event);
+            virtual bool Execute(Event event);
 
-    protected:
-        string qualifier;
+        protected:
+            string qualifier;
     };
 
     class GuardAction : public MoveToPositionAction
     {
-    public:
-        GuardAction(PlayerbotAI* ai) : MoveToPositionAction(ai, "guard")
-        {}
+        public:
+            GuardAction(PlayerbotAI* ai) : MoveToPositionAction(ai, "guard")
+            {}
     };
-
 }

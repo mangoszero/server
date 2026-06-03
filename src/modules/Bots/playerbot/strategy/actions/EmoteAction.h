@@ -6,13 +6,12 @@ namespace ai
 {
     class EmoteAction : public Action
     {
-    public:
-        EmoteAction(PlayerbotAI* ai) : Action(ai, "emote") {}
-        virtual bool Execute(Event event);
+        public:
+            EmoteAction(PlayerbotAI* ai) : Action(ai, "emote") {}
+            virtual bool Execute(Event event);
 
-    private:
-        void InitEmotes();
-        static map<string, uint32> emotes;
-
+        private:
+            void InitEmotes();
+            static map<string, uint32> emotes;
     };
 }

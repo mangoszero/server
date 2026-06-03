@@ -5,10 +5,8 @@
 namespace ai
 {
     class ChangeChatAction : public Action {
-    public:
-        ChangeChatAction(PlayerbotAI* ai) : Action(ai, "chat") {}
-        virtual bool Execute(Event event);
-
+        public:
+            ChangeChatAction(PlayerbotAI* ai) : Action(ai, "chat") {}
+            virtual bool Execute(Event event);
     };
-
 }

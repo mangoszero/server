@@ -5,12 +5,10 @@
 namespace ai
 {
     class TellReputationAction : public Action {
-    public:
-        TellReputationAction(PlayerbotAI* ai) : Action(ai, "reputation") {}
-        virtual bool Execute(Event event);
+        public:
+            TellReputationAction(PlayerbotAI* ai) : Action(ai, "reputation") {}
+            virtual bool Execute(Event event);
 
-    private:
-
+        private:
     };
-
 }

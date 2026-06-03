@@ -45,26 +45,26 @@ void SuggestWhatToDoAction::instance()
     {
         switch (urand(0, 5))
         {
-        case 0:
-            spam("Need a tank for an instance run");
-            break;
-        case 1:
-            spam("Need a healer for an instance run");
-            break;
-        case 2:
-            spam("I would like to do an instance run. Would you like to join me?");
-            break;
-        case 3:
-            spam("Need better equipment. Why not do an instance run?");
-            break;
-        case 4:
-            spam("Have dungeon quests? Can join your group!");
-            break;
-        case 5:
-            spam("Have group quests? Invite me!");
-            break;
-        default:
-            spam("Hey, why not join Dungeon Finder?");
+            case 0:
+                spam("Need a tank for an instance run");
+                break;
+            case 1:
+                spam("Need a healer for an instance run");
+                break;
+            case 2:
+                spam("I would like to do an instance run. Would you like to join me?");
+                break;
+            case 3:
+                spam("Need better equipment. Why not do an instance run?");
+                break;
+            case 4:
+                spam("Have dungeon quests? Can join your group!");
+                break;
+            case 5:
+                spam("Have group quests? Invite me!");
+                break;
+            default:
+                spam("Hey, why not join Dungeon Finder?");
         }
     }
 }
@@ -124,17 +124,17 @@ void SuggestWhatToDoAction::grindMaterials()
 
     switch (urand(0, 5))
     {
-    case 0:
-        spam("Need help for tradeskill?");
-        break;
-    case 1:
-        spam("Can we have some trade material grinding?");
-        break;
-    case 2:
-        spam("I have some trade materials for sell");
-        break;
-    default:
-        spam("I am going to grind some trade materials. Would you like to join me?");
+        case 0:
+            spam("Need help for tradeskill?");
+            break;
+        case 1:
+            spam("Can we have some trade material grinding?");
+            break;
+        case 2:
+            spam("I have some trade materials for sell");
+            break;
+        default:
+            spam("I am going to grind some trade materials. Would you like to join me?");
     }
 }
 
@@ -158,37 +158,37 @@ void SuggestWhatToDoAction::relax()
 
 class FindTradeItemsVisitor : public IterateItemsVisitor
 {
-public:
-    FindTradeItemsVisitor(uint32 quality) : quality(quality), IterateItemsVisitor() {}
+    public:
+        FindTradeItemsVisitor(uint32 quality) : quality(quality), IterateItemsVisitor() {}
 
-    virtual bool Visit(Item* item)
-    {
-        ItemPrototype const* proto = item->GetProto();
-        if (proto->Quality != quality)
+        virtual bool Visit(Item* item)
         {
+            ItemPrototype const* proto = item->GetProto();
+            if (proto->Quality != quality)
+            {
+                return true;
+            }
+
+            if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
+            {
+                if (proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
+                {
+                    stacks.push_back(proto->ItemId);
+                }
+
+                items.push_back(proto->ItemId);
+                count[proto->ItemId] += item->GetCount();
+            }
+
             return true;
         }
 
-        if (proto->Class == ITEM_CLASS_TRADE_GOODS && proto->Bonding == NO_BIND)
-        {
-            if (proto->Quality == ITEM_QUALITY_NORMAL && item->GetCount() > 1 && item->GetCount() == item->GetMaxStackCount())
-            {
-                stacks.push_back(proto->ItemId);
-            }
+        map<uint32, int > count;
+        vector<uint32> stacks;
+        vector<uint32> items;
 
-            items.push_back(proto->ItemId);
-            count[proto->ItemId] += item->GetCount();
-        }
-
-        return true;
-    }
-
-    map<uint32, int > count;
-    vector<uint32> stacks;
-    vector<uint32> items;
-
-private:
-    uint32 quality;
+    private:
+        uint32 quality;
 };
 
 void SuggestWhatToDoAction::trade()
@@ -278,15 +278,21 @@ void SuggestWhatToDoAction::spam(string msg)
     }
 
     if (sPlayerbotAIConfig.whisperToZoneOnly && bot->GetZoneId() != player->GetZoneId())
+    {
         return;
+    }
 
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsRandomBot(bot) &&
-            player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
-            (bot->GetMapId() != player->GetMapId() || bot->GetDistance(player) > sPlayerbotAIConfig.whisperDistance))
+        player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
+        (bot->GetMapId() != player->GetMapId() || bot->GetDistance(player) > sPlayerbotAIConfig.whisperDistance))
+    {
         return;
+    }
 
     if ((int)bot->getLevel() - (int)player->getLevel() > 5)
+    {
         return;
+    }
 
     bot->Whisper(msg, LANG_UNIVERSAL, player->GetObjectGuid());
 }

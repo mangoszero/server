@@ -25,18 +25,18 @@ bool IsAlliance(uint8 race);
  */
 class PlayerbotChatHandler: protected ChatHandler
 {
-public:
-    explicit PlayerbotChatHandler(Player* pMasterPlayer) : ChatHandler(pMasterPlayer) {}
-    bool revive(const Player& botPlayer) { return HandleReviveCommand((char*)botPlayer.GetName()); }
-    bool teleport(const Player& botPlayer) { return HandleSummonCommand((char*)botPlayer.GetName()); }
-    void sysmessage(string str) { SendSysMessage(str.c_str()); }
-    bool dropQuest(string str) { return HandleQuestRemoveCommand((char*)str.c_str()); }
-    uint32 extractQuestId(string str);
-    uint32 extractSpellId(string str)
-    {
-        char* source = (char*)str.c_str();
-        return ExtractSpellIdFromLink(&source);
-    }
+    public:
+        explicit PlayerbotChatHandler(Player* pMasterPlayer) : ChatHandler(pMasterPlayer) {}
+        bool revive(const Player& botPlayer) { return HandleReviveCommand((char*)botPlayer.GetName()); }
+        bool teleport(const Player& botPlayer) { return HandleSummonCommand((char*)botPlayer.GetName()); }
+        void sysmessage(string str) { SendSysMessage(str.c_str()); }
+        bool dropQuest(string str) { return HandleQuestRemoveCommand((char*)str.c_str()); }
+        uint32 extractQuestId(string str);
+        uint32 extractSpellId(string str)
+        {
+            char* source = (char*)str.c_str();
+            return ExtractSpellIdFromLink(&source);
+        }
 };
 
 namespace ai
@@ -46,26 +46,24 @@ namespace ai
      * @brief Calculates the minimum value for a given parameter.
      */
     class MinValueCalculator {
-    public:
-        MinValueCalculator(float def = 0.0f) {
-            param = NULL;
-            minValue = def;
-        }
-
-    public:
-        void probe(float value, void* p) {
-            if (!param || minValue >= value)
-            {
-            {
-                minValue = value;
+        public:
+            MinValueCalculator(float def = 0.0f) {
+                param = NULL;
+                minValue = def;
             }
-                param = p;
-            }
-        }
 
-    public:
-        void* param;
-        float minValue;
+        public:
+            void probe(float value, void* p) {
+                if (!param || minValue >= value)
+                {
+                    minValue = value;
+                    param = p;
+                }
+            }
+
+        public:
+            void* param;
+            float minValue;
     };
 };
 
@@ -83,18 +81,18 @@ enum BotState
  */
 class PacketHandlingHelper
 {
-public:
-    void AddHandler(uint16 opcode, string handler);
-    void Handle(ExternalEventHelper &helper);
-    void AddPacket(const WorldPacket& packet);
-    bool IsEmpty()
-    {
-        return queue.size() == 0;
-    }
+    public:
+        void AddHandler(uint16 opcode, string handler);
+        void Handle(ExternalEventHelper &helper);
+        void AddPacket(const WorldPacket& packet);
+        bool IsEmpty()
+        {
+            return queue.size() == 0;
+        }
 
-private:
-    map<uint16, string> handlers;
-    stack<WorldPacket> queue;
+    private:
+        map<uint16, string> handlers;
+        stack<WorldPacket> queue;
 };
 
 /**
@@ -102,31 +100,31 @@ private:
  */
 class ChatCommandHolder
 {
-public:
-    ChatCommandHolder(string command, Player* owner = NULL, uint32 type = CHAT_MSG_WHISPER) : command(command), owner(owner), type(type) {}
-    ChatCommandHolder(ChatCommandHolder const& other)
-    {
-        this->command = other.command;
-        this->owner = other.owner;
-        this->type = other.type;
-    }
+    public:
+        ChatCommandHolder(string command, Player* owner = NULL, uint32 type = CHAT_MSG_WHISPER) : command(command), owner(owner), type(type) {}
+        ChatCommandHolder(ChatCommandHolder const& other)
+        {
+            this->command = other.command;
+            this->owner = other.owner;
+            this->type = other.type;
+        }
 
-public:
-    string GetCommand()
-    {
-        return command;
-    }
+    public:
+        string GetCommand()
+        {
+            return command;
+        }
 
-    Player* GetOwner()
-    {
-        return owner;
-    }
-    uint32 GetType() const { return type; }
+        Player* GetOwner()
+        {
+            return owner;
+        }
+        uint32 GetType() const { return type; }
 
-private:
-    string command;
-    Player* owner;
-    uint32 type;
+    private:
+        string command;
+        Player* owner;
+        uint32 type;
 };
 
 /**
@@ -134,142 +132,145 @@ private:
  */
 class PlayerbotAI : public PlayerbotAIBase
 {
-public:
-    PlayerbotAI();
-    PlayerbotAI(Player* bot);
-    virtual ~PlayerbotAI();
+    public:
+        PlayerbotAI();
+        PlayerbotAI(Player* bot);
+        virtual ~PlayerbotAI();
 
-public:
-    virtual void UpdateAI(uint32 elapsed);
-    virtual void UpdateAIInternal(uint32 elapsed);
-    void HandleCommand(uint32 type, const string& text, Player& fromPlayer);
-    void HandleBotOutgoingPacket(const WorldPacket& packet);
-    void HandleMasterIncomingPacket(const WorldPacket& packet);
-    void HandleMasterOutgoingPacket(const WorldPacket& packet);
-    void HandleTeleportAck();
-    void ChangeEngine(BotState type);
-    void DoNextAction();
-    void DoSpecificAction(string name);
-    void ChangeStrategy(string name, BotState type);
-    bool ContainsStrategy(StrategyType type);
-    bool HasStrategy(string name, BotState type);
-    bool HasStrategy(string name) { return HasStrategy(name, currentState); }
-    BotState GetState() const { return currentState; }
-    void ResetStrategies();
-    void ReInitCurrentEngine();
-    void Reset();
-    bool IsTank(Player* player);
-    Player* GetGroupTank(Player* except);
-    bool IsHeal(Player* player);
-    bool IsRanged(Player* player);
-    Creature* GetCreature(ObjectGuid guid);
-    Unit* GetUnit(ObjectGuid guid);
-    GameObject* GetGameObject(ObjectGuid guid);
-    bool TellMaster(ostringstream &stream, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL) { return TellMaster(stream.str(), securityLevel); }
-    bool TellMaster(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
-    bool TellMasterNoFacing(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
-    void SpellInterrupted(uint32 spellid);
-    uint32 CalculateGlobalCooldown(uint32 spellid);
-    void InterruptSpell();
-    void RemoveAura(string name);
-    void RemoveShapeshift();
-    void WaitForSpellCast(uint32 spellId);
+    public:
+        virtual void UpdateAI(uint32 elapsed);
+        virtual void UpdateAIInternal(uint32 elapsed);
+        void HandleCommand(uint32 type, const string& text, Player& fromPlayer);
+        void HandleBotOutgoingPacket(const WorldPacket& packet);
+        void HandleMasterIncomingPacket(const WorldPacket& packet);
+        void HandleMasterOutgoingPacket(const WorldPacket& packet);
+        void HandleTeleportAck();
+        void ChangeEngine(BotState type);
+        void DoNextAction();
+        void DoSpecificAction(string name);
+        void ChangeStrategy(string name, BotState type);
+        bool ContainsStrategy(StrategyType type);
+        bool HasStrategy(string name, BotState type);
+        bool HasStrategy(string name) { return HasStrategy(name, currentState); }
+        BotState GetState() const { return currentState; }
+        void ResetStrategies();
+        void ReInitCurrentEngine();
+        void Reset();
+        bool IsTank(Player* player);
+        Player* GetGroupTank(Player* except);
+        bool IsHeal(Player* player);
+        bool IsRanged(Player* player);
+        Creature* GetCreature(ObjectGuid guid);
+        Unit* GetUnit(ObjectGuid guid);
+        GameObject* GetGameObject(ObjectGuid guid);
+        bool TellMaster(ostringstream &stream, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL) { return TellMaster(stream.str(), securityLevel); }
+        bool TellMaster(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
+        bool TellMasterNoFacing(string text, PlayerbotSecurityLevel securityLevel = PLAYERBOT_SECURITY_ALLOW_ALL);
+        void SpellInterrupted(uint32 spellid);
+        uint32 CalculateGlobalCooldown(uint32 spellid);
+        void InterruptSpell();
+        void RemoveAura(string name);
+        void RemoveShapeshift();
+        void WaitForSpellCast(uint32 spellId);
 
-    virtual bool CanCastSpell(string name, Unit* target);
-    virtual bool CastSpell(string name, Unit* target);
-    virtual bool HasAura(string spellName, Unit* player);
-    virtual bool HasAnyAuraOf(Unit* player, ...);
+        virtual bool CanCastSpell(string name, Unit* target);
+        virtual bool CastSpell(string name, Unit* target);
+        virtual bool HasAura(string spellName, Unit* player);
+        virtual bool HasAnyAuraOf(Unit* player, ...);
 
-    virtual bool IsInterruptableSpellCasting(Unit* player, string spell);
-    virtual bool HasAuraToDispel(Unit* player, uint32 dispelType);
-    bool CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell = true);
+        virtual bool IsInterruptableSpellCasting(Unit* player, string spell);
+        virtual bool HasAuraToDispel(Unit* player, uint32 dispelType);
+        bool CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell = true);
 
-    bool HasAura(uint32 spellId, const Unit* player);
-    bool CastSpell(uint32 spellId, Unit* target);
-    bool canDispel(const SpellEntry* entry, uint32 dispelType);
+        bool HasAura(uint32 spellId, const Unit* player);
+        bool CastSpell(uint32 spellId, Unit* target);
+        bool canDispel(const SpellEntry* entry, uint32 dispelType);
 
-public:
-    Player* GetBot()
-    {
-        return bot;
-    }
+    public:
+        Player* GetBot()
+        {
+            return bot;
+        }
 
-    Player* GetMaster()
-    {
-        return master;
-    }
+        Player* GetMaster()
+        {
+            return master;
+        }
 
-    void SetMaster(Player* master) { this->master = master; }
-    AiObjectContext* GetAiObjectContext()
-    {
-        return aiObjectContext;
-    }
+        void SetMaster(Player* master) { this->master = master; }
+        AiObjectContext* GetAiObjectContext()
+        {
+            return aiObjectContext;
+        }
 
-    ChatHelper* GetChatHelper()
-    {
-        return &chatHelper;
-    }
+        ChatHelper* GetChatHelper()
+        {
+            return &chatHelper;
+        }
 
-    bool IsOpposing(Player* player);
-    static bool IsOpposing(uint8 race1, uint8 race2);
-    PlayerbotSecurity* GetSecurity()
-    {
-        return &security;
-    }
+        bool IsOpposing(Player* player);
+        static bool IsOpposing(uint8 race1, uint8 race2);
+        PlayerbotSecurity* GetSecurity()
+        {
+            return &security;
+        }
 
-    void StartJump(bool forward, float orientation = -1.f);
-    void RequestJump(bool here = false);
-    bool IsJumping() const { return m_isJumping; }
-    bool IsPendingJump() const { return m_pendingJump; }
+        void StartJump(bool forward, float orientation = -1.f);
+        void RequestJump(bool here = false);
+        bool IsJumping() const { return m_isJumping; }
+        bool IsPendingJump() const { return m_pendingJump; }
 
-    bool IsEating() const
-    {
-        return m_eatingUntil && time(0) <= m_eatingUntil
-            && bot->GetHealth() < bot->GetMaxHealth();
-    }
-    bool IsDrinking() const
-    {
-        if (!m_drinkingUntil) return false;
-        time_t now = time(0);
-        uint32 mana = bot->GetPower(POWER_MANA);
-        uint32 maxMana = bot->GetMaxPower(POWER_MANA);
-        return now <= m_drinkingUntil && mana < maxMana;
-    }
-    void SetEating()
-    {
-        m_eatingUntil = time(0) + 30;
-    }
-    void SetDrinking()
-    {
-        m_drinkingUntil = time(0) + 30;
-    }
+        bool IsEating() const
+        {
+            return m_eatingUntil && time(0) <= m_eatingUntil &&
+                bot->GetHealth() < bot->GetMaxHealth();
+        }
+        bool IsDrinking() const
+        {
+            if (!m_drinkingUntil)
+            {
+                return false;
+            }
+            time_t now = time(0);
+            uint32 mana = bot->GetPower(POWER_MANA);
+            uint32 maxMana = bot->GetMaxPower(POWER_MANA);
+            return now <= m_drinkingUntil && mana < maxMana;
+        }
+        void SetEating()
+        {
+            m_eatingUntil = time(0) + 30;
+        }
+        void SetDrinking()
+        {
+            m_drinkingUntil = time(0) + 30;
+        }
 
-protected:
-    Player* bot;
-    Player* master;
-    uint32 accountId;
-    AiObjectContext* aiObjectContext;
-    Engine* currentEngine;
-    Engine* engines[BOT_STATE_MAX];
-    BotState currentState;
-    ChatHelper chatHelper;
-    stack<ChatCommandHolder> chatCommands;
-    PacketHandlingHelper botOutgoingPacketHandlers;
-    PacketHandlingHelper masterIncomingPacketHandlers;
-    PacketHandlingHelper masterOutgoingPacketHandlers;
-    CompositeChatFilter chatFilter;
-    PlayerbotSecurity security;
-    time_t m_eatingUntil;
-    time_t m_drinkingUntil;
+    protected:
+        Player* bot;
+        Player* master;
+        uint32 accountId;
+        AiObjectContext* aiObjectContext;
+        Engine* currentEngine;
+        Engine* engines[BOT_STATE_MAX];
+        BotState currentState;
+        ChatHelper chatHelper;
+        stack<ChatCommandHolder> chatCommands;
+        PacketHandlingHelper botOutgoingPacketHandlers;
+        PacketHandlingHelper masterIncomingPacketHandlers;
+        PacketHandlingHelper masterOutgoingPacketHandlers;
+        CompositeChatFilter chatFilter;
+        PlayerbotSecurity security;
+        time_t m_eatingUntil;
+        time_t m_drinkingUntil;
 
-    bool   m_isJumping;
-    uint32 m_jumpStartTime;
-    float  m_jumpStartX, m_jumpStartY, m_jumpStartZ;
-    float  m_jumpSinAngle, m_jumpCosAngle, m_jumpXYSpeed;
-    bool   m_pendingJump;
-    bool   m_jumpHere;
-    uint32 m_jumpRequestTime;
-    float  m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ, m_jumpTargetO;
+        bool   m_isJumping;
+        uint32 m_jumpStartTime;
+        float  m_jumpStartX, m_jumpStartY, m_jumpStartZ;
+        float  m_jumpSinAngle, m_jumpCosAngle, m_jumpXYSpeed;
+        bool   m_pendingJump;
+        bool   m_jumpHere;
+        uint32 m_jumpRequestTime;
+        float  m_jumpTargetX, m_jumpTargetY, m_jumpTargetZ, m_jumpTargetO;
 
-    void UpdateJump();
+        void UpdateJump();
 };

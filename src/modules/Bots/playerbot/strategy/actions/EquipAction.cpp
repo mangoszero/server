@@ -25,7 +25,10 @@ void EquipAction::EquipItem(FindItemVisitor* visitor)
 {
     IterateItems(visitor);
     list<Item*> items = visitor->GetResult();
-    if (!items.empty()) EquipItem(**items.begin());
+    if (!items.empty())
+    {
+        EquipItem(**items.begin());
+    }
 }
 
 void EquipAction::EquipItem(Item& item)
@@ -41,7 +44,7 @@ void EquipAction::EquipItem(Item& item)
     else
     {
         WorldPacket* const packet = new WorldPacket(CMSG_AUTOEQUIP_ITEM, 2);
-            *packet << bagIndex << slot;
+        *packet << bagIndex << slot;
         bot->GetSession()->QueuePacket(packet);
     }
 

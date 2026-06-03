@@ -100,23 +100,23 @@ void LootObject::Refresh(Player* bot, ObjectGuid guid)
         {
             switch (lockInfo->Type[i])
             {
-            case LOCK_KEY_ITEM:
-                if (lockInfo->Index[i] > 0)
-                {
-                    reqItem = lockInfo->Index[i];
-                    this->guid = guid;
-                }
-                break;
-            case LOCK_KEY_SKILL:
-                if (SkillByLockType(LockType(lockInfo->Index[i])) > 0)
-                {
-                    skillId = SkillByLockType(LockType(lockInfo->Index[i]));
-                    reqSkillValue = lockInfo->Skill[i];
-                    this->guid = guid;
-                }
-                break;
-            default:
-                break;
+                case LOCK_KEY_ITEM:
+                    if (lockInfo->Index[i] > 0)
+                    {
+                        reqItem = lockInfo->Index[i];
+                        this->guid = guid;
+                    }
+                    break;
+                case LOCK_KEY_SKILL:
+                    if (SkillByLockType(LockType(lockInfo->Index[i])) > 0)
+                    {
+                        skillId = SkillByLockType(LockType(lockInfo->Index[i]));
+                        reqSkillValue = lockInfo->Skill[i];
+                        this->guid = guid;
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }

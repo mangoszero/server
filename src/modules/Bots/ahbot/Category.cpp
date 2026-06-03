@@ -70,21 +70,21 @@ QualityCategoryWrapper::QualityCategoryWrapper(Category* category, uint32 qualit
     ostringstream out; out << category->GetName() << ".";
     switch (quality)
     {
-    case ITEM_QUALITY_POOR:
-        out << "gray";
-        break;
-    case ITEM_QUALITY_NORMAL:
-        out << "white";
-        break;
-    case ITEM_QUALITY_UNCOMMON:
-        out << "green";
-        break;
-    case ITEM_QUALITY_RARE:
-        out << "blue";
-        break;
-    default:
-        out << "epic";
-        break;
+        case ITEM_QUALITY_POOR:
+            out << "gray";
+            break;
+        case ITEM_QUALITY_NORMAL:
+            out << "white";
+            break;
+        case ITEM_QUALITY_UNCOMMON:
+            out << "green";
+            break;
+        case ITEM_QUALITY_RARE:
+            out << "blue";
+            break;
+        default:
+            out << "epic";
+            break;
     }
 
     combinedName = out.str();

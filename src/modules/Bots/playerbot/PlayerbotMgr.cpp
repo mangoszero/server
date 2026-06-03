@@ -404,7 +404,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char* args, Player* master)
         }
 
         QueryResult* results = CharacterDatabase.PQuery(
-            "SELECT `name` FROM `characters` WHERE `account` = '%u'",
+                "SELECT `name` FROM `characters` WHERE `account` = '%u'",
             accountId);
         if (results)
         {

@@ -3,11 +3,10 @@
 namespace ai
 {
     class RememberTaxiAction : public Action {
-    public:
-        RememberTaxiAction(PlayerbotAI* ai) : Action(ai, "remember taxi") {}
+        public:
+            RememberTaxiAction(PlayerbotAI* ai) : Action(ai, "remember taxi") {}
 
-    public:
-        virtual bool Execute(Event event);
+        public:
+            virtual bool Execute(Event event);
     };
-
 }

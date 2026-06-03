@@ -39,44 +39,44 @@ bool LootRollAction::Execute(Event event)
 
         switch (proto->Class)
         {
-        case ITEM_CLASS_WEAPON:
-        case ITEM_CLASS_ARMOR:
-            if (usage == ITEM_USAGE_EQUIP || usage == ITEM_USAGE_REPLACE)
-            {
-                vote = ROLL_NEED;
-            }
-            else if (bot->CanUseItem(proto) == EQUIP_ERR_OK && proto->Bonding != BIND_WHEN_PICKED_UP)
-            {
-                vote = ROLL_GREED;
-            }
-            break;
-        default:
-            if (usage == ITEM_USAGE_SKILL || usage == ITEM_USAGE_USE)
-            {
-                vote = ROLL_NEED;
-            }
-            else if (proto->StartQuest || proto->Bonding == BIND_QUEST_ITEM ||
+            case ITEM_CLASS_WEAPON:
+            case ITEM_CLASS_ARMOR:
+                if (usage == ITEM_USAGE_EQUIP || usage == ITEM_USAGE_REPLACE)
+                {
+                    vote = ROLL_NEED;
+                }
+                else if (bot->CanUseItem(proto) == EQUIP_ERR_OK && proto->Bonding != BIND_WHEN_PICKED_UP)
+                {
+                    vote = ROLL_GREED;
+                }
+                break;
+            default:
+                if (usage == ITEM_USAGE_SKILL || usage == ITEM_USAGE_USE)
+                {
+                    vote = ROLL_NEED;
+                }
+                else if (proto->StartQuest || proto->Bonding == BIND_QUEST_ITEM ||
                     proto->Bonding == BIND_QUEST_ITEM1 || proto->Class == ITEM_CLASS_QUEST)
-            {
-                vote = ROLL_NEED;
-            }
-            else if (proto->SellPrice > 0 && proto->Bonding != BIND_WHEN_PICKED_UP)
-            {
-                vote = ROLL_GREED;
-            }
-            break;
+                {
+                    vote = ROLL_NEED;
+                }
+                else if (proto->SellPrice > 0 && proto->Bonding != BIND_WHEN_PICKED_UP)
+                {
+                    vote = ROLL_GREED;
+                }
+                break;
         }
     }
 
     switch (group->GetLootMethod())
     {
-    case MASTER_LOOT:
-    case FREE_FOR_ALL:
-        group->CountRollVote(bot, lootTargetGuid, slot, ROLL_PASS);
-        break;
-    default:
-        group->CountRollVote(bot, lootTargetGuid, slot, vote);
-        break;
+        case MASTER_LOOT:
+        case FREE_FOR_ALL:
+            group->CountRollVote(bot, lootTargetGuid, slot, ROLL_PASS);
+            break;
+        default:
+            group->CountRollVote(bot, lootTargetGuid, slot, vote);
+            break;
     }
 
     return true;

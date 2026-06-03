@@ -164,6 +164,7 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
     {
         const Bag* const pBag = (Bag *) bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
         if (pBag)
+        {
             for (uint8 slot = 0; slot < pBag->GetBagSize(); ++slot)
             {
                 Item* const pItem = bot->GetItemByPos(bag, slot);
@@ -181,6 +182,7 @@ Item* BankAction::FindItemInBank(uint32 ItemId)
                     }
                 }
             }
+        }
     }
     return NULL;
 }

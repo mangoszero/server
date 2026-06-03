@@ -6,11 +6,10 @@
 namespace ai
 {
     class TeleportAction : public Action {
-    public:
-        TeleportAction(PlayerbotAI* ai) : Action(ai, "teleport") {}
+        public:
+            TeleportAction(PlayerbotAI* ai) : Action(ai, "teleport") {}
 
-    public:
-        virtual bool Execute(Event event);
+        public:
+            virtual bool Execute(Event event);
     };
-
 }

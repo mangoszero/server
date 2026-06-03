@@ -6,8 +6,8 @@ namespace ai
 {
     class RepairAllAction : public Action
     {
-    public:
-        RepairAllAction(PlayerbotAI* ai) : Action(ai, "repair") {}
-        virtual bool Execute(Event event);
+        public:
+            RepairAllAction(PlayerbotAI* ai) : Action(ai, "repair") {}
+            virtual bool Execute(Event event);
     };
 }
