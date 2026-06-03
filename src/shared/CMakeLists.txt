@@ -157,6 +157,8 @@ set(SRC_GRP_UTILITIES
   Utilities/ProgressBar.cpp
   Utilities/ProgressBar.h
   Utilities/RNGen.h
+  Utilities/ScheduledExit.cpp
+  Utilities/ScheduledExit.h
   Utilities/Timer.h
   Utilities/Util.cpp
   Utilities/Util.h
