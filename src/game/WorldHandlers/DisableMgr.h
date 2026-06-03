@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (C) 2015-2025 MaNGOS <https://www.getmangos.eu>
  * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
@@ -49,9 +49,10 @@ enum SpellDisableTypes
     SPELL_DISABLE_MAP               = 0x10,
     SPELL_DISABLE_AREA              = 0x20,
     SPELL_DISABLE_LOS               = 0x40,
-    MAX_SPELL_DISABLE_TYPE = (  SPELL_DISABLE_PLAYER | SPELL_DISABLE_CREATURE | SPELL_DISABLE_PET |
-                                SPELL_DISABLE_DEPRECATED_SPELL | SPELL_DISABLE_MAP | SPELL_DISABLE_AREA |
-                                SPELL_DISABLE_LOS)
+    MAX_SPELL_DISABLE_TYPE = (
+    SPELL_DISABLE_PLAYER | SPELL_DISABLE_CREATURE | SPELL_DISABLE_PET |
+    SPELL_DISABLE_DEPRECATED_SPELL | SPELL_DISABLE_MAP | SPELL_DISABLE_AREA |
+    SPELL_DISABLE_LOS)
 };
 
 enum SpawnDisableTypes

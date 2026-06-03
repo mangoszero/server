@@ -169,9 +169,9 @@ namespace MMAP
             // Always use mmaps for pets of players
             if (unit->GetTypeId() == TYPEID_UNIT && ((Creature*)unit)->IsPet() && unit->GetOwner() &&
                 unit->GetOwner()->GetTypeId() == TYPEID_PLAYER)
-                {
-                    return true;
-                }
+            {
+                return true;
+            }
         }
 
         return g_mmapDisabledIds->find(mapId) == g_mmapDisabledIds->end();
@@ -348,7 +348,7 @@ namespace MMAP
         if (fileHeader.mmapVersion != MMAP_VERSION)
         {
             sLog.outError("MMAP:loadMap: %03u%02i%02i.mmtile was built with generator v%i, expected v%i",
-                          mapId, x, y, fileHeader.mmapVersion, MMAP_VERSION);
+                mapId, x, y, fileHeader.mmapVersion, MMAP_VERSION);
             fclose(file);
             return false;
         }

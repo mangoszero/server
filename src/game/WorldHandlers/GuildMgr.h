@@ -32,9 +32,10 @@ class ObjectGuid;
 
 class GuildMgr
 {
-        typedef UNORDERED_MAP<uint32, Guild*> GuildMap;
+    typedef UNORDERED_MAP<uint32, Guild*> GuildMap;
 
-        GuildMap m_GuildMap;
+    GuildMap m_GuildMap;
+
     public:
         GuildMgr();
         ~GuildMgr();

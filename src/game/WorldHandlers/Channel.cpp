@@ -422,7 +422,7 @@ void Channel::SetMode(Player* player, const char* targetName, bool moderator, bo
     // allow make moderator from another team only if both is GMs
     // at this moment this only way to show channel post for GM from another team
     if ((player->GetSession()->GetSecurity() < SEC_GAMEMASTER || target->GetSession()->GetSecurity() < SEC_GAMEMASTER) &&
-            player->GetTeam() != target->GetTeam() && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
+        player->GetTeam() != target->GetTeam() && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
     {
         WorldPacket data;
         MakePlayerNotFound(&data, targetName);
@@ -564,7 +564,7 @@ void Channel::List(Player* player)
         // PLAYER can't see MODERATOR, GAME MASTER, ADMINISTRATOR characters
         // MODERATOR, GAME MASTER, ADMINISTRATOR can see all
         if (plr && (player->GetSession()->GetSecurity() > SEC_PLAYER || plr->GetSession()->GetSecurity() <= gmLevelInWhoList) &&
-                plr->IsVisibleGloballyFor(player))
+            plr->IsVisibleGloballyFor(player))
         {
             data << ObjectGuid(i->first);
             data << uint8(i->second.flags);                 // flags seems to be changed...
@@ -700,8 +700,8 @@ void Channel::Say(Player* player, const char* text, uint32 lang)
         return;
     }
     else if (m_players[guid].IsMuted() ||
-            (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
-            (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
+        (GetChannelId() == CHANNEL_ID_LOCAL_DEFENSE && !speakInLocalDef) ||
+        (GetChannelId() == CHANNEL_ID_WORLD_DEFENSE && !speakInWorldDef))
     {
         WorldPacket data;
         MakeMuted(&data);

@@ -85,7 +85,7 @@ typedef NGrid<MAX_NUMBER_OF_CELLS, Player, WorldTypeMapContainer, GridTypeMapCon
  * @tparam LIMIT The maximum limit for the coordinates.
  */
 template<const unsigned int LIMIT>
-struct CoordPair
+    struct CoordPair
 {
     CoordPair(uint32 x = 0, uint32 y = 0) : x_coord(x), y_coord(y) {}
     CoordPair(const CoordPair<LIMIT>& obj) : x_coord(obj.x_coord), y_coord(obj.y_coord) {}
@@ -178,7 +178,7 @@ namespace MaNGOS
      * @return RET_TYPE The computed grid or cell pair.
      */
     template<class RET_TYPE, int CENTER_VAL>
-    inline RET_TYPE Compute(float x, float y, float center_offset, float size)
+        inline RET_TYPE Compute(float x, float y, float center_offset, float size)
     {
         // calculate and store temporary values in double format for having same result as same mySQL calculations
         double x_offset = (double(x) - center_offset) / size;

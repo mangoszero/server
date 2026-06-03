@@ -201,8 +201,8 @@ void WorldSession::SendAuctionOutbiddedMail(AuctionEntry* auction)
         }
 
         MailDraft(msgAuctionOutbiddedSubject.str(),"")
-        .SetMoney(auction->bid)
-        .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
+            .SetMoney(auction->bid)
+            .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
 }
 
@@ -230,8 +230,8 @@ void WorldSession::SendAuctionCancelledToBidderMail(AuctionEntry* auction)
         }
 
         MailDraft(msgAuctionCancelledSubject.str(),"")
-        .SetMoney(auction->bid)
-        .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
+            .SetMoney(auction->bid)
+            .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
 }
 
@@ -369,7 +369,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     if (GetSecurity() > SEC_PLAYER && sWorld.getConfig(CONFIG_BOOL_GM_LOG_TRADE))
     {
         sLog.outCommand(GetAccountId(), "GM %s (Account: %u) create auction: %s (Entry: %u Count: %u)",
-                        GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
+            GetPlayerName(), GetAccountId(), it->GetProto()->Name1, it->GetEntry(), it->GetCount());
     }
 
     /* The client limits owned auctions to 50: */
@@ -403,7 +403,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
     AuctionEntry* AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl);
 
     DETAIL_LOG("selling %s to auctioneer %s with initial bid %u with buyout %u and with time %u (in sec) in auctionhouse %u",
-               itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->houseId);
+        itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->houseId);
 
     SendAuctionCommandResult(AH, AUCTION_STARTED, AUCTION_OK);
 
@@ -568,8 +568,8 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
 
     // item will deleted or added to received mail list
     MailDraft(msgAuctionCanceledOwner.str(),"")
-    .AddItem(pItem)
-    .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
+        .AddItem(pItem)
+        .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
 
     // inform player, that auction is removed
     SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_OK);
@@ -737,9 +737,9 @@ void WorldSession::HandleAuctionListItems(WorldPacket& recv_data)
     wstrToLower(wsearchedname);
 
     auctionHouse->BuildListAuctionItems(data, _player,
-                                        wsearchedname, listfrom, levelmin, levelmax, usable,
-                                        auctionSlotID, auctionMainCategory, auctionSubCategory, quality,
-                                        count, totalcount);
+        wsearchedname, listfrom, levelmin, levelmax, usable,
+        auctionSlotID, auctionMainCategory, auctionSubCategory, quality,
+        count, totalcount);
 
     data.put<uint32>(0, count);
     data << uint32(totalcount);

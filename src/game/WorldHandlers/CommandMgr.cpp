@@ -1,4 +1,22 @@
 /**
+ * Copyright (C) 2009-2025 MaNGOS <https://www.getmangos.eu>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
  * @file CommandMgr.cpp
  * @brief GM command localization management
  *
@@ -15,24 +33,6 @@
  * @see ChatCommand for command structure
  */
 
-/*
- * Copyright (C) 2015-2025 MaNGOS <https://www.getmangos.eu>
- * Copyright (C) 2008-2015 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 
 #include "Common.h"
 #include "SharedDefines.h"
@@ -154,7 +154,10 @@ void CommandMgr::LoadCommandHelpLocale()
 CommandHelpLocale const* CommandMgr::GetCommandLocale(uint32 commandId) const
 {
     CommandHelpLocaleMap::const_iterator itr = m_CommandHelpLocaleMap.find(commandId);
-    if (itr == m_CommandHelpLocaleMap.end()) return NULL;
+    if (itr == m_CommandHelpLocaleMap.end())
+    {
+        return NULL;
+    }
     return &itr->second;
 }
 

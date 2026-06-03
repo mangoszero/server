@@ -198,7 +198,8 @@ struct QuestLocale
 // xp to give
 class Quest
 {
-        friend class ObjectMgr;
+    friend class ObjectMgr;
+
     public:
         Quest(Field* questRecord);
         uint32 XPValue(Player* pPlayer) const;
@@ -368,7 +369,7 @@ struct QuestStatusData
 {
     QuestStatusData()
         : m_status(QUEST_STATUS_NONE), m_rewarded(false),
-          m_explored(false), m_timer(0), uState(QUEST_NEW)
+        m_explored(false), m_timer(0), uState(QUEST_NEW)
     {
         memset(m_itemcount, 0, QUEST_ITEM_OBJECTIVES_COUNT * sizeof(uint32));
         memset(m_creatureOrGOcount, 0, QUEST_OBJECTIVES_COUNT * sizeof(uint32));

@@ -1000,9 +1000,9 @@ void WorldSession::SendListInventory(ObjectGuid vendorguid)
                     // when no faction required but rank > 0 will be used faction id from the vendor faction template to compare the rank
                     if (!pProto->RequiredReputationFaction && pProto->RequiredReputationRank > 0 &&
                         ReputationRank(pProto->RequiredReputationRank) > _player->GetReputationRank(pCreature->getFactionTemplateEntry()->faction))
-                        {
-                            continue;
-                        }
+                    {
+                        continue;
+                    }
 
                     if (crItem->conditionId && !sObjectMgr.IsPlayerMeetToCondition(crItem->conditionId, _player, pCreature->GetMap(), pCreature, CONDITION_FROM_VENDOR))
                     {
@@ -1497,7 +1497,8 @@ void WorldSession::HandleWrapItemOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (item->GetGuidValue(ITEM_FIELD_GIFTCREATOR))         // HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_WRAPPED);
+    // HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_WRAPPED)
+    if (item->GetGuidValue(ITEM_FIELD_GIFTCREATOR))
     {
         _player->SendEquipError(EQUIP_ERR_WRAPPED_CANT_BE_WRAPPED, item, NULL);
         return;

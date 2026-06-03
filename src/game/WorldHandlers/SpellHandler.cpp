@@ -349,7 +349,7 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
     }
 
     DEBUG_LOG("WORLD: got cast spell packet, spellId - %u, data length = %zu",
-              spellId, recvPacket.size());
+        spellId, recvPacket.size());
 
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
 
@@ -484,10 +484,12 @@ void WorldSession::HandleCancelAuraOpcode(WorldPacket& recvPacket)
     if (IsChanneledSpell(spellInfo))
     {
         if (Spell* curSpell = _player->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        {
             if (curSpell->m_spellInfo->Id == spellId)
             {
                 _player->InterruptSpell(CURRENT_CHANNELED_SPELL);
             }
+        }
         return;
     }
 

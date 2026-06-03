@@ -143,13 +143,13 @@ void WorldSession::HandleGMTicketUpdateTextOpcode(WorldPacket& recv_data)
 
     // Notify all GM that the ticket has been changed
     sObjectAccessor.DoForAllPlayers([ticket, this](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
         {
-            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-            {
-                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETUPDATED, GetPlayer()->GetName(), ticket->GetId());
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETUPDATED, GetPlayer()->GetName(), ticket->GetId());
 
-            }
         }
+    }
     );
 }
 
@@ -261,12 +261,12 @@ void WorldSession::HandleGMTicketCreateOpcode(WorldPacket& recv_data)
     GMTicket * ticket = sTicketMgr.GetGMTicket(_player->GetObjectGuid());
 
     sObjectAccessor.DoForAllPlayers([ticket, this](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
         {
-            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-            {
-                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName(), ticket->GetId());
-            }
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETNEW, GetPlayer()->GetName(), ticket->GetId());
         }
+    }
     );
 }
 

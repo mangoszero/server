@@ -98,6 +98,6 @@ void InstanceData::SaveToDB() const
 bool InstanceData::CheckConditionCriteriaMeet(Player const* /*source*/, uint32 instance_condition_id, WorldObject const* /*conditionSource*/, uint32 conditionSourceType) const
 {
     sLog.outError("Condition system call InstanceData::CheckConditionCriteriaMeet but instance script for map %u not have implementation for player condition criteria with internal id %u (called from %u)",
-                  instance->GetId(), instance_condition_id, uint32(conditionSourceType));
+        instance->GetId(), instance_condition_id, uint32(conditionSourceType));
     return false;
 }

@@ -137,9 +137,9 @@ struct InstanceTemplate
 
 class Map : public GridRefManager<NGridType>
 {
-        friend class MapReference;
-        friend class ObjectGridLoader;
-        friend class ObjectWorldLoader;
+    friend class MapReference;
+    friend class ObjectGridLoader;
+    friend class ObjectWorldLoader;
 
     protected:
         Map(uint32 id, time_t, uint32 InstanceId);
@@ -386,8 +386,8 @@ class Map : public GridRefManager<NGridType>
         }
 
         void VisitNearbyCellsOf(WorldObject* obj,
-                                TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor,
-                                TypeContainerVisitor<MaNGOS::ObjectUpdater, WorldTypeMapContainer> &worldVisitor);
+            TypeContainerVisitor<MaNGOS::ObjectUpdater, GridTypeMapContainer> &gridVisitor,
+            TypeContainerVisitor<MaNGOS::ObjectUpdater, WorldTypeMapContainer> &worldVisitor);
 
         bool isGridObjectDataLoaded(uint32 x, uint32 y) const { return getNGrid(x, y)->isGridObjectDataLoaded(); }
         void setGridObjectDataLoaded(bool pLoaded, uint32 x, uint32 y) { getNGrid(x, y)->setGridObjectDataLoaded(pLoaded); }
@@ -441,10 +441,10 @@ class Map : public GridRefManager<NGridType>
 
         // Type specific code for add/remove to/from grid
         template<class T>
-        void AddToGrid(T*, NGridType*, Cell const&);
+            void AddToGrid(T*, NGridType*, Cell const&);
 
         template<class T>
-        void RemoveFromGrid(T*, NGridType*, Cell const&);
+            void RemoveFromGrid(T*, NGridType*, Cell const&);
         // Holder for information about linked mobs
         CreatureLinkingHolder m_creatureLinkingHolder;
 
@@ -531,8 +531,7 @@ class BattleGroundMap : public Map
 };
 
 template<class T, class CONTAINER>
-inline void
-Map::Visit(const Cell& cell, TypeContainerVisitor<T, CONTAINER>& visitor)
+    inline void Map::Visit(const Cell& cell, TypeContainerVisitor<T, CONTAINER>& visitor)
 {
     const uint32 x = cell.GridX();
     const uint32 y = cell.GridY();

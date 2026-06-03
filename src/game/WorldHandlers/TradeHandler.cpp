@@ -169,9 +169,9 @@ void WorldSession::moveItems(Item* myItems[], Item* hisItems[])
                 if (_player->GetSession()->GetSecurity() > SEC_PLAYER && sWorld.getConfig(CONFIG_BOOL_GM_LOG_TRADE))
                 {
                     sLog.outCommand(_player->GetSession()->GetAccountId(), "GM %s (Account: %u) trade: %s (Entry: %d Count: %u) to player: %s (Account: %u)",
-                                    _player->GetName(), _player->GetSession()->GetAccountId(),
-                                    myItems[i]->GetProto()->Name1, myItems[i]->GetEntry(), myItems[i]->GetCount(),
-                                    trader->GetName(), trader->GetSession()->GetAccountId());
+                        _player->GetName(), _player->GetSession()->GetAccountId(),
+                        myItems[i]->GetProto()->Name1, myItems[i]->GetEntry(), myItems[i]->GetCount(),
+                        trader->GetName(), trader->GetSession()->GetAccountId());
                 }
 
                 // store
@@ -185,9 +185,9 @@ void WorldSession::moveItems(Item* myItems[], Item* hisItems[])
                 if (trader->GetSession()->GetSecurity() > SEC_PLAYER && sWorld.getConfig(CONFIG_BOOL_GM_LOG_TRADE))
                 {
                     sLog.outCommand(trader->GetSession()->GetAccountId(), "GM %s (Account: %u) trade: %s (Entry: %d Count: %u) to player: %s (Account: %u)",
-                                    trader->GetName(), trader->GetSession()->GetAccountId(),
-                                    hisItems[i]->GetProto()->Name1, hisItems[i]->GetEntry(), hisItems[i]->GetCount(),
-                                    _player->GetName(), _player->GetSession()->GetAccountId());
+                        trader->GetName(), trader->GetSession()->GetAccountId(),
+                        hisItems[i]->GetProto()->Name1, hisItems[i]->GetEntry(), hisItems[i]->GetCount(),
+                        _player->GetName(), _player->GetSession()->GetAccountId());
                 }
 
                 // store
@@ -519,16 +519,16 @@ void WorldSession::HandleAcceptTradeOpcode(WorldPacket& recvPacket)
             if (_player->GetSession()->GetSecurity() > SEC_PLAYER && my_trade->GetMoney() > 0)
             {
                 sLog.outCommand(_player->GetSession()->GetAccountId(), "GM %s (Account: %u) give money (Amount: %u) to player: %s (Account: %u)",
-                                _player->GetName(), _player->GetSession()->GetAccountId(),
-                                my_trade->GetMoney(),
-                                trader->GetName(), trader->GetSession()->GetAccountId());
+                    _player->GetName(), _player->GetSession()->GetAccountId(),
+                    my_trade->GetMoney(),
+                    trader->GetName(), trader->GetSession()->GetAccountId());
             }
             if (trader->GetSession()->GetSecurity() > SEC_PLAYER && his_trade->GetMoney() > 0)
             {
                 sLog.outCommand(trader->GetSession()->GetAccountId(), "GM %s (Account: %u) give money (Amount: %u) to player: %s (Account: %u)",
-                                trader->GetName(), trader->GetSession()->GetAccountId(),
-                                his_trade->GetMoney(),
-                                _player->GetName(), _player->GetSession()->GetAccountId());
+                    trader->GetName(), trader->GetSession()->GetAccountId(),
+                    his_trade->GetMoney(),
+                    _player->GetName(), _player->GetSession()->GetAccountId());
             }
         }
 
@@ -748,10 +748,9 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
 
     // Check visibility in order to avoid hanging trade sessions
     if (GetSecurity() > SEC_PLAYER && GetPlayer()->GetVisibility() == VISIBILITY_OFF &&
-        (pOther->GetSession()->GetSecurity() < GetSecurity()
-            || (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
-            )
-        )
+        (pOther->GetSession()->GetSecurity() < GetSecurity() ||
+        (pOther->GetSession()->GetSecurity() > GetSecurity() && pOther->GetVisibility() == VISIBILITY_OFF)
+        ))
     {
         info.Status = TRADE_STATUS_TRADE_CANCELED;
         SendTradeStatus(info);

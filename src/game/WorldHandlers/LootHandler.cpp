@@ -293,12 +293,12 @@ void WorldSession::HandleLootMoneyOpcode(WorldPacket& /*recv_data*/)
                 player->ModifyMoney(pLoot->gold);
 
                 // Used by Eluna
-                #ifdef ENABLE_ELUNA
+#ifdef ENABLE_ELUNA
                 if (Eluna* e = player->GetEluna())
                 {
                     e->OnLootMoney(player, pLoot->gold);
                 }
-                #endif /* ENABLE_ELUNA */
+#endif /* ENABLE_ELUNA */
 
                 pLoot->gold = 0;
                 return;
@@ -593,7 +593,7 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
 
             switch (pItem->loot.loot_type)
             {
-                    // temporary loot, auto loot move
+                // temporary loot, auto loot move
                 case LOOT_DISENCHANTING:
                 {
                     if (!pItem->loot.isLooted())
@@ -625,8 +625,8 @@ void WorldSession::DoLootRelease(ObjectGuid lguid)
             Creature* pCreature = GetPlayer()->GetMap()->GetCreature(lguid);
 
             bool ok_loot = (pCreature && // The creature exists (we dont have a null pointer)
-                            pCreature->IsAlive() == // Creature is alive and we're a rogue and creature can be pickpocketed
-                            (player->getClass() == CLASS_ROGUE && pCreature->lootForPickPocketed));
+                pCreature->IsAlive() == // Creature is alive and we're a rogue and creature can be pickpocketed
+                (player->getClass() == CLASS_ROGUE && pCreature->lootForPickPocketed));
             if (!ok_loot || !pCreature->IsWithinDistInMap(_player, INTERACTION_DISTANCE))
             {
                 return;

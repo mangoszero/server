@@ -61,7 +61,8 @@ class MapPersistentStateManager;
 
 class MapPersistentState
 {
-        friend class MapPersistentStateManager;
+    friend class MapPersistentStateManager;
+
     protected:
         MapPersistentState(uint16 MapId, uint32 InstanceId);
 
@@ -70,9 +71,9 @@ class MapPersistentState
         /* Unloaded when m_playerList and m_groupList become empty or when the instance is reset */
         virtual ~MapPersistentState();
 
-        /* A map corresponding to the InstanceId/MapId does not always exist.
-        MapPersistentState objects may be created on player logon but the maps are
-        created and loaded only when a player actually enters the instance. */
+        /** A map corresponding to the InstanceId/MapId does not always exist.
+         *  MapPersistentState objects may be created on player logon but the maps are
+         *  created and loaded only when a player actually enters the instance. */
         uint32 GetInstanceId() const { return m_instanceid; }
         uint32 GetMapId() const { return m_mapid; }
 
@@ -107,7 +108,7 @@ class MapPersistentState
         virtual SpawnedPoolData& GetSpawnedPoolData() = 0;
 
         template<typename T>
-        bool IsSpawnedPoolObject(uint32 db_guid_or_pool_id) { return GetSpawnedPoolData().IsSpawnedObject<T>(db_guid_or_pool_id); }
+            bool IsSpawnedPoolObject(uint32 db_guid_or_pool_id) { return GetSpawnedPoolData().IsSpawnedObject<T>(db_guid_or_pool_id); }
 
         // grid objects (Dynamic map/instance specific added/removed grid spawns from pool system/etc)
         MapCellObjectGuids const& GetCellObjectGuids(uint32 cell_id) { return m_gridObjectGuids[cell_id]; }
@@ -148,10 +149,10 @@ inline bool MapPersistentState::CanBeUnload() const
 class WorldPersistentState : public MapPersistentState
 {
     public:
-        /* Created either when:
-            - any new non-instanceable map created
-            - respawn data loading for non-instanceable map
-        */
+        /** Created either when:
+         - any new non-instanceable map created
+         - respawn data loading for non-instanceable map
+         */
         explicit WorldPersistentState(uint16 MapId) : MapPersistentState(MapId, 0) {}
 
         ~WorldPersistentState() {}
@@ -164,22 +165,22 @@ class WorldPersistentState : public MapPersistentState
         static SpawnedPoolData m_sharedSpawnedPoolData;     // Pools spawns state for map, shared by all non-instanced maps
 };
 
-/*
-    Holds the information necessary for creating a new map for an existing instance
-    Is referenced in three cases:
-    - player-instance binds for solo players (not in group)
-    - player-instance binds for permanent raid saves
-    - group-instance binds (both solo and permanent) cache the player binds for the group leader
+/**
+ Holds the information necessary for creating a new map for an existing instance
+ Is referenced in three cases:
+ - player-instance binds for solo players (not in group)
+ - player-instance binds for permanent raid saves
+ - group-instance binds (both solo and permanent) cache the player binds for the group leader
 
-    Used for InstanceMap only
-*/
+ Used for InstanceMap only
+ */
 class DungeonPersistentState : public MapPersistentState
 {
     public:
-        /* Created either when:
-            - any new instance is being generated
-            - the first time a player bound to InstanceId logs in
-            - when a group bound to the instance is loaded */
+        /** Created either when:
+         - any new instance is being generated
+         - the first time a player bound to InstanceId logs in
+         - when a group bound to the instance is loaded */
         DungeonPersistentState(uint16 MapId, uint32 InstanceId, time_t resetTime, bool canReset);
 
         ~DungeonPersistentState();
@@ -191,23 +192,23 @@ class DungeonPersistentState : public MapPersistentState
         uint8 GetPlayerCount() const { return (uint8)m_playerList.size(); }
         uint8 GetGroupCount() const { return (uint8)m_groupList.size(); }
 
-        /*  online players bound to the instance (perm/solo)
-            does not include the members of the group unless they have permanent saves */
+        /**  online players bound to the instance (perm/solo)
+         * does not include the members of the group unless they have permanent saves */
         void AddPlayer(Player* player) { m_playerList.push_back(player); }
         bool RemovePlayer(Player* player) { m_playerList.remove(player); return UnloadIfEmpty(); }
         /* all groups bound to the instance */
         void AddGroup(Group* group) { m_groupList.push_back(group); }
         bool RemoveGroup(Group* group) { m_groupList.remove(group); return UnloadIfEmpty(); }
 
-        /*  for normal instances this corresponds to max(creature respawn time) + X hours
-            for raid instances this caches the global respawn time for the map */
+        /**  for normal instances this corresponds to max(creature respawn time) + X hours
+         * for raid instances this caches the global respawn time for the map */
         time_t GetResetTime() const { return m_resetTime; }
         void SetResetTime(time_t resetTime) { m_resetTime = resetTime; }
         time_t GetResetTimeForDB() const;
 
-        /*  instances can not be reset (except at the global reset time)
-            if there are players permanently bound to it
-            this is cached for the case when those players are offline */
+        /** instances can not be reset (except at the global reset time)
+         *  if there are players permanently bound to it
+         *  this is cached for the case when those players are offline */
         bool CanReset() const { return m_canReset; }
         void SetCanReset(bool canReset) { m_canReset = canReset; }
 
@@ -231,9 +232,9 @@ class DungeonPersistentState : public MapPersistentState
         time_t m_resetTime;
         bool m_canReset;
 
-        /*  the only reason the instSave-object links are kept is because
-            the object-instSave links need to be broken at reset time
-            TODO: maybe it's enough to just store the number of players/groups */
+        /** the only reason the instSave-object links are kept is because
+         *  the object-instSave links need to be broken at reset time
+         *  TODO: maybe it's enough to just store the number of players/groups */
         PlayerListType m_playerList;                        // lock MapPersistentState from unload
         GroupListType m_groupList;                          // lock MapPersistentState from unload
 
@@ -243,9 +244,9 @@ class DungeonPersistentState : public MapPersistentState
 class BattleGroundPersistentState : public MapPersistentState
 {
     public:
-        /* Created either when:
-            - any new BG/arena is being generated
-        */
+        /** Created either when:
+         - any new BG/arena is being generated
+         */
         BattleGroundPersistentState(uint16 MapId, uint32 InstanceId)
             : MapPersistentState(MapId, InstanceId) {}
 
@@ -282,8 +283,8 @@ enum InstanceResetFailReason
 
 #define MAX_RESET_EVENT_TYPE   9
 
-/* resetTime is a global propery of each (raid/heroic) map
-    all instances of that map reset at the same time */
+/** resetTime is a global propery of each (raid/heroic) map
+ *  all instances of that map reset at the same time */
 struct DungeonResetEvent
 {
     ResetEventType type   : 8;                              // if RESET_EVENT_DUNGEON then InstanceID == 0 and applied to all instances for map)
@@ -332,7 +333,8 @@ class DungeonResetScheduler
 
 class MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateManager, MaNGOS::ClassLevelLockable<MapPersistentStateManager, ACE_Thread_Mutex> >
 {
-        friend class DungeonResetScheduler;
+    friend class DungeonResetScheduler;
+
     public:                                                 // constructors
         MapPersistentStateManager();
         ~MapPersistentStateManager();
@@ -354,7 +356,7 @@ class MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateMan
         void RemovePersistentState(uint32 mapId, uint32 instanceId);
 
         template<typename Do>
-        void DoForAllStatesWithMapId(uint32 mapId, Do& _do);
+            void DoForAllStatesWithMapId(uint32 mapId, Do& _do);
 
     public:                                                 // DungeonPersistentState specific
         void CleanupInstances();
@@ -396,7 +398,7 @@ class MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateMan
 };
 
 template<typename Do>
-inline void MapPersistentStateManager::DoForAllStatesWithMapId(uint32 mapId, Do& _do)
+    inline void MapPersistentStateManager::DoForAllStatesWithMapId(uint32 mapId, Do& _do)
 {
     MapEntry const* mapEntry = sMapStore.LookupEntry(mapId);
     if (!mapEntry)

@@ -253,15 +253,15 @@ void AddonHandler::BuildAddonPacket(WorldPacket* Source, WorldPacket* Target, ui
 
             if (CRCCHECK == UI64LIT(0x4C1C776D01))          // If addon is Standard addon CRC
             {
-                                                            // value's standard Addons
+                // value's standard Addons
                 *Target << uint8(0) << uint8(2) << uint8(1) << uint8(0) << uint32(0);
             }
             else if (*AddonAllowed)                         // if addon is Custom addons
-                                                            // value's enable addon
-                *Target << uint8(0x00) << uint8(0x01) << uint8(0x00) << uint8(0x01);
+            // value's enable addon
+            *Target << uint8(0x00) << uint8(0x01) << uint8(0x00) << uint8(0x01);
             else
-                                                            // value's disable addom
-                *Target << uint8(0x00) << uint8(0x0) << uint8(0x00) << uint8(0x0);
+                // value's disable addom
+            *Target << uint8(0x00) << uint8(0x0) << uint8(0x00) << uint8(0x0);
 
             i += AddonNames.size() + 10;
         }

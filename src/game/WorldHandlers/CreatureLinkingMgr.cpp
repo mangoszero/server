@@ -54,7 +54,7 @@ INSTANTIATE_SINGLETON_1(CreatureLinkingMgr);
 
 #define INVALID_MAP_ID      0xFFFFFFFF
 
-/* *********************************************************
+/** *********************************************************
  * Method to Load From DB
  * DB Format:   entry, map, master_entry, flag, search_radius   for `creature_linking_template` (by entry)
  *              0      1    2             3     4
@@ -442,11 +442,12 @@ void CreatureLinkingHolder::AddMasterToHolder(Creature* pCreature)
     // Check, if already stored
     BossGuidMapBounds bounds = m_masterGuid.equal_range(pCreature->GetEntry());
     for (BossGuidMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+    {
         if (itr->second == pCreature->GetObjectGuid())
         {
             return;                                          // Already added
         }
-
+    }
     m_masterGuid.insert(BossGuidMap::value_type(pCreature->GetEntry(), pCreature->GetObjectGuid()));
 }
 

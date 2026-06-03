@@ -178,7 +178,7 @@ enum GroupUpdateFlags
 };
 
 #define GROUP_UPDATE_FLAGS_COUNT          21
-                                                    // bit number: 0, 1, 2, 3, 4, 5, 6, 7, 8,    9,   10,11, 12,13,14,15,16,17,18,   19,   20
+//                                                     bit number: 0, 1, 2, 3, 4, 5, 6, 7, 8,    9,   10,11, 12,13,14,15,16,17,18,   19,   20
 static const uint8 GroupUpdateLength[GROUP_UPDATE_FLAGS_COUNT] = { 1, 2, 2, 1, 2, 2, 2, 2, 4, 4+32, 2+16, 8, 10, 2, 2, 2, 1, 2, 2, 4+32, 2+16};
 
 class Roll : public LootValidatorRef
@@ -186,7 +186,8 @@ class Roll : public LootValidatorRef
     public:
         Roll(ObjectGuid _lootedTragetGuid, LootItem const& li)
             : lootedTargetGUID(_lootedTragetGuid), itemid(li.itemid), itemRandomPropId(li.randomPropertyId),
-              totalPlayersRolling(0), totalNeed(0), totalGreed(0), totalPass(0), itemSlot(0) {}
+            totalPlayersRolling(0), totalNeed(0), totalGreed(0), totalPass(0), itemSlot(0) {}
+
         ~Roll() {}
         void setLoot(Loot* pLoot)
         {
@@ -214,8 +215,8 @@ struct InstanceGroupBind
 {
     DungeonPersistentState* state;
     bool perm;
-    /*  permanent InstanceGroupBinds exist iff the leader has a permanent
-        PlayerInstanceBind for the same instance. */
+    /**  permanent InstanceGroupBinds exist iff the leader has a permanent
+     *   PlayerInstanceBind for the same instance. */
     InstanceGroupBind() : state(NULL), perm(false) {}
 };
 
@@ -226,9 +227,9 @@ class Group
 {
     public:
         /**
-        * Struct MemberSlot
-        * Represent a member of a group with some of its caracteristics
-        */
+         * Struct MemberSlot
+         * Represent a member of a group with some of its caracteristics
+         */
         struct MemberSlot
         {
             /* GUID of the player. */
@@ -335,11 +336,12 @@ class Group
         ObjectGuid GetMemberGuid(const std::string& name)
         {
             for (member_citerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->name == name)
                 {
                     return itr->guid;
                 }
-
+            }
             return ObjectGuid();
         }
         bool IsAssistant(ObjectGuid guid) const
@@ -363,10 +365,10 @@ class Group
         bool SameSubGroup(Player const* member1, Player const* member2) const;
 
         /**
-        * Returns the joined time of a member if it exist.
-        * \param guid GUID of the player to look for.
-        * \return time_t representing the joined time for that player or NULL if it doesn't exist.
-        */
+         * Returns the joined time of a member if it exist.
+         * \param guid GUID of the player to look for.
+         * \return time_t representing the joined time for that player or NULL if it doesn't exist.
+         */
         time_t GetMemberSlotJoinedTime(ObjectGuid guid)
         {
             member_citerator mslot = _getMemberCSlot(guid);
@@ -511,11 +513,11 @@ class Group
         void EndRoll();
 
         /**
-        * function that returns whether the roll is done for this group for the given creature and the given item.
-        * \param Creature pointer to the creature which has dropped some loots.
-        * \param Item pointer to the item to check.
-        * \return bool true if the roll is done, false otherwise.
-        */
+         * function that returns whether the roll is done for this group for the given creature and the given item.
+         * \param Creature pointer to the creature which has dropped some loots.
+         * \param Item pointer to the item to check.
+         * \return bool true if the roll is done, false otherwise.
+         */
         bool IsRollDoneForItem(WorldObject * pObject, const LootItem * pItem);
 
         void LinkMember(GroupReference* pRef)
@@ -570,22 +572,24 @@ class Group
         member_citerator _getMemberCSlot(ObjectGuid guid) const
         {
             for (member_citerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->guid == guid)
                 {
                     return itr;
                 }
-
+            }
             return m_memberSlots.end();
         }
 
         member_witerator _getMemberWSlot(ObjectGuid guid)
         {
             for (member_witerator itr = m_memberSlots.begin(); itr != m_memberSlots.end(); ++itr)
+            {
                 if (itr->guid == guid)
                 {
                     return itr;
                 }
-
+            }
             return m_memberSlots.end();
         }
 

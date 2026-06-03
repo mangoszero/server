@@ -78,7 +78,7 @@ enum SpellCastFlags
     CAST_FLAG_UNKNOWN5          = 0x00000010,    ///< Unknown flag 5
     CAST_FLAG_AMMO              = 0x00000020,    ///< Display projectile visual for spell
     CAST_FLAG_UNKNOWN7          = 0x00000040,    ///< Unknown flag 7 (used for trade skill recast)
-                                                 ///< !0x41 mask used to call CGTradeSkillInfo::DoRecast
+    ///<                                              !0x41 mask used to call CGTradeSkillInfo::DoRecast
     CAST_FLAG_UNKNOWN8          = 0x00000080,    ///< @brief Unknown flag 8
     CAST_FLAG_UNKNOWN9          = 0x00000100,    ///< @brief Unknown flag 9
 };
@@ -274,9 +274,10 @@ typedef std::multimap<uint64, uint64> SpellTargetTimeMap;
 
 class Spell
 {
-        friend struct MaNGOS::SpellNotifierPlayer;
-        friend struct MaNGOS::SpellNotifierCreatureAndPlayer;
-        friend void Unit::SetCurrentCastedSpell(Spell* pSpell);
+    friend struct MaNGOS::SpellNotifierPlayer;
+    friend struct MaNGOS::SpellNotifierCreatureAndPlayer;
+    friend void Unit::SetCurrentCastedSpell(Spell* pSpell);
+
     public:
 
         void EffectEmpty(SpellEffectIndex eff_idx);
@@ -750,9 +751,9 @@ namespace MaNGOS
         float GetCenterY() const { return i_centerY; }
 
         SpellNotifierCreatureAndPlayer(Spell& spell, Spell::UnitList& data, float radius, SpellNotifyPushType type,
-                                       SpellTargets TargetType = SPELL_TARGETS_NOT_FRIENDLY, WorldObject* originalCaster = NULL)
-            : i_data(&data), i_spell(spell), i_push_type(type), i_radius(radius), i_TargetType(TargetType),
-              i_originalCaster(originalCaster), i_castingObject(i_spell.GetCastingObject())
+            SpellTargets TargetType = SPELL_TARGETS_NOT_FRIENDLY, WorldObject* originalCaster = NULL)
+                : i_data(&data), i_spell(spell), i_push_type(type), i_radius(radius), i_TargetType(TargetType),
+            i_originalCaster(originalCaster), i_castingObject(i_spell.GetCastingObject())
         {
             if (!i_originalCaster)
             {
@@ -813,12 +814,12 @@ namespace MaNGOS
 
                 if (!gmSpell)
                 {
-                    if ((i_TargetType != SPELL_TARGETS_ALL && !itr->getSource()->IsTargetableForAttack(i_spell.m_spellInfo->HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD)))
+                    if ((i_TargetType != SPELL_TARGETS_ALL && !itr->getSource()->IsTargetableForAttack(i_spell.m_spellInfo->HasAttribute(SPELL_ATTR_EX3_CAST_ON_DEAD))) ||
                         // mostly phase check
-                        || !itr->getSource()->IsInMap(i_originalCaster))
-                        {
-                            continue;
-                        }
+                        !itr->getSource()->IsInMap(i_originalCaster))
+                    {
+                        continue;
+                    }
 
                     switch (i_TargetType)
                     {

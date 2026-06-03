@@ -271,7 +271,7 @@ void GameEventMgr::LoadFromDB()
     mGameEventCreatureGuids.resize(mGameEvent.size() * 2 - 1);
     //                                   1              2
     result = WorldDatabase.Query("SELECT `creature`.`guid`, `game_event_creature`.`event` "
-                                 "FROM `creature` JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid`");
+        "FROM `creature` JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid`");
 
     count = 0;
     if (!result)
@@ -350,7 +350,7 @@ void GameEventMgr::LoadFromDB()
     mGameEventGameobjectGuids.resize(mGameEvent.size() * 2 - 1);
     //                                   1                2
     result = WorldDatabase.Query("SELECT `gameobject`.`guid`, `game_event_gameobject`.`event` "
-                                 "FROM `gameobject` JOIN `game_event_gameobject` ON `gameobject`.`guid`=`game_event_gameobject`.`guid`");
+        "FROM `gameobject` JOIN `game_event_gameobject` ON `gameobject`.`guid`=`game_event_gameobject`.`guid`");
 
     count = 0;
     if (!result)
@@ -437,13 +437,13 @@ void GameEventMgr::LoadFromDB()
 
     mGameEventCreatureData.resize(mGameEvent.size());
     result = WorldDatabase.Query(
-                                //                  0                                  1                                   2
-                                "SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
-                                //                           3                                          4
-                                "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
-                                //                           5                                         6
-                                "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
-                                "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
+        //                      0                                  1                                   2
+            "SELECT `creature`.`guid`, `game_event_creature_data`.`event`, `game_event_creature_data`.`modelid`,"
+        //                               3                                          4
+            "`game_event_creature_data`.`equipment_id`, `game_event_creature_data`.`entry_id`, "
+        //                               5                                         6
+            "`game_event_creature_data`.`spell_start`, `game_event_creature_data`.`spell_end` "
+            "FROM `creature` JOIN `game_event_creature_data` ON `creature`.`guid`=`game_event_creature_data`.`guid`");
 
     count = 0;
     if (!result)
@@ -695,10 +695,12 @@ void GameEventMgr::Initialize(MapPersistentState* state)
     // At map persistent state creating need only apply pool spawn modifications
     // other data is global and will be auto-apply
     for (GameEventMgr::ActiveEvents::const_iterator event_itr = m_ActiveEvents.begin(); event_itr != m_ActiveEvents.end(); ++event_itr)
+    {
         for (IdList::iterator pool_itr = mGameEventSpawnPoolIds[*event_itr].begin(); pool_itr != mGameEventSpawnPoolIds[*event_itr].end(); ++pool_itr)
         {
             sPoolMgr.InitSpawnPool(*state, *pool_itr);
         }
+    }
 }
 
 // return the next event delay in ms
@@ -998,11 +1000,12 @@ GameEventCreatureData const* GameEventMgr::GetCreatureUpdateDataForActiveEvent(u
     }
 
     for (GameEventCreatureDataList::const_iterator itr = mGameEventCreatureData[event_id].begin(); itr != mGameEventCreatureData[event_id].end(); ++itr)
+    {
         if (itr->first == lowguid)
         {
             return &itr->second;
         }
-
+    }
     return NULL;
 }
 
@@ -1067,10 +1070,11 @@ void GameEventMgr::UpdateEventQuests(uint16 event_id, bool Activate)
     {
         const Quest* pQuest = sObjectMgr.GetQuestTemplate(*itr);
 
-        // if (Activate)
-        //{
-        // TODO: implement way to reset quests when event begin.
-        //}
+        /** if (Activate)
+         *  {
+         *  // TODO: implement way to reset quests when event begin.
+         *  }
+         */
 
         const_cast<Quest*>(pQuest)->SetQuestActiveState(Activate);
     }
@@ -1093,13 +1097,12 @@ void GameEventMgr::SendEventMails(int16 event_id)
         {
             // need special query
             std::ostringstream ss;
-            ss
-                << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
+            ss << "SELECT `characters`.`guid` FROM `characters`, `character_queststatus` "
                 "WHERE (1 << (`characters`.`race` - 1)) & "
-                << itr->raceMask
-                << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
-                << itr->questId
-                << " AND `character_queststatus`.`rewarded` <> 0";
+                          << itr->raceMask
+                          << " AND `characters`.`deleteDate` IS NULL AND `character_queststatus`.`guid` = `characters`.`guid` AND `character_queststatus`.`quest` = "
+                          << itr->questId
+                          << " AND `character_queststatus`.`rewarded` <> 0";
 
             sMassMailMgr.AddMassMailTask(new MailDraft(itr->mailTemplateId), MailSender(MAIL_CREATURE, itr->senderEntry), ss.str().c_str());
         }
@@ -1122,11 +1125,15 @@ template <>
 int16 GameEventMgr::GetGameEventId<Creature>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventCreatureGuids.size(); ++i) // 0 <= i <= 2*(S := mGameEvent.size()) - 2
+    {
         for (GuidList::const_iterator itr = mGameEventCreatureGuids[i].begin(); itr != mGameEventCreatureGuids[i].end(); ++itr)
+        {
             if (*itr == guid_or_poolid)
             {
                 return i + 1 - mGameEvent.size();        // -S *1 + 1 <= . <= 1*S - 1
             }
+        }
+    }
     return 0;
 }
 
@@ -1142,11 +1149,15 @@ template <>
 int16 GameEventMgr::GetGameEventId<GameObject>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventGameobjectGuids.size(); ++i)
+    {
         for (GuidList::const_iterator itr = mGameEventGameobjectGuids[i].begin(); itr != mGameEventGameobjectGuids[i].end(); ++itr)
+        {
             if (*itr == guid_or_poolid)
             {
                 return i + 1 - mGameEvent.size();        // -S *1 + 1 <= . <= 1*S - 1
             }
+        }
+    }
     return 0;
 }
 
@@ -1162,11 +1173,15 @@ template <>
 int16 GameEventMgr::GetGameEventId<Pool>(uint32 guid_or_poolid)
 {
     for (uint16 i = 0; i < mGameEventSpawnPoolIds.size(); ++i)
+    {
         for (IdList::const_iterator itr = mGameEventSpawnPoolIds[i].begin(); itr != mGameEventSpawnPoolIds[i].end(); ++itr)
+        {
             if (*itr == guid_or_poolid)
             {
                 return i;
             }
+        }
+    }
     return 0;
 }
 
@@ -1189,11 +1204,12 @@ bool GameEventMgr::IsActiveHoliday(HolidayIds id)
     }
 
     for (GameEventMgr::ActiveEvents::const_iterator itr = m_ActiveEvents.begin(); itr != m_ActiveEvents.end(); ++itr)
+    {
         if (mGameEvent[*itr].holiday_id == id)
         {
             return true;
         }
-
+    }
     return false;
 }
 

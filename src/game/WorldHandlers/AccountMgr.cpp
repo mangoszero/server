@@ -263,10 +263,10 @@ AccountOpResult AccountMgr::ChangeUsername(uint32 accid, std::string new_uname, 
     LoginDatabase.escape_string(safe_new_uname);
 
     if (!LoginDatabase.PExecute("UPDATE `account` SET `v`='0',`s`='0',`username`='%s',`sha_pass_hash`='%s' WHERE `id`='%u'", safe_new_uname.c_str(),
-                                CalculateShaPassHash(new_uname, new_passwd).c_str(), accid))
-                                {
-                                    return AOR_DB_INTERNAL_ERROR;                        // unexpected error
-                                }
+        CalculateShaPassHash(new_uname, new_passwd).c_str(), accid))
+    {
+        return AOR_DB_INTERNAL_ERROR;                        // unexpected error
+    }
 
     return AOR_OK;
 }
@@ -301,10 +301,10 @@ AccountOpResult AccountMgr::ChangePassword(uint32 accid, std::string new_passwd)
 
     // also reset s and v to force update at next realmd login
     if (!LoginDatabase.PExecute("UPDATE `account` SET `v`='0', `s`='0', `sha_pass_hash`='%s' WHERE `id`='%u'",
-                                CalculateShaPassHash(username, new_passwd).c_str(), accid))
-                                {
-                                    return AOR_DB_INTERNAL_ERROR;                        // unexpected error
-                                }
+        CalculateShaPassHash(username, new_passwd).c_str(), accid))
+    {
+        return AOR_DB_INTERNAL_ERROR;                        // unexpected error
+    }
 
     return AOR_OK;
 }

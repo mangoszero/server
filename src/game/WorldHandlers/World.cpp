@@ -364,11 +364,12 @@ int32 World::GetQueuedSessionPos(WorldSession* sess)
     uint32 position = 1;
 
     for (Queue::const_iterator iter = m_QueuedSessions.begin(); iter != m_QueuedSessions.end(); ++iter, ++position)
+    {
         if ((*iter) == sess)
         {
             return position;
         }
-
+    }
     return 0;
 }
 
@@ -599,7 +600,9 @@ void World::LoadConfigSettings(bool reload)
         unsigned int id;
         VMAP::VMapFactory::chompAndTrim(forceLoadGridOnMaps);
         while (VMAP::VMapFactory::getNextId(forceLoadGridOnMaps, pos, id))
+        {
             m_configForceLoadMapIds.insert(id);
+        }
     }
 
     setConfig(CONFIG_UINT32_INTERVAL_SAVE, "PlayerSave.Interval", 15 * MINUTE * IN_MILLISECONDS);
@@ -1002,7 +1005,7 @@ void World::LoadConfigSettings(bool reload)
     VMAP::VMapFactory::createOrGetVMapManager()->setEnableHeightCalc(enableHeight);
     VMAP::VMapFactory::preventSpellsFromBeingTestedForLoS(ignoreSpellIds.c_str());
     sLog.outString("WORLD: VMap support included. LineOfSight:%i, getHeight:%i, indoorCheck:%i",
-                   enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
+        enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
     sLog.outString("WORLD: VMap data directory is: %svmaps", m_dataPath.c_str());
 
     setConfig(CONFIG_BOOL_MMAP_ENABLED, "mmap.enabled", true);
@@ -1475,10 +1478,10 @@ void World::SetInitialWorldSettings()
     local = safe_localtime(time(nullptr));
     char isoDate[128];
     sprintf(isoDate, "%04d-%02d-%02d %02d:%02d:%02d",
-            local.tm_year + 1900, local.tm_mon + 1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
+        local.tm_year + 1900, local.tm_mon + 1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
 
     LoginDatabase.PExecute("INSERT INTO `uptime` (`realmid`, `starttime`, `startstring`, `uptime`) VALUES('%u', " UI64FMTD ", '%s', 0)",
-                           realmID, uint64(m_startTime), isoDate);
+        realmID, uint64(m_startTime), isoDate);
 
     m_timers[WUPDATE_AUCTIONS].SetInterval(MINUTE * IN_MILLISECONDS);
     m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE) * MINUTE * IN_MILLISECONDS);
@@ -1685,9 +1688,9 @@ void World::showFooter()
         "                Builds : %s\n"
         "\n"
         "         Module Status -\n%s\n"
-        "_______________________________________________________\n"
-        , GitRevision::GetProductVersionStr(), GitRevision::GetDepElunaFullRevision(), GitRevision::GetDepSD3FullRevision(), GitRevision::GetWorldDBVersion(), GitRevision::GetWorldDBStructure(), GitRevision::GetWorldDBContent(),
-            thisClientVersion.c_str(), thisClientBuilds.c_str(), sModules.c_str());
+        "_______________________________________________________\n",
+    GitRevision::GetProductVersionStr(), GitRevision::GetDepElunaFullRevision(), GitRevision::GetDepSD3FullRevision(), GitRevision::GetWorldDBVersion(), GitRevision::GetWorldDBStructure(), GitRevision::GetWorldDBContent(),
+        thisClientVersion.c_str(), thisClientBuilds.c_str(), sModules.c_str());
 }
 
 /**
@@ -2065,11 +2068,15 @@ void World::KickAllLess(AccountTypes sec)
 {
     // session not removed at kick and will removed in next update tick
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
         if (WorldSession* session = itr->second)
+        {
             if (session->GetSecurity() < sec)
             {
                 session->KickPlayer();
             }
+        }
+    }
 }
 
 /// Ban an account or ban an IP address, duration_secs if it is positive used, otherwise permban
@@ -2124,7 +2131,7 @@ BanReturn World::BanAccount(BanMode mode, std::string nameOrIP, uint32 duration_
         {
             // No SQL injection as strings are escaped
             LoginDatabase.PExecute("INSERT INTO `account_banned` VALUES ('%u', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()+%u, '%s', '%s', '1')",
-                                   account, duration_secs, safe_author.c_str(), reason.c_str());
+                account, duration_secs, safe_author.c_str(), reason.c_str());
         }
 
         if (WorldSession* sess = FindSession(account))
@@ -2223,8 +2230,8 @@ void World::ShutdownServ(uint32 time, uint32 options, uint8 exitcode)
     {
         if (!(options & SHUTDOWN_MASK_IDLE) || GetActiveAndQueuedSessionCount() == 0)
         {
-                sObjectAccessor.SaveAllPlayers();        // save all players.
-                m_stopEvent = true;                                // exist code already set
+            sObjectAccessor.SaveAllPlayers();        // save all players.
+            m_stopEvent = true;                                // exist code already set
         }
         else
         {
@@ -2354,10 +2361,12 @@ void World::ServerMaintenanceStart()
 
     // save and update all online players
     for (SessionMap::iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
         if (itr->second->GetPlayer() && itr->second->GetPlayer()->IsInWorld())
         {
             itr->second->GetPlayer()->SaveToDB();
         }
+    }
 
     CharacterDatabase.PExecute("UPDATE `saved_variables` SET `NextMaintenanceDate` = '" UI64FMTD "'", uint64(m_NextMaintenanceDate));
 }
@@ -2436,7 +2445,7 @@ void World::UpdateResultQueue()
 void World::UpdateRealmCharCount(uint32 accountId)
 {
     CharacterDatabase.AsyncPQuery(this, &World::_UpdateRealmCharCount, accountId,
-                                  "SELECT COUNT(`guid`) FROM `characters` WHERE `account` = '%u'", accountId);
+            "SELECT COUNT(`guid`) FROM `characters` WHERE `account` = '%u'", accountId);
 }
 
 /**
@@ -2479,8 +2488,10 @@ void World::SetPlayerLimit(int32 limit, bool needUpdate)
     m_playerLimit = limit;
 
     if (db_update_need)
+    {
         LoginDatabase.PExecute("UPDATE `realmlist` SET `allowedSecurityLevel` = '%u' WHERE `id` = '%u'",
-                               uint32(GetPlayerSecurityLimit()), realmID);
+            uint32(GetPlayerSecurityLimit()), realmID);
+    }
 }
 
 /**

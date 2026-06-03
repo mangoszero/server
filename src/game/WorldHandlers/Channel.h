@@ -87,104 +87,104 @@ enum ChannelIds
 
 class Channel
 {
-        enum ChannelFlags
-        {
-            CHANNEL_FLAG_NONE       = 0x00,
-            CHANNEL_FLAG_CUSTOM     = 0x01,
-            // 0x02
-            CHANNEL_FLAG_TRADE      = 0x04,
-            CHANNEL_FLAG_NOT_LFG    = 0x08,
-            CHANNEL_FLAG_GENERAL    = 0x10,
-            CHANNEL_FLAG_CITY       = 0x20,
-            CHANNEL_FLAG_LFG        = 0x40,
-            CHANNEL_FLAG_VOICE      = 0x80
-            // General                  0x18 = 0x10 | 0x08
-            // Trade                    0x3C = 0x20 | 0x10 | 0x08 | 0x04
-            // LocalDefence             0x18 = 0x10 | 0x08
-            // GuildRecruitment         0x38 = 0x20 | 0x10 | 0x08
-            // LookingForGroup          0x50 = 0x40 | 0x10
-        };
+    enum ChannelFlags
+    {
+        CHANNEL_FLAG_NONE       = 0x00,
+        CHANNEL_FLAG_CUSTOM     = 0x01,
+        // 0x02
+        CHANNEL_FLAG_TRADE      = 0x04,
+        CHANNEL_FLAG_NOT_LFG    = 0x08,
+        CHANNEL_FLAG_GENERAL    = 0x10,
+        CHANNEL_FLAG_CITY       = 0x20,
+        CHANNEL_FLAG_LFG        = 0x40,
+        CHANNEL_FLAG_VOICE      = 0x80
+        // General                  0x18 = 0x10 | 0x08
+        // Trade                    0x3C = 0x20 | 0x10 | 0x08 | 0x04
+        // LocalDefence             0x18 = 0x10 | 0x08
+        // GuildRecruitment         0x38 = 0x20 | 0x10 | 0x08
+        // LookingForGroup          0x50 = 0x40 | 0x10
+    };
 
-        enum ChannelDBCFlags
-        {
-            CHANNEL_DBC_FLAG_NONE       = 0x00000,
-            CHANNEL_DBC_FLAG_INITIAL    = 0x00001,          // General, Trade, LocalDefense, LFG
-            CHANNEL_DBC_FLAG_ZONE_DEP   = 0x00002,          // General, Trade, LocalDefense, GuildRecruitment
-            CHANNEL_DBC_FLAG_GLOBAL     = 0x00004,          // WorldDefense
-            CHANNEL_DBC_FLAG_TRADE      = 0x00008,          // Trade
-            CHANNEL_DBC_FLAG_CITY_ONLY  = 0x00010,          // Trade, GuildRecruitment
-            CHANNEL_DBC_FLAG_CITY_ONLY2 = 0x00020,          // Trade, GuildRecruitment
-            CHANNEL_DBC_FLAG_DEFENSE    = 0x10000,          // LocalDefense, WorldDefense
-            CHANNEL_DBC_FLAG_GUILD_REQ  = 0x20000,          // GuildRecruitment
-            CHANNEL_DBC_FLAG_LFG        = 0x40000           // LookingForGroup
-        };
+    enum ChannelDBCFlags
+    {
+        CHANNEL_DBC_FLAG_NONE       = 0x00000,
+        CHANNEL_DBC_FLAG_INITIAL    = 0x00001,          // General, Trade, LocalDefense, LFG
+        CHANNEL_DBC_FLAG_ZONE_DEP   = 0x00002,          // General, Trade, LocalDefense, GuildRecruitment
+        CHANNEL_DBC_FLAG_GLOBAL     = 0x00004,          // WorldDefense
+        CHANNEL_DBC_FLAG_TRADE      = 0x00008,          // Trade
+        CHANNEL_DBC_FLAG_CITY_ONLY  = 0x00010,          // Trade, GuildRecruitment
+        CHANNEL_DBC_FLAG_CITY_ONLY2 = 0x00020,          // Trade, GuildRecruitment
+        CHANNEL_DBC_FLAG_DEFENSE    = 0x10000,          // LocalDefense, WorldDefense
+        CHANNEL_DBC_FLAG_GUILD_REQ  = 0x20000,          // GuildRecruitment
+        CHANNEL_DBC_FLAG_LFG        = 0x40000           // LookingForGroup
+    };
 
-        enum ChannelMemberFlags
-        {
-            MEMBER_FLAG_NONE        = 0x00,
-            MEMBER_FLAG_OWNER       = 0x01,
-            MEMBER_FLAG_MODERATOR   = 0x02,
-            MEMBER_FLAG_VOICED      = 0x04,
-            MEMBER_FLAG_MUTED       = 0x08,
-            MEMBER_FLAG_CUSTOM      = 0x10,
-            MEMBER_FLAG_MIC_MUTED   = 0x20,
-            // 0x40
-            // 0x80
-        };
+    enum ChannelMemberFlags
+    {
+        MEMBER_FLAG_NONE        = 0x00,
+        MEMBER_FLAG_OWNER       = 0x01,
+        MEMBER_FLAG_MODERATOR   = 0x02,
+        MEMBER_FLAG_VOICED      = 0x04,
+        MEMBER_FLAG_MUTED       = 0x08,
+        MEMBER_FLAG_CUSTOM      = 0x10,
+        MEMBER_FLAG_MIC_MUTED   = 0x20,
+        // 0x40
+        // 0x80
+    };
 
-        struct PlayerInfo
-        {
-            ObjectGuid player;
-            uint8 flags;
+    struct PlayerInfo
+    {
+        ObjectGuid player;
+        uint8 flags;
 
-            bool HasFlag(uint8 flag) { return flags & flag; }
-            void SetFlag(uint8 flag) { if (!HasFlag(flag)) { flags |= flag; } }
-            bool IsOwner()
+        bool HasFlag(uint8 flag) { return flags & flag; }
+        void SetFlag(uint8 flag) { if (!HasFlag(flag)) { flags |= flag; } }
+        bool IsOwner()
+        {
+            return flags & MEMBER_FLAG_OWNER;
+        }
+        void SetOwner(bool state)
+        {
+            if (state)
             {
-                return flags & MEMBER_FLAG_OWNER;
+                flags |= MEMBER_FLAG_OWNER;
             }
-            void SetOwner(bool state)
+            else
             {
-                if (state)
-                {
-                    flags |= MEMBER_FLAG_OWNER;
-                }
-                else
-                {
-                    flags &= ~MEMBER_FLAG_OWNER;
-                }
+                flags &= ~MEMBER_FLAG_OWNER;
             }
-            bool IsModerator()
+        }
+        bool IsModerator()
+        {
+            return flags & MEMBER_FLAG_MODERATOR;
+        }
+        void SetModerator(bool state)
+        {
+            if (state)
             {
-                return flags & MEMBER_FLAG_MODERATOR;
+                flags |= MEMBER_FLAG_MODERATOR;
             }
-            void SetModerator(bool state)
+            else
             {
-                if (state)
-                {
-                    flags |= MEMBER_FLAG_MODERATOR;
-                }
-                else
-                {
-                    flags &= ~MEMBER_FLAG_MODERATOR;
-                }
+                flags &= ~MEMBER_FLAG_MODERATOR;
             }
-            bool IsMuted()
+        }
+        bool IsMuted()
+        {
+            return flags & MEMBER_FLAG_MUTED;
+        }
+        void SetMuted(bool state)
+        {
+            if (state)
             {
-                return flags & MEMBER_FLAG_MUTED;
+                flags |= MEMBER_FLAG_MUTED;
             }
-            void SetMuted(bool state)
+            else
             {
-                if (state)
-                {
-                    flags |= MEMBER_FLAG_MUTED;
-                }
-                else
-                {
-                    flags &= ~MEMBER_FLAG_MUTED;
-                }
+                flags &= ~MEMBER_FLAG_MUTED;
             }
-        };
+        }
+    };
 
     public:
         Channel(const std::string& name);
@@ -241,9 +241,9 @@ class Channel
         static const uint8 SPEAK_IN_WORLDDEFENSE_RANK = 4 + 10;
 
         /**
-        * This creates the packet informing client that the player is not on requested \ref name channel.
-        * See also \ref MakeNotMember for non-static version.
-        */
+         * This creates the packet informing client that the player is not on requested \ref name channel.
+         * See also \ref MakeNotMember for non-static version.
+         */
         static void MakeNotOnPacket(WorldPacket* data, const std::string &name);
     private:
         // initial packet data (notify type and channel name)
