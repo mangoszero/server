@@ -119,7 +119,7 @@ bool Corpse::Create(uint32 guidlow, Player* owner)
     if (!IsPositionValid())
     {
         sLog.outError("Corpse (guidlow %d, owner %s) not created. Suggested coordinates isn't valid (X: %f Y: %f)",
-                      guidlow, owner->GetName(), owner->GetPositionX(), owner->GetPositionY());
+            guidlow, owner->GetName(), owner->GetPositionX(), owner->GetPositionY());
         return false;
     }
 
@@ -299,7 +299,7 @@ bool Corpse::LoadFromDB(uint32 lowguid, Field* fields)
     if (!IsPositionValid())
     {
         sLog.outError("%s Owner %s not created. Suggested coordinates isn't valid (X: %f Y: %f)",
-                      GetGuidStr().c_str(), GetOwnerGuid().GetString().c_str(), GetPositionX(), GetPositionY());
+            GetGuidStr().c_str(), GetOwnerGuid().GetString().c_str(), GetPositionX(), GetPositionY());
         return false;
     }
 

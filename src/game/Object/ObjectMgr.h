@@ -198,7 +198,10 @@ struct PetLevelInfo
 {
     PetLevelInfo() : health(0), mana(0), armor(0)
     {
-        for (int i = 0; i < MAX_STATS; ++i) stats[i] = 0;
+        for (int i = 0; i < MAX_STATS; ++i)
+        {
+            stats[i] = 0;
+        }
     }
 
     uint16 stats[MAX_STATS];
@@ -361,7 +364,7 @@ enum ConditionType
     CONDITION_RESERVED_4            = 34,                   // reserved for 3.x and later
     CONDITION_GENDER                = 35,                   // 0=male, 1=female, 2=none (see enum Gender)
     CONDITION_DEAD_OR_AWAY          = 36,                   // value1: 0=player dead, 1=player is dead (with group dead), 2=player in instance are dead, 3=creature is dead
-                                                            // value2: if != 0 only consider players in range of this value
+    //                                                         value2: if != 0 only consider players in range of this value
     CONDITION_CREATURE_IN_RANGE     = 37,                   // value1: creature entry; value2: range; returns only alive creatures
     CONDITION_GAMEOBJECT_IN_RANGE   = 38,                   // value1: gameobject entry; value2: range
     CONDITION_PVP_RANK              = 39,                   // value1: rank; value2: 0 = eq, 1 = equal or higher, 2 = equal or less
@@ -485,7 +488,7 @@ class HonorStanding
         HonorStanding* GetInfo()
         {
             return this;
-        };
+        }
 };
 
 bool operator < (const HonorStanding& lhs, const HonorStanding& rhs);
@@ -493,7 +496,7 @@ bool operator < (const HonorStanding& lhs, const HonorStanding& rhs);
 typedef std::list<HonorStanding> HonorStandingList;
 
 template<typename T>
-class IdGenerator
+    class IdGenerator
 {
     public:                                                 // constructors
         explicit IdGenerator(char const* _name) : m_name(_name), m_nextGuid(1) {}
@@ -518,7 +521,7 @@ class IdGenerator
 
 class ObjectMgr
 {
-        friend class PlayerDumpReader;
+    friend class PlayerDumpReader;
 
     public:
         ObjectMgr();
@@ -918,13 +921,15 @@ class ObjectMgr
         void DeleteCreatureData(uint32 guid);
 
         template<typename Worker>
-        void DoCreatureData(Worker& worker) const
+            void DoCreatureData(Worker& worker) const
         {
             for (CreatureDataMap::const_iterator itr = mCreatureDataMap.begin(); itr != mCreatureDataMap.end(); ++itr)
+            {
                 if (worker(*itr))
                 {
                     break;
                 }
+            }
         }
 
         ActiveCreatureGuidsOnMap const* GetActiveCreatureGuids() const { return &m_activeCreatures; }
@@ -1053,13 +1058,15 @@ class ObjectMgr
         void DeleteGOData(uint32 guid);
 
         template<typename Worker>
-        void DoGOData(Worker& worker) const
+            void DoGOData(Worker& worker) const
         {
             for (GameObjectDataMap::const_iterator itr = mGameObjectDataMap.begin(); itr != mGameObjectDataMap.end(); ++itr)
+            {
                 if (worker(*itr))                           // arg = GameObjectDataPair
                 {
                     break;
                 }
+            }
         }
 
         MangosStringLocale const* GetMangosStringLocale(int32 entry) const
@@ -1255,16 +1262,16 @@ class ObjectMgr
         }
 
         /**
-        * \brief: Data returned is used to compute health, mana, armor, damage of creatures. May be NULL.
-        * \param uint32 level               creature level
-        * \param uint32 unitClass           creature class, related to CLASSMASK_ALL_CREATURES
-        * \return: CreatureClassLvlStats const* or NULL
-        *
-        * Description: GetCreatureClassLvlStats give fast access to creature stats data.
-        * FullName: ObjectMgr::GetCreatureClassLvlStats
-        * Access: public
-        * Qualifier: const
-        **/
+         * \brief: Data returned is used to compute health, mana, armor, damage of creatures. May be NULL.
+         * \param uint32 level               creature level
+         * \param uint32 unitClass           creature class, related to CLASSMASK_ALL_CREATURES
+         * \return: CreatureClassLvlStats const* or NULL
+         *
+         * Description: GetCreatureClassLvlStats give fast access to creature stats data.
+         * FullName: ObjectMgr::GetCreatureClassLvlStats
+         * Access: public
+         * Qualifier: const
+         **/
         CreatureClassLvlStats const* GetCreatureClassLvlStats(uint32 level, uint32 unitClass) const;
     protected:
 

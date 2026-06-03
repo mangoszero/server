@@ -62,11 +62,12 @@ class UpdateMask
             {
                 ClientUpdateMaskType maskPart = 0;
                 for (uint32 j = 0; j < CLIENT_UPDATE_MASK_BITS; ++j)
+                {
                     if (_bits[CLIENT_UPDATE_MASK_BITS * i + j])
                     {
                         maskPart |= 1 << j;
                     }
-
+                }
                 *data << maskPart;
             }
         }

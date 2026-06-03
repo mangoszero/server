@@ -41,7 +41,7 @@ static_assert(MAXIMAL_AI_EVENT_EVENTAI <= 32, "Maximal 32 AI_EVENTs supported wi
  * @param creature The creature controlled by this AI.
  */
 CreatureAI::CreatureAI(Creature* creature) : m_creature(creature), m_combatMovement(COMBAT_MOVEMENT_SCRIPT),
-                                             m_attackDistance(0.0f), m_attackAngle(0.0f), m_meleeAttack(true), m_uiCastingDelay(0)
+    m_attackDistance(0.0f), m_attackAngle(0.0f), m_meleeAttack(true), m_uiCastingDelay(0)
 {
     SetSpellsList(creature->GetCreatureInfo()->SpellListId);
 }
@@ -210,7 +210,7 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
         else
         {
             sLog.outErrorDb("DoCastSpellIfCan: %s attempt to cast spell %u but spell does not exist.",
-                            m_creature->GetGuidStr().c_str(), uiSpell);
+                m_creature->GetGuidStr().c_str(), uiSpell);
             return CAST_FAIL_OTHER;
         }
     }
@@ -229,22 +229,22 @@ enum CreatureSpellTarget
     TARGET_T_HOSTILE_RANDOM_NOT_TOP         = 5,            //Any random target except top threat.
 
     TARGET_T_FRIENDLY                       = 14,           //Random friendly unit.
-                                                            //Param1 = search_radius
-                                                            //Param2 = (bool) exclude_target
+    //Param1 = search_radius
+    //Param2 = (bool) exclude_target
     TARGET_T_FRIENDLY_INJURED               = 15,           //Friendly unit missing the most health.
-                                                            //Param1 = search_radius
-                                                            //Param2 = hp_percent
+    //Param1 = search_radius
+    //Param2 = hp_percent
     TARGET_T_FRIENDLY_INJURED_EXCEPT        = 16,           //Friendly unit missing the most health but not provided target.
-                                                            //Param1 = search_radius
-                                                            //Param2 = hp_percent
+    //Param1 = search_radius
+    //Param2 = hp_percent
     TARGET_T_FRIENDLY_MISSING_BUFF          = 17,           //Friendly unit without aura.
-                                                            //Param1 = search_radius
-                                                            //Param2 = spell_id
+    //Param1 = search_radius
+    //Param2 = spell_id
     TARGET_T_FRIENDLY_MISSING_BUFF_EXCEPT   = 18,           //Friendly unit without aura but not provided target.
-                                                            //Param1 = search_radius
-                                                            //Param2 = spell_id
+    //Param1 = search_radius
+    //Param2 = spell_id
     TARGET_T_FRIENDLY_CC                    = 19,           //Friendly unit under crowd control.
-                                                            //Param1 = search_radius
+    //Param1 = search_radius
     TARGET_T_END
 };
 
@@ -569,8 +569,8 @@ void CreatureAI::HandleMovementOnAttackStart(Unit* victim)
 class AiDelayEventAround : public BasicEvent
 {
     public:
-        AiDelayEventAround(AIEventType eventType, ObjectGuid invokerGuid, Creature& owner, std::list<Creature*> const& receivers, uint32 miscValue) :
-            BasicEvent(),
+        AiDelayEventAround(AIEventType eventType, ObjectGuid invokerGuid, Creature& owner, std::list<Creature*> const& receivers, uint32 miscValue)
+            : BasicEvent(),
             m_eventType(eventType),
             m_invokerGuid(invokerGuid),
             m_owner(owner),

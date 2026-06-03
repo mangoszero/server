@@ -86,7 +86,7 @@ struct LootStoreItem
     // displayid is filled in IsValid() which must be called after
     LootStoreItem(uint32 _itemid, float _chanceOrQuestChance, int8 _group, uint16 _conditionId, int32 _mincountOrRef, uint8 _maxcount)
         : itemid(_itemid), chance(fabs(_chanceOrQuestChance)), mincountOrRef(_mincountOrRef),
-          group(_group), needs_quest(_chanceOrQuestChance < 0), maxcount(_maxcount), conditionId(_conditionId)
+        group(_group), needs_quest(_chanceOrQuestChance < 0), maxcount(_maxcount), conditionId(_conditionId)
     {}
 
     bool Roll(bool rate) const;                             // Checks if the entry takes it's chance (at loot generation)
@@ -166,21 +166,21 @@ class LootStore
         bool HaveQuestLootForPlayer(uint32 loot_id, Player* player) const;
 
         /**
-        * function which indicates whether there's at least one shared quest item dropped for a given player
-        *
-        * \param loot_id uint32 indicating the loot template id.
-        * \param player Player const* to the player that needs to get loot or not.
-        * \return bool if there's at least one Shared Quest Loot available.
-        */
+         * function which indicates whether there's at least one shared quest item dropped for a given player
+         *
+         * \param loot_id uint32 indicating the loot template id.
+         * \param player Player const* to the player that needs to get loot or not.
+         * \return bool if there's at least one Shared Quest Loot available.
+         */
         bool HaveSharedQuestLootForPlayer(uint32 loot_id, Player* player) const;
 
         /**
-        * function which indicates whether there's at least one starting quest item dropped for a given player
-        *
-        * \param loot_id uint32 indicating the loot template id.
-        * \param player Player const* to the player that needs to get loot or not.
-        * \return bool if there's at least one Starting Quest Loot available.
-        */
+         * function which indicates whether there's at least one starting quest item dropped for a given player
+         *
+         * \param loot_id uint32 indicating the loot template id.
+         * \param player Player const* to the player that needs to get loot or not.
+         * \return bool if there's at least one Starting Quest Loot available.
+         */
         bool HaveStartingQuestLootForPlayer(uint32 loot_id, Player* player) const;
 
         LootTemplate const* GetLootFor(uint32 loot_id) const;
@@ -200,8 +200,8 @@ class LootStore
 
 class LootTemplate
 {
-        class LootGroup;                                   // A set of loot definitions for items (refs are not allowed inside)
-        typedef std::vector<LootGroup> LootGroups;
+    class LootGroup;                                   // A set of loot definitions for items (refs are not allowed inside)
+    typedef std::vector<LootGroup> LootGroups;
 
     public:
         // Adds an entry to the group (at loading stage)
@@ -215,23 +215,23 @@ class LootTemplate
         bool HasQuestDropForPlayer(LootTemplateMap const& store, Player const* player, uint8 GroupId = 0) const;
 
         /**
-        * function which indicates whether there's at least one shared quest item dropped for a given player
-        *
-        * \param store LootTemplateMap const& which provides the source store of items drop.
-        * \param player Player const* to the player that needs to get loot or not.
-        * \param GroupId uint8 indicates the GroupId for the given LootTemplate (see database).
-        * \return bool if there's at least one Shared Quest Loot available.
-        */
+         * function which indicates whether there's at least one shared quest item dropped for a given player
+         *
+         * \param store LootTemplateMap const& which provides the source store of items drop.
+         * \param player Player const* to the player that needs to get loot or not.
+         * \param GroupId uint8 indicates the GroupId for the given LootTemplate (see database).
+         * \return bool if there's at least one Shared Quest Loot available.
+         */
         bool HasSharedQuestDropForPlayer(LootTemplateMap const& store, Player const* player, uint8 GroupId = 0) const;
 
         /**
-        * function which indicates whether there's at least one starting quest item dropped for a given player
-        *
-        * \param store LootTemplateMap const& which provides the source store of items drop.
-        * \param player Player const* to the player that needs to get loot or not.
-        * \param GroupId uint8 indicates the GroupId for the given LootTemplate (see database).
-        * \return bool if there's at least one starting Quest Loot available.
-        */
+         * function which indicates whether there's at least one starting quest item dropped for a given player
+         *
+         * \param store LootTemplateMap const& which provides the source store of items drop.
+         * \param player Player const* to the player that needs to get loot or not.
+         * \param GroupId uint8 indicates the GroupId for the given LootTemplate (see database).
+         * \return bool if there's at least one starting Quest Loot available.
+         */
         bool HasStartingQuestDropForPlayer(LootTemplateMap const& store, Player const* player, uint8 GroupId = 0) const;
 
         // Checks integrity of the template
@@ -305,84 +305,84 @@ ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv);
 
 struct Loot
 {
-        friend ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv);
+    friend ByteBuffer& operator<<(ByteBuffer& b, LootView const& lv);
 
-        QuestItemMap const& GetPlayerQuestItems() const { return m_playerQuestItems; }
-        QuestItemMap const& GetPlayerFFAItems() const { return m_playerFFAItems; }
-        QuestItemMap const& GetPlayerNonQuestNonFFAConditionalItems() const { return m_playerNonQuestNonFFAConditionalItems; }
+    QuestItemMap const& GetPlayerQuestItems() const { return m_playerQuestItems; }
+    QuestItemMap const& GetPlayerFFAItems() const { return m_playerFFAItems; }
+    QuestItemMap const& GetPlayerNonQuestNonFFAConditionalItems() const { return m_playerNonQuestNonFFAConditionalItems; }
 
-        LootItemList items;
-        uint32 gold;
-        uint8 unlootedCount;
-        LootType loot_type;                                 // required for for proper item loot finish (store internal loot types in different from 3.x version, in fact this meaning that it send same loot types for interesting cases like 3.x version code, skip pre-3.x client loot type limitaitons)
+    LootItemList items;
+    uint32 gold;
+    uint8 unlootedCount;
+    LootType loot_type;                                 // required for for proper item loot finish (store internal loot types in different from 3.x version, in fact this meaning that it send same loot types for interesting cases like 3.x version code, skip pre-3.x client loot type limitaitons)
 
-        Loot(WorldObject const* lootTarget, uint32 _gold = 0) : gold(_gold), unlootedCount(0), loot_type(LOOT_CORPSE), m_lootTarget(lootTarget) {}
-        ~Loot()
+    Loot(WorldObject const* lootTarget, uint32 _gold = 0) : gold(_gold), unlootedCount(0), loot_type(LOOT_CORPSE), m_lootTarget(lootTarget) {}
+    ~Loot()
+    {
+        clear();
+    }
+
+    // if loot becomes invalid this reference is used to inform the listener
+    void addLootValidatorRef(LootValidatorRef* pLootValidatorRef)
+    {
+        m_LootValidatorRefManager.insertFirst(pLootValidatorRef);
+    }
+
+    // void clear();
+    void clear()
+    {
+        for (QuestItemMap::const_iterator itr = m_playerQuestItems.begin(); itr != m_playerQuestItems.end(); ++itr)
         {
-            clear();
+            delete itr->second;
         }
+        m_playerQuestItems.clear();
 
-        // if loot becomes invalid this reference is used to inform the listener
-        void addLootValidatorRef(LootValidatorRef* pLootValidatorRef)
+        for (QuestItemMap::const_iterator itr = m_playerFFAItems.begin(); itr != m_playerFFAItems.end(); ++itr)
         {
-            m_LootValidatorRefManager.insertFirst(pLootValidatorRef);
+            delete itr->second;
         }
+        m_playerFFAItems.clear();
 
-        // void clear();
-        void clear()
+        for (QuestItemMap::const_iterator itr = m_playerNonQuestNonFFAConditionalItems.begin(); itr != m_playerNonQuestNonFFAConditionalItems.end(); ++itr)
         {
-            for (QuestItemMap::const_iterator itr = m_playerQuestItems.begin(); itr != m_playerQuestItems.end(); ++itr)
-            {
-                delete itr->second;
-            }
-            m_playerQuestItems.clear();
-
-            for (QuestItemMap::const_iterator itr = m_playerFFAItems.begin(); itr != m_playerFFAItems.end(); ++itr)
-            {
-                delete itr->second;
-            }
-            m_playerFFAItems.clear();
-
-            for (QuestItemMap::const_iterator itr = m_playerNonQuestNonFFAConditionalItems.begin(); itr != m_playerNonQuestNonFFAConditionalItems.end(); ++itr)
-            {
-                delete itr->second;
-            }
-            m_playerNonQuestNonFFAConditionalItems.clear();
-
-            m_playersLooting.clear();
-            items.clear();
-            m_questItems.clear();
-            gold = 0;
-            unlootedCount = 0;
-            m_LootValidatorRefManager.clearReferences();
+            delete itr->second;
         }
+        m_playerNonQuestNonFFAConditionalItems.clear();
 
-        bool empty() const { return items.empty() && gold == 0; }
-        bool isLooted() const { return gold == 0 && unlootedCount == 0; }
+        m_playersLooting.clear();
+        items.clear();
+        m_questItems.clear();
+        gold = 0;
+        unlootedCount = 0;
+        m_LootValidatorRefManager.clearReferences();
+    }
 
-        void NotifyItemRemoved(uint8 lootIndex);
-        void NotifyQuestItemRemoved(uint8 questIndex);
-        void NotifyMoneyRemoved();
-        void AddLooter(ObjectGuid guid) { m_playersLooting.insert(guid); }
-        void RemoveLooter(ObjectGuid guid) { m_playersLooting.erase(guid); }
+    bool empty() const { return items.empty() && gold == 0; }
+    bool isLooted() const { return gold == 0 && unlootedCount == 0; }
 
-        /**
-        * function IsWinner returns whether the player won at least one item during a roll.
-        * \param player Pointer indicating the player who may have won a loot.
-        * \return boolean true if the player has won at least one loot, false otherwise.
-        */
-        bool IsWinner(Player * player);
+    void NotifyItemRemoved(uint8 lootIndex);
+    void NotifyQuestItemRemoved(uint8 questIndex);
+    void NotifyMoneyRemoved();
+    void AddLooter(ObjectGuid guid) { m_playersLooting.insert(guid); }
+    void RemoveLooter(ObjectGuid guid) { m_playersLooting.erase(guid); }
 
-        void generateMoneyLoot(uint32 minAmount, uint32 maxAmount);
-        bool FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
+    /**
+     * function IsWinner returns whether the player won at least one item during a roll.
+     * \param player Pointer indicating the player who may have won a loot.
+     * \return boolean true if the player has won at least one loot, false otherwise.
+     */
+    bool IsWinner(Player * player);
 
-        // Inserts the item into the loot (called by LootTemplate processors)
-        void AddItem(LootStoreItem const& item);
+    void generateMoneyLoot(uint32 minAmount, uint32 maxAmount);
+    bool FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
 
-        LootItem* LootItemInSlot(uint32 lootslot, Player* player, QuestItem** qitem = NULL, QuestItem** ffaitem = NULL, QuestItem** conditem = NULL);
-        uint32 GetMaxSlotInLootFor(Player* player) const;
+    // Inserts the item into the loot (called by LootTemplate processors)
+    void AddItem(LootStoreItem const& item);
 
-        WorldObject const* GetLootTarget() const { return m_lootTarget; }
+    LootItem* LootItemInSlot(uint32 lootslot, Player* player, QuestItem** qitem = NULL, QuestItem** ffaitem = NULL, QuestItem** conditem = NULL);
+    uint32 GetMaxSlotInLootFor(Player* player) const;
+
+    WorldObject const* GetLootTarget() const { return m_lootTarget; }
 
     private:
         void FillNotNormalLootFor(Player* player);

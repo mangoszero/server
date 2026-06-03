@@ -849,9 +849,9 @@ struct InstancePlayerBind
 {
     DungeonPersistentState* state;
     bool perm;
-    /*  permanent PlayerInstanceBinds are created in Raid instances for players
-        that aren't already permanently bound when they are inside when a boss is killed
-        or when they enter an instance that the group leader is permanently bound to. */
+    /**  permanent PlayerInstanceBinds are created in Raid instances for players
+     *   that aren't already permanently bound when they are inside when a boss is killed
+     *   or when they enter an instance that the group leader is permanently bound to. */
     InstancePlayerBind() : state(NULL), perm(false) {}
 };
 
@@ -1020,8 +1020,8 @@ struct TradeStatusInfo
 class TradeData
 {
     public: // Constructors
-        TradeData(Player* player, Player* trader) :
-            m_player(player),  m_trader(trader), m_accepted(false), m_acceptProccess(false),
+        TradeData(Player* player, Player* trader)
+            : m_player(player),  m_trader(trader), m_accepted(false), m_acceptProccess(false),
             m_money(0), m_spell(0) {}
 
     public: // Access functions
@@ -1117,9 +1117,10 @@ class TradeData
 
 class Player : public Unit
 {
-        friend class WorldSession;
-        friend void Item::AddToUpdateQueueOf(Player* player);
-        friend void Item::RemoveFromUpdateQueueOf(Player* player);
+    friend class WorldSession;
+    friend void Item::AddToUpdateQueueOf(Player* player);
+    friend void Item::RemoveFromUpdateQueueOf(Player* player);
+
     public:
         explicit Player(WorldSession* session);
         ~Player();
@@ -1339,12 +1340,12 @@ class Player : public Unit
         void SetRestBonus(float rest_bonus_new);
 
         /**
-        * \brief: compute rest bonus
-        * \param: time_t timePassed > time from last check
-        * \param: bool offline      > is the player was offline?
-        * \param: bool inRestPlace  > if it was offline, is the player was in city/tavern/inn?
-        * \returns: float
-        **/
+         * \brief: compute rest bonus
+         * \param: time_t timePassed > time from last check
+         * \param: bool offline      > is the player was offline?
+         * \param: bool inRestPlace  > if it was offline, is the player was in city/tavern/inn?
+         * \returns: float
+         **/
         float ComputeRest(time_t timePassed, bool offline = false, bool inRestPlace = false);
 
         // Get the rest type
@@ -2126,7 +2127,7 @@ class Player : public Unit
         QuestStatusMap& getQuestStatusMap()
         {
             return mQuestStatus;
-        };
+        }
 
         // Get the player's current selection GUID
         ObjectGuid const& GetSelectionGuid() const { return m_curSelectionGuid; }
@@ -2512,7 +2513,7 @@ class Player : public Unit
 
         // Check if the player is in a duel with another player
 
-            /** todo: -maybe move UpdateDuelFlag+DuelComplete to independent DuelHandler.. **/
+        /** todo: -maybe move UpdateDuelFlag+DuelComplete to independent DuelHandler.. **/
         DuelInfo* duel;
         bool IsInDuelWith(Player const* player) const
         {
@@ -3214,10 +3215,12 @@ class Player : public Unit
         bool InBattleGroundQueue() const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId != BATTLEGROUND_QUEUE_NONE)
                 {
                     return true;
                 }
+            }
             return false;
         }
 
@@ -3228,10 +3231,12 @@ class Player : public Unit
         uint32 GetBattleGroundQueueIndex(BattleGroundQueueTypeId bgQueueTypeId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     return i;
                 }
+            }
             return PLAYER_MAX_BATTLEGROUND_QUEUES;
         }
 
@@ -3239,10 +3244,12 @@ class Player : public Unit
         bool IsInvitedForBattleGroundQueueType(BattleGroundQueueTypeId bgQueueTypeId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     return m_bgBattleGroundQueueID[i].invitedToInstance != 0;
                 }
+            }
             return false;
         }
 
@@ -3279,10 +3286,12 @@ class Player : public Unit
         bool HasFreeBattleGroundQueueId()
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == BATTLEGROUND_QUEUE_NONE)
                 {
                     return true;
                 }
+            }
             return false;
         }
 
@@ -3304,20 +3313,24 @@ class Player : public Unit
         void SetInviteForBattleGroundQueueType(BattleGroundQueueTypeId bgQueueTypeId, uint32 instanceId)
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].bgQueueTypeId == bgQueueTypeId)
                 {
                     m_bgBattleGroundQueueID[i].invitedToInstance = instanceId;
                 }
+            }
         }
 
         // Check if the player is invited for a specific battleground instance
         bool IsInvitedForBattleGroundInstance(uint32 instanceId) const
         {
             for (int i = 0; i < PLAYER_MAX_BATTLEGROUND_QUEUES; ++i)
+            {
                 if (m_bgBattleGroundQueueID[i].invitedToInstance == instanceId)
                 {
                     return true;
                 }
+            }
             return false;
         }
 
@@ -3707,9 +3720,9 @@ class Player : public Unit
         /***               BATTLEGROUND SYSTEM                 ***/
         /*********************************************************/
 
-        /*
-        This is an array of BG queues (BgTypeIDs) in which the player is queued
-        */
+        /**
+         * This is an array of BG queues (BgTypeIDs) in which the player is queued
+         */
         struct BgBattleGroundQueueID_Rec
         {
             BattleGroundQueueTypeId bgQueueTypeId; // Battleground queue type ID

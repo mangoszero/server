@@ -188,8 +188,8 @@ bool Guild::Create(Player* leader, std::string gname)
     // CharacterDatabase.PExecute("DELETE FROM `guild` WHERE `guildid`='%u'", Id); - MAX(guildid)+1 not exist
     CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guildid`='%u'", m_Id);
     CharacterDatabase.PExecute("INSERT INTO `guild` (`guildid`,`name`,`leaderguid`,`info`,`motd`,`createdate`,`EmblemStyle`,`EmblemColor`,`BorderStyle`,`BorderColor`,`BackgroundColor`) "
-                               "VALUES('%u','%s','%u', '%s', '%s','" UI64FMTD "','%u','%u','%u','%u','%u')",
-                               m_Id, gname.c_str(), m_LeaderGuid.GetCounter(), dbGINFO.c_str(), dbMOTD.c_str(), uint64(now), m_EmblemStyle, m_EmblemColor, m_BorderStyle, m_BorderColor, m_BackgroundColor);
+        "VALUES('%u','%s','%u', '%s', '%s','" UI64FMTD "','%u','%u','%u','%u','%u')",
+        m_Id, gname.c_str(), m_LeaderGuid.GetCounter(), dbGINFO.c_str(), dbMOTD.c_str(), uint64(now), m_EmblemStyle, m_EmblemColor, m_BorderStyle, m_BorderColor, m_BackgroundColor);
     CharacterDatabase.CommitTransaction();
 
     CreateDefaultGuildRanks(lSession->GetSessionDbLocaleIndex());
@@ -302,7 +302,7 @@ bool Guild::AddMember(ObjectGuid plGuid, uint32 plRank)
     CharacterDatabase.escape_string(dbOFFnote);
 
     CharacterDatabase.PExecute("INSERT INTO `guild_member` (`guildid`,`guid`,`rank`,`pnote`,`offnote`) VALUES ('%u', '%u', '%u','%s','%s')",
-                               m_Id, lowguid, newmember.RankId, dbPnote.c_str(), dbOFFnote.c_str());
+        m_Id, lowguid, newmember.RankId, dbPnote.c_str(), dbOFFnote.c_str());
 
     // If player not in game data in data field will be loaded from guild tables, no need to update it!!
     if (pl)
@@ -737,11 +737,13 @@ bool Guild::DelMember(ObjectGuid guid, bool isDisbanding)
 bool Guild::ChangeMemberRank(ObjectGuid guid, uint8 newRank)
 {
     if (newRank <= GetLowestRank())                    // Validate rank (allow only existing ranks)
+    {
         if (MemberSlot* member = GetMemberSlot(guid))
         {
             member->ChangeRank(newRank);
             return true;
         }
+    }
     return false;
 }
 
@@ -1254,7 +1256,7 @@ void Guild::LogGuildEvent(uint8 EventType, ObjectGuid playerGuid1, ObjectGuid pl
     // Save event to DB
     CharacterDatabase.PExecute("DELETE FROM `guild_eventlog` WHERE `guildid`='%u' AND `LogGuid`='%u'", m_Id, m_GuildEventLogNextGuid);
     CharacterDatabase.PExecute("INSERT INTO `guild_eventlog` (`guildid`, `LogGuid`, `EventType`, `PlayerGuid1`, `PlayerGuid2`, `NewRank`, `TimeStamp`) VALUES ('%u','%u','%u','%u','%u','%u','" UI64FMTD "')",
-                               m_Id, m_GuildEventLogNextGuid, uint32(NewEvent.EventType), NewEvent.PlayerGuid1, NewEvent.PlayerGuid2, uint32(NewEvent.NewRank), NewEvent.TimeStamp);
+        m_Id, m_GuildEventLogNextGuid, uint32(NewEvent.EventType), NewEvent.PlayerGuid1, NewEvent.PlayerGuid2, uint32(NewEvent.NewRank), NewEvent.TimeStamp);
 }
 
 /**

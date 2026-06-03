@@ -37,8 +37,8 @@
  * @param searchedForSize The size of the searching object.
  * @param searchPosFor Optional object whose occupied space may be ignored.
  */
-ObjectPosSelector::ObjectPosSelector(float x, float y, float dist, float searchedForSize, WorldObject const* searchPosFor) :
-    m_centerX(x), m_centerY(y), m_searcherDist(dist), m_searchPosFor(searchPosFor)
+ObjectPosSelector::ObjectPosSelector(float x, float y, float dist, float searchedForSize, WorldObject const* searchPosFor)
+    : m_centerX(x), m_centerY(y), m_searcherDist(dist), m_searchPosFor(searchPosFor)
 {
     // if size == 0, m_anglestep will become 0 -> freeze
     if (searchedForSize == 0.0f)
@@ -143,7 +143,7 @@ bool ObjectPosSelector::CheckOriginalAngle() const
 {
     // check first left/right used angles if exists
     return (m_UsedAreaLists[USED_POS_PLUS].empty()  || CheckAngle(*m_UsedAreaLists[USED_POS_PLUS].begin(), USED_POS_PLUS, 0.0f)) &&
-            (m_UsedAreaLists[USED_POS_MINUS].empty() || CheckAngle(*m_UsedAreaLists[USED_POS_MINUS].begin(), USED_POS_MINUS, 0.0f));
+        (m_UsedAreaLists[USED_POS_MINUS].empty() || CheckAngle(*m_UsedAreaLists[USED_POS_MINUS].begin(), USED_POS_MINUS, 0.0f));
 }
 
 /**
@@ -300,9 +300,9 @@ bool ObjectPosSelector::NextUsedAngle(float& angle)
     }
 
     // ++ direction less updated
-    if (m_nextUsedAreaItr[USED_POS_PLUS] != m_UsedAreaLists[USED_POS_PLUS].end()
-    && (m_nextUsedAreaItr[USED_POS_MINUS] == m_UsedAreaLists[USED_POS_MINUS].end()
-    || m_nextUsedAreaItr[USED_POS_PLUS]->first <= m_nextUsedAreaItr[USED_POS_MINUS]->first))
+    if (m_nextUsedAreaItr[USED_POS_PLUS] != m_UsedAreaLists[USED_POS_PLUS].end() &&
+        (m_nextUsedAreaItr[USED_POS_MINUS] == m_UsedAreaLists[USED_POS_MINUS].end() ||
+        m_nextUsedAreaItr[USED_POS_PLUS]->first <= m_nextUsedAreaItr[USED_POS_MINUS]->first))
     {
         angle = m_nextUsedAreaItr[USED_POS_PLUS]->first * SignOf(USED_POS_PLUS);
         ++m_nextUsedAreaItr[USED_POS_PLUS];

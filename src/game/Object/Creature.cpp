@@ -106,10 +106,12 @@ bool VendorItemData::RemoveItem(uint32 item_id)
 size_t VendorItemData::FindItemSlot(uint32 item_id) const
 {
     for (size_t i = 0; i < m_items.size(); ++i)
+    {
         if (m_items[i]->item == item_id)
         {
             return i;
         }
+    }
     return m_items.size();
 }
 
@@ -610,11 +612,14 @@ bool Creature::UpdateEntry(uint32 Entry, Team team, const CreatureData* data /*=
     {
         templateSpells = sCreatureTemplateSpellsStorage.LookupEntry<CreatureTemplateSpells>(GetEntry());
     }
+
     if (templateSpells)
+    {
         for (int i = 0; i < CREATURE_MAX_SPELLS; ++i)
         {
             m_spells[i] = templateSpells->spells[i];
         }
+    }
 
     // if eventData set then event active and need apply spell_start
     if (eventData)
@@ -1183,7 +1188,7 @@ bool Creature::IsTrainerOf(Player* pPlayer, bool msg) const
     if ((!cSpells || cSpells->spellList.empty()) && (!tSpells || tSpells->spellList.empty()))
     {
         sLog.outErrorDb("Creature %u (Entry: %u) have UNIT_NPC_FLAG_TRAINER but have empty trainer spell list.",
-                        GetGUIDLow(), GetEntry());
+            GetGUIDLow(), GetEntry());
         return false;
     }
 
@@ -1317,9 +1322,9 @@ bool Creature::CanInteractWithBattleMaster(Player* pPlayer, bool msg) const
  */
 bool Creature::CanTrainAndResetTalentsOf(Player* pPlayer) const
 {
-    return pPlayer->getLevel() >= 10
-        && GetCreatureInfo()->TrainerType == TRAINER_TYPE_CLASS
-        && pPlayer->getClass() == GetCreatureInfo()->TrainerClass;
+    return pPlayer->getLevel() >= 10 &&
+        GetCreatureInfo()->TrainerType == TRAINER_TYPE_CLASS &&
+        pPlayer->getClass() == GetCreatureInfo()->TrainerClass;
 }
 
 /**
@@ -1420,11 +1425,12 @@ Player* Creature::GetLootRecipient() const
 
     // find any in group
     for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+    {
         if (Player* p = itr->getSource())
         {
             return p;
         }
-
+    }
     return NULL;
 }
 
@@ -1568,7 +1574,7 @@ void Creature::SaveToDB(uint32 mapid)
     data.is_dead = m_IsDeadByDefault;
     // prevent add data integrity problems
     data.movementType = !m_respawnradius && GetDefaultMovementType() == RANDOM_MOTION_TYPE
-                        ? IDLE_MOTION_TYPE : GetDefaultMovementType();
+        ? IDLE_MOTION_TYPE : GetDefaultMovementType();
 
     // updated in DB
     WorldDatabase.BeginTransaction();
@@ -1577,22 +1583,22 @@ void Creature::SaveToDB(uint32 mapid)
 
     std::ostringstream ss;
     ss << "INSERT INTO `creature` VALUES ("
-        << GetGUIDLow() << ","
-        << data.id << ","
-        << data.mapid << ","
-        << data.modelid_override << ","
-        << data.equipmentId << ","
-        << data.posX << ","
-        << data.posY << ","
-        << data.posZ << ","
-        << data.orientation << ","
-        << data.spawntimesecs << ","                        // respawn time
-        << (float) data.spawndist << ","                    // spawn distance (float)
-        << data.currentwaypoint << ","                      // currentwaypoint
-        << data.curhealth << ","                            // curhealth
-        << data.curmana << ","                              // curmana
-        << (data.is_dead  ? 1 : 0) << ","                   // is_dead
-        << uint32(data.movementType) << ")";                // default movement generator type, cast to prevent save as symbol
+       << GetGUIDLow() << ","
+       << data.id << ","
+       << data.mapid << ","
+       << data.modelid_override << ","
+       << data.equipmentId << ","
+       << data.posX << ","
+       << data.posY << ","
+       << data.posZ << ","
+       << data.orientation << ","
+       << data.spawntimesecs << ","                        // respawn time
+       << (float) data.spawndist << ","                    // spawn distance (float)
+       << data.currentwaypoint << ","                      // currentwaypoint
+       << data.curhealth << ","                            // curhealth
+       << data.curmana << ","                              // curmana
+       << (data.is_dead  ? 1 : 0) << ","                   // is_dead
+       << uint32(data.movementType) << ")";                // default movement generator type, cast to prevent save as symbol
 
     WorldDatabase.PExecuteLog("%s", ss.str().c_str());
 
@@ -2766,7 +2772,7 @@ bool Creature::IsOutOfThreatArea(Unit* pVictim) const
 
     // Use AttackDistance in distance check if threat radius is lower. This prevents creature bounce in and out of combat every update tick.
     return !pVictim->IsWithinDist3d(m_combatStartX, m_combatStartY, m_combatStartZ,
-                                    ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
+        ThreatRadius > AttackDist ? ThreatRadius : AttackDist);
 }
 
 /**
@@ -3022,11 +3028,15 @@ Unit* Creature::SelectAttackingTarget(AttackingTarget target, uint32 position, S
             suitableUnits.reserve(threatlist.size() - position);
             advance(itr, position);
             for (; itr != threatlist.end(); ++itr)
+            {
                 if (Unit* pTarget = GetMap()->GetUnit((*itr)->getUnitGuid()))
+                {
                     if (!selectFlags || MeetsSelectAttackingRequirement(pTarget, pSpellInfo, selectFlags))
                     {
                         suitableUnits.push_back(pTarget);
                     }
+                }
+            }
 
             if (!suitableUnits.empty())
             {
@@ -3039,24 +3049,30 @@ Unit* Creature::SelectAttackingTarget(AttackingTarget target, uint32 position, S
         {
             advance(itr, position);
             for (; itr != threatlist.end(); ++itr)
+            {
                 if (Unit* pTarget = GetMap()->GetUnit((*itr)->getUnitGuid()))
+                {
                     if (!selectFlags || MeetsSelectAttackingRequirement(pTarget, pSpellInfo, selectFlags))
                     {
                         return pTarget;
                     }
-
+                }
+            }
             break;
         }
         case ATTACKING_TARGET_BOTTOMAGGRO:
         {
             advance(ritr, position);
             for (; ritr != threatlist.rend(); ++ritr)
+            {
                 if (Unit* pTarget = GetMap()->GetUnit((*itr)->getUnitGuid()))
+                {
                     if (!selectFlags || MeetsSelectAttackingRequirement(pTarget, pSpellInfo, selectFlags))
                     {
                         return pTarget;
                     }
-
+                }
+            }
             break;
         }
     }
@@ -3174,10 +3190,12 @@ bool Creature::HasSpell(uint32 spellID) const
 {
     uint8 i;
     for (i = 0; i < CREATURE_MAX_SPELLS; ++i)
+    {
         if (spellID == m_spells[i])
         {
             break;
         }
+    }
     return i < CREATURE_MAX_SPELLS;                         // break before end of iteration of known spells
 }
 
@@ -3376,10 +3394,12 @@ uint32 Creature::GetVendorItemCurrentCount(VendorItem const* vItem)
 
     VendorItemCounts::iterator itr = m_vendorItemCounts.begin();
     for (; itr != m_vendorItemCounts.end(); ++itr)
+    {
         if (itr->itemId == vItem->item)
         {
             break;
         }
+    }
 
     if (itr == m_vendorItemCounts.end())
     {
@@ -3424,10 +3444,12 @@ uint32 Creature::UpdateVendorItemCurrentCount(VendorItem const* vItem, uint32 us
 
     VendorItemCounts::iterator itr = m_vendorItemCounts.begin();
     for (; itr != m_vendorItemCounts.end(); ++itr)
+    {
         if (itr->itemId == vItem->item)
         {
             break;
         }
+    }
 
     if (itr == m_vendorItemCounts.end())
     {
@@ -3599,11 +3621,15 @@ void Creature::ApplyGameEventSpells(GameEventCreatureData const* eventData, bool
     uint32 remove_spell = activated ? eventData->spell_id_end : eventData->spell_id_start;
 
     if (remove_spell)
+    {
         if (SpellEntry const* spellEntry = sSpellStore.LookupEntry(remove_spell))
+        {
             if (IsSpellAppliesAura(spellEntry))
             {
                 RemoveAurasDueToSpell(remove_spell);
             }
+        }
+    }
 
     if (cast_spell)
     {
@@ -3838,7 +3864,7 @@ void Creature::SetSwim(bool enable)
  */
 void Creature::SetCanFly(bool /*enable*/)
 {
-//     TODO: check if there is something similar for 1.12.x (dragons and other flying NPCs)
+    //     TODO: check if there is something similar for 1.12.x (dragons and other flying NPCs)
 }
 
 /**
@@ -4011,8 +4037,8 @@ SpellCastResult Creature::TryToCast(Unit* pTarget, const SpellEntry* pSpellInfo,
             // Can't cast while fleeing.
             switch (GetMotionMaster()->GetCurrentMovementGeneratorType())
             {
-            case TIMED_FLEEING_MOTION_TYPE:
-                return SPELL_FAILED_FLEEING;
+                case TIMED_FLEEING_MOTION_TYPE:
+                    return SPELL_FAILED_FLEEING;
             }
         }
 

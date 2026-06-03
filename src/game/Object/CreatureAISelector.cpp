@@ -48,10 +48,12 @@ namespace FactorySelector
     {
         // Allow scripting AI for normal creatures and not controlled pets (guardians and mini-pets)
         if ((!creature->IsPet() || !((Pet*)creature)->isControlled()) && !creature->IsCharmed())
+        {
             if (CreatureAI* scriptedAI = sScriptMgr.GetCreatureAI(creature))
             {
                 return scriptedAI;
             }
+        }
 
         CreatureAIRegistry& ai_registry(CreatureAIRepository::Instance());
 
@@ -121,7 +123,7 @@ namespace FactorySelector
         MovementGeneratorRegistry& mv_registry(MovementGeneratorRepository::Instance());
         MANGOS_ASSERT(creature->GetCreatureInfo() != NULL);
         MovementGeneratorCreator const* mv_factory = mv_registry.GetRegistryItem(
-                    creature->GetOwnerGuid().IsPlayer() ? FOLLOW_MOTION_TYPE : creature->GetDefaultMovementType());
+            creature->GetOwnerGuid().IsPlayer() ? FOLLOW_MOTION_TYPE : creature->GetDefaultMovementType());
 
         /* if ( mv_factory == NULL  )
         {
@@ -130,15 +132,15 @@ namespace FactorySelector
             mv_registry.GetRegisteredItems(l);
             for ( std::vector<std::string>::iterator iter = l.begin(); iter != l.end(); ++iter)
             {
-            const MovementGeneratorCreator *factory = mv_registry.GetRegistryItem((*iter).c_str());
-            const SelectableMovement *p = dynamic_cast<const SelectableMovement *>(factory);
-            ASSERT( p != NULL );
-            int val = p->Permit(creature);
-            if ( val > best_val )
-            {
-                best_val = val;
-                mv_factory = p;
-            }
+                const MovementGeneratorCreator *factory = mv_registry.GetRegistryItem((*iter).c_str());
+                const SelectableMovement *p = dynamic_cast<const SelectableMovement *>(factory);
+                ASSERT( p != NULL );
+                int val = p->Permit(creature);
+                if ( val > best_val )
+                {
+                    best_val = val;
+                    mv_factory = p;
+                }
             }
         }*/
 

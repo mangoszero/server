@@ -59,11 +59,11 @@ PlayerSocial::~PlayerSocial()
  */
 uint32 PlayerSocial::GetNumberOfSocialsWithFlag(SocialFlag flag)
 {
-    /* This is the value we return
+    /** This is the value we return
      * It indicates the number of players that have the flag specified in arg1 */
     uint32 counter = 0;
 
-    /* For each person on our player's social map
+    /** For each person on our player's social map
      * This includes both friends and enemies */
     for (PlayerSocialMap::const_iterator itr = m_playerSocialMap.begin(); itr != m_playerSocialMap.end(); ++itr)
     {
@@ -221,9 +221,9 @@ void PlayerSocial::SendIgnoreList()
     /* Returns number of people the player is ignoring */
     uint32 size = GetNumberOfSocialsWithFlag(SOCIAL_FLAG_IGNORED);
 
-    WorldPacket data(SMSG_IGNORE_LIST, (1 +          // 1 byte for ignore list size
-                                        size * 8));  // 8 bytes per person ignored (object guid)
-    data << uint8(size);                                    // friends count
+    WorldPacket data(SMSG_IGNORE_LIST, (1 +  // 1 byte for ignore list size
+        size * 8));                          // 8 bytes per person ignored (object guid)
+    data << uint8(size);                     // friends count
 
     for (PlayerSocialMap::iterator itr = m_playerSocialMap.begin(); itr != m_playerSocialMap.end(); ++itr)
     {
@@ -309,10 +309,10 @@ void SocialMgr::GetFriendInfo(Player* player, uint32 friend_lowguid, FriendInfo&
     {
         // PLAYER see his team only and PLAYER can't see MODERATOR, GAME MASTER, ADMINISTRATOR characters
         // MODERATOR, GAME MASTER, ADMINISTRATOR can see all
-        if (pFriend && pFriend->GetName()
-            && (security > SEC_PLAYER
-            || ((pFriend->GetTeam() == team || allowTwoSideWhoList) && (pFriend->GetSession()->GetSecurity() <= gmLevelInWhoList)))
-            && pFriend->IsVisibleGloballyFor(player))
+        if (pFriend && pFriend->GetName() &&
+            (security > SEC_PLAYER ||
+            ((pFriend->GetTeam() == team || allowTwoSideWhoList) && (pFriend->GetSession()->GetSecurity() <= gmLevelInWhoList))) &&
+            pFriend->IsVisibleGloballyFor(player))
         {
             friendInfo.Status = FRIEND_STATUS_ONLINE;
             if (pFriend->isAFK())

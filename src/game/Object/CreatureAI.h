@@ -357,7 +357,7 @@ class CreatureAI
 
         ///== Event Handling ===============================
 
-        /*
+        /**
          * Send an AI Event to nearby Creatures around
          * @param uiType number to specify the event, default cases listed in enum AIEventType
          * @param pInvoker Unit that triggered this event (like an attacker)
@@ -366,7 +366,7 @@ class CreatureAI
          */
         void SendAIEventAround(AIEventType eventType, Unit* pInvoker, uint32 uiDelay, float fRadius, uint32 miscValue = 0) const;
 
-        /*
+        /**
          * Send an AI Event to a Creature
          * @param eventType to specify the event, default cases listed in enum AIEventType
          * @param pInvoker Unit that triggered this event (like an attacker)
@@ -374,7 +374,7 @@ class CreatureAI
          */
         void SendAIEvent(AIEventType eventType, Unit* pInvoker, Creature* pReceiver, uint32 miscValue = 0) const;
 
-        /*
+        /**
          * Called when an AI Event is received
          * @param eventType to specify the event, default cases listed in enum AIEventType
          * @param pSender Creature that sent this event
@@ -414,7 +414,7 @@ struct SelectableAI : public FactoryHolder<CreatureAI>, public Permissible<Creat
 };
 
 template<class REAL_AI>
-struct CreatureAIFactory : public SelectableAI
+    struct CreatureAIFactory : public SelectableAI
 {
     CreatureAIFactory(const char* name) : SelectableAI(name) {}
 

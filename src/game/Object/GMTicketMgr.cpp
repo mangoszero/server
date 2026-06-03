@@ -103,8 +103,8 @@ void GMTicket::SetText(const char* text)
     std::string escapedString = m_text;
     CharacterDatabase.escape_string(escapedString);
     CharacterDatabase.PExecute("UPDATE `character_ticket` SET `ticket_text` = '%s' "
-                               "WHERE `guid` = '%u' AND `ticket_id` = %u",
-                               escapedString.c_str(), m_guid.GetCounter(), m_ticketId);
+        "WHERE `guid` = '%u' AND `ticket_id` = %u",
+        escapedString.c_str(), m_guid.GetCounter(), m_ticketId);
 }
 
 /**
@@ -163,9 +163,9 @@ void GMTicket::_Close(GMTicketStatus statusCode) const
     Player* pPlayer = sObjectMgr.GetPlayer(m_guid);
 
     CharacterDatabase.PExecute("UPDATE `character_ticket` "
-                               "SET `resolved` = 1 "
-                               "WHERE `guid` = %u AND `resolved` = 0",
-                               m_guid.GetCounter());
+        "SET `resolved` = 1 "
+        "WHERE `guid` = %u AND `resolved` = 0",
+        m_guid.GetCounter());
 
     if (pPlayer && statusCode != GM_TICKET_STATUS_DO_NOTHING)
     {
@@ -181,11 +181,11 @@ void GMTicketMgr::LoadGMTickets()
     m_GMTicketMap.clear();                                  // For reload case
 
     QueryResult* result = CharacterDatabase.Query(
-    //       0       1              2                3                                    4
-    "SELECT `guid`, `ticket_text`, `response_text`, UNIX_TIMESTAMP(`ticket_lastchange`), `ticket_id` "
-    "FROM `character_ticket` "
-    "WHERE `resolved` = 0 "
-    "ORDER BY `ticket_id` ASC");
+        //           0       1              2                3                                    4
+            "SELECT `guid`, `ticket_text`, `response_text`, UNIX_TIMESTAMP(`ticket_lastchange`), `ticket_id` "
+            "FROM `character_ticket` "
+            "WHERE `resolved` = 0 "
+            "ORDER BY `ticket_id` ASC");
 
     if (!result)
     {
@@ -236,18 +236,18 @@ void GMTicketMgr::Create(ObjectGuid guid, const char* text)
     CharacterDatabase.BeginTransaction();
     //This needs to be Direct (not placed in queue) as we need the id of it soon afterwards
     CharacterDatabase.DirectPExecute("INSERT INTO `character_ticket` "
-                                     "(`guid`, `ticket_text`) "
-                                     "VALUES "
-                                     "(%u,   '%s')",
-                                     guid.GetCounter(), escapedText.c_str());
+        "(`guid`, `ticket_text`) "
+        "VALUES "
+        "(%u,   '%s')",
+        guid.GetCounter(), escapedText.c_str());
 
     // Get the id of the ticket, needed for logging whispers
     // Limiting to the the most recent ticket of the player and avoid potential multiple returns
     // if there is inconsistent data in table (e.g : more than 1 ticket unsolved for the same player (should never happen but..who knows..)
     QueryResult* result = CharacterDatabase.PQuery("SELECT `ticket_id`, `guid`, `resolved` "
-                                                   "FROM `character_ticket` "
-                                                   "WHERE `guid` = %u AND `resolved` = 0 ORDER BY `ticket_id` DESC LIMIT 1;",
-                                                   guid.GetCounter());
+        "FROM `character_ticket` "
+        "WHERE `guid` = %u AND `resolved` = 0 ORDER BY `ticket_id` DESC LIMIT 1;",
+        guid.GetCounter());
 
     CharacterDatabase.CommitTransaction();
 

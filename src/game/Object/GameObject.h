@@ -623,7 +623,7 @@ class GameObject : public WorldObject
         void CleanupsBeforeDelete() override;
 
         bool Create(uint32 guidlow, uint32 name_id, Map* map, float x, float y, float z, float ang,
-                    float rotation0 = 0.0f, float rotation1 = 0.0f, float rotation2 = 0.0f, float rotation3 = 0.0f, uint32 animprogress = GO_ANIMPROGRESS_DEFAULT, GOState go_state = GO_STATE_READY);
+            float rotation0 = 0.0f, float rotation1 = 0.0f, float rotation2 = 0.0f, float rotation3 = 0.0f, uint32 animprogress = GO_ANIMPROGRESS_DEFAULT, GOState go_state = GO_STATE_READY);
         void Update(uint32 update_diff, uint32 p_time) override;
 
         GameObjectInfo const* GetGOInfo() const { return m_goInfo; }
@@ -833,7 +833,7 @@ class GameObject : public WorldObject
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded
         uint32 m_lootGroupRecipientId;                      // group who will have rights for looting if set and exist
 
-         // Used for trap type
+        // Used for trap type
         time_t m_rearmTimer;                                // timer to rearm the trap once disarmed
 
         // Used for chest type

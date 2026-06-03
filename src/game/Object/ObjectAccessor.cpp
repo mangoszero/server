@@ -38,7 +38,7 @@
 #include <algorithm>
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Recursive_Thread_Mutex>
-INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
+    INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Recursive_Thread_Mutex);
 
 /**
@@ -142,10 +142,12 @@ Player* ObjectAccessor::FindPlayerByName(const char* name)
 {
     ACE_READ_GUARD_RETURN(HashMapHolder<Player>::LockType, guard, i_playerMap.GetLock(), nullptr)
     for (auto& iter : i_playerMap.GetContainer())
+    {
         if (iter.second->IsInWorld() && (::strcmp(name, iter.second->GetName()) == 0))
         {
             return iter.second;
         }
+    }
     return nullptr;
 }
 
@@ -269,7 +271,7 @@ void ObjectAccessor::AddCorpsesToGrid(GridPair const& gridpair, GridType& grid, 
     {
         if (iter->second->GetGrid() == gridpair)
         {
-              // verify, if the corpse in our instance (add only corpses which are)
+            // verify, if the corpse in our instance (add only corpses which are)
             if (map->Instanceable())
             {
                 if (iter->second->GetInstanceId() == map->GetInstanceId())
@@ -323,7 +325,7 @@ Corpse* ObjectAccessor::ConvertCorpseForPlayer(ObjectGuid player_guid, bool insi
     // create the bones only if the map and the grid is loaded at the corpse's location
     // ignore bones creating option in case insignia
     if (map && (insignia ||
-                (map->IsBattleGround() ? sWorld.getConfig(CONFIG_BOOL_DEATH_BONES_BG) : sWorld.getConfig(CONFIG_BOOL_DEATH_BONES_WORLD))) &&
+        (map->IsBattleGround() ? sWorld.getConfig(CONFIG_BOOL_DEATH_BONES_BG) : sWorld.getConfig(CONFIG_BOOL_DEATH_BONES_WORLD))) &&
         !map->IsRemovalGrid(corpse->GetPositionX(), corpse->GetPositionY()))
     {
         // Create bones, don't change Corpse
