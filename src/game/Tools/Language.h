@@ -880,8 +880,16 @@ Faction Template: %u. */
     LANG_COMMAND_UNFREEZE_PLAYER_PLAYER_NOT_FOUND             = 1714,    /* You can only unfreeze online characters. */
     LANG_CANNOT_ENTER_CHAMPIONS_HALL                          = 1715,    /* You must be a Knight or higher rank in order to enter the Champions Hall. */
     LANG_CANNOT_ENTER_LEGENDS_HALL                            = 1716,    /* You must be a Stone Guard or higher rank in order to enter the Hall of Legends. */
+    LANG_SCHEDULED_EXIT_RESTART_15_MIN                        = 1717,    /* This realm will be automatically restarting in 15 Minutes as part of its weekly schedule. Downtime is expected to be 1-2 minutes. */
+    LANG_SCHEDULED_EXIT_RESTART_10_MIN                        = 1718,    /* This realm will be automatically restarting in 10 Minutes. */
+    LANG_SCHEDULED_EXIT_RESTART_5_MIN                         = 1719,    /* This realm will be automatically restarting in 5 Minutes. */
+    LANG_SCHEDULED_EXIT_RESTART_1_MIN                         = 1720,    /* This realm will be automatically restarting in 1 Minute as part of its weekly schedule. Please ensure you are in a safe area. Downtime is expected to be 1-2 minutes. */
+    LANG_SCHEDULED_EXIT_SHUTDOWN_15_MIN                       = 1721,    /* This realm will be automatically shutting down in 15 Minutes as part of its weekly schedule. Downtime is expected to be 1-2 minutes. */
+    LANG_SCHEDULED_EXIT_SHUTDOWN_10_MIN                       = 1722,    /* This realm will be automatically shutting down in 10 Minutes. */
+    LANG_SCHEDULED_EXIT_SHUTDOWN_5_MIN                        = 1723,    /* This realm will be automatically shutting down in 5 Minutes. */
+    LANG_SCHEDULED_EXIT_SHUTDOWN_1_MIN                        = 1724,    /* This realm will be automatically shutting down in 1 Minute as part of its weekly schedule. Please ensure you are in a safe area. Downtime is expected to be 1-2 minutes. */
 
-        // FREE IDS                           1701-9999
+        // FREE IDS                           1725-9999
         // Use for not-in-official-sources patches
         //                                    10000-10999
 

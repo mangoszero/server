@@ -69,7 +69,6 @@ namespace MaNGOS
     bool CheckAndMarkScheduledExit(
         ScheduledExitSchedule const& schedule, std::tm const& localTime,
         ScheduledExitState& state);
-    std::string BuildScheduledExitWarningText(ScheduledExitMode mode, uint32 remainingSeconds);
 }
 
 #endif

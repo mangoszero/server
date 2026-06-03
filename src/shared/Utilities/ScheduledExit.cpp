@@ -231,24 +231,4 @@ namespace MaNGOS
         return true;
     }
 
-    std::string BuildScheduledExitWarningText(ScheduledExitMode mode, uint32 remainingSeconds)
-    {
-        std::stringstream text;
-        char const* action = mode == SCHEDULED_EXIT_MODE_RESTART
-            ? "restarting" : "shutting down";
-
-        if (remainingSeconds < 60)
-        {
-            text << "This realm will be automatically " << action << " in " << remainingSeconds
-                 << (remainingSeconds == 1 ? " Second." : " Seconds.");
-        }
-        else
-        {
-            uint32 minutes = remainingSeconds / 60;
-            text << "This realm will be automatically " << action << " in " << minutes
-                 << (minutes == 1 ? " Minute." : " Minutes.");
-        }
-
-        return text.str();
-    }
 }

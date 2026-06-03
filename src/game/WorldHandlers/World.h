@@ -695,7 +695,7 @@ class World
         struct ScheduledExitWarning
         {
             uint32 remainingSeconds;
-            std::string text;
+            int32 textId;
             bool sent;
         };
 

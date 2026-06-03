@@ -595,14 +595,10 @@ SD3ErrorLogFile              = "scriptdev3-errors.log"
 #        Default: 900
 #
 #    ScheduledExit.WarningTimes
-#        Comma-separated remaining-seconds milestones for server messages.
+#        Comma-separated remaining-seconds milestones for localized server messages.
+#        Text is loaded from the mangos_string table.
+#        Supported default milestones: 900,600,300,60.
 #        Default: "900,600,300,60"
-#
-#    ScheduledExit.WarningText.900
-#    ScheduledExit.WarningText.600
-#    ScheduledExit.WarningText.300
-#    ScheduledExit.WarningText.60
-#        Optional custom server message text for each warning milestone.
 #
 #    InstantLogout
 #        Enable or disable instant logout for security level (0..4) or high (NOT in combat/while dueling/while falling)
@@ -843,10 +839,6 @@ ScheduledExit.Time                        = "05:00"
 ScheduledExit.Mode                        = "restart"
 ScheduledExit.Delay                       = 900
 ScheduledExit.WarningTimes                = "900,600,300,60"
-ScheduledExit.WarningText.900             = "This realm will be automatically restarting in 15 Minutes as part of its weekly schedule. Downtime is expected to be 1-2 minutes."
-ScheduledExit.WarningText.600             = "This realm will be automatically restarting in 10 Minutes."
-ScheduledExit.WarningText.300             = "This realm will be automatically restarting in 5 Minutes."
-ScheduledExit.WarningText.60              = "This realm will be automatically restarting in 1 Minute as part of its weekly schedule. Please ensure you are in a safe area. Downtime is expected to be 1-2 minutes."
 InstantLogout                             = 1
 MountCost                                 = 100000
 TrainMountCost                            = 900000

@@ -132,6 +132,36 @@ float World::m_VisibleObjectGreyDistance      = 0;
 float  World::m_relocation_lower_limit_sq     = 10.f * 10.f;
 uint32 World::m_relocation_ai_notify_delay    = 1000u;
 
+namespace
+{
+    int32 GetScheduledExitWarningTextId(MaNGOS::ScheduledExitMode mode,
+        uint32 remainingSeconds)
+    {
+        if (mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART)
+        {
+            switch (remainingSeconds)
+            {
+                case 900: return LANG_SCHEDULED_EXIT_RESTART_15_MIN;
+                case 600: return LANG_SCHEDULED_EXIT_RESTART_10_MIN;
+                case 300: return LANG_SCHEDULED_EXIT_RESTART_5_MIN;
+                case 60:  return LANG_SCHEDULED_EXIT_RESTART_1_MIN;
+            }
+        }
+        else
+        {
+            switch (remainingSeconds)
+            {
+                case 900: return LANG_SCHEDULED_EXIT_SHUTDOWN_15_MIN;
+                case 600: return LANG_SCHEDULED_EXIT_SHUTDOWN_10_MIN;
+                case 300: return LANG_SCHEDULED_EXIT_SHUTDOWN_5_MIN;
+                case 60:  return LANG_SCHEDULED_EXIT_SHUTDOWN_1_MIN;
+            }
+        }
+
+        return 0;
+    }
+}
+
 /**
  * @brief World class constructor
  *
@@ -2339,16 +2369,17 @@ void World::LoadScheduledExitConfig()
             continue;
         }
 
-        std::ostringstream configKey;
-        configKey << "ScheduledExit.WarningText." << *itr;
+        int32 textId = GetScheduledExitWarningTextId(mode, *itr);
+        if (!textId)
+        {
+            sLog.outError("ScheduledExit: ignoring warning milestone %u "
+                "because it has no mangos_string entry", *itr);
+            continue;
+        }
 
         ScheduledExitWarning warning;
         warning.remainingSeconds = *itr;
-        warning.text = sConfig.GetStringDefault(configKey.str().c_str(), "");
-        if (warning.text.empty())
-        {
-            warning.text = MaNGOS::BuildScheduledExitWarningText(mode, *itr);
-        }
+        warning.textId = textId;
         warning.sent = false;
         m_scheduledExitWarnings.push_back(warning);
     }
@@ -2462,7 +2493,19 @@ void World::SendScheduledExitWarnings()
 void World::SendScheduledExitWarning(ScheduledExitWarning& warning)
 {
     warning.sent = true;
-    SendServerMessage(SERVER_MSG_CUSTOM, warning.text.c_str());
+
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    {
+        if (WorldSession* session = itr->second)
+        {
+            Player* player = session->GetPlayer();
+            if (player && player->IsInWorld())
+            {
+                SendServerMessage(SERVER_MSG_CUSTOM,
+                    session->GetMangosString(warning.textId), player);
+            }
+        }
+    }
 }
 
 /// Display a shutdown message to the user(s)
