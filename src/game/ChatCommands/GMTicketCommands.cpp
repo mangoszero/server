@@ -197,12 +197,12 @@ bool ChatHandler::HandleTicketCloseCommand(char* args)
 
     // Send system Message to All Connected GMs to inform them the ticket has been closed
     sObjectAccessor.DoForAllPlayers([&](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
         {
-            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-            {
-                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
-            }
-        });
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
+        }
+    });
 
     if (!m_session)
     {
@@ -530,12 +530,12 @@ bool ChatHandler::HandleTicketRespondCommand(char* args)
 
     // Send system Message to All Connected GMs to informe them the ticket has been closed
     sObjectAccessor.DoForAllPlayers([&](Player* player)
+    {
+        if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
         {
-            if (player->GetSession()->GetSecurity() >= SEC_GAMEMASTER && player->isAcceptTickets())
-            {
-                ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
-            }
-        });
+            ChatHandler(player).PSendSysMessage(LANG_COMMAND_TICKETCLOSED_NAME, ticketId, target_name.c_str(), m_session ? m_session->GetPlayer()->GetName() : gmNameReplacementWhenUsingCLI);
+        }
+    });
 
     if (!m_session)
     {

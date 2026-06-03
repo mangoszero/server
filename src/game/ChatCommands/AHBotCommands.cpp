@@ -37,9 +37,9 @@
 #include "Chat.h"
 #include "AuctionHouseBot/AuctionHouseBot.h"
 
- /**********************************************************************
-    Useful constants definition
-  **********************************************************************/
+/**********************************************************************
+ Useful constants definition
+ **********************************************************************/
 
 static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
 {
@@ -49,7 +49,7 @@ static uint32 ahbotQualityIds[MAX_AUCTION_QUALITY] =
     LANG_AHBOT_QUALITY_YELLOW
 };
 
- /**
+/**
  * @brief Rebuilds the auction house bot's inventory.
  *
  * @param args Command arguments: optional "all" flag to rebuild all auction houses.
@@ -127,22 +127,22 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
     uint32 fmtId = m_session ? LANG_AHBOT_STATUS_FORMAT_CHAT : LANG_AHBOT_STATUS_FORMAT_CONSOLE;
 
     PSendSysMessage(fmtId, GetMangosString(LANG_AHBOT_STATUS_ITEM_COUNT),
-                    statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount,
-                    statusInfo[AUCTION_HOUSE_HORDE].ItemsCount,
-                    statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount,
-                    statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount +
-                    statusInfo[AUCTION_HOUSE_HORDE].ItemsCount +
-                    statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount);
+        statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount,
+        statusInfo[AUCTION_HOUSE_HORDE].ItemsCount,
+        statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount,
+        statusInfo[AUCTION_HOUSE_ALLIANCE].ItemsCount +
+        statusInfo[AUCTION_HOUSE_HORDE].ItemsCount +
+        statusInfo[AUCTION_HOUSE_NEUTRAL].ItemsCount);
 
     if (all)
     {
         PSendSysMessage(fmtId, GetMangosString(LANG_AHBOT_STATUS_ITEM_RATIO),
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO),
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO),
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO),
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO) +
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO) +
-                        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO));
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO),
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO),
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO),
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_ALLIANCE_ITEM_AMOUNT_RATIO) +
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_ITEM_AMOUNT_RATIO) +
+            sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_ITEM_AMOUNT_RATIO));
 
         if (!m_session)
         {
@@ -156,11 +156,13 @@ bool ChatHandler::HandleAHBotStatusCommand(char* args)
         }
 
         for (int i = 0; i < MAX_AUCTION_QUALITY; ++i)
+        {
             PSendSysMessage(fmtId, GetMangosString(ahbotQualityIds[i]),
-                            statusInfo[AUCTION_HOUSE_ALLIANCE].QualityInfo[i],
-                            statusInfo[AUCTION_HOUSE_HORDE].QualityInfo[i],
-                            statusInfo[AUCTION_HOUSE_NEUTRAL].QualityInfo[i],
-                            sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i)));
+                statusInfo[AUCTION_HOUSE_ALLIANCE].QualityInfo[i],
+                statusInfo[AUCTION_HOUSE_HORDE].QualityInfo[i],
+                statusInfo[AUCTION_HOUSE_NEUTRAL].QualityInfo[i],
+                sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(i)));
+        }
     }
 
     if (!m_session)
@@ -181,10 +183,12 @@ bool ChatHandler::HandleAHBotItemsAmountCommand(char* args)
 {
     uint32 qVals[MAX_AUCTION_QUALITY];
     for (int i = 0; i < MAX_AUCTION_QUALITY; ++i)
+    {
         if (!ExtractUInt32(&args, qVals[i]))
         {
             return false;
         }
+    }
 
     sAuctionBot.SetItemsAmount(qVals);
 
@@ -220,7 +224,7 @@ bool ChatHandler::HandleAHBotItemsAmountQualityCommand(char* args)
     }
     sAuctionBot.SetItemsAmountForQuality(AuctionQuality(Q), qVal);
     PSendSysMessage(LANG_AHBOT_ITEMS_AMOUNT, GetMangosString(ahbotQualityIds[Q]),
-                    sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(Q)));
+        sAuctionBotConfig.getConfigItemQualityAmount(AuctionQuality(Q)));
     return true;
 }
 
@@ -242,10 +246,12 @@ bool ChatHandler::HandleAHBotItemsRatioCommand(char* args)
 {
     uint32 rVal[MAX_AUCTION_HOUSE_TYPE];
     for (int i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
+    {
         if (!ExtractUInt32(&args, rVal[i]))
         {
             return false;
         }
+    }
 
     sAuctionBot.SetItemsRatio(rVal[0], rVal[1], rVal[2]);
 

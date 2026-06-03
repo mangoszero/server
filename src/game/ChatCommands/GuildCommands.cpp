@@ -39,13 +39,13 @@
 #include "Guild.h"
 
 /** \brief GM command level 3 - Create a guild.
-  *
-  * This command allows a GM (level 3) to create a guild.
-  *
-  * The "args" parameter contains the name of the guild leader
-  * and then the name of the guild.
-  *
-  */
+ *
+ * This command allows a GM (level 3) to create a guild.
+ *
+ * The "args" parameter contains the name of the guild leader
+ * and then the name of the guild.
+ *
+ */
 bool ChatHandler::HandleGuildCreateCommand(char* args)
 {
     // guildmaster name optional

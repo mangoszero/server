@@ -33,11 +33,11 @@ class Creature;
  * @brief HomeMovementGenerator is a movement generator that returns a creature to its home position.
  */
 template < class T >
-class HomeMovementGenerator;
+    class HomeMovementGenerator;
 
 template <>
-class HomeMovementGenerator<Creature>
-    : public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
+    class HomeMovementGenerator<Creature>
+        : public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
 {
     public:
         /**

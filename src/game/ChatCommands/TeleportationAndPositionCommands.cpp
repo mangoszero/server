@@ -42,13 +42,13 @@
 #ifdef _DEBUG_VMAPS
 #include "VMapFactory.h"
 #endif
- /*
-    All commands related to Teleportation
+/**
+ All commands related to Teleportation
  */
 
-/*
-    Utilities methods an enums
-*/
+/**
+ Utilities methods an enums
+ */
 
 enum CreatureLinkType
 {
@@ -59,8 +59,8 @@ enum CreatureLinkType
 
 static char const* const creatureKeys[] =
 {
-    "Hcreature",
-    "Hcreature_entry",
+        "Hcreature",
+        "Hcreature_entry",
     NULL
 };
 
@@ -73,15 +73,15 @@ enum GameobjectLinkType
 
 static char const* const gameobjectKeys[] =
 {
-    "Hgameobject",
-    "Hgameobject_entry",
+        "Hgameobject",
+        "Hgameobject_entry",
     NULL
 };
 
 static char const* const areatriggerKeys[] =
 {
-    "Hareatrigger",
-    "Hareatrigger_target",
+        "Hareatrigger",
+        "Hareatrigger_target",
     NULL
 };
 
@@ -225,8 +225,8 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
             // we are in instance, and can summon only player in our group with us as lead
             if (!player->GetGroup() || !target->GetGroup() ||
-                    (target->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()) ||
-                    (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()))
+                (target->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()) ||
+                (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid()))
                 // the last check is a bit excessive, but let it be, just in case
             {
                 PSendSysMessage(LANG_CANNOT_SUMMON_TO_INST, nameLink.c_str());
@@ -272,11 +272,11 @@ bool ChatHandler::HandleSummonCommand(char* args)
 
         // in point where GM stay
         Player::SavePositionInDB(target_guid, player->GetMapId(),
-                                 player->GetPositionX(),
-                                 player->GetPositionY(),
-                                 player->GetPositionZ(),
-                                 player->GetOrientation(),
-                                 player->GetZoneId());
+            player->GetPositionX(),
+            player->GetPositionY(),
+            player->GetPositionZ(),
+            player->GetOrientation(),
+            player->GetZoneId());
     }
 
     return true;
@@ -481,9 +481,9 @@ bool ChatHandler::HandleGroupgoCommand(char* args)
     bool to_instance = gmMap->Instanceable();
 
     // we are in instance, and can summon only player in our group with us as lead
-    if (to_instance && (
-                !player->GetGroup() || (grp->GetLeaderGuid() != player->GetObjectGuid()) ||
-                (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid())))
+    if (to_instance &&
+        (!player->GetGroup() || (grp->GetLeaderGuid() != player->GetObjectGuid()) ||
+        (player->GetGroup()->GetLeaderGuid() != player->GetObjectGuid())))
         // the last check is a bit excessive, but let it be, just in case
     {
         SendSysMessage(LANG_CANNOT_SUMMON_TO_INST);
@@ -669,25 +669,25 @@ bool ChatHandler::HandleGPSCommand(char* args)
     }
 
     PSendSysMessage(LANG_MAP_POSITION,
-                    obj->GetMapId(), (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
-                    zone_id, (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
-                    area_id, (areaEntry ? areaEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
-                    obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-                    cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
-                    zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
+        obj->GetMapId(), (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+        zone_id, (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
+        area_id, (areaEntry ? areaEntry->area_name[GetSessionDbcLocale()] : "<unknown>"),
+        obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+        cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+        zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     DEBUG_LOG("Player %s GPS call for %s '%s' (%s: %u):",
-              m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
-              (obj->GetTypeId() == TYPEID_PLAYER ? "player" : "creature"), obj->GetName(),
-              (obj->GetTypeId() == TYPEID_PLAYER ? "GUID" : "Entry"), (obj->GetTypeId() == TYPEID_PLAYER ? obj->GetGUIDLow() : obj->GetEntry()));
+        m_session ? GetNameLink().c_str() : GetMangosString(LANG_CONSOLE_COMMAND),
+        (obj->GetTypeId() == TYPEID_PLAYER ? "player" : "creature"), obj->GetName(),
+        (obj->GetTypeId() == TYPEID_PLAYER ? "GUID" : "Entry"), (obj->GetTypeId() == TYPEID_PLAYER ? obj->GetGUIDLow() : obj->GetEntry()));
 
     DEBUG_LOG(GetMangosString(LANG_MAP_POSITION),
-              obj->GetMapId(), (mapEntry ? mapEntry->name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-              zone_id, (zoneEntry ? zoneEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-              area_id, (areaEntry ? areaEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
-              obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
-              cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
-              zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
+        obj->GetMapId(), (mapEntry ? mapEntry->name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+        zone_id, (zoneEntry ? zoneEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+        area_id, (areaEntry ? areaEntry->area_name[sWorld.GetDefaultDbcLocale()] : "<unknown>"),
+        obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), obj->GetOrientation(),
+        cell.GridX(), cell.GridY(), cell.CellX(), cell.CellY(), obj->GetInstanceId(),
+        zone_x, zone_y, ground_z, floor_z, have_map, have_vmap);
 
     GridMapLiquidData liquid_status;
     GridMapLiquidStatus res = terrain->getLiquidStatus(obj->GetPositionX(), obj->GetPositionY(), obj->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status);
@@ -1055,7 +1055,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     if (mapEntry->Instanceable())
     {
         PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
-                        mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
+            mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
     }
@@ -1063,7 +1063,7 @@ bool ChatHandler::HandleGoZoneXYCommand(char* args)
     if (!Zone2MapCoordinates(x, y, zoneEntry->ID))
     {
         PSendSysMessage(LANG_INVALID_ZONE_MAP, areaEntry->ID, areaEntry->area_name[GetSessionDbcLocale()],
-                        mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
+            mapEntry->MapID, mapEntry->name[GetSessionDbcLocale()]);
         SetSentErrorMessage(true);
         return false;
     }
@@ -1107,15 +1107,15 @@ bool ChatHandler::HandleGoGridCommand(char* args)
 }
 
 /** \brief Teleport the GM to the specified creature
-*
-* .go creature <GUID>     --> TP using creature.guid
-* .go creature azuregos   --> TP player to the mob with this name
-*                             Warning: If there is more than one mob with this name
-*                                      you will be teleported to the first one that is found.
-* .go creature id 6109    --> TP player to the mob, that has this creature_template.entry
-*                             Warning: If there is more than one mob with this "id"
-*                                      you will be teleported to the first one that is found.
-*/
+ *
+ * .go creature <GUID>     --> TP using creature.guid
+ * .go creature azuregos   --> TP player to the mob with this name
+ *                             Warning: If there is more than one mob with this name
+ *                                      you will be teleported to the first one that is found.
+ * .go creature id 6109    --> TP player to the mob, that has this creature_template.entry
+ *                             Warning: If there is more than one mob with this "id"
+ *                                      you will be teleported to the first one that is found.
+ */
 
 /**
  * @brief Handler for HandleGoCreatureCommand command.
@@ -1736,7 +1736,7 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
                 }
 
                 PSendSysMessage("Teleporting %s to map %u (%s) at coordinates %.2f, %.2f, %.2f",
-                               chrNameLink.c_str(), mapId, mapEntry->name[GetSessionDbcLocale()], x, y, z);
+                    chrNameLink.c_str(), mapId, mapEntry->name[GetSessionDbcLocale()], x, y, z);
 
                 if (needReportToTarget(target))
                 {
@@ -1754,10 +1754,10 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
                 }
 
                 PSendSysMessage("Teleporting %s %s to map %u at coordinates %.2f, %.2f, %.2f",
-                               chrNameLink.c_str(), GetMangosString(LANG_OFFLINE), mapId, x, y, z);
+                    chrNameLink.c_str(), GetMangosString(LANG_OFFLINE), mapId, x, y, z);
 
                 Player::SavePositionInDB(target_guid, mapId, x, y, z, o,
-                                       sTerrainMgr.GetZoneId(mapId, x, y, z));
+                    sTerrainMgr.GetZoneId(mapId, x, y, z));
                 return true;
             }
         }
@@ -1810,8 +1810,8 @@ bool ChatHandler::HandleTeleNameCommand(char* args)
 
         PSendSysMessage(LANG_TELEPORTING_TO, nameLink.c_str(), GetMangosString(LANG_OFFLINE), tele->name.c_str());
         Player::SavePositionInDB(target_guid, tele->mapId,
-                                 tele->position_x, tele->position_y, tele->position_z, tele->orientation,
-                                 sTerrainMgr.GetZoneId(tele->mapId, tele->position_x, tele->position_y, tele->position_z));
+            tele->position_x, tele->position_y, tele->position_z, tele->orientation,
+            sTerrainMgr.GetZoneId(tele->mapId, tele->position_x, tele->position_y, tele->position_z));
     }
 
     return true;

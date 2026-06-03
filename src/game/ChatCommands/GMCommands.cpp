@@ -89,7 +89,7 @@ bool ChatHandler::HandlePInfoCommand(char* args)
 
         //                                                     0          1      2      3       4       5
         QueryResult* result = CharacterDatabase.PQuery("SELECT `totaltime`, `level`, `money`, `account`, `race`, `class`"
-                                                       " FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
+            " FROM `characters` WHERE `guid` = '%u'", target_guid.GetCounter());
         if (!result)
         {
             return false;
@@ -171,13 +171,13 @@ bool ChatHandler::HandlePInfoCommand(char* args)
         AreaTableEntry const* zoneEntry = GetAreaEntryByAreaID(zoneId);
 
         PSendSysMessage("Location: Map %u (%s), Zone %u (%s)",
-                        mapId,
-                        (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
-                        zoneId,
-                        (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
+            mapId,
+            (mapEntry ? mapEntry->name[GetSessionDbcLocale()] : "<unknown>"),
+            zoneId,
+            (zoneEntry ? zoneEntry->area_name[GetSessionDbcLocale()] : "<unknown>"));
 
         PSendSysMessage("Coordinates: X=%.2f Y=%.2f Z=%.2f O=%.2f",
-                        posX, posY, posZ, orientation);
+            posX, posY, posZ, orientation);
     }
 
     // Skills
@@ -225,14 +225,14 @@ bool ChatHandler::HandlePInfoCommand(char* args)
                     printedHeader = true;
                 }
                 PSendSysMessage("  %s (%u/%u)", name.c_str(),
-                                target->GetPureSkillValue(id),
-                                target->GetPureMaxSkillValue(id));
+                    target->GetPureSkillValue(id),
+                    target->GetPureMaxSkillValue(id));
             }
         }
         else
         {
             QueryResult* skillResult = CharacterDatabase.PQuery(
-                "SELECT `skill`, `value`, `max` FROM `character_skills` WHERE `guid` = '%u' ORDER BY `skill`",
+                    "SELECT `skill`, `value`, `max` FROM `character_skills` WHERE `guid` = '%u' ORDER BY `skill`",
                 target_guid.GetCounter());
             if (skillResult)
             {

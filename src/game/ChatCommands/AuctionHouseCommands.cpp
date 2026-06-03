@@ -93,10 +93,12 @@ bool ChatHandler::HandleAuctionItemCommand(char* args)
     uint32 item_id = 0;
     uint32 item_count = 1;
     if (sscanf(itemStr, "%u:%u", &item_id, &item_count) != 2)
+    {
         if (sscanf(itemStr, "%u", &item_id) != 1)
         {
             return false;
         }
+    }
 
     uint32 price;
     if (!ExtractUInt32(&args, price))

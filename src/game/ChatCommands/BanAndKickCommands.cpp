@@ -41,15 +41,15 @@
 #include "ObjectMgr.h"
 
 /**
-* @brief Helper function to display ban list information.
-*
-* Displays bans in either chat format (short output) or console format (detailed).
-* For chat output, shows usernames of banned accounts. For console output, shows
-* detailed ban information including dates, duration, and ban reasons.
-*
-* @param result Query result containing ban information.
-* @returns True if ban list was displayed successfully, false otherwise.
-*/
+ * @brief Helper function to display ban list information.
+ *
+ * Displays bans in either chat format (short output) or console format (detailed).
+ * For chat output, shows usernames of banned accounts. For console output, shows
+ * detailed ban information including dates, duration, and ban reasons.
+ *
+ * @param result Query result containing ban information.
+ * @returns True if ban list was displayed successfully, false otherwise.
+ */
 bool ChatHandler::HandleBanListHelper(QueryResult* result)
 {
     PSendSysMessage(LANG_BANLIST_MATCHINGACCOUNT);
@@ -110,8 +110,8 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                     if (fields2[0].GetUInt64() == fields2[1].GetUInt64())
                     {
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                                        account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
-                                        fields2[2].GetString(), fields2[3].GetString());
+                            account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
+                            fields2[2].GetString(), fields2[3].GetString());
                     }
                     else
                     {
@@ -119,9 +119,9 @@ bool ChatHandler::HandleBanListHelper(QueryResult* result)
                         tm tmUnban = safe_localtime(timeUnban);
 
                         PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                                        account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
-                                        tmUnban.tm_year % 100, tmUnban.tm_mon + 1, tmUnban.tm_mday, tmUnban.tm_hour, tmUnban.tm_min,
-                                        fields2[2].GetString(), fields2[3].GetString());
+                            account_name.c_str(), tmBan.tm_year % 100, tmBan.tm_mon + 1, tmBan.tm_mday, tmBan.tm_hour, tmBan.tm_min,
+                            tmUnban.tm_year % 100, tmUnban.tm_mon + 1, tmUnban.tm_mday, tmUnban.tm_hour, tmUnban.tm_min,
+                            fields2[2].GetString(), fields2[3].GetString());
                     }
                 }
                 while (banInfo->NextRow());
@@ -269,15 +269,15 @@ bool ChatHandler::HandleBanAccountCommand(char* args)
 }
 
 /**
-* @brief Helper function to display ban information for an account.
-*
-* Shows ban history for a specific account including ban dates, duration,
-* active status, reason, and who issued the ban.
-*
-* @param accountid The account ID to look up.
-* @param accountname The name of the account (for display).
-* @returns True if ban information was successfully retrieved and displayed, false otherwise.
-*/
+ * @brief Helper function to display ban information for an account.
+ *
+ * Shows ban history for a specific account including ban dates, duration,
+ * active status, reason, and who issued the ban.
+ *
+ * @param accountid The account ID to look up.
+ * @param accountname The name of the account (for display).
+ * @returns True if ban information was successfully retrieved and displayed, false otherwise.
+ */
 bool ChatHandler::HandleBanInfoHelper(uint32 accountid, char const* accountname)
 {
     QueryResult* result = LoginDatabase.PQuery("SELECT FROM_UNIXTIME(`bandate`), `unbandate`-`bandate`, `active`, `unbandate`,`banreason`,`bannedby` FROM `account_banned` WHERE `id` = '%u' ORDER BY `bandate` ASC", accountid);
@@ -301,7 +301,7 @@ bool ChatHandler::HandleBanInfoHelper(uint32 accountid, char const* accountname)
         bool permanent = (fields[1].GetUInt64() == (uint64)0);
         std::string bantime = permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[1].GetUInt64(), TimeFormat::ShortText);
         PSendSysMessage(LANG_BANINFO_HISTORYENTRY,
-                        fields[0].GetString(), bantime.c_str(), active ? GetMangosString(LANG_BANINFO_YES) : GetMangosString(LANG_BANINFO_NO), fields[4].GetString(), fields[5].GetString());
+            fields[0].GetString(), bantime.c_str(), active ? GetMangosString(LANG_BANINFO_YES) : GetMangosString(LANG_BANINFO_NO), fields[4].GetString(), fields[5].GetString());
     }
     while (result->NextRow());
 
@@ -346,8 +346,8 @@ bool ChatHandler::HandleBanInfoIPCommand(char* args)
     Field* fields = result->Fetch();
     bool permanent = !fields[6].GetUInt64();
     PSendSysMessage(LANG_BANINFO_IPENTRY,
-                    fields[0].GetString(), fields[1].GetString(), permanent ? GetMangosString(LANG_BANINFO_NEVER) : fields[2].GetString(),
-                    permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[3].GetUInt64(), TimeFormat::ShortText).c_str(), fields[4].GetString(), fields[5].GetString());
+        fields[0].GetString(), fields[1].GetString(), permanent ? GetMangosString(LANG_BANINFO_NEVER) : fields[2].GetString(),
+        permanent ? GetMangosString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[3].GetUInt64(), TimeFormat::ShortText).c_str(), fields[4].GetString(), fields[5].GetString());
     delete result;
     return true;
 }
@@ -403,14 +403,14 @@ bool ChatHandler::HandleBanInfoAccountCommand(char* args)
 }
 
 /**
-* @brief Displays the list of banned IP addresses.
-*
-* Shows currently active IP bans, optionally filtered by IP pattern.
-* Displays in short format for chat or detailed format for console.
-*
-* @param args Command arguments: [ip_filter_pattern].
-* @returns True if ban list was displayed, false otherwise.
-*/
+ * @brief Displays the list of banned IP addresses.
+ *
+ * Shows currently active IP bans, optionally filtered by IP pattern.
+ * Displays in short format for chat or detailed format for console.
+ *
+ * @param args Command arguments: [ip_filter_pattern].
+ * @returns True if ban list was displayed, false otherwise.
+ */
 bool ChatHandler::HandleBanListIPCommand(char* args)
 {
     LoginDatabase.Execute("DELETE FROM `ip_banned` WHERE `unbandate`<=UNIX_TIMESTAMP() AND `unbandate`<>`bandate`");
@@ -424,14 +424,14 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
     if (filter.empty())
     {
         result = LoginDatabase.Query("SELECT `ip`,`bandate`,`unbandate`,`bannedby`,`banreason` FROM `ip_banned`"
-                                     " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP())"
-                                     " ORDER BY `unbandate`");
+            " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP())"
+            " ORDER BY `unbandate`");
     }
     else
     {
         result = LoginDatabase.PQuery("SELECT `ip`,`bandate`,`unbandate`,`bannedby`,`banreason` FROM `ip_banned`"
-                                    " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP()) AND `ip` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")
-                                    " ORDER BY `unbandate`", filter.c_str());
+            " WHERE (`bandate`=`unbandate` OR `unbandate`>UNIX_TIMESTAMP()) AND `ip` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")
+            " ORDER BY `unbandate`", filter.c_str());
     }
 
     if (!result)
@@ -466,17 +466,17 @@ bool ChatHandler::HandleBanListIPCommand(char* args)
             if (fields[1].GetUInt64() == fields[2].GetUInt64())
             {
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|   permanent  |%-15.15s|%-15.15s|",
-                                fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
-                                fields[3].GetString(), fields[4].GetString());
+                    fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
+                    fields[3].GetString(), fields[4].GetString());
             }
             else
             {
                 time_t t_unban = fields[2].GetUInt64();
                 std::tm aTm_unban = safe_localtime(t_unban);
                 PSendSysMessage("|%-15.15s|%02d-%02d-%02d %02d:%02d|%02d-%02d-%02d %02d:%02d|%-15.15s|%-15.15s|",
-                                fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
-                                aTm_unban.tm_year % 100, aTm_unban.tm_mon + 1, aTm_unban.tm_mday, aTm_unban.tm_hour, aTm_unban.tm_min,
-                                fields[3].GetString(), fields[4].GetString());
+                    fields[0].GetString(), aTm_ban.tm_year % 100, aTm_ban.tm_mon + 1, aTm_ban.tm_mday, aTm_ban.tm_hour, aTm_ban.tm_min,
+                    aTm_unban.tm_year % 100, aTm_unban.tm_mon + 1, aTm_unban.tm_mday, aTm_unban.tm_hour, aTm_unban.tm_min,
+                    fields[3].GetString(), fields[4].GetString());
             }
         }
         while (result->NextRow());
@@ -538,13 +538,13 @@ bool ChatHandler::HandleBanListAccountCommand(char* args)
     if (filter.empty())
     {
         result = LoginDatabase.Query("SELECT `account`.`id`, `username` FROM `account`, `account_banned`"
-                                     " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 GROUP BY `account`.`id`");
+            " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 GROUP BY `account`.`id`");
     }
     else
     {
         result = LoginDatabase.PQuery("SELECT `account`.`id`, `username` FROM `account`, `account_banned`"
-                                      " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 AND `username` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" GROUP BY `account`.`id`",
-                                      filter.c_str());
+            " WHERE `account`.`id` = `account_banned`.`id` AND `active` = 1 AND `username` " _LIKE_ " " _CONCAT3_("'%%'", "'%s'", "'%%'")" GROUP BY `account`.`id`",
+            filter.c_str());
     }
 
     if (!result)

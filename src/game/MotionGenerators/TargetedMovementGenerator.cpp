@@ -103,8 +103,8 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
     }
 
     // allow pets following their master to cheat while generating paths
-    bool forceDest = (owner.GetTypeId() == TYPEID_UNIT && ((Creature*)&owner)->IsPet()
-                    && owner.hasUnitState(UNIT_STAT_FOLLOW));
+    bool forceDest = (owner.GetTypeId() == TYPEID_UNIT && ((Creature*)&owner)->IsPet() &&
+        owner.hasUnitState(UNIT_STAT_FOLLOW));
 
     if (forceDest &&
         (owner.m_movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT) ||
@@ -112,7 +112,7 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T& owner, bool up
     {
         bool outMoved = false;
         if (((Creature*)&owner)->HandleTransportFollow(
-                i_target.getTarget(), i_offset, i_angle, ((D*)this)->EnableWalking(), outMoved))
+            i_target.getTarget(), i_offset, i_angle, ((D*)this)->EnableWalking(), outMoved))
         {
             if (outMoved)
             {
@@ -319,7 +319,7 @@ bool TargetedMovementGeneratorMedium<T, D>::RequiresNewPosition(T& owner, float 
  * @param u The owner.
  */
 template<class T>
-void ChaseMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UNIT_STAT_CHASE_MOVE); }
+    void ChaseMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UNIT_STAT_CHASE_MOVE); }
 
 /**
  * @brief Add the chase movement state for the owner.
@@ -328,7 +328,7 @@ void ChaseMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UNI
  * @param u The owner.
  */
 template<class T>
-void ChaseMovementGenerator<T>::_addUnitStateMove(T& u) { u.addUnitState(UNIT_STAT_CHASE_MOVE); }
+    void ChaseMovementGenerator<T>::_addUnitStateMove(T& u) { u.addUnitState(UNIT_STAT_CHASE_MOVE); }
 
 /**
  * @brief Check if the owner has lost the target.
@@ -510,7 +510,7 @@ float ChaseMovementGenerator<T>::GetDynamicTargetDistance(T& owner, bool forRang
  * @param u The owner.
  */
 template<class T>
-void FollowMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UNIT_STAT_FOLLOW_MOVE); }
+    void FollowMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UNIT_STAT_FOLLOW_MOVE); }
 
 /**
  * @brief Add the follow movement state for the owner.
@@ -519,7 +519,7 @@ void FollowMovementGenerator<T>::_clearUnitStateMove(T& u) { u.clearUnitState(UN
  * @param u The owner.
  */
 template<class T>
-void FollowMovementGenerator<T>::_addUnitStateMove(T& u) { u.addUnitState(UNIT_STAT_FOLLOW_MOVE); }
+    void FollowMovementGenerator<T>::_addUnitStateMove(T& u) { u.addUnitState(UNIT_STAT_FOLLOW_MOVE); }
 
 /**
  * @brief Enable walking for the creature.

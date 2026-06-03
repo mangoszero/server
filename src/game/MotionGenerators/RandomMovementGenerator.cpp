@@ -38,8 +38,8 @@
  * @param verticalZ Vertical offset for the movement.
  */
 template<>
-RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ) :
-    i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ)
+    RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, float z, float radius, float verticalZ)
+        : i_nextMoveTime(0), i_x(x), i_y(y), i_z(z), i_radius(radius), i_verticalZ(verticalZ)
 {
     if (radius < 0.1f)
     {
@@ -53,7 +53,7 @@ RandomMovementGenerator<Creature>::RandomMovementGenerator(float x, float y, flo
  * @param creature Reference to the creature.
  */
 template<>
-RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creature)
+    RandomMovementGenerator<Creature>::RandomMovementGenerator(const Creature& creature)
 {
     float respX, respY, respZ, respO, wander_distance;
     creature.GetRespawnCoord(respX, respY, respZ, &respO, &wander_distance);

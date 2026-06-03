@@ -348,10 +348,12 @@ bool ChatHandler::HandleServerLogFilterCommand(char* args)
     {
         SendSysMessage(LANG_LOG_FILTERS_STATE_HEADER);
         for (int i = 0; i < LOG_FILTER_COUNT; ++i)
+        {
             if (*logFilterData[i].name)
             {
                 PSendSysMessage("  %-20s = %s", logFilterData[i].name, GetOnOffStr(sLog.HasLogFilter(1 << i)));
             }
+        }
         return true;
     }
 

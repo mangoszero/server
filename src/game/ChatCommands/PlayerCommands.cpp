@@ -219,7 +219,7 @@ bool ChatHandler::HandleCharacterReputationCommand(char* args)
 }
 
 /**********************************************************************
-    CommandTable : characterDeletedCommandTable
+ CommandTable : characterDeletedCommandTable
  ***********************************************************************/
 
 /**
@@ -338,13 +338,17 @@ void ChatHandler::HandleCharacterDeletedListHelper(DeletedInfoList const& foundL
         std::string dateStr = TimeToTimestampStr(itr->deleteDate);
 
         if (!m_session)
+        {
             PSendSysMessage(LANG_CHARACTER_DELETED_LIST_LINE_CONSOLE,
-                            itr->lowguid, itr->name.c_str(), itr->accountName.empty() ? "<nonexistent>" : itr->accountName.c_str(),
-                            itr->accountId, dateStr.c_str());
+                itr->lowguid, itr->name.c_str(), itr->accountName.empty() ? "<nonexistent>" : itr->accountName.c_str(),
+                itr->accountId, dateStr.c_str());
+        }
         else
+        {
             PSendSysMessage(LANG_CHARACTER_DELETED_LIST_LINE_CHAT,
-                            itr->lowguid, itr->name.c_str(), itr->accountName.empty() ? "<nonexistent>" : itr->accountName.c_str(),
-                            itr->accountId, dateStr.c_str());
+                itr->lowguid, itr->name.c_str(), itr->accountName.empty() ? "<nonexistent>" : itr->accountName.c_str(),
+                itr->accountId, dateStr.c_str());
+        }
     }
 
     if (!m_session)
@@ -387,7 +391,7 @@ void ChatHandler::HandleCharacterDeletedRestoreHelper(DeletedInfo const& delInfo
     }
 
     CharacterDatabase.PExecute("UPDATE `characters` SET `name`='%s', `account`='%u', `deleteDate`=NULL, `deleteInfos_Name`=NULL, `deleteInfos_Account`=NULL WHERE `deleteDate` IS NOT NULL AND `guid` = %u",
-                               delInfo.name.c_str(), delInfo.accountId, delInfo.lowguid);
+        delInfo.name.c_str(), delInfo.accountId, delInfo.lowguid);
 }
 
 /**
@@ -565,7 +569,7 @@ bool ChatHandler::HandleCharacterDeletedOldCommand(char* args)
 }
 
 /**********************************************************************
-    CommandTable : commandTable
+ CommandTable : commandTable
  ***********************************************************************/
 
 void ChatHandler::HandleCharacterLevel(Player* player, ObjectGuid player_guid, uint32 oldlevel, uint32 newlevel)
@@ -1602,7 +1606,9 @@ bool ChatHandler::HandleModifyManaCommand(char* args)
 
     int32 manam;
     if (!ExtractInt32(&args, manam) || manam < mana)
+    {
         manam = (int32)chr->GetMaxPower(POWER_MANA);
+    }
 
     PSendSysMessage(LANG_YOU_CHANGE_MANA, GetNameLink(chr).c_str(), mana, manam);
     if (needReportToTarget(chr))
@@ -2530,7 +2536,7 @@ bool ChatHandler::HandleModifyRepCommand(char* args)
 
     target->GetReputationMgr().SetReputation(factionEntry, amount);
     PSendSysMessage(LANG_COMMAND_MODIFY_REP, factionEntry->name[GetSessionDbcLocale()], factionId,
-                    GetNameLink(target).c_str(), target->GetReputationMgr().GetReputation(factionEntry));
+        GetNameLink(target).c_str(), target->GetReputationMgr().GetReputation(factionEntry));
     return true;
 }
 

@@ -32,8 +32,8 @@
  * @brief FleeingMovementGenerator is a movement generator that makes a unit flee from a specified target.
  */
 template<class T>
-class FleeingMovementGenerator
-    : public MovementGeneratorMedium< T, FleeingMovementGenerator<T> >
+    class FleeingMovementGenerator
+        : public MovementGeneratorMedium< T, FleeingMovementGenerator<T> >
 {
     public:
         /**
@@ -113,8 +113,8 @@ class TimedFleeingMovementGenerator
          * @param fright The GUID of the target to flee from.
          * @param time The total time to flee.
          */
-        TimedFleeingMovementGenerator(ObjectGuid fright, uint32 time) :
-            FleeingMovementGenerator<Creature>(fright),
+        TimedFleeingMovementGenerator(ObjectGuid fright, uint32 time)
+            : FleeingMovementGenerator<Creature>(fright),
             i_totalFleeTime(time) {}
 
         /**

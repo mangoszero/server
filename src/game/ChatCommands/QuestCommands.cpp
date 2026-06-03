@@ -227,10 +227,12 @@ bool ChatHandler::HandleQuestCompleteCommand(char* args)
         else if (creature > 0)
         {
             if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature))
+            {
                 for (uint16 z = 0; z < creaturecount; ++z)
                 {
                     player->KilledMonster(cInfo, ObjectGuid());
                 }
+            }
         }
         else if (creature < 0)
         {
@@ -247,10 +249,12 @@ bool ChatHandler::HandleQuestCompleteCommand(char* args)
         uint32 repValue = pQuest->GetRepObjectiveValue();
         uint32 curRep = player->GetReputationMgr().GetReputation(repFaction);
         if (curRep < repValue)
+        {
             if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(repFaction))
             {
                 player->GetReputationMgr().SetReputation(factionEntry, repValue);
             }
+        }
     }
 
     // If the quest requires money

@@ -59,8 +59,8 @@ class TargetedMovementGeneratorBase
  * @tparam D Derived class type.
  */
 template<class T, typename D>
-class TargetedMovementGeneratorMedium
-    : public MovementGeneratorMedium< T, D >, public TargetedMovementGeneratorBase
+    class TargetedMovementGeneratorMedium
+        : public MovementGeneratorMedium< T, D >, public TargetedMovementGeneratorBase
 {
     protected:
         /**
@@ -69,8 +69,8 @@ class TargetedMovementGeneratorMedium
          * @param offset Offset distance from the target.
          * @param angle Angle to maintain from the target.
          */
-        TargetedMovementGeneratorMedium(Unit& target, float offset, float angle) :
-            TargetedMovementGeneratorBase(target),
+        TargetedMovementGeneratorMedium(Unit& target, float offset, float angle)
+            : TargetedMovementGeneratorBase(target),
             i_recheckDistance(0),
             i_offset(offset), i_angle(angle),
             m_speedChanged(false), i_targetReached(false),
@@ -155,7 +155,7 @@ class TargetedMovementGeneratorMedium
  * @tparam T Type of the unit (Player or Creature).
  */
 template<class T>
-class ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >
+    class ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMovementGenerator<T> >
 {
     public:
         /**
@@ -248,7 +248,7 @@ class ChaseMovementGenerator : public TargetedMovementGeneratorMedium<T, ChaseMo
  * @tparam T Type of the unit (Player or Creature).
  */
 template<class T>
-class FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >
+    class FollowMovementGenerator : public TargetedMovementGeneratorMedium<T, FollowMovementGenerator<T> >
 {
     public:
         /**
