@@ -7,52 +7,52 @@ using namespace ai;
 
 class DpsPaladinStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
-public:
-    DpsPaladinStrategyActionNodeFactory()
-    {
-        creators["seal of the crusader"] = &seal_of_the_crusader;
-        creators["seal of vengeance"] = &seal_of_vengeance;
-        creators["seal of command"] = &seal_of_command;
-        creators["blessing"] = &blessing;
-        creators["crusader strike"] = &crusader_strike;
-    }
+    public:
+        DpsPaladinStrategyActionNodeFactory()
+        {
+            creators["seal of the crusader"] = &seal_of_the_crusader;
+            creators["seal of vengeance"] = &seal_of_vengeance;
+            creators["seal of command"] = &seal_of_command;
+            creators["blessing"] = &blessing;
+            creators["crusader strike"] = &crusader_strike;
+        }
 
-private:
-    static ActionNode* seal_of_the_crusader(PlayerbotAI* ai)
-    {
-        return new ActionNode ("seal of the crusader",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("seal of vengeance"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* seal_of_vengeance(PlayerbotAI* ai)
-    {
-        return new ActionNode ("seal of vengeance",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("seal of command"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* seal_of_command(PlayerbotAI* ai)
-    {
-        return new ActionNode ("seal of command",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("seal of righteousness"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* blessing(PlayerbotAI* ai)
-    {
-        return new ActionNode ("blessing",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("blessing of might"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* crusader_strike(PlayerbotAI* ai)
-    {
-        return new ActionNode ("crusader strike",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("melee"), NULL),
-            /*C*/ NULL);
-    }
+    private:
+        static ActionNode* seal_of_the_crusader(PlayerbotAI* ai)
+        {
+            return new ActionNode ("seal of the crusader",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("seal of vengeance"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* seal_of_vengeance(PlayerbotAI* ai)
+        {
+            return new ActionNode ("seal of vengeance",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("seal of command"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* seal_of_command(PlayerbotAI* ai)
+        {
+            return new ActionNode ("seal of command",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("seal of righteousness"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* blessing(PlayerbotAI* ai)
+        {
+            return new ActionNode ("blessing",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("blessing of might"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* crusader_strike(PlayerbotAI* ai)
+        {
+            return new ActionNode ("crusader strike",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("melee"), NULL),
+                /*C*/ NULL);
+        }
 };
 
 DpsPaladinStrategy::DpsPaladinStrategy(PlayerbotAI* ai) : GenericPaladinStrategy(ai)
@@ -70,22 +70,22 @@ void DpsPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     GenericPaladinStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "low health",
+            "low health",
         NextAction::array(0, new NextAction("divine shield", ACTION_CRITICAL_HEAL + 2), new NextAction("holy light", ACTION_CRITICAL_HEAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "judgement of wisdom",
+            "judgement of wisdom",
         NextAction::array(0, new NextAction("judgement of wisdom", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "blessing",
+            "blessing",
         NextAction::array(0, new NextAction("blessing of might", ACTION_HIGH + 8), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium aoe",
+            "medium aoe",
         NextAction::array(0, new NextAction("divine storm", ACTION_HIGH + 1), new NextAction("consecration", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "art of war",
+            "art of war",
         NextAction::array(0, new NextAction("exorcism", ACTION_HIGH + 2), NULL)));
 }

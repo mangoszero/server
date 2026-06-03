@@ -7,39 +7,38 @@ namespace ai
 {
     class GenericShamanStrategy : public CombatStrategy
     {
-    public:
-        GenericShamanStrategy(PlayerbotAI* ai);
+        public:
+            GenericShamanStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
 
     };
 
     class ShamanBuffDpsStrategy : public Strategy
     {
-    public:
-        ShamanBuffDpsStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        public:
+            ShamanBuffDpsStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "bdps";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "bdps";
+            }
 
     };
 
     class ShamanBuffManaStrategy : public Strategy
     {
-    public:
-        ShamanBuffManaStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        public:
+            ShamanBuffManaStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "bmana";
-        }
-
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "bmana";
+            }
     };
 }

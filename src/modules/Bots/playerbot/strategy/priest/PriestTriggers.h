@@ -14,8 +14,8 @@ namespace ai
 
     class PowerWordPainOnAttackerTrigger : public DebuffOnAttackerTrigger
     {
-    public:
-        PowerWordPainOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "shadow word: pain") {}
+        public:
+            PowerWordPainOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "shadow word: pain") {}
     };
 
     DEBUFF_TRIGGER(PowerWordPainTrigger, "shadow word: pain", "shadow word: pain")
@@ -24,48 +24,50 @@ namespace ai
 
     class DispelMagicTrigger : public NeedCureTrigger
     {
-    public:
-        DispelMagicTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "dispel magic", DISPEL_MAGIC) {}
+        public:
+            DispelMagicTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "dispel magic", DISPEL_MAGIC) {}
     };
 
     class DispelMagicPartyMemberTrigger : public PartyMemberNeedCureTrigger
     {
-    public:
-        DispelMagicPartyMemberTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "dispel magic", DISPEL_MAGIC) {}
+        public:
+            DispelMagicPartyMemberTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "dispel magic", DISPEL_MAGIC) {}
     };
 
     class CureDiseaseTrigger : public NeedCureTrigger
     {
-    public:
-        CureDiseaseTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "cure disease", DISPEL_DISEASE) {}
+        public:
+            CureDiseaseTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "cure disease", DISPEL_DISEASE) {}
     };
 
     class PartyMemberCureDiseaseTrigger : public PartyMemberNeedCureTrigger
     {
-    public:
-        PartyMemberCureDiseaseTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "cure disease", DISPEL_DISEASE) {}
+        public:
+            PartyMemberCureDiseaseTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "cure disease", DISPEL_DISEASE) {}
     };
 
     class ShadowformTrigger : public BuffTrigger {
-    public:
-        ShadowformTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "shadowform") {}
-        virtual bool IsActive()
-        {
-            return !ai->HasAura("shadowform", bot);
-        }
+        public:
+            ShadowformTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "shadowform") {}
+            virtual bool IsActive()
+            {
+                return !ai->HasAura("shadowform", bot);
+            }
     };
 
     class ShackleUndeadTrigger : public DebuffOnAttackerTrigger
     {
-    public:
-        ShackleUndeadTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "shackle undead") {}
-        virtual bool IsActive()
-        {
-            Unit* target = GetTargetValue()->Get();
-            if (!target || target->GetCreatureType() != CREATURE_TYPE_UNDEAD)
-                return false;
-            return DebuffTrigger::IsActive();
-        }
+        public:
+            ShackleUndeadTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "shackle undead") {}
+            virtual bool IsActive()
+            {
+                Unit* target = GetTargetValue()->Get();
+                if (!target || target->GetCreatureType() != CREATURE_TYPE_UNDEAD)
+                {
+                    return false;
+                }
+                return DebuffTrigger::IsActive();
+            }
     };
 
     BUFF_ON_PARTY_TRIGGER(PowerInfusionTrigger, "power infusion", "power infusion")

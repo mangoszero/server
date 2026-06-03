@@ -7,14 +7,14 @@ namespace ai
 {
     class PriestNonCombatStrategy : public NonCombatStrategy
     {
-    public:
-        PriestNonCombatStrategy(PlayerbotAI* ai);
+        public:
+            PriestNonCombatStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "nc";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "nc";
+            }
     };
 }

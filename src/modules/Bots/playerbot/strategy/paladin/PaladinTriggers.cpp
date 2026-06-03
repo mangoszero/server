@@ -39,10 +39,15 @@ bool HolyWrathTrigger::IsActive()
 {
     Unit* target = AI_VALUE(Unit*, "current target");
     if (!target)
+    {
         return false;
+    }
+
     uint32 ctype = target->GetCreatureType();
     if (ctype != CREATURE_TYPE_UNDEAD && ctype != CREATURE_TYPE_DEMON)
+    {
         return false;
+    }
     return AI_VALUE(uint8, "attacker count") >= 2;
 }
 
@@ -50,7 +55,9 @@ bool ExorcismTrigger::IsActive()
 {
     Unit* target = AI_VALUE(Unit*, "current target");
     if (!target)
+    {
         return false;
+    }
     uint32 ctype = target->GetCreatureType();
     return ctype == CREATURE_TYPE_UNDEAD || ctype == CREATURE_TYPE_DEMON;
 }

@@ -7,42 +7,41 @@ namespace ai
 {
     class DpsWarlockStrategy : public GenericWarlockStrategy
     {
-    public:
-        DpsWarlockStrategy(PlayerbotAI* ai);
-        virtual string getName()
-        {
-            return "dps";
-        }
+        public:
+            DpsWarlockStrategy(PlayerbotAI* ai);
+            virtual string getName()
+            {
+                return "dps";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual NextAction** getDefaultActions();
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual NextAction** getDefaultActions();
     };
 
     class DpsAoeWarlockStrategy : public CombatStrategy
     {
-    public:
-        DpsAoeWarlockStrategy(PlayerbotAI* ai);
+        public:
+            DpsAoeWarlockStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "aoe";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "aoe";
+            }
     };
 
     class DpsWarlockDebuffStrategy : public CombatStrategy
     {
-    public:
-        DpsWarlockDebuffStrategy(PlayerbotAI* ai) : CombatStrategy(ai) {}
+        public:
+            DpsWarlockDebuffStrategy(PlayerbotAI* ai) : CombatStrategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "dps debuff";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "dps debuff";
+            }
     };
-
 }

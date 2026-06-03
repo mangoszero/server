@@ -9,7 +9,10 @@ using namespace ai;
 bool CastBlessingOnPartyAction::Execute(Event event)
 {
     Group* group = bot->GetGroup();
-    if (!group) return false;
+    if (!group)
+    {
+        return false;
+    }
 
     Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
     bool casted = false;
@@ -18,10 +21,14 @@ bool CastBlessingOnPartyAction::Execute(Event event)
     {
         Player* member = sObjectMgr.GetPlayer(itr->guid);
         if (!member || !member->IsAlive())
+        {
             continue;
+        }
 
         if (HasAnyBlessing(ai, member))
+        {
             continue;
+        }
 
         string primary;
         switch (member->getClass())
@@ -47,14 +54,20 @@ bool CastBlessingOnPartyAction::Execute(Event event)
         }
 
         if (ai->CastSpell(primary, member))
+        {
             casted = true;
+        }
         else
         {
             string lesser = (primary.find("greater ") == 0) ? primary.substr(8) : primary;
             if (ai->CastSpell(lesser, member))
+            {
                 casted = true;
+            }
             else if (lesser != "blessing of might" && ai->CastSpell("blessing of might", member))
+            {
                 casted = true;
+            }
         }
     }
     return casted;

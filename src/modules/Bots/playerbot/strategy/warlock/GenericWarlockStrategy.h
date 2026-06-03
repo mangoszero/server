@@ -7,15 +7,15 @@ namespace ai
 {
     class GenericWarlockStrategy : public RangedCombatStrategy
     {
-    public:
-        GenericWarlockStrategy(PlayerbotAI* ai);
-        virtual string getName()
-        {
-            return "warlock";
-        }
+        public:
+            GenericWarlockStrategy(PlayerbotAI* ai);
+            virtual string getName()
+            {
+                return "warlock";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual NextAction** getDefaultActions();
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual NextAction** getDefaultActions();
     };
 }

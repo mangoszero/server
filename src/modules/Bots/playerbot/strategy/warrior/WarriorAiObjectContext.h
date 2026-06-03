@@ -6,7 +6,7 @@ namespace ai
 {
     class WarriorAiObjectContext : public AiObjectContext
     {
-    public:
-        WarriorAiObjectContext(PlayerbotAI* ai);
+        public:
+            WarriorAiObjectContext(PlayerbotAI* ai);
     };
 }

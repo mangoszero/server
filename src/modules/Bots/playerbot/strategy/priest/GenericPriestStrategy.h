@@ -7,11 +7,10 @@ namespace ai
 {
     class GenericPriestStrategy : public CombatStrategy
     {
-    public:
-        GenericPriestStrategy(PlayerbotAI* ai);
+        public:
+            GenericPriestStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 }

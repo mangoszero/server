@@ -16,54 +16,54 @@ void GenericPaladinNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trig
     NonCombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "aura",
+            "aura",
         NextAction::array(0, new NextAction("devotion aura", 8.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "blessing",
+            "blessing",
         NextAction::array(0, new NextAction("blessing on party", 11.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member dead",
+            "party member dead",
         NextAction::array(0, new NextAction("redemption", 30.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium health",
+            "medium health",
         NextAction::array(0, new NextAction("flash of light", 25.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member medium health",
+            "party member medium health",
         NextAction::array(0, new NextAction("flash of light on party", 26.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "low health",
+            "low health",
         NextAction::array(0, new NextAction("holy light", 50.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member low health",
+            "party member low health",
         NextAction::array(0, new NextAction("holy light on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse cure disease",
+            "cleanse cure disease",
         NextAction::array(0, new NextAction("cleanse disease", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse party member cure disease",
+            "cleanse party member cure disease",
         NextAction::array(0, new NextAction("cleanse disease on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse cure poison",
+            "cleanse cure poison",
         NextAction::array(0, new NextAction("cleanse poison", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse party member cure poison",
+            "cleanse party member cure poison",
         NextAction::array(0, new NextAction("cleanse poison on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse cure magic",
+            "cleanse cure magic",
         NextAction::array(0, new NextAction("cleanse magic", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cleanse party member cure magic",
+            "cleanse party member cure magic",
         NextAction::array(0, new NextAction("cleanse magic on party", 40.0f), NULL)));
 }

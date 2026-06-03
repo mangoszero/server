@@ -7,19 +7,19 @@ using namespace ai;
 
 class TankPaladinStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
-public:
-    TankPaladinStrategyActionNodeFactory()
-    {
-        creators["blessing of sanctuary"] = &blessing_of_sanctuary;
-    }
-private:
-    static ActionNode* blessing_of_sanctuary(PlayerbotAI* ai)
-    {
-        return new ActionNode ("blessing of sanctuary",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("blessing of kings"), NULL),
-            /*C*/ NULL);
-    }
+    public:
+        TankPaladinStrategyActionNodeFactory()
+        {
+            creators["blessing of sanctuary"] = &blessing_of_sanctuary;
+        }
+    private:
+        static ActionNode* blessing_of_sanctuary(PlayerbotAI* ai)
+        {
+            return new ActionNode ("blessing of sanctuary",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("blessing of kings"), NULL),
+                /*C*/ NULL);
+        }
 };
 
 TankPaladinStrategy::TankPaladinStrategy(PlayerbotAI* ai) : GenericPaladinStrategy(ai)
@@ -37,34 +37,34 @@ void TankPaladinStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     GenericPaladinStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "judgement of light",
+            "judgement of light",
         NextAction::array(0, new NextAction("judgement of light", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium mana",
+            "medium mana",
         NextAction::array(0, new NextAction("judgement of wisdom", ACTION_NORMAL + 3), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "righteous fury",
+            "righteous fury",
         NextAction::array(0, new NextAction("righteous fury", ACTION_HIGH + 8), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "light aoe",
+            "light aoe",
         NextAction::array(0, new NextAction("hammer of the righteous", ACTION_HIGH + 6), new NextAction("avenger's shield", ACTION_HIGH + 6), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium aoe",
+            "medium aoe",
         NextAction::array(0, new NextAction("consecration", ACTION_HIGH + 6), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "lose aggro",
+            "lose aggro",
         NextAction::array(0, new NextAction("hand of reckoning", ACTION_HIGH + 7), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "holy shield",
+            "holy shield",
         NextAction::array(0, new NextAction("holy shield", ACTION_HIGH + 7), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "blessing",
+            "blessing",
         NextAction::array(0, new NextAction("blessing of sanctuary", ACTION_HIGH + 9), NULL)));
 }

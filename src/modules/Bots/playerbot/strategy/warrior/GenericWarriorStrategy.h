@@ -9,14 +9,14 @@ namespace ai
 
     class GenericWarriorStrategy : public MeleeCombatStrategy
     {
-    public:
-        GenericWarriorStrategy(PlayerbotAI* ai);
+        public:
+            GenericWarriorStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "warrior";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "warrior";
+            }
     };
 }

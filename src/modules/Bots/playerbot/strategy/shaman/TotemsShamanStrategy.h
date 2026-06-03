@@ -6,19 +6,19 @@ namespace ai
 {
     class TotemsShamanStrategy : public GenericShamanStrategy
     {
-    public:
-        TotemsShamanStrategy(PlayerbotAI* ai);
+        public:
+            TotemsShamanStrategy(PlayerbotAI* ai);
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "totems";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "totems";
+            }
 
-        virtual int GetType()
-        {
-            return STRATEGY_TYPE_HEAL;
-        }
+            virtual int GetType()
+            {
+                return STRATEGY_TYPE_HEAL;
+            }
     };
 }
