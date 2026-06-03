@@ -13,7 +13,9 @@ static Player* FindPartyMemberWithoutSustenance(Player* bot, Item *item)
 {
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return NULL;
+    }
 
     for (GroupReference* gref = group->GetFirstMember(); gref; gref = gref->next())
     {
@@ -42,7 +44,9 @@ static Player* FindPartyMemberWithoutSustenance(Player* bot, Item *item)
         FindLikeItemVisitor itemVisitor(item);
         bool hasItem = InventoryAction::FindPlayerItem(player, &itemVisitor) != NULL;
         if (!hasItem)
+        {
             return player;
+        }
     }
 
     return NULL;
@@ -51,9 +55,14 @@ static Player* FindPartyMemberWithoutSustenance(Player* bot, Item *item)
 bool GiveConjuredFoodAction::isUseful()
 {
     if (bot->IsInCombat())
+    {
         return false;
+    }
+
     if (!bot->GetGroup())
+    {
         return false;
+    }
 
     return !AI_VALUE2(list<Item*>, "inventory items", "conjured food").empty();
 }
@@ -78,7 +87,9 @@ bool GiveConjuredFoodAction::Execute(Event event)
 
     Item* newItem = target->StoreNewItemInInventorySlot(itemId, count);
     if (!newItem || target->CanUseItem(newItem->GetProto()) != EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     bot->DestroyItem(food->GetBagSlot(), food->GetSlot(), true);
     newItem->AddToUpdateQueueOf(target);
@@ -99,9 +110,14 @@ bool GiveConjuredFoodAction::Execute(Event event)
 bool GiveConjuredWaterAction::isUseful()
 {
     if (bot->IsInCombat())
+    {
         return false;
+    }
+
     if (!bot->GetGroup())
+    {
         return false;
+    }
 
     return !AI_VALUE2(list<Item*>, "inventory items", "conjured drink").empty();
 }
@@ -110,19 +126,25 @@ bool GiveConjuredWaterAction::Execute(Event event)
 {
     list<Item*> drinks = AI_VALUE2(list<Item*>, "inventory items", "conjured drink");
     if (drinks.empty())
+    {
         return false;
+    }
     Item* water = drinks.front();
 
     Player* target = FindPartyMemberWithoutSustenance(bot, water);
     if (!target)
+    {
         return false;
+    }
 
     uint32 itemId = water->GetEntry();
     uint32 count = water->GetCount();
 
     Item* newItem = target->StoreNewItemInInventorySlot(itemId, count);
     if (!newItem || target->CanUseItem(newItem->GetProto()) != EQUIP_ERR_OK)
+    {
         return false;
+    }
 
     bot->DestroyItem(water->GetBagSlot(), water->GetSlot(), true);
     newItem->AddToUpdateQueueOf(target);
@@ -149,20 +171,28 @@ uint32 CastConjureManaGemAction::FindBestConjureManaSpell()
         uint32 spellId = itr->first;
 
         if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        {
             continue;
+        }
 
         const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
         if (!pSpellInfo)
+        {
             continue;
+        }
 
         for (int i = 0; i < MAX_EFFECT_INDEX; i++)
         {
             if (pSpellInfo->Effect[i] != SPELL_EFFECT_CREATE_ITEM)
+            {
                 continue;
+            }
 
             uint32 itemId = pSpellInfo->EffectItemType[i];
             if (!itemId)
+            {
                 continue;
+            }
 
             ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
             if (!proto ||
@@ -176,7 +206,9 @@ uint32 CastConjureManaGemAction::FindBestConjureManaSpell()
             {
                 const SpellEntry* itemSpell = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
                 if (!itemSpell)
+                {
                     continue;
+                }
                 for (int k = 0; k < MAX_EFFECT_INDEX; k++)
                 {
                     if (itemSpell->Effect[k] == SPELL_EFFECT_ENERGIZE)
@@ -188,7 +220,9 @@ uint32 CastConjureManaGemAction::FindBestConjureManaSpell()
             }
 
             if (isManaGem && spellId > bestSpellId)
+            {
                 bestSpellId = spellId;
+            }
 
             break;
         }
@@ -206,7 +240,9 @@ bool CastConjureManaGemAction::isPossible()
 bool CastConjureManaGemAction::Execute(Event event)
 {
     if (!m_bestSpellId)
+    {
         return false;
+    }
 
     return ai->CastSpell(m_bestSpellId, GetTarget());
 }

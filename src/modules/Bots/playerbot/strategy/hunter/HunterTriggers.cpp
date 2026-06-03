@@ -17,11 +17,15 @@ bool HunterNoStingsActiveTrigger::IsActive()
 bool HuntersPetDeadTrigger::IsActive()
 {
     if (AI_VALUE2(bool, "mounted", "self target"))
+    {
         return false;
+    }
 
     Unit* pet = AI_VALUE(Unit*, "pet target");
     if (pet)
+    {
         return AI_VALUE2(bool, "dead", "pet target");
+    }
 
     // Pet not in world — check DB to catch the common case where the corpse timer has already expired
     PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
@@ -38,7 +42,9 @@ bool HuntersPetLowHealthTrigger::IsActive()
 bool HuntersPetUnhappyTrigger::IsActive()
 {
     if (AI_VALUE2(bool, "mounted", "self target"))
+    {
         return false;
+    }
 
     Pet* pet = bot->GetPet();
     return pet && pet->IsAlive() && pet->GetHappinessState() == UNHAPPY;

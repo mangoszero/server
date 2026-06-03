@@ -29,7 +29,9 @@ Value<Unit*>* CastFreezingTrap::GetTargetValue()
 bool CastRevivePetAction::isPossible()
 {
     if (bot->GetPet())
+    {
         return CastBuffSpellAction::isPossible();
+    }
     PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
     return status == PET_DB_DEAD || status == PET_DB_NO_PET;
 }
@@ -54,11 +56,15 @@ bool FeedPetAction::isUseful()
 {
     Unit* pet = GetTarget();
     if (!pet || !pet->IsAlive())
+    {
         return false;
+    }
 
     // Pet already has the Feed Pet Effect aura
     if (pet->HasAura(SPELL_ID_FEED_PET_EFFECT))
+    {
         return false;
+    }
 
     uint32 spellId = AI_VALUE2(uint32, "spell id", "feed pet");
     return spellId && AI_VALUE2(Item*, "item for spell", spellId);
@@ -69,7 +75,10 @@ bool HunterMeleeAction::isUseful()
     // Only swing if enemy is already in our face AND targeting us.
     //  Perhaps in the future a ranged/melee hunter strategy would be nice.
     Unit* target = AI_VALUE(Unit*, "current target");
-    if (!target || !target->IsAlive()) return false;
+    if (!target || !target->IsAlive())
+    {
+        return false;
+    }
     bool victim = target->getVictim() == bot;
     float dist = AI_VALUE2(float, "distance", "current target");
     return victim && dist <= ATTACK_DISTANCE;
@@ -78,7 +87,10 @@ bool HunterMeleeAction::isUseful()
 bool HunterMeleeAction::Execute(Event event)
 {
     Unit* target = AI_VALUE(Unit*, "current target");
-    if (!target) return false;
+    if (!target)
+    {
+        return false;
+    }
     bot->Attack(target, true);
     return true;
 }

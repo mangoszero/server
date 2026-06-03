@@ -7,14 +7,14 @@ namespace ai
 {
     class GenericMageStrategy : public RangedCombatStrategy
     {
-    public:
-        GenericMageStrategy(PlayerbotAI* ai);
-        virtual string getName()
-        {
-            return "mage";
-        }
+        public:
+            GenericMageStrategy(PlayerbotAI* ai);
+            virtual string getName()
+            {
+                return "mage";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 }

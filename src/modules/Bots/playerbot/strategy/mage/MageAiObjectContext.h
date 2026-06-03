@@ -6,7 +6,7 @@ namespace ai
 {
     class MageAiObjectContext : public AiObjectContext
     {
-    public:
-        MageAiObjectContext(PlayerbotAI* ai);
+        public:
+            MageAiObjectContext(PlayerbotAI* ai);
     };
 }

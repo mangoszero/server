@@ -7,53 +7,53 @@ namespace ai
 {
     class HunterBuffSpeedStrategy : public NonCombatStrategy
     {
-    public:
-        HunterBuffSpeedStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "bspeed";
-        }
+        public:
+            HunterBuffSpeedStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "bspeed";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 
     class HunterBuffManaStrategy : public NonCombatStrategy
     {
-    public:
-        HunterBuffManaStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "bmana";
-        }
+        public:
+            HunterBuffManaStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "bmana";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 
     class HunterBuffDpsStrategy : public NonCombatStrategy
     {
-    public:
-        HunterBuffDpsStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "bdps";
-        }
+        public:
+            HunterBuffDpsStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "bdps";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 
     class HunterNatureResistanceStrategy : public NonCombatStrategy
     {
-    public:
-        HunterNatureResistanceStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "rnature";
-        }
+        public:
+            HunterNatureResistanceStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "rnature";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 }
