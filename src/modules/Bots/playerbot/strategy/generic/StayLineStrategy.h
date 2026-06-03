@@ -6,13 +6,13 @@ namespace ai
 {
     class StayLineStrategy : public NonCombatStrategy
     {
-    public:
-        StayLineStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "stay line";
-        }
+        public:
+            StayLineStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "stay line";
+            }
 
-        virtual NextAction** getDefaultActions();
+            virtual NextAction** getDefaultActions();
     };
 }

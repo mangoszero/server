@@ -6,11 +6,11 @@ namespace ai
 {
     class PartyMemberToResurrect : public PartyMemberValue
     {
-    public:
-        PartyMemberToResurrect(PlayerbotAI* ai) :
-        PartyMemberValue(ai) {}
+        public:
+            PartyMemberToResurrect(PlayerbotAI* ai) :
+            PartyMemberValue(ai) {}
 
-    protected:
-        virtual Unit* Calculate();
+        protected:
+            virtual Unit* Calculate();
     };
 }

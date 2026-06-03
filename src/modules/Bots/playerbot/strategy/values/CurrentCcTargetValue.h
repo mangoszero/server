@@ -7,10 +7,10 @@ namespace ai
 
     class CurrentCcTargetValue : public TargetValue, public Qualified
     {
-    public:
-        CurrentCcTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            CurrentCcTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate();
+        public:
+            Unit* Calculate();
     };
 }

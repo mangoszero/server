@@ -6,18 +6,17 @@
 namespace ai
 {
     class WhoAction : public InventoryAction {
-    public:
-        WhoAction(PlayerbotAI* ai) : InventoryAction(ai, "who") {}
+        public:
+            WhoAction(PlayerbotAI* ai) : InventoryAction(ai, "who") {}
 
-    public:
-        virtual bool Execute(Event event);
-        static map<uint32, string> skills;
+        public:
+            virtual bool Execute(Event event);
+            static map<uint32, string> skills;
 
-    private:
-        void InitSkills();
-        string QueryTrade(string &text);
-        string QuerySkill(string text);
-        string QuerySpec(string &text);
+        private:
+            void InitSkills();
+            string QueryTrade(string &text);
+            string QuerySkill(string text);
+            string QuerySpec(string &text);
     };
-
 }

@@ -7,12 +7,12 @@ namespace ai
 {
     class PossibleTargetsValue : public NearestUnitsValue
     {
-    public:
-        PossibleTargetsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
-        NearestUnitsValue(ai) {}
+        public:
+            PossibleTargetsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
+            NearestUnitsValue(ai) {}
 
-    protected:
-        virtual void FindUnits(list<Unit*> &targets);
-        virtual bool AcceptUnit(Unit* unit);
+        protected:
+            virtual void FindUnits(list<Unit*> &targets);
+            virtual bool AcceptUnit(Unit* unit);
     };
 }

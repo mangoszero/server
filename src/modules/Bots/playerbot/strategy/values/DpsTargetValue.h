@@ -7,10 +7,10 @@ namespace ai
 
     class DpsTargetValue : public TargetValue
     {
-    public:
-        DpsTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            DpsTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate() override;
+        public:
+            Unit* Calculate() override;
     };
 }

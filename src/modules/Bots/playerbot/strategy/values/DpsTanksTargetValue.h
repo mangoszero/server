@@ -6,16 +6,18 @@ namespace ai
 {
     class DpsTanksTargetValue : public TargetValue
     {
-    public:
-        DpsTanksTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            DpsTanksTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate() override
-        {
-            Player* tank = ai->GetGroupTank(bot);
-            if (!tank)
-                return NULL;
-            return tank->getVictim();
-        }
+        public:
+            Unit* Calculate() override
+            {
+                Player* tank = ai->GetGroupTank(bot);
+                if (!tank)
+                {
+                    return NULL;
+                }
+                return tank->getVictim();
+            }
     };
 }

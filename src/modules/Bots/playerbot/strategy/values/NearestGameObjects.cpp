@@ -11,22 +11,22 @@ using namespace MaNGOS;
 
 class AnyGameObjectInObjectRangeCheck
 {
-public:
-    AnyGameObjectInObjectRangeCheck(WorldObject const* obj, float range) : i_obj(obj), i_range(range) {}
-    WorldObject const& GetFocusObject() const { return *i_obj; }
-    bool operator()(GameObject* u)
-    {
-        if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo())
+    public:
+        AnyGameObjectInObjectRangeCheck(WorldObject const* obj, float range) : i_obj(obj), i_range(range) {}
+        WorldObject const& GetFocusObject() const { return *i_obj; }
+        bool operator()(GameObject* u)
         {
-            return true;
+            if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo())
+            {
+                return true;
+            }
+
+            return false;
         }
 
-        return false;
-    }
-
-private:
-    WorldObject const* i_obj;
-    float i_range;
+    private:
+        WorldObject const* i_obj;
+        float i_range;
 };
 
 list<ObjectGuid> NearestGameObjects::Calculate()

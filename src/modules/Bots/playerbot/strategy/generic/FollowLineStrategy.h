@@ -5,13 +5,13 @@ namespace ai
 {
     class FollowLineStrategy : public NonCombatStrategy
     {
-    public:
-        FollowLineStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
-        virtual string getName()
-        {
-            return "follow line";
-        }
+        public:
+            FollowLineStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai) {}
+            virtual string getName()
+            {
+                return "follow line";
+            }
 
-        virtual NextAction** getDefaultActions();
+            virtual NextAction** getDefaultActions();
     };
 }

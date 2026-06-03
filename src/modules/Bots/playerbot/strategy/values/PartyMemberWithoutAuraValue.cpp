@@ -6,24 +6,24 @@ using namespace ai;
 
 class PlayerWithoutAuraPredicate : public FindPlayerPredicate, public PlayerbotAIAware
 {
-public:
-    PlayerWithoutAuraPredicate(PlayerbotAI* ai, string aura) :
+    public:
+        PlayerWithoutAuraPredicate(PlayerbotAI* ai, string aura) :
         PlayerbotAIAware(ai), FindPlayerPredicate(), aura(aura) {}
 
-public:
-    virtual bool Check(Unit* unit)
-    {
-        Pet* pet = dynamic_cast<Pet*>(unit);
-        if (pet && (pet->getPetType() == MINI_PET || pet->getPetType() == SUMMON_PET))
+    public:
+        virtual bool Check(Unit* unit)
         {
-            return false;
+            Pet* pet = dynamic_cast<Pet*>(unit);
+            if (pet && (pet->getPetType() == MINI_PET || pet->getPetType() == SUMMON_PET))
+            {
+                return false;
+            }
+
+            return unit->IsAlive() && !ai->HasAura(aura, unit);
         }
 
-        return unit->IsAlive() && !ai->HasAura(aura, unit);
-    }
-
-private:
-    string aura;
+    private:
+        string aura;
 };
 
 Unit* PartyMemberWithoutAuraValue::Calculate()

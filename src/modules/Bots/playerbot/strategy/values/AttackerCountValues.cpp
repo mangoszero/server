@@ -97,18 +97,18 @@ uint8 BalancePercentValue::Calculate()
 
         switch (creature->GetCreatureInfo()->Rank)
         {
-        case CREATURE_ELITE_RARE:
-            level *= 2;
-            break;
-        case CREATURE_ELITE_ELITE:
-            level *= 3;
-            break;
-        case CREATURE_ELITE_RAREELITE:
-            level *= 3;
-            break;
-        case CREATURE_ELITE_WORLDBOSS:
-            level *= 5;
-            break;
+            case CREATURE_ELITE_RARE:
+                level *= 2;
+                break;
+            case CREATURE_ELITE_ELITE:
+                level *= 3;
+                break;
+            case CREATURE_ELITE_RAREELITE:
+                level *= 3;
+                break;
+            case CREATURE_ELITE_WORLDBOSS:
+                level *= 5;
+                break;
         }
         attackerLevel += level;
     }

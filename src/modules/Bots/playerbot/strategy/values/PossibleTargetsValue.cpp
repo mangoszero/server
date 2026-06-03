@@ -19,5 +19,5 @@ void PossibleTargetsValue::FindUnits(list<Unit*> &targets)
 bool PossibleTargetsValue::AcceptUnit(Unit* unit)
 {
     return !unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) &&
-            (unit->IsHostileTo(bot) || (unit->getLevel() > 1 && !unit->IsFriendlyTo(bot)));
+        (unit->IsHostileTo(bot) || (unit->getLevel() > 1 && !unit->IsFriendlyTo(bot)));
 }

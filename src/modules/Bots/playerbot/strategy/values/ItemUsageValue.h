@@ -14,14 +14,14 @@ namespace ai
 
     class ItemUsageValue : public CalculatedValue<ItemUsage>, public Qualified
     {
-    public:
-        ItemUsageValue(PlayerbotAI* ai) : CalculatedValue<ItemUsage>(ai) {}
+        public:
+            ItemUsageValue(PlayerbotAI* ai) : CalculatedValue<ItemUsage>(ai) {}
 
-    public:
-        virtual ItemUsage Calculate();
+        public:
+            virtual ItemUsage Calculate();
 
-    private:
-        ItemUsage QueryItemUsageForEquip(ItemPrototype const * proto);
-        bool IsItemUsefulForSkill(ItemPrototype const * proto);
+        private:
+            ItemUsage QueryItemUsageForEquip(ItemPrototype const * proto);
+            bool IsItemUsefulForSkill(ItemPrototype const * proto);
     };
 }

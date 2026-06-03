@@ -5,8 +5,8 @@
 
 using namespace ai;
 
-SpellIdValue::SpellIdValue(PlayerbotAI* ai) :
-        CalculatedValue<uint32>(ai, "spell id", 5)
+SpellIdValue::SpellIdValue(PlayerbotAI* ai)
+    : CalculatedValue<uint32>(ai, "spell id", 5)
 {
 }
 
@@ -76,9 +76,7 @@ uint32 SpellIdValue::Calculate()
         }
         if (useThisSpell)
         {
-        {
             foundSpellId = spellId;
-        }
             foundMatchUsesNoReagents = usesNoReagents;
         }
     }

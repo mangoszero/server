@@ -6,11 +6,11 @@ namespace ai
 {
     class PartyMemberToDispel : public PartyMemberValue, Qualified
     {
-    public:
-        PartyMemberToDispel(PlayerbotAI* ai) :
-        PartyMemberValue(ai) {}
+        public:
+            PartyMemberToDispel(PlayerbotAI* ai) :
+            PartyMemberValue(ai) {}
 
-    protected:
-        virtual Unit* Calculate();
+        protected:
+            virtual Unit* Calculate();
     };
 }

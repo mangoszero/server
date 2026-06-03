@@ -5,7 +5,7 @@ namespace ai
 {
     class RtiValue : public ManualSetValue<string>
     {
-    public:
-        RtiValue(PlayerbotAI* ai);
+        public:
+            RtiValue(PlayerbotAI* ai);
     };
 }

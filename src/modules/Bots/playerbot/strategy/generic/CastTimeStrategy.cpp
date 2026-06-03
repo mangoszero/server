@@ -7,7 +7,10 @@ using namespace ai;
 
 float CastTimeMultiplier::GetValue(Action* action)
 {
-    if (action == NULL) return 1.0f;
+    if (action == NULL)
+    {
+        return 1.0f;
+    }
 
     uint8 targetHealth = AI_VALUE2(uint8, "health", "current target");
     string name = action->getName();

@@ -6,10 +6,10 @@ namespace ai
 {
     class LeastHpTargetValue : public TargetValue
     {
-    public:
-        LeastHpTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            LeastHpTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate();
+        public:
+            Unit* Calculate();
     };
 }

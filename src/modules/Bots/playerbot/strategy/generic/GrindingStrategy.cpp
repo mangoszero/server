@@ -12,7 +12,7 @@ NextAction** GrindingStrategy::getDefaultActions()
 void GrindingStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "no target",
+            "no target",
         NextAction::array(0,
         new NextAction("attack anything", 5.0f), NULL)));
 }

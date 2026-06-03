@@ -97,11 +97,11 @@ string WhoAction::QuerySkill(string text)
             ObjectGuid guid = bot->GetObjectGuid();
             string data = "0";
             out << "|cFFFFFF00|Htrade:" << spellId << ":" << value << ":" << maxSkill << ":"
-                    << std::hex << std::uppercase << guid.GetRawValue()
-                    << std::nouppercase << std::dec << ":" << data
-                    << "|h[" << skills[skill] << "]|h|r"
-                    << " |h|cff00ff00" << value << "|h|cffffffff/"
-                    << "|h|cff00ff00" << maxSkill << "|h|cffffffff ";
+                << std::hex << std::uppercase << guid.GetRawValue()
+                << std::nouppercase << std::dec << ":" << data
+                << "|h[" << skills[skill] << "]|h|r"
+                << " |h|cff00ff00" << value << "|h|cffffffff/"
+                << "|h|cff00ff00" << maxSkill << "|h|cffffffff ";
         }
     }
 

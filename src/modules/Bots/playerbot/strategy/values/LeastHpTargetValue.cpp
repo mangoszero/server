@@ -8,23 +8,23 @@ using namespace std;
 
 class FindLeastHpTargetStrategy : public FindTargetStrategy
 {
-public:
-    FindLeastHpTargetStrategy(PlayerbotAI* ai) : FindTargetStrategy(ai)
-    {
-        minHealth = 0;
-    }
-
-public:
-    virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager)
-    {
-        if (!result || result->GetHealth() > attacker->GetHealth())
+    public:
+        FindLeastHpTargetStrategy(PlayerbotAI* ai) : FindTargetStrategy(ai)
         {
-            result = attacker;
+            minHealth = 0;
         }
-    }
 
-protected:
-    float minHealth;
+    public:
+        virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager)
+        {
+            if (!result || result->GetHealth() > attacker->GetHealth())
+            {
+                result = attacker;
+            }
+        }
+
+    protected:
+        float minHealth;
 };
 
 Unit* LeastHpTargetValue::Calculate()

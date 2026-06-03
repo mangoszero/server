@@ -11,22 +11,22 @@ namespace MaNGOS
 {
     class GameObjectByGuidInRangeCheck
     {
-    public:
-        GameObjectByGuidInRangeCheck(WorldObject const* obj, ObjectGuid guid, float range) : i_obj(obj), i_range(range), i_guid(guid) {}
-        WorldObject const& GetFocusObject() const { return *i_obj; }
-        bool operator()(GameObject* u)
-        {
-            if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo() && u->GetObjectGuid() == i_guid)
+        public:
+            GameObjectByGuidInRangeCheck(WorldObject const* obj, ObjectGuid guid, float range) : i_obj(obj), i_range(range), i_guid(guid) {}
+            WorldObject const& GetFocusObject() const { return *i_obj; }
+            bool operator()(GameObject* u)
             {
-                return true;
-            }
+                if (u && i_obj->IsWithinDistInMap(u, i_range) && u->isSpawned() && u->GetGOInfo() && u->GetObjectGuid() == i_guid)
+                {
+                    return true;
+                }
 
-            return false;
-        }
-    private:
-        WorldObject const* i_obj;
-        float i_range;
-        ObjectGuid i_guid;
+                return false;
+            }
+        private:
+            WorldObject const* i_obj;
+            float i_range;
+            ObjectGuid i_guid;
     };
 };
 

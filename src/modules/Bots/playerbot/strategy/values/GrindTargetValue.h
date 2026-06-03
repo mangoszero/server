@@ -7,14 +7,14 @@ namespace ai
 
     class GrindTargetValue : public TargetValue
     {
-    public:
-        GrindTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            GrindTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate();
+        public:
+            Unit* Calculate();
 
-    private:
-        int GetTargetingPlayerCount(Unit* unit);
-        Unit* FindTargetForGrinding(int assistCount);
+        private:
+            int GetTargetingPlayerCount(Unit* unit);
+            Unit* FindTargetForGrinding(int assistCount);
     };
 }
