@@ -47,11 +47,12 @@ bool WaypointBehavior::isEmpty()
     }
 
     for (int i = 0; i < MAX_WAYPOINT_TEXT; ++i)
+    {
         if (textid[i])
         {
             return false;
         }
-
+    }
     return true;
 }
 
@@ -126,10 +127,10 @@ void WaypointManager::Load()
         delete result;
 
         result = WorldDatabase.Query(
-                                    //       0     1        2             3             4             5           6
-                                    "SELECT `id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
-                                    // 7         8          9          10         11         12       13       14             15        16
-                                    "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement`");
+            //           0     1        2             3             4             5           6
+                "SELECT `id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
+            //    7          8          9          10         11         12       13       14             15        16
+                "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement`");
 
         BarGoLink bar(result->GetRowCount());
 
@@ -172,11 +173,15 @@ void WaypointManager::Load()
             {
                 QueryResult* result1 = WorldDatabase.PQuery("SELECT `id`, `map` FROM `creature` WHERE `guid` = '%u'", id);
                 if (result1)
+                {
                     sLog.outErrorDb("Creature (guidlow %d, entry %d) have invalid coordinates in his waypoint %d (X: %f, Y: %f).",
-                                    id, result1->Fetch()[0].GetUInt32(), point, node.x, node.y);
+                        id, result1->Fetch()[0].GetUInt32(), point, node.x, node.y);
+                }
                 else
+                {
                     sLog.outErrorDb("Waypoint path %d, have invalid coordinates in his waypoint %d (X: %f, Y: %f).",
-                                    id, point, node.x, node.y);
+                        id, point, node.x, node.y);
+                }
 
                 MaNGOS::NormalizeMapCoord(node.x);
                 MaNGOS::NormalizeMapCoord(node.y);
@@ -304,10 +309,10 @@ void WaypointManager::Load()
         delete result;
 
         result = WorldDatabase.Query(
-                                    //       0        1        2             3             4             5           6
-                                    "SELECT `entry`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
-                                    // 7         8          9          10         11         12       13       14             15        16
-                                    "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement_template`");
+            //           0        1        2             3             4             5           6
+                "SELECT `entry`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`,"
+            //    7          8          9          10         11         12       13       14             15        16
+                "`textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `orientation`, `model1`, `model2` FROM `creature_movement_template`");
 
         BarGoLink bar(result->GetRowCount());
 
@@ -341,13 +346,13 @@ void WaypointManager::Load()
             if (!MaNGOS::IsValidMapCoord(node.x, node.y, node.z, node.orientation))
             {
                 sLog.outErrorDb("Table creature_movement_template for entry %u (point %u) are using invalid coordinates position_x: %f, position_y: %f)",
-                                entry, point, node.x, node.y);
+                    entry, point, node.x, node.y);
 
                 MaNGOS::NormalizeMapCoord(node.x);
                 MaNGOS::NormalizeMapCoord(node.y);
 
                 sLog.outErrorDb("Table creature_movement_template for entry %u (point %u) are auto corrected to normalized position_x=%f, position_y=%f",
-                                entry, point, node.x, node.y);
+                    entry, point, node.x, node.y);
 
                 WorldDatabase.PExecute("UPDATE `creature_movement_template` SET `position_x` = '%f', `position_y` = '%f' WHERE `entry` = %u AND `point` = %u", node.x, node.y, entry, point);
             }
@@ -792,7 +797,7 @@ inline void CheckWPText(bool isTemplate, uint32 entryOrGuid, uint32 point, Waypo
         if (!sObjectMgr.GetMangosStringLocale(be->textid[j]))
         {
             sLog.outErrorDb("Table `creature_movement%s %u, PointId %u has textid%u with non existing textid %i.",
-                            isTemplate ? "_template` Entry:" : "` Id:", entryOrGuid, point, j, be->textid[j]);
+                isTemplate ? "_template` Entry:" : "` Id:", entryOrGuid, point, j, be->textid[j]);
             be->textid[j] = 0;
             ++zeroCount;
             continue;
@@ -818,18 +823,22 @@ void WaypointManager::CheckTextsExistance(std::set<int32>& ids)
     for (WaypointPathMap::const_iterator pmItr = m_pathMap.begin(); pmItr != m_pathMap.end(); ++pmItr)
     {
         for (WaypointPath::const_iterator pItr = pmItr->second.begin(); pItr != pmItr->second.end(); ++pItr)
+        {
             if (pItr->second.behavior)
             {
                 CheckWPText(false, pmItr->first, pItr->first, pItr->second.behavior, ids);
             }
+        }
     }
 
     for (WaypointPathMap::const_iterator pmItr = m_pathTemplateMap.begin(); pmItr != m_pathTemplateMap.end(); ++pmItr)
     {
         for (WaypointPath::const_iterator pItr = pmItr->second.begin(); pItr != pmItr->second.end(); ++pItr)
+        {
             if (pItr->second.behavior)
             {
                 CheckWPText(true, pmItr->first, pItr->first, pItr->second.behavior, ids);
             }
+        }
     }
 }

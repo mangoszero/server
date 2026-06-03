@@ -252,14 +252,18 @@ class Guild
         }
 
         template<class Do>
-        void BroadcastWorker(Do& _do, Player* except = NULL)
+            void BroadcastWorker(Do& _do, Player* except = NULL)
         {
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
+            {
                 if (Player* player = sObjectAccessor.FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
+                {
                     if (player != except)
                     {
                         _do(player);
                     }
+                }
+            }
         }
 
         void CreateRank(std::string name, uint32 rights);
@@ -290,11 +294,12 @@ class Guild
         MemberSlot* GetMemberSlot(const std::string& name)
         {
             for (MemberList::iterator itr = members.begin(); itr != members.end(); ++itr)
+            {
                 if (itr->second.Name == name)
                 {
                     return &itr->second;
                 }
-
+            }
             return NULL;
         }
 

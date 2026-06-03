@@ -92,7 +92,7 @@ class GameEventMgr
         void StartEvent(uint16 event_id, bool overwrite = false, bool resume = false);
         void StopEvent(uint16 event_id, bool overwrite = false);
         template<typename T>
-        int16 GetGameEventId(uint32 guid_or_poolid);
+            int16 GetGameEventId(uint32 guid_or_poolid);
 
         GameEventCreatureData const* GetCreatureUpdateDataForActiveEvent(uint32 lowguid) const;
     private:
@@ -103,9 +103,9 @@ class GameEventMgr
         void UpdateCreatureData(int16 event_id, bool activate);
         void UpdateEventQuests(uint16 event_id, bool activate);
         void SendEventMails(int16 event_id);
-       // To implement for GameObjectAI - see code in CMangos
-       // void OnEventHappened(uint16 event_id, bool activate, bool resume);
-       // void ComputeEventStartAndEndTime(GameEventData& data);
+        // To implement for GameObjectAI - see code in CMangos
+        // void OnEventHappened(uint16 event_id, bool activate, bool resume);
+        // void ComputeEventStartAndEndTime(GameEventData& data);
 
     protected:
         typedef std::list<uint32> GuidList;

@@ -5,18 +5,18 @@ namespace ai
 {
     class IsFacingValue : public BoolCalculatedValue, public Qualified
     {
-    public:
-        IsFacingValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
+        public:
+            IsFacingValue(PlayerbotAI* ai) : BoolCalculatedValue(ai) {}
 
-        virtual bool Calculate()
-        {
-            Unit* target = AI_VALUE(Unit*, qualifier);
-            if (!target)
+            virtual bool Calculate()
             {
-                return false;
-            }
+                Unit* target = AI_VALUE(Unit*, qualifier);
+                if (!target)
+                {
+                    return false;
+                }
 
-            return bot->IsInFront(target, sPlayerbotAIConfig.sightDistance, M_PI_F / 3.0f);
-        }
+                return bot->IsInFront(target, sPlayerbotAIConfig.sightDistance, M_PI_F / 3.0f);
+            }
     };
 }

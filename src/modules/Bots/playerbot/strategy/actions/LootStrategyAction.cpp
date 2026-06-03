@@ -97,15 +97,15 @@ string LootStrategyAction::LootStrategy2string(LootStrategy lootStrategy)
 {
     switch (lootStrategy)
     {
-    case LOOTSTRATEGY_ALL:
-        return "all";
-    case LOOTSTRATEGY_QUEST:
-        return "quest";
-    case LOOTSTRATEGY_SKILL:
-        return "skill";
-    case LOOTSTRATEGY_GRAY:
-        return "gray";
-    default:
-        return "normal";
+        case LOOTSTRATEGY_ALL:
+            return "all";
+        case LOOTSTRATEGY_QUEST:
+            return "quest";
+        case LOOTSTRATEGY_SKILL:
+            return "skill";
+        case LOOTSTRATEGY_GRAY:
+            return "gray";
+        default:
+            return "normal";
     }
 }

@@ -34,7 +34,11 @@
 #include "Database/DatabaseEnv.h"
 
 // the default client version with info in warden_checks; for other version checks, see warden_build_specific
+#if defined(CLASSIC)
 #define DEFAULT_CLIENT_BUILD  5875
+#elif defined(TBC)
+#define DEFAULT_CLIENT_BUILD  8606
+#endif
 
 /**
  * @brief Warden opcode enumeration
@@ -182,7 +186,7 @@ class Warden
         void DecryptData(uint8* buffer, uint32 length);
         void EncryptData(uint8* buffer, uint32 length);
 
-    void SetNewState(WardenState::Value state);
+        void SetNewState(WardenState::Value state);
 
         static bool IsValidCheckSum(uint32 checksum, const uint8 *data, const uint16 length);
         static uint32 BuildChecksum(const uint8 *data, uint32 length);

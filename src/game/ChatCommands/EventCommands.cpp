@@ -145,8 +145,8 @@ bool ChatHandler::HandleEventInfoCommand(char* args)
     std::string lengthStr = secsToTimeString(eventData.length * MINUTE);
 
     PSendSysMessage(LANG_EVENT_INFO, event_id, eventData.description.c_str(), activeStr,
-                    startTimeStr.c_str(), endTimeStr.c_str(), occurenceStr.c_str(), lengthStr.c_str(),
-                    nextStr.c_str());
+        startTimeStr.c_str(), endTimeStr.c_str(), occurenceStr.c_str(), lengthStr.c_str(),
+        nextStr.c_str());
     return true;
 }
 

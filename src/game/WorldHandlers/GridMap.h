@@ -191,7 +191,7 @@ class GridMap
 };
 
 template<typename Countable>
-class Referencable
+    class Referencable
 {
     public:
         Referencable()
@@ -295,8 +295,8 @@ class TerrainInfo : public Referencable<AtomicLong>
 // class for managing TerrainData object and all sort of geometry querying operations
 class TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex> >
 {
-        typedef UNORDERED_MAP<uint32,  TerrainInfo*> TerrainDataMap;
-        friend class MaNGOS::OperatorNew<TerrainManager>;
+    typedef UNORDERED_MAP<uint32,  TerrainInfo*> TerrainDataMap;
+    friend class MaNGOS::OperatorNew<TerrainManager>;
 
     public:
         TerrainInfo* LoadTerrain(const uint32 mapId);

@@ -5,12 +5,10 @@
 namespace ai
 {
     class ChangeTalentsAction : public Action {
-    public:
-        ChangeTalentsAction(PlayerbotAI* ai) : Action(ai, "talents") {}
+        public:
+            ChangeTalentsAction(PlayerbotAI* ai) : Action(ai, "talents") {}
 
-    public:
-        virtual bool Execute(Event event);
-
+        public:
+            virtual bool Execute(Event event);
     };
-
 }

@@ -303,13 +303,13 @@ GroupQueueInfo* BattleGroundQueue::AddGroup(Player* leader, Group* grp, BattleGr
                 if (sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_QUEUE_ANNOUNCER_JOIN) == 1)
                 {
                     ChatHandler(leader).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_SELF, bgName, q_min_level, q_min_level + 10,
-                                                        qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
+                        qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
                 }
                 // System message
                 else
                 {
                     sWorld.SendWorldText(LANG_BG_QUEUE_ANNOUNCE_WORLD, bgName, q_min_level, q_min_level + 10,
-                                         qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
+                        qAlliance, (MinPlayers > qAlliance) ? MinPlayers - qAlliance : (uint32)0, qHorde, (MinPlayers > qHorde) ? MinPlayers - qHorde : (uint32)0);
                 }
             }
         }
@@ -417,7 +417,7 @@ void BattleGroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
 
     for (int8 bracket_id_tmp = MAX_BATTLEGROUND_BRACKETS - 1; bracket_id_tmp >= 0 && bracket_id == -1; --bracket_id_tmp)
     {
-        // we must check premade and normal team's queue - because when players from premade are joining bg,
+        // we must check premade and normal team's queue - because when players from premade are joining the bg
         // they leave groupinfo so we can't use its players size to find out index
         for (uint8 j = index; j < BG_QUEUE_GROUP_TYPES_COUNT; j += BG_QUEUE_NORMAL_ALLIANCE)
         {
@@ -491,9 +491,9 @@ bool BattleGroundQueue::IsPlayerInvited(ObjectGuid pl_guid, const uint32 bgInsta
 {
     // ACE_Guard<ACE_Recursive_Thread_Mutex> g(m_Lock);
     QueuedPlayersMap::const_iterator qItr = m_QueuedPlayers.find(pl_guid);
-    return (qItr != m_QueuedPlayers.end()
-            && qItr->second.GroupInfo->IsInvitedToBGInstanceGUID == bgInstanceGuid
-            && qItr->second.GroupInfo->RemoveInviteTime == removeTime);
+    return (qItr != m_QueuedPlayers.end() &&
+        qItr->second.GroupInfo->IsInvitedToBGInstanceGUID == bgInstanceGuid &&
+        qItr->second.GroupInfo->RemoveInviteTime == removeTime);
 }
 
 /**
@@ -581,7 +581,7 @@ bool BattleGroundQueue::InviteGroupToBG(GroupQueueInfo* ginfo, BattleGround* bg,
             uint32 queueSlot = plr->GetBattleGroundQueueIndex(bgQueueTypeId);
 
             DEBUG_LOG("Battleground: invited %s to BG instance %u queueindex %u bgtype %u, I can't help it if they don't press the enter battle button.",
-                      plr->GetGuidStr().c_str(), bg->GetInstanceID(), queueSlot, bg->GetTypeID());
+                plr->GetGuidStr().c_str(), bg->GetInstanceID(), queueSlot, bg->GetTypeID());
 
             // send status packet
             sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME, 0);
@@ -634,13 +634,13 @@ void BattleGroundQueue::FillPlayersToBG(BattleGround* bg, BattleGroundBracketId 
         return;
     }
 
-    /*
-    if we reached this code, then we have to solve NP - complete problem called Subset sum problem
-    So one solution is to check all possible invitation subgroups, or we can use these conditions:
-    1. Last time when BattleGroundQueue::Update was executed we invited all possible players - so there is only small possibility
-        that we will invite now whole queue, because only 1 change has been made to queues from the last BattleGroundQueue::Update call
-    2. Other thing we should consider is group order in queue
-    */
+    /**
+     * If we reached this code, then we have to solve NP - complete problem called Subset sum problem
+     * So one solution is to check all possible invitation subgroups, or we can use these conditions:
+     * 1. Last time when BattleGroundQueue::Update was executed we invited all possible players - so there is only small possibility
+     * that we will invite now whole queue, because only 1 change has been made to queues from the last BattleGroundQueue::Update call
+     * 2. Other thing we should consider is group order in queue
+     */
 
     // At first we need to compare free space in bg and our selection pool
     int32 diffAli   = aliFree   - int32(m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount());
@@ -810,8 +810,9 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint3
     {
         j = TEAM_INDEX_HORDE;
     }
-    if (sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_INVITATION_TYPE) != 0
-        && m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() >= minPlayers && m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount() >= minPlayers)
+
+    if (sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_INVITATION_TYPE) != 0 &&
+        m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() >= minPlayers && m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount() >= minPlayers)
     {
         // we will try to invite more groups to team with less players indexed by j
         ++(itr_team[j]);                                    // this will not cause a crash, because for cycle above reached break;
@@ -840,11 +841,11 @@ bool BattleGroundQueue::CheckNormalMatch(BattleGroundBracketId bracket_id, uint3
     return m_SelectionPools[TEAM_INDEX_ALLIANCE].GetPlayerCount() >= minPlayers && m_SelectionPools[TEAM_INDEX_HORDE].GetPlayerCount() >= minPlayers;
 }
 
-/*
-this method is called when group is inserted, or player / group is removed from BG Queue - there is only one player's status changed, so we don't use while (true) cycles to invite whole queue
-it must be called after fully adding the members of a group to ensure group joining
-should be called from BattleGround::RemovePlayer function in some cases
-*/
+/**
+ * This method is called when group is inserted, or player / group is removed from BG Queue - there is only one player's status changed, so we don't use while (true) cycles to invite whole queue
+ * it must be called after fully adding the members of a group to ensure group joining
+ * should be called from BattleGround::RemovePlayer function in some cases
+ */
 void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
     // ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_Lock);
@@ -1029,15 +1030,15 @@ void BGQueueInviteEvent::Abort(uint64 /*e_time*/)
     // do nothing
 }
 
-/*
-    this event has many possibilities when it is executed:
-    1. player is in battleground ( he clicked enter on invitation window )
-    2. player left battleground queue and he isn't there any more
-    3. player left battleground queue and he joined it again and IsInvitedToBGInstanceGUID = 0
-    4. player left queue and he joined again and he has been invited to same battleground again -> we should not remove him from queue yet
-    5. player is invited to bg and he didn't choose what to do and timer expired - only in this condition we should call queue::RemovePlayer
-    we must remove player in the 5. case even if battleground object doesn't exist!
-*/
+/**
+ * This event has many possibilities when it is executed:
+ * 1. player is in battleground ( he clicked enter on invitation window )
+ * 2. player left battleground queue and he isn't there any more
+ * 3. player left battleground queue and he joined it again and IsInvitedToBGInstanceGUID = 0
+ * 4. player left queue and he joined again and he has been invited to same battleground again -> we should not remove him from queue yet
+ * 5. player is invited to bg and he didn't choose what to do and timer expired - only in this condition we should call queue::RemovePlayer
+ * We must remove player in the 5. case even if battleground object doesn't exist!
+ */
 
 /**
  * @brief Executes the queue removal event for an invited player.
@@ -2019,37 +2020,37 @@ void BattleGroundMgr::LoadBattleEventIndexes()
     uint32 count = 0;
 
     QueryResult* result =
-        //                           0         1           2                3                4              5           6
+    //                                      0             1               2                      3                        4              5                      6
         WorldDatabase.Query("SELECT `data`.`typ`, `data`.`guid1`, `data`.`ev1` AS `ev1`, `data`.`ev2` AS ev2, `data`.`map` AS m, `data`.`guid2`, `description`.`map`, "
-                            //                              7                  8                   9
-                            "`description`.`event1`, `description`.`event2`, `description`.`description` "
-                            "FROM "
-                            "(SELECT '1' AS typ, `a`.`guid` AS `guid1`, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
-                            "FROM `gameobject_battleground` AS a "
-                            "LEFT OUTER JOIN `gameobject` AS b ON `a`.`guid` = `b`.`guid` "
-                            "UNION "
-                            "SELECT '2' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
-                            "FROM `creature_battleground` AS a "
-                            "LEFT OUTER JOIN `creature` AS b ON `a`.`guid` = `b`.`guid` "
-                            ") data "
-                            "RIGHT OUTER JOIN `battleground_events` AS `description` ON `data`.`map` = `description`.`map` "
-                            "AND `data`.`ev1` = `description`.`event1` AND `data`.`ev2` = `description`.`event2` "
-                            // full outer join doesn't work in mysql :-/ so just UNION-select the same again and add a left outer join
-                            "UNION "
-                            "SELECT `data`.`typ`, `data`.`guid1`, `data`.`ev1`, `data`.`ev2`, `data`.`map`, `data`.`guid2`, `description`.`map`, "
-                            "`description`.`event1`, `description`.`event2`, `description`.`description` "
-                            "FROM "
-                            "(SELECT '1' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
-                            "FROM `gameobject_battleground` AS a "
-                            "LEFT OUTER JOIN `gameobject` AS b ON `a`.`guid` = `b`.`guid` "
-                            "UNION "
-                            "SELECT '2' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
-                            "FROM `creature_battleground` AS a "
-                            "LEFT OUTER JOIN `creature` AS b ON `a`.`guid` = `b`.`guid` "
-                            ") data "
-                            "LEFT OUTER JOIN `battleground_events` AS `description` ON `data`.`map` = `description`.`map` "
-                            "AND `data`.`ev1` = `description`.`event1` AND `data`.`ev2` = `description`.`event2` "
-                            "ORDER BY `m`, `ev1`, `ev2`");
+    //                  7                       8                       9
+        "`description`.`event1`, `description`.`event2`, `description`.`description` "
+        "FROM "
+        "(SELECT '1' AS typ, `a`.`guid` AS `guid1`, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
+        "FROM `gameobject_battleground` AS a "
+        "LEFT OUTER JOIN `gameobject` AS b ON `a`.`guid` = `b`.`guid` "
+        "UNION "
+        "SELECT '2' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
+        "FROM `creature_battleground` AS a "
+        "LEFT OUTER JOIN `creature` AS b ON `a`.`guid` = `b`.`guid` "
+        ") data "
+        "RIGHT OUTER JOIN `battleground_events` AS `description` ON `data`.`map` = `description`.`map` "
+        "AND `data`.`ev1` = `description`.`event1` AND `data`.`ev2` = `description`.`event2` "
+    //  full outer join doesn't work in mysql :-/ so just UNION-select the same again and add a left outer join
+        "UNION "
+        "SELECT `data`.`typ`, `data`.`guid1`, `data`.`ev1`, `data`.`ev2`, `data`.`map`, `data`.`guid2`, `description`.`map`, "
+        "`description`.`event1`, `description`.`event2`, `description`.`description` "
+        "FROM "
+        "(SELECT '1' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
+        "FROM `gameobject_battleground` AS a "
+        "LEFT OUTER JOIN `gameobject` AS b ON `a`.`guid` = `b`.`guid` "
+        "UNION "
+        "SELECT '2' AS typ, `a`.`guid` AS guid1, `a`.`event1` AS ev1, `a`.`event2` AS ev2, `b`.`map` AS map, `b`.`guid` AS guid2 "
+        "FROM `creature_battleground` AS a "
+        "LEFT OUTER JOIN `creature` AS b ON `a`.`guid` = `b`.`guid` "
+        ") data "
+        "LEFT OUTER JOIN `battleground_events` AS `description` ON `data`.`map` = `description`.`map` "
+        "AND `data`.`ev1` = `description`.`event1` AND `data`.`ev2` = `description`.`event2` "
+        "ORDER BY `m`, `ev1`, `ev2`");
     if (!result)
     {
         BarGoLink bar(1);
@@ -2085,7 +2086,7 @@ void BattleGroundMgr::LoadBattleEventIndexes()
         if (fields[5].GetUInt32() != dbTableGuidLow)
         {
             sLog.outErrorDb("BattleGroundEvent: %s with nonexistent guid %u for event: map:%u, event1:%u, event2:%u (\"%s\")",
-                            (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2, description);
+                (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2, description);
             continue;
         }
 
@@ -2102,7 +2103,7 @@ void BattleGroundMgr::LoadBattleEventIndexes()
             else
             {
                 sLog.outErrorDb("BattleGroundEvent: %s with guid %u is registered, for a nonexistent event: map:%u, event1:%u, event2:%u",
-                                (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2);
+                    (gameobject) ? "gameobject" : "creature", dbTableGuidLow, map, events.event1, events.event2);
                 continue;
             }
         }

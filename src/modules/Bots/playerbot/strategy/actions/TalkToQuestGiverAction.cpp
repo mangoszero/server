@@ -11,19 +11,19 @@ void TalkToQuestGiverAction::ProcessQuest(Quest const* quest, WorldObject* quest
     QuestStatus status = bot->GetQuestStatus(quest->GetQuestId());
     switch (status)
     {
-    case QUEST_STATUS_COMPLETE:
-        TurnInQuest(quest, questGiver, out);
-        break;
-    case QUEST_STATUS_INCOMPLETE:
-        out << "|cffff0000Incompleted|r";
-        break;
-    case QUEST_STATUS_AVAILABLE:
-    case QUEST_STATUS_NONE:
-        out << "|cff00ff00Available|r";
-        break;
-    case QUEST_STATUS_FAILED:
-        out << "|cffff0000Failed|r";
-        break;
+        case QUEST_STATUS_COMPLETE:
+            TurnInQuest(quest, questGiver, out);
+            break;
+        case QUEST_STATUS_INCOMPLETE:
+            out << "|cffff0000Incompleted|r";
+            break;
+        case QUEST_STATUS_AVAILABLE:
+        case QUEST_STATUS_NONE:
+            out << "|cff00ff00Available|r";
+            break;
+        case QUEST_STATUS_FAILED:
+            out << "|cffff0000Failed|r";
+            break;
     }
 
     out << ": " << chat->formatQuest(quest);
@@ -49,9 +49,7 @@ void TalkToQuestGiverAction::TurnInQuest(Quest const* quest, WorldObject* questG
     }
     else
     {
-    {
         AskToSelectReward(quest, out);
-    }
     }
 }
 

@@ -2,13 +2,11 @@
 #include "../playerbot.h"
 #include "AiObject.h"
 
-AiObject::AiObject(PlayerbotAI* ai) :
-    PlayerbotAIAware(ai),
+AiObject::AiObject(PlayerbotAI* ai) : PlayerbotAIAware(ai),
     bot(ai->GetBot()),
     context(ai->GetAiObjectContext()),
     chat(ai->GetChatHelper())
-{
-}
+{}
 
 /**
  * Returns the bot master's player instance.

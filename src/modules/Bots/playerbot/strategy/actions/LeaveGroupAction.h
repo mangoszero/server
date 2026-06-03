@@ -5,84 +5,86 @@
 
 namespace ai
 {
-    class LeaveGroupAction : public Action {
-    public:
-        LeaveGroupAction(PlayerbotAI* ai, string name = "leave") : Action(ai, name) {}
+    class LeaveGroupAction : public Action
+    {
+        public:
+            LeaveGroupAction(PlayerbotAI* ai, string name = "leave") : Action(ai, name) {}
 
-        virtual bool Execute(Event event)
-        {
-            if (bot->GetGroup())
+            virtual bool Execute(Event event)
             {
-                ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
+                if (bot->GetGroup())
+                {
+                    ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
+                }
+
+                WorldPacket p;
+                string member = bot->GetName();
+                p << uint32(PARTY_OP_LEAVE) << member << uint32(0);
+                bot->GetSession()->HandleGroupDisbandOpcode(p);
+
+                if (sRandomPlayerbotMgr.IsRandomBot(bot))
+                {
+                    bot->GetPlayerbotAI()->SetMaster(NULL);
+                    sRandomPlayerbotMgr.ScheduleTeleport(bot->GetGUIDLow());
+                    sRandomPlayerbotMgr.SetLootAmount(bot, 0);
+                }
+
+                ai->ResetStrategies();
+                ai->ChangeStrategy("-follow master", BOT_STATE_NON_COMBAT);
+                ai->ChangeStrategy("-follow master", BOT_STATE_DEAD);
+                ai->ChangeStrategy("-follow master", BOT_STATE_COMBAT);
+                return true;
             }
-
-            WorldPacket p;
-            string member = bot->GetName();
-            p << uint32(PARTY_OP_LEAVE) << member << uint32(0);
-            bot->GetSession()->HandleGroupDisbandOpcode(p);
-
-            if (sRandomPlayerbotMgr.IsRandomBot(bot))
-            {
-                bot->GetPlayerbotAI()->SetMaster(NULL);
-                sRandomPlayerbotMgr.ScheduleTeleport(bot->GetGUIDLow());
-                sRandomPlayerbotMgr.SetLootAmount(bot, 0);
-            }
-
-            ai->ResetStrategies();
-            ai->ChangeStrategy("-follow master", BOT_STATE_NON_COMBAT);
-            ai->ChangeStrategy("-follow master", BOT_STATE_DEAD);
-            ai->ChangeStrategy("-follow master", BOT_STATE_COMBAT);
-            return true;
-        }
     };
 
-    class PartyCommandAction : public LeaveGroupAction {
-    public:
-        PartyCommandAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "party command") {}
+    class PartyCommandAction : public LeaveGroupAction
+    {
+        public:
+            PartyCommandAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "party command") {}
 
-        virtual bool Execute(Event event)
-        {
-            WorldPacket& p = event.getPacket();
-            p.rpos(0);
-            uint32 operation;
-            string member;
-
-            p >> operation >> member;
-
-            if (operation != PARTY_OP_LEAVE)
+            virtual bool Execute(Event event)
             {
+                WorldPacket& p = event.getPacket();
+                p.rpos(0);
+                uint32 operation;
+                string member;
+
+                p >> operation >> member;
+
+                if (operation != PARTY_OP_LEAVE)
+                {
+                    return false;
+                }
+
+                Player* master = GetMaster();
+                if (master && member == master->GetName())
+                {
+                    return LeaveGroupAction::Execute(event);
+                }
+
                 return false;
             }
-
-            Player* master = GetMaster();
-            if (master && member == master->GetName())
-            {
-                return LeaveGroupAction::Execute(event);
-            }
-
-            return false;
-        }
     };
 
-    class UninviteAction : public LeaveGroupAction {
-    public:
-        UninviteAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "party command") {}
+    class UninviteAction : public LeaveGroupAction
+    {
+        public:
+            UninviteAction(PlayerbotAI* ai) : LeaveGroupAction(ai, "party command") {}
 
-        virtual bool Execute(Event event)
-        {
-            WorldPacket& p = event.getPacket();
-            p.rpos(0);
-            ObjectGuid guid;
-
-            p >> guid;
-
-            if (bot->GetObjectGuid() == guid)
+            virtual bool Execute(Event event)
             {
-                return LeaveGroupAction::Execute(event);
+                WorldPacket& p = event.getPacket();
+                p.rpos(0);
+                ObjectGuid guid;
+
+                p >> guid;
+
+                if (bot->GetObjectGuid() == guid)
+                {
+                    return LeaveGroupAction::Execute(event);
+                }
+
+                return false;
             }
-
-            return false;
-        }
     };
-
 }

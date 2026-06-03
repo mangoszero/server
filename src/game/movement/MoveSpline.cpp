@@ -210,7 +210,7 @@ namespace Movement
         splineflags.done = true;
     }
 
-/// ============================================================================================
+    /// ============================================================================================
 
     /**
      * @brief Validates the MoveSpline initialization arguments.
@@ -220,11 +220,11 @@ namespace Movement
     bool MoveSplineInitArgs::Validate(Unit* unit) const
     {
 #define CHECK(exp) \
-    if (!(exp))\
-    {\
-        sLog.outError("MoveSplineInitArgs::Validate: expression '%s' failed for %s", #exp, unit->GetGuidStr().c_str());\
-        return false;\
-    }
+        if (!(exp))\
+        {\
+            sLog.outError("MoveSplineInitArgs::Validate: expression '%s' failed for %s", #exp, unit->GetGuidStr().c_str());\
+            return false;\
+        }
         CHECK(path.size() > 1);
         CHECK(velocity > 0.f);
         // CHECK(_checkPathBounds());
@@ -232,8 +232,8 @@ namespace Movement
 #undef CHECK
     }
 
-// MONSTER_MOVE packet format limitation for not CatmullRom movement:
-// each vertex offset packed into 11 bytes
+    // MONSTER_MOVE packet format limitation for not CatmullRom movement:
+    // each vertex offset packed into 11 bytes
 
     /**
      * @brief Checks the bounds of the path for non-CatmullRom movement.
@@ -262,7 +262,7 @@ namespace Movement
         return true;
     }
 
-/// ============================================================================================
+    /// ============================================================================================
 
     /**
      * @brief Updates the state of the MoveSpline.

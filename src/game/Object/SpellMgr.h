@@ -166,12 +166,15 @@ inline bool IsAuraApplyEffect(SpellEntry const* spellInfo, SpellEffectIndex effe
 inline bool IsSpellAppliesAura(SpellEntry const* spellInfo, uint32 effectMask = ((1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)))
 {
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (effectMask & (1 << i))
+        {
             if (IsAuraApplyEffect(spellInfo, SpellEffectIndex(i)))
             {
                 return true;
             }
-
+        }
+    }
     return false;
 }
 
@@ -206,21 +209,27 @@ inline bool IsPeriodicRegenerateEffect(SpellEntry const* spellInfo, SpellEffectI
 inline bool IsSpellHaveAura(SpellEntry const* spellInfo, AuraType aura, uint32 effectMask = (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2))
 {
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (effectMask & (1 << i))
+        {
             if (AuraType(spellInfo->EffectApplyAuraName[i]) == aura)
             {
                 return true;
             }
+        }
+    }
     return false;
 }
 
 inline bool IsSpellLastAuraEffect(SpellEntry const* spellInfo, SpellEffectIndex effecIdx)
 {
     for (int i = effecIdx + 1; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (spellInfo->EffectApplyAuraName[i])
         {
             return false;
         }
+    }
     return true;
 }
 
@@ -454,7 +463,7 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
 {
     //TODO: search for potential correct case for Classic
     /*if (IsSpellHaveAura(spellInfo, SPELL_AURA_FLY))
-        return false; */
+    return false; */
 
     switch (spellInfo->Id)
     {
@@ -576,10 +585,12 @@ inline bool IsAreaAuraEffect(uint32 effect)
 inline bool HasAreaAuraEffect(SpellEntry const* spellInfo)
 {
     for (int32 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (IsAreaAuraEffect(spellInfo->Effect[i]))
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -678,7 +689,7 @@ inline bool IsNeedCastSpellAtFormApply(SpellEntry const* spellInfo, ShapeshiftFo
     // passive spells with SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT are already active without shapeshift, do no recast!
     // Feline Swiftness Passive 2a not have 0x1 mask in Stance field in spell data as expected
     return ((spellInfo->Stances & (1 << (form - 1))  || (spellInfo->Id == 24864 && form == FORM_CAT)) &&
-            !spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
+        !spellInfo->HasAttribute(SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT));
 }
 
 inline bool IsNeedCastSpellAtOutdoor(SpellEntry const* spellInfo)
@@ -750,11 +761,14 @@ inline uint32 GetAllSpellMechanicMask(SpellEntry const* spellInfo)
     {
         mask |= 1 << (spellInfo->Mechanic - 1);
     }
+
     for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
         if (spellInfo->EffectMechanic[i])
         {
             mask |= 1 << (spellInfo->EffectMechanic[i] - 1);
         }
+    }
     return mask;
 }
 
@@ -793,10 +807,12 @@ inline bool IsAuraAddedBySpell(uint32 auraType, uint32 spellId)
     }
 
     for (int i = 0; i < 3; i++)
+    {
         if (spellproto->EffectApplyAuraName[i] == auraType)
         {
             return true;
         }
+    }
     return false;
 }
 
@@ -862,23 +878,23 @@ enum ProcFlags
 
 /// Proc flags for a melee based trigger
 #define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_SUCCESSFUL_MELEE_HIT          | \
-                                    PROC_FLAG_TAKEN_MELEE_HIT             | \
-                                    PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
-                                    PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
-                                    PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
-                                    PROC_FLAG_TAKEN_RANGED_HIT            | \
-                                    PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
-                                    PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
+PROC_FLAG_TAKEN_MELEE_HIT             | \
+PROC_FLAG_SUCCESSFUL_MELEE_SPELL_HIT  | \
+PROC_FLAG_TAKEN_MELEE_SPELL_HIT       | \
+PROC_FLAG_SUCCESSFUL_RANGED_HIT       | \
+PROC_FLAG_TAKEN_RANGED_HIT            | \
+PROC_FLAG_SUCCESSFUL_RANGED_SPELL_HIT | \
+PROC_FLAG_TAKEN_RANGED_SPELL_HIT)
 
 /**
  * Proc flags mask for a negative trigger
  * \todo What is negative in this case?
  */
 #define NEGATIVE_TRIGGER_MASK (MELEE_BASED_TRIGGER_MASK                 | \
-                                PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
-                                PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
-                                PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
-                                PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
+PROC_FLAG_SUCCESSFUL_AOE_SPELL_HIT      | \
+PROC_FLAG_TAKEN_AOE_SPELL_HIT           | \
+PROC_FLAG_SUCCESSFUL_NEGATIVE_SPELL_HIT | \
+PROC_FLAG_TAKEN_NEGATIVE_SPELL_HIT)
 
 /**
  * Flags used for procing different spells, these flags tell when a proc should
@@ -1022,14 +1038,12 @@ typedef std::set<uint32>  SpellLinkedSet;
 class PetAura
 {
     public:
-        PetAura() :
-            removeOnChangePet(false),
+        PetAura() : removeOnChangePet(false),
             damage(0)
-        {
-        }
+        {}
 
-        PetAura(uint32 petEntry, uint32 aura, bool _removeOnChangePet, int _damage) :
-            removeOnChangePet(_removeOnChangePet), damage(_damage)
+        PetAura(uint32 petEntry, uint32 aura, bool _removeOnChangePet, int _damage)
+            : removeOnChangePet(_removeOnChangePet), damage(_damage)
         {
             auras[petEntry] = aura;
         }
@@ -1160,11 +1174,11 @@ typedef std::map<uint32, uint32> SpellFacingFlagMap;
 
 class SpellMgr
 {
-        friend struct DoSpellBonuses;
-        friend struct DoSpellProcEvent;
-        friend struct DoSpellProcItemEnchant;
+    friend struct DoSpellBonuses;
+    friend struct DoSpellProcEvent;
+    friend struct DoSpellProcItemEnchant;
 
-        // Constructors
+    // Constructors
     public:
         SpellMgr();
         ~SpellMgr();
@@ -1338,7 +1352,7 @@ class SpellMgr
         SpellChainMapNext const& GetSpellChainNext() const { return mSpellChainsNext; }
 
         template<typename Worker>
-        void doForHighRanks(uint32 spellid, Worker& worker)
+            void doForHighRanks(uint32 spellid, Worker& worker)
         {
             SpellChainMapNext const& nextMap = GetSpellChainNext();
             for (SpellChainMapNext::const_iterator itr = nextMap.lower_bound(spellid); itr != nextMap.upper_bound(spellid); ++itr)
@@ -1374,11 +1388,12 @@ class SpellMgr
 
             // check present in same rank chain
             for (; itr != mSpellChains.end(); itr = mSpellChains.find(itr->second.prev))
+            {
                 if (itr->second.prev == spell2)
                 {
                     return true;
                 }
-
+            }
             return false;
         }
 
@@ -1420,10 +1435,12 @@ class SpellMgr
         {
             SpellLearnSpellMapBounds bounds = GetSpellLearnSpellMapBounds(spell_id1);
             for (SpellLearnSpellMap::const_iterator i = bounds.first; i != bounds.second; ++i)
+            {
                 if (i->second.spell == spell_id2)
                 {
                     return true;
                 }
+            }
             return false;
         }
 

@@ -150,7 +150,7 @@ class ObjectGuid
             switch (high)
             {
                 case HIGHGUID_ITEM:         return TYPEID_ITEM;
-                    // case HIGHGUID_CONTAINER:    return TYPEID_CONTAINER; HIGHGUID_CONTAINER==HIGHGUID_ITEM currently
+                // case HIGHGUID_CONTAINER:    return TYPEID_CONTAINER; HIGHGUID_CONTAINER==HIGHGUID_ITEM currently
                 case HIGHGUID_UNIT:         return TYPEID_UNIT;
                 case HIGHGUID_PET:          return TYPEID_UNIT;
                 case HIGHGUID_PLAYER:       return TYPEID_PLAYER;
@@ -158,7 +158,7 @@ class ObjectGuid
                 case HIGHGUID_DYNAMICOBJECT: return TYPEID_DYNAMICOBJECT;
                 case HIGHGUID_CORPSE:       return TYPEID_CORPSE;
                 case HIGHGUID_MO_TRANSPORT: return TYPEID_GAMEOBJECT;
-                    // unknown
+                // unknown
                 default:                    return TYPEID_OBJECT;
             }
         }
@@ -211,7 +211,7 @@ typedef std::vector<ObjectGuid> GuidVector;
 
 class PackedGuid
 {
-        friend ByteBuffer& operator<< (ByteBuffer& buf, PackedGuid const& guid);
+    friend ByteBuffer& operator<< (ByteBuffer& buf, PackedGuid const& guid);
 
     public:                                                 // constructors
         explicit PackedGuid() : m_packedGuid(PACKED_GUID_MIN_BUFFER_SIZE) { m_packedGuid.appendPackGUID(0); }
@@ -230,7 +230,7 @@ class PackedGuid
 };
 
 template<HighGuid high>
-class ObjectGuidGenerator
+    class ObjectGuidGenerator
 {
     public:                                                 // constructors
         explicit ObjectGuidGenerator(uint32 start = 1) : m_nextGuid(start) {}
@@ -271,7 +271,7 @@ inline PackedGuid ObjectGuid::WriteAsPacked() const { return PackedGuid(*this); 
 HASH_NAMESPACE_START
 
 template<>
-struct hash<ObjectGuid>
+    struct hash<ObjectGuid>
 {
     public:
 

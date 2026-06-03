@@ -6,33 +6,33 @@ namespace ai
 {
     class NearestUnitsValue : public ObjectGuidListCalculatedValue
     {
-    public:
-        NearestUnitsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
+        public:
+            NearestUnitsValue(PlayerbotAI* ai, float range = sPlayerbotAIConfig.sightDistance) :
             ObjectGuidListCalculatedValue(ai, "nearest units", 5), range(range) {}
 
-    public:
-        list<ObjectGuid> Calculate()
-        {
-            list<Unit*> targets;
-            FindUnits(targets);
-
-            list<ObjectGuid> results;
-            for (list<Unit *>::iterator i = targets.begin(); i!= targets.end(); ++i)
+        public:
+            list<ObjectGuid> Calculate()
             {
-                Unit* unit = *i;
-                if (bot->IsWithinLOSInMap(unit) && AcceptUnit(unit))
+                list<Unit*> targets;
+                FindUnits(targets);
+
+                list<ObjectGuid> results;
+                for (list<Unit *>::iterator i = targets.begin(); i!= targets.end(); ++i)
                 {
-                    results.push_back(unit->GetObjectGuid());
+                    Unit* unit = *i;
+                    if (bot->IsWithinLOSInMap(unit) && AcceptUnit(unit))
+                    {
+                        results.push_back(unit->GetObjectGuid());
+                    }
                 }
+                return results;
             }
-            return results;
-        }
 
-    protected:
-        virtual void FindUnits(list<Unit*> &targets) = 0;
-        virtual bool AcceptUnit(Unit* unit) = 0;
+        protected:
+            virtual void FindUnits(list<Unit*> &targets) = 0;
+            virtual bool AcceptUnit(Unit* unit) = 0;
 
-    protected:
-        float range;
+        protected:
+            float range;
     };
 }

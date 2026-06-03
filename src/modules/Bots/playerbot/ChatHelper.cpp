@@ -16,7 +16,7 @@ map<uint8, string> ChatHelper::races;
 map<uint8, map<uint8, string> > ChatHelper::specs;
 
 template<class T>
-static bool substrContainsInMap(string &searchTerm, map<string, T> searchIn)
+    static bool substrContainsInMap(string &searchTerm, map<string, T> searchIn)
 {
     for (typename map<string, T>::iterator i = searchIn.begin(); i != searchIn.end(); ++i)
     {
@@ -303,14 +303,14 @@ string ChatHelper::formatChat(ChatMsg chat)
 {
     switch (chat)
     {
-    case CHAT_MSG_GUILD:
-        return "guild";
-    case CHAT_MSG_PARTY:
-        return "party";
-    case CHAT_MSG_WHISPER:
-        return "whisper";
-    case CHAT_MSG_RAID:
-        return "raid";
+        case CHAT_MSG_GUILD:
+            return "guild";
+        case CHAT_MSG_PARTY:
+            return "party";
+        case CHAT_MSG_WHISPER:
+            return "whisper";
+        case CHAT_MSG_RAID:
+            return "raid";
     }
 
     return "unknown";
@@ -428,13 +428,13 @@ uint32 ChatHelper::parseSlot(string text)
 bool ChatHelper::parseable(string text)
 {
     return text.find("|H") != string::npos ||
-            text == "questitem" ||
-            substrContainsInMap<uint32>(text, consumableSubClasses) ||
-            substrContainsInMap<uint32>(text, tradeSubClasses) ||
-            substrContainsInMap<uint32>(text, itemQualities) ||
-            substrContainsInMap<uint32>(text, slots) ||
-            substrContainsInMap<ChatMsg>(text, chats) ||
-            parseMoney(text) > 0;
+        text == "questitem" ||
+        substrContainsInMap<uint32>(text, consumableSubClasses) ||
+        substrContainsInMap<uint32>(text, tradeSubClasses) ||
+        substrContainsInMap<uint32>(text, itemQualities) ||
+        substrContainsInMap<uint32>(text, slots) ||
+        substrContainsInMap<ChatMsg>(text, chats) ||
+        parseMoney(text) > 0;
 }
 
 string ChatHelper::formatClass(Player* player, int spec)

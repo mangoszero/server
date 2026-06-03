@@ -49,7 +49,7 @@
  * @tparam P Type of the path
  */
 template<class T, class P>
-class PathMovementBase
+    class PathMovementBase
 {
     public:
         /**
@@ -87,12 +87,12 @@ class PathMovementBase
  * move according to its predefined waypoints.
  */
 template<class T>
-class WaypointMovementGenerator;
+    class WaypointMovementGenerator;
 
 template<>
-class WaypointMovementGenerator<Creature>
-    : public MovementGeneratorMedium< Creature, WaypointMovementGenerator<Creature> >,
-      public PathMovementBase<Creature, WaypointPath const*>
+    class WaypointMovementGenerator<Creature>
+        : public MovementGeneratorMedium< Creature, WaypointMovementGenerator<Creature> >,
+    public PathMovementBase<Creature, WaypointPath const*>
 {
     public:
         /**
@@ -259,7 +259,7 @@ class WaypointMovementGenerator<Creature>
  */
 class FlightPathMovementGenerator
     : public MovementGeneratorMedium< Player, FlightPathMovementGenerator >,
-      public PathMovementBase<Player, TaxiPathNodeList const*>
+    public PathMovementBase<Player, TaxiPathNodeList const*>
 {
     public:
         /**

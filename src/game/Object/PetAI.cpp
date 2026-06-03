@@ -190,9 +190,14 @@ void PetAI::SelectNextTarget(Unit* owner)
         if (m_creature->GetCharmInfo()->HasReactState(REACT_DEFENSIVE))
         {
             for (Unit* attacker : owner->getAttackers())
+            {
                 candidates.push_back(attacker);
+            }
+
             for (Unit* attacker : m_creature->getAttackers())
+            {
                 candidates.push_back(attacker);
+            }
         }
         else if (m_creature->GetCharmInfo()->HasReactState(REACT_AGGRESSIVE))
         {
@@ -514,8 +519,8 @@ void PetAI::UpdateAI(const uint32 diff)
  */
 bool PetAI::_isVisible(Unit* u) const
 {
-    return m_creature->IsWithinDist(u, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER))
-           && u->IsVisibleForOrDetect(m_creature, m_creature, true);
+    return m_creature->IsWithinDist(u, sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER)) &&
+        u->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
 /**

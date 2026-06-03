@@ -7,38 +7,38 @@ namespace ai
 {
     class NextAction
     {
-    public:
-        NextAction(string name, float relevance = 0.0f)
-        {
-            this->name = name;
-            this->relevance = relevance;
-        }
-        NextAction(const NextAction& o)
-        {
-            this->name = o.name;
-            this->relevance = o.relevance;
-        }
+        public:
+            NextAction(string name, float relevance = 0.0f)
+            {
+                this->name = name;
+                this->relevance = relevance;
+            }
+            NextAction(const NextAction& o)
+            {
+                this->name = o.name;
+                this->relevance = o.relevance;
+            }
 
-    public:
-        string getName()
-        {
-            return name;
-        }
-        float getRelevance()
-        {
-            return relevance;
-        }
+        public:
+            string getName()
+            {
+                return name;
+            }
+            float getRelevance()
+            {
+                return relevance;
+            }
 
-    public:
-        static int size(NextAction** actions);
-        static NextAction** clone(NextAction** actions);
-        static NextAction** merge(NextAction** what, NextAction** with);
-        static NextAction** array(uint8 _nil,...);
-        static void destroy(NextAction** actions);
+        public:
+            static int size(NextAction** actions);
+            static NextAction** clone(NextAction** actions);
+            static NextAction** merge(NextAction** what, NextAction** with);
+            static NextAction** array(uint8 _nil,...);
+            static void destroy(NextAction** actions);
 
-    private:
-        float relevance;
-        std::string name;
+        private:
+            float relevance;
+            std::string name;
     };
 
     //---------------------------------------------------------------------------------------------------------------------
@@ -54,149 +54,149 @@ namespace ai
 
     class Action : public AiNamedObject
     {
-    public:
-        Action(PlayerbotAI* ai, string name = "action") : verbose(false), AiNamedObject(ai, name) {}
-        virtual ~Action(void) {}
+        public:
+            Action(PlayerbotAI* ai, string name = "action") : verbose(false), AiNamedObject(ai, name) {}
+            virtual ~Action(void) {}
 
-    public:
-        virtual bool Execute(Event event) { return true; }
-        virtual bool isPossible()
-        {
-            return true;
-        }
+        public:
+            virtual bool Execute(Event event) { return true; }
+            virtual bool isPossible()
+            {
+                return true;
+            }
 
-        virtual bool isUseful()
-        {
-            return true;
-        }
+            virtual bool isUseful()
+            {
+                return true;
+            }
 
-        virtual NextAction** getPrerequisites()
-        {
-            return NULL;
-        }
+            virtual NextAction** getPrerequisites()
+            {
+                return NULL;
+            }
 
-        virtual NextAction** getAlternatives()
-        {
-            return NULL;
-        }
+            virtual NextAction** getAlternatives()
+            {
+                return NULL;
+            }
 
-        virtual NextAction** getContinuers()
-        {
-            return NULL;
-        }
+            virtual NextAction** getContinuers()
+            {
+                return NULL;
+            }
 
-        virtual ActionThreatType getThreatType()
-        {
-            return ACTION_THREAT_NONE;
-        }
+            virtual ActionThreatType getThreatType()
+            {
+                return ACTION_THREAT_NONE;
+            }
 
-        void Update() {}
-        void Reset() {}
-        virtual Unit* GetTarget();
-        virtual Value<Unit*>* GetTargetValue();
-        virtual string GetTargetName()
-        {
-            return "self target";
-        }
-        void MakeVerbose()
-        {
-            verbose = true;
-        }
+            void Update() {}
+            void Reset() {}
+            virtual Unit* GetTarget();
+            virtual Value<Unit*>* GetTargetValue();
+            virtual string GetTargetName()
+            {
+                return "self target";
+            }
+            void MakeVerbose()
+            {
+                verbose = true;
+            }
 
-    protected:
-        bool verbose;
+        protected:
+            bool verbose;
     };
 
     class ActionNode
     {
-    public:
-        ActionNode(string name, NextAction** prerequisites = NULL, NextAction** alternatives = NULL, NextAction** continuers = NULL)
-        {
-            this->action = NULL;
-            this->name = name;
-            this->prerequisites = prerequisites;
-            this->alternatives = alternatives;
-            this->continuers = continuers;
-        }
-        virtual ~ActionNode()
-        {
-            NextAction::destroy(prerequisites);
-            NextAction::destroy(alternatives);
-            NextAction::destroy(continuers);
-        }
+        public:
+            ActionNode(string name, NextAction** prerequisites = NULL, NextAction** alternatives = NULL, NextAction** continuers = NULL)
+            {
+                this->action = NULL;
+                this->name = name;
+                this->prerequisites = prerequisites;
+                this->alternatives = alternatives;
+                this->continuers = continuers;
+            }
+            virtual ~ActionNode()
+            {
+                NextAction::destroy(prerequisites);
+                NextAction::destroy(alternatives);
+                NextAction::destroy(continuers);
+            }
 
-    public:
-        Action* getAction()
-        {
-            return action;
-        }
+        public:
+            Action* getAction()
+            {
+                return action;
+            }
 
-        void setAction(Action* action) { this->action = action; }
-        string getName()
-        {
-            return name;
-        }
+            void setAction(Action* action) { this->action = action; }
+            string getName()
+            {
+                return name;
+            }
 
-    public:
-        NextAction** getContinuers()
-        {
-            return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL);
-        }
+        public:
+            NextAction** getContinuers()
+            {
+                return NextAction::merge(NextAction::clone(continuers), action ? action->getContinuers() : NULL);
+            }
 
-        NextAction** getAlternatives()
-        {
-            return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL);
-        }
+            NextAction** getAlternatives()
+            {
+                return NextAction::merge(NextAction::clone(alternatives), action ? action->getAlternatives() : NULL);
+            }
 
-        NextAction** getPrerequisites()
-        {
-            return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL);
-        }
+            NextAction** getPrerequisites()
+            {
+                return NextAction::merge(NextAction::clone(prerequisites), action ? action->getPrerequisites() : NULL);
+            }
 
-    private:
-        string name;
-        Action* action;
-        NextAction** continuers;
-        NextAction** alternatives;
-        NextAction** prerequisites;
+        private:
+            string name;
+            Action* action;
+            NextAction** continuers;
+            NextAction** alternatives;
+            NextAction** prerequisites;
     };
 
     //---------------------------------------------------------------------------------------------------------------------
 
     class ActionBasket
     {
-    public:
-        ActionBasket(ActionNode* action, float relevance, bool skipPrerequisites, const Event& event) :
+        public:
+            ActionBasket(ActionNode* action, float relevance, bool skipPrerequisites, const Event& event) :
             action(action), relevance(relevance), skipPrerequisites(skipPrerequisites), event(event) {}
-        virtual ~ActionBasket(void) {}
-    public:
-        float getRelevance()
-        {
-            return relevance;
-        }
+            virtual ~ActionBasket(void) {}
+        public:
+            float getRelevance()
+            {
+                return relevance;
+            }
 
-        ActionNode* getAction()
-        {
-            return action;
-        }
+            ActionNode* getAction()
+            {
+                return action;
+            }
 
-        const Event& getEvent()
-        {
-            return event;
-        }
+            const Event& getEvent()
+            {
+                return event;
+            }
 
-        bool isSkipPrerequisites()
-        {
-            return skipPrerequisites;
-        }
+            bool isSkipPrerequisites()
+            {
+                return skipPrerequisites;
+            }
 
-        void AmendRelevance(float k) {relevance *= k; }
-        void setRelevance(float relevance) { this->relevance = relevance; }
-    private:
-        ActionNode* action;
-        float relevance;
-        bool skipPrerequisites;
-        Event event;
+            void AmendRelevance(float k) {relevance *= k; }
+            void setRelevance(float relevance) { this->relevance = relevance; }
+        private:
+            ActionNode* action;
+            float relevance;
+            bool skipPrerequisites;
+            Event event;
     };
 
     //---------------------------------------------------------------------------------------------------------------------

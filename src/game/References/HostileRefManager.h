@@ -26,6 +26,9 @@
 #define _HOSTILEREFMANAGER
 
 #include "Common.h"
+#if !defined(CLASSIC)
+#include "ObjectGuid.h"
+#endif
 #include "Utilities/LinkedReference/RefManager.h"
 
 class Unit;
@@ -129,8 +132,27 @@ class HostileRefManager : public RefManager<Unit, ThreatManager>
          */
         void deleteReference(Unit* pCreature);
 
+#if !defined(CLASSIC)
+        // redirection threat data
+        void SetThreatRedirection(ObjectGuid guid)
+        {
+            m_redirectionTargetGuid = guid;
+        }
+
+        void ResetThreatRedirection()
+        {
+            m_redirectionTargetGuid.Clear();
+        }
+
+        Unit*  GetThreatRedirectionTarget() const;
+#endif
+
     private:
         Unit* iOwner; ///< Owner of manager variable (back reference, always exists)
+
+#if !defined(CLASSIC)
+        ObjectGuid m_redirectionTargetGuid;                 // in 2.x redirected only full threat
+#endif
 };
 //=================================================
 #endif

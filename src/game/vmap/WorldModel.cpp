@@ -128,35 +128,33 @@ namespace VMAP
      */
     class TriBoundFunc
     {
-    public:
-        /**
-         * @brief Constructor for TriBoundFunc.
-         *
-         * @param vert Vector of vertices.
-         */
-        TriBoundFunc(std::vector<Vector3>& vert) : vertices(vert.begin()) {}
+        public:
+            /**
+             * @brief Constructor for TriBoundFunc.
+             *
+             * @param vert Vector of vertices.
+             */
+            TriBoundFunc(std::vector<Vector3>& vert) : vertices(vert.begin()) {}
 
-        /**
-         * @brief Calculates the bounding box of a triangle.
-         *
-         * @param tri The triangle to calculate the bounding box for.
-         * @param out The calculated bounding box.
-         */
-        void operator()(const MeshTriangle& tri, G3D::AABox& out) const
-        {
-            G3D::Vector3 lo = vertices[tri.idx0];
-            G3D::Vector3 hi = lo;
+            /**
+             * @brief Calculates the bounding box of a triangle.
+             *
+             * @param tri The triangle to calculate the bounding box for.
+             * @param out The calculated bounding box.
+             */
+            void operator()(const MeshTriangle& tri, G3D::AABox& out) const
+            {
+                G3D::Vector3 lo = vertices[tri.idx0];
+                G3D::Vector3 hi = lo;
 
-            lo = (lo.min(vertices[tri.idx1])).min(vertices[tri.idx2]);
-            hi = (hi.max(vertices[tri.idx1])).max(vertices[tri.idx2]);
+                lo = (lo.min(vertices[tri.idx1])).min(vertices[tri.idx2]);
+                hi = (hi.max(vertices[tri.idx1])).max(vertices[tri.idx2]);
 
-            out = G3D::AABox(lo, hi);
-        }
-    protected:
-        const std::vector<Vector3>::const_iterator vertices;
+                out = G3D::AABox(lo, hi);
+            }
+        protected:
+            const std::vector<Vector3>::const_iterator vertices;
     };
-
-    // ===================== WmoLiquid ==================================
 
     /**
      * @brief Constructor for WmoLiquid.
@@ -167,7 +165,7 @@ namespace VMAP
      * @param type The type of the liquid.
      */
     WmoLiquid::WmoLiquid(uint32 width, uint32 height, const Vector3& corner, uint32 type) :
-        iTilesX(width), iTilesY(height), iCorner(corner), iType(type)
+    iTilesX(width), iTilesY(height), iCorner(corner), iType(type)
     {
         iHeight = new float[(width + 1) * (height + 1)];
         iFlags = new uint8[width * height];
@@ -267,18 +265,18 @@ namespace VMAP
         float dx = tx_f - (float)tx;
         float dy = ty_f - (float)ty;
 
-        /* Tesselate tile to two triangles (not sure if client does it exactly like this)
-
-            ^ dy
-            |
-        1 x---------x (1,1)
-            | (b)   / |
-            |     /   |
-            |   /     |
-            | /   (a) |
-            x---------x---> dx
-        0           1
-        */
+        /** Tesselate tile to two triangles (not sure if client does it exactly like this)
+         *
+         *    ^ dy
+         *    |
+         *  1 x---------x (1,1)
+         *    | (b)   / |
+         *    |     /   |
+         *    |   /     |
+         *    | /   (a) |
+         *    x---------x---> dx
+         *    0         1
+         */
         const uint32 rowOffset = iTilesX + 1;
         if (dx > dy) // case (a)
         {
@@ -402,7 +400,7 @@ namespace VMAP
      * @param other The GroupModel to copy from.
      */
     GroupModel::GroupModel(const GroupModel& other) :
-        iBound(other.iBound), iMogpFlags(other.iMogpFlags), iGroupWMOID(other.iGroupWMOID),
+    iBound(other.iBound), iMogpFlags(other.iMogpFlags), iGroupWMOID(other.iGroupWMOID),
         vertices(other.vertices), triangles(other.triangles), meshTree(other.meshTree), iLiquid(0)
     {
         if (other.iLiquid)
@@ -788,26 +786,26 @@ namespace VMAP
      */
     class WModelAreaCallback
     {
-    public:
-        WModelAreaCallback(const std::vector<GroupModel>& vals, const Vector3& down) :
-        prims(vals.begin()), hit(vals.end()), minVol(G3D::inf()), zDist(G3D::inf()), zVec(down) {}
-        std::vector<GroupModel>::const_iterator prims;
-        std::vector<GroupModel>::const_iterator hit;
-        float minVol;
-        float zDist;
-        Vector3 zVec;
-        void operator()(const Vector3& point, uint32 entry)
-        {
-            float group_Z;
-            if (prims[entry].IsInsideObject(point, zVec, group_Z))
+        public:
+            WModelAreaCallback(const std::vector<GroupModel>& vals, const Vector3& down) :
+            prims(vals.begin()), hit(vals.end()), minVol(G3D::inf()), zDist(G3D::inf()), zVec(down) {}
+            std::vector<GroupModel>::const_iterator prims;
+            std::vector<GroupModel>::const_iterator hit;
+            float minVol;
+            float zDist;
+            Vector3 zVec;
+            void operator()(const Vector3& point, uint32 entry)
             {
-                if (group_Z < zDist)
+                float group_Z;
+                if (prims[entry].IsInsideObject(point, zVec, group_Z))
                 {
-                    zDist = group_Z;
-                    hit = prims + entry;
+                    if (group_Z < zDist)
+                    {
+                        zDist = group_Z;
+                        hit = prims + entry;
+                    }
                 }
             }
-        }
     };
 
     /**

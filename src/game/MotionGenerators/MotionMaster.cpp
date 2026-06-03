@@ -492,7 +492,7 @@ void MotionMaster::MoveSeekAssistance(float x, float y, float z)
     else
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s seek assistance (X: %f Y: %f Z: %f)",
-                         m_owner->GetGuidStr().c_str(), x, y, z);
+            m_owner->GetGuidStr().c_str(), x, y, z);
         Mutate(new AssistanceMovementGenerator(x, y, z));
     }
 }
@@ -510,7 +510,7 @@ void MotionMaster::MoveSeekAssistanceDistract(uint32 time)
     else
     {
         DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s is distracted after assistance call (Time: %u)",
-                         m_owner->GetGuidStr().c_str(), time);
+            m_owner->GetGuidStr().c_str(), time);
         Mutate(new AssistanceDistractMovementGenerator(time));
     }
 }
@@ -594,13 +594,13 @@ void MotionMaster::MoveTaxiFlight(uint32 path, uint32 pathnode)
         else
         {
             sLog.outError("%s attempt taxi to (nonexistent Path %u node %u)",
-                          m_owner->GetGuidStr().c_str(), path, pathnode);
+                m_owner->GetGuidStr().c_str(), path, pathnode);
         }
     }
     else
     {
         sLog.outError("%s attempt taxi to (Path %u node %u)",
-                      m_owner->GetGuidStr().c_str(), path, pathnode);
+            m_owner->GetGuidStr().c_str(), path, pathnode);
     }
 }
 
@@ -644,7 +644,7 @@ void MotionMaster::Mutate(MovementGenerator* m)
     {
         switch (top()->GetMovementGeneratorType())
         {
-                // HomeMovement is not that important, delete it if meanwhile a new comes
+            // HomeMovement is not that important, delete it if meanwhile a new comes
             case HOME_MOTION_TYPE:
                 // DistractMovement interrupted by any other movement
             case DISTRACT_MOTION_TYPE:
@@ -769,7 +769,7 @@ void MotionMaster::MoveFall()
     if (tz <= INVALID_HEIGHT)
     {
         DEBUG_LOG("MotionMaster::MoveFall: unable retrive a proper height at map %u (x: %f, y: %f, z: %f).",
-                  m_owner->GetMap()->GetId(), m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
+            m_owner->GetMap()->GetId(), m_owner->GetPositionX(), m_owner->GetPositionY(), m_owner->GetPositionZ());
         return;
     }
 

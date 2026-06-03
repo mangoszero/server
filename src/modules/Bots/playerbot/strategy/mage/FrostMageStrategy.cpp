@@ -6,8 +6,7 @@
 using namespace ai;
 
 FrostMageStrategy::FrostMageStrategy(PlayerbotAI* ai) : GenericMageStrategy(ai)
-{
-}
+{}
 
 NextAction** FrostMageStrategy::getDefaultActions()
 {
@@ -19,17 +18,17 @@ void FrostMageStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     GenericMageStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "icy veins",
+            "icy veins",
         NextAction::array(0, new NextAction("icy veins", 50.0f), NULL)));
 }
 
 void FrostMageAoeStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "high aoe",
+            "high aoe",
         NextAction::array(0, new NextAction("blizzard", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium aoe",
+            "medium aoe",
         NextAction::array(0, new NextAction("cone of cold", 30.0f), NULL)));
 }

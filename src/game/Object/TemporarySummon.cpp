@@ -31,8 +31,8 @@
  *
  * @param summoner The GUID of the summoning object.
  */
-TemporarySummon::TemporarySummon(ObjectGuid summoner) :
-    Creature(CREATURE_SUBTYPE_TEMPORARY_SUMMON), m_type(TEMPSPAWN_TIMED_OOC_OR_CORPSE_DESPAWN), m_timer(0), m_lifetime(0), m_summoner(summoner)
+TemporarySummon::TemporarySummon(ObjectGuid summoner)
+    : Creature(CREATURE_SUBTYPE_TEMPORARY_SUMMON), m_type(TEMPSPAWN_TIMED_OOC_OR_CORPSE_DESPAWN), m_timer(0), m_lifetime(0), m_summoner(summoner)
 {
 }
 
@@ -249,12 +249,15 @@ void TemporarySummon::Summon(TempSpawnType type, uint32 lifetime)
 void TemporarySummon::UnSummon()
 {
     if (GetSummonerGuid().IsCreature())
+    {
         if (Creature* sum = GetMap()->GetCreature(GetSummonerGuid()))
+        {
             if (sum->AI())
             {
                 sum->AI()->SummonedCreatureDespawn(this);
             }
-
+        }
+    }
     AddObjectToRemoveList();
 }
 
@@ -300,10 +303,8 @@ void TemporarySummon::RemoveFromWorld()
  * @param path_id The path identifier.
  * @param pathOrigin The origin source for the waypoint path.
  */
-TemporarySummonWaypoint::TemporarySummonWaypoint(ObjectGuid summoner, uint32 waypoint_id, int32 path_id, uint32 pathOrigin) :
-    TemporarySummon(summoner),
+TemporarySummonWaypoint::TemporarySummonWaypoint(ObjectGuid summoner, uint32 waypoint_id, int32 path_id, uint32 pathOrigin)
+    : TemporarySummon(summoner),
     m_waypoint_id(waypoint_id),
     m_path_id(path_id),
-    m_pathOrigin(pathOrigin)
-{
-}
+    m_pathOrigin(pathOrigin) {}

@@ -7,35 +7,35 @@ using namespace ai;
 
 class GenericMageNonCombatStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
-public:
-    GenericMageNonCombatStrategyActionNodeFactory()
-    {
-        creators["molten armor"] = &molten_armor;
-        creators["mage armor"] = &mage_armor;
-        creators["ice armor"] = &ice_armor;
-    }
-private:
-    static ActionNode* molten_armor(PlayerbotAI* ai)
-    {
-        return new ActionNode ("molten armor",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("mage armor"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* mage_armor(PlayerbotAI* ai)
-    {
-        return new ActionNode ("mage armor",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("ice armor"), NULL),
-            /*C*/ NULL);
-    }
-    static ActionNode* ice_armor(PlayerbotAI* ai)
-    {
-        return new ActionNode ("ice armor",
-            /*P*/ NULL,
-            /*A*/ NextAction::array(0, new NextAction("frost armor"), NULL),
-            /*C*/ NULL);
-    }
+    public:
+        GenericMageNonCombatStrategyActionNodeFactory()
+        {
+            creators["molten armor"] = &molten_armor;
+            creators["mage armor"] = &mage_armor;
+            creators["ice armor"] = &ice_armor;
+        }
+    private:
+        static ActionNode* molten_armor(PlayerbotAI* ai)
+        {
+            return new ActionNode ("molten armor",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("mage armor"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* mage_armor(PlayerbotAI* ai)
+        {
+            return new ActionNode ("mage armor",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("ice armor"), NULL),
+                /*C*/ NULL);
+        }
+        static ActionNode* ice_armor(PlayerbotAI* ai)
+        {
+            return new ActionNode ("ice armor",
+                /*P*/ NULL,
+                /*A*/ NextAction::array(0, new NextAction("frost armor"), NULL),
+                /*C*/ NULL);
+        }
 };
 
 GenericMageNonCombatStrategy::GenericMageNonCombatStrategy(PlayerbotAI* ai) : NonCombatStrategy(ai)
@@ -48,55 +48,55 @@ void GenericMageNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigger
     NonCombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "arcane intellect",
+            "arcane intellect",
         NextAction::array(0, new NextAction("arcane intellect", 21.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "arcane intellect on party",
+            "arcane intellect on party",
         NextAction::array(0,
-            new NextAction("arcane brilliance", 21.0f),
-            new NextAction("arcane intellect on party", 20.0f),
-            NULL)));
+        new NextAction("arcane brilliance", 21.0f),
+        new NextAction("arcane intellect on party", 20.0f),
+        NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no conjured drink",
+            "no conjured drink",
         NextAction::array(0, new NextAction("conjure water", 16.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no conjured food",
+            "no conjured food",
         NextAction::array(0, new NextAction("conjure food", 15.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no mana gem",
+            "no mana gem",
         NextAction::array(0, new NextAction("conjure mana gem", 14.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "remove curse",
+            "remove curse",
         NextAction::array(0, new NextAction("remove curse", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "remove curse on party",
+            "remove curse on party",
         NextAction::array(0, new NextAction("remove curse on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member needs food",
+            "party member needs food",
         NextAction::array(0, new NextAction("give conjured food", 13.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member needs water",
+            "party member needs water",
         NextAction::array(0, new NextAction("give conjured water", 13.0f), NULL)));
 }
 
 void MageBuffManaStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "mage armor",
+            "mage armor",
         NextAction::array(0, new NextAction("mage armor", 19.0f), NULL)));
 }
 
 void MageBuffDpsStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "mage armor",
+            "mage armor",
         NextAction::array(0, new NextAction("molten armor", 19.0f), NULL)));
 }

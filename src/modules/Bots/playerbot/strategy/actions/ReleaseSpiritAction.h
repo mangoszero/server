@@ -7,25 +7,24 @@
 namespace ai
 {
     class ReleaseSpiritAction : public Action {
-    public:
-        ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
+        public:
+            ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
 
-    public:
-        virtual bool Execute(Event event)
-        {
-            if (bot->IsAlive() || bot->GetCorpse())
+        public:
+            virtual bool Execute(Event event)
             {
-                return false;
+                if (bot->IsAlive() || bot->GetCorpse())
+                {
+                    return false;
+                }
+
+                ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
+
+                bot->SetBotDeathTimer();
+                bot->BuildPlayerRepop();
+
+                bot->RepopAtGraveyard();
+                return true;
             }
-
-            ai->ChangeStrategy("-follow,+stay", BOT_STATE_NON_COMBAT);
-
-            bot->SetBotDeathTimer();
-            bot->BuildPlayerRepop();
-
-            bot->RepopAtGraveyard();
-            return true;
-        }
     };
-
 }

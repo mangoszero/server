@@ -60,12 +60,12 @@ void Map::LoadLocalTransports()
     }
 
     sLog.outString();
-/*
-    for (std::set<Transport*>::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
-    {
-        sLog.outString(">>>%s initialized", (*i)->GetGuidStr().c_str());
-    }
-*/
+    /**
+     for (std::set<Transport*>::const_iterator i = i_transports.begin(); i != i_transports.end(); ++i)
+     {
+     sLog.outString(">>>%s initialized", (*i)->GetGuidStr().c_str());
+     }
+     */
 
     if (GetId()==369)
     {
@@ -286,7 +286,7 @@ bool LocalTransport::Initialize(uint32 guid, Map* m)
     if (!IsPositionValid())
     {
         sLog.outError("Local transport GUID:%u, Name:%s, Entry:%u not created. Suggested coordinates are not valid: (X, Y, Z)=(%f, %f, %f)",
-                      guid, goinfo->name, goinfo->id, gdata->posX, gdata->posY, gdata->posZ);
+            guid, goinfo->name, goinfo->id, gdata->posX, gdata->posY, gdata->posZ);
         return false;
     }
 
@@ -474,8 +474,8 @@ bool GlobalTransport::GenerateWaypoints()
         {
             keyFrames[i].distFromPrev =
                 sqrt(pow(keyFrames[i].node->x - keyFrames[i - 1].node->x, 2) +
-                    pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
-                    pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
+                pow(keyFrames[i].node->y - keyFrames[i - 1].node->y, 2) +
+                pow(keyFrames[i].node->z - keyFrames[i - 1].node->z, 2));
         }
         if (keyFrames[i].node->actionFlag == 2)
         {
@@ -537,10 +537,6 @@ bool GlobalTransport::GenerateWaypoints()
         keyFrames[i].tFrom *= 1000;
         keyFrames[i].tTo *= 1000;
     }
-
-    //    for (int i = 0; i < keyFrames.size(); ++i) {
-    //        sLog.outString("%f, %f, %f, %f, %f, %f, %f", keyFrames[i].x, keyFrames[i].y, keyFrames[i].distUntilStop, keyFrames[i].distSinceStop, keyFrames[i].distFromPrev, keyFrames[i].tFrom, keyFrames[i].tTo);
-    //    }
 
     // Now we're completely set up; we can move along the length of each waypoint at 100 ms intervals
     // speed = max(30, t) (remember x = 0.5s^2, and when accelerating, a = 1 unit/s^2
@@ -700,13 +696,17 @@ void GlobalTransport::TeleportTransport(uint32 newMapid, float x, float y, float
         {
             Player* receiver = (*itr) ? (*itr)->ToPlayer() : nullptr;
             if (!receiver || receiver->GetPlayerbotAI())
+            {
                 continue;
+            }
 
             for (UnitSet::const_iterator itr2 = m_passengers.begin(); itr2 != m_passengers.end(); ++itr2)
             {
                 Player* other = (*itr2) ? (*itr2)->ToPlayer() : nullptr;
                 if (!other || other == receiver || !other->GetPlayerbotAI())
+                {
                     continue;
+                }
 
                 UpdateData updateData;
                 other->BuildOutOfRangeUpdateBlock(&updateData);
@@ -721,8 +721,12 @@ void GlobalTransport::TeleportTransport(uint32 newMapid, float x, float y, float
     // Snapshot: TeleportTo() may call RemovePassenger(), invalidating a live iterator.
     std::vector<Player*> playersToTeleport;
     for (Unit* unit : m_passengers)
+    {
         if (Player* plr = unit->ToPlayer())
+        {
             playersToTeleport.push_back(plr);
+        }
+    }
 
     for (Player* plr : playersToTeleport)
     {
@@ -778,9 +782,14 @@ void GlobalTransport::Update(uint32 /*update_diff*/, uint32 /*p_time*/)
                 {
                     Player* player = itr->getSource();
                     if (this == player->GetTransport())
+                    {
                         continue;
+                    }
+
                     if (player->GetZoneId() != zoneId)
+                    {
                         continue;
+                    }
                     player->SendDirectMessage(&destroyPacket);
                     UpdateData transData;
                     BuildCreateUpdateBlockForPlayer(&transData, player);
@@ -838,9 +847,11 @@ void GlobalTransport::UpdateForMap(Map const* targetMap)
         transData.BuildPacket(&out_packet, true);
 
         for (Map::PlayerList::const_iterator itr = pl.begin(); itr != pl.end(); ++itr)
+        {
             if (this != itr->getSource()->GetTransport())
             {
                 itr->getSource()->SendDirectMessage(&out_packet);
             }
+        }
     }
 }

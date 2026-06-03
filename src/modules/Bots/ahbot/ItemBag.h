@@ -7,26 +7,26 @@ namespace ahbot
 
     class CategoryList
     {
-    public:
-        CategoryList();
-        virtual ~CategoryList();
+        public:
+            CategoryList();
+            virtual ~CategoryList();
 
-        Category* operator[](int index) { return categories[index]; }
-        int32 size()
-        {
-            return categories.size();
-        }
-        static CategoryList instance;
+            Category* operator[](int index) { return categories[index]; }
+            int32 size()
+            {
+                return categories.size();
+            }
+            static CategoryList instance;
 
-    private:
-        void Add(Category* category);
+        private:
+            void Add(Category* category);
 
-    private:
-        vector<Category*> categories;
+        private:
+            vector<Category*> categories;
     };
 
     template<class T>
-    void Shuffle(vector<T>& items)
+        void Shuffle(vector<T>& items)
     {
         uint32 count = items.size();
         for (uint32 i = 0; i < count * 5; i++)
@@ -42,47 +42,47 @@ namespace ahbot
 
     class ItemBag
     {
-    public:
-        ItemBag();
+        public:
+            ItemBag();
 
-    public:
-        void Init(bool silent = false);
-        vector<uint32>& Get(Category* category) { return content[category]; }
-        int32 GetCount(Category* category) { return content[category].size(); }
-        int32 GetCount(Category* category, uint32 item);
-        bool Add(ItemPrototype const* proto);
+        public:
+            void Init(bool silent = false);
+            vector<uint32>& Get(Category* category) { return content[category]; }
+            int32 GetCount(Category* category) { return content[category].size(); }
+            int32 GetCount(Category* category, uint32 item);
+            bool Add(ItemPrototype const* proto);
 
-    protected:
-        virtual void Load() = 0;
-        virtual string GetName() = 0;
+        protected:
+            virtual void Load() = 0;
+            virtual string GetName() = 0;
 
-    protected:
-        map<Category*,vector<uint32> > content;
+        protected:
+            map<Category*,vector<uint32> > content;
     };
 
     class AvailableItemsBag : public ItemBag
     {
-    public:
-        AvailableItemsBag() {}
+        public:
+            AvailableItemsBag() {}
 
-    protected:
-        virtual void Load();
-        virtual string GetName()
-        {
-            return "available";
-        }
+        protected:
+            virtual void Load();
+            virtual string GetName()
+            {
+                return "available";
+            }
     };
 
     class InAuctionItemsBag : public ItemBag
     {
-    public:
-        InAuctionItemsBag(uint32 auctionId) : auctionId(auctionId) {}
+        public:
+            InAuctionItemsBag(uint32 auctionId) : auctionId(auctionId) {}
 
-    protected:
-        virtual void Load();
-        virtual string GetName();
+        protected:
+            virtual void Load();
+            virtual string GetName();
 
-    private:
-        uint32 auctionId;
+        private:
+            uint32 auctionId;
     };
 };

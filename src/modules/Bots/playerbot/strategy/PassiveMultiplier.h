@@ -6,15 +6,15 @@ namespace ai
 {
     class PassiveMultiplier : public Multiplier
     {
-    public:
-        PassiveMultiplier(PlayerbotAI* ai);
+        public:
+            PassiveMultiplier(PlayerbotAI* ai);
 
-    public:
-        virtual float GetValue(Action* action);
+        public:
+            virtual float GetValue(Action* action);
 
-    private:
-        static list<string> allowedActions;
-        static list<string> allowedParts;
+        private:
+            static list<string> allowedActions;
+            static list<string> allowedParts;
     };
 
 }

@@ -399,21 +399,21 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (float(tmp.questExplored.distance) > DEFAULT_VISIBILITY_DISTANCE)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u",
-                                    type, tmp.questExplored.distance, tmp.id);
+                        type, tmp.questExplored.distance, tmp.id);
                     continue;
                 }
 
                 if (tmp.questExplored.distance && float(tmp.questExplored.distance) > DEFAULT_VISIBILITY_DISTANCE)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has too large distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, max distance is %f or 0 for disable distance check",
-                                    type, tmp.questExplored.distance, tmp.id, DEFAULT_VISIBILITY_DISTANCE);
+                        type, tmp.questExplored.distance, tmp.id, DEFAULT_VISIBILITY_DISTANCE);
                     continue;
                 }
 
                 if (tmp.questExplored.distance && float(tmp.questExplored.distance) < INTERACTION_DISTANCE)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has too small distance (%u) for exploring objective complete in `datalong2` in SCRIPT_COMMAND_QUEST_EXPLORED in `datalong` for script id %u, min distance is %f or 0 for disable distance check",
-                                    type, tmp.questExplored.distance, tmp.id, INTERACTION_DISTANCE);
+                        type, tmp.questExplored.distance, tmp.id, INTERACTION_DISTANCE);
                     continue;
                 }
 
@@ -459,8 +459,8 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 }
 
                 if (info->type == GAMEOBJECT_TYPE_FISHINGNODE ||
-                        info->type == GAMEOBJECT_TYPE_FISHINGHOLE ||
-                        info->type == GAMEOBJECT_TYPE_DOOR)
+                    info->type == GAMEOBJECT_TYPE_FISHINGHOLE ||
+                    info->type == GAMEOBJECT_TYPE_DOOR)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` have gameobject type (%u) unsupported by command SCRIPT_COMMAND_RESPAWN_GO for script id %u", type, info->type, tmp.id);
                     continue;
@@ -528,7 +528,7 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (!sSpellStore.LookupEntry(tmp.removeAura.spellId))
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` using nonexistent spell (id: %u) in SCRIPT_COMMAND_REMOVE_AURA or SCRIPT_COMMAND_CAST_SPELL for script id %u",
-                                    type, tmp.removeAura.spellId, tmp.id);
+                        type, tmp.removeAura.spellId, tmp.id);
                     continue;
                 }
                 break;
@@ -538,7 +538,7 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (!sSpellStore.LookupEntry(tmp.castSpell.spellId))
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` using nonexistent spell (id: %u) in SCRIPT_COMMAND_REMOVE_AURA or SCRIPT_COMMAND_CAST_SPELL for script id %u",
-                                    type, tmp.castSpell.spellId, tmp.id);
+                        type, tmp.castSpell.spellId, tmp.id);
                     continue;
                 }
                 bool hasErrored = false;
@@ -562,7 +562,7 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (!sSoundEntriesStore.LookupEntry(tmp.playSound.soundId))
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` using nonexistent sound (id: %u) in SCRIPT_COMMAND_PLAY_SOUND for script id %u",
-                                    type, tmp.playSound.soundId, tmp.id);
+                        type, tmp.playSound.soundId, tmp.id);
                     continue;
                 }
                 // bitmask: 0/1=target-player, 0/2=with distance dependent, 0/4=map wide, 0/8=zone wide
@@ -581,13 +581,13 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (!ObjectMgr::GetItemPrototype(tmp.createItem.itemEntry))
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has nonexistent item (entry: %u) in SCRIPT_COMMAND_CREATE_ITEM for script id %u",
-                                    type, tmp.createItem.itemEntry, tmp.id);
+                        type, tmp.createItem.itemEntry, tmp.id);
                     continue;
                 }
                 if (!tmp.createItem.amount)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` SCRIPT_COMMAND_CREATE_ITEM but amount is %u for script id %u",
-                                    type, tmp.createItem.amount, tmp.id);
+                        type, tmp.createItem.amount, tmp.id);
                     continue;
                 }
                 break;
@@ -601,13 +601,13 @@ void ScriptMgr::LoadScripts(DBScriptType type)
             {
 #if defined(CLASSIC)
                 sLog.outErrorDb("Table `db_scripts [type = %d]` use unsupported SCRIPT_COMMAND_PLAY_MOVIE for script id %u",
-                                type, tmp.id);
+                    type, tmp.id);
                 continue;
 #else
                 if (!sMovieStore.LookupEntry(tmp.playMovie.movieId))
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` use non-existing movie_id (id: %u) in SCRIPT_COMMAND_PLAY_MOVIE for script id %u",
-                                type, tmp.playMovie.movieId, tmp.id);
+                        type, tmp.playMovie.movieId, tmp.id);
                     continue;
                 }
                 break;
@@ -618,14 +618,16 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 if (tmp.movement.movementType >= MAX_DB_MOTION_TYPE)
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` SCRIPT_COMMAND_MOVEMENT has invalid MovementType %u for script id %u",
-                                    type, tmp.movement.movementType, tmp.id);
+                        type, tmp.movement.movementType, tmp.id);
                     continue;
                 }
 
                 break;
             }
             case SCRIPT_COMMAND_SET_ACTIVEOBJECT:           // 21
+            {
                 break;
+            }
             case SCRIPT_COMMAND_SET_FACTION:                // 22
             {
                 if (tmp.faction.factionId && !sFactionTemplateStore.LookupEntry(tmp.faction.factionId))
@@ -680,11 +682,13 @@ void ScriptMgr::LoadScripts(DBScriptType type)
             }
             case SCRIPT_COMMAND_SET_RUN:                    // 25
             case SCRIPT_COMMAND_ATTACK_START:               // 26
+            {
                 break;
+            }
             case SCRIPT_COMMAND_GO_LOCK_STATE:              // 27
             {
-                if (// lock(0x01) and unlock(0x02) together
-                    ((tmp.goLockState.lockState & 0x01) && (tmp.goLockState.lockState & 0x02)) ||
+                // lock(0x01) and unlock(0x02) together
+                if (((tmp.goLockState.lockState & 0x01) && (tmp.goLockState.lockState & 0x02)) ||
                     // non-interact (0x4) and interact (0x08) together
                     ((tmp.goLockState.lockState & 0x04) && (tmp.goLockState.lockState & 0x08)) ||
                     // no setting
@@ -707,7 +711,9 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_MODIFY_NPC_FLAGS:           // 29
+            {
                 break;
+            }
             case SCRIPT_COMMAND_SEND_TAXI_PATH:             // 30
             {
                 if (!sTaxiPathStore.LookupEntry(tmp.sendTaxiPath.taxiPathId))
@@ -722,6 +728,7 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                     for (uint32 i = 1; i < sSpellStore.GetNumRows() && taxiSpell == 0; ++i)
                     {
                         if (SpellEntry const* spell = sSpellStore.LookupEntry(i))
+                        {
                             for (int j = 0; j < MAX_EFFECT_INDEX; ++j)
                             {
 #if defined (CATA)
@@ -732,14 +739,19 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                                 }
 
                                 if (spellEffect->Effect == SPELL_EFFECT_SEND_TAXI && spellEffect->EffectMiscValue == tmp.sendTaxiPath.taxiPathId)
-#else
-                                if (spell->Effect[j] == SPELL_EFFECT_SEND_TAXI && spell->EffectMiscValue[j] == int32(tmp.sendTaxiPath.taxiPathId))
-#endif
                                 {
                                     taxiSpell = i;
                                     break;
                                 }
+#else
+                                if (spell->Effect[j] == SPELL_EFFECT_SEND_TAXI && spell->EffectMiscValue[j] == int32(tmp.sendTaxiPath.taxiPathId))
+                                {
+                                    taxiSpell = i;
+                                    break;
+                                }
+#endif
                             }
+                        }
                     }
 
                     if (taxiSpell)
@@ -760,10 +772,14 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_PAUSE_WAYPOINTS:            // 32
+            {
                 break;
+            }
             case SCRIPT_COMMAND_JOIN_LFG:                   // 33
+            {
                 //Only currently used in Zero
                 break;
+            }
             case SCRIPT_COMMAND_TERMINATE_COND:             // 34
             {
                 if (!sConditionStorage.LookupEntry<PlayerCondition>(tmp.terminateCond.conditionId))
@@ -788,7 +804,9 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_TURN_TO:                    // 36
+            {
                 break;
+            }
             case SCRIPT_COMMAND_MOVE_DYNAMIC:               // 37
             {
                 if (tmp.moveDynamic.maxDist < tmp.moveDynamic.minDist)
@@ -815,10 +833,10 @@ void ScriptMgr::LoadScripts(DBScriptType type)
             case SCRIPT_COMMAND_CHANGE_ENTRY:              // 39
             {
                 if (tmp.changeEntry.creatureEntry && !ObjectMgr::GetCreatureTemplate(tmp.changeEntry.creatureEntry))
-                    {
-                        sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_CHANGE_ENTRY for script id %u, but this creature_template does not exist.", type, tmp.changeEntry.creatureEntry, tmp.id);
-                        continue;
-                    }
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_CHANGE_ENTRY for script id %u, but this creature_template does not exist.", type, tmp.changeEntry.creatureEntry, tmp.id);
+                    continue;
+                }
                 break;
             }
             case SCRIPT_COMMAND_DESPAWN_GO:                   // 40
@@ -839,7 +857,9 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_RESPAWN:                      // 41
+            {
                 break;
+            }
             case SCRIPT_COMMAND_SET_EQUIPMENT_SLOTS:          // 42
             {
                 if (tmp.textId[0] < 0 || tmp.textId[1] < 0 || tmp.textId[2] < 0)
@@ -850,27 +870,36 @@ void ScriptMgr::LoadScripts(DBScriptType type)
                 break;
             }
             case SCRIPT_COMMAND_RESET_GO:                     // 43
+            {
                 break;
+            }
             case SCRIPT_COMMAND_UPDATE_TEMPLATE:              // 44
             {
 #if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
                 if (tmp.updateTemplate.entry && !ObjectMgr::GetCreatureTemplate(tmp.updateTemplate.entry))
-#else
-                if (!sCreatureStorage.LookupEntry<CreatureInfo>(tmp.updateTemplate.entry))
-#endif
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u, but this creature_template does not exist.", type, tmp.updateTemplate.entry, tmp.id);
                     continue;
                 }
-#if defined(CLASSIC) || defined(TBC) || defined(WOTLK)
+
                 if (tmp.updateTemplate.faction > 1)
-#else
-                if (tmp.updateTemplate.faction != 0 && tmp.updateTemplate.faction != 1)
-#endif
                 {
                     sLog.outErrorDb("Table `db_scripts [type = %d]` uses invalid faction team (datalong2 = %u, must be 0 or 1) in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u", type, tmp.updateTemplate.faction, tmp.id);
                     continue;
                 }
+#else
+                if (!sCreatureStorage.LookupEntry<CreatureInfo>(tmp.updateTemplate.entry))
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` has datalong = %u in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u, but this creature_template does not exist.", type, tmp.updateTemplate.entry, tmp.id);
+                    continue;
+                }
+
+                if (tmp.updateTemplate.faction != 0 && tmp.updateTemplate.faction != 1)
+                {
+                    sLog.outErrorDb("Table `db_scripts [type = %d]` uses invalid faction team (datalong2 = %u, must be 0 or 1) in SCRIPT_COMMAND_UPDATE_TEMPLATE for script id %u", type, tmp.updateTemplate.faction, tmp.id);
+                    continue;
+                }
+#endif
                 break;
             }
             case SCRIPT_COMMAND_XP_USER:                      // 53
@@ -1009,10 +1038,12 @@ void ScriptMgr::LoadDbScriptStrings()
     std::set<int32> ids;
 
     for (int32 i = MIN_DB_SCRIPT_STRING_ID; i < MAX_DB_SCRIPT_STRING_ID; ++i)
+    {
         if (sObjectMgr.GetMangosStringLocale(i))
         {
             ids.insert(i);
         }
+    }
 
     CheckScriptTexts(ids);
     sWaypointMgr.CheckTextsExistance(ids);
@@ -1091,8 +1122,7 @@ bool ScriptAction::GetScriptCommandObject(const ObjectGuid guid, bool includeIte
         case HIGHGUID_CORPSE:
             resultObject = sObjectAccessor.FindCorpse(guid);
             break;
-        case HIGHGUID_ITEM:
-            // case HIGHGUID_CONTAINER: ==HIGHGUID_ITEM
+        case HIGHGUID_ITEM: // case HIGHGUID_CONTAINER: ==HIGHGUID_ITEM
         {
             if (includeItem)
             {
@@ -1422,7 +1452,7 @@ bool ScriptAction::HandleScriptStep()
             if (m_script->setField.fieldId <= OBJECT_FIELD_ENTRY || m_script->setField.fieldId >= pSourceOrItem->GetValuesCount())
             {
                 sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u call for wrong field %u (max count: %u) in %s.",
-                                m_type, m_script->id, m_script->command, m_script->setField.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
+                    m_type, m_script->id, m_script->command, m_script->setField.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
                 break;
             }
             pSourceOrItem->SetUInt32Value(m_script->setField.fieldId, m_script->setField.fieldValue);
@@ -1471,7 +1501,7 @@ bool ScriptAction::HandleScriptStep()
             if (m_script->setFlag.fieldId <= OBJECT_FIELD_ENTRY || m_script->setFlag.fieldId >= pSourceOrItem->GetValuesCount())
             {
                 sLog.outErrorDb("SCRIPT_COMMAND_FLAG_SET (script id %u) call for wrong field %u (max count: %u) in %s.",
-                                m_script->id, m_script->setFlag.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
+                    m_script->id, m_script->setFlag.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
                 break;
             }
             pSourceOrItem->SetFlag(m_script->setFlag.fieldId, m_script->setFlag.fieldValue);
@@ -1485,7 +1515,7 @@ bool ScriptAction::HandleScriptStep()
             if (m_script->removeFlag.fieldId <= OBJECT_FIELD_ENTRY || m_script->removeFlag.fieldId >= pSourceOrItem->GetValuesCount())
             {
                 sLog.outErrorDb("SCRIPT_COMMAND_FLAG_REMOVE (script id %u) call for wrong field %u (max count: %u) in %s.",
-                                m_script->id, m_script->removeFlag.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
+                    m_script->id, m_script->removeFlag.fieldId, pSourceOrItem->GetValuesCount(), pSourceOrItem->GetGuidStr().c_str());
                 break;
             }
             pSourceOrItem->RemoveFlag(m_script->removeFlag.fieldId, m_script->removeFlag.fieldValue);
@@ -1621,7 +1651,7 @@ bool ScriptAction::HandleScriptStep()
             }
 
             if (pGo->GetGoType() == GAMEOBJECT_TYPE_FISHINGNODE ||
-                    pGo->GetGoType() == GAMEOBJECT_TYPE_DOOR)
+                pGo->GetGoType() == GAMEOBJECT_TYPE_DOOR)
             {
                 sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u can not be used with gameobject of type %u (guid: %u, buddyEntry: %u).", m_type, m_script->id, m_script->command, uint32(pGo->GetGoType()), m_script->respawnGo.goGuid, m_script->buddyEntry);
                 break;
@@ -1750,13 +1780,17 @@ bool ScriptAction::HandleScriptStep()
             uint32 spell = m_script->castSpell.spellId;
             uint32 filledCount = 0;
             while (filledCount < MAX_TEXT_ID && m_script->textId[filledCount])  // Count which dataint fields are filled
+            {
                 ++filledCount;
+            }
+
             if (filledCount > 0)
+            {
                 if (uint32 randomField = urand(0, filledCount))               // Random selection resulted in one of the dataint fields
                 {
                     spell = m_script->textId[randomField - 1];
                 }
-
+            }
             // TODO: when GO cast implemented, code below must be updated accordingly to also allow GO spell cast
             if (pSource && pSource->GetTypeId() == TYPEID_GAMEOBJECT)
             {
@@ -2017,7 +2051,7 @@ bool ScriptAction::HandleScriptStep()
 
             GameObject* pGo = static_cast<GameObject*>(pSource);
 
-            /* flag lockState
+            /** flag lockState
              * go_lock          0x01
              * go_unlock        0x02
              * go_nonInteract   0x04
@@ -2289,7 +2323,7 @@ bool ScriptAction::HandleScriptStep()
                 }
 
                 pSource->GetRandomPoint(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), m_script->moveDynamic.maxDist, x, y, z,
-                                        m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
+                    m_script->moveDynamic.minDist, (orientation == 0.0f ? NULL : &orientation));
                 z = std::max(z, pTarget->GetPositionZ());
                 pSource->UpdateAllowedPositionZ(x, y, z);
             }
@@ -2553,48 +2587,48 @@ void ScriptMgr::LoadScriptBinding()
         bool exists = false;
         switch (type)
         {
-        case SCRIPTED_UNIT:
-            exists = id > 0 ? bool(sCreatureStorage.LookupEntry<CreatureInfo>(uint32(id))) : bool(sObjectMgr.GetCreatureData(uint32(-id)));
-            break;
-        case SCRIPTED_GAMEOBJECT:
-            exists = id > 0 ? bool(sGOStorage.LookupEntry<GameObjectInfo>(uint32(id))) : bool(sObjectMgr.GetGOData(uint32(-id)));
-            break;
-        case SCRIPTED_ITEM:
-            exists = bool(sItemStorage.LookupEntry<ItemPrototype>(uint32(id)));
-            break;
-        case SCRIPTED_AREATRIGGER:
-            exists = bool(sAreaTriggerStore.LookupEntry(uint32(id)));
-            break;
-        case SCRIPTED_SPELL:
-        case SCRIPTED_AURASPELL:
-            exists = bool(sSpellStore.LookupEntry(uint32(id)));
-            break;
-        case SCRIPTED_MAPEVENT:
-            exists = eventIds.count(uint32(id));
-            break;
-        case SCRIPTED_MAP:
-            exists = bool(sMapStore.LookupEntry(uint32(id)));
-            break;
-        case SCRIPTED_PVP_ZONE: // for now, no check on special zones
-            exists = bool(sAreaStore.LookupEntry(uint32(id)));
-            break;
-        case SCRIPTED_BATTLEGROUND:
-            if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
-            {
-                exists = mapEntry->IsBattleGround();
-            }
-            break;
-        case SCRIPTED_INSTANCE:
-            if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
-            {
-                exists = mapEntry->IsDungeon();
-            }
-            break;
-        case SCRIPTED_CONDITION:
-            exists = sConditionStorage.LookupEntry<PlayerCondition>(uint32(id));
-            break;
-        case SCRIPTED_ACHIEVEMENT:
-            break;
+            case SCRIPTED_UNIT:
+                exists = id > 0 ? bool(sCreatureStorage.LookupEntry<CreatureInfo>(uint32(id))) : bool(sObjectMgr.GetCreatureData(uint32(-id)));
+                break;
+            case SCRIPTED_GAMEOBJECT:
+                exists = id > 0 ? bool(sGOStorage.LookupEntry<GameObjectInfo>(uint32(id))) : bool(sObjectMgr.GetGOData(uint32(-id)));
+                break;
+            case SCRIPTED_ITEM:
+                exists = bool(sItemStorage.LookupEntry<ItemPrototype>(uint32(id)));
+                break;
+            case SCRIPTED_AREATRIGGER:
+                exists = bool(sAreaTriggerStore.LookupEntry(uint32(id)));
+                break;
+            case SCRIPTED_SPELL:
+            case SCRIPTED_AURASPELL:
+                exists = bool(sSpellStore.LookupEntry(uint32(id)));
+                break;
+            case SCRIPTED_MAPEVENT:
+                exists = eventIds.count(uint32(id));
+                break;
+            case SCRIPTED_MAP:
+                exists = bool(sMapStore.LookupEntry(uint32(id)));
+                break;
+            case SCRIPTED_PVP_ZONE: // for now, no check on special zones
+                exists = bool(sAreaStore.LookupEntry(uint32(id)));
+                break;
+            case SCRIPTED_BATTLEGROUND:
+                if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
+                {
+                    exists = mapEntry->IsBattleGround();
+                }
+                break;
+            case SCRIPTED_INSTANCE:
+                if (MapEntry const* mapEntry = sMapStore.LookupEntry(uint32(id)))
+                {
+                    exists = mapEntry->IsDungeon();
+                }
+                break;
+            case SCRIPTED_CONDITION:
+                exists = sConditionStorage.LookupEntry<PlayerCondition>(uint32(id));
+                break;
+            case SCRIPTED_ACHIEVEMENT:
+                break;
         }
 
         if (!exists)
@@ -2729,7 +2763,9 @@ uint32 ScriptMgr::GetBoundScriptId(ScriptedObjectType entity, int32 entry)
         }
     }
     else
+    {
         sLog.outErrorScriptLib("asking a script for non-existing entity type %u!", entity);
+    }
 #ifdef _DEBUG
     m_bindMutex.release();
 #endif /* _DEBUG */
@@ -2785,11 +2821,11 @@ CreatureAI* ScriptMgr::GetCreatureAI(Creature* pCreature)
 GameObjectAI* ScriptMgr::GetGameObjectAI(GameObject* pGo)
 {
     // TODO - expose in ELuna
-    #ifdef ENABLE_SD3
-        return SD3::GetGameObjectAI(pGo);
-    #else
-        return NULL;
-    #endif
+#ifdef ENABLE_SD3
+    return SD3::GetGameObjectAI(pGo);
+#else
+    return NULL;
+#endif
 }
 
 /**
@@ -2872,7 +2908,7 @@ bool ScriptMgr::OnGossipHello(Player* pPlayer, Item* pItem)
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-// TODO ELUNA handler
+    // TODO ELUNA handler
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_SD3
@@ -2990,7 +3026,7 @@ bool ScriptMgr::OnGossipSelect(Player* pPlayer, Item* pItem, uint32 sender, uint
 {
     // Used by Eluna
 #ifdef ENABLE_ELUNA
-// TODO Add Eluna handlers
+    // TODO Add Eluna handlers
 #endif /* ENABLE_ELUNA */
 
 #ifdef ENABLE_SD3

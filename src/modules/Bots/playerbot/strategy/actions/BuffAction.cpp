@@ -6,94 +6,96 @@
 
 using namespace ai;
 
-class FindBuffVisitor : public IterateItemsVisitor {
-public:
-    FindBuffVisitor(Player* bot) : IterateItemsVisitor(), bot(bot)
-    {
-    }
+class FindBuffVisitor : public IterateItemsVisitor
+{
+    public:
+        FindBuffVisitor(Player* bot) : IterateItemsVisitor(), bot(bot)
+        {}
 
-    virtual bool Visit(Item* item)
-    {
-        if (bot->CanUseItem(item->GetProto()) != EQUIP_ERR_OK)
+        virtual bool Visit(Item* item)
         {
-            return true;
-        }
-
-        const ItemPrototype* proto = item->GetProto();
-
-        if (proto->Class != ITEM_CLASS_CONSUMABLE)
-        {
-            return true;
-        }
-
-        if (proto->SubClass != ITEM_SUBCLASS_ELIXIR &&
-            proto->SubClass != ITEM_SUBCLASS_FLASK &&
-            proto->SubClass != ITEM_SUBCLASS_SCROLL &&
-            proto->SubClass != ITEM_SUBCLASS_FOOD &&
-            proto->SubClass != ITEM_SUBCLASS_CONSUMABLE_OTHER &&
-            proto->SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
-            return true;
-
-        for (int i=0; i<MAX_ITEM_PROTO_SPELLS; i++)
-        {
-            uint32 spellId = proto->Spells[i].SpellId;
-            if (!spellId)
-            {
-                continue;
-            }
-
-            if (bot->HasAura(spellId))
+            if (bot->CanUseItem(item->GetProto()) != EQUIP_ERR_OK)
             {
                 return true;
             }
 
-            Item* itemForSpell = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<Item*>("item for spell", spellId);
-            if (itemForSpell && itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+            const ItemPrototype* proto = item->GetProto();
+
+            if (proto->Class != ITEM_CLASS_CONSUMABLE)
             {
                 return true;
             }
 
-            if (items.find(proto->SubClass) == items.end())
+            if (proto->SubClass != ITEM_SUBCLASS_ELIXIR &&
+                proto->SubClass != ITEM_SUBCLASS_FLASK &&
+                proto->SubClass != ITEM_SUBCLASS_SCROLL &&
+                proto->SubClass != ITEM_SUBCLASS_FOOD &&
+                proto->SubClass != ITEM_SUBCLASS_CONSUMABLE_OTHER &&
+                proto->SubClass != ITEM_SUBCLASS_ITEM_ENHANCEMENT)
             {
-                items[proto->SubClass] = list<Item*>();
+                return true;
             }
 
-            items[proto->SubClass].push_back(item);
-            break;
+            for (int i=0; i<MAX_ITEM_PROTO_SPELLS; i++)
+            {
+                uint32 spellId = proto->Spells[i].SpellId;
+                if (!spellId)
+                {
+                    continue;
+                }
+
+                if (bot->HasAura(spellId))
+                {
+                    return true;
+                }
+
+                Item* itemForSpell = *bot->GetPlayerbotAI()->GetAiObjectContext()->GetValue<Item*>("item for spell", spellId);
+                if (itemForSpell && itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+                {
+                    return true;
+                }
+
+                if (items.find(proto->SubClass) == items.end())
+                {
+                    items[proto->SubClass] = list<Item*>();
+                }
+
+                items[proto->SubClass].push_back(item);
+                break;
+            }
+
+            return true;
         }
 
-        return true;
-    }
+    public:
+        map<uint32, list<Item*> > items;
 
-public:
-    map<uint32, list<Item*> > items;
-
-private:
-    Player* bot;
+    private:
+        Player* bot;
 };
 
 void BuffAction::TellHeader(uint32 subClass)
 {
     switch (subClass)
     {
-    case ITEM_SUBCLASS_ELIXIR:
-        ai->TellMaster("--- Elixir ---");
-        return;
-    case ITEM_SUBCLASS_FLASK:
-        ai->TellMaster("--- Flask ---");
-        return;
-    case ITEM_SUBCLASS_SCROLL:
-        ai->TellMaster("--- Scroll ---");
-        return;
-    case ITEM_SUBCLASS_FOOD:
-        ai->TellMaster("--- Food ---");
-        return;
-    case ITEM_SUBCLASS_CONSUMABLE_OTHER:
-        ai->TellMaster("--- Other ---");
-        return;
-    case ITEM_SUBCLASS_ITEM_ENHANCEMENT:
-        ai->TellMaster("--- Enchant ---");
-        return;
+        case ITEM_SUBCLASS_ELIXIR:
+            ai->TellMaster("--- Elixir ---");
+            return;
+        case ITEM_SUBCLASS_FLASK:
+            ai->TellMaster("--- Flask ---");
+            return;
+        case ITEM_SUBCLASS_SCROLL:
+            ai->TellMaster("--- Scroll ---");
+            return;
+        case ITEM_SUBCLASS_FOOD:
+            ai->TellMaster("--- Food ---");
+            return;
+        case ITEM_SUBCLASS_CONSUMABLE_OTHER:
+            ai->TellMaster("--- Other ---");
+            return;
+        case ITEM_SUBCLASS_ITEM_ENHANCEMENT:
+            ai->TellMaster("--- Enchant ---");
+            return;
     }
 }
 

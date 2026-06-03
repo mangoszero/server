@@ -23,8 +23,8 @@
  */
 
 /** \file
-    \ingroup world
-*/
+ \ingroup world
+ */
 
 #include "Weather.h"
 #include "WorldSession.h"
@@ -55,8 +55,8 @@ enum WeatherSounds
 };
 
 /// Create the Weather object
-Weather::Weather(uint32 zone, WeatherZoneChances const* weatherChances) :
-    m_zone(zone),
+Weather::Weather(uint32 zone, WeatherZoneChances const* weatherChances)
+    : m_zone(zone),
     m_type(WEATHER_TYPE_FINE),
     m_grade(0.0f),
     m_weatherChances(weatherChances),

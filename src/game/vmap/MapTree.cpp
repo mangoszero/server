@@ -60,38 +60,38 @@ namespace VMAP
      */
     class MapRayCallback
     {
-    public:
-        MapRayCallback(ModelInstance* val) : prims(val), hit(false) {}
+        public:
+            MapRayCallback(ModelInstance* val) : prims(val), hit(false) {}
 
-        /**
-         * @brief Operator to handle ray intersection.
-         *
-         * @param ray The ray to intersect.
-         * @param entry The entry index.
-         * @param distance The distance to intersection.
-         * @param pStopAtFirstHit Whether to stop at the first hit.
-         * @return true if intersection occurs, false otherwise.
-         */
-        bool operator()(const G3D::Ray& ray, uint32 entry, float& distance, bool pStopAtFirstHit = true)
-        {
-            bool result = prims[entry].intersectRay(ray, distance, pStopAtFirstHit);
-            if (result)
+            /**
+             * @brief Operator to handle ray intersection.
+             *
+             * @param ray The ray to intersect.
+             * @param entry The entry index.
+             * @param distance The distance to intersection.
+             * @param pStopAtFirstHit Whether to stop at the first hit.
+             * @return true if intersection occurs, false otherwise.
+             */
+            bool operator()(const G3D::Ray& ray, uint32 entry, float& distance, bool pStopAtFirstHit = true)
             {
-                hit = true;
+                bool result = prims[entry].intersectRay(ray, distance, pStopAtFirstHit);
+                if (result)
+                {
+                    hit = true;
+                }
+                return result;
             }
-            return result;
-        }
 
-        /**
-         * @brief Checks if an intersection occurred.
-         *
-         * @return true if an intersection occurred, false otherwise.
-         */
-        bool didHit() const { return hit; }
+            /**
+             * @brief Checks if an intersection occurred.
+             *
+             * @return true if an intersection occurred, false otherwise.
+             */
+            bool didHit() const { return hit; }
 
-    protected:
-        ModelInstance* prims; /**< Pointer to model instances. */
-        bool hit; /**< Flag indicating if an intersection occurred. */
+        protected:
+            ModelInstance* prims; /**< Pointer to model instances. */
+            bool hit; /**< Flag indicating if an intersection occurred. */
     };
 
     /**
@@ -99,25 +99,25 @@ namespace VMAP
      */
     class AreaInfoCallback
     {
-    public:
-        AreaInfoCallback(ModelInstance* val) : prims(val) {}
+        public:
+            AreaInfoCallback(ModelInstance* val) : prims(val) {}
 
-        /**
-         * @brief Operator to handle area information retrieval.
-         *
-         * @param point The point to check.
-         * @param entry The entry index.
-         */
-        void operator()(const Vector3& point, uint32 entry)
-        {
+            /**
+             * @brief Operator to handle area information retrieval.
+             *
+             * @param point The point to check.
+             * @param entry The entry index.
+             */
+            void operator()(const Vector3& point, uint32 entry)
+            {
 #ifdef VMAP_DEBUG
-            DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
+                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
 #endif
-            prims[entry].GetAreaInfo(point, aInfo);
-        }
+                prims[entry].GetAreaInfo(point, aInfo);
+            }
 
-        ModelInstance* prims; /**< Pointer to model instances. */
-        AreaInfo aInfo; /**< Area information. */
+            ModelInstance* prims; /**< Pointer to model instances. */
+            AreaInfo aInfo; /**< Area information. */
     };
 
     /**
@@ -125,29 +125,29 @@ namespace VMAP
      */
     class LocationInfoCallback
     {
-    public:
-        LocationInfoCallback(ModelInstance* val, LocationInfo& info) : prims(val), locInfo(info), result(false) {}
+        public:
+            LocationInfoCallback(ModelInstance* val, LocationInfo& info) : prims(val), locInfo(info), result(false) {}
 
-        /**
-         * @brief Operator to handle location information retrieval.
-         *
-         * @param point The point to check.
-         * @param entry The entry index.
-         */
-        void operator()(const Vector3& point, uint32 entry)
-        {
-#ifdef VMAP_DEBUG
-            DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
-#endif
-            if (prims[entry].GetLocationInfo(point, locInfo))
+            /**
+             * @brief Operator to handle location information retrieval.
+             *
+             * @param point The point to check.
+             * @param entry The entry index.
+             */
+            void operator()(const Vector3& point, uint32 entry)
             {
-                result = true;
+#ifdef VMAP_DEBUG
+                DEBUG_LOG("trying to intersect '%s'", prims[entry].name.c_str());
+#endif
+                if (prims[entry].GetLocationInfo(point, locInfo))
+                {
+                    result = true;
+                }
             }
-        }
 
-        ModelInstance* prims; /**< Pointer to model instances. */
-        LocationInfo& locInfo; /**< Location information. */
-        bool result; /**< Flag indicating if location information was found. */
+            ModelInstance* prims; /**< Pointer to model instances. */
+            LocationInfo& locInfo; /**< Location information. */
+            bool result; /**< Flag indicating if location information was found. */
     };
 
     /**
@@ -213,8 +213,8 @@ namespace VMAP
      * @param mapID The map ID.
      * @param basePath The base path for map files.
      */
-    StaticMapTree::StaticMapTree(uint32 mapID, const std::string& basePath) :
-        iMapID(mapID), iTreeValues(nullptr), iBasePath(basePath), iIsTiled(false), iNTreeValues(0)
+    StaticMapTree::StaticMapTree(uint32 mapID, const std::string& basePath)
+        : iMapID(mapID), iTreeValues(nullptr), iBasePath(basePath), iIsTiled(false), iNTreeValues(0)
     {
         if (iBasePath.length() > 0 && (iBasePath[iBasePath.length() - 1] != '/' || iBasePath[iBasePath.length() - 1] != '\\'))
         {

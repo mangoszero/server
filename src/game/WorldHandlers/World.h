@@ -643,14 +643,14 @@ class World
         void LoadBroadcastStrings();
 
         /**
-        * \brief: force all client to request player data
-        * \param: ObjectGuid guid : guid of the specified player
-        * \returns: void
-        *
-        * Description: InvalidatePlayerDataToAllClient force all connected clients to clear specified player cache
-        * FullName: World::InvalidatePlayerDataToAllClient
-        * Access: public
-        **/
+         * \brief: force all client to request player data
+         * \param: ObjectGuid guid : guid of the specified player
+         * \returns: void
+         *
+         * Description: InvalidatePlayerDataToAllClient force all connected clients to clear specified player cache
+         * FullName: World::InvalidatePlayerDataToAllClient
+         * Access: public
+         **/
         void InvalidatePlayerDataToAllClient(ObjectGuid guid);
 
 #ifdef ENABLE_ELUNA

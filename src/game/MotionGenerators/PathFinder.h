@@ -296,7 +296,7 @@ class PathFinder
          * @return The fixed up path length.
          */
         uint32 fixupCorridor(dtPolyRef* path, uint32 npath, uint32 maxPath,
-                             const dtPolyRef* visited, uint32 nvisited);
+            const dtPolyRef* visited, uint32 nvisited);
 
         /**
          * @brief Get the steer target for the path.
@@ -311,8 +311,8 @@ class PathFinder
          * @return True if the steer target was successfully obtained, false otherwise.
          */
         bool getSteerTarget(const float* startPos, const float* endPos, float minTargetDist,
-                            const dtPolyRef* path, uint32 pathSize, float* steerPos,
-                            unsigned char& steerPosFlag, dtPolyRef& steerPosRef);
+            const dtPolyRef* path, uint32 pathSize, float* steerPos,
+            unsigned char& steerPosFlag, dtPolyRef& steerPosRef);
 
         /**
          * @brief Find the smooth path.
@@ -326,8 +326,8 @@ class PathFinder
          * @return The status of the path finding.
          */
         dtStatus findSmoothPath(const float* startPos, const float* endPos,
-                                const dtPolyRef* polyPath, uint32 polyPathSize,
-                                float* smoothPath, int* smoothPathSize, uint32 smoothPathMaxSize);
+            const dtPolyRef* polyPath, uint32 polyPathSize,
+            float* smoothPath, int* smoothPathSize, uint32 smoothPathMaxSize);
 };
 
 #endif // MANGOS_PATH_FINDER_H

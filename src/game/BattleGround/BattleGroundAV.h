@@ -408,7 +408,7 @@ class BattleGroundAVScore : public BattleGroundScore
  */
 class BattleGroundAV : public BattleGround
 {
-        friend class BattleGroundMgr;
+    friend class BattleGroundMgr;
 
     public:
         /**
@@ -443,7 +443,7 @@ class BattleGroundAV : public BattleGround
          */
         void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
-                /**
+        /**
          * @brief Handles an area trigger.
          *
          * @param source The player who triggered the area.

@@ -48,9 +48,9 @@
 #include "VMapFactory.h"
 #endif
 
- /**********************************************************************
-    CommandTable : commandTable
-  ***********************************************************************/
+/**********************************************************************
+ CommandTable : commandTable
+ ***********************************************************************/
 
 /**
  * @brief Moves the selected creature to the handler's location.
@@ -359,9 +359,9 @@ bool ChatHandler::HandleNpcAIInfoCommand(char* /*args*/)
     char const* cstrAIClass = pTarget->AI() ? typeid(*pTarget->AI()).name() : " - ";
 
     PSendSysMessage(LANG_NPC_AI_NAMES,
-                    strAI.empty() ? " - " : strAI.c_str(),
-                    cstrAIClass ? cstrAIClass : " - ",
-                    strScript.empty() ? " - " : strScript.c_str());
+        strAI.empty() ? " - " : strAI.c_str(),
+        cstrAIClass ? cstrAIClass : " - ",
+        strScript.empty() ? " - " : strScript.c_str());
     PSendSysMessage("Motion Type: %u", pTarget->GetMotionMaster()->GetCurrentMovementGeneratorType());
     PSendSysMessage("Casting Spell: %s", pTarget->IsNonMeleeSpellCasted(true) ? "yes" : "no");
 
@@ -1128,7 +1128,7 @@ bool ChatHandler::HandleNpcSubNameCommand(char* /*args*/)
 
     pCreature->SaveToDB();
     */
-    return true;
+        return true;
 }
 
 /**
@@ -1467,75 +1467,77 @@ bool ChatHandler::HandleNpcPlayEmoteCommand(char* args)
  */
 bool ChatHandler::HandleNpcAddWeaponCommand(char* /*args*/)
 {
-    /*if (!*args)
-    return false;
-
-    ObjectGuid guid = m_session->GetPlayer()->GetSelectionGuid();
-    if (guid.IsEmpty())
-    {
-        SendSysMessage(LANG_NO_SELECTION);
-        return true;
-    }
-
-    Creature *pCreature = sObjectAccessor.GetCreature(*m_session->GetPlayer(), guid);
-
-    if (!pCreature)
-    {
-        SendSysMessage(LANG_SELECT_CREATURE);
-        return true;
-    }
-
-    char* pSlotID = strtok((char*)args, " ");
-    if (!pSlotID)
-    {
-        return false;
-    }
-
-    char* pItemID = strtok(NULL, " ");
-    if (!pItemID)
-    {
-        return false;
-    }
-
-    uint32 ItemID = atoi(pItemID);
-    uint32 SlotID = atoi(pSlotID);
-
-    ItemPrototype* tmpItem = ObjectMgr::GetItemPrototype(ItemID);
-
-    bool added = false;
-    if (tmpItem)
-    {
-        switch (SlotID)
-        {
-            case 1:
-                pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY, ItemID);
-                added = true;
-                break;
-            case 2:
-                pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY_01, ItemID);
-                added = true;
-                break;
-            case 3:
-                pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY_02, ItemID);
-                added = true;
-                break;
-            default:
-                PSendSysMessage(LANG_ITEM_SLOT_NOT_EXIST,SlotID);
-                added = false;
-                break;
-        }
-
-        if (added)
-        {
-            PSendSysMessage(LANG_ITEM_ADDED_TO_SLOT,ItemID,tmpItem->Name1,SlotID);
-        }
-    }
-    else
-    {
-        PSendSysMessage(LANG_ITEM_NOT_FOUND,ItemID);
-        return true;
-    }
-    */
+    /** if (!*args)
+     *  {
+     *      return false;
+     *  }
+     *
+     *  ObjectGuid guid = m_session->GetPlayer()->GetSelectionGuid();
+     *  if (guid.IsEmpty())
+     *  {
+     *      SendSysMessage(LANG_NO_SELECTION);
+     *      return true;
+     *  }
+     *
+     *  Creature *pCreature = sObjectAccessor.GetCreature(*m_session->GetPlayer(), guid);
+     *
+     *  if (!pCreature)
+     *  {
+     *      SendSysMessage(LANG_SELECT_CREATURE);
+     *      return true;
+     *  }
+     *
+     *  char* pSlotID = strtok((char*)args, " ");
+     *  if (!pSlotID)
+     *  {
+     *      return false;
+     *  }
+     *
+     *  char* pItemID = strtok(NULL, " ");
+     *  if (!pItemID)
+     *  {
+     *      return false;
+     *  }
+     *
+     *  uint32 ItemID = atoi(pItemID);
+     *  uint32 SlotID = atoi(pSlotID);
+     *
+     *  ItemPrototype* tmpItem = ObjectMgr::GetItemPrototype(ItemID);
+     *
+     *  bool added = false;
+     *  if (tmpItem)
+     *  {
+     *      switch (SlotID)
+     *      {
+     *          case 1:
+     *              pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY, ItemID);
+     *              added = true;
+     *              break;
+     *          case 2:
+     *              pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY_01, ItemID);
+     *              added = true;
+     *              break;
+     *          case 3:
+     *              pCreature->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_DISPLAY_02, ItemID);
+     *              added = true;
+     *              break;
+     *          default:
+     *              PSendSysMessage(LANG_ITEM_SLOT_NOT_EXIST,SlotID);
+     *              added = false;
+     *              break;
+     *      }
+     *
+     *      if (added)
+     *      {
+                PSendSysMessage(LANG_ITEM_ADDED_TO_SLOT,ItemID,tmpItem->Name1,SlotID);
+     *      }
+     *  }
+     *  else
+     *  {
+     *      PSendSysMessage(LANG_ITEM_NOT_FOUND,ItemID);
+     *      return true;
+     *  }
+     */
     return true;
 }
 //----------------------------------------------------------

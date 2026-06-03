@@ -71,7 +71,7 @@ typedef std::map < ObjectGuid /*playerGuid*/, bool /*isMainZone*/ > GuidZoneMap;
  */
 class OutdoorPvP
 {
-        friend class OutdoorPvPMgr;
+    friend class OutdoorPvPMgr;
 
     public:
         /**

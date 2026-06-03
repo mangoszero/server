@@ -1,26 +1,26 @@
 /**
-* MaNGOS is a full featured server for World of Warcraft, supporting
-* the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
-*
-* Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*
-* World of Warcraft, and all World of Warcraft or Warcraft art, images,
-* and lore are copyrighted by Blizzard Entertainment, Inc.
-*/
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
 
 #ifndef MANGOS_H_PLAYERLOGGER
 #define MANGOS_H_PLAYERLOGGER
@@ -152,54 +152,54 @@ struct PlayerLogProgress : public PlayerLogPosition // 18+4=22 bytes
 
 class PlayerLogger
 {
-public:
-    PlayerLogger(ObjectGuid const & guid);
-    ~PlayerLogger();
+    public:
+        PlayerLogger(ObjectGuid const & guid);
+        ~PlayerLogger();
 
-    static inline PlayerLogMask CalcLogMask(PlayerLogEntity entity) { return PlayerLogMask(1 << entity); }
+        static inline PlayerLogMask CalcLogMask(PlayerLogEntity entity) { return PlayerLogMask(1 << entity); }
 
-    // active logs check
-    bool IsLoggingActive(PlayerLogMask mask) const { return (mask & logActiveMask) != 0; }
-    bool IsLoggingActive(PlayerLogEntity entity) const { return IsLoggingActive(CalcLogMask(entity)); }
+        // active logs check
+        bool IsLoggingActive(PlayerLogMask mask) const { return (mask & logActiveMask) != 0; }
+        bool IsLoggingActive(PlayerLogEntity entity) const { return IsLoggingActive(CalcLogMask(entity)); }
 
-    // check active loggers and init missing ones
-    void Initialize(PlayerLogEntity, uint32 maxLength = 0);
+        // check active loggers and init missing ones
+        void Initialize(PlayerLogEntity, uint32 maxLength = 0);
 
-    // remove entries of type PlayerLogEntity
-    void Clean(PlayerLogMask);
+        // remove entries of type PlayerLogEntity
+        void Clean(PlayerLogMask);
 
-    // save to DB entries
-    bool SaveToDB(PlayerLogMask, bool removeSaved = true, bool insideTransaction = false);
+        // save to DB entries
+        bool SaveToDB(PlayerLogMask, bool removeSaved = true, bool insideTransaction = false);
 
-    // start logging for PLAYER_LOG_DAMAGE
-    void StartCombatLogging();
+        // start logging for PLAYER_LOG_DAMAGE
+        void StartCombatLogging();
 
-    // start logging for strictly timed logs
-    void StartLogging(PlayerLogEntity);
+        // start logging for strictly timed logs
+        void StartLogging(PlayerLogEntity);
 
-    // stop logging - returns number of entries logged currently
-    uint32 Stop(PlayerLogEntity);
+        // stop logging - returns number of entries logged currently
+        uint32 Stop(PlayerLogEntity);
 
-    // check and limit the total size of the log dropping older entries
-    void CheckAndTruncate(PlayerLogMask, uint32 maxRecords);
+        // check and limit the total size of the log dropping older entries
+        void CheckAndTruncate(PlayerLogMask, uint32 maxRecords);
 
-    // logging itself
-    void LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid const & unitGuid, uint16 spell);
-    void LogLooting(LootSourceType type, ObjectGuid const & droppedBy, ObjectGuid const & itemGuid, uint32 id);
-    void LogTrading(bool aquire, ObjectGuid const & partner, ObjectGuid const & itemGuid);
-    void LogKilling(bool killedEnemy, ObjectGuid const & unitGuid);
-    void LogPosition();
-    void LogProgress(ProgressType type, uint8 achieve, uint16 misc = 0);
+        // logging itself
+        void LogDamage(bool done, uint16 damage, uint16 heal, ObjectGuid const & unitGuid, uint16 spell);
+        void LogLooting(LootSourceType type, ObjectGuid const & droppedBy, ObjectGuid const & itemGuid, uint32 id);
+        void LogTrading(bool aquire, ObjectGuid const & partner, ObjectGuid const & itemGuid);
+        void LogKilling(bool killedEnemy, ObjectGuid const & unitGuid);
+        void LogPosition();
+        void LogProgress(ProgressType type, uint8 achieve, uint16 misc = 0);
 
-private:
-    inline void SetLogActiveMask(PlayerLogEntity entity, bool on);
-    Player* GetPlayer() const;
-    void FillPosition(PlayerLogPosition* log, Player* me);
+    private:
+        inline void SetLogActiveMask(PlayerLogEntity entity, bool on);
+        Player* GetPlayer() const;
+        void FillPosition(PlayerLogPosition* log, Player* me);
 
-    uint32 playerGuid;
+        uint32 playerGuid;
 
-    std::vector<PlayerLogBase>* data[MAX_PLAYER_LOG_ENTITIES];
-    uint8 logActiveMask;
+        std::vector<PlayerLogBase>* data[MAX_PLAYER_LOG_ENTITIES];
+        uint8 logActiveMask;
 };
 
 #endif

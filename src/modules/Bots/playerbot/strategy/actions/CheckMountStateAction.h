@@ -7,13 +7,12 @@
 namespace ai
 {
     class CheckMountStateAction : public Action {
-    public:
-        CheckMountStateAction(PlayerbotAI* ai) : Action(ai, "check mount state") {}
+        public:
+            CheckMountStateAction(PlayerbotAI* ai) : Action(ai, "check mount state") {}
 
-        virtual bool Execute(Event event);
+            virtual bool Execute(Event event);
 
-    private:
-        bool Mount();
+        private:
+            bool Mount();
     };
-
 }

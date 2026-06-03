@@ -6,13 +6,12 @@
 namespace ai
 {
     class EquipAction : public InventoryAction {
-    public:
-        EquipAction(PlayerbotAI* ai) : InventoryAction(ai, "equip") {}
-        virtual bool Execute(Event event);
+        public:
+            EquipAction(PlayerbotAI* ai) : InventoryAction(ai, "equip") {}
+            virtual bool Execute(Event event);
 
-    private:
-        void EquipItem(FindItemVisitor* visitor);
-        void EquipItem(Item& item);
+        private:
+            void EquipItem(FindItemVisitor* visitor);
+            void EquipItem(Item& item);
     };
-
 }

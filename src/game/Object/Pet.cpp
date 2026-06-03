@@ -61,8 +61,7 @@ uint32 const LevelStartLoyalty[6] =
  *
  * @param type The pet type to initialize.
  */
-Pet::Pet(PetType type) :
-    Creature(CREATURE_SUBTYPE_PET),
+Pet::Pet(PetType type) : Creature(CREATURE_SUBTYPE_PET),
     m_TrainingPoints(0), m_resetTalentsCost(0), m_resetTalentsTime(0),
     m_removed(false), m_pendingTransportReboard(false), m_transport(nullptr), m_happinessTimer(7500), m_loyaltyTimer(12000), m_petType(type), m_duration(0),
     m_loyaltyPoints(0), m_bonusdamage(0), m_auraUpdateMask(0), m_loading(false),
@@ -138,27 +137,35 @@ bool Pet::LoadPetFromDB(Player* owner, uint32 petentry, uint32 petnumber, bool c
     QueryResult* result;
 
     if (petnumber)
-        // known petnumber entry                  0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
+    {
+        // known petnumber entry                   0     1        2        3          4        5      6             7                8          9             10      11      12         13           14         15              16        17                18          19                   20                   21                22
         result = CharacterDatabase.PQuery("SELECT `id`, `entry`, `owner`, `modelid`, `level`, `exp`, `Reactstate`, `loyaltypoints`, `loyalty`, `trainpoint`, `slot`, `name`, `renamed`, `curhealth`, `curmana`, `curhappiness`, `abdata`, `TeachSpelldata`, `savetime`, `resettalents_cost`, `resettalents_time`, `CreatedBySpell`, `PetType` "
-                                          "FROM `character_pet` WHERE `owner` = '%u' AND `id` = '%u'",
-                                          ownerid, petnumber);
+            "FROM `character_pet` WHERE `owner` = '%u' AND `id` = '%u'",
+            ownerid, petnumber);
+    }
     else if (current)
-        // current pet (slot 0)                   0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
+    {
+        // current pet (slot 0)                    0     1        2        3          4        5      6             7                8          9             10      11      12         13           14         15              16        17                18          19                   20                   21                22
         result = CharacterDatabase.PQuery("SELECT `id`, `entry`, `owner`, `modelid`, `level`, `exp`, `Reactstate`, `loyaltypoints`, `loyalty`, `trainpoint`, `slot`, `name`, `renamed`, `curhealth`, `curmana`, `curhappiness`, `abdata`, `TeachSpelldata`, `savetime`, `resettalents_cost`, `resettalents_time`, `CreatedBySpell`, `PetType` "
-                                          "FROM `character_pet` WHERE `owner` = '%u' AND `slot` = '%u'",
-                                          ownerid, PET_SAVE_AS_CURRENT);
+            "FROM `character_pet` WHERE `owner` = '%u' AND `slot` = '%u'",
+            ownerid, PET_SAVE_AS_CURRENT);
+    }
     else if (petentry)
+    {
         // known petentry entry (unique for summoned pet, but non unique for hunter pet (only from current or not stabled pets)
-        //                                        0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
+        //                                         0     1        2        3          4        5      6             7                8          9             10      11      12         13           14         15              16        17                18          19                   20                   21                22
         result = CharacterDatabase.PQuery("SELECT `id`, `entry`, `owner`, `modelid`, `level`, `exp`, `Reactstate`, `loyaltypoints`, `loyalty`, `trainpoint`, `slot`, `name`, `renamed`, `curhealth`, `curmana`, `curhappiness`, `abdata`, `TeachSpelldata`, `savetime`, `resettalents_cost`, `resettalents_time`, `CreatedBySpell`, `PetType` "
-                                          "FROM `character_pet` WHERE `owner` = '%u' AND `entry` = '%u' AND (`slot` = '%u' OR `slot` > '%u') ",
-                                          ownerid, petentry, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+            "FROM `character_pet` WHERE `owner` = '%u' AND `entry` = '%u' AND (`slot` = '%u' OR `slot` > '%u') ",
+            ownerid, petentry, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+    }
     else
+    {
         // any current or other non-stabled pet (for hunter "call pet")
-        //                                        0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
+        //                                         0     1        2        3          4        5      6             7                8          9             10      11      12         13           14         15              16        17                18          19                   20                   21                22
         result = CharacterDatabase.PQuery("SELECT `id`, `entry`, `owner`, `modelid`, `level`, `exp`, `Reactstate`, `loyaltypoints`, `loyalty`, `trainpoint`, `slot`, `name`, `renamed`, `curhealth`, `curmana`, `curhappiness`, `abdata`, `TeachSpelldata`, `savetime`, `resettalents_cost`, `resettalents_time`, `CreatedBySpell`, `PetType` "
-                                          "FROM `character_pet` WHERE `owner` = '%u' AND (`slot` = '%u' OR `slot` > '%u') ",
-                                          ownerid, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+            "FROM `character_pet` WHERE `owner` = '%u' AND (`slot` = '%u' OR `slot` > '%u') ",
+            ownerid, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+    }
 
     if (!result)
     {
@@ -465,7 +472,7 @@ void Pet::SavePetToDB(PetSaveMode mode)
         }
         // not save pet as current if another pet temporary unsummoned
         else if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
-                pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
+            pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
         {
             // pet will lost anyway at restore temporary unsummoned
             if (getPetType() == HUNTER_PET)
@@ -529,8 +536,8 @@ void Pet::SavePetToDB(PetSaveMode mode)
 
         // save pet
         SqlStatement savePet = CharacterDatabase.CreateStatement(insPet, "INSERT INTO `character_pet` "
-                               "(`id`,`entry`,`owner`,`modelid`,`level`,`exp`,`Reactstate`,`loyaltypoints`,`loyalty`,`trainpoint`,`slot`,`name`,`renamed`,`curhealth`,`curmana`,`curhappiness`,`abdata`,`TeachSpelldata`,`savetime`,`resettalents_cost`,`resettalents_time`,`CreatedBySpell`,`PetType`) "
-                               "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            "(`id`,`entry`,`owner`,`modelid`,`level`,`exp`,`Reactstate`,`loyaltypoints`,`loyalty`,`trainpoint`,`slot`,`name`,`renamed`,`curhealth`,`curmana`,`curhappiness`,`abdata`,`TeachSpelldata`,`savetime`,`resettalents_cost`,`resettalents_time`,`CreatedBySpell`,`PetType`) "
+            "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         savePet.addUInt32(m_charmInfo->GetPetNumber());
         savePet.addUInt32(GetEntry());
@@ -717,7 +724,9 @@ void Pet::Update(uint32 update_diff, uint32 diff)
             }
 
             if (Player* plOwner = owner->ToPlayer())
+            {
                 UpdateTransport(plOwner);
+            }
 
             break;
         }
@@ -745,7 +754,7 @@ void Pet::UpdateTransport(Player* plOwner)
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
         m_movementInfo.ClearTransportData();
         NearTeleportTo(plOwner->GetPositionX(), plOwner->GetPositionY(),
-                       plOwner->GetPositionZ(), plOwner->GetOrientation());
+            plOwner->GetPositionZ(), plOwner->GetOrientation());
     }
     else // Board pet onto transport once it has swum/walked close enough to the owner.
     if (!m_transport && tr)
@@ -763,7 +772,10 @@ void Pet::UpdateTransport(Player* plOwner)
             m_movementInfo.ChangePosition(plOwner->GetPositionX(), plOwner->GetPositionY(), plOwner->GetPositionZ(), plOwner->GetOrientation());
             GetMotionMaster()->Clear(false);
             if (GetCharmInfo())
+            {
                 GetCharmInfo()->SetCommandState(COMMAND_FOLLOW);
+            }
+
             NearTeleportTo(plOwner->GetPositionX(), plOwner->GetPositionY(), plOwner->GetPositionZ(), plOwner->GetOrientation());
             if (movespline)
             {
@@ -812,11 +824,15 @@ bool Pet::HandleTransportFollow(Unit* target, float offset, float angle, bool wa
 {
     outMoved = false;
     if (!target || target->GetTypeId() != TYPEID_PLAYER)
+    {
         return false;
+    }
 
     Transport* masterTransport = static_cast<Player*>(target)->GetTransport();
     if (!masterTransport)
+    {
         return false;
+    }
 
     if (m_transport == masterTransport)
     {
@@ -839,7 +855,9 @@ bool Pet::HandleTransportFollow(Unit* target, float offset, float angle, bool wa
         float relDx = destRelX - startRelX, relDy = destRelY - startRelY, relDz = destRelZ - startRelZ;
         float relDist = sqrt(relDx * relDx + relDy * relDy + relDz * relDz);
         if (relDist < 0.5f)
+        {
             return true;
+        }
 
         m_movementInfo.SetTransportData(masterTransport->GetObjectGuid(), destRelX, destRelY, destRelZ, 0.0f, 0);
 
@@ -1290,9 +1308,9 @@ void Pet::Unsummon(PetSaveMode mode, Unit* owner /*= NULL*/)
             // not save secondary permanent pet as current
             if (mode == PET_SAVE_AS_CURRENT && p_owner->GetTemporaryUnsummonedPetNumber() &&
                 p_owner->GetTemporaryUnsummonedPetNumber() != GetCharmInfo()->GetPetNumber())
-                {
-                    mode = PET_SAVE_NOT_IN_SLOT;
-                }
+            {
+                mode = PET_SAVE_NOT_IN_SLOT;
+            }
 
             if (mode == PET_SAVE_REAGENTS)
             {
@@ -2100,8 +2118,8 @@ void Pet::_SaveAuras()
     }
 
     stmt = CharacterDatabase.CreateStatement(insAuras, "INSERT INTO `pet_aura` (`guid`, `caster_guid`, `item_guid`, `spell`, `stackcount`, `remaincharges`, "
-            "`basepoints0`, `basepoints1`, `basepoints2`, `periodictime0`, `periodictime1`, `periodictime2`, `maxduration`, `remaintime`, `effIndexMask`) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        "`basepoints0`, `basepoints1`, `basepoints2`, `periodictime0`, `periodictime1`, `periodictime2`, `maxduration`, `remaintime`, `effIndexMask`) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     for (SpellAuraHolderMap::const_iterator itr = auraHolders.begin(); itr != auraHolders.end(); ++itr)
     {
@@ -2401,10 +2419,12 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
         {
             // need update action bar for last removed rank
             if (Unit* owner = GetOwner())
+            {
                 if (owner->GetTypeId() == TYPEID_PLAYER)
                 {
                     ((Player*)owner)->PetSpellInitialize();
                 }
+            }
         }
     }
 
@@ -2417,12 +2437,18 @@ bool Pet::removeSpell(uint32 spell_id, bool learn_prev, bool clear_ab)
 void Pet::CleanupActionBar()
 {
     for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
+    {
         if (UnitActionBarEntry const* ab = m_charmInfo->GetActionBarEntry(i))
+        {
             if (uint32 action = ab->GetAction())
+            {
                 if (ab->IsActionBarForSpell() && !HasSpell(action))
                 {
                     m_charmInfo->SetActionBar(i, 0, ACT_DISABLED);
                 }
+            }
+        }
+    }
 }
 
 /**
@@ -2633,8 +2659,8 @@ bool Pet::IsPermanentPetFor(Player* owner)
         case SUMMON_PET:
             switch (owner->getClass())
             {
-                    // oddly enough, Mage's Water Elemental is still treated as temporary pet with Glyph of Eternal Water
-                    // i.e. does not unsummon at mounting, gets dismissed at teleport etc.
+                // oddly enough, Mage's Water Elemental is still treated as temporary pet with Glyph of Eternal Water
+                // i.e. does not unsummon at mounting, gets dismissed at teleport etc.
                 case CLASS_WARLOCK:
                     return GetCreatureInfo()->CreatureType == CREATURE_TYPE_DEMON;
                 default:
@@ -2812,11 +2838,11 @@ void Pet::SynchronizeLevelWithOwner()
 
     switch (getPetType())
     {
-            // always same level
+        // always same level
         case SUMMON_PET:
             GivePetLevel(owner->getLevel());
             break;
-            // can't be greater owner level
+        // can't be greater owner level
         case HUNTER_PET:
             if (getLevel() > owner->getLevel())
             {
@@ -2983,10 +3009,10 @@ PetDatabaseStatus Pet::GetStatusFromDB(Player* owner)
     uint32 ownerid = owner->GetGUIDLow();
 
     QueryResult* result;
-                                      //      0   1      2      3        4      5    6           7              8        9           10    11    12       13         14       15            16      17              18        19                 20                 21              22
+    //                                         0     1        2        3          4        5      6             7                8          9             10      11      12         13           14         15              16        17                18          19                   20                   21                22
     result = CharacterDatabase.PQuery("SELECT `id`, `entry`, `owner`, `modelid`, `level`, `exp`, `Reactstate`, `loyaltypoints`, `loyalty`, `trainpoint`, `slot`, `name`, `renamed`, `curhealth`, `curmana`, `curhappiness`, `abdata`, `TeachSpelldata`, `savetime`, `resettalents_cost`, `resettalents_time`, `CreatedBySpell`, `PetType` "
-                                      "FROM `character_pet` WHERE `owner` = %u AND (`slot` = %u OR `slot` > %u)",
-                                      ownerid, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+        "FROM `character_pet` WHERE `owner` = %u AND (`slot` = %u OR `slot` > %u)",
+        ownerid, PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
     if (!result)
     {
         return status;

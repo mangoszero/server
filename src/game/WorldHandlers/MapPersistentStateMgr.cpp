@@ -63,13 +63,13 @@
 INSTANTIATE_SINGLETON_1(MapPersistentStateManager);
 
 static uint32 resetEventTypeDelay[MAX_RESET_EVENT_TYPE] = { 0,                      // not used
-                                                            3600, 900, 300, 60,     // (seconds) normal and official timer delay to inform player about instance reset
-                                                            60, 30, 10, 5 };        // (seconds) fast reset by gm command inform timer
+        3600, 900, 300, 60,     // (seconds) normal and official timer delay to inform player about instance reset
+        60, 30, 10, 5 };        // (seconds) fast reset by gm command inform timer
 
 //== MapPersistentState functions ==========================
 MapPersistentState::MapPersistentState(uint16 MapId, uint32 InstanceId)
     : m_instanceid(InstanceId), m_mapid(MapId),
-      m_usedByMap(NULL)
+    m_usedByMap(NULL)
 {
 }
 
@@ -345,9 +345,9 @@ bool DungeonPersistentState::CanBeUnload() const
     return MapPersistentState::CanBeUnload() && !HasBounds() && !HasRespawnTimes();
 }
 
-/*
-    Called from AddPersistentState
-*/
+/**
+ Called from AddPersistentState
+ */
 void DungeonPersistentState::SaveToDB()
 {
     // state instance data too
@@ -512,10 +512,12 @@ void DungeonResetScheduler::LoadResetTimes()
 
         // schedule the reset times
         for (ResetTimeMapType::iterator itr = InstResetTime.begin(); itr != InstResetTime.end(); ++itr)
+        {
             if (itr->second.second > now)
             {
                 ScheduleReset(true, itr->second.second, DungeonResetEvent(RESET_EVENT_NORMAL_DUNGEON, itr->second.first, itr->first));
             }
+        }
     }
 
     // load the global respawn times for raid instances
@@ -597,11 +599,12 @@ void DungeonResetScheduler::LoadResetTimes()
         // schedule the global reset/warning
         ResetEventType type = RESET_EVENT_INFORM_1;
         for (; type < RESET_EVENT_INFORM_LAST; type = ResetEventType(type + 1))
+        {
             if (t > time_t(now + resetEventTypeDelay[type]))
             {
                 break;
             }
-
+        }
         ScheduleReset(true, t - resetEventTypeDelay[type], DungeonResetEvent(type, temp->map, 0));
     }
 }
@@ -695,10 +698,12 @@ void DungeonResetScheduler::Update()
 
                 ResetEventType type = RESET_EVENT_INFORM_1;
                 for (; type < RESET_EVENT_INFORM_LAST; type = ResetEventType(type + 1))
+                {
                     if (next_reset > time_t(now + resetEventTypeDelay[type]))
                     {
                         break;
                     }
+                }
 
                 // add new scheduler event to the queue
                 event.type = type;
@@ -759,10 +764,10 @@ MapPersistentStateManager::~MapPersistentStateManager()
     }
 }
 
-/*
-- adding instance into manager
-- called from DungeonMap::Add, _LoadBoundInstances, LoadGroups
-*/
+/**
+ - adding instance into manager
+ - called from DungeonMap::Add, _LoadBoundInstances, LoadGroups
+ */
 MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const* mapEntry, uint32 instanceId, time_t resetTime, bool canReset, bool load /*=false*/, bool initPools /*= true*/)
 {
     if (MapPersistentState* old_save = GetPersistentState(mapEntry->MapID, instanceId))
@@ -887,10 +892,12 @@ void MapPersistentStateManager::RemovePersistentState(uint32 mapId, uint32 insta
         {
             // state the resettime for normal instances only when they get unloaded
             if (itr->second->GetMapEntry()->IsDungeon())
+            {
                 if (time_t resettime = ((DungeonPersistentState*)itr->second)->GetResetTimeForDB())
                 {
                     CharacterDatabase.PExecute("UPDATE `instance` SET `resettime` = '" UI64FMTD "' WHERE `id` = '%u'", (uint64)resettime, instanceId);
                 }
+            }
 
             _ResetSave(m_instanceSaveByInstanceId, itr);
         }
@@ -1138,10 +1145,12 @@ void MapPersistentStateManager::_ResetOrWarnAll(uint32 mapid, bool warn, uint32 
         std::vector<DungeonPersistentState*> unbindList;
 
         for (PersistentStateMap::iterator itr = m_instanceSaveByInstanceId.begin(); itr != m_instanceSaveByInstanceId.end(); ++itr)
+        {
             if (itr->second->GetMapId() == mapid)
             {
                 unbindList.push_back((DungeonPersistentState*)itr->second);
             }
+        }
 
         for (std::vector<DungeonPersistentState*>::const_iterator it = unbindList.begin(); it != unbindList.end(); ++it)
         {
@@ -1215,11 +1224,15 @@ void MapPersistentStateManager::InitWorldMaps()
 {
     MapPersistentState* state = NULL;                       // need any from created for shared pool state
     for (uint32 mapid = 0; mapid < sMapStore.GetNumRows(); ++mapid)
+    {
         if (MapEntry const* entry = sMapStore.LookupEntry(mapid))
+        {
             if (!entry->Instanceable())
             {
                 state = AddPersistentState(entry, 0, 0, false, true, false);
             }
+        }
+    }
 
     if (state)
     {

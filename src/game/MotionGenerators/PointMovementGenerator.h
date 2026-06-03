@@ -32,8 +32,8 @@
  * @tparam T Type of the unit (Player or Creature).
  */
 template<class T>
-class PointMovementGenerator
-    : public MovementGeneratorMedium< T, PointMovementGenerator<T> >
+    class PointMovementGenerator
+        : public MovementGeneratorMedium< T, PointMovementGenerator<T> >
 {
     public:
         /**
@@ -44,8 +44,8 @@ class PointMovementGenerator
          * @param _z Z-coordinate of the destination.
          * @param _generatePath Whether to generate a path to the destination.
          */
-        PointMovementGenerator(uint32 _id, float _x, float _y, float _z, bool _generatePath) :
-            id(_id), i_x(_x), i_y(_y), i_z(_z), m_generatePath(_generatePath) {}
+        PointMovementGenerator(uint32 _id, float _x, float _y, float _z, bool _generatePath)
+            : id(_id), i_x(_x), i_y(_y), i_z(_z), m_generatePath(_generatePath) {}
 
         /**
          * @brief Initializes the movement generator.
@@ -119,8 +119,8 @@ class AssistanceMovementGenerator
          * @param _y Y-coordinate of the destination.
          * @param _z Z-coordinate of the destination.
          */
-        AssistanceMovementGenerator(float _x, float _y, float _z) :
-            PointMovementGenerator<Creature>(0, _x, _y, _z, true) {}
+        AssistanceMovementGenerator(float _x, float _y, float _z)
+            : PointMovementGenerator<Creature>(0, _x, _y, _z, true) {}
 
         /**
          * @brief Gets the type of the movement generator.
@@ -209,8 +209,8 @@ class FlyOrLandMovementGenerator : public PointMovementGenerator<Creature>
          * @param _z Z-coordinate of the destination.
          * @param liftOff Whether the creature should lift off or land.
          */
-        FlyOrLandMovementGenerator(uint32 _id, float _x, float _y, float _z, bool liftOff) :
-            PointMovementGenerator<Creature>(_id, _x, _y, _z, false),
+        FlyOrLandMovementGenerator(uint32 _id, float _x, float _y, float _z, bool liftOff)
+            : PointMovementGenerator<Creature>(_id, _x, _y, _z, false),
             m_liftOff(liftOff) {}
 
         /**

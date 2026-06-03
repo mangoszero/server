@@ -8,42 +8,41 @@ namespace ahbot
 {
     class Engineering : public Trade
     {
-    public:
-        Engineering() : Trade() {}
+        public:
+            Engineering() : Trade() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Trade::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Trade::Contains(proto) &&
                     (proto->SubClass == ITEM_SUBCLASS_PARTS ||
                     proto->SubClass == ITEM_SUBCLASS_DEVICES ||
                     proto->SubClass == ITEM_SUBCLASS_EXPLOSIVES);
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "Engineering";
-        }
+            virtual string GetName()
+            {
+                return "Engineering";
+            }
     };
 
     class OtherTrade : public Trade
     {
-    public:
-        OtherTrade() : Trade() {}
+        public:
+            OtherTrade() : Trade() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Trade::Contains(proto) &&
-                proto->SubClass != ITEM_SUBCLASS_PARTS &&
-                proto->SubClass != ITEM_SUBCLASS_DEVICES &&
-                proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
-        }
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Trade::Contains(proto) &&
+                    proto->SubClass != ITEM_SUBCLASS_PARTS &&
+                    proto->SubClass != ITEM_SUBCLASS_DEVICES &&
+                    proto->SubClass != ITEM_SUBCLASS_EXPLOSIVES;
+            }
 
-        virtual string GetName()
-        {
-            return "OtherTrade";
-        }
-
+            virtual string GetName()
+            {
+                return "OtherTrade";
+            }
     };
 };

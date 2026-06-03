@@ -98,28 +98,40 @@ bool AttackersValue::hasRealThreat(Unit *attacker)
         return false;
 
     if (attacker->GetObjectGuid().IsPlayer())
+    {
         return true;
+    }
 
     Group* group = bot->GetGroup();
     if (!group)
+    {
         return attacker->GetThreatManager().getCurrentVictim() != nullptr;
+    }
 
     Unit* victim = attacker->getVictim();
     if (!victim)
+    {
         return false;
+    }
 
     if (victim == bot)
+    {
         return true;
+    }
 
     Player* master = GetMaster();
     if (master && victim == master)
+    {
         return true;
+    }
 
     if (victim->GetObjectGuid().IsPlayer())
     {
         Player* victimPlayer = sObjectMgr.GetPlayer(victim->GetObjectGuid());
         if (victimPlayer && victimPlayer->GetGroup() == group)
+        {
             return true;
+        }
     }
 
     return false;

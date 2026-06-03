@@ -22,27 +22,27 @@ bool TellCastFailedAction::Execute(Event event)
     ostringstream out; out << chat->formatSpell(pSpellInfo) << ": ";
     switch (result)
     {
-    case SPELL_FAILED_NOT_READY:
-        out << "not ready";
-        break;
-    case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
-        out << "requires spell focus";
-        break;
-    case SPELL_FAILED_REQUIRES_AREA:
-        out << "cannot cast here";
-        break;
-    case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
-        out << "requires item";
-        break;
-    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
-    case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
-        out << "requires weapon";
-        break;
-    case SPELL_FAILED_PREVENTED_BY_MECHANIC:
-        out << "interrupted";
-        break;
-    default:
-        out << "cannot cast";
+        case SPELL_FAILED_NOT_READY:
+            out << "not ready";
+            break;
+        case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
+            out << "requires spell focus";
+            break;
+        case SPELL_FAILED_REQUIRES_AREA:
+            out << "cannot cast here";
+            break;
+        case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
+            out << "requires item";
+            break;
+        case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
+        case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
+            out << "requires weapon";
+            break;
+        case SPELL_FAILED_PREVENTED_BY_MECHANIC:
+            out << "interrupted";
+            break;
+        default:
+            out << "cannot cast";
     }
     int32 castTime = GetSpellCastTime(pSpellInfo);
     if (castTime >= 2000)

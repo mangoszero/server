@@ -45,7 +45,7 @@ enum
     GO_SILITHYST_GEYSER              = 181598, ///< Geyser spawned on map by default
 
     // spells
-//  SPELL_SILITHYST_OBJECT           = 29518,  ///< unknown, related to the GO
+    //  SPELL_SILITHYST_OBJECT       = 29518,  ///< unknown, related to the GO
     SPELL_SILITHYST                  = 29519,  ///< Buff when carrying silithyst
     SPELL_TRACES_OF_SILITHYST        = 29534,  ///< Individual buff after delivering silithyst
     SPELL_CENARION_FAVOR             = 30754,  ///< Zone buff when team gathers 200 silithyst

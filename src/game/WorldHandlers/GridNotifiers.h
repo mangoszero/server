@@ -167,44 +167,44 @@ namespace MaNGOS
 
     // SEARCHERS & LIST SEARCHERS & WORKERS
 
-    /* Model Searcher class:
-    template<class Check>
-    struct SomeSearcher
-    {
-        ResultType& i_result;
-        Check & i_check;
+    /** Model Searcher class:
+     *  template<class Check>
+     *  struct SomeSearcher
+     *  {
+     *      ResultType& i_result;
+     *      Check & i_check;
 
-        SomeSearcher(ResultType& result, Check & check)
-            : i_phaseMask(check.GetFocusObject().GetPhaseMask()), i_result(result), i_check(check) {}
+     *      SomeSearcher(ResultType& result, Check & check)
+     *      : i_phaseMask(check.GetFocusObject().GetPhaseMask()), i_result(result), i_check(check) {}
 
-        void Visit(CreatureMapType &m);
-        {
-            ..some code fast return if result found
+     *      void Visit(CreatureMapType &m);
+     *      {
+     *          ..some code fast return if result found
 
-            for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
-            {
-                if (!itr->getSource()->InSamePhase(i_phaseMask))
-                {
-                    continue;
-                }
+     *          for (CreatureMapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+     *          {
+     *              if (!itr->getSource()->InSamePhase(i_phaseMask))
+     *              {
+     *                  continue;
+     *              }
 
-                if (!i_check(itr->getSource()))
-                {
-                    continue;
-                }
+     *              if (!i_check(itr->getSource()))
+     *              {
+     *                  continue;
+     *              }
 
-                ..some code for update result and possible stop search
-            }
-        }
+     *              ..some code for update result and possible stop search
+     *          }
+     *      }
 
-        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED> &) {}
-    };
-    */
+     *      template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED> &) {}
+     *  };
+     */
 
     // WorldObject searchers & workers
 
     template<class Check>
-    struct WorldObjectSearcher
+        struct WorldObjectSearcher
     {
         WorldObject*& i_object;
         Check& i_check;
@@ -221,7 +221,7 @@ namespace MaNGOS
     };
 
     template<class Check>
-    struct WorldObjectLastSearcher
+        struct WorldObjectLastSearcher
     {
         WorldObject*& i_object;
         Check& i_check;
@@ -238,7 +238,7 @@ namespace MaNGOS
     };
 
     template<class Check>
-    struct WorldObjectListSearcher
+        struct WorldObjectListSearcher
     {
         std::list<WorldObject*>& i_objects;
         Check& i_check;
@@ -255,7 +255,7 @@ namespace MaNGOS
     };
 
     template<class Do>
-    struct WorldObjectWorker
+        struct WorldObjectWorker
     {
         Do const& i_do;
 
@@ -306,7 +306,7 @@ namespace MaNGOS
     // Gameobject searchers
 
     template<class Check>
-    struct GameObjectSearcher
+        struct GameObjectSearcher
     {
         GameObject*& i_object;
         Check& i_check;
@@ -320,7 +320,7 @@ namespace MaNGOS
 
     // Last accepted by Check GO if any (Check can change requirements at each call)
     template<class Check>
-    struct GameObjectLastSearcher
+        struct GameObjectLastSearcher
     {
         GameObject*& i_object;
         Check& i_check;
@@ -333,7 +333,7 @@ namespace MaNGOS
     };
 
     template<class Check>
-    struct GameObjectListSearcher
+        struct GameObjectListSearcher
     {
         std::list<GameObject*>& i_objects;
         Check& i_check;
@@ -349,7 +349,7 @@ namespace MaNGOS
 
     // First accepted by Check Unit if any
     template<class Check>
-    struct UnitSearcher
+        struct UnitSearcher
     {
         Unit*& i_object;
         Check& i_check;
@@ -364,7 +364,7 @@ namespace MaNGOS
 
     // Last accepted by Check Unit if any (Check can change requirements at each call)
     template<class Check>
-    struct UnitLastSearcher
+        struct UnitLastSearcher
     {
         Unit*& i_object;
         Check& i_check;
@@ -379,7 +379,7 @@ namespace MaNGOS
 
     // All accepted by Check units if any
     template<class Check>
-    struct UnitListSearcher
+        struct UnitListSearcher
     {
         std::list<Unit*>& i_objects;
         Check& i_check;
@@ -394,7 +394,7 @@ namespace MaNGOS
 
     // unit worker
     template<class Do>
-    struct UnitWorker
+        struct UnitWorker
     {
         Do& i_do;
 
@@ -421,7 +421,7 @@ namespace MaNGOS
     // Creature searchers
 
     template<class Check>
-    struct CreatureSearcher
+        struct CreatureSearcher
     {
         Creature*& i_object;
         Check& i_check;
@@ -435,7 +435,7 @@ namespace MaNGOS
 
     // Last accepted by Check Creature if any (Check can change requirements at each call)
     template<class Check>
-    struct CreatureLastSearcher
+        struct CreatureLastSearcher
     {
         Creature*& i_object;
         Check& i_check;
@@ -448,7 +448,7 @@ namespace MaNGOS
     };
 
     template<class Check>
-    struct CreatureListSearcher
+        struct CreatureListSearcher
     {
         std::list<Creature*>& i_objects;
         Check& i_check;
@@ -461,7 +461,7 @@ namespace MaNGOS
     };
 
     template<class Do>
-    struct CreatureWorker
+        struct CreatureWorker
     {
         Do& i_do;
 
@@ -481,7 +481,7 @@ namespace MaNGOS
     // Player searchers
 
     template<class Check>
-    struct PlayerSearcher
+        struct PlayerSearcher
     {
         Player*& i_object;
         Check& i_check;
@@ -494,7 +494,7 @@ namespace MaNGOS
     };
 
     template<class Check>
-    struct PlayerListSearcher
+        struct PlayerListSearcher
     {
         std::list<Player*>& i_objects;
         Check& i_check;
@@ -508,7 +508,7 @@ namespace MaNGOS
     };
 
     template<class Do>
-    struct PlayerWorker
+        struct PlayerWorker
     {
         Do& i_do;
 
@@ -526,7 +526,7 @@ namespace MaNGOS
     };
 
     template<class Do>
-    struct CameraDistWorker
+        struct CameraDistWorker
     {
         WorldObject const* i_searcher;
         float i_dist;
@@ -564,7 +564,7 @@ namespace MaNGOS
             template<class NOT_INTERESTED> bool operator()(NOT_INTERESTED*) { return false; }
         private:
             SomeObjecType const* i_fobj;                    // Focus object used for check distance from, phase, so place in world
-            ..other values need for check
+                ..other values need for check
     };
     */
 
@@ -830,8 +830,8 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
             {
-                if (u->IsAlive() && (i_controlledByPlayer ? !i_obj->IsFriendlyTo(u) : i_obj->IsHostileTo(u))
-                    && i_obj->IsWithinDistInMap(u, i_range))
+                if (u->IsAlive() && (i_controlledByPlayer ? !i_obj->IsFriendlyTo(u) : i_obj->IsHostileTo(u)) &&
+                    i_obj->IsWithinDistInMap(u, i_range))
                 {
                     return true;
                 }
@@ -854,10 +854,10 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Unit* u)
             {
-                return u->IsAlive()
-                       && i_obj->IsWithinDistInMap(u, i_range)
-                       && !i_funit->IsFriendlyTo(u)
-                       && u->IsVisibleForOrDetect(i_funit, i_funit, false);
+                return u->IsAlive() &&
+                    i_obj->IsWithinDistInMap(u, i_range) &&
+                    !i_funit->IsFriendlyTo(u) &&
+                    u->IsVisibleForOrDetect(i_funit, i_funit, false);
             }
         private:
             WorldObject const* i_obj;
@@ -1198,8 +1198,8 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return i_obj; }
             bool operator()(Creature* u)
             {
-                if (u->GetEntry() == i_entry && ((i_onlyAlive && u->IsAlive()) || (i_onlyDead && u->IsCorpse()) || (!i_onlyAlive && !i_onlyDead))
-                    && (!i_excludeSelf || &i_obj != u) && i_obj.IsWithinDistInMap(u, i_range))
+                if (u->GetEntry() == i_entry && ((i_onlyAlive && u->IsAlive()) || (i_onlyDead && u->IsCorpse()) || (!i_onlyAlive && !i_onlyDead)) &&
+                    (!i_excludeSelf || &i_obj != u) && i_obj.IsWithinDistInMap(u, i_range))
                 {
                     i_range = i_obj.GetDistance(u);         // use found unit range as new range limit for next check
                     return true;
@@ -1272,9 +1272,9 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Player* u)
             {
-                return u->IsAlive()
-                       && i_obj->IsWithinDistInMap(u, i_range)
-                       && u->HasAura(i_spellId);
+                return u->IsAlive() &&
+                    i_obj->IsWithinDistInMap(u, i_range) &&
+                    u->HasAura(i_spellId);
             }
         private:
             WorldObject const* i_obj;
@@ -1290,8 +1290,8 @@ namespace MaNGOS
             WorldObject const& GetFocusObject() const { return *i_obj; }
             bool operator()(Player* u)
             {
-                return u->CanUseCapturePoint()
-                    && i_obj->IsWithinDistInMap(u, i_range);
+                return u->CanUseCapturePoint() &&
+                    i_obj->IsWithinDistInMap(u, i_range);
             }
         private:
             WorldObject const* i_obj;
@@ -1300,7 +1300,7 @@ namespace MaNGOS
 
     // Prepare using Builder localized packets with caching and send to player
     template<class Builder>
-    class LocalizedPacketDo
+        class LocalizedPacketDo
     {
         public:
             explicit LocalizedPacketDo(Builder& builder) : i_builder(builder) {}
@@ -1321,7 +1321,7 @@ namespace MaNGOS
 
     // Prepare using Builder localized packets with caching and send to player
     template<class Builder>
-    class LocalizedPacketListDo
+        class LocalizedPacketListDo
     {
         public:
             typedef std::vector<WorldPacket*> WorldPacketList;
@@ -1330,10 +1330,12 @@ namespace MaNGOS
             ~LocalizedPacketListDo()
             {
                 for (size_t i = 0; i < i_data_cache.size(); ++i)
+                {
                     for (size_t j = 0; j < i_data_cache[i].size(); ++j)
                     {
                         delete i_data_cache[i][j];
                     }
+                }
             }
             void operator()(Player* p);
 

@@ -91,8 +91,8 @@ bool IsQuestTameSpell(uint32 spellId)
         return false;
     }
 
-    return spellproto->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_THREAT
-           && spellproto->Effect[EFFECT_INDEX_1] == SPELL_EFFECT_APPLY_AURA && spellproto->EffectApplyAuraName[EFFECT_INDEX_1] == SPELL_AURA_DUMMY;
+    return spellproto->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_THREAT &&
+        spellproto->Effect[EFFECT_INDEX_1] == SPELL_EFFECT_APPLY_AURA && spellproto->EffectApplyAuraName[EFFECT_INDEX_1] == SPELL_AURA_DUMMY;
 }
 
 SpellCastTargets::SpellCastTargets()
@@ -224,9 +224,9 @@ void SpellCastTargets::setCorpseTarget(Corpse* corpse)
 void SpellCastTargets::Update(Unit* caster)
 {
     m_GOTarget   = m_GOTargetGUID ? caster->GetMap()->GetGameObject(m_GOTargetGUID) : NULL;
-    m_unitTarget = m_unitTargetGUID ?
-                    (m_unitTargetGUID == caster->GetObjectGuid() ? caster : sObjectAccessor.GetUnit(*caster, m_unitTargetGUID)) :
-                    NULL;
+    m_unitTarget = m_unitTargetGUID
+        ? (m_unitTargetGUID == caster->GetObjectGuid() ? caster : sObjectAccessor.GetUnit(*caster, m_unitTargetGUID))
+        : NULL;
 
     m_itemTarget = NULL;
     if (caster->GetTypeId() == TYPEID_PLAYER)
@@ -591,9 +591,9 @@ void Spell::FillTargetMap()
         for (int j = 0; j < i; ++j)
         {
             // Check if same target, but handle i.e. AreaAuras different
-            if (m_spellInfo->EffectImplicitTargetA[i] == m_spellInfo->EffectImplicitTargetA[j] && m_spellInfo->EffectImplicitTargetB[i] == m_spellInfo->EffectImplicitTargetB[j]
-                && m_spellInfo->Effect[j] != SPELL_EFFECT_NONE
-                && !IsAreaAuraEffect(m_spellInfo->Effect[i]) && !IsAreaAuraEffect(m_spellInfo->Effect[j]))
+            if (m_spellInfo->EffectImplicitTargetA[i] == m_spellInfo->EffectImplicitTargetA[j] && m_spellInfo->EffectImplicitTargetB[i] == m_spellInfo->EffectImplicitTargetB[j] &&
+                m_spellInfo->Effect[j] != SPELL_EFFECT_NONE &&
+                !IsAreaAuraEffect(m_spellInfo->Effect[i]) && !IsAreaAuraEffect(m_spellInfo->Effect[j]))
                 // Add further conditions here if required
             {
                 effToIndex[i] = j;                          // effect i has same targeting list as effect j
@@ -692,7 +692,7 @@ void Spell::FillTargetMap()
                             }
                             SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitLists[i /*==effToIndex[i]*/]);
                             break;
-                            // target pre-selection required
+                        // target pre-selection required
                         case TARGET_INNKEEPER_COORDINATES:
                         case TARGET_TABLE_X_Y_Z_COORDINATES:
                         case TARGET_CASTER_COORDINATES:
@@ -1488,9 +1488,9 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
 
     // Recheck immune (only for delayed spells)
     float speed = m_spellInfo->speed == 0.0f && m_triggeredBySpellInfo ? m_triggeredBySpellInfo->speed : m_spellInfo->speed;
-    if (speed && (
-            unit->IsImmuneToDamage(GetSpellSchoolMask(m_spellInfo)) ||
-            unit->IsImmuneToSpell(m_spellInfo, unit == realCaster)))
+    if (speed &&
+        (unit->IsImmuneToDamage(GetSpellSchoolMask(m_spellInfo)) ||
+        unit->IsImmuneToSpell(m_spellInfo, unit == realCaster)))
     {
         if (realCaster)
         {
@@ -1550,7 +1550,7 @@ void Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool isReflected)
 
                 switch (m_spellInfo->Id)
                 {
-                         // Mind Soothe (all ranks)
+                    // Mind Soothe (all ranks)
                     case 453:
                     case 8192:
                     case 10953:
@@ -1903,7 +1903,7 @@ struct ChainHealingOrder
             return 0;
         }
         else if (Target->GetTypeId() == TYPEID_PLAYER && MainTarget->GetTypeId() == TYPEID_PLAYER &&
-                ((Player const*)Target)->IsInSameRaidWith((Player const*)MainTarget))
+            ((Player const*)Target)->IsInSameRaidWith((Player const*)MainTarget))
         {
             if (Target->GetHealth() == Target->GetMaxHealth())
             {
@@ -2192,7 +2192,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
             // fill real target list if no spell script target defined
             FillAreaTargets(bounds.first != bounds.second ? tempTargetUnitMap : targetUnitMap,
-                            radius, PUSH_DEST_CENTER, bounds.first != bounds.second ? SPELL_TARGETS_ALL : targetB);
+                radius, PUSH_DEST_CENTER, bounds.first != bounds.second ? SPELL_TARGETS_ALL : targetB);
 
             if (!tempTargetUnitMap.empty())
             {
@@ -2504,7 +2504,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
             // fill real target list if no spell script target defined
             FillAreaTargets(bounds.first != bounds.second ? tempTargetUnitMap : targetUnitMap,
-                            radius, PUSH_IN_FRONT_15, bounds.first != bounds.second ? SPELL_TARGETS_ALL : targetB);
+                radius, PUSH_IN_FRONT_15, bounds.first != bounds.second ? SPELL_TARGETS_ALL : targetB);
 
             if (!tempTargetUnitMap.empty())
             {
@@ -2781,7 +2781,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_AREAEFFECT_PARTY_AND_CLASS:
         {
             Player* targetPlayer = m_targets.getUnitTarget() && m_targets.getUnitTarget()->GetTypeId() == TYPEID_PLAYER
-                                ? (Player*)m_targets.getUnitTarget() : NULL;
+                ? (Player*)m_targets.getUnitTarget() : NULL;
 
             Group* pGroup = targetPlayer ? targetPlayer->GetGroup() : NULL;
             if (pGroup)
@@ -2969,15 +2969,16 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     break;
                 case SPELL_EFFECT_TELEPORT_UNITS:
                 case SPELL_EFFECT_SUMMON:
-                    /*[-ZERO]  if (m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED ||
-                    m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED2)
-                    {
-                        if (m_targets.getUnitTarget())
-                        {
-                            targetUnitMap.push_back(m_targets.getUnitTarget());
-                        }
-                    }
-                    else */
+                    /** [-ZERO]  if (m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED ||
+                     *              m_spellInfo->EffectMiscValueB[effIndex] == SUMMON_TYPE_POSESSED2)
+                     *              {
+                     *                  if (m_targets.getUnitTarget())
+                     *                  {
+                     *                      targetUnitMap.push_back(m_targets.getUnitTarget());
+                     *                  }
+                     *              }
+                     *              else
+                     */
                     {
                         targetUnitMap.push_back(m_caster);
                     }
@@ -3731,22 +3732,22 @@ void Spell::_handle_finish_phase()
     {
         switch (m_spellInfo->Id)
         {
-        // on next swing
-        case 15494:
-        case 18797:
-        case 21919:
-        case 20178: // paladin reckoning proc
-            break;
-        default:
-            if (Unit* victim = m_caster->getVictim())
-            {
-                m_caster->HandleProcExtraAttackFor(victim);
-            }
-            else
-            {
-                m_caster->m_extraAttacks = 0;   // do not allow to accumulate instant extra attacks
-            }
-            break;
+            // on next swing
+            case 15494:
+            case 18797:
+            case 21919:
+            case 20178: // paladin reckoning proc
+                break;
+            default:
+                if (Unit* victim = m_caster->getVictim())
+                {
+                    m_caster->HandleProcExtraAttackFor(victim);
+                }
+                else
+                {
+                    m_caster->m_extraAttacks = 0;   // do not allow to accumulate instant extra attacks
+                }
+                break;
         }
     }
 }
@@ -3952,7 +3953,7 @@ void Spell::update(uint32 difftime)
 
                 finish();
             }
-        break;
+            break;
         }
         default:
         {
@@ -4044,8 +4045,8 @@ void Spell::finish(bool ok)
         }
     }
 
-    /*if (IsRangedAttackResetSpell())
-        m_caster->resetAttackTimer(RANGED_ATTACK);*/
+    /** if (IsRangedAttackResetSpell())
+     *      m_caster->resetAttackTimer(RANGED_ATTACK); */
 
     // Clear combo at finish state
     if (m_caster->GetTypeId() == TYPEID_PLAYER && NeedsComboPoints(m_spellInfo))
@@ -4141,11 +4142,6 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, SpellCas
                 data << uint32(spellInfo->RequiresSpellFocus);
                 break;
             case SPELL_FAILED_REQUIRES_AREA:
-                /* [-ZERO]    // hardcode areas limitation case     switch (spellInfo->Id)
-                    {
-                        default:                            // default case             data << uint32(spellInfo->AreaId);
-                            break;
-                    } */
                 break;
             case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
                 data << uint32(spellInfo->EquippedItemClass);
@@ -4393,65 +4389,65 @@ void Spell::SendLogExecute()
         {   // this block may be iterated (target count) times
             switch (m_spellInfo->Effect[i])
             {
-            case SPELL_EFFECT_POWER_DRAIN:
-                data << m_targets.getUnitTargetGuid();
-                data << uint32(0);
-                data << uint32(0);
-                data << float(0);
-                break;
-            case SPELL_EFFECT_ADD_EXTRA_ATTACKS:
-                data << m_targets.getUnitTargetGuid();
-                data << uint32(0);                      // count?
-                break;
-            case SPELL_EFFECT_INTERRUPT_CAST:
-                data << m_targets.getUnitTargetGuid();
-                data << uint32(0);                      // spellid being interrupted
-                break;
-            case SPELL_EFFECT_DURABILITY_DAMAGE:
-                data << m_targets.getUnitTargetGuid();
-                data << uint32(0);
-                data << uint32(0);                      // if both -1, a separate handling
-                break;
-            case SPELL_EFFECT_CREATE_ITEM:              // here target is not the item but SELF
-                data << uint32(m_spellInfo->EffectItemType[i]);
-                break;
-            case SPELL_EFFECT_FEED_PET:                 // here we may get both SELF and item targets
-                data << m_targets.getItemTargetEntry();
-                break;
-            case SPELL_EFFECT_RESURRECT:
-            case SPELL_EFFECT_DISPEL:
-            case SPELL_EFFECT_THREAT:
-            case SPELL_EFFECT_DISTRACT:
-            case SPELL_EFFECT_SANCTUARY:
-            case SPELL_EFFECT_THREAT_ALL:
-            case SPELL_EFFECT_DISPEL_MECHANIC:
-            case SPELL_EFFECT_RESURRECT_NEW:
-            case SPELL_EFFECT_ATTACK_ME:
-            case SPELL_EFFECT_SKIN_PLAYER_CORPSE:
-            case SPELL_EFFECT_MODIFY_THREAT_PERCENT:
-            case SPELL_EFFECT_126:
-            case SPELL_EFFECT_DISMISS_PET:              // case is handled separately but has the same input
-            case SPELL_EFFECT_OPEN_LOCK:                // 2 cases are handled separately but have the same input
-            case SPELL_EFFECT_OPEN_LOCK_ITEM:
-            case SPELL_EFFECT_INSTAKILL:                // separate. Also self instakill will not be logged by client
-                if (ObjectGuid guid = GetPrefilledOrUnitTargetGuid(SpellEffectIndex(i)))
-                {
-                    data << guid;
-                }
-                else if (m_targets.getItemTargetGuid())
-                {
-                    data << m_targets.getItemTargetGuid();
-                }
-                else if (m_targets.getGOTargetGuid())
-                {
-                    data << m_targets.getGOTargetGuid();
-                }
-                break;
-            case SPELL_EFFECT_DUMMY:
-                break;
-            default:                                    // including SPELL_EFFECT_DUMMY w/separate handling
-                hasSpecial = false;                     // prevent duplicate logging for spells logged w/o target
-                break;
+                case SPELL_EFFECT_POWER_DRAIN:
+                    data << m_targets.getUnitTargetGuid();
+                    data << uint32(0);
+                    data << uint32(0);
+                    data << float(0);
+                    break;
+                case SPELL_EFFECT_ADD_EXTRA_ATTACKS:
+                    data << m_targets.getUnitTargetGuid();
+                    data << uint32(0);                      // count?
+                    break;
+                case SPELL_EFFECT_INTERRUPT_CAST:
+                    data << m_targets.getUnitTargetGuid();
+                    data << uint32(0);                      // spellid being interrupted
+                    break;
+                case SPELL_EFFECT_DURABILITY_DAMAGE:
+                    data << m_targets.getUnitTargetGuid();
+                    data << uint32(0);
+                    data << uint32(0);                      // if both -1, a separate handling
+                    break;
+                case SPELL_EFFECT_CREATE_ITEM:              // here target is not the item but SELF
+                    data << uint32(m_spellInfo->EffectItemType[i]);
+                    break;
+                case SPELL_EFFECT_FEED_PET:                 // here we may get both SELF and item targets
+                    data << m_targets.getItemTargetEntry();
+                    break;
+                case SPELL_EFFECT_RESURRECT:
+                case SPELL_EFFECT_DISPEL:
+                case SPELL_EFFECT_THREAT:
+                case SPELL_EFFECT_DISTRACT:
+                case SPELL_EFFECT_SANCTUARY:
+                case SPELL_EFFECT_THREAT_ALL:
+                case SPELL_EFFECT_DISPEL_MECHANIC:
+                case SPELL_EFFECT_RESURRECT_NEW:
+                case SPELL_EFFECT_ATTACK_ME:
+                case SPELL_EFFECT_SKIN_PLAYER_CORPSE:
+                case SPELL_EFFECT_MODIFY_THREAT_PERCENT:
+                case SPELL_EFFECT_126:
+                case SPELL_EFFECT_DISMISS_PET:              // case is handled separately but has the same input
+                case SPELL_EFFECT_OPEN_LOCK:                // 2 cases are handled separately but have the same input
+                case SPELL_EFFECT_OPEN_LOCK_ITEM:
+                case SPELL_EFFECT_INSTAKILL:                // separate. Also self instakill will not be logged by client
+                    if (ObjectGuid guid = GetPrefilledOrUnitTargetGuid(SpellEffectIndex(i)))
+                    {
+                        data << guid;
+                    }
+                    else if (m_targets.getItemTargetGuid())
+                    {
+                        data << m_targets.getItemTargetGuid();
+                    }
+                    else if (m_targets.getGOTargetGuid())
+                    {
+                        data << m_targets.getGOTargetGuid();
+                    }
+                    break;
+                case SPELL_EFFECT_DUMMY:
+                    break;
+                default:                                    // including SPELL_EFFECT_DUMMY w/separate handling
+                    hasSpecial = false;                     // prevent duplicate logging for spells logged w/o target
+                    break;
             }
         }
         if (hasSpecial)
@@ -4516,8 +4512,8 @@ void Spell::SendChannelUpdate(uint32 time)
     if (time == 0)
     {
         // Reset farsight for some possessing auras of possessed summoned (as they might work with different aura types)
-        if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_FARSIGHT) && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->GetCharmGuid()
-            && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS) && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS_PET))
+        if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_FARSIGHT) && m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->GetCharmGuid() &&
+            !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS) && !IsSpellHaveAura(m_spellInfo, SPELL_AURA_MOD_POSSESS_PET))
         {
             Player* player = (Player*)m_caster;
             // These Auras are applied to self, so get the possessed first
@@ -4758,14 +4754,16 @@ void Spell::TakePower()
             if (m_caster->GetTypeId() == TYPEID_PLAYER)
             {
                 if (powerType == POWER_ENERGY || powerType == POWER_RAGE)
+                {
                     for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+                    {
+                        if (ihit->missCondition != SPELL_MISS_NONE)
                         {
-                            if (ihit->missCondition != SPELL_MISS_NONE)
-                            {
-                                hit = false;
-                            }
-                            break;
+                            hit = false;
                         }
+                        break;
+                    }
+                }
             }
         }
     }
@@ -4987,10 +4985,10 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOT
     damage = int32(CalculateDamage(i, unitTarget) * DamageMultiplier);
 
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell %u Effect%d : %u Targets: %s, %s, %s",
-                     m_spellInfo->Id, i, eff,
-                     unitTarget ? unitTarget->GetGuidStr().c_str() : "-",
-                     itemTarget ? itemTarget->GetGuidStr().c_str() : "-",
-                     gameObjTarget ? gameObjTarget->GetGuidStr().c_str() : "-");
+        m_spellInfo->Id, i, eff,
+        unitTarget ? unitTarget->GetGuidStr().c_str() : "-",
+        itemTarget ? itemTarget->GetGuidStr().c_str() : "-",
+        gameObjTarget ? gameObjTarget->GetGuidStr().c_str() : "-");
 
     if (eff < TOTAL_SPELL_EFFECTS)
     {
@@ -5228,7 +5226,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELLFAMILY_PALADIN:
             {
                 if (m_spellInfo->HasSpellEffect(SPELL_EFFECT_HEAL) || IsSpellHaveAura(m_spellInfo, SPELL_AURA_PERIODIC_HEAL) ||
-                        m_spellInfo->HasSpellEffect(SPELL_EFFECT_DISPEL))
+                    m_spellInfo->HasSpellEffect(SPELL_EFFECT_DISPEL))
                 {
                     Unit::AuraList const& auraClassScripts = m_caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
                     for (Unit::AuraList::const_iterator itr = auraClassScripts.begin(); itr != auraClassScripts.end();)
@@ -5263,10 +5261,12 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
         //Perhaps this should be done for all spells?
         if (foundSootheAnimal)
+        {
             if (target->getLevel() > m_spellInfo->MaxTargetLevel)
             {
                 return SPELL_FAILED_HIGHLEVEL;
             }
+        }
 
         // Swiftmend
         if (m_spellInfo->Id == 18562)                       // future versions have special aura state for this
@@ -5376,9 +5376,9 @@ SpellCastResult Spell::CheckCast(bool strict)
 
         // totem immunity for channeled spells(needs to be before spell cast)
         // spell attribs for player channeled spells
-        if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_CHANNEL_TRACK_TARGET)
-            && target->GetTypeId() == TYPEID_UNIT
-            && ((Creature*)target)->IsTotem())
+        if (m_spellInfo->HasAttribute(SPELL_ATTR_EX_CHANNEL_TRACK_TARGET) &&
+            target->GetTypeId() == TYPEID_UNIT &&
+            ((Creature*)target)->IsTotem())
         {
             return SPELL_FAILED_IMMUNE;
         }
@@ -5622,7 +5622,7 @@ SpellCastResult Spell::CheckCast(bool strict)
     m_caster->GetZoneAndAreaId(zone, area);
 
     SpellCastResult locRes = sSpellMgr.GetSpellAllowedInLocationError(m_spellInfo, m_caster->GetMapId(), zone, area,
-                             m_caster->GetCharmerOrOwnerPlayerOrPlayerItself());
+        m_caster->GetCharmerOrOwnerPlayerOrPlayerItself());
     if (locRes != SPELL_CAST_OK)
     {
         return locRes;
@@ -5847,7 +5847,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 // Missing DB Entry or targets for this spellEffect.
                 else
                 {
-                    /* For TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT makes DB targets optional not required for now
+                    /** For TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT makes DB targets optional not required for now
                      * TODO: Makes more research for this target type
                      */
                     if (m_spellInfo->EffectImplicitTargetA[j] != TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT)
@@ -6857,17 +6857,19 @@ SpellCastResult Spell::CheckCasterAuras() const
     SpellCastResult prevented_reason = SPELL_CAST_OK;
     // Have to check if there is a stun aura. Otherwise will have problems with ghost aura apply while logging out
     uint32 unitflag = m_caster->GetUInt32Value(UNIT_FIELD_FLAGS);     // Get unit state
-    /*[-ZERO]    if (unitflag & UNIT_FLAG_STUNNED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED))
-            prevented_reason = SPELL_FAILED_STUNNED;
-        else if (unitflag & UNIT_FLAG_CONFUSED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
-        {
-            prevented_reason = SPELL_FAILED_CONFUSED;
-        }
-        else if (unitflag & UNIT_FLAG_FLEEING && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
-        {
-            prevented_reason = SPELL_FAILED_FLEEING;
-        }
-        else */
+    /** [-ZERO]
+     * if (unitflag & UNIT_FLAG_STUNNED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED))
+     *     prevented_reason = SPELL_FAILED_STUNNED;
+     * else if (unitflag & UNIT_FLAG_CONFUSED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
+     * {
+     *     prevented_reason = SPELL_FAILED_CONFUSED;
+     * }
+     * else if (unitflag & UNIT_FLAG_FLEEING && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
+     * {
+     *      prevented_reason = SPELL_FAILED_FLEEING;
+     * }
+     * else
+     */
     if (unitflag & UNIT_FLAG_SILENCED && m_spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
     {
         prevented_reason = SPELL_FAILED_SILENCED;
@@ -6878,7 +6880,9 @@ SpellCastResult Spell::CheckCasterAuras() const
     }
 
     if (m_caster->IsSchoolLockedOut(GetSpellSchoolMask(m_spellInfo)))
+    {
         prevented_reason = SPELL_FAILED_SILENCED;
+    }
 
     // Attr must make flag drop spell totally immune from all effects
     if (prevented_reason != SPELL_CAST_OK)
@@ -6917,26 +6921,26 @@ SpellCastResult Spell::CheckCasterAuras() const
                     // That is needed when your casting is prevented by multiple states and you are only immune to some of them.
                     switch (aura->GetModifier()->m_auraname)
                     {
-                            /* Zero
-                            case SPELL_AURA_MOD_STUN:
-                                if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED))
-                                {
-                                    return SPELL_FAILED_STUNNED;
-                                }
-                                break;
-                            case SPELL_AURA_MOD_CONFUSE:
-                                if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
-                                {
-                                    return SPELL_FAILED_CONFUSED;
-                                }
-                                break;
-                            case SPELL_AURA_MOD_FEAR:
-                                if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
-                                {
-                                    return SPELL_FAILED_FLEEING;
-                                }
-                                break;
-                            */
+                        /** Zero
+                         *  case SPELL_AURA_MOD_STUN:
+                         *     if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED))
+                         *     {
+                         *         return SPELL_FAILED_STUNNED;
+                         *     }
+                         *     break;
+                         *  case SPELL_AURA_MOD_CONFUSE:
+                         *     if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
+                         *     {
+                         *         return SPELL_FAILED_CONFUSED;
+                         *     }
+                         *     break;
+                         *  case SPELL_AURA_MOD_FEAR:
+                         *     if (!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
+                         *     {
+                         *         return SPELL_FAILED_FLEEING;
+                         *     }
+                         *     break;
+                         */
                         case SPELL_AURA_MOD_SILENCE:
                         case SPELL_AURA_MOD_PACIFY:
                         case SPELL_AURA_MOD_PACIFY_SILENCE:
@@ -7160,7 +7164,7 @@ uint32 Spell::CalculatePowerCost(SpellEntry const* spellInfo, Unit* caster, Spel
     {
         switch (spellInfo->powerType)
         {
-                // health as power used
+            // health as power used
             case POWER_HEALTH:
                 powerCost += spellInfo->ManaCostPercentage * caster->GetCreateHealth() / 100;
                 break;
@@ -7424,19 +7428,19 @@ SpellCastResult Spell::CheckItems()
         if (m_caster->GetTypeId() != TYPEID_PLAYER)
         {
             return m_IsTriggeredSpell && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_BAD_TARGETS;
+                ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_BAD_TARGETS;
         }
 
         if (!m_targets.getItemTarget())
         {
             return m_IsTriggeredSpell  && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_ITEM_GONE;
+                ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_ITEM_GONE;
         }
 
         if (!m_targets.getItemTarget()->IsFitToSpellRequirements(m_spellInfo))
         {
             return m_IsTriggeredSpell  && !(m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-                                        ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+                ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
         }
     }
     // if not item target then required item must be equipped (for triggered case not report error)
@@ -7529,30 +7533,30 @@ SpellCastResult Spell::CheckItems()
             return SPELL_FAILED_ITEM_GONE;                   //[-ZERO] not sure of it
         }
 
-        /*[-ZERO] to rewrite?
-        // Check items for TotemCategory  (items presence in inventory)
-        uint32 TotemCategory = MAX_SPELL_TOTEM_CATEGORIES;
-        for (int i= 0; i < MAX_SPELL_TOTEM_CATEGORIES; ++i)
-        {
-            if (m_spellInfo->TotemCategory[i] != 0)
-            {
-                if (p_caster->HasItemTotemCategory(m_spellInfo->TotemCategory[i]))
-                {
-                    TotemCategory -= 1;
-                    continue;
-                }
-            }
-            else
-            {
-                TotemCategory -= 1;
-            }
-        }
+        /**[-ZERO] to rewrite?
+         * // Check items for TotemCategory  (items presence in inventory)
+         * uint32 TotemCategory = MAX_SPELL_TOTEM_CATEGORIES;
+         * for (int i= 0; i < MAX_SPELL_TOTEM_CATEGORIES; ++i)
+         * {
+         *     if (m_spellInfo->TotemCategory[i] != 0)
+         *     {
+         *         if (p_caster->HasItemTotemCategory(m_spellInfo->TotemCategory[i]))
+         *         {
+         *             TotemCategory -= 1;
+         *             continue;
+         *         }
+         *     }
+         *     else
+         *     {
+         *         TotemCategory -= 1;
+         *     }
+         * }
 
-        if (TotemCategory != 0)
-        {
-            return SPELL_FAILED_TOTEM_CATEGORY;             // 0x7B
-        }
-        */
+         * if (TotemCategory != 0)
+         * {
+         *     return SPELL_FAILED_TOTEM_CATEGORY;             // 0x7B
+         * }
+         */
     }
 
     // special checks for spell effects
@@ -8070,8 +8074,8 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
         }
     }
 
-    if (target->GetTypeId() != TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR_EX3_TARGET_ONLY_PLAYER)
-        && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SCRIPT && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SELF)
+    if (target->GetTypeId() != TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR_EX3_TARGET_ONLY_PLAYER) &&
+        m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SCRIPT && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_SELF)
     {
         return false;
     }
@@ -8086,10 +8090,10 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
  */
 bool Spell::IsNeedSendToClient() const
 {
-    return m_spellInfo->SpellVisual != 0
-            || IsChanneledSpell(m_spellInfo)
-            || m_spellInfo->speed > 0.0f
-            || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
+    return m_spellInfo->SpellVisual != 0 ||
+        IsChanneledSpell(m_spellInfo) ||
+        m_spellInfo->speed > 0.0f ||
+        (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
 }
 
 /**
@@ -8156,7 +8160,7 @@ SpellEvent::~SpellEvent()
     else
     {
         sLog.outError("~SpellEvent: %s %u tried to delete non-deletable spell %u. Was not deleted, causes memory leak.",
-                      (m_Spell->GetCaster()->GetTypeId() == TYPEID_PLAYER ? "Player" : "Creature"), m_Spell->GetCaster()->GetGUIDLow(), m_Spell->m_spellInfo->Id);
+            (m_Spell->GetCaster()->GetTypeId() == TYPEID_PLAYER ? "Player" : "Creature"), m_Spell->GetCaster()->GetGUIDLow(), m_Spell->m_spellInfo->Id);
     }
 }
 
@@ -8329,7 +8333,7 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
     {
         switch (lockInfo->Type[j])
         {
-                // check key item (many fit cases can be)
+            // check key item (many fit cases can be)
             case LOCK_KEY_ITEM:
             {
                 if (lockInfo->Index[j] && m_CastItem && m_CastItem->GetEntry() == lockInfo->Index[j])
@@ -8338,8 +8342,8 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
                 }
                 reqKey = true;
                 break;
-                // check key skill (only single first fit case can be)
             }
+            // check key skill - only single first fit case can be
             case LOCK_KEY_SKILL:
             {
                 reqKey = true;
@@ -8360,8 +8364,8 @@ SpellCastResult Spell::CanOpenLock(SpellEffectIndex effIndex, uint32 lockId, Ski
                     reqSkillValue = lockInfo->Skill[j];
 
                     // castitem check: rogue using skeleton keys. the skill values should not be added in this case.
-                    skillValue = m_CastItem || m_caster->GetTypeId() != TYPEID_PLAYER ?
-                                            0 : ((Player*)m_caster)->GetSkillValue(skillId);
+                    skillValue = m_CastItem || m_caster->GetTypeId() != TYPEID_PLAYER ? 0
+                        : ((Player*)m_caster)->GetSkillValue(skillId);
 
                     skillValue += spellSkillBonus;
 
@@ -8425,8 +8429,8 @@ void Spell::FillRaidOrPartyTargets(UnitList& targetUnitMap, Unit* member, float 
             Player* Target = itr->getSource();
 
             // IsHostileTo check duel and controlled by enemy
-            if (Target && (raid || subgroup == Target->GetSubGroup())
-                && !m_caster->IsHostileTo(Target))
+            if (Target && (raid || subgroup == Target->GetSubGroup()) &&
+                !m_caster->IsHostileTo(Target))
             {
                 if ((Target == m_caster && withcaster) ||
                     (Target != m_caster && m_caster->IsWithinDistInMap(Target, radius)))

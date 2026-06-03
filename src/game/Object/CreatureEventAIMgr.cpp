@@ -68,10 +68,12 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
 
     std::set<int32> idx_set;
     for (int32 i = MAX_CREATURE_AI_TEXT_STRING_ID + 1; i <= MIN_CREATURE_AI_TEXT_STRING_ID; ++i)
+    {
         if (sObjectMgr.GetMangosStringLocale(i))
         {
             idx_set.insert(i);
         }
+    }
 
     for (CreatureEventAI_Event_Map::const_iterator itr = m_CreatureEventAI_Event_Map.begin(); itr != m_CreatureEventAI_Event_Map.end(); ++itr)
     {
@@ -90,13 +92,16 @@ void CreatureEventAIMgr::CheckUnusedAITexts()
                         // ACTION_T_CHANCED_TEXT contains a chance value in first param
                         int k = action.type == ACTION_T_TEXT ? 0 : 1;
                         for (; k < 3; ++k)
+                        {
                             if (action.text.TextId[k])
                             {
                                 idx_set.erase(action.text.TextId[k]);
                             }
+                        }
                         break;
                     }
-                    default: break;
+                    default:
+                        break;
                 }
             }
         }
@@ -295,8 +300,6 @@ bool IsValidTargetType(EventAI_Type eventType, EventAI_ActionType actionType, ui
     }
 }
 
-// -------------------
-
 /**
  * @brief Loads and validates all EventAI scripts from the database.
  */
@@ -308,11 +311,11 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
 
     // Gather event data
     QueryResult* result = WorldDatabase.Query("SELECT `id`, `creature_id`, `event_type`, `event_inverse_phase_mask`, `event_chance`, `event_flags`, "
-                          "`event_param1`, `event_param2`, `event_param3`, `event_param4`, "
-                          "`action1_type`, `action1_param1`, `action1_param2`, `action1_param3`, "
-                          "`action2_type`, `action2_param1`, `action2_param2`, `action2_param3`, "
-                          "`action3_type`, `action3_param1`, `action3_param2`, `action3_param3` "
-                          "FROM `creature_ai_scripts`");
+        "`event_param1`, `event_param2`, `event_param3`, `event_param4`, "
+        "`action1_type`, `action1_param1`, `action1_param2`, `action1_param3`, "
+        "`action2_type`, `action2_param1`, `action2_param2`, `action2_param3`, "
+        "`action3_type`, `action3_param1`, `action3_param2`, `action3_param3` "
+        "FROM `creature_ai_scripts`");
     if (result)
     {
         BarGoLink bar(result->GetRowCount());

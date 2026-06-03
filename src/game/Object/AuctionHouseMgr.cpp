@@ -170,7 +170,7 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
             uint32 owner_accid = sObjectMgr.GetPlayerAccountIdByGUID(ownerGuid);
 
             sLog.outCommand(bidder_accId, "GM %s (Account: %u) won item in auction (Entry: %u Count: %u) and pay money: %u. Original owner %s (Account: %u)",
-                            bidder_name.c_str(), bidder_accId, auction->itemTemplate, auction->itemCount, auction->bid, owner_name.c_str(), owner_accid);
+                bidder_name.c_str(), bidder_accId, auction->itemTemplate, auction->itemCount, auction->bid, owner_name.c_str(), owner_accid);
         }
     }
     else if (!bidder)
@@ -204,8 +204,8 @@ void AuctionHouseMgr::SendAuctionWonMail(AuctionEntry* auction)
 
         // will delete item or place to receiver mail list
         MailDraft(msgAuctionWonSubject.str(), msgAuctionWonBody.str())
-        .AddItem(pItem)
-        .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
+            .AddItem(pItem)
+            .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
     // receiver not exist
     else
@@ -260,8 +260,8 @@ void AuctionHouseMgr::SendAuctionSuccessfulMail(AuctionEntry* auction)
         }
 
         MailDraft(msgAuctionSuccessfulSubject.str(), auctionSuccessfulBody.str())
-        .SetMoney(profit)
-        .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
+            .SetMoney(profit)
+            .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
 }
 
@@ -307,8 +307,8 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
 
         // will delete item or place to receiver mail list
         MailDraft(subject.str(),"")
-        .AddItem(pItem)
-        .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
+            .AddItem(pItem)
+            .SendMailTo(MailReceiver(owner, owner_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
     // owner not found
     else
@@ -461,7 +461,7 @@ void AuctionHouseMgr::LoadAuctions()
 
             // No SQL injection (no strings)
             CharacterDatabase.PExecute("UPDATE `auction` SET `item_template` = %u, `item_count` = %u, `item_randompropertyid` = %i WHERE `itemguid` = %u",
-                                       auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
+                auction->itemTemplate, auction->itemCount, auction->itemRandomPropertyId, auction->itemGuidLow);
         }
 
         auction->auctionHouseEntry = sAuctionHouseStore.LookupEntry(houseid);
@@ -482,8 +482,8 @@ void AuctionHouseMgr::LoadAuctions()
 
                 // item will deleted or added to received mail list
                 MailDraft(msgAuctionCanceledOwner.str(), "")// TODO: fix body
-                .AddItem(pItem)
-                .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
+                    .AddItem(pItem)
+                    .SendMailTo(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, auction->owner)), auction, MAIL_CHECK_MASK_COPIED);
             }
 
             auction->DeleteFromDB();
@@ -737,9 +737,9 @@ void AuctionHouseObject::BuildListOwnerItems(WorldPacket& data, Player* player, 
  * @param totalcount Receives the total number of matching entries.
  */
 void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player,
-        std::wstring const& wsearchedname, uint32 listfrom, uint32 levelmin, uint32 levelmax, uint32 usable,
-        uint32 inventoryType, uint32 itemClass, uint32 itemSubClass, uint32 quality,
-        uint32& count, uint32& totalcount)
+    std::wstring const& wsearchedname, uint32 listfrom, uint32 levelmin, uint32 levelmax, uint32 usable,
+    uint32 inventoryType, uint32 itemClass, uint32 itemSubClass, uint32 quality,
+    uint32& count, uint32& totalcount)
 {
     int loc_idx = player->GetSession()->GetSessionDbLocaleIndex();
 
@@ -995,8 +995,8 @@ void AuctionEntry::SaveToDB() const
 {
     // No SQL injection (no strings)
     CharacterDatabase.PExecute("INSERT INTO `auction` (`id`,`houseid`,`itemguid`,`item_template`,`item_count`,`item_randompropertyid`,`itemowner`,`buyoutprice`,`time`,`buyguid`,`lastbid`,`startbid`,`deposit`) "
-                               "VALUES ('%u', '%u', '%u', '%u', '%u', '%i', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u')",
-                               Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
+        "VALUES ('%u', '%u', '%u', '%u', '%u', '%i', '%u', '%u', '" UI64FMTD "', '%u', '%u', '%u', '%u')",
+        Id, auctionHouseEntry->houseId, itemGuidLow, itemTemplate, itemCount, itemRandomPropertyId, owner, buyout, (uint64)expireTime, bidder, bid, startbid, deposit);
 }
 
 /**

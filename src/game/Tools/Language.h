@@ -321,8 +321,7 @@ enum MangosStrings
     LANG_TRIGGER_EXPLORE_QUEST                                = 366,    /* Explore quest: */
     LANG_TRIGGER_CONDITION                                    = 367,    /* Condition %u */
     LANG_COMMAND_TICKETRESPONSE                               = 373,    /* Response: %s */
-    LANG_COMMAND_TICKETCOUNT_CONSOLE                          = 374,    /* Tickets count: %i
- */
+    LANG_COMMAND_TICKETCOUNT_CONSOLE                          = 374,    /* Tickets count: %i */
     LANG_COMMAND_TICKETNOTEXIST_NAME                          = 375,    /* Player %s not have tickets. */
     LANG_POOL_ENTRY_LIST_CHAT                                 = 376,    /* %u - |cffffffff|Hpool:%u|h[%s]|h|r AutoSpawn: %u MaxLimit: %u Creatures: %u GameObjecs: %u Pools %u */
     LANG_NO_POOL_FOR_MAP                                      = 377,    /* No pools found for map '%s' (Id:%u) */
@@ -486,16 +485,16 @@ enum MangosStrings
     LANG_MOVEGENS_HOME_PLAYER                                 = 536,    /*    Home movement used for player?!? */
     LANG_MOVEGENS_FLIGHT                                      = 537,    /*    Taxi flight */
     LANG_MOVEGENS_UNKNOWN                                     = 538,    /*    Unknown movement generator (%u) */
-    LANG_NPCINFO_CHAR                                         = 539,    /* Player selected: %s.
-Faction: %u.
-npcFlags: %u.
-Entry: %u.
-DisplayID: %u (Native: %u). */
+    LANG_NPCINFO_CHAR                                         = 539,    /* Player selected: %s.*/
+    //                                                                      Faction: %u.
+    //                                                                      npcFlags: %u.
+    //                                                                      Entry: %u.
+    //                                                                      DisplayID: %u (Native: %u). */
     LANG_NPCINFO_LEVEL                                        = 540,    /* Level: %u. */
     LANG_NPCINFO_HEALTH                                       = 541,    /* Health (base): %u. (max): %u. (current): %u. */
-    LANG_NPCINFO_FLAGS                                        = 542,    /* Unit Flags: %u.
-Dynamic Flags: %u.
-Faction Template: %u. */
+    LANG_NPCINFO_FLAGS                                        = 542,    /* Unit Flags: %u. */
+    //                                                                      Dynamic Flags: %u.
+    //                                                                      Faction Template: %u. */
     LANG_NPCINFO_LOOT                                         = 543,    /* Loot: %u Pickpocket: %u Skinning: %u */
     LANG_NPCINFO_POSITION                                     = 544,    /* Position: %f %f %f. */
     LANG_NPCINFO_VENDOR                                       = 545,    /* *** Is a vendor! */
@@ -889,14 +888,14 @@ Faction Template: %u. */
     LANG_SCHEDULED_EXIT_SHUTDOWN_5_MIN                        = 1736,    /* This realm will be automatically shutting down in 5 Minutes. */
     LANG_SCHEDULED_EXIT_SHUTDOWN_1_MIN                        = 1737,    /* This realm will be automatically shutting down in 1 Minute as part of its weekly schedule. Please ensure you are in a safe area. Downtime is expected to be 1-2 minutes. */
 
-        // FREE IDS                           1738-9999
-        // Use for not-in-official-sources patches
-        //                                    10000-10999
+    // FREE IDS                           1738-9999
+    // Use for not-in-official-sources patches
+    //                                    10000-10999
 
-        // Use for custom patches             11000-11999
+    // Use for custom patches             11000-11999
 
-        // NOT RESERVED IDS                   12000-1999999999
-        // `db_script_string` table index     2000000000-2000999999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
-        // For other tables maybe             2001000000-2147483647 (max index)
+    // NOT RESERVED IDS                   12000-1999999999
+    // `db_script_string` table index     2000000000-2000999999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
+    // For other tables maybe             2001000000-2147483647 (max index)
 };
 #endif

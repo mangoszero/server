@@ -141,8 +141,8 @@ class AssistanceDistractMovementGenerator : public DistractMovementGenerator
          * @brief Constructor for AssistanceDistractMovementGenerator.
          * @param timer Time to distract the unit.
          */
-        AssistanceDistractMovementGenerator(uint32 timer) :
-            DistractMovementGenerator(timer) {}
+        AssistanceDistractMovementGenerator(uint32 timer)
+            : DistractMovementGenerator(timer) {}
 
         /**
          * @brief Gets the type of the movement generator.

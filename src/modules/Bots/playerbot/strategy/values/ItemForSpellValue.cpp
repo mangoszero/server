@@ -41,10 +41,10 @@ Item* ItemForSpellValue::Calculate()
 
     // Workaround as some spells have no item mask (e.g. shaman weapon enhancements)
     if (!strcmpi(spellInfo->SpellName[0], "rockbiter weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "flametongue weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "earthliving weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "frostbrand weapon") ||
-            !strcmpi(spellInfo->SpellName[0], "windfury weapon"))
+        !strcmpi(spellInfo->SpellName[0], "flametongue weapon") ||
+        !strcmpi(spellInfo->SpellName[0], "earthliving weapon") ||
+        !strcmpi(spellInfo->SpellName[0], "frostbrand weapon") ||
+        !strcmpi(spellInfo->SpellName[0], "windfury weapon"))
     {
         itemForSpell = GetItemFitsToSpellRequirements(EQUIPMENT_SLOT_MAINHAND, spellInfo);
         if (itemForSpell && itemForSpell->GetProto()->Class == ITEM_CLASS_WEAPON)
@@ -86,7 +86,10 @@ Item* ItemForSpellValue::Calculate()
             for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag)
             {
                 Bag* pBag = (Bag*)bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag);
-                if (!pBag) continue;
+                if (!pBag)
+                {
+                    continue;
+                }
                 for (uint32 slot = 0; slot < pBag->GetBagSize(); ++slot)
                 {
                     Item* item = pBag->GetItemByPos(slot);
@@ -100,11 +103,13 @@ Item* ItemForSpellValue::Calculate()
             }
 
             if (bestFood)
+            {
                 return bestFood;
+            }
         }
     }
 
-    for ( uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++ )
+    for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++ )
     {
         itemForSpell = GetItemFitsToSpellRequirements(slot, spellInfo);
         if (itemForSpell)
@@ -112,9 +117,9 @@ Item* ItemForSpellValue::Calculate()
             return itemForSpell;
         }
     }
-
     return NULL;
 }
+
 uint32 ItemForSpellValue::GetPetFoodScore(Pet *pet, Item *item, SpellEntry const *spellInfo)
 {
     if (!item || !pet)
@@ -138,6 +143,7 @@ Item* ItemForSpellValue::GetItemFitsToSpellRequirements(uint8 slot, SpellEntry c
     {
         return NULL;
     }
+
     if (itemForSpell->IsFitToSpellRequirements(spellInfo))
     {
         return itemForSpell;

@@ -16,12 +16,12 @@ namespace ai
      */
     class ActionExecutionListener
     {
-    public:
-        virtual ~ActionExecutionListener() = default; // Add a virtual destructor
-        virtual bool Before(Action* action, const Event& event) = 0;
-        virtual bool AllowExecution(Action* action, const Event& event) = 0;
-        virtual void After(Action* action, bool executed, const Event& event) = 0;
-        virtual bool OverrideResult(Action* action, bool executed, const Event& event) = 0;
+        public:
+            virtual ~ActionExecutionListener() = default; // Add a virtual destructor
+            virtual bool Before(Action* action, const Event& event) = 0;
+            virtual bool AllowExecution(Action* action, const Event& event) = 0;
+            virtual void After(Action* action, bool executed, const Event& event) = 0;
+            virtual bool OverrideResult(Action* action, bool executed, const Event& event) = 0;
     };
 
     // -----------------------------------------------------------------------------------------------------------------------
@@ -31,39 +31,39 @@ namespace ai
      */
     class ActionExecutionListeners : public ActionExecutionListener
     {
-    public:
-        virtual ~ActionExecutionListeners();
+        public:
+            virtual ~ActionExecutionListeners();
 
-    // ActionExecutionListener
-    public:
-        virtual bool Before(Action* action, const Event& event);
-        virtual bool AllowExecution(Action* action, const Event& event);
-        virtual void After(Action* action, bool executed, const Event& event);
-        virtual bool OverrideResult(Action* action, bool executed, const Event& event);
+            // ActionExecutionListener
+        public:
+            virtual bool Before(Action* action, const Event& event);
+            virtual bool AllowExecution(Action* action, const Event& event);
+            virtual void After(Action* action, bool executed, const Event& event);
+            virtual bool OverrideResult(Action* action, bool executed, const Event& event);
 
-    public:
-        /**
-         * @brief Add a listener to the list
-         *
-         * @param listener The listener to add
-         */
-        void Add(ActionExecutionListener* listener)
-        {
-            listeners.push_back(listener);
-        }
+        public:
+            /**
+             * @brief Add a listener to the list
+             *
+             * @param listener The listener to add
+             */
+            void Add(ActionExecutionListener* listener)
+            {
+                listeners.push_back(listener);
+            }
 
-        /**
-         * @brief Remove a listener from the list
-         *
-         * @param listener The listener to remove
-         */
-        void Remove(ActionExecutionListener* listener)
-        {
-            listeners.remove(listener);
-        }
+            /**
+             * @brief Remove a listener from the list
+             *
+             * @param listener The listener to remove
+             */
+            void Remove(ActionExecutionListener* listener)
+            {
+                listeners.remove(listener);
+            }
 
-    private:
-        std::list<ActionExecutionListener*> listeners; /**< List of action execution listeners */
+        private:
+            std::list<ActionExecutionListener*> listeners; /**< List of action execution listeners */
     };
 
     // -----------------------------------------------------------------------------------------------------------------------
@@ -85,83 +85,83 @@ namespace ai
      */
     class Engine : public PlayerbotAIAware
     {
-    public:
-        Engine(PlayerbotAI* ai, AiObjectContext *factory);
+        public:
+            Engine(PlayerbotAI* ai, AiObjectContext *factory);
 
-        void Init();
-        void addStrategy(string name);
-        void addStrategies(string first, ...);
-        bool removeStrategy(string name);
-        bool HasStrategy(string name);
-        void removeAllStrategies();
-        void toggleStrategy(string name);
-        std::string ListStrategies();
-        bool ContainsStrategy(StrategyType type);
-        void ChangeStrategy(string &names);
-        string GetLastAction()
-        {
-            return lastAction;
-        }
+            void Init();
+            void addStrategy(string name);
+            void addStrategies(string first, ...);
+            bool removeStrategy(string name);
+            bool HasStrategy(string name);
+            void removeAllStrategies();
+            void toggleStrategy(string name);
+            std::string ListStrategies();
+            bool ContainsStrategy(StrategyType type);
+            void ChangeStrategy(string &names);
+            string GetLastAction()
+            {
+                return lastAction;
+            }
 
-    public:
-        virtual bool DoNextAction(Unit*, int depth = 0);
-        ActionResult ExecuteAction(string &name);
+        public:
+            virtual bool DoNextAction(Unit*, int depth = 0);
+            ActionResult ExecuteAction(string &name);
 
-    public:
-        /**
-         * @brief Add an action execution listener
-         *
-         * @param listener The listener to add
-         */
-        void AddActionExecutionListener(ActionExecutionListener* listener)
-        {
-            actionExecutionListeners.Add(listener);
-        }
+        public:
+            /**
+             * @brief Add an action execution listener
+             *
+             * @param listener The listener to add
+             */
+            void AddActionExecutionListener(ActionExecutionListener* listener)
+            {
+                actionExecutionListeners.Add(listener);
+            }
 
-        /**
-         * @brief Remove an action execution listener
-         *
-         * @param listener The listener to remove
-         */
-        void removeActionExecutionListener(ActionExecutionListener* listener)
-        {
-            actionExecutionListeners.Remove(listener);
-        }
+            /**
+             * @brief Remove an action execution listener
+             *
+             * @param listener The listener to remove
+             */
+            void removeActionExecutionListener(ActionExecutionListener* listener)
+            {
+                actionExecutionListeners.Remove(listener);
+            }
 
-    public:
-        virtual ~Engine(void);
+        public:
+            virtual ~Engine(void);
 
-    private:
-        bool MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, const Event& event);
-        void Reset();
-        void ProcessTriggers();
-        void PushDefaultActions();
-        void PushAgain(ActionNode* actionNode, float relevance, const Event& event);
-        ActionNode* CreateActionNode(string name);
-        Action* InitializeAction(ActionNode* actionNode);
-        bool ListenAndExecute(Action* action, const Event& event);
-        void ClearActionNodeCache();
-        void InitStrategies();
+        private:
+            bool MultiplyAndPush(NextAction** actions, float forceRelevance, bool skipPrerequisites, const Event& event);
+            void Reset();
+            void ProcessTriggers();
+            void PushDefaultActions();
+            void PushAgain(ActionNode* actionNode, float relevance, const Event& event);
+            ActionNode* CreateActionNode(string name);
+            Action* InitializeAction(ActionNode* actionNode);
+            bool ListenAndExecute(Action* action, const Event& event);
+            void ClearActionNodeCache();
+            void InitStrategies();
 
-    private:
-        void LogAction(const char* format, ...);
-        void LogValues();
+        private:
+            void LogAction(const char* format, ...);
+            void LogValues();
 
-    protected:
-        Queue queue; /**< Queue for managing actions */
-        std::list<TriggerNode*> triggers; /**< List of triggers */
-        std::list<Multiplier*> multipliers; /**< List of multipliers */
-        AiObjectContext* aiObjectContext; /**< AI object context */
-        std::map<string, Strategy*> strategies; /**< Map of strategies */
-        std::unordered_map<string, ActionNode*> actionNodeCache; /**< Cache of action nodes by name */
-        float lastRelevance; /**< Last relevance value */
-        std::string lastAction; /**< Last executed action */
-        bool strategiesDirty; /**< True when strategies changed and ActualInit() is pending */
+        protected:
+            Queue queue; /**< Queue for managing actions */
+            std::list<TriggerNode*> triggers; /**< List of triggers */
+            std::list<Multiplier*> multipliers; /**< List of multipliers */
+            AiObjectContext* aiObjectContext; /**< AI object context */
+            std::map<string, Strategy*> strategies; /**< Map of strategies */
+            std::unordered_map<string, ActionNode*> actionNodeCache; /**< Cache of action nodes by name */
+            float lastRelevance; /**< Last relevance value */
+            std::string lastAction; /**< Last executed action */
+            bool strategiesDirty; /**< True when strategies changed and ActualInit() is pending */
 
-    public:
-        bool testMode; /**< Flag for test mode */
+        public:
+            bool testMode; /**< Flag for test mode */
 
-    private:
-        ActionExecutionListeners actionExecutionListeners; /**< Listeners for action execution */
+        private:
+            ActionExecutionListeners actionExecutionListeners; /**< Listeners for action execution */
     };
 }

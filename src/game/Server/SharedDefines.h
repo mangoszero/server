@@ -58,18 +58,18 @@ enum Races
 #define MAX_RACES         9
 
 #define RACEMASK_ALL_PLAYABLE \
-    ((1<<(RACE_HUMAN-1))    |(1<<(RACE_ORC-1))      |(1<<(RACE_DWARF-1))   | \
-    (1<<(RACE_NIGHTELF-1))  |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
-    (1<<(RACE_GNOME-1))     |(1<<(RACE_TROLL-1)))
+((1<<(RACE_HUMAN-1))    |(1<<(RACE_ORC-1))      |(1<<(RACE_DWARF-1))   | \
+(1<<(RACE_NIGHTELF-1))  |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
+(1<<(RACE_GNOME-1))     |(1<<(RACE_TROLL-1)))
 
 // for most cases batter use ChrRace data for team check as more safe, but when need full mask of team can be use this defines.
 #define RACEMASK_ALLIANCE \
-    ((1<<(RACE_HUMAN-1))    |(1<<(RACE_DWARF-1))    |(1<<(RACE_NIGHTELF-1))| \
-    (1<<(RACE_GNOME-1)))
+((1<<(RACE_HUMAN-1))    |(1<<(RACE_DWARF-1))    |(1<<(RACE_NIGHTELF-1))| \
+(1<<(RACE_GNOME-1)))
 
 #define RACEMASK_HORDE \
-    ((1<<(RACE_ORC-1))      |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
-    (1<<(RACE_TROLL-1)))
+((1<<(RACE_ORC-1))      |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
+(1<<(RACE_TROLL-1)))
 
 // Class value is index in ChrClasses.dbc
 enum Classes
@@ -91,9 +91,9 @@ enum Classes
 #define MAX_CLASSES       12
 
 #define CLASSMASK_ALL_PLAYABLE \
-    ((1<<(CLASS_WARRIOR-1))|(1<<(CLASS_PALADIN-1))|(1<<(CLASS_HUNTER-1))| \
-    (1<<(CLASS_ROGUE-1))  |(1<<(CLASS_PRIEST-1)) |(1<<(CLASS_SHAMAN-1))| \
-    (1<<(CLASS_MAGE-1))   |(1<<(CLASS_WARLOCK-1))|(1<<(CLASS_DRUID-1))   )
+((1<<(CLASS_WARRIOR-1))|(1<<(CLASS_PALADIN-1))|(1<<(CLASS_HUNTER-1))| \
+(1<<(CLASS_ROGUE-1))  |(1<<(CLASS_PRIEST-1)) |(1<<(CLASS_SHAMAN-1))| \
+(1<<(CLASS_MAGE-1))   |(1<<(CLASS_WARLOCK-1))|(1<<(CLASS_DRUID-1))   )
 
 #define CLASSMASK_ALL_CREATURES ((1<<(CLASS_WARRIOR-1)) | (1<<(CLASS_PALADIN-1)) | (1<<(CLASS_MAGE-1)) )
 #define MAX_CREATURE_CLASS 3
@@ -213,9 +213,9 @@ enum SpellSchoolMask
 };
 
 #define SPELL_SCHOOL_MASK_MAGIC                            \
-    ( SPELL_SCHOOL_MASK_HOLY | SPELL_SCHOOL_MASK_FIRE | SPELL_SCHOOL_MASK_NATURE |  \
-    SPELL_SCHOOL_MASK_FROST | SPELL_SCHOOL_MASK_SHADOW | \
-    SPELL_SCHOOL_MASK_ARCANE )
+(SPELL_SCHOOL_MASK_HOLY | SPELL_SCHOOL_MASK_FIRE | SPELL_SCHOOL_MASK_NATURE |  \
+SPELL_SCHOOL_MASK_FROST | SPELL_SCHOOL_MASK_SHADOW | \
+SPELL_SCHOOL_MASK_ARCANE )
 
 /**
  * Converts a \ref SpellSchools value into a bitmask representation since this is missing
@@ -239,11 +239,12 @@ inline SpellSchoolMask GetSchoolMask(uint32 school)
 inline SpellSchools GetFirstSchoolInMask(SpellSchoolMask mask)
 {
     for (int i = 0; i < MAX_SPELL_SCHOOL; ++i)
+    {
         if (mask & (1 << i))
         {
             return SpellSchools(i);
         }
-
+    }
     return SPELL_SCHOOL_NORMAL;
 }
 
@@ -879,17 +880,17 @@ enum Mechanics
 
 ///Mask defining \ref Mechanics mask which is immune to root and snare
 #define IMMUNE_TO_ROOT_AND_SNARE_MASK ( \
-                                        (1<<(MECHANIC_ROOT-1))|(1<<(MECHANIC_SNARE-1)))
+    (1<<(MECHANIC_ROOT-1))|(1<<(MECHANIC_SNARE-1)))
 
 #define IMMUNE_TO_ROOT_AND_STUN_MASK ( \
-                                            (1<<(MECHANIC_ROOT-1))|(1<<(MECHANIC_STUN-1)))
+    (1<<(MECHANIC_ROOT-1))|(1<<(MECHANIC_STUN-1)))
 
 /// Daze and all crowd control spells except polymorph are not removed
 #define MECHANIC_NOT_REMOVED_BY_SHAPESHIFT ( \
-        (1<<(MECHANIC_CHARM -1))|(1<<(MECHANIC_DISORIENTED-1))|(1<<(MECHANIC_FEAR  -1))| \
-        (1<<(MECHANIC_PACIFY-1))|(1<<(MECHANIC_STUN       -1))|(1<<(MECHANIC_FREEZE-1))| \
-        (1<<(MECHANIC_BANISH-1))|(1<<(MECHANIC_SHACKLE    -1))|(1<<(MECHANIC_HORROR-1))| \
-        (1<<(MECHANIC_TURN  -1))|(1<<(MECHANIC_DAZE       -1))|(1<<(MECHANIC_SAPPED-1)))
+    (1<<(MECHANIC_CHARM -1))|(1<<(MECHANIC_DISORIENTED-1))|(1<<(MECHANIC_FEAR  -1))| \
+    (1<<(MECHANIC_PACIFY-1))|(1<<(MECHANIC_STUN       -1))|(1<<(MECHANIC_FREEZE-1))| \
+    (1<<(MECHANIC_BANISH-1))|(1<<(MECHANIC_SHACKLE    -1))|(1<<(MECHANIC_HORROR-1))| \
+    (1<<(MECHANIC_TURN  -1))|(1<<(MECHANIC_DAZE       -1))|(1<<(MECHANIC_SAPPED-1)))
 
 /// Different types of \ref Spell s that can be dispelled and what the reason for the dispel is.
 /// Also coupled with \ref Aura s as \ref Spell s have \ref Aura s.
@@ -2577,7 +2578,7 @@ enum GMTicketStatus
     GM_TICKET_STATUS_DO_NOTHING = -1,
 
     /** On this client responds by CMSG_GMTICKET_GETTICKET, updating the local ticket copy
-    */
+     */
     GM_TICKET_STATUS_ASK_UPDATE = 1,
 
     /** Should close the window in the top right corner telling you that you have a
@@ -2620,9 +2621,9 @@ enum WhisperLoggingLevels
     WHISPER_LOGGING_EVERYTHING = 2
 };
 
-/*
-    Creature entries for more readable code
-*/
+/**
+ *    Creature entries for more readable code
+ */
 enum CreatureEntriesConsts
 {
     CREATURE_TAINTED_OOZE   = 7092,

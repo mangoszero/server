@@ -85,14 +85,14 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
         bot->GetMotionMaster()->Clear();
         switch (skill)
         {
-        case SKILL_ENGINEERING:
-            return bot->HasSkill(SKILL_ENGINEERING) ? ai->CastSpell(ENGINEERING, creature) : false;
-        case SKILL_HERBALISM:
-            return bot->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(32605, creature) : false;
-        case SKILL_MINING:
-            return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(32606, creature) : false;
-        default:
-            return bot->HasSkill(SKILL_SKINNING) ? ai->CastSpell(SKINNING, creature) : false;
+            case SKILL_ENGINEERING:
+                return bot->HasSkill(SKILL_ENGINEERING) ? ai->CastSpell(ENGINEERING, creature) : false;
+            case SKILL_HERBALISM:
+                return bot->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(32605, creature) : false;
+            case SKILL_MINING:
+                return bot->HasSkill(SKILL_MINING) ? ai->CastSpell(32606, creature) : false;
+            default:
+                return bot->HasSkill(SKILL_SKINNING) ? ai->CastSpell(SKINNING, creature) : false;
         }
     }
 
@@ -107,7 +107,9 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     if (go && go->GetGoState() == GO_STATE_ACTIVE)
     {
         if (bot->GetLootGuid() == lootObject.guid)
+        {
             return false;
+        }
 
         WorldPacket* const packet = new WorldPacket(CMSG_LOOT, 8);
         *packet << lootObject.guid;
@@ -227,11 +229,11 @@ bool OpenLootAction::CanOpenLock(LootObject& lootObject, const SpellEntry* pSpel
         {
             switch (lockInfo->Type[j])
             {
-            /*
-            case LOCK_KEY_ITEM:
-                return true;
-            */
-            case LOCK_KEY_SKILL:
+                /**
+                 * case LOCK_KEY_ITEM:
+                 * return true;
+                 */
+                case LOCK_KEY_SKILL:
                 {
                     if (uint32(pSpellInfo->EffectMiscValue[effIndex]) != lockInfo->Index[j])
                     {

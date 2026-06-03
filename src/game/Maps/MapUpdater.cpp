@@ -127,8 +127,11 @@ int MapUpdater::wait()
         ACE_GUARD_RETURN(ACE_Thread_Mutex, guard, m_mutex, -1);
 
         while (pending_requests > 0)
+        {
             m_condition.wait();
+        }
     }
+
     uint32 waited = getMSTimeDiff(start, getMSTime());
     if (waited > 1000)
     {

@@ -522,7 +522,7 @@ struct CreatureCreatePos
         // if dist == 0.0f -> exactly object coordinates used, in other case close point to object (CONTACT_DIST can be used as minimal distances)
         CreatureCreatePos(WorldObject* closeObject, float ori, float dist = 0.0f, float angle = 0.0f)
             : m_map(closeObject->GetMap()),
-              m_closeObject(closeObject), m_angle(angle), m_dist(dist) { m_pos.o = ori; }
+            m_closeObject(closeObject), m_angle(angle), m_dist(dist) { m_pos.o = ori; }
     public:
         Map* GetMap() const { return m_map; }
         void SelectFinalPoint(Creature* cr);
@@ -561,7 +561,7 @@ enum TemporaryFactionFlags                                  // Used at real fact
 
 class Creature : public Unit
 {
-        CreatureAI* i_AI;
+    CreatureAI* i_AI;
 
     public:
 
@@ -737,28 +737,28 @@ class Creature : public Unit
         bool lootForSkin;
 
         /**
-        * Method preparing the creature for the loot state. Based on the previous loot state, the loot ID provided in the database and the creature's type,
-        * this method updates the state of the creature for loots.
-        *
-        * At the end of this method, the creature loot state may be:
-        * Lootable: UNIT_DYNFLAG_LOOTABLE
-        * Skinnable: UNIT_FLAG_SKINNABLE
-        * Not lootable: No flag
-        */
+         * Method preparing the creature for the loot state. Based on the previous loot state, the loot ID provided in the database and the creature's type,
+         * this method updates the state of the creature for loots.
+         *
+         * At the end of this method, the creature loot state may be:
+         * Lootable: UNIT_DYNFLAG_LOOTABLE
+         * Skinnable: UNIT_FLAG_SKINNABLE
+         * Not lootable: No flag
+         */
         void PrepareBodyLootState();
 
         /**
-        * function returning the GUID of the loot recipient (a player GUID).
-        *
-        * \return ObjectGuid Player GUID.
-        */
+         * function returning the GUID of the loot recipient (a player GUID).
+         *
+         * \return ObjectGuid Player GUID.
+         */
         ObjectGuid GetLootRecipientGuid() const { return m_lootRecipientGuid; }
 
         /**
-        * function returning the group recipient ID.
-        *
-        * \return uint32 Group ID.
-        */
+         * function returning the group recipient ID.
+         *
+         * \return uint32 Group ID.
+         */
         uint32 GetLootGroupRecipientId() const { return m_lootGroupRecipientId; }
         Player* GetLootRecipient() const;                   // use group cases as prefered
         Group* GetGroupLootRecipient() const;
@@ -771,17 +771,17 @@ class Creature : public Unit
         }
 
         /**
-        * function indicating whether the whether the creature has a looter recipient defined (either a group ID, either a player GUID).
-        *
-        * \return boolean true if the creature has a recipient defined, false otherwise.
-        */
+         * function indicating whether the whether the creature has a looter recipient defined (either a group ID, either a player GUID).
+         *
+         * \return boolean true if the creature has a recipient defined, false otherwise.
+         */
         bool HasLootRecipient() const { return m_lootGroupRecipientId || m_lootRecipientGuid; }
 
         /**
-        * function indicating whether the recipient is a group.
-        *
-        * \return boolean true if the creature's recipient is a group, false otherwise.
-        */
+         * function indicating whether the recipient is a group.
+         *
+         * \return boolean true if the creature's recipient is a group, false otherwise.
+         */
         bool IsGroupLootRecipient() const { return m_lootGroupRecipientId; }
         void SetLootRecipient(Unit* unit);
         void AllLootRemovedFromCorpse();
@@ -839,13 +839,13 @@ class Creature : public Unit
         void SetRespawnDelay(uint32 delay) { m_respawnDelay = delay; }
 
         /**
-        * Returns the time when the creature has been killed.
-        */
+         * Returns the time when the creature has been killed.
+         */
         time_t GetKilledTime() const { return m_killedTime; }
 
         /**
-        * Set the time when the creature has been killed.
-        */
+         * Set the time when the creature has been killed.
+         */
         void SetKilledTime(time_t time) { m_killedTime = time; }
 
         float GetRespawnRadius() const { return m_respawnradius; }

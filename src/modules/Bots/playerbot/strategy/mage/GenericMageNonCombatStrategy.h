@@ -7,40 +7,40 @@ namespace ai
 {
     class GenericMageNonCombatStrategy : public NonCombatStrategy
     {
-    public:
-        GenericMageNonCombatStrategy(PlayerbotAI* ai);
-        virtual string getName()
-        {
-            return "nc";
-        }
+        public:
+            GenericMageNonCombatStrategy(PlayerbotAI* ai);
+            virtual string getName()
+            {
+                return "nc";
+            }
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
     };
 
     class MageBuffManaStrategy : public Strategy
     {
-    public:
-        MageBuffManaStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        public:
+            MageBuffManaStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "bmana";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "bmana";
+            }
     };
 
     class MageBuffDpsStrategy : public Strategy
     {
-    public:
-        MageBuffDpsStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        public:
+            MageBuffDpsStrategy(PlayerbotAI* ai) : Strategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "bdps";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "bdps";
+            }
     };
 }

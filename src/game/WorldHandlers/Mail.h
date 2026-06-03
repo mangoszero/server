@@ -193,10 +193,10 @@ class MailReceiver
 class MailDraft
 {
 
-        /**
-         * Holds a Map of GUIDs of items and pointers to the items.
-         */
-        typedef std::map<uint32, Item*> MailItemMap;
+    /**
+     * Holds a Map of GUIDs of items and pointers to the items.
+     */
+    typedef std::map<uint32, Item*> MailItemMap;
 
     public:                                                 // Constructors
         /**
@@ -225,6 +225,7 @@ class MailDraft
          */
         MailDraft(std::string subject, std::string body)
             : m_mailTemplateId(0), m_mailTemplateItemsNeed(false), m_subject(subject), m_body(body), m_money(0), m_COD(0) {}
+
     public:                                                 // Accessors
         /// Returns the template ID used for this MailDraft.
         uint16 GetMailTemplateId() const { return m_mailTemplateId; }
@@ -236,6 +237,7 @@ class MailDraft
         uint32 GetMoney() const { return m_money; }
         /// Returns the Cost of delivery of this MailDraft.
         uint32 GetCOD() const { return m_COD; }
+
     public:                                                 // modifiers
 
         // this two modifiers expected to be applied in normal case to blank draft and exclusively, it will work and with mixed cases but this will be not normal way use.
@@ -379,7 +381,7 @@ struct Mail
         return false;
     }
 
-    /*
+    /**
      * Checks whether a mail contains items (including case none items generated from template already) or not.
      * HasItems() checks whether the mail contains items or not.
      *
@@ -388,7 +390,7 @@ struct Mail
      */
     bool HasItems() const { return has_items; }
 
-    /*
+    /**
      * Generate items for template if items not genereated before (receiver has been offline, has_items == false)
      *
      */

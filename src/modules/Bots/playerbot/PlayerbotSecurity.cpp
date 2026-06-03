@@ -154,59 +154,59 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     ostringstream out;
     switch (realLevel)
     {
-    case PLAYERBOT_SECURITY_DENY_ALL:
-        out << "I'm kind of busy now";
-        break;
-    case PLAYERBOT_SECURITY_TALK:
-        switch (reason)
-        {
-        case PLAYERBOT_DENY_NONE:
-            out << "I'll do it later";
+        case PLAYERBOT_SECURITY_DENY_ALL:
+            out << "I'm kind of busy now";
             break;
-        case PLAYERBOT_DENY_LOW_LEVEL:
-            out << "You are too low level: |cffff0000" << from->getLevel() << "|cffffffff/|cff00ff00" << bot->getLevel();
-            break;
-        case PLAYERBOT_DENY_NOT_YOURS:
-            out << "I have a master already";
-            break;
-        case PLAYERBOT_DENY_IS_BOT:
-            out << "You are a bot";
-            break;
-        case PLAYERBOT_DENY_OPPOSING:
-            out << "You are the enemy";
-            break;
-        case PLAYERBOT_DENY_DEAD:
-            out << "I'm dead. Will do it later";
-            break;
-        case PLAYERBOT_DENY_INVITE:
-            out << "Invite me to your group first";
-            break;
-        case PLAYERBOT_DENY_FAR:
+        case PLAYERBOT_SECURITY_TALK:
+            switch (reason)
             {
-                out << "You must be closer to invite me to your group. I am in ";
-
-                uint32 area = bot->GetAreaId();
-                if (area)
+                case PLAYERBOT_DENY_NONE:
+                    out << "I'll do it later";
+                    break;
+                case PLAYERBOT_DENY_LOW_LEVEL:
+                    out << "You are too low level: |cffff0000" << from->getLevel() << "|cffffffff/|cff00ff00" << bot->getLevel();
+                    break;
+                case PLAYERBOT_DENY_NOT_YOURS:
+                    out << "I have a master already";
+                    break;
+                case PLAYERBOT_DENY_IS_BOT:
+                    out << "You are a bot";
+                    break;
+                case PLAYERBOT_DENY_OPPOSING:
+                    out << "You are the enemy";
+                    break;
+                case PLAYERBOT_DENY_DEAD:
+                    out << "I'm dead. Will do it later";
+                    break;
+                case PLAYERBOT_DENY_INVITE:
+                    out << "Invite me to your group first";
+                    break;
+                case PLAYERBOT_DENY_FAR:
                 {
-                    const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
-                    if (entry)
+                    out << "You must be closer to invite me to your group. I am in ";
+
+                    uint32 area = bot->GetAreaId();
+                    if (area)
                     {
-                        out << " |cffffffff(|cffff0000" << entry->area_name[0] << "|cffffffff)";
+                        const AreaTableEntry* entry = sAreaStore.LookupEntry(area);
+                        if (entry)
+                        {
+                            out << " |cffffffff(|cffff0000" << entry->area_name[0] << "|cffffffff)";
+                        }
                     }
+                    break;
                 }
+                case PLAYERBOT_DENY_FULL_GROUP:
+                    out << "I am in a full group. Will do it later";
+                    break;
+                default:
+                    out << "I can't do that";
+                    break;
             }
             break;
-        case PLAYERBOT_DENY_FULL_GROUP:
-            out << "I am in a full group. Will do it later";
+        case PLAYERBOT_SECURITY_INVITE:
+            out << "Invite me to your group first";
             break;
-        default:
-            out << "I can't do that";
-            break;
-        }
-        break;
-    case PLAYERBOT_SECURITY_INVITE:
-        out << "Invite me to your group first";
-        break;
     }
 
     bot->Whisper(out.str(), LANG_UNIVERSAL, from->GetObjectGuid());

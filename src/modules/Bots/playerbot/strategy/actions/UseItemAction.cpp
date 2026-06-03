@@ -108,7 +108,7 @@ bool UseItemAction::UseItem(Item* item, ObjectGuid goGuid, Item* itemTarget)
 
     WorldPacket* const packet = new WorldPacket(CMSG_USE_ITEM, 1 + 1 + 1 + 4 + 8 + 4 + 1 + 8 + 1);
     *packet << bagIndex << slot << cast_count << uint32(0) << item_guid
-        << glyphIndex << unk_flags;
+            << glyphIndex << unk_flags;
 
     bool targetSelected = false;
     ostringstream out; out << "Using " << chat->formatItem(item->GetProto());

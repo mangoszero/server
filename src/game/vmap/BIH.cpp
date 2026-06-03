@@ -42,13 +42,13 @@
 
 #include "BIH.h"
 
- /**
-  * @brief Builds the BIH hierarchy.
-  *
-  * @param tempTree Temporary tree structure.
-  * @param dat Build data containing primitives and bounds.
-  * @param stats Statistics for the build process.
-  */
+/**
+ * @brief Builds the BIH hierarchy.
+ *
+ * @param tempTree Temporary tree structure.
+ * @param dat Build data containing primitives and bounds.
+ * @param stats Statistics for the build process.
+ */
 void BIH::buildHierarchy(std::vector<uint32>& tempTree, buildData& dat, BuildStats& stats)
 {
     // Create space for the first node (dummy leaf)

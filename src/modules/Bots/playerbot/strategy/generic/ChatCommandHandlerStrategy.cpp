@@ -6,20 +6,20 @@ using namespace ai;
 
 class ChatCommandActionNodeFactoryInternal : public NamedObjectFactory<ActionNode>
 {
-public:
-    ChatCommandActionNodeFactoryInternal()
-    {
-        creators["tank attack chat shortcut"] = &tank_attack_chat_shortcut;
-    }
+    public:
+        ChatCommandActionNodeFactoryInternal()
+        {
+            creators["tank attack chat shortcut"] = &tank_attack_chat_shortcut;
+        }
 
-private:
-    static ActionNode* tank_attack_chat_shortcut(PlayerbotAI* ai)
-    {
-        return new ActionNode ("tank attack chat shortcut",
-            /*P*/ NULL,
-            /*A*/ NULL,
-            /*C*/ NextAction::array(0, new NextAction("attack my target", 100.0f), NULL));
-    }
+    private:
+        static ActionNode* tank_attack_chat_shortcut(PlayerbotAI* ai)
+        {
+            return new ActionNode ("tank attack chat shortcut",
+                /*P*/ NULL,
+                /*A*/ NULL,
+                /*C*/ NextAction::array(0, new NextAction("attack my target", 100.0f), NULL));
+        }
 };
 
 void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
@@ -27,117 +27,117 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     PassTroughStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "rep",
+            "rep",
         NextAction::array(0, new NextAction("reputation", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "q",
+            "q",
         NextAction::array(0,
-            new NextAction("query quest", relevance),
-            new NextAction("query item usage", relevance), NULL)));
+        new NextAction("query quest", relevance),
+        new NextAction("query item usage", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "add all loot",
+            "add all loot",
         NextAction::array(0, new NextAction("add all loot", relevance), new NextAction("loot", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "u",
+            "u",
         NextAction::array(0, new NextAction("use", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "use",
+            "use",
         NextAction::array(0, new NextAction("use", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "c",
+            "c",
         NextAction::array(0, new NextAction("item count", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "e",
+            "e",
         NextAction::array(0, new NextAction("equip", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "ue",
+            "ue",
         NextAction::array(0, new NextAction("unequip", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "t",
+            "t",
         NextAction::array(0, new NextAction("trade", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "nt",
+            "nt",
         NextAction::array(0, new NextAction("trade", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "s",
+            "s",
         NextAction::array(0, new NextAction("sell", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "b",
+            "b",
         NextAction::array(0, new NextAction("buy", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "r",
+            "r",
         NextAction::array(0, new NextAction("reward", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "attack",
+            "attack",
         NextAction::array(0, new NextAction("attack my target", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "accept",
+            "accept",
         NextAction::array(0, new NextAction("accept quest", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "follow",
+            "follow",
         NextAction::array(0, new NextAction("follow chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "stay",
+            "stay",
         NextAction::array(0, new NextAction("stay chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "flee",
+            "flee",
         NextAction::array(0, new NextAction("flee chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "tank attack",
+            "tank attack",
         NextAction::array(0, new NextAction("tank attack chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "grind",
+            "grind",
         NextAction::array(0, new NextAction("grind chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "talk",
+            "talk",
         NextAction::array(0, new NextAction("gossip hello", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cast",
+            "cast",
         NextAction::array(0, new NextAction("cast custom spell", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "revive",
+            "revive",
         NextAction::array(0, new NextAction("spirit healer", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "runaway",
+            "runaway",
         NextAction::array(0, new NextAction("runaway chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "warning",
+            "warning",
         NextAction::array(0, new NextAction("runaway chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "max dps",
+            "max dps",
         NextAction::array(0, new NextAction("max dps chat shortcut", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "attackers",
+            "attackers",
         NextAction::array(0, new NextAction("tell attackers", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "jump",
+            "jump",
         NextAction::array(0, new NextAction("jump", relevance), NULL)));
 }
 

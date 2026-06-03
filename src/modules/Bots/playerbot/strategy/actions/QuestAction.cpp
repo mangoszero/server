@@ -40,7 +40,9 @@ bool QuestAction::ProcessQuests(ObjectGuid questGiver)
     if (creature)
     {
         if (!creature->isQuestGiver())
+        {
             return false;
+        }
         return ProcessQuests(creature);
     }
 

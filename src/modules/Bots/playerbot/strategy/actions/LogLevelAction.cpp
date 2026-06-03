@@ -27,16 +27,17 @@ string LogLevelAction::logLevel2string(LogLevel level)
 {
     switch (level)
     {
-    case LOG_LVL_BASIC:
-        return "basic";
-    case LOG_LVL_MINIMAL:
-        return "minimal";
-    case LOG_LVL_DETAIL:
-        return "detail";
-    default:
-        return "debug";
+        case LOG_LVL_BASIC:
+            return "basic";
+        case LOG_LVL_MINIMAL:
+            return "minimal";
+        case LOG_LVL_DETAIL:
+            return "detail";
+        default:
+            return "debug";
     }
 }
+
 LogLevel LogLevelAction::string2logLevel(string level)
 {
     if (level == "debug")

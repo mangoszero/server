@@ -61,155 +61,155 @@ namespace MaNGOS
 {
     class BattleGroundChatBuilder
     {
-    public:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BattleGroundChatBuilder"/> class.
-        /// </summary>
-        /// <param name="msgtype">The msgtype.</param>
-        /// <param name="textId">The text id.</param>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The args.</param>
-        BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = nullptr)
+        public:
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BattleGroundChatBuilder"/> class.
+            /// </summary>
+            /// <param name="msgtype">The msgtype.</param>
+            /// <param name="textId">The text id.</param>
+            /// <param name="source">The source.</param>
+            /// <param name="args">The args.</param>
+            BattleGroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = nullptr)
                 : i_msgtype(msgtype), i_textId(textId), i_source(source), i_args(args) {}
-        void operator()(WorldPacket& data, int32 loc_idx)
-        {
-            char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
-
-            ObjectGuid sourceGuid = i_source ? i_source->GetObjectGuid() : ObjectGuid();
-            std::string sourceName = i_source ? i_source->GetName() : "";
-
-            if (i_args)
+            void operator()(WorldPacket& data, int32 loc_idx)
             {
-                // we need copy va_list before use or original va_list will corrupted
-                va_list ap;
-                va_copy(ap, *i_args);
+                char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
 
-                char str[2048];
-                vsnprintf(str, 2048, text, ap);
-                va_end(ap);
+                ObjectGuid sourceGuid = i_source ? i_source->GetObjectGuid() : ObjectGuid();
+                std::string sourceName = i_source ? i_source->GetName() : "";
 
-                ChatHandler::BuildChatPacket(data, i_msgtype, &str[0], LANG_UNIVERSAL, CHAT_TAG_NONE, sourceGuid, sourceName.c_str());
+                if (i_args)
+                {
+                    // we need copy va_list before use or original va_list will corrupted
+                    va_list ap;
+                    va_copy(ap, *i_args);
+
+                    char str[2048];
+                    vsnprintf(str, 2048, text, ap);
+                    va_end(ap);
+
+                    ChatHandler::BuildChatPacket(data, i_msgtype, &str[0], LANG_UNIVERSAL, CHAT_TAG_NONE, sourceGuid, sourceName.c_str());
+                }
+                else
+                {
+                    ChatHandler::BuildChatPacket(data, i_msgtype, text, LANG_UNIVERSAL, CHAT_TAG_NONE, sourceGuid, sourceName.c_str(), sourceGuid, sourceName.c_str());
+                }
             }
-            else
-            {
-                ChatHandler::BuildChatPacket(data, i_msgtype, text, LANG_UNIVERSAL, CHAT_TAG_NONE, sourceGuid, sourceName.c_str(), sourceGuid, sourceName.c_str());
-            }
-        }
-    private:
-        ChatMsg i_msgtype;
-        int32 i_textId;
-        Player const* i_source;
-        va_list* i_args;
+        private:
+            ChatMsg i_msgtype;
+            int32 i_textId;
+            Player const* i_source;
+            va_list* i_args;
     };
 
     class BattleGroundYellBuilder
     {
-    public:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BattleGroundYellBuilder"/> class.
-        /// </summary>
-        /// <param name="language">The language.</param>
-        /// <param name="textId">The text id.</param>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The args.</param>
-        BattleGroundYellBuilder(Language language, int32 textId, Creature const* source, va_list* args = NULL)
+        public:
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BattleGroundYellBuilder"/> class.
+            /// </summary>
+            /// <param name="language">The language.</param>
+            /// <param name="textId">The text id.</param>
+            /// <param name="source">The source.</param>
+            /// <param name="args">The args.</param>
+            BattleGroundYellBuilder(Language language, int32 textId, Creature const* source, va_list* args = NULL)
                 : i_language(language), i_textId(textId), i_source(source), i_args(args) {}
-        void operator()(WorldPacket& data, int32 loc_idx)
-        {
-            char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
-
-            if (i_args)
+            void operator()(WorldPacket& data, int32 loc_idx)
             {
-                // we need copy va_list before use or original va_list will corrupted
-                va_list ap;
-                va_copy(ap, *i_args);
+                char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
 
-                char str[2048];
-                vsnprintf(str, 2048, text, ap);
-                va_end(ap);
+                if (i_args)
+                {
+                    // we need copy va_list before use or original va_list will corrupted
+                    va_list ap;
+                    va_copy(ap, *i_args);
 
-                ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, &str[0], i_language, CHAT_TAG_NONE, i_source->GetObjectGuid(), i_source->GetName());
+                    char str[2048];
+                    vsnprintf(str, 2048, text, ap);
+                    va_end(ap);
+
+                    ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, &str[0], i_language, CHAT_TAG_NONE, i_source->GetObjectGuid(), i_source->GetName());
+                }
+                else
+                {
+                    ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, text, i_language, CHAT_TAG_NONE, i_source->GetObjectGuid(), i_source->GetName());
+                }
             }
-            else
-            {
-                ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, text, i_language, CHAT_TAG_NONE, i_source->GetObjectGuid(), i_source->GetName());
-            }
-        }
-    private:
-        Language i_language;
-        int32 i_textId;
-        Creature const* i_source;
-        va_list* i_args;
+        private:
+            Language i_language;
+            int32 i_textId;
+            Creature const* i_source;
+            va_list* i_args;
     };
 
     class BattleGround2ChatBuilder
     {
-    public:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BattleGround2ChatBuilder"/> class.
-        /// </summary>
-        /// <param name="msgtype">The msgtype.</param>
-        /// <param name="textId">The text id.</param>
-        /// <param name="source">The source.</param>
-        /// <param name="arg1">The arg1.</param>
-        /// <param name="arg2">The arg2.</param>
-        BattleGround2ChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, int32 arg1, int32 arg2)
+        public:
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BattleGround2ChatBuilder"/> class.
+            /// </summary>
+            /// <param name="msgtype">The msgtype.</param>
+            /// <param name="textId">The text id.</param>
+            /// <param name="source">The source.</param>
+            /// <param name="arg1">The arg1.</param>
+            /// <param name="arg2">The arg2.</param>
+            BattleGround2ChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, int32 arg1, int32 arg2)
                 : i_msgtype(msgtype), i_textId(textId), i_source(source), i_arg1(arg1), i_arg2(arg2) {}
-        void operator()(WorldPacket& data, int32 loc_idx)
-        {
-            char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
-            char const* arg1str = i_arg1 ? sObjectMgr.GetMangosString(i_arg1, loc_idx) : "";
-            char const* arg2str = i_arg2 ? sObjectMgr.GetMangosString(i_arg2, loc_idx) : "";
-
-            char str[2048];
-            snprintf(str, 2048, text, arg1str, arg2str);
-
-            ObjectGuid guid;
-            if (i_source)
+            void operator()(WorldPacket& data, int32 loc_idx)
             {
-                guid = i_source->GetObjectGuid();
+                char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
+                char const* arg1str = i_arg1 ? sObjectMgr.GetMangosString(i_arg1, loc_idx) : "";
+                char const* arg2str = i_arg2 ? sObjectMgr.GetMangosString(i_arg2, loc_idx) : "";
+
+                char str[2048];
+                snprintf(str, 2048, text, arg1str, arg2str);
+
+                ObjectGuid guid;
+                if (i_source)
+                {
+                    guid = i_source->GetObjectGuid();
+                }
+                ChatHandler::BuildChatPacket(data, i_msgtype, str, LANG_UNIVERSAL, CHAT_TAG_NONE, guid);
             }
-            ChatHandler::BuildChatPacket(data, i_msgtype, str, LANG_UNIVERSAL, CHAT_TAG_NONE, guid);
-        }
-    private:
-        ChatMsg i_msgtype;
-        int32 i_textId;
-        Player const* i_source;
-        int32 i_arg1;
-        int32 i_arg2;
+        private:
+            ChatMsg i_msgtype;
+            int32 i_textId;
+            Player const* i_source;
+            int32 i_arg1;
+            int32 i_arg2;
     };
 
     class BattleGround2YellBuilder
     {
-    public:
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BattleGround2YellBuilder"/> class.
-        /// </summary>
-        /// <param name="language">The language.</param>
-        /// <param name="textId">The text id.</param>
-        /// <param name="source">The source.</param>
-        /// <param name="arg1">The arg1.</param>
-        /// <param name="arg2">The arg2.</param>
-        BattleGround2YellBuilder(uint32 language, int32 textId, Creature const* source, int32 arg1, int32 arg2)
+        public:
+            /// <summary>
+            /// Initializes a new instance of the <see cref="BattleGround2YellBuilder"/> class.
+            /// </summary>
+            /// <param name="language">The language.</param>
+            /// <param name="textId">The text id.</param>
+            /// <param name="source">The source.</param>
+            /// <param name="arg1">The arg1.</param>
+            /// <param name="arg2">The arg2.</param>
+            BattleGround2YellBuilder(uint32 language, int32 textId, Creature const* source, int32 arg1, int32 arg2)
                 : i_language(language), i_textId(textId), i_source(source), i_arg1(arg1), i_arg2(arg2) {}
-        void operator()(WorldPacket& data, int32 loc_idx)
-        {
-            char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
-            char const* arg1str = i_arg1 ? sObjectMgr.GetMangosString(i_arg1, loc_idx) : "";
-            char const* arg2str = i_arg2 ? sObjectMgr.GetMangosString(i_arg2, loc_idx) : "";
+            void operator()(WorldPacket& data, int32 loc_idx)
+            {
+                char const* text = sObjectMgr.GetMangosString(i_textId, loc_idx);
+                char const* arg1str = i_arg1 ? sObjectMgr.GetMangosString(i_arg1, loc_idx) : "";
+                char const* arg2str = i_arg2 ? sObjectMgr.GetMangosString(i_arg2, loc_idx) : "";
 
-            char str[2048];
-            snprintf(str, 2048, text, arg1str, arg2str);
+                char str[2048];
+                snprintf(str, 2048, text, arg1str, arg2str);
 
-            ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, str, LANG_UNIVERSAL, CHAT_TAG_NONE, i_source ? i_source->GetObjectGuid() : ObjectGuid(), i_source ? i_source->GetName() : "");
-        }
-    private:
+                ChatHandler::BuildChatPacket(data, CHAT_MSG_MONSTER_YELL, str, LANG_UNIVERSAL, CHAT_TAG_NONE, i_source ? i_source->GetObjectGuid() : ObjectGuid(), i_source ? i_source->GetName() : "");
+            }
+        private:
 
-        uint32 i_language;
-        int32 i_textId;
-        Creature const* i_source;
-        int32 i_arg1;
-        int32 i_arg2;
+            uint32 i_language;
+            int32 i_textId;
+            Creature const* i_source;
+            int32 i_arg1;
+            int32 i_arg2;
     };
 } // namespace MaNGOS
 
@@ -987,10 +987,10 @@ uint32 BattleGround::GetBattlemasterEntry() const
 {
     switch (GetTypeID())
     {
-    case BATTLEGROUND_AV: return 15972;
-    case BATTLEGROUND_WS: return 14623;
-    case BATTLEGROUND_AB: return 14879;
-    default:              return 0;
+        case BATTLEGROUND_AV: return 15972;
+        case BATTLEGROUND_WS: return 14623;
+        case BATTLEGROUND_AB: return 14879;
+        default:              return 0;
     }
 }
 
@@ -1004,38 +1004,38 @@ void BattleGround::RewardMark(Player* plr, uint32 count)
 {
     switch (GetTypeID())
     {
-    case BATTLEGROUND_AV:
-        if (count == ITEM_WINNER_COUNT)
-        {
-            RewardSpellCast(plr, SPELL_AV_MARK_WINNER);
-        }
-        else
-        {
-            RewardSpellCast(plr, SPELL_AV_MARK_LOSER);
-        }
-        break;
-    case BATTLEGROUND_WS:
-        if (count == ITEM_WINNER_COUNT)
-        {
-            RewardSpellCast(plr, SPELL_WS_MARK_WINNER);
-        }
-        else
-        {
-            RewardSpellCast(plr, SPELL_WS_MARK_LOSER);
-        }
-        break;
-    case BATTLEGROUND_AB:
-        if (count == ITEM_WINNER_COUNT)
-        {
-            RewardSpellCast(plr, SPELL_AB_MARK_WINNER);
-        }
-        else
-        {
-            RewardSpellCast(plr, SPELL_AB_MARK_LOSER);
-        }
-        break;
-    default:
-        break;
+        case BATTLEGROUND_AV:
+            if (count == ITEM_WINNER_COUNT)
+            {
+                RewardSpellCast(plr, SPELL_AV_MARK_WINNER);
+            }
+            else
+            {
+                RewardSpellCast(plr, SPELL_AV_MARK_LOSER);
+            }
+            break;
+        case BATTLEGROUND_WS:
+            if (count == ITEM_WINNER_COUNT)
+            {
+                RewardSpellCast(plr, SPELL_WS_MARK_WINNER);
+            }
+            else
+            {
+                RewardSpellCast(plr, SPELL_WS_MARK_LOSER);
+            }
+            break;
+        case BATTLEGROUND_AB:
+            if (count == ITEM_WINNER_COUNT)
+            {
+                RewardSpellCast(plr, SPELL_AB_MARK_WINNER);
+            }
+            else
+            {
+                RewardSpellCast(plr, SPELL_AB_MARK_LOSER);
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -1148,17 +1148,17 @@ void BattleGround::RewardQuestComplete(Player* plr)
     uint32 quest;
     switch (GetTypeID())
     {
-    case BATTLEGROUND_AV:
-        quest = SPELL_AV_QUEST_REWARD;
-        break;
-    case BATTLEGROUND_WS:
-        quest = SPELL_WS_QUEST_REWARD;
-        break;
-    case BATTLEGROUND_AB:
-        quest = SPELL_AB_QUEST_REWARD;
-        break;
-    default:
-        return;
+        case BATTLEGROUND_AV:
+            quest = SPELL_AV_QUEST_REWARD;
+            break;
+        case BATTLEGROUND_WS:
+            quest = SPELL_WS_QUEST_REWARD;
+            break;
+        case BATTLEGROUND_AB:
+            quest = SPELL_AB_QUEST_REWARD;
+            break;
+        default:
+            return;
     }
 
     RewardSpellCast(plr, quest);
@@ -1542,25 +1542,25 @@ void BattleGround::UpdatePlayerScore(Player* Source, uint32 type, uint32 value)
 
     switch (type)
     {
-    case SCORE_KILLING_BLOWS:                           // Killing blows
-        itr->second->KillingBlows += value;
-        break;
-    case SCORE_DEATHS:                                  // Deaths
-        itr->second->Deaths += value;
-        break;
-    case SCORE_HONORABLE_KILLS:                         // Honorable kills
-        itr->second->HonorableKills += value;
-        break;
-    case SCORE_BONUS_HONOR:                             // Honor bonus
-        // reward honor instantly
-        if (Source->AddHonorCP(value, HONORABLE, 0, 0))
-        {
-            itr->second->BonusHonor += value;
-        }
-        break;
-    default:
-        sLog.outError("BattleGround: Unknown player score type %u", type);
-        break;
+        case SCORE_KILLING_BLOWS:                           // Killing blows
+            itr->second->KillingBlows += value;
+            break;
+        case SCORE_DEATHS:                                  // Deaths
+            itr->second->Deaths += value;
+            break;
+        case SCORE_HONORABLE_KILLS:                         // Honorable kills
+            itr->second->HonorableKills += value;
+            break;
+        case SCORE_BONUS_HONOR:                             // Honor bonus
+            // reward honor instantly
+            if (Source->AddHonorCP(value, HONORABLE, 0, 0))
+            {
+                itr->second->BonusHonor += value;
+            }
+            break;
+        default:
+            sLog.outError("BattleGround: Unknown player score type %u", type);
+            break;
     }
 }
 
@@ -1728,8 +1728,8 @@ void BattleGround::SpawnEvent(uint8 event1, uint8 event2, bool spawn)
 {
     // stop if we want to spawn something which was already spawned
     // or despawn something which was already despawned
-    if (event2 == BG_EVENT_NONE || (spawn && m_ActiveEvents[event1] == event2)
-        || (!spawn && m_ActiveEvents[event1] != event2))
+    if (event2 == BG_EVENT_NONE || (spawn && m_ActiveEvents[event1] == event2) ||
+        (!spawn && m_ActiveEvents[event1] != event2))
     {
         return;
     }

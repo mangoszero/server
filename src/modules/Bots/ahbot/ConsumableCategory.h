@@ -8,96 +8,96 @@ namespace ahbot
 {
     class Alchemy : public Consumable
     {
-    public:
-        Alchemy() : Consumable() {}
+        public:
+            Alchemy() : Consumable() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Consumable::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Consumable::Contains(proto) &&
                     (proto->SubClass == ITEM_SUBCLASS_POTION ||
                     proto->SubClass == ITEM_SUBCLASS_ELIXIR ||
                     proto->SubClass == ITEM_SUBCLASS_FLASK);
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "Alchemy";
-        }
+            virtual string GetName()
+            {
+                return "Alchemy";
+            }
     };
 
     class Scroll : public Consumable
     {
-    public:
-        Scroll() : Consumable() {}
+        public:
+            Scroll() : Consumable() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Consumable::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Consumable::Contains(proto) &&
                     (proto->SubClass == ITEM_SUBCLASS_SCROLL ||
                     proto->SubClass == ITEM_SUBCLASS_ITEM_ENHANCEMENT);
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "Scroll";
-        }
+            virtual string GetName()
+            {
+                return "Scroll";
+            }
     };
 
     class Food : public Consumable
     {
-    public:
-        Food() : Consumable() {}
+        public:
+            Food() : Consumable() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Consumable::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Consumable::Contains(proto) &&
                     proto->SubClass == ITEM_SUBCLASS_FOOD;
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "Food";
-        }
+            virtual string GetName()
+            {
+                return "Food";
+            }
     };
 
     class Bandage : public Consumable
     {
-    public:
-        Bandage() : Consumable() {}
+        public:
+            Bandage() : Consumable() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Consumable::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Consumable::Contains(proto) &&
                     proto->SubClass == ITEM_SUBCLASS_BANDAGE;
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "Bandage";
-        }
+            virtual string GetName()
+            {
+                return "Bandage";
+            }
     };
 
     class OtherConsumable : public Consumable
     {
-    public:
-        OtherConsumable() : Consumable() {}
+        public:
+            OtherConsumable() : Consumable() {}
 
-    public:
-        virtual bool Contains(ItemPrototype const* proto)
-        {
-            return Consumable::Contains(proto) &&
+        public:
+            virtual bool Contains(ItemPrototype const* proto)
+            {
+                return Consumable::Contains(proto) &&
                     (proto->SubClass == ITEM_SUBCLASS_CONSUMABLE ||
                     proto->SubClass == ITEM_SUBCLASS_CONSUMABLE_OTHER) && (proto->RequiredSkill);
-        }
+            }
 
-        virtual string GetName()
-        {
-            return "OtherConsumable";
-        }
+            virtual string GetName()
+            {
+                return "OtherConsumable";
+            }
 
     };
 };

@@ -123,8 +123,8 @@ std::atomic<uint32> WorldSocket::s_openConnections{0};
  * - Output buffer size: 64KB
  * - Random seed for encryption
  */
-WorldSocket::WorldSocket(void) :
-    WorldHandler(),
+WorldSocket::WorldSocket(void)
+    : WorldHandler(),
     m_LastPingTime(ACE_Time_Value::zero),
     m_OverSpeedPings(0),
     m_Session(0),
@@ -408,10 +408,9 @@ int WorldSocket::handle_output(ACE_HANDLE)
     else if (n == -1)
     {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
-            {
+        {
             return 0;
-            }
-
+        }
         return -1;
     }
     else if (n < (ssize_t)send_len) // now n > 0
@@ -483,7 +482,7 @@ int WorldSocket::handle_input_header(void)
     if ((header.size < 4) || (header.size > 10240) || (header.cmd  > 10240))
     {
         sLog.outError("WorldSocket::handle_input_header: client sent malformed packet size = %d , cmd = %d",
-                      header.size, header.cmd);
+            header.size, header.cmd);
 
         errno = EINVAL;
         return -1;
@@ -546,21 +545,21 @@ int WorldSocket::handle_input_missing_data(void)
     char buf [4096];
 
     ACE_Data_Block db(sizeof(buf),
-                      ACE_Message_Block::MB_DATA,
-                      buf,
-                      0,
-                      0,
-                      ACE_Message_Block::DONT_DELETE,
-                      0);
+        ACE_Message_Block::MB_DATA,
+        buf,
+        0,
+        0,
+        ACE_Message_Block::DONT_DELETE,
+        0);
 
     ACE_Message_Block message_block(&db,
-                                    ACE_Message_Block::DONT_DELETE,
-                                    0);
+        ACE_Message_Block::DONT_DELETE,
+        0);
 
     const size_t recv_size = message_block.space();
 
     const ssize_t n = peer().recv(message_block.wr_ptr(),
-                                  recv_size);
+        recv_size);
 
     if (n <= 0)
     {
@@ -714,7 +713,8 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     catch (ByteBufferException&)
     {
         sLog.outError("WorldSocket::ProcessIncoming ByteBufferException occured while parsing an instant handled packet (opcode: %u) from client %s, accountid=%i.",
-                      opcode, GetRemoteAddress().c_str(), m_Session ? m_Session->GetAccountId() : -1);
+            opcode, GetRemoteAddress().c_str(), m_Session ? m_Session->GetAccountId() : -1);
+
         if (sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))
         {
             DEBUG_LOG("Dumping error-causing packet:");
@@ -724,7 +724,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
         if (sWorld.getConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET))
         {
             DETAIL_LOG("Disconnecting session [account id %i / address %s] for badly formatted packet.",
-                       m_Session ? m_Session->GetAccountId() : -1, GetRemoteAddress().c_str());
+                m_Session ? m_Session->GetAccountId() : -1, GetRemoteAddress().c_str());
 
             return -1;
         }
@@ -762,10 +762,10 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     recvPacket.read(digest, SHA_DIGEST_LENGTH);
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: client %u, unk2 %u, account %s, clientseed %u",
-              BuiltNumberClient,
-              unk2,
-              account.c_str(),
-              clientSeed);
+        BuiltNumberClient,
+        unk2,
+        account.c_str(),
+        clientSeed);
 
     // Check the version of client trying to connect
     if (!IsAcceptableClientBuild(BuiltNumberClient))
@@ -785,19 +785,19 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     QueryResult* result =
         LoginDatabase.PQuery("SELECT "
-                            "`id`, "                      // 0
-                            "`gmlevel`, "                 // 1
-                            "`sessionkey`, "              // 2
-                            "`last_ip`, "                 // 3
-                            "`locked`, "                  // 4
-                            "`v`, "                       // 5
-                            "`s`, "                       // 6
-                            "`mutetime`, "                // 7
-                            "`locale`, "                  // 8
-                            "`os` "                       // 9
-                            "FROM `account` "
-                            "WHERE `username` = '%s'",
-                            safe_account.c_str());
+        "`id`, "                      // 0
+        "`gmlevel`, "                 // 1
+        "`sessionkey`, "              // 2
+        "`last_ip`, "                 // 3
+        "`locked`, "                  // 4
+        "`v`, "                       // 5
+        "`s`, "                       // 6
+        "`mutetime`, "                // 7
+        "`locale`, "                  // 8
+        "`os` "                       // 9
+        "FROM `account` "
+        "WHERE `username` = '%s'",
+        safe_account.c_str());
 
     // Stop if the account is not found
     if (!result)
@@ -822,8 +822,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     const char* vStr = v.AsHexStr();                        // Must be freed by OPENSSL_free()
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: (s,v) present: s=%s v=%s",
-              sStr && *sStr ? "yes" : "no",
-              vStr && *vStr ? "yes" : "no");
+        sStr && *sStr ? "yes" : "no",
+        vStr && *vStr ? "yes" : "no");
 
     OPENSSL_free((void*) sStr);
     OPENSSL_free((void*) vStr);
@@ -864,9 +864,9 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // Re-check account ban (same check as in realmd)
     QueryResult* banresult =
         LoginDatabase.PQuery("SELECT 1 FROM `account_banned` WHERE `id` = %u AND `active` = 1 AND (`unbandate` > UNIX_TIMESTAMP() OR `unbandate` = `bandate`)"
-                             "UNION "
-                             "SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s'",
-                             id, GetRemoteAddress().c_str());
+        "UNION "
+        "SELECT 1 FROM `ip_banned` WHERE (`unbandate` = `bandate` OR `unbandate` > UNIX_TIMESTAMP()) AND `ip` = '%s'",
+        id, GetRemoteAddress().c_str());
 
     if (banresult) // if account banned
     {
@@ -929,8 +929,8 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     std::string address = GetRemoteAddress();
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: Client '%s' authenticated successfully from %s.",
-              account.c_str(),
-              address.c_str());
+        account.c_str(),
+        address.c_str());
 
     // Update the last_ip in the database
     // No SQL injection, username escaped.
@@ -1005,8 +1005,8 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
                 if (m_Session && m_Session->GetSecurity() == SEC_PLAYER)
                 {
                     sLog.outError("WorldSocket::HandlePing: Player kicked for "
-                                  "overspeeded pings address = %s",
-                                  GetRemoteAddress().c_str());
+                        "overspeeded pings address = %s",
+                        GetRemoteAddress().c_str());
 
                     return -1;
                 }
@@ -1026,9 +1026,9 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
     else
     {
         sLog.outError("WorldSocket::HandlePing: peer sent CMSG_PING, "
-                      "but is not authenticated or got recently kicked,"
-                      " address = %s",
-                      GetRemoteAddress().c_str());
+            "but is not authenticated or got recently kicked,"
+            " address = %s",
+            GetRemoteAddress().c_str());
         return -1;
     }
 
@@ -1073,10 +1073,12 @@ int WorldSocket::iSendPacket(const WorldPacket& pct)
     }
 
     if (!pct.empty())
+    {
         if (m_OutBuffer->copy((char*) pct.contents(), pct.size()) == -1)
         {
             ACE_ASSERT(false);
         }
+    }
 
     return 0;
 }

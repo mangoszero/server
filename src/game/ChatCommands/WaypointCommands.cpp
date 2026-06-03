@@ -890,10 +890,12 @@ bool ChatHandler::HandleWpExportCommand(char* args)
         if (wpOrigin == PATH_NO_PATH)
         {
             if (wpOwner->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+            {
                 if (WaypointMovementGenerator<Creature> const* wpMMGen = dynamic_cast<WaypointMovementGenerator<Creature> const*>(wpOwner->GetMotionMaster()->GetCurrent()))
                 {
                     wpMMGen->GetPathInformation(wpPathId, wpOrigin);
                 }
+            }
             if (wpOrigin == PATH_NO_PATH)
             {
                 sWaypointMgr.GetDefaultPath(wpOwner->GetEntry(), wpOwner->GetGUIDLow(), &wpOrigin);

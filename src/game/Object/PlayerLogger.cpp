@@ -1,26 +1,26 @@
 /**
-* MaNGOS is a full featured server for World of Warcraft, supporting
-* the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
-*
-* Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*
-* World of Warcraft, and all World of Warcraft or Warcraft art, images,
-* and lore are copyrighted by Blizzard Entertainment, Inc.
-*/
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * World of Warcraft, and all World of Warcraft or Warcraft art, images,
+ * and lore are copyrighted by Blizzard Entertainment, Inc.
+ */
 
 #include "PlayerLogger.h"
 #include "ObjectAccessor.h"
@@ -71,31 +71,34 @@ void PlayerLogger::Initialize(PlayerLogEntity entity, uint32 maxLength)
     else
     {
         if (IsLoggingActive(entity))
+        {
             sLog.outDebug("PlayerLogger: no data but activity flag set for log type %u!", entity);
+        }
+
         switch (entity)
         {
-        case PLAYER_LOG_DAMAGE_GET:
-        case PLAYER_LOG_DAMAGE_DONE:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogDamage>);
-            break;
-        case PLAYER_LOG_LOOTING:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogLooting>);
-            break;
-        case PLAYER_LOG_TRADE:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogTrading>);
-            break;
-        case PLAYER_LOG_KILL:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogKilling>);
-            break;
-        case PLAYER_LOG_POSITION:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogPosition>);
-            break;
-        case PLAYER_LOG_PROGRESS:
-            data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogProgress>);
-            break;
-        default:
-            sLog.outError("PlayerLogger: unknown logging type %u initiated, ignoring.", entity);
-            break;
+            case PLAYER_LOG_DAMAGE_GET:
+            case PLAYER_LOG_DAMAGE_DONE:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogDamage>);
+                break;
+            case PLAYER_LOG_LOOTING:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogLooting>);
+                break;
+            case PLAYER_LOG_TRADE:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogTrading>);
+                break;
+            case PLAYER_LOG_KILL:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogKilling>);
+                break;
+            case PLAYER_LOG_POSITION:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogPosition>);
+                break;
+            case PLAYER_LOG_PROGRESS:
+                data[entity] = (PlayerLogBaseType*)(new std::vector<PlayerLogProgress>);
+                break;
+            default:
+                sLog.outError("PlayerLogger: unknown logging type %u initiated, ignoring.", entity);
+                break;
         }
     }
     if (maxLength)
@@ -155,103 +158,103 @@ bool PlayerLogger::SaveToDB(PlayerLogMask mask, bool removeSaved, bool insideTra
         {
             switch (PlayerLogEntity(i))
             {
-            case PLAYER_LOG_DAMAGE_GET:
+                case PLAYER_LOG_DAMAGE_GET:
                 {
-                PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
-                static SqlStatementID dmgGetStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgGetStmt, "INSERT INTO `playerlog_damage_get` SET `guid` = ?, `time` = ?, `aggressor` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt32(info.GetId());
-                stmt.addBool(info.IsPlayer());
-                stmt.addInt32(info.damage);
-                stmt.addUInt16(info.spell);
-                stmt.Execute();
+                    PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
+                    static SqlStatementID dmgGetStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(dmgGetStmt, "INSERT INTO `playerlog_damage_get` SET `guid` = ?, `time` = ?, `aggressor` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt32(info.GetId());
+                    stmt.addBool(info.IsPlayer());
+                    stmt.addInt32(info.damage);
+                    stmt.addUInt16(info.spell);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_DAMAGE_DONE:
+                case PLAYER_LOG_DAMAGE_DONE:
                 {
-                PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
-                static SqlStatementID dmgDoneStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(dmgDoneStmt, "INSERT INTO `playerlog_damage_done` SET `guid` = ?, `time` = ?, `victim` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt32(info.GetId());
-                stmt.addBool(info.IsPlayer());
-                stmt.addInt32(info.damage);
-                stmt.addUInt16(info.spell);
-                stmt.Execute();
+                    PlayerLogDamage info = *(PlayerLogDamage*)(&data[i]->at(id));
+                    static SqlStatementID dmgDoneStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(dmgDoneStmt, "INSERT INTO `playerlog_damage_done` SET `guid` = ?, `time` = ?, `victim` = ?, `isPlayer` = ?, `damage` = ?, `spell` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt32(info.GetId());
+                    stmt.addBool(info.IsPlayer());
+                    stmt.addInt32(info.damage);
+                    stmt.addUInt16(info.spell);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_LOOTING:
+                case PLAYER_LOG_LOOTING:
                 {
-                PlayerLogLooting info = *(PlayerLogLooting*)(&data[i]->at(id));
-                static SqlStatementID lootStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(lootStmt, "INSERT INTO `playerlog_looting` SET `guid` = ?, `time`= ?, `item` = ?, `sourceType` = ?, `sourceEntry` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt32(info.GetItemEntry());
-                stmt.addUInt8(uint8(info.GetLootSourceType()));
-                stmt.addUInt32(info.droppedBy);
-                stmt.Execute();
+                    PlayerLogLooting info = *(PlayerLogLooting*)(&data[i]->at(id));
+                    static SqlStatementID lootStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(lootStmt, "INSERT INTO `playerlog_looting` SET `guid` = ?, `time`= ?, `item` = ?, `sourceType` = ?, `sourceEntry` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt32(info.GetItemEntry());
+                    stmt.addUInt8(uint8(info.GetLootSourceType()));
+                    stmt.addUInt32(info.droppedBy);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_TRADE:
+                case PLAYER_LOG_TRADE:
                 {
-                PlayerLogTrading info = *(PlayerLogTrading*)(&data[i]->at(id));
-                static SqlStatementID tradeStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(tradeStmt, "INSERT INTO `playerlog_trading` SET `guid` = ?, `time`= ?, `itemEntry` = ?, `itemGuid` = ?, `aquired` = ?, `partner` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt32(info.GetItemEntry());
-                stmt.addUInt32(info.itemGuid);
-                stmt.addBool(info.IsItemAquired());
-                stmt.addUInt16(info.partner);
-                stmt.Execute();
+                    PlayerLogTrading info = *(PlayerLogTrading*)(&data[i]->at(id));
+                    static SqlStatementID tradeStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(tradeStmt, "INSERT INTO `playerlog_trading` SET `guid` = ?, `time`= ?, `itemEntry` = ?, `itemGuid` = ?, `aquired` = ?, `partner` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt32(info.GetItemEntry());
+                    stmt.addUInt32(info.itemGuid);
+                    stmt.addBool(info.IsItemAquired());
+                    stmt.addUInt16(info.partner);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_KILL:
+                case PLAYER_LOG_KILL:
                 {
-                PlayerLogKilling info = *(PlayerLogKilling*)(&data[i]->at(id));
-                static SqlStatementID killStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(killStmt, "INSERT INTO `playerlog_killing` SET `guid` = ?, `time`= ?, `iskill` = ?, `entry` = ?, `victimGuid` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addBool(info.IsKill());
-                stmt.addUInt32(info.GetUnitEntry());
-                stmt.addUInt32(info.unitGuid);
-                stmt.Execute();
+                    PlayerLogKilling info = *(PlayerLogKilling*)(&data[i]->at(id));
+                    static SqlStatementID killStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(killStmt, "INSERT INTO `playerlog_killing` SET `guid` = ?, `time`= ?, `iskill` = ?, `entry` = ?, `victimGuid` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addBool(info.IsKill());
+                    stmt.addUInt32(info.GetUnitEntry());
+                    stmt.addUInt32(info.unitGuid);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_POSITION:
+                case PLAYER_LOG_POSITION:
                 {
-                PlayerLogPosition info = *(PlayerLogPosition*)(&data[i]->at(id));
-                static SqlStatementID posStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(posStmt, "INSERT INTO `playerlog_position` SET `guid` = ?, `time`= ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt16(info.map);
-                stmt.addFloat(info.x);
-                stmt.addFloat(info.y);
-                stmt.addFloat(info.z);
-                stmt.Execute();
+                    PlayerLogPosition info = *(PlayerLogPosition*)(&data[i]->at(id));
+                    static SqlStatementID posStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(posStmt, "INSERT INTO `playerlog_position` SET `guid` = ?, `time`= ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt16(info.map);
+                    stmt.addFloat(info.x);
+                    stmt.addFloat(info.y);
+                    stmt.addFloat(info.z);
+                    stmt.Execute();
+                    break;
                 }
-                break;
-            case PLAYER_LOG_PROGRESS:
+                case PLAYER_LOG_PROGRESS:
                 {
-                PlayerLogProgress info = *(PlayerLogProgress*)(&data[i]->at(id));
-                static SqlStatementID progStmt;
-                SqlStatement stmt = CharacterDatabase.CreateStatement(progStmt, "INSERT INTO `playerlog_progress` SET `guid` = ?, `time` = ?, `type` = ?, `level` = ?, `data` = ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
-                stmt.addUInt32(playerGuid);
-                stmt.addUInt64(info.timestamp + serverStart);
-                stmt.addUInt8(info.progressType);
-                stmt.addUInt8(info.level);
-                stmt.addUInt16(info.data);
-                stmt.addUInt16(info.map);
-                stmt.addFloat(info.x);
-                stmt.addFloat(info.y);
-                stmt.addFloat(info.z);
-                stmt.Execute();
+                    PlayerLogProgress info = *(PlayerLogProgress*)(&data[i]->at(id));
+                    static SqlStatementID progStmt;
+                    SqlStatement stmt = CharacterDatabase.CreateStatement(progStmt, "INSERT INTO `playerlog_progress` SET `guid` = ?, `time` = ?, `type` = ?, `level` = ?, `data` = ?, `map` = ?, `posx` = ?, `posy` = ?, `posz` = ?");
+                    stmt.addUInt32(playerGuid);
+                    stmt.addUInt64(info.timestamp + serverStart);
+                    stmt.addUInt8(info.progressType);
+                    stmt.addUInt8(info.level);
+                    stmt.addUInt16(info.data);
+                    stmt.addUInt16(info.map);
+                    stmt.addFloat(info.x);
+                    stmt.addFloat(info.y);
+                    stmt.addFloat(info.z);
+                    stmt.Execute();
                 }
             }
         }
@@ -293,7 +296,9 @@ void PlayerLogger::StartLogging(PlayerLogEntity entity)
     else
     {
         if (data[entity]->size() > 0)
+        {
             sLog.outDebug("PlayerLogger: dropped old data for type %u player GUID %u!", entity, playerGuid);
+        }
         data[entity]->clear();
     }
 
@@ -331,47 +336,47 @@ void PlayerLogger::CheckAndTruncate(PlayerLogMask mask, uint32 maxRecords)
         {
             switch (PlayerLogEntity(i))
             {
-            case PLAYER_LOG_DAMAGE_GET:
-            case PLAYER_LOG_DAMAGE_DONE:
+                case PLAYER_LOG_DAMAGE_GET:
+                case PLAYER_LOG_DAMAGE_DONE:
                 {
-                std::vector<PlayerLogDamage>* v = (std::vector<PlayerLogDamage>*)data[i];
-                std::vector<PlayerLogDamage>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogDamage>* v = (std::vector<PlayerLogDamage>*)data[i];
+                    std::vector<PlayerLogDamage>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
-            case PLAYER_LOG_LOOTING:
+                case PLAYER_LOG_LOOTING:
                 {
-                std::vector<PlayerLogLooting>* v = (std::vector<PlayerLogLooting>*)data[i];
-                std::vector<PlayerLogLooting>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogLooting>* v = (std::vector<PlayerLogLooting>*)data[i];
+                    std::vector<PlayerLogLooting>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
-            case PLAYER_LOG_TRADE:
+                case PLAYER_LOG_TRADE:
                 {
-                std::vector<PlayerLogTrading>* v = (std::vector<PlayerLogTrading>*)data[i];
-                std::vector<PlayerLogTrading>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogTrading>* v = (std::vector<PlayerLogTrading>*)data[i];
+                    std::vector<PlayerLogTrading>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
-            case PLAYER_LOG_KILL:
+                case PLAYER_LOG_KILL:
                 {
-                std::vector<PlayerLogKilling>* v = (std::vector<PlayerLogKilling>*)data[i];
-                std::vector<PlayerLogKilling>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogKilling>* v = (std::vector<PlayerLogKilling>*)data[i];
+                    std::vector<PlayerLogKilling>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
-            case PLAYER_LOG_POSITION:
+                case PLAYER_LOG_POSITION:
                 {
-                std::vector<PlayerLogPosition>* v = (std::vector<PlayerLogPosition>*)data[i];
-                std::vector<PlayerLogPosition>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogPosition>* v = (std::vector<PlayerLogPosition>*)data[i];
+                    std::vector<PlayerLogPosition>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
-            case PLAYER_LOG_PROGRESS:
+                case PLAYER_LOG_PROGRESS:
                 {
-                std::vector<PlayerLogProgress>* v = (std::vector<PlayerLogProgress>*)data[i];
-                std::vector<PlayerLogProgress>::iterator itr = v->begin();
-                v->erase(itr, itr + v->size() - maxRecords);
+                    std::vector<PlayerLogProgress>* v = (std::vector<PlayerLogProgress>*)data[i];
+                    std::vector<PlayerLogProgress>::iterator itr = v->begin();
+                    v->erase(itr, itr + v->size() - maxRecords);
                 }
                 break;
             }

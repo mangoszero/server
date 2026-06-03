@@ -117,8 +117,8 @@ bool GridMap::loadData(char* filename)
 
     fread(&header, sizeof(header), 1, in);
     if (header.mapMagic     == *((uint32 const*)(MAP_MAGIC)) &&
-            header.versionMagic == *((uint32 const*)(MAP_VERSION_MAGIC)) &&
-            IsAcceptableClientBuild(header.buildMagic))
+        header.versionMagic == *((uint32 const*)(MAP_VERSION_MAGIC)) &&
+        IsAcceptableClientBuild(header.buildMagic))
     {
         // loadup area data
         if (header.areaMapOffset && !loadAreaData(in, header.areaMapOffset, header.areaMapSize))
@@ -897,8 +897,8 @@ bool GridMap::ExistMap(uint32 mapid, int gx, int gy)
         return false;
     }
     if (header.mapMagic     != *((uint32 const*)(MAP_MAGIC)) ||
-            header.versionMagic != *((uint32 const*)(MAP_VERSION_MAGIC)) ||
-            !IsAcceptableClientBuild(header.buildMagic))
+        header.versionMagic != *((uint32 const*)(MAP_VERSION_MAGIC)) ||
+        !IsAcceptableClientBuild(header.buildMagic))
     {
         sLog.outError("Map file '%s' is non-compatible version created with a different map-extractor version.", tmp);
         delete[] tmp;
@@ -963,10 +963,12 @@ TerrainInfo::TerrainInfo(uint32 mapid) : m_mapId(mapid), m_refMutex(), m_mutex()
 TerrainInfo::~TerrainInfo()
 {
     for (int k = 0; k < MAX_NUMBER_OF_GRIDS; ++k)
+    {
         for (int i = 0; i < MAX_NUMBER_OF_GRIDS; ++i)
         {
             delete m_GridMaps[i][k];
         }
+    }
 
     VMAP::VMapFactory::createOrGetVMapManager()->unloadMap(m_mapId);
     MMAP::MMapFactory::createOrGetMMapManager()->unloadMap(m_mapId);
@@ -1644,7 +1646,7 @@ float TerrainInfo::GetWaterLevel(float x, float y, float z, float* pGround /*= N
 //////////////////////////////////////////////////////////////////////////
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>
-INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
+    INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(TerrainManager, ACE_Thread_Mutex);
 
 TerrainManager::TerrainManager() : m_mutex()

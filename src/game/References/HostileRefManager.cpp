@@ -49,6 +49,9 @@
 #include "Unit.h"
 #include "DBCStructure.h"
 #include "SpellMgr.h"
+#if !defined(CLASSIC)
+#include "Map.h"
+#endif
 
 /**
  * @brief Construct HostileRefManager
@@ -238,5 +241,12 @@ void HostileRefManager::setOnlineOfflineState(Unit* pCreature, bool pIsOnline)
         ref = nextRef;
     }
 }
+
+#if !defined(CLASSIC)
+Unit* HostileRefManager::GetThreatRedirectionTarget() const
+{
+    return m_redirectionTargetGuid ? iOwner->GetMap()->GetUnit(m_redirectionTargetGuid) : NULL;
+}
+#endif
 
 //=================================================

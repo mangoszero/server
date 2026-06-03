@@ -6,24 +6,24 @@ using namespace ai;
 
 class PartyMemberToDispelPredicate : public FindPlayerPredicate, public PlayerbotAIAware
 {
-public:
-    PartyMemberToDispelPredicate(PlayerbotAI* ai, uint32 dispelType) :
+    public:
+        PartyMemberToDispelPredicate(PlayerbotAI* ai, uint32 dispelType) :
         PlayerbotAIAware(ai), FindPlayerPredicate(), dispelType(dispelType) {}
 
-public:
-    virtual bool Check(Unit* unit)
-    {
-        Pet* pet = dynamic_cast<Pet*>(unit);
-        if (pet && (pet->getPetType() == MINI_PET || pet->getPetType() == SUMMON_PET))
+    public:
+        virtual bool Check(Unit* unit)
         {
-            return false;
+            Pet* pet = dynamic_cast<Pet*>(unit);
+            if (pet && (pet->getPetType() == MINI_PET || pet->getPetType() == SUMMON_PET))
+            {
+                return false;
+            }
+
+            return unit->IsAlive() && ai->HasAuraToDispel(unit, dispelType);
         }
 
-        return unit->IsAlive() && ai->HasAuraToDispel(unit, dispelType);
-    }
-
-private:
-    uint32 dispelType;
+    private:
+        uint32 dispelType;
 };
 
 Unit* PartyMemberToDispel::Calculate()

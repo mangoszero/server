@@ -4,12 +4,11 @@
 
 namespace ai
 {
-    class ListSpellsAction : public Action {
-    public:
-        ListSpellsAction(PlayerbotAI* ai) : Action(ai, "spells") {}
+    class ListSpellsAction : public Action
+    {
+        public:
+            ListSpellsAction(PlayerbotAI* ai) : Action(ai, "spells") {}
 
-        virtual bool Execute(Event event);
-
+            virtual bool Execute(Event event);
     };
-
 }

@@ -5,15 +5,15 @@
 
 namespace ai
 {
-    class BuyAction : public InventoryAction {
-    public:
-        BuyAction(PlayerbotAI* ai) : InventoryAction(ai, "buy") {}
-        virtual bool Execute(Event event);
+    class BuyAction : public InventoryAction
+    {
+        public:
+            BuyAction(PlayerbotAI* ai) : InventoryAction(ai, "buy") {}
+            virtual bool Execute(Event event);
 
-    private:
-        bool TradeItem(FindItemVisitor *visitor, int8 slot);
-        bool TradeItem(const Item& item, int8 slot);
-
+        private:
+            bool TradeItem(FindItemVisitor *visitor, int8 slot);
+            bool TradeItem(const Item& item, int8 slot);
     };
 
 }

@@ -100,8 +100,8 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     if (!MapManager::IsValidMapCoord(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, loc.orientation))
     {
         sLog.outError("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far to a not valid location "
-                      "(map:%u, x:%f, y:%f, z:%f) We port him to his homebind instead..",
-                      GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
+            "(map:%u, x:%f, y:%f, z:%f) We port him to his homebind instead..",
+            GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
         // stop teleportation else we would try this again and again in LogoutPlayer...
         GetPlayer()->SetSemaphoreTeleportFar(false);
         // and teleport the player to a valid place
@@ -125,8 +125,8 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         if (!map)
         {
             DETAIL_LOG("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far to nonexisten battleground instance "
-                       " (map:%u, x:%f, y:%f, z:%f) Trying to port him to his previous place..",
-                       GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
+                " (map:%u, x:%f, y:%f, z:%f) Trying to port him to his previous place..",
+                GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
 
             GetPlayer()->SetSemaphoreTeleportFar(false);
 
@@ -134,7 +134,7 @@ void WorldSession::HandleMoveWorldportAckOpcode()
             if (!GetPlayer()->TeleportTo(old_loc))
             {
                 DETAIL_LOG("WorldSession::HandleMoveWorldportAckOpcode: %s can not be ported to his previous place, teleporting him to his homebind place...",
-                           GetPlayer()->GetGuidStr().c_str());
+                    GetPlayer()->GetGuidStr().c_str());
                 GetPlayer()->TeleportToHomebind();
             }
             return;
@@ -169,14 +169,14 @@ void WorldSession::HandleMoveWorldportAckOpcode()
         GetPlayer()->ResetMap();
 
         DETAIL_LOG("WorldSession::HandleMoveWorldportAckOpcode: %s was teleported far but couldn't be added to map "
-                   " (map:%u, x:%f, y:%f, z:%f) Trying to port him to his previous place..",
-                   GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
+            " (map:%u, x:%f, y:%f, z:%f) Trying to port him to his previous place..",
+            GetPlayer()->GetGuidStr().c_str(), loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z);
 
         // Teleport to previous place, if can not be ported back TP to homebind place
         if (!GetPlayer()->TeleportTo(old_loc))
         {
             DETAIL_LOG("WorldSession::HandleMoveWorldportAckOpcode: %s can not be ported to his previous place, teleporting him to his homebind place...",
-                       GetPlayer()->GetGuidStr().c_str());
+                GetPlayer()->GetGuidStr().c_str());
             GetPlayer()->TeleportToHomebind();
         }
         return;
@@ -435,8 +435,8 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
             return;
     }
 
-    // skip all forced speed changes except last and unexpected
-    // in run/mounted case used one ACK and it must be skipped.m_forced_speed_changes[MOVE_RUN} store both.
+    /** skip all forced speed changes except last and unexpected
+     *  in run/mounted case used one ACK and it must be skipped.m_forced_speed_changes[MOVE_RUN} store both. */
     if (_player->m_forced_speed_changes[force_move_type] > 0)
     {
         --_player->m_forced_speed_changes[force_move_type];
@@ -451,13 +451,13 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
         if (_player->GetSpeed(move_type) > newspeed)        // must be greater - just correct
         {
             sLog.outError("%sSpeedChange player %s is NOT correct (must be %f instead %f), force set to correct value",
-                          move_type_name[move_type], _player->GetName(), _player->GetSpeed(move_type), newspeed);
+                move_type_name[move_type], _player->GetName(), _player->GetSpeed(move_type), newspeed);
             _player->SetSpeedRate(move_type, _player->GetSpeedRate(move_type), true);
         }
         else                                                // must be lesser - cheating
         {
             BASIC_LOG("Player %s from account id %u kicked for incorrect speed (must be %f instead %f)",
-                      _player->GetName(), _player->GetSession()->GetAccountId(), _player->GetSpeed(move_type), newspeed);
+                _player->GetName(), _player->GetSession()->GetAccountId(), _player->GetSpeed(move_type), newspeed);
             _player->GetSession()->KickPlayer();
         }
     }
@@ -478,7 +478,7 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recv_data)
     if (_player->GetMover()->GetObjectGuid() != guid)
     {
         sLog.outError("HandleSetActiveMoverOpcode: incorrect mover guid: mover is %s and should be %s",
-                      _player->GetMover()->GetGuidStr().c_str(), guid.GetString().c_str());
+            _player->GetMover()->GetGuidStr().c_str(), guid.GetString().c_str());
         return;
     }
 }
@@ -502,10 +502,12 @@ void WorldSession::HandleMoveNotActiveMoverOpcode(WorldPacket& recv_data)
     if (_player->GetMover()->GetObjectGuid() == old_mover_guid)
     {
         if (_player->GetObjectGuid() != old_mover_guid )
+        {
             sLog.outError("HandleMoveNotActiveMover: incorrect mover guid: mover is %s and should be %s instead of %s",
-                          _player->GetMover()->GetGuidStr().c_str(),
-                          _player->GetGuidStr().c_str(),
-                          old_mover_guid.GetString().c_str());
+                _player->GetMover()->GetGuidStr().c_str(),
+                _player->GetGuidStr().c_str(),
+                old_mover_guid.GetString().c_str());
+        }
         recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
         return;
     }
@@ -701,7 +703,7 @@ bool WorldSession::VerifyMovementInfo(MovementInfo const& movementInfo) const
         }
 
         if (!MaNGOS::IsValidMapCoord(movementInfo.GetPos()->x + movementInfo.GetTransportPos()->x, movementInfo.GetPos()->y + movementInfo.GetTransportPos()->y,
-                                     movementInfo.GetPos()->z + movementInfo.GetTransportPos()->z, movementInfo.GetPos()->o + movementInfo.GetTransportPos()->o))
+            movementInfo.GetPos()->z + movementInfo.GetTransportPos()->z, movementInfo.GetPos()->o + movementInfo.GetTransportPos()->o))
         {
             return false;
         }
@@ -781,8 +783,8 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 
         if (movementInfo.GetPos()->z < -500.0f)
         {
-            if (plMover->GetBattleGround()
-                && plMover->GetBattleGround()->HandlePlayerUnderMap(_player))
+            if (plMover->GetBattleGround() &&
+                plMover->GetBattleGround()->HandlePlayerUnderMap(_player))
             {
                 // do nothing, the handle already did if returned true
             }

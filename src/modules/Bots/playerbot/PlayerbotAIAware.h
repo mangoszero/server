@@ -8,14 +8,14 @@ namespace ai
      */
     class PlayerbotAIAware
     {
-    public:
-        /**
-         * @brief Constructor for PlayerbotAIAware.
-         * @param ai Pointer to the PlayerbotAI instance.
-         */
-        PlayerbotAIAware(PlayerbotAI* const ai) : ai(ai) {}
+        public:
+            /**
+             * @brief Constructor for PlayerbotAIAware.
+             * @param ai Pointer to the PlayerbotAI instance.
+             */
+            PlayerbotAIAware(PlayerbotAI* const ai) : ai(ai) {}
 
-    protected:
-        PlayerbotAI* ai; ///< Pointer to the PlayerbotAI instance.
+        protected:
+            PlayerbotAI* ai; ///< Pointer to the PlayerbotAI instance.
     };
 }

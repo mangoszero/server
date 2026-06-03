@@ -7,36 +7,36 @@ using namespace ai;
 
 class SellItemsVisitor : public IterateItemsVisitor
 {
-public:
-    SellItemsVisitor(SellAction* action) : IterateItemsVisitor()
-    {
-        this->action = action;
-    }
+    public:
+        SellItemsVisitor(SellAction* action) : IterateItemsVisitor()
+        {
+            this->action = action;
+        }
 
-    virtual bool Visit(Item* item)
-    {
-        action->Sell(item);
-        return true;
-    }
+        virtual bool Visit(Item* item)
+        {
+            action->Sell(item);
+            return true;
+        }
 
-private:
-    SellAction* action;
+    private:
+        SellAction* action;
 };
 
 class SellGrayItemsVisitor : public SellItemsVisitor
 {
-public:
-    SellGrayItemsVisitor(SellAction* action) : SellItemsVisitor(action) {}
+    public:
+        SellGrayItemsVisitor(SellAction* action) : SellItemsVisitor(action) {}
 
-    virtual bool Visit(Item* item)
-    {
-        if (item->GetProto()->Quality != ITEM_QUALITY_POOR)
+        virtual bool Visit(Item* item)
         {
-            return true;
-        }
+            if (item->GetProto()->Quality != ITEM_QUALITY_POOR)
+            {
+                return true;
+            }
 
-        return SellItemsVisitor::Visit(item);
-    }
+            return SellItemsVisitor::Visit(item);
+        }
 };
 
 bool SellAction::Execute(Event event)

@@ -5,22 +5,21 @@
 namespace ai
 {
     class PassLeadershipToMasterAction : public Action {
-    public:
-        PassLeadershipToMasterAction(PlayerbotAI* ai) : Action(ai, "leader") {}
+        public:
+            PassLeadershipToMasterAction(PlayerbotAI* ai) : Action(ai, "leader") {}
 
-        virtual bool Execute(Event event)
-        {
-            Player* master = GetMaster();
-            if (master && bot->GetGroup() && bot->GetGroup()->IsMember(master->GetObjectGuid()))
+            virtual bool Execute(Event event)
             {
-                WorldPacket p(SMSG_GROUP_SET_LEADER, 8);
-                p << master->GetObjectGuid();
-                bot->GetSession()->HandleGroupSetLeaderOpcode(p);
-                return true;
+                Player* master = GetMaster();
+                if (master && bot->GetGroup() && bot->GetGroup()->IsMember(master->GetObjectGuid()))
+                {
+                    WorldPacket p(SMSG_GROUP_SET_LEADER, 8);
+                    p << master->GetObjectGuid();
+                    bot->GetSession()->HandleGroupSetLeaderOpcode(p);
+                    return true;
+                }
+
+                return false;
             }
-
-            return false;
-        }
     };
-
 }

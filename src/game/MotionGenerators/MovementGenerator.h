@@ -148,7 +148,7 @@ class MovementGenerator
  * @tparam D Derived class type
  */
 template<class T, class D>
-class MovementGeneratorMedium : public MovementGenerator
+    class MovementGeneratorMedium : public MovementGenerator
 {
     public:
         /**
@@ -248,7 +248,7 @@ struct SelectableMovement : public FactoryHolder<MovementGenerator, MovementGene
  * @tparam REAL_MOVEMENT Type of the real movement generator.
  */
 template<class REAL_MOVEMENT>
-struct MovementGeneratorFactory : public SelectableMovement
+    struct MovementGeneratorFactory : public SelectableMovement
 {
 
     /**

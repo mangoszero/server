@@ -68,9 +68,8 @@ class ChatCommand
             bool pAllowConsole,
             bool (ChatHandler::* pHandler)(char* args),
             std::string pHelp,
-            ChatCommand* pChildCommands
-        )
-        : Id(-1)
+            ChatCommand* pChildCommands)
+                : Id(-1)
         {
             Name = pName;
             SecurityLevel = pSecurityLevel;
@@ -116,6 +115,9 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 #define RESET_MAIL_COMMAND_ARG_OPTION_ALL  "all"
 #define RESET_MAIL_COMMAND_ARG_OPTION_FROM "from"
 
+// What strange voodoo is this, this line makes no sense to me - Antz
+// for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
+
 #define BITMASK_AND_SWITCH(x) \
     for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 
@@ -128,13 +130,13 @@ enum  ResetItemCommandArgFlags
     RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING    = 0x08,
     RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK    = 0x10,
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL        =
-        (
-            RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
-            | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
-            | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
-            | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
-            | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
-        ),
+    (
+    RESET_ITEMS_COMMAND_FLAG_OPTION_EQUIPED
+    | RESET_ITEMS_COMMAND_FLAG_OPTION_BAGS
+    | RESET_ITEMS_COMMAND_FLAG_OPTION_BANK
+    | RESET_ITEMS_COMMAND_FLAG_OPTION_KEYRING
+    | RESET_ITEMS_COMMAND_FLAG_OPTION_BUYBACK
+    ),
     RESET_ITEMS_COMMAND_FLAG_OPTION_ALL_BAGS = RESET_ITEMS_COMMAND_FLAG_OPTION_ALL << 1 | 1, // Will also delete bank bags and equiped bags
 };
 
@@ -177,24 +179,24 @@ class ChatHandler
         }
 
         /**
-        * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
-        *
-        * Method:    BuildChatPacket build message chat packet generic way
-        * FullName:  ChatHandler::BuildChatPacket
-        * Access:    public static
-        * Returns:   void
-        *
-        * \param WorldPacket& data             : Provided packet will be filled with requested info
-        * \param ChatMsg msgtype               : Message type from ChatMsg enum from SharedDefines.h
-        * \param ChatTagFlags chatTag          : Chat tag from PlayerChatTag in Chat.h
-        * \param char const* message           : Message to send
-        * \param Language language             : Language from Language enum in SharedDefines.h
-        * \param ObjectGuid const& senderGuid  : May be null in some case but often required for ignore list
-        * \param char const* senderName        : Required for type *MONSTER* or *BATTLENET, but also if GM is true
-        * \param ObjectGuid const& targetGuid  : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND* or *ACHIEVEMENT
-        * \param char const* targetName        : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND*
-        * \param char const* channelName       : Required only for CHAT_MSG_CHANNEL
-        **/
+         * \brief Prepare SMSG_GM_MESSAGECHAT/SMSG_MESSAGECHAT
+         *
+         * Method:    BuildChatPacket build message chat packet generic way
+         * FullName:  ChatHandler::BuildChatPacket
+         * Access:    public static
+         * Returns:   void
+         *
+         * \param WorldPacket& data             : Provided packet will be filled with requested info
+         * \param ChatMsg msgtype               : Message type from ChatMsg enum from SharedDefines.h
+         * \param ChatTagFlags chatTag          : Chat tag from PlayerChatTag in Chat.h
+         * \param char const* message           : Message to send
+         * \param Language language             : Language from Language enum in SharedDefines.h
+         * \param ObjectGuid const& senderGuid  : May be null in some case but often required for ignore list
+         * \param char const* senderName        : Required for type *MONSTER* or *BATTLENET, but also if GM is true
+         * \param ObjectGuid const& targetGuid  : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND* or *ACHIEVEMENT
+         * \param char const* targetName        : Often null, but needed for type *MONSTER* or *BATTLENET or *BATTLEGROUND*
+         * \param char const* channelName       : Required only for CHAT_MSG_CHANNEL
+         **/
         static void BuildChatPacket(
             WorldPacket& data, ChatMsg msgtype, char const* message, Language language = LANG_UNIVERSAL, ChatTagFlags chatTag = CHAT_TAG_NONE,
             ObjectGuid const& senderGuid = ObjectGuid(), char const* senderName = NULL,
@@ -243,10 +245,10 @@ class ChatHandler
 
         bool HandleAHBotItemsAmountCommand(char* args);
         template <int Q>
-        bool HandleAHBotItemsAmountQualityCommand(char* args);
+            bool HandleAHBotItemsAmountQualityCommand(char* args);
         bool HandleAHBotItemsRatioCommand(char* args);
         template <int H>
-        bool HandleAHBotItemsRatioHouseCommand(char* args);
+            bool HandleAHBotItemsRatioHouseCommand(char* args);
         bool HandleAHBotRebuildCommand(char* args);
         bool HandleAHBotReloadCommand(char* args);
         bool HandleAHBotStatusCommand(char* args);
@@ -780,9 +782,9 @@ class ChatHandler
         bool HandleSendMoneyHelper(MailDraft& draft, char* args);
 
         template<typename T>
-        void ShowNpcOrGoSpawnInformation(uint32 guid);
+            void ShowNpcOrGoSpawnInformation(uint32 guid);
         template <typename T>
-        std::string PrepareStringNpcOrGoSpawnInformation(uint32 guid);
+            std::string PrepareStringNpcOrGoSpawnInformation(uint32 guid);
 
         /**
          * Stores informations about a deleted character

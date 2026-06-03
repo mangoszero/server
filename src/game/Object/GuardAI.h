@@ -33,11 +33,11 @@ class Creature;
 
 class GuardAI : public CreatureAI
 {
-        enum GuardState
-        {
-            STATE_NORMAL = 1,
-            STATE_LOOK_AT_VICTIM = 2
-        };
+    enum GuardState
+    {
+        STATE_NORMAL = 1,
+        STATE_LOOK_AT_VICTIM = 2
+    };
 
     public:
 

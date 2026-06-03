@@ -37,9 +37,9 @@
 #include "World.h"
 #include "Mail.h"
 
- /**********************************************************************
-    CommandTable : commandTable
-  ***********************************************************************/
+/**********************************************************************
+ CommandTable : commandTable
+ ***********************************************************************/
 enum
 {
     EARTH_STONE_ITEM = 6948,
@@ -72,8 +72,8 @@ bool ChatHandler::HandleStableCommand(char* /*args*/)
 }
 
 /**********************************************************************
-    CommandTable : resetCommandTable
-/***********************************************************************/
+ CommandTable : resetCommandTable
+ /***********************************************************************/
 static bool HandleResetStatsOrLevelHelper(Player* player)
 {
     ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(player->getClass());
@@ -637,23 +637,23 @@ int GetResetMailBitMask(char* args)
     return optionBitMask;
 }
 
-/*
-        HandleResetMailCommand
-        Default behaviour :
-        -------------------
-        - delete checked mails (even if its is GM stationery and if it contains items in it, but not deleted COD)
+/**
+ HandleResetMailCommand
+ Default behaviour :
+ -------------------
+ - delete checked mails (even if its is GM stationery and if it contains items in it, but not deleted COD)
 
-    Options :
-    ---------
-        - cod : delete only cod mail (even if it is unchecked)
-            TODO -> to improve => return cod to sender instead of delete
-        - gm : delete only GM stationery emails (even if it is unchecked)
-        - all : delete all mails (even if it is unchecked)
-        - from XXXX : delete all mails from specific sender in the slected player mailbox, name or guid
-        TODO  -> to improve, if unchecked return letter to sender to inform it was not read and purged by GM for tech. reason.
+ Options :
+ ---------
+ - cod : delete only cod mail (even if it is unchecked)
+ TODO -> to improve => return cod to sender instead of delete
+ - gm : delete only GM stationery emails (even if it is unchecked)
+ - all : delete all mails (even if it is unchecked)
+ - from XXXX : delete all mails from specific sender in the slected player mailbox, name or guid
+ TODO  -> to improve, if unchecked return letter to sender to inform it was not read and purged by GM for tech. reason.
 
-        TODO : future => handle reset mail for Offline char ?
-*/
+ TODO : future => handle reset mail for Offline char ?
+ */
 bool ChatHandler::HandleResetMailCommand(char* args)
 {
     char* firstArg = ExtractArg(&args);
@@ -763,29 +763,29 @@ bool ChatHandler::HandleResetMailCommand(char* args)
 
     BITMASK_AND_SWITCH(optionBitMask)
     {
-            case RESET_MAIL_COMMAND_FLAG_OPTION_NONE:
-            {
-                // Nothing specific to display
-                break;
-            }
+        case RESET_MAIL_COMMAND_FLAG_OPTION_NONE:
+        {
+            // Nothing specific to display
+            break;
+        }
 
-            case RESET_MAIL_COMMAND_FLAG_OPTION_COD:
-            {
-                PSendSysMessage(LANG_COMMAND_RESET_MAIL_COD, deletedCODMailCount, player->GetName());
-                break;
-            }
+        case RESET_MAIL_COMMAND_FLAG_OPTION_COD:
+        {
+            PSendSysMessage(LANG_COMMAND_RESET_MAIL_COD, deletedCODMailCount, player->GetName());
+            break;
+        }
 
-            case RESET_MAIL_COMMAND_FLAG_OPTION_GM:
-            {
-                PSendSysMessage(LANG_COMMAND_RESET_MAIL_GM, deletedGMMailCount, player->GetName());
-                break;
-            }
+        case RESET_MAIL_COMMAND_FLAG_OPTION_GM:
+        {
+            PSendSysMessage(LANG_COMMAND_RESET_MAIL_GM, deletedGMMailCount, player->GetName());
+            break;
+        }
 
-            case RESET_MAIL_COMMAND_FLAG_OPTION_FROM:
-            {
-                PSendSysMessage(LANG_COMMAND_RESET_MAIL_FROM, deletedFromMailCount, from_sender_name.c_str(), player->GetName());
-                break;
-            }
+        case RESET_MAIL_COMMAND_FLAG_OPTION_FROM:
+        {
+            PSendSysMessage(LANG_COMMAND_RESET_MAIL_FROM, deletedFromMailCount, from_sender_name.c_str(), player->GetName());
+            break;
+        }
     }
 
     if (gm != player)

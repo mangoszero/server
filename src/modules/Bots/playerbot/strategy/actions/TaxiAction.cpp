@@ -35,7 +35,9 @@ bool TaxiAction::Execute(Event event)
             {
                 float terrainZ = map->GetHeight(x, y, z);
                 if (terrainZ > INVALID_HEIGHT && terrainZ < z)
+                {
                     ground = terrainZ;
+                }
             }
 
             if (ground < z)

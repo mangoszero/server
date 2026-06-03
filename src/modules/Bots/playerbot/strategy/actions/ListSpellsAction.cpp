@@ -58,11 +58,15 @@ bool ListSpellsAction::Execute(Event event)
         alreadySeenList += ",";
 
         if (IsPositiveSpell(spellId))
+        {
             posOut << " |cffffffff|Hspell:" << spellId << "|h["
-            << pSpellInfo->SpellName[loc] << "]|h|r";
+                   << pSpellInfo->SpellName[loc] << "]|h|r";
+        }
         else
+        {
             negOut << " |cffffffff|Hspell:" << spellId << "|h["
-            << pSpellInfo->SpellName[loc] << "]|h|r";
+                   << pSpellInfo->SpellName[loc] << "]|h|r";
+        }
     }
 
     ai->TellMaster("here's my non-attack spells:");

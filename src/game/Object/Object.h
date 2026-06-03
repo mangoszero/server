@@ -522,10 +522,10 @@ class Object
         }
 
         /**
-        * method to force the update of a given flag to the client. The method is checking the index before indicating the flags need an update.
-        *
-        * \param index uint16 of the flag to be updated.
-        */
+         * method to force the update of a given flag to the client. The method is checking the index before indicating the flags need an update.
+         *
+         * \param index uint16 of the flag to be updated.
+         */
         void MarkFlagUpdateForClient(uint16 index);
         void SetFlag(uint16 index, uint32 newFlag);
         void RemoveFlag(uint16 index, uint32 oldFlag);
@@ -742,7 +742,7 @@ struct WorldObjectChangeAccumulator;
 
 class WorldObject : public Object
 {
-        friend struct WorldObjectChangeAccumulator;
+    friend struct WorldObjectChangeAccumulator;
 
     public:
 

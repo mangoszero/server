@@ -9,14 +9,14 @@ void UseFoodStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     Strategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "hungry",
+            "hungry",
         NextAction::array(0, new NextAction("food", 2.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "thirsty",
+            "thirsty",
         NextAction::array(0, new NextAction("drink", 2.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "hungry",
+            "hungry",
         NextAction::array(0, new NextAction("bandage", 1.5f), NULL)));
 }

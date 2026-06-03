@@ -51,6 +51,7 @@ class AuthCrypt
          */
         ~AuthCrypt();
 
+#if defined(CLASSIC)
         /**
          * @brief Initialize the encryption/decryption state
          */
@@ -62,7 +63,12 @@ class AuthCrypt
          * @param len Length of the key in bytes
          */
         void SetKey(uint8* key, size_t len);
-
+#else
+        /**
+         * @brief Initialize the encryption/decryption state
+         */
+        void Init(BigNumber* K);
+#endif
         /**
          * @brief Decrypt received data from client
          * @param data Pointer to data buffer to decrypt

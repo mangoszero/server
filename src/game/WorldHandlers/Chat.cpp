@@ -469,11 +469,12 @@ ChatCommand* ChatHandler::getCommandTable()
         { "tame",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcTameCommand,             "", NULL },
         { "setdeathstate",  SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSetDeathStateCommand,    "", NULL },
 
-        //{ TODO: fix or remove this commands
-        { "addweapon",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcAddWeaponCommand,        "", NULL },
-        { "name",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcNameCommand,             "", NULL },
-        { "subname",        SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSubNameCommand,          "", NULL },
-        //}
+        /**
+         * { TODO: fix or remove this commands
+         *   { "addweapon",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleNpcAddWeaponCommand,        "", NULL },
+         *   { "name",           SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcNameCommand,             "", NULL },
+         *   { "subname",        SEC_GAMEMASTER,     false, &ChatHandler::HandleNpcSubNameCommand,          "", NULL },
+         * } */
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
@@ -1155,11 +1156,11 @@ void  ChatHandler::PSendSysMessageMultiline(int32 entry, ...)
     /* Used for tracking our position within the string while iterating through it */
     std::string::size_type pos = 0, nextpos;
 
-    /* Find the next occurance of @ in the string
+    /** Find the next occurance of @ in the string
      * This is how newlines are represented */
     while ((nextpos = mangosString.find("@@", pos)) != std::string::npos)
     {
-        /* If these are not equal, it means a '@@' was found
+        /** If these are not equal, it means a '@@' was found
          * These are used to represent newlines in the string
          * It is set by the code above here */
         if (nextpos != pos)
@@ -1206,8 +1207,10 @@ void ChatHandler::CheckIntegrity(ChatCommand* table, ChatCommand* parentCommand)
         ChatCommand* command = &table[i];
 
         if (parentCommand && command->SecurityLevel < parentCommand->SecurityLevel)
+        {
             sLog.outError("Subcommand '%s' of command '%s' have less access level (%u) that parent (%u)",
-                          command->Name, parentCommand->Name, command->SecurityLevel, parentCommand->SecurityLevel);
+                command->Name, parentCommand->Name, command->SecurityLevel, parentCommand->SecurityLevel);
+        }
 
         if (!parentCommand && strlen(command->Name) == 0)
         {
@@ -1219,11 +1222,15 @@ void ChatHandler::CheckIntegrity(ChatCommand* table, ChatCommand* parentCommand)
             if (command->Handler)
             {
                 if (parentCommand)
+                {
                     sLog.outError("Subcommand '%s' of command '%s' have handler and subcommands in same time, must be used '' subcommand for handler instead.",
-                                  command->Name, parentCommand->Name);
+                        command->Name, parentCommand->Name);
+                }
                 else
+                {
                     sLog.outError("First level command '%s' have handler and subcommands in same time, must be used '' subcommand for handler instead.",
-                                  command->Name);
+                        command->Name);
+                }
             }
 
             if (parentCommand && strlen(command->Name) == 0)
@@ -1236,11 +1243,15 @@ void ChatHandler::CheckIntegrity(ChatCommand* table, ChatCommand* parentCommand)
         else if (!command->Handler)
         {
             if (parentCommand)
+            {
                 sLog.outError("Subcommand '%s' of command '%s' not have handler and subcommands in same time. Must have some from its!",
-                              command->Name, parentCommand->Name);
+                    command->Name, parentCommand->Name);
+            }
             else
+            {
                 sLog.outError("First level command '%s' not have handler and subcommands in same time. Must have some from its!",
-                              command->Name);
+                    command->Name);
+            }
         }
     }
 }
@@ -1541,8 +1552,10 @@ bool ChatHandler::SetDataForCommandInTable(ChatCommand* commandTable, uint32 id,
         case CHAT_COMMAND_OK:
         {
             if (command->SecurityLevel != security)
+            {
                 DETAIL_LOG("Table `command` overwrite for command '%s' default security (%u) by %u",
-                           fullcommand.c_str(), command->SecurityLevel, security);
+                    fullcommand.c_str(), command->SecurityLevel, security);
+            }
 
             command->Id = id;
             command->SecurityLevel = security;
@@ -1735,10 +1748,12 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand* table, const char* cmd)
     }
 
     if (childCommands)
+    {
         if (ShowHelpForSubCommands(childCommands, showCommand ? showCommand->Name : ""))
         {
             return true;
         }
+    }
 
     if (command && command->Help.empty())
     {
@@ -1756,17 +1771,15 @@ bool ChatHandler::ShowHelpForCommand(ChatCommand* table, const char* cmd)
  */
 bool ChatHandler::isValidChatMessage(const char* message)
 {
-    /*
-
-    valid examples:
-    |cffa335ee|Hitem:812:0:0:0:0:0:0:0:70|h[Glowing Brightwood Staff]|h|r
-    |cff808080|Hquest:2278:47|h[The Platinum Discs]|h|r
-    |cff4e96f7|Htalent:2232:-1|h[Taste for Blood]|h|r
-    |cff71d5ff|Hspell:21563|h[Command]|h|r
-    |cffffd000|Henchant:3919|h[Engineering: Rough Dynamite]|h|r
-
-    | will be escaped to ||
-    */
+    /**
+     * valid examples:
+     * |cffa335ee|Hitem:812:0:0:0:0:0:0:0:70|h[Glowing Brightwood Staff]|h|r
+     * |cff808080|Hquest:2278:47|h[The Platinum Discs]|h|r
+     * |cff4e96f7|Htalent:2232:-1|h[Taste for Blood]|h|r
+     * |cff71d5ff|Hspell:21563|h[Command]|h|r
+     * |cffffd000|Henchant:3919|h[Engineering: Rough Dynamite]|h|r
+     * | will be escaped to ||
+     */
 
     if (strlen(message) > 255)
     {
@@ -1950,7 +1963,7 @@ bool ChatHandler::isValidChatMessage(const char* message)
                     if (color != ItemQualityColors[linkedItem->Quality])
                     {
                         DEBUG_LOG("ChatHandler::isValidChatMessage linked item has color %u, but user claims %u", ItemQualityColors[linkedItem->Quality],
-                                  color);
+                            color);
                         return false;
                     }
 
@@ -2583,10 +2596,10 @@ char* ChatHandler::ExtractLiteralArg(char** args, char const* lit /*= NULL*/)
     // reject quoted string or link (|-started text)
     switch (head[0])
     {
-            // reject quoted string
+        // reject quoted string
         case '[': case '\'': case '"':
             return NULL;
-            // reject link (|-started text)
+        // reject link (|-started text)
         case '|':
             // client replace all | by || in raw text
             if (head[1] != '|')
@@ -3177,9 +3190,9 @@ enum SpellLinkType
 
 static char const* const spellKeys[] =
 {
-    "Hspell",                                               // normal spell
-    "Htalent",                                              // talent spell
-    "Henchant",                                             // enchanting recipe spell
+        "Hspell",                                               // normal spell
+        "Htalent",                                              // talent spell
+        "Henchant",                                             // enchanting recipe spell
     NULL
 };
 
@@ -3279,9 +3292,9 @@ enum GuidLinkType
 
 static char const* const guidKeys[] =
 {
-    "Hplayer",
-    "Hcreature",
-    "Hgameobject",
+        "Hplayer",
+        "Hcreature",
+        "Hgameobject",
     NULL
 };
 
@@ -3378,15 +3391,15 @@ enum LocationLinkType
 
 static char const* const locationKeys[] =
 {
-    "Htele",
-    "Htaxinode",
-    "Hplayer",
-    "Hcreature",
-    "Hgameobject",
-    "Hcreature_entry",
-    "Hgameobject_entry",
-    "Hareatrigger",
-    "Hareatrigger_target",
+        "Htele",
+        "Htaxinode",
+        "Hplayer",
+        "Hcreature",
+        "Hgameobject",
+        "Hcreature_entry",
+        "Hgameobject_entry",
+        "Hareatrigger",
+        "Hareatrigger_target",
     NULL
 };
 
@@ -3738,7 +3751,9 @@ bool ChatHandler::ExtractPlayerTarget(char** args, Player** player /*= NULL*/, O
             uint32 accountId = GetAccountId();
             auto itr = m_consoleSelectedPlayers.find(accountId);
             if (itr != m_consoleSelectedPlayers.end())
+            {
                 guid = itr->second;
+            }
         }
 
         // if allowed player guid (if no then only online players allowed)
@@ -3750,21 +3765,29 @@ bool ChatHandler::ExtractPlayerTarget(char** args, Player** player /*= NULL*/, O
         if (player_name)
         {
             if (pl)
+            {
                 *player_name = pl->GetName();
+            }
             else if (guid)
             {
                 std::string name;
                 if (!sObjectMgr.GetPlayerNameByGUID(guid, name) || name.empty())
                 {
                     if (player_guid)
+                    {
                         *player_guid = ObjectGuid();
+                    }
                     *player_name = "";
                 }
                 else
+                {
                     *player_name = name;
+                }
             }
             else
+            {
                 *player_name = "";
+            }
         }
     }
 
@@ -4188,20 +4211,20 @@ void ChatHandler::LogCommand(char const* fullcmd)
         Player* p = m_session->GetPlayer();
         ObjectGuid sel_guid = p->GetSelectionGuid();
         sLog.outCommand(GetAccountId(), "Command: %s [Player: %s (Account: %u) X: %f Y: %f Z: %f Map: %u Selected: %s]",
-                        fullcmd, p->GetName(), GetAccountId(), p->GetPositionX(), p->GetPositionY(), p->GetPositionZ(), p->GetMapId(),
-                        sel_guid.GetString().c_str());
+            fullcmd, p->GetName(), GetAccountId(), p->GetPositionX(), p->GetPositionY(), p->GetPositionZ(), p->GetMapId(),
+            sel_guid.GetString().c_str());
     }
     else                                        // 0 account -> console
     {
         sLog.outCommand(GetAccountId(), "Command: %s [Account: %u from %s]",
-                        fullcmd, GetAccountId(), GetAccountId() ? "RA-connection" : "Console");
+            fullcmd, GetAccountId(), GetAccountId() ? "RA-connection" : "Console");
     }
 }
 
 void ChatHandler::BuildChatPacket(WorldPacket& data, ChatMsg msgtype, char const* message, Language language /*= LANG_UNIVERSAL*/, ChatTagFlags chatTag /*= CHAT_TAG_NONE*/,
-                                  ObjectGuid const& senderGuid /*= ObjectGuid()*/, char const* senderName /*= NULL*/,
-                                  ObjectGuid const& targetGuid /*= ObjectGuid()*/, char const* /*targetName*/ /*= NULL*/,
-                                  char const* channelName /*= NULL*/, uint8 playerRank /*= 0*/)
+    ObjectGuid const& senderGuid /*= ObjectGuid()*/, char const* senderName /*= NULL*/,
+    ObjectGuid const& targetGuid /*= ObjectGuid()*/, char const* /*targetName*/ /*= NULL*/,
+    char const* channelName /*= NULL*/, uint8 playerRank /*= 0*/)
 {
     data.Initialize(SMSG_MESSAGECHAT);
     data << uint8(msgtype);
@@ -4477,11 +4500,11 @@ template std::string ChatHandler::PrepareStringNpcOrGoSpawnInformation<GameObjec
  */
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster)
 {
-    // We assume the spellInfo has been checked and teh spell has aura effects
-    /*
-        if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
-        !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
-    */
+    // We assume the spellInfo has been checked and the spell has aura effects
+    /**
+     * if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
+     * !spellInfo->HasSpellEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
+     */
     if (!spellInfo)
     {
         return false;

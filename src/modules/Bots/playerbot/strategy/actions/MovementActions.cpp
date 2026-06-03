@@ -53,7 +53,9 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool unsafe
     }
 
     if (!unsafe && ai->HasStrategy("cautious") && IsAggroPosition(x, y))
+    {
         return false;
+    }
 
     float distance = bot->GetDistance(x, y, z);
     if (distance > sPlayerbotAIConfig.contactDistance)
@@ -136,12 +138,16 @@ bool MovementAction::MoveTo(Unit* target, float distance)
                 bestAngle    = travelAngle + delta;
             }
             if (bestSafeDist >= travelDist)
+            {
                 break;
+            }
         }
 
         float moveDist = std::min(bestSafeDist, travelDist);
         if (moveDist < sPlayerbotAIConfig.contactDistance)
+        {
             return false;
+        }
         dx = cos(bestAngle) * moveDist + bx;
         dy = sin(bestAngle) * moveDist + by;
     }
@@ -211,12 +217,12 @@ bool MovementAction::IsMovingAllowed(uint32 mapId, float x, float y, float z)
 bool MovementAction::IsMovingAllowed()
 {
     if (bot->IsFrozen() || bot->IsPolymorphed() ||
-            (bot->IsDead() && !bot->GetCorpse()) ||
-            bot->IsBeingTeleported() ||
-            bot->GetTransport() ||
-            bot->IsInRoots() ||
-            bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || bot->IsCharmed() ||
-            bot->HasAuraType(SPELL_AURA_MOD_STUN) || bot->IsTaxiFlying())
+        (bot->IsDead() && !bot->GetCorpse()) ||
+        bot->IsBeingTeleported() ||
+        bot->GetTransport() ||
+        bot->IsInRoots() ||
+        bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || bot->IsCharmed() ||
+        bot->HasAuraType(SPELL_AURA_MOD_STUN) || bot->IsTaxiFlying())
         return false;
 
     MotionMaster &mm = *bot->GetMotionMaster();
@@ -248,8 +254,8 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
         mm.Clear();
         bot->movespline->_Interrupt();
         bot->NearTeleportTo(master->GetPositionX(),
-                            master->GetPositionY(),
-                            master->GetPositionZ(), bot->GetOrientation());
+            master->GetPositionY(),
+            master->GetPositionZ(), bot->GetOrientation());
         bot->SetTransport(transport);
         transport->AddPassenger(bot);
         bot->m_movementInfo.SetTransportData(
@@ -259,7 +265,7 @@ bool MovementAction::FollowOnTransport(Unit* target, Player* master)
             master->m_movementInfo.GetTransportPos()->z,
             bot->GetOrientation(),
             getMSTime()
-        );
+            );
         bot->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
 
         WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
@@ -304,11 +310,11 @@ bool MovementAction::FollowOffTransport(Unit* target, Player* master)
         bot->m_movementInfo.ClearTransportData();
         bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
         bot->TeleportTo(master->GetMapId(),
-                       master->GetPositionX(),
-                       master->GetPositionY(),
-                       master->GetPositionZ(),
-                       bot->GetOrientation(),
-                       TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
+            master->GetPositionX(),
+            master->GetPositionY(),
+            master->GetPositionZ(),
+            bot->GetOrientation(),
+            TELE_TO_NOT_LEAVE_COMBAT | TELE_TO_NOT_UNSUMMON_PET);
         WorldPacket data(MSG_MOVE_HEARTBEAT, 64);
         data << bot->GetPackGUID();
         bot->m_movementInfo.Write(data);
@@ -341,14 +347,20 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     if (master  && bot->GetTransport() != master->GetTransport())
     {
         if(bot->GetTransport())
+        {
             return FollowOffTransport(target, master);
+        }
         else
-        if (master->GetTransport()) // master on transport
-            return FollowOnTransport(target, master);
+        {
+            if (master->GetTransport()) // master on transport
+            {
+                return FollowOnTransport(target, master);
+            }
+        }
     }
 
     if (bot->GetDistance2d(target->GetPositionX(), target->GetPositionY()) <= sPlayerbotAIConfig.sightDistance &&
-            abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
+        abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance)
     {
         mm.Clear();
         float x = bot->GetPositionX(), y = bot->GetPositionY(), z = target->GetPositionZ();
@@ -393,7 +405,9 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     float followX = target->GetPositionX() + cos(angle) * distance;
     float followY = target->GetPositionY() + sin(angle) * distance;
     if (IsAggroPosition(followX, followY))
+    {
         return false;
+    }
 
     mm.MoveFollow(target, distance, angle);
 
@@ -454,13 +468,13 @@ bool MovementAction::Flee(Unit *target)
     return MoveTo(target->GetMapId(), rx, ry, rz);
 }
 
-/*
+/**
  * Returns the farthest distance along the beeline from (bx,by) at the
  * given angle that doesn't enter any hostile creature's aggro zone.
  * Returns maxDist if the entire path is clear.
  */
 float MovementAction::CalculateAggroFreeDistance(float bx, float by,
-                                                  float angle, float maxDist)
+    float angle, float maxDist)
 {
     if( !ai->HasStrategy("cautious"))
     {
@@ -475,11 +489,15 @@ float MovementAction::CalculateAggroFreeDistance(float bx, float by,
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !unit->IsAlive() || unit->IsInCombat() || !unit->IsHostileTo(bot) || unit == bot->getVictim())
+        {
             continue;
+        }
 
         Creature* creature = dynamic_cast<Creature*>(unit);
         if (!creature || !creature->CanInitiateAttack())
+        {
             continue;
+        }
 
         float aggroRange = creature->GetAttackDistance(bot);
         float ex = bx - creature->GetPositionX();
@@ -489,7 +507,9 @@ float MovementAction::CalculateAggroFreeDistance(float bx, float by,
 
         float disc = b * b - c;
         if (disc < 0)
+        {
             continue;
+        }
 
         float sqrtDisc = sqrt(disc);
         float tEntry = -b - sqrtDisc;
@@ -516,7 +536,9 @@ bool MovementAction::IsAggroPosition(float x, float y)
     float dy = y - by;
     float dist = sqrt(dx * dx + dy * dy);
     if (dist < 0.1f)
+    {
         return false;
+    }
 
     float angle = atan2(dy, dx);
     return CalculateAggroFreeDistance(bx, by, angle, dist) < dist;
@@ -530,7 +552,7 @@ bool FleeAction::Execute(Event event)
 bool FleeAction::isUseful()
 {
     return AI_VALUE(uint8, "attacker count") > 0 &&
-            AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.tooCloseDistance;
+        AI_VALUE2(float, "distance", "current target") <= sPlayerbotAIConfig.tooCloseDistance;
 }
 
 bool RunAwayAction::Execute(Event event)
@@ -665,7 +687,9 @@ bool JumpAction::Execute(Event event)
     if (param == "forward")
     {
         if (ai->IsJumping())
+        {
             return false;
+        }
         ai->StartJump(true);
         return true;
     }
@@ -673,10 +697,14 @@ bool JumpAction::Execute(Event event)
     if (param == "master")
     {
         if (ai->IsJumping())
+        {
             return false;
+        }
         Player* master = ai->GetMaster();
         if (!master)
+        {
             return false;
+        }
         float angle = bot->GetAngle(master);
         bot->SetFacingTo(angle);
         ai->StartJump(true, angle);
@@ -686,13 +714,17 @@ bool JumpAction::Execute(Event event)
     if (param == "here")
     {
         if (ai->IsJumping() || ai->IsPendingJump())
+        {
             return false;
+        }
         ai->RequestJump();
         return ai->IsPendingJump();
     }
 
     if (ai->IsJumping())
+    {
         return false;
+    }
 
     ai->StartJump(false);
     return true;

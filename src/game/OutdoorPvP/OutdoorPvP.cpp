@@ -29,10 +29,9 @@
 #include "Player.h"
 
 /**
-    Function that adds a player to the players of the affected outdoor pvp zones
-
-    @param   player to add
-    @param   whether zone is main outdoor pvp zone or a affected zone
+ * Function that adds a player to the players of the affected outdoor pvp zones
+ * @param   player to add
+ * @param   whether zone is main outdoor pvp zone or a affected zone
  */
 void OutdoorPvP::HandlePlayerEnterZone(Player* player, bool isMainZone)
 {
@@ -40,10 +39,9 @@ void OutdoorPvP::HandlePlayerEnterZone(Player* player, bool isMainZone)
 }
 
 /**
-    Function that removes a player from the players of the affected outdoor pvp zones
-
-    @param   player to remove
-    @param   whether zone is main outdoor pvp zone or a affected zone
+ * Function that removes a player from the players of the affected outdoor pvp zones
+ * @param   player to remove
+ * @param   whether zone is main outdoor pvp zone or a affected zone
  */
 void OutdoorPvP::HandlePlayerLeaveZone(Player* player, bool isMainZone)
 {
@@ -60,10 +58,10 @@ void OutdoorPvP::HandlePlayerLeaveZone(Player* player, bool isMainZone)
 }
 
 /**
-    Function that updates the world state for all the players of the outdoor pvp zone
+ * Function that updates the world state for all the players of the outdoor pvp zone
 
-    @param   world state to update
-    @param   new world state value
+ * @param   world state to update
+ * @param   new world state value
  */
 void OutdoorPvP::SendUpdateWorldState(uint32 field, uint32 value)
 {
@@ -121,10 +119,9 @@ void OutdoorPvP::HandleGameObjectRemove(GameObject* go)
 }
 
 /**
-    Function that handles player kills in the main outdoor pvp zones
-
-    @param   player who killed another player
-    @param   victim who was killed
+ * Function that handles player kills in the main outdoor pvp zones
+ * @param   player who killed another player
+ * @param   victim who was killed
  */
 void OutdoorPvP::HandlePlayerKill(Player* killer, Player* victim)
 {

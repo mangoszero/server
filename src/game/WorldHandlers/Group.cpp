@@ -162,14 +162,14 @@ bool Group::Create(ObjectGuid guid, const char* name)
         CharacterDatabase.PExecute("DELETE FROM `group_member` WHERE `groupId` ='%u'", m_Id);
 
         CharacterDatabase.PExecute("INSERT INTO `groups` (`groupId`,`leaderGuid`,`mainTank`,`mainAssistant`,`lootMethod`,`looterGuid`,`lootThreshold`,`icon1`,`icon2`,`icon3`,`icon4`,`icon5`,`icon6`,`icon7`,`icon8`,`isRaid`) "
-                                   "VALUES ('%u','%u','%u','%u','%u','%u','%u','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','%u')",
-                                   m_Id, m_leaderGuid.GetCounter(), m_mainTankGuid.GetCounter(), m_mainAssistantGuid.GetCounter(), uint32(m_lootMethod),
-                                   m_looterGuid.GetCounter(), uint32(m_lootThreshold),
-                                   m_targetIcons[0].GetRawValue(), m_targetIcons[1].GetRawValue(),
-                                   m_targetIcons[2].GetRawValue(), m_targetIcons[3].GetRawValue(),
-                                   m_targetIcons[4].GetRawValue(), m_targetIcons[5].GetRawValue(),
-                                   m_targetIcons[6].GetRawValue(), m_targetIcons[7].GetRawValue(),
-                                   isRaidGroup());
+            "VALUES ('%u','%u','%u','%u','%u','%u','%u','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','" UI64FMTD "','%u')",
+            m_Id, m_leaderGuid.GetCounter(), m_mainTankGuid.GetCounter(), m_mainAssistantGuid.GetCounter(), uint32(m_lootMethod),
+            m_looterGuid.GetCounter(), uint32(m_lootThreshold),
+            m_targetIcons[0].GetRawValue(), m_targetIcons[1].GetRawValue(),
+            m_targetIcons[2].GetRawValue(), m_targetIcons[3].GetRawValue(),
+            m_targetIcons[4].GetRawValue(), m_targetIcons[5].GetRawValue(),
+            m_targetIcons[6].GetRawValue(), m_targetIcons[7].GetRawValue(),
+            isRaidGroup());
     }
 
     if (!AddMember(guid, name))
@@ -280,10 +280,13 @@ void Group::ConvertToRaid()
 
     // update quest related GO states (quest activity dependent from raid membership)
     for (member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
+    {
+
         if (Player* player = sObjectMgr.GetPlayer(citr->guid))
         {
             player->UpdateForQuestWorldObjects();
         }
+    }
 }
 
 /**
@@ -379,11 +382,12 @@ void Group::RemoveAllInvites()
 Player* Group::GetInvited(ObjectGuid guid) const
 {
     for (InvitesList::const_iterator itr = m_invitees.begin(); itr != m_invitees.end(); ++itr)
+    {
         if ((*itr)->GetObjectGuid() == guid)
         {
             return (*itr);
         }
-
+    }
     return NULL;
 }
 
@@ -703,7 +707,7 @@ void Group::Disband(bool hideDestroy)
  *
  * \param pPlayer Pointer to the player towards the update needs to be sent.
  *
-*/
+ */
 void Group::SendUpdateToPlayer(Player* pPlayer)
 {
     if (!pPlayer || !pPlayer->GetSession() || !pPlayer->IsInWorld() || pPlayer->GetGroup() != this)
@@ -1059,10 +1063,10 @@ void Group::GroupLoot(WorldObject* pSource, Loot* loot)
 
         // only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            {
-                lootItem.is_underthreshold = 0;
-                StartLootRoll(pSource, GROUP_LOOT, loot, itemSlot);
-            }
+        {
+            lootItem.is_underthreshold = 0;
+            StartLootRoll(pSource, GROUP_LOOT, loot, itemSlot);
+        }
         else
         {
             lootItem.is_underthreshold = 1;
@@ -1090,10 +1094,10 @@ void Group::NeedBeforeGreed(WorldObject* pSource, Loot* loot)
 
         // only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            {
-                lootItem.is_underthreshold = 0;
-                StartLootRoll(pSource, NEED_BEFORE_GREED, loot, itemSlot);
-            }
+        {
+            lootItem.is_underthreshold = 0;
+            StartLootRoll(pSource, NEED_BEFORE_GREED, loot, itemSlot);
+        }
         else
         {
             lootItem.is_underthreshold = 1;
@@ -1167,10 +1171,12 @@ bool Group::CountRollVote(Player* player, ObjectGuid const& lootedTarget, uint32
 {
     Rolls::iterator rollI = RollId.begin();
     for (; rollI != RollId.end(); ++rollI)
+    {
         if ((*rollI)->isValid() && (*rollI)->lootedTargetGUID == lootedTarget && (*rollI)->itemSlot == itemSlot)
         {
             break;
         }
+    }
 
     if (rollI == RollId.end())
     {
@@ -1201,10 +1207,12 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     }
 
     if (roll->getLoot())
+    {
         if (roll->getLoot()->items.empty())
         {
             return false;
         }
+    }
 
     switch (vote)
     {
@@ -1522,11 +1530,15 @@ void Group::SetTargetIcon(uint8 id, ObjectGuid targetGuid)
 
     // clean other icons
     if (targetGuid)
+    {
         for (int i = 0; i < TARGET_ICON_COUNT; ++i)
+        {
             if (m_targetIcons[i] == targetGuid)
             {
                 SetTargetIcon(i, ObjectGuid());
             }
+        }
+    }
 
     m_targetIcons[id] = targetGuid;
 
@@ -1555,8 +1567,8 @@ static void GetDataForXPAtKill_helper(Player* player, Unit const* victim, uint32
     }
 
     uint32 gray_level = MaNGOS::XP::GetGrayLevel(player->getLevel());
-    if (victim->getLevel() > gray_level && (!not_gray_member_with_max_level
-                                            || not_gray_member_with_max_level->getLevel() < player->getLevel()))
+    if (victim->getLevel() > gray_level && (!not_gray_member_with_max_level ||
+        not_gray_member_with_max_level->getLevel() < player->getLevel()))
     {
         not_gray_member_with_max_level = player;
     }
@@ -1710,11 +1722,15 @@ void Group::UpdatePlayerOutOfRange(Player* pPlayer)
     pPlayer->GetSession()->BuildPartyMemberStatsChangedPacket(pPlayer, &data);
 
     for (GroupReference* itr = GetFirstMember(); itr != NULL; itr = itr->next())
+    {
         if (Player* player = itr->getSource())
+        {
             if (player != pPlayer && !player->HaveAtClient(pPlayer))
             {
                 player->GetSession()->SendPacket(&data);
             }
+        }
+    }
 }
 
 /**
@@ -1753,10 +1769,12 @@ void Group::BroadcastReadyCheck(WorldPacket* packet)
     {
         Player* pl = itr->getSource();
         if (pl && pl->GetSession())
+        {
             if (IsLeader(pl->GetObjectGuid()) || IsAssistant(pl->GetObjectGuid()))
             {
                 pl->GetSession()->SendPacket(packet);
             }
+        }
     }
 }
 
@@ -1867,10 +1885,12 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
         {
             // if the same group invites the player back, cancel the homebind timer
             if (InstanceGroupBind* bind = GetBoundInstance(player->GetMapId()))
+            {
                 if (bind->state->GetInstanceId() == player->GetInstanceId())
                 {
                     player->m_InstanceValid = true;
                 }
+            }
         }
     }
 
@@ -1886,7 +1906,7 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     {
         // insert into group table
         CharacterDatabase.PExecute("INSERT INTO `group_member` (`groupId`,`memberGuid`,`assistant`,`subgroup`) VALUES ('%u','%u','%u','%u')",
-                                   m_Id, member.guid.GetCounter(), ((member.assistant == 1) ? 1 : 0), member.group);
+            m_Id, member.guid.GetCounter(), ((member.assistant == 1) ? 1 : 0), member.group);
     }
 
     return true;
@@ -1977,9 +1997,9 @@ void Group::_setLeader(ObjectGuid guid)
         // in the DB also remove solo binds that will be replaced with permbinds
         // from the new leader
         CharacterDatabase.PExecute(
-            "DELETE FROM `group_instance` WHERE `leaderguid`='%u' AND (`permanent` = 1 OR "
-            "`instance` IN (SELECT `instance` FROM `character_instance` WHERE `guid` = '%u')"
-            ")", leader_lowguid, slot_lowguid);
+                "DELETE FROM `group_instance` WHERE `leaderguid`='%u' AND (`permanent` = 1 OR "
+                "`instance` IN (SELECT `instance` FROM `character_instance` WHERE `guid` = '%u')"
+                ")", leader_lowguid, slot_lowguid);
 
         Player* player = sObjectMgr.GetPlayer(slot->guid);
 
@@ -2001,7 +2021,7 @@ void Group::_setLeader(ObjectGuid guid)
 
         // update the group's solo binds to the new leader
         CharacterDatabase.PExecute("UPDATE `group_instance` SET `leaderGuid`='%u' WHERE `leaderGuid` = '%u'",
-                                   slot_lowguid, leader_lowguid);
+            slot_lowguid, leader_lowguid);
 
         // copy the permanent binds from the new leader to the group
         // overwriting the solo binds with permanent ones if necessary
@@ -2177,8 +2197,10 @@ bool Group::_setMainAssistant(ObjectGuid guid)
     m_mainAssistantGuid = guid;
 
     if (!isBGGroup())
+    {
         CharacterDatabase.PExecute("UPDATE `groups` SET `mainAssistant`='%u' WHERE `groupId`='%u'",
-                                   m_mainAssistantGuid.GetCounter(), m_Id);
+            m_mainAssistantGuid.GetCounter(), m_Id);
+    }
 
     return true;
 }
@@ -2482,10 +2504,12 @@ void Group::ResetInstances(InstanceResetMethod method, Player* SendMsgTo)
         bool isEmpty = true;
         // if the map is loaded, reset it
         if (Map* map = sMapMgr.FindMap(state->GetMapId(), state->GetInstanceId()))
+        {
             if (map->IsDungeon() && !(method == INSTANCE_RESET_GROUP_DISBAND && !state->CanReset()))
             {
                 isEmpty = ((DungeonMap*)map)->Reset(method);
             }
+        }
 
         if (SendMsgTo)
         {
@@ -2566,13 +2590,19 @@ InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool per
         {
             // when a boss is killed or when copying the players's binds to the group
             if (permanent != bind.perm || state != bind.state)
+            {
                 if (!load)
+                {
                     CharacterDatabase.PExecute("UPDATE `group_instance` SET `instance` = '%u', `permanent` = '%u' WHERE `leaderGuid` = '%u' AND `instance` = '%u'",
-                                               state->GetInstanceId(), permanent, GetLeaderGuid().GetCounter(), bind.state->GetInstanceId());
+                        state->GetInstanceId(), permanent, GetLeaderGuid().GetCounter(), bind.state->GetInstanceId());
+                }
+            }
         }
         else if (!load)
+        {
             CharacterDatabase.PExecute("INSERT INTO `group_instance` (`leaderGuid`, `instance`, `permanent`) VALUES ('%u', '%u', '%u')",
-                                       GetLeaderGuid().GetCounter(), state->GetInstanceId(), permanent);
+                GetLeaderGuid().GetCounter(), state->GetInstanceId(), permanent);
+        }
 
         if (bind.state != state)
         {
@@ -2586,8 +2616,10 @@ InstanceGroupBind* Group::BindToInstance(DungeonPersistentState* state, bool per
         bind.state = state;
         bind.perm = permanent;
         if (!load)
+        {
             DEBUG_LOG("Group::BindToInstance: Group (Id: %d) is now bound to map %d, instance %d",
-                      GetId(), state->GetMapId(), state->GetInstanceId());
+                GetId(), state->GetMapId(), state->GetInstanceId());
+        }
         return &bind;
     }
     else
@@ -2608,8 +2640,10 @@ void Group::UnbindInstance(uint32 mapid, bool unload)
     if (itr != m_boundInstances.end())
     {
         if (!unload)
+        {
             CharacterDatabase.PExecute("DELETE FROM `group_instance` WHERE `leaderGuid` = '%u' AND `instance` = '%u'",
-                                       GetLeaderGuid().GetCounter(), itr->second.state->GetInstanceId());
+                GetLeaderGuid().GetCounter(), itr->second.state->GetInstanceId());
+        }
         itr->second.state->RemoveGroup(this);               // save can become invalid
         m_boundInstances.erase(itr);
     }

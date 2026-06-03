@@ -221,7 +221,7 @@ void PlayerMenu::SendGossipMenu(uint32 TitleTextId, ObjectGuid objectGuid)
         data << uint8(gItem.m_gCoded);                      // makes pop up box password
         //data << uint32(gItem.m_gBoxMoney);
         data << gItem.m_gMessage;                           // text for gossip item, max 0x800
-       // data << gItem.m_gBoxMessage;
+        // data << gItem.m_gBoxMessage;
     }
 
     data << uint32(mQuestMenu.MenuItemCount()); // max count 0x20

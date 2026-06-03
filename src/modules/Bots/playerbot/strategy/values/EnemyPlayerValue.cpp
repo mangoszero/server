@@ -8,24 +8,22 @@ using namespace std;
 
 class FindEnemyPlayerStrategy : public FindTargetStrategy
 {
-public:
-    FindEnemyPlayerStrategy(PlayerbotAI* ai) : FindTargetStrategy(ai)
-    {
-    }
+    public:
+        FindEnemyPlayerStrategy(PlayerbotAI* ai) : FindTargetStrategy(ai)
+        {}
 
-public:
-    virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager)
-    {
-        if (!result)
+    public:
+        virtual void CheckAttacker(Unit* attacker, ThreatManager* threatManager)
         {
-            Player* enemy = dynamic_cast<Player*>(attacker);
-            if (enemy && ai->IsOpposing(enemy) && enemy->IsPvP())
+            if (!result)
             {
-                result = attacker;
+                Player* enemy = dynamic_cast<Player*>(attacker);
+                if (enemy && ai->IsOpposing(enemy) && enemy->IsPvP())
+                {
+                    result = attacker;
+                }
             }
         }
-    }
-
 };
 
 Unit* EnemyPlayerValue::Calculate()

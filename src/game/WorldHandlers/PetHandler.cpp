@@ -290,10 +290,12 @@ void WorldSession::HandlePetAction(WorldPacket& recv_data)
                     }
                 }
                 if (Unit* powner = pet->GetCharmerOrOwner())
+                {
                     if (powner->GetTypeId() == TYPEID_PLAYER)
                     {
                         pet->SendCreateUpdateToPlayer((Player*)powner);
                     }
+                }
                 result = SPELL_CAST_OK;
             }
 
@@ -523,9 +525,9 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
             UnitActionBarEntry const* actionEntry_1 = charmInfo->GetActionBarEntry(position[1]);
             if (!actionEntry_1 || spell_id_0 != actionEntry_1->GetAction() ||
                 act_state_0 != actionEntry_1->GetType())
-                {
-                    return;
-                }
+            {
+                return;
+            }
         }
 
         uint8 act_state_1 = UNIT_ACTION_BUTTON_TYPE(data[1]);
@@ -535,9 +537,9 @@ void WorldSession::HandlePetSetAction(WorldPacket& recv_data)
             UnitActionBarEntry const* actionEntry_0 = charmInfo->GetActionBarEntry(position[0]);
             if (!actionEntry_0 || spell_id_1 != actionEntry_0->GetAction() ||
                 act_state_1 != actionEntry_0->GetType())
-                {
-                    return;
-                }
+            {
+                return;
+            }
         }
     }
 
@@ -601,9 +603,9 @@ void WorldSession::HandlePetRename(WorldPacket& recv_data)
     if (!pet || pet->getPetType() != HUNTER_PET ||
         !pet->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_RENAME) ||
         pet->GetOwnerGuid() != _player->GetObjectGuid() || !pet->GetCharmInfo())
-        {
-            return;
-        }
+    {
+        return;
+    }
 
     PetNameInvalidReason res = ObjectMgr::CheckPetName(name);
     if (res != PET_NAME_SUCCESS)
@@ -721,11 +723,15 @@ void WorldSession::HandlePetUnlearnOpcode(WorldPacket& recvPacket)
     pet->SetTP(pet->getLevel() * (pet->GetLoyaltyLevel() - 1));
 
     for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
+    {
         if (UnitActionBarEntry const* ab = charmInfo->GetActionBarEntry(i))
+        {
             if (ab->GetAction() && ab->IsActionBarForSpell())
             {
                 charmInfo->SetActionBar(i, 0, ACT_DISABLED);
             }
+        }
+    }
 
     // relearn pet passives
     pet->LearnPetPassives();

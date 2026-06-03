@@ -54,16 +54,17 @@
 #include "SocialMgr.h"
 #include "Util.h"
 
-/* differences from off:
-    -you can uninvite yourself - is is useful
-    -you can accept invitation even if leader went offline
-*/
-/* todo:
-    -group_destroyed msg is sent but not shown
-    -reduce xp gaining when in raid group
-    -quest sharing has to be corrected
-    -FIX sending PartyMemberStats
-*/
+/** differences from off:
+ *  - you can uninvite yourself - it is useful
+ *  - you can accept invitation even if leader went offline
+ */
+
+/** todo:
+ * - group_destroyed msg is sent but not shown
+ * - reduce xp gaining when in raid group
+ * - quest sharing has to be corrected
+ * - FIX sending PartyMemberStats
+ */
 
 /**
  * @brief Sends a party operation result packet to the client.
@@ -215,7 +216,7 @@ void WorldSession::HandleGroupAcceptOpcode(WorldPacket& /*recv_data*/)
     if (group->GetLeaderGuid() == GetPlayer()->GetObjectGuid())
     {
         sLog.outError("HandleGroupAcceptOpcode: %s tried to accept an invite to his own group",
-                      GetPlayer()->GetGuidStr().c_str());
+            GetPlayer()->GetGuidStr().c_str());
         return;
     }
 
@@ -605,9 +606,9 @@ void WorldSession::HandleRaidTargetUpdateOpcode(WorldPacket& recv_data)
     {
         if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
             !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-            {
-                return;
-            }
+        {
+            return;
+        }
 
         ObjectGuid guid;
         recv_data >> guid;
@@ -674,9 +675,9 @@ void WorldSession::HandleGroupChangeSubGroupOpcode(WorldPacket& recv_data)
     /** error handling **/
     if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
         !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-        {
-            return;
-        }
+    {
+        return;
+    }
 
     if (!group->HasFreeSlotSubGroup(groupNr))
     {
@@ -791,9 +792,9 @@ void WorldSession::HandleRaidReadyCheckOpcode(WorldPacket& recv_data)
         /** error handling **/
         if (!group->IsLeader(GetPlayer()->GetObjectGuid()) &&
             !group->IsAssistant(GetPlayer()->GetObjectGuid()))
-            {
-                return;
-            }
+        {
+            return;
+        }
 
         /********************/
 
@@ -861,10 +862,12 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player* player, WorldPacke
 
     uint32 byteCount = 0;
     for (int i = 0; i < GROUP_UPDATE_FLAGS_COUNT; ++i)
+    {
         if (mask & (1 << i))
         {
             byteCount += GroupUpdateLength[i];
         }
+    }
 
     data->Initialize(SMSG_PARTY_MEMBER_STATS, 8 + 4 + byteCount);
     *data << player->GetPackGUID();

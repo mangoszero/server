@@ -31,8 +31,8 @@
  * @brief ConfusedMovementGenerator is a movement generator that makes a unit move in a confused manner.
  */
 template<class T>
-class ConfusedMovementGenerator
-    : public MovementGeneratorMedium< T, ConfusedMovementGenerator<T> >
+    class ConfusedMovementGenerator
+        : public MovementGeneratorMedium< T, ConfusedMovementGenerator<T> >
 {
     public:
         /**

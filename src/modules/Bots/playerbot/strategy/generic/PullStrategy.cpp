@@ -7,17 +7,17 @@ using namespace ai;
 
 class MagePullMultiplier : public PassiveMultiplier
 {
-public:
-    MagePullMultiplier(PlayerbotAI* ai, string action) : PassiveMultiplier(ai)
-    {
-        this->action = action;
-    }
+    public:
+        MagePullMultiplier(PlayerbotAI* ai, string action) : PassiveMultiplier(ai)
+        {
+            this->action = action;
+        }
 
-public:
-    virtual float GetValue(Action* action);
+    public:
+        virtual float GetValue(Action* action);
 
-private:
-    string action;
+    private:
+        string action;
 };
 
 float MagePullMultiplier::GetValue(Action* action)

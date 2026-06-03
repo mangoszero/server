@@ -87,6 +87,8 @@ namespace Movement
      */
     class MoveSpline
     {
+        friend class PacketBuilder;
+
         public:
             /**
              * @brief Typedef for the spline type used.
@@ -103,8 +105,6 @@ namespace Movement
                 Result_NextCycle    = 0x04,
                 Result_NextSegment  = 0x08,
             };
-
-            friend class PacketBuilder;
 
         protected:
             MySpline        spline; /**< The spline representing the path. */
@@ -215,7 +215,7 @@ namespace Movement
              * @param handler The handler to process the update result.
              */
             template<class UpdateHandler>
-            void updateState(int32 difftime, UpdateHandler& handler)
+                void updateState(int32 difftime, UpdateHandler& handler)
             {
                 MANGOS_ASSERT(Initialized());
                 do

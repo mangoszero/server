@@ -257,10 +257,10 @@ class BattleGroundQueue
          * @brief Two dimensional array for storing all queued groups.
          * First dimension specifies the bgTypeId.
          * Second dimension specifies the player's group types.
-            BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
-            BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
-            BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
-            BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
+         BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
+         BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
+         BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
+         BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
          */
         GroupsQueueType m_QueuedGroups[MAX_BATTLEGROUND_BRACKETS][BG_QUEUE_GROUP_TYPES_COUNT]; /**< Two dimensional array for storing all queued groups. */
 
@@ -337,8 +337,8 @@ class BGQueueInviteEvent : public BasicEvent
          * @param BgTypeId The battleground type id.
          * @param removeTime The remove time.
          */
-        BGQueueInviteEvent(ObjectGuid pl_guid, uint32 BgInstanceGUID, BattleGroundTypeId BgTypeId, uint32 removeTime) :
-            m_PlayerGuid(pl_guid), m_BgInstanceGUID(BgInstanceGUID), m_BgTypeId(BgTypeId), m_RemoveTime(removeTime)
+        BGQueueInviteEvent(ObjectGuid pl_guid, uint32 BgInstanceGUID, BattleGroundTypeId BgTypeId, uint32 removeTime)
+            : m_PlayerGuid(pl_guid), m_BgInstanceGUID(BgInstanceGUID), m_BgTypeId(BgTypeId), m_RemoveTime(removeTime)
         {};
 
         /**

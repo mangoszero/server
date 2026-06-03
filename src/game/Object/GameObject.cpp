@@ -173,7 +173,7 @@ void GameObject::RemoveFromWorld()
             else
             {
                 sLog.outError("Delete %s with SpellId %u LinkedGO %u that lost references to owner %s GO list. Crash possible later.",
-                              GetGuidStr().c_str(), m_spellId, GetGOInfo()->GetLinkedGameObjectEntry(), owner_guid.GetString().c_str());
+                    GetGuidStr().c_str(), m_spellId, GetGOInfo()->GetLinkedGameObjectEntry(), owner_guid.GetString().c_str());
             }
         }
 
@@ -215,7 +215,7 @@ void GameObject::CleanupsBeforeDelete()
  * @return true if creation succeeded; otherwise, false.
  */
 bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map,float x, float y, float z, float ang,
-                        float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
+    float r0, float r1, float r2, float r3, uint32 animprogress, GOState go_state)
 {
     if (!map)
     {
@@ -636,50 +636,50 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
                     SetLootState(GO_READY);
                     return; // SetLootState and return because go is treated as "burning flag" due to GetGoAnimProgress() being 100 and would be removed on the client
                 case GAMEOBJECT_TYPE_CHEST:
+                {
+                    uint32 trapEntry = GetGOInfo()->GetLinkedGameObjectEntry();
+                    if (trapEntry == 144064) // Special case for Gordunni Cobalt Visual
                     {
-                        uint32 trapEntry = GetGOInfo()->GetLinkedGameObjectEntry();
-                        if (trapEntry == 144064) // Special case for Gordunni Cobalt Visual
-                        {
-                            float range = 0.5f;
-                            GameObject* visualGO = NULL;
-
-                            MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, 177683, range); //177683 Visual Entry
-                            MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(visualGO, go_check);
-
-                            Cell::VisitGridObjects(this, checker, range);
-
-                            if (visualGO)
-                            {
-                                visualGO->SetLootState(GO_JUST_DEACTIVATED);
-                            }
-                        }
-
-                        if (!trapEntry)
-                        {
-                            break;
-                        }
-
-                        GameObjectInfo const* trapInfo = sGOStorage.LookupEntry<GameObjectInfo>(trapEntry);
-                        if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
-                        {
-                            break;
-                        }
-
                         float range = 0.5f;
+                        GameObject* visualGO = NULL;
 
-                        GameObject* trapGO = NULL;
-
-                        MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, trapEntry, range);
-                        MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(trapGO, go_check);
+                        MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, 177683, range); //177683 Visual Entry
+                        MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(visualGO, go_check);
 
                         Cell::VisitGridObjects(this, checker, range);
 
-                        // found correct GO
-                        if (trapGO)
+                        if (visualGO)
                         {
-                            trapGO->SetLootState(GO_JUST_DEACTIVATED);
+                            visualGO->SetLootState(GO_JUST_DEACTIVATED);
                         }
                     }
+
+                    if (!trapEntry)
+                    {
+                        break;
+                    }
+
+                    GameObjectInfo const* trapInfo = sGOStorage.LookupEntry<GameObjectInfo>(trapEntry);
+                    if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
+                    {
+                        break;
+                    }
+
+                    float range = 0.5f;
+
+                    GameObject* trapGO = NULL;
+
+                    MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*this, trapEntry, range);
+                    MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(trapGO, go_check);
+
+                    Cell::VisitGridObjects(this, checker, range);
+
+                    // found correct GO
+                    if (trapGO)
+                    {
+                        trapGO->SetLootState(GO_JUST_DEACTIVATED);
+                    }
+                }
 
                 default:
                     break;
@@ -759,7 +759,6 @@ void GameObject::Update(uint32 update_diff, uint32 p_time)
         AI()->UpdateAI(update_diff);   // AI not react good at real update delays (while freeze in non-active part of map)
         m_AI_locked = false;
     }
-
 }
 
 /**
@@ -1236,8 +1235,8 @@ bool GameObject::ActivateToQuest(Player* pTarget) const
 
             for (QuestRelationsMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
             {
-                if ((pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_INCOMPLETE || pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_COMPLETE)
-                    && !pTarget->GetQuestRewardStatus(itr->second))
+                if ((pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_INCOMPLETE || pTarget->GetQuestStatus(itr->second) == QUEST_STATUS_COMPLETE) &&
+                    !pTarget->GetQuestRewardStatus(itr->second))
                 {
                     return true;
                 }
@@ -1257,12 +1256,16 @@ bool GameObject::ActivateToQuest(Player* pTarget) const
             {
                 // look for battlegroundAV for some objects which are only activated after mine gots captured by own team
                 if (GetEntry() == BG_AV_OBJECTID_MINE_N || GetEntry() == BG_AV_OBJECTID_MINE_S)
+                {
                     if (BattleGround* bg = pTarget->GetBattleGround())
+                    {
                         if (bg->GetTypeID() == BATTLEGROUND_AV && !(((BattleGroundAV*)bg)->PlayerCanDoMineQuest(GetEntry(), pTarget->GetTeam())))
                         {
                             return false;
                         }
-                return true;
+                    }
+                    return true;
+                }
             }
             break;
         }
@@ -1310,7 +1313,7 @@ void GameObject::SummonLinkedTrapIfAny()
 
     GameObject* linkedGO = new GameObject;
     if (!linkedGO->Create(GetMap()->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), linkedEntry, GetMap(),
-                          GetPositionX(), GetPositionY(), GetPositionZ(), GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
+        GetPositionX(), GetPositionY(), GetPositionZ(), GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
     {
         delete linkedGO;
         return;
@@ -2017,10 +2020,12 @@ void GameObject::Use(Unit* user)
 
             // owner is first user for non-wild GO objects, if it offline value already set to current user
             if (!GetOwnerGuid())
+            {
                 if (Player* firstUser = GetMap()->GetPlayer(m_firstUser))
                 {
                     spellCaster = firstUser;
                 }
+            }
 
             spellId = info->summoningRitual.spellId;
 
@@ -2370,10 +2375,12 @@ bool GameObject::IsFriendlyTo(Unit const* unit) const
 
             // apply reputation state
             if (FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction))
+            {
                 if (raw_tester_faction->reputationListID >= 0)
                 {
                     return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) >= REP_FRIENDLY;
                 }
+            }
         }
     }
 
@@ -2410,13 +2417,13 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
     uint32 entrynew = entry;
 
     if ((GetZoneId() == 46) || (GetZoneId() == 51)) // each node in searing gorge or burning steppes is able to spawn dark iron
+    {
+        if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_DARKIRON))
         {
-            if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_DARKIRON))
-            {
-                entrynew = 165658;
-            }
-            return entrynew;
+            entrynew = 165658;
         }
+        return entrynew;
+    }
 
     if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_LOWER)) // beside silver all base ores have the possibility to spawn the lower base ore type so rol for lower version spawn
     {
@@ -2455,60 +2462,60 @@ uint32 GameObject::RollMineralVein(uint32 entry)      //Maybe incedicite bloodst
             {
                 entrynew = 1733;
             }
-                break;
+            break;
         case 1735: // Iron can spawn Gold
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 1734;
             }
-                break;
+            break;
         case 73939: // Ooze covered iron can spawn ooze covered gold
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 73941;
             }
-                break;
+            break;
         case 2040: // Mithril can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 2047;
             }
-                break;
+            break;
         case 123310: // Ooze covered mithril can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 123309;
             }
-                break;
+            break;
         case 324: // small thorium Vein can spawn Truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 2047;
             }
-                break;
+            break;
         case 123848: // ooze covered thorium Vein can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 123309;
             }
-                break;
+            break;
         case 175404: // Rich thorium Vein can spawn truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 2047;
             }
-                break;
+            break;
         case 177388: // ooze covered Rich thorium Vein can spawn ooze covered truesilver
             if (urand (0, 100) < sWorld.getConfig(CONFIG_UINT32_RATE_MINING_RARE))
             {
                 entrynew = 123309;
             }
-                break;
+            break;
 
         default: //default case for copper or not listet special veins
             entrynew = entry;
     }
-        return entrynew;
+    return entrynew;
 }
 
 /**
@@ -2668,11 +2675,12 @@ Player* GameObject::GetLootRecipient() const
 
     // find any in group
     for (GroupReference* itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+    {
         if (Player* newPlayer = itr->getSource())
         {
             return newPlayer;
         }
-
+    }
     return NULL;
 }
 
@@ -3013,10 +3021,12 @@ void GameObject::TickCapturePoint()
 
         // handle objective complete
         if (m_captureState == CAPTURE_STATE_NEUTRAL)
+        {
             if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript((*capturingPlayers.begin())->GetCachedZoneId()))
             {
                 outdoorPvP->HandleObjectiveComplete(eventId, capturingPlayers, progressFaction);
             }
+        }
 
         // set capture state to alliance
         m_captureState = CAPTURE_STATE_PROGRESS_ALLIANCE;
@@ -3028,10 +3038,12 @@ void GameObject::TickCapturePoint()
 
         // handle objective complete
         if (m_captureState == CAPTURE_STATE_NEUTRAL)
+        {
             if (OutdoorPvP* outdoorPvP = sOutdoorPvPMgr.GetScript((*capturingPlayers.begin())->GetCachedZoneId()))
             {
                 outdoorPvP->HandleObjectiveComplete(eventId, capturingPlayers, progressFaction);
             }
+        }
 
         // set capture state to horde
         m_captureState = CAPTURE_STATE_PROGRESS_HORDE;
@@ -3144,7 +3156,7 @@ bool  GameObject::AIM_Initialize()
         return false;
     }
 
-m_AI.reset(sScriptMgr.GetGameObjectAI(this));
+    m_AI.reset(sScriptMgr.GetGameObjectAI(this));
 
-return true;
+    return true;
 }

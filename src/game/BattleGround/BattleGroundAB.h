@@ -73,9 +73,9 @@
 #include "Common.h"
 #include "BattleGround.h"
 
- /**
-  * @brief Enum for world states in Arathi Basin battleground.
-  */
+/**
+ * @brief Enum for world states in Arathi Basin battleground.
+ */
 enum BG_AB_WorldStates
 {
     BG_AB_OP_OCCUPIED_BASES_HORDE       = 1778,
@@ -84,34 +84,34 @@ enum BG_AB_WorldStates
     BG_AB_OP_RESOURCES_HORDE            = 1777,
     BG_AB_OP_RESOURCES_MAX              = 1780,
     BG_AB_OP_RESOURCES_WARNING          = 1955
-    /*
-        BG_AB_OP_STABLE_ICON                = 1842,         // Stable map icon (NONE)
-        BG_AB_OP_STABLE_STATE_ALIENCE       = 1767,         // Stable map state (ALIENCE)
-        BG_AB_OP_STABLE_STATE_HORDE         = 1768,         // Stable map state (HORDE)
-        BG_AB_OP_STABLE_STATE_CON_ALI       = 1769,         // Stable map state (CON ALIENCE)
-        BG_AB_OP_STABLE_STATE_CON_HOR       = 1770,         // Stable map state (CON HORDE)
-        BG_AB_OP_FARM_ICON                  = 1845,         // Farm map icon (NONE)
-        BG_AB_OP_FARM_STATE_ALIENCE         = 1772,         // Farm state (ALIENCE)
-        BG_AB_OP_FARM_STATE_HORDE           = 1773,         // Farm state (HORDE)
-        BG_AB_OP_FARM_STATE_CON_ALI         = 1774,         // Farm state (CON ALIENCE)
-        BG_AB_OP_FARM_STATE_CON_HOR         = 1775,         // Farm state (CON HORDE)
+    /**
+     BG_AB_OP_STABLE_ICON                = 1842,         // Stable map icon (NONE)
+     BG_AB_OP_STABLE_STATE_ALIENCE       = 1767,         // Stable map state (ALIENCE)
+     BG_AB_OP_STABLE_STATE_HORDE         = 1768,         // Stable map state (HORDE)
+     BG_AB_OP_STABLE_STATE_CON_ALI       = 1769,         // Stable map state (CON ALIENCE)
+     BG_AB_OP_STABLE_STATE_CON_HOR       = 1770,         // Stable map state (CON HORDE)
+     BG_AB_OP_FARM_ICON                  = 1845,         // Farm map icon (NONE)
+     BG_AB_OP_FARM_STATE_ALIENCE         = 1772,         // Farm state (ALIENCE)
+     BG_AB_OP_FARM_STATE_HORDE           = 1773,         // Farm state (HORDE)
+     BG_AB_OP_FARM_STATE_CON_ALI         = 1774,         // Farm state (CON ALIENCE)
+     BG_AB_OP_FARM_STATE_CON_HOR         = 1775,         // Farm state (CON HORDE)
 
-        BG_AB_OP_BLACKSMITH_ICON            = 1846,         // Blacksmith map icon (NONE)
-        BG_AB_OP_BLACKSMITH_STATE_ALIENCE   = 1782,         // Blacksmith map state (ALIENCE)
-        BG_AB_OP_BLACKSMITH_STATE_HORDE     = 1783,         // Blacksmith map state (HORDE)
-        BG_AB_OP_BLACKSMITH_STATE_CON_ALI   = 1784,         // Blacksmith map state (CON ALIENCE)
-        BG_AB_OP_BLACKSMITH_STATE_CON_HOR   = 1785,         // Blacksmith map state (CON HORDE)
-        BG_AB_OP_LUMBERMILL_ICON            = 1844,         // Lumber Mill map icon (NONE)
-        BG_AB_OP_LUMBERMILL_STATE_ALIENCE   = 1792,         // Lumber Mill map state (ALIENCE)
-        BG_AB_OP_LUMBERMILL_STATE_HORDE     = 1793,         // Lumber Mill map state (HORDE)
-        BG_AB_OP_LUMBERMILL_STATE_CON_ALI   = 1794,         // Lumber Mill map state (CON ALIENCE)
-        BG_AB_OP_LUMBERMILL_STATE_CON_HOR   = 1795,         // Lumber Mill map state (CON HORDE)
-        BG_AB_OP_GOLDMINE_ICON              = 1843,         // Gold Mine map icon (NONE)
-        BG_AB_OP_GOLDMINE_STATE_ALIENCE     = 1787,         // Gold Mine map state (ALIENCE)
-        BG_AB_OP_GOLDMINE_STATE_HORDE       = 1788,         // Gold Mine map state (HORDE)
-        BG_AB_OP_GOLDMINE_STATE_CON_ALI     = 1789,         // Gold Mine map state (CON ALIENCE
-        BG_AB_OP_GOLDMINE_STATE_CON_HOR     = 1790,         // Gold Mine map state (CON HORDE)
-    */
+     BG_AB_OP_BLACKSMITH_ICON            = 1846,         // Blacksmith map icon (NONE)
+     BG_AB_OP_BLACKSMITH_STATE_ALIENCE   = 1782,         // Blacksmith map state (ALIENCE)
+     BG_AB_OP_BLACKSMITH_STATE_HORDE     = 1783,         // Blacksmith map state (HORDE)
+     BG_AB_OP_BLACKSMITH_STATE_CON_ALI   = 1784,         // Blacksmith map state (CON ALIENCE)
+     BG_AB_OP_BLACKSMITH_STATE_CON_HOR   = 1785,         // Blacksmith map state (CON HORDE)
+     BG_AB_OP_LUMBERMILL_ICON            = 1844,         // Lumber Mill map icon (NONE)
+     BG_AB_OP_LUMBERMILL_STATE_ALIENCE   = 1792,         // Lumber Mill map state (ALIENCE)
+     BG_AB_OP_LUMBERMILL_STATE_HORDE     = 1793,         // Lumber Mill map state (HORDE)
+     BG_AB_OP_LUMBERMILL_STATE_CON_ALI   = 1794,         // Lumber Mill map state (CON ALIENCE)
+     BG_AB_OP_LUMBERMILL_STATE_CON_HOR   = 1795,         // Lumber Mill map state (CON HORDE)
+     BG_AB_OP_GOLDMINE_ICON              = 1843,         // Gold Mine map icon (NONE)
+     BG_AB_OP_GOLDMINE_STATE_ALIENCE     = 1787,         // Gold Mine map state (ALIENCE)
+     BG_AB_OP_GOLDMINE_STATE_HORDE       = 1788,         // Gold Mine map state (HORDE)
+     BG_AB_OP_GOLDMINE_STATE_CON_ALI     = 1789,         // Gold Mine map state (CON ALIENCE
+     BG_AB_OP_GOLDMINE_STATE_CON_HOR     = 1790,         // Gold Mine map state (CON HORDE)
+     */
 };
 
 const uint32 BG_AB_OP_NODESTATES[5] = { 1767, 1782, 1772, 1792, 1787 }; /**< Node states for Arathi Basin */
@@ -222,31 +222,31 @@ struct BG_AB_BannerTimer
  */
 class BattleGroundABScore : public BattleGroundScore
 {
-public:
-    /**
-     * @brief Constructor for BattleGroundABScore.
-     */
-    BattleGroundABScore() : BasesAssaulted(0), BasesDefended(0) {};
+    public:
+        /**
+         * @brief Constructor for BattleGroundABScore.
+         */
+        BattleGroundABScore() : BasesAssaulted(0), BasesDefended(0) {};
 
-    /**
-     * @brief Destructor for BattleGroundABScore.
-     */
-    virtual ~BattleGroundABScore() {};
+        /**
+         * @brief Destructor for BattleGroundABScore.
+         */
+        virtual ~BattleGroundABScore() {};
 
-    /**
-     * @brief Get the number of bases assaulted.
-     * @return Number of bases assaulted.
-     */
-    uint32 GetAttr1() const { return BasesAssaulted; }
+        /**
+         * @brief Get the number of bases assaulted.
+         * @return Number of bases assaulted.
+         */
+        uint32 GetAttr1() const { return BasesAssaulted; }
 
-    /**
-     * @brief Get the number of bases defended.
-     * @return Number of bases defended.
-     */
-    uint32 GetAttr2() const { return BasesDefended; }
+        /**
+         * @brief Get the number of bases defended.
+         * @return Number of bases defended.
+         */
+        uint32 GetAttr2() const { return BasesDefended; }
 
-    uint32 BasesAssaulted; /**< Number of bases assaulted */
-    uint32 BasesDefended; /**< Number of bases defended */
+        uint32 BasesAssaulted; /**< Number of bases assaulted */
+        uint32 BasesDefended; /**< Number of bases defended */
 };
 
 /**
@@ -256,152 +256,152 @@ class BattleGroundAB : public BattleGround
 {
     friend class BattleGroundMgr;
 
-public:
-    /**
-     * @brief Constructor for BattleGroundAB.
-     */
-    BattleGroundAB();
+    public:
+        /**
+         * @brief Constructor for BattleGroundAB.
+         */
+        BattleGroundAB();
 
-    /**
-     * @brief Destructor for BattleGroundAB.
-     */
-    ~BattleGroundAB();
+        /**
+         * @brief Destructor for BattleGroundAB.
+         */
+        ~BattleGroundAB();
 
-    /**
-     * @brief Updates the battleground state.
-     * @param diff Time difference since the last update.
-     */
-    void Update(uint32 diff) override;
+        /**
+         * @brief Updates the battleground state.
+         * @param diff Time difference since the last update.
+         */
+        void Update(uint32 diff) override;
 
-    /**
-     * @brief Adds a player to the battleground.
-     * @param plr The player to add.
-     */
-    void AddPlayer(Player* plr) override;
+        /**
+         * @brief Adds a player to the battleground.
+         * @param plr The player to add.
+         */
+        void AddPlayer(Player* plr) override;
 
-    /**
-     * @brief Starts the event to open doors.
-     */
-    void StartingEventOpenDoors() override;
+        /**
+         * @brief Starts the event to open doors.
+         */
+        void StartingEventOpenDoors() override;
 
-    /**
-     * @brief Removes a player from the battleground.
-     * @param plr The player to remove.
-     * @param guid The GUID of the player.
-     */
-    void RemovePlayer(Player* plr, ObjectGuid guid) override;
+        /**
+         * @brief Removes a player from the battleground.
+         * @param plr The player to remove.
+         * @param guid The GUID of the player.
+         */
+        void RemovePlayer(Player* plr, ObjectGuid guid) override;
 
-    /**
-     * @brief Handles area triggers.
-     * @param source The player who triggered the area.
-     * @param trigger The trigger ID.
-     * @return True if the trigger was handled, false otherwise.
-     */
-    bool HandleAreaTrigger(Player* source, uint32 trigger) override;
+        /**
+         * @brief Handles area triggers.
+         * @param source The player who triggered the area.
+         * @param trigger The trigger ID.
+         * @return True if the trigger was handled, false otherwise.
+         */
+        bool HandleAreaTrigger(Player* source, uint32 trigger) override;
 
-    /**
-     * @brief Resets the battleground state.
-     */
-    void Reset() override;
+        /**
+         * @brief Resets the battleground state.
+         */
+        void Reset() override;
 
-    /**
-     * @brief Ends the battleground.
-     * @param winner The winning team.
-     */
-    void EndBattleGround(Team winner) override;
+        /**
+         * @brief Ends the battleground.
+         * @param winner The winning team.
+         */
+        void EndBattleGround(Team winner) override;
 
-    /**
-     * @brief Gets the closest graveyard for a player.
-     * @param player The player.
-     * @return The closest graveyard entry.
-     */
-    WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
+        /**
+         * @brief Gets the closest graveyard for a player.
+         * @param player The player.
+         * @return The closest graveyard entry.
+         */
+        WorldSafeLocsEntry const* GetClosestGraveYard(Player* player) override;
 
-    /* Scorekeeping */
+        /* Scorekeeping */
 
-    /**
-     * @brief Updates the player score.
-     * @param source The player.
-     * @param type The type of score to update.
-     * @param value The value to add to the score.
-     */
-    void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
+        /**
+         * @brief Updates the player score.
+         * @param source The player.
+         * @param type The type of score to update.
+         * @param value The value to add to the score.
+         */
+        void UpdatePlayerScore(Player* source, uint32 type, uint32 value) override;
 
-    /**
-     * @brief Fills the initial world states.
-     * @param data The world packet data.
-     * @param count The count of world states.
-     */
-    void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
+        /**
+         * @brief Fills the initial world states.
+         * @param data The world packet data.
+         * @param count The count of world states.
+         */
+        void FillInitialWorldStates(WorldPacket& data, uint32& count) override;
 
-    /* Nodes occupying */
+        /* Nodes occupying */
 
-    /**
-     * @brief Handles the event when a player clicks on a flag.
-     * @param source The player who clicked the flag.
-     * @param target_obj The flag game object.
-     */
-    void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
+        /**
+         * @brief Handles the event when a player clicks on a flag.
+         * @param source The player who clicked the flag.
+         * @param target_obj The flag game object.
+         */
+        void EventPlayerClickedOnFlag(Player* source, GameObject* target_obj) override;
 
-    /* Premature finish */
+        /* Premature finish */
 
-    /**
-     * @brief Gets the premature finish winning team.
-     * @return The winning team.
-     */
-    Team GetPrematureWinner() override;
+        /**
+         * @brief Gets the premature finish winning team.
+         * @return The winning team.
+         */
+        Team GetPrematureWinner() override;
 
-private:
-    /* Gameobject spawning/despawning */
+    private:
+        /* Gameobject spawning/despawning */
 
-    /**
-     * @brief Creates a banner.
-     * @param node The node.
-     * @param type The type of banner.
-     * @param teamIndex The team index.
-     * @param delay Whether to delay the creation.
-     */
-    void _CreateBanner(uint8 node, uint8 type, uint8 teamIndex, bool delay);
+        /**
+         * @brief Creates a banner.
+         * @param node The node.
+         * @param type The type of banner.
+         * @param teamIndex The team index.
+         * @param delay Whether to delay the creation.
+         */
+        void _CreateBanner(uint8 node, uint8 type, uint8 teamIndex, bool delay);
 
-    /**
-     * @brief Sends a node update.
-     * @param node The node.
-     */
-    void _SendNodeUpdate(uint8 node);
+        /**
+         * @brief Sends a node update.
+         * @param node The node.
+         */
+        void _SendNodeUpdate(uint8 node);
 
-    /* Creature spawning/despawning */
-    // TODO: working, scripted peons spawning
+        /* Creature spawning/despawning */
+        // TODO: working, scripted peons spawning
 
-    /**
-     * @brief Handles node occupation.
-     * @param node The node.
-     * @param team The team.
-     */
-    void _NodeOccupied(uint8 node, Team team);
+        /**
+         * @brief Handles node occupation.
+         * @param node The node.
+         * @param team The team.
+         */
+        void _NodeOccupied(uint8 node, Team team);
 
-    /**
-     * @brief Gets the name ID of a node.
-     * @param node The node.
-     * @return The name ID of the node.
-     */
-    int32 _GetNodeNameId(uint8 node);
+        /**
+         * @brief Gets the name ID of a node.
+         * @param node The node.
+         * @return The name ID of the node.
+         */
+        int32 _GetNodeNameId(uint8 node);
 
-    /* Nodes info:
-        0: neutral
-        1: ally contested
-        2: horde contested
-        3: ally occupied
-        4: horde occupied     */
-    uint8               m_Nodes[BG_AB_NODES_MAX]; /**< Node statuses */
-    uint8               m_prevNodes[BG_AB_NODES_MAX];   /**< Previous node statuses for efficient world state updating */
-    BG_AB_BannerTimer   m_BannerTimers[BG_AB_NODES_MAX]; /**< Banner timers for nodes */
-    uint32              m_NodeTimers[BG_AB_NODES_MAX]; /**< Node timers */
-    uint32              m_lastTick[PVP_TEAM_COUNT]; /**< Last tick times for each team */
-    uint32              m_honorScoreTicks[PVP_TEAM_COUNT]; /**< Honor score ticks for each team */
-    uint32              m_ReputationScoreTics[PVP_TEAM_COUNT]; /**< Reputation score ticks for each team */
-    bool                m_IsInformedNearVictory; /**< Whether the near victory warning has been issued */
-    uint32              m_honorTicks; /**< Honor ticks */
-    uint32              m_ReputationTics; /**< Reputation ticks */
+        /** Nodes info:
+         0: neutral
+         1: ally contested
+         2: horde contested
+         3: ally occupied
+         4: horde occupied     */
+        uint8               m_Nodes[BG_AB_NODES_MAX]; /**< Node statuses */
+        uint8               m_prevNodes[BG_AB_NODES_MAX];   /**< Previous node statuses for efficient world state updating */
+        BG_AB_BannerTimer   m_BannerTimers[BG_AB_NODES_MAX]; /**< Banner timers for nodes */
+        uint32              m_NodeTimers[BG_AB_NODES_MAX]; /**< Node timers */
+        uint32              m_lastTick[PVP_TEAM_COUNT]; /**< Last tick times for each team */
+        uint32              m_honorScoreTicks[PVP_TEAM_COUNT]; /**< Honor score ticks for each team */
+        uint32              m_ReputationScoreTics[PVP_TEAM_COUNT]; /**< Reputation score ticks for each team */
+        bool                m_IsInformedNearVictory; /**< Whether the near victory warning has been issued */
+        uint32              m_honorTicks; /**< Honor ticks */
+        uint32              m_ReputationTics; /**< Reputation ticks */
 };
 
 #endif

@@ -182,8 +182,8 @@ CreatureEventAI::CreatureEventAI(Creature* c) : CreatureAI(c),
 }
 
 #define LOG_PROCESS_EVENT                                                                                                       \
-    DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: Event type %u (script %u) triggered for %s (invoked by %s)",    \
-                    pHolder.Event.event_type, pHolder.Event.event_id, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>")
+DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: Event type %u (script %u) triggered for %s (invoked by %s)",    \
+    pHolder.Event.event_type, pHolder.Event.event_id, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>")
 
 /**
  * @brief Checks whether an EventAI event type is driven by timer-style scheduling.
@@ -617,10 +617,12 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
         // amount of real actions
         uint32 count = 0;
         for (uint32 j = 0; j < MAX_ACTIONS; ++j)
+        {
             if (pHolder.Event.action[j].type != ACTION_T_NONE)
             {
                 ++count;
             }
+        }
 
         if (count)
         {
@@ -664,7 +666,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
     }
 
     DEBUG_FILTER_LOG(LOG_FILTER_EVENT_AI_DEV, "CreatureEventAI: Process action %u (script %u) triggered for %s (invoked by %s)",
-                     action.type, EventId, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>");
+        action.type, EventId, m_creature->GetGuidStr().c_str(), pActionInvoker ? pActionInvoker->GetGuidStr().c_str() : "<no invoker>");
 
     bool reportTargetError = false;
     switch (action.type)
@@ -728,11 +730,15 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                 else if ((target = m_creature->getVictim()))
                 {
                     if (target->GetTypeId() != TYPEID_PLAYER)
+                    {
                         if (Unit* owner = target->GetOwner())
+                        {
                             if (owner->GetTypeId() == TYPEID_PLAYER)
                             {
                                 target = owner;
                             }
+                        }
+                    }
                 }
 
                 if (!DoDisplayText(m_creature, textId, target))
@@ -827,7 +833,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
             DoCastSpellIfCan(target, action.cast.spellId, action.cast.castFlags);
 
-        break;
+            break;
         }
         case ACTION_T_SUMMON:               //12
         {
@@ -872,10 +878,12 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         {
             ThreatList const& threatList = m_creature->GetThreatManager().getThreatList();
             for (ThreatList::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
+            {
                 if (Unit* Temp = m_creature->GetMap()->GetUnit((*i)->getUnitGuid()))
                 {
                     m_creature->GetThreatManager().modifyThreatPercent(Temp, action.threat_all_pct.percent);
                 }
+            }
             break;
         }
         case ACTION_T_QUEST_EVENT:          //15
@@ -1010,10 +1018,12 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
         {
             ThreatList const& threatList = m_creature->GetThreatManager().getThreatList();
             for (ThreatList::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
+            {
                 if (Player* temp = m_creature->GetMap()->GetPlayer((*i)->getUnitGuid()))
                 {
                     temp->CastedCreatureOrGO(action.cast_event_all.creatureId, m_creature->GetObjectGuid(), action.cast_event_all.spellId);
                 }
+            }
             break;
         }
         case ACTION_T_REMOVEAURASFROMSPELL:     //28
@@ -1356,7 +1366,7 @@ void CreatureEventAI::Reset()
         CreatureEventAI_Event const& event = i->Event;
         switch (event.event_type)
         {
-                // Reset all out of combat timers
+            // Reset all out of combat timers
             case EVENT_T_TIMER_OOC:
             {
                 if (i->UpdateRepeatTimer(m_creature, event.timer.initialMin, event.timer.initialMax))
@@ -1366,10 +1376,10 @@ void CreatureEventAI::Reset()
                 break;
             }
             default:
-            // TODO: enable below code line / verify this is correct to enable events previously disabled (ex. aggro yell), instead of enable this in void Aggro()
-            //i->Enabled = true;
-            //i->Time = 0;
-            break;
+                // TODO: enable below code line / verify this is correct to enable events previously disabled (ex. aggro yell), instead of enable this in void Aggro()
+                //i->Enabled = true;
+                //i->Time = 0;
+                break;
         }
     }
 }
@@ -1541,9 +1551,9 @@ void CreatureEventAI::ReceiveAIEvent(AIEventType eventType, Creature* pSender, U
     {
         if (itr->Event.event_type == EVENT_T_RECEIVE_AI_EVENT &&
             itr->Event.receiveAIEvent.eventType == eventType && (!itr->Event.receiveAIEvent.senderEntry || itr->Event.receiveAIEvent.senderEntry == pSender->GetEntry()))
-            {
-                ProcessEvent(*itr, pInvoker, pSender);
-            }
+        {
+            ProcessEvent(*itr, pInvoker, pSender);
+        }
     }
 }
 
@@ -1564,14 +1574,14 @@ void CreatureEventAI::EnterCombat(Unit* enemy)
                 i->Enabled = true;
                 ProcessEvent(*i, enemy);
                 break;
-                // Reset all in combat timers
+            // Reset all in combat timers
             case EVENT_T_TIMER_IN_COMBAT:
                 if (i->UpdateRepeatTimer(m_creature, event.timer.initialMin, event.timer.initialMax))
                 {
                     i->Enabled = true;
                 }
                 break;
-                // All normal events need to be re-enabled and their time set to 0
+            // All normal events need to be re-enabled and their time set to 0
             default:
                 i->Enabled = true;
                 i->Time = 0;
@@ -1771,8 +1781,8 @@ void CreatureEventAI::UpdateAI(const uint32 diff)
  */
 bool CreatureEventAI::IsVisible(Unit* pl) const
 {
-    return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER))
-           && pl->IsVisibleForOrDetect(m_creature, m_creature, true);
+    return m_creature->IsWithinDist(pl, sWorld.getConfig(CONFIG_FLOAT_SIGHT_MONSTER)) &&
+        pl->IsVisibleForOrDetect(m_creature, m_creature, true);
 }
 
 /**
@@ -1921,10 +1931,10 @@ Unit* CreatureEventAI::DoSelectLowestHpFriendly(float range, uint32 MinHPDiff)
     MaNGOS::MostHPMissingInRangeCheck u_check(m_creature, range, MinHPDiff);
     MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRangeCheck> searcher(pUnit, u_check);
 
-    /*
-    typedef TYPELIST_4(GameObject, Creature*except pets*, DynamicObject, Corpse*Bones*) AllGridObjectTypes;
-    This means that if we only search grid then we can not possibly return pets or players so this is safe
-    */
+    /**
+     typedef TYPELIST_4(GameObject, Creature*except pets*, DynamicObject, Corpse*Bones*) AllGridObjectTypes;
+     This means that if we only search grid then we can not possibly return pets or players so this is safe
+     */
     Cell::VisitGridObjects(m_creature, searcher, range);
     return pUnit;
 }

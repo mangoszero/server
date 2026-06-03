@@ -343,8 +343,8 @@ void LFGQueue::Update(uint32 diff)
                 Player* plr = sObjectMgr.GetPlayer(qPlayer->first);
 
                 // Check here that players team and areaId they're in queue are same
-                if (qPlayer->second.team == qGroup->second.team
-                    && qPlayer->second.areaId == qGroup->second.areaId)
+                if (qPlayer->second.team == qGroup->second.team &&
+                    qPlayer->second.areaId == qGroup->second.areaId)
                 {
                     // Check if player can perform tank role
                     if ((canPerformRole(qPlayer->second.roleMask, LFG_ROLE_TANK) & qGroup->second.availableRoles) == LFG_ROLE_TANK)

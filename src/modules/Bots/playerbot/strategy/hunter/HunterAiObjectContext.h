@@ -6,7 +6,7 @@ namespace ai
 {
     class HunterAiObjectContext : public AiObjectContext
     {
-    public:
-        HunterAiObjectContext(PlayerbotAI* ai);
+        public:
+            HunterAiObjectContext(PlayerbotAI* ai);
     };
 }

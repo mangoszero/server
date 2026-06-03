@@ -37,7 +37,7 @@ using GridLoaderType = GridLoader<Player, WorldTypeMapContainer, GridTypeMapCont
 
 class ObjectGridLoader
 {
-        friend class ObjectWorldLoader;
+    friend class ObjectWorldLoader;
 
     public:
         ObjectGridLoader(NGridType& grid, Map* map, const Cell& cell)

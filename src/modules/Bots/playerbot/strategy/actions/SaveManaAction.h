@@ -7,14 +7,13 @@ namespace ai
 {
     class SaveManaAction : public Action
     {
-    public:
-        SaveManaAction(PlayerbotAI* ai) : Action(ai, "save mana") {}
+        public:
+            SaveManaAction(PlayerbotAI* ai) : Action(ai, "save mana") {}
 
-    public:
-        virtual bool Execute(Event event);
+        public:
+            virtual bool Execute(Event event);
 
-    private:
-        string format(double value);
+        private:
+            string format(double value);
     };
-
 }

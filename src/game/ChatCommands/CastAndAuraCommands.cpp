@@ -38,7 +38,7 @@
 #include "SpellMgr.h"
 
 /**********************************************************************
-    CommandTable : castCommandTable
+ CommandTable : castCommandTable
  ***********************************************************************/
 
 bool AddAuraToPlayer(const SpellEntry* spellInfo, Unit* target, WorldObject* caster);

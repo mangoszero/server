@@ -6,10 +6,10 @@ namespace ai
 {
     class EnemyPlayerValue : public TargetValue
     {
-    public:
-        EnemyPlayerValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            EnemyPlayerValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate();
+        public:
+            Unit* Calculate();
     };
 }

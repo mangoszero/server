@@ -20,33 +20,33 @@ AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* a
 {
     switch (player->getClass())
     {
-    case CLASS_PRIEST:
-        return new PriestAiObjectContext(ai);
-        break;
-    case CLASS_MAGE:
-        return new MageAiObjectContext(ai);
-        break;
-    case CLASS_WARLOCK:
-        return new WarlockAiObjectContext(ai);
-        break;
-    case CLASS_WARRIOR:
-        return new WarriorAiObjectContext(ai);
-        break;
-    case CLASS_SHAMAN:
-        return new ShamanAiObjectContext(ai);
-        break;
-    case CLASS_PALADIN:
-        return new PaladinAiObjectContext(ai);
-        break;
-    case CLASS_DRUID:
-        return new DruidAiObjectContext(ai);
-        break;
-    case CLASS_HUNTER:
-        return new HunterAiObjectContext(ai);
-        break;
-    case CLASS_ROGUE:
-        return new RogueAiObjectContext(ai);
-        break;
+        case CLASS_PRIEST:
+            return new PriestAiObjectContext(ai);
+            break;
+        case CLASS_MAGE:
+            return new MageAiObjectContext(ai);
+            break;
+        case CLASS_WARLOCK:
+            return new WarlockAiObjectContext(ai);
+            break;
+        case CLASS_WARRIOR:
+            return new WarriorAiObjectContext(ai);
+            break;
+        case CLASS_SHAMAN:
+            return new ShamanAiObjectContext(ai);
+            break;
+        case CLASS_PALADIN:
+            return new PaladinAiObjectContext(ai);
+            break;
+        case CLASS_DRUID:
+            return new DruidAiObjectContext(ai);
+            break;
+        case CLASS_HUNTER:
+            return new HunterAiObjectContext(ai);
+            break;
+        case CLASS_ROGUE:
+            return new RogueAiObjectContext(ai);
+            break;
     }
     return new AiObjectContext(ai);
 }
@@ -83,7 +83,9 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
     for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
     {
         if (found >= spentPoints)
+        {
             break;
+        }
 
         TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
         if (!talentInfo)
@@ -245,11 +247,17 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     if (player->GetGroup())
     {
         if (engine->ContainsStrategy(STRATEGY_TYPE_TANK))
+        {
             engine->ChangeStrategy(sPlayerbotAIConfig.botTankStrategies);
+        }
         else if (engine->ContainsStrategy(STRATEGY_TYPE_HEAL))
+        {
             engine->ChangeStrategy(sPlayerbotAIConfig.botHealStrategies);
+        }
         else
+        {
             engine->ChangeStrategy(sPlayerbotAIConfig.botDpsStrategies);
+        }
     }
     else if (sRandomPlayerbotMgr.IsRandomBot(player))
     {

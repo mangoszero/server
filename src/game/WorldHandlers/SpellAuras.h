@@ -273,8 +273,8 @@ typedef void(Aura::*pAuraHandler)(bool Apply, bool Real);
 
 class Aura
 {
-        friend struct ReapplyAffectedPassiveAurasHelper;
-        friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
+    friend struct ReapplyAffectedPassiveAurasHelper;
+    friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
 
     public:
         // aura handlers
@@ -558,7 +558,7 @@ class PersistentAreaAura : public Aura
 
 class SingleEnemyTargetAura : public Aura
 {
-        friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
+    friend Aura* CreateAura(SpellEntry const* spellproto, SpellEffectIndex eff, int32* currentBasePoints, SpellAuraHolder* holder, Unit* target, Unit* caster, Item* castItem);
 
     public:
         ~SingleEnemyTargetAura();

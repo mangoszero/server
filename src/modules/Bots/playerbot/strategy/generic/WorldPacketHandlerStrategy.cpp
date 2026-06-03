@@ -9,90 +9,90 @@ void WorldPacketHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     PassTroughStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "group invite",
+            "group invite",
         NextAction::array(0, new NextAction("accept invitation", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "group set leader",
+            "group set leader",
         NextAction::array(0, new NextAction("leader", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "not enough money",
+            "not enough money",
         NextAction::array(0, new NextAction("tell not enough money", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "not enough reputation",
+            "not enough reputation",
         NextAction::array(0, new NextAction("tell not enough reputation", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "cannot equip",
+            "cannot equip",
         NextAction::array(0, new NextAction("tell cannot equip", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "use game object",
+            "use game object",
         NextAction::array(0,
-            new NextAction("add loot", relevance),
-            new NextAction("use meeting stone", relevance), NULL)));
+        new NextAction("add loot", relevance),
+        new NextAction("use meeting stone", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "gossip hello",
+            "gossip hello",
         NextAction::array(0,
-            new NextAction("trainer", relevance), NULL)));
+        new NextAction("trainer", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "activate taxi",
+            "activate taxi",
         NextAction::array(0, new NextAction("remember taxi", relevance), new NextAction("taxi", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "taxi done",
+            "taxi done",
         NextAction::array(0, new NextAction("taxi", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "trade status",
+            "trade status",
         NextAction::array(0, new NextAction("accept trade", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "area trigger",
+            "area trigger",
         NextAction::array(0, new NextAction("reach area trigger", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "within area trigger",
+            "within area trigger",
         NextAction::array(0, new NextAction("area trigger", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "loot response",
+            "loot response",
         NextAction::array(0, new NextAction("store loot", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "item push result",
+            "item push result",
         NextAction::array(0, new NextAction("query item usage", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "ready check finished",
+            "ready check finished",
         NextAction::array(0, new NextAction("finish ready check", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "no possible targets",
+            "no possible targets",
         NextAction::array(0, new NextAction("lfg join", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "seldom",
+            "seldom",
         NextAction::array(0, new NextAction("lfg leave", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "lfg proposal",
+            "lfg proposal",
         NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "lfg proposal active",
+            "lfg proposal active",
         NextAction::array(0, new NextAction("lfg accept", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "often",
+            "often",
         NextAction::array(0, new NextAction("security check", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "guild invite",
+            "guild invite",
         NextAction::array(0, new NextAction("guild accept", relevance), NULL)));
 }
 
@@ -110,6 +110,6 @@ WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* ai) : PassTr
 void ReadyCheckStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
-        "timer",
+            "timer",
         NextAction::array(0, new NextAction("ready check", relevance), NULL)));
 }

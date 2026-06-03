@@ -37,7 +37,8 @@ class Player;
 /// Camera - object-receiver. Receives broadcast packets from nearby worldobjects, object visibility changes and sends them to client
 class Camera
 {
-        friend class ViewPoint;
+    friend class ViewPoint;
+
     public:
 
         explicit Camera(Player* pl);
@@ -95,27 +96,27 @@ class Camera
 /// Object-observer, notifies farsight object state to cameras that attached to it
 class ViewPoint
 {
-        friend class Camera;
+    friend class Camera;
 
-        typedef std::list<Camera*> CameraList;
+    typedef std::list<Camera*> CameraList;
 
-        CameraList m_cameras;
-        GridType* m_grid;
+    CameraList m_cameras;
+    GridType* m_grid;
 
-        void Attach(Camera* c) { m_cameras.push_back(c); }
-        void Detach(Camera* c) { m_cameras.remove(c); }
+    void Attach(Camera* c) { m_cameras.push_back(c); }
+    void Detach(Camera* c) { m_cameras.remove(c); }
 
-        void CameraCall(void (Camera::*handler)())
+    void CameraCall(void (Camera::*handler)())
+    {
+        if (!m_cameras.empty())
         {
-            if (!m_cameras.empty())
+            for (CameraList::iterator itr = m_cameras.begin(); itr != m_cameras.end();)
             {
-                for (CameraList::iterator itr = m_cameras.begin(); itr != m_cameras.end();)
-                {
-                    Camera* c = *(itr++);
-                    (c->*handler)();
-                }
+                Camera* c = *(itr++);
+                (c->*handler)();
             }
         }
+    }
 
     public:
 

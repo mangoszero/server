@@ -84,11 +84,14 @@ bool TradeAction::TradeItem(const Item& item, int8 slot)
         }
     }
 
-    if (tradeSlot == -1) return false;
+    if (tradeSlot == -1)
+    {
+        return false;
+    }
 
     WorldPacket* const packet = new WorldPacket(CMSG_SET_TRADE_ITEM, 3);
     *packet << (uint8) tradeSlot << (uint8) item.GetBagSlot()
-        << (uint8) item.GetSlot();
+            << (uint8) item.GetSlot();
     bot->GetSession()->QueuePacket(packet);
     return true;
 }

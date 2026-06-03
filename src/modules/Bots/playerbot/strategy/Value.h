@@ -12,14 +12,14 @@ namespace ai
      */
     class UntypedValue : public AiNamedObject
     {
-    public:
-        UntypedValue(PlayerbotAI* ai, string name) : AiNamedObject(ai, name) {}
-        virtual void Update() {}
-        virtual void Reset() {}
-        virtual string Format()
-        {
-            return "?";
-        }
+        public:
+            UntypedValue(PlayerbotAI* ai, string name) : AiNamedObject(ai, name) {}
+            virtual void Update() {}
+            virtual void Reset() {}
+            virtual string Format()
+            {
+                return "?";
+            }
     };
 
     /**
@@ -28,15 +28,15 @@ namespace ai
      * @tparam T The type of the value.
      */
     template<class T>
-    class Value
+        class Value
     {
-    public:
-        virtual T Get() = 0;
-        virtual void Set(T value) = 0;
-        operator T()
-        {
-            return Get();
-        }
+        public:
+            virtual T Get() = 0;
+            virtual void Set(T value) = 0;
+            operator T()
+            {
+                return Get();
+            }
     };
 
     /**
@@ -45,67 +45,67 @@ namespace ai
      * @tparam T The type of the value.
      */
     template<class T>
-    class CalculatedValue : public UntypedValue, public Value<T>
+        class CalculatedValue : public UntypedValue, public Value<T>
     {
-    public:
-        /**
-         * @brief Construct a new Calculated Value object
-         *
-         * @param ai Pointer to the PlayerbotAI instance.
-         * @param name The name of the value.
-         * @param checkInterval The interval at which the value is checked.
-         */
-        CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
-            checkInterval(checkInterval), ticksElapsed(checkInterval)
-        {}
+        public:
+            /**
+             * @brief Construct a new Calculated Value object
+             *
+             * @param ai Pointer to the PlayerbotAI instance.
+             * @param name The name of the value.
+             * @param checkInterval The interval at which the value is checked.
+             */
+            CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) : UntypedValue(ai, name),
+                checkInterval(checkInterval), ticksElapsed(checkInterval)
+            {}
 
-        /**
-         * @brief Destroy the Calculated Value object
-         */
-        virtual ~CalculatedValue() {}
+            /**
+             * @brief Destroy the Calculated Value object
+             */
+            virtual ~CalculatedValue() {}
 
-    public:
-        /**
-         * @brief Get the calculated value.
-         *
-         * @return T The calculated value.
-         */
-        virtual T Get()
-        {
-            if (ticksElapsed >= checkInterval)
+        public:
+            /**
+             * @brief Get the calculated value.
+             *
+             * @return T The calculated value.
+             */
+            virtual T Get()
             {
-                ticksElapsed = 0;
-                value = Calculate();
+                if (ticksElapsed >= checkInterval)
+                {
+                    ticksElapsed = 0;
+                    value = Calculate();
+                }
+                return value;
             }
-            return value;
-        }
 
-        /**
-         * @brief Set the value.
-         *
-         * @param value The value to set.
-         */
-        virtual void Set(T value) { this->value = value; }
-        virtual void Update()
-        {
-            if (ticksElapsed < checkInterval)
+            /**
+             * @brief Set the value.
+             *
+             * @param value The value to set.
+             */
+            virtual void Set(T value) { this->value = value; }
+            virtual void Update()
             {
-                ticksElapsed++;
+                if (ticksElapsed < checkInterval)
+                {
+                    ticksElapsed++;
+                }
             }
-        }
 
-    protected:
-        /**
-         * @brief Calculate the value.
-         *
-         * @return T The calculated value.
-         */
-        virtual T Calculate() = 0;
+        protected:
+            /**
+             * @brief Calculate the value.
+             *
+             * @return T The calculated value.
+             */
+            virtual T Calculate() = 0;
 
-    protected:
-        int checkInterval; ///< The interval at which the value is checked.
-        int ticksElapsed;
-        T value; ///< The cached value.
+        protected:
+            int checkInterval; ///< The interval at which the value is checked.
+            int ticksElapsed;
+            T value; ///< The cached value.
     };
 
     /**
@@ -113,15 +113,15 @@ namespace ai
      */
     class Uint8CalculatedValue : public CalculatedValue<uint8>
     {
-    public:
-        Uint8CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<uint8>(ai, name, checkInterval) {}
+        public:
+            Uint8CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<uint8>(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            ostringstream out; out << (int)Calculate();
-            return out.str();
-        }
+            virtual string Format()
+            {
+                ostringstream out; out << (int)Calculate();
+                return out.str();
+            }
     };
 
     /**
@@ -129,15 +129,15 @@ namespace ai
      */
     class Uint32CalculatedValue : public CalculatedValue<uint32>
     {
-    public:
-        Uint32CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<uint32>(ai, name, checkInterval) {}
+        public:
+            Uint32CalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<uint32>(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            ostringstream out; out << (int)Calculate();
-            return out.str();
-        }
+            virtual string Format()
+            {
+                ostringstream out; out << (int)Calculate();
+                return out.str();
+            }
     };
 
     /**
@@ -145,15 +145,15 @@ namespace ai
      */
     class FloatCalculatedValue : public CalculatedValue<float>
     {
-    public:
-        FloatCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<float>(ai, name, checkInterval) {}
+        public:
+            FloatCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<float>(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            ostringstream out; out << Calculate();
-            return out.str();
-        }
+            virtual string Format()
+            {
+                ostringstream out; out << Calculate();
+                return out.str();
+            }
     };
 
     /**
@@ -161,14 +161,14 @@ namespace ai
      */
     class BoolCalculatedValue : public CalculatedValue<bool>
     {
-    public:
-        BoolCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<bool>(ai, name, checkInterval) {}
+        public:
+            BoolCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<bool>(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            return Calculate() ? "true" : "false";
-        }
+            virtual string Format()
+            {
+                return Calculate() ? "true" : "false";
+            }
     };
 
     /**
@@ -176,15 +176,15 @@ namespace ai
      */
     class UnitCalculatedValue : public CalculatedValue<Unit*>
     {
-    public:
-        UnitCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<Unit*>(ai, name, checkInterval) {}
+        public:
+            UnitCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<Unit*>(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            Unit* unit = Calculate();
-            return unit ? unit->GetName() : "<none>";
-        }
+            virtual string Format()
+            {
+                Unit* unit = Calculate();
+                return unit ? unit->GetName() : "<none>";
+            }
     };
 
     /**
@@ -192,22 +192,22 @@ namespace ai
      */
     class ObjectGuidListCalculatedValue : public CalculatedValue<list<ObjectGuid> >
     {
-    public:
-        ObjectGuidListCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1) :
-            CalculatedValue<list<ObjectGuid> >(ai, name, checkInterval) {}
+        public:
+            ObjectGuidListCalculatedValue(PlayerbotAI* ai, string name = "value", int checkInterval = 1)
+                : CalculatedValue<list<ObjectGuid> >(ai, name, checkInterval) {}
 
-        virtual string Format()
-        {
-            ostringstream out; out << "{";
-            list<ObjectGuid> guids = Calculate();
-            for (list<ObjectGuid>::iterator i = guids.begin(); i != guids.end(); ++i)
+            virtual string Format()
             {
-                ObjectGuid guid = *i;
-                out << guid.GetRawValue() << ",";
+                ostringstream out; out << "{";
+                list<ObjectGuid> guids = Calculate();
+                for (list<ObjectGuid>::iterator i = guids.begin(); i != guids.end(); ++i)
+                {
+                    ObjectGuid guid = *i;
+                    out << guid.GetRawValue() << ",";
+                }
+                out << "}";
+                return out.str();
             }
-            out << "}";
-            return out.str();
-        }
     };
 
     /**
@@ -216,29 +216,29 @@ namespace ai
      * @tparam T The type of the value.
      */
     template<class T>
-    class ManualSetValue : public UntypedValue, public Value<T>
+        class ManualSetValue : public UntypedValue, public Value<T>
     {
-    public:
-        ManualSetValue(PlayerbotAI* ai, T defaultValue, string name = "value") :
-            UntypedValue(ai, name), value(defaultValue), defaultValue(defaultValue) {}
-        virtual ~ManualSetValue() {}
+        public:
+            ManualSetValue(PlayerbotAI* ai, T defaultValue, string name = "value")
+                : UntypedValue(ai, name), value(defaultValue), defaultValue(defaultValue) {}
+            virtual ~ManualSetValue() {}
 
-    public:
-        virtual T Get()
-        {
-            return value;
-        }
+        public:
+            virtual T Get()
+            {
+                return value;
+            }
 
-        virtual void Set(T value) { this->value = value; }
-        virtual void Update() {}
-        virtual void Reset()
-        {
-            value = defaultValue;
-        }
+            virtual void Set(T value) { this->value = value; }
+            virtual void Update() {}
+            virtual void Reset()
+            {
+                value = defaultValue;
+            }
 
-    protected:
-        T value; ///< The current value.
-        T defaultValue; ///< The default value.
+        protected:
+            T value; ///< The current value.
+            T defaultValue; ///< The default value.
     };
 
     /**
@@ -246,14 +246,14 @@ namespace ai
      */
     class UnitManualSetValue : public ManualSetValue<Unit*>
     {
-    public:
-        UnitManualSetValue(PlayerbotAI* ai, Unit* defaultValue, string name = "value") :
-            ManualSetValue<Unit*>(ai, defaultValue, name) {}
+        public:
+            UnitManualSetValue(PlayerbotAI* ai, Unit* defaultValue, string name = "value")
+                : ManualSetValue<Unit*>(ai, defaultValue, name) {}
 
-        virtual string Format()
-        {
-            Unit* unit = Get();
-            return unit ? unit->GetName() : "<none>";
-        }
+            virtual string Format()
+            {
+                Unit* unit = Get();
+                return unit ? unit->GetName() : "<none>";
+            }
     };
 }

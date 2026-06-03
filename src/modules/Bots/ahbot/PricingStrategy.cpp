@@ -96,20 +96,20 @@ double PricingStrategy::GetRarityPriceMultiplier(uint32 itemId)
     double result = 1.0;
 
     QueryResult* results = WorldDatabase.PQuery(
-        "SELECT MAX(`ChanceOrQuestChance`) FROM ( "
-        "SELECT `ChanceOrQuestChance` FROM `gameobject_loot_template` WHERE `item` = '%u' "
+            "SELECT MAX(`ChanceOrQuestChance`) FROM ( "
+            "SELECT `ChanceOrQuestChance` FROM `gameobject_loot_template` WHERE `item` = '%u' "
         //"union select ChanceOrQuestChance from spell_loot_template where item = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `disenchant_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `fishing_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `item_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `disenchant_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `fishing_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `item_loot_template` WHERE `item` = '%u' "
         //"union select ChanceOrQuestChance from milling_loot_template where `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `pickpocketing_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `pickpocketing_loot_template` WHERE `item` = '%u' "
         //"union select ChanceOrQuestChance from prospecting_loot_template where `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `reference_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `skinning_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT `ChanceOrQuestChance` FROM `creature_loot_template` WHERE `item` = '%u' "
-        "UNION SELECT 0 "
-        ") a",
+            "UNION SELECT `ChanceOrQuestChance` FROM `reference_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `skinning_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT `ChanceOrQuestChance` FROM `creature_loot_template` WHERE `item` = '%u' "
+            "UNION SELECT 0 "
+            ") a",
         itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId,itemId);
 
     if (results)
@@ -133,7 +133,7 @@ double PricingStrategy::GetCategoryPriceMultiplier(uint32 untilTime, uint32 auct
     double result = 1.0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT COUNT(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS days FROM `ahbot_history` WHERE `category` = '%s' AND `won` = '1' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
+            "SELECT COUNT(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS days FROM `ahbot_history` WHERE `category` = '%s' AND `won` = '1' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
         category->GetName().c_str(), untilTime, AhBot::factions[auctionHouse]);
     if (results)
     {
@@ -163,7 +163,7 @@ double PricingStrategy::GetItemPriceMultiplier(ItemPrototype const* proto, uint3
     double result = 1.0;
 
     QueryResult* results = CharacterDatabase.PQuery(
-        "SELECT count(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS `days` FROM `ahbot_history` WHERE `won` = '1' AND `item` = '%u' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
+            "SELECT count(*) FROM (SELECT ROUND(`buytime`/3600/24/5) AS `days` FROM `ahbot_history` WHERE `won` = '1' AND `item` = '%u' AND `buytime` <= '%u' AND `auction_house` = '%u' GROUP BY `days`) q",
         proto->ItemId, untilTime, AhBot::factions[auctionHouse]);
     if (results)
     {
@@ -210,7 +210,7 @@ uint32 PricingStrategy::GetDefaultBuyPrice(ItemPrototype const* proto)
         double result = 1.0;
 
         QueryResult* results = WorldDatabase.PQuery(
-            "SELECT MAX(`QuestLevel`), MAX(`MinLevel`) FROM `quest_template` WHERE `ReqItemId1` = %u OR `ReqItemId2` = %u OR `ReqItemId3` = %u OR `ReqItemId4` = %u",
+                "SELECT MAX(`QuestLevel`), MAX(`MinLevel`) FROM `quest_template` WHERE `ReqItemId1` = %u OR `ReqItemId2` = %u OR `ReqItemId3` = %u OR `ReqItemId4` = %u",
             proto->ItemId, proto->ItemId, proto->ItemId, proto->ItemId);
         if (results)
         {

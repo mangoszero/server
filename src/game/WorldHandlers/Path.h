@@ -36,7 +36,7 @@ struct PathNode
 };
 
 template < typename PathElem, typename PathNode = PathElem >
-class Path
+    class Path
 {
     public:
         size_t size() const { return i_nodes.size(); }

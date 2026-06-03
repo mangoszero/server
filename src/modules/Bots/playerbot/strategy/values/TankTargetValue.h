@@ -7,10 +7,10 @@ namespace ai
 
     class TankTargetValue : public TargetValue
     {
-    public:
-        TankTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
+        public:
+            TankTargetValue(PlayerbotAI* ai) : TargetValue(ai) {}
 
-    public:
-        Unit* Calculate();
+        public:
+            Unit* Calculate();
     };
 }

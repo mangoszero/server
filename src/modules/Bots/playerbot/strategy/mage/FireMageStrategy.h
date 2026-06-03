@@ -7,29 +7,29 @@ namespace ai
 {
     class FireMageStrategy : public GenericMageStrategy
     {
-    public:
-        FireMageStrategy(PlayerbotAI* ai) : GenericMageStrategy(ai) {}
+        public:
+            FireMageStrategy(PlayerbotAI* ai) : GenericMageStrategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "fire";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "fire";
+            }
 
-        virtual NextAction** getDefaultActions();
+            virtual NextAction** getDefaultActions();
     };
 
     class FireMageAoeStrategy : public CombatStrategy
     {
-    public:
-        FireMageAoeStrategy(PlayerbotAI* ai) : CombatStrategy(ai) {}
+        public:
+            FireMageAoeStrategy(PlayerbotAI* ai) : CombatStrategy(ai) {}
 
-    public:
-        virtual void InitTriggers(std::list<TriggerNode*> &triggers);
-        virtual string getName()
-        {
-            return "fire aoe";
-        }
+        public:
+            virtual void InitTriggers(std::list<TriggerNode*> &triggers);
+            virtual string getName()
+            {
+                return "fire aoe";
+            }
     };
 }

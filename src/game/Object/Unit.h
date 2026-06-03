@@ -667,8 +667,8 @@ MovementFlags const movementFlagsMask = MovementFlags(
     );
 
 MovementFlags const movementOrTurningFlagsMask = MovementFlags(
-            movementFlagsMask | MOVEFLAG_TURN_LEFT | MOVEFLAG_TURN_RIGHT
-        );
+    movementFlagsMask | MOVEFLAG_TURN_LEFT | MOVEFLAG_TURN_RIGHT
+    );
 
 class MovementInfo
 {
@@ -835,8 +835,8 @@ enum MeleeHitOutcome
 
 struct CleanDamage
 {
-    CleanDamage(uint32 _damage, WeaponAttackType _attackType, MeleeHitOutcome _hitOutCome) :
-        damage(_damage), attackType(_attackType), hitOutCome(_hitOutCome) {}
+    CleanDamage(uint32 _damage, WeaponAttackType _attackType, MeleeHitOutcome _hitOutCome)
+        : damage(_damage), attackType(_attackType), hitOutCome(_hitOutCome) {}
 
     uint32 damage;
     WeaponAttackType attackType;
@@ -912,7 +912,7 @@ struct SpellNonMeleeDamage
 {
     SpellNonMeleeDamage(Unit* _attacker, Unit* _target, uint32 _SpellID, SpellSchools _school)
         : target(_target), attacker(_attacker), SpellID(_SpellID), damage(0), school(_school),
-          absorb(0), resist(0), physicalLog(false), unused(false), blocked(0), HitInfo(0)
+        absorb(0), resist(0), physicalLog(false), unused(false), blocked(0), HitInfo(0)
     {}
 
     Unit*   target;
@@ -1530,32 +1530,32 @@ class Unit : public WorldObject
         Unit* SelectRandomFriendlyTarget(Unit* except = NULL, float radius = ATTACK_DISTANCE) const;
 
         /**
-        * @param fRange how big the radius for our search should be
-        * @param uiMinHPDiff how much health the unit has to be missing
-        * @param bPercent if the previous param is percent or raw value
-        * @param except select any target but this one, usually your current target
-        * @return The injured friendly target found, NULL if no targets were found
-        * \see Mangos::UnitListSearcher
-        * \see Cell::VisitAllObjects
-        */
+         * @param fRange how big the radius for our search should be
+         * @param uiMinHPDiff how much health the unit has to be missing
+         * @param bPercent if the previous param is percent or raw value
+         * @param except select any target but this one, usually your current target
+         * @return The injured friendly target found, NULL if no targets were found
+         * \see Mangos::UnitListSearcher
+         * \see Cell::VisitAllObjects
+         */
         Unit* FindLowestHpFriendlyUnit(float fRange, uint32 uiMinHPDiff = 1, bool bPercent = false, Unit* except = nullptr) const;
 
         /**
-        * @param range how big the radius for our search should be
-        * @param spellid buff to check
-        * @param except select any target but this one, usually your current target
-        * @return The friendly target found, NULL if no targets were found
-        * \see Mangos::UnitListSearcher
-        * \see Cell::VisitAllObjects
-        */
+         * @param range how big the radius for our search should be
+         * @param spellid buff to check
+         * @param except select any target but this one, usually your current target
+         * @return The friendly target found, NULL if no targets were found
+         * \see Mangos::UnitListSearcher
+         * \see Cell::VisitAllObjects
+         */
         Unit* FindFriendlyUnitMissingBuff(float range, uint32 spellid, Unit* except = nullptr) const;
 
         /**
-        * @param range how big the radius for our search should be
-        * @return The friendly target found, NULL if no targets were found
-        * \see Mangos::UnitListSearcher
-        * \see Cell::VisitAllObjects
-        */
+         * @param range how big the radius for our search should be
+         * @return The friendly target found, NULL if no targets were found
+         * \see Mangos::UnitListSearcher
+         * \see Cell::VisitAllObjects
+         */
         Unit* FindFriendlyUnitCC(float range) const;
 
         /**
@@ -2208,8 +2208,8 @@ class Unit : public WorldObject
         void DealMeleeDamage(CalcDamageInfo* damageInfo, bool durabilityLoss);
 
         /**
-        * Handles all extra attacks set up by a spell
-        */
+         * Handles all extra attacks set up by a spell
+         */
         void HandleProcExtraAttackFor(Unit* victim);
 
         /**
@@ -2567,10 +2567,10 @@ class Unit : public WorldObject
         bool IsServiceProvider() const
         {
             return HasFlag(UNIT_NPC_FLAGS,
-                            UNIT_NPC_FLAG_VENDOR | UNIT_NPC_FLAG_TRAINER | UNIT_NPC_FLAG_FLIGHTMASTER |
-                            UNIT_NPC_FLAG_PETITIONER | UNIT_NPC_FLAG_BATTLEMASTER | UNIT_NPC_FLAG_BANKER |
-                            UNIT_NPC_FLAG_INNKEEPER | UNIT_NPC_FLAG_SPIRITHEALER |
-                            UNIT_NPC_FLAG_SPIRITGUIDE | UNIT_NPC_FLAG_TABARDDESIGNER | UNIT_NPC_FLAG_AUCTIONEER);
+                UNIT_NPC_FLAG_VENDOR | UNIT_NPC_FLAG_TRAINER | UNIT_NPC_FLAG_FLIGHTMASTER |
+                UNIT_NPC_FLAG_PETITIONER | UNIT_NPC_FLAG_BATTLEMASTER | UNIT_NPC_FLAG_BANKER |
+                UNIT_NPC_FLAG_INNKEEPER | UNIT_NPC_FLAG_SPIRITHEALER |
+                UNIT_NPC_FLAG_SPIRITGUIDE | UNIT_NPC_FLAG_TABARDDESIGNER | UNIT_NPC_FLAG_AUCTIONEER);
         }
 
         /**
@@ -3483,7 +3483,7 @@ class Unit : public WorldObject
          * the functor for
          */
         template<typename Func>
-        void CallForAllControlledUnits(Func const& func, uint32 controlledMask);
+            void CallForAllControlledUnits(Func const& func, uint32 controlledMask);
 
         /**
          * Works pretty much the same way as \ref Unit::CallForAllControlledUnits but instead
@@ -3500,7 +3500,7 @@ class Unit : public WorldObject
          * \see Unit::isAttackingPlayer
          */
         template<typename Func>
-        bool CheckAllControlledUnits(Func const& func, uint32 controlledMask) const;
+            bool CheckAllControlledUnits(Func const& func, uint32 controlledMask) const;
 
         /**
          * Adds a \ref SpellAuraHolder
@@ -3759,11 +3759,12 @@ class Unit : public WorldObject
         bool IsInDisallowedMountForm() const
         {
             ShapeshiftForm form = GetShapeshiftForm();
-            return form != FORM_NONE
-                        && form != FORM_BATTLESTANCE
-                        && form != FORM_BERSERKERSTANCE
-                        && form != FORM_DEFENSIVESTANCE
-                        && form != FORM_SHADOW && form != FORM_STEALTH;
+            return form != FORM_NONE &&
+                form != FORM_BATTLESTANCE &&
+                form != FORM_BERSERKERSTANCE &&
+                form != FORM_DEFENSIVESTANCE &&
+                form != FORM_SHADOW &&
+                form != FORM_STEALTH;
         }
 
         float m_modMeleeHitChance;
@@ -3845,6 +3846,7 @@ class Unit : public WorldObject
         ThreatManager const& GetThreatManager() const { return m_ThreatManager; }
         void AddHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
         void RemoveHatedBy(HostileReference* /*pHostileReference*/) { /* nothing to do yet */ }
+
         HostileRefManager& GetHostileRefManager()
         {
             return m_HostileRefManager;
@@ -4071,7 +4073,7 @@ class Unit : public WorldObject
         virtual bool CanSwim() const = 0;
         virtual bool CanFly() const = 0;
 
-protected:
+    protected:
         struct WeaponDamageInfo
         {
             struct Weapon
@@ -4147,7 +4149,7 @@ protected:
 
     private:
 
-    void CleanupDeletedAuras();
+        void CleanupDeletedAuras();
         void UpdateSplineMovement(uint32 t_diff);
 
         Unit* _GetTotem(TotemSlot slot) const;              // for templated function without include need
@@ -4188,106 +4190,134 @@ protected:
         // this will catch and prevent build for any cases when all optional args skipped and instead triggered used non boolean type
         // no bodies expected for this declarations
         template <typename TR>
-        void CastSpell(Unit* Victim, uint32 spell, TR triggered);
+            void CastSpell(Unit* Victim, uint32 spell, TR triggered);
         template <typename TR>
-        void CastSpell(Unit* Victim, SpellEntry const* spell, TR triggered);
+            void CastSpell(Unit* Victim, SpellEntry const* spell, TR triggered);
         template <typename TR>
-        void CastCustomSpell(Unit* Victim, uint32 spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
+            void CastCustomSpell(Unit* Victim, uint32 spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
         template <typename SP, typename TR>
-        void CastCustomSpell(Unit* Victim, SpellEntry const* spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
+            void CastCustomSpell(Unit* Victim, SpellEntry const* spell, int32 const* bp0, int32 const* bp1, int32 const* bp2, TR triggered);
         template <typename TR>
-        void CastSpell(float x, float y, float z, uint32 spell, TR triggered);
+            void CastSpell(float x, float y, float z, uint32 spell, TR triggered);
         template <typename TR>
-        void CastSpell(float x, float y, float z, SpellEntry const* spell, TR triggered);
+            void CastSpell(float x, float y, float z, SpellEntry const* spell, TR triggered);
 };
 
 template<typename Func>
-void Unit::CallForAllControlledUnits(Func const& func, uint32 controlledMask)
+    void Unit::CallForAllControlledUnits(Func const& func, uint32 controlledMask)
 {
     if (controlledMask & CONTROLLED_PET)
+    {
         if (Pet* pet = GetPet())
         {
             func(pet);
         }
+    }
 
     if (controlledMask & CONTROLLED_MINIPET)
+    {
         if (Pet* mini = GetMiniPet())
         {
             func(mini);
         }
+    }
 
     if (controlledMask & CONTROLLED_GUARDIANS)
     {
         for (GuidSet::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end();)
+        {
             if (Pet* guardian = _GetPet(*(itr++)))
             {
                 func(guardian);
             }
+        }
     }
 
     if (controlledMask & CONTROLLED_TOTEMS)
     {
         for (int i = 0; i < MAX_TOTEM_SLOT; ++i)
+        {
             if (Unit* totem = _GetTotem(TotemSlot(i)))
             {
                 func(totem);
             }
+        }
     }
 
     if (controlledMask & CONTROLLED_CHARM)
+    {
         if (Unit* charm = GetCharm())
         {
             func(charm);
         }
+    }
 }
 
 template<typename Func>
-bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) const
+    bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) const
 {
     if (controlledMask & CONTROLLED_PET)
+    {
         if (Pet const* pet = GetPet())
+        {
             if (func(pet))
             {
                 return true;
             }
+        }
+    }
 
     if (controlledMask & CONTROLLED_MINIPET)
+    {
         if (Pet* mini = GetMiniPet())
+        {
             if (func(mini))
             {
                 return true;
             }
+        }
+    }
 
     if (controlledMask & CONTROLLED_GUARDIANS)
     {
         for (GuidSet::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end();)
+        {
             if (Pet const* guardian = _GetPet(*(itr++)))
+            {
                 if (func(guardian))
                 {
                     return true;
                 }
+            }
+        }
     }
 
     if (controlledMask & CONTROLLED_TOTEMS)
     {
         for (int i = 0; i < MAX_TOTEM_SLOT; ++i)
+        {
             if (Unit const* totem = _GetTotem(TotemSlot(i)))
+            {
                 if (func(totem))
                 {
                     return true;
                 }
+            }
+        }
     }
 
     if (controlledMask & CONTROLLED_CHARM)
+    {
         if (Unit const* charm = GetCharm())
+        {
             if (func(charm))
             {
                 return true;
             }
+        }
+    }
 
     return false;
 }
-
 /** @} */
-
 #endif

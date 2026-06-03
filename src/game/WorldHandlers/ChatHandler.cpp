@@ -87,11 +87,11 @@ bool WorldSession::processChatmessageFurtherAfterSecurityChecks(std::string& msg
             stripLineInvisibleChars(msg);
         }
 
-        if (sWorld.getConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_SEVERITY) && GetSecurity() < SEC_MODERATOR
-            && !ChatHandler(this).isValidChatMessage(msg.c_str()))
+        if (sWorld.getConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_SEVERITY) && GetSecurity() < SEC_MODERATOR &&
+            !ChatHandler(this).isValidChatMessage(msg.c_str()))
         {
             sLog.outError("Player %s (GUID: %u) sent a chatmessage with an invalid link: %s", GetPlayer()->GetName(),
-                          GetPlayer()->GetGUIDLow(), msg.c_str());
+                GetPlayer()->GetGUIDLow(), msg.c_str());
             if (sWorld.getConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_KICK))
             {
                 KickPlayer();
@@ -135,10 +135,10 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
     if (type != CHAT_MSG_AFK && type != CHAT_MSG_DND)
     {
         //prevent cheating, by sending LANG_UNIVERSAL
-        if ((langDesc->lang_id == LANG_UNIVERSAL
-            && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT)
-            && GetSecurity() == SEC_PLAYER)
-            || (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
+        if ((langDesc->lang_id == LANG_UNIVERSAL &&
+            !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHAT) &&
+            GetSecurity() == SEC_PLAYER) ||
+            (langDesc->skill_id != 0 && !_player->HasSkill(langDesc->skill_id)))
         {
             SendNotification(LANG_NOT_LEARNED_LANGUAGE);
             return;
@@ -349,8 +349,12 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                 GetPlayer()->m_speakCount = 0;
             }
             else
-#endif
+            {
                 GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
+            }
+#else
+            GetPlayer()->Whisper(msg, lang, player->GetObjectGuid());
+#endif
         } break;
 
         case CHAT_MSG_PARTY:
@@ -445,6 +449,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
 
             if (GetPlayer()->GetGuildId())
+            {
                 if (Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId()))
                 {
                     // Used by Eluna
@@ -475,7 +480,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
                     }
                 }
 #endif
-
+            }
             break;
         }
         case CHAT_MSG_OFFICER:
@@ -504,6 +509,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             }
 
             if (GetPlayer()->GetGuildId())
+            {
                 if (Guild* guild = sGuildMgr.GetGuildById(GetPlayer()->GetGuildId()))
                 {
                     // Used by Eluna
@@ -519,7 +525,7 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
 
                     guild->BroadcastToOfficers(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
                 }
-
+            }
             break;
         }
         case CHAT_MSG_RAID:
@@ -669,9 +675,9 @@ void WorldSession::HandleMessagechatOpcode(WorldPacket& recv_data)
             Group* group = GetPlayer()->GetGroup();
             if (!group || !group->isRaidGroup() ||
                 !(group->IsLeader(GetPlayer()->GetObjectGuid()) || group->IsAssistant(GetPlayer()->GetObjectGuid())))
-                {
-                    return;
-                }
+            {
+                return;
+            }
 
             // Used by Eluna
 #ifdef ENABLE_ELUNA

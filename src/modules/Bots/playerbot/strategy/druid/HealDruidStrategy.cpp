@@ -7,11 +7,11 @@ using namespace ai;
 
 class HealDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
-public:
-    HealDruidStrategyActionNodeFactory()
-    {
-    }
-private:
+    public:
+        HealDruidStrategyActionNodeFactory()
+        {}
+
+    private:
 };
 
 HealDruidStrategy::HealDruidStrategy(PlayerbotAI* ai) : GenericDruidStrategy(ai)
@@ -24,34 +24,34 @@ void HealDruidStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     GenericDruidStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "enemy out of spell",
+            "enemy out of spell",
         NextAction::array(0, new NextAction("reach spell", ACTION_NORMAL + 9), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "tree form",
+            "tree form",
         NextAction::array(0, new NextAction("tree form", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium health",
+            "medium health",
         NextAction::array(0, new NextAction("regrowth", ACTION_MEDIUM_HEAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member medium health",
+            "party member medium health",
         NextAction::array(0, new NextAction("regrowth on party", ACTION_MEDIUM_HEAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "almost full health",
+            "almost full health",
         NextAction::array(0, new NextAction("rejuvenation", ACTION_LIGHT_HEAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "party member almost full health",
+            "party member almost full health",
         NextAction::array(0, new NextAction("rejuvenation on party", ACTION_LIGHT_HEAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "medium aoe heal",
+            "medium aoe heal",
         NextAction::array(0, new NextAction("tranquility", ACTION_MEDIUM_HEAL + 3), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "entangling roots",
+            "entangling roots",
         NextAction::array(0, new NextAction("entangling roots on cc", ACTION_HIGH + 1), NULL)));
 }
