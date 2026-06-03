@@ -1,5 +1,6 @@
 #pragma once
 #include "../triggers/GenericTriggers.h"
+#include "../triggers/CureTriggers.h"
 
 namespace ai
 {
