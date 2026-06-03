@@ -59,10 +59,16 @@ namespace MaNGOS
     bool ParseScheduledExitTime(std::string const& text, uint32& hour, uint32& minute);
     bool ParseScheduledExitMode(std::string const& text, ScheduledExitMode& mode);
     char const* ScheduledExitModeToString(ScheduledExitMode mode);
-    std::vector<uint32> ParseScheduledExitWarningTimes(std::string const& text, uint32 delay, std::vector<std::string>& errors);
-    ScheduledExitCountdownActions GetScheduledExitCountdownActions(bool scheduledExitCountdownActive);
-    bool MarkScheduledExitHandledIfMatching(ScheduledExitSchedule const& schedule, std::tm const& localTime, ScheduledExitState& state);
-    bool CheckAndMarkScheduledExit(ScheduledExitSchedule const& schedule, std::tm const& localTime, ScheduledExitState& state);
+    std::vector<uint32> ParseScheduledExitWarningTimes(
+        std::string const& text, uint32 delay, std::vector<std::string>& errors);
+    ScheduledExitCountdownActions GetScheduledExitCountdownActions(
+        bool scheduledExitCountdownActive);
+    bool MarkScheduledExitHandledIfMatching(
+        ScheduledExitSchedule const& schedule, std::tm const& localTime,
+        ScheduledExitState& state);
+    bool CheckAndMarkScheduledExit(
+        ScheduledExitSchedule const& schedule, std::tm const& localTime,
+        ScheduledExitState& state);
     std::string BuildScheduledExitWarningText(ScheduledExitMode mode, uint32 remainingSeconds);
 }
 

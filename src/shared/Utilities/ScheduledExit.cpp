@@ -37,11 +37,13 @@ namespace MaNGOS
 
         std::string ToLower(std::string text)
         {
-            std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+            std::transform(text.begin(), text.end(), text.begin(),
+                [](unsigned char c) { return char(std::tolower(c)); });
             return text;
         }
 
-        bool IsScheduledExitMinute(ScheduledExitSchedule const& schedule, std::tm const& localTime)
+        bool IsScheduledExitMinute(ScheduledExitSchedule const& schedule,
+            std::tm const& localTime)
         {
             return schedule.enabled &&
                 localTime.tm_wday == int(schedule.dayOfWeek) &&
@@ -146,7 +148,8 @@ namespace MaNGOS
         return mode == SCHEDULED_EXIT_MODE_RESTART ? "restart" : "shutdown";
     }
 
-    std::vector<uint32> ParseScheduledExitWarningTimes(std::string const& text, uint32 delay, std::vector<std::string>& errors)
+    std::vector<uint32> ParseScheduledExitWarningTimes(
+        std::string const& text, uint32 delay, std::vector<std::string>& errors)
     {
         std::vector<uint32> warnings;
         std::set<uint32> seen;
@@ -168,7 +171,8 @@ namespace MaNGOS
             if (warningTime > delay)
             {
                 std::stringstream message;
-                message << "warning milestone " << warningTime << " is greater than delay " << delay;
+                message << "warning milestone " << warningTime
+                        << " is greater than delay " << delay;
                 errors.push_back(message.str());
                 continue;
             }
@@ -183,7 +187,8 @@ namespace MaNGOS
         return warnings;
     }
 
-    ScheduledExitCountdownActions GetScheduledExitCountdownActions(bool scheduledExitCountdownActive)
+    ScheduledExitCountdownActions GetScheduledExitCountdownActions(
+        bool scheduledExitCountdownActive)
     {
         ScheduledExitCountdownActions actions;
         actions.sendShutdownTimer = true;
@@ -191,7 +196,9 @@ namespace MaNGOS
         return actions;
     }
 
-    bool MarkScheduledExitHandledIfMatching(ScheduledExitSchedule const& schedule, std::tm const& localTime, ScheduledExitState& state)
+    bool MarkScheduledExitHandledIfMatching(
+        ScheduledExitSchedule const& schedule, std::tm const& localTime,
+        ScheduledExitState& state)
     {
         if (!IsScheduledExitMinute(schedule, localTime))
         {
@@ -202,7 +209,9 @@ namespace MaNGOS
         return true;
     }
 
-    bool CheckAndMarkScheduledExit(ScheduledExitSchedule const& schedule, std::tm const& localTime, ScheduledExitState& state)
+    bool CheckAndMarkScheduledExit(
+        ScheduledExitSchedule const& schedule, std::tm const& localTime,
+        ScheduledExitState& state)
     {
         if (!IsScheduledExitMinute(schedule, localTime))
         {
@@ -225,7 +234,8 @@ namespace MaNGOS
     std::string BuildScheduledExitWarningText(ScheduledExitMode mode, uint32 remainingSeconds)
     {
         std::stringstream text;
-        char const* action = mode == SCHEDULED_EXIT_MODE_RESTART ? "restarting" : "shutting down";
+        char const* action = mode == SCHEDULED_EXIT_MODE_RESTART
+            ? "restarting" : "shutting down";
 
         if (remainingSeconds < 60)
         {

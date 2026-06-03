@@ -2206,7 +2206,9 @@ void World::_UpdateGameTime()
         {
             m_ShutdownTimer -= elapsed;
 
-            MaNGOS::ScheduledExitCountdownActions actions = MaNGOS::GetScheduledExitCountdownActions(m_scheduledExitCountdownActive);
+            MaNGOS::ScheduledExitCountdownActions actions =
+                MaNGOS::GetScheduledExitCountdownActions(
+                    m_scheduledExitCountdownActive);
             if (actions.sendShutdownTimer)
             {
                 ShutdownMsg();
@@ -2284,7 +2286,8 @@ void World::LoadScheduledExitConfig()
     uint32 dayOfWeek = 0;
     if (!MaNGOS::ParseScheduledExitUInt32(dayText, dayOfWeek) || dayOfWeek > 6)
     {
-        sLog.outError("ScheduledExit: invalid ScheduledExit.DayOfWeek '%s'; disabling scheduled exit", dayText.c_str());
+        sLog.outError("ScheduledExit: invalid ScheduledExit.DayOfWeek '%s'; "
+            "disabling scheduled exit", dayText.c_str());
         return;
     }
 
@@ -2293,7 +2296,8 @@ void World::LoadScheduledExitConfig()
     uint32 minute = 0;
     if (!MaNGOS::ParseScheduledExitTime(timeText, hour, minute))
     {
-        sLog.outError("ScheduledExit: invalid ScheduledExit.Time '%s'; disabling scheduled exit", timeText.c_str());
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Time '%s'; "
+            "disabling scheduled exit", timeText.c_str());
         return;
     }
 
@@ -2301,7 +2305,8 @@ void World::LoadScheduledExitConfig()
     MaNGOS::ScheduledExitMode mode = MaNGOS::SCHEDULED_EXIT_MODE_RESTART;
     if (!MaNGOS::ParseScheduledExitMode(modeText, mode))
     {
-        sLog.outError("ScheduledExit: invalid ScheduledExit.Mode '%s'; disabling scheduled exit", modeText.c_str());
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Mode '%s'; "
+            "disabling scheduled exit", modeText.c_str());
         return;
     }
 
@@ -2309,20 +2314,24 @@ void World::LoadScheduledExitConfig()
     uint32 delay = 0;
     if (!MaNGOS::ParseScheduledExitUInt32(delayText, delay))
     {
-        sLog.outError("ScheduledExit: invalid ScheduledExit.Delay '%s'; disabling scheduled exit", delayText.c_str());
+        sLog.outError("ScheduledExit: invalid ScheduledExit.Delay '%s'; "
+            "disabling scheduled exit", delayText.c_str());
         return;
     }
 
     std::vector<std::string> warningErrors;
     std::vector<uint32> warningTimes = MaNGOS::ParseScheduledExitWarningTimes(
-        sConfig.GetStringDefault("ScheduledExit.WarningTimes", "900,600,300,60"), delay, warningErrors);
+        sConfig.GetStringDefault("ScheduledExit.WarningTimes", "900,600,300,60"),
+        delay, warningErrors);
 
-    for (std::vector<std::string>::const_iterator itr = warningErrors.begin(); itr != warningErrors.end(); ++itr)
+    for (std::vector<std::string>::const_iterator itr = warningErrors.begin();
+         itr != warningErrors.end(); ++itr)
     {
         sLog.outError("ScheduledExit: ignoring %s", itr->c_str());
     }
 
-    for (std::vector<uint32>::const_iterator itr = warningTimes.begin(); itr != warningTimes.end(); ++itr)
+    for (std::vector<uint32>::const_iterator itr = warningTimes.begin();
+         itr != warningTimes.end(); ++itr)
     {
         if (*itr == 0)
         {
@@ -2351,13 +2360,17 @@ void World::LoadScheduledExitConfig()
     m_scheduledExit.mode = mode;
     m_scheduledExitDelay = delay;
 
-    if (MaNGOS::MarkScheduledExitHandledIfMatching(m_scheduledExit, safe_localtime(time(NULL)), m_scheduledExitState))
+    if (MaNGOS::MarkScheduledExitHandledIfMatching(
+        m_scheduledExit, safe_localtime(time(NULL)), m_scheduledExitState))
     {
-        sLog.outString("ScheduledExit: startup minute matches configured schedule; suppressing this minute to avoid restart loop");
+        sLog.outString("ScheduledExit: startup minute matches configured schedule; "
+            "suppressing this minute to avoid restart loop");
     }
 
     std::ostringstream milestones;
-    for (std::vector<ScheduledExitWarning>::const_iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    for (std::vector<ScheduledExitWarning>::const_iterator itr =
+             m_scheduledExitWarnings.begin();
+         itr != m_scheduledExitWarnings.end(); ++itr)
     {
         if (itr != m_scheduledExitWarnings.begin())
         {
@@ -2379,15 +2392,19 @@ void World::CheckScheduledExit()
         return;
     }
 
-    if (!MaNGOS::CheckAndMarkScheduledExit(m_scheduledExit, safe_localtime(m_gameTime), m_scheduledExitState))
+    if (!MaNGOS::CheckAndMarkScheduledExit(
+        m_scheduledExit, safe_localtime(m_gameTime), m_scheduledExitState))
     {
         return;
     }
 
     if (m_ShutdownTimer > 0)
     {
-        sLog.outString("ScheduledExit: %s scheduled for day=%u time=%02u:%02u skipped because shutdown/restart is already in progress",
-            MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode), m_scheduledExit.dayOfWeek, m_scheduledExit.hour, m_scheduledExit.minute);
+        sLog.outString("ScheduledExit: %s scheduled for day=%u time=%02u:%02u "
+            "skipped because shutdown/restart is already in progress",
+            MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode),
+            m_scheduledExit.dayOfWeek, m_scheduledExit.hour,
+            m_scheduledExit.minute);
         return;
     }
 
@@ -2396,8 +2413,10 @@ void World::CheckScheduledExit()
 
 void World::StartScheduledExit()
 {
-    uint32 mask = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART ? SHUTDOWN_MASK_RESTART : SHUTDOWN_MASK_STOP;
-    uint8 exitCode = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART ? RESTART_EXIT_CODE : SHUTDOWN_EXIT_CODE;
+    uint32 mask = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART
+        ? SHUTDOWN_MASK_RESTART : SHUTDOWN_MASK_STOP;
+    uint8 exitCode = m_scheduledExit.mode == MaNGOS::SCHEDULED_EXIT_MODE_RESTART
+        ? RESTART_EXIT_CODE : SHUTDOWN_EXIT_CODE;
 
     sLog.outString("ScheduledExit: firing scheduled %s with delay %u seconds",
         MaNGOS::ScheduledExitModeToString(m_scheduledExit.mode), m_scheduledExitDelay);
@@ -2414,7 +2433,9 @@ void World::StartScheduledExit()
 
 void World::ResetScheduledExitWarnings()
 {
-    for (std::vector<ScheduledExitWarning>::iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    for (std::vector<ScheduledExitWarning>::iterator itr =
+             m_scheduledExitWarnings.begin();
+         itr != m_scheduledExitWarnings.end(); ++itr)
     {
         itr->sent = false;
     }
@@ -2427,7 +2448,9 @@ void World::SendScheduledExitWarnings()
         return;
     }
 
-    for (std::vector<ScheduledExitWarning>::iterator itr = m_scheduledExitWarnings.begin(); itr != m_scheduledExitWarnings.end(); ++itr)
+    for (std::vector<ScheduledExitWarning>::iterator itr =
+             m_scheduledExitWarnings.begin();
+         itr != m_scheduledExitWarnings.end(); ++itr)
     {
         if (!itr->sent && m_ShutdownTimer <= itr->remainingSeconds)
         {
