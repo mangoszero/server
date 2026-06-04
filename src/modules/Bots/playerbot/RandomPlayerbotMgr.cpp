@@ -576,12 +576,19 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
 
 bool RandomPlayerbotMgr::IsRandomBot(Player* bot)
 {
-    return IsRandomBot(bot->GetObjectGuid());
+    if (!bot) return false;
+    return IsRandomBot(bot->GetGUIDLow());
 }
 
 bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
 {
-    return GetEventValue(bot, "add");
+    std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
+    if (it != m_randomBotCache.end())
+        return it->second;
+
+    bool value = (GetEventValue(bot, "add") != 0);
+    m_randomBotCache[bot] = value;
+    return value;
 }
 
 list<uint32> RandomPlayerbotMgr::GetBots()
@@ -835,6 +842,9 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
                 "INSERT INTO `ai_playerbot_random_bots` (`owner`, `bot`, `time`, `validIn`, `event`, `value`) VALUES ('%u', '%u', '%u', '%u', '%s', '%u')",
             0, bot, (uint32)time(0), validIn, event.c_str(), value);
     }
+
+    if (event == "add")
+        m_randomBotCache[bot] = (value != 0);
 
     return value;
 }
