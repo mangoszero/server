@@ -4822,7 +4822,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 int32 spellid = m_spellInfo->Id;            // send main spell id as basepoints for not used effect
                 m_caster->CastCustomSpell(unitTarget, 19993, &heal, &spellid, NULL, true);
             }
-            else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000800000))
+            else if (m_spellInfo->SpellIconID == 205)
             {
                 if (!unitTarget || !unitTarget->IsAlive())
                 {
@@ -4843,8 +4843,16 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         continue;
                     }
 
-                    // must be calculated base at raw base points in spell proto, GetModifier()->m_value for S.Righteousness modified by SPELLMOD_DAMAGE
-                    spellId2 = (*itr)->GetSpellProto()->CalculateSimpleValue((SpellEffectIndex)(*itr)->GetEffIndex());
+                    SpellEntry const* sealInfo = (*itr)->GetSpellProto();
+                    for (int32 eff = EFFECT_INDEX_0; eff < MAX_EFFECT_INDEX; ++eff)
+                    {
+                        uint32 val = sealInfo->CalculateSimpleValue(SpellEffectIndex(eff));
+                        if (val > 10000)
+                        {
+                            spellId2 = val;
+                            break;
+                        }
+                    }
 
                     if (spellId2 <= 1)
                     {

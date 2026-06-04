@@ -241,7 +241,7 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, uint32 spellId_2);
 inline bool IsSealSpell(SpellEntry const* spellInfo)
 {
     // Collection of all the seal family flags. No other paladin spell has any of those.
-    return spellInfo->IsFitToFamily(SPELLFAMILY_PALADIN, UI64LIT(0x000000000A000200));
+    return spellInfo->IsFitToFamily(SPELLFAMILY_PALADIN, UI64LIT(0x0000000008000200));
 }
 
 inline bool IsElementalShield(SpellEntry const* spellInfo)
