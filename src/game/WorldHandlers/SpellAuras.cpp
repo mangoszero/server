@@ -6458,6 +6458,10 @@ void Aura::HandlePreventFleeing(bool apply, bool Real)
             GetTarget()->SetFeared(true, first->GetCasterGuid(), first->GetId());
         }
     }
+    else if (apply && GetTarget()->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING))
+    {
+        GetTarget()->SetFeared(false, GetCasterGuid());
+    }
 }
 
 /**
