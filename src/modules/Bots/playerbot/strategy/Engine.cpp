@@ -209,8 +209,17 @@ bool Engine::DoNextAction(Unit* unit, int depth)
 
                     if (actionExecuted)
                     {
-                        LogAction("A:%s - OK", action->getName().c_str());
-                        MultiplyAndPush(actionNode->getContinuers(), 0, false, event);
+                        if (actionNode->isPersistent() && action->isUseful() &&
+                            !actionNode->hasPersistTimedOut())
+                        {
+                            LogAction("A:%s - OK - REPUSH", action->getName().c_str());
+                            PushAgain(actionNode, relevance, event);
+                        }
+                        else
+                        {
+                            LogAction("A:%s - OK", action->getName().c_str());
+                            MultiplyAndPush(actionNode->getContinuers(), 0, false, event);
+                        }
                         lastRelevance = relevance;
                         break;
                     }

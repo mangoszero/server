@@ -33,7 +33,7 @@ namespace ai
                 static Strategy* nc(PlayerbotAI* ai) { return new GenericWarlockNonCombatStrategy(ai); }
                 static Strategy* aoe(PlayerbotAI* ai) { return new DpsAoeWarlockStrategy(ai); }
                 static Strategy* dps_debuff(PlayerbotAI* ai) { return new DpsWarlockDebuffStrategy(ai); }
-                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "shoot"); }
+                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "ranged pull"); }
         };
 
         class CombatStrategyFactoryInternal : public NamedObjectContext<Strategy>

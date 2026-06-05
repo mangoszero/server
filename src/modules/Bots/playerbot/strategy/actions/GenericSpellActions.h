@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Action.h"
+#include "../AiObjectContext.h"
 #include "../../PlayerbotAIConfig.h"
 
 #define BEGIN_SPELL_ACTION(clazz, name) \
@@ -49,23 +50,7 @@ namespace ai
             {
                 this->spell = spell;
                 // Clamp range to actual spell's min/max range from DBC
-                uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
-                if (spellId)
-                {
-                    const SpellEntry* pSpellInfo = sSpellStore.LookupEntry(spellId);
-                    if (pSpellInfo)
-                    {
-                        SpellRangeEntry const* spellRange = sSpellRangeStore.LookupEntry(pSpellInfo->rangeIndex);
-                        if (spellRange)
-                        {
-                            float actualMaxRange = GetSpellMaxRange(spellRange);
-                            if (actualMaxRange > 0)  // Only clamp if spell has a defined range
-                            {
-                                range = actualMaxRange;
-                            }
-                        }
-                    }
-                }
+                range = AI_VALUE2(float, "spell range", spell);
             }
 
             virtual string GetTargetName()
@@ -314,15 +299,6 @@ namespace ai
 
     //---------------------------------------------------------------------------------------------------------------------
 
-    class CastShootAction : public CastSpellAction
-    {
-        public:
-            CastShootAction(PlayerbotAI* ai) : CastSpellAction(ai, "shoot") {}
-            virtual ActionThreatType getThreatType()
-            {
-                return ACTION_THREAT_NONE;
-            }
-    };
 
     class CastLifeBloodAction : public CastHealingSpellAction
     {

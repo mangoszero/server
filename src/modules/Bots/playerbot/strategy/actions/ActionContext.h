@@ -13,6 +13,7 @@
 #include "SuggestWhatToDoAction.h"
 #include "PositionAction.h"
 #include "AttackAction.h"
+#include "PullActions.h"
 
 namespace ai
 {
@@ -25,12 +26,14 @@ namespace ai
                 creators["melee"] = &ActionContext::melee;
                 creators["reach spell"] = &ActionContext::ReachSpell;
                 creators["reach melee"] = &ActionContext::ReachMelee;
+                creators["ranged pull"] = &ActionContext::ranged_pull;
                 creators["flee"] = &ActionContext::flee;
                 creators["gift of the naaru"] = &ActionContext::gift_of_the_naaru;
                 creators["shoot"] = &ActionContext::shoot;
                 creators["lifeblood"] = &ActionContext::lifeblood;
                 creators["arcane torrent"] = &ActionContext::arcane_torrent;
                 creators["end pull"] = &ActionContext::end_pull;
+                creators["end wait for pull"] = &ActionContext::end_wait_for_pull;
                 creators["healthstone"] = &ActionContext::healthstone;
                 creators["healing potion"] = &ActionContext::healing_potion;
                 creators["bandage"] = &ActionContext::bandage;
@@ -44,10 +47,14 @@ namespace ai
                 creators["add loot"] = &ActionContext::add_loot;
                 creators["add gathering loot"] = &ActionContext::add_gathering_loot;
                 creators["add all loot"] = &ActionContext::add_all_loot;
-                creators["shoot"] = &ActionContext::shoot;
+                creators["shoot bow"] = &ActionContext::shoot_bow;
+                creators["shoot gun"] = &ActionContext::shoot_gun;
+                creators["shoot crossbow"] = &ActionContext::shoot_crossbow;
+                creators["throw"] = &ActionContext::throw_action;
                 creators["follow line"] = &ActionContext::follow_line;
                 creators["follow"] = &ActionContext::follow_master;
                 creators["follow master"] = &ActionContext::follow_master;
+                creators["reach master"] = &ActionContext::reach_master;
                 creators["be near"] = &ActionContext::follow_master_random;
                 creators["runaway"] = &ActionContext::runaway;
                 creators["stay"] = &ActionContext::stay;
@@ -70,6 +77,10 @@ namespace ai
                 creators["drop target"] = &ActionContext::drop_target;
                 creators["jump"] = &ActionContext::jump;
                 creators["back off"] = &ActionContext::back_off;
+                creators["watch target approach"] = &ActionContext::watch_target_approach;
+                creators["start pull"] = &ActionContext::start_pull;
+                creators["watch group pull"] = &ActionContext::watch_group_pull;
+                creators["reach shoot range"] = &ActionContext::reach_shoot_range;
             }
 
         private:
@@ -79,7 +90,12 @@ namespace ai
             static Action* open_loot(PlayerbotAI* ai) { return new OpenLootAction(ai); }
             static Action* move_to_loot(PlayerbotAI* ai) { return new MoveToLootAction(ai); }
             static Action* move_random(PlayerbotAI* ai) { return new MoveRandomAction(ai); }
-            static Action* shoot(PlayerbotAI* ai) { return new CastShootAction(ai); }
+            static Action* shoot(PlayerbotAI* ai) { return new CastSpellAction(ai, "shoot"); }
+            static Action* ranged_pull(PlayerbotAI* ai) { return new RangedPullAction(ai); }
+            static Action* shoot_bow(PlayerbotAI* ai) { return new CastSpellAction(ai, "shoot bow"); }
+            static Action* shoot_gun(PlayerbotAI* ai) { return new CastSpellAction(ai, "shoot gun"); }
+            static Action* shoot_crossbow(PlayerbotAI* ai) { return new CastSpellAction(ai, "shoot crossbow"); }
+            static Action* throw_action(PlayerbotAI* ai) { return new CastSpellAction(ai, "throw"); }
             static Action* melee(PlayerbotAI* ai) { return new MeleeAction(ai); }
             static Action* ReachSpell(PlayerbotAI* ai) { return new ReachSpellAction(ai); }
             static Action* ReachMelee(PlayerbotAI* ai) { return new ReachMeleeAction(ai); }
@@ -89,6 +105,7 @@ namespace ai
             static Action* lifeblood(PlayerbotAI* ai) { return new CastLifeBloodAction(ai); }
             static Action* arcane_torrent(PlayerbotAI* ai) { return new CastArcaneTorrentAction(ai); }
             static Action* end_pull(PlayerbotAI* ai) { return new ChangeCombatStrategyAction(ai, "-pull"); }
+            static Action* end_wait_for_pull(PlayerbotAI* ai) { return new ChangeCombatStrategyAction(ai, "-wait for pull"); }
 
             static Action* emote(PlayerbotAI* ai) { return new EmoteAction(ai); }
             static Action* suggest_what_to_do(PlayerbotAI* ai) { return new SuggestWhatToDoAction(ai); }
@@ -103,6 +120,7 @@ namespace ai
             static Action* runaway(PlayerbotAI* ai) { return new RunAwayAction(ai); }
             static Action* follow_master_random(PlayerbotAI* ai) { return new FollowMasterRandomAction(ai); }
             static Action* follow_master(PlayerbotAI* ai) { return new FollowMasterAction(ai); }
+            static Action* reach_master(PlayerbotAI* ai) { return new ReachMasterAction(ai); }
             static Action* follow_line(PlayerbotAI* ai) { return new FollowLineAction(ai); }
             static Action* add_gathering_loot(PlayerbotAI* ai) { return new AddGatheringLootAction(ai); }
             static Action* add_loot(PlayerbotAI* ai) { return new AddLootAction(ai); }
@@ -120,6 +138,10 @@ namespace ai
             static Action* move_out_of_enemy_contact(PlayerbotAI* ai) { return new MoveOutOfEnemyContactAction(ai); }
             static Action* set_facing(PlayerbotAI* ai) { return new SetFacingTargetAction(ai); }
             static Action* jump(PlayerbotAI* ai) { return new JumpAction(ai); }
+            static Action* watch_target_approach(PlayerbotAI* ai) { return new WatchTargetApproachAction(ai); }
+            static Action* watch_group_pull(PlayerbotAI* ai) { return new WatchGroupPullAction(ai); }
+            static Action* start_pull(PlayerbotAI* ai) { return new StartPullAction(ai); }
+            static Action* reach_shoot_range(PlayerbotAI* ai) { return new ReachShootRangeAction(ai); }
 
     };
 };

@@ -26,6 +26,25 @@ namespace ai
             virtual bool Execute(Event event);
     };
 
+    class PullMyTargetAction : public AttackMyTargetAction
+    {
+        public:
+            PullMyTargetAction(PlayerbotAI* ai, string name = "pull my target") : AttackMyTargetAction(ai, name) {}
+
+        public:
+            virtual bool Execute(Event event)
+            {
+                MakeVerbose();
+                ai->ChangeStrategy("+pull", BOT_STATE_COMBAT);
+                if (!AttackMyTargetAction::Execute(event))
+                {
+                    ai->ChangeStrategy("-pull", BOT_STATE_COMBAT);
+                    return false;
+                }
+                return true;
+            }
+    };
+
     class AttackDuelOpponentAction : public AttackAction
     {
         public:

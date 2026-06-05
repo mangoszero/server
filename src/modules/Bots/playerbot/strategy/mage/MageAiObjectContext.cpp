@@ -32,7 +32,7 @@ namespace ai
 
             private:
                 static Strategy* nc(PlayerbotAI* ai) { return new GenericMageNonCombatStrategy(ai); }
-                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "shoot"); }
+                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "ranged pull"); }
                 static Strategy* fire_aoe(PlayerbotAI* ai) { return new FireMageAoeStrategy(ai); }
                 static Strategy* frost_aoe(PlayerbotAI* ai) { return new FrostMageAoeStrategy(ai); }
         };

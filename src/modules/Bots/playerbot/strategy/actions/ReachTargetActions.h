@@ -2,6 +2,7 @@
 
 #include "../Action.h"
 #include "MovementActions.h"
+#include "GenericSpellActions.h"
 #include "../../PlayerbotAIConfig.h"
 
 namespace ai
@@ -54,7 +55,8 @@ namespace ai
 
             virtual bool isUseful()
             {
-                return AI_VALUE2(float, "distance", "current target") > distance + sPlayerbotAIConfig.contactDistance + bot->GetObjectBoundingRadius();
+                return AI_VALUE2(float, "distance", "current target") >
+                    distance + sPlayerbotAIConfig.contactDistance + bot->GetObjectBoundingRadius();
             }
     };
 
@@ -65,7 +67,8 @@ namespace ai
 
             virtual bool isUseful()
             {
-                return AI_VALUE2(float, "distance", "current target") < distance + sPlayerbotAIConfig.contactDistance + bot->GetObjectBoundingRadius();
+                return AI_VALUE2(float, "distance", "current target") <
+                        distance + sPlayerbotAIConfig.contactDistance + bot->GetObjectBoundingRadius();
             }
     };
 
@@ -73,15 +76,21 @@ namespace ai
     {
         public:
             ReachSpellAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach spell", sPlayerbotAIConfig.spellDistance) {}
-            virtual bool Execute(Event event)
+    };
+
+    class ReachShootRangeAction : public ReachTargetAction
+    {
+        public:
+            ReachShootRangeAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach shoot range", sPlayerbotAIConfig.spellDistance)
             {
-                distance = AI_VALUE(float, "reach spell distance");
-                return ReachTargetAction::Execute(event);
+                string spell = GetShootSpell(bot);
+                if (spell.length() > 0)
+                {
+                    distance = AI_VALUE2(float, "spell range", spell);
+                }
             }
-            virtual bool isUseful()
-            {
-                distance = AI_VALUE(float, "reach spell distance");
-                return ReachTargetAction::isUseful();
-            }
+            virtual bool isUseful();
+            virtual void Reset();
+            static string GetShootSpell(Player *bot);
     };
 }

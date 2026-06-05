@@ -38,6 +38,7 @@
 #include "generic/MoveRandomStrategy.h"
 #include "generic/CautiousStrategy.h"
 #include "generic/DpsTanksTargetStrategy.h"
+#include "generic/PullStrategy.h"
 
 namespace ai
 {
@@ -67,6 +68,7 @@ namespace ai
                 creators["pvp"] = &StrategyContext::pvp;
                 creators["move random"] = &StrategyContext::move_random;
                 creators["cautious"] = &StrategyContext::cautious;
+                creators["wait for pull"] = &StrategyContext::wait_for_pull;
             }
 
         private:
@@ -91,6 +93,7 @@ namespace ai
             static Strategy* pvp(PlayerbotAI* ai) { return new AttackEnemyPlayersStrategy(ai); }
             static Strategy* move_random(PlayerbotAI* ai) { return new MoveRandomStrategy(ai); }
             static Strategy* cautious(PlayerbotAI* ai) { return new CautiousStrategy(ai); }
+            static Strategy* wait_for_pull(PlayerbotAI* ai) { return new WaitForPullStrategy(ai); }
     };
 
     class MovementStrategyContext : public NamedObjectContext<Strategy>

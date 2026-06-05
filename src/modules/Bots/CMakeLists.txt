@@ -133,6 +133,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/PassLeadershipToMasterAction.h
     playerbot/strategy/actions/PositionAction.cpp
     playerbot/strategy/actions/PositionAction.h
+    playerbot/strategy/actions/PullActions.cpp
+    playerbot/strategy/actions/PullActions.h
     playerbot/strategy/actions/QueryItemUsageAction.cpp
     playerbot/strategy/actions/QueryItemUsageAction.h
     playerbot/strategy/actions/QueryQuestAction.cpp
@@ -140,6 +142,7 @@ set(BOT_SRCS
     playerbot/strategy/actions/QuestAction.cpp
     playerbot/strategy/actions/QuestAction.h
     playerbot/strategy/actions/ReachTargetActions.h
+    playerbot/strategy/actions/ReachTargetActions.cpp
     playerbot/strategy/actions/ReadyCheckAction.cpp
     playerbot/strategy/actions/ReadyCheckAction.h
     playerbot/strategy/actions/ReleaseSpiritAction.h
@@ -374,6 +377,8 @@ set(BOT_SRCS
     playerbot/strategy/paladin/PaladinTriggers.h
     playerbot/strategy/paladin/TankPaladinStrategy.cpp
     playerbot/strategy/paladin/TankPaladinStrategy.h
+    playerbot/strategy/StrategyMultiplier.cpp
+    playerbot/strategy/StrategyMultiplier.h
     playerbot/strategy/PassiveMultiplier.cpp
     playerbot/strategy/PassiveMultiplier.h
     playerbot/strategy/priest/GenericPriestStrategy.cpp
@@ -543,6 +548,8 @@ set(BOT_SRCS
     playerbot/strategy/values/SpellCastUsefulValue.h
     playerbot/strategy/values/SpellIdValue.cpp
     playerbot/strategy/values/SpellIdValue.h
+    playerbot/strategy/values/SpellRangeValue.cpp
+    playerbot/strategy/values/SpellRangeValue.h
     playerbot/strategy/values/StatsValues.cpp
     playerbot/strategy/values/StatsValues.h
     playerbot/strategy/values/TankTargetValue.cpp
