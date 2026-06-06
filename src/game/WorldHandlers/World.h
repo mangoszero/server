@@ -620,6 +620,9 @@ class World
         static float GetRelocationLowerLimitSq()            { return m_relocation_lower_limit_sq; }
         static uint32 GetRelocationAINotifyDelay()          { return m_relocation_ai_notify_delay; }
 
+        static bool   GetVisibilityObserverSweepEnabled()   { return m_visibility_observer_sweep_enabled; }
+        static uint32 GetVisibilityObserverSweepInterval()  { return m_visibility_observer_sweep_interval; }
+
         void InitServerMaintenanceCheck();
         void ServerMaintenanceStart();
 
@@ -754,6 +757,9 @@ class World
 
         static float  m_relocation_lower_limit_sq;
         static uint32 m_relocation_ai_notify_delay;
+
+        static bool   m_visibility_observer_sweep_enabled;
+        static uint32 m_visibility_observer_sweep_interval;
 
         // CLI command holder to be thread safe
         ACE_Based::LockedQueue<CliCommandHolder*, ACE_Thread_Mutex> cliCmdQueue;

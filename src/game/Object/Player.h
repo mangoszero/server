@@ -4018,6 +4018,9 @@ class Player : public Unit
         // The player's camera
         Camera m_camera;
 
+        // Countdown (ms) for the periodic observer-side visibility sweep
+        uint32 m_visibilityObserverSweepTimer;
+
         // Grid reference for the player
         GridReference<Player> m_gridRef;
 
