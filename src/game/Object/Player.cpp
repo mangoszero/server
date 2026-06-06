@@ -537,6 +537,8 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_speakTime = 0;
     m_speakCount = 0;
 
+    m_visibilityObserverSweepTimer = World::GetVisibilityObserverSweepInterval();
+
     m_objectType |= TYPEMASK_PLAYER;
     m_objectTypeId = TYPEID_PLAYER;
 
@@ -1564,6 +1566,28 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     SetCanDelayTeleport(true);
     Unit::Update(update_diff, p_time);
     SetCanDelayTeleport(false);
+
+    // Periodic observer-side visibility maintenance.
+    // The owner's visible set is otherwise refreshed only when the player moves
+    // (Camera::UpdateVisibilityForOwner via OnRelocated), while an object moving
+    // out of range only re-notifies observers still near that object. A
+    // near-stationary player therefore never gets an out-of-range update for an
+    // active object that walks away, leaving it frozen on the client. Sweep the
+    // owner's visible set on an interval so out-of-range objects are dropped even
+    // when the player stands still. Skipped mid-teleport (visibility is rebuilt
+    // by the teleport path) and gated by config.
+    if (World::GetVisibilityObserverSweepEnabled() && !IsBeingTeleported())
+    {
+        if (m_visibilityObserverSweepTimer <= update_diff)
+        {
+            m_visibilityObserverSweepTimer = World::GetVisibilityObserverSweepInterval();
+            GetCamera().UpdateVisibilityForOwner();
+        }
+        else
+        {
+            m_visibilityObserverSweepTimer -= update_diff;
+        }
+    }
 
     // Update player-only attacks
     if (uint32 ranged_att = getAttackTimer(RANGED_ATTACK))
