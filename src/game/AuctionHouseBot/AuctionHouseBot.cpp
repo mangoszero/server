@@ -1900,15 +1900,17 @@ bool AuctionBotSeller::Initialize()
                     {
                         continue;
                     }
-                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MAX_ITEM_LEVEL))
+                }
+
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_TRADEGOOD_MAX_ITEM_LEVEL))
+                {
+                    if (prototype->ItemLevel > value)
                     {
-                        if (prototype->ItemLevel > value)
-                        {
-                            continue;
-                        }
-                        break;
+                        continue;
                     }
                 }
+
+                break;
             }
             case ITEM_CLASS_CONTAINER:
             case ITEM_CLASS_QUIVER:
@@ -1919,15 +1921,17 @@ bool AuctionBotSeller::Initialize()
                     {
                         continue;
                     }
-                    if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MAX_ITEM_LEVEL))
+                }
+
+                if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_CONTAINER_MAX_ITEM_LEVEL))
+                {
+                    if (prototype->ItemLevel > value)
                     {
-                        if (prototype->ItemLevel > value)
-                        {
-                            continue;
-                        }
-                        break;
+                        continue;
                     }
                 }
+
+                break;
             }
 
             default:
