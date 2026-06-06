@@ -541,14 +541,19 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         {
             WorldPacket p(packet);
             p.rpos(0);
-            uint8 status, result;
-            p >> status >> result;
+            uint32 spellId;
+            p >> spellId;
+            uint8 result = SPELL_CAST_OK;
+            if (p.size() >= 6) // failure packet has status + result bytes
+            {
+                uint8 status;
+                p >> status >> result;
+            }
             if (result != SPELL_CAST_OK)
             {
-                LastSpellCast& lastSpell = aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get();
-                SpellInterrupted(lastSpell.id);
-                botOutgoingPacketHandlers.AddPacket(packet);
+                SpellInterrupted(spellId);
             }
+            botOutgoingPacketHandlers.AddPacket(packet);
             return;
         }
         case SMSG_SPELL_FAILURE:
@@ -589,6 +594,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         }
         default:
             botOutgoingPacketHandlers.AddPacket(packet);
+            break;
     }
 }
 
@@ -1455,7 +1461,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target)
     MotionMaster &mm = *bot->GetMotionMaster();
     if (bot->isMoving() && GetSpellCastTime(pSpellInfo, NULL))
     {
-        return false;
+        // bot wants to cast, but mm is still active; don't reject, just STOP!
+        bot->StopMoving(false);
+        mm.MoveIdle();
     }
 
     if (bot->IsTaxiFlying())

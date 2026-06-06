@@ -33,7 +33,7 @@ namespace ai
             private:
                 static Strategy* nc(PlayerbotAI* ai) { return new PriestNonCombatStrategy(ai); }
                 static Strategy* shadow_aoe(PlayerbotAI* ai) { return new ShadowPriestAoeStrategy(ai); }
-                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "shoot"); }
+                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "ranged pull"); }
                 static Strategy* shadow_debuff(PlayerbotAI* ai) { return new ShadowPriestDebuffStrategy(ai); }
         };
 

@@ -15,6 +15,27 @@ bool FollowMasterAction::Execute(Event event)
     return Follow(AI_VALUE(Unit*, "master target"));
 }
 
+bool FollowMasterAction::isUseful()
+{
+    return (AI_VALUE2(float, "distance", "master target") > sPlayerbotAIConfig.followDistance && !AI_VALUE(bool, "can loot")) ||
+        transportBoardingDelayTime > 0;
+}
+
+bool ReachMasterAction::Execute(Event event)
+{
+    if (!FollowMasterAction::Execute(event))
+    {
+        return false;
+    }
+    return isUseful();
+}
+bool ReachMasterAction::isUseful()
+{
+    return (AI_VALUE2(float, "distance", "master target") - 2.0 > sPlayerbotAIConfig.followDistance &&
+            AI_VALUE2(float, "distance", "master target") < sPlayerbotAIConfig.reactDistance) ||
+                transportBoardingDelayTime > 0;
+}
+
 bool FollowMasterRandomAction::Execute(Event event)
 {
     Player* master = GetMaster();

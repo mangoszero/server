@@ -18,15 +18,16 @@ namespace ai
 
     class FollowMasterAction : public MovementAction {
         public:
-            FollowMasterAction(PlayerbotAI* ai) : MovementAction(ai, "follow master") {}
+            FollowMasterAction(PlayerbotAI* ai, string name="follow master") : MovementAction(ai, name) {}
             virtual bool Execute(Event event);
+            virtual bool isUseful();
+    };
 
-            virtual bool isUseful()
-            {
-                return AI_VALUE2(float, "distance", "master target") > sPlayerbotAIConfig.followDistance &&
-                    !AI_VALUE(bool, "can loot") || transportBoardingDelayTime > 0;
-            }
-
+    class ReachMasterAction : public FollowMasterAction {
+        public:
+            ReachMasterAction(PlayerbotAI* ai) : FollowMasterAction(ai, "reach master") {}
+            virtual bool Execute(Event event);
+            virtual bool isUseful();
     };
 
     class FollowMasterRandomAction : public MovementAction {

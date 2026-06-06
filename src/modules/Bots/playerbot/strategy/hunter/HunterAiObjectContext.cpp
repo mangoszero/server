@@ -7,6 +7,7 @@
 #include "GenericHunterNonCombatStrategy.h"
 #include "HunterBuffStrategies.h"
 #include "../NamedObjectContext.h"
+#include "../generic/PullStrategy.h"
 
 using namespace ai;
 
@@ -29,6 +30,7 @@ namespace ai
 
             private:
                 static Strategy* aoe(PlayerbotAI* ai) { return new DpsAoeHunterStrategy(ai); }
+                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "auto shot"); }
                 static Strategy* dps(PlayerbotAI* ai) { return new DpsHunterStrategy(ai); }
                 static Strategy* nc(PlayerbotAI* ai) { return new GenericHunterNonCombatStrategy(ai); }
                 static Strategy* dps_debuff(PlayerbotAI* ai) { return new DpsHunterDebuffStrategy(ai); }

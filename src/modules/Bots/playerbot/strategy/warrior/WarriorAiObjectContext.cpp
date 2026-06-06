@@ -30,7 +30,7 @@ namespace ai
             private:
                 static Strategy* nc(PlayerbotAI* ai) { return new GenericWarriorNonCombatStrategy(ai); }
                 static Strategy* aoe(PlayerbotAI* ai) { return new DpsWarrirorAoeStrategy(ai); }
-                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "shoot"); }
+                static Strategy* pull(PlayerbotAI* ai) { return new PullStrategy(ai, "ranged pull"); }
         };
 
         class CombatStrategyFactoryInternal : public NamedObjectContext<Strategy>

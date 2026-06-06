@@ -55,6 +55,9 @@
 #include "EnemyHealerTargetValue.h"
 #include "ItemUsageValue.h"
 #include "DpsTanksTargetValue.h"
+#include "PullerTargetValue.h"
+#include "SpellRangeValue.h"
+#include "LastTargetPositionValue.h"
 
 namespace ai
 {
@@ -142,6 +145,9 @@ namespace ai
                 creators["enemy healer target"] = &ValueContext::enemy_healer_target;
                 creators["item usage"] = &ValueContext::item_usage;
                 creators["reach spell distance"] = &ValueContext::reach_spell_distance;
+                creators["puller target"] = &ValueContext::puller_target;
+                creators["spell range"] = &ValueContext::spell_range;
+                creators["last target position"] = &ValueContext::last_target_position;
             }
 
         private:
@@ -223,5 +229,8 @@ namespace ai
             static UntypedValue* lfg_proposal(PlayerbotAI* ai) { return new LfgProposalValue(ai); }
             static UntypedValue* bag_space(PlayerbotAI* ai) { return new BagSpaceValue(ai); }
             static UntypedValue* enemy_healer_target(PlayerbotAI* ai) { return new EnemyHealerTargetValue(ai); }
+            static UntypedValue* puller_target(PlayerbotAI* ai) { return new PullerTargetValue(ai); }
+            static UntypedValue* spell_range(PlayerbotAI* ai) { return new SpellRangeValue(ai); }
+            static UntypedValue* last_target_position(PlayerbotAI* ai) { return new LastTargetPositionValue(ai); }
     };
 };
