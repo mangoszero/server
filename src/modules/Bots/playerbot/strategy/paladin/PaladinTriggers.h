@@ -36,8 +36,8 @@ namespace ai
             {
                 return true;
             }
-                return false;
         }
+        return false;
     }
 
     class BlessingTrigger : public Trigger
