@@ -1264,6 +1264,20 @@ GM.MaxSpeedFactor         = 10
 #        Delay time between creature AI reactions on nearby movements
 #        Default: 1000 (milliseconds)
 #
+#    Visibility.ObserverSweep.Enable
+#        Periodically rebuild each player's own visible-object set so that objects
+#        which move out of range while the player stands still are removed from the
+#        client. Without this, out-of-range cleanup is only driven by the observer
+#        moving or by the observed object moving (and the latter only notifies
+#        observers still near that object), so an active creature that walks away
+#        from a stationary player can stay frozen at the edge of view.
+#        Default: 1 (enabled)
+#
+#    Visibility.ObserverSweep.Interval
+#        Interval between observer-side visibility sweeps, applied per player.
+#        Lower values remove stale objects sooner; higher values use less CPU.
+#        Default: 2000 (milliseconds)
+#
 ################################################################################
 
 Visibility.GroupMode               = 0
@@ -1275,6 +1289,8 @@ Visibility.Distance.Grey.Unit      = 1
 Visibility.Distance.Grey.Object    = 10
 Visibility.RelocationLowerLimit    = 10
 Visibility.AIRelocationNotifyDelay = 1000
+Visibility.ObserverSweep.Enable    = 1
+Visibility.ObserverSweep.Interval  = 2000
 
 ################################################################################
 # SERVER RATES
