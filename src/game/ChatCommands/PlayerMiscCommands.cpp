@@ -555,6 +555,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
 
         // Perhaps check if we have deleted earthstone if, so then re-add it
     }
+    BITMASK_AND_SWITCH_END
 
     // Since bitmaskorepation is "AND" we have to manually test the last cases
     if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_ALL)
@@ -743,6 +744,7 @@ bool ChatHandler::HandleResetMailCommand(char* args)
                 break;
             }
         }
+        BITMASK_AND_SWITCH_END
 
         if (deleteMail)
         {
@@ -787,6 +789,7 @@ bool ChatHandler::HandleResetMailCommand(char* args)
             break;
         }
     }
+    BITMASK_AND_SWITCH_END
 
     if (gm != player)
     {
