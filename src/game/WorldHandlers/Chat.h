@@ -119,10 +119,8 @@ static const uint32 ReputationRankStrIndex[MAX_REPUTATION_RANK] =
 // for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 
 #define BITMASK_AND_SWITCH(x) \
-    for (uint64_t bit = 1; bit <= x+1; bit *= 2) { if (x & bit) switch (bit)
-
+    for (uint64_t bit = 1; bit <= x+1; bit *= 2) if (x & bit) switch (bit)
 #define BITMASK_AND_SWITCH_END \
-    }
 
 enum  ResetItemCommandArgFlags
 {
