@@ -7590,6 +7590,21 @@ SpellCastResult Spell::CheckItems()
                 {
                     return SPELL_FAILED_LOWLEVEL;
                 }
+                // Check for armor kit spells: Heavy(2833), Thick(10344), Rugged(19057), Core(22725)
+                if (m_CastItem && m_CastItem->GetProto())
+                {
+                    static uint32 const armorKitSpells[] = { 2833, 10344, 19057, 22725 };
+                    for (uint32 const spellId : armorKitSpells)
+                    {
+                        if (m_spellInfo->Id == spellId)
+                        {
+                            int32 minLevel = int32(m_CastItem->GetProto()->RequiredLevel) - 5;
+                            if (minLevel > 0 && int32(targetItem->GetProto()->ItemLevel) < minLevel)
+                                return SPELL_FAILED_LOWLEVEL;
+                            break;
+                        }
+                    }
+                }
                 // Not allow enchant in trade slot for some enchant type
                 if (targetItem->GetOwner() != m_caster)
                 {
