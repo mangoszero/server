@@ -556,7 +556,7 @@ bool ChatHandler::HandleResetItemsCommand(char* args)
         // Perhaps check if we have deleted earthstone if, so then re-add it
     }
 
- // Since bitmaskorepation is "AND" we have to manually test the last cases
+    // Since bitmaskorepation is "AND" we have to manually test the last cases
     if (optionBitMask == RESET_ITEMS_COMMAND_FLAG_OPTION_ALL)
     {
         // Just text display
