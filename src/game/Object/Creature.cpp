@@ -376,7 +376,6 @@ void Creature::RemoveCorpse(bool inPlace)
     SetVisibility(VISIBILITY_REMOVE_CORPSE);
     UpdateObjectVisibility();
     SetVisibility(currentVis);                              // restore visibility state
-    UpdateObjectVisibility();
 }
 
 /**
