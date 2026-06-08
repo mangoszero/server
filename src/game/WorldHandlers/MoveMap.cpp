@@ -313,10 +313,17 @@ namespace MMAP
             return false;
         }
 
-        // load this tile :: mmaps/MMMXXYY.mmtile
-        uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%03i%02i%02i.mmtile") + 1;
+        // MMap tile files follow the same swapped grid order as VMap tiles.
+        const int32 filenameTileX = y;
+        const int32 filenameTileY = x;
+
+        // load this tile :: mmaps/MMMYYXX.mmtile
+        uint32 pathLen = sWorld.GetDataPath().length() +
+                         strlen("mmaps/%03i%02i%02i.mmtile") + 1;
         char* fileName = new char[pathLen];
-        snprintf(fileName, pathLen, (sWorld.GetDataPath() + "mmaps/%03i%02i%02i.mmtile").c_str(), mapId, x, y);
+        snprintf(fileName, pathLen,
+                 (sWorld.GetDataPath() + "mmaps/%03i%02i%02i.mmtile").c_str(),
+                 mapId, filenameTileX, filenameTileY);
 
         FILE* file = fopen(fileName, "rb");
         if (!file)
@@ -333,22 +340,28 @@ namespace MMAP
 
         if (file_read <= 0)
         {
-            sLog.outError("MMAP:loadMap: Could not load mmap %03u%02i%02i.mmtile", mapId, x, y);
+            sLog.outError("MMAP:loadMap: Could not load mmap "
+                          "%03u%02i%02i.mmtile",
+                          mapId, filenameTileX, filenameTileY);
             fclose(file);
             return false;
         }
 
         if (fileHeader.mmapMagic != MMAP_MAGIC)
         {
-            sLog.outError("MMAP:loadMap: Bad header in mmap %03u%02i%02i.mmtile", mapId, x, y);
+            sLog.outError("MMAP:loadMap: Bad header in mmap "
+                          "%03u%02i%02i.mmtile",
+                          mapId, filenameTileX, filenameTileY);
             fclose(file);
             return false;
         }
 
         if (fileHeader.mmapVersion != MMAP_VERSION)
         {
-            sLog.outError("MMAP:loadMap: %03u%02i%02i.mmtile was built with generator v%i, expected v%i",
-                mapId, x, y, fileHeader.mmapVersion, MMAP_VERSION);
+            sLog.outError("MMAP:loadMap: %03u%02i%02i.mmtile was built "
+                          "with generator v%i, expected v%i",
+                          mapId, filenameTileX, filenameTileY,
+                          fileHeader.mmapVersion, MMAP_VERSION);
             fclose(file);
             return false;
         }
@@ -359,7 +372,9 @@ namespace MMAP
         size_t result = fread(data, fileHeader.size, 1, file);
         if (!result)
         {
-            sLog.outError("MMAP:loadMap: Bad header or data in mmap %03u%02i%02i.mmtile", mapId, x, y);
+            sLog.outError("MMAP:loadMap: Bad header or data in mmap "
+                          "%03u%02i%02i.mmtile",
+                          mapId, filenameTileX, filenameTileY);
             fclose(file);
             return false;
         }
@@ -373,14 +388,20 @@ namespace MMAP
         dtStatus dtResult = mmap->navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
         if (dtStatusFailed(dtResult))
         {
-            sLog.outError("MMAP:loadMap: Could not load %03u%02i%02i.mmtile into navmesh", mapId, x, y);
+            sLog.outError("MMAP:loadMap: Could not load "
+                          "%03u%02i%02i.mmtile into navmesh",
+                          mapId, filenameTileX, filenameTileY);
             dtFree(data);
             return false;
         }
 
         mmap->mmapLoadedTiles.insert(std::pair<uint32, dtTileRef>(packedGridPos, tileRef));
         ++loadedTiles;
-        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:loadMap: Loaded mmtile %03i[%02i,%02i] into %03i[%02i,%02i]", mapId, x, y, mapId, header->x, header->y);
+        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING,
+                         "MMAP:loadMap: Loaded mmtile "
+                         "%03i[%02i,%02i] into %03i[%02i,%02i]",
+                         mapId, filenameTileX, filenameTileY, mapId,
+                         header->x, header->y);
         return true;
     }
 
