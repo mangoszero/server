@@ -51,4 +51,4 @@ If not, try to copy it manually since it has been generated in the `out` folder 
 ## How to contribute ?
 ----
 
-You can develop other versions of this generator using other languages (e.g : python, C, perl ...) 
+You can develop other versions of this generator using other languages (e.g : python, C, perl ...)
