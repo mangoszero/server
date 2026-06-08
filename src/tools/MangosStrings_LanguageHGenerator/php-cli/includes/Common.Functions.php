@@ -50,8 +50,7 @@
             {
                 return SHARED_CONFIGS[$input];
             }
-            default : 
-            {
+            default :                {
                 return null;
             }
         }

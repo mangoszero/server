@@ -1,4 +1,3 @@
 <?php
-    
-    echo "=== END OF SCRIPT ===";
+           echo "=== END OF SCRIPT ===";
 ?>

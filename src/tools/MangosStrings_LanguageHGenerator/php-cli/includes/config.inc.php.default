@@ -22,10 +22,8 @@
  * World of Warcraft, and all World of Warcraft or Warcraft art, images,
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
- 
- /* Generator Initiated by By Elmsroth */
- 
- /*
+     /* Generator Initiated by By Elmsroth */
+     /*
     DATABASE CONFIG
  */
  define("DB_HOST","localhost");
@@ -33,8 +31,7 @@
  // The user should be granted access to all mangos schemas for all core DBs you might have
  define("DB_USER", "mangos_zero");
  define("DB_PASS", "passWQiopword1xG2196qsdOUdqs");
- define("SHARED_CONFIGS", 
- [
+ define("SHARED_CONFIGS",     [
     0 => ["DB"=> "world0", "TPL_PREFIX" => "MangosZero_", "OUT_DIR_IF_EMPTY" =>"../out/MangosZero/"],
     1 => ["DB"=> "world1", "TPL_PREFIX" => "MangosOne_", "OUT_DIR_IF_EMPTY" =>"../out/MangosOne/"],
     2 => ["DB"=> "world2", "TPL_PREFIX" => "MangosTwo_", "OUT_DIR_IF_EMPTY" =>"../out/MangosTwo/"],
@@ -48,8 +45,7 @@
     to be the one where the original source file is located.
     If empty, the file will be generated in the "out" folder in the root fodler of this project
  */
- 
- // /!\ WARNING  NEVER PUT DOUBLE QUOTES FOR VALUE
+     // /!\ WARNING  NEVER PUT DOUBLE QUOTES FOR VALUE
  define("OUTPUT_DIR", '');
 
 ?>

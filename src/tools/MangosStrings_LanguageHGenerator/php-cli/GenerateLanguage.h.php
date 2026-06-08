@@ -22,16 +22,12 @@
  * World of Warcraft, and all World of Warcraft or Warcraft art, images,
  * and lore are copyrighted by Blizzard Entertainment, Inc.
  */
- 
- /* Generator Initiated by By @Elmsroth */
+     /* Generator Initiated by By @Elmsroth */
 
     require_once "includes/init.inc.php";
-    
-    echo "Which core version should the script generate the 'Language.h' file ?" .NEWLINE;
-    
-    displayChoices();
-   
-    $input = readline("Enter your choice : ");
+           echo "Which core version should the script generate the 'Language.h' file ?" .NEWLINE;
+           displayChoices();
+          $input = readline("Enter your choice : ");
 
     $config = getConfig($input);
     if($config == null)
@@ -40,22 +36,18 @@
         goto end;
     }
 
-    // Start MYSQL connection 
-    $connStr = 'mysql:host='.DB_HOST.':'.DB_PORT.';dbname='.$config["DB"];
+    // Start MYSQL connection        $connStr = 'mysql:host='.DB_HOST.':'.DB_PORT.';dbname='.$config["DB"];
     $worldPDO = new PDO($connStr, DB_USER, DB_PASS);
-    
-    echo "> Generating 'Language.h' source file..." . NEWLINE;
+           echo "> Generating 'Language.h' source file..." . NEWLINE;
 
     $sqlQueryText = "SELECT `entry`, `content_default`, `source_enum_tag` FROM `mangos_string` WHERE `source_enum_wrapper`='MangosStrings' ORDER By `entry` ASC;" ;
- 
-    $template = file_get_contents("templates/MangosZero_Language.h.tpl");
+        $template = file_get_contents("templates/MangosZero_Language.h.tpl");
 
     if($template === false)
     {
         goto end;
     }
-    
-    $stm = $worldPDO->query($sqlQueryText);
+           $stm = $worldPDO->query($sqlQueryText);
     $rows = $stm->fetchAll(PDO::FETCH_ASSOC);
 
     $fileContent = "";
@@ -81,8 +73,7 @@
 
 
     $output = str_replace ("{CONTENT}", $fileContent, $template);
- 
-    $outputDir = trim(OUTPUT_DIR);
+        $outputDir = trim(OUTPUT_DIR);
     // If output dir is empty we will have to create output folder
     if($outputDir == "")
     {
