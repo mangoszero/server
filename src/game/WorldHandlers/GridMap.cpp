@@ -1147,27 +1147,24 @@ float TerrainInfo::GetHeightStatic(float x, float y, float z, bool useVmaps/*=tr
     // vmapheight set for any under Z value or <= INVALID_HEIGHT
     if (vmapHeight > INVALID_HEIGHT)
     {
-        if (mapHeight > INVALID_HEIGHT)
+        // vmap surface above the .map terrain always wins (platforms/bridges/upper floors); this also
+        // covers the case where only vmapHeight is valid (mapHeight <= INVALID_HEIGHT).
+        if (vmapHeight > mapHeight)
         {
-            // we have mapheight and vmapheight and must select more appropriate
-
-            // we are already under the surface or vmap height above map heigt
-            if (z < mapHeight || vmapHeight > mapHeight)
-            {
-                return vmapHeight;
-            }
-            else
-            {
-                return mapHeight;                            // better use .map surface height
-            }
+            return vmapHeight;
         }
-        else
+
+        // vmap floor is below the terrain: only consider dropping to it when the query Z is genuinely
+        // below the terrain, and even then return whichever surface is nearer to Z. This prevents a
+        // navmesh vertex that sits a fraction below the heightmap from being snapped down onto a lower
+        // WMO/building floor. (vmapHeight <= mapHeight here, so the midpoint test == nearest-surface.)
+        if (z < mapHeight)
         {
-            return vmapHeight;                               // we have only vmapHeight (if have)
+            return (z < (vmapHeight + mapHeight) * 0.5f) ? vmapHeight : mapHeight;
         }
     }
 
-    return mapHeight;
+    return mapHeight;                                        // better use .map surface height
 }
 
 /**
