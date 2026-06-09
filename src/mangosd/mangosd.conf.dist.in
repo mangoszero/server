@@ -975,6 +975,16 @@ TalentsInspecting                 = 1
 #        Difference for boss dynamic level with target
 #        Default: 3
 #
+#    LivingWorld.AnchorPolicyMask
+#        Bitmask selecting which high-confidence creature categories are marked
+#        as LivingWorld active anchors (active object + grid kept resident).
+#        Continent-only (maps 0/1); raid/dungeon/battleground spawns are excluded.
+#        0 = off (default; behavior identical to upstream)
+#        1 = continent world bosses & faction/capital leaders (creature rank = WORLDBOSS)
+#        2 = continent flight masters (npcflag FLIGHTMASTER)
+#        3 = both
+#        Default: 0
+#
 #    Corpse.EmptyLootShow
 #        If target can have loot (or can be skining after loot) but no loot generated still show loot window
 #        Default: 1 (show)
@@ -1046,6 +1056,7 @@ CreatureFamilyAssistanceRadius            = 10
 CreatureFamilyAssistanceDelay             = 1500
 CreatureFamilyFleeDelay                   = 7000
 WorldBossLevelDiff                        = 3
+LivingWorld.AnchorPolicyMask              = 0
 Corpse.EmptyLootShow                      = 1
 Corpse.Decay.NORMAL                       = 300
 Corpse.Decay.RARE                         = 900
