@@ -314,6 +314,13 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
+    static ChatCommand gridCommandTable[] =
+    {
+        { "info",           SEC_GAMEMASTER,     false, &ChatHandler::HandleGridInfoCommand,            "", NULL },
+        { "anchors",        SEC_GAMEMASTER,     false, &ChatHandler::HandleGridAnchorsCommand,         "", NULL },
+        { NULL,             0,                  false, NULL,                                           "", NULL }
+    };
+
     static ChatCommand guildCommandTable[] =
     {
         { "create",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleGuildCreateCommand,         "", NULL },
@@ -757,6 +764,7 @@ ChatCommand* ChatHandler::getCommandTable()
         { "honor",          SEC_GAMEMASTER,     false, NULL,                                           "", honorCommandTable    },
         { "go",             SEC_MODERATOR,      false, NULL,                                           "", goCommandTable       },
         { "gobject",        SEC_GAMEMASTER,     false, NULL,                                           "", gobjectCommandTable  },
+        { "grid",           SEC_GAMEMASTER,     false, NULL,                                           "", gridCommandTable     },
         { "guild",          SEC_GAMEMASTER,     true,  NULL,                                           "", guildCommandTable    },
         { "instance",       SEC_ADMINISTRATOR,  true,  NULL,                                           "", instanceCommandTable },
         { "learn",          SEC_MODERATOR,      false, NULL,                                           "", learnCommandTable    },

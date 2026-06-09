@@ -197,6 +197,11 @@ class Map : public GridRefManager<NGridType>
             return loaded(p);
         }
 
+        // Read-only: true if the grid at the given grid indices is resident with its object data
+        // loaded. Index-based companion to IsLoaded(x,y); never loads or creates a grid. Caller
+        // must keep gridX/gridY within [0, MAX_NUMBER_OF_GRIDS).
+        bool IsGridLoaded(uint32 gridX, uint32 gridY) const { return loaded(GridPair(gridX, gridY)); }
+
         bool GetUnloadLock(const GridPair& p) const { return getNGrid(p.x_coord, p.y_coord)->getUnloadLock(); }
         void SetUnloadLock(const GridPair& p, bool on) { getNGrid(p.x_coord, p.y_coord)->setUnloadExplicitLock(on); }
         void ForceLoadGrid(float x, float y);
