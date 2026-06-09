@@ -239,7 +239,7 @@ namespace MMAP
         }
 
         // load and init dtNavMesh - read parameters from file
-        uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%04i.mmap") + 1;
+        uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%04u.mmap") + 1;
         char* fileName = new char[pathLen];
         snprintf(fileName, pathLen, (sWorld.GetDataPath() + "mmaps/%04u.mmap").c_str(), mapId);
 
