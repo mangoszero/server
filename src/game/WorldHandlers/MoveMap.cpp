@@ -241,7 +241,7 @@ namespace MMAP
         // load and init dtNavMesh - read parameters from file
         uint32 pathLen = sWorld.GetDataPath().length() + strlen("mmaps/%04i.mmap") + 1;
         char* fileName = new char[pathLen];
-        snprintf(fileName, pathLen, (sWorld.GetDataPath() + "mmaps/%04i.mmap").c_str(), mapId);
+        snprintf(fileName, pathLen, (sWorld.GetDataPath() + "mmaps/%04u.mmap").c_str(), mapId);
 
         FILE* file = fopen(fileName, "rb");
         if (!file)
@@ -278,7 +278,7 @@ namespace MMAP
 
         delete[] fileName;
 
-        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:loadMapData: Loaded %04i.mmap", mapId);
+        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:loadMapData: Loaded %04u.mmap", mapId);
 
         // store inside our map list
         MMapData* mmap_data = new MMapData(mesh);
@@ -314,15 +314,15 @@ namespace MMAP
         }
 
         // MMap tile files follow the same swapped grid order as VMap tiles.
-        const int32 filenameTileX = y;
-        const int32 filenameTileY = x;
+        const int32 filenameTileX = x;
+        const int32 filenameTileY = y;
 
         // load this tile :: mmaps/MMMXXYY.mmtile
         uint32 pathLen = sWorld.GetDataPath().length() +
-                         strlen("mmaps/%04i%02i%02i.mmtile") + 1;
+                         strlen("mmaps/%04u%02i%02i.mmtile") + 1;
         char* fileName = new char[pathLen];
         snprintf(fileName, pathLen,
-                 (sWorld.GetDataPath() + "mmaps/%04i%02i%02i.mmtile").c_str(),
+                 (sWorld.GetDataPath() + "mmaps/%04u%02i%02i.mmtile").c_str(),
                  mapId, filenameTileX, filenameTileY);
 
         FILE* file = fopen(fileName, "rb");
@@ -399,7 +399,7 @@ namespace MMAP
         ++loadedTiles;
         DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING,
                          "MMAP:loadMap: Loaded mmtile "
-                         "%04i[%02i,%02i] into %04i[%02i,%02i]",
+                         "%04u[%02i,%02i] into %04u[%02i,%02i]",
                          mapId, filenameTileX, filenameTileY, mapId,
                          header->x, header->y);
         return true;
@@ -442,7 +442,7 @@ namespace MMAP
         {
             mmap->mmapLoadedTiles.erase(packedGridPos);
             --loadedTiles;
-            DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04i[%02i,%02i] from %04i", mapId, x, y, mapId);
+            DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04u[%02i,%02i] from %04i", mapId, x, y, mapId);
             return true;
         }
 
@@ -472,13 +472,13 @@ namespace MMAP
             else
             {
                 --loadedTiles;
-                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04i[%02i,%02i] from %04i", mapId, x, y, mapId);
+                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04u[%02i,%02i] from %04i", mapId, x, y, mapId);
             }
         }
 
         delete mmap;
         loadedMMaps.erase(mapId);
-        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded %04i.mmap", mapId);
+        DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded %04u.mmap", mapId);
 
         return true;
     }
