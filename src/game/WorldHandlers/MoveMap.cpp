@@ -467,7 +467,7 @@ namespace MMAP
             dtStatus dtResult = mmap->navMesh->removeTile(i->second, NULL, NULL);
             if (dtStatusFailed(dtResult))
             {
-                sLog.outError("MMAP:unloadMap: Could not unload %04u%02i%02i.mmtile from navmesh", mapId, x, y);
+                sLog.outError("MMAP:unloadMap: Could not unload %04u%02u%02u.mmtile from navmesh", mapId, x, y);
             }
             else
             {
