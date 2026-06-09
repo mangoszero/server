@@ -119,7 +119,7 @@ namespace VMAP
              * @param tileX The tile X coordinate.
              * @param tileY The tile Y coordinate.
              */
-            static void unpackTileID(uint32 ID, uint32& tileX, uint32& tileY) { tileX = ID >> 16; tileY = ID & 0xFF; }
+            static void unpackTileID(uint32 ID, uint32& tileX, uint32& tileY) { tileX = ID >> 16; tileY = ID & 0xFFFF; }
 
             /**
              * @brief Checks if a map can be loaded.
