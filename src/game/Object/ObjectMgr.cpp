@@ -23,6 +23,7 @@
  */
 
 #include "ObjectMgr.h"
+#include "LivingWorldAnchorPolicy.h"
 #include "Database/DatabaseEnv.h"
 #include "Policies/Singleton.h"
 
@@ -1490,6 +1491,11 @@ void ObjectMgr::LoadCreatures()
 
     BarGoLink bar(result->GetRowCount());
 
+    const uint32 lwAnchorMask = sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK);
+    uint32 lwWorldBossLeaderCount = 0;
+    uint32 lwFlightMasterCount = 0;
+    uint32 lwAnchorTotal = 0;
+
     do
     {
         Field* fields = result->Fetch();
@@ -1610,10 +1616,18 @@ void ObjectMgr::LoadCreatures()
         {
             AddCreatureToGrid(guid, &data);
 
-            if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE)
+            uint32 lwCats = GetLivingWorldAnchorCategories(cInfo, mapEntry) & lwAnchorMask;
+            if ((cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE) || lwCats != 0)
             {
                 sLog.outString("Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
                 m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
+
+                if (lwCats != 0)
+                {
+                    ++lwAnchorTotal;
+                    if (lwCats & LW_ANCHOR_WORLD_BOSS_OR_LEADER) { ++lwWorldBossLeaderCount; }
+                    if (lwCats & LW_ANCHOR_FLIGHT_MASTER)        { ++lwFlightMasterCount; }
+                }
             }
         }
 
@@ -1624,6 +1638,8 @@ void ObjectMgr::LoadCreatures()
     delete result;
 
     sLog.outString(">> Loaded %zu creatures", mCreatureDataMap.size());
+    sLog.outString("[LivingWorld] anchor policy mask=0x%X: world-boss/leaders=%u, flight-masters=%u, total-anchors=%u (continent-only; instance bosses excluded)",
+        lwAnchorMask, lwWorldBossLeaderCount, lwFlightMasterCount, lwAnchorTotal);
     sLog.outString();
 }
 
