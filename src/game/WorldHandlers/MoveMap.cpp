@@ -313,7 +313,7 @@ namespace MMAP
             return false;
         }
 
-        // MMap tile files follow the same swapped grid order as VMap tiles.
+        // MMap tile files follow the same grid order as VMap tiles.
         const int32 filenameTileX = x;
         const int32 filenameTileY = y;
 
