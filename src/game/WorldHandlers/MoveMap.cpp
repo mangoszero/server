@@ -472,7 +472,7 @@ namespace MMAP
             else
             {
                 --loadedTiles;
-                DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04u[%02i,%02i] from %04i", mapId, x, y, mapId);
+                    DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MMAP:unloadMap: Unloaded mmtile %04u[%02u,%02u] from %04u", mapId, x, y, mapId);
             }
         }
 
