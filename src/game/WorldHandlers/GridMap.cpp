@@ -874,9 +874,9 @@ GridMapLiquidStatus GridMap::getLiquidStatus(float x, float y, float z, uint8 Re
  */
 bool GridMap::ExistMap(uint32 mapid, int gx, int gy)
 {
-    int len = sWorld.GetDataPath().length() + strlen("maps/%03u%02u%02u.map") + 1;
+    int len = sWorld.GetDataPath().length() + strlen("maps/%04u%02u%02u.map") + 1;
     char* tmp = new char[len];
-    snprintf(tmp, len, (char*)(sWorld.GetDataPath() + "maps/%03u%02u%02u.map").c_str(), mapid, gx, gy);
+    snprintf(tmp, len, (char*)(sWorld.GetDataPath() + "maps/%04u%02u%02u.map").c_str(), mapid, gx, gy);
 
     FILE* pf = fopen(tmp, "rb");
 
@@ -1566,9 +1566,9 @@ GridMap* TerrainInfo::LoadMapAndVMap(const uint32 x, const uint32 y)
             GridMap* map = new GridMap();
 
             // map file name
-            int len = sWorld.GetDataPath().length() + strlen("maps/%03u%02u%02u.map") + 1;
+            int len = sWorld.GetDataPath().length() + strlen("maps/%04u%02u%02u.map") + 1;
             char* tmp = new char[len];
-            snprintf(tmp, len, (char*)(sWorld.GetDataPath() + "maps/%03u%02u%02u.map").c_str(), m_mapId, x, y);
+            snprintf(tmp, len, (char*)(sWorld.GetDataPath() + "maps/%04u%02u%02u.map").c_str(), m_mapId, x, y);
             DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Loading map %s", tmp);
 
             if (!map->loadData(tmp))
