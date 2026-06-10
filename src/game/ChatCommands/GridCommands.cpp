@@ -93,13 +93,17 @@ namespace
 
                 CellObjectGuids const* guids = sObjectMgr.GetCellObjectGuidsReadOnly(mapId, cellId);
                 if (!guids)
+                {
                     continue;
+                }
 
                 uint32 nCreatures = uint32(guids->creatures.size());
                 uint32 nGameobjects = uint32(guids->gameobjects.size());
                 uint32 nCorpses = uint32(guids->corpses.size());
                 if (nCreatures + nGameobjects + nCorpses == 0)
+                {
                     continue;
+                }
 
                 CellOccupancy cell;
                 cell.cellX = cellX;
@@ -234,7 +238,9 @@ bool ChatHandler::HandleGridAnchorsCommand(char* args)
     {
         CreatureData const* data = sObjectMgr.GetCreatureData(itr->second);
         if (!data)
+        {
             continue;
+        }
 
         GridPair gp = MaNGOS::ComputeGridPair(data->posX, data->posY);
         std::pair<uint32, uint32> key(gp.x_coord, gp.y_coord);

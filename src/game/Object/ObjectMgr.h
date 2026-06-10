@@ -1107,10 +1107,14 @@ class ObjectMgr
         {
             MapObjectGuids::const_iterator mapItr = mMapObjectGuids.find(mapid);
             if (mapItr == mMapObjectGuids.end())
+            {
                 return NULL;
+            }
             CellObjectGuidsMap::const_iterator cellItr = mapItr->second.find(cell_id);
             if (cellItr == mapItr->second.end())
+            {
                 return NULL;
+            }
             return &cellItr->second;
         }
 
