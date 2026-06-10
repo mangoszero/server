@@ -1569,7 +1569,7 @@ bool AuctionBotSeller::Initialize()
             "SELECT `item` FROM `item_loot_template` UNION "
             "SELECT `item` FROM `pickpocketing_loot_template` UNION "
 #if !defined(CLASSIC)
-        "SELECT `item` FROM `prospecting_loot_template` UNION "
+            "SELECT `item` FROM `prospecting_loot_template` UNION "
 #endif
             "SELECT `item` FROM `skinning_loot_template`"))
     {
@@ -1855,25 +1855,33 @@ bool AuctionBotSeller::Initialize()
                 if (prototype->SubClass == ITEM_SUBCLASS_JUNK_MOUNT)
                 {
                     if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MIN_REQ_LEVEL))
+                    {
                         if (prototype->RequiredLevel < value)
                         {
                             continue;
                         }
+                    }
                     if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MAX_REQ_LEVEL))
+                    {
                         if (prototype->RequiredLevel > value)
                         {
                             continue;
                         }
+                    }
                     if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MIN_SKILL_RANK))
+                    {
                         if (prototype->RequiredSkillRank < value)
                         {
                             continue;
                         }
+                    }
                     if (uint32 value = sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_CLASS_MISC_MOUNT_MAX_SKILL_RANK))
+                    {
                         if (prototype->RequiredSkillRank > value)
                         {
                             continue;
                         }
+                    }
                 }
 #endif
 
@@ -2839,4 +2847,3 @@ void AuctionHouseBot::PurgeMailedItems()
 }
 
 /* END */
-

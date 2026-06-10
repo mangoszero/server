@@ -109,11 +109,11 @@ typedef std::map<ObjectGuid, PlayerQueueInfo*> GroupQueueInfoPlayers;
 struct GroupQueueInfo
 {
     GroupQueueInfoPlayers Players; /**< Player queue info map */
-    Team  GroupTeam; /**< Player team (ALLIANCE/HORDE) */
+    Team GroupTeam; /**< Player team (ALLIANCE/HORDE) */
     BattleGroundTypeId BgTypeId; /**< Battleground type id */
-    uint32  JoinTime; /**< Time when group was added */
-    uint32  RemoveInviteTime; /**< Time when we will remove invite for players in group */
-    uint32  IsInvitedToBGInstanceGUID; /**< Was invited to certain BG */
+    uint32 JoinTime; /**< Time when group was added */
+    uint32 RemoveInviteTime; /**< Time when we will remove invite for players in group */
+    uint32 IsInvitedToBGInstanceGUID; /**< Was invited to certain BG */
 };
 
 /**
@@ -257,10 +257,10 @@ class BattleGroundQueue
          * @brief Two dimensional array for storing all queued groups.
          * First dimension specifies the bgTypeId.
          * Second dimension specifies the player's group types.
-         BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
-         BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
-         BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
-         BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
+         *  BG_QUEUE_PREMADE_ALLIANCE  is used for premade alliance groups and alliance rated arena teams
+         *  BG_QUEUE_PREMADE_HORDE     is used for premade horde groups and horde rated arena teams
+         *  BG_QUEUE_NORMAL_ALLIANCE   is used for normal (or small) alliance groups or non-rated arena matches
+         *  BG_QUEUE_NORMAL_HORDE      is used for normal (or small) horde groups or non-rated arena matches
          */
         GroupsQueueType m_QueuedGroups[MAX_BATTLEGROUND_BRACKETS][BG_QUEUE_GROUP_TYPES_COUNT]; /**< Two dimensional array for storing all queued groups. */
 

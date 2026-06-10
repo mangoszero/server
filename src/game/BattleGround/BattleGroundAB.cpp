@@ -98,8 +98,7 @@ BattleGroundAB::BattleGroundAB()
  * @brief Destructor for BattleGroundAB.
  */
 BattleGroundAB::~BattleGroundAB()
-{
-}
+{}
 
 /**
  * @brief Updates Arathi Basin battleground state.
