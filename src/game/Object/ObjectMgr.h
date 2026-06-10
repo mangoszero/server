@@ -1099,6 +1099,26 @@ class ObjectMgr
             return mMapObjectGuids[mapid][cell_id];
         }
 
+        // Read-only per-cell spawn lookup for diagnostics. Unlike
+        // GetCellObjectGuids() this is find-based and const: it never
+        // inserts an empty entry on miss, so scanning many cells (e.g. a
+        // whole grid) does not mutate mMapObjectGuids. Returns NULL when
+        // the cell has no static DB spawn definitions.
+        CellObjectGuids const* GetCellObjectGuidsReadOnly(uint16 mapid, uint32 cell_id) const
+        {
+            MapObjectGuids::const_iterator mapItr = mMapObjectGuids.find(mapid);
+            if (mapItr == mMapObjectGuids.end())
+            {
+                return NULL;
+            }
+            CellObjectGuidsMap::const_iterator cellItr = mapItr->second.find(cell_id);
+            if (cellItr == mapItr->second.end())
+            {
+                return NULL;
+            }
+            return &cellItr->second;
+        }
+
         // modifiers for global grid objects state (static DB spawns, global spawn mods from gameevent system)
         // Don't must be used for modify instance specific spawn state modifications
         void AddCreatureToGrid(uint32 guid, CreatureData const* data);
