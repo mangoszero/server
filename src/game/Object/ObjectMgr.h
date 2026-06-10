@@ -1099,10 +1099,11 @@ class ObjectMgr
             return mMapObjectGuids[mapid][cell_id];
         }
 
-        // Read-only per-cell spawn lookup for diagnostics. Unlike GetCellObjectGuids()
-        // this is find-based and const: it never inserts an empty entry on miss, so
-        // scanning many cells (e.g. a whole grid) does not mutate mMapObjectGuids.
-        // Returns NULL when the cell has no static DB spawn definitions.
+        // Read-only per-cell spawn lookup for diagnostics. Unlike
+        // GetCellObjectGuids() this is find-based and const: it never
+        // inserts an empty entry on miss, so scanning many cells (e.g. a
+        // whole grid) does not mutate mMapObjectGuids. Returns NULL when
+        // the cell has no static DB spawn definitions.
         CellObjectGuids const* GetCellObjectGuidsReadOnly(uint16 mapid, uint32 cell_id) const
         {
             MapObjectGuids::const_iterator mapItr = mMapObjectGuids.find(mapid);

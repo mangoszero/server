@@ -178,7 +178,7 @@ bool ChatHandler::HandleGridInfoCommand(char* args)
     GridOccupancy occ = ComputeGridOccupancy(mapId, gridX, gridY);
 
     PSendSysMessage("[LivingWorld] grid occupancy (static DB spawn-definition, "
-                       "not live objects): map=%u grid=(%u,%u) loaded=%s",
+                    "not live objects): map=%u grid=(%u,%u) loaded=%s",
                     uint32(mapId), gridX, gridY, gridLoaded ? "yes" : "no");
     PSendSysMessage("  cells: occupied=%u/%u empty=%u",
                     occ.occupiedCells, CELLS_PER_GRID, CELLS_PER_GRID - occ.occupiedCells);
@@ -248,10 +248,10 @@ bool ChatHandler::HandleGridAnchorsCommand(char* args)
     }
 
     PSendSysMessage("[LivingWorld] anchor grid occupancy (static DB "
-                       "spawn-definition, not live objects): map=%u",
+                    "spawn-definition, not live objects): map=%u",
                     uint32(mapId));
     PSendSysMessage("  enabled startup anchor grids on this map "
-                       "(extra-active + enabled LivingWorld anchors): %u",
+                    "(extra-active + enabled LivingWorld anchors): %u",
                     uint32(anchorGridSpawnCount.size()));
 
     if (anchorGridSpawnCount.empty())
@@ -286,7 +286,7 @@ bool ChatHandler::HandleGridAnchorsCommand(char* args)
     uint32 maxOccupied = occupancies.back();
     uint32 medianOccupied = occupancies[occupancies.size() / 2];
     PSendSysMessage("  anchor-grid sparsity (occupied cells /%u): "
-                       "min=%u median=%u max=%u across %u grids",
+                    "min=%u median=%u max=%u across %u grids",
                     CELLS_PER_GRID, minOccupied, medianOccupied, maxOccupied,
                     uint32(occupancies.size()));
 
