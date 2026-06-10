@@ -1293,6 +1293,42 @@ Visibility.ObserverSweep.Enable    = 1
 Visibility.ObserverSweep.Interval  = 2000
 
 ################################################################################
+# CINEMATIC FLYOVER
+#
+#    Cinematic.Flyover.Enable
+#        Enable cinematic flyover visibility for first-login intros
+#        This feature shows a populated world during the starting-area cinematic
+#        by binding the player camera to a temporary invisible creature that
+#        moves along a pre-baked route.
+#        Default: 0 (disabled)
+#                 1 (enabled)
+#
+#    Cinematic.Flyover.UpdateIntervalMs
+#        Update interval for moving the cinematic body (in milliseconds)
+#        Default: 200
+#
+#    Cinematic.Flyover.TimeoutSec
+#        Timeout for stopping the flyover if not completed (in seconds)
+#        Default: 120
+#
+#    Cinematic.Flyover.Debug
+#        Enable debug logging for cinematic flyover
+#        Default: 0 (disabled)
+#                 1 (enabled)
+#
+#    Cinematic.Flyover.BodyEntry
+#        Creature entry to use as the invisible cinematic body
+#        Default: 12999 (World Invisible Trigger)
+#
+################################################################################
+
+Cinematic.Flyover.Enable        = 0
+Cinematic.Flyover.UpdateIntervalMs = 200
+Cinematic.Flyover.TimeoutSec    = 120
+Cinematic.Flyover.Debug         = 0
+Cinematic.Flyover.BodyEntry     = 12999
+
+################################################################################
 # SERVER RATES
 #
 #    Rate.Health

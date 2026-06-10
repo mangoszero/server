@@ -57,6 +57,7 @@
 #include "Log.h"
 #include "Player.h"
 #include "World.h"
+#include "CinematicFlyover.h"
 #include "GuildMgr.h"
 #include "ObjectMgr.h"
 #include "WorldSession.h"
@@ -1165,6 +1166,18 @@ void WorldSession::HandleSetActionButtonOpcode(WorldPacket& recv_data)
 void WorldSession::HandleCompleteCinematic(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_COMPLETE_CINEMATIC");
+
+    // Stop cinematic flyover if active
+    if (Player* player = GetPlayer())
+    {
+        if (CinematicFlyover* flyover = player->GetCinematicFlyover())
+        {
+            if (flyover->IsActive())
+            {
+                flyover->Stop();
+            }
+        }
+    }
 }
 
 /**
@@ -1175,6 +1188,17 @@ void WorldSession::HandleCompleteCinematic(WorldPacket& /*recv_data*/)
 void WorldSession::HandleNextCinematicCamera(WorldPacket& /*recv_data*/)
 {
     DEBUG_LOG("WORLD: Received opcode CMSG_NEXT_CINEMATIC_CAMERA");
+
+    // The client sends this when it enters the cinematic. Begin the flyover now
+    // (summon body + bind camera) so farsight binds in sync with the client's
+    // cinematic rather than during the login control window. Begin() is guarded.
+    if (Player* player = GetPlayer())
+    {
+        if (CinematicFlyover* flyover = player->GetCinematicFlyover())
+        {
+            flyover->Begin();
+        }
+    }
 }
 
 /**
