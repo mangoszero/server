@@ -713,6 +713,18 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
             return false;
         }
     }
+    else // area->team == AREATEAM_NONE: check for opposing-faction guard presence
+    {
+        bool botIsAlliance = IsAlliance(bot->getRace());
+        if (botIsAlliance && m_hordeGuardAreas.find(area->ID) != m_hordeGuardAreas.end())
+        {
+            return false;   // Alliance bot in Horde-guarded contested area
+        }
+        if (!botIsAlliance && m_allianceGuardAreas.find(area->ID) != m_allianceGuardAreas.end())
+        {
+            return false;   // Horde bot in Alliance-guarded contested area
+        }
+    }
 
     if (m_areaCreatureStatsMap.empty()) // calculate stats if not done yet
     {
@@ -856,6 +868,9 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
     std::map<std::pair<uint32, uint32>, uint32> cellToAreaCache; // (mapId, cellId) -> areaId
     std::map<uint32, std::vector<uint8>> areaLevels;
 
+    m_allianceGuardAreas.clear();
+    m_hordeGuardAreas.clear();
+
     uint32 getAreaIdCalls = 0;
     uint32 totalCreatures = 0;
 
@@ -865,7 +880,7 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
         CreatureData const& data = itr->second;
         CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(data.id);
 
-        if (!cInfo || cInfo->NpcFlags != 0 || cInfo->UnitFlags & UNIT_FLAG_NON_ATTACKABLE)
+        if (!cInfo)
         {
             continue;
         }
@@ -897,6 +912,27 @@ void RandomPlayerbotMgr::CalculateAreaCreatureStats()
         }
 
         if (areaId == 0)
+        {
+            continue;
+        }
+
+        // Guard area detection: classify guards by faction hostility
+        if (cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_GUARD)
+        {
+            FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(cInfo->FactionAlliance);
+            if (factionTemplate && !factionTemplate->IsContestedGuardFaction() &&
+                !(factionTemplate->hostileMask & FACTION_MASK_PLAYER))
+            {
+                if (factionTemplate->hostileMask & FACTION_MASK_HORDE)
+                    m_allianceGuardAreas.insert(areaId);
+                if (factionTemplate->hostileMask & FACTION_MASK_ALLIANCE)
+                    m_hordeGuardAreas.insert(areaId);
+            }
+            continue;
+        }
+
+        // Skip questgivers, vendors, and non-attackable creatures
+        if (cInfo->NpcFlags != 0 || cInfo->UnitFlags & UNIT_FLAG_NON_ATTACKABLE)
         {
             continue;
         }
