@@ -35,7 +35,8 @@ static const uint32 CONFIG_TIMEOUT_SEC = 120;
 static const uint32 CONFIG_VISIBILITY_DISTANCE = 250;
 
 CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
-    : m_player(player), m_route(nullptr), m_bodyEntry(0), m_elapsedMs(0),
+    : m_player(player), m_route(nullptr), m_viewerMap(nullptr), m_viewerRadius(0.0f),
+      m_bodyEntry(0), m_elapsedMs(0),
       m_updateTimer(0), m_timeoutMs(0), m_armed(false), m_begun(false), m_active(false)
 {
     // Validate config is enabled
@@ -136,6 +137,16 @@ void CinematicFlyover::Begin()
     // resets to the player on stop - no global map state is touched.
     float visDist = float(sConfig.GetIntDefault("Cinematic.Flyover.VisibilityDistance", CONFIG_VISIBILITY_DISTANCE));
     body->SetVisibilityDistanceOverride(visDist);
+
+    // Extend the map's packet broadcast radius to match: creatures revealed by
+    // the wide radius must keep delivering their movement/update packets to
+    // this viewer's remote camera, or the client freezes them until the camera
+    // closes to the default visibility distance and then fast-walks them to
+    // catch up. The registered map/radius are stored so Stop() removes exactly
+    // this registration; flyovers only run on continents, which persist.
+    m_viewerMap = body->GetMap();
+    m_viewerRadius = visDist;
+    m_viewerMap->AddCinematicViewer(m_viewerRadius);
 
     // Bind player camera to body (farsight), now that the client is in the cinematic
     m_player->GetCamera().SetView(body, true);
@@ -246,7 +257,16 @@ void CinematicFlyover::Stop()
         body->AddObjectToRemoveList();
     }
 
-    // Step 3: Clear references
+    // Step 3: Revert the map's extended broadcast radius - unconditionally
+    // paired with Begin's registration, on exactly the map/radius registered
+    if (m_viewerMap)
+    {
+        m_viewerMap->RemoveCinematicViewer(m_viewerRadius);
+        m_viewerMap = nullptr;
+        m_viewerRadius = 0.0f;
+    }
+
+    // Step 4: Clear references
     m_bodyGuid.Clear();
     m_active = false;
 }

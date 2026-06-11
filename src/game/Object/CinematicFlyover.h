@@ -28,6 +28,7 @@
 
 class Player;
 class Creature;
+class Map;
 
 class CinematicFlyover
 {
@@ -58,6 +59,8 @@ private:
 
     Player* m_player;
     const CinematicFlyoverRoute* m_route;
+    Map* m_viewerMap;       // map the broadcast-radius viewer was registered on
+    float m_viewerRadius;   // radius it was registered with (for paired removal)
     ObjectGuid m_bodyGuid;
     uint32 m_bodyEntry;
     uint32 m_elapsedMs;
