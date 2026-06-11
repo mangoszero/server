@@ -1281,7 +1281,7 @@ GM.MaxSpeedFactor         = 10
 ################################################################################
 
 Visibility.GroupMode               = 0
-Visibility.Distance.Continents     = 90
+Visibility.Distance.Continents     = 100
 Visibility.Distance.Instances      = 120
 Visibility.Distance.BG             = 180
 Visibility.Distance.InFlight       = 100
@@ -1300,8 +1300,8 @@ Visibility.ObserverSweep.Interval  = 2000
 #        This feature shows a populated world during the starting-area cinematic
 #        by binding the player camera to a temporary invisible creature that
 #        moves along a pre-baked route.
-#        Default: 0 (disabled)
-#                 1 (enabled)
+#        Default: 1 (enabled)
+#                 0 (disabled)
 #
 #    Cinematic.Flyover.UpdateIntervalMs
 #        Update interval for moving the cinematic body (in milliseconds)
@@ -1329,7 +1329,7 @@ Visibility.ObserverSweep.Interval  = 2000
 #
 ################################################################################
 
-Cinematic.Flyover.Enable        = 0
+Cinematic.Flyover.Enable        = 1
 Cinematic.Flyover.UpdateIntervalMs = 200
 Cinematic.Flyover.TimeoutSec    = 120
 Cinematic.Flyover.Debug         = 0
