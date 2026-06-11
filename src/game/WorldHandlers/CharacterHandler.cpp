@@ -864,9 +864,11 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     /* We create the flyover after the player is fully in-world (per final review) */
     if (isFirstLogin && sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
     {
-        if (ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(pCurrChar->getRace()))
+        if (sChrRacesStore.LookupEntry(pCurrChar->getRace()))
         {
-            pCurrChar->SetCinematicFlyover(std::make_unique<CinematicFlyover>(pCurrChar, pCurrChar->getRace()));
+            pCurrChar->SetCinematicFlyover(
+                std::make_unique<CinematicFlyover>(pCurrChar,
+                                                   pCurrChar->getRace()));
         }
     }
 

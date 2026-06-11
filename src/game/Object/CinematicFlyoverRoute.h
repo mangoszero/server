@@ -27,7 +27,9 @@
 struct CinematicFlyoverKeyframe
 {
     uint32 timestampMs;  // Time from route start in milliseconds
+    // cppcheck-suppress unusedStructMember
     float x, y, z;       // World position
+    // cppcheck-suppress unusedStructMember
     float orientation;   // Facing in radians
 };
 
@@ -38,6 +40,7 @@ struct CinematicFlyoverRoute
     uint32 mapId;           // Map ID
     uint32 durationMs;      // Total route duration in milliseconds
     uint32 keyframeCount;
+    // cppcheck-suppress unusedStructMember
     const CinematicFlyoverKeyframe* keyframes;
 };
 

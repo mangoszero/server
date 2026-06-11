@@ -21,6 +21,7 @@
 
 
 #include "CinematicFlyoverRoute.h"
+#include "SharedDefines.h"
 
 // GENERATED FILE - do not hand-edit. Regenerate with:
 //     python .ai_tools/bake_cinematic_routes.py --out <this file>
