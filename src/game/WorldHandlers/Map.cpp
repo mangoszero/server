@@ -245,6 +245,11 @@ void Map::InitVisibilityDistance()
  *
  * @param radius The flyover visibility distance in yards.
  */
+float Map::GetBroadcastRadius() const
+{
+    return m_cinematicViewerRadius > m_VisibleDistance ? m_cinematicViewerRadius : m_VisibleDistance;
+}
+
 void Map::AddCinematicViewer(float radius)
 {
     m_cinematicViewerRadii.insert(radius);

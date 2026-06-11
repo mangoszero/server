@@ -35,9 +35,10 @@ static const uint32 CONFIG_TIMEOUT_SEC = 120;
 static const uint32 CONFIG_VISIBILITY_DISTANCE = 250;
 
 CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
-    : m_player(player), m_route(nullptr), m_viewerMap(nullptr), m_viewerRadius(0.0f),
-      m_bodyEntry(0), m_elapsedMs(0),
-      m_updateTimer(0), m_timeoutMs(0), m_armed(false), m_begun(false), m_active(false)
+    : m_player(player), m_route(nullptr), m_viewerMap(nullptr),
+      m_viewerRadius(0.0f), m_bodyEntry(0), m_elapsedMs(0),
+      m_updateTimer(0), m_timeoutMs(0), m_armed(false), m_begun(false),
+      m_active(false)
 {
     // Validate config is enabled
     if (!sConfig.GetBoolDefault("Cinematic.Flyover.Enable", false))
@@ -70,7 +71,8 @@ CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
     }
 
     // Validate body entry from config
-    uint32 bodyEntry = sConfig.GetIntDefault("Cinematic.Flyover.BodyEntry", 12999);
+    uint32 bodyEntry = sConfig.GetIntDefault("Cinematic.Flyover.BodyEntry",
+                                            12999);
     if (bodyEntry == 0)
     {
         sLog.outError("CinematicFlyover: BodyEntry is 0, cannot create body");
@@ -79,7 +81,8 @@ CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
 
     if (!ObjectMgr::GetCreatureTemplate(bodyEntry))
     {
-        sLog.outError("CinematicFlyover: Creature entry %u not found in creature_template", bodyEntry);
+        sLog.outError("CinematicFlyover: Creature entry %u not found in "
+                      "creature_template", bodyEntry);
         return;
     }
 
@@ -91,8 +94,8 @@ CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
     // control window and breaks the intro control-handover (drumbeat) sequence.
     m_armed = true;
 
-    sLog.outDebug("CinematicFlyover: Armed for player %s (race %u), awaiting cinematic start",
-                  m_player->GetName(), raceId);
+    sLog.outDebug("CinematicFlyover: Armed for player %s (race %u), "
+                  "awaiting cinematic start", m_player->GetName(), raceId);
 }
 
 void CinematicFlyover::Begin()
@@ -116,10 +119,13 @@ void CinematicFlyover::Begin()
 
     // Spawn temporary invisible creature body.
     // Despawn must outlast the flyover timeout so our Stop() despawns it first.
-    uint32 despawnMs = m_route->durationMs + (CONFIG_TIMEOUT_SEC * 1000) + 60000; // +60s buffer
-    Creature* body = m_player->SummonCreature(m_bodyEntry, startKeyframe.x, startKeyframe.y, startKeyframe.z,
-                                              startKeyframe.orientation, TEMPSPAWN_TIMED_DESPAWN,
-                                              despawnMs, true, false); // asActiveObject=true, setRun=false
+    uint32 despawnMs = m_route->durationMs + (CONFIG_TIMEOUT_SEC * 1000) +
+                       60000; // +60s buffer
+    Creature* body = m_player->SummonCreature(m_bodyEntry, startKeyframe.x,
+                                              startKeyframe.y, startKeyframe.z,
+                                              startKeyframe.orientation,
+                                              TEMPSPAWN_TIMED_DESPAWN,
+                                              despawnMs, true, false);
 
     if (!body)
     {
@@ -135,7 +141,9 @@ void CinematicFlyover::Begin()
     // stream in well before the camera reaches them and persist as it pulls away.
     // The override lives on the body, so it reverts automatically when the camera
     // resets to the player on stop - no global map state is touched.
-    float visDist = float(sConfig.GetIntDefault("Cinematic.Flyover.VisibilityDistance", CONFIG_VISIBILITY_DISTANCE));
+    float visDist = float(sConfig.GetIntDefault(
+                          "Cinematic.Flyover.VisibilityDistance",
+                          CONFIG_VISIBILITY_DISTANCE));
     body->SetVisibilityDistanceOverride(visDist);
 
     // Extend the map's packet broadcast radius to match: creatures revealed by
@@ -191,7 +199,9 @@ void CinematicFlyover::Update(uint32 updateDiff)
 
     // Relocate only when the update interval has accumulated
     m_updateTimer += updateDiff;
-    uint32 updateInterval = sConfig.GetIntDefault("Cinematic.Flyover.UpdateIntervalMs", CONFIG_UPDATE_INTERVAL_MS);
+    uint32 updateInterval = sConfig.GetIntDefault(
+                              "Cinematic.Flyover.UpdateIntervalMs",
+                              CONFIG_UPDATE_INTERVAL_MS);
     if (m_updateTimer < updateInterval)
     {
         return;
@@ -223,14 +233,16 @@ void CinematicFlyover::Update(uint32 updateDiff)
         return;
     }
 
-    // Relocate body using Map::CreatureRelocation to trigger OnRelocated and visibility updates
+    // Relocate body using Map::CreatureRelocation to trigger OnRelocated
+    // and visibility updates
     if (body->GetMap())
     {
         body->GetMap()->CreatureRelocation(body, x, y, z, o);
 
         if (sConfig.GetBoolDefault("Cinematic.Flyover.Debug", false))
         {
-            sLog.outDebug("CinematicFlyover: Relocated body to (%.2f, %.2f, %.2f, %.2f)", x, y, z, o);
+            sLog.outDebug("CinematicFlyover: Relocated body to (%.2f, %.2f, %.2f, %.2f)",
+                          x, y, z, o);
         }
     }
 }
@@ -245,7 +257,8 @@ void CinematicFlyover::Stop()
         return;
     }
 
-    sLog.outDebug("CinematicFlyover: Stopping for player %s", m_player->GetName());
+    sLog.outDebug("CinematicFlyover: Stopping for player %s",
+                  m_player->GetName());
 
     // Step 1: Reset camera (must happen before body removal)
     m_player->GetCamera().ResetView(true);
@@ -298,7 +311,8 @@ bool CinematicFlyover::InterpolatePosition(uint32 atMs, float& x, float& y, floa
     {
         if (atMs >= m_route->keyframes[m_route->keyframeCount - 1].timestampMs)
         {
-            const CinematicFlyoverKeyframe& last = m_route->keyframes[m_route->keyframeCount - 1];
+            const CinematicFlyoverKeyframe& last =
+                m_route->keyframes[m_route->keyframeCount - 1];
             x = last.x;
             y = last.y;
             z = last.z;

@@ -41,7 +41,7 @@ struct CinematicFlyoverRoute
     const CinematicFlyoverKeyframe* keyframes;
 };
 
-// Route accessor function - returns nullptr if no route exists for the race
+/// Route accessor function - returns nullptr if no route exists for the race
 const CinematicFlyoverRoute* GetCinematicFlyoverRouteForRace(uint8 raceId);
 
 #endif // MANGOSSERVER_CINEMATIC_FLYOVER_ROUTE_H
