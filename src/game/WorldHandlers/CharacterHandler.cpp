@@ -62,6 +62,7 @@
 #include "Util.h"
 #include "Language.h"
 #include "Chat.h"
+#include "Config/Config.h"
 #include "SpellMgr.h"
 #include "GameTime.h"
 #include "Timer.h"
