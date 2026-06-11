@@ -1281,7 +1281,7 @@ GM.MaxSpeedFactor         = 10
 ################################################################################
 
 Visibility.GroupMode               = 0
-Visibility.Distance.Continents     = 90
+Visibility.Distance.Continents     = 100
 Visibility.Distance.Instances      = 120
 Visibility.Distance.BG             = 180
 Visibility.Distance.InFlight       = 100
@@ -1291,6 +1291,50 @@ Visibility.RelocationLowerLimit    = 10
 Visibility.AIRelocationNotifyDelay = 1000
 Visibility.ObserverSweep.Enable    = 1
 Visibility.ObserverSweep.Interval  = 2000
+
+################################################################################
+# CINEMATIC FLYOVER
+#
+#    Cinematic.Flyover.Enable
+#        Enable cinematic flyover visibility for first-login intros
+#        This feature shows a populated world during the starting-area cinematic
+#        by binding the player camera to a temporary invisible creature that
+#        moves along a pre-baked route.
+#        Default: 1 (enabled)
+#                 0 (disabled)
+#
+#    Cinematic.Flyover.UpdateIntervalMs
+#        Update interval for moving the cinematic body (in milliseconds)
+#        Default: 200
+#
+#    Cinematic.Flyover.TimeoutSec
+#        Timeout for stopping the flyover if not completed (in seconds)
+#        Default: 120
+#
+#    Cinematic.Flyover.Debug
+#        Enable debug logging for cinematic flyover
+#        Default: 0 (disabled)
+#                 1 (enabled)
+#
+#    Cinematic.Flyover.BodyEntry
+#        Creature entry to use as the invisible cinematic body
+#        Default: 12999 (World Invisible Trigger)
+#
+#    Cinematic.Flyover.VisibilityDistance
+#        Visibility radius (yards) used while the flyover is active, so NPCs along
+#        the route stream in before the camera reaches them and persist as it
+#        pulls away. Applies only to the cinematic viewpoint, not to other
+#        players; reverts to Visibility.Distance.Continents when the flyover ends.
+#        Default: 250
+#
+################################################################################
+
+Cinematic.Flyover.Enable        = 1
+Cinematic.Flyover.UpdateIntervalMs = 200
+Cinematic.Flyover.TimeoutSec    = 120
+Cinematic.Flyover.Debug         = 0
+Cinematic.Flyover.BodyEntry     = 12999
+Cinematic.Flyover.VisibilityDistance = 250
 
 ################################################################################
 # SERVER RATES

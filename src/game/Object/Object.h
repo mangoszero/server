@@ -940,6 +940,12 @@ class WorldObject : public Object
 
         void SetActiveObjectState(bool active);
 
+        // Per-object visibility distance. 0 means use the map default; a positive
+        // value overrides it when this object is the viewpoint (e.g. the cinematic
+        // flyover body widens the populate radius without touching the map).
+        float GetVisibilityDistanceOverride() const { return m_visibilityDistanceOverride; }
+        void SetVisibilityDistanceOverride(float dist) { m_visibilityDistanceOverride = dist; }
+
         ViewPoint& GetViewPoint()
         {
             return m_viewPoint;
@@ -981,6 +987,7 @@ class WorldObject : public Object
         ViewPoint m_viewPoint;
         WorldUpdateCounter m_updateTracker;
         bool m_isActiveObject;
+        float m_visibilityDistanceOverride;
 };
 
 // Helper functions to cast between different Object pointers. Useful when unsure that your object* is valid at all.

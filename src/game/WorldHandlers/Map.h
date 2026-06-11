@@ -180,6 +180,21 @@ class Map : public GridRefManager<NGridType>
         // function for setting up visibility distance for maps on per-type/per-Id basis
         virtual void InitVisibilityDistance();
 
+        /**
+         * Packet delivery radius: the map visibility distance, extended while a
+         * cinematic flyover viewer on this map watches from beyond it so that
+         * movement/update packets still reach that viewer's remote camera.
+         * Without this, creatures revealed by the wide flyover radius receive no
+         * further movement packets until the camera closes to the default
+         * distance, and the client visibly fast-walks them to catch up.
+         */
+        float GetBroadcastRadius() const;
+        /// Registration of cinematic flyover viewers. Each Add must be paired
+        /// with a Remove of the same radius on the same map; the effective
+        /// radius is the largest among the currently registered viewers.
+        void AddCinematicViewer(float radius);
+        void RemoveCinematicViewer(float radius);
+
         void PlayerRelocation(Player*, float x, float y, float z, float angl);
         void CreatureRelocation(Creature* creature, float x, float y, float z, float orientation);
 
@@ -410,6 +425,8 @@ class Map : public GridRefManager<NGridType>
         uint32 i_InstanceId;
         uint32 m_unloadTimer;
         float m_VisibleDistance;
+        std::multiset<float> m_cinematicViewerRadii;  ///< radii of active cinematic flyover viewers on this map
+        float m_cinematicViewerRadius;                ///< cached largest of m_cinematicViewerRadii (0 when none)
         MapPersistentState* m_persistentState;
 
         MapRefManager m_mapRefManager;

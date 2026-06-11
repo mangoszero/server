@@ -9206,8 +9206,16 @@ bool Unit::IsVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     }
     else if (!at_same_transport)                            // distance for show player/pet/creature (no transport case)
     {
+        // Honor a per-viewpoint visibility distance override (e.g. the cinematic
+        // flyover body), otherwise use the map default.
+        float visibilityDistance = viewPoint->GetVisibilityDistanceOverride();
+        if (visibilityDistance <= 0.0f)
+        {
+            visibilityDistance = _map.GetVisibilityDistance();
+        }
+
         // Any units far than max visible distance for viewer or not in our map are not visible too
-        if (!IsWithinDistInMap(viewPoint, _map.GetVisibilityDistance() + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
+        if (!IsWithinDistInMap(viewPoint, visibilityDistance + (inVisibleList ? World::GetVisibleUnitGreyDistance() : 0.0f), is3dDistance))
         {
             return false;
         }
