@@ -217,8 +217,16 @@ void Camera::UpdateVisibilityOf(WorldObject* target, UpdateData& data, std::set<
  */
 void Camera::UpdateVisibilityForOwner()
 {
+    // Honor a per-viewpoint visibility distance override (e.g. the cinematic
+    // flyover body widens the populate radius); otherwise use the map default.
+    float visibilityDistance = m_source->GetVisibilityDistanceOverride();
+    if (visibilityDistance <= 0.0f)
+    {
+        visibilityDistance = m_source->GetMap()->GetVisibilityDistance();
+    }
+
     MaNGOS::VisibleNotifier notifier(*this);
-    Cell::VisitAllObjects(m_source, notifier, m_source->GetMap()->GetVisibilityDistance(), false);
+    Cell::VisitAllObjects(m_source, notifier, visibilityDistance, false);
     notifier.Notify();
 }
 

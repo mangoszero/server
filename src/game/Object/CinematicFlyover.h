@@ -53,8 +53,8 @@ private:
     // Resolve body from GUID (returns nullptr if body no longer exists)
     Creature* ResolveBody() const;
 
-    // Interpolate position at current elapsed time
-    bool InterpolatePosition(float& x, float& y, float& z, float& o);
+    // Interpolate route position at the given route time (ms)
+    bool InterpolatePosition(uint32 atMs, float& x, float& y, float& z, float& o);
 
     Player* m_player;
     const CinematicFlyoverRoute* m_route;

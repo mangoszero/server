@@ -32,6 +32,7 @@
 // Config keys
 static const uint32 CONFIG_UPDATE_INTERVAL_MS = 200;
 static const uint32 CONFIG_TIMEOUT_SEC = 120;
+static const uint32 CONFIG_VISIBILITY_DISTANCE = 250;
 
 CinematicFlyover::CinematicFlyover(Player* player, uint8 raceId)
     : m_player(player), m_route(nullptr), m_bodyEntry(0), m_elapsedMs(0),
@@ -129,6 +130,13 @@ void CinematicFlyover::Begin()
     // Store body GUID for resolution (not a raw pointer)
     m_bodyGuid = body->GetObjectGuid();
 
+    // Widen the populate radius for this viewpoint only, so NPCs along the route
+    // stream in well before the camera reaches them and persist as it pulls away.
+    // The override lives on the body, so it reverts automatically when the camera
+    // resets to the player on stop - no global map state is touched.
+    float visDist = float(sConfig.GetIntDefault("Cinematic.Flyover.VisibilityDistance", CONFIG_VISIBILITY_DISTANCE));
+    body->SetVisibilityDistanceOverride(visDist);
+
     // Bind player camera to body (farsight), now that the client is in the cinematic
     m_player->GetCamera().SetView(body, true);
 
@@ -164,20 +172,26 @@ void CinematicFlyover::Update(uint32 updateDiff)
         return;
     }
 
-    // Update timer
-    m_updateTimer += updateDiff;
+    // Advance the route clock by real elapsed time every tick so the body
+    // tracks the client's cinematic camera. Crediting only the nominal
+    // interval per relocation made the body run at ~80% speed (the world
+    // tick overshoot was discarded), leaving it ~17s behind by route end.
+    m_elapsedMs += updateDiff;
 
-    // Check if update interval elapsed
+    // Relocate only when the update interval has accumulated
+    m_updateTimer += updateDiff;
     uint32 updateInterval = sConfig.GetIntDefault("Cinematic.Flyover.UpdateIntervalMs", CONFIG_UPDATE_INTERVAL_MS);
     if (m_updateTimer < updateInterval)
     {
         return;
     }
 
-    m_updateTimer = 0;
-
-    // Advance elapsed time
-    m_elapsedMs += updateInterval;
+    // Keep the remainder so relocation cadence does not drift either
+    m_updateTimer -= updateInterval;
+    if (m_updateTimer > updateInterval)
+    {
+        m_updateTimer = updateInterval; // cap catch-up after a long stall
+    }
 
     // Check timeout
     if (m_elapsedMs > m_timeoutMs)
@@ -187,9 +201,11 @@ void CinematicFlyover::Update(uint32 updateDiff)
         return;
     }
 
-    // Interpolate position
+    // Interpolate the body to the camera's current route position. The wide
+    // visibility override (set in Begin) does the work of streaming NPCs ahead
+    // of and behind the camera, so no look-ahead offset is needed here.
     float x, y, z, o;
-    if (!InterpolatePosition(x, y, z, o))
+    if (!InterpolatePosition(m_elapsedMs, x, y, z, o))
     {
         sLog.outDebug("CinematicFlyover: Interpolation failed, stopping");
         Stop();
@@ -235,7 +251,7 @@ void CinematicFlyover::Stop()
     m_active = false;
 }
 
-bool CinematicFlyover::InterpolatePosition(float& x, float& y, float& z, float& o)
+bool CinematicFlyover::InterpolatePosition(uint32 atMs, float& x, float& y, float& z, float& o)
 {
     if (!m_route || m_route->keyframeCount == 0)
     {
@@ -248,8 +264,8 @@ bool CinematicFlyover::InterpolatePosition(float& x, float& y, float& z, float& 
 
     for (uint32 i = 0; i < m_route->keyframeCount - 1; ++i)
     {
-        if (m_route->keyframes[i].timestampMs <= m_elapsedMs &&
-            m_route->keyframes[i + 1].timestampMs > m_elapsedMs)
+        if (m_route->keyframes[i].timestampMs <= atMs &&
+            m_route->keyframes[i + 1].timestampMs > atMs)
         {
             prev = &m_route->keyframes[i];
             next = &m_route->keyframes[i + 1];
@@ -260,7 +276,7 @@ bool CinematicFlyover::InterpolatePosition(float& x, float& y, float& z, float& 
     // If we're past the last keyframe, clamp to end
     if (!prev && !next)
     {
-        if (m_elapsedMs >= m_route->keyframes[m_route->keyframeCount - 1].timestampMs)
+        if (atMs >= m_route->keyframes[m_route->keyframeCount - 1].timestampMs)
         {
             const CinematicFlyoverKeyframe& last = m_route->keyframes[m_route->keyframeCount - 1];
             x = last.x;
@@ -291,7 +307,7 @@ bool CinematicFlyover::InterpolatePosition(float& x, float& y, float& z, float& 
             return false;
         }
 
-        float t = float(m_elapsedMs - prev->timestampMs) / float(timeDiff);
+        float t = float(atMs - prev->timestampMs) / float(timeDiff);
         x = prev->x + t * (next->x - prev->x);
         y = prev->y + t * (next->y - prev->y);
         z = prev->z + t * (next->z - prev->z);
