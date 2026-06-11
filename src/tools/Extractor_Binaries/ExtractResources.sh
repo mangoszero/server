@@ -148,7 +148,7 @@ DisplayHeader
 echo
 echo "Current Extraction Settings: DBCs/maps: $USE_AD"
 echo "                                 vmaps: $USE_VMAPS"
-echo "                                 mmaps: $USE_MMAPS using $NUM_CPU processes times $NUM_THREADS threads"
+echo "                                 mmaps: $USE_MMAPS using $NUM_CPU processors times $NUM_THREADS threads"
 if [ "$USE_MMAPS_DELAY" != "" ]; then
     echo
     echo "MMap Extraction will be delayed by: $USE_MMAPS_DELAY"
@@ -176,7 +176,7 @@ else
 fi
 
 if [ "$USE_MMAPS" = "1" ]; then
-    echo "Mmaps will be extracted with $NUM_CPU processes times $NUM_THREADS threads" | tee -a $LOG_FILE
+    echo "Mmaps will be extracted with $NUM_CPU processors times $NUM_THREADS threads" | tee -a $LOG_FILE
 else
     echo "Mmaps files won't be extracted!" | tee -a $LOG_FILE
 fi
