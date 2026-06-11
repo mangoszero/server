@@ -291,6 +291,18 @@ bool CinematicFlyover::InterpolatePosition(uint32 atMs, float& x, float& y, floa
         return false;
     }
 
+    // Some client camera tracks begin after 0 ms. Hold the body at the first
+    // baked keyframe until the route enters its first interpolated segment.
+    if (atMs <= m_route->keyframes[0].timestampMs)
+    {
+        const CinematicFlyoverKeyframe& first = m_route->keyframes[0];
+        x = first.x;
+        y = first.y;
+        z = first.z;
+        o = first.orientation;
+        return true;
+    }
+
     // Find surrounding keyframes
     const CinematicFlyoverKeyframe* prev = nullptr;
     const CinematicFlyoverKeyframe* next = nullptr;
@@ -320,16 +332,6 @@ bool CinematicFlyover::InterpolatePosition(uint32 atMs, float& x, float& y, floa
             return true;
         }
         return false;
-    }
-
-    // If we're before the first keyframe, use first
-    if (!prev && next)
-    {
-        x = next->x;
-        y = next->y;
-        z = next->z;
-        o = next->orientation;
-        return true;
     }
 
     // Linear interpolation
