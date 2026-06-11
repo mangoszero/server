@@ -14,6 +14,7 @@
 ## First param must be number of to be used CPUs (only 1, 2, 3, 4 supported) or "offmesh" to recreate the special tiles from the OFFMESH_FILE
 ## Second param can be an additional filename for storing log
 ## Third param can be an addition filename for storing detailed log
+## Fourth param can be number of threads for mmap-extractor (default: 1)
 
 ## Additional Parameters to be forwarded to MoveMapGen, see mmaps/readme for instructions
 PARAMS="--silent"
@@ -134,13 +135,22 @@ DisplayHeader()
 }
 
 
-if [ "$#" = "3" ]
+if [ "$#" = "4" ]
 then
   LOG_FILE=$2
   DETAIL_LOG_FILE=$3
+  THREADS=$4
+elif [ "$#" = "3" ]
+then
+  LOG_FILE=$2
+  DETAIL_LOG_FILE=$3
+  THREADS=1
 elif [ "$#" = "2" ]
 then
   LOG_FILE=$2
+  THREADS=1
+else
+  THREADS=1
 fi
 
 # Offmesh file provided?
@@ -169,7 +179,7 @@ createMMaps()
         continue 2
       fi
     done
-    ./mmap-extractor $PARAMS $OFFMESH $i | tee -a $DETAIL_LOG_FILE
+    ./mmap-extractor $PARAMS $OFFMESH --threads $THREADS $i | tee -a $DETAIL_LOG_FILE
     echo "`date`: (Re)created map $i" | tee -a $LOG_FILE
   done
 }
@@ -281,7 +291,7 @@ case "$1" in
     echo "Recreate offmeshs from file $OFFMESH_FILE" | tee -a $DETAIL_LOG_FILE
     while read map tile line
     do
-      ./mmap-extractor $PARAMS $OFFMESH $map --tile $tile | tee -a $DETAIL_LOG_FILE
+      ./mmap-extractor $PARAMS $OFFMESH --threads $THREADS $map --tile $tile | tee -a $DETAIL_LOG_FILE
       echo "`date`: Recreated $map $tile from $OFFMESH_FILE" | tee -a $LOG_FILE
     done < $OFFMESH_FILE &
     ;;
