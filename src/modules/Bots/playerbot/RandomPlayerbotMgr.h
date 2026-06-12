@@ -262,7 +262,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
          * @param teleZ The Z coordinate.
          * @return true if the zone is good for random teleport, false otherwise
          */
-        bool IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z);
+        bool IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z, uint32 useLevel = 0);
 
         /**
          * @brief Calculate creature stats for various areas, to be used for bot teleport.
@@ -277,6 +277,12 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
+        struct EventValueEntry {
+            uint32 value;
+            uint32 lastChangeTime;
+            uint32 validIn;
+        };
+        std::map<std::pair<uint32, std::string>, EventValueEntry> m_eventValueCache;
 };
 
 #define sRandomPlayerbotMgr MaNGOS::Singleton<RandomPlayerbotMgr>::Instance()

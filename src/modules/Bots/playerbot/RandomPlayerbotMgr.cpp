@@ -419,6 +419,15 @@ void RandomPlayerbotMgr::Randomize(Player* bot)
 void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
 {
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
+    uint32 botCap = sPlayerbotAIConfig.randomBotMaxLevel;
+    if (botCap > maxLevel)
+        botCap = maxLevel;
+    if (bot->getLevel() >= botCap)
+    {
+        RandomizeFirst(bot);
+        return;
+    }
+
     uint32 level = min((uint32)(bot->getLevel() + 1), maxLevel);
     PlayerbotFactory factory(bot, level);
     if (bot->GetGuildId())
@@ -450,8 +459,7 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         for (GameTeleMap::const_iterator itr = teleMap.begin(); itr != teleMap.end(); ++itr)
         {
             GameTele const* tele = &itr->second;
-            if (( tele->mapId == mapId) &&
-                (IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z)))
+            if (tele->mapId == mapId)
             {
                 locs.push_back(tele);
             }
@@ -490,10 +498,23 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
             continue;
         }
 
+        if (!IsZoneSafeForBot(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z, level))
+        {
+            continue;
+        }
+
         PlayerbotFactory factory(bot, level);
         factory.CleanRandomize();
         RandomTeleport(bot, tele->mapId, tele->position_x, tele->position_y, tele->position_z);
         break;
+    }
+
+    if (bot->getLevel() > maxLevel)
+    {
+        uint32 newLevel =  urand(sPlayerbotAIConfig.randomBotMinLevel, maxLevel);
+        PlayerbotFactory factory(bot, newLevel);
+        factory.CleanRandomize();
+        RandomTeleportForLevel(bot);
     }
 }
 
@@ -663,7 +684,7 @@ vector<uint32> RandomPlayerbotMgr::GetFreeBots(bool alliance)
     return guids;
 }
 
-bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z)
+bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, float y, float z, uint32 useLevel)
 {
     Map* map = sMapMgr.FindMap(mapId);
     if (!map)
@@ -723,7 +744,7 @@ bool RandomPlayerbotMgr::IsZoneSafeForBot(Player* bot, uint32 mapId, float x, fl
     AreaCreatureStats const* stats = (statsItr != m_areaCreatureStatsMap.end()) ? &statsItr->second : nullptr;
     if (stats && stats->creatureCount > 0)
     {
-        uint8 botLevel = bot->getLevel();
+        uint8 botLevel = useLevel ? useLevel : bot->getLevel();
         uint8 tolerance = sPlayerbotAIConfig.randomBotTeleLevel;
         if (botLevel < stats->minLevel - tolerance || botLevel > stats->maxLevel + tolerance)
         {
@@ -808,6 +829,15 @@ void RandomPlayerbotMgr::EnsureGroupedBotsOnline()
 uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
 {
     uint32 value = 0;
+    auto key = std::make_pair(bot, event);
+    auto it = m_eventValueCache.find(key);
+    if (it != m_eventValueCache.end())
+    {
+        if ((time(0) - it->second.lastChangeTime) < it->second.validIn)
+        {
+            return it->second.value;
+        }
+    }
 
     // Query the database to get the event value for the specified bot
     QueryResult* results = CharacterDatabase.PQuery(
@@ -824,6 +854,7 @@ uint32 RandomPlayerbotMgr::GetEventValue(uint32 bot, string event)
         {
             value = 0;
         }
+        m_eventValueCache[key] = {value, lastChangeTime, validIn};
         delete results;
     }
 
@@ -846,6 +877,7 @@ uint32 RandomPlayerbotMgr::SetEventValue(uint32 bot, string event, uint32 value,
     if (event == "add")
         m_randomBotCache[bot] = (value != 0);
 
+    m_eventValueCache[std::make_pair(bot, event)] = {value, (uint32)time(0), validIn};
     return value;
 }
 
