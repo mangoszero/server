@@ -330,8 +330,10 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, vector<WorldLocation> &locs
         if (!terrain->IsOutdoors(x, y, z) ||
             +terrain->IsUnderWater(x, y, z) ||
             +terrain->IsInWater(x, y, z))
+        {
             continue;
-
+        }
+        
         sLog.outDetail("Random teleporting bot %s to %s %f,%f,%f", bot->GetName(), area->area_name[0], x, y, z);
         float height = map->GetTerrain()->GetHeightStatic(x, y, 0.5f + z, true, MAX_HEIGHT);
         if (height <= INVALID_HEIGHT)
@@ -421,7 +423,9 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
     uint32 maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
     uint32 botCap = sPlayerbotAIConfig.randomBotMaxLevel;
     if (botCap > maxLevel)
+    {
         botCap = maxLevel;
+    }
     if (bot->getLevel() >= botCap)
     {
         RandomizeFirst(bot);
@@ -605,8 +609,9 @@ bool RandomPlayerbotMgr::IsRandomBot(uint32 bot)
 {
     std::unordered_map<uint32, bool>::iterator it = m_randomBotCache.find(bot);
     if (it != m_randomBotCache.end())
+    {
         return it->second;
-
+    }
     bool value = (GetEventValue(bot, "add") != 0);
     m_randomBotCache[bot] = value;
     return value;
