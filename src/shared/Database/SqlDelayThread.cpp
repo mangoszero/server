@@ -46,7 +46,8 @@
  * for executing queued operations. The thread starts in running state
  * but doesn't begin execution until run() is called.
  */
-SqlDelayThread::SqlDelayThread(Database* db, SqlConnection* conn) : m_dbEngine(db), m_dbConnection(conn), m_running(true)
+SqlDelayThread::SqlDelayThread(Database* db, SqlConnection* conn, const std::string& name)
+    : m_dbEngine(db), m_dbConnection(conn), m_name(name), m_pendingRequests(0), m_lastCycleProcessed(0), m_lastCycleElapsedMs(0), m_running(true)
 {
 }
 
@@ -100,9 +101,10 @@ void SqlDelayThread::run()
         uint32 start = getMSTime();
         ProcessRequests();
         uint32 elapsed = getMSTimeDiff(start, getMSTime());
+        m_lastCycleElapsedMs = elapsed;
         if (elapsed > 5000)
         {
-            sLog.outError("SqlDelayThread: ProcessRequests took %u ms", elapsed);
+            sLog.outError("SqlDelayThread[%s]: ProcessRequests took %u ms", m_name.c_str(), elapsed);
         }
 
         // Send periodic ping to keep connection alive
@@ -152,9 +154,13 @@ void SqlDelayThread::Stop()
 void SqlDelayThread::ProcessRequests()
 {
     SqlOperation* s = NULL;
+    uint32 processed = 0;
     while (m_sqlQueue.next(s))
     {
+        m_pendingRequests--;
         s->Execute(m_dbConnection);
         delete s;
+        ++processed;
     }
+    m_lastCycleProcessed = processed;
 }

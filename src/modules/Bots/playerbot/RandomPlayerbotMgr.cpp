@@ -22,7 +22,7 @@ INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_randomBotProvisionCarry(0.0f)
 {
 }
 
@@ -76,16 +76,29 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     list<uint32> bots = GetBots();
     int botCount = bots.size();
     int allianceNewBots = 0, hordeNewBots = 0;
-    int randomBotsPerInterval = (int)urand(sPlayerbotAIConfig.minRandomBotsPerInterval, sPlayerbotAIConfig.maxRandomBotsPerInterval);
-    if (!processTicks)
+    m_randomBotProvisionCarry += std::max(1u, sPlayerbotAIConfig.randomBotProvisionPerTick);
+    uint32 randomBotsPerTickBudget = std::max(1u, (uint32)m_randomBotProvisionCarry);
+    randomBotsPerTickBudget = std::min(randomBotsPerTickBudget, std::max(1u, sPlayerbotAIConfig.randomBotProvisionMaxBurst));
+    m_randomBotProvisionCarry -= randomBotsPerTickBudget;
+
+    if (m_randomBotProvisionCarry > (float)(sPlayerbotAIConfig.randomBotProvisionMaxBurst * 8))
     {
-        if (sPlayerbotAIConfig.randomBotLoginAtStartup)
-        {
-            randomBotsPerInterval = bots.size();
-        }
+        m_randomBotProvisionCarry = (float)(sPlayerbotAIConfig.randomBotProvisionMaxBurst * 8);
     }
 
-    while (botCount++ < maxAllowedBotCount)
+    uint32 dbBackpressureThreshold = sPlayerbotAIConfig.randomBotAsyncQueueBackpressureThreshold;
+    if (dbBackpressureThreshold && CharacterDatabase.GetAsyncQueueDepth() >= dbBackpressureThreshold)
+    {
+        randomBotsPerTickBudget = 0;
+    }
+
+    if (!processTicks && sPlayerbotAIConfig.randomBotLoginAtStartup)
+    {
+        randomBotsPerTickBudget = std::max(randomBotsPerTickBudget, std::max(1u, sPlayerbotAIConfig.randomBotProvisionPerTick));
+    }
+
+    uint32 budgetUsed = 0;
+    while (botCount++ < maxAllowedBotCount && budgetUsed < randomBotsPerTickBudget)
     {
         bool alliance = botCount % 2;
         uint32 bot = AddRandomBot(alliance);
@@ -101,6 +114,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
             }
 
             bots.push_back(bot);
+            ++budgetUsed;
         }
         else
         {
@@ -109,6 +123,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     }
 
     int botProcessed = 0;
+    uint32 remainingBudget = (budgetUsed < randomBotsPerTickBudget) ? (randomBotsPerTickBudget - budgetUsed) : 0;
     for (list<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
     {
         uint32 bot = *i;
@@ -117,7 +132,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
             botProcessed++;
         }
 
-        if (botProcessed >= randomBotsPerInterval)
+        if (botProcessed >= (int)remainingBudget)
         {
             break;
         }

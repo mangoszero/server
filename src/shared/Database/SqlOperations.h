@@ -28,9 +28,12 @@
 #include "Common/Common.h"
 
 #include <ace/Thread_Mutex.h>
+#include <ace/Atomic_Op.h>
 #include "LockedQueue/LockedQueue.h"
 #include <queue>
 #include "Utilities/Callback.h"
+#include <map>
+#include <algorithm>
 
 /// ---- BASE ---
 
@@ -198,13 +201,27 @@ class SqlResultQueue : public ACE_Based::LockedQueue<MaNGOS::IQueryCallback* , A
          * @brief
          *
          */
-        SqlResultQueue() {}
+        SqlResultQueue();
 
+        void Enqueue(MaNGOS::IQueryCallback* callback);
         /**
          * @brief
          *
          */
         void Update();
+
+        uint32 GetPendingCallbacks() const { return uint32(std::max<long>(0, m_pendingCallbacks.value())); }
+        uint32 GetLastCycleProcessed() const { return uint32(std::max<long>(0, m_lastCycleProcessed.value())); }
+        uint32 GetLastCycleElapsedMs() const { return uint32(std::max<long>(0, m_lastCycleElapsedMs.value())); }
+        uint32 GetLastCycleMaxLagMs() const { return uint32(std::max<long>(0, m_lastCycleMaxLagMs.value())); }
+
+    private:
+        mutable ACE_Thread_Mutex m_enqueueTimesLock;
+        std::map<MaNGOS::IQueryCallback*, uint32> m_enqueueTimes;
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_pendingCallbacks;
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_lastCycleProcessed;
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_lastCycleElapsedMs;
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_lastCycleMaxLagMs;
 };
 
 /**

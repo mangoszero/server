@@ -26,8 +26,10 @@
 #define MANGOS_H_SQLDELAYTHREAD
 
 #include <ace/Thread_Mutex.h>
+#include <ace/Atomic_Op.h>
 #include "LockedQueue/LockedQueue.h"
 #include "Threading/Threading.h"
+#include <algorithm>
 
 class Database;
 class SqlOperation;
@@ -49,6 +51,10 @@ class SqlDelayThread : public ACE_Based::Runnable
         SqlQueue m_sqlQueue;                                /**< Queue of SQL statements */
         Database* m_dbEngine;                               /**< Pointer to used Database engine */
         SqlConnection* m_dbConnection;                      /**< Pointer to DB connection */
+        std::string m_name;                                 /**< Logical worker name for diagnostics */
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_pendingRequests; /**< Approximate queue depth */
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_lastCycleProcessed; /**< Operations processed in last cycle */
+        ACE_Atomic_Op<ACE_Thread_Mutex, long> m_lastCycleElapsedMs; /**< Last cycle drain time in ms */
         volatile bool m_running; /**< TODO */
 
         /**
@@ -64,7 +70,7 @@ class SqlDelayThread : public ACE_Based::Runnable
          * @param db
          * @param conn
          */
-        SqlDelayThread(Database* db, SqlConnection* conn);
+        SqlDelayThread(Database* db, SqlConnection* conn, const std::string& name = "async");
 
         /**
          * @brief
@@ -78,7 +84,21 @@ class SqlDelayThread : public ACE_Based::Runnable
          * @param sql
          * @return bool
          */
-        bool Delay(SqlOperation* sql) { m_sqlQueue.add(sql); return true; }
+        bool Delay(SqlOperation* sql)
+        {
+            if (!sql)
+            {
+                return false;
+            }
+
+            m_pendingRequests++;
+            m_sqlQueue.add(sql);
+            return true;
+        }
+
+        uint32 GetPendingRequests() const { return uint32(std::max<long>(0, m_pendingRequests.value())); }
+        uint32 GetLastCycleProcessed() const { return uint32(std::max<long>(0, m_lastCycleProcessed.value())); }
+        uint32 GetLastCycleElapsedMs() const { return uint32(std::max<long>(0, m_lastCycleElapsedMs.value())); }
 
         /**
          * @brief Stop event

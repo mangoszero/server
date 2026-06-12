@@ -27,6 +27,7 @@
 #include "Database/SqlOperations.h"
 #include "GitRevision.h"
 #include "Utilities/Util.h"
+#include "Timer.h"
 #include <ctime>
 #include <iostream>
 #include <fstream>
@@ -178,6 +179,33 @@ bool Database::Initialize(const char* infoString, int nConns /*= 1*/)
         return false;
     }
 
+    m_pAsyncReadConn = CreateConnection();
+    if (!m_pAsyncReadConn->Initialize(infoString))
+    {
+        return false;
+    }
+
+    m_nAsyncWriteShardPoolSize = sConfig.GetIntDefault("AsyncWriteShardThreads", 2);
+    if (m_nAsyncWriteShardPoolSize < 1)
+    {
+        m_nAsyncWriteShardPoolSize = 1;
+    }
+    if (m_nAsyncWriteShardPoolSize > 4)
+    {
+        m_nAsyncWriteShardPoolSize = 4;
+    }
+
+    for (int i = 0; i < m_nAsyncWriteShardPoolSize; ++i)
+    {
+        SqlConnection* pConn = CreateConnection();
+        if (!pConn->Initialize(infoString))
+        {
+            delete pConn;
+            return false;
+        }
+        m_pAsyncShardConnections.push_back(pConn);
+    }
+
     m_pResultQueue = new SqlResultQueue;
 
     InitDelayThread();
@@ -190,9 +218,11 @@ void Database::StopServer()
 
     delete m_pResultQueue;
     delete m_pAsyncConn;
+    delete m_pAsyncReadConn;
 
     m_pResultQueue = NULL;
     m_pAsyncConn = NULL;
+    m_pAsyncReadConn = NULL;
 
     for (size_t i = 0; i < m_pQueryConnections.size(); ++i)
     {
@@ -200,22 +230,41 @@ void Database::StopServer()
     }
 
     m_pQueryConnections.clear();
+
+    for (size_t i = 0; i < m_pAsyncShardConnections.size(); ++i)
+    {
+        delete m_pAsyncShardConnections[i];
+    }
+    m_pAsyncShardConnections.clear();
 }
 
 SqlDelayThread* Database::CreateDelayThread()
 {
     assert(m_pAsyncConn);
-    return new SqlDelayThread(this, m_pAsyncConn);
+    return new SqlDelayThread(this, m_pAsyncConn, "write-fallback");
 }
 
 void Database::InitDelayThread()
 {
     assert(!m_delayThread);
 
-    // New delay thread for delay execute
+    // Fallback delay thread for async writes without a shard key
     m_threadBody = CreateDelayThread();              // will deleted at m_delayThread delete
+    // Dedicated read queue thread
+    m_readThreadBody = new SqlDelayThread(this, m_pAsyncReadConn, "read");
+
+    for (size_t i = 0; i < m_pAsyncShardConnections.size(); ++i)
+    {
+        std::ostringstream name;
+        name << "write-shard-" << i;
+        SqlDelayThread* worker = new SqlDelayThread(this, m_pAsyncShardConnections[i], name.str());
+        m_writeShardThreadBodies.push_back(worker);
+        m_writeShardDelayThreads.push_back(new ACE_Based::Thread(worker));
+    }
+
     m_TransStorage = new ACE_TSS<Database::TransHelper>();
     m_delayThread = new ACE_Based::Thread(m_threadBody);
+    m_readDelayThread = new ACE_Based::Thread(m_readThreadBody);
 }
 
 void Database::HaltDelayThread()
@@ -227,8 +276,29 @@ void Database::HaltDelayThread()
 
     m_threadBody->Stop();                                   // Stop event
     m_delayThread->wait();                                  // Wait for flush to DB
+    if (m_readThreadBody && m_readDelayThread)
+    {
+        m_readThreadBody->Stop();
+        m_readDelayThread->wait();
+    }
+
+    for (size_t i = 0; i < m_writeShardThreadBodies.size(); ++i)
+    {
+        m_writeShardThreadBodies[i]->Stop();
+    }
+    for (size_t i = 0; i < m_writeShardDelayThreads.size(); ++i)
+    {
+        m_writeShardDelayThreads[i]->wait();
+        delete m_writeShardDelayThreads[i];
+    }
+    m_writeShardDelayThreads.clear();
+    m_writeShardThreadBodies.clear();
+
     delete m_TransStorage;
+    delete m_readDelayThread;
     delete m_delayThread;                                   // This also deletes m_threadBody
+    m_readDelayThread = NULL;
+    m_readThreadBody = NULL;
     m_delayThread = NULL;
     m_threadBody = NULL;
     m_TransStorage=NULL;
@@ -247,6 +317,21 @@ void Database::ProcessResultQueue()
     if (m_pResultQueue)
     {
         m_pResultQueue->Update();
+
+        static uint32 s_lastMetricsLog = 0;
+        uint32 now = getMSTime();
+        if (getMSTimeDiff(s_lastMetricsLog, now) >= 5000)
+        {
+            s_lastMetricsLog = now;
+            sLog.outDetail(
+                "DB async metrics: readQueue=%u writeQueue=%u resultQueue=%u resultLagMs=%u readCycleMs=%u writeCycleMs=%u",
+                GetAsyncReadQueueDepth(),
+                GetAsyncWriteQueueDepth(),
+                GetAsyncResultQueueDepth(),
+                m_pResultQueue->GetLastCycleMaxLagMs(),
+                m_readThreadBody ? m_readThreadBody->GetLastCycleElapsedMs() : 0,
+                m_threadBody ? m_threadBody->GetLastCycleElapsedMs() : 0);
+        }
     }
 }
 
@@ -280,6 +365,32 @@ SqlConnection* Database::getQueryConnection()
     return m_pQueryConnections[nCount % m_nQueryConnPoolSize];
 }
 
+SqlDelayThread* Database::getShardedWriteDelayThread(uint32 shardKey) const
+{
+    if (m_writeShardThreadBodies.empty())
+    {
+        return m_threadBody;
+    }
+
+    return m_writeShardThreadBodies[shardKey % m_writeShardThreadBodies.size()];
+}
+
+bool Database::QueueWriteOperation(SqlOperation* operation, bool hasShardKey, uint32 shardKey)
+{
+    if (!operation)
+    {
+        return false;
+    }
+
+    SqlDelayThread* thread = hasShardKey ? getShardedWriteDelayThread(shardKey) : getWriteFallbackDelayThread();
+    if (!thread)
+    {
+        delete operation;
+        return false;
+    }
+    return thread->Delay(operation);
+}
+
 void Database::Ping()
 {
     const char* sql = "SELECT 1";
@@ -289,10 +400,47 @@ void Database::Ping()
         delete guard->Query(sql);
     }
 
+    if (m_pAsyncReadConn)
+    {
+        SqlConnection::Lock guard(m_pAsyncReadConn);
+        delete guard->Query(sql);
+    }
+
+    for (size_t i = 0; i < m_pAsyncShardConnections.size(); ++i)
+    {
+        SqlConnection::Lock guard(m_pAsyncShardConnections[i]);
+        delete guard->Query(sql);
+    }
+
     for (int i = 0; i < m_nQueryConnPoolSize; ++i)
     {
         SqlConnection::Lock guard(m_pQueryConnections[i]);
         delete guard->Query(sql);
+    }
+
+    uint32 Database::GetAsyncQueueDepth() const
+    {
+        return GetAsyncReadQueueDepth() + GetAsyncWriteQueueDepth() + GetAsyncResultQueueDepth();
+    }
+
+    uint32 Database::GetAsyncReadQueueDepth() const
+    {
+        return m_readThreadBody ? m_readThreadBody->GetPendingRequests() : 0;
+    }
+
+    uint32 Database::GetAsyncWriteQueueDepth() const
+    {
+        uint32 depth = m_threadBody ? m_threadBody->GetPendingRequests() : 0;
+        for (size_t i = 0; i < m_writeShardThreadBodies.size(); ++i)
+        {
+            depth += m_writeShardThreadBodies[i]->GetPendingRequests();
+        }
+        return depth;
+    }
+
+    uint32 Database::GetAsyncResultQueueDepth() const
+    {
+        return m_pResultQueue ? m_pResultQueue->GetPendingCallbacks() : 0;
     }
 }
 
@@ -407,7 +555,7 @@ bool Database::Execute(const char* sql)
         }
 
         // Simple sql statement
-        m_threadBody->Delay(new SqlPlainRequest(sql));
+        QueueWriteOperation(new SqlPlainRequest(sql));
     }
 
     return true;
@@ -466,7 +614,18 @@ bool Database::BeginTransaction()
 
     // initiate transaction on current thread
     // currently we do not support queued transactions
-    (*m_TransStorage)->init();
+    (*m_TransStorage)->init(false, 0);
+    return true;
+}
+
+bool Database::BeginTransaction(uint32 shardKey)
+{
+    if (!m_pAsyncConn)
+    {
+        return false;
+    }
+
+    (*m_TransStorage)->init(true, shardKey);
     return true;
 }
 
@@ -489,8 +648,11 @@ bool Database::CommitTransaction()
         return CommitTransactionDirect();
     }
 
-    // add SqlTransaction to the async queue
-    m_threadBody->Delay((*m_TransStorage)->detach());
+    Database::TransHelper* helper = (*m_TransStorage);
+    bool hasShardKey = helper->hasShardKey();
+    uint32 shardKey = helper->getShardKey();
+    SqlTransaction* trans = helper->detach();
+    QueueWriteOperation(trans, hasShardKey, shardKey);
     return true;
 }
 
@@ -687,7 +849,7 @@ bool Database::ExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params)
         }
 
         // Simple sql statement
-        m_threadBody->Delay(new SqlPreparedRequest(id.ID(), params));
+        QueueWriteOperation(new SqlPreparedRequest(id.ID(), params));
     }
 
     return true;
@@ -761,10 +923,12 @@ Database::TransHelper::~TransHelper()
     reset();
 }
 
-SqlTransaction* Database::TransHelper::init()
+SqlTransaction* Database::TransHelper::init(bool hasShardKey, uint32 shardKey)
 {
     MANGOS_ASSERT(!m_pTrans);   // if we will get a nested transaction request - we MUST fix code!!!
     m_pTrans = new SqlTransaction;
+    m_hasShardKey = hasShardKey;
+    m_shardKey = shardKey;
     return m_pTrans;
 }
 
@@ -772,6 +936,8 @@ SqlTransaction* Database::TransHelper::detach()
 {
     SqlTransaction* pRes = m_pTrans;
     m_pTrans = NULL;
+    m_hasShardKey = false;
+    m_shardKey = 0;
     return pRes;
 }
 
@@ -779,4 +945,6 @@ void Database::TransHelper::reset()
 {
     delete m_pTrans;
     m_pTrans = NULL;
+    m_hasShardKey = false;
+    m_shardKey = 0;
 }

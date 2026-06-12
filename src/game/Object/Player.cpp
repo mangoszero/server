@@ -5204,7 +5204,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             QueryResult* resultFriend = CharacterDatabase.PQuery("SELECT DISTINCT `guid` FROM `character_social` WHERE `friend` = '%u'", lowguid);
 
             // NOW we can finally clear other DB data related to character
-            CharacterDatabase.BeginTransaction();
+            CharacterDatabase.BeginTransaction(GetGUIDLow());
             if (resultPets)
             {
                 do

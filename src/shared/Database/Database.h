@@ -611,6 +611,7 @@ class Database
          * @return bool
          */
         bool BeginTransaction();
+        bool BeginTransaction(uint32 shardKey);
 
         /**
          * @brief
@@ -721,14 +722,19 @@ class Database
             m_bAllowAsyncTransactions = true;
         }
 
+        uint32 GetAsyncQueueDepth() const;
+        uint32 GetAsyncReadQueueDepth() const;
+        uint32 GetAsyncWriteQueueDepth() const;
+        uint32 GetAsyncResultQueueDepth() const;
+
     protected:
         /**
          * @brief
          *
          */
         Database()
-            : m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pResultQueue(NULL),
-            m_threadBody(NULL), m_delayThread(NULL), m_bAllowAsyncTransactions(false),
+            : m_TransStorage(NULL),m_nQueryConnPoolSize(1), m_pAsyncConn(NULL), m_pAsyncReadConn(NULL), m_pResultQueue(NULL),
+            m_threadBody(NULL), m_delayThread(NULL), m_readThreadBody(NULL), m_readDelayThread(NULL), m_bAllowAsyncTransactions(false),
             m_iStmtIndex(-1), m_logSQL(false), m_pingIntervallms(0)
         {
             m_nQueryCounter = -1;
@@ -765,7 +771,7 @@ class Database
                  * @brief
                  *
                  */
-                TransHelper() : m_pTrans(NULL) {}
+                TransHelper() : m_pTrans(NULL), m_hasShardKey(false), m_shardKey(0) {}
 
                 /**
                  * @brief
@@ -778,7 +784,7 @@ class Database
                  *
                  * @return SqlTransaction
                  */
-                SqlTransaction* init();
+                SqlTransaction* init(bool hasShardKey = false, uint32 shardKey = 0);
 
                 /**
                  * @brief gets pointer on current transaction object. Returns NULL if transaction was not initiated
@@ -797,6 +803,9 @@ class Database
                  */
                 SqlTransaction* detach();
 
+                bool hasShardKey() const { return m_hasShardKey; }
+                uint32 getShardKey() const { return m_shardKey; }
+
                 /**
                  * @brief destroyes SqlTransaction allocated by init() function
                  *
@@ -805,6 +814,8 @@ class Database
 
             private:
                 SqlTransaction* m_pTrans; /**< TODO */
+                bool m_hasShardKey;
+                uint32 m_shardKey;
         };
 
         /**
@@ -829,6 +840,11 @@ class Database
          * @return SqlConnection
          */
         SqlConnection* getAsyncConnection() const { return m_pAsyncConn; }
+        SqlConnection* getAsyncReadConnection() const { return m_pAsyncReadConn; }
+
+        SqlDelayThread* getReadDelayThread() const { return m_readThreadBody ? m_readThreadBody : m_threadBody; }
+        SqlDelayThread* getWriteFallbackDelayThread() const { return m_threadBody; }
+        SqlDelayThread* getShardedWriteDelayThread(uint32 shardKey) const;
 
         friend class SqlStatement;
         // PREPARED STATEMENT API
@@ -850,6 +866,7 @@ class Database
          * @return bool
          */
         bool DirectExecuteStmt(const SqlStatementID& id, SqlStmtParameters* params);
+        bool QueueWriteOperation(SqlOperation* operation, bool hasShardKey = false, uint32 shardKey = 0);
 
         // connection helper counters
         int m_nQueryConnPoolSize;                               /**< current size of query connection pool */
@@ -864,10 +881,17 @@ class Database
 
         // only one single DB connection for transactions
         SqlConnection* m_pAsyncConn; /**< TODO */
+        SqlConnection* m_pAsyncReadConn; /**< TODO */
 
         SqlResultQueue*     m_pResultQueue;                 /**< Transaction queues from diff. threads */
         SqlDelayThread*     m_threadBody;                   /**< Pointer to delay sql executer (owned by m_delayThread) */
         ACE_Based::Thread*  m_delayThread;                  /**< Pointer to executer thread */
+        SqlDelayThread*     m_readThreadBody;               /**< Dedicated async read delay thread */
+        ACE_Based::Thread*  m_readDelayThread;              /**< Dedicated async read worker thread */
+        SqlConnectionContainer m_pAsyncShardConnections;    /**< Additional async write shard connections */
+        std::vector<SqlDelayThread*> m_writeShardThreadBodies;  /**< Additional sharded write workers */
+        std::vector<ACE_Based::Thread*> m_writeShardDelayThreads; /**< Thread wrappers for sharded workers */
+        int m_nAsyncWriteShardPoolSize;                     /**< Number of sharded async write workers */
 
         bool m_bAllowAsyncTransactions;                     /**< flag which specifies if async transactions are enabled */
 

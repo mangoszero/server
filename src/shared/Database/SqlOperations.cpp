@@ -41,6 +41,7 @@
 #include "SqlDelayThread.h"
 #include "DatabaseEnv.h"
 #include "DatabaseImpl.h"
+#include "Timer.h"
 
 /**
  * @def LOCK_DB_CONN
@@ -53,6 +54,11 @@
 #define LOCK_DB_CONN(conn) SqlConnection::Lock guard(conn)
 
 /// ---- ASYNC STATEMENTS / TRANSACTIONS ----
+
+SqlResultQueue::SqlResultQueue()
+    : m_pendingCallbacks(0), m_lastCycleProcessed(0), m_lastCycleElapsedMs(0), m_lastCycleMaxLagMs(0)
+{
+}
 
 /**
  * @brief Execute a plain SQL request
@@ -188,9 +194,24 @@ bool SqlQuery::Execute(SqlConnection* conn)
     /// execute the query and store the result in the callback
     m_callback->SetResult(conn->Query(m_sql));
     /// add the callback to the sql result queue of the thread it originated from
-    m_queue->add(m_callback);
+    m_queue->Enqueue(m_callback);
 
     return true;
+}
+
+void SqlResultQueue::Enqueue(MaNGOS::IQueryCallback* callback)
+{
+    if (!callback)
+    {
+        return;
+    }
+
+    {
+        ACE_Guard<ACE_Thread_Mutex> lock(m_enqueueTimesLock);
+        m_enqueueTimes[callback] = getMSTime();
+    }
+    m_pendingCallbacks++;
+    add(callback);
 }
 
 /**
@@ -204,13 +225,37 @@ bool SqlQuery::Execute(SqlConnection* conn)
  */
 void SqlResultQueue::Update()
 {
+    uint32 cycleStart = getMSTime();
+    uint32 maxLagMs = 0;
+    uint32 processed = 0;
+
     /// execute the callbacks waiting in the synchronization queue
     MaNGOS::IQueryCallback* callback = NULL;
     while (next(callback))
     {
+        {
+            ACE_Guard<ACE_Thread_Mutex> lock(m_enqueueTimesLock);
+            std::map<MaNGOS::IQueryCallback*, uint32>::iterator itr = m_enqueueTimes.find(callback);
+            if (itr != m_enqueueTimes.end())
+            {
+                uint32 lagMs = getMSTimeDiff(itr->second, getMSTime());
+                if (lagMs > maxLagMs)
+                {
+                    maxLagMs = lagMs;
+                }
+                m_enqueueTimes.erase(itr);
+            }
+        }
+
+        m_pendingCallbacks--;
         callback->Execute();
         delete callback;
+        ++processed;
     }
+
+    m_lastCycleProcessed = processed;
+    m_lastCycleMaxLagMs = maxLagMs;
+    m_lastCycleElapsedMs = getMSTimeDiff(cycleStart, getMSTime());
 }
 
 /**
@@ -426,7 +471,7 @@ bool SqlQueryHolderEx::Execute(SqlConnection* conn)
     }
 
     /// sync with the caller thread
-    m_queue->add(m_callback);
+    m_queue->Enqueue(m_callback);
 
     return true;
 }

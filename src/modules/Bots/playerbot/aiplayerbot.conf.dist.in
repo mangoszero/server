@@ -158,6 +158,12 @@ AiPlayerbot.RandomBotTeleLevel = 3
 #AiPlayerbot.MaxRandomRandomizeTime = 1209600
 #AiPlayerbot.MinRandomBotsPerInterval = 50
 #AiPlayerbot.MaxRandomBotsPerInterval = 100
+# Max bot add/process actions consumed each update tick (carry-over is preserved)
+#AiPlayerbot.RandomBotProvisionPerTick = 2
+# Max burst when carry-over accumulated; keeps frame-time bounded
+#AiPlayerbot.RandomBotProvisionMaxBurst = 4
+# Pause random bot provisioning if async Character DB queue exceeds this depth
+#AiPlayerbot.RandomBotAsyncQueueBackpressureThreshold = 2000
 #AiPlayerbot.MinRandomBotsPriceChangeInterval = 7200
 #AiPlayerbot.MaxRandomBotsPriceChangeInterval = 172800
 

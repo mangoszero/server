@@ -65,6 +65,9 @@ class PlayerbotAIConfig
         uint32 minRandomBotReviveTime, maxRandomBotReviveTime;
         uint32 minRandomBotPvpTime, maxRandomBotPvpTime;
         uint32 minRandomBotsPerInterval, maxRandomBotsPerInterval;
+        uint32 randomBotProvisionPerTick;
+        uint32 randomBotProvisionMaxBurst;
+        uint32 randomBotAsyncQueueBackpressureThreshold;
         uint32 minRandomBotsPriceChangeInterval, maxRandomBotsPriceChangeInterval;
         bool randomBotJoinLfg; ///< Indicates if random bots should join Looking For Group.
         bool randomBotLoginAtStartup; ///< Indicates if random bots should login at startup.
