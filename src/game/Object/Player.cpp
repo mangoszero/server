@@ -5204,7 +5204,7 @@ void Player::DeleteFromDB(ObjectGuid playerguid, uint32 accountId, bool updateRe
             QueryResult* resultFriend = CharacterDatabase.PQuery("SELECT DISTINCT `guid` FROM `character_social` WHERE `friend` = '%u'", lowguid);
 
             // NOW we can finally clear other DB data related to character
-            CharacterDatabase.BeginTransaction(GetGUIDLow());
+            CharacterDatabase.BeginTransaction();
             if (resultPets)
             {
                 do
@@ -20580,7 +20580,7 @@ void Player::SaveToDB()
     DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_STATS, "The value of player %s at save: ", m_name.c_str());
     outDebugStatsValues();
 
-    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.BeginTransaction(GetGUIDLow());
 
     UpdateHonor();
 

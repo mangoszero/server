@@ -417,31 +417,31 @@ void Database::Ping()
         SqlConnection::Lock guard(m_pQueryConnections[i]);
         delete guard->Query(sql);
     }
+}
 
-    uint32 Database::GetAsyncQueueDepth() const
-    {
-        return GetAsyncReadQueueDepth() + GetAsyncWriteQueueDepth() + GetAsyncResultQueueDepth();
-    }
+uint32 Database::GetAsyncQueueDepth() const
+{
+    return GetAsyncReadQueueDepth() + GetAsyncWriteQueueDepth() + GetAsyncResultQueueDepth();
+}
 
-    uint32 Database::GetAsyncReadQueueDepth() const
-    {
-        return m_readThreadBody ? m_readThreadBody->GetPendingRequests() : 0;
-    }
+uint32 Database::GetAsyncReadQueueDepth() const
+{
+    return m_readThreadBody ? m_readThreadBody->GetPendingRequests() : 0;
+}
 
-    uint32 Database::GetAsyncWriteQueueDepth() const
+uint32 Database::GetAsyncWriteQueueDepth() const
+{
+    uint32 depth = m_threadBody ? m_threadBody->GetPendingRequests() : 0;
+    for (size_t i = 0; i < m_writeShardThreadBodies.size(); ++i)
     {
-        uint32 depth = m_threadBody ? m_threadBody->GetPendingRequests() : 0;
-        for (size_t i = 0; i < m_writeShardThreadBodies.size(); ++i)
-        {
-            depth += m_writeShardThreadBodies[i]->GetPendingRequests();
-        }
-        return depth;
+        depth += m_writeShardThreadBodies[i]->GetPendingRequests();
     }
+    return depth;
+}
 
-    uint32 Database::GetAsyncResultQueueDepth() const
-    {
-        return m_pResultQueue ? m_pResultQueue->GetPendingCallbacks() : 0;
-    }
+uint32 Database::GetAsyncResultQueueDepth() const
+{
+    return m_pResultQueue ? m_pResultQueue->GetPendingCallbacks() : 0;
 }
 
 bool Database::PExecuteLog(const char* format, ...)
