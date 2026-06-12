@@ -274,6 +274,8 @@ class RandomPlayerbotMgr : public PlayerbotHolder
         int processTicks; ///< Number of process ticks.
         set<uint32> m_groupedBots; ///< Cached set of bot GUIDs currently in a group, refreshed each update cycle.
         std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
+        std::set<uint32> m_allianceGuardAreas; ///< Areas with guards hostile to Horde (Alliance-guarded)
+        std::set<uint32> m_hordeGuardAreas;    ///< Areas with guards hostile to Alliance (Horde-guarded)
         std::map<std::pair<uint32, uint32>, uint32> m_cellToAreaCache;
         std::unordered_map<uint32, bool> m_randomBotCache;
         std::unordered_map<uint32, uint32> m_playerZoneCounts; ///< zone_id -> real player count, for O(1) bot tick gating.
