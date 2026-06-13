@@ -55,17 +55,45 @@ int AiFactory::GetPlayerSpecTab(Player* bot)
 {
     map<uint32, int32> tabs = GetPlayerSpecTabs(bot);
 
-    int tab = -1, max = 0;
-    for (uint32 i = 0; i < uint32(3); i++)
+    int bestId = -1, max = 0;
+    for (auto const& pair : tabs)
     {
-        if (tab == -1 || max < tabs[i])
+        if (bestId == -1 || max < pair.second)
         {
-            tab = i;
-            max = tabs[i];
+            bestId = pair.first;
+            max = pair.second;
         }
     }
 
-    return tab;
+    if (bestId == -1)
+    {
+        return -1;
+    }
+
+    // Convert TalentTabID to a tabpage (0, 1, or 2).
+    switch (bot->getClass())
+    {
+        case CLASS_MAGE:
+            // Arcane(81)=tab 0, Fire(41)=tab 1, Frost(61)=tab 2
+            if (bestId == 41)
+            {
+                return 1;     // Fire
+            }
+            if (bestId == 61)
+            {
+                return 2;     // Frost
+            }
+            return 0;                       // Arcane or fallback
+        default:
+        {
+            TalentTabEntry const* tabEntry = sTalentTabStore.LookupEntry(bestId);
+            if (tabEntry)
+            {
+                return (int)tabEntry->tabpage;
+            }
+            return -1;
+        }
+    }
 }
 
 map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
@@ -114,7 +142,7 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
             uint32 spellid = talentInfo->RankID[rank];
             if (spellid && bot->HasSpell(spellid))
             {
-                tabs[talentTabInfo->tabpage]++;
+                tabs[talentTabInfo->TalentTabID]++;
                 found++;
             }
         }
