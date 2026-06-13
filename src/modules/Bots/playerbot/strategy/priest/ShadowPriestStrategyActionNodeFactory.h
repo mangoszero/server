@@ -31,7 +31,7 @@ namespace ai
             {
                 return new ActionNode ("mind blast",
                     /*P*/ NULL,
-                    /*A*/ NextAction::array(0, new NextAction("mind flay"), NULL),
+                    /*A*/ NextAction::array(0, new NextAction("mind flay"), new NextAction("shoot"), NULL),
                     /*C*/ NULL);
             }
             static ActionNode* dispersion(PlayerbotAI* ai)
