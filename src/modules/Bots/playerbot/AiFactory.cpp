@@ -123,6 +123,61 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
     return tabs;
 }
 
+bool AiFactory::IsFeralCatSpec(Player* bot)
+{
+    if (GetPlayerSpecTab(bot) != 1)
+    {
+        return false;
+    }
+
+    int catPoints = 0;
+    int bearPoints = 0;
+    uint32 classMask = bot->getClassMask();
+
+    for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
+    {
+        TalentEntry const *talentInfo = sTalentStore.LookupEntry(i);
+        if (!talentInfo)
+        {
+            continue;
+        }
+
+        TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+        if ((!talentTabInfo) || ((classMask & talentTabInfo->ClassMask) == 0) || (talentTabInfo->tabpage != 1))
+        {
+            continue;
+        }
+
+        for (int rank = 0; rank < MAX_TALENT_RANK; ++rank)
+        {
+            uint32 spellid = talentInfo->RankID[rank];
+            if (spellid && bot->HasSpell(spellid))
+            {
+                SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
+                if (!spellInfo || !spellInfo->SpellName[0])
+                {
+                    continue;
+                }
+                std::string name = spellInfo->SpellName[0];
+                if (name == "Feline Swiftness")           catPoints++;
+                else if (name == "Thick Hide")            bearPoints++;
+                else if (name == "Feral Charge")          bearPoints++;
+                else if (name == "Improved Shred")        catPoints++;
+                else if (name == "Blood Frenzy")          catPoints++;
+                else if (name == "Primal Fury")           bearPoints++;
+                break;
+            }
+        }
+    }
+    // Default to bear for low-level druids with no deep spec
+    if (catPoints == 0 && bearPoints == 0)
+    {
+        return false;
+    }
+
+    return catPoints > bearPoints;
+}
+
 void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const facade, Engine* engine)
 {
     int tab = GetPlayerSpecTab(player);
@@ -212,7 +267,18 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             }
             else
             {
-                engine->addStrategies("bear", "tank aoe", "threat", "flee", NULL);
+                if (IsFeralCatSpec(player))
+                {
+                    engine->addStrategies("cat", "cat aoe", "threat", "flee", NULL);
+                    if (player->getLevel() > 19)
+                    {
+                        engine->addStrategy("dps debuff");
+                    }
+                }
+                else
+                {
+                    engine->addStrategies("bear", "tank aoe", "threat", "flee", NULL);
+                }
             }
             break;
         case CLASS_HUNTER:

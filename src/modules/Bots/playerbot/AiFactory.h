@@ -18,4 +18,5 @@ class AiFactory
     public:
         static int GetPlayerSpecTab(Player* player);
         static map<uint32, int32> GetPlayerSpecTabs(Player* player);
+        static bool IsFeralCatSpec(Player* player);
 };
