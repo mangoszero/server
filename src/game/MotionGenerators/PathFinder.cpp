@@ -80,12 +80,28 @@ bool PathFinder::calculate(float destX, float destY, float destZ, bool forceDest
     float x, y, z;
     m_sourceUnit->GetPosition(x, y, z);
 
-    if (!MaNGOS::IsValidMapCoord(x,y,z) || !MaNGOS::IsValidMapCoord(destX, destY, destZ))
+    return calculate(x, y, z, destX, destY, destZ, forceDest);
+}
+
+/**
+ * @brief Calculates the path from an explicit start position to the destination.
+ * @param startX The X-coordinate of the start position.
+ * @param startY The Y-coordinate of the start position.
+ * @param startZ The Z-coordinate of the start position.
+ * @param destX The X-coordinate of the destination.
+ * @param destY The Y-coordinate of the destination.
+ * @param destZ The Z-coordinate of the destination.
+ * @param forceDest Whether to force the destination.
+ * @return True if the path was successfully calculated, false otherwise.
+ */
+bool PathFinder::calculate(float startX, float startY, float startZ, float destX, float destY, float destZ, bool forceDest)
+{
+    if (!MaNGOS::IsValidMapCoord(startX, startY, startZ) || !MaNGOS::IsValidMapCoord(destX, destY, destZ))
     {
         return false;
     }
 
-    Vector3 start(x, y, z);
+    Vector3 start(startX, startY, startZ);
     setStartPosition(start);
 
     Vector3 dest(destX, destY, destZ);

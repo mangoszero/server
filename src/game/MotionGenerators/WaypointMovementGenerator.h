@@ -34,8 +34,11 @@
 #include "MovementGenerator.h"
 #include "WaypointManager.h"
 #include "DBCStructure.h"
+#include "movement/MoveSplineInitArgs.h"
 
+#include <cstddef>
 #include <set>
+#include <vector>
 
 #define FLIGHT_TRAVEL_UPDATE  100
 #define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)// 3 Minutes
@@ -99,7 +102,7 @@ template<>
          * @brief Constructor
          * @param creature Reference to the creature
          */
-        WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0), m_pathId(0) {}
+        WaypointMovementGenerator(Creature&) : i_nextMoveTime(0), m_isArrivalDone(false), m_lastReachedWaypoint(0), m_pathId(0), m_PathOrigin(PATH_NO_PATH), m_activeSegmentArrivals(0) {}
 
         /**
          * @brief Destructor
@@ -243,12 +246,58 @@ template<>
          */
         void StartMove(Creature&);
 
+        /// A waypoint reached inside an active smoothed segment.
+        struct ActiveSegmentWaypoint
+        {
+            uint32 pointId;            ///< Waypoint id in the path
+            std::size_t pathPointIndex; ///< Index of its endpoint in the spline path
+        };
+
+        /**
+         * @brief Whether smoothing is allowed for the current path origin.
+         * @return True for all origins except externally-scripted paths.
+         */
+        bool IsSmoothingEnabled() const;
+
+        /**
+         * @brief Whether a segment may smooth through the given node without stopping.
+         * @param node Waypoint node to test.
+         * @return True if the node has no delay, script or behavior.
+         */
+        bool CanSmoothThrough(WaypointNode const& node) const;
+
+        /// Drops any tracked active smoothed segment.
+        void ClearActiveSegment();
+
+        /**
+         * @brief Records a waypoint reached within the active smoothed segment.
+         * @param pointId Waypoint id in the path.
+         * @param pathPointIndex Index of its endpoint within the spline path.
+         */
+        void AddActiveSegmentWaypoint(uint32 pointId, std::size_t pathPointIndex);
+
+        /**
+         * @brief Fires arrival handling for any smoothed waypoints the spline has passed.
+         * @param creature Reference to the creature.
+         */
+        void ProcessActiveSegmentProgress(Creature& creature);
+
+        /**
+         * @brief Builds a smoothed multi-waypoint path starting at the given waypoint.
+         * @param creature Reference to the creature.
+         * @param startPoint Iterator to the first waypoint of the segment.
+         * @param pathPoints Output spline points; left empty when smoothing is skipped.
+         */
+        void BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint, Movement::PointsArray& pathPoints);
+
         TimeTracker i_nextMoveTime; ///< Time tracker for the next move
         bool m_isArrivalDone; ///< Indicates if the arrival is done
         uint32 m_lastReachedWaypoint; ///< Last reached waypoint
 
         int32 m_pathId; ///< Path ID
         WaypointPathOrigin m_PathOrigin; ///< Path origin
+        std::vector<ActiveSegmentWaypoint> m_activeSegmentWaypoints; ///< Waypoints in the active smoothed segment
+        std::size_t m_activeSegmentArrivals; ///< Count already processed via ProcessActiveSegmentProgress
 };
 
 /**

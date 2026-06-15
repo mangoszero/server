@@ -27,12 +27,59 @@
 #include "Player.h"
 #include "Creature.h"
 #include "CreatureAI.h"
+#include "PathFinder.h"
 #include "WaypointManager.h"
+#include "WaypointSmoothing.h"
 #include "ScriptMgr.h"
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 
 #include <cassert>
+
+namespace
+{
+    /**
+     * @brief Pathfinds one waypoint leg and appends its points to a smoothed path.
+     * @param creature Reference to the creature.
+     * @param startX Leg start X-coordinate.
+     * @param startY Leg start Y-coordinate.
+     * @param startZ Leg start Z-coordinate.
+     * @param endNode Waypoint the leg ends at.
+     * @param pathPoints Path being built; the leg start point is added only when empty.
+     * @return True if a real navmesh leg of at least two points was appended.
+     */
+    bool AppendWaypointPathSegment(Creature& creature, float startX, float startY, float startZ, WaypointNode const& endNode, Movement::PointsArray& pathPoints)
+    {
+        PathFinder path(&creature);
+        if (!path.calculate(startX, startY, startZ, endNode.x, endNode.y, endNode.z))
+        {
+            return false;
+        }
+
+        if (path.getPathType() & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH))
+        {
+            return false;
+        }
+
+        Movement::PointsArray const& segment = path.getPath();
+        if (segment.size() < 2)
+        {
+            return false;
+        }
+
+        if (pathPoints.empty())
+        {
+            pathPoints.push_back(segment.front());
+        }
+
+        for (Movement::PointsArray::const_iterator itr = segment.begin() + 1; itr != segment.end(); ++itr)
+        {
+            pathPoints.push_back(*itr);
+        }
+
+        return true;
+    }
+}
 
 /**
  * @brief Loads the waypoint path for the creature.
@@ -44,6 +91,8 @@
 void WaypointMovementGenerator<Creature>::LoadPath(Creature& creature, int32 pathId, WaypointPathOrigin wpOrigin, uint32 overwriteEntry)
 {
     DETAIL_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "LoadPath: loading waypoint path for %s", creature.GetGuidStr().c_str());
+
+    ClearActiveSegment();
 
     if (!overwriteEntry)
     {
@@ -116,6 +165,7 @@ void WaypointMovementGenerator<Creature>::InitializeWaypointPath(Creature& u, in
  */
 void WaypointMovementGenerator<Creature>::Finalize(Creature& creature)
 {
+    ClearActiveSegment();
     creature.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
 }
@@ -126,6 +176,7 @@ void WaypointMovementGenerator<Creature>::Finalize(Creature& creature)
  */
 void WaypointMovementGenerator<Creature>::Interrupt(Creature& creature)
 {
+    ClearActiveSegment();
     creature.InterruptMoving();
     creature.clearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE), false);
@@ -236,6 +287,166 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
 }
 
 /**
+ * @brief Whether smoothing is allowed for the current path origin.
+ * @return True for all origins except externally-scripted paths.
+ */
+bool WaypointMovementGenerator<Creature>::IsSmoothingEnabled() const
+{
+    return m_PathOrigin != PATH_FROM_EXTERNAL;
+}
+
+/**
+ * @brief Whether a segment may smooth through the given node without stopping.
+ * @param node Waypoint node to test.
+ * @return True if the node has no delay, script or behavior.
+ */
+bool WaypointMovementGenerator<Creature>::CanSmoothThrough(WaypointNode const& node) const
+{
+    WaypointSmoothingNode smoothingNode;
+    smoothingNode.hasDelay = node.delay != 0;
+    smoothingNode.hasScript = node.script_id != 0;
+    smoothingNode.hasBehavior = node.behavior != NULL && !node.behavior->isEmpty();
+
+    return IsWaypointSmoothingSafe(smoothingNode);
+}
+
+/**
+ * @brief Drops any tracked active smoothed segment.
+ */
+void WaypointMovementGenerator<Creature>::ClearActiveSegment()
+{
+    m_activeSegmentWaypoints.clear();
+    m_activeSegmentArrivals = 0;
+}
+
+/**
+ * @brief Records a waypoint reached within the active smoothed segment.
+ * @param pointId Waypoint id in the path.
+ * @param pathPointIndex Index of its endpoint within the spline path.
+ */
+void WaypointMovementGenerator<Creature>::AddActiveSegmentWaypoint(uint32 pointId, std::size_t pathPointIndex)
+{
+    ActiveSegmentWaypoint waypoint = { pointId, pathPointIndex };
+    m_activeSegmentWaypoints.push_back(waypoint);
+}
+
+/**
+ * @brief Fires arrival handling for any smoothed waypoints the spline has passed.
+ * @param creature Reference to the creature.
+ */
+void WaypointMovementGenerator<Creature>::ProcessActiveSegmentProgress(Creature& creature)
+{
+    while (m_activeSegmentArrivals < m_activeSegmentWaypoints.size() &&
+           HasReachedWaypointEndpoint(creature.movespline->currentPathIdx(), m_activeSegmentWaypoints[m_activeSegmentArrivals].pathPointIndex))
+    {
+        i_currentNode = m_activeSegmentWaypoints[m_activeSegmentArrivals].pointId;
+        m_isArrivalDone = false;
+        OnArrived(creature);
+        ++m_activeSegmentArrivals;
+
+        if (!creature.movespline->Finalized() && !Stopped(creature))
+        {
+            creature.addUnitState(UNIT_STAT_ROAMING_MOVE);
+        }
+    }
+}
+
+/**
+ * @brief Builds a smoothed multi-waypoint path starting at the given waypoint.
+ * @param creature Reference to the creature.
+ * @param startPoint Iterator to the first waypoint of the segment.
+ * @param pathPoints Output spline points; left empty when smoothing is skipped.
+ */
+void WaypointMovementGenerator<Creature>::BuildSmoothPath(Creature& creature, WaypointPath::const_iterator startPoint, Movement::PointsArray& pathPoints)
+{
+    ClearActiveSegment();
+    pathPoints.clear();
+
+    if (!IsSmoothingEnabled())
+    {
+        return;
+    }
+
+    float startX = creature.GetPositionX();
+    float startY = creature.GetPositionY();
+    float startZ = creature.GetPositionZ();
+
+    // Bounding box of the points committed to the smoothed path so far. We keep extending
+    // the chunk through consecutive smoothable waypoints until the box would exceed the
+    // packable offset budget (see WaypointSmoothing.h) rather than stopping at a fixed
+    // count, so the spline carries as many waypoints as the SMSG_MONSTER_MOVE encoding
+    // safely allows. This minimises spline finalize/relaunch boundaries (each of which is a
+    // visible stop/relaunch) while guaranteeing the packed offsets never wrap.
+    WaypointSmoothingBounds bounds;
+
+    WaypointPath::const_iterator currPoint = startPoint;
+    for (std::size_t segment = 0; segment < WAYPOINT_SMOOTHING_MAX_LOOKAHEAD; ++segment)
+    {
+        WaypointNode const& node = currPoint->second;
+
+        std::size_t const committedSize = pathPoints.size();
+        if (!AppendWaypointPathSegment(creature, startX, startY, startZ, node, pathPoints))
+        {
+            // The first leg failing means nothing is usable; fall back to per-waypoint
+            // movement. A later leg failing keeps the chunk built so far.
+            if (committedSize == 0)
+            {
+                ClearActiveSegment();
+                pathPoints.clear();
+                return;
+            }
+            break;
+        }
+
+        // The first waypoint is always accepted (a one-waypoint chunk falls back to MoveTo
+        // below). Each subsequent waypoint is only kept while the whole path stays within
+        // the packable budget; otherwise roll it back and end the chunk here.
+        WaypointSmoothingBounds trial = bounds;
+        for (std::size_t i = committedSize; i < pathPoints.size(); ++i)
+        {
+            AddWaypointSmoothingPoint(trial, pathPoints[i].x, pathPoints[i].y, pathPoints[i].z);
+        }
+
+        if (committedSize != 0 && !IsWaypointSmoothingWithinBudget(trial))
+        {
+            pathPoints.resize(committedSize);
+            break;
+        }
+
+        bounds = trial;
+        AddActiveSegmentWaypoint(currPoint->first, pathPoints.size() - 1);
+
+        if (!CanSmoothThrough(node))
+        {
+            break;
+        }
+
+        WaypointPath::const_iterator nextPoint = currPoint;
+        ++nextPoint;
+        if (nextPoint == i_path->end())
+        {
+            nextPoint = i_path->begin();
+        }
+
+        if (nextPoint == startPoint)
+        {
+            break;
+        }
+
+        startX = node.x;
+        startY = node.y;
+        startZ = node.z;
+        currPoint = nextPoint;
+    }
+
+    if (m_activeSegmentWaypoints.size() <= 1)
+    {
+        ClearActiveSegment();
+        pathPoints.clear();
+    }
+}
+
+/**
  * @brief Starts moving the creature along the waypoint path.
  * @param creature Reference to the creature.
  */
@@ -303,13 +514,28 @@ void WaypointMovementGenerator<Creature>::StartMove(Creature& creature)
 
     creature.addUnitState(UNIT_STAT_ROAMING_MOVE);
 
-    WaypointNode const& nextNode = currPoint->second;;
+    WaypointNode const& nextNode = currPoint->second;
     Movement::MoveSplineInit init(creature);
-    init.MoveTo(nextNode.x, nextNode.y, nextNode.z, true);
+    Movement::PointsArray smoothPath;
+    BuildSmoothPath(creature, currPoint, smoothPath);
 
-    if (nextNode.orientation != 100 && nextNode.delay != 0)
+    WaypointNode const* finalNode = &nextNode;
+    if (!smoothPath.empty())
     {
-        init.SetFacing(nextNode.orientation);
+        init.MovebyPath(smoothPath);
+
+        WaypointPath::const_iterator finalPoint = i_path->find(m_activeSegmentWaypoints.back().pointId);
+        MANGOS_ASSERT(finalPoint != i_path->end());
+        finalNode = &finalPoint->second;
+    }
+    else
+    {
+        init.MoveTo(nextNode.x, nextNode.y, nextNode.z, true);
+    }
+
+    if (finalNode->orientation != 100 && finalNode->delay != 0)
+    {
+        init.SetFacing(finalNode->orientation);
     }
     creature.SetWalk(!creature.hasUnitState(UNIT_STAT_RUNNING_STATE) && !creature.IsLevitating(), false);
     init.Launch();
@@ -347,14 +573,33 @@ bool WaypointMovementGenerator<Creature>::Update(Creature& creature, const uint3
     }
     else
     {
-        if (creature.IsStopped())
+        // Sample the stopped state before arrival handling clears UNIT_STAT_ROAMING_MOVE,
+        // so an externally force-stopped unit (e.g. a player talking to it, which also
+        // finalizes the spline) is paused rather than mistaken for a finishing spline.
+        switch (GetWaypointSegmentUpdateState(creature.movespline->Finalized(), creature.IsStopped()))
         {
-            Stop(STOP_TIME_FOR_PLAYER);
-        }
-        else if (creature.movespline->Finalized())
-        {
-            OnArrived(creature);
-            StartMove(creature);
+            case WaypointSegmentUpdateState::Stopped:
+            {
+                ClearActiveSegment();
+                Stop(STOP_TIME_FOR_PLAYER);
+                break;
+            }
+            case WaypointSegmentUpdateState::Finalized:
+            {
+                ProcessActiveSegmentProgress(creature);
+                if (!m_isArrivalDone)
+                {
+                    OnArrived(creature);
+                }
+                ClearActiveSegment();
+                StartMove(creature);
+                break;
+            }
+            case WaypointSegmentUpdateState::Moving:
+            {
+                ProcessActiveSegmentProgress(creature);
+                break;
+            }
         }
     }
     return true;
@@ -492,6 +737,7 @@ bool WaypointMovementGenerator<Creature>::SetNextWaypoint(uint32 pointId)
     // If this function is called while PAUSED, it will move properly when unpaused.
     i_nextMoveTime.Reset(1);
     m_isArrivalDone = false;
+    ClearActiveSegment();
 
     // Set the point
     i_currentNode = pointId;
