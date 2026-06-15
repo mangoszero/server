@@ -65,6 +65,8 @@ class PlayerbotAIConfig
         uint32 minRandomBotReviveTime, maxRandomBotReviveTime;
         uint32 minRandomBotPvpTime, maxRandomBotPvpTime;
         uint32 minRandomBotsPerInterval, maxRandomBotsPerInterval;
+        uint32 randomBotProcessBudgetMs; ///< Wall-clock budget (ms) for one random-bot processing pass; 0 disables pacing.
+        uint32 randomBotCatchupInterval; ///< Seconds until the next pass when a pass stops on its time budget.
         uint32 minRandomBotsPriceChangeInterval, maxRandomBotsPriceChangeInterval;
         bool randomBotJoinLfg; ///< Indicates if random bots should join Looking For Group.
         bool randomBotLoginAtStartup; ///< Indicates if random bots should login at startup.

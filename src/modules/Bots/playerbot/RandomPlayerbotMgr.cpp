@@ -14,6 +14,7 @@
 #include "MapManager.h"
 #include "LFGMgr.h"
 #include "Group.h"
+#include "Timer.h"
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
@@ -85,8 +86,21 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
+    // Pace the pass against a wall-clock budget so a single update tick can not be
+    // monopolised by a burst of bot adds/randomizes/saves. Work that does not fit in
+    // the budget is carried over to the next (soon-rescheduled) pass.
+    uint32 passStart = getMSTime();
+    uint32 budgetMs = sPlayerbotAIConfig.randomBotProcessBudgetMs;
+    bool overBudget = false;
+
     while (botCount++ < maxAllowedBotCount)
     {
+        if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
+        {
+            overBudget = true;
+            break;
+        }
+
         bool alliance = botCount % 2;
         uint32 bot = AddRandomBot(alliance);
         if (bot)
@@ -111,6 +125,12 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
     int botProcessed = 0;
     for (list<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
     {
+        if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
+        {
+            overBudget = true;
+            break;
+        }
+
         uint32 bot = *i;
         if (ProcessBot(bot))
         {
@@ -123,8 +143,15 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
-    sLog.outString("%d bots processed. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
-        botProcessed, allianceNewBots, hordeNewBots, playerBots.size(), sPlayerbotAIConfig.randomBotUpdateInterval);
+    // Still work left this pass - come back quickly instead of waiting a full interval.
+    if (overBudget && sPlayerbotAIConfig.randomBotCatchupInterval < sPlayerbotAIConfig.randomBotUpdateInterval)
+    {
+        SetNextCheckDelay(sPlayerbotAIConfig.randomBotCatchupInterval * 1000);
+    }
+
+    sLog.outString("%d bots processed%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
+        botProcessed, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
+        overBudget ? sPlayerbotAIConfig.randomBotCatchupInterval : sPlayerbotAIConfig.randomBotUpdateInterval);
 
     if (processTicks++ == 1)
     {

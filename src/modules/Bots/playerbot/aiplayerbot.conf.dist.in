@@ -171,6 +171,16 @@ AiPlayerbot.RandomBotTeleLevel = 3
 #AiPlayerbot.MaxRandomRandomizeTime = 1209600
 #AiPlayerbot.MinRandomBotsPerInterval = 50
 #AiPlayerbot.MaxRandomBotsPerInterval = 100
+
+# Wall-clock budget (milliseconds) for a single random-bot processing pass. When a
+# pass exceeds this, it stops and resumes on the next (catch-up) pass instead of
+# blocking the world tick. Set to 0 to disable pacing (legacy burst behaviour).
+#AiPlayerbot.RandomBotProcessBudgetMs = 50
+
+# Seconds until the next pass when a pass stopped early on its time budget. Only used
+# while there is pending work; ignored once a pass finishes within budget.
+#AiPlayerbot.RandomBotCatchupInterval = 1
+
 #AiPlayerbot.MinRandomBotsPriceChangeInterval = 7200
 #AiPlayerbot.MaxRandomBotsPriceChangeInterval = 172800
 
