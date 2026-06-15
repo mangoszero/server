@@ -80,6 +80,9 @@ class PlayerbotAIConfig
         uint32 specProbability[MAX_CLASSES][3]; ///< Probability of class specs for random bots.
         std::string commandPrefix; ///< Prefix for bot commands.
 
+        std::string randomMovementTargetsAsString; ///< Comma-separated string of random movement targets.
+        std::vector<std::string> randomMovementTargets; ///< List of validated random movement targets.
+
         uint32 iterationsPerTick; ///< Number of iterations per tick.
 
         int commandServerPort; ///< Port for the command server.
