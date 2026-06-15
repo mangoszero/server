@@ -1,7 +1,5 @@
 #include "WaypointSmoothing.h"
 
-#include <algorithm>
-
 /**
  * @brief Whether smoothing may pass through the given node without stopping.
  * @param node Per-node smoothing properties.
@@ -22,14 +20,14 @@ bool IsWaypointSmoothingSafe(WaypointSmoothingNode const& node)
  * @param endpointPathIndex Path-point index recorded for the waypoint.
  * @return True once the spline index has reached or passed the endpoint.
  */
-bool HasReachedWaypointEndpoint(std::int32_t currentPathIdx, std::size_t endpointPathIndex)
+bool HasReachedWaypointEndpoint(int32 currentPathIdx, size_t endpointPathIndex)
 {
     if (currentPathIdx <= 0)
     {
         return false;
     }
 
-    return static_cast<std::size_t>(currentPathIdx) >= endpointPathIndex;
+    return static_cast<size_t>(currentPathIdx) >= endpointPathIndex;
 }
 
 /**

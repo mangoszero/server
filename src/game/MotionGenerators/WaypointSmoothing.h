@@ -1,8 +1,7 @@
 #ifndef MANGOS_WAYPOINTSMOOTHING_H
 #define MANGOS_WAYPOINTSMOOTHING_H
 
-#include <cstddef>
-#include <cstdint>
+#include "Common.h"
 
 /**
  * @brief Safety ceiling on how many waypoints a single smoothed spline may span.
@@ -11,7 +10,7 @@
  * pathological paths with huge numbers of tightly-packed nodes producing one
  * enormous spline/packet.
  */
-constexpr std::size_t WAYPOINT_SMOOTHING_MAX_LOOKAHEAD = 32;
+constexpr size_t WAYPOINT_SMOOTHING_MAX_LOOKAHEAD = 32;
 
 /**
  * @brief Maximum X/Y bounding-box span (in yards) of a single smoothed path.
@@ -79,7 +78,7 @@ bool IsWaypointSmoothingSafe(WaypointSmoothingNode const& node);
  * @param endpointPathIndex Path-point index recorded for the waypoint.
  * @return True once the spline index has reached or passed the endpoint.
  */
-bool HasReachedWaypointEndpoint(std::int32_t currentPathIdx, std::size_t endpointPathIndex);
+bool HasReachedWaypointEndpoint(int32 currentPathIdx, size_t endpointPathIndex);
 
 /**
  * @brief Classifies an in-progress segment, giving finalized precedence over stopped.

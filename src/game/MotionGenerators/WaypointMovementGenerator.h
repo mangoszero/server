@@ -36,9 +36,7 @@
 #include "DBCStructure.h"
 #include "movement/MoveSplineInitArgs.h"
 
-#include <cstddef>
 #include <set>
-#include <vector>
 
 #define FLIGHT_TRAVEL_UPDATE  100
 #define STOP_TIME_FOR_PLAYER  (3 * MINUTE * IN_MILLISECONDS)// 3 Minutes
@@ -250,7 +248,7 @@ template<>
         struct ActiveSegmentWaypoint
         {
             uint32 pointId;            ///< Waypoint id in the path
-            std::size_t pathPointIndex; ///< Index of its endpoint in the spline path
+            size_t pathPointIndex;     ///< Index of its endpoint in the spline path
         };
 
         /**
@@ -274,7 +272,7 @@ template<>
          * @param pointId Waypoint id in the path.
          * @param pathPointIndex Index of its endpoint within the spline path.
          */
-        void AddActiveSegmentWaypoint(uint32 pointId, std::size_t pathPointIndex);
+        void AddActiveSegmentWaypoint(uint32 pointId, size_t pathPointIndex);
 
         /**
          * @brief Fires arrival handling for any smoothed waypoints the spline has passed.
@@ -297,7 +295,7 @@ template<>
         int32 m_pathId; ///< Path ID
         WaypointPathOrigin m_PathOrigin; ///< Path origin
         std::vector<ActiveSegmentWaypoint> m_activeSegmentWaypoints; ///< Waypoints in the active smoothed segment
-        std::size_t m_activeSegmentArrivals; ///< Count already processed via ProcessActiveSegmentProgress
+        size_t m_activeSegmentArrivals; ///< Count already processed via ProcessActiveSegmentProgress
 };
 
 /**

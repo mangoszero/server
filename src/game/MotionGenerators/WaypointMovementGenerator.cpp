@@ -324,7 +324,7 @@ void WaypointMovementGenerator<Creature>::ClearActiveSegment()
  * @param pointId Waypoint id in the path.
  * @param pathPointIndex Index of its endpoint within the spline path.
  */
-void WaypointMovementGenerator<Creature>::AddActiveSegmentWaypoint(uint32 pointId, std::size_t pathPointIndex)
+void WaypointMovementGenerator<Creature>::AddActiveSegmentWaypoint(uint32 pointId, size_t pathPointIndex)
 {
     ActiveSegmentWaypoint waypoint = { pointId, pathPointIndex };
     m_activeSegmentWaypoints.push_back(waypoint);
@@ -380,11 +380,11 @@ void WaypointMovementGenerator<Creature>::BuildSmoothPath(Creature& creature, Wa
     WaypointSmoothingBounds bounds;
 
     WaypointPath::const_iterator currPoint = startPoint;
-    for (std::size_t segment = 0; segment < WAYPOINT_SMOOTHING_MAX_LOOKAHEAD; ++segment)
+    for (size_t segment = 0; segment < WAYPOINT_SMOOTHING_MAX_LOOKAHEAD; ++segment)
     {
         WaypointNode const& node = currPoint->second;
 
-        std::size_t const committedSize = pathPoints.size();
+        size_t const committedSize = pathPoints.size();
         if (!AppendWaypointPathSegment(creature, startX, startY, startZ, node, pathPoints))
         {
             // The first leg failing means nothing is usable; fall back to per-waypoint
@@ -402,7 +402,7 @@ void WaypointMovementGenerator<Creature>::BuildSmoothPath(Creature& creature, Wa
         // below). Each subsequent waypoint is only kept while the whole path stays within
         // the packable budget; otherwise roll it back and end the chunk here.
         WaypointSmoothingBounds trial = bounds;
-        for (std::size_t i = committedSize; i < pathPoints.size(); ++i)
+        for (size_t i = committedSize; i < pathPoints.size(); ++i)
         {
             AddWaypointSmoothingPoint(trial, pathPoints[i].x, pathPoints[i].y, pathPoints[i].z);
         }
