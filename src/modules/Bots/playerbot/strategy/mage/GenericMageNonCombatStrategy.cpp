@@ -71,12 +71,12 @@ void GenericMageNonCombatStrategy::InitTriggers(std::list<TriggerNode*> &trigger
         NextAction::array(0, new NextAction("conjure mana gem", 14.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-            "remove curse",
-        NextAction::array(0, new NextAction("remove curse", 41.0f), NULL)));
+            "remove lesser curse",
+        NextAction::array(0, new NextAction("remove lesser curse", 41.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
-            "remove curse on party",
-        NextAction::array(0, new NextAction("remove curse on party", 40.0f), NULL)));
+            "remove lesser curse on party",
+        NextAction::array(0, new NextAction("remove lesser curse on party", 40.0f), NULL)));
 
     triggers.push_back(new TriggerNode(
             "party member needs food",

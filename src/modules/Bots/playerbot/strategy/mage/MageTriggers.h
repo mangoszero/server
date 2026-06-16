@@ -70,13 +70,13 @@ namespace ai
     class RemoveCurseTrigger : public NeedCureTrigger
     {
         public:
-            RemoveCurseTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "remove curse", DISPEL_CURSE) {}
+            RemoveCurseTrigger(PlayerbotAI* ai) : NeedCureTrigger(ai, "remove lesser curse", DISPEL_CURSE) {}
     };
 
     class PartyMemberRemoveCurseTrigger : public PartyMemberNeedCureTrigger
     {
         public:
-            PartyMemberRemoveCurseTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "remove curse", DISPEL_CURSE) {}
+            PartyMemberRemoveCurseTrigger(PlayerbotAI* ai) : PartyMemberNeedCureTrigger(ai, "remove lesser curse", DISPEL_CURSE) {}
     };
 
     class SpellstealTrigger : public TargetAuraDispelTrigger

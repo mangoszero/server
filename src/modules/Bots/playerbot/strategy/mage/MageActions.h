@@ -79,7 +79,7 @@ namespace ai
     class CastRemoveCurseAction : public CastCureSpellAction
     {
         public:
-            CastRemoveCurseAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "remove curse") {}
+            CastRemoveCurseAction(PlayerbotAI* ai) : CastCureSpellAction(ai, "remove lesser curse") {}
     };
 
     class CastCombustionAction : public CastBuffSpellAction
@@ -94,7 +94,7 @@ namespace ai
     class CastRemoveCurseOnPartyAction : public CurePartyMemberAction
     {
         public:
-            CastRemoveCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "remove curse", DISPEL_CURSE) {}
+            CastRemoveCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "remove lesser curse", DISPEL_CURSE) {}
     };
 
     class CastConjureFoodAction : public CastBuffSpellAction
