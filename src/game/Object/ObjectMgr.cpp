@@ -1625,8 +1625,10 @@ void ObjectMgr::LoadCreatures()
                 if (lwCats != 0)
                 {
                     ++lwAnchorTotal;
-                    if (lwCats & LW_ANCHOR_WORLD_BOSS_OR_LEADER) { ++lwWorldBossLeaderCount; }
-                    if (lwCats & LW_ANCHOR_FLIGHT_MASTER)        { ++lwFlightMasterCount; }
+                    if (lwCats & LW_ANCHOR_WORLD_BOSS_OR_LEADER)
+                        ++lwWorldBossLeaderCount;
+                    if (lwCats & LW_ANCHOR_FLIGHT_MASTER)
+                        ++lwFlightMasterCount;
                 }
             }
         }
