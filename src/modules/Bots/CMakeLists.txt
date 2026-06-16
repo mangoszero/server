@@ -148,6 +148,7 @@ set(BOT_SRCS
     playerbot/strategy/actions/ReadyCheckAction.cpp
     playerbot/strategy/actions/ReadyCheckAction.h
     playerbot/strategy/actions/ReleaseSpiritAction.h
+    playerbot/strategy/actions/ReleaseSpiritWithMasterAction.h
     playerbot/strategy/actions/RememberTaxiAction.cpp
     playerbot/strategy/actions/RememberTaxiAction.h
     playerbot/strategy/actions/RepairAllAction.cpp
@@ -169,6 +170,8 @@ set(BOT_SRCS
     playerbot/strategy/actions/SetHomeAction.h
     playerbot/strategy/actions/StatsAction.cpp
     playerbot/strategy/actions/StatsAction.h
+    playerbot/strategy/actions/SpiritHealerWithMasterAction.cpp
+    playerbot/strategy/actions/SpiritHealerWithMasterAction.h
     playerbot/strategy/actions/StayActions.cpp
     playerbot/strategy/actions/StayActions.h
     playerbot/strategy/actions/SuggestWhatToDoAction.cpp

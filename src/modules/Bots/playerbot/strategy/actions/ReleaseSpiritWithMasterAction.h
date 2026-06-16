@@ -4,14 +4,21 @@
 
 namespace ai
 {
-    class ReleaseSpiritAction : public Action {
+    class ReleaseSpiritWithMasterAction : public Action
+    {
         public:
-            ReleaseSpiritAction(PlayerbotAI* ai) : Action(ai, "release") {}
+            ReleaseSpiritWithMasterAction(PlayerbotAI* ai) : Action(ai, "release spirit with master") {}
 
         public:
             virtual bool Execute(Event event)
             {
                 if (bot->IsAlive() || bot->GetCorpse())
+                {
+                    return false;
+                }
+
+                Player* master = ai->GetMaster();
+                if (!master || !bot->GetGroup() || bot->GetGroup() != master->GetGroup())
                 {
                     return false;
                 }

@@ -23,6 +23,8 @@
 #include "LfgActions.h"
 #include "SecurityCheckAction.h"
 #include "GuildAcceptAction.h"
+#include "ReleaseSpiritWithMasterAction.h"
+#include "SpiritHealerWithMasterAction.h"
 
 namespace ai
 {
@@ -60,10 +62,14 @@ namespace ai
                 creators["uninvite"] = &WorldPacketActionContext::uninvite;
                 creators["security check"] = &WorldPacketActionContext::security_check;
                 creators["guild accept"] = &WorldPacketActionContext::guild_accept;
+                creators["release spirit with master"] = &WorldPacketActionContext::release_spirit_with_master;
+                creators["spirit healer with master"] = &WorldPacketActionContext::spirit_healer_with_master;
             }
 
         private:
             static Action* guild_accept(PlayerbotAI* ai) { return new GuildAcceptAction(ai); }
+            static Action* release_spirit_with_master(PlayerbotAI* ai) { return new ReleaseSpiritWithMasterAction(ai); }
+            static Action* spirit_healer_with_master(PlayerbotAI* ai) { return new SpiritHealerWithMasterAction(ai); }
             static Action* security_check(PlayerbotAI* ai) { return new SecurityCheckAction(ai); }
             static Action* uninvite(PlayerbotAI* ai) { return new UninviteAction(ai); }
             static Action* ready_check_finished(PlayerbotAI* ai) { return new FinishReadyCheckAction(ai); }
