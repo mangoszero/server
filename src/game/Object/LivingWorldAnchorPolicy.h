@@ -42,13 +42,19 @@ enum LivingWorldAnchorCategory
 constexpr uint32 LivingWorldAnchorCategoriesFor(uint32 rank, uint32 npcFlags, bool isContinent)
 {
     if (!isContinent)
+    {
         return LW_ANCHOR_NONE;
+    }
 
     uint32 cats = LW_ANCHOR_NONE;
     if (rank == CREATURE_ELITE_WORLDBOSS)
+    {
         cats |= LW_ANCHOR_WORLD_BOSS_OR_LEADER;
+    }
     if (npcFlags & UNIT_NPC_FLAG_FLIGHTMASTER)
+    {
         cats |= LW_ANCHOR_FLIGHT_MASTER;
+    }
     return cats;
 }
 
@@ -71,7 +77,9 @@ static_assert(LivingWorldAnchorCategoriesFor(CREATURE_ELITE_NORMAL, 0, true) == 
 inline uint32 GetLivingWorldAnchorCategories(CreatureInfo const* cInfo, MapEntry const* mapEntry)
 {
     if (!cInfo || !mapEntry)
+    {
         return LW_ANCHOR_NONE;
+    }
     return LivingWorldAnchorCategoriesFor(cInfo->Rank, cInfo->NpcFlags, mapEntry->IsContinent());
 }
 
