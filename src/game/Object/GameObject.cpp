@@ -1264,8 +1264,8 @@ bool GameObject::ActivateToQuest(Player* pTarget) const
                             return false;
                         }
                     }
-                    return true;
                 }
+                return true;
             }
             break;
         }
