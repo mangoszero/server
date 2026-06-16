@@ -640,12 +640,54 @@ bool WaypointMovementGenerator<Creature>::CanMove(int32 diff, Creature& u)
  * @param o Reference to the orientation.
  * @return True if the reset position was successfully obtained, false otherwise.
  */
-bool WaypointMovementGenerator<Creature>::GetResetPosition(Creature&, float& x, float& y, float& z, float& o) const
+bool WaypointMovementGenerator<Creature>::GetResetPosition(Creature& creature, float& x, float& y, float& z, float& o) const
 {
     // Prevent a crash at empty waypoint path.
     if (!i_path || i_path->empty())
     {
         return false;
+    }
+
+    // Prefer resuming from the point where combat pulled the creature off
+    // its path (its departure point) rather than the last reached waypoint.
+    // This removes the visible backtrack where an evading patroller runs
+    // back to the previous waypoint and then re-walks the leg it was on.
+    // m_combatStartX/Y/Z is captured for every creature at the start of a new
+    // battle (Unit::Attack), so a creature that fought and is now evading
+    // holds the on-path position it had when it engaged. A zero sentinel
+    // means no combat start was recorded; in that case fall back below.
+    float combatX, combatY, combatZ;
+    creature.GetCombatStartPosition(combatX, combatY, combatZ);
+    if (combatX != 0.0f || combatY != 0.0f || combatZ != 0.0f)
+    {
+        x = combatX;
+        y = combatY;
+        z = combatZ;
+
+        // Face toward the waypoint the creature was heading for, so it keeps
+        // moving forward on resume; fall back to current facing if that point
+        // is unavailable or coincident.
+        WaypointPath::const_iterator nextPoint = i_path->find(i_currentNode);
+        if (nextPoint != i_path->end())
+        {
+            float dx = nextPoint->second.x - x;
+            float dy = nextPoint->second.y - y;
+            if (dx != 0.0f || dy != 0.0f)
+            {
+                o = atan2(dy, dx);
+                o = (o >= 0) ? o : 2 * M_PI_F + o;
+            }
+            else
+            {
+                o = creature.GetOrientation();
+            }
+        }
+        else
+        {
+            o = creature.GetOrientation();
+        }
+
+        return true;
     }
 
     WaypointPath::const_iterator lastPoint = i_path->find(m_lastReachedWaypoint);
