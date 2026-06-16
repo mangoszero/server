@@ -3,7 +3,7 @@
 ##########################################
 
 [AiPlayerbotConf]
-ConfVersion=2010102201
+ConfVersion=2026061600
 
 # Enable or disable AI Playerbot
 AiPlayerbot.Enabled = 1
