@@ -936,6 +936,26 @@ AllowTwoSide.AddFriend            = 0
 TalentsInspecting                 = 1
 
 ################################################################################
+# LIVINGWORLD SETTINGS
+#
+#    LivingWorld keeps selected important actors active (and their grids
+#    resident) without force-loading whole maps. All features default OFF.
+#
+#    LivingWorld.AnchorPolicyMask
+#        Bitmask selecting which high-confidence creature categories are marked
+#        as LivingWorld active anchors (active object + grid kept resident).
+#        Continent-only (maps 0/1); raid/dungeon/battleground spawns are excluded.
+#        0 = off (default; behavior identical to upstream)
+#        1 = continent world bosses & faction/capital leaders (creature rank = WORLDBOSS)
+#        2 = continent flight masters (npcflag FLIGHTMASTER)
+#        3 = both
+#        Default: 0
+#
+################################################################################
+
+LivingWorld.AnchorPolicyMask              = 0
+
+################################################################################
 # CREATURE AND GAMEOBJECT SETTINGS
 #
 #    ThreatRadius
