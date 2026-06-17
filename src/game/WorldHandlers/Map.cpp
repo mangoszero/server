@@ -1188,13 +1188,13 @@ template<class T>
     }
 
     Cell cell(p);
-    if (!loaded(GridPair(cell.data.Part.grid_x, cell.data.Part.grid_y)))
+    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+    if (!grid || !grid->isCellObjectDataLoaded(cell.CellX(), cell.CellY()))
     {
         return;
     }
 
     DEBUG_LOG("Remove object (GUID: %u TypeId:%u) from grid[%u,%u]", obj->GetGUIDLow(), obj->GetTypeId(), cell.data.Part.grid_x, cell.data.Part.grid_y);
-    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
     MANGOS_ASSERT(grid != NULL);
 
     if (obj->IsActiveObject())
