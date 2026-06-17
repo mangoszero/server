@@ -677,9 +677,14 @@ void Map::ForceLoadGrid(float x, float y)
 {
     if (!IsLoaded(x, y))
     {
-        CellPair p = MaNGOS::ComputeCellPair(x, y);
-        Cell cell(p);
-        EnsureGridLoadedAtEnter(cell);
+        Cell cell(MaNGOS::ComputeCellPair(x, y));
+        EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
+        if (EnsureGridLoaded(cell))
+        {
+            NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+            ResetGridExpiry(*grid, 0.1f);
+            grid->SetGridState(GRID_STATE_ACTIVE);
+        }
         getNGrid(cell.GridX(), cell.GridY())->setUnloadExplicitLock(true);
     }
 }
