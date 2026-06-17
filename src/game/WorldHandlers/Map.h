@@ -379,6 +379,9 @@ class Map : public GridRefManager<NGridType>
             uint32 envelopeLoads = 0;     // cells loaded via the anchor/envelope path
             uint32 accretions = 0;        // same-grid accretion events
             uint32 fills = 0;             // ENVELOPE→FULL fills triggered by players
+            uint32 cellsUnloaded = 0;     // cells torn down (downgrade + trailing)
+            uint32 downgrades = 0;        // FULL→ENVELOPE downgrades performed
+            uint32 trailingUnloads = 0;   // trailing-unload events (mover advanced)
             uint32 anomalyAnchorOutside = 0;
             uint32 anomalyScanPartial = 0;
         };
@@ -420,6 +423,7 @@ class Map : public GridRefManager<NGridType>
         void EnsureGridCreated(const GridPair&);
         bool EnsureGridLoaded(Cell const&);
         bool EnsureCellEnvelopeLoaded(const Cell& centerCell);
+        void UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY);
         void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }

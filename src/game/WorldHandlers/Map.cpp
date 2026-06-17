@@ -1390,6 +1390,41 @@ bool Map::CreatureRespawnRelocation(Creature* c)
 }
 
 /**
+ * @brief Tears down a single cell's DB objects (B-Cell unload-side primitive).
+ *
+ * Mirrors the grid-unload sequence (stop → respawn-relocate → unload) but scoped
+ * to one cell, and does NOT delete the NGrid or unload terrain. Idempotent: a no-op
+ * on an already-unloaded cell. Callers MUST ensure the cell is anchor/player-free
+ * (see IsCellAnchorProtected) before calling.
+ */
+void Map::UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY)
+{
+    if (!grid->isCellObjectDataLoaded(cellX, cellY))
+    {
+        return;
+    }
+
+    // stop combat / clear dynobjects for creatures in the cell
+    ObjectGridStoper stoper(*grid);
+    stoper.Stop((*grid)(cellX, cellY));
+    RemoveAllObjectsInRemoveList();
+
+    // relocate creatures whose respawn point is in a different grid (mirrors grid unload)
+    ObjectGridUnloader unloader(*grid);
+    unloader.MoveToRespawnCell(cellX, cellY);
+    RemoveAllObjectsInRemoveList();
+
+    // delete remaining objects in the cell (saves respawn time, removes from world)
+    unloader.Unload((*grid)(cellX, cellY));
+    RemoveAllObjectsInRemoveList();
+
+    grid->setCellObjectDataLoaded(cellX, cellY, false);
+    ++m_cellEnvStats.cellsUnloaded;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] unloaded cell grid[%u,%u]cell[%u,%u] on map %u", grid->getX(), grid->getY(), cellX, cellY, i_id);
+}
+
+/**
  * @brief Unloads a grid and its terrain data when it is safe to do so.
  *
  * @param x The grid X coordinate.
