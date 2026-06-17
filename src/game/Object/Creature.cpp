@@ -269,7 +269,10 @@ void Creature::AddToWorld()
     if (sWorld.isForceLoadMap(GetMapId()) ||
         (GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE) ||
         IsLivingWorldAnchor(GetCreatureInfo(), sMapStore.LookupEntry(GetMapId()),
-                            sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK)))
+                            sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK)) ||
+        (GetLivingWorldDefenderCategory(GetCreatureInfo(), sMapStore.LookupEntry(GetMapId()),
+                                        GetDefaultMovementType() == WAYPOINT_MOTION_TYPE)
+            & sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK)))
     {
         SetActiveObjectState(true);
     }
