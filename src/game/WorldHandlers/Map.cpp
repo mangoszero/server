@@ -1488,6 +1488,15 @@ bool Map::IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32
             continue;
         }
 
+        // Cheap reject: a 3x3 envelope reaches at most one grid away, so skip anchors
+        // whose grid is >1 from the target grid before the per-cell test.
+        GridPair ap = MaNGOS::ComputeGridPair(obj->GetPositionX(), obj->GetPositionY());
+        if (ap.x_coord + 1 < gridX || ap.x_coord > gridX + 1
+            || ap.y_coord + 1 < gridY || ap.y_coord > gridY + 1)
+        {
+            continue;
+        }
+
         CellPair cp = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
         // anchor's 3x3 envelope in global cell coords
         if (targetGX + 1 >= cp.x_coord && targetGX <= cp.x_coord + 1
