@@ -374,6 +374,31 @@ class Map : public GridRefManager<NGridType>
         void LoadLocalTransports();
         std::set<Transport*> const& GetLocalTransports() const { return i_transports; }
 
+        struct CellEnvelopeStats
+        {
+            uint32 envelopeLoads = 0;     // cells loaded via the anchor/envelope path
+            uint32 accretions = 0;        // same-grid accretion events
+            uint32 fills = 0;             // ENVELOPE→FULL fills triggered by players
+            uint32 anomalyAnchorOutside = 0;
+            uint32 anomalyTouchUnloaded = 0;
+            uint32 anomalyScanPartial = 0;
+        };
+        CellEnvelopeStats const& GetCellEnvelopeStats() const { return m_cellEnvStats; }
+        CellEnvelopeStats& CellEnvStats() { return m_cellEnvStats; }
+
+        // true if the grid is in ENVELOPE state (exists, not FULL, has loaded cells)
+        bool IsGridEnvelope(uint32 gridX, uint32 gridY) const
+        {
+            NGridType* grid = getNGrid(gridX, gridY);
+            return grid && !grid->isGridObjectDataLoaded() && grid->loadedCellCount() > 0;
+        }
+
+        uint32 GetGridLoadedCellCount(uint32 gridX, uint32 gridY) const
+        {
+            NGridType* grid = getNGrid(gridX, gridY);
+            return grid ? grid->loadedCellCount() : 0;
+        }
+
 #ifdef ENABLE_ELUNA
         Eluna* GetEluna() const;
 
@@ -440,6 +465,7 @@ class Map : public GridRefManager<NGridType>
 
     private:
         time_t i_gridExpiry;
+        CellEnvelopeStats m_cellEnvStats;
 
         NGridType* i_grids[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
 

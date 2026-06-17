@@ -583,11 +583,17 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     MANGOS_ASSERT(grid != NULL);
     if (!isGridObjectDataLoaded(cell.GridX(), cell.GridY()))
     {
+        bool wasEnvelope = (grid->loadedCellCount() > 0);
         ObjectGridLoader loader(*grid, this, cell);
         loader.LoadN(); // loads every not-yet-loaded cell (fills an ENVELOPE grid's remainder)
 
         // mark the whole grid FULL only after loading (sets all per-cell bits)
         setGridObjectDataLoaded(true, cell.GridX(), cell.GridY());
+
+        if (wasEnvelope && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+        {
+            ++m_cellEnvStats.fills;
+        }
 
         // Add resurrectable corpses to world object list in grid
         sObjectAccessor.AddCorpsesToGrid(GridPair(cell.GridX(), cell.GridY()), (*grid)(cell.CellX(), cell.CellY()), this);
@@ -644,6 +650,7 @@ bool Map::EnsureCellEnvelopeLoaded(const Cell& centerCell)
             loader.LoadCell(envCell.CellX(), envCell.CellY());
             sObjectAccessor.AddCorpsesToGrid(gp, (*grid)(envCell.CellX(), envCell.CellY()), this);
             didWork = true;
+            ++m_cellEnvStats.envelopeLoads;
 
             DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] loaded cell grid[%u,%u]cell[%u,%u] (global %u,%u)", gp.x_coord, gp.y_coord, envCell.CellX(), envCell.CellY(), gcx, gcy);
         }
@@ -1330,12 +1337,20 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
             && !newGrid->isGridObjectDataLoaded())
         {
             EnsureCellEnvelopeLoaded(new_cell);
+            ++m_cellEnvStats.accretions;
             DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
         }
 
         RemoveFromGrid(c, oldGrid, old_cell);
         AddToGrid(c, newGrid, new_cell);
         c->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
+
+        if (c->IsActiveObject() && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY()))
+        {
+            ++m_cellEnvStats.anomalyAnchorOutside;
+            sLog.outError("[CellEnvelope][ANOMALY] active GUID %u Entry %u landed in UNLOADED grid[%u,%u]cell[%u,%u] on map %u", c->GetGUIDLow(), c->GetEntry(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY(), i_id);
+        }
     }
     return true;
 }
