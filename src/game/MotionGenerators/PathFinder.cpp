@@ -121,6 +121,19 @@ bool PathFinder::calculate(float startX, float startY, float startZ, float destX
         return true;
     }
 
+#ifdef ENABLE_PLAYERBOTS
+    if (m_sourceUnit->GetTypeId() == TYPEID_PLAYER &&
+        ((Player*)m_sourceUnit)->GetPlayerbotAI() &&
+        (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(start.x, start.y, start.z) ||
+            m_sourceUnit->GetMap()->GetTerrain()->IsInWater(dest.x, dest.y, dest.z)) &&
+        m_sourceUnit->GetMap()->IsInLineOfSight(start.x, start.y, start.z + 2.0f, dest.x, dest.y, dest.z + 2.0f))
+    {
+        BuildShortcut();
+        m_type = PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH);
+        return true;
+    }
+#endif
+
     updateFilter();
 
     BuildPolyPath(start, dest);
@@ -478,23 +491,6 @@ void PathFinder::BuildPolyPath(const Vector3& startPos, const Vector3& endPos)
     {
         m_type = PATHFIND_NORMAL;
     }
-#ifdef ENABLE_PLAYERBOTS
-    else // case for playerbots navigating polyless gaps in water nav
-    if (m_sourceUnit->GetMap()->GetTerrain()->IsInWater(startPos.x, startPos.y, startPos.z) &&
-        dtVdist(startPoint, endPoint) < 25.0f &&
-        m_sourceUnit->GetTypeId() == TYPEID_PLAYER &&
-        m_sourceUnit->GetMap()->IsInLineOfSight(startPos.x, startPos.y, startPos.z + 2.0f, endPos.x, endPos.y, endPos.z + 2.0f))
-
-    {
-        Player* player = (Player*)m_sourceUnit;
-        if (player->GetPlayerbotAI())
-        {
-            BuildShortcut();
-            m_type = PathType(PATHFIND_NORMAL | PATHFIND_NOT_USING_PATH);
-            return;
-        }
-    }
-#endif
     else
     {
         m_type = PATHFIND_INCOMPLETE;
@@ -613,7 +609,8 @@ void PathFinder::BuildShortcut()
     {
         float t = float(i) / float(segments);
         Vector3 point = start + (end - start) * t;
-        m_sourceUnit->UpdateAllowedPositionZ(point.x, point.y, point.z);
+        if (!m_sourceUnit->GetMap()->GetTerrain()->IsInWater(point.x, point.y, point.z))
+            m_sourceUnit->UpdateAllowedPositionZ(point.x, point.y, point.z);
         m_pathPoints[i] = point;
     }
 

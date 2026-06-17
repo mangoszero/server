@@ -591,6 +591,15 @@ namespace ai
             virtual bool IsActive();
     };
 
+    class DrowningTrigger : public Trigger
+    {
+        public:
+            DrowningTrigger(PlayerbotAI* ai) : Trigger(ai, "drowning") {}
+
+        public:
+            virtual bool IsActive();
+    };
+
     class HasNearestAddsTrigger : public Trigger
     {
         public:

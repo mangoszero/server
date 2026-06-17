@@ -59,6 +59,8 @@ PlayerbotAIConfig::PlayerbotAIConfig()
     maxRandomBotPvpTime(0),
     minRandomBotsPerInterval(0),
     maxRandomBotsPerInterval(0),
+    randomBotProcessBudgetMs(0),
+    randomBotCatchupInterval(0),
     minRandomBotsPriceChangeInterval(0),
     maxRandomBotsPriceChangeInterval(0),
     randomBotJoinLfg(false),
@@ -178,6 +180,8 @@ bool PlayerbotAIConfig::Initialize()
     randomBotTeleportDistance = config.GetIntDefault("AiPlayerbot.RandomBotTeleportDistance", 1000);
     minRandomBotsPerInterval = config.GetIntDefault("AiPlayerbot.MinRandomBotsPerInterval", 50);
     maxRandomBotsPerInterval = config.GetIntDefault("AiPlayerbot.MaxRandomBotsPerInterval", 100);
+    randomBotProcessBudgetMs = config.GetIntDefault("AiPlayerbot.RandomBotProcessBudgetMs", 50);
+    randomBotCatchupInterval = config.GetIntDefault("AiPlayerbot.RandomBotCatchupInterval", 1);
     minRandomBotsPriceChangeInterval = config.GetIntDefault("AiPlayerbot.MinRandomBotsPriceChangeInterval", 2 * 3600);
     maxRandomBotsPriceChangeInterval = config.GetIntDefault("AiPlayerbot.MaxRandomBotsPriceChangeInterval", 48 * 3600);
     randomBotJoinLfg = config.GetBoolDefault("AiPlayerbot.RandomBotJoinLfg", true);

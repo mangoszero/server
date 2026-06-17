@@ -272,6 +272,7 @@ class RandomPlayerbotMgr : public PlayerbotHolder
     private:
         vector<Player*> players; ///< List of players.
         int processTicks; ///< Number of process ticks.
+        uint32 m_processBotCursor; ///< GUID of the last bot examined; the next pass resumes after it so a budget/cap-limited pass eventually covers every bot.
         set<uint32> m_groupedBots; ///< Cached set of bot GUIDs currently in a group, refreshed each update cycle.
         std::map<uint32, AreaCreatureStats> m_areaCreatureStatsMap;
         std::set<uint32> m_allianceGuardAreas; ///< Areas with guards hostile to Horde (Alliance-guarded)

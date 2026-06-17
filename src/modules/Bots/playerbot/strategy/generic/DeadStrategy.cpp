@@ -17,6 +17,14 @@ void DeadStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
         "resurrect request",
         NextAction::array(0, new NextAction("accept resurrect", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "master released spirit",
+        NextAction::array(0, new NextAction("release spirit with master", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "master spirit healer",
+        NextAction::array(0, new NextAction("spirit healer with master", relevance), NULL)));
 }
 
 DeadStrategy::DeadStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)

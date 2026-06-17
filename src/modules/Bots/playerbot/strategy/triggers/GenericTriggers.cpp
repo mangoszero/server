@@ -18,8 +18,9 @@ bool MediumManaTrigger::IsActive()
 
 bool ThirstyTrigger::IsActive()
 {
-    return ai->IsDrinking() ||
-        (AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.thirstyMana);
+    return ai->IsDrinking() || (AI_VALUE2(bool, "has mana", "self target") &&
+            AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.thirstyMana &&
+            !AI_VALUE2(bool, "swimming", "self target"));
 }
 
 bool RageAvailable::IsActive()
@@ -231,6 +232,21 @@ bool EnemyPlayerIsAttacking::IsActive()
 bool IsSwimmingTrigger::IsActive()
 {
     return AI_VALUE2(bool, "swimming", "self target");
+}
+
+bool DrowningTrigger::IsActive()
+{
+    if (!bot->IsDrowning())
+    {
+        return false;
+    }
+
+    if (bot->HasAuraType(SPELL_AURA_WATER_BREATHING))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool HasNearestAddsTrigger::IsActive()

@@ -830,3 +830,27 @@ bool JumpAction::Execute(Event event)
     ai->StartJump(false);
     return true;
 }
+
+bool SwimToSurfaceAction::isUseful()
+{
+    return bot->IsUnderWater();
+}
+
+bool SwimToSurfaceAction::Execute(Event event)
+{
+    float x = bot->GetPositionX();
+    float y = bot->GetPositionY();
+    float z = bot->GetPositionZ();
+
+    float waterLevel = bot->GetMap()->GetTerrain()->GetWaterLevel(x, y, z);
+    if (waterLevel <= -500.0f)
+    {
+        return false;
+    }
+
+    MotionMaster &mm = *bot->GetMotionMaster();
+    mm.Clear();
+    mm.MovePoint(bot->GetMapId(), x, y, waterLevel, true);
+    ai->SetNextCheckDelay(sPlayerbotAIConfig.globalCoolDown);
+    return true;
+}
