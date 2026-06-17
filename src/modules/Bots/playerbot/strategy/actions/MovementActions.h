@@ -104,4 +104,12 @@ namespace ai
             JumpAction(PlayerbotAI* ai) : MovementAction(ai, "jump") {}
             virtual bool Execute(Event event);
     };
+
+    class SwimToSurfaceAction : public MovementAction
+    {
+        public:
+            SwimToSurfaceAction(PlayerbotAI* ai) : MovementAction(ai, "swim to surface") {}
+            virtual bool Execute(Event event);
+            virtual bool isUseful();
+    };
 }

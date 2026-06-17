@@ -1172,6 +1172,7 @@ class Player : public Unit
             return m_isInWater;
         }
         bool IsUnderWater() const override; // Check if the player is underwater
+        bool IsDrowning() const; // Check if the player is drowning (breath timer expired)
         bool IsFalling() // Check if the player is falling
         {
             return GetPositionZ() < m_lastFallZ;

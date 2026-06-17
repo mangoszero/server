@@ -81,6 +81,7 @@ namespace ai
                 creators["start pull"] = &ActionContext::start_pull;
                 creators["watch group pull"] = &ActionContext::watch_group_pull;
                 creators["reach shoot range"] = &ActionContext::reach_shoot_range;
+                creators["swim to surface"] = &ActionContext::swim_to_surface;
             }
 
         private:
@@ -142,6 +143,7 @@ namespace ai
             static Action* watch_group_pull(PlayerbotAI* ai) { return new WatchGroupPullAction(ai); }
             static Action* start_pull(PlayerbotAI* ai) { return new StartPullAction(ai); }
             static Action* reach_shoot_range(PlayerbotAI* ai) { return new ReachShootRangeAction(ai); }
+            static Action* swim_to_surface(PlayerbotAI* ai) { return new SwimToSurfaceAction(ai); }
 
     };
 };

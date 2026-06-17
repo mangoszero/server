@@ -234,6 +234,21 @@ bool IsSwimmingTrigger::IsActive()
     return AI_VALUE2(bool, "swimming", "self target");
 }
 
+bool DrowningTrigger::IsActive()
+{
+    if (!bot->IsDrowning())
+    {
+        return false;
+    }
+
+    if (bot->HasAuraType(SPELL_AURA_WATER_BREATHING))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool HasNearestAddsTrigger::IsActive()
 {
     list<ObjectGuid> targets = AI_VALUE(list<ObjectGuid>, "nearest adds");

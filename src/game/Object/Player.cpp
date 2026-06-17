@@ -2851,6 +2851,14 @@ bool Player::IsUnderWater() const
     return GetMap()->GetTerrain()->IsUnderWater(GetPositionX(), GetPositionY(), GetPositionZ() + 2);
 }
 
+bool Player::IsDrowning() const
+{
+    return (m_MirrorTimerFlags & UNDERWATER_INWATER) &&
+            m_MirrorTimer[BREATH_TIMER] != DISABLED_MIRROR_TIMER &&
+            !HasAuraType(SPELL_AURA_WATER_BREATHING) &&
+            m_MirrorTimer[BREATH_TIMER] < 2000 && IsAlive();
+}
+
 /**
  * @brief Updates the player's in-water state.
  *
