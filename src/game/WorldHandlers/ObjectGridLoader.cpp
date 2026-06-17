@@ -67,7 +67,10 @@
 class ObjectGridRespawnMover
 {
     public:
-        ObjectGridRespawnMover() {}
+        ObjectGridRespawnMover(bool cellGranular = false)
+            : i_cellGranular(cellGranular)
+        {
+        }
 
         /**
          * @brief Process entire grid for respawn relocations
@@ -82,9 +85,13 @@ class ObjectGridRespawnMover
          * @param m Creature container
          *
          * For each creature, checks if its respawn point is in a different
-         * grid. If so, initiates relocation to respawn coordinates.
+         * grid (or different cell when i_cellGranular is true).
+         * If so, initiates relocation to respawn coordinates.
          */
         void Visit(CreatureMapType& m);
+
+    private:
+        bool i_cellGranular;
 };
 
 /**
@@ -132,7 +139,8 @@ ObjectGridRespawnMover::Visit(CreatureMapType& m)
         CellPair resp_val = MaNGOS::ComputeCellPair(resp_x, resp_y);
         Cell resp_cell(resp_val);
 
-        if (cur_cell.DiffGrid(resp_cell))
+        bool needsRelocation = i_cellGranular ? (cur_cell != resp_cell) : cur_cell.DiffGrid(resp_cell);
+        if (needsRelocation)
         {
             c->GetMap()->CreatureRespawnRelocation(c);
             // false result ignored: will be unloaded with other creatures at grid
@@ -421,7 +429,7 @@ void ObjectGridUnloader::MoveToRespawnN()
  */
 void ObjectGridUnloader::MoveToRespawnCell(uint32 cellX, uint32 cellY)
 {
-    ObjectGridRespawnMover mover;
+    ObjectGridRespawnMover mover(true);
     mover.Move(i_grid(cellX, cellY));
 }
 
