@@ -1322,6 +1322,17 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) moved in grid[%u,%u] from cell[%u,%u] to cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.CellX(), new_cell.CellY());
         NGridType* oldGrid = getNGrid(old_cell.GridX(), old_cell.GridY());
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
+
+        // B-Cell accretion: an active anchor moving inside a partially-loaded
+        // (ENVELOPE) grid must have its new 3x3 envelope resident before it lands.
+        if (c->IsActiveObject()
+            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isGridObjectDataLoaded())
+        {
+            EnsureCellEnvelopeLoaded(new_cell);
+            DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
+        }
+
         RemoveFromGrid(c, oldGrid, old_cell);
         AddToGrid(c, newGrid, new_cell);
         c->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
