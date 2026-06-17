@@ -1539,6 +1539,19 @@ bool Map::HasPlayerInOrAroundGrid(uint32 gridX, uint32 gridY) const
 }
 
 /**
+ * @brief Read-only: true if the specific cell containing (x,y) has its DB objects loaded.
+ *
+ * Unlike IsLoaded()/loaded() (which report the whole-grid FULL flag), this is true for a
+ * single envelope cell in an otherwise-partial grid. Never loads anything.
+ */
+bool Map::IsCellLoaded(float x, float y) const
+{
+    Cell cell(MaNGOS::ComputeCellPair(x, y));
+    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+    return grid && grid->isCellObjectDataLoaded(cell.CellX(), cell.CellY());
+}
+
+/**
  * @brief Tears down a single cell's DB objects (B-Cell unload-side primitive).
  *
  * Mirrors the grid-unload sequence (stop → respawn-relocate → unload) but scoped
