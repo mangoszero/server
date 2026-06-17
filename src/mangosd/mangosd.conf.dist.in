@@ -958,6 +958,15 @@ TalentsInspecting                 = 1
 #
 ################################################################################
 
+#    LivingWorld.CellEnvelopeLoad
+#        EXPERIMENTAL (default 0). When 1, a LivingWorld anchor with no player
+#        nearby force-loads only its 3x3 cell envelope (following it as it moves)
+#        instead of its whole 256-cell grid, reducing resident memory. A player
+#        entering or seeing the grid still loads it fully. Requires
+#        LivingWorld.AnchorPolicyMask to select anchors. Continent maps only.
+#        Default: 0 (off — whole-grid load, unchanged behaviour)
+
+LivingWorld.CellEnvelopeLoad = 0
 LivingWorld.AnchorPolicyMask              = 0
 
 ################################################################################
