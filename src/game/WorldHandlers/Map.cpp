@@ -529,7 +529,20 @@ Map::EnsureGridLoadedAtEnter(const Cell& cell, Player* player)
 {
     NGridType* grid;
 
-    if (EnsureGridLoaded(cell))
+    bool useEnvelope = (player == NULL) && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD);
+    bool loadedNow = false;
+
+    if (useEnvelope)
+    {
+        EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
+        loadedNow = EnsureCellEnvelopeLoaded(cell);
+    }
+    else
+    {
+        loadedNow = EnsureGridLoaded(cell);
+    }
+
+    if (loadedNow)
     {
         grid = getNGrid(cell.GridX(), cell.GridY());
 
@@ -1818,7 +1831,7 @@ void Map::AddToActive(WorldObject* obj)
 {
     m_activeNonPlayers.insert(obj);
     Cell cell = Cell(MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY()));
-    EnsureGridLoaded(cell);
+    EnsureGridLoadedAtEnter(cell); // player==null → envelope when CellEnvelopeLoad is on
 
     // also not allow unloading spawn grid to prevent creating creature clone at load
     if (obj->GetTypeId() == TYPEID_UNIT)
