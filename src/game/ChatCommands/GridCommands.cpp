@@ -181,8 +181,14 @@ bool ChatHandler::HandleGridInfoCommand(char* args)
     bool isFull = player->GetMap()->IsGridLoaded(gridX, gridY);
     uint32 loadedCells = player->GetMap()->GetGridLoadedCellCount(gridX, gridY);
     const char* lwState = "UNLOADED";
-    if (isFull)         { lwState = "FULL"; }
-    else if (isEnv)     { lwState = "ENVELOPE"; }
+    if (isFull)
+    {
+        lwState = "FULL";
+    }
+    else if (isEnv)
+    {
+        lwState = "ENVELOPE";
+    }
 
     PSendSysMessage("[LivingWorld] grid occupancy (static DB spawn-definition, "
                     "not live objects): map=%u grid=(%u,%u) loaded=%s",
