@@ -1343,9 +1343,14 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
             && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
             && !newGrid->isGridObjectDataLoaded())
         {
-            EnsureCellEnvelopeLoaded(new_cell);
-            ++m_cellEnvStats.accretions;
-            DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
+            // Count/log accretion only when the move actually loaded NEW envelope cells.
+            // Otherwise it fires on every boundary crossing (re-entering already-loaded
+            // route cells), flooding the log and inflating the counter to "steps taken".
+            if (EnsureCellEnvelopeLoaded(new_cell))
+            {
+                ++m_cellEnvStats.accretions;
+                DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
+            }
         }
 
         RemoveFromGrid(c, oldGrid, old_cell);
