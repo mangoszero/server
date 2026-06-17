@@ -1267,7 +1267,7 @@ void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
                 continue;
             }
             NGridType* ng = getNGrid(uint32(nx), uint32(ny));
-            if (ng && !ng->isGridObjectDataLoaded())
+            if (ng && ng->loadedCellCount() > 0 && !ng->isGridObjectDataLoaded())
             {
                 Cell promoteCell(CellPair(uint32(nx) * MAX_NUMBER_OF_CELLS, uint32(ny) * MAX_NUMBER_OF_CELLS));
                 EnsureGridLoaded(promoteCell);
@@ -1453,7 +1453,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
                     bool alreadyPending = false;
                     for (const auto& p : m_pendingCellUnloads)
                     {
-                        if (p.grid == vg && p.cellX == vacated.CellX() && p.cellY == vacated.CellY())
+                        if (p.gridX == vacated.GridX() && p.gridY == vacated.GridY() && p.cellX == vacated.CellX() && p.cellY == vacated.CellY())
                         {
                             alreadyPending = true;
                             break;
@@ -1461,7 +1461,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
                     }
                     if (!alreadyPending)
                     {
-                        m_pendingCellUnloads.push_back({vg, vacated.CellX(), vacated.CellY()});
+                        m_pendingCellUnloads.push_back({vacated.GridX(), vacated.GridY(), vacated.CellX(), vacated.CellY()});
                     }
                     ++m_cellEnvStats.trailingUnloads;
                 }
@@ -1523,7 +1523,7 @@ void Map::DowngradeGridToEnvelope(NGridType* grid, uint32 gridX, uint32 gridY)
             {
                 continue;
             }
-            m_pendingCellUnloads.push_back({grid, cx, cy});
+            m_pendingCellUnloads.push_back({gridX, gridY, cx, cy});
         }
     }
 
@@ -1664,19 +1664,22 @@ void Map::ProcessPendingCellUnloads()
 {
     for (const auto& entry : m_pendingCellUnloads)
     {
-        if (!entry.grid)
+        // Re-resolve the grid by coords: it may have been unloaded (and the NGrid
+        // freed) between enqueue and drain, so a stored raw pointer could dangle.
+        NGridType* grid = getNGrid(entry.gridX, entry.gridY);
+        if (!grid)
         {
             continue;
         }
-        if (!entry.grid->isCellObjectDataLoaded(entry.cellX, entry.cellY))
+        if (!grid->isCellObjectDataLoaded(entry.cellX, entry.cellY))
         {
             continue;
         }
-        if (IsCellAnchorProtected(entry.grid->getX(), entry.grid->getY(), entry.cellX, entry.cellY))
+        if (IsCellAnchorProtected(entry.gridX, entry.gridY, entry.cellX, entry.cellY))
         {
             continue;
         }
-        UnloadCell(entry.grid, entry.cellX, entry.cellY);
+        UnloadCell(grid, entry.cellX, entry.cellY);
     }
     m_pendingCellUnloads.clear();
 }

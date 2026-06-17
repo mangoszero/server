@@ -479,7 +479,8 @@ class Map : public GridRefManager<NGridType>
 
         struct PendingCellUnload
         {
-            NGridType* grid;
+            uint32 gridX;
+            uint32 gridY;
             uint32 cellX;
             uint32 cellY;
         };
