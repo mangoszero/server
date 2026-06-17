@@ -287,6 +287,11 @@ class NGrid
          *
          * @param pLoaded
          */
+        void markGridObjectDataLoading()
+        {
+            i_GridObjectDataLoaded = true;
+        }
+
         void setGridObjectDataLoaded(bool pLoaded)
         {
             i_GridObjectDataLoaded = pLoaded;

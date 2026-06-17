@@ -590,10 +590,11 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     if (!isGridObjectDataLoaded(cell.GridX(), cell.GridY()))
     {
         bool wasEnvelope = (grid->loadedCellCount() > 0);
+        grid->markGridObjectDataLoading(); // re-entrancy guard (upstream semantics)
         ObjectGridLoader loader(*grid, this, cell);
         loader.LoadN(); // loads every not-yet-loaded cell (fills an ENVELOPE grid's remainder)
 
-        // mark the whole grid FULL only after loading (sets all per-cell bits)
+        // finalise FULL bitset (idempotent; ensures all 256 bits set even though LoadN already set them)
         setGridObjectDataLoaded(true, cell.GridX(), cell.GridY());
 
         if (wasEnvelope && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
