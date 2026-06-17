@@ -1588,6 +1588,10 @@ bool Map::IsCellLoaded(float x, float y) const
  * to one cell, and does NOT delete the NGrid or unload terrain. Idempotent: a no-op
  * on an already-unloaded cell. Callers MUST ensure the cell is anchor/player-free
  * (see IsCellAnchorProtected) before calling.
+ *
+ * NOTE: Resurrectable player corpses are world objects (WorldTypeMapContainer) and
+ * are NOT touched by this cell teardown — only GridTypeMapContainer objects are
+ * unloaded. Verified: bones in the grid container are cleaned up; corpses survive.
  */
 void Map::UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY)
 {
