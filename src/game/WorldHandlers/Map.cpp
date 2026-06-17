@@ -535,7 +535,7 @@ Map::EnsureGridLoadedAtEnter(const Cell& cell, Player* player)
 {
     NGridType* grid;
 
-    bool useEnvelope = (player == NULL) && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD);
+    bool useEnvelope = (player == NULL) && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD) && IsContinent();
     bool loadedNow = false;
 
     if (useEnvelope)
