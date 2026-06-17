@@ -601,5 +601,17 @@ template<class T, class CONTAINER>
         EnsureGridLoaded(cell);
         getNGrid(x, y)->Visit(cell_x, cell_y, visitor);
     }
+    else if (NGridType* ng = getNGrid(x, y))
+    {
+        // B-Cell: the grid is not fully loaded, but this individual cell may be resident
+        // as part of an anchor's envelope. Tick its objects (AI/movement/respawn) in place
+        // WITHOUT promoting the grid to FULL -- otherwise envelope grids would be resident
+        // yet never updated (anchors frozen, no background respawn). Visiting only the
+        // already-loaded cell keeps it partial. No-op when no envelope cells exist.
+        if (ng->isCellObjectDataLoaded(cell_x, cell_y))
+        {
+            ng->Visit(cell_x, cell_y, visitor);
+        }
+    }
 }
 #endif
