@@ -361,21 +361,40 @@ ObjectGridLoader::Load(GridType& grid)
 }
 
 /**
+ * @brief Loads a single cell's DB-backed objects into the grid (idempotent).
+ *
+ * Marks the cell loaded BEFORE visiting (mirrors the grid-level guard in
+ * Map::EnsureGridLoaded) so a re-entrant load triggered while loading cannot
+ * load the same cell twice. Safe to call on an already-loaded cell (no-op).
+ */
+void ObjectGridLoader::LoadCell(uint32 cellX, uint32 cellY)
+{
+    if (i_grid.isCellObjectDataLoaded(cellX, cellY))
+    {
+        return;
+    }
+    i_grid.setCellObjectDataLoaded(cellX, cellY, true);
+
+    i_cell.data.Part.cell_x = cellX;
+    i_cell.data.Part.cell_y = cellY;
+
+    GridLoaderType loader;
+    loader.Load(i_grid(cellX, cellY), *this);
+}
+
+/**
  * @brief Loads all cells in the current grid and reports loaded object counts.
  */
 void ObjectGridLoader::LoadN(void)
 {
     i_gameObjects = 0; i_creatures = 0; i_corpses = 0;
     i_cell.data.Part.cell_y = 0;
-    GridLoaderType loader;
 
     for (unsigned int x = 0; x < MAX_NUMBER_OF_CELLS; ++x)
     {
-        i_cell.data.Part.cell_x = x;
         for (unsigned int y = 0; y < MAX_NUMBER_OF_CELLS; ++y)
         {
-            i_cell.data.Part.cell_y = y;
-            loader.Load(i_grid(x, y), *this);
+            LoadCell(x, y);
         }
     }
     DEBUG_LOG("%u GameObjects, %u Creatures, and %u Corpses/Bones loaded for grid %u on map %u", i_gameObjects, i_creatures, i_corpses, i_grid.GetGridId(), i_map->GetId());

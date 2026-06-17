@@ -52,6 +52,7 @@ class ObjectGridLoader
         void Visit(DynamicObjectMapType&) {}
 
         void LoadN(void);
+        void LoadCell(uint32 cellX, uint32 cellY);
 
     private:
         Cell i_cell;
