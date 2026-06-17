@@ -948,7 +948,10 @@ TalentsInspecting                 = 1
 #        0 = off (default; behavior identical to upstream)
 #        1 = continent world bosses & faction/capital leaders (creature rank = WORLDBOSS)
 #        2 = continent flight masters (npcflag FLIGHTMASTER)
-#        3 = both
+#        3 = both of the above
+#        4 = continent settlement defenders (defender-faction waypoint patrollers,
+#            e.g. town mountaineers/guards; combat-capable, leave route to fight & return)
+#        7 = all of the above
 #        Default: 0
 #
 ################################################################################
