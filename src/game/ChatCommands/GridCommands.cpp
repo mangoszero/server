@@ -324,6 +324,8 @@ bool ChatHandler::HandleGridLwStatsCommand(char* /*args*/)
                     stats.envelopeLoads, stats.accretions, stats.fills);
     PSendSysMessage("  anomalies: anchorOutside=%u scanPartial=%u",
                     stats.anomalyAnchorOutside, stats.anomalyScanPartial);
+    PSendSysMessage("  unload: cellsUnloaded=%u downgrades=%u trailingUnloads=%u",
+                    stats.cellsUnloaded, stats.downgrades, stats.trailingUnloads);
 
     return true;
 }
