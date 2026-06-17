@@ -23,7 +23,7 @@ INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0)
 {
 }
 
@@ -122,8 +122,25 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
+    // Resume from the bot after the one last examined so a pass that stops early on
+    // its time budget or per-interval cap still works its way through every bot over
+    // successive passes instead of repeatedly re-processing the head of the list.
     int botProcessed = 0;
-    for (list<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
+    list<uint32>::iterator i = bots.begin();
+    if (m_processBotCursor)
+    {
+        list<uint32>::iterator cursor = find(bots.begin(), bots.end(), m_processBotCursor);
+        if (cursor != bots.end())
+        {
+            i = cursor;
+            if (++i == bots.end())
+            {
+                i = bots.begin();
+            }
+        }
+    }
+
+    for (size_t examined = 0; examined < bots.size(); ++examined)
     {
         if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
         {
@@ -132,6 +149,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
 
         uint32 bot = *i;
+        m_processBotCursor = bot;
+
         if (ProcessBot(bot))
         {
             botProcessed++;
@@ -140,6 +159,11 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         if (botProcessed >= randomBotsPerInterval)
         {
             break;
+        }
+
+        if (++i == bots.end())
+        {
+            i = bots.begin();
         }
     }
 
