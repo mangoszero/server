@@ -704,6 +704,7 @@ bool Map::Add(Player* player)
     CellPair p = MaNGOS::ComputeCellPair(player->GetPositionX(), player->GetPositionY());
     Cell cell(p);
     EnsureGridLoadedAtEnter(cell, player);
+    PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     player->AddToWorld();
 
     SendInitSelf(player);
@@ -1244,6 +1245,38 @@ template<class T>
  * @param z The destination Z coordinate.
  * @param orientation The destination facing angle.
  */
+void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
+{
+    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    {
+        return;
+    }
+
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            if (dx == 0 && dy == 0)
+            {
+                continue;
+            }
+            int nx = int(gridX) + dx;
+            int ny = int(gridY) + dy;
+            if (nx < 0 || nx >= MAX_NUMBER_OF_GRIDS || ny < 0 || ny >= MAX_NUMBER_OF_GRIDS)
+            {
+                continue;
+            }
+            NGridType* ng = getNGrid(uint32(nx), uint32(ny));
+            if (ng && !ng->isGridObjectDataLoaded())
+            {
+                Cell promoteCell(CellPair(uint32(nx) * MAX_NUMBER_OF_CELLS, uint32(ny) * MAX_NUMBER_OF_CELLS));
+                EnsureGridLoaded(promoteCell);
+                ng->SetGridState(GRID_STATE_ACTIVE);
+            }
+        }
+    }
+}
+
 void Map::PlayerRelocation(Player* player, float x, float y, float z, float orientation)
 {
     MANGOS_ASSERT(player);
@@ -1271,6 +1304,7 @@ void Map::PlayerRelocation(Player* player, float x, float y, float z, float orie
         {
             EnsureGridLoadedAtEnter(new_cell, player);
         }
+        PromoteEnvelopeNeighboursToFull(new_cell.GridX(), new_cell.GridY());
 
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
         player->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
