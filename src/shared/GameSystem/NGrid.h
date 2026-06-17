@@ -267,6 +267,13 @@ class NGrid
          */
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
 
+        /**
+         * @brief True if this cell has been loaded/scanned (FULL grid or envelope cell).
+         *
+         * A set bit means the cell is "covered" by a FULL-grid load or was explicitly
+         * envelope-loaded; it does NOT mean the cell contains DB objects. Empty cells in
+         * a FULL grid have their bit set too. Use this for residency checks, not occupancy.
+         */
         bool isCellObjectDataLoaded(uint32 x, uint32 y) const
         {
             return i_cellLoaded.test(x * N + y);
