@@ -1509,6 +1509,36 @@ bool Map::IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32
 }
 
 /**
+ * @brief Returns true if a player is in the given grid or any of its 8 neighbours.
+ *
+ * A player's visibility force-loads the grids it can see into (<= 1 grid away), so a
+ * grid is "needed FULL" if any player is in or adjacent to it -- not only when a player
+ * is physically inside it. Used to gate the B-Cell FULL->ENVELOPE downgrade so a grid a
+ * nearby player can see is never torn down (which otherwise thrashes load/unload).
+ */
+bool Map::HasPlayerInOrAroundGrid(uint32 gridX, uint32 gridY) const
+{
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            int gx = int(gridX) + dx;
+            int gy = int(gridY) + dy;
+            if (gx < 0 || gy < 0 || gx >= int(MAX_NUMBER_OF_GRIDS) || gy >= int(MAX_NUMBER_OF_GRIDS))
+            {
+                continue;
+            }
+            NGridType* g = getNGrid(uint32(gx), uint32(gy));
+            if (g && g->getPlayerCount() > 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Tears down a single cell's DB objects (B-Cell unload-side primitive).
  *
  * Mirrors the grid-unload sequence (stop → respawn-relocate → unload) but scoped

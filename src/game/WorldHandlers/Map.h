@@ -402,6 +402,7 @@ class Map : public GridRefManager<NGridType>
         }
 
         bool IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32 cellY) const;
+        bool HasPlayerInOrAroundGrid(uint32 gridX, uint32 gridY) const;
         void DowngradeGridToEnvelope(NGridType* grid, uint32 gridX, uint32 gridY);
 
 #ifdef ENABLE_ELUNA
