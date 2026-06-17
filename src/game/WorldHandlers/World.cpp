@@ -825,6 +825,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK, "LivingWorld.AnchorPolicyMask", 0);
     setConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD, "LivingWorld.CellEnvelopeLoad", false);
+    setConfig(CONFIG_UINT32_LIVINGWORLD_CELL_ENVELOPE_DOWNGRADE_DELAY, "LivingWorld.CellEnvelopeDowngradeDelay", 300000);
 
     setConfigMinMax(CONFIG_INT32_QUEST_LOW_LEVEL_HIDE_DIFF, "Quests.LowLevelHideDiff", 4, -1, MAX_LEVEL);
     setConfigMinMax(CONFIG_INT32_QUEST_HIGH_LEVEL_HIDE_DIFF, "Quests.HighLevelHideDiff", 7, -1, MAX_LEVEL);

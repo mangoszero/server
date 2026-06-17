@@ -965,8 +965,17 @@ TalentsInspecting                 = 1
 #        entering or seeing the grid still loads it fully. Requires
 #        LivingWorld.AnchorPolicyMask to select anchors. Continent maps only.
 #        Default: 0 (off — whole-grid load, unchanged behaviour)
+#
+#    LivingWorld.CellEnvelopeDowngradeDelay
+#        Milliseconds a FULL anchor grid stays fully loaded after its LAST player
+#        leaves, before downgrading back to its anchor 3x3 envelope (reclaiming the
+#        rest of the grid's memory). Only applies when CellEnvelopeLoad = 1 and the
+#        grid still holds an anchor; anchorless grids unload via GridCleanUpDelay as
+#        usual. Lower = reclaim sooner but re-fill if players return; higher = smoother.
+#        Default: 300000 (5 minutes). 0 = downgrade at the next grid-state check.
 
 LivingWorld.CellEnvelopeLoad = 0
+LivingWorld.CellEnvelopeDowngradeDelay = 300000
 LivingWorld.AnchorPolicyMask              = 0
 
 ################################################################################
