@@ -415,6 +415,16 @@ void ObjectGridUnloader::MoveToRespawnN()
     }
 }
 
+/**
+ * @brief Moves respawnable objects in a single cell back to their respawn state
+ *        (cell-scoped analog of MoveToRespawnN, used by B-Cell per-cell teardown).
+ */
+void ObjectGridUnloader::MoveToRespawnCell(uint32 cellX, uint32 cellY)
+{
+    ObjectGridRespawnMover mover;
+    mover.Move(i_grid(cellX, cellY));
+}
+
 void
 ObjectGridUnloader::Unload(GridType& grid)
 {

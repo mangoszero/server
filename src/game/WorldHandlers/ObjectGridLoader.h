@@ -69,6 +69,7 @@ class ObjectGridUnloader
         ObjectGridUnloader(NGridType& grid) : i_grid(grid) {}
 
         void MoveToRespawnN();
+        void MoveToRespawnCell(uint32 cellX, uint32 cellY);
         void UnloadN()
         {
             GridLoaderType loader;
