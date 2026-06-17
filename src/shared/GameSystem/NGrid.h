@@ -359,6 +359,17 @@ class NGrid
          */
         void UpdateTimeTracker(time_t diff) { i_GridInfo.UpdateTimeTracker(diff); }
 
+        uint16 getPlayerCount() const { return i_playerCount; }
+        void incPlayerCount() { ++i_playerCount; }
+        void decPlayerCount()
+        {
+            if (i_playerCount)
+            {
+                --i_playerCount;
+            }
+        }
+        TimeTracker& getDowngradeTimer() { return i_downgradeTimer; }
+
         template<class SPECIFIC_OBJECT>
 
         /**
@@ -495,6 +506,8 @@ class NGrid
         GridType i_cells[N][N]; /**< TODO */
         bool i_GridObjectDataLoaded; /**< TODO */
         std::bitset<N * N> i_cellLoaded; /**< per-cell DB-object-loaded flags; bit (x*N+y) set ⇔ cell (x,y) instantiated */
+        uint16 i_playerCount = 0;
+        TimeTracker i_downgradeTimer;
 };
 
 #endif

@@ -321,6 +321,7 @@ template<>
 void Map::AddToGrid(Player* obj, NGridType* grid, Cell const& cell)
 {
     (*grid)(cell.CellX(), cell.CellY()).AddWorldObject(obj);
+    grid->incPlayerCount();
 }
 
 /**
@@ -427,6 +428,11 @@ template<>
 void Map::RemoveFromGrid(Player* obj, NGridType* grid, Cell const& cell)
 {
     (*grid)(cell.CellX(), cell.CellY()).RemoveWorldObject(obj);
+    grid->decPlayerCount();
+    if (grid->getPlayerCount() == 0)
+    {
+        grid->getDowngradeTimer().Reset(sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_CELL_ENVELOPE_DOWNGRADE_DELAY));
+    }
 }
 
 /**
