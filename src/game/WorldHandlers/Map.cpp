@@ -1329,12 +1329,17 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
     Cell const& old_cell = c->GetCurrentCell();
     if (old_cell.DiffGrid(new_cell))
     {
-        if (!c->IsActiveObject() && !loaded(new_cell.gridPair()))
+        NGridType* destGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
+        bool destCellResident = destGrid && destGrid->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY());
+        if (!c->IsActiveObject() && !loaded(new_cell.gridPair()) && !destCellResident)
         {
             DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) attempt move from grid[%u,%u]cell[%u,%u] to unloaded grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
             return false;
         }
-        EnsureGridLoadedAtEnter(new_cell);
+        if (!destCellResident)
+        {
+            EnsureGridLoadedAtEnter(new_cell);
+        }
     }
 
     if (old_cell != new_cell)
