@@ -648,7 +648,8 @@ bool Map::EnsureCellEnvelopeLoaded(const Cell& centerCell)
 
             ObjectGridLoader loader(*grid, this, envCell);
             loader.LoadCell(envCell.CellX(), envCell.CellY());
-            sObjectAccessor.AddCorpsesToGrid(gp, (*grid)(envCell.CellX(), envCell.CellY()), this);
+            // NOTE: no AddCorpsesToGrid here — envelope grids are background/player-less;
+            // corpses are transient and the FULL-load path adds them when a player enters.
             didWork = true;
             ++m_cellEnvStats.envelopeLoads;
 

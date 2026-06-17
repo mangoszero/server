@@ -322,8 +322,8 @@ bool ChatHandler::HandleGridLwStatsCommand(char* /*args*/)
     PSendSysMessage("[LivingWorld] cell-envelope stats for map %u:", player->GetMapId());
     PSendSysMessage("  loads=%u accretions=%u fills=%u",
                     stats.envelopeLoads, stats.accretions, stats.fills);
-    PSendSysMessage("  anomalies: anchorOutside=%u touchUnloaded=%u scanPartial=%u",
-                    stats.anomalyAnchorOutside, stats.anomalyTouchUnloaded, stats.anomalyScanPartial);
+    PSendSysMessage("  anomalies: anchorOutside=%u scanPartial=%u",
+                    stats.anomalyAnchorOutside, stats.anomalyScanPartial);
 
     return true;
 }

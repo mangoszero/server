@@ -380,7 +380,6 @@ class Map : public GridRefManager<NGridType>
             uint32 accretions = 0;        // same-grid accretion events
             uint32 fills = 0;             // ENVELOPE→FULL fills triggered by players
             uint32 anomalyAnchorOutside = 0;
-            uint32 anomalyTouchUnloaded = 0;
             uint32 anomalyScanPartial = 0;
         };
         CellEnvelopeStats const& GetCellEnvelopeStats() const { return m_cellEnvStats; }
