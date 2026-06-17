@@ -395,6 +395,7 @@ class Map : public GridRefManager<NGridType>
         bool loaded(const GridPair&) const;
         void EnsureGridCreated(const GridPair&);
         bool EnsureGridLoaded(Cell const&);
+        bool EnsureCellEnvelopeLoaded(const Cell& centerCell);
         void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }

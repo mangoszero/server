@@ -63,6 +63,7 @@
 #include "Weather.h"
 #include "Transports.h"
 #include "ObjectGridLoader.h"
+#include "LivingWorldCellEnvelope.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -581,6 +582,61 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     }
 
     return false;
+}
+
+/**
+ * @brief Loads only the 3x3 cell envelope around centerCell (B-Cell anchor path).
+ *
+ * Builds the 3x3 block in GLOBAL cell coordinates so it spills correctly across
+ * grid boundaries, groups cells by grid, ensures each touched grid exists, and
+ * loads just those cells (idempotent). Leaves grids in a partial (ENVELOPE) state
+ * — never calls setGridObjectDataLoaded(true). Returns true if anything new was
+ * created or loaded (so the caller can set ACTIVE state / reset expiry).
+ */
+bool Map::EnsureCellEnvelopeLoaded(const Cell& centerCell)
+{
+    uint32 centerX = LwGridLocalToGlobalCell(centerCell.GridX(), centerCell.CellX());
+    uint32 centerY = LwGridLocalToGlobalCell(centerCell.GridY(), centerCell.CellY());
+
+    bool didWork = false;
+
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            uint32 gcx = LwClampGlobalCell(int(centerX) + dx);
+            uint32 gcy = LwClampGlobalCell(int(centerY) + dy);
+
+            CellPair envPair(gcx, gcy);
+            Cell envCell(envPair);
+
+            GridPair gp(envCell.GridX(), envCell.GridY());
+            if (!getNGrid(gp.x_coord, gp.y_coord))
+            {
+                EnsureGridCreated(gp);
+                didWork = true;
+            }
+
+            NGridType* grid = getNGrid(gp.x_coord, gp.y_coord);
+            if (grid->isGridObjectDataLoaded())
+            {
+                continue; // grid already FULL — envelope cells already present
+            }
+            if (grid->isCellObjectDataLoaded(envCell.CellX(), envCell.CellY()))
+            {
+                continue;
+            }
+
+            ObjectGridLoader loader(*grid, this, envCell);
+            loader.LoadCell(envCell.CellX(), envCell.CellY());
+            sObjectAccessor.AddCorpsesToGrid(gp, (*grid)(envCell.CellX(), envCell.CellY()), this);
+            didWork = true;
+
+            DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] loaded cell grid[%u,%u]cell[%u,%u] (global %u,%u)", gp.x_coord, gp.y_coord, envCell.CellX(), envCell.CellY(), gcx, gcy);
+        }
+    }
+
+    return didWork;
 }
 
 /**
