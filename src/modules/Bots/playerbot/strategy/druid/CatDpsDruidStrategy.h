@@ -20,7 +20,7 @@ namespace ai
             virtual NextAction** getDefaultActions();
             virtual int GetType()
             {
-                return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_MELEE;
+                return STRATEGY_TYPE_COMBAT | STRATEGY_TYPE_DPS | STRATEGY_TYPE_MELEE;
             }
     };
 
