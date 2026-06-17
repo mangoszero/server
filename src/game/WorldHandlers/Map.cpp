@@ -1072,6 +1072,8 @@ void Map::Update(const uint32& t_diff)
         }
     }
 
+    ProcessPendingCellUnloads();
+
     ///- Process necessary scripts
     if (!m_scriptSchedule.empty())
     {
@@ -1414,7 +1416,19 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
                         continue;                                     // another anchor still needs it
                     }
 
-                    UnloadCell(vg, vacated.CellX(), vacated.CellY());
+                    bool alreadyPending = false;
+                    for (const auto& p : m_pendingCellUnloads)
+                    {
+                        if (p.grid == vg && p.cellX == vacated.CellX() && p.cellY == vacated.CellY())
+                        {
+                            alreadyPending = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyPending)
+                    {
+                        m_pendingCellUnloads.push_back({vg, vacated.CellX(), vacated.CellY()});
+                    }
                     ++m_cellEnvStats.trailingUnloads;
                 }
             }
@@ -1475,7 +1489,7 @@ void Map::DowngradeGridToEnvelope(NGridType* grid, uint32 gridX, uint32 gridY)
             {
                 continue;
             }
-            UnloadCell(grid, cx, cy);
+            m_pendingCellUnloads.push_back({grid, cx, cy});
         }
     }
 
@@ -1600,6 +1614,33 @@ void Map::UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY)
     ++m_cellEnvStats.cellsUnloaded;
 
     DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] unloaded cell grid[%u,%u]cell[%u,%u] on map %u", grid->getX(), grid->getY(), cellX, cellY, i_id);
+}
+
+/**
+ * @brief Drain any cell-unload requests queued during the update iteration.
+ *
+ * Re-checks residency and anchor protection at drain time because state may
+ * have changed since the request was enqueued.
+ */
+void Map::ProcessPendingCellUnloads()
+{
+    for (const auto& entry : m_pendingCellUnloads)
+    {
+        if (!entry.grid)
+        {
+            continue;
+        }
+        if (!entry.grid->isCellObjectDataLoaded(entry.cellX, entry.cellY))
+        {
+            continue;
+        }
+        if (IsCellAnchorProtected(entry.grid->getX(), entry.grid->getY(), entry.cellX, entry.cellY))
+        {
+            continue;
+        }
+        UnloadCell(entry.grid, entry.cellX, entry.cellY);
+    }
+    m_pendingCellUnloads.clear();
 }
 
 /**

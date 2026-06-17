@@ -429,6 +429,7 @@ class Map : public GridRefManager<NGridType>
         bool EnsureGridLoaded(Cell const&);
         bool EnsureCellEnvelopeLoaded(const Cell& centerCell);
         void UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY);
+        void ProcessPendingCellUnloads();
         void EnsureGridLoadedAtEnter(Cell const&, Player* player = nullptr);
 
         void buildNGridLinkage(NGridType* pNGridType) { pNGridType->link(this); }
@@ -474,6 +475,14 @@ class Map : public GridRefManager<NGridType>
     private:
         time_t i_gridExpiry;
         CellEnvelopeStats m_cellEnvStats;
+
+        struct PendingCellUnload
+        {
+            NGridType* grid;
+            uint32 cellX;
+            uint32 cellY;
+        };
+        std::vector<PendingCellUnload> m_pendingCellUnloads;
 
         NGridType* i_grids[MAX_NUMBER_OF_GRIDS][MAX_NUMBER_OF_GRIDS];
 
