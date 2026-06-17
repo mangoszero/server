@@ -1358,6 +1358,51 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
             ++m_cellEnvStats.anomalyAnchorOutside;
             sLog.outError("[CellEnvelope][ANOMALY] active GUID %u Entry %u landed in UNLOADED grid[%u,%u]cell[%u,%u] on map %u", c->GetGUIDLow(), c->GetEntry(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY(), i_id);
         }
+
+        // B-Cell trailing unload: cells in the anchor's OLD 3x3 envelope but not its
+        // NEW one are candidates to reclaim, unless another anchor still covers them.
+        if (c->IsActiveObject()
+            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isGridObjectDataLoaded())          // ENVELOPE only (never on a FULL/player grid)
+        {
+            uint32 oldCX = LwGridLocalToGlobalCell(old_cell.GridX(), old_cell.CellX());
+            uint32 oldCY = LwGridLocalToGlobalCell(old_cell.GridY(), old_cell.CellY());
+            uint32 newCX = LwGridLocalToGlobalCell(new_cell.GridX(), new_cell.CellX());
+            uint32 newCY = LwGridLocalToGlobalCell(new_cell.GridY(), new_cell.CellY());
+
+            for (int dx = -1; dx <= 1; ++dx)
+            {
+                for (int dy = -1; dy <= 1; ++dy)
+                {
+                    uint32 gcx = LwClampGlobalCell(int(oldCX) + dx);
+                    uint32 gcy = LwClampGlobalCell(int(oldCY) + dy);
+
+                    // still inside the NEW envelope? keep it.
+                    if (gcx + 1 >= newCX && gcx <= newCX + 1 && gcy + 1 >= newCY && gcy <= newCY + 1)
+                    {
+                        continue;
+                    }
+
+                    Cell vacated(CellPair(gcx, gcy));
+                    NGridType* vg = getNGrid(vacated.GridX(), vacated.GridY());
+                    if (!vg || vg->isGridObjectDataLoaded())          // gone or FULL → leave it
+                    {
+                        continue;
+                    }
+                    if (!vg->isCellObjectDataLoaded(vacated.CellX(), vacated.CellY()))
+                    {
+                        continue;
+                    }
+                    if (IsCellAnchorProtected(vacated.GridX(), vacated.GridY(), vacated.CellX(), vacated.CellY()))
+                    {
+                        continue;                                     // another anchor still needs it
+                    }
+
+                    UnloadCell(vg, vacated.CellX(), vacated.CellY());
+                    ++m_cellEnvStats.trailingUnloads;
+                }
+            }
+        }
     }
     return true;
 }
