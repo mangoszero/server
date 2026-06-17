@@ -1396,6 +1396,35 @@ bool Map::CreatureRespawnRelocation(Creature* c)
 }
 
 /**
+ * @brief Returns a FULL anchor grid to ENVELOPE state: tears down every loaded cell
+ *        NOT covered by an active anchor's 3x3 envelope, then clears the grid-FULL
+ *        flag. Reclaims the memory a player visit had promoted to full.
+ */
+void Map::DowngradeGridToEnvelope(NGridType* grid, uint32 gridX, uint32 gridY)
+{
+    for (uint32 cx = 0; cx < MAX_NUMBER_OF_CELLS; ++cx)
+    {
+        for (uint32 cy = 0; cy < MAX_NUMBER_OF_CELLS; ++cy)
+        {
+            if (!grid->isCellObjectDataLoaded(cx, cy))
+            {
+                continue;
+            }
+            if (IsCellAnchorProtected(gridX, gridY, cx, cy))
+            {
+                continue;
+            }
+            UnloadCell(grid, cx, cy);
+        }
+    }
+
+    grid->setGridObjectDataLoaded(false); // FULL flag off → ENVELOPE (surviving cells keep their bits)
+    ++m_cellEnvStats.downgrades;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] downgraded grid[%u,%u] to ENVELOPE on map %u (loaded cells now %u)", gridX, gridY, i_id, grid->loadedCellCount());
+}
+
+/**
  * @brief Returns true if the cell lies within any active anchor's 3x3 envelope.
  *
  * Safety check: a cell must NOT be torn down while it is still covered by an

@@ -47,6 +47,7 @@
 #include "GridStates.h"
 #include "ObjectGridLoader.h"
 #include "Log.h"
+#include "World.h"
 
 /**
  * @brief Destroy grid state
@@ -110,6 +111,21 @@ ActiveState::Update(Map& m, NGridType& grid, GridInfo& info, const uint32& x, co
         else
         {
             m.ResetGridExpiry(grid, 0.1f);
+        }
+
+        // B-Cell: downgrade a FULL anchor grid back to ENVELOPE once its last player
+        // has been gone for CellEnvelopeDowngradeDelay (the grid stays loaded via the
+        // anchor's unload-lock, so normal unload never reclaims the non-envelope cells).
+        if (sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && grid.isGridObjectDataLoaded()              // FULL
+            && grid.ActiveObjectsInGrid() > 0             // has an anchor
+            && grid.getPlayerCount() == 0)                // no players in the grid
+        {
+            grid.getDowngradeTimer().Update(t_diff);
+            if (grid.getDowngradeTimer().Passed())
+            {
+                m.DowngradeGridToEnvelope(&grid, x, y);
+            }
         }
     }
 }
