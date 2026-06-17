@@ -24,6 +24,7 @@
 
 #include "ObjectMgr.h"
 #include "LivingWorldAnchorPolicy.h"
+#include "MotionGenerators/MotionMaster.h"  // WAYPOINT_MOTION_TYPE
 #include "Database/DatabaseEnv.h"
 #include "Policies/Singleton.h"
 
@@ -1494,6 +1495,7 @@ void ObjectMgr::LoadCreatures()
     const uint32 lwAnchorMask = sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_ANCHOR_MASK);
     uint32 lwWorldBossLeaderCount = 0;
     uint32 lwFlightMasterCount = 0;
+    uint32 lwSettlementDefenderCount = 0;
     uint32 lwAnchorTotal = 0;
 
     do
@@ -1616,7 +1618,9 @@ void ObjectMgr::LoadCreatures()
         {
             AddCreatureToGrid(guid, &data);
 
-            uint32 lwCats = GetLivingWorldAnchorCategories(cInfo, mapEntry) & lwAnchorMask;
+            const bool lwIsWaypoint = (data.movementType == WAYPOINT_MOTION_TYPE);
+            uint32 lwCats = (GetLivingWorldAnchorCategories(cInfo, mapEntry)
+                          |  GetLivingWorldDefenderCategory(cInfo, mapEntry, lwIsWaypoint)) & lwAnchorMask;
             if ((cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE) || lwCats != 0)
             {
                 sLog.outString("Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
@@ -1633,6 +1637,10 @@ void ObjectMgr::LoadCreatures()
                     {
                         ++lwFlightMasterCount;
                     }
+                    if (lwCats & LW_ANCHOR_SETTLEMENT_DEFENDER)
+                    {
+                        ++lwSettlementDefenderCount;
+                    }
                 }
             }
         }
@@ -1644,8 +1652,8 @@ void ObjectMgr::LoadCreatures()
     delete result;
 
     sLog.outString(">> Loaded %zu creatures", mCreatureDataMap.size());
-    sLog.outString("[LivingWorld] anchor policy mask=0x%X: world-boss/leaders=%u, flight-masters=%u, total-anchors=%u (continent-only; instance bosses excluded)",
-        lwAnchorMask, lwWorldBossLeaderCount, lwFlightMasterCount, lwAnchorTotal);
+    sLog.outString("[LivingWorld] anchor policy mask=0x%X: world-boss/leaders=%u, flight-masters=%u, settlement-defenders=%u, total-anchors=%u (continent-only; instance spawns excluded)",
+        lwAnchorMask, lwWorldBossLeaderCount, lwFlightMasterCount, lwSettlementDefenderCount, lwAnchorTotal);
     sLog.outString();
 }
 
