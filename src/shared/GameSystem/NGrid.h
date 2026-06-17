@@ -29,6 +29,7 @@
 #include "GameSystem/GridReference.h"
 #include "Timer.h"
 
+#include <bitset>
 #include <cassert>
 
 /**
@@ -266,12 +267,34 @@ class NGrid
          */
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
 
+        bool isCellObjectDataLoaded(uint32 x, uint32 y) const
+        {
+            return i_cellLoaded.test(x * N + y);
+        }
+
+        void setCellObjectDataLoaded(uint32 x, uint32 y, bool on)
+        {
+            i_cellLoaded.set(x * N + y, on);
+        }
+
+        uint32 loadedCellCount() const
+        {
+            return uint32(i_cellLoaded.count());
+        }
+
         /**
          * @brief
          *
          * @param pLoaded
          */
-        void setGridObjectDataLoaded(bool pLoaded) { i_GridObjectDataLoaded = pLoaded; }
+        void setGridObjectDataLoaded(bool pLoaded)
+        {
+            i_GridObjectDataLoaded = pLoaded;
+            if (pLoaded)
+            {
+                i_cellLoaded.set();
+            }
+        }
 
         /**
          * @brief
@@ -471,6 +494,7 @@ class NGrid
         grid_state_t i_cellstate; /**< TODO */
         GridType i_cells[N][N]; /**< TODO */
         bool i_GridObjectDataLoaded; /**< TODO */
+        std::bitset<N * N> i_cellLoaded; /**< per-cell DB-object-loaded flags; bit (x*N+y) set ⇔ cell (x,y) instantiated */
 };
 
 #endif
