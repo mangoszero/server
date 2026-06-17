@@ -1396,6 +1396,36 @@ bool Map::CreatureRespawnRelocation(Creature* c)
 }
 
 /**
+ * @brief Returns true if the cell lies within any active anchor's 3x3 envelope.
+ *
+ * Safety check: a cell must NOT be torn down while it is still covered by an
+ * active anchor, or it would despawn the anchor itself (or its neighbours).
+ */
+bool Map::IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32 cellY) const
+{
+    uint32 targetGX = LwGridLocalToGlobalCell(gridX, cellX);
+    uint32 targetGY = LwGridLocalToGlobalCell(gridY, cellY);
+
+    for (ActiveNonPlayers::const_iterator it = m_activeNonPlayers.begin(); it != m_activeNonPlayers.end(); ++it)
+    {
+        WorldObject* obj = *it;
+        if (!obj || !obj->IsInWorld())
+        {
+            continue;
+        }
+
+        CellPair cp = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
+        // anchor's 3x3 envelope in global cell coords
+        if (targetGX + 1 >= cp.x_coord && targetGX <= cp.x_coord + 1
+            && targetGY + 1 >= cp.y_coord && targetGY <= cp.y_coord + 1)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Tears down a single cell's DB objects (B-Cell unload-side primitive).
  *
  * Mirrors the grid-unload sequence (stop → respawn-relocate → unload) but scoped

@@ -401,6 +401,8 @@ class Map : public GridRefManager<NGridType>
             return grid ? grid->loadedCellCount() : 0;
         }
 
+        bool IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32 cellY) const;
+
 #ifdef ENABLE_ELUNA
         Eluna* GetEluna() const;
 
