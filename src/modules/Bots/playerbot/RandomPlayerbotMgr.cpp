@@ -14,6 +14,7 @@
 #include "MapManager.h"
 #include "LFGMgr.h"
 #include "Group.h"
+#include "Timer.h"
 
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
@@ -22,7 +23,7 @@ INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
  * It handles the creation, updating, and processing of these bots, ensuring they
  * behave in a way that simulates real player activity.
  */
-RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0)
+RandomPlayerbotMgr::RandomPlayerbotMgr() : PlayerbotHolder(), processTicks(0), m_processBotCursor(0)
 {
 }
 
@@ -85,8 +86,21 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
+    // Pace the pass against a wall-clock budget so a single update tick can not be
+    // monopolised by a burst of bot adds/randomizes/saves. Work that does not fit in
+    // the budget is carried over to the next (soon-rescheduled) pass.
+    uint32 passStart = getMSTime();
+    uint32 budgetMs = sPlayerbotAIConfig.randomBotProcessBudgetMs;
+    bool overBudget = false;
+
     while (botCount++ < maxAllowedBotCount)
     {
+        if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
+        {
+            overBudget = true;
+            break;
+        }
+
         bool alliance = botCount % 2;
         uint32 bot = AddRandomBot(alliance);
         if (bot)
@@ -108,10 +122,35 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         }
     }
 
+    // Resume from the bot after the one last examined so a pass that stops early on
+    // its time budget or per-interval cap still works its way through every bot over
+    // successive passes instead of repeatedly re-processing the head of the list.
     int botProcessed = 0;
-    for (list<uint32>::iterator i = bots.begin(); i != bots.end(); ++i)
+    list<uint32>::iterator i = bots.begin();
+    if (m_processBotCursor)
     {
+        list<uint32>::iterator cursor = find(bots.begin(), bots.end(), m_processBotCursor);
+        if (cursor != bots.end())
+        {
+            i = cursor;
+            if (++i == bots.end())
+            {
+                i = bots.begin();
+            }
+        }
+    }
+
+    for (size_t examined = 0; examined < bots.size(); ++examined)
+    {
+        if (budgetMs && getMSTimeDiff(passStart, getMSTime()) >= budgetMs)
+        {
+            overBudget = true;
+            break;
+        }
+
         uint32 bot = *i;
+        m_processBotCursor = bot;
+
         if (ProcessBot(bot))
         {
             botProcessed++;
@@ -121,10 +160,22 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed)
         {
             break;
         }
+
+        if (++i == bots.end())
+        {
+            i = bots.begin();
+        }
     }
 
-    sLog.outString("%d bots processed. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
-        botProcessed, allianceNewBots, hordeNewBots, playerBots.size(), sPlayerbotAIConfig.randomBotUpdateInterval);
+    // Still work left this pass - come back quickly instead of waiting a full interval.
+    if (overBudget && sPlayerbotAIConfig.randomBotCatchupInterval < sPlayerbotAIConfig.randomBotUpdateInterval)
+    {
+        SetNextCheckDelay(sPlayerbotAIConfig.randomBotCatchupInterval * 1000);
+    }
+
+    sLog.outString("%d bots processed%s. %d alliance and %d horde bots added. %d bots online. Next check in %d seconds",
+        botProcessed, overBudget ? " (budget reached, more pending)" : "", allianceNewBots, hordeNewBots, playerBots.size(),
+        overBudget ? sPlayerbotAIConfig.randomBotCatchupInterval : sPlayerbotAIConfig.randomBotUpdateInterval);
 
     if (processTicks++ == 1)
     {
