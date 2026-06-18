@@ -4,7 +4,7 @@
 
 namespace ai
 {
-    class PartyMemberToDispel : public PartyMemberValue, Qualified
+    class PartyMemberToDispel : public PartyMemberValue, public Qualified
     {
         public:
             PartyMemberToDispel(PlayerbotAI* ai) :
