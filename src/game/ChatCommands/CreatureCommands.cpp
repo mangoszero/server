@@ -1210,6 +1210,7 @@ namespace
         CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
         bool inWorld = unit->IsInWorld();
         bool gridLoaded = inWorld && unit->GetMap()->IsLoaded(x, y);
+        bool cellLoaded = inWorld && unit->GetMap()->IsCellLoaded(x, y);
 
         handler.PSendSysMessage("  %s=%s", label, unit->GetGuidStr().c_str());
 
@@ -1226,10 +1227,11 @@ namespace
                                 unit->GetMapId(), unit->GetInstanceId());
         handler.PSendSysMessage("    pos x=%.3f y=%.3f z=%.3f o=%.3f",
                                 x, y, z, o);
-        handler.PSendSysMessage("    grid[%u,%u] cell[%u,%u] grid-loaded=%s%s",
+        handler.PSendSysMessage("    grid[%u,%u] cell[%u,%u] grid-loaded=%s cell-loaded=%s%s",
                                 gridPair.x_coord, gridPair.y_coord,
                                 cellPair.x_coord, cellPair.y_coord,
                                 gridLoaded ? "yes" : "no",
+                                cellLoaded ? "yes" : "no",
                                 inWorld ? "" : " (not in world)");
 
         if (watched->IsInMap(unit))
@@ -1266,14 +1268,16 @@ namespace
         GridPair gridPair = MaNGOS::ComputeGridPair(x, y);
         CellPair cellPair = MaNGOS::ComputeCellPair(x, y);
         bool gridLoaded = target->GetMap()->IsLoaded(x, y); // read-only: does NOT load the grid
+        bool cellLoaded = target->GetMap()->IsCellLoaded(x, y); // read-only: per-cell envelope state
 
         handler.PSendSysMessage("[LivingWorld] watch %s \"%s\"",
                                 target->GetGuidStr().c_str(), target->GetName());
         handler.PSendSysMessage("  map=%u instance=%u", target->GetMapId(), target->GetInstanceId());
         handler.PSendSysMessage("  pos x=%.3f y=%.3f z=%.3f o=%.3f", x, y, z, o);
-        handler.PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s",
+        handler.PSendSysMessage("  grid[%u,%u] cell[%u,%u] grid-loaded=%s cell-loaded=%s",
                                 gridPair.x_coord, gridPair.y_coord, cellPair.x_coord, cellPair.y_coord,
-                                gridLoaded ? "yes" : "no");
+                                gridLoaded ? "yes" : "no",
+                                cellLoaded ? "yes" : "no");
         handler.PSendSysMessage("  in-world=%s active-object=%s",
                                 target->IsInWorld() ? "yes" : "no",
                                 target->IsActiveObject() ? "yes" : "no");

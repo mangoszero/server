@@ -29,6 +29,7 @@
 #include "GameSystem/GridReference.h"
 #include "Timer.h"
 
+#include <bitset>
 #include <cassert>
 
 /**
@@ -267,11 +268,45 @@ class NGrid
         bool isGridObjectDataLoaded() const { return i_GridObjectDataLoaded; }
 
         /**
+         * @brief True if this cell has been loaded/scanned (FULL grid or envelope cell).
+         *
+         * A set bit means the cell is "covered" by a FULL-grid load or was explicitly
+         * envelope-loaded; it does NOT mean the cell contains DB objects. Empty cells in
+         * a FULL grid have their bit set too. Use this for residency checks, not occupancy.
+         */
+        bool isCellObjectDataLoaded(uint32 x, uint32 y) const
+        {
+            return i_cellLoaded.test(x * N + y);
+        }
+
+        void setCellObjectDataLoaded(uint32 x, uint32 y, bool on)
+        {
+            i_cellLoaded.set(x * N + y, on);
+        }
+
+        uint32 loadedCellCount() const
+        {
+            return uint32(i_cellLoaded.count());
+        }
+
+        /**
          * @brief
          *
          * @param pLoaded
          */
-        void setGridObjectDataLoaded(bool pLoaded) { i_GridObjectDataLoaded = pLoaded; }
+        void markGridObjectDataLoading()
+        {
+            i_GridObjectDataLoaded = true;
+        }
+
+        void setGridObjectDataLoaded(bool pLoaded)
+        {
+            i_GridObjectDataLoaded = pLoaded;
+            if (pLoaded)
+            {
+                i_cellLoaded.set();
+            }
+        }
 
         /**
          * @brief
@@ -335,6 +370,17 @@ class NGrid
          * @param diff
          */
         void UpdateTimeTracker(time_t diff) { i_GridInfo.UpdateTimeTracker(diff); }
+
+        uint16 getPlayerCount() const { return i_playerCount; }
+        void incPlayerCount() { ++i_playerCount; }
+        void decPlayerCount()
+        {
+            if (i_playerCount)
+            {
+                --i_playerCount;
+            }
+        }
+        TimeTracker& getDowngradeTimer() { return i_downgradeTimer; }
 
         template<class SPECIFIC_OBJECT>
 
@@ -471,6 +517,9 @@ class NGrid
         grid_state_t i_cellstate; /**< TODO */
         GridType i_cells[N][N]; /**< TODO */
         bool i_GridObjectDataLoaded; /**< TODO */
+        std::bitset<N * N> i_cellLoaded; /**< per-cell DB-object-loaded flags; bit (x*N+y) set ⇔ cell (x,y) instantiated */
+        uint16 i_playerCount = 0;
+        TimeTracker i_downgradeTimer;
 };
 
 #endif

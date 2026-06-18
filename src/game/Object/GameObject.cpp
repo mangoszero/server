@@ -2785,7 +2785,7 @@ struct SpawnGameObjectInMapsWorker
     void operator()(Map* map)
     {
         // Spawn if necessary (loaded grids only)
-        if (map->IsLoaded(i_data->posX, i_data->posY))
+        if (map->IsCellLoaded(i_data->posX, i_data->posY))
         {
             GameObject* pGameobject = new GameObject;
             // DEBUG_LOG("Spawning gameobject %u", *itr);
