@@ -424,6 +424,7 @@ class Map : public GridRefManager<NGridType>
 
         bool CreatureCellRelocation(Creature* creature, const Cell &new_cell);
         void PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY);
+        void MaybePromoteEnvelopeGridForPlayer(uint32 gridX, uint32 gridY);
 
         bool loaded(const GridPair&) const;
         void EnsureGridCreated(const GridPair&);

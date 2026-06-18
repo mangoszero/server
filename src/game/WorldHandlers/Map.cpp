@@ -1277,6 +1277,29 @@ void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
     }
 }
 
+/**
+ * @brief Promote a single ENVELOPE grid to FULL if a player is in or around it.
+ *
+ * Companion to PromoteEnvelopeNeighboursToFull (which fires on player add/relocation):
+ * this covers the case where an ENVELOPE grid is created/extended NEXT TO a stationary
+ * player -- an anchor wandering in (accretion) or being registered active nearby -- so
+ * visibility still matches the full-load baseline without the player having to move.
+ */
+void Map::MaybePromoteEnvelopeGridForPlayer(uint32 gridX, uint32 gridY)
+{
+    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    {
+        return;
+    }
+    NGridType* ng = getNGrid(gridX, gridY);
+    if (ng && ng->loadedCellCount() > 0 && !ng->isGridObjectDataLoaded() && HasPlayerInOrAroundGrid(gridX, gridY))
+    {
+        Cell promoteCell(CellPair(gridX * MAX_NUMBER_OF_CELLS, gridY * MAX_NUMBER_OF_CELLS));
+        EnsureGridLoaded(promoteCell);
+        ng->SetGridState(GRID_STATE_ACTIVE);
+    }
+}
+
 void Map::PlayerRelocation(Player* player, float x, float y, float z, float orientation)
 {
     MANGOS_ASSERT(player);
@@ -1412,6 +1435,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
             {
                 ++m_cellEnvStats.accretions;
                 DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
+                MaybePromoteEnvelopeGridForPlayer(new_cell.GridX(), new_cell.GridY());
             }
         }
 
@@ -2169,6 +2193,7 @@ void Map::AddToActive(WorldObject* obj)
     m_activeNonPlayers.insert(obj);
     Cell cell = Cell(MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY()));
     EnsureGridLoadedAtEnter(cell); // player==null → envelope when CellEnvelopeLoad is on
+    MaybePromoteEnvelopeGridForPlayer(cell.GridX(), cell.GridY());
 
     // also not allow unloading spawn grid to prevent creating creature clone at load
     if (obj->GetTypeId() == TYPEID_UNIT)
