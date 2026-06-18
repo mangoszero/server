@@ -67,7 +67,7 @@
 class ObjectGridRespawnMover
 {
     public:
-        ObjectGridRespawnMover(bool cellGranular = false)
+        explicit ObjectGridRespawnMover(bool cellGranular = false)
             : i_cellGranular(cellGranular)
         {
         }
