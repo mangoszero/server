@@ -1378,6 +1378,21 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         }
     }
 
+    // B-Cell: never place a non-active creature into a non-resident cell. A same-grid respawn
+    // relocation (a wandered creature sent home during teardown) can target a home cell that was
+    // already unloaded earlier in the same drain; Map::Visit and Map::Remove both gate on the
+    // cell bit, so the creature would be stranded -- frozen and unremovable. Reject here so the
+    // caller (CreatureRespawnRelocation -> Unload) deletes + reschedules it instead. Active
+    // anchors are exempt: the accretion path below loads their destination envelope first.
+    if (!c->IsActiveObject())
+    {
+        NGridType* ng = getNGrid(new_cell.GridX(), new_cell.GridY());
+        if (!ng || !ng->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY()))
+        {
+            return false;
+        }
+    }
+
     if (old_cell != new_cell)
     {
         DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) moved in grid[%u,%u] from cell[%u,%u] to cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.CellX(), new_cell.CellY());
