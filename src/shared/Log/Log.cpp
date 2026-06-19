@@ -75,6 +75,7 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "pathfinding",         "LogFilter_Pathfinding",        true  },
     { "map_loading",         "LogFilter_MapLoading",         true  },
     { "event_ai_dev",        "LogFilter_EventAiDev",         true  },
+    { "cell_envelope",       "LogFilter_CellEnvelope",       true  },
 };
 
 enum LogType

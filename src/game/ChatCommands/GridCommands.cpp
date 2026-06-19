@@ -177,9 +177,24 @@ bool ChatHandler::HandleGridInfoCommand(char* args)
     bool gridLoaded = player->GetMap()->IsGridLoaded(gridX, gridY);
     GridOccupancy occ = ComputeGridOccupancy(mapId, gridX, gridY);
 
+    bool isEnv = player->GetMap()->IsGridEnvelope(gridX, gridY);
+    bool isFull = player->GetMap()->IsGridLoaded(gridX, gridY);
+    uint32 loadedCells = player->GetMap()->GetGridLoadedCellCount(gridX, gridY);
+    const char* lwState = "UNLOADED";
+    if (isFull)
+    {
+        lwState = "FULL";
+    }
+    else if (isEnv)
+    {
+        lwState = "ENVELOPE";
+    }
+
     PSendSysMessage("[LivingWorld] grid occupancy (static DB spawn-definition, "
                     "not live objects): map=%u grid=(%u,%u) loaded=%s",
                     uint32(mapId), gridX, gridY, gridLoaded ? "yes" : "no");
+    PSendSysMessage("  live load-state: %s (loaded cells=%u/%u, occupied DB cells=%u)",
+                    lwState, loadedCells, CELLS_PER_GRID, occ.occupiedCells);
     PSendSysMessage("  cells: occupied=%u/%u empty=%u",
                     occ.occupiedCells, CELLS_PER_GRID, CELLS_PER_GRID - occ.occupiedCells);
     PSendSysMessage("  db-guids: creatures=%u gameobjects=%u corpses=%u total=%u",
@@ -289,6 +304,34 @@ bool ChatHandler::HandleGridAnchorsCommand(char* args)
                     "min=%u median=%u max=%u across %u grids",
                     CELLS_PER_GRID, minOccupied, medianOccupied, maxOccupied,
                     uint32(occupancies.size()));
+
+    return true;
+}
+
+/**
+ * @brief .grid lwstats
+ *
+ * Prints the per-map CellEnvelopeStats counters (envelopeLoads, accretions,
+ * fills, and anomaly counters) for the player's current map.
+ */
+bool ChatHandler::HandleGridLwStatsCommand(char* /*args*/)
+{
+    Player* player = m_session ? m_session->GetPlayer() : NULL;
+    if (!player)
+    {
+        SendSysMessage("This command requires an in-game player.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    Map::CellEnvelopeStats const& stats = player->GetMap()->GetCellEnvelopeStats();
+    PSendSysMessage("[LivingWorld] cell-envelope stats for map %u:", player->GetMapId());
+    PSendSysMessage("  loads=%u accretions=%u fills=%u",
+                    stats.envelopeLoads, stats.accretions, stats.fills);
+    PSendSysMessage("  anomalies: anchorOutside=%u scanPartial=%u",
+                    stats.anomalyAnchorOutside, stats.anomalyScanPartial);
+    PSendSysMessage("  unload: cellsUnloaded=%u downgrades=%u trailingUnloads=%u",
+                    stats.cellsUnloaded, stats.downgrades, stats.trailingUnloads);
 
     return true;
 }

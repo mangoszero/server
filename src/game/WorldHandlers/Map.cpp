@@ -63,6 +63,7 @@
 #include "Weather.h"
 #include "Transports.h"
 #include "ObjectGridLoader.h"
+#include "LivingWorldCellEnvelope.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -320,6 +321,7 @@ template<>
 void Map::AddToGrid(Player* obj, NGridType* grid, Cell const& cell)
 {
     (*grid)(cell.CellX(), cell.CellY()).AddWorldObject(obj);
+    grid->incPlayerCount();
 }
 
 /**
@@ -426,6 +428,11 @@ template<>
 void Map::RemoveFromGrid(Player* obj, NGridType* grid, Cell const& cell)
 {
     (*grid)(cell.CellX(), cell.CellY()).RemoveWorldObject(obj);
+    grid->decPlayerCount();
+    if (grid->getPlayerCount() == 0)
+    {
+        grid->getDowngradeTimer().Reset(sWorld.getConfig(CONFIG_UINT32_LIVINGWORLD_CELL_ENVELOPE_DOWNGRADE_DELAY));
+    }
 }
 
 /**
@@ -528,7 +535,20 @@ Map::EnsureGridLoadedAtEnter(const Cell& cell, Player* player)
 {
     NGridType* grid;
 
-    if (EnsureGridLoaded(cell))
+    bool useEnvelope = (player == NULL) && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD) && IsContinent();
+    bool loadedNow = false;
+
+    if (useEnvelope)
+    {
+        EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
+        loadedNow = EnsureCellEnvelopeLoaded(cell);
+    }
+    else
+    {
+        loadedNow = EnsureGridLoaded(cell);
+    }
+
+    if (loadedNow)
     {
         grid = getNGrid(cell.GridX(), cell.GridY());
 
@@ -569,14 +589,18 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     MANGOS_ASSERT(grid != NULL);
     if (!isGridObjectDataLoaded(cell.GridX(), cell.GridY()))
     {
-        // it's important to set it loaded before loading!
-        // otherwise there is a possibility of infinity chain (grid loading will be called many times for the same grid)
-        // possible scenario:
-        // active object A(loaded with loader.LoadN call and added to the  map)
-        // summons some active object B, while B added to map grid loading called again and so on..
-        setGridObjectDataLoaded(true, cell.GridX(), cell.GridY());
+        bool wasEnvelope = (grid->loadedCellCount() > 0);
+        grid->markGridObjectDataLoading(); // re-entrancy guard (upstream semantics)
         ObjectGridLoader loader(*grid, this, cell);
-        loader.LoadN();
+        loader.LoadN(); // loads every not-yet-loaded cell (fills an ENVELOPE grid's remainder)
+
+        // finalise FULL bitset (idempotent; ensures all 256 bits set even though LoadN already set them)
+        setGridObjectDataLoaded(true, cell.GridX(), cell.GridY());
+
+        if (wasEnvelope && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+        {
+            ++m_cellEnvStats.fills;
+        }
 
         // Add resurrectable corpses to world object list in grid
         sObjectAccessor.AddCorpsesToGrid(GridPair(cell.GridX(), cell.GridY()), (*grid)(cell.CellX(), cell.CellY()), this);
@@ -584,6 +608,63 @@ bool Map::EnsureGridLoaded(const Cell& cell)
     }
 
     return false;
+}
+
+/**
+ * @brief Loads only the 3x3 cell envelope around centerCell (B-Cell anchor path).
+ *
+ * Builds the 3x3 block in GLOBAL cell coordinates so it spills correctly across
+ * grid boundaries, groups cells by grid, ensures each touched grid exists, and
+ * loads just those cells (idempotent). Leaves grids in a partial (ENVELOPE) state
+ * — never calls setGridObjectDataLoaded(true). Returns true if anything new was
+ * created or loaded (so the caller can set ACTIVE state / reset expiry).
+ */
+bool Map::EnsureCellEnvelopeLoaded(const Cell& centerCell)
+{
+    uint32 centerX = LwGridLocalToGlobalCell(centerCell.GridX(), centerCell.CellX());
+    uint32 centerY = LwGridLocalToGlobalCell(centerCell.GridY(), centerCell.CellY());
+
+    bool didWork = false;
+
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            uint32 gcx = LwClampGlobalCell(int(centerX) + dx);
+            uint32 gcy = LwClampGlobalCell(int(centerY) + dy);
+
+            CellPair envPair(gcx, gcy);
+            Cell envCell(envPair);
+
+            GridPair gp(envCell.GridX(), envCell.GridY());
+            if (!getNGrid(gp.x_coord, gp.y_coord))
+            {
+                EnsureGridCreated(gp);
+                didWork = true;
+            }
+
+            NGridType* grid = getNGrid(gp.x_coord, gp.y_coord);
+            if (grid->isGridObjectDataLoaded())
+            {
+                continue; // grid already FULL — envelope cells already present
+            }
+            if (grid->isCellObjectDataLoaded(envCell.CellX(), envCell.CellY()))
+            {
+                continue;
+            }
+
+            ObjectGridLoader loader(*grid, this, envCell);
+            loader.LoadCell(envCell.CellX(), envCell.CellY());
+            // NOTE: no AddCorpsesToGrid here — envelope grids are background/player-less;
+            // corpses are transient and the FULL-load path adds them when a player enters.
+            didWork = true;
+            ++m_cellEnvStats.envelopeLoads;
+
+            DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] loaded cell grid[%u,%u]cell[%u,%u] (global %u,%u)", gp.x_coord, gp.y_coord, envCell.CellX(), envCell.CellY(), gcx, gcy);
+        }
+    }
+
+    return didWork;
 }
 
 /**
@@ -596,9 +677,14 @@ void Map::ForceLoadGrid(float x, float y)
 {
     if (!IsLoaded(x, y))
     {
-        CellPair p = MaNGOS::ComputeCellPair(x, y);
-        Cell cell(p);
-        EnsureGridLoadedAtEnter(cell);
+        Cell cell(MaNGOS::ComputeCellPair(x, y));
+        EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
+        if (EnsureGridLoaded(cell))
+        {
+            NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+            ResetGridExpiry(*grid, 0.1f);
+            grid->SetGridState(GRID_STATE_ACTIVE);
+        }
         getNGrid(cell.GridX(), cell.GridY())->setUnloadExplicitLock(true);
     }
 }
@@ -618,6 +704,7 @@ bool Map::Add(Player* player)
     CellPair p = MaNGOS::ComputeCellPair(player->GetPositionX(), player->GetPositionY());
     Cell cell(p);
     EnsureGridLoadedAtEnter(cell, player);
+    PromoteEnvelopeNeighboursToFull(cell.GridX(), cell.GridY());
     player->AddToWorld();
 
     SendInitSelf(player);
@@ -986,6 +1073,8 @@ void Map::Update(const uint32& t_diff)
         }
     }
 
+    ProcessPendingCellUnloads();
+
     ///- Process necessary scripts
     if (!m_scriptSchedule.empty())
     {
@@ -1107,13 +1196,13 @@ template<class T>
     }
 
     Cell cell(p);
-    if (!loaded(GridPair(cell.data.Part.grid_x, cell.data.Part.grid_y)))
+    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+    if (!grid || !grid->isCellObjectDataLoaded(cell.CellX(), cell.CellY()))
     {
         return;
     }
 
     DEBUG_LOG("Remove object (GUID: %u TypeId:%u) from grid[%u,%u]", obj->GetGUIDLow(), obj->GetTypeId(), cell.data.Part.grid_x, cell.data.Part.grid_y);
-    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
     MANGOS_ASSERT(grid != NULL);
 
     if (obj->IsActiveObject())
@@ -1156,6 +1245,61 @@ template<class T>
  * @param z The destination Z coordinate.
  * @param orientation The destination facing angle.
  */
+void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
+{
+    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    {
+        return;
+    }
+
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            if (dx == 0 && dy == 0)
+            {
+                continue;
+            }
+            int nx = int(gridX) + dx;
+            int ny = int(gridY) + dy;
+            if (nx < 0 || nx >= MAX_NUMBER_OF_GRIDS || ny < 0 || ny >= MAX_NUMBER_OF_GRIDS)
+            {
+                continue;
+            }
+            NGridType* ng = getNGrid(uint32(nx), uint32(ny));
+            if (ng && ng->loadedCellCount() > 0 && !ng->isGridObjectDataLoaded())
+            {
+                Cell promoteCell(CellPair(uint32(nx) * MAX_NUMBER_OF_CELLS, uint32(ny) * MAX_NUMBER_OF_CELLS));
+                EnsureGridLoaded(promoteCell);
+                ng->SetGridState(GRID_STATE_ACTIVE);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Promote a single ENVELOPE grid to FULL if a player is in or around it.
+ *
+ * Companion to PromoteEnvelopeNeighboursToFull (which fires on player add/relocation):
+ * this covers the case where an ENVELOPE grid is created/extended NEXT TO a stationary
+ * player -- an anchor wandering in (accretion) or being registered active nearby -- so
+ * visibility still matches the full-load baseline without the player having to move.
+ */
+void Map::MaybePromoteEnvelopeGridForPlayer(uint32 gridX, uint32 gridY)
+{
+    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    {
+        return;
+    }
+    NGridType* ng = getNGrid(gridX, gridY);
+    if (ng && ng->loadedCellCount() > 0 && !ng->isGridObjectDataLoaded() && HasPlayerInOrAroundGrid(gridX, gridY))
+    {
+        Cell promoteCell(CellPair(gridX * MAX_NUMBER_OF_CELLS, gridY * MAX_NUMBER_OF_CELLS));
+        EnsureGridLoaded(promoteCell);
+        ng->SetGridState(GRID_STATE_ACTIVE);
+    }
+}
+
 void Map::PlayerRelocation(Player* player, float x, float y, float z, float orientation)
 {
     MANGOS_ASSERT(player);
@@ -1183,6 +1327,7 @@ void Map::PlayerRelocation(Player* player, float x, float y, float z, float orie
         {
             EnsureGridLoadedAtEnter(new_cell, player);
         }
+        PromoteEnvelopeNeighboursToFull(new_cell.GridX(), new_cell.GridY());
 
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
         player->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
@@ -1243,12 +1388,32 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
     Cell const& old_cell = c->GetCurrentCell();
     if (old_cell.DiffGrid(new_cell))
     {
-        if (!c->IsActiveObject() && !loaded(new_cell.gridPair()))
+        NGridType* destGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
+        bool destCellResident = destGrid && destGrid->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY());
+        if (!c->IsActiveObject() && !loaded(new_cell.gridPair()) && !destCellResident)
         {
             DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) attempt move from grid[%u,%u]cell[%u,%u] to unloaded grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
             return false;
         }
-        EnsureGridLoadedAtEnter(new_cell);
+        if (!destCellResident)
+        {
+            EnsureGridLoadedAtEnter(new_cell);
+        }
+    }
+
+    // B-Cell: never place a non-active creature into a non-resident cell. A same-grid respawn
+    // relocation (a wandered creature sent home during teardown) can target a home cell that was
+    // already unloaded earlier in the same drain; Map::Visit and Map::Remove both gate on the
+    // cell bit, so the creature would be stranded -- frozen and unremovable. Reject here so the
+    // caller (CreatureRespawnRelocation -> Unload) deletes + reschedules it instead. Active
+    // anchors are exempt: the accretion path below loads their destination envelope first.
+    if (!c->IsActiveObject())
+    {
+        NGridType* ng = getNGrid(new_cell.GridX(), new_cell.GridY());
+        if (!ng || !ng->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY()))
+        {
+            return false;
+        }
     }
 
     if (old_cell != new_cell)
@@ -1256,9 +1421,91 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) moved in grid[%u,%u] from cell[%u,%u] to cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.CellX(), new_cell.CellY());
         NGridType* oldGrid = getNGrid(old_cell.GridX(), old_cell.GridY());
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
+
+        // B-Cell accretion: an active anchor moving inside a partially-loaded
+        // (ENVELOPE) grid must have its new 3x3 envelope resident before it lands.
+        if (c->IsActiveObject()
+            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isGridObjectDataLoaded())
+        {
+            // Count/log accretion only when the move actually loaded NEW envelope cells.
+            // Otherwise it fires on every boundary crossing (re-entering already-loaded
+            // route cells), flooding the log and inflating the counter to "steps taken".
+            if (EnsureCellEnvelopeLoaded(new_cell))
+            {
+                ++m_cellEnvStats.accretions;
+                DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] accretion for active GUID %u into grid[%u,%u]cell[%u,%u]", c->GetGUIDLow(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
+                MaybePromoteEnvelopeGridForPlayer(new_cell.GridX(), new_cell.GridY());
+            }
+        }
+
         RemoveFromGrid(c, oldGrid, old_cell);
         AddToGrid(c, newGrid, new_cell);
         c->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
+
+        if (c->IsActiveObject() && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY()))
+        {
+            ++m_cellEnvStats.anomalyAnchorOutside;
+            sLog.outError("[CellEnvelope][ANOMALY] active GUID %u Entry %u landed in UNLOADED grid[%u,%u]cell[%u,%u] on map %u", c->GetGUIDLow(), c->GetEntry(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY(), i_id);
+        }
+
+        // B-Cell trailing unload: cells in the anchor's OLD 3x3 envelope but not its
+        // NEW one are candidates to reclaim, unless another anchor still covers them.
+        if (c->IsActiveObject()
+            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && !newGrid->isGridObjectDataLoaded())          // ENVELOPE only (never on a FULL/player grid)
+        {
+            uint32 oldCX = LwGridLocalToGlobalCell(old_cell.GridX(), old_cell.CellX());
+            uint32 oldCY = LwGridLocalToGlobalCell(old_cell.GridY(), old_cell.CellY());
+            uint32 newCX = LwGridLocalToGlobalCell(new_cell.GridX(), new_cell.CellX());
+            uint32 newCY = LwGridLocalToGlobalCell(new_cell.GridY(), new_cell.CellY());
+
+            for (int dx = -1; dx <= 1; ++dx)
+            {
+                for (int dy = -1; dy <= 1; ++dy)
+                {
+                    uint32 gcx = LwClampGlobalCell(int(oldCX) + dx);
+                    uint32 gcy = LwClampGlobalCell(int(oldCY) + dy);
+
+                    // still inside the NEW envelope? keep it.
+                    if (gcx + 1 >= newCX && gcx <= newCX + 1 && gcy + 1 >= newCY && gcy <= newCY + 1)
+                    {
+                        continue;
+                    }
+
+                    Cell vacated(CellPair(gcx, gcy));
+                    NGridType* vg = getNGrid(vacated.GridX(), vacated.GridY());
+                    if (!vg || vg->isGridObjectDataLoaded())          // gone or FULL → leave it
+                    {
+                        continue;
+                    }
+                    if (!vg->isCellObjectDataLoaded(vacated.CellX(), vacated.CellY()))
+                    {
+                        continue;
+                    }
+                    if (IsCellAnchorProtected(vacated.GridX(), vacated.GridY(), vacated.CellX(), vacated.CellY()))
+                    {
+                        continue;                                     // another anchor still needs it
+                    }
+
+                    bool alreadyPending = false;
+                    for (const auto& p : m_pendingCellUnloads)
+                    {
+                        if (p.gridX == vacated.GridX() && p.gridY == vacated.GridY() && p.cellX == vacated.CellX() && p.cellY == vacated.CellY())
+                        {
+                            alreadyPending = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyPending)
+                    {
+                        m_pendingCellUnloads.push_back({vacated.GridX(), vacated.GridY(), vacated.CellX(), vacated.CellY()});
+                    }
+                    ++m_cellEnvStats.trailingUnloads;
+                }
+            }
+        }
     }
     return true;
 }
@@ -1294,6 +1541,186 @@ bool Map::CreatureRespawnRelocation(Creature* c)
     {
         return false;
     }
+}
+
+/**
+ * @brief Returns a FULL anchor grid to ENVELOPE state: tears down every loaded cell
+ *        NOT covered by an active anchor's 3x3 envelope, then clears the grid-FULL
+ *        flag. Reclaims the memory a player visit had promoted to full.
+ */
+void Map::DowngradeGridToEnvelope(NGridType* grid, uint32 gridX, uint32 gridY)
+{
+    for (uint32 cx = 0; cx < MAX_NUMBER_OF_CELLS; ++cx)
+    {
+        for (uint32 cy = 0; cy < MAX_NUMBER_OF_CELLS; ++cy)
+        {
+            if (!grid->isCellObjectDataLoaded(cx, cy))
+            {
+                continue;
+            }
+            if (IsCellAnchorProtected(gridX, gridY, cx, cy))
+            {
+                continue;
+            }
+            m_pendingCellUnloads.push_back({gridX, gridY, cx, cy});
+        }
+    }
+
+    grid->setGridObjectDataLoaded(false); // FULL flag off → ENVELOPE (surviving cells keep their bits)
+    ++m_cellEnvStats.downgrades;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] downgraded grid[%u,%u] to ENVELOPE on map %u (loaded cells now %u)", gridX, gridY, i_id, grid->loadedCellCount());
+}
+
+/**
+ * @brief Returns true if the cell lies within any active anchor's 3x3 envelope.
+ *
+ * Safety check: a cell must NOT be torn down while it is still covered by an
+ * active anchor, or it would despawn the anchor itself (or its neighbours).
+ */
+bool Map::IsCellAnchorProtected(uint32 gridX, uint32 gridY, uint32 cellX, uint32 cellY) const
+{
+    uint32 targetGX = LwGridLocalToGlobalCell(gridX, cellX);
+    uint32 targetGY = LwGridLocalToGlobalCell(gridY, cellY);
+
+    for (ActiveNonPlayers::const_iterator it = m_activeNonPlayers.begin(); it != m_activeNonPlayers.end(); ++it)
+    {
+        WorldObject* obj = *it;
+        if (!obj || !obj->IsInWorld())
+        {
+            continue;
+        }
+
+        // Cheap reject: a 3x3 envelope reaches at most one grid away, so skip anchors
+        // whose grid is >1 from the target grid before the per-cell test.
+        GridPair ap = MaNGOS::ComputeGridPair(obj->GetPositionX(), obj->GetPositionY());
+        if (ap.x_coord + 1 < gridX || ap.x_coord > gridX + 1
+            || ap.y_coord + 1 < gridY || ap.y_coord > gridY + 1)
+        {
+            continue;
+        }
+
+        CellPair cp = MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY());
+        // anchor's 3x3 envelope in global cell coords
+        if (targetGX + 1 >= cp.x_coord && targetGX <= cp.x_coord + 1
+            && targetGY + 1 >= cp.y_coord && targetGY <= cp.y_coord + 1)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Returns true if a player is in the given grid or any of its 8 neighbours.
+ *
+ * A player's visibility force-loads the grids it can see into (<= 1 grid away), so a
+ * grid is "needed FULL" if any player is in or adjacent to it -- not only when a player
+ * is physically inside it. Used to gate the B-Cell FULL->ENVELOPE downgrade so a grid a
+ * nearby player can see is never torn down (which otherwise thrashes load/unload).
+ */
+bool Map::HasPlayerInOrAroundGrid(uint32 gridX, uint32 gridY) const
+{
+    for (int dx = -1; dx <= 1; ++dx)
+    {
+        for (int dy = -1; dy <= 1; ++dy)
+        {
+            int gx = int(gridX) + dx;
+            int gy = int(gridY) + dy;
+            if (gx < 0 || gy < 0 || gx >= int(MAX_NUMBER_OF_GRIDS) || gy >= int(MAX_NUMBER_OF_GRIDS))
+            {
+                continue;
+            }
+            NGridType* g = getNGrid(uint32(gx), uint32(gy));
+            if (g && g->getPlayerCount() > 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Read-only: true if the specific cell containing (x,y) has its DB objects loaded.
+ *
+ * Unlike IsLoaded()/loaded() (which report the whole-grid FULL flag), this is true for a
+ * single envelope cell in an otherwise-partial grid. Never loads anything.
+ */
+bool Map::IsCellLoaded(float x, float y) const
+{
+    Cell cell(MaNGOS::ComputeCellPair(x, y));
+    NGridType* grid = getNGrid(cell.GridX(), cell.GridY());
+    return grid && grid->isCellObjectDataLoaded(cell.CellX(), cell.CellY());
+}
+
+/**
+ * @brief Tears down a single cell's DB objects (B-Cell unload-side primitive).
+ *
+ * Mirrors the grid-unload sequence (stop → respawn-relocate → unload) but scoped
+ * to one cell, and does NOT delete the NGrid or unload terrain. Idempotent: a no-op
+ * on an already-unloaded cell. Callers MUST ensure the cell is anchor/player-free
+ * (see IsCellAnchorProtected) before calling.
+ *
+ * NOTE: Resurrectable player corpses are world objects (WorldTypeMapContainer) and
+ * are NOT touched by this cell teardown — only GridTypeMapContainer objects are
+ * unloaded. Verified: bones in the grid container are cleaned up; corpses survive.
+ */
+void Map::UnloadCell(NGridType* grid, uint32 cellX, uint32 cellY)
+{
+    if (!grid->isCellObjectDataLoaded(cellX, cellY))
+    {
+        return;
+    }
+
+    // stop combat / clear dynobjects for creatures in the cell
+    ObjectGridStoper stoper(*grid);
+    stoper.Stop((*grid)(cellX, cellY));
+    RemoveAllObjectsInRemoveList();
+
+    // relocate creatures whose respawn point is in a different grid (mirrors grid unload)
+    ObjectGridUnloader unloader(*grid);
+    unloader.MoveToRespawnCell(cellX, cellY);
+    RemoveAllObjectsInRemoveList();
+
+    // delete remaining objects in the cell (saves respawn time, removes from world)
+    unloader.Unload((*grid)(cellX, cellY));
+    RemoveAllObjectsInRemoveList();
+
+    grid->setCellObjectDataLoaded(cellX, cellY, false);
+    ++m_cellEnvStats.cellsUnloaded;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_CELL_ENVELOPE, "[CellEnvelope] unloaded cell grid[%u,%u]cell[%u,%u] on map %u", grid->getX(), grid->getY(), cellX, cellY, i_id);
+}
+
+/**
+ * @brief Drain any cell-unload requests queued during the update iteration.
+ *
+ * Re-checks residency and anchor protection at drain time because state may
+ * have changed since the request was enqueued.
+ */
+void Map::ProcessPendingCellUnloads()
+{
+    for (const auto& entry : m_pendingCellUnloads)
+    {
+        // Re-resolve the grid by coords: it may have been unloaded (and the NGrid
+        // freed) between enqueue and drain, so a stored raw pointer could dangle.
+        NGridType* grid = getNGrid(entry.gridX, entry.gridY);
+        if (!grid)
+        {
+            continue;
+        }
+        if (!grid->isCellObjectDataLoaded(entry.cellX, entry.cellY))
+        {
+            continue;
+        }
+        if (IsCellAnchorProtected(entry.gridX, entry.gridY, entry.cellX, entry.cellY))
+        {
+            continue;
+        }
+        UnloadCell(grid, entry.cellX, entry.cellY);
+    }
+    m_pendingCellUnloads.clear();
 }
 
 /**
@@ -1765,7 +2192,8 @@ void Map::AddToActive(WorldObject* obj)
 {
     m_activeNonPlayers.insert(obj);
     Cell cell = Cell(MaNGOS::ComputeCellPair(obj->GetPositionX(), obj->GetPositionY()));
-    EnsureGridLoaded(cell);
+    EnsureGridLoadedAtEnter(cell); // player==null → envelope when CellEnvelopeLoad is on
+    MaybePromoteEnvelopeGridForPlayer(cell.GridX(), cell.GridY());
 
     // also not allow unloading spawn grid to prevent creating creature clone at load
     if (obj->GetTypeId() == TYPEID_UNIT)

@@ -87,8 +87,8 @@ namespace ai
                     creators["arcane intellect"] = &TriggerFactoryInternal::arcane_intellect;
                     creators["arcane intellect on party"] = &TriggerFactoryInternal::arcane_intellect_on_party;
                     creators["mage armor"] = &TriggerFactoryInternal::mage_armor;
-                    creators["remove curse"] = &TriggerFactoryInternal::remove_curse;
-                    creators["remove curse on party"] = &TriggerFactoryInternal::remove_curse_on_party;
+                    creators["remove lesser curse"] = &TriggerFactoryInternal::remove_curse;
+                    creators["remove lesser curse on party"] = &TriggerFactoryInternal::remove_curse_on_party;
                     creators["counterspell"] = &TriggerFactoryInternal::counterspell;
                     creators["polymorph"] = &TriggerFactoryInternal::polymorph;
                     creators["spellsteal"] = &TriggerFactoryInternal::spellsteal;
@@ -158,8 +158,8 @@ namespace ai
                     creators["fire blast"] = &AiObjectContextInternal::fire_blast;
                     creators["scorch"] = &AiObjectContextInternal::scorch;
                     creators["counterspell"] = &AiObjectContextInternal::counterspell;
-                    creators["remove curse"] = &AiObjectContextInternal::remove_curse;
-                    creators["remove curse on party"] = &AiObjectContextInternal::remove_curse_on_party;
+                    creators["remove lesser curse"] = &AiObjectContextInternal::remove_curse;
+                    creators["remove lesser curse on party"] = &AiObjectContextInternal::remove_curse_on_party;
                     creators["combustion"] = &AiObjectContextInternal::combustion;
                     creators["ice block"] = &AiObjectContextInternal::ice_block;
                     creators["polymorph"] = &AiObjectContextInternal::polymorph;

@@ -630,7 +630,7 @@ void PoolGroup<Creature>::Spawn1Object(MapPersistentState& mapState, PoolObject*
             Map* dataMap = dataMapState->GetMap();
 
             // We use spawn coords to spawn
-            if (dataMap && dataMap->IsLoaded(data->posX, data->posY))
+            if (dataMap && dataMap->IsCellLoaded(data->posX, data->posY))
             {
                 Creature* pCreature = new Creature;
                 // DEBUG_LOG("Spawning creature %u",obj->guid);
@@ -684,7 +684,7 @@ void PoolGroup<GameObject>::Spawn1Object(MapPersistentState& mapState, PoolObjec
             Map* dataMap = dataMapState->GetMap();
 
             // We use spawn coords to spawn
-            if (dataMap && dataMap->IsLoaded(data->posX, data->posY))
+            if (dataMap && dataMap->IsCellLoaded(data->posX, data->posY))
             {
                 GameObject* pGameobject = new GameObject;
                 // DEBUG_LOG("Spawning gameobject %u", obj->guid);
