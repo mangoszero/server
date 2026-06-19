@@ -253,6 +253,11 @@ class ChatHandler
         bool HandleAHBotReloadCommand(char* args);
         bool HandleAHBotStatusCommand(char* args);
 
+        // Movement subsystem commands
+        bool HandleMovementStatusCommand(char* args);
+        bool HandleMovementConfigCommand(char* args);
+        bool HandleMovementSetCommand(char* args);
+
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);
         bool HandleAuctionHordeCommand(char* args);

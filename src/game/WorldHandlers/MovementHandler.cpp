@@ -362,6 +362,11 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
     data << mover->GetPackGUID();             // write guid
     movementInfo.Write(data);                               // write data
     mover->SendMessageToSetExcept(&data, _player);
+
+    // Movement smoothing: mark when a real movement packet was last relayed for this
+    // mover, so Player::Update can detect a stale mover and inject heartbeats.
+    if (plMover)
+        plMover->SetLastMoveRelayMs(getMSTime());
     // Fix for seeing movement by fellow transport passengers
     if (plMover && plMover->GetTransport())
     {

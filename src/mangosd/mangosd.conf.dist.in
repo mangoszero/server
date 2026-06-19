@@ -885,6 +885,45 @@ PlayerCommands                            = 0
 Motd                                      = "Welcome to Mangos Zero"
 AutoBroadcast                             = 0
 
+###############################################################################
+# MOVEMENT SUBSYSTEM
+#
+#    Movement.Smoothing
+#        Inject extrapolated movement heartbeats for a "stale" mover (a player
+#        whose client packets stop mid-move during lag) so nearby players keep
+#        interpolating smoothly instead of seeing them freeze then warp.
+#        Conservative: ground movement only, capped extrapolation window,
+#        broadcast-only (the server's authoritative position is unchanged).
+#        Higher-risk netcode for A/B testing.
+#        Default: 0 (off)
+#
+#    Movement.HeartbeatMs
+#        How often to inject a heartbeat while a mover is stale (100-2000).
+#        Default: 250
+#
+#    Movement.MaxExtrapolateMs
+#        Stop extrapolating once a mover has been stale longer than this (100-3000).
+#        Default: 400
+#
+#    Movement.PlayerSpeedRate
+#        Global player movement-speed multiplier, percent (100 = normal). Applies
+#        to all player move types. Live-tunable via .movement set speedrate.
+#        Default: 100
+#
+#    Movement.RunSpeedRate / Movement.SwimSpeedRate / Movement.WalkSpeedRate
+#        Optional per-move-type multipliers (percent) applied on top of
+#        PlayerSpeedRate. Default: 100
+#
+###############################################################################
+
+Movement.Smoothing                        = 0
+Movement.HeartbeatMs                      = 250
+Movement.MaxExtrapolateMs                 = 400
+Movement.PlayerSpeedRate                  = 100
+Movement.RunSpeedRate                     = 100
+Movement.SwimSpeedRate                    = 100
+Movement.WalkSpeedRate                    = 100
+
 ################################################################################
 # PLAYER INTERACTION
 #

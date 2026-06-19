@@ -615,6 +615,17 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_MAX_WHOLIST_RETURNS, "MaxWhoListReturns", 49);
     setConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL, "AutoBroadcast", 600);
 
+    // Movement subsystem: other-player smoothing (heartbeat extrapolation for stale
+    // movers, A/B netcode so OFF by default) + a global player speed-rate knob and
+    // optional per-move-type multipliers.
+    setConfig(CONFIG_BOOL_MOVEMENT_SMOOTHING,       "Movement.Smoothing", false);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_HEARTBEAT_MS,      "Movement.HeartbeatMs", 250, 100, 2000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_MAX_EXTRAPOLATE_MS,"Movement.MaxExtrapolateMs", 400, 100, 3000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_SPEED_RATE,       "Movement.PlayerSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_RUN_RATE,         "Movement.RunSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_SWIM_RATE,        "Movement.SwimSpeedRate", 100, 10, 1000);
+    setConfigMinMax(CONFIG_UINT32_MOVEMENT_WALK_RATE,        "Movement.WalkSpeedRate", 100, 10, 1000);
+
     if (getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) > 0)
     {
         m_broadcastEnable = true;
