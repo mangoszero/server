@@ -64,6 +64,7 @@
 #include "LootMgr.h"
 #include "ItemEnchantmentMgr.h"
 #include "MapManager.h"
+#include "PerformanceMonitor.h"
 #include "ScriptMgr.h"
 #include "CreatureAIRegistry.h"
 #include "ProgressBar.h"
@@ -614,6 +615,8 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_GRID_UNLOAD, "GridUnload", true);
     setConfig(CONFIG_UINT32_MAX_WHOLIST_RETURNS, "MaxWhoListReturns", 49);
     setConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL, "AutoBroadcast", 600);
+    // Server-side debug-draw toolkit (.debug vis): marker auto-despawn seconds.
+    setConfigMinMax(CONFIG_UINT32_DEBUGVIS_DESPAWN, "DebugVis.DespawnSeconds", 30, 5, 600);
 
     if (getConfig(CONFIG_UINT32_AUTOBROADCAST_INTERVAL) > 0)
     {
@@ -1790,6 +1793,9 @@ void World::DetectDBCLang()
 /// Update the World !
 void World::Update(uint32 diff)
 {
+    ///- Record world-tick timing for the performance monitor (.debug perf)
+    PerformanceMonitor::TrackUpdate(diff);
+
     ///- Update the different timers
     for (int i = 0; i < WUPDATE_COUNT; ++i)
     {

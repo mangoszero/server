@@ -241,9 +241,23 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  false, NULL,                                                "", NULL }
     };
 
+    static ChatCommand debugVisCommandTable[] =
+    {
+        { "cells",          SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisCellsCommand,            "", NULL },
+        { "los",            SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisLosCommand,              "", NULL },
+        { "path",           SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisPathCommand,             "", NULL },
+        { "collision",      SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisCollisionCommand,        "", NULL },
+        { "height",         SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisHeightCommand,           "", NULL },
+        { "clear",          SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisClearCommand,            "", NULL },
+        { NULL,             0,                  false, NULL,                                                "", NULL }
+    };
+
     static ChatCommand debugCommandTable[] =
     {
         { "anim",           SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugAnimCommand,                "", NULL },
+        { "vis",            SEC_GAMEMASTER,     false, NULL,                                                "", debugVisCommandTable },
+        { "perf",           SEC_GAMEMASTER,     true,  &ChatHandler::HandleDebugPerfCommand,                "", NULL },
+        { "visual",         SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugVisualCommand,              "", NULL },
         { "bg",             SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugBattlegroundCommand,        "", NULL },
         { "getitemstate",   SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDebugGetItemStateCommand,        "", NULL },
         { "lootrecipient",  SEC_GAMEMASTER,     false, &ChatHandler::HandleDebugGetLootRecipientCommand,    "", NULL },

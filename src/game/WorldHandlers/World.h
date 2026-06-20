@@ -215,6 +215,8 @@ enum eConfigUInt32Values
     CONFIG_UINT32_PLAYERBOT_MINBOTLEVEL,
 #endif
     CONFIG_UINT32_AUTOBROADCAST_INTERVAL,
+    // Server-side debug visualization toolkit (.debug vis): marker lifetime.
+    CONFIG_UINT32_DEBUGVIS_DESPAWN,
     CONFIG_UINT32_VALUE_COUNT
 };
 
