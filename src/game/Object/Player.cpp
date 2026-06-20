@@ -1600,11 +1600,22 @@ void Player::Update(uint32 update_diff, uint32 p_time)
                 float speed = (mflags & MOVEFLAG_WALK_MODE) ? GetSpeed(MOVE_WALK)
                             : (lx < 0.0f ? GetSpeed(MOVE_RUN_BACK) : GetSpeed(MOVE_RUN));
                 float dt = float(stale) / 1000.0f;
-                float nx = GetPositionX() + cos(dir) * speed * dt;
-                float ny = GetPositionY() + sin(dir) * speed * dt;
-                float nz = GetMap()->GetHeight(nx, ny, GetPositionZ() + 2.0f);
+                float cx = GetPositionX(), cy = GetPositionY(), cz = GetPositionZ();
+                float nx = cx + cos(dir) * speed * dt;
+                float ny = cy + sin(dir) * speed * dt;
+
+                // Collision-aware: never extrapolate THROUGH geometry. If the
+                // predicted path crosses a wall, clamp the heartbeat to just before
+                // it (GetHitPosition pulls back 0.5yd) so the mover visually stops at
+                // the wall instead of clipping through and snapping back on reconcile.
+                float hx = nx, hy = ny, hz = cz + 1.5f;
+                if (GetMap()->GetHitPosition(cx, cy, cz + 1.5f, hx, hy, hz, -0.5f))
+                {
+                    nx = hx; ny = hy;
+                }
+                float nz = GetMap()->GetHeight(nx, ny, cz + 2.0f);
                 if (nz < -50000.0f)
-                    nz = GetPositionZ();
+                    nz = cz;
 
                 MovementInfo hb = m_movementInfo;
                 hb.ChangePosition(nx, ny, nz, o);
