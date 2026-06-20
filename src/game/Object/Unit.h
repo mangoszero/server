@@ -709,7 +709,7 @@ class MovementInfo
         }
         ObjectGuid const& GetTransportGuid() const { return t_guid; }
         Position const* GetTransportPos() const { return &t_pos; }
-        uint32 GetTime()
+        uint32 GetTime() const
         {
             return time;
         }

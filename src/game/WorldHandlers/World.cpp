@@ -109,6 +109,9 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+// ANTICHEAT
+#include "AntiCheatMgr.h"
+
 #include <iostream>
 #include <sstream>
 
@@ -930,6 +933,41 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED, "Realm.RecommendedOrNew.Enabled", false);
     setConfig(CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW, "Realm.RecommendedOrNew", false);
 
+    // Anti-Cheat / Movement-Validation framework. Master switch off by default:
+    // with AntiCheat.Enable = 0 the framework is fully inert.
+    setConfig(CONFIG_BOOL_ANTICHEAT_ENABLE,       "AntiCheat.Enable", false);
+    setConfig(CONFIG_BOOL_ANTICHEAT_MOVEMENT,     "AntiCheat.Movement.Enable", true);
+    setConfig(CONFIG_BOOL_ANTICHEAT_PHYSICS,      "AntiCheat.Physics.Enable", true);
+    setConfig(CONFIG_BOOL_ANTICHEAT_EXEMPT_BOTS,  "AntiCheat.ExemptBots", true);
+    setConfig(CONFIG_BOOL_ANTICHEAT_PERSIST,      "AntiCheat.Persist", true);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_EXEMPT_GM, "AntiCheat.ExemptGMLevel", 1, 0, 4);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_ACTION,    "AntiCheat.Action", 1, 0, 4);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_SPEED_TOL, "AntiCheat.Speed.Tolerance", 110, 100, 500);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_TELE_DIST, "AntiCheat.Teleport.Distance", 50, 10, 1000);
+    setConfig(CONFIG_UINT32_ANTICHEAT_SCORE_WARN,   "AntiCheat.Score.Warn", 30);
+    setConfig(CONFIG_UINT32_ANTICHEAT_SCORE_RUBBER, "AntiCheat.Score.Rubberband", 60);
+    setConfig(CONFIG_UINT32_ANTICHEAT_SCORE_KICK,   "AntiCheat.Score.Kick", 120);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_DECAY,  "AntiCheat.Score.DecayPerSec", 2, 0, 100);
+    // Spell-cast timing: more than this many cast requests per second = cast spam.
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_CAST_BURST, "AntiCheat.CastBurstPerSec", 8, 2, 100);
+    // Acceleration/velocity-delta gate (FP-prone; OFF by default). Flags a sudden
+    // speed increase beyond allowed-speed * this multiplier per second.
+    setConfig(CONFIG_BOOL_ANTICHEAT_ACCEL_CHECK,    "AntiCheat.AccelCheck", false);
+    setConfigMinMax(CONFIG_UINT32_ANTICHEAT_ACCEL_MULT, "AntiCheat.AccelMaxMult", 6, 2, 50);
+    // Bot-movement heuristic (snap-to-waypoint + metronomic packet timing over a
+    // 30s window). Heuristic/FP-prone, so OFF by default.
+    setConfig(CONFIG_BOOL_ANTICHEAT_BOT_DETECT,     "AntiCheat.BotDetect", false);
+    // Anti-gaming autoban: account-level kick accumulation with slow (hours) decay
+    // so spacing offences out still accumulates; ban duration escalates. Off by
+    // default (needs AntiCheat.Enable too).
+    setConfig(CONFIG_BOOL_AC_AUTOBAN_ENABLE,            "AntiCheat.Autoban.Enable", false);
+    setConfigMinMax(CONFIG_UINT32_AC_AUTOBAN_KICKPOINTS, "AntiCheat.Autoban.KickPoints", 10, 1, 1000);
+    setConfigMinMax(CONFIG_UINT32_AC_AUTOBAN_THRESHOLD,  "AntiCheat.Autoban.Threshold", 30, 1, 100000);
+    setConfigMinMax(CONFIG_UINT32_AC_AUTOBAN_DECAY_PER_HOUR, "AntiCheat.Autoban.DecayPerHour", 1, 0, 1000);
+    setConfig(CONFIG_UINT32_AC_AUTOBAN_DUR1,            "AntiCheat.Autoban.Duration1", 86400);   // 1 day
+    setConfig(CONFIG_UINT32_AC_AUTOBAN_DUR2,            "AntiCheat.Autoban.Duration2", 604800);  // 7 days
+    setConfig(CONFIG_UINT32_AC_AUTOBAN_DUR3,            "AntiCheat.Autoban.Duration3", 0);       // 0 = permanent
+
     m_relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay", 1000u);
     m_relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit", 10), 2);
 
@@ -1537,6 +1575,9 @@ void World::SetInitialWorldSettings()
     // for AhBot
     m_timers[WUPDATE_AHBOT].SetInterval(20 * IN_MILLISECONDS); // every 20 sec
 
+    // for Anti-Cheat maintenance (idle score pruning)
+    m_timers[WUPDATE_ANTICHEAT].SetInterval(30 * IN_MILLISECONDS); // every 30 sec
+
     // for AutoBroadcast
     sLog.outString("Starting AutoBroadcast System");
     if (m_broadcastEnable)
@@ -1588,6 +1629,11 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Warden Action Overrides...");
     sWardenCheckMgr->LoadWardenOverrides();
+    sLog.outString();
+
+    // Initialize Anti-Cheat / Movement-Validation framework (inert unless enabled)
+    sLog.outString("Initializing Anti-Cheat framework...");
+    sAntiCheatMgr->Init();
     sLog.outString();
 
     sLog.outString("Deleting expired bans...");
@@ -1851,6 +1897,13 @@ void World::Update(uint32 diff)
     {
         sAuctionBot.Update();
         m_timers[WUPDATE_AHBOT].Reset();
+    }
+
+    /// <li> Handle Anti-Cheat maintenance (prune idle scores + apply autobans)
+    if (m_timers[WUPDATE_ANTICHEAT].Passed())
+    {
+        sAntiCheatMgr->Update(m_timers[WUPDATE_ANTICHEAT].GetCurrent());
+        m_timers[WUPDATE_ANTICHEAT].Reset();
     }
 
 #ifdef ENABLE_PLAYERBOTS

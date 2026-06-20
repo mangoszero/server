@@ -1021,6 +1021,7 @@ int WorldSocket::HandlePing(WorldPacket& recvPacket)
     if (m_Session)
     {
         m_Session->SetLatency(latency);
+        m_Session->UpdateLatencyStats(latency); // Anti-Cheat rolling window/EWMA
         m_Session->SetClientTimeDelay(0); // recalculated on next movement packet
     }
     else

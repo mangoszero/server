@@ -452,6 +452,12 @@ class WorldSession
         {
             m_latency = latency;
         }
+
+        // Anti-Cheat: rolling latency window + EWMA fed from CMSG_PING. Used by the
+        // movement detectors for latency-aware tolerances.
+        void UpdateLatencyStats(uint32 sampleMS);
+        uint32 GetLatencyEWMA() const { return m_latEWMA ? m_latEWMA : m_latency; }
+        uint32 GetLatencyJitter() const { return m_latMax >= m_latMin ? m_latMax - m_latMin : 0; }
         void SetClientTimeDelay(uint32 delay) { m_clientTimeDelay = delay; }
         uint32 getDialogStatus(Player* pPlayer, Object* questgiver, uint32 defstatus);
 
@@ -882,6 +888,14 @@ class WorldSession
         LocaleConstant m_sessionDbcLocale;
         int m_sessionDbLocaleIndex;
         uint32 m_latency;
+        // Anti-Cheat: rolling latency window + smoothed value.
+        static const uint32 LATENCY_WINDOW = 8;
+        uint32 m_latSamples[LATENCY_WINDOW];
+        uint32 m_latIdx;
+        uint32 m_latCount;
+        uint32 m_latEWMA;
+        uint32 m_latMin;
+        uint32 m_latMax;
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;
