@@ -261,6 +261,13 @@ class ChatHandler
         bool HandleAntiCheatJailCommand(char* args);
         bool HandleAntiCheatUnjailCommand(char* args);
         bool HandleAntiCheatDeleteCommand(char* args);
+        // Anti-Cheat GM test tooling
+        bool HandleAntiCheatTopCommand(char* args);
+        bool HandleAntiCheatSetCommand(char* args);
+        bool HandleAntiCheatScoreCommand(char* args);
+        bool HandleAntiCheatTestCommand(char* args);
+        bool HandleAntiCheatRubberbandCommand(char* args);
+        bool HandleSpoofCommand(char* args);
 
         // Anti-Cheat time-sync subsystem commands
         bool HandleTimeSyncStatusCommand(char* args);
@@ -268,6 +275,7 @@ class ChatHandler
         bool HandleTimeSyncSetCommand(char* args);
         bool HandleTimeSyncResyncCommand(char* args);
         bool HandleTimeSyncSkipCommand(char* args);
+        bool HandleTimeSyncDesyncCommand(char* args);
 
         bool HandleAuctionAllianceCommand(char* args);
         bool HandleAuctionGoblinCommand(char* args);

@@ -59,6 +59,25 @@ class AntiCheatMgr
         void RecordViolation(Player* player, AntiCheatViolationType type,
                              float weight, AntiCheatContext const& ctx);
 
+        // GM/dev TEST ingress: runs the full scoring + persist + escalation
+        // pipeline while BYPASSING the enabled/exempt gate, so `.anticheat test`
+        // can exercise every capability on a GM. Not used by detectors.
+        void TestInject(Player* player, AntiCheatViolationType type,
+                        float weight, AntiCheatContext const& ctx);
+
+        // Append a human-readable snapshot of the live AC config (for diagnostics).
+        void BuildDiag(std::string& out);
+
+        // GM tool: set a player's live AC score directly and evaluate escalation
+        // (lets a GM drive the score to a threshold to exercise warn/rubberband/kick).
+        void SetScore(Player* player, float score);
+
+        // When set, RecordViolation bypasses the enabled/exempt gate and the
+        // *Enabled() getters report true — so `.spoof` simulations drive the real
+        // detectors and apply results even on an exempt GM / with AC disabled.
+        // Set only briefly around a synchronous simulation on the world thread.
+        void SetTestBypass(bool on) { m_testBypass = on; }
+
         // World-tick maintenance: prune idle score entries + apply queued autobans.
         void Update(uint32 diff);
 
@@ -68,11 +87,15 @@ class AntiCheatMgr
         // GM review: append a human-readable status line for target (or all).
         void BuildStatus(Player* target, std::string& out);
 
+        // GM triage: the highest live (decayed) scores, sorted desc, as
+        // (characterLowGuid, score) pairs, capped at `limit`.
+        void GetTopScores(uint32 limit, std::vector<std::pair<uint32, float> >& out);
+
         // Config getters (cached snapshot).
         uint32 GetSpeedTolerancePct() const { return m_speedTolerancePct; }
         uint32 GetTeleportDistance()  const { return m_teleportDistance; }
-        bool   MovementEnabled() const { return m_enabled && m_movementEnabled; }
-        bool   PhysicsEnabled()  const { return m_enabled && m_physicsEnabled; }
+        bool   MovementEnabled() const { return m_testBypass || (m_enabled && m_movementEnabled); }
+        bool   PhysicsEnabled()  const { return m_testBypass || (m_enabled && m_physicsEnabled); }
 
     private:
         AntiCheatMgr();
@@ -107,6 +130,11 @@ class AntiCheatMgr
             std::string reason;
         };
 
+        // Shared post-gate body for RecordViolation/TestInject: score, persist,
+        // escalate.
+        void DoRecord(Player* player, AntiCheatViolationType type,
+                      float weight, AntiCheatContext const& ctx);
+
         // Lazily decay the score to "now" using the configured decay rate.
         float DecayedScore(ScoreState& s, uint32 nowMS) const;
 
@@ -129,6 +157,7 @@ class AntiCheatMgr
         void PersistAccount(uint32 accountId, AccountState const& s);
 
         bool   m_enabled;
+        bool   m_testBypass;          // transient: `.spoof` simulation in progress
         bool   m_movementEnabled;
         bool   m_physicsEnabled;
         bool   m_exemptBots;

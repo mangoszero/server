@@ -670,6 +670,98 @@ void MovementAnticheat::NotifyClientTimeSkip(uint32 skippedMs)
     m_trustNext      = true;    // the skip itself moves nothing; trust the next packet
 }
 
+bool MovementAnticheat::SimulateCheat(const std::string& kind, float mag, std::string& outDesc)
+{
+    if (!m_player || !m_player->IsInWorld())
+    {
+        outDesc = "player not in world";
+        return false;
+    }
+
+    // Snapshot the whole validator state (plain-copyable) so the simulation can't
+    // perturb live tracking; restored at the end.
+    MovementAnticheat saved = *this;
+
+    float cx = m_player->GetPositionX();
+    float cy = m_player->GetPositionY();
+    float cz = m_player->GetPositionZ();
+    float co = m_player->GetOrientation();
+    uint32 now = getMSTime();
+    float allowed = m_player->GetSpeed(MOVE_RUN);
+    if (allowed <= 0.0f) allowed = 7.0f;
+
+    // Craft a "previous" baseline at the current position a short tick ago, so the
+    // crafted packet below produces the cheat's delta.
+    m_hasLast = true;
+    m_lastX = cx; m_lastY = cy; m_lastZ = cz; m_lastO = co;
+    m_lastMS = now - 200;            // 0.2s ago
+    m_lastFlags = 0;
+    m_trustNext = false;
+    m_airborne = false; m_fallApexZ = cz;
+    m_grantedFlags = 0;              // ensure flag spoofs aren't excused by a grant
+
+    MovementInfo mi = m_player->m_movementInfo;   // start from the real, valid state
+    mi.SetMovementFlags(MOVEFLAG_NONE);
+    mi.ChangePosition(cx, cy, cz, co);
+    mi.UpdateTime(now);
+    uint16 opcode = MSG_MOVE_HEARTBEAT;
+    bool known = true;
+
+    if (kind == "speed")
+    {
+        float d = allowed * (mag > 0.f ? mag : 4.0f) * 0.2f;   // mag x run-speed over 0.2s
+        mi.ChangePosition(cx + cosf(co) * d, cy + sinf(co) * d, cz, co);
+        outDesc = "speed (exceeds allowed)";
+    }
+    else if (kind == "teleport")
+    {
+        float d = mag > 0.f ? mag : 60.0f;
+        mi.ChangePosition(cx + cosf(co) * d, cy + sinf(co) * d, cz, co);
+        outDesc = "teleport / blink";
+    }
+    else if (kind == "fly")
+    {
+        mi.AddMovementFlag(MovementFlags(MOVEFLAG_FLYING | MOVEFLAG_CAN_FLY));
+        outDesc = "fly flag";
+    }
+    else if (kind == "waterwalk") { mi.AddMovementFlag(MOVEFLAG_WATERWALKING); outDesc = "water-walk flag (no aura)"; }
+    else if (kind == "hover")     { mi.AddMovementFlag(MOVEFLAG_HOVER);        outDesc = "hover flag (no aura)"; }
+    else if (kind == "slowfall")  { mi.AddMovementFlag(MOVEFLAG_SAFE_FALL);    outDesc = "slow-fall flag (no aura)"; }
+    else if (kind == "swim")      { mi.AddMovementFlag(MOVEFLAG_SWIMMING);     outDesc = "swim flag (not in water)"; }
+    else if (kind == "transport") { mi.AddMovementFlag(MOVEFLAG_ONTRANSPORT);  outDesc = "transport flag (no transport)"; }
+    else if (kind == "vertical")  { mi.ChangePosition(cx, cy, cz + 8.0f, co);  outDesc = "vertical climb"; }
+    else if (kind == "jump")
+    {
+        m_airborne = true; m_fallApexZ = cz;          // already airborne -> re-jump
+        opcode = MSG_MOVE_JUMP;
+        outDesc = "mid-air / infinite jump";
+    }
+    else if (kind == "desync")
+    {
+        m_hasClientTime = true; m_lastClientTime = now;
+        mi.UpdateTime(now + 5000);                    // client clock 5s ahead of server
+        mi.ChangePosition(cx + cosf(co) * 2.0f, cy + sinf(co) * 2.0f, cz, co);
+        outDesc = "client/server time divergence";
+    }
+    else if (kind == "noclip")
+    {
+        float d = mag > 0.f ? mag : 6.0f;
+        mi.ChangePosition(cx + cosf(co) * d, cy + sinf(co) * d, cz, co);
+        outDesc = "no-clip (only trips if a wall lies between you and the point)";
+    }
+    else
+    {
+        known = false;
+        outDesc = "unknown cheat kind";
+    }
+
+    if (known)
+        HandlePositionUpdate(opcode, mi);
+
+    *this = saved;   // restore live tracking
+    return known;
+}
+
 void MovementAnticheat::NotifyMoveAckTime(uint32 clientTime)
 {
     if (!m_player || !sAntiCheatMgr->MovementEnabled() || sAntiCheatMgr->IsExempt(m_player))

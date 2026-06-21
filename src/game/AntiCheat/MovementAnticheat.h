@@ -27,6 +27,13 @@ class MovementAnticheat
         // is parsed and before it is applied. opcode is the movement opcode.
         void HandlePositionUpdate(uint16 opcode, MovementInfo const& mi);
 
+        // GM/dev `.spoof` tooling: craft the packet signature of a named cheat and
+        // run it through the REAL detectors (a live end-to-end test of detection +
+        // response), restoring the validator baseline afterwards so live tracking
+        // is unaffected. Requires the manager's test-bypass to be set by the caller.
+        // Returns false (with reason in `outDesc`) for an unknown kind.
+        bool SimulateCheat(const std::string& kind, float mag, std::string& outDesc);
+
         // Periodic (timer-driven from Player::Update) re-validation of the player's
         // current position — a second cadence that catches static exploits where no
         // movement packets are sent (e.g. standing inside geometry).

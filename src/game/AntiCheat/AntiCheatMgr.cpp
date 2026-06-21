@@ -14,7 +14,7 @@
 #include <algorithm>
 
 AntiCheatMgr::AntiCheatMgr()
-    : m_enabled(false), m_movementEnabled(false), m_physicsEnabled(false),
+    : m_enabled(false), m_testBypass(false), m_movementEnabled(false), m_physicsEnabled(false),
       m_exemptBots(true), m_persist(true), m_exemptGmLevel(1),
       m_actionCeiling(AC_ACTION_LOG), m_speedTolerancePct(110),
       m_teleportDistance(50), m_scoreWarn(30), m_scoreRubberband(60),
@@ -103,9 +103,25 @@ void AntiCheatMgr::RecordViolation(Player* player, AntiCheatViolationType type,
 {
     if (!player)
         return;
-    if (!m_enabled || IsExempt(player))
+    // m_testBypass lets `.spoof` simulations score on an exempt GM / with AC off.
+    if (!m_testBypass && (!m_enabled || IsExempt(player)))
         return;
+    DoRecord(player, type, weight, ctx);
+}
 
+void AntiCheatMgr::TestInject(Player* player, AntiCheatViolationType type,
+                              float weight, AntiCheatContext const& ctx)
+{
+    // Deliberately bypasses the enabled/exempt gate so `.anticheat test` can drive
+    // the whole pipeline (scoring, decay, persist, escalation) on a GM.
+    if (!player)
+        return;
+    DoRecord(player, type, weight, ctx);
+}
+
+void AntiCheatMgr::DoRecord(Player* player, AntiCheatViolationType type,
+                            float weight, AntiCheatContext const& ctx)
+{
     // Clamp weight defensively so a single buggy detector can't spike the score.
     if (weight < 0.0f) weight = 0.0f;
     if (weight > 100.0f) weight = 100.0f;
@@ -126,6 +142,65 @@ void AntiCheatMgr::RecordViolation(Player* player, AntiCheatViolationType type,
         Persist(player, type, score, ctx);
 
     Apply(player, score, type, ctx);
+}
+
+void AntiCheatMgr::GetTopScores(uint32 limit, std::vector<std::pair<uint32, float> >& out)
+{
+    uint32 nowMS = getMSTime();
+    std::vector<std::pair<uint32, float> > all;
+    {
+        std::lock_guard<std::mutex> guard(m_lock);
+        for (std::map<uint32, ScoreState>::iterator it = m_scores.begin(); it != m_scores.end(); ++it)
+        {
+            float s = DecayedScore(it->second, nowMS);
+            if (s > 0.0f)
+                all.push_back(std::make_pair(it->first, s));
+        }
+    }
+    std::sort(all.begin(), all.end(),
+              [](std::pair<uint32, float> const& a, std::pair<uint32, float> const& b)
+              { return a.second > b.second; });
+    if (all.size() > limit)
+        all.resize(limit);
+    out.swap(all);
+}
+
+void AntiCheatMgr::SetScore(Player* player, float score)
+{
+    if (!player)
+        return;
+    if (score < 0.0f) score = 0.0f;
+
+    uint32 nowMS = getMSTime();
+    {
+        std::lock_guard<std::mutex> guard(m_lock);
+        ScoreState& s = m_scores[player->GetGUIDLow()];
+        DecayedScore(s, nowMS);   // settle decay before overwriting
+        s.score = score;
+    }
+
+    AntiCheatContext ctx;
+    ctx.mapId = player->GetMapId();
+    ctx.x = player->GetPositionX(); ctx.y = player->GetPositionY(); ctx.z = player->GetPositionZ();
+    ctx.detail = "GM set score";
+    Apply(player, score, AC_VIOLATION_NONE, ctx);
+}
+
+void AntiCheatMgr::BuildDiag(std::string& out)
+{
+    char buf[512];
+    snprintf(buf, sizeof(buf),
+             "AntiCheat config: enabled=%u movement=%u physics=%u accelCheck=%u | "
+             "actionCeiling=%u warn=%u rubber=%u kick=%u decay/s=%u | "
+             "speedTol=%u%% teleDist=%u | autoban=%u (kickPts=%u thr=%u) | "
+             "persist=%u exemptGmLvl=%u exemptBots=%u",
+             (uint32)m_enabled, (uint32)m_movementEnabled, (uint32)m_physicsEnabled,
+             (uint32)sWorld.getConfig(CONFIG_BOOL_ANTICHEAT_ACCEL_CHECK),
+             m_actionCeiling, m_scoreWarn, m_scoreRubberband, m_scoreKick, m_decayPerSec,
+             m_speedTolerancePct, m_teleportDistance,
+             (uint32)m_autobanEnable, m_autobanKickPoints, m_autobanThreshold,
+             (uint32)m_persist, m_exemptGmLevel, (uint32)m_exemptBots);
+    out = buf;
 }
 
 void AntiCheatMgr::Apply(Player* player, float score, AntiCheatViolationType type,
