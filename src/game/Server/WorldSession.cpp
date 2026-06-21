@@ -53,6 +53,7 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Player.h"
+#include "AntiCheatMgr.h"
 #include "ObjectMgr.h"
 #include "Group.h"
 #include "CinematicFlyover.h"
@@ -150,6 +151,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, time_
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
     m_latency(0), m_latIdx(0), m_latCount(0), m_latEWMA(0), m_latMin(0), m_latMax(0),
+    m_desyncPending(false), m_desyncValue(0),
     m_clientTimeDelay(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_npcWatchLastGuid()
 {
     memset(m_latSamples, 0, sizeof(m_latSamples));
@@ -180,11 +182,30 @@ void WorldSession::UpdateLatencyStats(uint32 sampleMS)
     m_latMin = (mn == 0xFFFFFFFF) ? 0 : mn;
     m_latMax = mx;
 
-    // EWMA with a fixed 20% weight on the newest sample.
+    // Time-sync desync detection (opt-in): a sample deviating wildly from the
+    // established baseline (latency spoofing / time manipulation). Once the window
+    // is full, compare against the PREVIOUS smoothed value before folding the new
+    // sample. Flagged here (network thread); recorded later on the safe thread.
+    if (sWorld.getConfig(CONFIG_BOOL_TIMESYNC_ENABLE) &&
+        m_latCount >= LATENCY_WINDOW && m_latEWMA > 0)
+    {
+        uint32 dev = sampleMS > m_latEWMA ? sampleMS - m_latEWMA : m_latEWMA - sampleMS;
+        if (dev > sWorld.getConfig(CONFIG_UINT32_TIMESYNC_DESYNC))
+        {
+            m_desyncPending = true;
+            m_desyncValue = dev;
+        }
+    }
+
+    // EWMA with alpha (percent) from config (default 20): ewma = a*sample + (1-a)*ewma.
+    // Always maintained so the core movement detectors have latency-aware tolerances
+    // regardless of TimeSync.Enable.
+    uint32 alpha = sWorld.getConfig(CONFIG_UINT32_TIMESYNC_ALPHA);
+    if (alpha > 100) { alpha = 100; }
     if (m_latEWMA == 0)
         m_latEWMA = sampleMS;
     else
-        m_latEWMA = (20 * sampleMS + 80 * m_latEWMA) / 100;
+        m_latEWMA = (alpha * sampleMS + (100 - alpha) * m_latEWMA) / 100;
 }
 
 /// WorldSession destructor
@@ -468,6 +489,23 @@ bool WorldSession::Update(PacketFilter& updater)
     if (m_Socket && !m_Socket->IsClosed() && _warden)
     {
         _warden->Update();
+    }
+
+    // Anti-Cheat: consume a pending latency-desync flag (raised on the network
+    // thread in UpdateLatencyStats) here on the safe map/world thread.
+    if (m_desyncPending)
+    {
+        m_desyncPending = false;
+        Player* p = GetPlayer();
+        if (p && p->IsInWorld() && sAntiCheatMgr->MovementEnabled() && !sAntiCheatMgr->IsExempt(p))
+        {
+            AntiCheatContext ctx;
+            ctx.mapId = p->GetMapId();
+            ctx.x = p->GetPositionX(); ctx.y = p->GetPositionY(); ctx.z = p->GetPositionZ();
+            ctx.latency = m_latEWMA;
+            ctx.detail = "latency desync spike";
+            sAntiCheatMgr->RecordViolation(p, AC_VIOLATION_DESYNC, 5.0f, ctx);
+        }
     }
 
     // check if we are safe to proceed with logout

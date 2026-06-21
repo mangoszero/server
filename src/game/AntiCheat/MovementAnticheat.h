@@ -32,6 +32,14 @@ class MovementAnticheat
         // movement packets are sent (e.g. standing inside geometry).
         void PeriodicCheck();
 
+        // Movement-sync clock service: smoothed offset between the server clock
+        // (getMSTime) and the client's reported movement timestamps. Its drift over
+        // time is the desync signal; consumers (detection + optional relay
+        // correction) read it. Valid once HasClockOffset() is true.
+        bool   HasClockOffset() const { return m_hasClockOffset; }
+        int64  GetClockOffsetMs() const { return m_clockOffsetMs; }
+        uint32 GetDesyncStreak() const { return m_desyncStreak; }
+
         // Called when the SERVER relocates the player (teleport ack, map change)
         // so the next client packet is trusted and the baseline is rebuilt
         // instead of being scored as an impossible jump.
@@ -46,10 +54,22 @@ class MovementAnticheat
             if (on) m_grantedFlags |= flag; else m_grantedFlags &= ~flag;
         }
 
+        // Called when the client reports a movement time skip
+        // (CMSG_MOVE_TIME_SKIPPED) — a legitimate client clock jump after a freeze.
+        // Re-baselines the clock service + arms a grace window so the same event
+        // isn't double-scored as desync, AND scores the skip itself for abuse
+        // (oversized / spammed skips are a time-based speed/teleport-mask vector).
+        void NotifyClientTimeSkip(uint32 skippedMs);
+
         // Time-based anti-cheat for the spell-cast path (CMSG_CAST_SPELL): detects
         // GCD bypass (casts closer together than the spell's global cooldown allows)
         // and cast spam. castTimeMs/gcdMs come from the spell entry.
         void NotifySpellCast(uint32 spellId, uint32 castTimeMs, uint32 gcdMs);
+
+        // Time-based anti-cheat for movement ACK packets (force-speed-change,
+        // water-walk): flags client-timestamp regression in the ack (manipulated
+        // ack timing) and folds the sample into the clock-offset service.
+        void NotifyMoveAckTime(uint32 clientTime);
 
         // Last position that passed the teleport/physics gates (rubberband target
         // for enforcement). Valid only if HasValid() is true.
@@ -83,12 +103,31 @@ class MovementAnticheat
         uint32 m_lastClientTime;   // last MovementInfo client timestamp
         bool   m_hasClientTime;
 
+        // Movement-sync clock-offset service (smoothed server-vs-client clock).
+        bool   m_hasClockOffset;
+        int64  m_clockOffsetMs;
+
+        // Time-sync / desync-resync state.
+        uint32 m_timeSkipGraceUntilMS; // suppress per-packet desync scoring until here
+        uint32 m_desyncStreak;         // consecutive desync trips (auto-resync trigger)
+        uint32 m_lastResyncMS;         // last auto-resync server time (cooldown)
+
+        // CMSG_MOVE_TIME_SKIPPED abuse window (frequency + accumulation).
+        uint32 m_skipWinStartMS;
+        uint32 m_skipCount;
+        uint32 m_skipAccumMs;
+
         // Spell-cast timing (GCD bypass + cast spam).
         bool   m_hasLastCast;
         uint32 m_lastCastMS;
         uint32 m_lastCastGcd;
         uint32 m_castWinStartMS;
         uint32 m_castCount;
+
+        // Movement-ACK client-timestamp tracking (kept separate from the movement
+        // path's m_lastClientTime so it can't skew the per-packet desync delta).
+        bool   m_hasAckTime;
+        uint32 m_lastAckTime;
 
         // Kinematics (acceleration / velocity-delta gate).
         bool   m_hasKin;

@@ -896,6 +896,10 @@ class WorldSession
         uint32 m_latEWMA;
         uint32 m_latMin;
         uint32 m_latMax;
+        // Time-sync desync detection: flagged on the network thread (HandlePing),
+        // consumed on the safe map/world thread in WorldSession::Update.
+        bool   m_desyncPending;
+        uint32 m_desyncValue;
         uint32 m_Tutorials[8];
         TutorialDataState m_tutorialState;
         uint32 m_clientTimeDelay;

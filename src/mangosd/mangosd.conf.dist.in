@@ -2056,3 +2056,61 @@ AntiCheat.Autoban.DecayPerHour = 1
 AntiCheat.Autoban.Duration1 = 86400
 AntiCheat.Autoban.Duration2 = 604800
 AntiCheat.Autoban.Duration3 = 0
+
+###################################################################################################
+# ANTI-CHEAT TIME-SYNC SUBSYSTEM
+#
+#   Builds additively on the anti-cheat core. Provides a per-session client<->server
+#   clock-offset service, time-based desync detection, CMSG_MOVE_TIME_SKIPPED handling,
+#   an optional movement-timestamp correction, and an optional desync auto-resync.
+#   GM commands: .timesync status / config / set / resync / skip.
+#
+#   NOTE: the per-session latency window + EWMA (used by the core movement detectors
+#   for latency-aware tolerances) is ALWAYS maintained regardless of TimeSync.Enable;
+#   this switch only governs the time-sync desync detection layer.
+#
+#   TimeSync.Enable
+#       Description: Master switch for the desync-detection layer (latency-spike
+#                    desync + client/server elapsed-time divergence). The skip
+#                    relay and abuse scoring run under AntiCheat.Movement.Enable.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.EWMA.Alpha
+#       Description: Latency EWMA smoothing weight, percent (20 = 0.20).
+#       Default:     20
+#
+#   TimeSync.Desync.Threshold
+#       Description: Latency/elapsed-time deviation (ms) from baseline treated as a
+#                    desync (added to measured latency as tolerance).
+#       Default:     1000
+#
+#   TimeSync.MaxSkipMs
+#       Description: CMSG_MOVE_TIME_SKIPPED above this many ms scores as a time-based
+#                    cheat signal (legit lag-freezes are usually well under this).
+#       Default:     2000
+#
+#   TimeSync.MovementCorrection
+#       Description: Normalise the movement timestamp relayed to OTHER players to the
+#                    server clock so observers interpolate on one timebase (reduces
+#                    other-player warp/stutter). Higher-risk netcode; A/B test it.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.AutoResync
+#       Description: After ResyncDesyncTrips sustained desync trips, rubberband the
+#                    client to its authoritative position (the only vanilla resync
+#                    lever). Cooldown-limited by ResyncCooldownMs.
+#       Default:     0 - (disabled)
+#
+#   TimeSync.ResyncDesyncTrips / TimeSync.ResyncCooldownMs
+#       Default:     5 / 10000
+#
+###################################################################################################
+
+TimeSync.Enable = 0
+TimeSync.EWMA.Alpha = 20
+TimeSync.Desync.Threshold = 1000
+TimeSync.MaxSkipMs = 2000
+TimeSync.MovementCorrection = 0
+TimeSync.AutoResync = 0
+TimeSync.ResyncDesyncTrips = 5
+TimeSync.ResyncCooldownMs = 10000

@@ -58,6 +58,8 @@
 #include "Opcodes.h"
 #include "Log.h"
 #include "Player.h"
+#include "Timer.h"
+#include "World.h"
 #include "AntiCheatMgr.h"
 #include "MovementAnticheat.h"
 #include "MapManager.h"
@@ -369,6 +371,13 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recv_data)
         plMover->UpdateFallInformationIfNeed(movementInfo, opcode);
     }
 
+    // Movement-sync: optionally normalise the timestamp relayed to other players to
+    // the server clock, so all observers interpolate movement on one consistent
+    // timebase (reduces other-player warp/stutter). Gated, OFF by default; only
+    // affects the broadcast copy, not the applied/stored state.
+    if (sWorld.getConfig(CONFIG_BOOL_TIMESYNC_MOVE_CORRECTION))
+        movementInfo.UpdateTime(getMSTime());
+
     WorldPacket data(opcode, uint16(recv_data.size() + 2));
     data << mover->GetPackGUID();             // write guid
     movementInfo.Write(data);                               // write data
@@ -425,6 +434,10 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
     {
         return;
     }
+
+    // Anti-Cheat: validate the ACK's client timestamp (regression = manipulated clock).
+    if (sAntiCheatMgr->MovementEnabled() && !sAntiCheatMgr->IsExempt(_player))
+        _player->GetMovementAnticheat()->NotifyMoveAckTime(movementInfo.GetTime());
 
     // client ACK send one packet for mounted/run case and need skip all except last from its
     // in other cases anti-cheat check can be fail in false case
@@ -639,6 +652,10 @@ void WorldSession::HandleMoveWaterWalkAck(WorldPacket& recv_data)
     recv_data.read_skip<uint32>();                          // unk
     recv_data >> movementInfo;
     recv_data >> Unused<uint32>();                          // unk2
+
+    // Anti-Cheat: validate the ACK's client timestamp (regression = manipulated clock).
+    if (sAntiCheatMgr->MovementEnabled() && !sAntiCheatMgr->IsExempt(_player))
+        _player->GetMovementAnticheat()->NotifyMoveAckTime(movementInfo.GetTime());
 }
 
 /**
@@ -671,6 +688,24 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recv_data)
     recv_data >> guid;
     recv_data >> time_skipped;
     DEBUG_LOG("WORLD: Received opcode CMSG_MOVE_TIME_SKIPPED for %s, time_skipped: %u", guid.GetString().c_str(), time_skipped);
+
+    Unit* mover = _player->GetMover();
+    // Anti-spoof: the reported guid must be this session's active mover.
+    if (!mover || mover->GetObjectGuid() != guid)
+        return;
+
+    // Relay to nearby players so their interpolation of this mover stays aligned
+    // after the mover's client clock skip (fixes observer-side warp/stutter).
+    WorldPacket data(MSG_MOVE_TIME_SKIPPED, mover->GetPackGUID().size() + 4);
+    data << mover->GetPackGUID();
+    data << uint32(time_skipped);
+    mover->SendMessageToSetExcept(&data, _player);
+
+    // Feed the skip into the per-player time-sync / anti-cheat service: re-baseline
+    // for the legitimate case + score abuse (oversized/spammed skips = time hacks).
+    Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL;
+    if (plMover && sAntiCheatMgr->MovementEnabled())
+        plMover->GetMovementAnticheat()->NotifyClientTimeSkip(time_skipped);
 }
 
 /**
