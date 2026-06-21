@@ -57,13 +57,12 @@ Now we use symmetric bracket placement, closing bracket under the opening bracke
         printf("I is %i!\n", i);
     }
 
-Every bracketed block moves its contents by one tab to right. Labels (but not case
+Every bracketed block moves its contents by one tab to the right. Labels (but not case
 selectors or 'public:/private:/protected' C++ keywords) are placed at the leftmost
-indention position for the current block, that is, in the same position where
+indentation position for the current block, that is, in the same position where
 enclosing brackets are.
 
-Also please don't use brackets around a single statement because it clutters the
-code with unneeded stuff; use brackets only when using non-obvious constructs,
+Also use brackets around a single statement because it helps clarify usage to newer coders,
 like:
 
     if (...)
