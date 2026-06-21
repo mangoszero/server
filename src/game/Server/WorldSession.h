@@ -397,7 +397,7 @@ class WorldSession
 
         // auction
         void SendAuctionHello(Unit* unit);
-        void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK);
+        void SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError = EQUIP_ERR_OK, uint32 newOutbid = 0);
         void SendAuctionBidderNotification(AuctionEntry* auction, bool won);
         void SendAuctionOwnerNotification(AuctionEntry* auction, bool sold);
         void SendAuctionRemovedNotification(AuctionEntry* auction);

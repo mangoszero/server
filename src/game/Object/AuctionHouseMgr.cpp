@@ -954,7 +954,8 @@ bool AuctionEntry::BuildAuctionInfo(WorldPacket& data) const
     data << uint32(buyout);                                 // auction->buyout
     data << uint32((expireTime - time(NULL))*IN_MILLISECONDS); // time left
     data << ObjectGuid(HIGHGUID_PLAYER, bidder);            // auction->bidder current
-    data << uint32(bid);                                    // current bid
+    data << uint32(bid && startbid > bid ? startbid : bid); // current bid
+
     return true;
 }
 
