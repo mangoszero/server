@@ -1,0 +1,158 @@
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef MANGOS_H_AUCTION_INTENT_EXECUTOR
+#define MANGOS_H_AUCTION_INTENT_EXECUTOR
+
+#include "Common.h"
+#include "Policies/Singleton.h"
+#include "IpcMessage.h"
+
+#include <unordered_map>
+
+/**
+ * @file AuctionIntentExecutor.h
+ * @brief mangosd-side (authority) executor for AH subprocess intents.
+ *
+ * The out-of-process ah-service child only ADVISES via intents; this
+ * executor is the sole authority that mutates gold/items/auctions. It runs
+ * on the world thread (driven from World::HandleAhInbound), so it may touch
+ * the live sAuctionMgr map without locking.
+ *
+ * Every intent is re-validated against LIVE state before applying. The
+ * child's snapshot may be ~1s stale, so nothing in the intent is trusted
+ * except as a request. Application is idempotent (a per-uuid cache dedups
+ * redeliveries) and atomic (the underlying AuctionHouse* methods wrap their
+ * own DB transactions).
+ */
+
+/**
+ * @brief Idempotent re-validate-and-apply executor for AH intents.
+ *
+ * Singleton accessed via @c sAuctionIntentExecutor. Not thread safe by
+ * design: all entry points must be called from the world thread.
+ */
+class AuctionIntentExecutor
+{
+    public:
+        AuctionIntentExecutor()
+            : m_applied(0), m_rejected(0), m_duplicate(0),
+              m_malformed(0), m_lastPurge(0)
+        {
+        }
+
+        /**
+         * @brief Decode, dedupe, re-validate and apply one inbound intent.
+         *
+         * Routes on @p in.op (IPC_INTENT_SELL/BID/BUYOUT), decodes the
+         * matching struct, dedups by uuid, guards the bot GUID, re-validates
+         * against live state and applies. Always populates @p resultOut with
+         * an IntentResult-encoded IPC_INTENT_RESULT frame to send back to the
+         * child.
+         *
+         * Malformed bodies (Decode failure) and unroutable opcodes leave
+         * @p resultOut empty (op == 0); the caller must not send those.
+         *
+         * @param in        Inbound frame from the child.
+         * @param resultOut Result frame to forward to the child.
+         */
+        void Apply(const IpcMessage& in, IpcMessage& resultOut);
+
+        /**
+         * @brief Drop expired uuid cache entries.
+         *
+         * Erases entries whose expiry second is <= @p now. Cheap; intended
+         * to be called at most ~once/second from World::Update.
+         *
+         * @param now Current game-time in seconds.
+         */
+        void PurgeExpiredUuids(uint32 now);
+
+        /// @return Count of intents accepted and applied (status OK).
+        uint64 GetApplied() const { return m_applied; }
+        /// @return Count of intents rejected after re-validation.
+        uint64 GetRejected() const { return m_rejected; }
+        /// @return Count of duplicate (already-seen uuid) intents ignored.
+        uint64 GetDuplicate() const { return m_duplicate; }
+        /// @return Count of frames that failed to decode (malformed body).
+        uint64 GetMalformed() const { return m_malformed; }
+
+        /// @return Number of live uuid entries currently held in the cache.
+        size_t GetCacheSize() const { return m_appliedUuid.size(); }
+
+    private:
+        /**
+         * @brief Configured TTL (seconds) for uuid cache entries.
+         *
+         * Read once from "AH.Service.IntentTtlSec" (default 900) on first
+         * use; a uuid stays deduped for at least this long after it is
+         * processed, which must exceed the child's redelivery window.
+         */
+        uint32 IntentTtlSec() const;
+
+        /**
+         * @brief Has @p uuid already reached a terminal outcome?
+         * @return true if present (caller should emit INTENT_DUPLICATE).
+         */
+        bool IsDuplicate(uint64 uuid) const
+        {
+            return m_appliedUuid.find(uuid) != m_appliedUuid.end();
+        }
+
+        /**
+         * @brief Record @p uuid as processed so redeliveries are deduped.
+         *
+         * Called on EVERY terminal outcome (OK and REJECTED) so that a
+         * redelivered, already-applied uuid never double-applies.
+         *
+         * @param uuid Intent uuid.
+         * @param now  Current game-time in seconds (expiry = now + TTL).
+         */
+        void Remember(uint64 uuid, uint32 now)
+        {
+            m_appliedUuid[uuid] = now + IntentTtlSec();
+        }
+
+        /// Re-validate-and-apply for IPC_INTENT_SELL. Returns the outcome.
+        void ApplySell(const IpcMessage& in, IpcMessage& resultOut,
+                       uint32 now);
+        /// Re-validate-and-apply for IPC_INTENT_BID. Returns the outcome.
+        void ApplyBid(const IpcMessage& in, IpcMessage& resultOut,
+                      uint32 now);
+        /// Re-validate-and-apply for IPC_INTENT_BUYOUT. Returns the outcome.
+        void ApplyBuyout(const IpcMessage& in, IpcMessage& resultOut,
+                         uint32 now);
+
+        /// uuid -> expiry second (game-time). Dedup cache.
+        std::unordered_map<uint64, uint32> m_appliedUuid;
+
+        uint64 m_applied;    ///< Accepted-and-applied counter.
+        uint64 m_rejected;   ///< Rejected-after-validation counter.
+        uint64 m_duplicate;  ///< Duplicate-uuid counter.
+        uint64 m_malformed;  ///< Failed-to-decode counter.
+        uint32 m_lastPurge;  ///< Last game-time second a purge ran.
+};
+
+/// Convenience define to access the AuctionIntentExecutor singleton.
+#define sAuctionIntentExecutor \
+    MaNGOS::Singleton<AuctionIntentExecutor>::Instance()
+
+#endif // MANGOS_H_AUCTION_INTENT_EXECUTOR
