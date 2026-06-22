@@ -29,6 +29,7 @@
 #include <ace/Reactor.h>
 #include <ace/Event_Handler.h>
 #include <atomic>
+#include <mutex>
 
 class IpcServerHandler;
 class IpcClientHandler;
@@ -48,17 +49,30 @@ static const size_t IPC_OUTBOUND_QUEUE_CAP = 256;
  * boundary, which is a use-after-free + data race once cross-thread use begins.
  *
  * Concurrency contract:
- *   - @ref outbound and @ref live are the ONLY members the caller thread may
- *     touch. @ref outbound is internally synchronised (BoundedQueue) and
- *     @ref live is a std::atomic — both are safe to read/write from any thread.
- *   - @ref handler and @ref reactor are owned by, and may only be
- *     read/written from, the REACTOR thread. The caller thread never
- *     dereferences them.
+ *   - @ref outbound and @ref live are the ONLY lock-free members the caller
+ *     thread may touch. @ref outbound is internally synchronised (BoundedQueue)
+ *     and @ref live is a std::atomic — both are safe to read/write from any
+ *     thread.
+ *   - @ref handler is owned by, and may only be read/written from, the REACTOR
+ *     thread. The caller thread never dereferences it.
+ *   - @ref reactor and @ref notifier form the notify target. The caller thread
+ *     reads them (to call ACE_Reactor::notify) ONLY while holding
+ *     @ref m_notifyMtx; teardown nulls them ONLY while holding the same mutex,
+ *     and only AFTER the reactor thread has been joined. This serialises the
+ *     caller's notify() against destruction of the reactor/notifier objects,
+ *     closing the teardown TOCTOU/use-after-free. See @ref m_notifyMtx.
  *
- * Send path (caller thread): encode into @ref outbound, then poke the reactor
- * via ACE_Reactor::notify(<the side's notifier>). The notifier's
+ * Send path (caller thread): encode into @ref outbound, then take
+ * @ref m_notifyMtx and, if @ref reactor is non-null, poke the reactor via
+ * ACE_Reactor::notify(<the side's notifier>). The notifier's
  * handle_exception() runs on the reactor thread, where it drains @ref outbound
  * and performs the actual send through @ref handler.
+ *
+ * IMPORTANT: the reactor-thread drain (IpcOutboundNotifier::handle_exception)
+ * must NEVER take @ref m_notifyMtx. The drain runs on the reactor thread BEFORE
+ * the teardown join completes; taking the mutex there while teardown waits on
+ * the join would deadlock. The drain only needs @ref outbound and @ref handler,
+ * both of which it already uses.
  *
  * Lifetime: the link is heap-allocated and reference-counted (one ref held by
  * the facade, one by the reactor thread). It outlives both the handler and the
@@ -102,13 +116,25 @@ struct IpcLink
     /// Connected()/SendFrame() on the caller thread load it with acquire
     /// ordering and treat null as "not ready". A non-null acquire-load
     /// therefore guarantees @ref notifier is also visible.
+    ///
+    /// TEARDOWN: the caller thread's SendFrame() additionally reads this under
+    /// @ref m_notifyMtx and only calls notify() while the mutex is held, so
+    /// the notify cannot race the reactor/notifier objects being destroyed.
     std::atomic<ACE_Reactor*> reactor;
 
     /// The reactor-thread notifier whose handle_exception() drains @ref
     /// outbound. Set before @ref reactor is published; passed to
-    /// ACE_Reactor::notify() by the caller thread. Lifetime owned by the
-    /// reactor thread (the IpcThread / IpcClientThread).
+    /// ACE_Reactor::notify() by the caller thread (under @ref m_notifyMtx).
+    /// Lifetime owned by the reactor thread (the IpcThread / IpcClientThread).
     ACE_Event_Handler* notifier;
+
+    /// Guards ONLY the (@ref reactor, @ref notifier) validity for the caller
+    /// thread's notify() call. SendFrame() takes this around the notify;
+    /// teardown takes it to null @ref reactor + @ref notifier AFTER joining the
+    /// reactor thread and BEFORE destroying those objects. The reactor-thread
+    /// drain path must NEVER take this mutex (see the class note above) — it
+    /// would deadlock against the teardown join.
+    std::mutex m_notifyMtx;
 
     // --- reference counting (simple, mutex-free via atomic) ---
 

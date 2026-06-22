@@ -126,9 +126,14 @@ bool IpcServer::SendFrame(const IpcMessage& msg)
         return false;
     }
 
-    // Acquire-load the reactor; a non-null value also publishes link->notifier.
+    // Poke the reactor under m_notifyMtx so the notify can never race teardown
+    // destroying the reactor/notifier. Teardown nulls reactor/notifier under
+    // this same mutex AFTER joining the reactor thread, so here reactor is
+    // either still valid (and notify is safe) or already null (we skip).
     // ACE_Reactor::notify() is documented thread-safe; the notifier's
     // handle_exception() runs on the reactor thread and drains the queue.
+    std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
+
     ACE_Reactor* r = m_link->reactor.load(std::memory_order_acquire);
     if (!r)
     {
@@ -225,6 +230,10 @@ bool IpcClient::SendFrame(const IpcMessage& msg)
         fprintf(stderr, "IpcClient::SendFrame: outbound queue full — frame 0x%04X dropped\n", msg.op);
         return false;
     }
+
+    // See IpcServer::SendFrame: notify under m_notifyMtx so it cannot race
+    // teardown destroying the reactor/notifier.
+    std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
 
     ACE_Reactor* r = m_link->reactor.load(std::memory_order_acquire);
     if (!r)

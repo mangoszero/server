@@ -61,6 +61,24 @@ IpcThread::~IpcThread()
         delete m_acceptor;
         m_acceptor = nullptr;
     }
+
+    // Teardown TOCTOU guard. This destructor runs on the CALLER thread, and only
+    // AFTER IpcServer::Stop() has joined the reactor thread (m_aceThread->wait()
+    // returns before ~Thread → decReference() → this dtor). With the reactor
+    // thread gone, take m_notifyMtx and null reactor/notifier on the link, THEN
+    // release the mutex and destroy the objects. A concurrent SendFrame() either
+    // (a) ran its notify() entirely before us under the mutex (reactor still
+    // alive then), or (b) blocks on the mutex and afterwards sees reactor == null
+    // and skips. notify() can therefore never touch a freed reactor/notifier.
+    // The lock is released before delete, and is NEVER taken across the join, so
+    // there is no deadlock with the reactor-thread drain path.
+    if (m_link)
+    {
+        std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
+        m_link->reactor.store(nullptr, std::memory_order_release);
+        m_link->notifier = nullptr;
+    }
+
     // The notifier is purge_pending_notifications()'d and removed from the
     // reactor in run() before the reactor is destroyed; safe to delete here.
     if (m_notifier)
@@ -182,6 +200,18 @@ IpcClientThread::~IpcClientThread()
         delete m_connector;
         m_connector = nullptr;
     }
+
+    // Teardown TOCTOU guard — symmetric to ~IpcThread. Runs on the caller thread
+    // after IpcClient::Stop() has joined the reactor thread. Null reactor/notifier
+    // under m_notifyMtx, release, THEN destroy the objects. See ~IpcThread for the
+    // full rationale and the no-deadlock argument.
+    if (m_link)
+    {
+        std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
+        m_link->reactor.store(nullptr, std::memory_order_release);
+        m_link->notifier = nullptr;
+    }
+
     if (m_notifier)
     {
         delete m_notifier;
@@ -242,6 +272,17 @@ void IpcClientThread::run()
     {
         fprintf(stderr, "IpcClientThread: connect() failed: %s\n",
                 ACE_OS::strerror(errno));
+
+        // OWNERSHIP: do NOT remove_reference() here — it would be a double-free.
+        // On EVERY -1 return, ACE_Connector::connect_i() has already called
+        // sh->close(CLOSE_DURING_NEW_CONNECTION) on the handler. close() is
+        // virtual and IpcClientHandler overrides it to call remove_reference(),
+        // which (creation refcount 1 -> 0, no register_handler ref since open()
+        // never ran) deletes the handler inside that close() call. m_handler is
+        // therefore already dangling on this path; just null it so nothing else
+        // touches the freed object. (~IpcClientThread never deletes m_handler.)
+        m_handler = nullptr;
+
         if (m_link)
         {
             m_link->reactor.store(nullptr, std::memory_order_release);
