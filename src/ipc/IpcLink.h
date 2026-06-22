@@ -84,6 +84,7 @@ struct IpcLink
     IpcLink()
         : outbound(IPC_OUTBOUND_QUEUE_CAP),
           live(false),
+          runId(0),
           handler(nullptr),
           reactor(nullptr),
           notifier(nullptr),
@@ -99,6 +100,10 @@ struct IpcLink
     /// Published true by the reactor thread on handshake completion, cleared on
     /// handle_close(). Read by the caller thread via Connected().
     std::atomic<bool> live;
+
+    /// Per-spawn run-id received in IPC_HELLO_ACK (set by handler, read by
+    /// IpcClient::RunId()). Zero until the handshake completes.
+    std::atomic<uint32> runId;
 
     // --- reactor-thread-only members ---
 

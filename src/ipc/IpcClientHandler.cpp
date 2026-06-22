@@ -349,7 +349,21 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                                     ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
-            // Body: uint32 gametime (we ignore it for now; data load is a stub)
+            // Body: uint32 run-id (per-spawn uuid seed assigned by supervisor)
+            uint32 runId = 0;
+            if (msg.body.size() >= sizeof(uint32))
+            {
+                ByteBuffer b;
+                b.append(msg.body.contents(), msg.body.size());
+                b >> runId;
+            }
+            if (m_link)
+            {
+                m_link->runId.store(runId,
+                                    std::memory_order_release);
+            }
+            fprintf(stdout, "IpcClientHandler: received run-id %u\n", runId);
+            fflush(stdout);
             // Send IPC_READY
             IpcMessage ready;
             ready.op = IPC_READY;

@@ -83,6 +83,8 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
                                       const std::string& secret,
                                       IpcServerLink* link);
 
+        static void SetPendingRunId(uint32 runId);
+
         // --- ACE framework callbacks ---
 
         IpcServerHandler();
@@ -134,6 +136,8 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         // Shared secret expected in IPC_HELLO.
         std::string                 m_secret;
 
+        uint32                      m_runId;  ///< Per-spawn run-id from handshake.
+
         // Inbound queue shared with IpcServer facade.
         BoundedQueue<IpcMessage>*   m_inbound;
 
@@ -149,6 +153,7 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         static BoundedQueue<IpcMessage>*  s_pendingInbound;
         static std::string                s_pendingSecret;
         static IpcServerLink*             s_pendingLink;
+        static std::atomic<uint32>        s_pendingRunId;
 
         // Helpers.
         int ProcessFrame(const IpcMessage& msg);

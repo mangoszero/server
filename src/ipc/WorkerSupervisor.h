@@ -171,6 +171,7 @@ class WorkerSupervisor
         std::string  m_secret;
         uint32       m_botGuid;
         std::string  m_cfgPath;
+        uint32       m_runId;       ///< Per-spawn run-id; incremented on every spawn.
 
         IpcServer    m_ipc;
 

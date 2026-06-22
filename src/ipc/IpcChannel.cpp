@@ -160,6 +160,11 @@ bool IpcServer::Connected() const
     return m_link && m_link->live.load(std::memory_order_acquire);
 }
 
+void IpcServer::SetRunId(uint32 runId)
+{
+    IpcServerHandler::SetPendingRunId(runId);
+}
+
 // ===========================================================================
 // IpcClient
 // ===========================================================================
@@ -261,4 +266,13 @@ bool IpcClient::PopInbound(IpcMessage& out)
 bool IpcClient::Connected() const
 {
     return m_link && m_link->live.load(std::memory_order_acquire);
+}
+
+uint32 IpcClient::RunId() const
+{
+    if (!m_link)
+    {
+        return 0;
+    }
+    return m_link->runId.load(std::memory_order_acquire);
 }

@@ -103,6 +103,17 @@ class IpcServer
          */
         bool Connected() const;
 
+        /**
+         * @brief Set the per-spawn run-id sent in IPC_HELLO_ACK.
+         *
+         * Called by WorkerSupervisor on the supervisor thread before
+         * SpawnChild(). Uses an atomic store so the value is visible to
+         * the reactor thread when the handler ctor runs.
+         *
+         * @param runId New run-id (supervisor increments per spawn).
+         */
+        void SetRunId(uint32 runId);
+
     private:
         BoundedQueue<IpcMessage>    m_inbound;
         IpcServerLink*              m_link;       ///< Shared link (refcounted).
@@ -161,6 +172,13 @@ class IpcClient
 
         /// True once the handshake has completed.
         bool Connected() const;
+
+        /**
+         * @brief Per-spawn run-id received in IPC_HELLO_ACK.
+         *
+         * Returns 0 until the handshake completes.
+         */
+        uint32 RunId() const;
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;

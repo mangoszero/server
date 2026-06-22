@@ -35,6 +35,7 @@
 BoundedQueue<IpcMessage>* IpcServerHandler::s_pendingInbound = nullptr;
 std::string               IpcServerHandler::s_pendingSecret;
 IpcServerLink*            IpcServerHandler::s_pendingLink    = nullptr;
+std::atomic<uint32>       IpcServerHandler::s_pendingRunId(0);
 
 void IpcServerHandler::SetPendingContext(BoundedQueue<IpcMessage>* inbound,
                                          const std::string& secret,
@@ -43,6 +44,11 @@ void IpcServerHandler::SetPendingContext(BoundedQueue<IpcMessage>* inbound,
     s_pendingInbound = inbound;
     s_pendingSecret  = secret;
     s_pendingLink    = link;
+}
+
+void IpcServerHandler::SetPendingRunId(uint32 runId)
+{
+    s_pendingRunId.store(runId, std::memory_order_release);
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +60,8 @@ IpcServerHandler::IpcServerHandler()
       m_state(IPC_SRV_WAIT_HELLO),
       m_inbound(nullptr),
       m_link(nullptr),
-      m_closing(false)
+      m_closing(false),
+      m_runId(s_pendingRunId.load(std::memory_order_acquire))
 {
     reference_counting_policy().value(
         ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
@@ -381,10 +388,10 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
 
             sLog.outString("IpcServerHandler: IPC_HELLO OK from pid %u", pid);
 
-            // Reply IPC_HELLO_ACK { gametime = 0 (placeholder) }
+            // Reply IPC_HELLO_ACK { run-id: per-spawn uuid seed }
             IpcMessage ack;
             ack.op = IPC_HELLO_ACK;
-            ack.body << uint32(0); // gametime placeholder
+            ack.body << m_runId; // per-spawn run-id
             if (SendFrame(ack) == -1)
             {
                 return -1;

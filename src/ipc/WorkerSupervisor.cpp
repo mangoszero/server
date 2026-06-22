@@ -58,6 +58,7 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
     , m_failCount(0)
     , m_started(false)
     , m_childExited(true)
+    , m_runId(0)
 #ifdef _WIN32
     , m_jobObject(NULL)
 #endif
@@ -138,6 +139,12 @@ bool WorkerSupervisor::SpawnChild()
     // The child will manage show/hide in Task 5.
     opts.creation_flags(CREATE_NEW_CONSOLE);
 #endif
+
+    // Assign a new per-spawn run-id (monotonically increasing; 0 is never used).
+    ++m_runId;
+    m_ipc.SetRunId(m_runId);
+    sLog.outString("[WorkerSupervisor:%s] assigned run-id %u",
+                   m_name.c_str(), static_cast<unsigned>(m_runId));
 
     // Spawn via the singleton ACE_Process_Manager, passing our ACE_Process
     // object so we can retrieve the process HANDLE for the Job Object.
