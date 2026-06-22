@@ -54,6 +54,7 @@
 #include "Player.h"
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/AuctionIntentExecutor.h"
 #include "ObjectMgr.h"
 #include "CreatureEventAIMgr.h"
 #include "GuildMgr.h"
@@ -1914,6 +1915,16 @@ void World::Update(uint32 diff)
         {
             HandleAhInbound(msgs[i]);
         }
+
+        // Expire processed-uuid dedup entries. Rate-limit to once per second
+        // (game-time); purging every tick would be wasteful.
+        static time_t s_lastIntentPurge = 0;
+        const time_t nowSec = GetGameTime();
+        if (nowSec != s_lastIntentPurge)
+        {
+            sAuctionIntentExecutor.PurgeExpiredUuids(uint32(nowSec));
+            s_lastIntentPurge = nowSec;
+        }
     }
 
 #ifdef ENABLE_PLAYERBOTS
@@ -2034,10 +2045,33 @@ void World::HandleAhInbound(const IpcMessage& msg)
                        " IPC_HEARTBEAT_ACK");
             break;
         }
+        case IPC_INTENT_SELL:
+        case IPC_INTENT_BID:
+        case IPC_INTENT_BUYOUT:
+        {
+            // Authority side: re-validate against live state and apply
+            // idempotently. The executor populates `result` with an
+            // IPC_INTENT_RESULT frame to return to the child (or leaves it
+            // empty -- op 0 -- for a malformed body, which we must not send).
+            IpcMessage result;
+            sAuctionIntentExecutor.Apply(msg, result);
+            if (m_ahSupervisor != NULL && result.op != IpcOpcode(0))
+            {
+                m_ahSupervisor->Channel().SendFrame(result);
+            }
+            break;
+        }
+        case IPC_INTENT_RESULT:
+        {
+            // mangosd -> child direction; should never be received here.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_INTENT_RESULT (ignored)");
+            break;
+        }
         default:
         {
             DETAIL_LOG("[AHSupervisor] HandleAhInbound: opcode 0x%04X"
-                       " (body=%u bytes) -- unhandled (M2 routing pending)",
+                       " (body=%u bytes) -- unhandled",
                        static_cast<unsigned>(msg.op),
                        static_cast<unsigned>(msg.body.size()));
             break;
