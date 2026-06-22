@@ -394,6 +394,8 @@ void WorkerSupervisor::DrainInboundProtocol()
 void WorkerSupervisor::DrainInbound(std::vector<IpcMessage>& out,
                                     size_t maxPerTick)
 {
+    MANGOS_ASSERT(m_pendingFrames.size() <= IPC_INBOUND_QUEUE_CAP);
+
     if (m_pendingFrames.empty())
     {
         return;

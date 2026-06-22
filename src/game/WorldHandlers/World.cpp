@@ -1864,17 +1864,21 @@ void World::Update(uint32 diff)
     /// <li> Tick the AH subprocess supervisor and drain inbound frames
     if (m_ahSupervisor != NULL)
     {
+        // Tick() uses wall-clock deltas internally; do NOT gate behind WUPDATE_AHBOT.
         m_ahSupervisor->Tick(GetGameTime());
 
         // Overflow visibility: warn (rate-limited) when the inbound queue
         // has dropped frames since we last checked.
         static size_t s_lastDroppedSeen = 0;
         static time_t s_lastOverflowWarn = 0;
+        static time_t s_lastNearFullWarn = 0;
         const size_t  dropped = m_ahSupervisor->InboundDropped();
         if (dropped > s_lastDroppedSeen)
         {
             const time_t now = time(NULL);
             // Warn at most once every 60 seconds to avoid log spam.
+            // Baseline only advances on emission so suppressed bursts are
+            // counted correctly in the next warning.
             if (now - s_lastOverflowWarn >= 60)
             {
                 sLog.outError("[AHSupervisor] inbound queue overflow:"
@@ -1882,13 +1886,30 @@ void World::Update(uint32 diff)
                               static_cast<unsigned>(dropped - s_lastDroppedSeen),
                               static_cast<unsigned>(dropped));
                 s_lastOverflowWarn = now;
+                s_lastDroppedSeen  = dropped;
             }
-            s_lastDroppedSeen = dropped;
         }
 
         // Drain up to 256 application frames per tick.
         std::vector<IpcMessage> msgs;
         m_ahSupervisor->DrainInbound(msgs, 256);
+
+        // Near-full warning: queue >= 80% capacity means we are close to
+        // dropping frames even though none have been lost yet.
+        const size_t qSize = m_ahSupervisor->Channel().InboundSize();
+        if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
+        {
+            const time_t now = time(NULL);
+            if (now - s_lastNearFullWarn >= 60)
+            {
+                sLog.outError("[AHSupervisor] inbound queue near full:"
+                              " %u / %u frames",
+                              static_cast<unsigned>(qSize),
+                              static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
+                s_lastNearFullWarn = now;
+            }
+        }
+
         for (size_t i = 0; i < msgs.size(); ++i)
         {
             HandleAhInbound(msgs[i]);
