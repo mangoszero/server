@@ -54,4 +54,23 @@ CharacterDatabaseConnections = 1
 
 AhBot.ConfigPath = ahbot.conf
 
+#
+#    AhBot.DryRun
+#        When 1 the child still makes auction decisions on its cadence but
+#        LOGS each intent (opcode + key fields) instead of sending it to
+#        mangosd. The child is always read-only on the DB; this only governs
+#        whether decided intents are transmitted.
+#    Default: 0 (emit intents)
+
+AhBot.DryRun = 0
+
+#
+#    AhBot.UpdateIntervalMs
+#        Bot decision cadence in milliseconds. Matches the in-process bot's
+#        20s WUPDATE_AHBOT tick by default; one rotated operation (one house,
+#        seller or buyer) runs per tick.
+#    Default: 20000
+
+AhBot.UpdateIntervalMs = 20000
+
 ###############################################################################

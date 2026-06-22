@@ -55,10 +55,12 @@
 #include "ServiceDatabase.h"
 #include "ItemPool.h"
 #include "MarketSnapshot.h"
+#include "BotBrain.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Self-test: intent codec round-trip
@@ -584,6 +586,179 @@ static int RunSnapCheck(const char* cfgPath)
 }
 
 // ---------------------------------------------------------------------------
+// Intent emission helpers (shared by dry-run and normal mode)
+// ---------------------------------------------------------------------------
+
+/// Map an EmittedIntent kind to its IPC opcode.
+static uint16 IntentOpcode(const EmittedIntent& ei)
+{
+    switch (ei.kind)
+    {
+        case EmittedIntent::KIND_SELL:   return IPC_INTENT_SELL;
+        case EmittedIntent::KIND_BID:    return IPC_INTENT_BID;
+        case EmittedIntent::KIND_BUYOUT: return IPC_INTENT_BUYOUT;
+        default:                         return 0;
+    }
+}
+
+/// Log one intent (opcode + key fields), splitting the 64-bit uuid into its
+/// run-id high word and sequence low word so the run-id stamping is visible.
+static void LogIntent(const EmittedIntent& ei)
+{
+    switch (ei.kind)
+    {
+        case EmittedIntent::KIND_SELL:
+            printf("  SellIntent   uuid=%08x:%08x bot=%u house=%u item=%u"
+                   " stack=%u bid=%u buyout=%u durHrs=%u\n",
+                   static_cast<unsigned>(ei.sell.uuid >> 32),
+                   static_cast<unsigned>(ei.sell.uuid & 0xFFFFFFFFu),
+                   ei.sell.botGuid, ei.sell.house, ei.sell.itemId,
+                   ei.sell.stack, ei.sell.bid, ei.sell.buyout,
+                   ei.sell.durationHrs);
+            break;
+        case EmittedIntent::KIND_BID:
+            printf("  BidIntent    uuid=%08x:%08x bot=%u auction=%u"
+                   " bidAmount=%u\n",
+                   static_cast<unsigned>(ei.bid.uuid >> 32),
+                   static_cast<unsigned>(ei.bid.uuid & 0xFFFFFFFFu),
+                   ei.bid.botGuid, ei.bid.auctionId, ei.bid.bidAmount);
+            break;
+        case EmittedIntent::KIND_BUYOUT:
+            printf("  BuyoutIntent uuid=%08x:%08x bot=%u auction=%u\n",
+                   static_cast<unsigned>(ei.buyout.uuid >> 32),
+                   static_cast<unsigned>(ei.buyout.uuid & 0xFFFFFFFFu),
+                   ei.buyout.botGuid, ei.buyout.auctionId);
+            break;
+        default:
+            break;
+    }
+}
+
+/// Encode one intent into an IpcMessage body in wire order.
+static void EncodeIntent(const EmittedIntent& ei, IpcMessage& msg)
+{
+    msg.op = static_cast<IpcOpcode>(IntentOpcode(ei));
+    switch (ei.kind)
+    {
+        case EmittedIntent::KIND_SELL:   ei.sell.Encode(msg.body);   break;
+        case EmittedIntent::KIND_BID:    ei.bid.Encode(msg.body);    break;
+        case EmittedIntent::KIND_BUYOUT: ei.buyout.Encode(msg.body); break;
+        default:                                                     break;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Dry-run: decisions without IPC
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Foundation check for Task 8c.
+ *
+ * Loads config + pool + snapshot, resolves the bot GUID, then runs the bot's
+ * rotated operations and LOGS the intents it would emit (without sending).
+ * Uses a synthetic run-id (no IPC handshake) so the uuid stamping is still
+ * exercised and visible. No DB mutation; no IPC.
+ *
+ * @param cfgPath Path to ah-service.conf (already validated non-null).
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunDryRun(const char* cfgPath)
+{
+    if (cfgPath == nullptr)
+    {
+        fprintf(stderr, "ah-service: --dryrun requires --config <path>\n");
+        return 1;
+    }
+
+    if (!sConfig.SetSource(cfgPath))
+    {
+        fprintf(stderr, "ah-service: could not load config '%s'\n", cfgPath);
+        return 1;
+    }
+
+    ServiceConfig config;
+    if (!config.Initialize())
+    {
+        fprintf(stderr, "ah-service: ServiceConfig::Initialize failed\n");
+        return 1;
+    }
+
+    ServiceDatabase db;
+    if (!db.Init())
+    {
+        fprintf(stderr, "ah-service: ServiceDatabase::Init failed\n");
+        return 1;
+    }
+    if (!db.InitCharacter())
+    {
+        fprintf(stderr,
+                "ah-service: ServiceDatabase::InitCharacter failed\n");
+        db.Shutdown();
+        return 1;
+    }
+
+    ItemPool pool(config, db);
+    if (!pool.Build())
+    {
+        fprintf(stderr, "ah-service: item pool empty - cannot dry-run\n");
+        db.Shutdown();
+        return 1;
+    }
+
+    MarketSnapshot snap(db);
+    snap.Refresh();
+
+    // Resolve the bot GUID from the character DB (escaped name lookup).
+    const uint32 botGuid =
+        db.ResolveCharacterGuid(config.GetBotCharacterName());
+    printf("ah-service dryrun: bot character '%s' -> guid %u\n",
+           config.GetBotCharacterName().c_str(), botGuid);
+    if (botGuid == 0)
+    {
+        printf("ah-service dryrun: WARNING bot GUID unresolved -"
+               " seller/buyer intents will be suppressed\n");
+    }
+
+    // Synthetic run-id for dry-run (normal mode uses IpcClient::RunId()).
+    // A distinctive non-zero value so the run-id high word is obvious in the
+    // logged uuids.
+    const uint32 runId = 0xD00DBEEFu;
+
+    BotBrain brain(config, pool, snap, botGuid, runId);
+    brain.Initialize();
+
+    printf("ah-service dryrun: seller=%s buyer=%s run-id=0x%08x\n",
+           brain.SellerEnabled() ? "on" : "off",
+           brain.BuyerEnabled() ? "on" : "off",
+           runId);
+
+    // Run a full rotation (2 * MAX_HOUSE operations) so every house's
+    // seller AND buyer step is exercised in one dry-run.
+    uint32 totalIntents = 0;
+    for (uint32 step = 0; step < 2 * AH_MAX_AUCTION_HOUSE_TYPE; ++step)
+    {
+        std::vector<EmittedIntent> intents;
+        brain.RunOneOperation(intents);
+        if (!intents.empty())
+        {
+            printf("ah-service dryrun: operation produced %u intent(s):\n",
+                   static_cast<unsigned>(intents.size()));
+            for (size_t i = 0; i < intents.size(); ++i)
+            {
+                LogIntent(intents[i]);
+                ++totalIntents;
+            }
+        }
+    }
+
+    db.Shutdown();
+
+    printf("ah-service dryrun OK (%u intents logged)\n", totalIntents);
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Normal child loop
 // ---------------------------------------------------------------------------
 
@@ -594,8 +769,9 @@ static void PrintUsage(const char* argv0)
             " [--botguid <guid>] [--config <path>]\n"
             "       %s --selftest\n"
             "       %s --poolcheck --config <path>\n"
-            "       %s --snapcheck --config <path>\n",
-            argv0, argv0, argv0, argv0);
+            "       %s --snapcheck --config <path>\n"
+            "       %s --dryrun --config <path>\n",
+            argv0, argv0, argv0, argv0, argv0);
 }
 
 int main(int argc, char** argv)
@@ -606,6 +782,7 @@ int main(int argc, char** argv)
     bool selfTest  = false;
     bool poolCheck = false;
     bool snapCheck = false;
+    bool dryRun    = false;
     uint16 port   = 0;
     const char* secret  = nullptr;
     const char* cfgPath = nullptr;
@@ -624,6 +801,10 @@ int main(int argc, char** argv)
         else if (strcmp(argv[i], "--snapcheck") == 0)
         {
             snapCheck = true;
+        }
+        else if (strcmp(argv[i], "--dryrun") == 0)
+        {
+            dryRun = true;
         }
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
         {
@@ -661,6 +842,11 @@ int main(int argc, char** argv)
     if (snapCheck)
     {
         return RunSnapCheck(cfgPath);
+    }
+
+    if (dryRun)
+    {
+        return RunDryRun(cfgPath);
     }
 
     if (port == 0 || secret == nullptr)
@@ -716,8 +902,74 @@ int main(int argc, char** argv)
     printf("ah-service: handshake complete - run-id %u - entering service loop\n",
            cli.RunId());
 
+    // --- Bot-brain setup ---
+    // Config was already loaded into sConfig above (for Console.ShowOnStartup).
+    // Build the value table, item pool, market snapshot and resolve the bot
+    // GUID. If any step fails the loop still runs (heartbeat/console/shutdown),
+    // but no intents are emitted.
+    ServiceConfig botConfig;
+    ServiceDatabase botDb;
+    bool brainReady = false;
+    uint32 botGuid = 0;
+
+    // Dry-run can also be requested via config (logs instead of sends).
+    const bool emitDryRun = sConfig.GetBoolDefault("AhBot.DryRun", false);
+    // Bot tick cadence: matches the in-process WUPDATE_AHBOT (20s); override
+    // via config for testing.
+    const uint32 tickIntervalMs = static_cast<uint32>(
+        sConfig.GetIntDefault("AhBot.UpdateIntervalMs", 20000));
+
+    if (!botConfig.Initialize())
+    {
+        fprintf(stderr, "ah-service: ServiceConfig::Initialize failed -"
+                        " bot decisions disabled\n");
+    }
+    else if (!botDb.Init() || !botDb.InitCharacter())
+    {
+        fprintf(stderr, "ah-service: bot DB init failed -"
+                        " bot decisions disabled\n");
+    }
+    else
+    {
+        botGuid = botDb.ResolveCharacterGuid(botConfig.GetBotCharacterName());
+        if (botGuid == 0)
+        {
+            fprintf(stderr, "ah-service: bot GUID unresolved for '%s' -"
+                            " seller/buyer suppressed\n",
+                    botConfig.GetBotCharacterName().c_str());
+        }
+        brainReady = true;
+    }
+
+    // Pool + snapshot + brain live for the loop's lifetime when ready.
+    ItemPool*       botPool  = nullptr;
+    MarketSnapshot* botSnap  = nullptr;
+    BotBrain*       botBrain = nullptr;
+
+    if (brainReady)
+    {
+        botPool = new ItemPool(botConfig, botDb);
+        if (!botPool->Build())
+        {
+            fprintf(stderr, "ah-service: item pool empty -"
+                            " seller has no items\n");
+        }
+        botSnap = new MarketSnapshot(botDb);
+        botSnap->Refresh();
+        botBrain = new BotBrain(botConfig, *botPool, *botSnap, botGuid,
+                                cli.RunId());
+        botBrain->Initialize();
+        printf("ah-service: bot ready (seller=%s buyer=%s dryrun=%s"
+               " tick=%ums)\n",
+               botBrain->SellerEnabled() ? "on" : "off",
+               botBrain->BuyerEnabled() ? "on" : "off",
+               emitDryRun ? "on" : "off", tickIntervalMs);
+    }
+
     // --- Service loop ---
     volatile bool stop = false;
+    uint32 sinceTickMs = 0;       ///< Accumulator toward the bot cadence.
+    bool   backoffNext = false;   ///< Skip next tick after IPC_QUEUE_FULL.
 
     while (!stop)
     {
@@ -760,6 +1012,27 @@ int main(int argc, char** argv)
                     stop = true;
                     break;
                 }
+                case IPC_INTENT_RESULT:
+                {
+                    IntentResult res;
+                    if (res.Decode(msg.body))
+                    {
+                        printf("ah-service: intent result uuid=%08x:%08x"
+                               " status=%u reason=%u\n",
+                               static_cast<unsigned>(res.uuid >> 32),
+                               static_cast<unsigned>(res.uuid & 0xFFFFFFFFu),
+                               res.status, res.reason);
+                    }
+                    break;
+                }
+                case IPC_QUEUE_FULL:
+                {
+                    // mangosd's apply queue is full: back off one tick.
+                    printf("ah-service: IPC_QUEUE_FULL - backing off one"
+                           " bot cycle\n");
+                    backoffNext = true;
+                    break;
+                }
                 default:
                     // Unknown opcode - ignore silently for now.
                     break;
@@ -773,7 +1046,69 @@ int main(int argc, char** argv)
             break;
         }
 
+        // --- Bot cadence tick ---
+        if (botBrain != nullptr && !stop)
+        {
+            sinceTickMs += 10;
+            if (sinceTickMs >= tickIntervalMs)
+            {
+                sinceTickMs = 0;
+
+                if (backoffNext)
+                {
+                    // Skip this cycle once after an IPC_QUEUE_FULL.
+                    backoffNext = false;
+                }
+                else
+                {
+                    // Refresh the market view, then run ONE rotated op.
+                    botSnap->Refresh();
+                    if (botSnap->Healthy())
+                    {
+                        std::vector<EmittedIntent> intents;
+                        botBrain->RunOneOperation(intents);
+
+                        for (size_t i = 0; i < intents.size(); ++i)
+                        {
+                            if (emitDryRun)
+                            {
+                                LogIntent(intents[i]);
+                            }
+                            else
+                            {
+                                IpcMessage out;
+                                EncodeIntent(intents[i], out);
+                                cli.SendFrame(out);
+                            }
+                        }
+
+                        if (!intents.empty())
+                        {
+                            printf("ah-service: bot tick emitted %u"
+                                   " intent(s)%s\n",
+                                   static_cast<unsigned>(intents.size()),
+                                   emitDryRun ? " (dry-run, logged)" : "");
+                        }
+                    }
+                    else
+                    {
+                        fprintf(stderr, "ah-service: snapshot unhealthy"
+                                        " (%u failures) - not emitting\n",
+                                botSnap->ConsecutiveFailures());
+                    }
+                }
+            }
+        }
+
         ACE_Based::Thread::Sleep(10);
+    }
+
+    delete botBrain;
+    delete botSnap;
+    delete botPool;
+    if (brainReady)
+    {
+        botDb.Shutdown();
     }
 
     cli.Stop();
