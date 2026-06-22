@@ -20,6 +20,9 @@
 # Build the mangos shared library
 add_subdirectory(shared)
 
+# IPC substrate (always built; ah-service and mangosd both link it)
+add_subdirectory(ipc)
+
 add_subdirectory(genrev)
 
 # Needs to link against mangos_world.lib
@@ -44,6 +47,10 @@ endif()
 # If we want the tools for map/vmap/mmap extraction
 if(BUILD_TOOLS)
     add_subdirectory(tools)
+endif()
+
+if(BUILD_AH_SERVICE)
+    add_subdirectory(ah-service)
 endif()
 
 if (BUILD_MANGOSD OR BUILD_REALMD)

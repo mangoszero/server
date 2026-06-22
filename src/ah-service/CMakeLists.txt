@@ -1,0 +1,5 @@
+file(GLOB ah_service_SRC *.cpp *.h)
+add_executable(ah-service ${ah_service_SRC})
+target_link_libraries(ah-service PRIVATE ah_ipc shared Threads::Threads)
+install(TARGETS ah-service DESTINATION ${BIN_DIR}/service-workers/ah-service)
+install(FILES ah-service.conf.dist.in DESTINATION ${CONF_INSTALL_DIR} RENAME ah-service.conf.dist)
