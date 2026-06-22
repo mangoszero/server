@@ -95,7 +95,7 @@ class IpcServer
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;
-        IpcServerLink*              m_link;       ///< Shared with the reactor thread (refcounted).
+        IpcServerLink*              m_link;       ///< Shared link (refcounted).
         IpcThread*                  m_thread;
         ACE_Based::Thread*          m_aceThread;
 
@@ -154,7 +154,7 @@ class IpcClient
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;
-        IpcClientLink*              m_link;       ///< Shared with the reactor thread (refcounted).
+        IpcClientLink*              m_link;       ///< Shared link (refcounted).
         IpcClientThread*            m_thread;
         ACE_Based::Thread*          m_aceThread;
 

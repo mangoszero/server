@@ -163,7 +163,8 @@ int IpcClientHandler::handle_input(ACE_HANDLE)
         return 0;
     }
 
-    m_recvBuf.append(reinterpret_cast<const uint8*>(buf), static_cast<size_t>(n));
+    m_recvBuf.append(reinterpret_cast<const uint8*>(buf),
+                     static_cast<size_t>(n));
 
     while (m_recvBuf.rpos() < m_recvBuf.size())
     {
@@ -179,8 +180,10 @@ int IpcClientHandler::handle_input(ACE_HANDLE)
                 break;
             }
 
-            fprintf(stderr, "IpcClientHandler: framing error: %s\n", err.c_str());
-            return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
+            fprintf(stderr, "IpcClientHandler: framing error: %s\n",
+                    err.c_str());
+            return handle_close(ACE_INVALID_HANDLE,
+                                ACE_Event_Handler::ALL_EVENTS_MASK);
         }
 
         if (ProcessFrame(msg) == -1)
@@ -287,7 +290,8 @@ int IpcClientHandler::SendFrame(const IpcMessage& msg)
 
     if (reactor()->schedule_wakeup(this, ACE_Event_Handler::WRITE_MASK) == -1)
     {
-        fprintf(stderr, "IpcClientHandler::SendFrame: schedule_wakeup WRITE_MASK failed\n");
+        fprintf(stderr, "IpcClientHandler::SendFrame:"
+                        " schedule_wakeup WRITE_MASK failed\n");
         return -1;
     }
 
@@ -339,8 +343,10 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
         {
             if (msg.op != IPC_HELLO_ACK)
             {
-                fprintf(stderr, "IpcClientHandler: expected IPC_HELLO_ACK, got 0x%04X\n", msg.op);
-                return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
+                fprintf(stderr, "IpcClientHandler: expected IPC_HELLO_ACK,"
+                                " got 0x%04X\n", msg.op);
+                return handle_close(ACE_INVALID_HANDLE,
+                                    ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
             // Body: uint32 gametime (we ignore it for now; data load is a stub)
@@ -361,7 +367,8 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                 m_link->live.store(true, std::memory_order_release);
             }
 
-            fprintf(stdout, "IpcClientHandler: handshake complete - channel live\n");
+            fprintf(stdout,
+                    "IpcClientHandler: handshake complete - channel live\n");
             fflush(stdout);
             break;
         }
@@ -372,7 +379,8 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
             {
                 if (!m_inbound->push(msg))
                 {
-                    fprintf(stderr, "IpcClientHandler: inbound queue full - frame 0x%04X dropped\n", msg.op);
+                    fprintf(stderr, "IpcClientHandler: inbound queue full"
+                                    " - frame 0x%04X dropped\n", msg.op);
                 }
             }
             break;

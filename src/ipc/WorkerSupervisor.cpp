@@ -99,7 +99,8 @@ bool WorkerSupervisor::Start()
     }
 
     m_started           = true;
-    m_lastHeartbeatAck  = time(nullptr); // treat start as first ack to give child time
+    // Treat start as the first ack to give the child time to connect.
+    m_lastHeartbeatAck  = time(nullptr);
     m_lastHeartbeatSent = time(nullptr);
     return true;
 }
@@ -126,7 +127,8 @@ bool WorkerSupervisor::SpawnChild()
 
     if (opts.command_line("%s", cmdBuf) != 0)
     {
-        sLog.outError("[WorkerSupervisor:%s] ACE_Process_Options::command_line failed",
+        sLog.outError("[WorkerSupervisor:%s]"
+                      " ACE_Process_Options::command_line failed",
                       m_name.c_str());
         return false;
     }
@@ -143,7 +145,8 @@ bool WorkerSupervisor::SpawnChild()
 
     if (pid == ACE_INVALID_PID)
     {
-        sLog.outError("[WorkerSupervisor:%s] ACE_Process_Manager::spawn failed (cmd: %s)",
+        sLog.outError("[WorkerSupervisor:%s] ACE_Process_Manager::spawn"
+                      " failed (cmd: %s)",
                       m_name.c_str(), cmdBuf);
         return false;
     }
@@ -170,46 +173,52 @@ bool WorkerSupervisor::SpawnChild()
     m_jobObject = CreateJobObjectA(NULL, NULL);
     if (m_jobObject == NULL)
     {
-        sLog.outError("[WorkerSupervisor:%s] CreateJobObject failed (err=%lu) - orphan guard disabled",
+        sLog.outError("[WorkerSupervisor:%s] CreateJobObject failed"
+                      " (err=%lu) - orphan guard disabled",
                       m_name.c_str(), GetLastError());
     }
     else
     {
         JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
         memset(&jeli, 0, sizeof(jeli));
-        jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        jeli.BasicLimitInformation.LimitFlags =
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
         if (!SetInformationJobObject(m_jobObject,
                                      JobObjectExtendedLimitInformation,
                                      &jeli,
                                      sizeof(jeli)))
         {
-            sLog.outError("[WorkerSupervisor:%s] SetInformationJobObject failed (err=%lu) - orphan guard disabled",
+            sLog.outError("[WorkerSupervisor:%s] SetInformationJobObject"
+                          " failed (err=%lu) - orphan guard disabled",
                           m_name.c_str(), GetLastError());
             CloseHandle(m_jobObject);
             m_jobObject = NULL;
         }
         else
         {
-            // ACE_Process::gethandle() returns the Windows HANDLE for the child.
+            // ACE_Process::gethandle() returns the Windows HANDLE for child.
             HANDLE hChild = m_process.gethandle();
             if (hChild == INVALID_HANDLE_VALUE || hChild == NULL)
             {
-                sLog.outError("[WorkerSupervisor:%s] ACE_Process::gethandle() returned invalid - orphan guard disabled",
+                sLog.outError("[WorkerSupervisor:%s] ACE_Process::gethandle()"
+                              " returned invalid - orphan guard disabled",
                               m_name.c_str());
                 CloseHandle(m_jobObject);
                 m_jobObject = NULL;
             }
             else if (!AssignProcessToJobObject(m_jobObject, hChild))
             {
-                sLog.outError("[WorkerSupervisor:%s] AssignProcessToJobObject failed (err=%lu) - orphan guard disabled",
+                sLog.outError("[WorkerSupervisor:%s] AssignProcessToJobObject"
+                              " failed (err=%lu) - orphan guard disabled",
                               m_name.c_str(), GetLastError());
                 CloseHandle(m_jobObject);
                 m_jobObject = NULL;
             }
             else
             {
-                sLog.outString("[WorkerSupervisor:%s] orphan guard (Job Object) armed",
+                sLog.outString("[WorkerSupervisor:%s] orphan guard"
+                               " (Job Object) armed",
                                m_name.c_str());
             }
         }
@@ -217,7 +226,8 @@ bool WorkerSupervisor::SpawnChild()
 #else
     // Linux orphan guard: the child runs prctl(PR_SET_PDEATHSIG, SIGTERM)
     // at startup - implemented in Task 5 on the child side.
-    // TODO(Task-5): child-side prctl(PR_SET_PDEATHSIG, SIGTERM) in ah-service Main.cpp.
+    // TODO(Task-5): child-side prctl(PR_SET_PDEATHSIG, SIGTERM)
+    //               in ah-service Main.cpp.
 #endif
 
     return true;
@@ -245,7 +255,8 @@ void WorkerSupervisor::Tick(uint32 gametime)
         // running() returns 1 if alive, 0 if exited.
         if (!m_process.running())
         {
-            sLog.outError("[WorkerSupervisor:%s] child process (pid=%u) exited unexpectedly",
+            sLog.outError("[WorkerSupervisor:%s] child process (pid=%u)"
+                          " exited unexpectedly",
                           m_name.c_str(), static_cast<unsigned>(m_pid));
             m_childExited = true;
             m_pid         = ACE_INVALID_PID;
@@ -258,7 +269,8 @@ void WorkerSupervisor::Tick(uint32 gametime)
         const time_t ackAge = now - m_lastHeartbeatAck;
         if (ackAge > static_cast<time_t>(WS_HEARTBEAT_TIMEOUT_SEC))
         {
-            sLog.outError("[WorkerSupervisor:%s] heartbeat timeout (no ACK for %u s) - marking child dead",
+            sLog.outError("[WorkerSupervisor:%s] heartbeat timeout"
+                          " (no ACK for %u s) - marking child dead",
                           m_name.c_str(), static_cast<unsigned>(ackAge));
             m_childExited = true;
             if (m_pid != ACE_INVALID_PID)
@@ -275,8 +287,10 @@ void WorkerSupervisor::Tick(uint32 gametime)
         if (now >= m_nextRetryAt)
         {
             ++m_failCount;
-            sLog.outString("[WorkerSupervisor:%s] restarting child (attempt #%u, backoff was %u s)",
-                           m_name.c_str(), static_cast<unsigned>(m_failCount),
+            sLog.outString("[WorkerSupervisor:%s] restarting child"
+                           " (attempt #%u, backoff was %u s)",
+                           m_name.c_str(),
+                           static_cast<unsigned>(m_failCount),
                            static_cast<unsigned>(m_backoffSec));
 
             if (SpawnChild())
@@ -296,15 +310,18 @@ void WorkerSupervisor::Tick(uint32 gametime)
                 }
                 m_backoffSec  = nextBackoff;
                 m_nextRetryAt = now + static_cast<time_t>(m_backoffSec);
-                sLog.outError("[WorkerSupervisor:%s] spawn failed; next retry in %u s",
-                              m_name.c_str(), static_cast<unsigned>(m_backoffSec));
+                sLog.outError("[WorkerSupervisor:%s] spawn failed;"
+                              " next retry in %u s",
+                              m_name.c_str(),
+                              static_cast<unsigned>(m_backoffSec));
             }
         }
         return;
     }
 
     // Send heartbeat on interval.
-    if (now - m_lastHeartbeatSent >= static_cast<time_t>(WS_HEARTBEAT_INTERVAL_SEC))
+    const time_t hbInterval = static_cast<time_t>(WS_HEARTBEAT_INTERVAL_SEC);
+    if (now - m_lastHeartbeatSent >= hbInterval)
     {
         if (m_ipc.Connected())
         {
@@ -353,8 +370,9 @@ void WorkerSupervisor::DrainInbound()
             }
             case IPC_SHUTDOWN_ACK:
             {
-                // Handled in Shutdown(); here just log in case it arrives during Tick.
-                sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK received (unexpected in Tick)",
+                // Handled in Shutdown(); log if it arrives during Tick.
+                sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK"
+                               " received (unexpected in Tick)",
                                m_name.c_str());
                 break;
             }
@@ -389,10 +407,12 @@ void WorkerSupervisor::Shutdown()
         sd.op = IPC_SHUTDOWN;
         m_ipc.SendFrame(sd);
 
-        sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN sent; waiting up to %u s for ACK",
+        sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN sent;"
+                       " waiting up to %u s for ACK",
                        m_name.c_str(), WS_SHUTDOWN_GRACE_SEC);
 
-        const time_t deadline = time(nullptr) + static_cast<time_t>(WS_SHUTDOWN_GRACE_SEC);
+        const time_t grace    = static_cast<time_t>(WS_SHUTDOWN_GRACE_SEC);
+        const time_t deadline = time(nullptr) + grace;
         bool gotAck = false;
 
         while (time(nullptr) < deadline)
@@ -415,12 +435,14 @@ void WorkerSupervisor::Shutdown()
 
         if (gotAck)
         {
-            sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK received - child exiting cleanly",
+            sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK received"
+                           " - child exiting cleanly",
                            m_name.c_str());
         }
         else
         {
-            sLog.outError("[WorkerSupervisor:%s] shutdown ACK timeout - hard-killing child (pid=%u)",
+            sLog.outError("[WorkerSupervisor:%s] shutdown ACK timeout"
+                          " - hard-killing child (pid=%u)",
                           m_name.c_str(), static_cast<unsigned>(m_pid));
         }
     }
@@ -436,7 +458,8 @@ void WorkerSupervisor::Shutdown()
     m_ipc.Stop();
 
 #ifdef _WIN32
-    // 4. Close the Job Object handle (child already dead; this just frees the kernel object).
+    // 4. Close the Job Object handle (child already dead; frees the
+    //    kernel object).
     if (m_jobObject != NULL)
     {
         CloseHandle(m_jobObject);

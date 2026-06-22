@@ -62,16 +62,17 @@ IpcThread::~IpcThread()
         m_acceptor = nullptr;
     }
 
-    // Teardown TOCTOU guard. This destructor runs on the CALLER thread, and only
-    // AFTER IpcServer::Stop() has joined the reactor thread (m_aceThread->wait()
-    // returns before ~Thread -> decReference() -> this dtor). With the reactor
-    // thread gone, take m_notifyMtx and null reactor/notifier on the link, THEN
-    // release the mutex and destroy the objects. A concurrent SendFrame() either
-    // (a) ran its notify() entirely before us under the mutex (reactor still
-    // alive then), or (b) blocks on the mutex and afterwards sees reactor == null
-    // and skips. notify() can therefore never touch a freed reactor/notifier.
-    // The lock is released before delete, and is NEVER taken across the join, so
-    // there is no deadlock with the reactor-thread drain path.
+    // Teardown TOCTOU guard. This destructor runs on the CALLER thread,
+    // and only AFTER IpcServer::Stop() has joined the reactor thread
+    // (m_aceThread->wait() returns before ~Thread -> decReference() ->
+    // this dtor). With the reactor thread gone, take m_notifyMtx and null
+    // reactor/notifier on the link, THEN release the mutex and destroy
+    // the objects. A concurrent SendFrame() either (a) ran its notify()
+    // entirely before us under the mutex (reactor still alive then), or
+    // (b) blocks on the mutex and afterwards sees reactor == null and
+    // skips. notify() can therefore never touch a freed reactor/notifier.
+    // The lock is released before delete, and is NEVER taken across the
+    // join, so there is no deadlock with the reactor-thread drain path.
     if (m_link)
     {
         std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);
@@ -201,10 +202,10 @@ IpcClientThread::~IpcClientThread()
         m_connector = nullptr;
     }
 
-    // Teardown TOCTOU guard - symmetric to ~IpcThread. Runs on the caller thread
-    // after IpcClient::Stop() has joined the reactor thread. Null reactor/notifier
-    // under m_notifyMtx, release, THEN destroy the objects. See ~IpcThread for the
-    // full rationale and the no-deadlock argument.
+    // Teardown TOCTOU guard - symmetric to ~IpcThread. Runs on the caller
+    // thread after IpcClient::Stop() has joined the reactor thread. Null
+    // reactor/notifier under m_notifyMtx, release, THEN destroy objects.
+    // See ~IpcThread for the full rationale and the no-deadlock argument.
     if (m_link)
     {
         std::lock_guard<std::mutex> guard(m_link->m_notifyMtx);

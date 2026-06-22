@@ -99,7 +99,8 @@ static int RunSelfTest()
     {
         if (waited >= maxWaitMs)
         {
-            fprintf(stderr, "selftest FAILED: handshake timed out (srv=%s cli=%s)\n",
+            fprintf(stderr, "selftest FAILED: handshake timed out"
+                            " (srv=%s cli=%s)\n",
                     srv.Connected() ? "live" : "not-live",
                     cli.Connected() ? "live" : "not-live");
             cli.Stop();
@@ -138,7 +139,7 @@ static int RunSelfTest()
 
     while (!gotReply)
     {
-        // Let client process its inbound queue (IPC_ECHO received -> send reply).
+        // Let client process its inbound queue (IPC_ECHO -> send reply).
         IpcMessage clientMsg;
         if (cli.PopInbound(clientMsg))
         {
@@ -177,7 +178,8 @@ static int RunSelfTest()
 
     if (!gotReply)
     {
-        fprintf(stderr, "selftest FAILED: no IPC_ECHO_REPLY after %d ms\n", echoWaitMs);
+        fprintf(stderr, "selftest FAILED: no IPC_ECHO_REPLY after %d ms\n",
+                echoWaitMs);
         return 1;
     }
 
@@ -193,7 +195,8 @@ static int RunSelfTest()
 static void PrintUsage(const char* argv0)
 {
     fprintf(stderr,
-            "Usage: %s --port <port> --secret <secret> [--botguid <guid>] [--config <path>]\n"
+            "Usage: %s --port <port> --secret <secret>"
+            " [--botguid <guid>] [--config <path>]\n"
             "       %s --selftest\n",
             argv0, argv0);
 }
@@ -257,7 +260,8 @@ int main(int argc, char** argv)
         }
         else
         {
-            fprintf(stderr, "ah-service: warning: could not load config '%s'\n", cfgPath);
+            fprintf(stderr, "ah-service: warning: could not load"
+                            " config '%s'\n", cfgPath);
         }
     }
     Console_Show(showConsole);

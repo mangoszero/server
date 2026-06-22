@@ -40,7 +40,8 @@
 static constexpr uint32 WS_HEARTBEAT_INTERVAL_SEC  = 15;
 
 /**
- * @brief Declare the child dead if no IPC_HEARTBEAT_ACK arrives within K seconds.
+ * @brief Declare the child dead if no IPC_HEARTBEAT_ACK arrives within
+ *        K seconds.
  */
 static constexpr uint32 WS_HEARTBEAT_TIMEOUT_SEC   = 45;
 
@@ -87,7 +88,7 @@ class WorkerSupervisor
          * @param port     TCP port for the loopback IPC channel.
          * @param secret   Shared secret for the handshake.
          * @param botGuid  AH bot GUID passed as --botguid to the child.
-         * @param cfgPath  Path to the ah-service config file, passed as --config.
+         * @param cfgPath  Path to the ah-service config file (--config).
          */
         WorkerSupervisor(const std::string& name,
                          const std::string& exePath,
@@ -156,7 +157,7 @@ class WorkerSupervisor
         uint32       m_failCount;       ///< Consecutive failure count.
 
         bool         m_started;         ///< true once Start() succeeded.
-        bool         m_childExited;     ///< true when we know the child is gone.
+        bool         m_childExited;     ///< true when the child is gone.
 
 #ifdef _WIN32
         HANDLE       m_jobObject;       ///< Job Object for orphan guard.

@@ -42,8 +42,8 @@
 enum IpcClientHandshakeState
 {
     IPC_CLI_WAIT_CONNECT    = 0,    ///< Not yet connected
-    IPC_CLI_WAIT_HELLO_ACK  = 1,    ///< Sent IPC_HELLO; waiting for IPC_HELLO_ACK
-    IPC_CLI_WAIT_SEND_READY = 2,    ///< Received IPC_HELLO_ACK; need to send IPC_READY
+    IPC_CLI_WAIT_HELLO_ACK  = 1,    ///< Sent IPC_HELLO; waiting for ACK
+    IPC_CLI_WAIT_SEND_READY = 2,    ///< Got IPC_HELLO_ACK; sending IPC_READY
     IPC_CLI_LIVE            = 3,    ///< Handshake complete
     IPC_CLI_CLOSING         = 4,    ///< Shutting down
 };
@@ -87,8 +87,9 @@ class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
         int handle_input(ACE_HANDLE = ACE_INVALID_HANDLE) override;
         int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
-        int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                         ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
+        int handle_close(
+                ACE_HANDLE = ACE_INVALID_HANDLE,
+                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
 
         // --- Public interface used by IpcClient facade ---
 

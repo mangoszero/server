@@ -101,8 +101,9 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         int handle_output(ACE_HANDLE = ACE_INVALID_HANDLE) override;
 
         /// Called on connection close or error.
-        int handle_close(ACE_HANDLE = ACE_INVALID_HANDLE,
-                         ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
+        int handle_close(
+                ACE_HANDLE = ACE_INVALID_HANDLE,
+                ACE_Reactor_Mask = ACE_Event_Handler::ALL_EVENTS_MASK) override;
 
         // --- Public interface used by IpcServer facade ---
 

@@ -119,10 +119,10 @@ class BoundedQueue
         }
 
     private:
-        size_t                                              m_cap;     ///< Hard capacity limit
-        ACE_Based::LockedQueue<T, ACE_Thread_Mutex>         m_queue;   ///< Underlying thread-safe queue
-        ACE_Atomic_Op<ACE_Thread_Mutex, long>               m_count;   ///< Approximate current depth
-        mutable ACE_Atomic_Op<ACE_Thread_Mutex, long>       m_dropped; ///< Cumulative drop count
+        size_t                                        m_cap;
+        ACE_Based::LockedQueue<T, ACE_Thread_Mutex>   m_queue;
+        ACE_Atomic_Op<ACE_Thread_Mutex, long>         m_count;
+        mutable ACE_Atomic_Op<ACE_Thread_Mutex, long> m_dropped;
 };
 
 #endif // AH_IPC_BOUNDED_QUEUE_H

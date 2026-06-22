@@ -33,13 +33,13 @@
 enum IpcOpcode : uint16
 {
     IPC_HELLO           = 0x0001,   ///< Service -> mangosd: initial greeting
-    IPC_HELLO_ACK       = 0x0002,   ///< mangosd -> service: greeting acknowledged
-    IPC_READY           = 0x0003,   ///< Service -> mangosd: ready to process work
+    IPC_HELLO_ACK       = 0x0002,   ///< mangosd -> service: greeting ack
+    IPC_READY           = 0x0003,   ///< Service -> mangosd: ready
     IPC_HEARTBEAT       = 0x0004,   ///< Either direction: keepalive ping
     IPC_HEARTBEAT_ACK   = 0x0005,   ///< Either direction: keepalive pong
-    IPC_GAMETIME        = 0x0006,   ///< mangosd -> service: current server game time
+    IPC_GAMETIME        = 0x0006,   ///< mangosd -> service: server game time
     IPC_CONSOLE         = 0x0007,   ///< Either direction: console/log text
-    IPC_SHUTDOWN        = 0x0008,   ///< Either direction: graceful shutdown request
+    IPC_SHUTDOWN        = 0x0008,   ///< Either direction: graceful shutdown
     IPC_SHUTDOWN_ACK    = 0x0009,   ///< Either direction: shutdown acknowledged
     IPC_ECHO            = 0x000A,   ///< Debug echo request
     IPC_ECHO_REPLY      = 0x000B,   ///< Debug echo reply
