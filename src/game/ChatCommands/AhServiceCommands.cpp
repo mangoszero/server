@@ -72,7 +72,12 @@ bool ChatHandler::HandleAhServiceConsoleShowCommand(char* /*args*/)
     IpcMessage msg;
     msg.op = IPC_CONSOLE;
     msg.body << static_cast<uint8>(1);
-    sv->Channel().SendFrame(msg);
+    if (!sv->Channel().SendFrame(msg))
+    {
+        SendSysMessage("AH service is not responding (send failed).");
+        SetSentErrorMessage(true);
+        return false;
+    }
     SendSysMessage("AH service console show requested.");
     return true;
 }
@@ -93,7 +98,12 @@ bool ChatHandler::HandleAhServiceConsoleHideCommand(char* /*args*/)
     IpcMessage msg;
     msg.op = IPC_CONSOLE;
     msg.body << static_cast<uint8>(0);
-    sv->Channel().SendFrame(msg);
+    if (!sv->Channel().SendFrame(msg))
+    {
+        SendSysMessage("AH service is not responding (send failed).");
+        SetSentErrorMessage(true);
+        return false;
+    }
     SendSysMessage("AH service console hide requested.");
     return true;
 }
