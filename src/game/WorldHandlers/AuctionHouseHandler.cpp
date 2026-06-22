@@ -96,7 +96,7 @@ void WorldSession::SendAuctionHello(Unit* unit)
 }
 
 // call this method when player bids, creates, or deletes auction
-void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError)
+void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError, uint32 newOutbid /*= 0*/)
 {
     WorldPacket data(SMSG_AUCTION_COMMAND_RESULT, 16);
     data << uint32(auc ? auc->Id : 0);
@@ -108,7 +108,7 @@ void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Act
         case AUCTION_OK:
             if (Action == AUCTION_BID_PLACED)
             {
-                data << uint32(auc->GetAuctionOutBid());     // new AuctionOutBid?
+                data << uint32(newOutbid ? newOutbid : auc->GetAuctionOutBid());     // outbid increment
             }
             break;
         case AUCTION_ERR_INVENTORY:
@@ -498,7 +498,13 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         return;
     }
 
-    SendAuctionCommandResult(auction, AUCTION_BID_PLACED, AUCTION_OK);
+    uint32 newOutbid = (price / 100) * 5;
+    if (!newOutbid)
+    {
+        newOutbid = 1;
+    }
+
+    SendAuctionCommandResult(auction, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
 
     auction->UpdateBid(price, pl);
 }
