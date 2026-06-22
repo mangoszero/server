@@ -65,7 +65,7 @@ enum IntentStatus : uint8
 {
     INTENT_OK        = 0,   ///< Intent was accepted and applied
     INTENT_REJECTED  = 1,   ///< Intent was rejected (see reason)
-    INTENT_DUPLICATE = 2,   ///< uuid was seen before; ignored
+    INTENT_DUPLICATE = 2    ///< uuid was seen before; ignored
 };
 
 /**
@@ -80,7 +80,7 @@ enum IntentReason : uint8
     REASON_STALE_BID     = 4,   ///< Bid is below current bid
     REASON_GUID_MISMATCH = 5,   ///< botGuid does not own the auction
     REASON_NO_FUNDS      = 6,   ///< Insufficient funds for bid/buyout
-    REASON_BAD_ITEM      = 7,   ///< Item ID invalid or not listable
+    REASON_BAD_ITEM      = 7    ///< Item ID invalid or not listable
 };
 
 // ---------------------------------------------------------------------------
@@ -99,6 +99,8 @@ enum IntentReason : uint8
  */
 struct SellIntent
 {
+    static const size_t WIRE_SIZE = 33u;  ///< Fixed wire size in bytes.
+
     uint64 uuid;         ///< Unique intent ID (see file note on composition)
     uint32 botGuid;      ///< GUID of the bot placing the listing
     uint8  house;        ///< Auction house faction (0=Alliance,1=Horde,2=Neutral)
@@ -125,8 +127,7 @@ struct SellIntent
      */
     bool Decode(ByteBuffer& buf)
     {
-        static const size_t WIRE_SIZE = 33u;
-        if (buf.size() - buf.rpos() < WIRE_SIZE)
+        if (buf.rpos() + WIRE_SIZE > buf.size())
         {
             return false;
         }
@@ -149,6 +150,8 @@ struct SellIntent
  */
 struct BidIntent
 {
+    static const size_t WIRE_SIZE = 20u;  ///< Fixed wire size in bytes.
+
     uint64 uuid;       ///< Unique intent ID (see SellIntent note)
     uint32 botGuid;    ///< GUID of the bot placing the bid
     uint32 auctionId;  ///< Server auction entry ID to bid on
@@ -167,8 +170,7 @@ struct BidIntent
      */
     bool Decode(ByteBuffer& buf)
     {
-        static const size_t WIRE_SIZE = 20u;
-        if (buf.size() - buf.rpos() < WIRE_SIZE)
+        if (buf.rpos() + WIRE_SIZE > buf.size())
         {
             return false;
         }
@@ -190,6 +192,8 @@ struct BidIntent
  */
 struct BuyoutIntent
 {
+    static const size_t WIRE_SIZE = 16u;  ///< Fixed wire size in bytes.
+
     uint64 uuid;       ///< Unique intent ID (see SellIntent note)
     uint32 botGuid;    ///< GUID of the bot buying out
     uint32 auctionId;  ///< Server auction entry ID to buy out
@@ -207,8 +211,7 @@ struct BuyoutIntent
      */
     bool Decode(ByteBuffer& buf)
     {
-        static const size_t WIRE_SIZE = 16u;
-        if (buf.size() - buf.rpos() < WIRE_SIZE)
+        if (buf.rpos() + WIRE_SIZE > buf.size())
         {
             return false;
         }
@@ -230,6 +233,8 @@ struct BuyoutIntent
  */
 struct IntentResult
 {
+    static const size_t WIRE_SIZE = 10u;  ///< Fixed wire size in bytes.
+
     uint64 uuid;    ///< Echoes the uuid from the triggering intent
     uint8  status;  ///< IntentStatus value
     uint8  reason;  ///< IntentReason value (REASON_NONE when status == INTENT_OK)
@@ -247,8 +252,7 @@ struct IntentResult
      */
     bool Decode(ByteBuffer& buf)
     {
-        static const size_t WIRE_SIZE = 10u;
-        if (buf.size() - buf.rpos() < WIRE_SIZE)
+        if (buf.rpos() + WIRE_SIZE > buf.size())
         {
             return false;
         }
