@@ -588,10 +588,9 @@ int main(int argc, char** argv)
             ahSupervisor = NULL;
         }
     }
-    // Expose supervisor to World for per-tick Tick()/drain (Task 6):
-    //   sWorld.SetAhSupervisor(ahSupervisor);
-    // Wiring deferred to Task 6 (avoids adding a World.h dependency here
-    // before the full drain interface is designed); see task-4-report.md.
+    // Expose supervisor to World so the "ah console" command can reach it.
+    // Per-tick Tick()/drain wiring is deferred to Task 6.
+    sWorld.SetAhSupervisor(ahSupervisor);
 
     //************************************************************************************************************************
     // 6. Start the console thread

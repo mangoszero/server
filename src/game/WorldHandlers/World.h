@@ -52,6 +52,7 @@ class Player;
 class SqlResultQueue;
 class QueryResult;
 class WorldSocket;
+class WorkerSupervisor;
 
 // ServerMessages.dbc
 enum ServerMessageType
@@ -664,6 +665,12 @@ class World
         Eluna* eluna;
 #endif /* ENABLE_ELUNA */
 
+        // AH subprocess supervisor (Task 5+).
+        // Set by mangosd.cpp after WorkerSupervisor::Start() succeeds.
+        // Returns NULL if AH.Service.Enabled=0 or startup failed.
+        void SetAhSupervisor(WorkerSupervisor* sv) { m_ahSupervisor = sv; }
+        WorkerSupervisor* GetAhSupervisor() const  { return m_ahSupervisor; }
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -779,6 +786,9 @@ class World
 
         // List of Maps that should be force-loaded on startup
         std::set<uint32> m_configForceLoadMapIds;
+
+        // AH subprocess supervisor pointer (NULL when service is disabled).
+        WorkerSupervisor* m_ahSupervisor;
 };
 
 extern uint32 realmID;

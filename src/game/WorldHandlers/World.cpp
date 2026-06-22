@@ -220,6 +220,8 @@ World::World()
     {
         m_configBoolValues[i] = false;
     }
+
+    m_ahSupervisor = NULL;
 }
 
 /// World destructor

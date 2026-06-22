@@ -43,6 +43,8 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "Threading/Threading.h"
+#include "Console.h"
+#include "Config/Config.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -204,7 +206,8 @@ int main(int argc, char** argv)
     bool selfTest = false;
     uint16 port   = 0;
     const char* secret  = nullptr;
-    // botguid and config are reserved; parsed but not used in M1.
+    const char* cfgPath = nullptr;
+    // botguid is reserved; parsed but not used in M1.
 
     for (int i = 1; i < argc; ++i)
     {
@@ -226,7 +229,7 @@ int main(int argc, char** argv)
         }
         else if (strcmp(argv[i], "--config") == 0 && i + 1 < argc)
         {
-            ++i; // consume; reserved
+            cfgPath = argv[++i];
         }
     }
 
@@ -240,6 +243,24 @@ int main(int argc, char** argv)
         PrintUsage(argv[0]);
         return 1;
     }
+
+    // --- Install parent-death guard (POSIX: prctl SIGTERM; Windows: no-op) ---
+    Console_InstallParentDeathGuard();
+
+    // --- Read Console.ShowOnStartup and apply initial visibility ---
+    bool showConsole = false;
+    if (cfgPath != nullptr)
+    {
+        if (sConfig.SetSource(cfgPath))
+        {
+            showConsole = sConfig.GetBoolDefault("Console.ShowOnStartup", false);
+        }
+        else
+        {
+            fprintf(stderr, "ah-service: warning: could not load config '%s'\n", cfgPath);
+        }
+    }
+    Console_Show(showConsole);
 
     // --- Normal mode: connect to mangosd IPC server ---
     IpcClient cli;
@@ -291,6 +312,16 @@ int main(int argc, char** argv)
                     reply.op   = IPC_ECHO_REPLY;
                     reply.body = msg.body;
                     cli.SendFrame(reply);
+                    break;
+                }
+                case IPC_CONSOLE:
+                {
+                    uint8 show = 0;
+                    if (msg.body.size() >= 1)
+                    {
+                        msg.body >> show;
+                    }
+                    Console_Show(show != 0);
                     break;
                 }
                 case IPC_SHUTDOWN:
