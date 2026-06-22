@@ -32,7 +32,7 @@
  * Maximum allowed body size for a single IPC frame (1 MiB).
  * Frames advertising a larger body are rejected with "oversize frame".
  */
-static const uint32 IPC_MAX_FRAME = 1u << 20;
+static constexpr uint32 IPC_MAX_FRAME = 1u << 20;
 
 /**
  * @brief A framed IPC message: an opcode plus a variable-length body.
