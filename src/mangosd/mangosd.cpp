@@ -578,7 +578,8 @@ int main(int argc, char** argv)
             sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),
             uint16(sConfig.GetIntDefault("AH.Service.Port", 5760)),
             sConfig.GetStringDefault("AH.Service.Secret", "changeme"),
-            sAuctionBotConfig.GetAHBotId());
+            sAuctionBotConfig.GetAHBotId(),
+            sConfig.GetStringDefault("AH.Service.Config", "ah-service.conf"));
 
         if (!ahSupervisor->Start())
         {

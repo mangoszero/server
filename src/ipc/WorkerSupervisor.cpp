@@ -42,12 +42,14 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
                                    const std::string& exePath,
                                    uint16             port,
                                    const std::string& secret,
-                                   uint32             botGuid)
+                                   uint32             botGuid,
+                                   const std::string& cfgPath)
     : m_name(name)
     , m_exePath(exePath)
     , m_port(port)
     , m_secret(secret)
     , m_botGuid(botGuid)
+    , m_cfgPath(cfgPath)
     , m_pid(ACE_INVALID_PID)
     , m_lastHeartbeatSent(0)
     , m_lastHeartbeatAck(0)
@@ -115,11 +117,12 @@ bool WorkerSupervisor::SpawnChild()
     // Buffer large enough for a typical path + args.
     char cmdBuf[2048];
     snprintf(cmdBuf, sizeof(cmdBuf),
-             "%s --port %u --secret %s --botguid %u",
+             "\"%s\" --port %u --secret \"%s\" --botguid %u --config \"%s\"",
              m_exePath.c_str(),
              static_cast<unsigned>(m_port),
              m_secret.c_str(),
-             static_cast<unsigned>(m_botGuid));
+             static_cast<unsigned>(m_botGuid),
+             m_cfgPath.c_str());
 
     if (opts.command_line("%s", cmdBuf) != 0)
     {

@@ -1800,12 +1800,18 @@ SOAP.Port      = 7878
 #        Shared secret for IPC handshake authentication.
 #        Change this to a random string in production configurations.
 #        Default: changeme
+#
+#    AH.Service.Config
+#        Path to the ah-service configuration file, passed as --config to the
+#        child process so it can locate its own settings.
+#        Default: ah-service.conf
 ###############################################################################
 
 AH.Service.Enabled = 0
 AH.Service.Path    = service-workers/ah-service/ah-service
 AH.Service.Port    = 5760
 AH.Service.Secret  = changeme
+AH.Service.Config  = ah-service.conf
 
 ################################################################################
 #    CharDelete.Method

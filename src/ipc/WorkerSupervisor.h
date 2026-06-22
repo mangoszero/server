@@ -37,22 +37,22 @@
 /**
  * @brief Heartbeat interval: send IPC_HEARTBEAT every N seconds.
  */
-static const uint32 WS_HEARTBEAT_INTERVAL_SEC  = 15;
+static constexpr uint32 WS_HEARTBEAT_INTERVAL_SEC  = 15;
 
 /**
  * @brief Declare the child dead if no IPC_HEARTBEAT_ACK arrives within K seconds.
  */
-static const uint32 WS_HEARTBEAT_TIMEOUT_SEC   = 45;
+static constexpr uint32 WS_HEARTBEAT_TIMEOUT_SEC   = 45;
 
 /**
  * @brief Maximum exponential backoff (seconds).
  */
-static const uint32 WS_MAX_BACKOFF_SEC         = 60;
+static constexpr uint32 WS_MAX_BACKOFF_SEC         = 60;
 
 /**
  * @brief Grace period for IPC_SHUTDOWN_ACK before hard-kill.
  */
-static const uint32 WS_SHUTDOWN_GRACE_SEC      = 10;
+static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
 
 /**
  * @brief Supervises a single child-process worker.
@@ -87,12 +87,14 @@ class WorkerSupervisor
          * @param port     TCP port for the loopback IPC channel.
          * @param secret   Shared secret for the handshake.
          * @param botGuid  AH bot GUID passed as --botguid to the child.
+         * @param cfgPath  Path to the ah-service config file, passed as --config.
          */
         WorkerSupervisor(const std::string& name,
                          const std::string& exePath,
                          uint16             port,
                          const std::string& secret,
-                         uint32             botGuid);
+                         uint32             botGuid,
+                         const std::string& cfgPath);
 
         ~WorkerSupervisor();
 
@@ -136,6 +138,7 @@ class WorkerSupervisor
         uint16       m_port;
         std::string  m_secret;
         uint32       m_botGuid;
+        std::string  m_cfgPath;
 
         IpcServer    m_ipc;
 
