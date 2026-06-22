@@ -1780,6 +1780,33 @@ SOAP.Enabled   = 0
 SOAP.IP        = 127.0.0.1
 SOAP.Port      = 7878
 
+###############################################################################
+#    AH.Service.Enabled
+#        Run the auction house bot as a separate supervised child process.
+#        When enabled, mangosd spawns the ah-service executable, maintains a
+#        loopback IPC channel, and restarts the child on unexpected exit.
+#        Default: 0 (disabled; in-process AH bot is used instead)
+#
+#    AH.Service.Path
+#        Path to the ah-service executable, relative to the mangosd working
+#        directory (or absolute).
+#        Default: service-workers/ah-service/ah-service
+#
+#    AH.Service.Port
+#        Loopback TCP port for the mangosd ↔ ah-service IPC channel.
+#        Default: 5760
+#
+#    AH.Service.Secret
+#        Shared secret for IPC handshake authentication.
+#        Change this to a random string in production configurations.
+#        Default: changeme
+###############################################################################
+
+AH.Service.Enabled = 0
+AH.Service.Path    = service-workers/ah-service/ah-service
+AH.Service.Port    = 5760
+AH.Service.Secret  = changeme
+
 ################################################################################
 #    CharDelete.Method
 #        Character deletion behavior
