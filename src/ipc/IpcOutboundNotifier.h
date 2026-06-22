@@ -73,7 +73,7 @@ class IpcOutboundNotifier : public ACE_Event_Handler
                 return 0;
             }
 
-            HandlerT* h = m_link->handler; // reactor-thread-only read — safe.
+            HandlerT* h = m_link->handler; // reactor-thread-only read - safe.
 
             IpcMessage msg;
             while (m_link->outbound.pop(msg))
@@ -84,7 +84,7 @@ class IpcOutboundNotifier : public ACE_Event_Handler
                     // closing; the frame is dropped (mirrors a dropped queue).
                     h->SendFrame(msg);
                 }
-                // If no live handler, frames are silently discarded — the
+                // If no live handler, frames are silently discarded - the
                 // caller checks Connected() before sending in normal use.
             }
 

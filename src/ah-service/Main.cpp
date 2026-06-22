@@ -33,9 +33,9 @@
  *   --config <path>      (reserved; not used in M1)
  *
  * Normal mode: connect, handshake, then loop handling:
- *   IPC_HEARTBEAT  → IPC_HEARTBEAT_ACK
- *   IPC_ECHO       → IPC_ECHO_REPLY (body echoed back)
- *   IPC_SHUTDOWN   → IPC_SHUTDOWN_ACK, then exit
+ *   IPC_HEARTBEAT  -> IPC_HEARTBEAT_ACK
+ *   IPC_ECHO       -> IPC_ECHO_REPLY (body echoed back)
+ *   IPC_SHUTDOWN   -> IPC_SHUTDOWN_ACK, then exit
  */
 
 #include "IpcVersion.h"
@@ -125,7 +125,7 @@ static int RunSelfTest()
         return 1;
     }
 
-    // The client main loop handles IPC_ECHO → IPC_ECHO_REPLY automatically.
+    // The client main loop handles IPC_ECHO -> IPC_ECHO_REPLY automatically.
     // We need to run it briefly: pump the client inbound queue by running
     // a mini-loop here, then check for IPC_ECHO_REPLY on the server side.
 
@@ -136,7 +136,7 @@ static int RunSelfTest()
 
     while (!gotReply)
     {
-        // Let client process its inbound queue (IPC_ECHO received → send reply).
+        // Let client process its inbound queue (IPC_ECHO received -> send reply).
         IpcMessage clientMsg;
         if (cli.PopInbound(clientMsg))
         {
@@ -258,7 +258,7 @@ int main(int argc, char** argv)
     {
         if (waited >= handshakeTimeoutMs)
         {
-            fprintf(stderr, "ah-service: handshake timed out — exiting\n");
+            fprintf(stderr, "ah-service: handshake timed out - exiting\n");
             cli.Stop();
             return 1;
         }
@@ -266,7 +266,7 @@ int main(int argc, char** argv)
         waited += 50;
     }
 
-    printf("ah-service: handshake complete — entering service loop\n");
+    printf("ah-service: handshake complete - entering service loop\n");
 
     // --- Service loop ---
     volatile bool stop = false;
@@ -295,7 +295,7 @@ int main(int argc, char** argv)
                 }
                 case IPC_SHUTDOWN:
                 {
-                    printf("ah-service: received IPC_SHUTDOWN — exiting\n");
+                    printf("ah-service: received IPC_SHUTDOWN - exiting\n");
                     IpcMessage ack;
                     ack.op = IPC_SHUTDOWN_ACK;
                     cli.SendFrame(ack);
@@ -303,14 +303,14 @@ int main(int argc, char** argv)
                     break;
                 }
                 default:
-                    // Unknown opcode — ignore silently for now.
+                    // Unknown opcode - ignore silently for now.
                     break;
             }
         }
 
         if (!cli.Connected())
         {
-            fprintf(stderr, "ah-service: connection lost — exiting\n");
+            fprintf(stderr, "ah-service: connection lost - exiting\n");
             stop = true;
             break;
         }

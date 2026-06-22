@@ -122,7 +122,7 @@ bool IpcServer::SendFrame(const IpcMessage& msg)
     // Enqueue on the caller thread (thread-safe queue), then poke the reactor.
     if (!m_link->outbound.push(msg))
     {
-        sLog.outError("IpcServer::SendFrame: outbound queue full — frame 0x%04X dropped", msg.op);
+        sLog.outError("IpcServer::SendFrame: outbound queue full - frame 0x%04X dropped", msg.op);
         return false;
     }
 
@@ -227,7 +227,7 @@ bool IpcClient::SendFrame(const IpcMessage& msg)
 
     if (!m_link->outbound.push(msg))
     {
-        fprintf(stderr, "IpcClient::SendFrame: outbound queue full — frame 0x%04X dropped\n", msg.op);
+        fprintf(stderr, "IpcClient::SendFrame: outbound queue full - frame 0x%04X dropped\n", msg.op);
         return false;
     }
 

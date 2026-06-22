@@ -56,8 +56,8 @@ enum IpcClientHandshakeState
  * the handshake.
  *
  * Handshake sequence (client side):
- *   open()           → send IPC_HELLO { proto, pid, secret }
- *   recv IPC_HELLO_ACK → send IPC_READY
+ *   open()           -> send IPC_HELLO { proto, pid, secret }
+ *   recv IPC_HELLO_ACK -> send IPC_READY
  *   (channel is now live)
  */
 class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>

@@ -51,7 +51,7 @@ static const size_t IPC_OUTBOUND_QUEUE_CAP = 256;
  * Concurrency contract:
  *   - @ref outbound and @ref live are the ONLY lock-free members the caller
  *     thread may touch. @ref outbound is internally synchronised (BoundedQueue)
- *     and @ref live is a std::atomic — both are safe to read/write from any
+ *     and @ref live is a std::atomic - both are safe to read/write from any
  *     thread.
  *   - @ref handler is owned by, and may only be read/written from, the REACTOR
  *     thread. The caller thread never dereferences it.
@@ -132,7 +132,7 @@ struct IpcLink
     /// thread's notify() call. SendFrame() takes this around the notify;
     /// teardown takes it to null @ref reactor + @ref notifier AFTER joining the
     /// reactor thread and BEFORE destroying those objects. The reactor-thread
-    /// drain path must NEVER take this mutex (see the class note above) — it
+    /// drain path must NEVER take this mutex (see the class note above) - it
     /// would deadlock against the teardown join.
     std::mutex m_notifyMtx;
 

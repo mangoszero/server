@@ -58,14 +58,14 @@ static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
  * @brief Supervises a single child-process worker.
  *
  * Lifecycle:
- *   1. Start()  — binds IpcServer (acceptor up) THEN spawns the child.
+ *   1. Start()  - binds IpcServer (acceptor up) THEN spawns the child.
  *                 On Windows, attaches a Job Object so the child dies
  *                 if mangosd terminates unexpectedly.
- *   2. Tick()   — called from the world loop (World::Update).
+ *   2. Tick()   - called from the world loop (World::Update).
  *                 Sends IPC_HEARTBEAT + IPC_GAMETIME periodically.
  *                 Detects dead/disconnected child and restarts with
- *                 exponential backoff (1, 2, 4, … 60 s).
- *   3. Shutdown() — sends IPC_SHUTDOWN, waits up to WS_SHUTDOWN_GRACE_SEC
+ *                 exponential backoff (1, 2, 4, ... 60 s).
+ *   3. Shutdown() - sends IPC_SHUTDOWN, waits up to WS_SHUTDOWN_GRACE_SEC
  *                   for IPC_SHUTDOWN_ACK, then hard-kills the child and
  *                   stops the IPC server.
  *
@@ -74,7 +74,7 @@ static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
  * IpcServer::PopInbound are internally thread-safe (BoundedQueue +
  * IpcServerLink mutex).  The m_pid / m_childExited members are only
  * written from the world thread (Tick) and read from the main thread
- * (Shutdown) — the brief data-race on m_childExited is benign
+ * (Shutdown) - the brief data-race on m_childExited is benign
  * (boolean, single-writer, Shutdown fence provided by the world thread
  * stopping before Shutdown() is called in the cascade).
  */

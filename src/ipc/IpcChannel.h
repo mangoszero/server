@@ -40,7 +40,7 @@
 static const size_t IPC_INBOUND_QUEUE_CAP = 256;
 
 // ---------------------------------------------------------------------------
-// IpcServer  —  mangosd-side facade
+// IpcServer  -  mangosd-side facade
 // ---------------------------------------------------------------------------
 
 /**
@@ -105,7 +105,7 @@ class IpcServer
 };
 
 // ---------------------------------------------------------------------------
-// IpcClient  —  child-process-side facade
+// IpcClient  -  child-process-side facade
 // ---------------------------------------------------------------------------
 
 /**
@@ -113,7 +113,7 @@ class IpcServer
  *
  * Owns an IpcClientThread (connector + client reactor) and a BoundedQueue.
  * Connect() spawns the connector thread which immediately sends IPC_HELLO
- * and waits for IPC_HELLO_ACK → IPC_READY exchange on the reactor thread.
+ * and waits for IPC_HELLO_ACK -> IPC_READY exchange on the reactor thread.
  *
  * Lifetime:
  *   IpcClient cli;

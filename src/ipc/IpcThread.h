@@ -45,7 +45,7 @@ typedef IpcOutboundNotifier<IpcClientLink, IpcClientHandler> IpcClientNotifier;
  *
  * run() creates an ACE_TP_Reactor + ACE_Reactor, opens an
  * ACE_Acceptor<IpcServerHandler, ACE_SOCK_ACCEPTOR> on
- * 127.0.0.1:<port>, then calls run_reactor_event_loop() — mirroring
+ * 127.0.0.1:<port>, then calls run_reactor_event_loop() - mirroring
  * WorldSocketMgr::StartNetwork lines ~152-164.
  *
  * Stop() signals end_reactor_event_loop() so run() returns.
@@ -69,7 +69,7 @@ class IpcThread : public ACE_Based::Runnable
 
         ~IpcThread() override;
 
-        /// ACE_Based::Runnable interface — runs the reactor event loop.
+        /// ACE_Based::Runnable interface - runs the reactor event loop.
         void run() override;
 
         /// Signal the reactor to stop.

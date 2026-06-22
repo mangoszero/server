@@ -70,10 +70,10 @@ class IpcMessage
          * and sets @p err to a human-readable reason.
          *
          * Failure reasons:
-         *   "short header"     — fewer than 8 bytes available
-         *   "version mismatch" — header version != IPC_PROTOCOL_VERSION
-         *   "oversize frame"   — body_len > IPC_MAX_FRAME
-         *   "incomplete"       — header parsed but body not yet fully buffered
+         *   "short header"     - fewer than 8 bytes available
+         *   "version mismatch" - header version != IPC_PROTOCOL_VERSION
+         *   "oversize frame"   - body_len > IPC_MAX_FRAME
+         *   "incomplete"       - header parsed but body not yet fully buffered
          *
          * @param w   Source ByteBuffer (read position advanced on success).
          * @param out Populated with the decoded message on success.

@@ -170,7 +170,7 @@ bool WorkerSupervisor::SpawnChild()
     m_jobObject = CreateJobObjectA(NULL, NULL);
     if (m_jobObject == NULL)
     {
-        sLog.outError("[WorkerSupervisor:%s] CreateJobObject failed (err=%lu) — orphan guard disabled",
+        sLog.outError("[WorkerSupervisor:%s] CreateJobObject failed (err=%lu) - orphan guard disabled",
                       m_name.c_str(), GetLastError());
     }
     else
@@ -184,7 +184,7 @@ bool WorkerSupervisor::SpawnChild()
                                      &jeli,
                                      sizeof(jeli)))
         {
-            sLog.outError("[WorkerSupervisor:%s] SetInformationJobObject failed (err=%lu) — orphan guard disabled",
+            sLog.outError("[WorkerSupervisor:%s] SetInformationJobObject failed (err=%lu) - orphan guard disabled",
                           m_name.c_str(), GetLastError());
             CloseHandle(m_jobObject);
             m_jobObject = NULL;
@@ -195,14 +195,14 @@ bool WorkerSupervisor::SpawnChild()
             HANDLE hChild = m_process.gethandle();
             if (hChild == INVALID_HANDLE_VALUE || hChild == NULL)
             {
-                sLog.outError("[WorkerSupervisor:%s] ACE_Process::gethandle() returned invalid — orphan guard disabled",
+                sLog.outError("[WorkerSupervisor:%s] ACE_Process::gethandle() returned invalid - orphan guard disabled",
                               m_name.c_str());
                 CloseHandle(m_jobObject);
                 m_jobObject = NULL;
             }
             else if (!AssignProcessToJobObject(m_jobObject, hChild))
             {
-                sLog.outError("[WorkerSupervisor:%s] AssignProcessToJobObject failed (err=%lu) — orphan guard disabled",
+                sLog.outError("[WorkerSupervisor:%s] AssignProcessToJobObject failed (err=%lu) - orphan guard disabled",
                               m_name.c_str(), GetLastError());
                 CloseHandle(m_jobObject);
                 m_jobObject = NULL;
@@ -216,7 +216,7 @@ bool WorkerSupervisor::SpawnChild()
     }
 #else
     // Linux orphan guard: the child runs prctl(PR_SET_PDEATHSIG, SIGTERM)
-    // at startup — implemented in Task 5 on the child side.
+    // at startup - implemented in Task 5 on the child side.
     // TODO(Task-5): child-side prctl(PR_SET_PDEATHSIG, SIGTERM) in ah-service Main.cpp.
 #endif
 
@@ -258,7 +258,7 @@ void WorkerSupervisor::Tick(uint32 gametime)
         const time_t ackAge = now - m_lastHeartbeatAck;
         if (ackAge > static_cast<time_t>(WS_HEARTBEAT_TIMEOUT_SEC))
         {
-            sLog.outError("[WorkerSupervisor:%s] heartbeat timeout (no ACK for %u s) — marking child dead",
+            sLog.outError("[WorkerSupervisor:%s] heartbeat timeout (no ACK for %u s) - marking child dead",
                           m_name.c_str(), static_cast<unsigned>(ackAge));
             m_childExited = true;
             if (m_pid != ACE_INVALID_PID)
@@ -415,12 +415,12 @@ void WorkerSupervisor::Shutdown()
 
         if (gotAck)
         {
-            sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK received — child exiting cleanly",
+            sLog.outString("[WorkerSupervisor:%s] IPC_SHUTDOWN_ACK received - child exiting cleanly",
                            m_name.c_str());
         }
         else
         {
-            sLog.outError("[WorkerSupervisor:%s] shutdown ACK timeout — hard-killing child (pid=%u)",
+            sLog.outError("[WorkerSupervisor:%s] shutdown ACK timeout - hard-killing child (pid=%u)",
                           m_name.c_str(), static_cast<unsigned>(m_pid));
         }
     }

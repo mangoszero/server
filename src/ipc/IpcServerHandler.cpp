@@ -76,14 +76,14 @@ IpcServerHandler::~IpcServerHandler()
 }
 
 // ---------------------------------------------------------------------------
-// open() — called by ACE_Acceptor immediately after accept()
+// open() - called by ACE_Acceptor immediately after accept()
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::open(void* /*acceptor*/)
 {
     if (m_outBuffer)
     {
-        // Already opened — shouldn't happen.
+        // Already opened - shouldn't happen.
         return -1;
     }
 
@@ -98,7 +98,7 @@ int IpcServerHandler::open(void* /*acceptor*/)
 
     if (!m_inbound)
     {
-        sLog.outError("IpcServerHandler::open: no inbound queue set — call SetPendingContext first");
+        sLog.outError("IpcServerHandler::open: no inbound queue set - call SetPendingContext first");
         return -1;
     }
 
@@ -126,7 +126,7 @@ int IpcServerHandler::open(void* /*acceptor*/)
 }
 
 // ---------------------------------------------------------------------------
-// close() — ACE close hook
+// close() - ACE close hook
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::close(u_long /*flags*/)
@@ -138,7 +138,7 @@ int IpcServerHandler::close(u_long /*flags*/)
 }
 
 // ---------------------------------------------------------------------------
-// handle_input() — data available on socket
+// handle_input() - data available on socket
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::handle_input(ACE_HANDLE)
@@ -175,7 +175,7 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
             // ("short header" / "incomplete"); every other error ("version
             // mismatch", "oversize frame", ...) is a corrupt/hostile stream and
             // is fatal. We match the two known transient strings explicitly and
-            // treat anything else as fatal — without depending on the exact
+            // treat anything else as fatal - without depending on the exact
             // wording of the fatal strings.
             if (err == "incomplete" || err == "short header")
             {
@@ -183,7 +183,7 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
             }
 
             // Fatal framing error.
-            sLog.outError("IpcServerHandler: framing error: %s — closing", err.c_str());
+            sLog.outError("IpcServerHandler: framing error: %s - closing", err.c_str());
             return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
         }
 
@@ -202,7 +202,7 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
 }
 
 // ---------------------------------------------------------------------------
-// CompactRecvBuf() — drop already-consumed front bytes from the reassembly buf
+// CompactRecvBuf() - drop already-consumed front bytes from the reassembly buf
 // ---------------------------------------------------------------------------
 
 void IpcServerHandler::CompactRecvBuf()
@@ -227,7 +227,7 @@ void IpcServerHandler::CompactRecvBuf()
 }
 
 // ---------------------------------------------------------------------------
-// handle_output() — socket ready to write
+// handle_output() - socket ready to write
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::handle_output(ACE_HANDLE)
@@ -236,7 +236,7 @@ int IpcServerHandler::handle_output(ACE_HANDLE)
 }
 
 // ---------------------------------------------------------------------------
-// handle_close() — connection closed or error
+// handle_close() - connection closed or error
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
@@ -268,7 +268,7 @@ int IpcServerHandler::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 }
 
 // ---------------------------------------------------------------------------
-// SendFrame() — encode + queue for send
+// SendFrame() - encode + queue for send
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::SendFrame(const IpcMessage& msg)
@@ -286,7 +286,7 @@ int IpcServerHandler::SendFrame(const IpcMessage& msg)
     const size_t len = wire.size();
     if (m_outBuffer->space() < len)
     {
-        // Buffer full — this is a programming error (frames are small).
+        // Buffer full - this is a programming error (frames are small).
         sLog.outError("IpcServerHandler::SendFrame: output buffer full");
         return -1;
     }
@@ -317,7 +317,7 @@ bool IpcServerHandler::IsClosing() const
 }
 
 // ---------------------------------------------------------------------------
-// ProcessFrame() — dispatch a decoded frame through the handshake state machine
+// ProcessFrame() - dispatch a decoded frame through the handshake state machine
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
@@ -328,14 +328,14 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
         {
             if (msg.op != IPC_HELLO)
             {
-                sLog.outError("IpcServerHandler: expected IPC_HELLO, got 0x%04X — closing", msg.op);
+                sLog.outError("IpcServerHandler: expected IPC_HELLO, got 0x%04X - closing", msg.op);
                 return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
             // IPC_HELLO body: uint16 proto, uint32 pid, string secret
             if (msg.body.size() < 6)
             {
-                sLog.outError("IpcServerHandler: IPC_HELLO body too short — closing");
+                sLog.outError("IpcServerHandler: IPC_HELLO body too short - closing");
                 return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
@@ -354,14 +354,14 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
 
             if (proto != IPC_PROTOCOL_VERSION)
             {
-                sLog.outError("IpcServerHandler: proto mismatch (got %u, expected %u) — closing",
+                sLog.outError("IpcServerHandler: proto mismatch (got %u, expected %u) - closing",
                               proto, IPC_PROTOCOL_VERSION);
                 return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
             if (secret != m_secret)
             {
-                sLog.outError("IpcServerHandler: secret mismatch from pid %u — closing", pid);
+                sLog.outError("IpcServerHandler: secret mismatch from pid %u - closing", pid);
                 return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
@@ -384,7 +384,7 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
         {
             if (msg.op != IPC_READY)
             {
-                sLog.outError("IpcServerHandler: expected IPC_READY, got 0x%04X — closing", msg.op);
+                sLog.outError("IpcServerHandler: expected IPC_READY, got 0x%04X - closing", msg.op);
                 return handle_close(ACE_INVALID_HANDLE, ACE_Event_Handler::ALL_EVENTS_MASK);
             }
 
@@ -405,7 +405,7 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
             // Push all live frames into the inbound queue for the facade to pop.
             if (!m_inbound->push(msg))
             {
-                sLog.outError("IpcServerHandler: inbound queue full — frame 0x%04X dropped", msg.op);
+                sLog.outError("IpcServerHandler: inbound queue full - frame 0x%04X dropped", msg.op);
             }
             break;
         }
@@ -419,7 +419,7 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
 }
 
 // ---------------------------------------------------------------------------
-// FlushOutBuffer() — write as much of m_outBuffer as the socket will take
+// FlushOutBuffer() - write as much of m_outBuffer as the socket will take
 // ---------------------------------------------------------------------------
 
 int IpcServerHandler::FlushOutBuffer()

@@ -33,9 +33,9 @@
  * Wraps ACE_Based::LockedQueue<T> with a hard capacity limit.
  * When the queue is at or above capacity, push() drops the newest
  * item (i.e. the incoming item), increments a dropped counter,
- * and returns false immediately — it NEVER blocks.
+ * and returns false immediately - it NEVER blocks.
  *
- * A momentary ±1 over capacity is acceptable; no additional lock
+ * A momentary +/-1 over capacity is acceptable; no additional lock
  * is taken to make the size-check-then-push atomic.
  *
  * @tparam T  The element type stored in the queue.
@@ -99,7 +99,7 @@ class BoundedQueue
          *
          * The value is maintained via a separate atomic counter rather than
          * calling through the LockedQueue mutex on every size query, so it
-         * may momentarily read ±1 relative to the true queue depth.
+         * may momentarily read +/-1 relative to the true queue depth.
          *
          * @return Approximate queue size.
          */

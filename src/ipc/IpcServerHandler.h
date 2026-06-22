@@ -56,8 +56,8 @@ enum IpcServerHandshakeState
  * frames are pushed into the shared inbound BoundedQueue.
  *
  * The handshake sequence (server side):
- *   recv IPC_HELLO  → verify proto + secret → send IPC_HELLO_ACK
- *   recv IPC_READY  → mark live, log "AH service READY"
+ *   recv IPC_HELLO  -> verify proto + secret -> send IPC_HELLO_ACK
+ *   recv IPC_READY  -> mark live, log "AH service READY"
  *
  * This is a 1-connection server; only one IpcServerHandler is ever active.
  */

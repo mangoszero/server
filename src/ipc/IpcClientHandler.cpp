@@ -83,7 +83,7 @@ IpcClientHandler::~IpcClientHandler()
 }
 
 // ---------------------------------------------------------------------------
-// open() — called by ACE_Connector when connection succeeds
+// open() - called by ACE_Connector when connection succeeds
 // ---------------------------------------------------------------------------
 
 int IpcClientHandler::open(void* /*connector*/)
@@ -197,7 +197,7 @@ int IpcClientHandler::handle_input(ACE_HANDLE)
 }
 
 // ---------------------------------------------------------------------------
-// CompactRecvBuf() — drop already-consumed front bytes from the reassembly buf
+// CompactRecvBuf() - drop already-consumed front bytes from the reassembly buf
 // ---------------------------------------------------------------------------
 
 void IpcClientHandler::CompactRecvBuf()
@@ -309,7 +309,7 @@ bool IpcClientHandler::IsClosing() const
 }
 
 // ---------------------------------------------------------------------------
-// SendHello() — initiate the handshake
+// SendHello() - initiate the handshake
 // ---------------------------------------------------------------------------
 
 int IpcClientHandler::SendHello()
@@ -328,7 +328,7 @@ int IpcClientHandler::SendHello()
 }
 
 // ---------------------------------------------------------------------------
-// ProcessFrame() — handshake state machine (client side)
+// ProcessFrame() - handshake state machine (client side)
 // ---------------------------------------------------------------------------
 
 int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
@@ -361,7 +361,7 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                 m_link->live.store(true, std::memory_order_release);
             }
 
-            fprintf(stdout, "IpcClientHandler: handshake complete — channel live\n");
+            fprintf(stdout, "IpcClientHandler: handshake complete - channel live\n");
             fflush(stdout);
             break;
         }
@@ -372,7 +372,7 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
             {
                 if (!m_inbound->push(msg))
                 {
-                    fprintf(stderr, "IpcClientHandler: inbound queue full — frame 0x%04X dropped\n", msg.op);
+                    fprintf(stderr, "IpcClientHandler: inbound queue full - frame 0x%04X dropped\n", msg.op);
                 }
             }
             break;

@@ -27,17 +27,17 @@
 /**
  * @brief IPC opcode enumeration for the AH subprocess wire protocol.
  *
- * Milestone 1 opcodes occupy 0x0001–0x0FFF.
+ * Milestone 1 opcodes occupy 0x0001-0x0FFF.
  * 0x1000+ is reserved for AH consumer messages (Milestone 2).
  */
 enum IpcOpcode : uint16
 {
-    IPC_HELLO           = 0x0001,   ///< Service → mangosd: initial greeting
-    IPC_HELLO_ACK       = 0x0002,   ///< mangosd → service: greeting acknowledged
-    IPC_READY           = 0x0003,   ///< Service → mangosd: ready to process work
+    IPC_HELLO           = 0x0001,   ///< Service -> mangosd: initial greeting
+    IPC_HELLO_ACK       = 0x0002,   ///< mangosd -> service: greeting acknowledged
+    IPC_READY           = 0x0003,   ///< Service -> mangosd: ready to process work
     IPC_HEARTBEAT       = 0x0004,   ///< Either direction: keepalive ping
     IPC_HEARTBEAT_ACK   = 0x0005,   ///< Either direction: keepalive pong
-    IPC_GAMETIME        = 0x0006,   ///< mangosd → service: current server game time
+    IPC_GAMETIME        = 0x0006,   ///< mangosd -> service: current server game time
     IPC_CONSOLE         = 0x0007,   ///< Either direction: console/log text
     IPC_SHUTDOWN        = 0x0008,   ///< Either direction: graceful shutdown request
     IPC_SHUTDOWN_ACK    = 0x0009,   ///< Either direction: shutdown acknowledged
