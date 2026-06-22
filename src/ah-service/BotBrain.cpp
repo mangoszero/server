@@ -24,6 +24,7 @@
 #include "Utilities/Util.h"
 #include "Log/Log.h"
 
+#include <ctime>
 #include <limits>
 #include <map>
 #include <vector>
@@ -692,6 +693,10 @@ void BotBrain::addNewAuctions(SellerHouseConfig& cfg,
             continue;
         }
 
+        /// Intentionally guards the source's urand(1,0) degenerate case:
+        /// the source calls urand(1, GetMaxStackSize()) raw, which is
+        /// urand(1,0) when stackable==0, producing undefined behaviour.
+        /// Clamping to 1 here is safe hardening — do NOT revert to raw.
         uint32 maxStack = sell.stackable ? sell.stackable : 1;
         uint32 stackCount = urand(1, maxStack);
 
@@ -898,22 +903,34 @@ bool BotBrain::BuyerUpdate(uint8 houseType, std::vector<EmittedIntent>& out)
 // ---------------------------------------------------------------------------
 // addNewAuctionBuyerBotBid - REIMPLEMENTED against MarketSnapshot.
 //
-// Folds the source's GetBuyableEntry (cpp:1020) + addNewAuctionBuyerBotBid
-// (cpp:1306) into a single pass over the house's snapshot:
+// Folds the source's GetBuyableEntry (cpp:1020) + PrepareListOfEntry
+// (cpp:1100) + addNewAuctionBuyerBotBid (cpp:1306) into a single pass
+// over the house's snapshot:
+//
 //   1. Build SameItemInfo (per-itemId average/min buy/bid prices) exactly as
 //      GetBuyableEntry does, from EVERY record in the house.
 //   2. Build the candidate set with the SAME predicates GetBuyableEntry uses
 //      (skip bot-owned auctions unless a player bid on them; otherwise take
 //      any auction that has a bid+bidder, or any with no bid at all).
-//   3. For each candidate, run the IDENTICAL decision logic from
+//   3. PRUNE the cross-tick LastChecked map: remove any entry whose auctionId
+//      is not present in the current snapshot (mirrors PrepareListOfEntry's
+//      stale-CheckedEntry pruning, cpp:1100).
+//   4. SKIP candidates whose LastChecked is within AHB_BUYER_RECHECK_INTERVAL_
+//      SECONDS of now (mirrors the cpp:1337 check).  Set LastChecked = now
+//      when a candidate IS evaluated.
+//   5. Derive BuyCycles from the POST-skip (not raw) candidate count, matching
+//      the source's BuyCycles derivation from config.CheckedEntry.size().
+//   6. For each evaluated candidate, run the IDENTICAL decision logic from
 //      addNewAuctionBuyerBotBid (price computation, IsBuyable/IsBidable,
 //      bid-vs-buyout coin flip), emitting Bid/Buyout intents.
 //
-// The source's CheckedEntry / LastChecked recheck-interval de-dup is a
-// cross-call in-memory optimization (it throttles re-evaluating the same
-// auction between ticks). It does NOT change which decision is made for a
-// given auction, so it is dropped here: each tick works off a fresh snapshot
-// and the per-cycle BuyCycles cap still bounds the work. (Noted in report.)
+// The cross-tick LastChecked map lives in m_buyerLastChecked[houseType]
+// (a BotBrain member) so it persists between ticks exactly as
+// AHB_Buyer_Config::CheckedEntry does in the in-process bot.
+//
+// Wall-clock time(NULL) is used for 'now'.  The source uses server gametime,
+// but gametime advances 1:1 with wall-clock; a 20-minute throttle is coarse
+// enough that the difference is irrelevant.
 // ---------------------------------------------------------------------------
 
 void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
@@ -921,6 +938,13 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
 {
     const std::vector<AuctionRecord>& house =
         m_snapshot.GetHouse(cfg.houseType);
+
+    /// Wall-clock 'now' — see rationale above re: gametime equivalence.
+    time_t now = time(NULL);
+
+    // Convenience reference to the persistent per-house LastChecked map.
+    std::map<uint32, time_t>& lastChecked =
+        m_buyerLastChecked[cfg.houseType];
 
     // --- Step 1+2: build SameItemInfo + candidate list (GetBuyableEntry) ---
     struct BuyerItemInfo
@@ -935,7 +959,12 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         uint32 MinBidPrice;
     };
     std::map<uint32, BuyerItemInfo> sameItemInfo;
-    std::vector<size_t> candidates;   // indices into 'house'
+
+    // snapshotIds: the set of auctionIds present this tick (for pruning).
+    std::map<uint32, bool> snapshotIds;
+
+    // candidates: indices into 'house' that pass the selection predicates.
+    std::vector<size_t> candidates;
 
     for (size_t r = 0; r < house.size(); ++r)
     {
@@ -946,6 +975,8 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         {
             continue;
         }
+
+        snapshotIds[rec.id] = true;
 
         BuyerItemInfo& bi = sameItemInfo[rec.itemId];
         ++bi.ItemCount;
@@ -996,14 +1027,58 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         }
     }
 
+    // --- Step 3: prune stale LastChecked entries (PrepareListOfEntry) ---
+    // Drop any auctionId that is no longer in the snapshot (sold/expired).
+    // Mirrors: for (itr = CheckedEntry.begin(); ...) if (!LastExist) erase.
+    for (std::map<uint32, time_t>::iterator it = lastChecked.begin();
+         it != lastChecked.end(); )
+    {
+        if (snapshotIds.find(it->first) == snapshotIds.end())
+        {
+            it = lastChecked.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
     if (candidates.empty())
     {
         return;
     }
 
-    // --- BuyCycles cap (mirror addNewAuctionBuyerBotBid) ---
+    // --- Step 4: apply recheck throttle; collect post-skip candidates ---
+    // Mirrors cpp:1337: skip if (LastChecked != 0) && (Now-LastChecked) <=
+    // m_CheckInterval.  BuyCycles is derived from the post-skip count.
+    std::vector<size_t> eligible;
+    eligible.reserve(candidates.size());
+    for (size_t c = 0; c < candidates.size(); ++c)
+    {
+        const AuctionRecord& rec = house[candidates[c]];
+        std::map<uint32, time_t>::iterator lc = lastChecked.find(rec.id);
+        if (lc != lastChecked.end() && lc->second != 0)
+        {
+            if ((now - lc->second) <=
+                static_cast<time_t>(AHB_BUYER_RECHECK_INTERVAL_SECONDS))
+            {
+                // Still within the 20-minute window — skip this tick.
+                continue;
+            }
+        }
+        eligible.push_back(candidates[c]);
+    }
+
+    if (eligible.empty())
+    {
+        return;
+    }
+
+    // --- BuyCycles cap derived from post-skip eligible count ---
+    // Mirrors: BuyCycles set from config.CheckedEntry.size() AFTER pruning
+    // (cpp:1314), which is the post-PrepareListOfEntry (surviving) count.
     uint32 buyCycles;
-    if (candidates.size() >
+    if (eligible.size() >
         m_config.getConfig(AHBOT_CONFIG_UINT32_ITEMS_PER_CYCLE_BOOST))
     {
         buyCycles = m_config.getConfig(
@@ -1015,15 +1090,18 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
             AHBOT_CONFIG_UINT32_ITEMS_PER_CYCLE_NORMAL);
     }
 
-    // --- Step 3: per-candidate decision (verbatim math) ---
-    for (size_t c = 0; c < candidates.size(); ++c)
+    // --- Step 5: per-candidate decision (verbatim math) ---
+    for (size_t c = 0; c < eligible.size(); ++c)
     {
         if (buyCycles == 0)
         {
             break;
         }
 
-        const AuctionRecord& rec = house[candidates[c]];
+        const AuctionRecord& rec = house[eligible[c]];
+
+        // Mark evaluated — mirrors: auctionEval.LastChecked = Now (cpp:1453).
+        lastChecked[rec.id] = now;
 
         uint32 MaxChance = 5000;
 

@@ -29,6 +29,7 @@
 #include "MarketSnapshot.h"
 #include "AuctionIntents.h"
 
+#include <ctime>
 #include <map>
 #include <vector>
 
@@ -217,6 +218,19 @@ class BotBrain
 
         SellerHouseConfig     m_sellerHouse[AH_MAX_AUCTION_HOUSE_TYPE];
         BuyerHouseConfig      m_buyerHouse[AH_MAX_AUCTION_HOUSE_TYPE];
+
+        /**
+         * @brief Cross-tick recheck throttle for each buyer house.
+         *
+         * Maps auctionId -> wall-clock time of the last decision attempt.
+         * Mirrors the in-process @c BuyerAuctionEval::LastChecked map
+         * (AuctionHouseBot.cpp:969 / cpp:1337).  Keyed per house index
+         * (0=Alliance, 1=Horde, 2=Neutral).  Survives across ticks so that
+         * any given auction is evaluated at most once per
+         * @c AHB_BUYER_RECHECK_INTERVAL_SECONDS (1200 s).
+         */
+        std::map<uint32, time_t>
+            m_buyerLastChecked[AH_MAX_AUCTION_HOUSE_TYPE];
 
         // Non-copyable.
         BotBrain(const BotBrain&);

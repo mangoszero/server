@@ -118,4 +118,16 @@ enum AhAuctionHouseType
 /// Total number of auction house types (mirror of MAX_AUCTION_HOUSE_TYPE).
 #define AH_MAX_AUCTION_HOUSE_TYPE 3
 
+/**
+ * @brief Buyer recheck interval in seconds.
+ *
+ * Mirror of the in-process:
+ *   m_CheckInterval = CONFIG_UINT32_AHBOT_BUYER_RECHECK_INTERVAL * MINUTE
+ * The config default is 20 (minutes); MINUTE = 60 seconds, so:
+ *   20 * 60 = 1200 seconds.
+ * An auction is not re-evaluated for bid/buyout within this window
+ * (see AuctionHouseBot.cpp:969 and the LastChecked skip at cpp:1337).
+ */
+#define AHB_BUYER_RECHECK_INTERVAL_SECONDS 1200
+
 #endif // AH_SERVICE_AHBOT_DEFINES_H
