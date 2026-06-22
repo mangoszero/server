@@ -111,6 +111,22 @@ class ServiceDatabase
             return m_characterDatabase;
         }
 
+        /**
+         * @brief Resolve a character's low GUID from its name.
+         *
+         * Faithful reimplementation of
+         * @c ObjectMgr::GetPlayerGuidByName(): the name is escaped with the
+         * character DB's @c escape_string and looked up with
+         * @c "SELECT guid FROM characters WHERE name = '<escaped>'". The
+         * child cannot reach @c sObjectMgr, so this stands in for the bot's
+         * GUID resolution. READ-ONLY.
+         *
+         * @param name Character name (verbatim from config; may be empty).
+         * @return The character's low GUID, or 0 if the name is empty,
+         *         not found, or the character DB is not initialized.
+         */
+        uint32 ResolveCharacterGuid(const std::string& name);
+
     private:
         /// Parse the last (5th) semicolon-delimited field from a dbstring.
         static std::string ParseDbName(const std::string& dbstring);

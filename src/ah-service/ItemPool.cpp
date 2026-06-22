@@ -118,7 +118,8 @@ bool ItemPool::Build()
     QueryResult* protoResult = m_db.World().Query(
         "SELECT `entry`, `class`, `subclass`, `Quality`, `Flags`, "
         "`BuyPrice`, `SellPrice`, `ItemLevel`, `RequiredLevel`, "
-        "`RequiredSkillRank`, `bonding`, `lockid` FROM `item_template`");
+        "`RequiredSkillRank`, `bonding`, `lockid`, `stackable` "
+        "FROM `item_template`");
 
     if (!protoResult)
     {
@@ -144,6 +145,7 @@ bool ItemPool::Build()
         proto.requiredSkillRank = fields[9].GetUInt32();
         proto.bonding           = fields[10].GetUInt32();
         proto.lockId            = fields[11].GetUInt32();
+        proto.stackable         = fields[12].GetUInt32();
 
         const uint32 itemID = proto.entry;
 
@@ -180,6 +182,11 @@ bool ItemPool::Build()
         if (isForcedIncludeItem)
         {
             m_ItemPool[proto.quality][proto.itemClass].push_back(itemID);
+            ItemSellInfo info;
+            info.buyPrice  = proto.buyPrice;
+            info.sellPrice = proto.sellPrice;
+            info.stackable = proto.stackable;
+            m_SellInfo[itemID] = info;
             ++itemsAdded;
             continue;
         }
@@ -465,6 +472,11 @@ bool ItemPool::Build()
 
         // Add item to the pool.
         m_ItemPool[proto.quality][proto.itemClass].push_back(itemID);
+        ItemSellInfo info;
+        info.buyPrice  = proto.buyPrice;
+        info.sellPrice = proto.sellPrice;
+        info.stackable = proto.stackable;
+        m_SellInfo[itemID] = info;
         ++itemsAdded;
     }
     while (protoResult->NextRow());
@@ -479,6 +491,18 @@ bool ItemPool::Build()
 
     sLog.outString("AuctionHouseBot seller will use %u items to fill auction"
                    " house (according your config choices)", itemsAdded);
+    return true;
+}
+
+bool ItemPool::GetSellInfo(uint32 itemId, ItemSellInfo& out) const
+{
+    std::map<uint32, ItemSellInfo>::const_iterator itr =
+        m_SellInfo.find(itemId);
+    if (itr == m_SellInfo.end())
+    {
+        return false;
+    }
+    out = itr->second;
     return true;
 }
 

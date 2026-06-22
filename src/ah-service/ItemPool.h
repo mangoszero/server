@@ -27,6 +27,7 @@
 #include "ServiceConfig.h"
 #include "ServiceDatabase.h"
 
+#include <map>
 #include <vector>
 
 /**
@@ -45,6 +46,23 @@
 
 /// A pool of item IDs (mirror of the source's @c ItemPool typedef).
 typedef std::vector<uint32> ItemIdPool;
+
+/**
+ * @brief The seller-relevant prototype fields for a single item.
+ *
+ * The in-process seller's @c addNewAuctions reads @c BuyPrice / @c SellPrice
+ * and @c GetMaxStackSize() from @c sObjectMgr.GetItemPrototype(itemID). The
+ * child has no @c sObjectMgr, so the same three fields are captured for every
+ * pooled item during @c ItemPool::Build() (the item_template query already
+ * touches the row) and looked up by id at emission time, avoiding any
+ * per-emission DB round-trip.
+ */
+struct ItemSellInfo
+{
+    uint32 buyPrice;   ///< item_template.BuyPrice (vendor buy, copper)
+    uint32 sellPrice;  ///< item_template.SellPrice (vendor sell, copper)
+    uint32 stackable;  ///< item_template.stackable (max stack size, >= 1)
+};
 
 /**
  * @brief Builds and holds the seller's auctionable item pool.
@@ -89,6 +107,18 @@ class ItemPool
             return m_ItemPool[quality][itemClass];
         }
 
+        /**
+         * @brief Look up the seller prototype fields for a pooled item.
+         *
+         * Mirrors @c sObjectMgr.GetItemPrototype(itemID) for the three fields
+         * the seller's @c addNewAuctions needs.
+         *
+         * @param itemId Item entry id (must be one returned from a bucket).
+         * @param out    Filled with the item's price/stack info on success.
+         * @return true if the id is known, false otherwise.
+         */
+        bool GetSellInfo(uint32 itemId, ItemSellInfo& out) const;
+
     private:
         /**
          * @brief Minimal item prototype: only the fields the filter tests.
@@ -109,11 +139,14 @@ class ItemPool
             uint32 requiredSkillRank;
             uint32 bonding;
             uint32 lockId;
+            uint32 stackable;
         };
 
         const ServiceConfig& m_config;
         ServiceDatabase& m_db;
         ItemIdPool m_ItemPool[AH_MAX_AUCTION_QUALITY][AH_MAX_ITEM_CLASS];
+        /// Per-item seller prototype fields, keyed by item entry id.
+        std::map<uint32, ItemSellInfo> m_SellInfo;
 
         // Non-copyable.
         ItemPool(const ItemPool&);

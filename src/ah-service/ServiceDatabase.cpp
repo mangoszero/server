@@ -181,3 +181,31 @@ bool ServiceDatabase::InitCharacter()
     m_charInitialized = true;
     return true;
 }
+
+// ---------------------------------------------------------------------------
+// ResolveCharacterGuid - faithful port of ObjectMgr::GetPlayerGuidByName
+// ---------------------------------------------------------------------------
+
+uint32 ServiceDatabase::ResolveCharacterGuid(const std::string& name)
+{
+    if (name.empty() || !m_charInitialized)
+    {
+        return 0;
+    }
+
+    // Escape with the character DB (matches the in-process bot exactly).
+    std::string escaped = name;
+    m_characterDatabase.escape_string(escaped);
+
+    uint32 guid = 0;
+    QueryResult* result = m_characterDatabase.PQuery(
+        "SELECT `guid` FROM `characters` WHERE `name` = '%s'",
+        escaped.c_str());
+    if (result)
+    {
+        guid = (*result)[0].GetUInt32();
+        delete result;
+    }
+
+    return guid;
+}
