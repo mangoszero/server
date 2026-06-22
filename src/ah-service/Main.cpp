@@ -27,6 +27,11 @@
  *   --selftest           Run an in-process loopback test (server + client,
  *                        full handshake + IPC_ECHO round-trip), then exit 0.
  *
+ *   --poolcheck          Load config + open the read-only world DB, build the
+ *                        seller item pool, print per-[quality][class] counts,
+ *                        then exit (0 on success, 1 on any failure). Requires
+ *                        --config <ah-service.conf>.
+ *
  *   --port <p>           Connect to mangosd IPC server on this port.
  *   --secret <s>         Shared secret for handshake authentication.
  *   --botguid <g>        (reserved; not used in M1)
@@ -46,6 +51,9 @@
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
+#include "ServiceConfig.h"
+#include "ServiceDatabase.h"
+#include "ItemPool.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -426,6 +434,66 @@ static int RunSelfTest()
 }
 
 // ---------------------------------------------------------------------------
+// Pool check: build the seller item pool and report counts
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Foundation check for Task 8a.
+ *
+ * Loads the AH bot config, opens the child's read-only world-DB connection,
+ * builds the seller item pool, and prints per-[quality][class] counts. No
+ * decisions or intents are made (that is Task 8c).
+ *
+ * @param cfgPath Path to ah-service.conf (already validated non-null by the
+ *                caller); loaded into sConfig for the infra keys.
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunPoolCheck(const char* cfgPath)
+{
+    if (cfgPath == nullptr)
+    {
+        fprintf(stderr, "ah-service: --poolcheck requires --config <path>\n");
+        return 1;
+    }
+
+    if (!sConfig.SetSource(cfgPath))
+    {
+        fprintf(stderr, "ah-service: could not load config '%s'\n", cfgPath);
+        return 1;
+    }
+
+    ServiceConfig config;
+    if (!config.Initialize())
+    {
+        fprintf(stderr, "ah-service: ServiceConfig::Initialize failed\n");
+        return 1;
+    }
+
+    ServiceDatabase db;
+    if (!db.Init())
+    {
+        fprintf(stderr, "ah-service: ServiceDatabase::Init failed\n");
+        return 1;
+    }
+
+    ItemPool pool(config, db);
+    bool built = pool.Build();
+    pool.LogSummary();
+
+    db.Shutdown();
+
+    if (!built)
+    {
+        fprintf(stderr, "ah-service: item pool is empty\n");
+        return 1;
+    }
+
+    printf("ah-service poolcheck OK (%u items)\n", pool.GetTotalCount());
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Normal child loop
 // ---------------------------------------------------------------------------
 
@@ -434,8 +502,9 @@ static void PrintUsage(const char* argv0)
     fprintf(stderr,
             "Usage: %s --port <port> --secret <secret>"
             " [--botguid <guid>] [--config <path>]\n"
-            "       %s --selftest\n",
-            argv0, argv0);
+            "       %s --selftest\n"
+            "       %s --poolcheck --config <path>\n",
+            argv0, argv0, argv0);
 }
 
 int main(int argc, char** argv)
@@ -443,7 +512,8 @@ int main(int argc, char** argv)
     printf("ah-service (ipc proto v%u) starting\n", IPC_PROTOCOL_VERSION);
 
     // --- Parse arguments ---
-    bool selfTest = false;
+    bool selfTest  = false;
+    bool poolCheck = false;
     uint16 port   = 0;
     const char* secret  = nullptr;
     const char* cfgPath = nullptr;
@@ -454,6 +524,10 @@ int main(int argc, char** argv)
         if (strcmp(argv[i], "--selftest") == 0)
         {
             selfTest = true;
+        }
+        else if (strcmp(argv[i], "--poolcheck") == 0)
+        {
+            poolCheck = true;
         }
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
         {
@@ -481,6 +555,11 @@ int main(int argc, char** argv)
             return rc;
         }
         return RunSelfTest();
+    }
+
+    if (poolCheck)
+    {
+        return RunPoolCheck(cfgPath);
     }
 
     if (port == 0 || secret == nullptr)
