@@ -109,8 +109,14 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+// AH subprocess supervisor (Task 5+)
+#include "WorkerSupervisor.h"
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 INSTANTIATE_SINGLETON_1(World);
 
@@ -1855,6 +1861,40 @@ void World::Update(uint32 diff)
         m_timers[WUPDATE_AHBOT].Reset();
     }
 
+    /// <li> Tick the AH subprocess supervisor and drain inbound frames
+    if (m_ahSupervisor != NULL)
+    {
+        m_ahSupervisor->Tick(GetGameTime());
+
+        // Overflow visibility: warn (rate-limited) when the inbound queue
+        // has dropped frames since we last checked.
+        static size_t s_lastDroppedSeen = 0;
+        static time_t s_lastOverflowWarn = 0;
+        const size_t  dropped = m_ahSupervisor->InboundDropped();
+        if (dropped > s_lastDroppedSeen)
+        {
+            const time_t now = time(NULL);
+            // Warn at most once every 60 seconds to avoid log spam.
+            if (now - s_lastOverflowWarn >= 60)
+            {
+                sLog.outError("[AHSupervisor] inbound queue overflow:"
+                              " %u frame(s) dropped (total %u)",
+                              static_cast<unsigned>(dropped - s_lastDroppedSeen),
+                              static_cast<unsigned>(dropped));
+                s_lastOverflowWarn = now;
+            }
+            s_lastDroppedSeen = dropped;
+        }
+
+        // Drain up to 256 application frames per tick.
+        std::vector<IpcMessage> msgs;
+        m_ahSupervisor->DrainInbound(msgs, 256);
+        for (size_t i = 0; i < msgs.size(); ++i)
+        {
+            HandleAhInbound(msgs[i]);
+        }
+    }
+
 #ifdef ENABLE_PLAYERBOTS
     sRandomPlayerbotMgr.UpdateAI(diff);
     sRandomPlayerbotMgr.UpdateSessions(diff);
@@ -1942,6 +1982,46 @@ void World::Update(uint32 diff)
 
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
+}
+
+// ---------------------------------------------------------------------------
+// World::HandleAhInbound -- M1 stub; routes consumer frames in M2
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Dispatch one inbound frame from the ah-service child process.
+ *
+ * M1: logs what arrived so the smoke test can confirm the drain pipeline
+ * is live. M2 will add IPC_AH_* intent routing here; keep the switch
+ * extensible.
+ */
+void World::HandleAhInbound(const IpcMessage& msg)
+{
+    switch (msg.op)
+    {
+        case IPC_ECHO_REPLY:
+        {
+            DETAIL_LOG("[AHSupervisor] IPC_ECHO_REPLY received"
+                       " (body=%u bytes)", static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+        case IPC_HEARTBEAT_ACK:
+        {
+            // Should have been consumed by WorkerSupervisor::Tick(); log if
+            // it somehow leaks through.
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: unexpected"
+                       " IPC_HEARTBEAT_ACK");
+            break;
+        }
+        default:
+        {
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: opcode 0x%04X"
+                       " (body=%u bytes) -- unhandled (M2 routing pending)",
+                       static_cast<unsigned>(msg.op),
+                       static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+    }
 }
 
 namespace MaNGOS

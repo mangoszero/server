@@ -24,11 +24,13 @@
 
 #include "Common.h"
 #include "IpcChannel.h"
+#include "IpcMessage.h"
 
 #include <ace/Process.h>
 #include <ace/Process_Manager.h>
 
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -124,15 +126,44 @@ class WorkerSupervisor
          */
         void Shutdown();
 
-        /// Access the underlying IPC channel (Task 6 inbound drain).
+        /// Access the underlying IPC channel.
         IpcServer& Channel() { return m_ipc; }
+
+        /**
+         * @brief Drain up to @p maxPerTick application frames into @p out.
+         *
+         * Called from World::Update after Tick(). Protocol frames
+         * (IPC_HEARTBEAT_ACK, IPC_READY, IPC_SHUTDOWN_ACK) are handled
+         * inside Tick() and never appear in @p out. Unknown / consumer
+         * frames are buffered per-tick and handed back here for
+         * World::HandleAhInbound to dispatch.
+         *
+         * @param out        Destination; frames are appended (not cleared).
+         * @param maxPerTick Maximum frames to move; bounds per-tick work.
+         */
+        void DrainInbound(std::vector<IpcMessage>& out, size_t maxPerTick);
+
+        /**
+         * @brief Cumulative inbound frames dropped due to queue overflow.
+         *
+         * A rising value indicates the reactor is producing faster than
+         * the world thread is consuming; World::Update will log a warning.
+         */
+        size_t InboundDropped() const { return m_ipc.InboundDropped(); }
 
     private:
         /// Spawn the child process (called from Start() and on restart).
         bool SpawnChild();
 
-        /// Drain inbound queue, handling IPC_HEARTBEAT_ACK and other frames.
-        void DrainInbound();
+        /**
+         * @brief Drain the IPC inbound queue into m_pendingFrames.
+         *
+         * Handles protocol frames (IPC_HEARTBEAT_ACK, IPC_READY,
+         * IPC_SHUTDOWN_ACK) immediately; pushes all other frames into
+         * m_pendingFrames for the public DrainInbound() to hand to
+         * World::HandleAhInbound.
+         */
+        void DrainInboundProtocol();
 
         std::string  m_name;
         std::string  m_exePath;
@@ -158,6 +189,9 @@ class WorkerSupervisor
 
         bool         m_started;         ///< true once Start() succeeded.
         bool         m_childExited;     ///< true when the child is gone.
+
+        /// Application frames buffered by DrainInboundProtocol each tick.
+        std::vector<IpcMessage> m_pendingFrames;
 
 #ifdef _WIN32
         HANDLE       m_jobObject;       ///< Job Object for orphan guard.

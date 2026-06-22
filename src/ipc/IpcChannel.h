@@ -86,6 +86,16 @@ class IpcServer
         bool PopInbound(IpcMessage& out);
 
         /**
+         * @brief Approximate number of frames currently in the inbound queue.
+         */
+        size_t InboundSize() const { return m_inbound.size(); }
+
+        /**
+         * @brief Cumulative count of frames dropped due to inbound overflow.
+         */
+        size_t InboundDropped() const { return m_inbound.dropped(); }
+
+        /**
          * @brief True once the handshake has completed (IPC_READY received).
          *
          * Reads a std::atomic<bool> published by the reactor thread. No handler

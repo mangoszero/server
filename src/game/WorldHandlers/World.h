@@ -53,6 +53,7 @@ class SqlResultQueue;
 class QueryResult;
 class WorldSocket;
 class WorkerSupervisor;
+class IpcMessage;
 
 // ServerMessages.dbc
 enum ServerMessageType
@@ -789,6 +790,16 @@ class World
 
         // AH subprocess supervisor pointer (NULL when service is disabled).
         WorkerSupervisor* m_ahSupervisor;
+
+        /**
+         * @brief Dispatch one inbound frame from the AH subprocess.
+         *
+         * M1 stub: logs the opcode. M2 will route IPC_AH_* intents to
+         * the AH executor. Keep this switch extensible.
+         *
+         * @param msg The inbound frame from the ah-service child.
+         */
+        void HandleAhInbound(const IpcMessage& msg);
 };
 
 extern uint32 realmID;

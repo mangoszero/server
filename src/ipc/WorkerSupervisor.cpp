@@ -246,8 +246,9 @@ void WorkerSupervisor::Tick(uint32 gametime)
 
     const time_t now = time(nullptr);
 
-    // Drain inbound queue every tick (handles IPC_HEARTBEAT_ACK etc.).
-    DrainInbound();
+    // Drain inbound queue every tick; protocol frames handled here,
+    // app frames staged in m_pendingFrames for World::HandleAhInbound.
+    DrainInboundProtocol();
 
     // Check if child has exited by polling ACE_Process_Manager.
     if (!m_childExited && m_pid != ACE_INVALID_PID)
@@ -344,10 +345,10 @@ void WorkerSupervisor::Tick(uint32 gametime)
 }
 
 // ---------------------------------------------------------------------------
-// DrainInbound
+// DrainInboundProtocol (private)
 // ---------------------------------------------------------------------------
 
-void WorkerSupervisor::DrainInbound()
+void WorkerSupervisor::DrainInboundProtocol()
 {
     IpcMessage msg;
     while (m_ipc.PopInbound(msg))
@@ -378,13 +379,35 @@ void WorkerSupervisor::DrainInbound()
             }
             default:
             {
-                // Task 6 will drain AH consumer frames; silently skip for now.
-                DETAIL_LOG("[WorkerSupervisor:%s] Tick: ignoring opcode 0x%04X",
-                           m_name.c_str(), static_cast<unsigned>(msg.op));
+                // Application / consumer frame: stage for World::HandleAhInbound.
+                m_pendingFrames.push_back(msg);
                 break;
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// DrainInbound (public) -- called from World::Update after Tick()
+// ---------------------------------------------------------------------------
+
+void WorkerSupervisor::DrainInbound(std::vector<IpcMessage>& out,
+                                    size_t maxPerTick)
+{
+    if (m_pendingFrames.empty())
+    {
+        return;
+    }
+
+    size_t avail = m_pendingFrames.size();
+    size_t take  = (avail < maxPerTick) ? avail : maxPerTick;
+
+    // Move the first 'take' elements into out, then erase them.
+    out.insert(out.end(),
+               m_pendingFrames.begin(),
+               m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
+    m_pendingFrames.erase(m_pendingFrames.begin(),
+                          m_pendingFrames.begin() + static_cast<ptrdiff_t>(take));
 }
 
 // ---------------------------------------------------------------------------
