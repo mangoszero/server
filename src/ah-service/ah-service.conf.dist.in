@@ -26,6 +26,27 @@ WorldDatabaseInfo = ""
 WorldDatabaseConnections = 1
 
 #
+#    CharacterDatabaseInfo
+#        Character database connection string. Same host;port;user;pass;db
+#        format as mangosd.conf. The ah-service child opens its OWN read-only
+#        character-DB connection used by MarketSnapshot to read the live
+#        auction tables. Copy the value from mangosd.conf.
+#    Default: "" (disabled)
+#
+#    Example:
+#    CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;character0"
+
+CharacterDatabaseInfo = ""
+
+#
+#    CharacterDatabaseConnections
+#        Number of additional asynchronous character-DB connections (a
+#        synchronous connection is always created on top of this count).
+#    Default: 1
+
+CharacterDatabaseConnections = 1
+
+#
 #    AhBot.ConfigPath
 #        Path to the auction-house bot tuning config (ahbot.conf). May be
 #        relative to the ah-service working directory or absolute.

@@ -54,6 +54,7 @@
 #include "ServiceConfig.h"
 #include "ServiceDatabase.h"
 #include "ItemPool.h"
+#include "MarketSnapshot.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -494,6 +495,95 @@ static int RunPoolCheck(const char* cfgPath)
 }
 
 // ---------------------------------------------------------------------------
+// Snapshot check: read the live auction tables and report counts
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Foundation check for Task 8b.
+ *
+ * Loads the AH bot config, opens the child's read-only world-DB and
+ * character-DB connections, takes one MarketSnapshot, and prints per-house
+ * counts plus a sample record.  No decisions or intents are made.
+ *
+ * @param cfgPath Path to ah-service.conf (already validated non-null by the
+ *                caller); loaded into sConfig for the infra keys.
+ * @return 0 on success, 1 on any failure.
+ */
+static int RunSnapCheck(const char* cfgPath)
+{
+    if (cfgPath == nullptr)
+    {
+        fprintf(stderr,
+                "ah-service: --snapcheck requires --config <path>\n");
+        return 1;
+    }
+
+    if (!sConfig.SetSource(cfgPath))
+    {
+        fprintf(stderr, "ah-service: could not load config '%s'\n",
+                cfgPath);
+        return 1;
+    }
+
+    ServiceDatabase db;
+    if (!db.Init())
+    {
+        fprintf(stderr, "ah-service: ServiceDatabase::Init failed\n");
+        return 1;
+    }
+
+    if (!db.InitCharacter())
+    {
+        fprintf(stderr,
+                "ah-service: ServiceDatabase::InitCharacter failed\n");
+        db.Shutdown();
+        return 1;
+    }
+
+    MarketSnapshot snap(db);
+    snap.Refresh();
+
+    db.Shutdown();
+
+    const uint32 alliance = static_cast<uint32>(
+        snap.GetHouse(AH_AUCTION_HOUSE_ALLIANCE).size());
+    const uint32 horde = static_cast<uint32>(
+        snap.GetHouse(AH_AUCTION_HOUSE_HORDE).size());
+    const uint32 neutral = static_cast<uint32>(
+        snap.GetHouse(AH_AUCTION_HOUSE_NEUTRAL).size());
+
+    printf("ah-service snapcheck: alliance=%u horde=%u neutral=%u"
+           " total=%u\n",
+           alliance, horde, neutral, snap.TotalCount());
+
+    if (snap.TotalCount() > 0)
+    {
+        const AuctionRecord& sample =
+            snap.GetHouse(0).empty()
+            ? (snap.GetHouse(1).empty()
+               ? snap.GetHouse(2).front()
+               : snap.GetHouse(1).front())
+            : snap.GetHouse(0).front();
+        printf("ah-service snapcheck sample: id=%u house=%u"
+               " item=%u count=%u buyout=%u\n",
+               sample.id, sample.houseType, sample.itemId,
+               sample.itemCount, sample.buyout);
+    }
+
+    if (!snap.Healthy())
+    {
+        fprintf(stderr, "ah-service snapcheck: DB unhealthy"
+                        " (%u consecutive failures)\n",
+                snap.ConsecutiveFailures());
+        return 1;
+    }
+
+    printf("ah-service snapcheck OK\n");
+    fflush(stdout);
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Normal child loop
 // ---------------------------------------------------------------------------
 
@@ -503,8 +593,9 @@ static void PrintUsage(const char* argv0)
             "Usage: %s --port <port> --secret <secret>"
             " [--botguid <guid>] [--config <path>]\n"
             "       %s --selftest\n"
-            "       %s --poolcheck --config <path>\n",
-            argv0, argv0, argv0);
+            "       %s --poolcheck --config <path>\n"
+            "       %s --snapcheck --config <path>\n",
+            argv0, argv0, argv0, argv0);
 }
 
 int main(int argc, char** argv)
@@ -514,6 +605,7 @@ int main(int argc, char** argv)
     // --- Parse arguments ---
     bool selfTest  = false;
     bool poolCheck = false;
+    bool snapCheck = false;
     uint16 port   = 0;
     const char* secret  = nullptr;
     const char* cfgPath = nullptr;
@@ -528,6 +620,10 @@ int main(int argc, char** argv)
         else if (strcmp(argv[i], "--poolcheck") == 0)
         {
             poolCheck = true;
+        }
+        else if (strcmp(argv[i], "--snapcheck") == 0)
+        {
+            snapCheck = true;
         }
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
         {
@@ -560,6 +656,11 @@ int main(int argc, char** argv)
     if (poolCheck)
     {
         return RunPoolCheck(cfgPath);
+    }
+
+    if (snapCheck)
+    {
+        return RunSnapCheck(cfgPath);
     }
 
     if (port == 0 || secret == nullptr)
@@ -612,7 +713,8 @@ int main(int argc, char** argv)
         waited += 50;
     }
 
-    printf("ah-service: handshake complete - entering service loop\n");
+    printf("ah-service: handshake complete - run-id %u - entering service loop\n",
+           cli.RunId());
 
     // --- Service loop ---
     volatile bool stop = false;

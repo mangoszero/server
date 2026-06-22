@@ -25,8 +25,42 @@
 
 #include <string>
 
+// ---------------------------------------------------------------------------
+// ParseDbName - extract the database name from host;port;user;pass;db
+// ---------------------------------------------------------------------------
+
+std::string ServiceDatabase::ParseDbName(const std::string& dbstring)
+{
+    // Format: host;port;user;pass;db  (5 semicolon-delimited fields)
+    // Return the 5th field (index 4).
+    size_t pos = 0;
+    int    field = 0;
+    while (field < 4)
+    {
+        size_t semi = dbstring.find(';', pos);
+        if (semi == std::string::npos)
+        {
+            return std::string();   // malformed
+        }
+        pos = semi + 1;
+        ++field;
+    }
+    // pos now points at the start of the 5th field.
+    size_t end = dbstring.find(';', pos);
+    if (end == std::string::npos)
+    {
+        end = dbstring.size();
+    }
+    return dbstring.substr(pos, end - pos);
+}
+
+// ---------------------------------------------------------------------------
+// Constructor / Destructor
+// ---------------------------------------------------------------------------
+
 ServiceDatabase::ServiceDatabase()
-    : m_initialized(false)
+    : m_initialized(false),
+      m_charInitialized(false)
 {
 }
 
@@ -80,12 +114,19 @@ bool ServiceDatabase::Init()
 
     sLog.outString("ah-service: world database connection established"
                    " (read-only)");
+    m_worldDbName = ParseDbName(dbstring);
     m_initialized = true;
     return true;
 }
 
 void ServiceDatabase::Shutdown()
 {
+    if (m_charInitialized)
+    {
+        m_characterDatabase.HaltDelayThread();
+        m_charInitialized = false;
+    }
+
     if (!m_initialized)
     {
         return;
@@ -93,4 +134,50 @@ void ServiceDatabase::Shutdown()
 
     m_worldDatabase.HaltDelayThread();
     m_initialized = false;
+}
+
+bool ServiceDatabase::InitCharacter()
+{
+    if (m_charInitialized)
+    {
+        return true;
+    }
+
+    std::string dbstring =
+        sConfig.GetStringDefault("CharacterDatabaseInfo", "");
+    int nConnections =
+        sConfig.GetIntDefault("CharacterDatabaseConnections", 1);
+
+    if (dbstring.empty())
+    {
+        sLog.outError("ah-service: CharacterDatabaseInfo not specified"
+                      " in configuration file");
+        return false;
+    }
+
+    sLog.outString("ah-service: character database total connections: %i",
+                   nConnections + 1);
+
+    if (!m_characterDatabase.Initialize(dbstring.c_str(), nConnections))
+    {
+        sLog.outError("ah-service: cannot connect to character database %s",
+                      dbstring.c_str());
+        return false;
+    }
+
+    QueryResult* result = m_characterDatabase.Query("SELECT 1");
+    if (!result)
+    {
+        sLog.outError("ah-service: character database connectivity check"
+                      " failed (SELECT 1 returned null)");
+        m_characterDatabase.HaltDelayThread();
+        return false;
+    }
+    delete result;
+
+    sLog.outString("ah-service: character database connection established"
+                   " (read-only)");
+    m_charDbName      = ParseDbName(dbstring);
+    m_charInitialized = true;
+    return true;
 }

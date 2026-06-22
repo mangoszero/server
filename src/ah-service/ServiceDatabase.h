@@ -25,6 +25,8 @@
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 
+#include <string>
+
 /**
  * @file ServiceDatabase.h
  * @brief The child's OWN read-only world-DB connection.
@@ -75,9 +77,50 @@ class ServiceDatabase
             return m_worldDatabase;
         }
 
+        /**
+         * @brief The world database name (the 5th semicolon-delimited
+         *        field of WorldDatabaseInfo). Empty until Init() succeeds.
+         */
+        const std::string& WorldDbName() const { return m_worldDbName; }
+
+        /**
+         * @brief The character database name (the 5th semicolon-delimited
+         *        field of CharacterDatabaseInfo). Empty until
+         *        InitCharacter() succeeds.
+         */
+        const std::string& CharDbName() const { return m_charDbName; }
+
+        /**
+         * @brief Open the read-only character-DB connection.
+         *
+         * Reads @c CharacterDatabaseInfo / @c CharacterDatabaseConnections
+         * from @c sConfig, initializes the connection pool, and runs one
+         * trivial connectivity query.  READ-ONLY -- never write.
+         *
+         * @return true on success, false on any failure.
+         */
+        bool InitCharacter();
+
+        /**
+         * @brief Access the underlying read-only character database.
+         *
+         * Callers must only issue SELECTs.
+         */
+        DatabaseType& Character()
+        {
+            return m_characterDatabase;
+        }
+
     private:
-        DatabaseType m_worldDatabase; ///< Child-owned read-only world DB
-        bool m_initialized;           ///< True once Init() succeeded
+        /// Parse the last (5th) semicolon-delimited field from a dbstring.
+        static std::string ParseDbName(const std::string& dbstring);
+
+        DatabaseType m_worldDatabase;     ///< Child-owned read-only world DB
+        bool         m_initialized;       ///< True once Init() succeeded
+        std::string  m_worldDbName;       ///< World DB name from dbstring
+        DatabaseType m_characterDatabase; ///< Child-owned read-only character DB
+        bool         m_charInitialized;   ///< True once InitCharacter() succeeded
+        std::string  m_charDbName;        ///< Character DB name from dbstring
 
         // Non-copyable: owns a live DB connection pool.
         ServiceDatabase(const ServiceDatabase&);
