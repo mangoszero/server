@@ -25,6 +25,8 @@
 #include "Threading/Threading.h"
 #include "IpcServerHandler.h"
 #include "IpcClientHandler.h"
+#include "IpcLink.h"
+#include "IpcOutboundNotifier.h"
 #include "BoundedQueue.h"
 #include "IpcMessage.h"
 
@@ -32,6 +34,9 @@
 #include <ace/TP_Reactor.h>
 
 #include <string>
+
+typedef IpcOutboundNotifier<IpcServerLink, IpcServerHandler> IpcServerNotifier;
+typedef IpcOutboundNotifier<IpcClientLink, IpcClientHandler> IpcClientNotifier;
 
 /**
  * @brief Reactor thread that owns the IPC acceptor (server side).
@@ -53,11 +58,14 @@ class IpcThread : public ACE_Based::Runnable
          * @param port    TCP port to listen on.
          * @param secret  Shared secret validated against IPC_HELLO.
          * @param inbound Shared inbound queue populated by IpcServerHandler.
+         * @param link    Coupling object shared with the IpcServer facade
+         *                (outbound queue + liveness + reactor-thread handler).
          */
         IpcThread(const char* host,
                   uint16 port,
                   const std::string& secret,
-                  BoundedQueue<IpcMessage>* inbound);
+                  BoundedQueue<IpcMessage>* inbound,
+                  IpcServerLink* link);
 
         ~IpcThread() override;
 
@@ -67,17 +75,16 @@ class IpcThread : public ACE_Based::Runnable
         /// Signal the reactor to stop.
         void Stop();
 
-        /// Access the reactor (used by IpcServer to retrieve the handler).
-        ACE_Reactor* GetReactor() const { return m_reactor; }
-
     private:
         std::string               m_host;
         uint16                    m_port;
         std::string               m_secret;
         BoundedQueue<IpcMessage>* m_inbound;
+        IpcServerLink*            m_link;
 
-        ACE_Reactor*  m_reactor;
-        IpcAcceptor*  m_acceptor;
+        ACE_Reactor*       m_reactor;
+        IpcAcceptor*       m_acceptor;
+        IpcServerNotifier* m_notifier;
 
         volatile bool m_running;
 };
@@ -97,11 +104,14 @@ class IpcClientThread : public ACE_Based::Runnable
          * @param port    Server TCP port.
          * @param secret  Shared secret sent in IPC_HELLO.
          * @param inbound Shared inbound queue populated by IpcClientHandler.
+         * @param link    Coupling object shared with the IpcClient facade
+         *                (outbound queue + liveness + reactor-thread handler).
          */
         IpcClientThread(const char* host,
                         uint16 port,
                         const std::string& secret,
-                        BoundedQueue<IpcMessage>* inbound);
+                        BoundedQueue<IpcMessage>* inbound,
+                        IpcClientLink* link);
 
         ~IpcClientThread() override;
 
@@ -111,9 +121,6 @@ class IpcClientThread : public ACE_Based::Runnable
         /// Signal the reactor to stop.
         void Stop();
 
-        /// Return the handler after connection (may be null until connected).
-        IpcClientHandler* GetHandler() const { return m_handler; }
-
         /// True after run() establishes the connection and reactor is live.
         bool IsReady() const { return m_ready; }
 
@@ -122,10 +129,12 @@ class IpcClientThread : public ACE_Based::Runnable
         uint16                    m_port;
         std::string               m_secret;
         BoundedQueue<IpcMessage>* m_inbound;
+        IpcClientLink*            m_link;
 
         ACE_Reactor*       m_reactor;
         IpcConnector*      m_connector;
         IpcClientHandler*  m_handler;
+        IpcClientNotifier* m_notifier;
 
         volatile bool m_running;
         volatile bool m_ready;

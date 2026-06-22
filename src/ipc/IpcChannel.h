@@ -27,6 +27,7 @@
 #include "IpcThread.h"
 #include "IpcServerHandler.h"
 #include "IpcClientHandler.h"
+#include "IpcLink.h"
 #include "BoundedQueue.h"
 #include "Threading/Threading.h"
 
@@ -87,13 +88,14 @@ class IpcServer
         /**
          * @brief True once the handshake has completed (IPC_READY received).
          *
-         * Because the handler is owned by the reactor, we check the handler
-         * pointer from the thread and query IsLive() on it.
+         * Reads a std::atomic<bool> published by the reactor thread. No handler
+         * pointer is dereferenced off the reactor thread.
          */
         bool Connected() const;
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;
+        IpcServerLink*              m_link;       ///< Shared with the reactor thread (refcounted).
         IpcThread*                  m_thread;
         ACE_Based::Thread*          m_aceThread;
 
@@ -152,6 +154,7 @@ class IpcClient
 
     private:
         BoundedQueue<IpcMessage>    m_inbound;
+        IpcClientLink*              m_link;       ///< Shared with the reactor thread (refcounted).
         IpcClientThread*            m_thread;
         ACE_Based::Thread*          m_aceThread;
 

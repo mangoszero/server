@@ -28,23 +28,21 @@
 #include <cstdio>
 
 // ---------------------------------------------------------------------------
-// Static context injected by IpcThread::Start before the acceptor runs.
+// Static context injected by IpcThread::run before the acceptor runs.
+// All of these are written on the reactor thread before any accept fires.
 // ---------------------------------------------------------------------------
 
-BoundedQueue<IpcMessage>* IpcServerHandler::s_pendingInbound  = nullptr;
+BoundedQueue<IpcMessage>* IpcServerHandler::s_pendingInbound = nullptr;
 std::string               IpcServerHandler::s_pendingSecret;
-IpcServerHandler* volatile IpcServerHandler::s_liveHandler    = nullptr;
+IpcServerLink*            IpcServerHandler::s_pendingLink    = nullptr;
 
 void IpcServerHandler::SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                         const std::string& secret)
+                                         const std::string& secret,
+                                         IpcServerLink* link)
 {
     s_pendingInbound = inbound;
     s_pendingSecret  = secret;
-}
-
-IpcServerHandler* IpcServerHandler::GetLiveHandler()
-{
-    return s_liveHandler;
+    s_pendingLink    = link;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +53,7 @@ IpcServerHandler::IpcServerHandler()
     : m_outBuffer(nullptr),
       m_state(IPC_SRV_WAIT_HELLO),
       m_inbound(nullptr),
+      m_link(nullptr),
       m_closing(false)
 {
     reference_counting_policy().value(
@@ -67,6 +66,11 @@ IpcServerHandler::~IpcServerHandler()
     {
         m_outBuffer->release();
         m_outBuffer = nullptr;
+    }
+    if (m_link)
+    {
+        m_link->Release();
+        m_link = nullptr;
     }
     peer().close();
 }
@@ -86,6 +90,11 @@ int IpcServerHandler::open(void* /*acceptor*/)
     // Grab context injected before the reactor started.
     m_inbound = s_pendingInbound;
     m_secret  = s_pendingSecret;
+    if (s_pendingLink)
+    {
+        m_link = s_pendingLink;
+        m_link->AddRef();
+    }
 
     if (!m_inbound)
     {
@@ -104,8 +113,12 @@ int IpcServerHandler::open(void* /*acceptor*/)
 
     sLog.outString("IpcServerHandler: child connected, awaiting handshake");
 
-    // Register as the live handler so IpcServer::SendFrame can find us.
-    s_liveHandler = this;
+    // Publish ourselves into the link as the reactor-thread handler slot.
+    // This runs ON the reactor thread, so the facade never sees a raw pointer.
+    if (m_link)
+    {
+        m_link->handler = this;
+    }
 
     // Reactor now holds a reference; release ours.
     remove_reference();
@@ -158,6 +171,12 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
 
         if (!IpcMessage::Decode(m_recvBuf, msg, err))
         {
+            // The only non-fatal Decode outcomes are "need more bytes" cases
+            // ("short header" / "incomplete"); every other error ("version
+            // mismatch", "oversize frame", ...) is a corrupt/hostile stream and
+            // is fatal. We match the two known transient strings explicitly and
+            // treat anything else as fatal — without depending on the exact
+            // wording of the fatal strings.
             if (err == "incomplete" || err == "short header")
             {
                 break; // need more data
@@ -174,13 +193,37 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
         }
     }
 
-    // Compact the reassembly buffer once fully consumed.
-    if (m_recvBuf.rpos() == m_recvBuf.size())
-    {
-        m_recvBuf.clear();
-    }
+    // Compact the reassembly buffer. If fully drained, clear it; otherwise drop
+    // the consumed front bytes so a peer that always leaves a trailing partial
+    // frame cannot make m_recvBuf grow without bound.
+    CompactRecvBuf();
 
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// CompactRecvBuf() — drop already-consumed front bytes from the reassembly buf
+// ---------------------------------------------------------------------------
+
+void IpcServerHandler::CompactRecvBuf()
+{
+    const size_t consumed = m_recvBuf.rpos();
+    if (consumed == 0)
+    {
+        return; // nothing consumed; leave the (possibly partial) frame in place
+    }
+
+    if (consumed == m_recvBuf.size())
+    {
+        m_recvBuf.clear();
+        return;
+    }
+
+    // Move the unconsumed tail to the front and reset positions.
+    const size_t remaining = m_recvBuf.size() - consumed;
+    ByteBuffer compacted;
+    compacted.append(m_recvBuf.contents() + consumed, remaining);
+    m_recvBuf = compacted;
 }
 
 // ---------------------------------------------------------------------------
@@ -207,10 +250,16 @@ int IpcServerHandler::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
         }
     }
 
-    // Clear live handler slot so IpcServer::SendFrame stops routing here.
-    if (s_liveHandler == this)
+    // Clear the link so the facade stops reporting us live and the reactor-
+    // thread notifier stops routing through us. Runs on the reactor thread, so
+    // it is serialised against the notifier's drain and our own destruction.
+    if (m_link)
     {
-        s_liveHandler = nullptr;
+        m_link->live.store(false, std::memory_order_release);
+        if (m_link->handler == this)
+        {
+            m_link->handler = nullptr;
+        }
     }
 
     reactor()->remove_handler(this,
@@ -340,6 +389,13 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
             }
 
             m_state = IPC_SRV_LIVE;
+
+            // Publish liveness for the facade. Runs on the reactor thread.
+            if (m_link)
+            {
+                m_link->live.store(true, std::memory_order_release);
+            }
+
             sLog.outString("IpcServerHandler: AH service READY");
             break;
         }

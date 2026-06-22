@@ -34,6 +34,7 @@
 #include "Utilities/ByteBuffer.h"
 #include "IpcMessage.h"
 #include "BoundedQueue.h"
+#include "IpcLink.h"
 
 /**
  * @brief Handshake state for the server side of the IPC connection.
@@ -68,18 +69,19 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         // --- static injection used by IpcThread before the acceptor runs ---
 
         /**
-         * @brief Provide the shared inbound queue and shared secret before
-         *        any connection is accepted. Called once by IpcThread::Start.
+         * @brief Provide the shared inbound queue, secret and link before any
+         *        connection is accepted. Called once by IpcThread::run on the
+         *        reactor thread before the acceptor fires open().
+         *
+         * @param inbound Inbound queue shared with the IpcServer facade.
+         * @param secret  Shared secret validated against IPC_HELLO.
+         * @param link    Coupling object (outbound queue + liveness + handler
+         *                slot) shared with the facade. May be null in legacy
+         *                paths but is always set by IpcThread.
          */
         static void SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                      const std::string& secret);
-
-        /**
-         * @brief Return the currently live handler (set in open(), cleared in
-         *        handle_close()). May be null if no child is connected.
-         * Thread-safe to read (volatile pointer, single-connection design).
-         */
-        static IpcServerHandler* GetLiveHandler();
+                                      const std::string& secret,
+                                      IpcServerLink* link);
 
         // --- ACE framework callbacks ---
 
@@ -134,19 +136,23 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         // Inbound queue shared with IpcServer facade.
         BoundedQueue<IpcMessage>*   m_inbound;
 
-        // Closing flag.
-        volatile bool               m_closing;
+        // Coupling object shared with the facade (outbound queue + liveness +
+        // reactor-thread handler slot). Owned via reference count.
+        IpcServerLink*              m_link;
 
-        // --- static context set before first accept ---
+        // Closing flag. Only touched on the reactor thread (under m_outLock for
+        // the close transition); the facade never reads it.
+        bool                        m_closing;
+
+        // --- static context set before first accept (reactor thread only) ---
         static BoundedQueue<IpcMessage>*  s_pendingInbound;
         static std::string                s_pendingSecret;
-
-        // --- live handler slot (set in open(), cleared in handle_close()) ---
-        static IpcServerHandler* volatile s_liveHandler;
+        static IpcServerLink*             s_pendingLink;
 
         // Helpers.
         int ProcessFrame(const IpcMessage& msg);
         int FlushOutBuffer();
+        void CompactRecvBuf();
 };
 
 typedef ACE_Acceptor<IpcServerHandler, ACE_SOCK_ACCEPTOR> IpcAcceptor;

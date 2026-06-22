@@ -41,12 +41,15 @@
 
 BoundedQueue<IpcMessage>* IpcClientHandler::s_pendingInbound = nullptr;
 std::string               IpcClientHandler::s_pendingSecret;
+IpcClientLink*            IpcClientHandler::s_pendingLink    = nullptr;
 
 void IpcClientHandler::SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                          const std::string& secret)
+                                          const std::string& secret,
+                                          IpcClientLink* link)
 {
     s_pendingInbound = inbound;
     s_pendingSecret  = secret;
+    s_pendingLink    = link;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +60,7 @@ IpcClientHandler::IpcClientHandler()
     : m_outBuffer(nullptr),
       m_state(IPC_CLI_WAIT_CONNECT),
       m_inbound(nullptr),
+      m_link(nullptr),
       m_closing(false)
 {
     reference_counting_policy().value(
@@ -69,6 +73,11 @@ IpcClientHandler::~IpcClientHandler()
     {
         m_outBuffer->release();
         m_outBuffer = nullptr;
+    }
+    if (m_link)
+    {
+        m_link->Release();
+        m_link = nullptr;
     }
     peer().close();
 }
@@ -86,6 +95,11 @@ int IpcClientHandler::open(void* /*connector*/)
 
     m_inbound = s_pendingInbound;
     m_secret  = s_pendingSecret;
+    if (s_pendingLink)
+    {
+        m_link = s_pendingLink;
+        m_link->AddRef();
+    }
 
     ACE_NEW_RETURN(m_outBuffer, ACE_Message_Block(k_outBufSize), -1);
 
@@ -95,10 +109,23 @@ int IpcClientHandler::open(void* /*connector*/)
         return -1;
     }
 
-    remove_reference();
+    // Publish ourselves into the link as the reactor-thread handler slot
+    // (runs on the reactor thread). Liveness stays false until the handshake
+    // completes in ProcessFrame().
+    if (m_link)
+    {
+        m_link->handler = this;
+    }
 
-    // Immediately begin handshake.
-    return SendHello();
+    // Begin the handshake BEFORE releasing our local reference. SendHello()
+    // touches `this`, so dropping the reference first would risk a use-after-
+    // free if the reactor concurrently closed the handler. We send first, then
+    // hand ownership to the reactor.
+    const int rc = SendHello();
+
+    // Reactor now holds a reference; release ours.
+    remove_reference();
+    return rc;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +172,8 @@ int IpcClientHandler::handle_input(ACE_HANDLE)
 
         if (!IpcMessage::Decode(m_recvBuf, msg, err))
         {
+            // Only "short header" / "incomplete" are transient (need more
+            // bytes); any other Decode error is a corrupt stream and fatal.
             if (err == "incomplete" || err == "short header")
             {
                 break;
@@ -160,12 +189,35 @@ int IpcClientHandler::handle_input(ACE_HANDLE)
         }
     }
 
-    if (m_recvBuf.rpos() == m_recvBuf.size())
-    {
-        m_recvBuf.clear();
-    }
+    // Compact: drop consumed front bytes so a peer that always leaves a
+    // trailing partial frame cannot grow m_recvBuf without bound.
+    CompactRecvBuf();
 
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// CompactRecvBuf() — drop already-consumed front bytes from the reassembly buf
+// ---------------------------------------------------------------------------
+
+void IpcClientHandler::CompactRecvBuf()
+{
+    const size_t consumed = m_recvBuf.rpos();
+    if (consumed == 0)
+    {
+        return;
+    }
+
+    if (consumed == m_recvBuf.size())
+    {
+        m_recvBuf.clear();
+        return;
+    }
+
+    const size_t remaining = m_recvBuf.size() - consumed;
+    ByteBuffer compacted;
+    compacted.append(m_recvBuf.contents() + consumed, remaining);
+    m_recvBuf = compacted;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +241,17 @@ int IpcClientHandler::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
         if (h == ACE_INVALID_HANDLE)
         {
             peer().close_writer();
+        }
+    }
+
+    // Clear the link so the facade stops reporting us live and the reactor-
+    // thread notifier stops routing through us. Runs on the reactor thread.
+    if (m_link)
+    {
+        m_link->live.store(false, std::memory_order_release);
+        if (m_link->handler == this)
+        {
+            m_link->handler = nullptr;
         }
     }
 
@@ -290,6 +353,12 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
             if (SendFrame(ready) == -1)
             {
                 return -1;
+            }
+
+            // Publish liveness for the facade. Runs on the reactor thread.
+            if (m_link)
+            {
+                m_link->live.store(true, std::memory_order_release);
             }
 
             fprintf(stdout, "IpcClientHandler: handshake complete — channel live\n");

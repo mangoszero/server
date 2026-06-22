@@ -34,6 +34,7 @@
 #include "Utilities/ByteBuffer.h"
 #include "IpcMessage.h"
 #include "BoundedQueue.h"
+#include "IpcLink.h"
 
 /**
  * @brief Handshake state for the client (child) side of the IPC connection.
@@ -67,10 +68,12 @@ class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         // --- static injection before connector fires ---
 
         /**
-         * @brief Set shared secret and inbound queue before Connect() is called.
+         * @brief Set shared secret, inbound queue and link before Connect() is
+         *        called. Invoked on the reactor thread before open() fires.
          */
         static void SetPendingContext(BoundedQueue<IpcMessage>* inbound,
-                                      const std::string& secret);
+                                      const std::string& secret,
+                                      IpcClientLink* link);
 
         // --- ACE framework callbacks ---
 
@@ -115,15 +118,18 @@ class IpcClientHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
 
         std::string                 m_secret;
         BoundedQueue<IpcMessage>*   m_inbound;
-        volatile bool               m_closing;
+        IpcClientLink*              m_link;
+        bool                        m_closing;
 
-        // Static context.
+        // Static context (reactor thread only).
         static BoundedQueue<IpcMessage>*  s_pendingInbound;
         static std::string                s_pendingSecret;
+        static IpcClientLink*             s_pendingLink;
 
         int SendHello();
         int ProcessFrame(const IpcMessage& msg);
         int FlushOutBuffer();
+        void CompactRecvBuf();
 };
 
 typedef ACE_Connector<IpcClientHandler, ACE_SOCK_CONNECTOR> IpcConnector;

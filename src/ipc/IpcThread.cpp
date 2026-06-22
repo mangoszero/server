@@ -36,15 +36,22 @@
 IpcThread::IpcThread(const char* host,
                      uint16 port,
                      const std::string& secret,
-                     BoundedQueue<IpcMessage>* inbound)
+                     BoundedQueue<IpcMessage>* inbound,
+                     IpcServerLink* link)
     : m_host(host ? host : "127.0.0.1"),
       m_port(port),
       m_secret(secret),
       m_inbound(inbound),
+      m_link(link),
       m_reactor(nullptr),
       m_acceptor(nullptr),
+      m_notifier(nullptr),
       m_running(true)
 {
+    if (m_link)
+    {
+        m_link->AddRef();
+    }
 }
 
 IpcThread::~IpcThread()
@@ -54,10 +61,22 @@ IpcThread::~IpcThread()
         delete m_acceptor;
         m_acceptor = nullptr;
     }
+    // The notifier is purge_pending_notifications()'d and removed from the
+    // reactor in run() before the reactor is destroyed; safe to delete here.
+    if (m_notifier)
+    {
+        delete m_notifier;
+        m_notifier = nullptr;
+    }
     if (m_reactor)
     {
         delete m_reactor;
         m_reactor = nullptr;
+    }
+    if (m_link)
+    {
+        m_link->Release();
+        m_link = nullptr;
     }
 }
 
@@ -71,8 +90,22 @@ void IpcThread::run()
     impl->max_notify_iterations(128);
     m_reactor = new ACE_Reactor(impl, 1 /*delete_implementation*/);
 
+    // Create the outbound notifier and bind the reactor onto the link BEFORE
+    // any accept fires. The notifier owns the send path: the facade enqueues a
+    // frame and calls m_reactor->notify(m_notifier), and handle_exception()
+    // drains the queue on this (the reactor) thread.
+    if (m_link)
+    {
+        m_notifier = new IpcServerNotifier(m_link);
+        m_notifier->reactor(m_reactor);
+        m_link->notifier = m_notifier;
+        // Publishing the reactor pointer last (release) makes Connected()/
+        // SendFrame() on the facade a no-op until the notifier is visible.
+        m_link->reactor.store(m_reactor, std::memory_order_release);
+    }
+
     // Inject context before the acceptor fires open() on a new handler.
-    IpcServerHandler::SetPendingContext(m_inbound, m_secret);
+    IpcServerHandler::SetPendingContext(m_inbound, m_secret, m_link);
 
     m_acceptor = new IpcAcceptor();
 
@@ -81,12 +114,29 @@ void IpcThread::run()
     {
         sLog.outError("IpcThread: acceptor->open() failed on %s:%u — %s",
                       m_host.c_str(), m_port, ACE_OS::strerror(errno));
+        if (m_link)
+        {
+            m_link->reactor.store(nullptr, std::memory_order_release);
+        }
         return;
     }
 
     sLog.outString("IpcThread: listening on %s:%u", m_host.c_str(), m_port);
     m_reactor->run_reactor_event_loop();
     sLog.outString("IpcThread: reactor loop exited");
+
+    // Reactor loop has ended. Stop accepting facade notifications and flush any
+    // still-queued notifications so the reactor never calls the notifier after
+    // this thread proceeds to teardown.
+    if (m_link)
+    {
+        m_link->reactor.store(nullptr, std::memory_order_release);
+        m_link->live.store(false, std::memory_order_release);
+    }
+    if (m_notifier)
+    {
+        m_reactor->purge_pending_notifications(m_notifier);
+    }
 }
 
 void IpcThread::Stop()
@@ -105,17 +155,24 @@ void IpcThread::Stop()
 IpcClientThread::IpcClientThread(const char* host,
                                   uint16 port,
                                   const std::string& secret,
-                                  BoundedQueue<IpcMessage>* inbound)
+                                  BoundedQueue<IpcMessage>* inbound,
+                                  IpcClientLink* link)
     : m_host(host ? host : "127.0.0.1"),
       m_port(port),
       m_secret(secret),
       m_inbound(inbound),
+      m_link(link),
       m_reactor(nullptr),
       m_connector(nullptr),
       m_handler(nullptr),
+      m_notifier(nullptr),
       m_running(true),
       m_ready(false)
 {
+    if (m_link)
+    {
+        m_link->AddRef();
+    }
 }
 
 IpcClientThread::~IpcClientThread()
@@ -125,10 +182,20 @@ IpcClientThread::~IpcClientThread()
         delete m_connector;
         m_connector = nullptr;
     }
+    if (m_notifier)
+    {
+        delete m_notifier;
+        m_notifier = nullptr;
+    }
     if (m_reactor)
     {
         delete m_reactor;
         m_reactor = nullptr;
+    }
+    if (m_link)
+    {
+        m_link->Release();
+        m_link = nullptr;
     }
 }
 
@@ -142,8 +209,18 @@ void IpcClientThread::run()
     impl->max_notify_iterations(128);
     m_reactor = new ACE_Reactor(impl, 1);
 
+    // Create the outbound notifier and bind the reactor onto the link before
+    // open() fires. See IpcThread::run for the contract.
+    if (m_link)
+    {
+        m_notifier = new IpcClientNotifier(m_link);
+        m_notifier->reactor(m_reactor);
+        m_link->notifier = m_notifier;
+        m_link->reactor.store(m_reactor, std::memory_order_release);
+    }
+
     // Inject context before open() fires on the handler.
-    IpcClientHandler::SetPendingContext(m_inbound, m_secret);
+    IpcClientHandler::SetPendingContext(m_inbound, m_secret, m_link);
 
     m_connector = new IpcConnector();
     m_connector->reactor(m_reactor);
@@ -153,6 +230,10 @@ void IpcClientThread::run()
     if (!m_handler)
     {
         fprintf(stderr, "IpcClientThread: OOM allocating IpcClientHandler\n");
+        if (m_link)
+        {
+            m_link->reactor.store(nullptr, std::memory_order_release);
+        }
         return;
     }
 
@@ -161,6 +242,10 @@ void IpcClientThread::run()
     {
         fprintf(stderr, "IpcClientThread: connect() failed: %s\n",
                 ACE_OS::strerror(errno));
+        if (m_link)
+        {
+            m_link->reactor.store(nullptr, std::memory_order_release);
+        }
         return;
     }
 
@@ -171,6 +256,17 @@ void IpcClientThread::run()
     m_reactor->run_reactor_event_loop();
     fprintf(stdout, "IpcClientThread: client reactor loop exited\n");
     fflush(stdout);
+
+    // Reactor loop has ended; stop facade notifications and flush pending ones.
+    if (m_link)
+    {
+        m_link->reactor.store(nullptr, std::memory_order_release);
+        m_link->live.store(false, std::memory_order_release);
+    }
+    if (m_notifier)
+    {
+        m_reactor->purge_pending_notifications(m_notifier);
+    }
 }
 
 void IpcClientThread::Stop()

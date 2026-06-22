@@ -1,0 +1,131 @@
+/**
+ * MaNGOS is a full featured server for World of Warcraft, supporting
+ * the following clients: 1.12.x, 2.4.3, 3.3.5a, 4.3.4a and 5.4.8
+ *
+ * Copyright (C) 2005-2025 MaNGOS <https://www.getmangos.eu>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef AH_IPC_LINK_H
+#define AH_IPC_LINK_H
+
+#include "Common.h"
+#include "IpcMessage.h"
+#include "BoundedQueue.h"
+
+#include <ace/Reactor.h>
+#include <ace/Event_Handler.h>
+#include <atomic>
+
+class IpcServerHandler;
+class IpcClientHandler;
+
+/**
+ * @brief Capacity of the outbound (caller-thread -> reactor) queue per side.
+ */
+static const size_t IPC_OUTBOUND_QUEUE_CAP = 256;
+
+/**
+ * @brief Thread-safe coupling object between a facade (caller thread) and its
+ *        reactor thread / live handler.
+ *
+ * The whole point of this object is that mangosd's world thread calls
+ * SendFrame/Connected on the facade while a separate reactor thread runs the
+ * socket handler. The previous design handed a raw handler pointer across that
+ * boundary, which is a use-after-free + data race once cross-thread use begins.
+ *
+ * Concurrency contract:
+ *   - @ref outbound and @ref live are the ONLY members the caller thread may
+ *     touch. @ref outbound is internally synchronised (BoundedQueue) and
+ *     @ref live is a std::atomic — both are safe to read/write from any thread.
+ *   - @ref handler and @ref reactor are owned by, and may only be
+ *     read/written from, the REACTOR thread. The caller thread never
+ *     dereferences them.
+ *
+ * Send path (caller thread): encode into @ref outbound, then poke the reactor
+ * via ACE_Reactor::notify(<the side's notifier>). The notifier's
+ * handle_exception() runs on the reactor thread, where it drains @ref outbound
+ * and performs the actual send through @ref handler.
+ *
+ * Lifetime: the link is heap-allocated and reference-counted (one ref held by
+ * the facade, one by the reactor thread). It outlives both the handler and the
+ * reactor so the reactor-thread notifier can always touch it safely.
+ */
+template<class HandlerT>
+struct IpcLink
+{
+    IpcLink()
+        : outbound(IPC_OUTBOUND_QUEUE_CAP),
+          live(false),
+          handler(nullptr),
+          reactor(nullptr),
+          notifier(nullptr),
+          refCount(0)
+    {
+    }
+
+    // --- caller-thread-safe members ---
+
+    /// Frames enqueued by the caller thread, drained on the reactor thread.
+    BoundedQueue<IpcMessage> outbound;
+
+    /// Published true by the reactor thread on handshake completion, cleared on
+    /// handle_close(). Read by the caller thread via Connected().
+    std::atomic<bool> live;
+
+    // --- reactor-thread-only members ---
+
+    /// Live handler pointer. Set on the reactor thread when the handler goes
+    /// live; cleared on the reactor thread in handle_close(). NEVER read off
+    /// the reactor thread.
+    HandlerT* handler;
+
+    /// The reactor owning the handler. Set once by the reactor thread before it
+    /// enters run_reactor_event_loop(); read by the caller thread ONLY to call
+    /// ACE_Reactor::notify(), which is documented thread-safe.
+    ///
+    /// This pointer is the publication point: it is stored LAST (after
+    /// @ref notifier, with release ordering) on the reactor thread, and
+    /// Connected()/SendFrame() on the caller thread load it with acquire
+    /// ordering and treat null as "not ready". A non-null acquire-load
+    /// therefore guarantees @ref notifier is also visible.
+    std::atomic<ACE_Reactor*> reactor;
+
+    /// The reactor-thread notifier whose handle_exception() drains @ref
+    /// outbound. Set before @ref reactor is published; passed to
+    /// ACE_Reactor::notify() by the caller thread. Lifetime owned by the
+    /// reactor thread (the IpcThread / IpcClientThread).
+    ACE_Event_Handler* notifier;
+
+    // --- reference counting (simple, mutex-free via atomic) ---
+
+    std::atomic<int> refCount;
+
+    void AddRef() { refCount.fetch_add(1, std::memory_order_relaxed); }
+
+    void Release()
+    {
+        if (refCount.fetch_sub(1, std::memory_order_acq_rel) == 1)
+        {
+            delete this;
+        }
+    }
+};
+
+typedef IpcLink<IpcServerHandler> IpcServerLink;
+typedef IpcLink<IpcClientHandler> IpcClientLink;
+
+#endif // AH_IPC_LINK_H
