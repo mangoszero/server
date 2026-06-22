@@ -45,7 +45,15 @@ enum IpcOpcode : uint16
     IPC_ECHO_REPLY      = 0x000B,   ///< Debug echo reply
 
     // 0x1000+ reserved for AH consumer (Milestone 2)
-    IPC_AH_RESERVED_MIN = 0x1000,
+    IPC_AH_RESERVED_MIN  = 0x1000,  ///< Boundary sentinel (not a real opcode)
+
+    IPC_INTENT_SELL      = 0x1001,  ///< ah-service -> mangosd: place sell listing
+    IPC_INTENT_BID       = 0x1002,  ///< ah-service -> mangosd: place bid
+    IPC_INTENT_BUYOUT    = 0x1003,  ///< ah-service -> mangosd: instant buyout
+    IPC_INTENT_RESULT    = 0x1010,  ///< mangosd -> ah-service: intent outcome
+    IPC_QUEUE_FULL       = 0x1011,  ///< mangosd -> ah-service: AH queue full
+    IPC_GMCMD            = 0x1020,  ///< mangosd -> ah-service: GM command relay
+    IPC_GMCMD_RESULT     = 0x1021,  ///< ah-service -> mangosd: GM command result
 };
 
 #endif // AH_IPC_OPCODES_H

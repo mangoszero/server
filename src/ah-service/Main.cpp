@@ -42,6 +42,7 @@
 #include "IpcChannel.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
+#include "AuctionIntents.h"
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
@@ -49,6 +50,242 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+// ---------------------------------------------------------------------------
+// Self-test: intent codec round-trip
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Encode/decode round-trip test for all four AH intent structs.
+ *
+ * Each struct is filled with distinct non-zero sentinel values, encoded into
+ * a fresh ByteBuffer, decoded into a second instance, and every field is
+ * compared for equality.
+ *
+ * @return 0 on success, 1 on any field mismatch.
+ */
+static int RunIntentCodecSelfTest()
+{
+    // --- SellIntent ---
+    {
+        SellIntent a;
+        a.uuid        = UINT64_C(0xDEADBEEF00000001);
+        a.botGuid     = 0x00AA0001u;
+        a.house       = 2u;
+        a.itemId      = 0x00001234u;
+        a.stack       = 20u;
+        a.bid         = 10000u;
+        a.buyout      = 50000u;
+        a.durationHrs = 48u;
+
+        ByteBuffer buf;
+        a.Encode(buf);
+
+        SellIntent b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent::Decode"
+                    " returned false\n");
+            return 1;
+        }
+
+        if (b.uuid != a.uuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent uuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.botGuid != a.botGuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent botGuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.house != a.house)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent house"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.itemId != a.itemId)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent itemId"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.stack != a.stack)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent stack"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.bid != a.bid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent bid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.buyout != a.buyout)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent buyout"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.durationHrs != a.durationHrs)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: SellIntent durationHrs"
+                    " mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- BidIntent ---
+    {
+        BidIntent a;
+        a.uuid      = UINT64_C(0xDEADBEEF00000002);
+        a.botGuid   = 0x00AA0002u;
+        a.auctionId = 0x00009999u;
+        a.bidAmount = 75000u;
+
+        ByteBuffer buf;
+        a.Encode(buf);
+
+        BidIntent b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BidIntent::Decode"
+                    " returned false\n");
+            return 1;
+        }
+
+        if (b.uuid != a.uuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BidIntent uuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.botGuid != a.botGuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BidIntent botGuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.auctionId != a.auctionId)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BidIntent auctionId"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.bidAmount != a.bidAmount)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BidIntent bidAmount"
+                    " mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- BuyoutIntent ---
+    {
+        BuyoutIntent a;
+        a.uuid      = UINT64_C(0xDEADBEEF00000003);
+        a.botGuid   = 0x00AA0003u;
+        a.auctionId = 0x0000ABCDu;
+
+        ByteBuffer buf;
+        a.Encode(buf);
+
+        BuyoutIntent b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BuyoutIntent::Decode"
+                    " returned false\n");
+            return 1;
+        }
+
+        if (b.uuid != a.uuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BuyoutIntent uuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.botGuid != a.botGuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BuyoutIntent botGuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.auctionId != a.auctionId)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: BuyoutIntent auctionId"
+                    " mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- IntentResult ---
+    {
+        IntentResult a;
+        a.uuid   = UINT64_C(0xDEADBEEF00000004);
+        a.status = static_cast<uint8>(INTENT_REJECTED);
+        a.reason = static_cast<uint8>(REASON_NO_FUNDS);
+
+        ByteBuffer buf;
+        a.Encode(buf);
+
+        IntentResult b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: IntentResult::Decode"
+                    " returned false\n");
+            return 1;
+        }
+
+        if (b.uuid != a.uuid)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: IntentResult uuid"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.status != a.status)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: IntentResult status"
+                    " mismatch\n");
+            return 1;
+        }
+        if (b.reason != a.reason)
+        {
+            fprintf(stderr,
+                    "intent codec selftest FAILED: IntentResult reason"
+                    " mismatch\n");
+            return 1;
+        }
+    }
+
+    printf("intent codec selftest OK\n");
+    fflush(stdout);
+    return 0;
+}
 
 // ---------------------------------------------------------------------------
 // Self-test: in-process loopback
@@ -238,6 +475,11 @@ int main(int argc, char** argv)
 
     if (selfTest)
     {
+        int rc = RunIntentCodecSelfTest();
+        if (rc != 0)
+        {
+            return rc;
+        }
         return RunSelfTest();
     }
 
