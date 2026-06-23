@@ -27,7 +27,8 @@ namespace ai
             CastDrainSoulAction(PlayerbotAI* ai) : CastSpellAction(ai, "drain soul") {}
             virtual bool isUseful()
             {
-                return AI_VALUE2(uint8, "item count", "soul shard") < 2;
+                return AI_VALUE2(uint8, "item count", "soul shard") < 2 &&
+                       AI_VALUE2(bool, "spell cast useful", spell);
             }
     };
 
@@ -89,12 +90,22 @@ namespace ai
     {
         public:
             CastCreateFirestoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create firestone") {}
+            virtual bool isUseful();
     };
 
     class CastCreateSpellstoneAction : public CastBuffSpellAction
     {
         public:
             CastCreateSpellstoneAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "create spellstone") {}
+            virtual bool isUseful();
+    };
+
+    class EquipSpellstoneAction : public Action
+    {
+        public:
+            EquipSpellstoneAction(PlayerbotAI* ai) : Action(ai, "equip spellstone") {}
+            virtual bool Execute(Event event);
+            virtual bool isUseful();
     };
 
     class CastBanishAction : public CastBuffSpellAction

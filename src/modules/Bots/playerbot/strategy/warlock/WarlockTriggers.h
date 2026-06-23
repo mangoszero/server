@@ -10,10 +10,10 @@ namespace ai
             virtual bool IsActive();
     };
 
-    class SpellstoneTrigger : public BuffTrigger
+    class SpellstoneTrigger : public Trigger
     {
         public:
-            SpellstoneTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "spellstone") {}
+            SpellstoneTrigger(PlayerbotAI* ai) : Trigger(ai, "spellstone", 5) {}
             virtual bool IsActive();
     };
 
@@ -54,7 +54,9 @@ namespace ai
 
             virtual bool IsActive()
             {
-                return ItemCountTrigger::IsActive() && AI_VALUE2(uint8, "item count", "soul shard") > 0;
+                return ItemCountTrigger::IsActive()
+                        && AI_VALUE2(uint8, "item count", "soul shard") > 1 // leave spare for pet
+                        && AI_VALUE2(uint8, "item count", this->item) == 0;
             }
     };
 
