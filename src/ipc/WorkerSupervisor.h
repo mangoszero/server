@@ -53,6 +53,23 @@ static constexpr uint32 WS_HEARTBEAT_TIMEOUT_SEC   = 45;
 static constexpr uint32 WS_MAX_BACKOFF_SEC         = 60;
 
 /**
+ * @brief Connect deadline: terminate + restart a child that is spawned but
+ *        never completes the IPC handshake (or disconnects and never
+ *        reconnects) within this many seconds.
+ *
+ * The heartbeat-timeout liveness check only fires while IPC is CONNECTED, so
+ * a child whose process stays alive but never connects (e.g. its DB/pool
+ * setup wedged, or it crashed AFTER the parent observed the process but
+ * BEFORE READY) would otherwise leave the service inactive forever without a
+ * restart.  This deadline is generous: it must exceed the child's pre-READY
+ * setup time (config load + DB connect + item-pool build, a few seconds), so
+ * 60 s never false-triggers during the legitimate spawn->init->connect
+ * window.  The anchor is the spawn time, or the last disconnect time once the
+ * child has connected at least once.
+ */
+static constexpr uint32 WS_CONNECT_DEADLINE_SEC    = 60;
+
+/**
  * @brief Grace period for IPC_SHUTDOWN_ACK before hard-kill.
  */
 static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
@@ -206,6 +223,19 @@ class WorkerSupervisor
         bool SpawnChild();
 
         /**
+         * @brief Reap the dead child's process-table entry / OS handle.
+         *
+         * The same ACE_Process is reused across restarts, so a flapping child
+         * would otherwise leak zombies (Linux) or HANDLEs (Windows). This
+         * waits (non-blocking) on the recorded pid via ACE_Process_Manager so
+         * the kernel releases the entry before the next SpawnChild(). Safe to
+         * call when there is nothing to reap. Clears @p pid to ACE_INVALID_PID.
+         *
+         * @param pid The child pid to reap (by value; caller clears its copy).
+         */
+        void ReapChild(pid_t pid);
+
+        /**
          * @brief Discard all staged (not-yet-applied) application frames.
          *
          * Called on child-exit detection (process exit / heartbeat timeout)
@@ -242,6 +272,14 @@ class WorkerSupervisor
         /// Wall-clock timestamps (seconds since epoch) for heartbeat logic.
         time_t       m_lastHeartbeatSent;
         time_t       m_lastHeartbeatAck;
+
+        /// Connect-deadline tracking (C2).
+        /// Anchor for the connect deadline: set on each spawn and re-armed to
+        /// "now" each time the child transitions CONNECTED -> disconnected.
+        time_t       m_connectAnchor;
+        /// True once the IPC channel has reported Connected() for this spawn;
+        /// reset to false on every (re)spawn.
+        bool         m_everConnected;
 
         /// Restart backoff state.
         uint32       m_backoffSec;      ///< Current backoff delay.
