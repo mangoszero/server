@@ -99,6 +99,19 @@ class IpcServer
         bool PopInbound(IpcMessage& out);
 
         /**
+         * @brief Discard every frame currently in the inbound queue.
+         *
+         * Called by the supervisor on child death / before respawn so frames
+         * the dead child enqueued cannot survive the restart and be applied
+         * under the NEXT child. Thread-safe: the reactor thread produces and
+         * the world thread (which calls this) consumes; the drain is
+         * serialised by the inbound queue's own internal mutex.
+         *
+         * @return Number of frames discarded.
+         */
+        size_t ClearInbound() { return m_inbound.clear(); }
+
+        /**
          * @brief Approximate number of frames currently in the inbound queue.
          */
         size_t InboundSize() const { return m_inbound.size(); }

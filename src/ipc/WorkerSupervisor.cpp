@@ -417,6 +417,22 @@ void WorkerSupervisor::ClearStagedFrames()
     {
         std::vector<IpcMessage>().swap(m_pendingFrames);
     }
+
+    // Also purge the IPC server's INBOUND queue. Clearing only m_pendingFrames
+    // is not enough: the reactor thread may have already enqueued frames from
+    // the dead child into the inbound BoundedQueue that DrainInboundProtocol()
+    // has not popped yet. Left in place they would survive the restart and be
+    // applied under the NEXT child. The clear is thread-safe (the reactor
+    // thread produces, this world thread consumes; the queue's own mutex
+    // serialises the drain). Combined with the per-spawn run-id this closes the
+    // stale-frame-across-restart hole.
+    const size_t purged = m_ipc.ClearInbound();
+    if (purged != 0)
+    {
+        sLog.outString("[WorkerSupervisor:%s] purged %u stale inbound frame(s)"
+                       " on child death/respawn",
+                       m_name.c_str(), static_cast<unsigned>(purged));
+    }
 }
 
 // ---------------------------------------------------------------------------
