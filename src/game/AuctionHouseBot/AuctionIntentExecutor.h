@@ -102,9 +102,10 @@ class AuctionIntentExecutor
         /**
          * @brief Configured TTL (seconds) for uuid cache entries.
          *
-         * Read once from "AH.Service.IntentTtlSec" (default 900) on first
-         * use; a uuid stays deduped for at least this long after it is
-         * processed, which must exceed the child's redelivery window.
+         * Read from "AH.Service.IntentTtlSec" (default 900) on every call;
+         * clamped to [60, 86400] so the dedup window is always a meaningful
+         * positive duration. Zero gives same-tick expiry (dedup never holds
+         * -> double-apply); negative/huge values wrap or never expire.
          */
         uint32 IntentTtlSec() const;
 

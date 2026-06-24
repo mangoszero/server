@@ -189,7 +189,32 @@ uint32 AuctionIntentExecutor::IntentTtlSec() const
 {
     // Read on every call; Config access is a cheap map lookup and this keeps
     // the executor stateless w.r.t. config reloads.
-    return sConfig.GetIntDefault("AH.Service.IntentTtlSec", 900);
+    //
+    // Clamp to [60, 86400] so the dedup window is always a meaningful positive
+    // duration. Zero gives same-tick expiry (dedup never holds -> double-apply
+    // on redelivery); negative values wrap to a huge uint32 (never expire).
+    static const uint32 TTL_MIN = 60u;
+    static const uint32 TTL_MAX = 86400u;
+
+    const int32 raw = sConfig.GetIntDefault("AH.Service.IntentTtlSec", 900);
+    uint32 ttl;
+    if (raw < static_cast<int32>(TTL_MIN))
+    {
+        sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d is below "
+                      "minimum (%u); clamping to %u", raw, TTL_MIN, TTL_MIN);
+        ttl = TTL_MIN;
+    }
+    else if (static_cast<uint32>(raw) > TTL_MAX)
+    {
+        sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d exceeds "
+                      "maximum (%u); clamping to %u", raw, TTL_MAX, TTL_MAX);
+        ttl = TTL_MAX;
+    }
+    else
+    {
+        ttl = static_cast<uint32>(raw);
+    }
+    return ttl;
 }
 
 void AuctionIntentExecutor::PurgeExpiredUuids(uint32 now)

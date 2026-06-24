@@ -1131,11 +1131,17 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         return;
     }
 
-    // --- BuyCycles cap derived from post-skip eligible count ---
-    // Mirrors: BuyCycles set from config.CheckedEntry.size() AFTER pruning
-    // (cpp:1314), which is the post-PrepareListOfEntry (surviving) count.
+    // --- BuyCycles cap derived from PRE-recheck candidate count ---
+    // The boost-vs-normal decision mirrors the in-process source which bases it
+    // on the full market/CheckedEntry count (the broader tracked-candidate
+    // pool), NOT the per-tick post-throttle subset. Using the post-skip
+    // eligible count causes under-buying in a busy market: most auctions are
+    // recently-checked and throttled out this tick, so eligible is small and
+    // the child incorrectly picks NORMAL. The decision must use candidates
+    // (pre-recheck), while the actual work loop still iterates the
+    // post-skip eligible set capped at buyCycles.
     uint32 buyCycles;
-    if (eligible.size() >
+    if (candidates.size() >
         m_config.getConfig(AHBOT_CONFIG_UINT32_ITEMS_PER_CYCLE_BOOST))
     {
         buyCycles = m_config.getConfig(
@@ -1292,6 +1298,33 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
                                cfg.factionChance))
             {
                 doBid = true;
+            }
+        }
+
+        // D3: if the computed bid would meet or exceed a non-zero buyout, the
+        // executor rejects it as REASON_BOUGHT_OUT and the auction is then
+        // throttled as "checked" so it is never bid on or bought this run.
+        // Mirror the in-process source: a bid >= buyout becomes a buyout.
+        // Only promote when the buyout path is also viable (rec.buyout != 0
+        // and the IsBuyable check passed, i.e. doBuyout would have been set
+        // had the IsBuyable branch been entered). If only doBid is set (the
+        // buyout check failed or the listing is bid-only) and the bid would
+        // reach/exceed a non-zero buyout, skip this auction rather than emitting
+        // a bid that the executor will reject; the buyout path or a later tick
+        // will handle it when the price is more favourable.
+        if (doBid && rec.buyout != 0 && bidPrice >= rec.buyout)
+        {
+            if (doBuyout)
+            {
+                // Bid was going to be the secondary choice (urand branch);
+                // the amount would reach the buyout — just buyout directly.
+                doBid = false;
+                // doBuyout remains true; falls through to the doBuyout emit.
+            }
+            else
+            {
+                // Buyout value check did not pass; skip this auction entirely.
+                doBid = false;
             }
         }
 
