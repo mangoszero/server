@@ -1799,6 +1799,9 @@ SOAP.Port      = 7878
 #    AH.Service.Secret
 #        Shared secret for IPC handshake authentication.
 #        Change this to a random string in production configurations.
+#        mangosd passes this to the child OUT-OF-BAND via the
+#        AH_SERVICE_SECRET environment variable (NOT on the child command
+#        line), so it is not exposed in the process list.
 #        Default: changeme
 #
 #    AH.Service.Config

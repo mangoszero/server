@@ -33,11 +33,22 @@
  *                        --config <ah-service.conf>.
  *
  *   --port <p>           Connect to mangosd IPC server on this port.
- *   --secret <s>         Shared secret for handshake authentication.
- *   --botguid <g>        (reserved; not used in M1)
- *   --config <path>      (reserved; not used in M1)
+ *   --secret <s>         Shared secret for handshake authentication
+ *                        (manual-testing fallback only; the supervisor
+ *                        passes the secret out-of-band via the
+ *                        AH_SERVICE_SECRET environment variable, read first).
+ *   --botguid <g>        Authoritative bot low-GUID resolved by mangosd. The
+ *                        child STAMPS every emitted intent with this value so
+ *                        the executor's GUID guard always matches mangosd's
+ *                        GetAHBotId(). A value of 0 means mangosd has no valid
+ *                        bot character; the child then exits non-zero.
+ *   --config <path>      ah-service.conf path (infra keys + ahbot.conf path).
  *
- * Normal mode: connect, handshake, then loop handling:
+ * Normal mode: load config + open DB(s) + build item pool + resolve the bot
+ * brain BEFORE the IPC handshake, so "READY" implies the bot is OPERATIONAL.
+ * On any required-setup failure the child logs and exits non-zero (the
+ * supervisor backs off and restarts). Then connect, handshake, and loop
+ * handling:
  *   IPC_HEARTBEAT  -> IPC_HEARTBEAT_ACK
  *   IPC_ECHO       -> IPC_ECHO_REPLY (body echoed back)
  *   IPC_SHUTDOWN   -> IPC_SHUTDOWN_ACK, then exit
@@ -786,7 +797,11 @@ int main(int argc, char** argv)
     uint16 port   = 0;
     const char* secret  = nullptr;
     const char* cfgPath = nullptr;
-    // botguid is reserved; parsed but not used in M1.
+    // botGuid is the AUTHORITATIVE bot identity resolved by mangosd. It is
+    // parsed here and stamped onto every emitted intent so the executor's
+    // GUID guard can never silently reject (and silently stall) the bot.
+    bool   botGuidGiven = false;
+    uint32 argBotGuid   = 0;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -816,7 +831,8 @@ int main(int argc, char** argv)
         }
         else if (strcmp(argv[i], "--botguid") == 0 && i + 1 < argc)
         {
-            ++i; // consume; reserved
+            argBotGuid   = static_cast<uint32>(strtoul(argv[++i], nullptr, 10));
+            botGuidGiven = true;
         }
         else if (strcmp(argv[i], "--config") == 0 && i + 1 < argc)
         {
@@ -849,36 +865,144 @@ int main(int argc, char** argv)
         return RunDryRun(cfgPath);
     }
 
+    // --- Resolve the shared secret (C4: env first, then --secret) ---
+    // The supervisor passes the secret OUT-OF-BAND in AH_SERVICE_SECRET so it
+    // never appears on the child argv (readable via /proc/<pid>/cmdline or the
+    // Win32 command line by any local account). --secret remains a manual-
+    // testing fallback only, used when the env var is absent.
+    const char* envSecret = getenv("AH_SERVICE_SECRET");
+    if (envSecret != nullptr && envSecret[0] != '\0')
+    {
+        secret = envSecret;
+    }
+
     if (port == 0 || secret == nullptr)
     {
         PrintUsage(argv[0]);
         return 1;
     }
 
+    // --- C3: --botguid is the AUTHORITATIVE bot identity ---
+    // mangosd resolved this (sAuctionBotConfig.GetAHBotId()). If it is 0 the
+    // realm has no valid bot character, so the child cannot function: every
+    // intent would be rejected by the executor's GetAHBotId()==0 guard while
+    // the in-process fallback stays suppressed. Exit non-zero so the operator
+    // sees the misconfiguration rather than a silent total stall.
+    if (!botGuidGiven || argBotGuid == 0)
+    {
+        fprintf(stderr, "ah-service: --botguid is 0 or missing - mangosd has"
+                        " no valid AH bot character; exiting (cannot emit"
+                        " intents that pass the executor GUID guard)\n");
+        return 1;
+    }
+
     // --- Install parent-death guard (POSIX: prctl SIGTERM; Windows: no-op) ---
     Console_InstallParentDeathGuard();
 
-    // --- Read Console.ShowOnStartup and apply initial visibility ---
-    bool showConsole = false;
-    if (cfgPath != nullptr)
+    // --- Load config (C1: REQUIRED before the handshake) ---
+    // The infra config (DB strings, ahbot.conf path, cadence, Console toggle)
+    // must load before any bot setup. A missing --config or unreadable file
+    // means the child can do nothing useful, so exit non-zero rather than
+    // heartbeat as a hollow "ready" service that emits nothing.
+    if (cfgPath == nullptr)
     {
-        if (sConfig.SetSource(cfgPath))
-        {
-            showConsole = sConfig.GetBoolDefault("Console.ShowOnStartup", false);
-        }
-        else
-        {
-            fprintf(stderr, "ah-service: warning: could not load"
-                            " config '%s'\n", cfgPath);
-        }
+        fprintf(stderr, "ah-service: --config is required in normal mode -"
+                        " exiting\n");
+        return 1;
     }
+    if (!sConfig.SetSource(cfgPath))
+    {
+        fprintf(stderr, "ah-service: could not load config '%s' - exiting\n",
+                cfgPath);
+        return 1;
+    }
+
+    const bool showConsole =
+        sConfig.GetBoolDefault("Console.ShowOnStartup", false);
     Console_Show(showConsole);
 
+    // Dry-run can also be requested via config (logs instead of sends).
+    const bool emitDryRun = sConfig.GetBoolDefault("AhBot.DryRun", false);
+    // Bot tick cadence: matches the in-process WUPDATE_AHBOT (20s); override
+    // via config for testing.
+    const uint32 tickIntervalMs = static_cast<uint32>(
+        sConfig.GetIntDefault("AhBot.UpdateIntervalMs", 20000));
+
+    // -------------------------------------------------------------------
+    // C1: ALL required bot setup runs BEFORE the IPC handshake so that
+    // "READY" genuinely means the bot is OPERATIONAL. The supervisor uses
+    // ServiceActive() (READY + heartbeats) to SUPPRESS the in-process bot;
+    // if any of this failed after READY, mangosd would see a live service
+    // that emits nothing and BOTH bots would be silent. On ANY failure
+    // here we log and exit non-zero; the supervisor backs off + restarts.
+    //
+    // The only thing NOT available yet is the per-spawn run-id (assigned by
+    // mangosd in the handshake). It is used solely for uuid stamping in the
+    // loop, so the BotBrain is constructed just after Connect() with it; no
+    // failable setup depends on it.
+    // -------------------------------------------------------------------
+    ServiceConfig   botConfig;
+    ServiceDatabase botDb;
+
+    if (!botConfig.Initialize())
+    {
+        fprintf(stderr, "ah-service: ServiceConfig::Initialize failed -"
+                        " exiting (cannot run bot)\n");
+        return 1;
+    }
+
+    if (!botDb.Init() || !botDb.InitCharacter())
+    {
+        fprintf(stderr, "ah-service: bot DB init failed -"
+                        " exiting (cannot run bot)\n");
+        botDb.Shutdown();
+        return 1;
+    }
+
+    // C3: the parent-passed --botguid is AUTHORITATIVE. Re-resolve from the
+    // child's own character DB ONLY as a drift diagnostic: if it differs from
+    // mangosd's value we log loudly but still STAMP intents with the parent
+    // guid (argBotGuid), so config drift can never silently fail the
+    // executor's GUID guard. We already rejected argBotGuid == 0 above.
+    const uint32 botGuid = argBotGuid;
+    const uint32 resolvedGuid =
+        botDb.ResolveCharacterGuid(botConfig.GetBotCharacterName());
+    if (resolvedGuid != botGuid)
+    {
+        fprintf(stderr, "ah-service: WARNING bot GUID DRIFT - mangosd"
+                        " --botguid=%u but child resolved '%s' -> %u;"
+                        " using AUTHORITATIVE parent guid %u for all intents\n",
+                botGuid, botConfig.GetBotCharacterName().c_str(),
+                resolvedGuid, botGuid);
+    }
+
+    // Build the item pool (C1: REQUIRED). An empty pool means the seller has
+    // nothing to list; consistent with --poolcheck / --dryrun, treat it as a
+    // setup failure and exit so the supervisor restarts (the misconfig is
+    // visible rather than a hollow ready service).
+    ItemPool* botPool = new ItemPool(botConfig, botDb);
+    if (!botPool->Build())
+    {
+        fprintf(stderr, "ah-service: item pool empty -"
+                        " exiting (seller has no items)\n");
+        delete botPool;
+        botDb.Shutdown();
+        return 1;
+    }
+
+    MarketSnapshot* botSnap = new MarketSnapshot(botDb);
+    botSnap->Refresh();
+
     // --- Normal mode: connect to mangosd IPC server ---
+    // Setup above succeeded, so completing the handshake (READY) now truthfully
+    // advertises an OPERATIONAL bot.
     IpcClient cli;
     if (!cli.Connect("127.0.0.1", port, secret))
     {
         fprintf(stderr, "ah-service: IpcClient::Connect failed\n");
+        delete botSnap;
+        delete botPool;
+        botDb.Shutdown();
         return 1;
     }
 
@@ -893,6 +1017,9 @@ int main(int argc, char** argv)
         {
             fprintf(stderr, "ah-service: handshake timed out - exiting\n");
             cli.Stop();
+            delete botSnap;
+            delete botPool;
+            botDb.Shutdown();
             return 1;
         }
         ACE_Based::Thread::Sleep(50);
@@ -902,69 +1029,17 @@ int main(int argc, char** argv)
     printf("ah-service: handshake complete - run-id %u - entering service loop\n",
            cli.RunId());
 
-    // --- Bot-brain setup ---
-    // Config was already loaded into sConfig above (for Console.ShowOnStartup).
-    // Build the value table, item pool, market snapshot and resolve the bot
-    // GUID. If any step fails the loop still runs (heartbeat/console/shutdown),
-    // but no intents are emitted.
-    ServiceConfig botConfig;
-    ServiceDatabase botDb;
-    bool brainReady = false;
-    uint32 botGuid = 0;
-
-    // Dry-run can also be requested via config (logs instead of sends).
-    const bool emitDryRun = sConfig.GetBoolDefault("AhBot.DryRun", false);
-    // Bot tick cadence: matches the in-process WUPDATE_AHBOT (20s); override
-    // via config for testing.
-    const uint32 tickIntervalMs = static_cast<uint32>(
-        sConfig.GetIntDefault("AhBot.UpdateIntervalMs", 20000));
-
-    if (!botConfig.Initialize())
-    {
-        fprintf(stderr, "ah-service: ServiceConfig::Initialize failed -"
-                        " bot decisions disabled\n");
-    }
-    else if (!botDb.Init() || !botDb.InitCharacter())
-    {
-        fprintf(stderr, "ah-service: bot DB init failed -"
-                        " bot decisions disabled\n");
-    }
-    else
-    {
-        botGuid = botDb.ResolveCharacterGuid(botConfig.GetBotCharacterName());
-        if (botGuid == 0)
-        {
-            fprintf(stderr, "ah-service: bot GUID unresolved for '%s' -"
-                            " seller/buyer suppressed\n",
-                    botConfig.GetBotCharacterName().c_str());
-        }
-        brainReady = true;
-    }
-
-    // Pool + snapshot + brain live for the loop's lifetime when ready.
-    ItemPool*       botPool  = nullptr;
-    MarketSnapshot* botSnap  = nullptr;
-    BotBrain*       botBrain = nullptr;
-
-    if (brainReady)
-    {
-        botPool = new ItemPool(botConfig, botDb);
-        if (!botPool->Build())
-        {
-            fprintf(stderr, "ah-service: item pool empty -"
-                            " seller has no items\n");
-        }
-        botSnap = new MarketSnapshot(botDb);
-        botSnap->Refresh();
-        botBrain = new BotBrain(botConfig, *botPool, *botSnap, botGuid,
-                                cli.RunId());
-        botBrain->Initialize();
-        printf("ah-service: bot ready (seller=%s buyer=%s dryrun=%s"
-               " tick=%ums)\n",
-               botBrain->SellerEnabled() ? "on" : "off",
-               botBrain->BuyerEnabled() ? "on" : "off",
-               emitDryRun ? "on" : "off", tickIntervalMs);
-    }
+    // Brain construction needs the handshake-assigned run-id (uuid high word);
+    // it performs no DB/IO and cannot fail.
+    BotBrain* botBrain = new BotBrain(botConfig, *botPool, *botSnap, botGuid,
+                                      cli.RunId());
+    botBrain->Initialize();
+    printf("ah-service: bot ready (guid=%u seller=%s buyer=%s dryrun=%s"
+           " tick=%ums)\n",
+           botGuid,
+           botBrain->SellerEnabled() ? "on" : "off",
+           botBrain->BuyerEnabled() ? "on" : "off",
+           emitDryRun ? "on" : "off", tickIntervalMs);
 
     // --- Service loop ---
     volatile bool stop = false;
@@ -1162,10 +1237,7 @@ int main(int argc, char** argv)
     delete botBrain;
     delete botSnap;
     delete botPool;
-    if (brainReady)
-    {
-        botDb.Shutdown();
-    }
+    botDb.Shutdown();
 
     cli.Stop();
     printf("ah-service: shutdown complete\n");
