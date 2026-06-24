@@ -161,6 +161,26 @@ class ServiceConfig
         bool Initialize();
 
         /**
+         * @brief Re-read the ahbot.conf value table in place.
+         *
+         * Re-opens the same config file path used by Initialize() and
+         * reloads all tuning values (pricing, timing, buyer ratios,
+         * amounts, toggles).
+         *
+         * @note The item POOL filter thresholds (ItemLevel, ReqLevel,
+         *       ReqSkill, Bind, Items.Vendor/Loot/Misc, Includes/Excludes)
+         *       are used only during ItemPool::Build(), which runs once at
+         *       startup.  Changing those keys in ahbot.conf and calling
+         *       Reload() will update the stored values, but the running
+         *       pool is NOT rebuilt -- a service restart is required for
+         *       pool-affecting config to take effect.
+         *
+         * @return true on success, false if the config file could not be
+         *         re-opened.
+         */
+        bool Reload();
+
+        /**
          * @brief Get a uint32 configuration value.
          * @param index Configuration index
          * @return Configuration value

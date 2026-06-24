@@ -61,6 +61,28 @@ bool ServiceConfig::Initialize()
     return true;
 }
 
+bool ServiceConfig::Reload()
+{
+    // Re-open the same path that Initialize() used.
+    std::string cfgPath = sConfig.GetStringDefault(
+        "AhBot.ConfigPath", AUCTIONHOUSEBOT_CONFIG_NAME);
+
+    if (!m_botCfg.SetSource(cfgPath.c_str()))
+    {
+        if (!m_botCfg.SetSource(AUCTIONHOUSEBOT_CONFIG_NAME))
+        {
+            sLog.outError("ah-service: Reload: unable to re-open AH bot"
+                          " configuration file '%s'", cfgPath.c_str());
+            return false;
+        }
+    }
+
+    GetConfigFromFile();
+    sLog.outString("ah-service: AH bot configuration reloaded from %s",
+                   cfgPath.c_str());
+    return true;
+}
+
 void ServiceConfig::setConfig(AhBotConfigUInt32Values index,
                               char const* fieldname, uint32 defvalue)
 {

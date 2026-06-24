@@ -1033,6 +1033,41 @@ int main(int argc, char** argv)
                     backoffNext = true;
                     break;
                 }
+                case IPC_GMCMD:
+                {
+                    GmCmd gc;
+                    gc.cmd = 0;
+                    uint8 ok = 0;
+                    bool decoded = gc.Decode(msg.body);
+                    if (decoded)
+                    {
+                        if (gc.cmd == static_cast<uint8>(GMCMD_RELOAD))
+                        {
+                            ok = botConfig.Reload() ? 1u : 0u;
+                            printf("ah-service: GMCMD_RELOAD %s\n",
+                                   ok ? "OK" : "FAILED");
+                        }
+                        else
+                        {
+                            printf("ah-service: IPC_GMCMD unknown cmd %u"
+                                   " - replying FAIL\n",
+                                   static_cast<unsigned>(gc.cmd));
+                        }
+                    }
+                    else
+                    {
+                        printf("ah-service: IPC_GMCMD decode failed\n");
+                    }
+                    // Always reply so mangosd can log the result.
+                    GmCmdResult gcr;
+                    gcr.cmd = gc.cmd;
+                    gcr.ok  = ok;
+                    IpcMessage reply;
+                    reply.op = IPC_GMCMD_RESULT;
+                    gcr.Encode(reply.body);
+                    cli.SendFrame(reply);
+                    break;
+                }
                 default:
                     // Unknown opcode - ignore silently for now.
                     break;

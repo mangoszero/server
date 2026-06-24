@@ -114,6 +114,7 @@
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
+#include "AuctionIntents.h"
 
 #include <iostream>
 #include <sstream>
@@ -2090,6 +2091,30 @@ void World::HandleAhInbound(const IpcMessage& msg)
             // mangosd -> child direction; should never be received here.
             sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
                           " IPC_INTENT_RESULT (ignored)");
+            break;
+        }
+        case IPC_GMCMD_RESULT:
+        {
+            ByteBuffer body(msg.body);
+            GmCmdResult res;
+            if (res.Decode(body))
+            {
+                sLog.outString("[AHService] GM command %u result: %s",
+                               static_cast<unsigned>(res.cmd),
+                               res.ok ? "OK" : "FAIL");
+            }
+            else
+            {
+                sLog.outError("[AHSupervisor] HandleAhInbound:"
+                              " IPC_GMCMD_RESULT decode failed");
+            }
+            break;
+        }
+        case IPC_GMCMD:
+        {
+            // mangosd -> child direction; should never be received inbound.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_GMCMD inbound (ignored)");
             break;
         }
         default:

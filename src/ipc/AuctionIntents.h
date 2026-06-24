@@ -221,6 +221,89 @@ struct BuyoutIntent
 };
 
 // ---------------------------------------------------------------------------
+// GmCmd / GmCmdResult  (wire sizes: 1 / 2 bytes)
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief GM command type relayed to the ah-service child.
+ */
+enum GmCmdType : uint8
+{
+    GMCMD_RELOAD = 1   ///< Live-reload ahbot.conf tuning in the child.
+};
+
+/**
+ * @brief GM command frame sent from mangosd to the ah-service child.
+ *
+ * Opcode: IPC_GMCMD (0x1020), direction: mangosd -> ah-service.
+ *
+ * Wire size: 1 byte.
+ */
+struct GmCmd
+{
+    static const size_t WIRE_SIZE = 1u;  ///< Fixed wire size in bytes.
+
+    uint8 cmd;  ///< GmCmdType value.
+
+    /** @brief Append all fields to @p buf in wire order. */
+    void Encode(ByteBuffer& buf) const
+    {
+        buf << cmd;
+    }
+
+    /**
+     * @brief Read all fields from @p buf in wire order.
+     *
+     * @return true on success, false if fewer than 1 byte remains.
+     */
+    bool Decode(ByteBuffer& buf)
+    {
+        if (buf.rpos() + WIRE_SIZE > buf.size())
+        {
+            return false;
+        }
+        buf >> cmd;
+        return true;
+    }
+};
+
+/**
+ * @brief Result of a GM command execution in the ah-service child.
+ *
+ * Opcode: IPC_GMCMD_RESULT (0x1021), direction: ah-service -> mangosd.
+ *
+ * Wire size: 2 bytes.
+ */
+struct GmCmdResult
+{
+    static const size_t WIRE_SIZE = 2u;  ///< Fixed wire size in bytes.
+
+    uint8 cmd;  ///< GmCmdType value echoed from the triggering GmCmd.
+    uint8 ok;   ///< 1 = success, 0 = failure.
+
+    /** @brief Append all fields to @p buf in wire order. */
+    void Encode(ByteBuffer& buf) const
+    {
+        buf << cmd << ok;
+    }
+
+    /**
+     * @brief Read all fields from @p buf in wire order.
+     *
+     * @return true on success, false if fewer than 2 bytes remain.
+     */
+    bool Decode(ByteBuffer& buf)
+    {
+        if (buf.rpos() + WIRE_SIZE > buf.size())
+        {
+            return false;
+        }
+        buf >> cmd >> ok;
+        return true;
+    }
+};
+
+// ---------------------------------------------------------------------------
 // IntentResult  (wire size = 8+1+1 = 10 bytes)
 // ---------------------------------------------------------------------------
 
