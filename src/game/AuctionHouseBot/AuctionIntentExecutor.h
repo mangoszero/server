@@ -55,7 +55,7 @@ class AuctionIntentExecutor
     public:
         AuctionIntentExecutor()
             : m_applied(0), m_rejected(0), m_duplicate(0),
-              m_malformed(0), m_lastPurge(0)
+              m_malformed(0)
         {
         }
 
@@ -148,7 +148,6 @@ class AuctionIntentExecutor
         uint64 m_rejected;   ///< Rejected-after-validation counter.
         uint64 m_duplicate;  ///< Duplicate-uuid counter.
         uint64 m_malformed;  ///< Failed-to-decode counter.
-        uint32 m_lastPurge;  ///< Last game-time second a purge ran.
 };
 
 /// Convenience define to access the AuctionIntentExecutor singleton.

@@ -156,16 +156,24 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
         return; // no reply: caller leaves resultOut empty
     }
 
-    // Idempotency FIRST: a redelivered uuid must never double-apply.
+    // Idempotency FIRST: a redelivered uuid must never double-apply. Refresh
+    // the dedup expiry on every hit so an actively-redelivering uuid (whose
+    // INTENT_RESULT reply was lost) keeps its sliding window open and never
+    // ages out into a second apply.
     if (IsDuplicate(s.uuid))
     {
         ++m_duplicate;
+        Remember(s.uuid, now);
         MakeResult(resultOut, s.uuid, INTENT_DUPLICATE, REASON_NONE);
         return;
     }
 
-    // botGuid guard: the listing owner must be the real bot low-GUID.
-    if (s.botGuid != sAuctionBotConfig.GetAHBotId())
+    // botGuid guard: the listing owner must be the real bot low-GUID. When
+    // GetAHBotId() returns 0 (unresolvable bot name) a botGuid-0 intent would
+    // otherwise pass the bare mismatch test (0 != 0 is false) and mutate real
+    // players' auctions as owner 0; reject outright in that misconfig case.
+    if (sAuctionBotConfig.GetAHBotId() == 0 ||
+        s.botGuid != sAuctionBotConfig.GetAHBotId())
     {
         ++m_rejected;
         Remember(s.uuid, now);
@@ -230,14 +238,20 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
         return;
     }
 
+    // Refresh the dedup expiry on every duplicate hit (sliding window) so a
+    // redelivered uuid never ages out into a second UpdateBid.
     if (IsDuplicate(b.uuid))
     {
         ++m_duplicate;
+        Remember(b.uuid, now);
         MakeResult(resultOut, b.uuid, INTENT_DUPLICATE, REASON_NONE);
         return;
     }
 
-    if (b.botGuid != sAuctionBotConfig.GetAHBotId())
+    // Reject when the bot GUID is unresolvable (GetAHBotId()==0) as well as on
+    // a genuine mismatch, so a botGuid-0 intent can never bid as bidder 0.
+    if (sAuctionBotConfig.GetAHBotId() == 0 ||
+        b.botGuid != sAuctionBotConfig.GetAHBotId())
     {
         ++m_rejected;
         Remember(b.uuid, now);
@@ -293,6 +307,20 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
         return;
     }
 
+    // Enforce the startbid floor the canonical authority requires
+    // (AuctionHouseHandler.cpp: "if (price < auction->startbid) return;").
+    // The min-increment check below clamps to 1 on a fresh auction (bid==0),
+    // so without this a 1-copper first bid would be accepted; UpdateBid would
+    // then set bid=1/bidder=0 and at win-time AuctionBidWinning would pay the
+    // real seller ~1c and destroy the item via the receiver-not-exist branch.
+    if (b.bidAmount < auction->startbid)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_STALE_BID);
+        return;
+    }
+
     // Enforce the same minimum increment the in-process buyer respects: the
     // new bid must clear the current bid plus GetAuctionOutBid().
     uint32 minBid = auction->bid + auction->GetAuctionOutBid();
@@ -328,14 +356,20 @@ void AuctionIntentExecutor::ApplyBuyout(const IpcMessage& in,
         return;
     }
 
+    // Refresh the dedup expiry on every duplicate hit (sliding window) so a
+    // redelivered uuid never ages out into a second buyout.
     if (IsDuplicate(b.uuid))
     {
         ++m_duplicate;
+        Remember(b.uuid, now);
         MakeResult(resultOut, b.uuid, INTENT_DUPLICATE, REASON_NONE);
         return;
     }
 
-    if (b.botGuid != sAuctionBotConfig.GetAHBotId())
+    // Reject when the bot GUID is unresolvable (GetAHBotId()==0) as well as on
+    // a genuine mismatch, so a botGuid-0 intent can never buy out as buyer 0.
+    if (sAuctionBotConfig.GetAHBotId() == 0 ||
+        b.botGuid != sAuctionBotConfig.GetAHBotId())
     {
         ++m_rejected;
         Remember(b.uuid, now);
