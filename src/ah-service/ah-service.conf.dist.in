@@ -1,0 +1,91 @@
+[AhServiceConf]
+ConfVersion=@MANGOS_AHBOT_VER@
+Console.ShowOnStartup = 0
+LogLevel = 1
+
+###############################################################################
+# AH-SERVICE INFRASTRUCTURE
+#
+#    WorldDatabaseInfo
+#        World database connection string. Same host;port;user;pass;db format
+#        as mangosd.conf. The ah-service child opens its OWN world-DB
+#        connection (mangosd's connection is separate) and only ever issues
+#        SELECTs against it.
+#
+#        SECURITY: do NOT copy mangosd's full read/write credentials here. The
+#        child is untrusted (that is WHY mangosd re-validates every intent); a
+#        compromised child holding write-capable creds could write the DB
+#        directly and bypass the executor. Provision a DEDICATED least-privilege
+#        MySQL account with SELECT-only grants for this connection. See the
+#        "Security" section of doc/AuctionHouseBot.md for example GRANT
+#        statements.
+#    Default: "" (disabled)
+#
+#    Example (point at a SELECT-only account, not mangosd's user):
+#    WorldDatabaseInfo = "127.0.0.1;3306;ahbot_ro;change-me;mangos0"
+
+WorldDatabaseInfo = ""
+
+#
+#    WorldDatabaseConnections
+#        Number of additional asynchronous world-DB connections (a synchronous
+#        connection is always created on top of this count).
+#    Default: 1
+
+WorldDatabaseConnections = 1
+
+#
+#    CharacterDatabaseInfo
+#        Character database connection string. Same host;port;user;pass;db
+#        format as mangosd.conf. The ah-service child opens its OWN character-DB
+#        connection used by MarketSnapshot to read the live auction tables, and
+#        only ever issues SELECTs against it.
+#
+#        SECURITY: as with WorldDatabaseInfo, do NOT copy mangosd's full
+#        read/write credentials here. Use a DEDICATED least-privilege MySQL
+#        account with SELECT-only grants so a compromised child cannot write the
+#        DB directly and bypass the mangosd executor authority. See the
+#        "Security" section of doc/AuctionHouseBot.md.
+#    Default: "" (disabled)
+#
+#    Example (point at a SELECT-only account, not mangosd's user):
+#    CharacterDatabaseInfo = "127.0.0.1;3306;ahbot_ro;change-me;character0"
+
+CharacterDatabaseInfo = ""
+
+#
+#    CharacterDatabaseConnections
+#        Number of additional asynchronous character-DB connections (a
+#        synchronous connection is always created on top of this count).
+#    Default: 1
+
+CharacterDatabaseConnections = 1
+
+#
+#    AhBot.ConfigPath
+#        Path to the auction-house bot tuning config (ahbot.conf). May be
+#        relative to the ah-service working directory or absolute.
+#    Default: ahbot.conf
+
+AhBot.ConfigPath = ahbot.conf
+
+#
+#    AhBot.DryRun
+#        When 1 the child still makes auction decisions on its cadence but
+#        LOGS each intent (opcode + key fields) instead of sending it to
+#        mangosd. The child is always read-only on the DB; this only governs
+#        whether decided intents are transmitted.
+#    Default: 0 (emit intents)
+
+AhBot.DryRun = 0
+
+#
+#    AhBot.UpdateIntervalMs
+#        Bot decision cadence in milliseconds. Matches the in-process bot's
+#        20s WUPDATE_AHBOT tick by default; one rotated operation (one house,
+#        seller or buyer) runs per tick.
+#    Default: 20000
+
+AhBot.UpdateIntervalMs = 20000
+
+###############################################################################

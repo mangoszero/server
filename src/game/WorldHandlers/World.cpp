@@ -54,6 +54,7 @@
 #include "Player.h"
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/AuctionIntentExecutor.h"
 #include "ObjectMgr.h"
 #include "CreatureEventAIMgr.h"
 #include "GuildMgr.h"
@@ -109,8 +110,15 @@
 // WARDEN
 #include "WardenCheckMgr.h"
 
+// AH subprocess supervisor (Task 5+)
+#include "WorkerSupervisor.h"
+#include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "AuctionIntents.h"
+
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 INSTANTIATE_SINGLETON_1(World);
 
@@ -220,6 +228,11 @@ World::World()
     {
         m_configBoolValues[i] = false;
     }
+
+    // PF3-A: single-threaded construction; relaxed is sufficient here. The
+    // release/acquire pairing happens later between SetAhSupervisor() and the
+    // world tick loop.
+    m_ahSupervisor.store(NULL, std::memory_order_relaxed);
 }
 
 /// World destructor
@@ -1849,8 +1862,141 @@ void World::Update(uint32 diff)
     /// <li> Handle AHBot operations
     if (m_timers[WUPDATE_AHBOT].Passed())
     {
-        sAuctionBot.Update();
+        // PF3-A: acquire-load the published supervisor pointer once. The
+        // matching release store in SetAhSupervisor() guarantees the
+        // supervisor's construction + Start() is fully visible before any
+        // non-NULL pointer can be observed here.
+        WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+        const bool serviceActive =
+            (ahSupervisor != NULL && ahSupervisor->ServiceActive());
+
+        /// Transition logging: announce each time the in-process bot stands
+        /// down for / resumes from the out-of-process service.
+        static bool s_prevServiceActive = false;
+        if (serviceActive != s_prevServiceActive)
+        {
+            if (serviceActive)
+            {
+                sLog.outString("[AHSupervisor] AH service active -"
+                               " in-process AuctionHouseBot standing down");
+            }
+            else
+            {
+                sLog.outString("[AHSupervisor] AH service inactive -"
+                               " in-process AuctionHouseBot resuming");
+            }
+            s_prevServiceActive = serviceActive;
+        }
+
+        if (!serviceActive)
+        {
+            sAuctionBot.Update();
+        }
+
+        // Mail cleanup must run in BOTH modes. In service mode the in-process
+        // bot's Update() is gated out, so PurgeMailedItems() (the hourly
+        // cleanup of the bot's returned/unsold/outbid mail) would otherwise
+        // never run and the char-DB mail tables would grow without bound.
+        // It is self-throttled to once/hour internally, so calling it on every
+        // WUPDATE_AHBOT tick in either mode is cheap and idempotent.
+        sAuctionBot.PurgeMailedItemsTick();
+
         m_timers[WUPDATE_AHBOT].Reset();
+    }
+
+    /// <li> Tick the AH subprocess supervisor and drain inbound frames
+    // PF3-A: acquire-load the published supervisor pointer once for this whole
+    // block (see SetAhSupervisor()). Reusing one local keeps every dereference
+    // below consistent and avoids repeated atomic loads.
+    WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+    if (ahSupervisor != NULL)
+    {
+        // Tick() uses wall-clock deltas internally; do NOT gate behind
+        // WUPDATE_AHBOT. Tick() drives heartbeat/restart/protocol and MUST run
+        // every tick regardless of service health (it is what transitions the
+        // service from inactive back to active).
+        ahSupervisor->Tick(GetGameTime());
+
+        // Overflow visibility: warn (rate-limited) when the inbound queue
+        // has dropped frames since we last checked.
+        static size_t s_lastDroppedSeen = 0;
+        static time_t s_lastOverflowWarn = 0;
+        static time_t s_lastNearFullWarn = 0;
+        const size_t  dropped = ahSupervisor->InboundDropped();
+        if (dropped > s_lastDroppedSeen)
+        {
+            const time_t now = time(NULL);
+            // Warn at most once every 60 seconds to avoid log spam.
+            // Baseline only advances on emission so suppressed bursts are
+            // counted correctly in the next warning.
+            if (now - s_lastOverflowWarn >= 60)
+            {
+                sLog.outError("[AHSupervisor] inbound queue overflow:"
+                              " %u frame(s) dropped (total %u)",
+                              static_cast<unsigned>(dropped - s_lastDroppedSeen),
+                              static_cast<unsigned>(dropped));
+                s_lastOverflowWarn = now;
+                s_lastDroppedSeen  = dropped;
+            }
+        }
+
+        // The apply loop (DrainInbound + HandleAhInbound) and the near-full
+        // back-pressure check are gated on service health. When the service is
+        // inactive (crash / heartbeat-timeout / stand-down) the in-process
+        // AuctionHouseBot resumes (see the WUPDATE_AHBOT block above); applying
+        // the dead child's last staged batch at the same time would over-post
+        // against the resumed in-process bot. WorkerSupervisor clears its
+        // staged frames on child exit, so a reconnecting child never replays
+        // the dead child's stale batch; this gate is the second guard.
+        if (ahSupervisor->ServiceActive())
+        {
+            // Drain up to 256 application frames per tick.
+            std::vector<IpcMessage> msgs;
+            ahSupervisor->DrainInbound(msgs, 256);
+
+            // Near-full back-pressure: queue >= 80% capacity means we are close
+            // to dropping frames even though none have been lost yet. Warn AND
+            // tell the child to throttle via IPC_QUEUE_FULL so it pauses one
+            // bot cycle. Both are rate-limited to once per 60s to avoid spam.
+            const size_t qSize = ahSupervisor->Channel().InboundSize();
+            if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
+            {
+                const time_t now = time(NULL);
+                if (now - s_lastNearFullWarn >= 60)
+                {
+                    sLog.outError("[AHSupervisor] inbound queue near full:"
+                                  " %u / %u frames - sending IPC_QUEUE_FULL",
+                                  static_cast<unsigned>(qSize),
+                                  static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
+
+                    // Back-pressure producer: the child backs off one bot
+                    // cycle on IPC_QUEUE_FULL (ah-service Main.cpp). Empty
+                    // body; the child reads no payload for this opcode.
+                    IpcMessage qf;
+                    qf.op = IPC_QUEUE_FULL;
+                    ahSupervisor->Channel().SendFrame(qf);
+
+                    s_lastNearFullWarn = now;
+                }
+            }
+
+            for (size_t i = 0; i < msgs.size(); ++i)
+            {
+                HandleAhInbound(msgs[i]);
+            }
+        }
+
+        // Expire processed-uuid dedup entries. UNCONDITIONAL: the dedup cache
+        // must keep aging out regardless of service health, else stale uuids
+        // leak when the service stays inactive. Rate-limit to once per second
+        // (game-time); purging every tick would be wasteful.
+        static time_t s_lastIntentPurge = 0;
+        const time_t nowSec = GetGameTime();
+        if (nowSec != s_lastIntentPurge)
+        {
+            sAuctionIntentExecutor.PurgeExpiredUuids(uint32(nowSec));
+            s_lastIntentPurge = nowSec;
+        }
     }
 
 #ifdef ENABLE_PLAYERBOTS
@@ -1940,6 +2086,96 @@ void World::Update(uint32 diff)
 
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
+}
+
+// ---------------------------------------------------------------------------
+// World::HandleAhInbound -- M1 stub; routes consumer frames in M2
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Dispatch one inbound frame from the ah-service child process.
+ *
+ * M1: logs what arrived so the smoke test can confirm the drain pipeline
+ * is live. M2 will add IPC_AH_* intent routing here; keep the switch
+ * extensible.
+ */
+void World::HandleAhInbound(const IpcMessage& msg)
+{
+    switch (msg.op)
+    {
+        case IPC_ECHO_REPLY:
+        {
+            DETAIL_LOG("[AHSupervisor] IPC_ECHO_REPLY received"
+                       " (body=%u bytes)", static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+        case IPC_HEARTBEAT_ACK:
+        {
+            // Should have been consumed by WorkerSupervisor::Tick(); log if
+            // it somehow leaks through.
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: unexpected"
+                       " IPC_HEARTBEAT_ACK");
+            break;
+        }
+        case IPC_INTENT_SELL:
+        case IPC_INTENT_BID:
+        case IPC_INTENT_BUYOUT:
+        {
+            // Authority side: re-validate against live state and apply
+            // idempotently. The executor populates `result` with an
+            // IPC_INTENT_RESULT frame to return to the child (or leaves it
+            // empty -- op 0 -- for a malformed body, which we must not send).
+            IpcMessage result;
+            sAuctionIntentExecutor.Apply(msg, result);
+            // PF3-A: acquire-load the published supervisor pointer (see
+            // SetAhSupervisor()) before dereferencing it.
+            WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+            if (ahSupervisor != NULL && result.op != IpcOpcode(0))
+            {
+                ahSupervisor->Channel().SendFrame(result);
+            }
+            break;
+        }
+        case IPC_INTENT_RESULT:
+        {
+            // mangosd -> child direction; should never be received here.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_INTENT_RESULT (ignored)");
+            break;
+        }
+        case IPC_GMCMD_RESULT:
+        {
+            ByteBuffer body(msg.body);
+            GmCmdResult res;
+            if (res.Decode(body))
+            {
+                sLog.outString("[AHService] GM command %u result: %s",
+                               static_cast<unsigned>(res.cmd),
+                               res.ok ? "OK" : "FAIL");
+            }
+            else
+            {
+                sLog.outError("[AHSupervisor] HandleAhInbound:"
+                              " IPC_GMCMD_RESULT decode failed");
+            }
+            break;
+        }
+        case IPC_GMCMD:
+        {
+            // mangosd -> child direction; should never be received inbound.
+            sLog.outError("[AHSupervisor] HandleAhInbound: unexpected"
+                          " IPC_GMCMD inbound (ignored)");
+            break;
+        }
+        default:
+        {
+            DETAIL_LOG("[AHSupervisor] HandleAhInbound: opcode 0x%04X"
+                       " (body=%u bytes) -- unhandled",
+                       static_cast<unsigned>(msg.op),
+                       static_cast<unsigned>(msg.body.size()));
+            break;
+        }
+    }
 }
 
 namespace MaNGOS

@@ -73,6 +73,7 @@ target_compile_definitions(mangosd
 target_link_libraries(mangosd
     PRIVATE
         game
+        ah_ipc
         $<$<BOOL:${SOAP}>:gsoap>
         Threads::Threads
         OpenSSL::Crypto

@@ -38,6 +38,7 @@
 #include <set>
 #include <list>
 #include <vector>
+#include <atomic>
 
 #ifdef ENABLE_ELUNA
 #include "Player.h"
@@ -52,6 +53,8 @@ class Player;
 class SqlResultQueue;
 class QueryResult;
 class WorldSocket;
+class WorkerSupervisor;
+class IpcMessage;
 
 // ServerMessages.dbc
 enum ServerMessageType
@@ -664,6 +667,26 @@ class World
         Eluna* eluna;
 #endif /* ENABLE_ELUNA */
 
+        // AH subprocess supervisor (Task 5+).
+        // Set by mangosd.cpp after WorkerSupervisor::Start() succeeds.
+        // Returns NULL if AH.Service.Enabled=0 or startup failed.
+        //
+        // PF3-A: published with a RELEASE store and read with ACQUIRE loads.
+        // SetAhSupervisor() runs AFTER worldThread->open(0) has already started
+        // the world tick loop, so the world thread reads this pointer
+        // concurrently. The release/acquire pairing guarantees the
+        // WorkerSupervisor's construction + Start() member stores
+        // happen-before any non-NULL observation, so the world thread can never
+        // dereference a half-constructed supervisor on a weakly-ordered CPU.
+        void SetAhSupervisor(WorkerSupervisor* sv)
+        {
+            m_ahSupervisor.store(sv, std::memory_order_release);
+        }
+        WorkerSupervisor* GetAhSupervisor() const
+        {
+            return m_ahSupervisor.load(std::memory_order_acquire);
+        }
+
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -779,6 +802,21 @@ class World
 
         // List of Maps that should be force-loaded on startup
         std::set<uint32> m_configForceLoadMapIds;
+
+        // AH subprocess supervisor pointer (NULL when service is disabled).
+        // PF3-A: atomic so the publishing release store in SetAhSupervisor()
+        // synchronises-with the acquire loads in the world tick loop.
+        std::atomic<WorkerSupervisor*> m_ahSupervisor;
+
+        /**
+         * @brief Dispatch one inbound frame from the AH subprocess.
+         *
+         * M1 stub: logs the opcode. M2 will route IPC_AH_* intents to
+         * the AH executor. Keep this switch extensible.
+         *
+         * @param msg The inbound frame from the ah-service child.
+         */
+        void HandleAhInbound(const IpcMessage& msg);
 };
 
 extern uint32 realmID;

@@ -1780,6 +1780,50 @@ SOAP.Enabled   = 0
 SOAP.IP        = 127.0.0.1
 SOAP.Port      = 7878
 
+###############################################################################
+#    AH.Service.Enabled
+#        Run the auction house bot as a separate supervised child process.
+#        When enabled, mangosd spawns the ah-service executable, maintains a
+#        loopback IPC channel, and restarts the child on unexpected exit.
+#        Default: 0 (disabled; in-process AH bot is used instead)
+#
+#    AH.Service.Path
+#        Path to the ah-service executable, relative to the mangosd working
+#        directory (or absolute).
+#        Default: service-workers/ah-service/ah-service
+#
+#    AH.Service.Port
+#        Loopback TCP port for the mangosd ↔ ah-service IPC channel.
+#        Default: 5760
+#
+#    AH.Service.Secret
+#        Shared secret for IPC handshake authentication.
+#        Change this to a random string in production configurations.
+#        mangosd passes this to the child OUT-OF-BAND via the
+#        AH_SERVICE_SECRET environment variable (NOT on the child command
+#        line), so it is not exposed in the process list.
+#        Default: changeme
+#
+#    AH.Service.Config
+#        Path to the ah-service configuration file, passed as --config to the
+#        child process so it can locate its own settings.
+#        Default: ah-service.conf
+#
+#    AH.Service.IntentTtlSec
+#        How long (in seconds) the executor retains UUID records for
+#        deduplication of intents submitted by the child process.
+#        Increase if the child can re-emit the same intent after a reconnect
+#        within a window longer than the default.
+#        Default: 900
+###############################################################################
+
+AH.Service.Enabled      = 0
+AH.Service.Path         = service-workers/ah-service/ah-service
+AH.Service.Port         = 5760
+AH.Service.Secret       = changeme
+AH.Service.Config       = ah-service.conf
+AH.Service.IntentTtlSec = 900
+
 ################################################################################
 #    CharDelete.Method
 #        Character deletion behavior

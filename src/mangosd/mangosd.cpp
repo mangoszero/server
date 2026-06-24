@@ -70,6 +70,7 @@
 #include "CliThread.h"
 #include "AFThread.h"
 #include "RAThread.h"
+#include "WorkerSupervisor.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
@@ -567,7 +568,32 @@ int main(int argc, char** argv)
     freezeThread->open(NULL);
 
     //************************************************************************************************************************
-    // 5. Start the console thread
+    // 5. Start the AH subprocess worker (optional, default-off)
+    //************************************************************************************************************************
+    WorkerSupervisor* ahSupervisor = NULL;
+    if (sConfig.GetBoolDefault("AH.Service.Enabled", false))
+    {
+        ahSupervisor = new WorkerSupervisor(
+            "ah-service",
+            sConfig.GetStringDefault("AH.Service.Path", "service-workers/ah-service/ah-service"),
+            uint16(sConfig.GetIntDefault("AH.Service.Port", 5760)),
+            sConfig.GetStringDefault("AH.Service.Secret", "changeme"),
+            sAuctionBotConfig.GetAHBotId(),
+            sConfig.GetStringDefault("AH.Service.Config", "ah-service.conf"));
+
+        if (!ahSupervisor->Start())
+        {
+            sLog.outError("AH service failed to start; falling back to in-process bot");
+            delete ahSupervisor;
+            ahSupervisor = NULL;
+        }
+    }
+    // Expose supervisor to World so the "ah console" command can reach it.
+    // Per-tick Tick()/drain wiring is deferred to Task 6.
+    sWorld.SetAhSupervisor(ahSupervisor);
+
+    //************************************************************************************************************************
+    // 6. Start the console thread
     //************************************************************************************************************************
     CliThread* cliThread = NULL;
 #ifdef _WIN32
@@ -604,6 +630,16 @@ int main(int argc, char** argv)
     if (raThread)
     {
         delete raThread;
+    }
+
+    // Shut down the AH subprocess supervisor BEFORE deleting worldThread.
+    // worldThread->wait() has already returned, so the world tick loop is
+    // stopped and no concurrent Tick() calls can race with Shutdown().
+    if (ahSupervisor)
+    {
+        ahSupervisor->Shutdown();
+        delete ahSupervisor;
+        ahSupervisor = NULL;
     }
 
     delete worldThread;

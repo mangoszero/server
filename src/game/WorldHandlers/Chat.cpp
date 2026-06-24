@@ -155,6 +155,19 @@ ChatCommand* ChatHandler::getCommandTable()
         { NULL,             0,                  true,  NULL,                                           "", NULL }
     };
 
+    static ChatCommand ahConsoleCommandTable[] =
+    {
+        { "show",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleShowCommand, "", NULL },
+        { "hide",           SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhServiceConsoleHideCommand, "", NULL },
+        { NULL,             0,                  true,  NULL,                                            "", NULL }
+    };
+
+    static ChatCommand ahCommandTable[] =
+    {
+        { "console",        SEC_ADMINISTRATOR,  true,  NULL,                                            "", ahConsoleCommandTable },
+        { NULL,             0,                  true,  NULL,                                            "", NULL }
+    };
+
     static ChatCommand auctionCommandTable[] =
     {
         { "alliance",       SEC_ADMINISTRATOR,  false, &ChatHandler::HandleAuctionAllianceCommand,     "", NULL },
@@ -755,6 +768,7 @@ ChatCommand* ChatHandler::getCommandTable()
     static ChatCommand commandTable[] =
     {
         { "account",        SEC_PLAYER,         true,  NULL,                                           "", accountCommandTable  },
+        { "ah",             SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahCommandTable       },
         { "auction",        SEC_ADMINISTRATOR,  false, NULL,                                           "", auctionCommandTable  },
         { "ahbot",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", ahbotCommandTable    },
         { "cast",           SEC_ADMINISTRATOR,  true,  NULL,                                           "", castCommandTable     },
