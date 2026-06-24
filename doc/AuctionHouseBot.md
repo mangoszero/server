@@ -56,7 +56,7 @@ These keys are only active when `AH.Service.Enabled = 1`:
 * ``AH.Service.Enabled``       - Set to 1 to launch ah-service as a child
   process instead of running the bot in-process. Default: 0.
 * ``AH.Service.Path``          - Path to the ah-service executable.
-* ``AH.Service.Port``          - TCP port for the IPC channel (default: 17878).
+* ``AH.Service.Port``          - TCP port for the IPC channel (default: 5760).
 * ``AH.Service.Secret``        - Shared secret used to authenticate the child
   during the IPC handshake.
 * ``AH.Service.Config``        - Path to ah-service.conf passed to the child on

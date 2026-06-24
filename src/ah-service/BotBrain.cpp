@@ -965,9 +965,10 @@ bool BotBrain::BuyerUpdate(uint8 houseType, std::vector<EmittedIntent>& out)
 //   3. PRUNE the cross-tick LastChecked map: remove any entry whose auctionId
 //      is not present in the current snapshot (mirrors PrepareListOfEntry's
 //      stale-CheckedEntry pruning, cpp:1100).
-//   4. SKIP candidates whose LastChecked is within AHB_BUYER_RECHECK_INTERVAL_
-//      SECONDS of now (mirrors the cpp:1337 check).  Set LastChecked = now
-//      when a candidate IS evaluated.
+//   4. SKIP candidates whose LastChecked is within the configured recheck
+//      interval (AHBOT_CONFIG_UINT32_BUYER_RECHECK_INTERVAL minutes, read
+//      live so a GM reload takes effect immediately; mirrors cpp:1337).
+//      Set LastChecked = now when a candidate IS evaluated.
 //   5. Derive BuyCycles from the POST-skip (not raw) candidate count, matching
 //      the source's BuyCycles derivation from config.CheckedEntry.size().
 //   6. For each evaluated candidate, run the IDENTICAL decision logic from
@@ -1100,7 +1101,8 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
 
     // --- Step 4: apply recheck throttle; collect post-skip candidates ---
     // Mirrors cpp:1337: skip if (LastChecked != 0) && (Now-LastChecked) <=
-    // m_CheckInterval.  BuyCycles is derived from the post-skip count.
+    // recheckSecs (config-driven; live read so GM reload takes effect).
+    // BuyCycles is derived from the post-skip count.
     std::vector<size_t> eligible;
     eligible.reserve(candidates.size());
     for (size_t c = 0; c < candidates.size(); ++c)
@@ -1109,10 +1111,15 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         std::map<uint32, time_t>::iterator lc = lastChecked.find(rec.id);
         if (lc != lastChecked.end() && lc->second != 0)
         {
-            if ((now - lc->second) <=
-                static_cast<time_t>(AHB_BUYER_RECHECK_INTERVAL_SECONDS))
+            // Read live from config (minutes) and convert to seconds, so a
+            // GM reload of AuctionHouseBot.Buyer.Recheck.Interval takes
+            // effect on the next buyer tick without a service restart.
+            const time_t recheckSecs = static_cast<time_t>(
+                m_config.getConfig(
+                    AHBOT_CONFIG_UINT32_BUYER_RECHECK_INTERVAL)) * 60;
+            if ((now - lc->second) <= recheckSecs)
             {
-                // Still within the 20-minute window — skip this tick.
+                // Still within the configured recheck window — skip.
                 continue;
             }
         }

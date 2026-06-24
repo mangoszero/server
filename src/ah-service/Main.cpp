@@ -1033,6 +1033,12 @@ int main(int argc, char** argv)
                     backoffNext = true;
                     break;
                 }
+                case IPC_GAMETIME:
+                    // Deliberate no-op: mangosd sends gametime each heartbeat;
+                    // BotBrain uses time(NULL) directly, so we intentionally
+                    // ignore this opcode.  An explicit case keeps the default
+                    // warning reserved for genuinely unknown opcodes.
+                    break;
                 case IPC_GMCMD:
                 {
                     GmCmd gc;
@@ -1045,10 +1051,16 @@ int main(int argc, char** argv)
                         {
                             if (botConfig.Reload())
                             {
-                                ok = 1u;
                                 if (botBrain != nullptr)
                                 {
                                     botBrain->Reinitialize();
+                                    ok = 1u;
+                                }
+                                else
+                                {
+                                    printf("ah-service: GMCMD_RELOAD config"
+                                           " loaded but brain absent -"
+                                           " reporting failure\n");
                                 }
                             }
                             printf("ah-service: GMCMD_RELOAD %s\n",
@@ -1076,7 +1088,9 @@ int main(int argc, char** argv)
                     break;
                 }
                 default:
-                    // Unknown opcode - ignore silently for now.
+                    printf("ah-service: unhandled IPC opcode %u"
+                           " - ignored\n",
+                           static_cast<unsigned>(msg.op));
                     break;
             }
         }

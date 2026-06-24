@@ -65,9 +65,15 @@ bool ItemPool::Build()
 
     // NPC vendor items for filtering.
     sLog.outString("Loading npc vendor items for filter..");
-    if (QueryResult* result = m_db.World().Query(
-            "SELECT DISTINCT `item` FROM `npc_vendor` WHERE `maxcount` = 0"))
     {
+        QueryResult* result = m_db.World().Query(
+            "SELECT DISTINCT `item` FROM `npc_vendor` WHERE `maxcount` = 0");
+        if (!result)
+        {
+            sLog.outError("ah-service: npc_vendor query returned null;"
+                          " cannot build seller filter safely.");
+            return false;
+        }
         do
         {
             Field* fields = result->Fetch();
@@ -81,15 +87,21 @@ bool ItemPool::Build()
     // Loot items for filtering. CLASSIC build: prospecting_loot_template is
     // excluded (matches the upstream #if !defined(CLASSIC) UNION member).
     sLog.outString("Loading loot items for filter..");
-    if (QueryResult* result = m_db.World().PQuery(
+    {
+        QueryResult* result = m_db.World().PQuery(
             "SELECT `item` FROM `creature_loot_template` UNION "
             "SELECT `item` FROM `disenchant_loot_template` UNION "
             "SELECT `item` FROM `fishing_loot_template` UNION "
             "SELECT `item` FROM `gameobject_loot_template` UNION "
             "SELECT `item` FROM `item_loot_template` UNION "
             "SELECT `item` FROM `pickpocketing_loot_template` UNION "
-            "SELECT `item` FROM `skinning_loot_template`"))
-    {
+            "SELECT `item` FROM `skinning_loot_template`");
+        if (!result)
+        {
+            sLog.outError("ah-service: loot UNION query returned null;"
+                          " cannot build seller filter safely.");
+            return false;
+        }
         do
         {
             Field* fields = result->Fetch();
