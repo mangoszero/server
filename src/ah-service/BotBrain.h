@@ -155,6 +155,25 @@ class BotBrain
         void Initialize();
 
         /**
+         * @brief Re-snapshot all non-pool config into the per-house tables.
+         *
+         * Re-reads every tuning value that @c Initialize() snapshotted from
+         * @c ServiceConfig into @c m_sellerHouse[], @c m_buyerHouse[],
+         * @c m_sellerEnabled and @c m_buyerEnabled, so a GM @c reload command
+         * takes full effect without a service restart.
+         *
+         * The item pool (@c ItemPool::Build()) is a one-time startup cost and
+         * is intentionally NOT repeated here; pool-affecting config (ItemLevel,
+         * ReqLevel, ReqSkill, Bind, Vendor/Loot/Misc, Include/Exclude) still
+         * requires a restart.
+         *
+         * Runtime state (@c m_operationSelector and @c m_buyerLastChecked[])
+         * is preserved across the call so the house/role rotation and the
+         * per-auction 20-minute recheck throttle are unaffected.
+         */
+        void Reinitialize();
+
+        /**
          * @brief Run ONE rotated operation (mirror AuctionHouseBot::Update).
          *
          * Rotates @c m_operationSelector over 0..2*MAX_HOUSE-1 doing one
@@ -205,6 +224,17 @@ class BotBrain
         void LoadBuyerHouse(BuyerHouseConfig& cfg);
         uint32 GetItemAmountRatio(uint8 houseType) const;
         bool GetBuyerEnabledFor(uint8 houseType) const;
+
+        /**
+         * @brief Snapshot all non-pool config into the per-house tables.
+         *
+         * Shared implementation called by both @c Initialize() and
+         * @c Reinitialize() to avoid divergence between first-time setup
+         * and live-reload.  Reads seller/buyer toggles and calls
+         * @c LoadSellerHouse / @c LoadBuyerHouse for each active house.
+         * Does NOT touch @c m_operationSelector or @c m_buyerLastChecked[].
+         */
+        void SnapshotConfig();
 
         const ServiceConfig&  m_config;
         const ItemPool&       m_pool;

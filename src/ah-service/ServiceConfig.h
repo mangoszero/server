@@ -167,6 +167,13 @@ class ServiceConfig
          * reloads all tuning values (pricing, timing, buyer ratios,
          * amounts, toggles).
          *
+         * @note After this call the caller must invoke
+         *       @c BotBrain::Reinitialize() to propagate the new values
+         *       into the per-house config tables.  All non-pool tuning
+         *       (price ratios, MIN/MAXTIME, item/class amounts, buyer
+         *       chances, enable toggles) takes effect on the very next
+         *       @c BotBrain::RunOneOperation() call.
+         *
          * @note The item POOL filter thresholds (ItemLevel, ReqLevel,
          *       ReqSkill, Bind, Items.Vendor/Loot/Misc, Includes/Excludes)
          *       are used only during ItemPool::Build(), which runs once at

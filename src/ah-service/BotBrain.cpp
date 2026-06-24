@@ -143,15 +143,26 @@ bool BotBrain::GetBuyerEnabledFor(uint8 houseType) const
 }
 
 // ---------------------------------------------------------------------------
-// Initialize - build per-house seller/buyer config tables.
+// SnapshotConfig - shared config-snapshot logic for Initialize/Reinitialize.
 //
-// Mirrors AuctionBotSeller::LoadConfig + LoadSellerValues + LoadItemsQuantity
-// and AuctionBotBuyer::LoadConfig + LoadBuyerValues. CLASSIC build: the GEM /
-// GENERIC item classes live behind #if !defined(CLASSIC) upstream and are not
-// set here (they stay 0).
+// Reads every non-pool tuning value from m_config and writes it into the
+// per-house seller/buyer config tables.  Does NOT touch m_operationSelector
+// or m_buyerLastChecked[], so it is safe to call at any point during the
+// service loop without disturbing rotation state or the recheck throttle.
+//
+// Fields re-snapshotted on every call:
+//   m_sellerEnabled
+//   m_buyerEnabled
+//   m_sellerHouse[*]: amountPerQuality[], priceRatioPerQuality[],
+//                     quantity[][], amountPerClass[][], minTime, maxTime
+//   m_buyerHouse[*]:  buyerEnabled, buyerPriceRatio, factionChance
+//
+// Pool-affecting thresholds (ItemLevel/ReqLevel/ReqSkill/Bind/
+// Items.Vendor/Loot/Misc/Include/Exclude) are consumed only by
+// ItemPool::Build(), which runs once at startup and is NOT repeated here.
 // ---------------------------------------------------------------------------
 
-void BotBrain::Initialize()
+void BotBrain::SnapshotConfig()
 {
     // --- Seller ---
     // The seller is enabled only if its master toggle is set AND the bot
@@ -178,6 +189,9 @@ void BotBrain::Initialize()
     }
 
     // --- Buyer ---
+    // Reset the aggregate flag before re-checking each house.
+    m_buyerEnabled = false;
+
     // A Bid/Buyout intent carries the bot's GUID and the buyer's candidate
     // predicate keys on ownerGuid == botGuid, so the buyer also needs the
     // GUID resolved; with guid 0 the emitted intents would be invalid.
@@ -202,6 +216,42 @@ void BotBrain::Initialize()
             "BotBrain: buyer enabled but bot GUID unresolved"
             " (check AuctionHouseBot.CharacterName) - not buying.");
     }
+    else
+    {
+        // Buyer master toggle off: clear all per-house buyer flags.
+        for (uint32 i = 0; i < AH_MAX_AUCTION_HOUSE_TYPE; ++i)
+        {
+            m_buyerHouse[i].buyerEnabled = false;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Initialize - build per-house seller/buyer config tables.
+//
+// Mirrors AuctionBotSeller::LoadConfig + LoadSellerValues + LoadItemsQuantity
+// and AuctionBotBuyer::LoadConfig + LoadBuyerValues. CLASSIC build: the GEM /
+// GENERIC item classes live behind #if !defined(CLASSIC) upstream and are not
+// set here (they stay 0).
+// ---------------------------------------------------------------------------
+
+void BotBrain::Initialize()
+{
+    SnapshotConfig();
+}
+
+// ---------------------------------------------------------------------------
+// Reinitialize - re-snapshot non-pool config after a live reload.
+//
+// Called after ServiceConfig::Reload() succeeds (GM "ahbot reload" path).
+// Re-runs SnapshotConfig() so all tuning values are current; does NOT
+// rebuild the item pool or touch runtime state (m_operationSelector,
+// m_buyerLastChecked[]).
+// ---------------------------------------------------------------------------
+
+void BotBrain::Reinitialize()
+{
+    SnapshotConfig();
 }
 
 void BotBrain::LoadBuyerHouse(BuyerHouseConfig& cfg)

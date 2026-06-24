@@ -1043,7 +1043,14 @@ int main(int argc, char** argv)
                     {
                         if (gc.cmd == static_cast<uint8>(GMCMD_RELOAD))
                         {
-                            ok = botConfig.Reload() ? 1u : 0u;
+                            if (botConfig.Reload())
+                            {
+                                ok = 1u;
+                                if (botBrain != nullptr)
+                                {
+                                    botBrain->Reinitialize();
+                                }
+                            }
                             printf("ah-service: GMCMD_RELOAD %s\n",
                                    ok ? "OK" : "FAILED");
                         }
