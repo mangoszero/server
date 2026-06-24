@@ -229,7 +229,10 @@ World::World()
         m_configBoolValues[i] = false;
     }
 
-    m_ahSupervisor = NULL;
+    // PF3-A: single-threaded construction; relaxed is sufficient here. The
+    // release/acquire pairing happens later between SetAhSupervisor() and the
+    // world tick loop.
+    m_ahSupervisor.store(NULL, std::memory_order_relaxed);
 }
 
 /// World destructor
@@ -1859,8 +1862,13 @@ void World::Update(uint32 diff)
     /// <li> Handle AHBot operations
     if (m_timers[WUPDATE_AHBOT].Passed())
     {
+        // PF3-A: acquire-load the published supervisor pointer once. The
+        // matching release store in SetAhSupervisor() guarantees the
+        // supervisor's construction + Start() is fully visible before any
+        // non-NULL pointer can be observed here.
+        WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
         const bool serviceActive =
-            (m_ahSupervisor != NULL && m_ahSupervisor->ServiceActive());
+            (ahSupervisor != NULL && ahSupervisor->ServiceActive());
 
         /// Transition logging: announce each time the in-process bot stands
         /// down for / resumes from the out-of-process service.
@@ -1897,20 +1905,24 @@ void World::Update(uint32 diff)
     }
 
     /// <li> Tick the AH subprocess supervisor and drain inbound frames
-    if (m_ahSupervisor != NULL)
+    // PF3-A: acquire-load the published supervisor pointer once for this whole
+    // block (see SetAhSupervisor()). Reusing one local keeps every dereference
+    // below consistent and avoids repeated atomic loads.
+    WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+    if (ahSupervisor != NULL)
     {
         // Tick() uses wall-clock deltas internally; do NOT gate behind
         // WUPDATE_AHBOT. Tick() drives heartbeat/restart/protocol and MUST run
         // every tick regardless of service health (it is what transitions the
         // service from inactive back to active).
-        m_ahSupervisor->Tick(GetGameTime());
+        ahSupervisor->Tick(GetGameTime());
 
         // Overflow visibility: warn (rate-limited) when the inbound queue
         // has dropped frames since we last checked.
         static size_t s_lastDroppedSeen = 0;
         static time_t s_lastOverflowWarn = 0;
         static time_t s_lastNearFullWarn = 0;
-        const size_t  dropped = m_ahSupervisor->InboundDropped();
+        const size_t  dropped = ahSupervisor->InboundDropped();
         if (dropped > s_lastDroppedSeen)
         {
             const time_t now = time(NULL);
@@ -1936,17 +1948,17 @@ void World::Update(uint32 diff)
         // against the resumed in-process bot. WorkerSupervisor clears its
         // staged frames on child exit, so a reconnecting child never replays
         // the dead child's stale batch; this gate is the second guard.
-        if (m_ahSupervisor->ServiceActive())
+        if (ahSupervisor->ServiceActive())
         {
             // Drain up to 256 application frames per tick.
             std::vector<IpcMessage> msgs;
-            m_ahSupervisor->DrainInbound(msgs, 256);
+            ahSupervisor->DrainInbound(msgs, 256);
 
             // Near-full back-pressure: queue >= 80% capacity means we are close
             // to dropping frames even though none have been lost yet. Warn AND
             // tell the child to throttle via IPC_QUEUE_FULL so it pauses one
             // bot cycle. Both are rate-limited to once per 60s to avoid spam.
-            const size_t qSize = m_ahSupervisor->Channel().InboundSize();
+            const size_t qSize = ahSupervisor->Channel().InboundSize();
             if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
             {
                 const time_t now = time(NULL);
@@ -1962,7 +1974,7 @@ void World::Update(uint32 diff)
                     // body; the child reads no payload for this opcode.
                     IpcMessage qf;
                     qf.op = IPC_QUEUE_FULL;
-                    m_ahSupervisor->Channel().SendFrame(qf);
+                    ahSupervisor->Channel().SendFrame(qf);
 
                     s_lastNearFullWarn = now;
                 }
@@ -2115,9 +2127,12 @@ void World::HandleAhInbound(const IpcMessage& msg)
             // empty -- op 0 -- for a malformed body, which we must not send).
             IpcMessage result;
             sAuctionIntentExecutor.Apply(msg, result);
-            if (m_ahSupervisor != NULL && result.op != IpcOpcode(0))
+            // PF3-A: acquire-load the published supervisor pointer (see
+            // SetAhSupervisor()) before dereferencing it.
+            WorkerSupervisor* const ahSupervisor = GetAhSupervisor();
+            if (ahSupervisor != NULL && result.op != IpcOpcode(0))
             {
-                m_ahSupervisor->Channel().SendFrame(result);
+                ahSupervisor->Channel().SendFrame(result);
             }
             break;
         }
