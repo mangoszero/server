@@ -25,6 +25,7 @@
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot.h"
 #include "ObjectMgr.h"
+#include "ItemPrototype.h"
 #include "Item.h"
 #include "DBCStores.h"
 #include "Config/Config.h"
@@ -57,6 +58,88 @@ static const IpcOpcode IPC_OP_NONE = IpcOpcode(0);
  * phantom-credit a UINT32-range amount would inject.
  */
 static const uint32 AH_BID_SANITY_MULTIPLE = 100u;
+
+/**
+ * @brief Single-item buyability boost, mirrored from the in-process buyer.
+ *
+ * AuctionHouseBot.cpp (addNewAuctionBuyerBotBid): when only ONE auction of an
+ * item exists, the buyer multiplies its MaxBuyablePrice by 5
+ * (@c MaxBuyablePrice = MaxBuyablePrice * 5). Because the executor cannot know
+ * how many copies of the item are currently listed (and the hostile child must
+ * not be trusted to tell us), the ceiling assumes the most permissive case:
+ * the single-item boost always applies. This only widens the cap, so it never
+ * false-rejects a legitimate buy.
+ */
+static const uint64 AH_VALUE_SINGLE_ITEM_BOOST = 5u;
+
+/**
+ * @brief Upper price/MaxBuyablePrice ratio at which the buyer still buys.
+ *
+ * AuctionHouseBot.cpp (IsBuyableEntry): once the per-item price exceeds
+ * MaxBuyablePrice the buy chance decays linearly while @c ratio < 10, and only
+ * collapses to "never" (Chance = 0) at @c ratio >= 10. So the in-process buyer
+ * can, with low probability, still buy at up to 10x its MaxBuyablePrice. To
+ * never reject a buy the in-process bot itself could legitimately make, the
+ * authoritative ceiling allows the full @c ratio < 10 band.
+ */
+static const uint64 AH_VALUE_RATIO_CEILING = 10u;
+
+/**
+ * @brief Compute the authoritative spend ceiling for an auctioned item.
+ *
+ * This reproduces the in-process buyer's own valuation (AuctionHouseBot.cpp
+ * addNewAuctionBuyerBotBid / IsBuyableEntry) so the cap matches what the
+ * in-process bot would actually be willing to pay -- independent of the
+ * PLAYER-controlled startbid / buyout on the live auction. The ceiling is the
+ * total (whole-stack) gold the bot could ever spend on this listing:
+ *
+ *   BasePrice        = (BuyPrice.Buyer ? proto->BuyPrice : proto->SellPrice)
+ *                      * itemCount
+ *   MaxBuyablePrice  = BasePrice * BuyerPriceRatio / 100
+ *   ceiling          = MaxBuyablePrice
+ *                      * AH_VALUE_SINGLE_ITEM_BOOST     (single-copy boost)
+ *                      * AH_VALUE_RATIO_CEILING         (ratio<10 buy band)
+ *
+ * @c BuyerPriceRatio is the house price ratio + 50 (LoadBuyerValues). The
+ * executor does not stamp a house on bid/buyout intents and scans all three
+ * houses for the auction, so the MAX of the three configured house price
+ * ratios is used: that yields the most permissive (largest) ceiling and so can
+ * never false-reject a legitimate buy in whichever house the auction lives.
+ *
+ * All arithmetic is 64-bit so the chained multiplies cannot wrap (proto prices
+ * and itemCount are uint32; the product stays well within uint64).
+ *
+ * @param proto     Item prototype of the live auction's item.
+ * @param itemCount Stack count of the live auction (auction->itemCount).
+ * @return Maximum total copper the bot may spend on the listing. 0 only if
+ *         both intrinsic prices are 0 (vendor-trash with no value), which the
+ *         callers treat as "reject any non-trivial bid/buyout".
+ */
+static uint64 ComputeBotValueCeiling(ItemPrototype const* proto,
+                                     uint32 itemCount)
+{
+    const bool useBuyPrice =
+        sAuctionBotConfig.getConfig(CONFIG_BOOL_AHBOT_BUYPRICE_BUYER);
+    const uint64 unitPrice = useBuyPrice ? proto->BuyPrice : proto->SellPrice;
+
+    const uint64 count = itemCount ? uint64(itemCount) : 1u;
+    const uint64 basePrice = unitPrice * count;
+
+    // BuyerPriceRatio = (house price ratio) + 50; use the most permissive
+    // (largest) of the three houses since bid/buyout intents are house-blind.
+    uint32 priceRatio = sAuctionBotConfig.getConfig(
+        CONFIG_UINT32_AHBOT_ALLIANCE_PRICE_RATIO);
+    priceRatio = std::max<uint32>(priceRatio,
+        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_HORDE_PRICE_RATIO));
+    priceRatio = std::max<uint32>(priceRatio,
+        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_NEUTRAL_PRICE_RATIO));
+    const uint64 buyerPriceRatio = uint64(priceRatio) + 50u;
+
+    const uint64 maxBuyablePrice = (basePrice * buyerPriceRatio) / 100u;
+
+    return maxBuyablePrice * AH_VALUE_SINGLE_ITEM_BOOST
+           * AH_VALUE_RATIO_CEILING;
+}
 
 /**
  * @brief Build an IPC_INTENT_RESULT frame into @p out.
@@ -392,6 +475,33 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
         return;
     }
 
+    // AUTHORITATIVE VALUE CEILING (anti gold-injection): the floor above is
+    // derived from the PLAYER-controlled startbid/bid, so an accomplice seller
+    // can inflate it to lift the AH_BID_SANITY_MULTIPLE cap arbitrarily. Cap
+    // the bid by the item's INTRINSIC value instead -- the same MaxBuyablePrice
+    // band the in-process buyer would itself pay (see ComputeBotValueCeiling).
+    // A guid-0 / missing prototype is a reject: never bid on an item we cannot
+    // value.
+    ItemPrototype const* bidProto =
+        ObjectMgr::GetItemPrototype(auction->itemTemplate);
+    if (!bidProto)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    const uint64 valueCeiling =
+        ComputeBotValueCeiling(bidProto, auction->itemCount);
+    if (uint64(b.bidAmount) > valueCeiling)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_STALE_BID);
+        return;
+    }
+
     // Apply. With newbidder == NULL the bot pays nothing (no ModifyMoney);
     // UpdateBid returns true for a normal bid. It can only return false if
     // newbid reaches buyout, which we excluded above, so for a pure bid this
@@ -476,6 +586,34 @@ void AuctionIntentExecutor::ApplyBuyout(const IpcMessage& in,
         ++m_rejected;
         Remember(b.uuid, now);
         MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_GUID_MISMATCH);
+        return;
+    }
+
+    // AUTHORITATIVE VALUE CEILING (anti gold-injection): the buyout currently
+    // flows UNCAPPED into UpdateBid(auction->buyout, NULL), which pays the real
+    // seller auction->buyout while debiting the bot nothing. auction->buyout is
+    // PLAYER-controlled, so an accomplice seller can list vendor-trash at an
+    // arbitrary buyout to inject gold. Cap the buyout by the item's intrinsic
+    // value -- the same MaxBuyablePrice band the in-process buyer would itself
+    // pay (see ComputeBotValueCeiling). A guid-0 / missing prototype is a
+    // reject: never buy out an item we cannot value.
+    ItemPrototype const* buyProto =
+        ObjectMgr::GetItemPrototype(auction->itemTemplate);
+    if (!buyProto)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    const uint64 valueCeiling =
+        ComputeBotValueCeiling(buyProto, auction->itemCount);
+    if (uint64(auction->buyout) > valueCeiling)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
         return;
     }
 
