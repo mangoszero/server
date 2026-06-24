@@ -185,14 +185,17 @@ static AuctionHouseEntry const* ResolveHouseEntry(uint8 house)
     return sAuctionHouseStore.LookupEntry(houseId);
 }
 
-uint32 AuctionIntentExecutor::IntentTtlSec() const
+void AuctionIntentExecutor::RefreshTtl()
 {
-    // Read on every call; Config access is a cheap map lookup and this keeps
-    // the executor stateless w.r.t. config reloads.
+    // Read + clamp ONCE here (lazily on first use, then once/second from
+    // PurgeExpiredUuids) instead of on the per-intent hot path. A hostile child
+    // cannot make this run per intent, and a live config reload is still picked
+    // up within ~1 second.
     //
     // Clamp to [60, 86400] so the dedup window is always a meaningful positive
-    // duration. Zero gives same-tick expiry (dedup never holds -> double-apply
-    // on redelivery); negative values wrap to a huge uint32 (never expire).
+    // duration. Zero would give same-tick expiry (dedup never holds ->
+    // double-apply on redelivery); negative values wrap to a huge uint32
+    // (never expire).
     static const uint32 TTL_MIN = 60u;
     static const uint32 TTL_MAX = 86400u;
 
@@ -200,37 +203,137 @@ uint32 AuctionIntentExecutor::IntentTtlSec() const
     uint32 ttl;
     if (raw < static_cast<int32>(TTL_MIN))
     {
-        sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d is below "
-                      "minimum (%u); clamping to %u", raw, TTL_MIN, TTL_MIN);
         ttl = TTL_MIN;
     }
     else if (static_cast<uint32>(raw) > TTL_MAX)
     {
-        sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d exceeds "
-                      "maximum (%u); clamping to %u", raw, TTL_MAX, TTL_MAX);
         ttl = TTL_MAX;
     }
     else
     {
         ttl = static_cast<uint32>(raw);
     }
-    return ttl;
+
+    // Log a clamp only when the effective TTL actually changes, so a misconfig
+    // emits at most one line per change (not once per intent / per purge).
+    if (ttl != m_ttlSec)
+    {
+        if (raw < static_cast<int32>(TTL_MIN))
+        {
+            sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d is below "
+                          "minimum (%u); clamping to %u",
+                          raw, TTL_MIN, TTL_MIN);
+        }
+        else if (static_cast<uint32>(raw) > TTL_MAX)
+        {
+            sLog.outError("[AHExecutor] AH.Service.IntentTtlSec=%d exceeds "
+                          "maximum (%u); clamping to %u",
+                          raw, TTL_MAX, TTL_MAX);
+        }
+    }
+
+    m_ttlSec = ttl;
+}
+
+void AuctionIntentExecutor::LogMalformed(const char* kind, size_t bodySize)
+{
+    ++m_malformed;
+
+    // Rate-limit: a hostile child can resend malformed frames every drained
+    // frame (up to 256/tick). Emit at most once per MALFORMED_LOG_INTERVAL
+    // seconds and fold the suppressed count into the next emitted line, mirror-
+    // ing the rate-limited overflow warnings in World::Update.
+    const uint32 now = uint32(sWorld.GetGameTime());
+    if (m_lastMalformedLog != 0 &&
+        now - m_lastMalformedLog < MALFORMED_LOG_INTERVAL)
+    {
+        ++m_malformedSuppressed;
+        return;
+    }
+
+    sLog.outError("[AHExecutor] malformed %s (body=%u bytes); %u similar "
+                  "suppressed since last log",
+                  kind, static_cast<unsigned>(bodySize),
+                  static_cast<unsigned>(m_malformedSuppressed));
+    m_lastMalformedLog = now;
+    m_malformedSuppressed = 0;
+}
+
+void AuctionIntentExecutor::DedupCache::EraseIndex(uint64 uuid, uint32 expiry)
+{
+    // Erase the single (expiry -> uuid) index pair matching this uuid. Several
+    // uuids can share an expiry second, so scan that bucket for the exact uuid.
+    std::pair<std::multimap<uint32, uint64>::iterator,
+              std::multimap<uint32, uint64>::iterator> range =
+        m_byExpiry.equal_range(expiry);
+    for (std::multimap<uint32, uint64>::iterator itr = range.first;
+         itr != range.second; ++itr)
+    {
+        if (itr->second == uuid)
+        {
+            m_byExpiry.erase(itr);
+            return;
+        }
+    }
+}
+
+uint32 AuctionIntentExecutor::DedupCache::Remember(uint64 uuid, uint32 expiry)
+{
+    // Insert-or-refresh. On refresh, MOVE the uuid to its new (later) expiry
+    // position: erase the stale index pair first, then re-insert, so the
+    // sliding window holds -- a redelivered uuid's LATEST expiry is the only
+    // one in the index, and purge/eviction key off that. The unordered_map
+    // value is then updated (or inserted) to the new expiry.
+    std::unordered_map<uint64, uint32>::iterator found = m_byUuid.find(uuid);
+    if (found != m_byUuid.end())
+    {
+        EraseIndex(uuid, found->second);
+        found->second = expiry;
+        m_byExpiry.insert(std::make_pair(expiry, uuid));
+        return 0; // refresh of an existing entry never grows the cache
+    }
+
+    uint32 evicted = 0;
+    // Hard cap: if at capacity, evict the OLDEST-expiry entry (front of the
+    // ordered index) before inserting. cap >> legitimate working set, so this
+    // can only fire under a unique-uuid flood and only drops attacker entries
+    // closest to expiring anyway.
+    if (m_byUuid.size() >= MAX_ENTRIES)
+    {
+        std::multimap<uint32, uint64>::iterator oldest = m_byExpiry.begin();
+        if (oldest != m_byExpiry.end())
+        {
+            m_byUuid.erase(oldest->second);
+            m_byExpiry.erase(oldest);
+            evicted = 1;
+        }
+    }
+
+    m_byUuid.insert(std::make_pair(uuid, expiry));
+    m_byExpiry.insert(std::make_pair(expiry, uuid));
+    return evicted;
+}
+
+void AuctionIntentExecutor::DedupCache::Purge(uint32 now)
+{
+    // Pop only the expired prefix: the index is expiry-ordered, so iterate from
+    // the front and stop at the first entry that has not yet expired. O(k) in
+    // the number of entries actually expiring, not O(n) over the whole cache.
+    std::multimap<uint32, uint64>::iterator itr = m_byExpiry.begin();
+    while (itr != m_byExpiry.end() && itr->first <= now)
+    {
+        m_byUuid.erase(itr->second);
+        itr = m_byExpiry.erase(itr);
+    }
 }
 
 void AuctionIntentExecutor::PurgeExpiredUuids(uint32 now)
 {
-    for (std::unordered_map<uint64, uint32>::iterator itr =
-             m_appliedUuid.begin(); itr != m_appliedUuid.end();)
-    {
-        if (itr->second <= now)
-        {
-            itr = m_appliedUuid.erase(itr);
-        }
-        else
-        {
-            ++itr;
-        }
-    }
+    // Refresh the cached TTL here (cheap, once/second) so a live config reload
+    // is honoured without touching the per-intent hot path, then drop the
+    // expired prefix in O(k).
+    RefreshTtl();
+    m_dedup.Purge(now);
 }
 
 void AuctionIntentExecutor::Apply(const IpcMessage& in, IpcMessage& resultOut)
@@ -282,9 +385,7 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     SellIntent s;
     if (!s.Decode(body))
     {
-        ++m_malformed;
-        sLog.outError("[AHExecutor] malformed SellIntent (body=%u bytes)",
-                      static_cast<unsigned>(in.body.size()));
+        LogMalformed("SellIntent", in.body.size());
         return; // no reply: caller leaves resultOut empty
     }
 
@@ -402,18 +503,20 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
         return;
     }
 
-    // (3) Buyout must be within the item's intrinsic value ceiling. A SELL with
-    // buyout == 0 is bid-only and legitimate, so only cap a non-zero buyout.
-    if (s.buyout != 0)
+    // (3) The listing price must be within the item's intrinsic value ceiling.
+    // For a buyout-able listing cap the buyout; for a bid-only listing
+    // (buyout == 0) the buyout cap never fires, so cap the START BID instead --
+    // otherwise a hostile child could mint a bot-owned listing with an absurd
+    // start bid (up to UINT32_MAX) that a real buyer would then have to pay.
+    // The harm is bounded (the bot owns the listing) but close it anyway.
+    const uint64 valueCeiling = ComputeBotValueCeiling(proto, s.stack);
+    const uint64 priceToCap = s.buyout != 0 ? uint64(s.buyout) : uint64(s.bid);
+    if (priceToCap > valueCeiling)
     {
-        const uint64 valueCeiling = ComputeBotValueCeiling(proto, s.stack);
-        if (uint64(s.buyout) > valueCeiling)
-        {
-            ++m_rejected;
-            Remember(s.uuid, now);
-            MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
-            return;
-        }
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
     }
 
     // (4) Quality must be within the bot's auction-quality range AND be a
@@ -461,9 +564,7 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
     BidIntent b;
     if (!b.Decode(body))
     {
-        ++m_malformed;
-        sLog.outError("[AHExecutor] malformed BidIntent (body=%u bytes)",
-                      static_cast<unsigned>(in.body.size()));
+        LogMalformed("BidIntent", in.body.size());
         return;
     }
 
@@ -627,9 +728,7 @@ void AuctionIntentExecutor::ApplyBuyout(const IpcMessage& in,
     BuyoutIntent b;
     if (!b.Decode(body))
     {
-        ++m_malformed;
-        sLog.outError("[AHExecutor] malformed BuyoutIntent (body=%u bytes)",
-                      static_cast<unsigned>(in.body.size()));
+        LogMalformed("BuyoutIntent", in.body.size());
         return;
     }
 
