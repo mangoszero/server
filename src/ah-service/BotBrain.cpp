@@ -1220,7 +1220,6 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         }
 
         double InGame_BuyPrice;
-        double InGame_BidPrice;
         uint32 minBidPrice;
         uint32 minBuyPrice;
         std::map<uint32, BuyerItemInfo>::iterator si =
@@ -1228,7 +1227,6 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
         if (si == sameItemInfo.end())
         {
             InGame_BuyPrice = 0;
-            InGame_BidPrice = 0;
             minBidPrice = 0;
             minBuyPrice = 0;
         }
@@ -1241,7 +1239,6 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
                 MaxBuyablePrice = MaxBuyablePrice * 5;
             }
             InGame_BuyPrice = sb.BuyPrice / sb.ItemCount;
-            InGame_BidPrice = sb.BidPrice / sb.ItemCount;
             minBidPrice = sb.MinBidPrice;
             minBuyPrice = sb.MinBuyPrice;
         }

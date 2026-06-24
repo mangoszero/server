@@ -235,7 +235,8 @@ bool IpcClient::SendFrame(const IpcMessage& msg)
     if (!m_link->outbound.push(msg))
     {
         fprintf(stderr, "IpcClient::SendFrame: outbound queue full"
-                        " - frame 0x%04X dropped\n", msg.op);
+                        " - frame 0x%04X dropped\n",
+                        static_cast<unsigned>(msg.op));
         return false;
     }
 

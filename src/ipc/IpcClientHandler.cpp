@@ -344,7 +344,7 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
             if (msg.op != IPC_HELLO_ACK)
             {
                 fprintf(stderr, "IpcClientHandler: expected IPC_HELLO_ACK,"
-                                " got 0x%04X\n", msg.op);
+                                " got 0x%04X\n", static_cast<unsigned>(msg.op));
                 return handle_close(ACE_INVALID_HANDLE,
                                     ACE_Event_Handler::ALL_EVENTS_MASK);
             }
@@ -394,7 +394,8 @@ int IpcClientHandler::ProcessFrame(const IpcMessage& msg)
                 if (!m_inbound->push(msg))
                 {
                     fprintf(stderr, "IpcClientHandler: inbound queue full"
-                                    " - frame 0x%04X dropped\n", msg.op);
+                                    " - frame 0x%04X dropped\n",
+                                    static_cast<unsigned>(msg.op));
                 }
             }
             break;
