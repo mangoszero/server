@@ -1,4 +1,5 @@
 [AhServiceConf]
+ConfVersion=@MANGOS_AHBOT_VER@
 Console.ShowOnStartup = 0
 LogLevel = 1
 

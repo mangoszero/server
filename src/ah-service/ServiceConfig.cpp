@@ -146,6 +146,15 @@ void ServiceConfig::GetConfigFromFile()
                       " or missing.");
     }
 
+    // The ah-service infra config (sConfig / ah-service.conf) shares the
+    // AHBot conf version; warn if it is stale too.
+    if (sConfig.GetIntDefault("ConfVersion", 0) != AHBOT_CONFIG_VERSION)
+    {
+        sLog.outError("AH-service: ah-service.conf version doesn't match the"
+                      " expected version. Some config variables may be wrong"
+                      " or missing.");
+    }
+
     setConfigMax(AHBOT_CONFIG_UINT32_ALLIANCE_ITEM_AMOUNT_RATIO,
                  "AuctionHouseBot.Alliance.Items.Amount.Ratio", 100, 10000);
     setConfigMax(AHBOT_CONFIG_UINT32_HORDE_ITEM_AMOUNT_RATIO,
