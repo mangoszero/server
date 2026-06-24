@@ -39,6 +39,19 @@
  */
 static const size_t IPC_INBOUND_QUEUE_CAP = 256;
 
+/**
+ * @brief Byte budget for the server-side inbound frame queue.
+ *
+ * Belt-and-suspenders bound on TOTAL queued inbound bytes, in addition to the
+ * IPC_INBOUND_QUEUE_CAP frame count. The per-opcode size validation on the
+ * inbound path already makes every accepted frame tiny (the largest, a debug
+ * ECHO reply, is capped at 256 bytes), so the legitimate working set is well
+ * under 256 x 256 = 64 KiB; this 256 KiB cap sits comfortably above that yet
+ * forecloses the old "256 x ~1 MiB" payload-flood exposure. Drop-newest when
+ * either the count cap or this byte cap is hit.
+ */
+static const size_t IPC_INBOUND_BYTE_CAP = 256u * 1024u;
+
 // ---------------------------------------------------------------------------
 // IpcServer  -  mangosd-side facade
 // ---------------------------------------------------------------------------

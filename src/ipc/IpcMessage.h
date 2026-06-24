@@ -35,6 +35,36 @@
 static constexpr uint32 IPC_MAX_FRAME = 1u << 20;
 
 /**
+ * @brief Per-opcode body-size constraint for inbound frame validation.
+ *
+ * Result of IpcExpectedBodySize(): describes the accepted body length for a
+ * given opcode. The server side (which must NOT trust the child) rejects any
+ * frame whose body length violates this constraint, and rejects unknown
+ * opcodes outright. With this in force every accepted frame is tiny, so a
+ * hostile child cannot queue oversize-for-op or payload-flood frames.
+ */
+struct IpcBodySizeRule
+{
+    bool   known;  ///< false => unknown opcode; reject the frame.
+    bool   exact;  ///< true => body length must equal @ref maxLen exactly.
+    uint32 maxLen; ///< Exact length (when @ref exact) or inclusive max length.
+};
+
+/**
+ * @brief Authoritative expected-body-size rule for an inbound opcode.
+ *
+ * Single source of truth used by the inbound decode path to bound the body
+ * length of every accepted frame. Fixed-layout opcodes (intents, results,
+ * GM commands, and the tiny protocol frames) get an EXACT size; the debug
+ * ECHO opcodes get a small inclusive maximum; everything else is reported
+ * unknown so the caller can reject it.
+ *
+ * @param op Opcode taken from a decoded frame header.
+ * @return   The size rule for @p op (see @ref IpcBodySizeRule).
+ */
+IpcBodySizeRule IpcExpectedBodySize(uint16 op);
+
+/**
  * @brief A framed IPC message: an opcode plus a variable-length body.
  *
  * Wire layout (little-endian):

@@ -20,6 +20,59 @@
  */
 
 #include "IpcMessage.h"
+#include "IpcOpcodes.h"
+#include "AuctionIntents.h"
+
+/**
+ * @brief Small inclusive cap for the debug ECHO opcodes and free-text frames.
+ *
+ * ECHO is a debug round-trip and IPC_CONSOLE carries a tiny control flag plus
+ * optional text. Neither has a fixed layout, so they get a bounded maximum
+ * rather than an exact size. The bound is small (well under the legitimate
+ * working set) so it cannot be abused to flood bytes.
+ */
+static const uint32 IPC_ECHO_MAX_BODY = 256u;
+
+IpcBodySizeRule IpcExpectedBodySize(uint16 op)
+{
+    // Helper macros keep the table compact and unambiguous.
+    // EXACT(n)   - body length must equal n exactly.
+    // MAXLEN(n)  - body length must be <= n.
+    #define IPC_RULE_EXACT(n)  { true,  true,  static_cast<uint32>(n) }
+    #define IPC_RULE_MAXLEN(n) { true,  false, static_cast<uint32>(n) }
+    #define IPC_RULE_UNKNOWN   { false, false, 0u }
+
+    switch (op)
+    {
+        // --- protocol / handshake frames (fixed tiny bodies) ---
+        case IPC_HELLO:         return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY); // proto+pid+secret
+        case IPC_HELLO_ACK:     return IPC_RULE_EXACT(4);   // uint32 run-id
+        case IPC_READY:         return IPC_RULE_EXACT(0);
+        case IPC_HEARTBEAT:     return IPC_RULE_EXACT(0);
+        case IPC_HEARTBEAT_ACK: return IPC_RULE_EXACT(0);
+        case IPC_GAMETIME:      return IPC_RULE_EXACT(4);   // uint32 gametime
+        case IPC_CONSOLE:       return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
+        case IPC_SHUTDOWN:      return IPC_RULE_EXACT(0);
+        case IPC_SHUTDOWN_ACK:  return IPC_RULE_EXACT(0);
+        case IPC_ECHO:          return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
+        case IPC_ECHO_REPLY:    return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
+
+        // --- AH consumer frames (fixed wire layouts) ---
+        case IPC_INTENT_SELL:   return IPC_RULE_EXACT(SellIntent::WIRE_SIZE);   // 33
+        case IPC_INTENT_BID:    return IPC_RULE_EXACT(BidIntent::WIRE_SIZE);     // 20
+        case IPC_INTENT_BUYOUT: return IPC_RULE_EXACT(BuyoutIntent::WIRE_SIZE);  // 16
+        case IPC_INTENT_RESULT: return IPC_RULE_EXACT(IntentResult::WIRE_SIZE);  // 10
+        case IPC_QUEUE_FULL:    return IPC_RULE_EXACT(0);
+        case IPC_GMCMD:         return IPC_RULE_EXACT(GmCmd::WIRE_SIZE);         // 1
+        case IPC_GMCMD_RESULT:  return IPC_RULE_EXACT(GmCmdResult::WIRE_SIZE);   // 2
+
+        default:                return IPC_RULE_UNKNOWN;
+    }
+
+    #undef IPC_RULE_EXACT
+    #undef IPC_RULE_MAXLEN
+    #undef IPC_RULE_UNKNOWN
+}
 
 void IpcMessage::Encode(ByteBuffer& w) const
 {

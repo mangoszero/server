@@ -425,8 +425,36 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
 
         case IPC_SRV_LIVE:
         {
-            // Push all live frames into the inbound queue for the facade.
-            if (!m_inbound->push(msg))
+            // The child is UNTRUSTED. Before enqueuing, validate the body
+            // length against the authoritative per-opcode size rule and
+            // reject unknown opcodes. This makes every accepted frame tiny,
+            // so a hostile child cannot enqueue oversize-for-op frames or
+            // flood bytes (the inbound queue's byte budget is the second
+            // line of defence; with this validation it should never trip).
+            const IpcBodySizeRule rule = IpcExpectedBodySize(msg.op);
+            const uint32 bodyLen = static_cast<uint32>(msg.body.size());
+
+            if (!rule.known)
+            {
+                sLog.outError("IpcServerHandler: unknown opcode 0x%04X"
+                              " from child - dropping frame", msg.op);
+                break;
+            }
+
+            const bool sizeOk = rule.exact ? (bodyLen == rule.maxLen)
+                                           : (bodyLen <= rule.maxLen);
+            if (!sizeOk)
+            {
+                sLog.outError("IpcServerHandler: opcode 0x%04X bad body size"
+                              " (%u, expected %s%u) - dropping frame",
+                              msg.op, bodyLen, rule.exact ? "==" : "<=",
+                              rule.maxLen);
+                break;
+            }
+
+            // Push into the inbound queue for the facade, charging the body
+            // length against the queue's byte budget.
+            if (!m_inbound->push(msg, msg.body.size()))
             {
                 sLog.outError("IpcServerHandler: inbound queue full"
                               " - frame 0x%04X dropped", msg.op);

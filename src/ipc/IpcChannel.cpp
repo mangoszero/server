@@ -50,7 +50,7 @@
 // ===========================================================================
 
 IpcServer::IpcServer()
-    : m_inbound(IPC_INBOUND_QUEUE_CAP),
+    : m_inbound(IPC_INBOUND_QUEUE_CAP, IPC_INBOUND_BYTE_CAP),
       m_link(nullptr),
       m_thread(nullptr),
       m_aceThread(nullptr)
