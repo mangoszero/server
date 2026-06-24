@@ -79,7 +79,15 @@ class IpcMessage
         IpcOpcode  op;    ///< Message opcode
         ByteBuffer body;  ///< Message payload (may be empty)
 
-        IpcMessage() : op(IpcOpcode(0)), body() {}
+        /// Per-connection run-id stamped LOCALLY on the mangosd side when an
+        /// inbound frame is received (IpcServerHandler stamps its own
+        /// m_runId). This is NOT part of the wire frame and is NEVER touched by
+        /// Encode()/Decode(); it exists solely so the supervisor can drop a
+        /// frame produced by a PRIOR child connection that slipped into the
+        /// inbound queue after a purge (a stale-run frame). Default 0 = unset.
+        uint32     generation;
+
+        IpcMessage() : op(IpcOpcode(0)), body(), generation(0) {}
 
         /**
          * @brief Encode this message into the wire buffer @p w.

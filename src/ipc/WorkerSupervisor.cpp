@@ -591,6 +591,26 @@ void WorkerSupervisor::DrainInboundProtocol()
     IpcMessage msg;
     while (m_ipc.PopInbound(msg))
     {
+        // PF2-B: generation/run-id gate. Every inbound frame was stamped by
+        // the receiving connection's IpcServerHandler with that connection's
+        // run-id (msg.generation). Drop any frame whose stamp does not match
+        // our CURRENT run-id: m_runId increments on every spawn, so a frame
+        // produced by a PRIOR child's connection - even one that a dying
+        // child's reactor decoded and pushed AFTER ClearInbound() purged the
+        // queue - is dropped here before it can be staged or applied under the
+        // current child. This is belt-and-suspenders WITH ClearInbound(): the
+        // purge handles timing, this stamp handles a frame that slips past it.
+        if (msg.generation != m_runId)
+        {
+            DETAIL_LOG("[WorkerSupervisor:%s] dropping stale-run inbound frame"
+                       " 0x%04X (gen=%u, current=%u)",
+                       m_name.c_str(),
+                       static_cast<unsigned>(msg.op),
+                       static_cast<unsigned>(msg.generation),
+                       static_cast<unsigned>(m_runId));
+            continue;
+        }
+
         switch (msg.op)
         {
             case IPC_HEARTBEAT_ACK:

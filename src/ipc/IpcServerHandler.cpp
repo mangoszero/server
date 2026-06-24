@@ -492,9 +492,18 @@ int IpcServerHandler::ProcessFrame(const IpcMessage& msg)
                 break;
             }
 
+            // PF2-B: stamp this frame with our per-connection run-id BEFORE
+            // it enters the shared inbound queue. The supervisor drops any
+            // drained frame whose stamp != its CURRENT run-id, so a frame this
+            // (possibly dying) connection produces can never be applied under a
+            // LATER child even if it slips into the queue after a purge. The
+            // run-id is the same value sent to the child in IPC_HELLO_ACK.
+            IpcMessage stamped(msg);
+            stamped.generation = m_runId;
+
             // Push into the inbound queue for the facade, charging the body
             // length against the queue's byte budget.
-            if (!m_inbound->push(msg, msg.body.size()))
+            if (!m_inbound->push(stamped, stamped.body.size()))
             {
                 sLog.outError("IpcServerHandler: inbound queue full"
                               " - frame 0x%04X dropped", msg.op);
