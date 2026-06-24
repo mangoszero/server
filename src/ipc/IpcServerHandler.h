@@ -165,6 +165,21 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         int ProcessFrame(const IpcMessage& msg);
         int FlushOutBuffer();
         void CompactRecvBuf();
+
+        /**
+         * @brief PF2-C: reject an oversize-for-op frame at header parse.
+         *
+         * Precondition: at least 8 header bytes are buffered at m_recvBuf's
+         * current read position. Peeks the opcode + declared body length
+         * WITHOUT consuming any bytes and, for a KNOWN opcode, returns true
+         * when the declared length exceeds that opcode's allowed body size -
+         * so the caller can close the connection before the body is buffered/
+         * reassembled. Unknown opcodes and in-range lengths return false (the
+         * normal Decode()/ProcessFrame() path handles them).
+         *
+         * @return true if the frame must be rejected (close the connection).
+         */
+        bool RejectOversizeForOp();
 };
 
 typedef ACE_Acceptor<IpcServerHandler, ACE_SOCK_ACCEPTOR> IpcAcceptor;

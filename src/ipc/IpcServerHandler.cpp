@@ -206,6 +206,24 @@ int IpcServerHandler::handle_input(ACE_HANDLE)
     // Decode as many complete frames as possible.
     while (m_recvBuf.rpos() < m_recvBuf.size())
     {
+        // PF2-C: fail-fast on oversize-for-op BEFORE buffering/reassembling
+        // the body. Once the 8-byte header is present we can read the declared
+        // body length and the opcode WITHOUT consuming the (possibly still
+        // partial) body; if the declared length exceeds what the opcode allows,
+        // close the connection now rather than letting a live child force the
+        // recv path to buffer up to IPC_MAX_FRAME (~1 MiB) before the
+        // post-reassembly exact-size check would reject it. The header is
+        // peeked at absolute positions, so read position is untouched and the
+        // normal Decode() below still owns frame consumption.
+        if (m_recvBuf.size() - m_recvBuf.rpos() >= 8)
+        {
+            if (RejectOversizeForOp())
+            {
+                return handle_close(ACE_INVALID_HANDLE,
+                                    ACE_Event_Handler::ALL_EVENTS_MASK);
+            }
+        }
+
         IpcMessage msg;
         std::string err;
 
@@ -266,6 +284,49 @@ void IpcServerHandler::CompactRecvBuf()
     ByteBuffer compacted;
     compacted.append(m_recvBuf.contents() + consumed, remaining);
     m_recvBuf = compacted;
+}
+
+// ---------------------------------------------------------------------------
+// RejectOversizeForOp() - PF2-C fail-fast on oversize-for-op at header parse
+// ---------------------------------------------------------------------------
+
+bool IpcServerHandler::RejectOversizeForOp()
+{
+    // Caller guarantees at least 8 header bytes are buffered at rpos(). Peek
+    // the opcode and declared body length at their absolute wire offsets
+    // WITHOUT advancing the read position: version @ +0 (Decode validates),
+    // opcode @ +2, length @ +4. read<T>(pos) does not move rpos(), so the
+    // subsequent Decode() still sees the full frame.
+    const size_t base = m_recvBuf.rpos();
+    const uint16 op  = m_recvBuf.read<uint16>(base + 2);
+    const uint32 len = m_recvBuf.read<uint32>(base + 4);
+
+    const IpcBodySizeRule rule = IpcExpectedBodySize(op);
+
+    // Unknown opcodes are not rejected here: Decode() caps any body at
+    // IPC_MAX_FRAME, and ProcessFrame() drops the unknown frame after a tiny
+    // reassembly. We only fail-fast the case this fix targets: a KNOWN opcode
+    // declaring a body larger than that opcode can ever legitimately carry,
+    // which would otherwise force up to IPC_MAX_FRAME of buffering before the
+    // post-reassembly exact-size check rejects it.
+    if (!rule.known)
+    {
+        return false;
+    }
+
+    // maxLen is the exact size (exact rule) or the inclusive max (maxlen rule);
+    // either way a declared len strictly greater than it can never be valid, so
+    // reject before reassembly. An undersized exact-rule body is still left to
+    // the cheap post-reassembly exact-size check (tiny buffering, not a flood).
+    if (len > rule.maxLen)
+    {
+        sLog.outError("IpcServerHandler: opcode 0x%04X declares oversize body"
+                      " (%u > %s%u) at header - closing before reassembly",
+                      op, len, rule.exact ? "==" : "<=", rule.maxLen);
+        return true;
+    }
+
+    return false;
 }
 
 // ---------------------------------------------------------------------------
