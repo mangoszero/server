@@ -1858,7 +1858,31 @@ void World::Update(uint32 diff)
     /// <li> Handle AHBot operations
     if (m_timers[WUPDATE_AHBOT].Passed())
     {
-        sAuctionBot.Update();
+        const bool serviceActive =
+            (m_ahSupervisor != NULL && m_ahSupervisor->ServiceActive());
+
+        /// Transition logging: announce each time the in-process bot stands
+        /// down for / resumes from the out-of-process service.
+        static bool s_prevServiceActive = false;
+        if (serviceActive != s_prevServiceActive)
+        {
+            if (serviceActive)
+            {
+                sLog.outString("[AHSupervisor] AH service active -"
+                               " in-process AuctionHouseBot standing down");
+            }
+            else
+            {
+                sLog.outString("[AHSupervisor] AH service inactive -"
+                               " in-process AuctionHouseBot resuming");
+            }
+            s_prevServiceActive = serviceActive;
+        }
+
+        if (!serviceActive)
+        {
+            sAuctionBot.Update();
+        }
         m_timers[WUPDATE_AHBOT].Reset();
     }
 

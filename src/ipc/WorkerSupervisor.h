@@ -144,6 +144,23 @@ class WorkerSupervisor
         void DrainInbound(std::vector<IpcMessage>& out, size_t maxPerTick);
 
         /**
+         * @brief Returns true when the AH service child is connected and healthy.
+         *
+         * Evaluates: m_started && !m_childExited && IPC channel connected
+         * (handshake + IPC_READY complete) && last heartbeat-ack is fresh
+         * (within WS_HEARTBEAT_TIMEOUT_SEC seconds).
+         *
+         * Callers on the world thread may use this to stand down the in-process
+         * AH bot while the out-of-process service is active.  No locking is
+         * needed: all members read here are written only on the world thread
+         * (Tick()), and World::Update calls Tick() before consulting this.
+         *
+         * @return true if the service is active; false during startup, backoff,
+         *         crash, or heartbeat-timeout.
+         */
+        bool ServiceActive() const;
+
+        /**
          * @brief Cumulative inbound frames dropped due to queue overflow.
          *
          * A rising value indicates the reactor is producing faster than

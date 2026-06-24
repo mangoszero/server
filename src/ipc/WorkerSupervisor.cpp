@@ -241,6 +241,20 @@ bool WorkerSupervisor::SpawnChild()
 }
 
 // ---------------------------------------------------------------------------
+// ServiceActive
+// ---------------------------------------------------------------------------
+
+bool WorkerSupervisor::ServiceActive() const
+{
+    if (!m_started || m_childExited || !m_ipc.Connected())
+    {
+        return false;
+    }
+    const time_t age = time(nullptr) - m_lastHeartbeatAck;
+    return age <= static_cast<time_t>(WS_HEARTBEAT_TIMEOUT_SEC);
+}
+
+// ---------------------------------------------------------------------------
 // Tick
 // ---------------------------------------------------------------------------
 
