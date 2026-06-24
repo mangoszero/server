@@ -743,10 +743,10 @@ void BotBrain::addNewAuctions(SellerHouseConfig& cfg,
             continue;
         }
 
-        /// Intentionally guards the source's urand(1,0) degenerate case:
-        /// the source calls urand(1, GetMaxStackSize()) raw, which is
-        /// urand(1,0) when stackable==0, producing undefined behaviour.
-        /// Clamping to 1 here is safe hardening — do NOT revert to raw.
+        // Intentionally guards the source's urand(1,0) degenerate case:
+        // the source calls urand(1, GetMaxStackSize()) raw, which is
+        // urand(1,0) when stackable==0, producing undefined behaviour.
+        // Clamping to 1 here is safe hardening — do NOT revert to raw.
         uint32 maxStack = sell.stackable ? sell.stackable : 1;
         uint32 stackCount = urand(1, maxStack);
 
@@ -990,7 +990,7 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
     const std::vector<AuctionRecord>& house =
         m_snapshot.GetHouse(cfg.houseType);
 
-    /// Wall-clock 'now' — see rationale above re: gametime equivalence.
+    // Wall-clock 'now' — see rationale above re: gametime equivalence.
     time_t now = time(NULL);
 
     // Convenience reference to the persistent per-house LastChecked map.
