@@ -31,8 +31,32 @@
 #include "Log.h"
 #include "World.h"
 
+#include <algorithm>  // std::max
+
 /// Sentinel meaning the executor produced no reply frame for the caller.
 static const IpcOpcode IPC_OP_NONE = IpcOpcode(0);
+
+/**
+ * @brief Upper-bound multiple for a competitive bid, relative to the
+ *        auction's own live values.
+ *
+ * The child only ADVISES; mangosd is the authority and must never trust the
+ * child's bid amount as an absolute. A stale / corrupt / garbage
+ * @c bidAmount (up to ~UINT32_MAX) must not flow into UpdateBid(), because on
+ * a bid-only listing (buyout == 0) that would set bid=huge / bidder=0 and, at
+ * expiry, AuctionBidWinning(NULL) would credit the REAL seller phantom gold
+ * (capped only by the player money ceiling, ~214748 g) AND destroy the item
+ * via the receiver-not-exist branch.
+ *
+ * A legitimate competitive bot bid is at most a few outbid increments over the
+ * current bid (the in-process buyer raises by GetAuctionOutBid()), never a
+ * 100x jump over the auction's own live floor. We therefore reject any bid
+ * exceeding @c max(startbid, live bid, 1) * AH_BID_SANITY_MULTIPLE. 100x is
+ * generous enough to never reject a real bid yet rejects every absurd/garbage
+ * amount: e.g. a 1g floor caps the accepted bid at 100g, far below the ~214k g
+ * phantom-credit a UINT32-range amount would inject.
+ */
+static const uint32 AH_BID_SANITY_MULTIPLE = 100u;
 
 /**
  * @brief Build an IPC_INTENT_RESULT frame into @p out.
@@ -191,6 +215,21 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
         return;
     }
 
+    // Reject a malformed listing the child should never have sent:
+    //   - stack == 0: CreateItem would fail anyway, but reject explicitly so
+    //     the outcome is an honest REJECTED rather than a silent BAD_ITEM.
+    //   - buyout != 0 && bid > buyout: a "dead" unbuyable listing (the start
+    //     bid already exceeds the instant-buy price, so it can never sell).
+    // mangosd is the authority; do not post a listing the wire claims is sane
+    // but is internally contradictory.
+    if (s.stack == 0 || (s.buyout != 0 && s.bid > s.buyout))
+    {
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
     // Re-validate the item template against live data.
     if (!ObjectMgr::GetItemPrototype(s.itemId))
     {
@@ -325,6 +364,27 @@ void AuctionIntentExecutor::ApplyBid(const IpcMessage& in,
     // new bid must clear the current bid plus GetAuctionOutBid().
     uint32 minBid = auction->bid + auction->GetAuctionOutBid();
     if (b.bidAmount < minBid)
+    {
+        ++m_rejected;
+        Remember(b.uuid, now);
+        MakeResult(resultOut, b.uuid, INTENT_REJECTED, REASON_STALE_BID);
+        return;
+    }
+
+    // UPPER bound (anti gold-injection): mangosd is the authority and must not
+    // trust the child's bid amount. Without an upper clamp a stale / corrupt /
+    // huge bidAmount flows unclamped into UpdateBid() on a bid-only listing
+    // (buyout == 0, so the buyout-reached reject above never fires), setting a
+    // huge live bid with bidder=0; at expiry the real seller is paid phantom
+    // gold and the item is destroyed. Reject anything above the auction's own
+    // live floor times AH_BID_SANITY_MULTIPLE. Computed in 64-bit so the
+    // multiply cannot wrap. (Bids at/above a non-zero buyout are already
+    // rejected as REASON_BOUGHT_OUT above, so the buyout itself is the cap for
+    // buyout-able listings; this clamp is the guard for bid-only listings.)
+    const uint64 floor =
+        std::max<uint64>(std::max<uint32>(auction->startbid, auction->bid), 1u);
+    const uint64 sanityCap = floor * AH_BID_SANITY_MULTIPLE;
+    if (uint64(b.bidAmount) > sanityCap)
     {
         ++m_rejected;
         Remember(b.uuid, now);

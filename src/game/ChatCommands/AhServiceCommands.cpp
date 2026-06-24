@@ -61,6 +61,17 @@ static bool IsAhServiceConnected(WorkerSupervisor* sv)
  */
 bool ChatHandler::HandleAhServiceConsoleShowCommand(char* /*args*/)
 {
+    // Console-only: this toggles the CHILD's console window on the SERVER
+    // HOST, which an in-game GM cannot see and never needs. m_session is
+    // non-NULL only for an in-game chat invocation; reject those.
+    if (m_session)
+    {
+        PSendSysMessage("This command is only available from the server"
+                        " console.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
     WorkerSupervisor* sv = sWorld.GetAhSupervisor();
     if (!IsAhServiceConnected(sv))
     {
@@ -87,6 +98,16 @@ bool ChatHandler::HandleAhServiceConsoleShowCommand(char* /*args*/)
  */
 bool ChatHandler::HandleAhServiceConsoleHideCommand(char* /*args*/)
 {
+    // Console-only: see HandleAhServiceConsoleShowCommand. An in-game GM
+    // cannot see the host's child console window and never needs this.
+    if (m_session)
+    {
+        PSendSysMessage("This command is only available from the server"
+                        " console.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
     WorkerSupervisor* sv = sWorld.GetAhSupervisor();
     if (!IsAhServiceConnected(sv))
     {

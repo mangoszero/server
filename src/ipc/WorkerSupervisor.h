@@ -206,6 +206,16 @@ class WorkerSupervisor
         bool SpawnChild();
 
         /**
+         * @brief Discard all staged (not-yet-applied) application frames.
+         *
+         * Called on child-exit detection (process exit / heartbeat timeout)
+         * and before each (re)spawn. A reconnecting child must never replay
+         * the dead child's stale, partially-applied batch, which would
+         * over-post against the resumed in-process AuctionHouseBot.
+         */
+        void ClearStagedFrames();
+
+        /**
          * @brief Drain the IPC inbound queue into m_pendingFrames.
          *
          * Handles protocol frames (IPC_HEARTBEAT_ACK, IPC_READY,

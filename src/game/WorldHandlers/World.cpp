@@ -1884,13 +1884,25 @@ void World::Update(uint32 diff)
         {
             sAuctionBot.Update();
         }
+
+        // Mail cleanup must run in BOTH modes. In service mode the in-process
+        // bot's Update() is gated out, so PurgeMailedItems() (the hourly
+        // cleanup of the bot's returned/unsold/outbid mail) would otherwise
+        // never run and the char-DB mail tables would grow without bound.
+        // It is self-throttled to once/hour internally, so calling it on every
+        // WUPDATE_AHBOT tick in either mode is cheap and idempotent.
+        sAuctionBot.PurgeMailedItemsTick();
+
         m_timers[WUPDATE_AHBOT].Reset();
     }
 
     /// <li> Tick the AH subprocess supervisor and drain inbound frames
     if (m_ahSupervisor != NULL)
     {
-        // Tick() uses wall-clock deltas internally; do NOT gate behind WUPDATE_AHBOT.
+        // Tick() uses wall-clock deltas internally; do NOT gate behind
+        // WUPDATE_AHBOT. Tick() drives heartbeat/restart/protocol and MUST run
+        // every tick regardless of service health (it is what transitions the
+        // service from inactive back to active).
         m_ahSupervisor->Tick(GetGameTime());
 
         // Overflow visibility: warn (rate-limited) when the inbound queue
@@ -1916,32 +1928,55 @@ void World::Update(uint32 diff)
             }
         }
 
-        // Drain up to 256 application frames per tick.
-        std::vector<IpcMessage> msgs;
-        m_ahSupervisor->DrainInbound(msgs, 256);
-
-        // Near-full warning: queue >= 80% capacity means we are close to
-        // dropping frames even though none have been lost yet.
-        const size_t qSize = m_ahSupervisor->Channel().InboundSize();
-        if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
+        // The apply loop (DrainInbound + HandleAhInbound) and the near-full
+        // back-pressure check are gated on service health. When the service is
+        // inactive (crash / heartbeat-timeout / stand-down) the in-process
+        // AuctionHouseBot resumes (see the WUPDATE_AHBOT block above); applying
+        // the dead child's last staged batch at the same time would over-post
+        // against the resumed in-process bot. WorkerSupervisor clears its
+        // staged frames on child exit, so a reconnecting child never replays
+        // the dead child's stale batch; this gate is the second guard.
+        if (m_ahSupervisor->ServiceActive())
         {
-            const time_t now = time(NULL);
-            if (now - s_lastNearFullWarn >= 60)
+            // Drain up to 256 application frames per tick.
+            std::vector<IpcMessage> msgs;
+            m_ahSupervisor->DrainInbound(msgs, 256);
+
+            // Near-full back-pressure: queue >= 80% capacity means we are close
+            // to dropping frames even though none have been lost yet. Warn AND
+            // tell the child to throttle via IPC_QUEUE_FULL so it pauses one
+            // bot cycle. Both are rate-limited to once per 60s to avoid spam.
+            const size_t qSize = m_ahSupervisor->Channel().InboundSize();
+            if (qSize >= IPC_INBOUND_QUEUE_CAP * 4 / 5)
             {
-                sLog.outError("[AHSupervisor] inbound queue near full:"
-                              " %u / %u frames",
-                              static_cast<unsigned>(qSize),
-                              static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
-                s_lastNearFullWarn = now;
+                const time_t now = time(NULL);
+                if (now - s_lastNearFullWarn >= 60)
+                {
+                    sLog.outError("[AHSupervisor] inbound queue near full:"
+                                  " %u / %u frames - sending IPC_QUEUE_FULL",
+                                  static_cast<unsigned>(qSize),
+                                  static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
+
+                    // Back-pressure producer: the child backs off one bot
+                    // cycle on IPC_QUEUE_FULL (ah-service Main.cpp). Empty
+                    // body; the child reads no payload for this opcode.
+                    IpcMessage qf;
+                    qf.op = IPC_QUEUE_FULL;
+                    m_ahSupervisor->Channel().SendFrame(qf);
+
+                    s_lastNearFullWarn = now;
+                }
+            }
+
+            for (size_t i = 0; i < msgs.size(); ++i)
+            {
+                HandleAhInbound(msgs[i]);
             }
         }
 
-        for (size_t i = 0; i < msgs.size(); ++i)
-        {
-            HandleAhInbound(msgs[i]);
-        }
-
-        // Expire processed-uuid dedup entries. Rate-limit to once per second
+        // Expire processed-uuid dedup entries. UNCONDITIONAL: the dedup cache
+        // must keep aging out regardless of service health, else stale uuids
+        // leak when the service stays inactive. Rate-limit to once per second
         // (game-time); purging every tick would be wasteful.
         static time_t s_lastIntentPurge = 0;
         const time_t nowSec = GetGameTime();

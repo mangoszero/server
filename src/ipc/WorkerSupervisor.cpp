@@ -186,6 +186,12 @@ bool WorkerSupervisor::SpawnChild()
     m_pid         = pid;
     m_childExited = false;
 
+    // Defensive: start the new child with an empty staged buffer so a frame
+    // that slipped in from the prior run-id can never be applied as if it
+    // came from this child. Exit detection already clears on the way down;
+    // this also covers the very first Start() and any race on respawn.
+    ClearStagedFrames();
+
     sLog.outString("[WorkerSupervisor:%s] child spawned (pid=%u, cmd: %s)",
                    m_name.c_str(), static_cast<unsigned>(m_pid), cmdLog);
 
@@ -307,6 +313,10 @@ void WorkerSupervisor::Tick(uint32 gametime)
                           m_name.c_str(), static_cast<unsigned>(m_pid));
             m_childExited = true;
             m_pid         = ACE_INVALID_PID;
+            // Discard the dead child's staged intents: a reconnecting child
+            // must never replay the previous child's stale, half-applied
+            // batch (which would over-post against the resumed in-process bot).
+            ClearStagedFrames();
         }
     }
 
@@ -325,6 +335,8 @@ void WorkerSupervisor::Tick(uint32 gametime)
                 ACE_Process_Manager::instance()->terminate(m_pid);
                 m_pid = ACE_INVALID_PID;
             }
+            // Discard the dead child's staged intents (see process-exit path).
+            ClearStagedFrames();
         }
     }
 
@@ -387,6 +399,23 @@ void WorkerSupervisor::Tick(uint32 gametime)
             DETAIL_LOG("[WorkerSupervisor:%s] heartbeat sent (gametime=%u)",
                        m_name.c_str(), gametime);
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// ClearStagedFrames (private)
+// ---------------------------------------------------------------------------
+
+void WorkerSupervisor::ClearStagedFrames()
+{
+    // Drop any application frames staged but not yet handed to World::Update.
+    // Called on child-exit detection and before each (re)spawn so a fresh /
+    // reconnecting child can never apply the previous child's stale batch.
+    // swap-with-empty releases capacity too; this runs only on rare
+    // exit/restart events so the realloc cost is irrelevant.
+    if (!m_pendingFrames.empty())
+    {
+        std::vector<IpcMessage>().swap(m_pendingFrames);
     }
 }
 

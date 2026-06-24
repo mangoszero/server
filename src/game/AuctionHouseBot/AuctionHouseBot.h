@@ -459,6 +459,19 @@ class AuctionHouseBot
         void Update();
 
         /**
+         * @brief Drive the hourly mailed-item cleanup, mode-agnostic.
+         *
+         * Public wrapper around PurgeMailedItems() so World::Update can run
+         * the cleanup on the WUPDATE_AHBOT timer in BOTH bot modes (in-process
+         * and out-of-process service). In service mode Update() is gated out,
+         * so the cleanup must be driven from here or the bot's returned/unsold
+         * mail (mail / mail_items / item_instance) grows without bound.
+         *
+         * Internally throttled to once per hour; cheap to call every tick.
+         */
+        void PurgeMailedItemsTick();
+
+        /**
          * @brief Initialize the auction house bot
          */
         void Initialize();

@@ -2806,7 +2806,20 @@ void AuctionHouseBot::Update()
             break;
         }
     }
-    PurgeMailedItems(); // Check if its time to cleanup mailed items
+    // NOTE: PurgeMailedItems() is intentionally NOT called here. Update() is
+    // gated out when the out-of-process AH service is active, so driving the
+    // mail cleanup from here would skip it entirely on a service realm. It is
+    // now driven UNCONDITIONALLY from World::Update on the WUPDATE_AHBOT timer
+    // (via PurgeMailedItemsTick()), so it runs in both modes.
+}
+
+void AuctionHouseBot::PurgeMailedItemsTick()
+{
+    // Public, mode-agnostic entry point driven from World::Update on the
+    // WUPDATE_AHBOT timer. PurgeMailedItems() is internally throttled to once
+    // per hour and depends only on the configured bot GUID (not on any
+    // in-process bot cycle state), so it is safe to call in both bot modes.
+    PurgeMailedItems();
 }
 
 /**
