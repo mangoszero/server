@@ -142,6 +142,43 @@ credential restriction (see Security below).
 * ``Console.ShowOnStartup``         - Set to 1 to show the ah-service console
   window on startup (Windows only). Default: 0 (hidden).
 
+Out-of-process service - deployment & operational notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**1. Use a dedicated bot character.**
+Point ``AuctionHouseBot.CharacterName`` at a character on a **separate account
+that you never log into**. The bot owns every auction it creates. If you log
+in as that character you inherit all of them in your Auctions tab, and the
+1.12 client's owner-items list is unpaginated -- hundreds of owned auctions
+in one house will crash the client (issue #132). Rule: never log into the bot
+character while the service (or the in-process bot) is active. Normal players
+are unaffected; the public browse list is paged.
+
+**2. Stock-target sizing.**
+The default ``AuctionHouseBot.Items.Amount.*`` targets (White 2000 / Green 2500
+/ Blue 1500 / Purple 1000, roughly 7 000 total, ~2 300 per faction house)
+populate a large auction house. Tune these down for low-population or
+development realms. The bot boost-fills toward the target then maintains it,
+so a first-run burst can be large if the house starts empty.
+
+**3. Performance and DB durability.**
+The mangosd executor applies each auction synchronously on the world thread
+(one character-DB transaction per auction -- the same mechanism the in-process
+bot uses). A large initial fill under the default MariaDB durability setting
+(``innodb_flush_log_at_trx_commit = 1``, one fsync per commit) can cause brief
+world-tick hitches during the burst. For development or test deployments,
+``innodb_flush_log_at_trx_commit = 2`` (commit to OS page cache) smooths this;
+a larger ``innodb_buffer_pool_size`` or SSD data directory also helps. In
+production, keep stock amounts moderate to avoid a large fill on first start.
+
+**4. Read-only DB account (child-side trust boundary).**
+The child process issues only ``SELECT`` statements. Provision it a dedicated
+least-privilege MySQL account with ``SELECT``-only grants (see the Security
+section above) rather than copying mangosd's full read/write credentials.
+With a ``SELECT``-only account a compromised or malfunctioning child cannot
+write the database at all -- the only path remaining is the IPC channel, where
+mangosd re-validates everything.
+
 GM commands under the service
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The `ahbot` GM command set is extended when the service is running:

@@ -45,7 +45,8 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
     switch (op)
     {
         // --- protocol / handshake frames (fixed tiny bodies) ---
-        case IPC_HELLO:         return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY); // proto+pid+secret
+        // proto + pid + secret
+        case IPC_HELLO:         return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
         case IPC_HELLO_ACK:     return IPC_RULE_EXACT(4);   // uint32 run-id
         case IPC_READY:         return IPC_RULE_EXACT(0);
         case IPC_HEARTBEAT:     return IPC_RULE_EXACT(0);
@@ -58,13 +59,19 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
         case IPC_ECHO_REPLY:    return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
 
         // --- AH consumer frames (fixed wire layouts) ---
-        case IPC_INTENT_SELL:   return IPC_RULE_EXACT(SellIntent::WIRE_SIZE);   // 33
-        case IPC_INTENT_BID:    return IPC_RULE_EXACT(BidIntent::WIRE_SIZE);     // 20
-        case IPC_INTENT_BUYOUT: return IPC_RULE_EXACT(BuyoutIntent::WIRE_SIZE);  // 16
-        case IPC_INTENT_RESULT: return IPC_RULE_EXACT(IntentResult::WIRE_SIZE);  // 10
+        case IPC_INTENT_SELL:   // 33
+            return IPC_RULE_EXACT(SellIntent::WIRE_SIZE);
+        case IPC_INTENT_BID:    // 20
+            return IPC_RULE_EXACT(BidIntent::WIRE_SIZE);
+        case IPC_INTENT_BUYOUT: // 16
+            return IPC_RULE_EXACT(BuyoutIntent::WIRE_SIZE);
+        case IPC_INTENT_RESULT: // 10
+            return IPC_RULE_EXACT(IntentResult::WIRE_SIZE);
         case IPC_QUEUE_FULL:    return IPC_RULE_EXACT(0);
-        case IPC_GMCMD:         return IPC_RULE_EXACT(GmCmd::WIRE_SIZE);         // 1
-        case IPC_GMCMD_RESULT:  return IPC_RULE_EXACT(GmCmdResult::WIRE_SIZE);   // 2
+        case IPC_GMCMD:         // 1
+            return IPC_RULE_EXACT(GmCmd::WIRE_SIZE);
+        case IPC_GMCMD_RESULT:  // 2
+            return IPC_RULE_EXACT(GmCmdResult::WIRE_SIZE);
 
         default:                return IPC_RULE_UNKNOWN;
     }
