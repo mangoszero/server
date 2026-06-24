@@ -7,13 +7,21 @@ LogLevel = 1
 #
 #    WorldDatabaseInfo
 #        World database connection string. Same host;port;user;pass;db format
-#        as mangosd.conf. The ah-service child opens its OWN read-only world-DB
-#        connection (mangosd's connection is separate). Copy the value from
-#        mangosd.conf so both point at the same world database.
+#        as mangosd.conf. The ah-service child opens its OWN world-DB
+#        connection (mangosd's connection is separate) and only ever issues
+#        SELECTs against it.
+#
+#        SECURITY: do NOT copy mangosd's full read/write credentials here. The
+#        child is untrusted (that is WHY mangosd re-validates every intent); a
+#        compromised child holding write-capable creds could write the DB
+#        directly and bypass the executor. Provision a DEDICATED least-privilege
+#        MySQL account with SELECT-only grants for this connection. See the
+#        "Security" section of doc/AuctionHouseBot.md for example GRANT
+#        statements.
 #    Default: "" (disabled)
 #
-#    Example:
-#    WorldDatabaseInfo = "127.0.0.1;3306;mangos;mangos;mangos0"
+#    Example (point at a SELECT-only account, not mangosd's user):
+#    WorldDatabaseInfo = "127.0.0.1;3306;ahbot_ro;change-me;mangos0"
 
 WorldDatabaseInfo = ""
 
@@ -28,13 +36,19 @@ WorldDatabaseConnections = 1
 #
 #    CharacterDatabaseInfo
 #        Character database connection string. Same host;port;user;pass;db
-#        format as mangosd.conf. The ah-service child opens its OWN read-only
-#        character-DB connection used by MarketSnapshot to read the live
-#        auction tables. Copy the value from mangosd.conf.
+#        format as mangosd.conf. The ah-service child opens its OWN character-DB
+#        connection used by MarketSnapshot to read the live auction tables, and
+#        only ever issues SELECTs against it.
+#
+#        SECURITY: as with WorldDatabaseInfo, do NOT copy mangosd's full
+#        read/write credentials here. Use a DEDICATED least-privilege MySQL
+#        account with SELECT-only grants so a compromised child cannot write the
+#        DB directly and bypass the mangosd executor authority. See the
+#        "Security" section of doc/AuctionHouseBot.md.
 #    Default: "" (disabled)
 #
-#    Example:
-#    CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;character0"
+#    Example (point at a SELECT-only account, not mangosd's user):
+#    CharacterDatabaseInfo = "127.0.0.1;3306;ahbot_ro;change-me;character0"
 
 CharacterDatabaseInfo = ""
 

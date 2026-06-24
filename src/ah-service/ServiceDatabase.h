@@ -32,8 +32,13 @@
  * @brief The child's OWN read-only world-DB connection.
  *
  * The ah-service child opens its own @c DatabaseType (mangosd's
- * @c WorldDatabase global is untouched). This connection is strictly
- * READ-ONLY: the child must never issue a write/INSERT/UPDATE/DELETE. The
+ * @c WorldDatabase global is untouched). This connection is READ-ONLY BY
+ * USAGE: the child only ever issues SELECTs and never INSERT/UPDATE/DELETE.
+ * That is a code discipline, NOT an enforced credential restriction -- the
+ * connection string is whatever @c WorldDatabaseInfo supplies. For real
+ * enforcement (so a compromised child cannot write the DB directly and bypass
+ * the mangosd executor authority) provision a dedicated SELECT-only MySQL
+ * account for this connection; see doc/AuctionHouseBot.md "Security". The
  * connection string and pool size come from @c sConfig (the loaded
  * @c ah-service.conf) via the @c WorldDatabaseInfo /
  * @c WorldDatabaseConnections keys, the same format as mangosd.conf.
