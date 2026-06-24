@@ -314,7 +314,89 @@ void AuctionIntentExecutor::ApplySell(const IpcMessage& in,
     }
 
     // Re-validate the item template against live data.
-    if (!ObjectMgr::GetItemPrototype(s.itemId))
+    ItemPrototype const* proto = ObjectMgr::GetItemPrototype(s.itemId);
+    if (!proto)
+    {
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    // SELL POLICY (authority-side, mirrors the in-process seller so a hostile
+    // child cannot mint out-of-policy listings the bot would never create).
+    // The in-process seller (AuctionBotSeller::addNewAuctions) only ever posts
+    // listings that satisfy ALL of the following; we enforce the same bounds:
+    //
+    //   1. duration in [MinTime, MaxTime] hours
+    //        (urand(GetMinTime(), GetMaxTime()) * HOUR). Rejects zero / absurd
+    //        / huge durations.
+    //   2. stack in [1, proto->GetMaxStackSize()]
+    //        (urand(1, GetMaxStackSize())). Rejects 0 / over-stack.
+    //   3. buyout within the item's intrinsic value ceiling
+    //        (reuses the A1 ComputeBotValueCeiling so an absurd buyout vs the
+    //        item's vendor value is rejected). bid <= buyout and stack > 0 are
+    //        already enforced above.
+    //   4. item quality in the bot's configured auction-quality range, and a
+    //        quality the seller is configured to list at all
+    //        (getConfigItemQualityAmount > 0). Rejects qualities the bot would
+    //        never auction.
+    //
+    // NOTE (Phase 2): the strong form is a full host-rebuilt pool allowlist
+    // (the exact item-id set the seller would pick from its m_ItemPool, gated
+    // by the Items.* / Class.* / item-level / req-level filters). That is
+    // heavy; this policy enforces the value + duration + stack + quality
+    // envelope now and defers the per-item-id allowlist.
+
+    // (1) Duration must be within the seller's configured listing window.
+    const uint32 minHrs =
+        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_MINTIME);
+    const uint32 maxHrs =
+        sAuctionBotConfig.getConfig(CONFIG_UINT32_AHBOT_MAXTIME);
+    // Mirror AHB_Seller_Config::GetMinTime(): clamp the effective floor to at
+    // least 1 hour, and never above the configured max.
+    uint32 effMinHrs = minHrs < 1u ? 1u : minHrs;
+    if (maxHrs != 0 && effMinHrs > maxHrs)
+    {
+        effMinHrs = maxHrs;
+    }
+    if (s.durationHrs < effMinHrs || s.durationHrs > maxHrs)
+    {
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    // (2) Stack must be within [1, prototype max]. stack == 0 already rejected.
+    if (s.stack > proto->GetMaxStackSize())
+    {
+        ++m_rejected;
+        Remember(s.uuid, now);
+        MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+        return;
+    }
+
+    // (3) Buyout must be within the item's intrinsic value ceiling. A SELL with
+    // buyout == 0 is bid-only and legitimate, so only cap a non-zero buyout.
+    if (s.buyout != 0)
+    {
+        const uint64 valueCeiling = ComputeBotValueCeiling(proto, s.stack);
+        if (uint64(s.buyout) > valueCeiling)
+        {
+            ++m_rejected;
+            Remember(s.uuid, now);
+            MakeResult(resultOut, s.uuid, INTENT_REJECTED, REASON_BAD_ITEM);
+            return;
+        }
+    }
+
+    // (4) Quality must be within the bot's auction-quality range AND be a
+    // quality the seller is configured to list (amount > 0). proto->Quality
+    // indexes AuctionQuality 1:1 (AUCTION_QUALITY_* == ITEM_QUALITY_*).
+    if (proto->Quality >= MAX_AUCTION_QUALITY ||
+        sAuctionBotConfig.getConfigItemQualityAmount(
+            AuctionQuality(proto->Quality)) == 0)
     {
         ++m_rejected;
         Remember(s.uuid, now);
