@@ -896,7 +896,10 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // --- Install parent-death guard (POSIX: prctl SIGTERM; Windows: no-op) ---
+    // --- Install parent-death guard (POSIX: prctl PR_SET_PDEATHSIG = SIGUSR1;
+    // Windows: no-op). PF3-C: SIGUSR1 (NOT SIGTERM) on purpose -- SIGTERM keeps
+    // its default-terminate disposition so a stray/operator SIGTERM is never
+    // swallowed; do not "simplify" this back to SIGTERM. ---
     Console_InstallParentDeathGuard();
 
     // --- Load config (C1: REQUIRED before the handshake) ---
