@@ -286,9 +286,12 @@ bool WorkerSupervisor::SpawnChild()
     }
 #else
     // Linux orphan guard: implemented CHILD-SIDE. The ah-service installs
-    // prctl(PR_SET_PDEATHSIG, SIGTERM) at startup via
-    // Console_InstallParentDeathGuard(), so the kernel signals the child when
-    // this (the parent) dies. Nothing to arm on the supervisor side here.
+    // prctl(PR_SET_PDEATHSIG, SIGUSR1) at startup via
+    // Console_InstallParentDeathGuard() (OPEN-2: a distinct signal so SIGTERM
+    // keeps its default-terminate disposition), so the kernel signals the
+    // child when this (the parent) dies. Nothing to arm on the supervisor side
+    // here. The supervisor's hard-kill uses ACE terminate() -> POSIX
+    // kill(pid, SIGKILL), which is uncatchable, so it always works regardless.
 #endif
 
     return true;
