@@ -1172,7 +1172,20 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
 
         uint32 buyoutPrice = rec.buyout / rec.itemCount;
 
-        // bidPrice / bidPriceByItem (mirror GetAuctionOutBid).
+        // bidPrice = the FINAL TOTAL bid to emit, bidPriceByItem = the
+        // per-item value the IsBidable decision uses.
+        //
+        // WIRE CONTRACT: BidIntent.bidAmount is the new TOTAL bid, not the
+        // increment. The executor (AuctionIntentExecutor::ApplyBid) rejects
+        // anything below auction->bid + GetAuctionOutBid() and below startbid
+        // as REASON_STALE_BID, mirroring the canonical player handler
+        // (AuctionHouseHandler.cpp:480 "price < auction->bid +
+        // auction->GetAuctionOutBid()"). The in-process buyer
+        // (AuctionHouseBot.cpp:1371) hands the bare GetAuctionOutBid()
+        // INCREMENT to PlaceBidToEntry -> UpdateBid, which works in-process
+        // only because UpdateBid has no floor checks (it assigns bid = newbid
+        // directly). Across the wire we must emit the total the executor's
+        // floors expect, so add the increment to the current bid here.
         uint32 bidPrice;
         uint32 bidPriceByItem;
         if (rec.curBid >= rec.startBid)
@@ -1183,11 +1196,19 @@ void BotBrain::addNewAuctionBuyerBotBid(BuyerHouseConfig& cfg,
             {
                 outbid = 1;
             }
-            bidPrice = outbid;
+            // FINAL TOTAL = current bid + minimum outbid increment. This
+            // satisfies bidAmount >= auction->bid + GetAuctionOutBid() and
+            // (since outbid >= 1) bidAmount > auction->bid, i.e. it actually
+            // outbids a contested auction instead of being rejected as stale.
+            bidPrice = rec.curBid + outbid;
             bidPriceByItem = rec.curBid / rec.itemCount;
         }
         else
         {
+            // No prior bid (curBid < startBid, e.g. curBid == 0): startBid is
+            // itself the final total. The executor accepts it because
+            // minBid = bid + GetAuctionOutBid() = 0 + 1 = 1 <= startBid and
+            // bidAmount == startBid satisfies the startbid floor.
             bidPrice = rec.startBid;
             bidPriceByItem = rec.startBid / rec.itemCount;
         }
