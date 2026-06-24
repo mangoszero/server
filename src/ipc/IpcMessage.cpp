@@ -49,7 +49,7 @@ IpcBodySizeRule IpcExpectedBodySize(uint16 op)
         case IPC_HELLO_ACK:     return IPC_RULE_EXACT(4);   // uint32 run-id
         case IPC_READY:         return IPC_RULE_EXACT(0);
         case IPC_HEARTBEAT:     return IPC_RULE_EXACT(0);
-        case IPC_HEARTBEAT_ACK: return IPC_RULE_EXACT(0);
+        case IPC_HEARTBEAT_ACK: return IPC_RULE_EXACT(1);   // uint8 health flag
         case IPC_GAMETIME:      return IPC_RULE_EXACT(4);   // uint32 gametime
         case IPC_CONSOLE:       return IPC_RULE_MAXLEN(IPC_ECHO_MAX_BODY);
         case IPC_SHUTDOWN:      return IPC_RULE_EXACT(0);

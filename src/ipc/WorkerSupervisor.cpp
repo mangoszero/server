@@ -61,6 +61,10 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
     , m_failCount(0)
     , m_started(false)
     , m_childExited(true)
+    // OPEN-1: start UNHEALTHY so the in-process bot keeps running until the
+    // child proves itself healthy in a heartbeat-ack (err toward a bot
+    // running, never toward a silent stall).
+    , m_childHealthy(false)
     , m_runId(0)
     , m_appDropped(0)
 #ifdef _WIN32
@@ -340,6 +344,15 @@ bool WorkerSupervisor::ServiceActive() const
     {
         return false;
     }
+    // OPEN-1: require RUNTIME health, not just transport. An unhealthy child
+    // keeps heartbeating but stops emitting; if we returned true here the
+    // in-process bot would stay suppressed and no bot would run (silent
+    // stall). When the child recovers it reports healthy again and the
+    // in-process bot stands back down - no child restart involved.
+    if (!m_childHealthy)
+    {
+        return false;
+    }
     const time_t age = time(nullptr) - m_lastHeartbeatAck;
     return age <= static_cast<time_t>(WS_HEARTBEAT_TIMEOUT_SEC);
 }
@@ -431,6 +444,9 @@ void WorkerSupervisor::Tick(uint32 gametime)
             {
                 m_connectAnchor = now;
                 m_everConnected = false;
+                // OPEN-1: the channel just dropped; the child must re-prove
+                // health on reconnect before it suppresses the in-process bot.
+                m_childHealthy = false;
             }
 
             const time_t connectAge = now - m_connectAnchor;
@@ -524,6 +540,12 @@ void WorkerSupervisor::Tick(uint32 gametime)
 
 void WorkerSupervisor::ClearStagedFrames()
 {
+    // OPEN-1: a (re)connecting child must RE-PROVE its operational health
+    // before it can suppress the in-process bot. This runs on every child
+    // death/respawn path (process-exit, heartbeat-timeout, connect-deadline,
+    // and each SpawnChild()), so clearing the flag here covers them all.
+    m_childHealthy = false;
+
     // Drop any application frames staged but not yet handed to World::Update.
     // Called on child-exit detection and before each (re)spawn so a fresh /
     // reconnecting child can never apply the previous child's stale batch.
@@ -571,8 +593,21 @@ void WorkerSupervisor::DrainInboundProtocol()
             case IPC_HEARTBEAT_ACK:
             {
                 m_lastHeartbeatAck = time(nullptr);
-                DETAIL_LOG("[WorkerSupervisor:%s] IPC_HEARTBEAT_ACK received",
-                           m_name.c_str());
+                // OPEN-1: the ack body carries a 1-byte operational-health
+                // flag (1 == healthy). The frame already passed the exact-size
+                // B1 validation (IpcExpectedBodySize == 1) before reaching this
+                // drain, so the byte is guaranteed present; read it defensively
+                // regardless and treat a missing/zero flag as unhealthy.
+                uint8 healthy = 0;
+                if (msg.body.size() >= 1)
+                {
+                    msg.body >> healthy;
+                }
+                m_childHealthy = (healthy != 0);
+                DETAIL_LOG("[WorkerSupervisor:%s] IPC_HEARTBEAT_ACK received"
+                           " (childHealthy=%u)",
+                           m_name.c_str(),
+                           static_cast<unsigned>(m_childHealthy ? 1u : 0u));
                 break;
             }
             case IPC_SHUTDOWN_ACK:

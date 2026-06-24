@@ -1055,8 +1055,19 @@ int main(int argc, char** argv)
             {
                 case IPC_HEARTBEAT:
                 {
+                    // OPEN-1: report operational health in the ack body so the
+                    // supervisor's ServiceActive() reflects RUNTIME health, not
+                    // just transport. Healthy == the brain is usable AND the
+                    // market snapshot is healthy (>5 consecutive snapshot
+                    // failures, a lost SELECT grant, or a bad cross-DB JOIN all
+                    // trip MarketSnapshot::Healthy()). When unhealthy the child
+                    // already STOPS emitting; reporting it here lets mangosd
+                    // resume the in-process bot instead of stalling silently.
                     IpcMessage ack;
                     ack.op = IPC_HEARTBEAT_ACK;
+                    const uint8 healthy =
+                        (botBrain != nullptr && botSnap->Healthy()) ? 1u : 0u;
+                    ack.body << healthy;
                     cli.SendFrame(ack);
                     break;
                 }

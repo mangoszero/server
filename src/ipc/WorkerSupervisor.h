@@ -179,7 +179,12 @@ class WorkerSupervisor
          *
          * Evaluates: m_started && !m_childExited && IPC channel connected
          * (handshake + IPC_READY complete) && last heartbeat-ack is fresh
-         * (within WS_HEARTBEAT_TIMEOUT_SEC seconds).
+         * (within WS_HEARTBEAT_TIMEOUT_SEC seconds) && the child reported
+         * itself operationally healthy in its latest heartbeat-ack
+         * (m_childHealthy; OPEN-1). The last term closes the runtime-stall
+         * hole: a child whose snapshot/brain degrades keeps heartbeating but
+         * stops emitting, so without this it would suppress the in-process bot
+         * and NO bot would run.
          *
          * Callers on the world thread may use this to stand down the in-process
          * AH bot while the out-of-process service is active.  No locking is
@@ -288,6 +293,16 @@ class WorkerSupervisor
 
         bool         m_started;         ///< true once Start() succeeded.
         bool         m_childExited;     ///< true when the child is gone.
+
+        /// OPEN-1: child-reported RUNTIME operational health, taken from the
+        /// 1-byte IPC_HEARTBEAT_ACK body. Initialised false and reset to false
+        /// on every child death/disconnect, so a freshly-(re)connected child
+        /// must re-prove health before it can suppress the in-process bot. A
+        /// child whose snapshot/brain degrades at runtime keeps heartbeating
+        /// but reports unhealthy here; ServiceActive() then returns false and
+        /// the in-process bot resumes WITHOUT restarting the still-connected
+        /// child (it stands back down once the child reports healthy again).
+        bool         m_childHealthy;
 
         /// Application frames buffered by DrainInboundProtocol each tick.
         /// Producer-enforced HARD CAP of IPC_INBOUND_QUEUE_CAP across ticks:
