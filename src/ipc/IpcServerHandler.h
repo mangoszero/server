@@ -149,6 +149,12 @@ class IpcServerHandler : public ACE_Svc_Handler<ACE_SOCK_STREAM, ACE_NULL_SYNCH>
         // the close transition); the facade never reads it.
         bool                        m_closing;
 
+        // True only for the handler that won the single-owner test-and-set in
+        // open(). A handler refused because another is already active never
+        // sets this, so its handle_close() does NOT clear the owner's
+        // handlerActive flag or its handler slot. Reactor-thread only.
+        bool                        m_isOwner;
+
         // --- static context set before first accept (reactor thread only) ---
         static BoundedQueue<IpcMessage>*  s_pendingInbound;
         static std::string                s_pendingSecret;

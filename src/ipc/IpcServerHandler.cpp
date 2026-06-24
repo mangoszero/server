@@ -61,6 +61,7 @@ IpcServerHandler::IpcServerHandler()
       m_inbound(nullptr),
       m_link(nullptr),
       m_closing(false),
+      m_isOwner(false),
       m_runId(s_pendingRunId.load(std::memory_order_acquire))
 {
     reference_counting_policy().value(
@@ -73,6 +74,15 @@ IpcServerHandler::~IpcServerHandler()
     {
         m_outBuffer->release();
         m_outBuffer = nullptr;
+    }
+    // Safety net for the open()-failure path: if this handler claimed the
+    // single-owner guard but failed before going live (e.g. register_handler
+    // failed), handle_close() never ran, so release ownership here. Normal
+    // teardown already cleared m_isOwner in handle_close().
+    if (m_link && m_isOwner)
+    {
+        m_isOwner = false;
+        m_link->handlerActive.store(false, std::memory_order_release);
     }
     if (m_link)
     {
@@ -108,6 +118,27 @@ int IpcServerHandler::open(void* /*acceptor*/)
         sLog.outError("IpcServerHandler::open: no inbound queue set"
                       " - call SetPendingContext first");
         return -1;
+    }
+
+    // SINGLE-OWNER GUARD. This is a one-connection server: only the spawned
+    // loopback child should ever connect. If a handler is already active,
+    // a second concurrent connection is hostile - it must NOT be allowed to
+    // overwrite the live handler/link and steal outbound routing. Atomically
+    // claim ownership; if another handler already owns the link, refuse this
+    // connection by returning -1 (ACE then closes us) WITHOUT touching the
+    // live owner's handler slot, liveness, or reactor state.
+    if (m_link)
+    {
+        bool expected = false;
+        if (!m_link->handlerActive.compare_exchange_strong(
+                expected, true,
+                std::memory_order_acq_rel, std::memory_order_acquire))
+        {
+            sLog.outError("IpcServerHandler::open: a child connection is"
+                          " already active - refusing additional connection");
+            return -1;
+        }
+        m_isOwner = true;
     }
 
     ACE_NEW_RETURN(m_outBuffer, ACE_Message_Block(k_outBufSize), -1);
@@ -264,13 +295,22 @@ int IpcServerHandler::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
     // Clear the link so the facade stops reporting us live and the reactor-
     // thread notifier stops routing through us. Runs on the reactor thread, so
     // it is serialised against the notifier's drain and our own destruction.
-    if (m_link)
+    //
+    // Only the OWNER (the handler that won the single-owner test-and-set in
+    // open()) clears the live handler slot and releases the single-owner
+    // guard. A refused second connection never owns the link, so it must not
+    // touch the live owner's slot or flag here.
+    if (m_link && m_isOwner)
     {
         m_link->live.store(false, std::memory_order_release);
         if (m_link->handler == this)
         {
             m_link->handler = nullptr;
         }
+        // Release ownership so the next legitimate child connection can claim
+        // the link. Done last, after the handler slot is cleared.
+        m_isOwner = false;
+        m_link->handlerActive.store(false, std::memory_order_release);
     }
 
     reactor()->remove_handler(this,

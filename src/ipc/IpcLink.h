@@ -85,6 +85,7 @@ struct IpcLink
         : outbound(IPC_OUTBOUND_QUEUE_CAP),
           live(false),
           runId(0),
+          handlerActive(false),
           handler(nullptr),
           reactor(nullptr),
           notifier(nullptr),
@@ -104,6 +105,18 @@ struct IpcLink
     /// Per-spawn run-id received in IPC_HELLO_ACK (set by handler, read by
     /// IpcClient::RunId()). Zero until the handshake completes.
     std::atomic<uint32> runId;
+
+    /// Single-owner guard. Set true (test-and-set) by the FIRST handler that
+    /// opens on the reactor thread; any additional accepted connection finds
+    /// it already set and refuses itself WITHOUT touching the live handler,
+    /// reactor, or routing state. Cleared by the owning handler's
+    /// handle_close(). Only the loopback child should ever connect; a second
+    /// concurrent local connection is hostile and must not be able to steal
+    /// outbound routing by overwriting @ref handler. Atomic because the
+    /// test-and-set is the ownership decision; in practice all touches are on
+    /// the reactor thread, but the atomic makes the intent explicit and is
+    /// free on this path.
+    std::atomic<bool> handlerActive;
 
     // --- reactor-thread-only members ---
 
