@@ -44,6 +44,7 @@ IpcThread::IpcThread(const char* host,
       m_inbound(inbound),
       m_link(link),
       m_reactor(nullptr),
+      m_stopRequested(false),
       m_acceptor(nullptr),
       m_notifier(nullptr),
       m_running(true)
@@ -87,10 +88,14 @@ IpcThread::~IpcThread()
         delete m_notifier;
         m_notifier = nullptr;
     }
-    if (m_reactor)
+    // The reactor thread has been joined (see above), so no other thread can
+    // observe m_reactor now; a relaxed load is sufficient to recover the
+    // pointer for destruction.
+    ACE_Reactor* reactor = m_reactor.load(std::memory_order_relaxed);
+    if (reactor)
     {
-        delete m_reactor;
-        m_reactor = nullptr;
+        delete reactor;
+        m_reactor.store(nullptr, std::memory_order_relaxed);
     }
     if (m_link)
     {
@@ -107,20 +112,24 @@ void IpcThread::run()
     // Build a TP reactor (same as WorldSocketMgr::StartNetwork).
     ACE_TP_Reactor* impl = new ACE_TP_Reactor();
     impl->max_notify_iterations(128);
-    m_reactor = new ACE_Reactor(impl, 1 /*delete_implementation*/);
+    ACE_Reactor* reactor = new ACE_Reactor(impl, 1 /*delete_implementation*/);
+
+    // Publish the reactor (release) so a concurrent Stop() on the caller
+    // thread can acquire-load it and end the loop.
+    m_reactor.store(reactor, std::memory_order_release);
 
     // Create the outbound notifier and bind the reactor onto the link BEFORE
     // any accept fires. The notifier owns the send path: the facade enqueues a
-    // frame and calls m_reactor->notify(m_notifier), and handle_exception()
+    // frame and calls reactor->notify(m_notifier), and handle_exception()
     // drains the queue on this (the reactor) thread.
     if (m_link)
     {
         m_notifier = new IpcServerNotifier(m_link);
-        m_notifier->reactor(m_reactor);
+        m_notifier->reactor(reactor);
         m_link->notifier = m_notifier;
         // Publishing the reactor pointer last (release) makes Connected()/
         // SendFrame() on the facade a no-op until the notifier is visible.
-        m_link->reactor.store(m_reactor, std::memory_order_release);
+        m_link->reactor.store(reactor, std::memory_order_release);
     }
 
     // Inject context before the acceptor fires open() on a new handler.
@@ -129,7 +138,7 @@ void IpcThread::run()
     m_acceptor = new IpcAcceptor();
 
     ACE_INET_Addr addr(m_port, m_host.c_str());
-    if (m_acceptor->open(addr, m_reactor, ACE_NONBLOCK) == -1)
+    if (m_acceptor->open(addr, reactor, ACE_NONBLOCK) == -1)
     {
         sLog.outError("IpcThread: acceptor->open() failed on %s:%u - %s",
                       m_host.c_str(), m_port, ACE_OS::strerror(errno));
@@ -140,8 +149,23 @@ void IpcThread::run()
         return;
     }
 
+    // Early-stop guard: if Stop() was requested before we got here, it may have
+    // ended the loop on a not-yet-running reactor (a no-op). Do not enter the
+    // loop in that case, or this thread would block forever and hang the later
+    // wait() at shutdown.
+    if (m_stopRequested.load(std::memory_order_acquire))
+    {
+        sLog.outString("IpcThread: stop requested before loop entry; exiting");
+        if (m_link)
+        {
+            m_link->reactor.store(nullptr, std::memory_order_release);
+            m_link->live.store(false, std::memory_order_release);
+        }
+        return;
+    }
+
     sLog.outString("IpcThread: listening on %s:%u", m_host.c_str(), m_port);
-    m_reactor->run_reactor_event_loop();
+    reactor->run_reactor_event_loop();
     sLog.outString("IpcThread: reactor loop exited");
 
     // Reactor loop has ended. Stop accepting facade notifications and flush any
@@ -154,16 +178,21 @@ void IpcThread::run()
     }
     if (m_notifier)
     {
-        m_reactor->purge_pending_notifications(m_notifier);
+        reactor->purge_pending_notifications(m_notifier);
     }
 }
 
 void IpcThread::Stop()
 {
     m_running = false;
-    if (m_reactor)
+    // Set the request BEFORE reading the reactor so an early Stop() (before
+    // run() publishes the reactor) is observed by run()'s pre-loop check and
+    // cannot be lost. The acquire-load pairs with run()'s release-store.
+    m_stopRequested.store(true, std::memory_order_release);
+    ACE_Reactor* reactor = m_reactor.load(std::memory_order_acquire);
+    if (reactor)
     {
-        m_reactor->end_reactor_event_loop();
+        reactor->end_reactor_event_loop();
     }
 }
 
@@ -182,6 +211,7 @@ IpcClientThread::IpcClientThread(const char* host,
       m_inbound(inbound),
       m_link(link),
       m_reactor(nullptr),
+      m_stopRequested(false),
       m_connector(nullptr),
       m_handler(nullptr),
       m_notifier(nullptr),
@@ -218,10 +248,13 @@ IpcClientThread::~IpcClientThread()
         delete m_notifier;
         m_notifier = nullptr;
     }
-    if (m_reactor)
+    // The reactor thread has been joined, so a relaxed load suffices to
+    // recover the pointer for destruction (see ~IpcThread).
+    ACE_Reactor* reactor = m_reactor.load(std::memory_order_relaxed);
+    if (reactor)
     {
-        delete m_reactor;
-        m_reactor = nullptr;
+        delete reactor;
+        m_reactor.store(nullptr, std::memory_order_relaxed);
     }
     if (m_link)
     {
@@ -238,23 +271,26 @@ void IpcClientThread::run()
 
     ACE_TP_Reactor* impl = new ACE_TP_Reactor();
     impl->max_notify_iterations(128);
-    m_reactor = new ACE_Reactor(impl, 1);
+    ACE_Reactor* reactor = new ACE_Reactor(impl, 1);
+
+    // Publish the reactor (release) so a concurrent Stop() can acquire-load it.
+    m_reactor.store(reactor, std::memory_order_release);
 
     // Create the outbound notifier and bind the reactor onto the link before
     // open() fires. See IpcThread::run for the contract.
     if (m_link)
     {
         m_notifier = new IpcClientNotifier(m_link);
-        m_notifier->reactor(m_reactor);
+        m_notifier->reactor(reactor);
         m_link->notifier = m_notifier;
-        m_link->reactor.store(m_reactor, std::memory_order_release);
+        m_link->reactor.store(reactor, std::memory_order_release);
     }
 
     // Inject context before open() fires on the handler.
     IpcClientHandler::SetPendingContext(m_inbound, m_secret, m_link);
 
     m_connector = new IpcConnector();
-    m_connector->reactor(m_reactor);
+    m_connector->reactor(reactor);
 
     // Allocate the handler.  ACE_Connector will call open() on success.
     ACE_NEW_NORETURN(m_handler, IpcClientHandler());
@@ -292,10 +328,27 @@ void IpcClientThread::run()
     }
 
     m_ready = true;
+
+    // Early-stop guard: if Stop() was requested before we got here, it may
+    // have ended the loop on a not-yet-running reactor (a no-op). Do not enter
+    // the loop, or this thread blocks forever and hangs the later wait().
+    if (m_stopRequested.load(std::memory_order_acquire))
+    {
+        fprintf(stdout,
+                "IpcClientThread: stop requested before loop entry; exiting\n");
+        fflush(stdout);
+        if (m_link)
+        {
+            m_link->reactor.store(nullptr, std::memory_order_release);
+            m_link->live.store(false, std::memory_order_release);
+        }
+        return;
+    }
+
     fprintf(stdout, "IpcClientThread: connected; starting client reactor\n");
     fflush(stdout);
 
-    m_reactor->run_reactor_event_loop();
+    reactor->run_reactor_event_loop();
     fprintf(stdout, "IpcClientThread: client reactor loop exited\n");
     fflush(stdout);
 
@@ -307,15 +360,19 @@ void IpcClientThread::run()
     }
     if (m_notifier)
     {
-        m_reactor->purge_pending_notifications(m_notifier);
+        reactor->purge_pending_notifications(m_notifier);
     }
 }
 
 void IpcClientThread::Stop()
 {
     m_running = false;
-    if (m_reactor)
+    // Set the request BEFORE reading the reactor so an early Stop() cannot be
+    // lost (see IpcThread::Stop). The acquire-load pairs with run()'s release.
+    m_stopRequested.store(true, std::memory_order_release);
+    ACE_Reactor* reactor = m_reactor.load(std::memory_order_acquire);
+    if (reactor)
     {
-        m_reactor->end_reactor_event_loop();
+        reactor->end_reactor_event_loop();
     }
 }

@@ -33,6 +33,7 @@
 #include <ace/Reactor.h>
 #include <ace/TP_Reactor.h>
 
+#include <atomic>
 #include <string>
 
 typedef IpcOutboundNotifier<IpcServerLink, IpcServerHandler> IpcServerNotifier;
@@ -82,7 +83,17 @@ class IpcThread : public ACE_Based::Runnable
         BoundedQueue<IpcMessage>* m_inbound;
         IpcServerLink*            m_link;
 
-        ACE_Reactor*       m_reactor;
+        /// Published (release) by run() after the reactor is created so Stop()
+        /// (acquire) can safely end the loop from the caller thread. A plain
+        /// pointer here would let an immediate Stop() observe null, skip
+        /// end_reactor_event_loop(), and hang shutdown.
+        std::atomic<ACE_Reactor*> m_reactor;
+
+        /// Set by Stop() so an early stop (before run() enters the loop) is
+        /// never lost: run() checks it right after publishing m_reactor and
+        /// declines to enter / immediately ends the loop.
+        std::atomic<bool> m_stopRequested;
+
         IpcAcceptor*       m_acceptor;
         IpcServerNotifier* m_notifier;
 
@@ -131,7 +142,15 @@ class IpcClientThread : public ACE_Based::Runnable
         BoundedQueue<IpcMessage>* m_inbound;
         IpcClientLink*            m_link;
 
-        ACE_Reactor*       m_reactor;
+        /// Published (release) by run() after the reactor is created so Stop()
+        /// (acquire) can safely end the loop from the caller thread. See
+        /// IpcThread::m_reactor for the rationale.
+        std::atomic<ACE_Reactor*> m_reactor;
+
+        /// Set by Stop() so an early stop (before run() enters the loop) is
+        /// never lost. See IpcThread::m_stopRequested.
+        std::atomic<bool> m_stopRequested;
+
         IpcConnector*      m_connector;
         IpcClientHandler*  m_handler;
         IpcClientNotifier* m_notifier;

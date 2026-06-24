@@ -58,6 +58,20 @@ static constexpr uint32 WS_MAX_BACKOFF_SEC         = 60;
 static constexpr uint32 WS_SHUTDOWN_GRACE_SEC      = 3;
 
 /**
+ * @brief Maximum application frames DrainInboundProtocol() moves into
+ *        m_pendingFrames in a single call.
+ *
+ * The reactor thread refills the inbound BoundedQueue concurrently while
+ * the supervisor thread pops it, so an unbounded pop loop could run far
+ * past IPC_INBOUND_QUEUE_CAP and grow m_pendingFrames without limit. This
+ * per-call cap, combined with the hard cap on m_pendingFrames itself,
+ * bounds the staged-frame buffer across ticks. Protocol frames
+ * (HEARTBEAT_ACK / SHUTDOWN_ACK) are always consumed inline and do not
+ * count toward this cap.
+ */
+static constexpr uint32 WS_DRAIN_APP_PER_CALL      = 256;
+
+/**
  * @brief Supervises a single child-process worker.
  *
  * Lifecycle:
@@ -165,8 +179,27 @@ class WorkerSupervisor
          *
          * A rising value indicates the reactor is producing faster than
          * the world thread is consuming; World::Update will log a warning.
+         *
+         * Folds together two producer-enforced drop sources: the inbound
+         * BoundedQueue overflow (reactor thread, drop-newest) and the
+         * m_pendingFrames hard-cap overflow (supervisor thread, drop-newest;
+         * see @ref AppDropped). Either source signals back-pressure.
          */
-        size_t InboundDropped() const { return m_ipc.InboundDropped(); }
+        size_t InboundDropped() const
+        {
+            return m_ipc.InboundDropped() + m_appDropped;
+        }
+
+        /**
+         * @brief Cumulative application frames dropped at the m_pendingFrames
+         *        hard cap.
+         *
+         * The pending-frame buffer is producer-bounded at
+         * IPC_INBOUND_QUEUE_CAP (drop-newest, matching the inbound queue
+         * policy). Dropped intents are safe: they are idempotent and
+         * re-validated, and the child re-emits them on its cadence.
+         */
+        size_t AppDropped() const { return m_appDropped; }
 
     private:
         /// Spawn the child process (called from Start() and on restart).
@@ -209,7 +242,14 @@ class WorkerSupervisor
         bool         m_childExited;     ///< true when the child is gone.
 
         /// Application frames buffered by DrainInboundProtocol each tick.
+        /// Producer-enforced HARD CAP of IPC_INBOUND_QUEUE_CAP across ticks:
+        /// DrainInboundProtocol() drops newest frames (incrementing
+        /// m_appDropped) rather than growing past the cap, so the public
+        /// DrainInbound() never has to abort to enforce the bound.
         std::vector<IpcMessage> m_pendingFrames;
+
+        /// Application frames dropped at the m_pendingFrames hard cap.
+        size_t                  m_appDropped;
 
 #ifdef _WIN32
         HANDLE       m_jobObject;       ///< Job Object for orphan guard.

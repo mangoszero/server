@@ -59,6 +59,7 @@ WorkerSupervisor::WorkerSupervisor(const std::string& name,
     , m_started(false)
     , m_childExited(true)
     , m_runId(0)
+    , m_appDropped(0)
 #ifdef _WIN32
     , m_jobObject(NULL)
 #endif
@@ -82,6 +83,20 @@ WorkerSupervisor::~WorkerSupervisor()
 
 bool WorkerSupervisor::Start()
 {
+    // Loud warning (but do NOT refuse to start) when the shared secret is
+    // empty or the well-known default: the loopback IPC channel would accept
+    // any local process that knows the trivial secret.
+    if (m_secret.empty() || m_secret == "changeme")
+    {
+        sLog.outError("[WorkerSupervisor:%s] SECURITY: AH service is using an"
+                      " INSECURE DEFAULT secret (%s) - set a strong unique"
+                      " secret in the config; any local process can otherwise"
+                      " impersonate the AH worker on 127.0.0.1:%u",
+                      m_name.c_str(),
+                      m_secret.empty() ? "empty" : "\"changeme\"",
+                      static_cast<unsigned>(m_port));
+    }
+
     // Bind the IPC acceptor FIRST so it is listening before the child connects.
     if (!m_ipc.Start("127.0.0.1", m_port, m_secret))
     {
@@ -126,6 +141,16 @@ bool WorkerSupervisor::SpawnChild()
              static_cast<unsigned>(m_botGuid),
              m_cfgPath.c_str());
 
+    // Build a SEPARATE redacted command line for logging: the real secret must
+    // never reach the log. Only cmdBuf (with the real secret) goes to ACE.
+    char cmdLog[2048];
+    snprintf(cmdLog, sizeof(cmdLog),
+             "\"%s\" --port %u --secret \"***\" --botguid %u --config \"%s\"",
+             m_exePath.c_str(),
+             static_cast<unsigned>(m_port),
+             static_cast<unsigned>(m_botGuid),
+             m_cfgPath.c_str());
+
     if (opts.command_line("%s", cmdBuf) != 0)
     {
         sLog.outError("[WorkerSupervisor:%s]"
@@ -154,7 +179,7 @@ bool WorkerSupervisor::SpawnChild()
     {
         sLog.outError("[WorkerSupervisor:%s] ACE_Process_Manager::spawn"
                       " failed (cmd: %s)",
-                      m_name.c_str(), cmdBuf);
+                      m_name.c_str(), cmdLog);
         return false;
     }
 
@@ -162,7 +187,7 @@ bool WorkerSupervisor::SpawnChild()
     m_childExited = false;
 
     sLog.outString("[WorkerSupervisor:%s] child spawned (pid=%u, cmd: %s)",
-                   m_name.c_str(), static_cast<unsigned>(m_pid), cmdBuf);
+                   m_name.c_str(), static_cast<unsigned>(m_pid), cmdLog);
 
 #ifdef _WIN32
     // ------------------------------------------------------------------
@@ -231,10 +256,10 @@ bool WorkerSupervisor::SpawnChild()
         }
     }
 #else
-    // Linux orphan guard: the child runs prctl(PR_SET_PDEATHSIG, SIGTERM)
-    // at startup - implemented in Task 5 on the child side.
-    // TODO(Task-5): child-side prctl(PR_SET_PDEATHSIG, SIGTERM)
-    //               in ah-service Main.cpp.
+    // Linux orphan guard: implemented CHILD-SIDE. The ah-service installs
+    // prctl(PR_SET_PDEATHSIG, SIGTERM) at startup via
+    // Console_InstallParentDeathGuard(), so the kernel signals the child when
+    // this (the parent) dies. Nothing to arm on the supervisor side here.
 #endif
 
     return true;
@@ -371,6 +396,12 @@ void WorkerSupervisor::Tick(uint32 gametime)
 
 void WorkerSupervisor::DrainInboundProtocol()
 {
+    // Bound application frames staged PER CALL. The reactor thread refills the
+    // inbound BoundedQueue while this loop pops, so without a cap a flooding
+    // child could feed m_pendingFrames unbounded. Protocol frames are always
+    // consumed inline and do NOT count toward this budget.
+    uint32 appBudget = WS_DRAIN_APP_PER_CALL;
+
     IpcMessage msg;
     while (m_ipc.PopInbound(msg))
     {
@@ -383,13 +414,6 @@ void WorkerSupervisor::DrainInboundProtocol()
                            m_name.c_str());
                 break;
             }
-            case IPC_READY:
-            {
-                sLog.outString("[WorkerSupervisor:%s] child reports READY",
-                               m_name.c_str());
-                m_lastHeartbeatAck = time(nullptr);
-                break;
-            }
             case IPC_SHUTDOWN_ACK:
             {
                 // Handled in Shutdown(); log if it arrives during Tick.
@@ -398,10 +422,31 @@ void WorkerSupervisor::DrainInboundProtocol()
                                m_name.c_str());
                 break;
             }
+            // IPC_READY is consumed at the handshake layer (IpcServerHandler)
+            // and never reaches this drain; no case is needed here.
             default:
             {
                 // Application / consumer frame: stage for World::HandleAhInbound.
+                // Stop staging once this call's budget is spent so a
+                // concurrently-refilling reactor cannot feed us unbounded.
+                if (appBudget == 0)
+                {
+                    ++m_appDropped;
+                    break;
+                }
+
+                // HARD CAP on the staged buffer across ticks: drop-newest
+                // (matching the inbound BoundedQueue policy) rather than grow
+                // past the cap. The bound is therefore PRODUCER-enforced here;
+                // the public DrainInbound() never has to abort to keep it.
+                if (m_pendingFrames.size() >= IPC_INBOUND_QUEUE_CAP)
+                {
+                    ++m_appDropped;
+                    break;
+                }
+
                 m_pendingFrames.push_back(msg);
+                --appBudget;
                 break;
             }
         }
@@ -415,7 +460,26 @@ void WorkerSupervisor::DrainInboundProtocol()
 void WorkerSupervisor::DrainInbound(std::vector<IpcMessage>& out,
                                     size_t maxPerTick)
 {
-    MANGOS_ASSERT(m_pendingFrames.size() <= IPC_INBOUND_QUEUE_CAP);
+    // The cap on m_pendingFrames is enforced UPSTREAM in
+    // DrainInboundProtocol() (drop-newest at IPC_INBOUND_QUEUE_CAP), so this
+    // can no longer be exceeded. Never abort here: if the invariant were ever
+    // violated, clamp the buffer and emit a rate-limited warning instead of
+    // taking down a live realm (the old MANGOS_ASSERT was the crash vector).
+    if (m_pendingFrames.size() > IPC_INBOUND_QUEUE_CAP)
+    {
+        static time_t s_lastClampWarn = 0;
+        const time_t now = time(nullptr);
+        if (now - s_lastClampWarn >= 60)
+        {
+            sLog.outError("[WorkerSupervisor:%s] pending-frame buffer over cap"
+                          " (%u > %u) - clamping (should be unreachable)",
+                          m_name.c_str(),
+                          static_cast<unsigned>(m_pendingFrames.size()),
+                          static_cast<unsigned>(IPC_INBOUND_QUEUE_CAP));
+            s_lastClampWarn = now;
+        }
+        m_pendingFrames.resize(IPC_INBOUND_QUEUE_CAP);
+    }
 
     if (m_pendingFrames.empty())
     {
