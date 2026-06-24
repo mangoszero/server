@@ -57,7 +57,8 @@ uint8 MarketSnapshot::HouseIdToType(uint32 houseid)
 
 MarketSnapshot::MarketSnapshot(ServiceDatabase& db)
     : m_db(db),
-      m_consecutiveFailures(0)
+      m_consecutiveFailures(0),
+      m_hasSucceeded(false)
 {
 }
 
@@ -92,14 +93,18 @@ void MarketSnapshot::Refresh()
         query += "item_template it ON a.item_template = it.entry";
     }
 
-    // Use PQuery to surface MySQL errors to log; NULL means 0 rows OR error.
-    // Distinguish the two by running a COUNT(*) probe when the JOIN returns
-    // NULL, so an empty auction house does not trip the failure counter.
+    // A NULL result means EITHER the auction table is empty OR the query
+    // itself failed (e.g. a misconfigured cross-DB JOIN: a wrong
+    // WorldDatabaseInfo db name, or item_template not reachable from the
+    // character connection). Disambiguate with a COUNT(*) on the same-DB,
+    // non-JOIN auction table and READ its value: only a confirmed 0 rows is
+    // "empty"; a positive count with a NULL JOIN means the JOIN failed while
+    // live auctions exist - a real failure that must NOT be mistaken for an
+    // empty market (which would make the seller flood a full AH).
     QueryResult* result = m_db.Character().Query(query.c_str());
 
     if (!result)
     {
-        // Check whether auction is simply empty (vs a real query error).
         QueryResult* probe = m_db.Character().Query(
             "SELECT COUNT(*) FROM auction");
         if (!probe)
@@ -112,14 +117,34 @@ void MarketSnapshot::Refresh()
                 static_cast<unsigned>(m_consecutiveFailures));
             return;     // stale-fallback
         }
+
+        const uint32 auctionRows = probe->Fetch()[0].GetUInt32();
         delete probe;
 
-        // Auction table is empty: snapshot is valid (all houses have 0).
+        if (auctionRows != 0)
+        {
+            // auction has rows but the market JOIN returned nothing -> the
+            // JOIN query failed (cross-DB / config / permission). Fail closed
+            // (preserve the previous snapshot, trip the failure counter);
+            // do NOT clear the houses or treat the market as empty.
+            ++m_consecutiveFailures;
+            sLog.outError(
+                "MarketSnapshot::Refresh: market JOIN returned no rows but"
+                " auction has %u row(s) - the cross-DB JOIN failed (check the"
+                " WorldDatabaseInfo db name / item_template access)"
+                " (consecutive failures: %u)",
+                static_cast<unsigned>(auctionRows),
+                static_cast<unsigned>(m_consecutiveFailures));
+            return;     // stale-fallback
+        }
+
+        // Auction table is genuinely empty: snapshot is valid (all houses 0).
         for (int h = 0; h < AH_MAX_AUCTION_HOUSE_TYPE; ++h)
         {
             m_houses[h].clear();
         }
         m_consecutiveFailures = 0;
+        m_hasSucceeded = true;
         sLog.outDetail("MarketSnapshot::Refresh: auction table empty"
                        " (0 auctions)");
         return;
@@ -162,6 +187,7 @@ void MarketSnapshot::Refresh()
     delete result;
 
     m_consecutiveFailures = 0;
+    m_hasSucceeded = true;
     sLog.outDetail(
         "MarketSnapshot::Refresh: OK"
         " (alliance=%u horde=%u neutral=%u)",
@@ -200,7 +226,12 @@ uint32 MarketSnapshot::TotalCount() const
 
 bool MarketSnapshot::Healthy() const
 {
-    return m_consecutiveFailures <= k_maxConsecFailures;
+    // Not healthy until at least one refresh has SUCCEEDED (populated or a
+    // confirmed-empty auction table). This prevents the seller from acting
+    // on a never-populated (default-empty) snapshot when the very first
+    // refresh fails - e.g. a misconfigured cross-DB JOIN at startup, which
+    // would otherwise look like an empty market and trigger a flood.
+    return m_hasSucceeded && m_consecutiveFailures <= k_maxConsecFailures;
 }
 
 uint32 MarketSnapshot::ConsecutiveFailures() const

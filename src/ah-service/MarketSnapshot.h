@@ -100,8 +100,11 @@ class MarketSnapshot
         uint32 TotalCount() const;
 
         /**
-         * @brief True if the DB is reachable (fewer than 6 consecutive
-         *        query failures).
+         * @brief True once at least one refresh has succeeded AND there have
+         *        been fewer than 6 consecutive query failures since.
+         *
+         * Returns false until the first successful refresh so the seller never
+         * acts on a never-populated snapshot (e.g. a startup JOIN misconfig).
          */
         bool Healthy() const;
 
@@ -117,6 +120,10 @@ class MarketSnapshot
         ServiceDatabase&                 m_db;
         std::vector<AuctionRecord>       m_houses[AH_MAX_AUCTION_HOUSE_TYPE];
         uint32                           m_consecutiveFailures;
+        /// True once a refresh has succeeded (populated or confirmed-empty).
+        /// Until then Healthy() is false so the seller never trusts the
+        /// default-empty snapshot (see Refresh() / Healthy()).
+        bool                             m_hasSucceeded;
 
         // Non-copyable.
         MarketSnapshot(const MarketSnapshot&);
