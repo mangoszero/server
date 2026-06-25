@@ -145,22 +145,6 @@ bool CustodyLedger::Get(std::string const& idemKey, CustodyRow& out)
     return true;
 }
 
-bool CustodyLedger::GetLiveBidKey(uint32 auctionId, std::string& out)
-{
-    QueryResult* result = CharacterDatabase.PQuery(
-        "SELECT `idem_key` FROM `custody_ledger` "
-        "WHERE `auction_id`=%u AND `role`=%u AND `state`=%u LIMIT 1",
-        auctionId, uint32(ROLE_BID), uint32(CST_RESERVED));
-    if (!result)
-    {
-        return false;
-    }
-
-    out = result->Fetch()[0].GetCppString();
-    delete result;
-    return true;
-}
-
 bool CustodyLedger::GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out)
 {
     // Fetch every live bid row (kind=GOLD, role=BID, state=RESERVED) so we can

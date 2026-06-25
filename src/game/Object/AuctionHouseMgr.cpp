@@ -518,12 +518,11 @@ void AuctionHouseMgr::SendAuctionWonMailInTransaction(AuctionEntry* auction, Cus
             });
         }
 
-        // (2) Defer RemoveAItem + itemGuidLow=0 (legacy :207-208 ran before the
-        //     mail; SendMailToInTransaction appends its own push AFTER this).
-        def.effects.push_back([savedItemGuidLow, auction]()
+        // (2) Defer RemoveAItem (legacy :207-208 ran before the mail;
+        //     SendMailToInTransaction appends its own push AFTER this).
+        def.effects.push_back([savedItemGuidLow]()
         {
             sAuctionMgr.RemoveAItem(savedItemGuidLow);
-            auction->itemGuidLow = 0;
         });
 
         // (3) Co-commit the winner mail; its online push closure is appended AFTER
@@ -538,13 +537,12 @@ void AuctionHouseMgr::SendAuctionWonMailInTransaction(AuctionEntry* auction, Cus
         // DELETE the item_instance row IN-TXN (appends to the caller's open txn).
         CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", savedItemGuidLow);
 
-        // Defer RemoveAItem + itemGuidLow=0 + the live `delete pItem` (X5: the
-        // destroy must run only after the checked commit succeeds, NOT inside the
-        // txn -- on rollback the row survives and so must the live Item*).
-        def.effects.push_back([savedItemGuidLow, auction, pItem]()
+        // Defer RemoveAItem + the live `delete pItem` (X5: the destroy must run
+        // only after the checked commit succeeds, NOT inside the txn -- on
+        // rollback the row survives and so must the live Item*).
+        def.effects.push_back([savedItemGuidLow, pItem]()
         {
             sAuctionMgr.RemoveAItem(savedItemGuidLow);
-            auction->itemGuidLow = 0;
             delete pItem;
         });
     }

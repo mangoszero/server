@@ -166,24 +166,6 @@ namespace CustodyLedger
     bool Get(std::string const& idemKey, CustodyRow& out);
 
     /**
-     * @brief Fetch the idem_key of the live (non-terminal) bid row for an
-     *        auction.
-     *
-     * Selects the single CST_RESERVED ROLE_BID row for @p auctionId. There is at
-     * most one live bid row per auction (spec 5.2). Issues a synchronous SELECT;
-     * safe to call outside a transaction.
-     *
-     * @param auctionId Auction entry id to probe.
-     * @param out       Populated with the row's idem_key on success.
-     * @return true if a live bid row was found.
-     *
-     * @deprecated Superseded for the S2 bid seam by GetSingleLiveBidRow, which
-     *             validates uniqueness and returns the full row for fail-closed
-     *             owner/amount checks (spec I1). Retained for non-validating callers.
-     */
-    bool GetLiveBidKey(uint32 auctionId, std::string& out);
-
-    /**
      * @brief Fetch the single live (CST_RESERVED ROLE_BID CUSTODY_GOLD) bid row
      *        for an auction, validated for uniqueness.
      *
