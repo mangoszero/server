@@ -202,13 +202,18 @@ namespace CustodyLedger
     /**
      * @brief Allocate the next per-event bid sequence for an auction.
      *
-     * Returns COUNT(*) of bid rows (any state) for @p auctionId so each
+     * Returns MAX(id) of bid rows (any state) for @p auctionId so each
      * place-bid event gets a fresh, non-colliding idem_key
      * (e.g. "bid:<auc>:<seq>") even after a rollback-then-rebid (spec 5.2/R-C2).
+     * Using MAX(id) rather than COUNT(*) ensures the sequence is monotonic and
+     * collision-free across TTL pruning: the auto-increment PK only ever
+     * increases, so deleting terminal rows via DeleteTerminalOlderThan cannot
+     * cause a future call to return a value that matches a still-present row.
      * Issues a synchronous SELECT; safe to call outside a transaction.
      *
      * @param auctionId Auction entry id.
-     * @return The next sequence number to use for a new bid row.
+     * @return MAX(id) of existing bid rows for the auction (0 if none), used
+     *         as the collision-free suffix of the new bid's idem_key.
      */
     uint32 NextBidSeq(uint32 auctionId);
 

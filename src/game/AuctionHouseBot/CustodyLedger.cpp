@@ -189,8 +189,14 @@ bool CustodyLedger::GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out)
 
 uint32 CustodyLedger::NextBidSeq(uint32 auctionId)
 {
+    // Use MAX(id) rather than COUNT(*): the auto-increment PK is strictly
+    // monotonic and never decreases after row deletion, so the returned value
+    // is always greater than every existing bid row's suffix.  COUNT(*) would
+    // decrease when DeleteTerminalOlderThan prunes terminal rows, causing a
+    // regenerated suffix to collide with a still-present terminal row's
+    // idem_key and trigger a UNIQUE constraint violation.
     QueryResult* result = CharacterDatabase.PQuery(
-        "SELECT COUNT(*) FROM `custody_ledger` "
+        "SELECT COALESCE(MAX(`id`), 0) FROM `custody_ledger` "
         "WHERE `auction_id`=%u AND `role`=%u",
         auctionId, uint32(ROLE_BID));
     if (!result)

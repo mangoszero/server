@@ -1148,7 +1148,9 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
 
         // Reserve the new bidder's full bid (debits -newbid + SaveInventory).
         // Mirrors UpdateBid's `if (newbidder) ModifyMoney(-newbid)`.
-        // one bid row per place-bid event; NextBidSeq COUNT reflects only committed prior events, so keys never collide.
+        // NextBidSeq returns MAX(id) of existing bid rows: monotonic, never
+        // decreases after TTL pruning, so the suffix is always strictly greater
+        // than every existing row's suffix -- UNIQUE constraint cannot fire.
         std::string newBidKey = "bid:" + std::to_string(Id) + ":" +
                                 std::to_string(CustodyLedger::NextBidSeq(Id));
         CustodyService::ReserveGold(def, newbidder ? newbidder->GetGUIDLow() : 0,
