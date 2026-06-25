@@ -71,6 +71,7 @@
 #include "AFThread.h"
 #include "RAThread.h"
 #include "WorkerSupervisor.h"
+#include "MangosdTest.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
@@ -321,13 +322,14 @@ int main(int argc, char** argv)
     ///- Command line parsing
     char const* cfg_file = MANGOSD_CONFIG_LOCATION;
 
-    char const* options = ":a:c:s:";
+    char const* options = ":a:c:s:t:";
 
     ACE_Get_Opt cmd_opts(argc, argv, options);
     cmd_opts.long_option("version", 'v', ACE_Get_Opt::NO_ARG);
     cmd_opts.long_option("ahbot", 'a', ACE_Get_Opt::ARG_REQUIRED);
 
     char serviceDaemonMode = '\0';
+    std::string testMode;
 
     int option;
     while ((option = cmd_opts()) != EOF)
@@ -375,6 +377,9 @@ int main(int argc, char** argv)
                 }
                 break;
             }
+            case 't':
+                testMode = cmd_opts.opt_arg();
+                break;
             case ':':
                 sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
                 usage(argv[0]);
@@ -483,6 +488,13 @@ int main(int argc, char** argv)
     {
         Log::WaitBeforeContinueIfNeed();
         return 1;
+    }
+
+    if (!testMode.empty())
+    {
+        int rc = RunMangosdTest(testMode);
+        sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
+        return rc;
     }
 
     ///- Set Realm to Offline, if crash happens. Only used once.
