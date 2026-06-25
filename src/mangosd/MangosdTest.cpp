@@ -1,6 +1,10 @@
 #include "MangosdTest.h"
 #include "Log.h"
 #include "Database/DatabaseEnv.h"
+#include "Mail.h"
+#include "ObjectMgr.h"
+#include "ObjectGuid.h"
+#include "AuctionHouseBot/CustodyDeferred.h"
 #include <cstdio>
 #include <memory>
 
@@ -86,6 +90,73 @@ static int RunCommitTest()
     return 2;
 }
 
+/// Self-test for MailDraft::SendMailToInTransaction + CustodyDeferred: proves
+/// the co-commit variant appends the `mail` row to the CALLER's open
+/// transaction (no own Begin/Commit) and that running the deferred queue after
+/// a checked commit is safe. Uses existing offline character guid 1 (which has
+/// an account, so the offline path writes a row). Returns 0 on pass.
+static int RunMailTest()
+{
+    bool pass = true;
+
+    CharacterDatabase.AllowAsyncTransactions();
+
+    // Seed mail ids from MAX(mail.id)+1 so GenerateMailID() does not collide
+    // with existing rows (world data is NOT loaded under -t).
+    sObjectMgr.SetHighestGuids();
+
+    // Clean slate from any prior run.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `money`=123 "
+        "AND `subject`='custodytest'");
+
+    // Append the mail to OUR open transaction, then checked-commit, then run
+    // the deferred queue (offline receiver => effects empty, items deferred).
+    CharacterDatabase.BeginTransaction();
+    MailDraft d("custodytest", "b");
+    d.SetMoney(123);
+    CustodyDeferred def;
+    d.SendMailToInTransaction(MailReceiver(ObjectGuid(HIGHGUID_PLAYER, uint32(1))),
+                              MailSender(MAIL_AUCTION, uint32(0)), def);
+    bool ok = CharacterDatabase.CommitTransactionChecked();
+    if (!ok)
+    {
+        printf("mail FAIL: CommitTransactionChecked returned false\n");
+        pass = false;
+        def.discardItems();
+    }
+    else
+    {
+        def.run();
+        def.discardItems();
+    }
+
+    // The mail row must have co-committed in our transaction.
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`=1 AND `money`=123 "
+            "AND `subject`='custodytest'"));
+        if (!res || res->Fetch()[0].GetUInt64() != 1)
+        {
+            printf("mail FAIL: co-committed mail row not found (expected 1)\n");
+            pass = false;
+        }
+    }
+
+    // Clean up.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `money`=123 "
+        "AND `subject`='custodytest'");
+
+    if (pass)
+    {
+        printf("mail OK\n");
+        return 0;
+    }
+
+    return 2;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -97,6 +168,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "commit")
     {
         return RunCommitTest();
+    }
+
+    if (name == "mail")
+    {
+        return RunMailTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());
