@@ -574,6 +574,7 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
         std::string aucId = std::to_string(AH->Id);
         CustodyService::EscrowItem(AH->owner, AH->itemGuidLow, "item:" + aucId, AH->Id);
         CustodyService::ReserveGoldAlreadyDebited(AH->owner, deposit, "dep:" + aucId, AH->Id, ROLE_DEPOSIT);
+        CustodyService::MaybeCrash("pre-commit");
         if (!CharacterDatabase.CommitTransactionChecked())
         {
             // FIX X6: durable rollback -> UNDO the in-memory mutations
@@ -640,6 +641,8 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
             sLog.outError("custody S1: create txn rolled back for auction %u; live state restored", phantomId);
             return;
         }
+
+        CustodyService::MaybeCrash("pre-deferred");
     }
     else
     {
@@ -817,8 +820,10 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         bool const stillActive = auction->UpdateBidCustody(price, pl, def, liveBidKey);
         (void)stillActive;
 
+        CustodyService::MaybeCrash("pre-commit");
         if (CharacterDatabase.CommitTransactionChecked())
         {
+            CustodyService::MaybeCrash("pre-deferred");
             def.run();          // ordered live effects (command-result, notify/mail pushes, buyout win + delete)
         }
         else
@@ -1023,8 +1028,10 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
             delete self;
         });
 
+        CustodyService::MaybeCrash("pre-commit");
         if (CharacterDatabase.CommitTransactionChecked())
         {
+            CustodyService::MaybeCrash("pre-deferred");
             def.run();          // ordered live effects (refund notify/mail, item return, command-result, OnRemove, delete)
         }
         else

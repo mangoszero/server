@@ -31,10 +31,17 @@
 #include "Mail.h"
 #include "Player.h"
 
+#include <cstdio>
 #include <ctime>
 #include <functional>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace
 {
@@ -337,6 +344,16 @@ void CustodyService::DeferEffect(CustodyDeferred& d,
 std::string CustodyService::CrashPhase()
 {
     return sConfig.GetStringDefault("AH.Service.CustodyCrashAt", "");
+}
+
+void CustodyService::MaybeCrash(std::string const& phase)
+{
+    if (CrashPhase() == phase)
+    {
+        sLog.outError("custody crash-injection: _exit(3) at phase '%s' (TEST ONLY)", phase.c_str());
+        fflush(stdout);
+        _exit(3);
+    }
 }
 
 void CustodyService::ReconcileScan(bool dryRun, std::vector<CustodyRow>& orphans)

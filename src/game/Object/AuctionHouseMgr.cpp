@@ -1039,8 +1039,10 @@ void AuctionHouseObject::Update()
                     CustodyDeferred def;
                     CharacterDatabase.BeginTransaction();
                     old->second->AuctionBidWinningCustody(NULL, def);
+                    CustodyService::MaybeCrash("pre-commit");
                     if (CharacterDatabase.CommitTransactionChecked())
                     {
+                        CustodyService::MaybeCrash("pre-deferred");
                         def.run();
                     }
                     else
@@ -1072,8 +1074,10 @@ void AuctionHouseObject::Update()
                     CustodyDeferred def;
                     CharacterDatabase.BeginTransaction();
                     old->second->ExpireUnsoldCustody(def);
+                    CustodyService::MaybeCrash("pre-commit");
                     if (CharacterDatabase.CommitTransactionChecked())
                     {
+                        CustodyService::MaybeCrash("pre-deferred");
                         def.run();
                     }
                     else

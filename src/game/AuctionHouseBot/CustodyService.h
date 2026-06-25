@@ -199,6 +199,11 @@ namespace CustodyService
     /// (empty = off, "pre-commit", "pre-deferred").  Never set on a live realm.
     std::string CrashPhase();
 
+    /// TEST ONLY. If AH.Service.CustodyCrashAt == @p phase, flush + _exit(3) to
+    /// simulate process death at that custody-seam transition. No-op when the
+    /// config is empty (the live default), so it is inert on a real realm.
+    void MaybeCrash(std::string const& phase);
+
     /**
      * @brief Audit custody-ledger drift.
      *
