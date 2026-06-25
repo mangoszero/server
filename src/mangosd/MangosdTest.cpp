@@ -4,6 +4,7 @@
 #include "Mail.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
+#include "AuctionHouseMgr.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
@@ -333,6 +334,171 @@ static int RunCustodyTest()
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:crud%%'");
+    CharacterDatabase.CommitTransactionChecked();
+
+    // ================================================================ reconcile
+    // Task 13: ReconcileScan flags custody drift and DeleteTerminalOlderThan
+    // prunes only old terminal rows.
+    static AuctionHouseEntry testHouse = { 7, 0, 0, 0 };
+    AuctionHouseObject* testAuctions = sAuctionMgr.GetAuctionsMap(AUCTION_HOUSE_NEUTRAL);
+    uint32 const liveAuctionId = 970002;
+    uint32 const missingItemAuctionId = 970003;
+    uint64 const now = static_cast<uint64>(time(NULL));
+    uint64 const oldTime = now > 7200 ? now - 7200 : 1;
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:recon:%'");
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
+        "('item:970002','dep:970002','item:970003','dep:970003')");
+    testAuctions->RemoveAuction(liveAuctionId);
+    testAuctions->RemoveAuction(missingItemAuctionId);
+
+    AuctionEntry* liveAuction = new AuctionEntry;
+    liveAuction->Id = liveAuctionId;
+    liveAuction->itemGuidLow = 880002;
+    liveAuction->itemTemplate = 25;
+    liveAuction->itemCount = 1;
+    liveAuction->itemRandomPropertyId = 0;
+    liveAuction->owner = 1001;
+    liveAuction->startbid = 10;
+    liveAuction->bid = 0;
+    liveAuction->buyout = 0;
+    liveAuction->expireTime = time(NULL) + HOUR;
+    liveAuction->bidder = 0;
+    liveAuction->deposit = 5;
+    liveAuction->auctionHouseEntry = &testHouse;
+    testAuctions->AddAuction(liveAuction);
+
+    AuctionEntry* missingItemAuction = new AuctionEntry;
+    missingItemAuction->Id = missingItemAuctionId;
+    missingItemAuction->itemGuidLow = 880003;
+    missingItemAuction->itemTemplate = 25;
+    missingItemAuction->itemCount = 1;
+    missingItemAuction->itemRandomPropertyId = 0;
+    missingItemAuction->owner = 1002;
+    missingItemAuction->startbid = 10;
+    missingItemAuction->bid = 0;
+    missingItemAuction->buyout = 0;
+    missingItemAuction->expireTime = time(NULL) + HOUR;
+    missingItemAuction->bidder = 0;
+    missingItemAuction->deposit = 5;
+    missingItemAuction->auctionHouseEntry = &testHouse;
+    testAuctions->AddAuction(missingItemAuction);
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:recon:orphan','%u','%u','%u','%u','0','0','0','970001','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_RESERVED), 1000, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('item:970002','%u','%u','%u','%u','0','0','880002','970002','" UI64FMTD "','0')",
+        uint32(CUSTODY_ITEM), uint32(ROLE_ITEM), uint32(CST_RESERVED), 1001, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('dep:970002','%u','%u','%u','%u','0','5','0','970002','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_RESERVED), 1001, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('dep:970003','%u','%u','%u','%u','0','5','0','970003','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_RESERVED), 1002, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:recon:old-terminal','%u','%u','%u','%u','0','0','0','970004','" UI64FMTD "','" UI64FMTD "')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_TERMINAL_OK), 1004, oldTime, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:recon:recent-terminal','%u','%u','%u','%u','0','0','0','970005','" UI64FMTD "','" UI64FMTD "')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_TERMINAL_BACK), 1005, now, now);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("custody FAIL: reconcile seed commit returned false\n");
+        pass = false;
+    }
+
+    {
+        std::vector<CustodyRow> drift;
+        CustodyService::ReconcileScan(true, drift);
+        bool sawOrphan = false;
+        bool sawCleanLive = false;
+        bool sawMissingItem = false;
+        for (size_t i = 0; i < drift.size(); ++i)
+        {
+            if (drift[i].idemKey == "test:recon:orphan")
+            {
+                sawOrphan = true;
+            }
+            if (drift[i].auctionId == liveAuctionId)
+            {
+                sawCleanLive = true;
+            }
+            if (drift[i].idemKey == "item:970003")
+            {
+                sawMissingItem = true;
+            }
+        }
+        if (!sawOrphan)
+        {
+            printf("custody FAIL: reconcile did not flag orphan non-terminal row\n");
+            pass = false;
+        }
+        if (sawCleanLive)
+        {
+            printf("custody FAIL: reconcile flagged complete live custody auction\n");
+            pass = false;
+        }
+        if (!sawMissingItem)
+        {
+            printf("custody FAIL: reconcile did not flag live auction missing item row\n");
+            pass = false;
+        }
+    }
+
+    {
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::DeleteTerminalOlderThan(now - 3600);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            printf("custody FAIL: reconcile prune commit returned false\n");
+            pass = false;
+        }
+
+        CustodyRow row;
+        if (CustodyLedger::Get("test:recon:old-terminal", row))
+        {
+            printf("custody FAIL: old terminal row was not pruned\n");
+            pass = false;
+        }
+        if (!CustodyLedger::Get("test:recon:recent-terminal", row))
+        {
+            printf("custody FAIL: recent terminal row was pruned\n");
+            pass = false;
+        }
+    }
+
+    testAuctions->RemoveAuction(liveAuctionId);
+    testAuctions->RemoveAuction(missingItemAuctionId);
+    delete liveAuction;
+    delete missingItemAuction;
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:recon:%%'");
+    CharacterDatabase.PExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
+        "('item:970002','dep:970002','item:970003','dep:970003')");
     CharacterDatabase.CommitTransactionChecked();
 
     // ================================================================ primitive

@@ -55,6 +55,8 @@
 #include "AccountMgr.h"
 #include "AuctionHouseMgr.h"
 #include "AuctionHouseBot/AuctionIntentExecutor.h"
+#include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyService.h"
 #include "ObjectMgr.h"
 #include "CreatureEventAIMgr.h"
 #include "GuildMgr.h"
@@ -1903,6 +1905,30 @@ void World::Update(uint32 diff)
         // It is self-throttled to once/hour internally, so calling it on every
         // WUPDATE_AHBOT tick in either mode is cheap and idempotent.
         sAuctionBot.PurgeMailedItemsTick();
+
+        // Custody drift audit + terminal-row TTL prune. This is intentionally
+        // a fixed retention constant, not a config key, so no mangosd.conf
+        // version bump is required for Task 13.
+        static uint64 s_nextCustodyReconcileTime = 0;
+        uint64 const now = static_cast<uint64>(GetGameTime());
+        uint64 const custodyTerminalRetention = 30 * DAY;
+        if (now >= s_nextCustodyReconcileTime)
+        {
+            std::vector<CustodyRow> drift;
+            CustodyService::ReconcileScan(true, drift);
+            if (!drift.empty())
+            {
+                sLog.outError("custody reconcile sweep: %u drift row(s) detected",
+                              uint32(drift.size()));
+            }
+
+            if (now > custodyTerminalRetention)
+            {
+                CustodyLedger::DeleteTerminalOlderThan(now - custodyTerminalRetention);
+            }
+
+            s_nextCustodyReconcileTime = now + HOUR;
+        }
 
         m_timers[WUPDATE_AHBOT].Reset();
     }

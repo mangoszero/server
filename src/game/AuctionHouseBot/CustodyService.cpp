@@ -26,12 +26,150 @@
 
 #include "Config/Config.h"
 #include "CustodyLedger.h"
+#include "AuctionHouseMgr.h"
+#include "Log.h"
 #include "Mail.h"
 #include "Player.h"
 
 #include <ctime>
 #include <functional>
 #include <string>
+#include <vector>
+
+namespace
+{
+    uint64 const CUSTODY_RECONCILE_MIN_ROW_AGE = 60;         // seconds
+
+    bool IsMature(CustodyRow const& row, uint64 now)
+    {
+        return row.createdTime == 0 || row.createdTime + CUSTODY_RECONCILE_MIN_ROW_AGE <= now;
+    }
+
+    AuctionEntry* FindLiveAuction(uint32 auctionId)
+    {
+        for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
+        {
+            AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
+            AuctionEntry* auction = auctions->GetAuction(auctionId);
+            if (auction)
+            {
+                return auction;
+            }
+        }
+
+        return NULL;
+    }
+
+    bool HasMatureCustodyRow(std::vector<CustodyRow> const& rows, uint32 auctionId, uint64 now)
+    {
+        for (size_t i = 0; i < rows.size(); ++i)
+        {
+            if (rows[i].auctionId == auctionId && IsMature(rows[i], now))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    CustodyRow ExpectedRow(std::string const& key, uint8 kind, uint8 role,
+                           uint32 ownerGuid, uint32 amount, uint32 itemGuid,
+                           uint32 auctionId)
+    {
+        CustodyRow row;
+        row.id = 0;
+        row.idemKey = key;
+        row.kind = kind;
+        row.role = role;
+        row.state = CST_RESERVED;
+        row.ownerGuid = ownerGuid;
+        row.beneficiaryGuid = 0;
+        row.amount = amount;
+        row.itemGuid = itemGuid;
+        row.auctionId = auctionId;
+        row.createdTime = 0;
+        row.resolvedTime = 0;
+        return row;
+    }
+
+    void AddDrift(std::vector<CustodyRow>& out, CustodyRow const& row,
+                  char const* reason)
+    {
+        out.push_back(row);
+        sLog.outError("custody drift: %s key=%s auction=%u kind=%u role=%u state=%u",
+                      reason, row.idemKey.c_str(), row.auctionId,
+                      uint32(row.kind), uint32(row.role), uint32(row.state));
+    }
+
+    bool MatchesExpected(CustodyRow const& row, uint8 kind, uint8 role,
+                         uint32 ownerGuid, uint32 amount, uint32 itemGuid,
+                         uint32 auctionId)
+    {
+        return row.kind == kind &&
+               row.role == role &&
+               row.state == CST_RESERVED &&
+               row.ownerGuid == ownerGuid &&
+               row.amount == amount &&
+               row.itemGuid == itemGuid &&
+               row.auctionId == auctionId;
+    }
+
+    void CheckExpectedKey(std::vector<CustodyRow>& drift, std::string const& key,
+                          uint8 kind, uint8 role, uint32 ownerGuid,
+                          uint32 amount, uint32 itemGuid, uint32 auctionId,
+                          char const* reason)
+    {
+        CustodyRow row;
+        if (!CustodyLedger::Get(key, row))
+        {
+            AddDrift(drift, ExpectedRow(key, kind, role, ownerGuid, amount, itemGuid, auctionId), reason);
+            return;
+        }
+
+        if (!MatchesExpected(row, kind, role, ownerGuid, amount, itemGuid, auctionId))
+        {
+            AddDrift(drift, row, reason);
+        }
+    }
+
+    void CheckAuctionExpectedRows(AuctionEntry const* auction,
+                                  std::vector<CustodyRow>& drift)
+    {
+        std::string auctionId = std::to_string(auction->Id);
+
+        CheckExpectedKey(drift, "item:" + auctionId, CUSTODY_ITEM, ROLE_ITEM,
+                         auction->owner, 0, auction->itemGuidLow, auction->Id,
+                         "missing or invalid item row");
+
+        CheckExpectedKey(drift, "dep:" + auctionId, CUSTODY_GOLD, ROLE_DEPOSIT,
+                         auction->owner, auction->deposit, 0, auction->Id,
+                         "missing or invalid deposit row");
+
+        CustodyRow liveBidRow;
+        bool const hasLiveBid = CustodyLedger::GetSingleLiveBidRow(auction->Id, liveBidRow);
+        if (auction->bidder != 0)
+        {
+            if (!hasLiveBid)
+            {
+                AddDrift(drift, ExpectedRow("bid:" + auctionId + ":missing",
+                                            CUSTODY_GOLD, ROLE_BID,
+                                            auction->bidder, auction->bid, 0,
+                                            auction->Id),
+                         "missing live bid row");
+            }
+            else if (liveBidRow.ownerGuid != auction->bidder ||
+                     liveBidRow.amount != auction->bid)
+            {
+                AddDrift(drift, liveBidRow, "invalid live bid row");
+            }
+        }
+        else if (hasLiveBid)
+        {
+            AddDrift(drift, liveBidRow, "unexpected live bid row");
+        }
+    }
+}
 
 void CustodyService::ReserveGold(CustodyDeferred& d, uint32 ownerGuid,
                                  Player* ownerOnline, uint32 amount,
@@ -156,4 +294,48 @@ void CustodyService::DeferEffect(CustodyDeferred& d,
 std::string CustodyService::CrashPhase()
 {
     return sConfig.GetStringDefault("AH.Service.CustodyCrashAt", "");
+}
+
+void CustodyService::ReconcileScan(bool dryRun, std::vector<CustodyRow>& orphans)
+{
+    (void)dryRun;
+
+    uint64 const now = static_cast<uint64>(time(NULL));
+    std::vector<CustodyRow> nonTerminal;
+    CustodyLedger::LoadNonTerminal(nonTerminal);
+
+    for (size_t i = 0; i < nonTerminal.size(); ++i)
+    {
+        CustodyRow const& row = nonTerminal[i];
+        if (!IsMature(row, now))
+        {
+            continue;
+        }
+
+        if (!FindLiveAuction(row.auctionId))
+        {
+            AddDrift(orphans, row, "orphan row");
+        }
+    }
+
+    for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
+    {
+        AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
+        AuctionHouseObject::AuctionEntryMap const& map = auctions->GetAuctions();
+        for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = map.begin(); itr != map.end(); ++itr)
+        {
+            AuctionEntry const* auction = itr->second;
+            if (!CustodyLedger::HasRows(auction->Id))
+            {
+                continue;
+            }
+
+            if (!HasMatureCustodyRow(nonTerminal, auction->Id, now))
+            {
+                continue;
+            }
+
+            CheckAuctionExpectedRows(auction, orphans);
+        }
+    }
 }

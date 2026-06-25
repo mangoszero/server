@@ -46,6 +46,7 @@
 #include "Policies/Singleton.h"
 
 #include <string>
+#include <vector>
 
 /** \addtogroup auctionhouse
  * @{
@@ -53,6 +54,17 @@
  */
 
 INSTANTIATE_SINGLETON_1(AuctionHouseMgr);
+
+static void AuditCustodyReconcile(char const* phase)
+{
+    std::vector<CustodyRow> drift;
+    CustodyService::ReconcileScan(false, drift);
+    if (!drift.empty())
+    {
+        sLog.outError("custody reconcile %s: %u drift row(s) detected",
+                      phase, uint32(drift.size()));
+    }
+}
 
 /**
  * @brief Initializes the auction house manager.
@@ -747,6 +759,7 @@ void AuctionHouseMgr::LoadAuctions()
         bar.step();
         sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
+        AuditCustodyReconcile("boot");
         return;
     }
 
@@ -760,6 +773,7 @@ void AuctionHouseMgr::LoadAuctions()
         bar.step();
         sLog.outString();
         sLog.outString(">> Loaded 0 auctions. DB table `auction` is empty.");
+        AuditCustodyReconcile("boot");
         return;
     }
 
@@ -858,6 +872,7 @@ void AuctionHouseMgr::LoadAuctions()
     delete result;
 
     sLog.outString(">> Loaded %u auctions", AuctionCount);
+    AuditCustodyReconcile("boot");
     sLog.outString();
 }
 

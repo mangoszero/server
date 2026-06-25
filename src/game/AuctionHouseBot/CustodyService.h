@@ -43,6 +43,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 class Player;
 class MailDraft;
@@ -197,6 +198,20 @@ namespace CustodyService
     /// TEST ONLY. Returns the AH.Service.CustodyCrashAt config string
     /// (empty = off, "pre-commit", "pre-deferred").  Never set on a live realm.
     std::string CrashPhase();
+
+    /**
+     * @brief Audit custody-ledger drift.
+     *
+     * Scans non-terminal custody rows and loaded auction maps. Drift means a
+     * non-terminal row with no live auction, or a live custody auction missing
+     * one of its required non-terminal rows (`item:<id>`, `dep:<id>`, and a
+     * live bid row when `bidder != 0`). This is audit-only: @p dryRun is kept
+     * for the repair command's interface but this function never mutates state.
+     *
+     * @param dryRun  Audit-only flag; no mutations happen in either mode.
+     * @param orphans Destination vector; drift rows are appended.
+     */
+    void ReconcileScan(bool dryRun, std::vector<CustodyRow>& orphans);
 }
 
 #endif // MANGOS_CUSTODY_SERVICE_H
