@@ -467,7 +467,7 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         {
             Item* item = mailItemIter->second;
             CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", item->GetGUIDLow());
-            deferred.itemsToDestroyOnRollback.push_back(item);
+            deferred.itemsToDestroy.push_back(item);
         }
         m_items.clear();
         return;
@@ -545,6 +545,11 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
             Item* item = mailItemIter->second;
             push.items.push_back(std::make_pair(item->GetGUIDLow(), item->GetEntry()));
             push.liveItems.push_back(item);
+            // Also record the live Item* for rollback. On success run() AddMItem's
+            // them (transferring ownership to the receiving Player) so
+            // discardItems() skips onlineItems; on a failed commit run() never
+            // runs, so discardItems() frees them. Freed exactly once, no leak.
+            deferred.onlineItems.push_back(item);
         }
 
         // Ownership of the live Item* passes to the deferred push; this draft no
@@ -595,24 +600,10 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         // known instead of deleting inside the open transaction.
         for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
         {
-            deferred.itemsToDestroyOnRollback.push_back(mailItemIter->second);
+            deferred.itemsToDestroy.push_back(mailItemIter->second);
         }
         m_items.clear();
     }
-}
-
-/**
- * Destroys the live Item* objects that were to be mailed but are now orphaned
- * because the caller's transaction rolled back.
- */
-void CustodyDeferred::discardItems()
-{
-    for (std::vector<Item*>::iterator it = itemsToDestroyOnRollback.begin();
-         it != itemsToDestroyOnRollback.end(); ++it)
-    {
-        delete *it;
-    }
-    itemsToDestroyOnRollback.clear();
 }
 
 /**
