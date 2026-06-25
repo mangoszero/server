@@ -6,6 +6,7 @@
 #include "ObjectGuid.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyService.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
@@ -330,7 +331,108 @@ static int RunCustodyTest()
     }
 
     // ------------------------------------------------------------------ step 6
-    // Cleanup: remove any leftover test:crud% rows.
+    // Cleanup CRUD rows.
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:crud%%'");
+    CharacterDatabase.CommitTransactionChecked();
+
+    // ================================================================ primitive
+    // Primitive round-trip: offline owner (no ModifyMoney),
+    // ReserveGold -> RollbackGoldLedgerOnly -> assert no mail.
+
+    // Clean slate for the primitive sub-test.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:rg%%'");
+
+    // ------------------------------------------------------------------ prim 1
+    // ReserveGold with offline owner: inserts RESERVED row, no money debit.
+    {
+        CharacterDatabase.BeginTransaction();
+        CustodyDeferred def;
+        CustodyService::ReserveGold(def, 1, NULL, 50, "test:rg:1", 999,
+                                    uint8(ROLE_BID));
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        if (!ok)
+        {
+            printf("custody FAIL: prim 1 ReserveGold CommitTransactionChecked returned false\n");
+            pass = false;
+        }
+        def.run();
+        def.discardItems();
+    }
+
+    // ------------------------------------------------------------------ prim 2
+    // Row must be visible: state CST_RESERVED, amount 50.
+    {
+        CustodyRow row;
+        bool found = CustodyLedger::Get("test:rg:1", row);
+        if (!found)
+        {
+            printf("custody FAIL: prim 2 Get returned false (row not found)\n");
+            pass = false;
+        }
+        else
+        {
+            if (row.state != CST_RESERVED)
+            {
+                printf("custody FAIL: prim 2 state expected %u got %u\n",
+                    uint32(CST_RESERVED), uint32(row.state));
+                pass = false;
+            }
+            if (row.amount != 50)
+            {
+                printf("custody FAIL: prim 2 amount expected 50 got %u\n",
+                    row.amount);
+                pass = false;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ prim 3
+    // RollbackGoldLedgerOnly: ledger-only, no mail; state must flip to BACK.
+    {
+        CharacterDatabase.BeginTransaction();
+        CustodyService::RollbackGoldLedgerOnly("test:rg:1");
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        if (!ok)
+        {
+            printf("custody FAIL: prim 3 RollbackGoldLedgerOnly CommitTransactionChecked returned false\n");
+            pass = false;
+        }
+
+        CustodyRow row;
+        bool found = CustodyLedger::Get("test:rg:1", row);
+        if (!found)
+        {
+            printf("custody FAIL: prim 3 Get returned false after RollbackGoldLedgerOnly\n");
+            pass = false;
+        }
+        else if (row.state != CST_TERMINAL_BACK)
+        {
+            printf("custody FAIL: prim 3 state expected %u got %u\n",
+                uint32(CST_TERMINAL_BACK), uint32(row.state));
+            pass = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ prim 4
+    // The ledger-only rollback must NOT have sent any mail for receiver 1.
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`=1"
+            " AND `subject` LIKE 'test:rg%%'"));
+        uint64 cnt = res ? res->Fetch()[0].GetUInt64() : 0u;
+        if (cnt != 0)
+        {
+            printf("custody FAIL: prim 4 ledger-only rollback sent unexpected mail"
+                   " (count=%u)\n", uint32(cnt));
+            pass = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ final cleanup
+    // Remove all test:% rows from both runs.
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:%%'");
