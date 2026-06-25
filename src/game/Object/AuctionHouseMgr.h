@@ -253,9 +253,10 @@ class AuctionHouseMgr
         /// caller's open transaction (no own Begin/Commit), the "item:<Id>" escrow
         /// row flips to TERMINAL_OK (DeliverItem on the return branch;
         /// CommitGoldLedgerOnly on the destroy branch), and the online owner's
-        /// SMSG_AUCTION_OWNER_NOTIFICATION (expired form) + RemoveAItem +
-        /// itemGuidLow=0 (+ live item destroy on the no-owner branch) are deferred
-        /// into @p def in legacy order (notify-then-mail, spec S6 / C7).
+        /// SMSG_AUCTION_OWNER_NOTIFICATION (expired form) + RemoveAItem (+ live
+        /// item destroy on the no-owner branch) are deferred into @p def in legacy
+        /// order (notify-then-mail, spec S6 / C7). itemGuidLow is intentionally NOT
+        /// zeroed (success deletes the AuctionEntry; rollback needs the GUID).
         void SendAuctionExpiredMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
 
         /// Custody co-commit variant of SendAuctionSuccessfulMail: same owner-exists

@@ -334,11 +334,13 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
  * CharacterDatabase transaction and flips the "item:<Id>" escrow row to
  * TERMINAL_OK. The online owner's SMSG_AUCTION_OWNER_NOTIFICATION (the "expired"
  * form, sold=false, bid/outbid/bidder all 0) is deferred into @p def BEFORE the
- * mail push so packet order stays notify-then-mail (legacy :307). RemoveAItem +
- * itemGuidLow=0 (+ live item destroy on the no-owner branch) are also deferred
- * in legacy order (spec S6 / C7). Reads auction->owner/itemGuidLow, so the
- * caller MUST call this before mutating them (there is none in S6; expire
- * deletes the auction).
+ * mail push so packet order stays notify-then-mail (legacy :307). RemoveAItem
+ * (+ live item destroy on the no-owner branch) is deferred in legacy order (spec
+ * S6 / C7). itemGuidLow is intentionally NOT zeroed on the custody path: success
+ * deletes the AuctionEntry, and on rollback the original GUID must survive for
+ * the next tick's re-resolution. Reads auction->owner/itemGuidLow, so the caller
+ * MUST call this before mutating them (there is none in S6; expire deletes the
+ * auction).
  *
  * @param auction The expired (no-bidder) auction entry.
  * @param def     Ordered deferred-effects queue for this co-commit.
@@ -350,6 +352,14 @@ void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction,
     if (!pItem)
     {
         sLog.outError("Auction item (GUID: %u) not found, and lost.", auction->itemGuidLow);
+        // The item is already absent from the live AH cache (legacy loses it too,
+        // sending nothing). Still terminalize the "item:<Id>" escrow row
+        // ledger-only: the caller (ExpireUnsoldCustody) deletes the auction
+        // UNCONDITIONALLY after this returns, so leaving the row CST_RESERVED
+        // would orphan a non-terminal custody row with no live auction (breaking
+        // the reconciliation invariant). Do NOT touch item_instance here -- legacy
+        // does not, and the DB row's state is unknown when the cache has drifted.
+        CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(auction->Id));
         return;
     }
 
