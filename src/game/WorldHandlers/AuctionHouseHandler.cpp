@@ -502,7 +502,69 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
         CustodyService::ReserveGoldAlreadyDebited(AH->owner, deposit, "dep:" + aucId, AH->Id, ROLE_DEPOSIT);
         if (!CharacterDatabase.CommitTransactionChecked())
         {
-            sLog.outError("custody S1: create transaction rolled back for auction %u", AH->Id);
+            // FIX X6: durable rollback -> UNDO the in-memory mutations
+            // AddAuction(ownTransaction=false) applied before the (now reverted)
+            // DB writes. The checked commit failed, so CharacterDatabase rolled
+            // back to the pre-seam DB state (gold intact, character_inventory link
+            // intact, item_instance row intact, no custody_ledger rows). Live
+            // memory, however, still holds: the debited deposit, the item moved out
+            // of the seller's bag + into the AH cache, and a PHANTOM AuctionEntry in
+            // the in-memory map (biddable, with no DB row). Restore live state to
+            // exactly match the rolled-back DB, then report the DB error.
+            uint32 const phantomId = AH->Id;
+            uint32 const itemGuidLow = AH->itemGuidLow;
+
+            // (1) Drop the phantom auction from the in-memory map and free it.
+            //     RemoveAuction only erases the map slot (legacy cancel deletes the
+            //     entry itself), so delete AH after.
+            auctionHouse->RemoveAuction(phantomId);
+
+            // (2) Drop the item from the AH item cache (mAitems). The Item* is NOT
+            //     freed by RemoveAItem -- it is the same live object AddAuction moved
+            //     out of the bag, so it survives for return-to-inventory below.
+            sAuctionMgr.RemoveAItem(itemGuidLow);
+
+            // (3) Return the item to the seller's inventory -- the canonical inverse
+            //     of MoveItemFromInventory (see HandleMailTakeItem / TradeHandler
+            //     item-return): resolve a destination with CanStoreItem, then
+            //     MoveItemToInventory with in_characterInventoryDB=true (sets the
+            //     live item ITEM_CHANGED). The item was never deleted and ownership
+            //     was not cleared on removal, so this re-attaches the same object.
+            //     No re-persist to DB is needed: the failed commit rolled the txn
+            //     back, so the durable character_inventory link + item_instance row
+            //     are STILL the seller's on disk (the success path's
+            //     SaveInventoryAndGoldToDB DELETE of the inventory link never
+            //     committed). This step only re-syncs in-memory state.
+            ItemPosCountVec dest;
+            if (pl->CanStoreItem(NULL_BAG, NULL_SLOT, dest, it, false) == EQUIP_ERR_OK)
+            {
+                pl->MoveItemToInventory(dest, it, true, true);
+            }
+            else
+            {
+                // Should be unreachable: we are returning the item to the very
+                // inventory it left in this same synchronous handler (no other
+                // packet ran in between to consume the slot). Even so, there is NO
+                // durable item loss -- the rolled-back DB still holds the item as
+                // the seller's, so it reloads into the bag on next login. Log loudly
+                // rather than risk a duplicate by force-storing. (TradeHandler's
+                // item-return fallback takes the same log-only stance.)
+                sLog.outError("custody S1: seller %u could not re-store item %u on rollback of "
+                              "auction %u; item remains durably the seller's on disk (reloads on relog)",
+                              pl->GetGUIDLow(), itemGuidLow, phantomId);
+            }
+
+            // (4) Refund the in-memory deposit debit applied at :493. The DB gold
+            //     already rolled back; this re-syncs memory (no re-save, mirroring
+            //     the S2 bid-rollback refund).
+            pl->ModifyMoney(int32(deposit));
+
+            // (5) Free the phantom entry and report the failure to the client in
+            //     place of the AUCTION_OK that the success path would have sent.
+            delete AH;
+            SendAuctionCommandResult(NULL, AUCTION_STARTED, AUCTION_ERR_DATABASE);
+            sLog.outError("custody S1: create txn rolled back for auction %u; live state restored", phantomId);
+            return;
         }
     }
     else
