@@ -410,6 +410,11 @@ class WorldSession
         /// custody co-commit (spec I5).
         void SendAuctionBidderNotificationData(uint32 houseId, uint32 id, uint32 bidder, uint32 bid, uint32 outbid, uint32 itemTemplate, int32 itemRand, bool won);
         void SendAuctionOwnerNotification(AuctionEntry* auction, bool sold);
+        /// By-value variant of SendAuctionOwnerNotification: builds
+        /// SMSG_AUCTION_OWNER_NOTIFICATION from raw values snapshotted before a
+        /// custody co-commit, so a deferred closure can fire it after the
+        /// AuctionEntry is gone (spec I5).
+        void SendAuctionOwnerNotificationData(uint32 houseId, uint32 id, uint32 bid, uint32 outbid, uint32 bidderGuidLow, uint32 itemTemplate, int32 itemRand, bool sold);
         void SendAuctionRemovedNotification(AuctionEntry* auction);
         static void SendAuctionOutbiddedMail(AuctionEntry* auction);
         /// Custody co-commit variant of SendAuctionOutbiddedMail: defers the

@@ -105,6 +105,22 @@ struct AuctionEntry
     void DeleteFromDB() const;
     void SaveToDB() const;
     void AuctionBidWinning(Player* bidder = NULL);
+    /// Custody co-commit mirror of AuctionBidWinning: pays the seller, delivers
+    /// the item to the winner, nets the deposit/bid ledger rows, deletes the
+    /// auction row, and defers every in-memory effect (notifications, mail pushes,
+    /// AH cache mutations, RemoveAuction, delete this) into @p def. Every DB write
+    /// appends to the caller's ALREADY-OPEN CharacterDatabase transaction; the
+    /// caller checked-commits it then runs @p def (spec Sec 6 S4). @p newbidder is
+    /// the online winner (buyout path) or NULL (expiry path).
+    ///
+    /// @p knownBidKey is the idem_key of the live bid row to commit-net. It is
+    /// REQUIRED on the buyout path: the bid row was just RESERVED in the same
+    /// still-open transaction, so a synchronous SELECT (GetSingleLiveBidRow) cannot
+    /// see it yet -- the caller passes the key it just reserved. On the expiry path
+    /// the bid row is already committed, so the caller passes "" and this method
+    /// re-fetches + validates it via GetSingleLiveBidRow. Ignored when bidder == 0.
+    void AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& def,
+                                  std::string const& knownBidKey = "");
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
     /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
     /// custody primitives and appends every DB write to the caller's already-open
@@ -119,11 +135,11 @@ struct AuctionEntry
     /// auction has no live bid row (bidder==0 / first bid). Used directly so this
     /// method never re-looks-up (and never trusts) an unvalidated row.
     ///
-    /// The buyout guard is fail-closed at the very top: a buyout bid (newbid >=
-    /// buyout) is rejected with a false return BEFORE any debit/ledger/refund or
-    /// bid/bidder mutation (spec M1); the caller must treat false as a clean abort.
-    /// Returns true if the auction remains active (normal bid), false on a rejected
-    /// buyout bid (spec D / M1).
+    /// A buyout (newbid >= buyout) is absorbed here (Task 10): the bid is capped at
+    /// buyout, reserved/refunded as a normal bid, then the win resolves on the same
+    /// open transaction via AuctionBidWinningCustody (auction delete + cache
+    /// mutations deferred into @p def). Returns true if the auction remains active
+    /// (normal bid), false on a buyout (auction resolved + scheduled for delete).
     bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
                           std::string const& liveBidKey);
 };
@@ -222,6 +238,22 @@ class AuctionHouseMgr
         void SendAuctionWonMail(AuctionEntry* auction);
         void SendAuctionSuccessfulMail(AuctionEntry* auction);
         void SendAuctionExpiredMail(AuctionEntry* auction);
+
+        /// Custody co-commit variant of SendAuctionSuccessfulMail: same owner-exists
+        /// guard + profit math, but the seller payout mail co-commits into the
+        /// caller's open transaction (no own Begin/Commit) and the online owner-sold
+        /// notification is deferred into @p def BEFORE the mail push so packet order
+        /// stays notify-then-mail (legacy). Reads auction->bid/bidder, so the caller
+        /// MUST call this before mutating them (spec S4 / B).
+        void SendAuctionSuccessfulMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
+
+        /// Custody co-commit variant of SendAuctionWonMail: keeps the GM-log block;
+        /// the item_instance owner UPDATE (receiver-exists) or DELETE (destroy)
+        /// appends to the caller's open transaction, the winner mail co-commits via
+        /// SendMailToInTransaction, and the bidder notification + RemoveAItem +
+        /// itemGuidLow=0 (+ live item destroy on the no-receiver branch) are deferred
+        /// into @p def in legacy order (spec S4 / C).
+        void SendAuctionWonMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         static uint32 GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item* pItem);
 
         static uint32 GetAuctionHouseTeam(AuctionHouseEntry const* house);

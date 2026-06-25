@@ -182,22 +182,35 @@ void WorldSession::SendAuctionBidderNotificationData(uint32 houseId, uint32 id, 
 // this void causes on client to display: "Your auction sold"
 void WorldSession::SendAuctionOwnerNotification(AuctionEntry* auction, bool sold)
 {
+    SendAuctionOwnerNotificationData(auction->GetHouseId(), auction->Id, auction->bid,
+                                     auction->GetAuctionOutBid(), auction->bidder,
+                                     auction->itemTemplate, auction->itemRandomPropertyId, sold);
+}
+
+// by-value variant of SendAuctionOwnerNotification (spec I5)
+void WorldSession::SendAuctionOwnerNotificationData(uint32 houseId, uint32 id, uint32 bid, uint32 outbid, uint32 bidderGuidLow, uint32 itemTemplate, int32 itemRand, bool sold)
+{
+    // SMSG_AUCTION_OWNER_NOTIFICATION carries no houseId field (unlike the bidder
+    // notification); it is accepted for signature symmetry with the other by-value
+    // builders and to snapshot it alongside the other scalars.
+    (void)houseId;
+
     WorldPacket data(SMSG_AUCTION_OWNER_NOTIFICATION, (7 * 4));
-    data << uint32(auction->Id);
-    data << uint32(auction->bid);                           // if 0, client shows ERR_AUCTION_EXPIRED_S, else ERR_AUCTION_SOLD_S (works only when guid==0)
-    data << uint32(auction->GetAuctionOutBid());            // AuctionOutBid?
+    data << uint32(id);
+    data << uint32(bid);                                    // if 0, client shows ERR_AUCTION_EXPIRED_S, else ERR_AUCTION_SOLD_S (works only when guid==0)
+    data << uint32(outbid);                                 // AuctionOutBid?
 
     ObjectGuid bidder_guid = ObjectGuid();
     if (!sold)                                              // not sold yet
     {
-        bidder_guid = ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
+        bidder_guid = ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow);
     }
 
     // bidder==0 and moneyDeliveryTime==0 for expired auctions, and client shows error messages as described above
     // if bidder!=0 client updates auctions with new bid, outbid and bidderGuid
     data << bidder_guid;                                    // bidder guid
-    data << uint32(auction->itemTemplate);                  // item entry
-    data << uint32(auction->itemRandomPropertyId);
+    data << uint32(itemTemplate);                           // item entry
+    data << int32(itemRand);
 
     SendPacket(&data);
 }
@@ -674,9 +687,10 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         newOutbid = 1;
     }
 
-    // TODO(Task10): bring buyout under custody (custody-aware AuctionBidWinning that appends to the open txn + defers cache mutations), then remove the handler's !isBuyout gate.
-    bool const isBuyout = (auction->buyout != 0 && price >= auction->buyout);
-    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id) && !isBuyout)
+    // Buyout now goes through custody too (Task 10): UpdateBidCustody caps the
+    // bid at buyout, reserves/refunds as a normal bid, then routes to
+    // AuctionBidWinningCustody, all on the handler's single open transaction.
+    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
     {
         // Custody co-commit path. The success-path SendAuctionCommandResult is
         // deferred and appended FIRST (its legacy position :507 precedes
@@ -706,13 +720,14 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         }
 
         // FIX C1: snapshot the in-memory state mutated by UpdateBidCustody so a
-        // checked-commit rollback can restore it. effectiveBid == price (buyout
-        // excluded by !isBuyout, so no cap). Only the NEW bidder's wallet is
-        // debited in memory; the old bidder's refund is mail-based and rolls back
-        // with the txn, so no old-bidder restore is needed.
+        // checked-commit rollback can restore it. effectiveBid mirrors
+        // UpdateBidCustody's buyout cap (newbid = buyout when price > buyout) so the
+        // X6 refund matches the actual debit on a buyout. Only the NEW bidder's
+        // wallet is debited in memory; the old bidder's refund is mail-based and
+        // rolls back with the txn, so no old-bidder restore is needed.
         uint32 const oldBid = auction->bid;
         uint32 const oldBidder = auction->bidder;
-        uint32 const effectiveBid = price;
+        uint32 const effectiveBid = (auction->buyout && price > auction->buyout) ? auction->buyout : price;
         uint32 const bidderDebit = (oldBidder == pl->GetGUIDLow()) ? (effectiveBid - oldBid) : effectiveBid;
 
         // Capture bidder by low GUID so the deferred closure holds only uint32
@@ -731,29 +746,29 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         });
 
         CharacterDatabase.BeginTransaction();
-        // FIX M1: UpdateBidCustody fail-closes a stray buyout bid at its top
-        // before any mutation; a false return means nothing was mutated -> abort
-        // cleanly (this cannot happen given the !isBuyout gate, but is honored).
-        if (!auction->UpdateBidCustody(price, pl, def, liveBidKey))
-        {
-            CharacterDatabase.RollbackTransaction();
-            def.discardItems();
-            SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
-            sLog.outError("custody S2: UpdateBidCustody aborted (buyout reached custody) for auction %u", capId);
-            return;
-        }
+        // UpdateBidCustody mutates only deferred/DB state and returns whether the
+        // auction stays active: true = normal bid, false = BUYOUT (the win was
+        // resolved on this same open txn; the auction delete + cache mutations are
+        // deferred into def and run only on commit success). Both are success
+        // paths -> proceed to the checked commit. On the buyout path the auction is
+        // NOT deleted until def.run(), so the X6 restore below is still safe to
+        // reference auction on a commit FAILURE (def.run() did not execute).
+        bool const stillActive = auction->UpdateBidCustody(price, pl, def, liveBidKey);
+        (void)stillActive;
 
         if (CharacterDatabase.CommitTransactionChecked())
         {
-            def.run();          // ordered live effects (command-result, outbid notify/mail push)
+            def.run();          // ordered live effects (command-result, notify/mail pushes, buyout win + delete)
             def.discardItems(); // frees only offline items; online items now owned by their Players
         }
         else
         {
-            // FIX C1: durable rollback -> UNDO the in-memory mutations
-            // UpdateBidCustody applied, refund the in-memory debit, and report
-            // the DB error. Otherwise the DB reverts but live memory keeps the
-            // bid/gold and the next bid reads corrupted state.
+            // FIX C1/X6: durable rollback -> UNDO the in-memory mutations
+            // UpdateBidCustody applied, refund the in-memory debit, and report the
+            // DB error. The auction was NOT deleted (def.run() did not execute), so
+            // restoring its bid/bidder is safe for both the normal-bid and buyout
+            // paths. Otherwise the DB reverts but live memory keeps the bid/gold
+            // and the next bid reads corrupted state.
             auction->bid = oldBid;
             auction->bidder = oldBidder;
             pl->ModifyMoney(int32(bidderDebit));    // refund the debit we applied in memory
