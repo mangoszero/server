@@ -386,6 +386,9 @@ enum eConfigBoolValues
     // Recommended Or New Flag
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW_ENABLED,
     CONFIG_BOOL_REALM_RECOMMENDED_OR_NEW,
+
+    // AH Service custody escrow ledger
+    CONFIG_BOOL_AH_CUSTODY,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -608,6 +611,9 @@ class World
         {
             return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP;
         }
+
+        /// Is the AH custody escrow ledger enabled?
+        bool IsAhCustodyEnabled() const { return getConfig(CONFIG_BOOL_AH_CUSTODY); }
 
         void KickAll();
         void KickAllLess(AccountTypes sec);

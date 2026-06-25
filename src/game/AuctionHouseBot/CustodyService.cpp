@@ -24,6 +24,7 @@
 
 #include "CustodyService.h"
 
+#include "Config/Config.h"
 #include "CustodyLedger.h"
 #include "Mail.h"
 #include "Player.h"
@@ -150,4 +151,9 @@ void CustodyService::DeferEffect(CustodyDeferred& d,
                                  std::function<void()> effect)
 {
     d.effects.push_back(effect);
+}
+
+std::string CustodyService::CrashPhase()
+{
+    return sConfig.GetStringDefault("AH.Service.CustodyCrashAt", "");
 }

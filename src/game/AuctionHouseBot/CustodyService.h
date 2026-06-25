@@ -193,6 +193,10 @@ namespace CustodyService
      * @param effect Closure to execute post-commit.
      */
     void DeferEffect(CustodyDeferred& d, std::function<void()> effect);
+
+    /// TEST ONLY. Returns the AH.Service.CustodyCrashAt config string
+    /// (empty = off, "pre-commit", "pre-deferred").  Never set on a live realm.
+    std::string CrashPhase();
 }
 
 #endif // MANGOS_CUSTODY_SERVICE_H
