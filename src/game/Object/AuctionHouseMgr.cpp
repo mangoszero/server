@@ -1364,6 +1364,14 @@ void AuctionEntry::AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& 
     //    (destroy: delete pItem) are deferred by the co-commit core.
     sAuctionMgr.SendAuctionWonMailInTransaction(this, def);
 
+    // Terminalize the item escrow row: on a win the item always resolves
+    // (delivered to the winner or destroyed by SendAuctionWonMailInTransaction
+    // above), so flip "item:<Id>" -> TERMINAL_OK ledger-only. In-txn, so on
+    // rollback the flip rolls back with everything else (no orphan). Without
+    // this the "item:" row stays CST_RESERVED after the auction row is deleted
+    // -> orphaned non-terminal row (breaks reconciliation / ah repair).
+    CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(Id));
+
     // 4) Delete the auction row IN-TXN (appends to the caller's open transaction).
     this->DeleteFromDB();
 
