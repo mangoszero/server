@@ -46,9 +46,12 @@
 #include "ObjectGuid.h"
 #include "Player.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/CustodyService.h"
+#include "AuctionHouseBot/CustodyLedger.h"
 #include "Mail.h"
 #include "Util.h"
 #include "Chat.h"
+#include <string>
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -400,7 +403,23 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 
     pl->ModifyMoney(-int32(deposit));
 
-    AuctionEntry* AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl);
+    AuctionEntry* AH;
+    if (sWorld.IsAhCustodyEnabled())
+    {
+        CharacterDatabase.BeginTransaction();
+        AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl, false);
+        std::string aucId = std::to_string(AH->Id);
+        CustodyService::EscrowItem(AH->owner, AH->itemGuidLow, "item:" + aucId, AH->Id);
+        CustodyService::ReserveGoldAlreadyDebited(AH->owner, deposit, "dep:" + aucId, AH->Id, ROLE_DEPOSIT);
+        if (!CharacterDatabase.CommitTransactionChecked())
+        {
+            sLog.outError("custody S1: create transaction rolled back for auction %u", AH->Id);
+        }
+    }
+    else
+    {
+        AH = auctionHouse->AddAuction(auctionHouseEntry, it, etime, bid, buyout, deposit, pl);
+    }
 
     DETAIL_LOG("selling %s to auctioneer %s with initial bid %u with buyout %u and with time %u (in sec) in auctionhouse %u",
         itemGuid.GetString().c_str(), auctioneerGuid.GetString().c_str(), bid, buyout, etime, auctionHouseEntry->houseId);

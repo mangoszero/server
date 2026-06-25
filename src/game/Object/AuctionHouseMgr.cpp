@@ -828,9 +828,14 @@ void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player
  * @param buyout The buyout price.
  * @param deposit The deposit amount.
  * @param pl The player creating the auction.
+ * @param ownTransaction When true (default, all legacy callers) the four DB
+ *        writes are wrapped in this method's own Begin/CommitTransaction.  When
+ *        false the caller has already opened a transaction and the writes
+ *        auto-append to it (custody co-commit seam, spec S1); the in-memory
+ *        parts run identically in both cases.
  * @return Pointer to the created auction entry.
  */
-AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/)
+AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHouseEntry, Item* newItem, uint32 etime, uint32 bid, uint32 buyout, uint32 deposit, Player* pl /*= NULL*/, bool ownTransaction /*= true*/)
 {
     uint32 auction_time = uint32(etime * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
 
@@ -858,7 +863,10 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
         pl->MoveItemFromInventory(newItem->GetBagSlot(), newItem->GetSlot(), true);
     }
 
-    CharacterDatabase.BeginTransaction();
+    if (ownTransaction)
+    {
+        CharacterDatabase.BeginTransaction();
+    }
 
     if (pl)
     {
@@ -873,7 +881,10 @@ AuctionEntry* AuctionHouseObject::AddAuction(AuctionHouseEntry const* auctionHou
         pl->SaveInventoryAndGoldToDB();
     }
 
-    CharacterDatabase.CommitTransaction();
+    if (ownTransaction)
+    {
+        CharacterDatabase.CommitTransaction();
+    }
 
     return AH;
 }
