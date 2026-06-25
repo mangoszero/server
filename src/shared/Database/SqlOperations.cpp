@@ -127,6 +127,29 @@ bool SqlTransaction::Execute(SqlConnection* conn)
 }
 
 /**
+ * @brief Execute the wrapped transaction and signal its result to the caller
+ * @param conn The database connection to use
+ * @return true if the transaction committed successfully, false otherwise
+ *
+ * Runs the wrapped SqlTransaction synchronously on the worker's connection,
+ * then publishes the real Execute() result into the caller-owned promise so a
+ * blocked CommitTransactionChecked() can return it. The promise is fulfilled
+ * BEFORE the wrapped transaction is destroyed and BEFORE this op returns (the
+ * worker deletes this op immediately after Execute() returns), which is the
+ * correctness invariant: the caller's future is satisfied while its stack
+ * frame (owning the promise) is still alive and blocked.
+ */
+bool SqlTransactionResultSignal::Execute(SqlConnection* conn)
+{
+    bool ok = m_trans->Execute(conn);
+    /// set BEFORE the worker deletes this op; the caller's promise/future live
+    /// on its still-blocked stack frame, so this hand-off is race-free
+    m_result->set_value(ok);
+    delete m_trans;
+    return ok;
+}
+
+/**
  * @brief Constructor for SqlPreparedRequest
  * @param nIndex Index of the prepared statement
  * @param arg Pointer to the statement parameters
