@@ -41,6 +41,8 @@
 #include "Policies/Singleton.h"
 #include "DBCStructure.h"
 
+#include <string>
+
 /** \addtogroup auctionhouse
  * @{
  * \file
@@ -110,9 +112,20 @@ struct AuctionEntry
     /// (outbid notify/refund mail push) are queued into @p def. The outbid refund
     /// mail is sent via the static SendAuctionOutbiddedMailInTransaction, which
     /// resolves the old bidder's session itself, so no acting session is needed.
-    /// Returns true if the auction remains active (normal bid), false on buyout
-    /// (spec D / S2/S3).
-    bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def);
+    ///
+    /// @p liveBidKey is the idem_key of the existing live bid row, pre-fetched and
+    /// VALIDATED by the handler before BeginTransaction (spec I1) for the
+    /// same-bidder raise and the outbid-displacement cases; it is empty when the
+    /// auction has no live bid row (bidder==0 / first bid). Used directly so this
+    /// method never re-looks-up (and never trusts) an unvalidated row.
+    ///
+    /// The buyout guard is fail-closed at the very top: a buyout bid (newbid >=
+    /// buyout) is rejected with a false return BEFORE any debit/ledger/refund or
+    /// bid/bidder mutation (spec M1); the caller must treat false as a clean abort.
+    /// Returns true if the auction remains active (normal bid), false on a rejected
+    /// buyout bid (spec D / M1).
+    bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
+                          std::string const& liveBidKey);
 };
 
 // this class is used as auctionhouse instance

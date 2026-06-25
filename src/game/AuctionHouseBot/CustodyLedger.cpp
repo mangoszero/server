@@ -156,6 +156,32 @@ bool CustodyLedger::GetLiveBidKey(uint32 auctionId, std::string& out)
     return true;
 }
 
+bool CustodyLedger::GetSingleLiveBidRow(uint32 auctionId, CustodyRow& out)
+{
+    // Fetch every live bid row (kind=GOLD, role=BID, state=RESERVED) so we can
+    // assert there is EXACTLY ONE before trusting it (spec I1: fail closed on
+    // absent or ambiguous rows). No LIMIT -- we must see a second row if present.
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT " CUSTODY_SELECT_COLS " FROM `custody_ledger` "
+        "WHERE `auction_id`=%u AND `kind`=%u AND `role`=%u AND `state`=%u",
+        auctionId, uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED));
+    if (!result)
+    {
+        return false;
+    }
+
+    // Reject ambiguity: more than one live bid row is a fail-closed condition.
+    if (result->GetRowCount() != 1)
+    {
+        delete result;
+        return false;
+    }
+
+    FillRow(result->Fetch(), out);
+    delete result;
+    return true;
+}
+
 uint32 CustodyLedger::NextBidSeq(uint32 auctionId)
 {
     QueryResult* result = CharacterDatabase.PQuery(

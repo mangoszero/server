@@ -1110,21 +1110,25 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
  * @param def       Ordered deferred-effects queue for this co-commit.
  * @return true if the auction remains active (normal bid); false on buyout.
  */
-bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def)
+bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def,
+                                   std::string const& liveBidKey)
 {
-    // bid can't be greater buyout (identical to UpdateBid)
-    if (buyout && newbid > buyout)
+    // Fail-closed buyout guard FIRST, before any debit/ledger/refund mutation
+    // (spec M1). A buyout bid must be legacy-routed (the handler's !isBuyout gate
+    // guarantees this); if one ever reaches here, abort cleanly with no side
+    // effect so the caller can honor the false return as a no-op failure.
+    if (buyout && newbid >= buyout)
     {
-        newbid = buyout;
+        sLog.outError("custody UpdateBidCustody: buyout must be legacy-routed for auction %u", Id);
+        return false;
     }
 
     if (newbidder && newbidder->GetGUIDLow() == bidder)
     {
         // same-bidder raise: debit the DELTA and bump the live bid row amount.
         // The full-price affordability guard in the handler already gated this
-        // (spec I1). Mirrors UpdateBid's ModifyMoney(-(newbid - bid)).
-        std::string liveBidKey;
-        CustodyLedger::GetLiveBidKey(Id, liveBidKey);
+        // (spec I1). Mirrors UpdateBid's ModifyMoney(-(newbid - bid)). The live
+        // bid key was pre-fetched and VALIDATED by the handler (spec I1).
         CustodyService::TopUpBid(liveBidKey, newbid, newbid - bid, newbidder);
     }
     else
@@ -1135,8 +1139,9 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
         // (matches UpdateBid's `if (bidder)` skipping the refund -- spec R2).
         if (bidder != 0)
         {
-            std::string liveBidKey;
-            CustodyLedger::GetLiveBidKey(Id, liveBidKey);
+            // liveBidKey was pre-fetched and VALIDATED by the handler (owner_guid
+            // == bidder, amount == bid, exactly one live row) before the txn
+            // opened (spec I1), so terminalize exactly that verified row.
             CustodyService::RollbackGoldLedgerOnly(liveBidKey);
             WorldSession::SendAuctionOutbiddedMailInTransaction(this, def);
         }
@@ -1153,19 +1158,12 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
     bidder = newbidder ? newbidder->GetGUIDLow() : 0;
     bid = newbid;
 
-    if ((newbid < buyout) || (buyout == 0))                 // bid
-    {
-        // The new bidder's gold was already persisted by ReserveGold/TopUpBid
-        // (SaveInventoryAndGoldToDB), so do NOT save again. The auction UPDATE
-        // appends to the caller's open transaction.
-        CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u', `lastbid` = '%u' WHERE `id` = '%u'", bidder, bid, Id);
-        return true;
-    }
-    else                                                    // buyout — must NOT be reached: the handler routes buyouts to the legacy path until Task 10
-    {
-        sLog.outError("custody UpdateBidCustody: unexpected buyout branch for auction %u (should be legacy-routed); ignoring", Id);
-        return false;
-    }
+    // The new bidder's gold was already persisted by ReserveGold/TopUpBid
+    // (SaveInventoryAndGoldToDB), so do NOT save again. The auction UPDATE
+    // appends to the caller's open transaction. (Buyout is excluded above, so
+    // this is always the normal-bid path.)
+    CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u', `lastbid` = '%u' WHERE `id` = '%u'", bidder, bid, Id);
+    return true;
 }
 
 /** @} */

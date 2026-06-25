@@ -268,9 +268,13 @@ void WorldSession::SendAuctionOutbiddedMailInTransaction(AuctionEntry* auction, 
         // Defer the online bidder notification, snapshotting every field BY
         // VALUE (the buyout path may delete the AuctionEntry before run()).
         // Appended BEFORE the refund mail so packet order = notify-then-mail.
+        // The closure captures the old bidder's low GUID + packet scalars only
+        // (no live WorldSession*/Player*/AuctionEntry*) and RE-RESOLVES the player
+        // by GUID at run time, skipping the live packet if offline -- the durable
+        // mail row is authoritative (spec I2).
         if (oldBidder)
         {
-            WorldSession* oldBidderSession = oldBidder->GetSession();
+            uint32 oldBidderGuidLow = auction->bidder;
             uint32 houseId  = auction->GetHouseId();
             uint32 aucId    = auction->Id;
             uint32 bidder   = auction->bidder;
@@ -278,9 +282,13 @@ void WorldSession::SendAuctionOutbiddedMailInTransaction(AuctionEntry* auction, 
             uint32 outbid   = auction->GetAuctionOutBid();
             uint32 itemTpl  = auction->itemTemplate;
             int32  itemRand = auction->itemRandomPropertyId;
-            def.effects.push_back([oldBidderSession, houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand]()
+            def.effects.push_back([oldBidderGuidLow, houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand]()
             {
-                oldBidderSession->SendAuctionBidderNotificationData(houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand, false);
+                Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, oldBidderGuidLow));
+                if (p)
+                {
+                    p->GetSession()->SendAuctionBidderNotificationData(houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand, false);
+                }
             });
         }
 
@@ -612,15 +620,58 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         // deferred and appended FIRST (its legacy position :507 precedes
         // UpdateBid), snapshotting auction->Id + newOutbid BY VALUE since the
         // buyout route deletes the AuctionEntry in the same deferred run (I5).
+        uint32 const capId = auction->Id;
+
+        // FIX I1: validated, fail-closed live-bid lookup BEFORE the txn (it is a
+        // read; no live mutation has happened yet). When the auction already has
+        // a bidder (same-bidder raise OR outbid), there MUST be exactly one live
+        // bid row matching the current auction state; otherwise fail closed.
+        std::string liveBidKey;
+        if (auction->bidder != 0)
+        {
+            CustodyRow liveRow;
+            if (!CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
+                liveRow.ownerGuid != auction->bidder ||
+                liveRow.amount != auction->bid)
+            {
+                // No single matching live bid row -> abort before any mutation.
+                sLog.outError("custody S2: live bid row validation failed for auction %u "
+                              "(bidder %u, bid %u); failing closed", capId, auction->bidder, auction->bid);
+                SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+                return;
+            }
+            liveBidKey = liveRow.idemKey;
+        }
+
+        // FIX C1: snapshot the in-memory state mutated by UpdateBidCustody so a
+        // checked-commit rollback can restore it. effectiveBid == price (buyout
+        // excluded by !isBuyout, so no cap). Only the NEW bidder's wallet is
+        // debited in memory; the old bidder's refund is mail-based and rolls back
+        // with the txn, so no old-bidder restore is needed.
+        uint32 const oldBid = auction->bid;
+        uint32 const oldBidder = auction->bidder;
+        uint32 const effectiveBid = price;
+        uint32 const bidderDebit = (oldBidder == pl->GetGUIDLow()) ? (effectiveBid - oldBid) : effectiveBid;
+
         CustodyDeferred def;
-        uint32 capId = auction->Id;
         def.effects.push_back([this, capId, newOutbid]()
         {
             SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
         });
 
         CharacterDatabase.BeginTransaction();
-        auction->UpdateBidCustody(price, pl, def);
+        // FIX M1: UpdateBidCustody fail-closes a stray buyout bid at its top
+        // before any mutation; a false return means nothing was mutated -> abort
+        // cleanly (this cannot happen given the !isBuyout gate, but is honored).
+        if (!auction->UpdateBidCustody(price, pl, def, liveBidKey))
+        {
+            CharacterDatabase.RollbackTransaction();
+            def.discardItems();
+            SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("custody S2: UpdateBidCustody aborted (buyout reached custody) for auction %u", capId);
+            return;
+        }
+
         if (CharacterDatabase.CommitTransactionChecked())
         {
             def.run();          // ordered live effects (command-result, outbid notify/mail push)
@@ -628,8 +679,16 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         }
         else
         {
-            def.discardItems(); // rollback: free every live item the skipped mails would have delivered
-            sLog.outError("custody S2: bid txn rolled back for auction %u", capId);
+            // FIX C1: durable rollback -> UNDO the in-memory mutations
+            // UpdateBidCustody applied, refund the in-memory debit, and report
+            // the DB error. Otherwise the DB reverts but live memory keeps the
+            // bid/gold and the next bid reads corrupted state.
+            auction->bid = oldBid;
+            auction->bidder = oldBidder;
+            pl->ModifyMoney(int32(bidderDebit));    // refund the debit we applied in memory
+            def.discardItems();                     // free every live item the skipped mails would have delivered
+            SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("custody S2: bid txn rolled back for auction %u; live state restored", capId);
         }
     }
     else
