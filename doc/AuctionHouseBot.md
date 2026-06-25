@@ -117,6 +117,46 @@ These keys are only active when `AH.Service.Enabled = 1`:
 * ``AH.Service.IntentTtlSec``  - How long (seconds) the executor retains UUID
   records for deduplication. Default: 900.
 
+Player-auction custody escrow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Player auction custody is an in-process escrow ledger for player auction gold
+and items. It is independent of the out-of-process bot switch above:
+``AH.Service.Custody`` can remain off while ``AH.Service.Enabled`` is on, and
+can be enabled for player seams even when the bot still runs in-process.
+
+The relevant ``mangosd.conf`` keys are:
+
+* ``AH.Service.Custody`` - Default: 0. When 0, player auctions use today's
+  direct legacy path. When 1, only auctions that already carry custody ledger
+  rows use the custody path.
+* ``AH.Service.CustodyCrashAt`` - Default: empty. Test-only crash injection for
+  disposable realms. Values are ``pre-commit`` and ``pre-deferred``; never set
+  this on a live realm.
+
+The custody gate is per-auction. ``CustodyLedger::HasRows(auction_id)`` marks
+an auction as custody-managed, so existing pre-gate auctions and bot-created
+auctions with no custody rows continue through the legacy path. This lets a
+realm drain old auctions while the feature remains default-off and reversible.
+
+If reconciliation reports custody drift, use the server console command
+``ah repair``. It is console-only and scoped to custody-ledger drift; it does
+not repair legacy auction tears. The default form is dry-run. ``ah repair
+apply`` terminalizes supported orphan custody rows without disbursing gold or
+re-mailing items, which avoids minting value from a row whose live auction is
+gone. ``ah repair force-forfeit <idem_key>`` is the explicit escape hatch after
+manual verification; it terminalizes the named drift row without disbursement
+or item mail.
+
+Promotion checklist before considering a default flip:
+
+* Run the full gate-off/gate-on differential with
+  ``src/ah-service/tools/custody_diff.sql`` and get zero player-visible diffs.
+* Run ``src/ah-service/tools/custody_crash_test.md`` for every matrix row and
+  both crash phases.
+* Pass the concurrent-observer checks for auction list/search/console views.
+* Complete a live soak with custody still default-off, showing zero divergence
+  and no unresolved custody drift.
+
 ah-service.conf keys
 ~~~~~~~~~~~~~~~~~~~~~
 The child process uses its own configuration file (``ah-service.conf``):
@@ -190,3 +230,10 @@ The `ahbot` GM command set is extended when the service is running:
   filters (item level, quality, class, bind type, and include/exclude lists)
   take effect only after a full service restart.
 * ``ahbot rebuild``  - Rebuilds the item pool, as in in-process mode.
+
+Custody repair command
+~~~~~~~~~~~~~~~~~~~~~~
+The ``ah repair`` command is available from the mangosd console for the player
+auction custody ledger. It reports custody drift by default, mutates only with
+``ah repair apply`` or ``ah repair force-forfeit <idem_key>``, and never mints
+gold or sends replacement item mail from an orphan row.
