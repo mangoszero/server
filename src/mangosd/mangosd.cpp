@@ -78,6 +78,7 @@
 #endif
 
 #ifdef _WIN32
+#include <process.h>
 #include "ServiceWin32.h"
 #include "WheatyExceptionReport.h"
 
@@ -494,7 +495,8 @@ int main(int argc, char** argv)
     {
         int rc = RunMangosdTest(testMode);
         sLog.outString("mangosd test '%s' exit %d", testMode.c_str(), rc);
-        return rc;
+        fflush(stdout);
+        _exit(rc);
     }
 
     ///- Set Realm to Offline, if crash happens. Only used once.
