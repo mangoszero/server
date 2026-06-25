@@ -129,12 +129,18 @@ namespace CustodyLedger
     void SetAmount(std::string const& idemKey, uint32 newAmount);
 
     /**
-     * @brief Return true if at least one row exists for @p auctionId.
+     * @brief Return true if at least one active (CST_RESERVED) row exists for
+     *        @p auctionId.
+     *
+     * Only RESERVED rows are matched; terminal rows (CST_TERMINAL_OK,
+     * CST_TERMINAL_BACK) from a previously resolved or cancelled auction are
+     * ignored.  This prevents a deleted-then-reused auction_id from falsely
+     * opening the custody path via stale terminal rows.
      *
      * Issues a synchronous SELECT; safe to call outside a transaction.
      *
      * @param auctionId Auction entry id to probe.
-     * @return true if any row with that auction_id exists.
+     * @return true if at least one RESERVED row with that auction_id exists.
      */
     bool HasRows(uint32 auctionId);
 

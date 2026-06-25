@@ -715,10 +715,19 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         uint32 const effectiveBid = price;
         uint32 const bidderDebit = (oldBidder == pl->GetGUIDLow()) ? (effectiveBid - oldBid) : effectiveBid;
 
+        // Capture bidder by low GUID so the deferred closure holds only uint32
+        // scalars; re-resolving at run-time avoids a dangling WorldSession* if
+        // the player logs out between commit and def.run().
+        uint32 const bidderGuidLow = pl->GetGUIDLow();
+
         CustodyDeferred def;
-        def.effects.push_back([this, capId, newOutbid]()
+        def.effects.push_back([bidderGuidLow, capId, newOutbid]()
         {
-            SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow));
+            if (p)
+            {
+                p->GetSession()->SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
+            }
         });
 
         CharacterDatabase.BeginTransaction();

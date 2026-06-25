@@ -6355,11 +6355,30 @@ void ObjectMgr::SetHighestGuids()
         delete result;
     }
 
-    result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `auction`");
-    if (result)
+    // Seed the auction-id generator from the higher of the two live high-water
+    // marks: MAX(id) in the auction table, and MAX(auction_id) in the
+    // custody_ledger table.  Custody rows can outlive their auction row (the
+    // TTL sweep prunes them asynchronously), so a freshly reused auction id
+    // would collide the "item:<id>"/"dep:<id>" idempotency keys of any
+    // not-yet-pruned terminal custody rows for the old auction.
     {
-        m_AuctionIds.Set((*result)[0].GetUInt32() + 1);
-        delete result;
+        uint32 auctionMax = 0;
+        result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `auction`");
+        if (result)
+        {
+            auctionMax = (*result)[0].GetUInt32();
+            delete result;
+        }
+
+        uint32 custodyMax = 0;
+        result = CharacterDatabase.Query("SELECT MAX(`auction_id`) FROM `custody_ledger`");
+        if (result)
+        {
+            custodyMax = (*result)[0].GetUInt32();
+            delete result;
+        }
+
+        m_AuctionIds.Set(std::max(auctionMax, custodyMax) + 1);
     }
 
     result = CharacterDatabase.Query("SELECT MAX(`id`) FROM `mail`");
