@@ -39,8 +39,13 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "Mail.h"
+#include "AuctionHouseBot/CustodyService.h"
+#include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyDeferred.h"
 
 #include "Policies/Singleton.h"
+
+#include <string>
 
 /** \addtogroup auctionhouse
  * @{
@@ -1086,6 +1091,80 @@ bool AuctionEntry::UpdateBid(uint32 newbid, Player* newbidder /*=NULL*/)
     }
     else                                                    // buyout
     {
+        AuctionBidWinning(newbidder);
+        return false;
+    }
+}
+
+/**
+ * @brief Custody co-commit mirror of UpdateBid.
+ *
+ * Reproduces UpdateBid's gold movement EXACTLY but through the custody
+ * primitives, appending every DB write to the caller's already-open
+ * CharacterDatabase transaction (the caller opens and checked-commits it).
+ * Live effects (outbid notify + refund mail push) are queued into @p def and
+ * run only after the checked commit succeeds.
+ *
+ * @param newbid    The new bid amount (capped at buyout, as in UpdateBid).
+ * @param newbidder The player placing the bid (always non-NULL for the player seam).
+ * @param def       Ordered deferred-effects queue for this co-commit.
+ * @return true if the auction remains active (normal bid); false on buyout.
+ */
+bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def)
+{
+    // bid can't be greater buyout (identical to UpdateBid)
+    if (buyout && newbid > buyout)
+    {
+        newbid = buyout;
+    }
+
+    if (newbidder && newbidder->GetGUIDLow() == bidder)
+    {
+        // same-bidder raise: debit the DELTA and bump the live bid row amount.
+        // The full-price affordability guard in the handler already gated this
+        // (spec I1). Mirrors UpdateBid's ModifyMoney(-(newbid - bid)).
+        std::string liveBidKey;
+        CustodyLedger::GetLiveBidKey(Id, liveBidKey);
+        CustodyService::TopUpBid(liveBidKey, newbid, newbid - bid, newbidder);
+    }
+    else
+    {
+        // Refund/displace a REAL prior bidder first (reads the OLD bid), then
+        // reserve the new bidder's full amount. A bot-displaced bid
+        // (bid>0, bidder==0) carries no custody row: no rollback, no outbid mail
+        // (matches UpdateBid's `if (bidder)` skipping the refund -- spec R2).
+        if (bidder != 0)
+        {
+            std::string liveBidKey;
+            CustodyLedger::GetLiveBidKey(Id, liveBidKey);
+            CustodyService::RollbackGoldLedgerOnly(liveBidKey);
+            WorldSession::SendAuctionOutbiddedMailInTransaction(this, def);
+        }
+
+        // Reserve the new bidder's full bid (debits -newbid + SaveInventory).
+        // Mirrors UpdateBid's `if (newbidder) ModifyMoney(-newbid)`.
+        std::string newBidKey = "bid:" + std::to_string(Id) + ":" +
+                                std::to_string(CustodyLedger::NextBidSeq(Id));
+        CustodyService::ReserveGold(def, newbidder ? newbidder->GetGUIDLow() : 0,
+                                    newbidder, newbid, newBidKey, Id, ROLE_BID);
+    }
+
+    bidder = newbidder ? newbidder->GetGUIDLow() : 0;
+    bid = newbid;
+
+    if ((newbid < buyout) || (buyout == 0))                 // bid
+    {
+        // The new bidder's gold was already persisted by ReserveGold/TopUpBid
+        // (SaveInventoryAndGoldToDB), so do NOT save again. The auction UPDATE
+        // appends to the caller's open transaction.
+        CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u', `lastbid` = '%u' WHERE `id` = '%u'", bidder, bid, Id);
+        return true;
+    }
+    else                                                    // buyout
+    {
+        // TODO(Task10): thread def into a custody AuctionBidWinning so the win
+        // seam co-commits too; for now route to the legacy AuctionBidWinning
+        // (retrofitted to custody in Task 10).
         AuctionBidWinning(newbidder);
         return false;
     }

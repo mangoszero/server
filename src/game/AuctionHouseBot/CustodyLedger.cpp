@@ -140,6 +140,38 @@ bool CustodyLedger::Get(std::string const& idemKey, CustodyRow& out)
     return true;
 }
 
+bool CustodyLedger::GetLiveBidKey(uint32 auctionId, std::string& out)
+{
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT `idem_key` FROM `custody_ledger` "
+        "WHERE `auction_id`=%u AND `role`=%u AND `state`=%u LIMIT 1",
+        auctionId, uint32(ROLE_BID), uint32(CST_RESERVED));
+    if (!result)
+    {
+        return false;
+    }
+
+    out = result->Fetch()[0].GetCppString();
+    delete result;
+    return true;
+}
+
+uint32 CustodyLedger::NextBidSeq(uint32 auctionId)
+{
+    QueryResult* result = CharacterDatabase.PQuery(
+        "SELECT COUNT(*) FROM `custody_ledger` "
+        "WHERE `auction_id`=%u AND `role`=%u",
+        auctionId, uint32(ROLE_BID));
+    if (!result)
+    {
+        return 0;
+    }
+
+    uint32 seq = result->Fetch()[0].GetUInt32();
+    delete result;
+    return seq;
+}
+
 void CustodyLedger::DeleteTerminalOlderThan(uint64 cutoffTime)
 {
     CharacterDatabase.PExecute(

@@ -101,8 +101,38 @@ void WorldSession::SendAuctionHello(Unit* unit)
 // call this method when player bids, creates, or deletes auction
 void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError, uint32 newOutbid /*= 0*/)
 {
+    // The AUCTION_ERR_HIGHER_BID branch dereferences auc (bidder/bid); it is
+    // only ever sent inline on a guard-reject (never deferred), so it stays
+    // here. All other branches are value-only and delegate to the by-value
+    // variant below. The bid-OK increment is resolved here while auc is live.
+    if (ErrorCode == AUCTION_ERR_HIGHER_BID)
+    {
+        WorldPacket data(SMSG_AUCTION_COMMAND_RESULT, 16);
+        data << uint32(auc ? auc->Id : 0);
+        data << uint32(Action);
+        data << uint32(ErrorCode);
+        data << ObjectGuid(HIGHGUID_PLAYER, auc->bidder);   // new bidder guid
+        data << uint32(auc->bid);                           // new bid
+        data << uint32(auc->GetAuctionOutBid());            // new AuctionOutBid?
+        SendPacket(&data);
+        return;
+    }
+
+    uint32 outbid = newOutbid;
+    if (ErrorCode == AUCTION_OK && Action == AUCTION_BID_PLACED && !outbid)
+    {
+        outbid = auc->GetAuctionOutBid();                   // resolve while auc is live
+    }
+
+    SendAuctionCommandResultData(auc ? auc->Id : 0, Action, ErrorCode, invError, outbid);
+}
+
+// by-value variant: builds SMSG_AUCTION_COMMAND_RESULT from raw values so a
+// deferred custody closure can fire it after the AuctionEntry is gone (spec I5)
+void WorldSession::SendAuctionCommandResultData(uint32 aucId, AuctionAction Action, AuctionError ErrorCode, InventoryResult invError, uint32 newOutbid)
+{
     WorldPacket data(SMSG_AUCTION_COMMAND_RESULT, 16);
-    data << uint32(auc ? auc->Id : 0);
+    data << uint32(aucId);
     data << uint32(Action);
     data << uint32(ErrorCode);
 
@@ -111,16 +141,11 @@ void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Act
         case AUCTION_OK:
             if (Action == AUCTION_BID_PLACED)
             {
-                data << uint32(newOutbid ? newOutbid : auc->GetAuctionOutBid());     // outbid increment
+                data << uint32(newOutbid);                  // outbid increment (pre-resolved)
             }
             break;
         case AUCTION_ERR_INVENTORY:
             data << uint32(invError);
-            break;
-        case AUCTION_ERR_HIGHER_BID:
-            data << ObjectGuid(HIGHGUID_PLAYER, auc->bidder); // new bidder guid
-            data << uint32(auc->bid);                       // new bid
-            data << uint32(auc->GetAuctionOutBid());        // new AuctionOutBid?
             break;
         default:
             break;
@@ -132,16 +157,24 @@ void WorldSession::SendAuctionCommandResult(AuctionEntry* auc, AuctionAction Act
 // this function sends notification, if bidder is online
 void WorldSession::SendAuctionBidderNotification(AuctionEntry* auction, bool won)
 {
+    SendAuctionBidderNotificationData(auction->GetHouseId(), auction->Id, auction->bidder,
+                                      auction->bid, auction->GetAuctionOutBid(),
+                                      auction->itemTemplate, auction->itemRandomPropertyId, won);
+}
+
+// by-value variant of SendAuctionBidderNotification (spec I5)
+void WorldSession::SendAuctionBidderNotificationData(uint32 houseId, uint32 id, uint32 bidder, uint32 bid, uint32 outbid, uint32 itemTemplate, int32 itemRand, bool won)
+{
     WorldPacket data(SMSG_AUCTION_BIDDER_NOTIFICATION, (8 * 4));
-    data << uint32(auction->GetHouseId());
-    data << uint32(auction->Id);
-    data << ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
+    data << uint32(houseId);
+    data << uint32(id);
+    data << ObjectGuid(HIGHGUID_PLAYER, bidder);
 
     // if 0, client shows ERR_AUCTION_WON_S, else ERR_AUCTION_OUTBID_S
-    data << uint32(won ? 0 : auction->bid);
-    data << uint32(auction->GetAuctionOutBid());            // AuctionOutBid?
-    data << uint32(auction->itemTemplate);
-    data << int32(auction->itemRandomPropertyId);
+    data << uint32(won ? 0 : bid);
+    data << uint32(outbid);                                 // AuctionOutBid?
+    data << uint32(itemTemplate);
+    data << int32(itemRand);
 
     SendPacket(&data);
 }
@@ -206,6 +239,54 @@ void WorldSession::SendAuctionOutbiddedMail(AuctionEntry* auction)
         MailDraft(msgAuctionOutbiddedSubject.str(),"")
             .SetMoney(auction->bid)
             .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
+    }
+}
+
+// Custody co-commit variant of SendAuctionOutbiddedMail. Same old-bidder guard;
+// it (a) defers the online bidder notification snapshotted BY VALUE so it fires
+// in legacy order (notify before mail), then (b) co-commits the refund mail into
+// the caller's open transaction (its own online push is appended AFTER the notify
+// by SendMailToInTransaction). Reads the OLD auction->bid, so the caller MUST
+// call this before mutating bid (spec B / S2).
+void WorldSession::SendAuctionOutbiddedMailInTransaction(AuctionEntry* auction, CustodyDeferred& def)
+{
+    ObjectGuid oldBidder_guid = ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
+    Player* oldBidder = sObjectMgr.GetPlayer(oldBidder_guid);
+
+    uint32 oldBidder_accId = 0;
+    if (!oldBidder)
+    {
+        oldBidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(oldBidder_guid);
+    }
+
+    // old bidder exist
+    if (oldBidder || oldBidder_accId)
+    {
+        std::ostringstream msgAuctionOutbiddedSubject;
+        msgAuctionOutbiddedSubject << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_OUTBIDDED;
+
+        // Defer the online bidder notification, snapshotting every field BY
+        // VALUE (the buyout path may delete the AuctionEntry before run()).
+        // Appended BEFORE the refund mail so packet order = notify-then-mail.
+        if (oldBidder)
+        {
+            WorldSession* oldBidderSession = oldBidder->GetSession();
+            uint32 houseId  = auction->GetHouseId();
+            uint32 aucId    = auction->Id;
+            uint32 bidder   = auction->bidder;
+            uint32 bidValue = auction->bid;
+            uint32 outbid   = auction->GetAuctionOutBid();
+            uint32 itemTpl  = auction->itemTemplate;
+            int32  itemRand = auction->itemRandomPropertyId;
+            def.effects.push_back([oldBidderSession, houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand]()
+            {
+                oldBidderSession->SendAuctionBidderNotificationData(houseId, aucId, bidder, bidValue, outbid, itemTpl, itemRand, false);
+            });
+        }
+
+        MailDraft(msgAuctionOutbiddedSubject.str(),"")
+            .SetMoney(auction->bid)
+            .SendMailToInTransaction(MailReceiver(oldBidder, oldBidder_guid), MailSender(auction), def, MAIL_CHECK_MASK_COPIED);
     }
 }
 
@@ -523,9 +604,38 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         newOutbid = 1;
     }
 
-    SendAuctionCommandResult(auction, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
+    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
+    {
+        // Custody co-commit path. The success-path SendAuctionCommandResult is
+        // deferred and appended FIRST (its legacy position :507 precedes
+        // UpdateBid), snapshotting auction->Id + newOutbid BY VALUE since the
+        // buyout route deletes the AuctionEntry in the same deferred run (I5).
+        CustodyDeferred def;
+        uint32 capId = auction->Id;
+        def.effects.push_back([this, capId, newOutbid]()
+        {
+            SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
+        });
 
-    auction->UpdateBid(price, pl);
+        CharacterDatabase.BeginTransaction();
+        auction->UpdateBidCustody(price, pl, def);
+        if (CharacterDatabase.CommitTransactionChecked())
+        {
+            def.run();          // ordered live effects (command-result, outbid notify/mail push)
+            def.discardItems(); // frees only offline items; online items now owned by their Players
+        }
+        else
+        {
+            def.discardItems(); // rollback: free every live item the skipped mails would have delivered
+            sLog.outError("custody S2: bid txn rolled back for auction %u", capId);
+        }
+    }
+    else
+    {
+        SendAuctionCommandResult(auction, AUCTION_BID_PLACED, AUCTION_OK, EQUIP_ERR_OK, newOutbid);
+
+        auction->UpdateBid(price, pl);
+    }
 }
 
 // this void is called when auction_owner cancels his auction

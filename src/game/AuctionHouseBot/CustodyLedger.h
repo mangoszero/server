@@ -160,6 +160,33 @@ namespace CustodyLedger
     bool Get(std::string const& idemKey, CustodyRow& out);
 
     /**
+     * @brief Fetch the idem_key of the live (non-terminal) bid row for an
+     *        auction.
+     *
+     * Selects the single CST_RESERVED ROLE_BID row for @p auctionId. There is at
+     * most one live bid row per auction (spec 5.2). Issues a synchronous SELECT;
+     * safe to call outside a transaction.
+     *
+     * @param auctionId Auction entry id to probe.
+     * @param out       Populated with the row's idem_key on success.
+     * @return true if a live bid row was found.
+     */
+    bool GetLiveBidKey(uint32 auctionId, std::string& out);
+
+    /**
+     * @brief Allocate the next per-event bid sequence for an auction.
+     *
+     * Returns COUNT(*) of bid rows (any state) for @p auctionId so each
+     * place-bid event gets a fresh, non-colliding idem_key
+     * (e.g. "bid:<auc>:<seq>") even after a rollback-then-rebid (spec 5.2/R-C2).
+     * Issues a synchronous SELECT; safe to call outside a transaction.
+     *
+     * @param auctionId Auction entry id.
+     * @return The next sequence number to use for a new bid row.
+     */
+    uint32 NextBidSeq(uint32 auctionId);
+
+    /**
      * @brief Delete all terminal rows older than @p cutoffTime.
      *
      * Issues a synchronous PExecute; intended for use both inside an open

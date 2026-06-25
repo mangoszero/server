@@ -50,6 +50,7 @@ class Item;
 class Player;
 class Unit;
 class WorldPacket;
+struct CustodyDeferred;
 
 #define MIN_AUCTION_TIME (2*HOUR)
 
@@ -103,6 +104,15 @@ struct AuctionEntry
     void SaveToDB() const;
     void AuctionBidWinning(Player* bidder = NULL);
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
+    /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
+    /// custody primitives and appends every DB write to the caller's already-open
+    /// CharacterDatabase transaction (the caller opens/commits it). Live effects
+    /// (outbid notify/refund mail push) are queued into @p def. The outbid refund
+    /// mail is sent via the static SendAuctionOutbiddedMailInTransaction, which
+    /// resolves the old bidder's session itself, so no acting session is needed.
+    /// Returns true if the auction remains active (normal bid), false on buyout
+    /// (spec D / S2/S3).
+    bool UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDeferred& def);
 };
 
 // this class is used as auctionhouse instance
