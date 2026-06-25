@@ -121,6 +121,15 @@ struct AuctionEntry
     /// re-fetches + validates it via GetSingleLiveBidRow. Ignored when bidder == 0.
     void AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& def,
                                   std::string const& knownBidKey = "");
+    /// Custody co-commit mirror of the unsold-expiry path (spec S6): returns the
+    /// item to the seller by mail (or destroys it if the account is gone),
+    /// forfeits the deposit to the house, deletes the auction row, and defers
+    /// every in-memory effect (owner-expired notification, mail push, RemoveAItem,
+    /// RemoveAuction, delete this) into @p def. Every DB write appends to the
+    /// caller's ALREADY-OPEN CharacterDatabase transaction; the caller
+    /// checked-commits it then runs @p def. S6 makes NO synchronous in-memory
+    /// mutation, so on rollback there is nothing to restore.
+    void ExpireUnsoldCustody(CustodyDeferred& def);
     bool UpdateBid(uint32 newbid, Player* newbidder = NULL);// true if normal bid, false if buyout, bidder==NULL for generated bid
     /// Custody co-commit mirror of UpdateBid: moves the bidder's gold via the
     /// custody primitives and appends every DB write to the caller's already-open
@@ -238,6 +247,16 @@ class AuctionHouseMgr
         void SendAuctionWonMail(AuctionEntry* auction);
         void SendAuctionSuccessfulMail(AuctionEntry* auction);
         void SendAuctionExpiredMail(AuctionEntry* auction);
+
+        /// Custody co-commit variant of SendAuctionExpiredMail: same owner-exists
+        /// guard + expired subject, but the item return mail co-commits into the
+        /// caller's open transaction (no own Begin/Commit), the "item:<Id>" escrow
+        /// row flips to TERMINAL_OK (DeliverItem on the return branch;
+        /// CommitGoldLedgerOnly on the destroy branch), and the online owner's
+        /// SMSG_AUCTION_OWNER_NOTIFICATION (expired form) + RemoveAItem +
+        /// itemGuidLow=0 (+ live item destroy on the no-owner branch) are deferred
+        /// into @p def in legacy order (notify-then-mail, spec S6 / C7).
+        void SendAuctionExpiredMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
 
         /// Custody co-commit variant of SendAuctionSuccessfulMail: same owner-exists
         /// guard + profit math, but the seller payout mail co-commits into the

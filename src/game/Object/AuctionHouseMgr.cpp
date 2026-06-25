@@ -326,6 +326,120 @@ void AuctionHouseMgr::SendAuctionExpiredMail(AuctionEntry* auction)
 }
 
 /**
+ * @brief Custody co-commit variant of SendAuctionExpiredMail.
+ *
+ * Reproduces SendAuctionExpiredMail EXACTLY (owner-exists guard, expired subject,
+ * item return to the seller by mail; destroy branch when the account is gone)
+ * but co-commits the item return mail into the caller's already-open
+ * CharacterDatabase transaction and flips the "item:<Id>" escrow row to
+ * TERMINAL_OK. The online owner's SMSG_AUCTION_OWNER_NOTIFICATION (the "expired"
+ * form, sold=false, bid/outbid/bidder all 0) is deferred into @p def BEFORE the
+ * mail push so packet order stays notify-then-mail (legacy :307). RemoveAItem +
+ * itemGuidLow=0 (+ live item destroy on the no-owner branch) are also deferred
+ * in legacy order (spec S6 / C7). Reads auction->owner/itemGuidLow, so the
+ * caller MUST call this before mutating them (there is none in S6; expire
+ * deletes the auction).
+ *
+ * @param auction The expired (no-bidder) auction entry.
+ * @param def     Ordered deferred-effects queue for this co-commit.
+ */
+void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction, CustodyDeferred& def)
+{
+    // return an item in auction to its owner by mail
+    Item* pItem = GetAItem(auction->itemGuidLow);
+    if (!pItem)
+    {
+        sLog.outError("Auction item (GUID: %u) not found, and lost.", auction->itemGuidLow);
+        return;
+    }
+
+    ObjectGuid owner_guid = ObjectGuid(HIGHGUID_PLAYER, auction->owner);
+    Player* owner = sObjectMgr.GetPlayer(owner_guid);
+
+    uint32 owner_accId = 0;
+    if (!owner)
+    {
+        owner_accId = sObjectMgr.GetPlayerAccountIdByGUID(owner_guid);
+    }
+
+    // Snapshot the item guid-low before any deferral; the deferred RemoveAItem
+    // closure must use the original value (auction->itemGuidLow is zeroed below).
+    uint32 const savedItemGuidLow = auction->itemGuidLow;
+
+    // owner exist
+    if (owner || owner_accId)
+    {
+        std::ostringstream subject;
+        subject << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_EXPIRED;
+
+        // Defer the online owner-expired notification, snapshotting every field
+        // BY VALUE (the auction is deleted in the same deferred run). Appended
+        // BEFORE the RemoveAItem and the mail push so packet order stays
+        // notify-then-mail (legacy :307). An unsold expiry carries bid==0,
+        // outbid==0, bidder==0 (the "expired" form, sold=false). Re-resolves the
+        // owner by GUID at run time, skipping the packet if offline -- the
+        // durable mail row is authoritative (spec I2).
+        if (owner)
+        {
+            uint32 ownerGuidLow = auction->owner;
+            uint32 houseId  = auction->GetHouseId();
+            uint32 aucId    = auction->Id;
+            uint32 itemTpl  = auction->itemTemplate;
+            int32  itemRand = auction->itemRandomPropertyId;
+            def.effects.push_back([ownerGuidLow, houseId, aucId, itemTpl, itemRand]()
+            {
+                Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, ownerGuidLow));
+                if (p)
+                {
+                    p->GetSession()->SendAuctionOwnerNotificationData(houseId, aucId, 0, 0, 0, itemTpl, itemRand, false);
+                }
+            });
+        }
+
+        // Defer RemoveAItem FIRST (legacy :310 ran before the mail;
+        // SendMailToInTransaction appends its own push AFTER this), then zero
+        // itemGuidLow. Mirror S5 cancel :979-982.
+        def.effects.push_back([savedItemGuidLow]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+        });
+        auction->itemGuidLow = 0;
+
+        // Return the item via DeliverItem: flips "item:<Id>" -> TERMINAL_OK AND
+        // co-commits the return mail (queues the online owner's AddMItem
+        // disposal). An expiry return needs no item_instance.owner_guid UPDATE
+        // (the seller already owns the item). Mirror S5 cancel :984-987.
+        MailDraft itemReturn(subject.str(), "");
+        itemReturn.AddItem(pItem);
+        CustodyService::DeliverItem(def, "item:" + std::to_string(auction->Id), itemReturn,
+                                    MailReceiver(owner, owner_guid), MailSender(auction));
+    }
+    // owner not found (destroy)
+    else
+    {
+        // DELETE the item_instance row IN-TXN (appends to the caller's open txn).
+        CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", savedItemGuidLow);
+
+        // Terminalize the escrow row: this branch sends no mail, so DeliverItem
+        // is NOT called and nothing else flips "item:". The §0 lesson -- without
+        // this the row stays CST_RESERVED after the auction row is deleted ->
+        // orphaned non-terminal row.
+        CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(auction->Id));
+
+        // Defer RemoveAItem + itemGuidLow=0 + the live `delete pItem` (X5: the
+        // destroy must run only after the checked commit succeeds, NOT inside
+        // the txn -- on rollback the row survives and so must the live Item*).
+        // Mirror SendAuctionWonMailInTransaction's destroy branch :534-548.
+        def.effects.push_back([savedItemGuidLow, pItem]()
+        {
+            sAuctionMgr.RemoveAItem(savedItemGuidLow);
+            delete pItem;
+        });
+        auction->itemGuidLow = 0;
+    }
+}
+
+/**
  * @brief Custody co-commit variant of SendAuctionSuccessfulMail.
  *
  * Reproduces SendAuctionSuccessfulMail EXACTLY (owner-exists guard, subject/body,
@@ -912,15 +1026,43 @@ void AuctionHouseObject::Update()
                 }
             }
             ///- cancel the auction if there was no bidder and clear the auction
-            else
+            else   // no bidder -> unsold expiry
             {
-                sAuctionMgr.SendAuctionExpiredMail(old->second);
+                // Custody co-commit path (per-auction drain, X3): only auctions
+                // carrying live custody rows resolve through the ledger; legacy
+                // (pre-gate / bot-created) auctions fall through unchanged.
+                // `old = itr++` already advanced the iterator, so the deferred
+                // RemoveAuction(Id) erase of `old`'s slot does NOT invalidate itr
+                // (same reasoning as the win-branch comment at :887-889).
+                if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(old->second->Id))
+                {
+                    CustodyDeferred def;
+                    CharacterDatabase.BeginTransaction();
+                    old->second->ExpireUnsoldCustody(def);
+                    if (CharacterDatabase.CommitTransactionChecked())
+                    {
+                        def.run();
+                    }
+                    else
+                    {
+                        // S6 makes NO synchronous in-memory mutation (every
+                        // effect is deferred and does not run on rollback), so
+                        // there is nothing to restore: the auction + item
+                        // survive intact and the next tick re-resolves cleanly
+                        // with a valid GetAItem pointer.
+                        sLog.outError("custody S6: expire txn rolled back for auction %u", old->second->Id);
+                    }
+                }
+                else
+                {
+                    sAuctionMgr.SendAuctionExpiredMail(old->second);
 
-                old->second->DeleteFromDB();
-                sAuctionMgr.RemoveAItem(old->second->itemGuidLow);
-                delete old->second;
-                AuctionsMap.erase(old);
-                continue;
+                    old->second->DeleteFromDB();
+                    sAuctionMgr.RemoveAItem(old->second->itemGuidLow);
+                    delete old->second;
+                    AuctionsMap.erase(old);
+                    continue;
+                }
             }
         }
     }
@@ -1378,6 +1520,49 @@ void AuctionEntry::AuctionBidWinningCustody(Player* newbidder, CustodyDeferred& 
     // 5) Defer the AH-map erase + object delete LAST, so `this` stays valid for
     //    every earlier deferred closure throughout def.run(). Snapshot the map
     //    pointer + Id by value (the closure must not read `this` after delete).
+    AuctionHouseObject* houseMap = sAuctionMgr.GetAuctionsMap(this->auctionHouseEntry);
+    uint32 const aucId = this->Id;
+    AuctionEntry* self = this;
+    def.effects.push_back([houseMap, aucId, self]()
+    {
+        houseMap->RemoveAuction(aucId);
+        delete self;
+    });
+}
+
+/**
+ * @brief Custody co-commit mirror of the unsold-expiry path (spec S6).
+ *
+ * The no-bidder expiry branch of AuctionHouseObject::Update() routes here when
+ * the auction carries live custody rows. Returns the item to the seller by mail
+ * (or destroys it if the account is gone), forfeits the deposit to the house,
+ * deletes the auction row, and defers every in-memory effect (owner-expired
+ * notification, mail push, RemoveAItem, RemoveAuction, delete this) into @p def.
+ * Every DB write appends to the caller's ALREADY-OPEN CharacterDatabase
+ * transaction; the caller checked-commits it then runs @p def (spec Sec 6 S6).
+ * S6 makes NO synchronous in-memory mutation (every effect is deferred), so on
+ * rollback there is nothing to restore -- the auction + item survive intact and
+ * the next tick re-resolves cleanly.
+ */
+void AuctionEntry::ExpireUnsoldCustody(CustodyDeferred& def)
+{
+    // 1) Return the item to the seller (or destroy if the account is gone) +
+    //    flip the "item:<Id>" escrow row, all co-committed; the online owner's
+    //    expired notification + RemoveAItem are deferred by the co-commit core.
+    sAuctionMgr.SendAuctionExpiredMailInTransaction(this, def);
+
+    // 2) Deposit FORFEIT to the house on an unsold expiry (legacy keeps it):
+    //    flip "dep:<Id>" -> TERMINAL_OK ledger-only (house sink, no money, no
+    //    mail). Mirror S5 cancel's deposit forfeit.
+    CustodyService::CommitGoldLedgerOnly("dep:" + std::to_string(Id));
+
+    // 3) Delete the auction row IN-TXN (appends to the caller's open transaction).
+    this->DeleteFromDB();
+
+    // 4) Defer the AH-map erase + object delete LAST, so `this` stays valid for
+    //    every earlier deferred closure throughout def.run(). Snapshot the map
+    //    pointer + Id by value (the closure must not read `this` after delete).
+    //    Mirror AuctionBidWinningCustody :1373-1380.
     AuctionHouseObject* houseMap = sAuctionMgr.GetAuctionsMap(this->auctionHouseEntry);
     uint32 const aucId = this->Id;
     AuctionEntry* self = this;
