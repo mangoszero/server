@@ -416,12 +416,22 @@ class WorldSession
         /// AuctionEntry is gone (spec I5).
         void SendAuctionOwnerNotificationData(uint32 houseId, uint32 id, uint32 bid, uint32 outbid, uint32 bidderGuidLow, uint32 itemTemplate, int32 itemRand, bool sold);
         void SendAuctionRemovedNotification(AuctionEntry* auction);
+        /// By-value variant of SendAuctionRemovedNotification: builds
+        /// SMSG_AUCTION_REMOVED_NOTIFICATION from raw values snapshotted before a
+        /// custody co-commit, so a deferred closure can fire it after the
+        /// AuctionEntry is gone (spec I5 / S5).
+        void SendAuctionRemovedNotificationData(uint32 id, uint32 itemTemplate, int32 itemRand);
         static void SendAuctionOutbiddedMail(AuctionEntry* auction);
         /// Custody co-commit variant of SendAuctionOutbiddedMail: defers the
         /// online bidder notification (snapshotted by value) then co-commits the
         /// refund mail into the caller's open transaction (spec B / S2).
         static void SendAuctionOutbiddedMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         void SendAuctionCancelledToBidderMail(AuctionEntry* auction);
+        /// Custody co-commit variant of SendAuctionCancelledToBidderMail: defers
+        /// the distinct SMSG_AUCTION_REMOVED_NOTIFICATION (snapshotted by value)
+        /// then co-commits the refund mail (money = auction->bid) into the
+        /// caller's open transaction (spec B / S5).
+        static void SendAuctionCancelledToBidderMailInTransaction(AuctionEntry* auction, CustodyDeferred& def);
         AuctionHouseEntry const* GetCheckedAuctionHouseForAuctioneer(ObjectGuid guid);
 
         // Item Enchantment

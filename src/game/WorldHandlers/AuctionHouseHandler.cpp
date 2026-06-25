@@ -218,10 +218,16 @@ void WorldSession::SendAuctionOwnerNotificationData(uint32 houseId, uint32 id, u
 // shows ERR_AUCTION_REMOVED_S
 void WorldSession::SendAuctionRemovedNotification(AuctionEntry* auction)
 {
+    SendAuctionRemovedNotificationData(auction->Id, auction->itemTemplate, auction->itemRandomPropertyId);
+}
+
+// by-value variant of SendAuctionRemovedNotification (spec I5)
+void WorldSession::SendAuctionRemovedNotificationData(uint32 id, uint32 itemTemplate, int32 itemRand)
+{
     WorldPacket data(SMSG_AUCTION_REMOVED_NOTIFICATION, (3 * 4));
-    data << uint32(auction->Id);
-    data << uint32(auction->itemTemplate);
-    data << uint32(auction->itemRandomPropertyId);
+    data << uint32(id);
+    data << uint32(itemTemplate);
+    data << uint32(itemRand);
 
     SendPacket(&data);
 }
@@ -337,6 +343,61 @@ void WorldSession::SendAuctionCancelledToBidderMail(AuctionEntry* auction)
         MailDraft(msgAuctionCancelledSubject.str(),"")
             .SetMoney(auction->bid)
             .SendMailTo(MailReceiver(bidder, bidder_guid), auction, MAIL_CHECK_MASK_COPIED);
+    }
+}
+
+// Custody co-commit variant of SendAuctionCancelledToBidderMail. Same old-bidder
+// guard; it (a) defers the online bidder's DISTINCT SMSG_AUCTION_REMOVED_NOTIFICATION
+// snapshotted BY VALUE so it fires in legacy order (notify before mail), then
+// (b) co-commits the refund mail (money = auction->bid) into the caller's open
+// transaction (its own online push is appended AFTER the notify by
+// SendMailToInTransaction). Reads auction->bid, so the caller MUST call this
+// before any bid mutation (there is none in S5; cancel deletes the auction).
+// Note: unlike the outbid path this emits SendAuctionRemovedNotification (a third,
+// distinct opcode), NOT SendAuctionBidderNotification (spec B / S5).
+void WorldSession::SendAuctionCancelledToBidderMailInTransaction(AuctionEntry* auction, CustodyDeferred& def)
+{
+    ObjectGuid bidder_guid = ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
+    Player* bidder = sObjectMgr.GetPlayer(bidder_guid);
+
+    uint32 bidder_accId = 0;
+    if (!bidder)
+    {
+        bidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(bidder_guid);
+    }
+
+    // bidder exist
+    if (bidder || bidder_accId)
+    {
+        std::ostringstream msgAuctionCancelledSubject;
+        msgAuctionCancelledSubject << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELLED_TO_BIDDER;
+
+        // Defer the online bidder's removed-notification, snapshotting every field
+        // BY VALUE (the cancel deletes the AuctionEntry before run()). Appended
+        // BEFORE the refund mail so packet order = notify-then-mail (legacy :334).
+        // The closure captures the bidder's low GUID + packet scalars only (no live
+        // WorldSession*/Player*/AuctionEntry*) and RE-RESOLVES the player by GUID at
+        // run time, skipping the live packet if offline -- the durable mail row is
+        // authoritative (spec I2).
+        if (bidder)
+        {
+            uint32 bidderGuidLow = auction->bidder;
+            uint32 aucId    = auction->Id;
+            uint32 itemTpl  = auction->itemTemplate;
+            int32  itemRand = auction->itemRandomPropertyId;
+            def.effects.push_back([bidderGuidLow, aucId, itemTpl, itemRand]()
+            {
+                Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, bidderGuidLow));
+                if (p)
+                {
+                    p->GetSession()->SendAuctionRemovedNotificationData(aucId, itemTpl, itemRand);
+                }
+            });
+        }
+
+        MailDraft(msgAuctionCancelledSubject.str(),"")
+            .SetMoney(auction->bid)
+            .SendMailToInTransaction(MailReceiver(bidder, bidder_guid), MailSender(auction), def, MAIL_CHECK_MASK_COPIED);
     }
 }
 
@@ -829,48 +890,198 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         return;
     }
 
-    if (auction->bid)                                       // If we have a bid, we have to send him the money he paid
+    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
     {
-        uint32 auctionCut = auction->GetAuctionCut();
-        if (pl->GetMoney() < auctionCut)                    // player doesn't have enough money, maybe message needed
+        // -------------------------------------------------------------------
+        // Custody co-commit path (per-auction drain, X3). One checked txn:
+        // cut debit + bidder refund (ledger + mail) + deposit FORFEIT (ledger
+        // only) + item return to the seller, all co-committed; every live
+        // effect deferred and run only on commit success (spec B/C, S5).
+        // -------------------------------------------------------------------
+
+        // (1) GUARD FIRST -- before any mutation or txn. Matches legacy :835-838
+        //     (silent return, no command-result, no txn) so a too-poor seller
+        //     cancelling a bid auction is byte-identical to today.
+        uint32 const auctionCut = auction->bid ? auction->GetAuctionCut() : 0;
+        if (auction->bid && pl->GetMoney() < auctionCut)
         {
             return;
         }
 
-        if (auction->bidder)                                // if auction have real existed bidder send mail
+        uint32 const capId = auction->Id;
+        uint32 const itemGuidLow = auction->itemGuidLow;
+
+        // (2) I1 fail-closed live-bid lookup BEFORE the txn (it is a read; no
+        //     mutation yet). When the auction has a real bidder there MUST be
+        //     exactly one live bid row matching the current auction state;
+        //     otherwise fail closed (no txn, no mutation).
+        std::string liveBidKey;
+        if (auction->bidder != 0)
         {
-            SendAuctionCancelledToBidderMail(auction);
+            CustodyRow liveRow;
+            if (!CustodyLedger::GetSingleLiveBidRow(capId, liveRow) ||
+                liveRow.ownerGuid != auction->bidder ||
+                liveRow.amount != auction->bid)
+            {
+                sLog.outError("custody S5: live bid row validation failed for auction %u "
+                              "(bidder %u, bid %u); failing closed", capId, auction->bidder, auction->bid);
+                SendAuctionCommandResultData(capId, AUCTION_REMOVED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+                return;
+            }
+            liveBidKey = liveRow.idemKey;
         }
 
-        pl->ModifyMoney(-int32(auctionCut));
-    }
-    // Return the item by mail
-    std::ostringstream msgAuctionCanceledOwner;
-    msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
+        // (3) X6 snapshot. The ONLY synchronous in-memory mutation S5 makes is
+        //     the cut debit; capture it for restore-on-failure. (cutDebited == 0
+        //     when there is no bid -- nothing to restore in that case.)
+        uint32 const cutDebited = auctionCut;
 
-    // item will deleted or added to received mail list
-    MailDraft(msgAuctionCanceledOwner.str(),"")
-        .AddItem(pItem)
-        .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
+        // Capture the seller's low GUID so the deferred command-result closure
+        // holds only uint32 scalars; re-resolving at run-time avoids a dangling
+        // WorldSession* if the seller logs out between commit and def.run().
+        uint32 const sellerGuidLow = pl->GetGUIDLow();
 
-    // inform player, that auction is removed
-    SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_OK);
-    // Now remove the auction
-    CharacterDatabase.BeginTransaction();
-    auction->DeleteFromDB();
-    pl->SaveInventoryAndGoldToDB();
-    CharacterDatabase.CommitTransaction();
-    sAuctionMgr.RemoveAItem(auction->itemGuidLow);
-    auctionHouse->RemoveAuction(auction->Id);
+        CustodyDeferred def;
 
-    // Used by Eluna
+        // -- in-memory mutation BEFORE the txn (SaveInventoryAndGoldToDB persists
+        //    current memory) --
+        if (auction->bid)
+        {
+            pl->ModifyMoney(-int32(auctionCut));
+        }
+
+        CharacterDatabase.BeginTransaction();
+
+        // (a) Bidder refund: pushes the removed-notify THEN the refund-mail push
+        //     into def (legacy notify-before-mail, :334-339). Only for a REAL
+        //     bidder; a bot-bid auction (bidder==0) charges the cut but sends no
+        //     refund (spec R2). Terminalize the validated live bid row (ledger
+        //     only -- the refund coin rides the mail above).
+        if (auction->bid && auction->bidder != 0)
+        {
+            CustodyService::RollbackGoldLedgerOnly(liveBidKey);
+            SendAuctionCancelledToBidderMailInTransaction(auction, def);
+        }
+
+        // Deposit FORFEIT to the house on cancel (spec 4.2 / S5): flip the
+        // deposit row to TERMINAL_OK ledger-only -- house sink, no money, no mail.
+        CustodyService::CommitGoldLedgerOnly("dep:" + std::to_string(capId));
+
+        // (b) Seller item-return. Build the return mail exactly like legacy
+        //     (:848-854) and co-commit it. Push the seam RemoveAItem FIRST so it
+        //     runs BEFORE the item-mail's disposal closure (RemoveAItem-first,
+        //     the corrected lifecycle); DeliverItem appends the mail push (and the
+        //     online seller's AddMItem disposal) AFTER. On rollback neither runs
+        //     and the item survives in mAitems for re-resolution.
+        std::ostringstream msgAuctionCanceledOwner;
+        msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
+
+        def.effects.push_back([itemGuidLow]()
+        {
+            sAuctionMgr.RemoveAItem(itemGuidLow);
+        });
+
+        MailDraft itemReturn(msgAuctionCanceledOwner.str(), "");
+        itemReturn.AddItem(pItem);
+        CustodyService::DeliverItem(def, "item:" + std::to_string(capId), itemReturn,
+                                    MailReceiver(pl), MailSender(auction));
+
+        // (c) Command-result to the SELLER, deferred LAST (legacy :857 fires it
+        //     after the item mail). Scalar-only closure: re-resolve the seller by
+        //     GUID, snapshot capId by value (the auction is deleted in this same
+        //     deferred run).
+        def.effects.push_back([sellerGuidLow, capId]()
+        {
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, sellerGuidLow));
+            if (p)
+            {
+                p->GetSession()->SendAuctionCommandResultData(capId, AUCTION_REMOVED, AUCTION_OK, EQUIP_ERR_OK, 0);
+            }
+        });
+
+        // Persist the cut debit + delete the auction row, both IN-TXN.
+        pl->SaveInventoryAndGoldToDB();
+        auction->DeleteFromDB();
+
+        // Defer the AH-map erase + object delete LAST so `auction` stays valid
+        // for every earlier deferred closure throughout def.run().
+        AuctionEntry* self = auction;
+        def.effects.push_back([auctionHouse, capId, self]()
+        {
+            auctionHouse->RemoveAuction(capId);
+            delete self;
+        });
+
+        if (CharacterDatabase.CommitTransactionChecked())
+        {
+            // Used by Eluna -- fire the OnRemove hook before def.run() deletes the
+            // auction, preserving the legacy semantics (the hook sees a live entry).
 #ifdef ENABLE_ELUNA
-    if (Eluna* e = sWorld.GetEluna())
-    {
-        e->OnRemove(auctionHouse, auction);
-    }
+            if (Eluna* e = sWorld.GetEluna())
+            {
+                e->OnRemove(auctionHouse, auction);
+            }
 #endif /* ENABLE_ELUNA */
-    delete auction;
+            def.run();          // ordered live effects (refund notify/mail, item return, command-result, delete)
+        }
+        else
+        {
+            // X6: durable rollback -> UNDO the only in-memory mutation (the cut
+            // debit). The item + auction survive in memory (no deferred effect
+            // ran), so there is nothing else to restore; the auction re-lists on
+            // the next observer and the seller can retry the cancel. No item
+            // discard -- items survive rollback in mAitems (the corrected
+            // lifecycle).
+            pl->ModifyMoney(int32(cutDebited));
+            SendAuctionCommandResultData(capId, AUCTION_REMOVED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
+            sLog.outError("custody S5: cancel txn rolled back for auction %u; cut restored", capId);
+        }
+    }
+    else
+    {
+        if (auction->bid)                                   // If we have a bid, we have to send him the money he paid
+        {
+            uint32 auctionCut = auction->GetAuctionCut();
+            if (pl->GetMoney() < auctionCut)                // player doesn't have enough money, maybe message needed
+            {
+                return;
+            }
+
+            if (auction->bidder)                            // if auction have real existed bidder send mail
+            {
+                SendAuctionCancelledToBidderMail(auction);
+            }
+
+            pl->ModifyMoney(-int32(auctionCut));
+        }
+        // Return the item by mail
+        std::ostringstream msgAuctionCanceledOwner;
+        msgAuctionCanceledOwner << auction->itemTemplate << ":" << auction->itemRandomPropertyId << ":" << AUCTION_CANCELED;
+
+        // item will deleted or added to received mail list
+        MailDraft(msgAuctionCanceledOwner.str(),"")
+            .AddItem(pItem)
+            .SendMailTo(pl, auction, MAIL_CHECK_MASK_COPIED);
+
+        // inform player, that auction is removed
+        SendAuctionCommandResult(auction, AUCTION_REMOVED, AUCTION_OK);
+        // Now remove the auction
+        CharacterDatabase.BeginTransaction();
+        auction->DeleteFromDB();
+        pl->SaveInventoryAndGoldToDB();
+        CharacterDatabase.CommitTransaction();
+        sAuctionMgr.RemoveAItem(auction->itemGuidLow);
+        auctionHouse->RemoveAuction(auction->Id);
+
+        // Used by Eluna
+#ifdef ENABLE_ELUNA
+        if (Eluna* e = sWorld.GetEluna())
+        {
+            e->OnRemove(auctionHouse, auction);
+        }
+#endif /* ENABLE_ELUNA */
+        delete auction;
+    }
 }
 
 // called when player lists his bids
