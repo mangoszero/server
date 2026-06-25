@@ -5,7 +5,9 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
+#include "AuctionHouseBot/CustodyLedger.h"
 #include <cstdio>
+#include <ctime>
 #include <memory>
 
 /// Self-test for Database::CommitTransactionChecked(): proves the runtime
@@ -184,6 +186,165 @@ static int RunMailTest()
     return 2;
 }
 
+/// CRUD round-trip test for CustodyLedger: Insert, Get, HasRows, SetState,
+/// LoadNonTerminal, DeleteTerminalOlderThan.  Returns 0 on pass.
+static int RunCustodyTest()
+{
+    bool pass = true;
+
+    CharacterDatabase.AllowAsyncTransactions();
+
+    // Clean slate from any prior aborted run.
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:crud%'");
+
+    // ------------------------------------------------------------------ step 1
+    // Insert a RESERVED gold row and commit.
+    {
+        CustodyRow r;
+        r.id              = 0;
+        r.idemKey         = "test:crud:1";
+        r.kind            = CUSTODY_GOLD;
+        r.role            = ROLE_BID;
+        r.state           = CST_RESERVED;
+        r.ownerGuid       = 1;
+        r.beneficiaryGuid = 0;
+        r.amount          = 50;
+        r.itemGuid        = 0;
+        r.auctionId       = 999;
+        r.createdTime     = static_cast<uint64>(time(NULL));
+        r.resolvedTime    = 0;
+
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::Insert(r);
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        if (!ok)
+        {
+            printf("custody FAIL: step 1 Insert CommitTransactionChecked returned false\n");
+            pass = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ step 2
+    // Get: row visible, state==CST_RESERVED, amount==50.
+    {
+        CustodyRow row;
+        bool found = CustodyLedger::Get("test:crud:1", row);
+        if (!found)
+        {
+            printf("custody FAIL: step 2 Get returned false (row not found)\n");
+            pass = false;
+        }
+        else
+        {
+            if (row.state != CST_RESERVED)
+            {
+                printf("custody FAIL: step 2 state expected %u got %u\n",
+                    uint32(CST_RESERVED), uint32(row.state));
+                pass = false;
+            }
+            if (row.amount != 50)
+            {
+                printf("custody FAIL: step 2 amount expected 50 got %u\n", row.amount);
+                pass = false;
+            }
+        }
+    }
+
+    // HasRows(999) must be true; HasRows(424242) must be false.
+    if (!CustodyLedger::HasRows(999))
+    {
+        printf("custody FAIL: step 2 HasRows(999) returned false\n");
+        pass = false;
+    }
+    if (CustodyLedger::HasRows(424242))
+    {
+        printf("custody FAIL: step 2 HasRows(424242) returned true (unexpected)\n");
+        pass = false;
+    }
+
+    // ------------------------------------------------------------------ step 3
+    // SetState to CST_TERMINAL_OK and verify.
+    {
+        uint64 resolvedNow = static_cast<uint64>(time(NULL));
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::SetState("test:crud:1", CST_TERMINAL_OK, resolvedNow);
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        if (!ok)
+        {
+            printf("custody FAIL: step 3 SetState CommitTransactionChecked returned false\n");
+            pass = false;
+        }
+
+        CustodyRow row;
+        bool found = CustodyLedger::Get("test:crud:1", row);
+        if (!found)
+        {
+            printf("custody FAIL: step 3 Get returned false after SetState\n");
+            pass = false;
+        }
+        else if (row.state != CST_TERMINAL_OK)
+        {
+            printf("custody FAIL: step 3 state expected %u got %u\n",
+                uint32(CST_TERMINAL_OK), uint32(row.state));
+            pass = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ step 4
+    // LoadNonTerminal must NOT contain "test:crud:1" (it is now terminal).
+    {
+        std::vector<CustodyRow> v;
+        CustodyLedger::LoadNonTerminal(v);
+        for (size_t i = 0; i < v.size(); ++i)
+        {
+            if (v[i].idemKey == "test:crud:1")
+            {
+                printf("custody FAIL: step 4 LoadNonTerminal contains terminal row\n");
+                pass = false;
+                break;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ step 5
+    // DeleteTerminalOlderThan(now+10): row must be pruned.
+    {
+        uint64 cutoff = static_cast<uint64>(time(NULL)) + 10;
+        CharacterDatabase.BeginTransaction();
+        CustodyLedger::DeleteTerminalOlderThan(cutoff);
+        bool ok = CharacterDatabase.CommitTransactionChecked();
+        if (!ok)
+        {
+            printf("custody FAIL: step 5 DeleteTerminalOlderThan CommitTransactionChecked returned false\n");
+            pass = false;
+        }
+
+        CustodyRow row;
+        bool found = CustodyLedger::Get("test:crud:1", row);
+        if (found)
+        {
+            printf("custody FAIL: step 5 Get returned true after prune (row not deleted)\n");
+            pass = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ step 6
+    // Cleanup: remove any leftover test:crud% rows.
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:%%'");
+    CharacterDatabase.CommitTransactionChecked();
+
+    if (pass)
+    {
+        printf("custody OK\n");
+        return 0;
+    }
+
+    return 2;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -200,6 +361,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "mail")
     {
         return RunMailTest();
+    }
+
+    if (name == "custody")
+    {
+        return RunCustodyTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());
