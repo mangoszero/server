@@ -604,7 +604,9 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         newOutbid = 1;
     }
 
-    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id))
+    // TODO(Task10): bring buyout under custody (custody-aware AuctionBidWinning that appends to the open txn + defers cache mutations), then remove the handler's !isBuyout gate.
+    bool const isBuyout = (auction->buyout != 0 && price >= auction->buyout);
+    if (sWorld.IsAhCustodyEnabled() && CustodyLedger::HasRows(auction->Id) && !isBuyout)
     {
         // Custody co-commit path. The success-path SendAuctionCommandResult is
         // deferred and appended FIRST (its legacy position :507 precedes

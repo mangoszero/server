@@ -1143,6 +1143,7 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
 
         // Reserve the new bidder's full bid (debits -newbid + SaveInventory).
         // Mirrors UpdateBid's `if (newbidder) ModifyMoney(-newbid)`.
+        // one bid row per place-bid event; NextBidSeq COUNT reflects only committed prior events, so keys never collide.
         std::string newBidKey = "bid:" + std::to_string(Id) + ":" +
                                 std::to_string(CustodyLedger::NextBidSeq(Id));
         CustodyService::ReserveGold(def, newbidder ? newbidder->GetGUIDLow() : 0,
@@ -1160,12 +1161,9 @@ bool AuctionEntry::UpdateBidCustody(uint32 newbid, Player* newbidder, CustodyDef
         CharacterDatabase.PExecute("UPDATE `auction` SET `buyguid` = '%u', `lastbid` = '%u' WHERE `id` = '%u'", bidder, bid, Id);
         return true;
     }
-    else                                                    // buyout
+    else                                                    // buyout — must NOT be reached: the handler routes buyouts to the legacy path until Task 10
     {
-        // TODO(Task10): thread def into a custody AuctionBidWinning so the win
-        // seam co-commits too; for now route to the legacy AuctionBidWinning
-        // (retrofitted to custody in Task 10).
-        AuctionBidWinning(newbidder);
+        sLog.outError("custody UpdateBidCustody: unexpected buyout branch for auction %u (should be legacy-routed); ignoring", Id);
         return false;
     }
 }
