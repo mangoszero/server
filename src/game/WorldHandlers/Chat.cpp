@@ -165,6 +165,7 @@ ChatCommand* ChatHandler::getCommandTable()
     static ChatCommand ahCommandTable[] =
     {
         { "console",        SEC_ADMINISTRATOR,  true,  NULL,                                            "", ahConsoleCommandTable },
+        { "repair",         SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAhRepairCommand,             "", NULL },
         { NULL,             0,                  true,  NULL,                                            "", NULL }
     };
 

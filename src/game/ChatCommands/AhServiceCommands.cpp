@@ -33,13 +33,31 @@
  * Usage (mangosd console):
  *   ah console show    -- make the ah-service console window visible
  *   ah console hide    -- hide the ah-service console window
+ *   ah repair          -- dry-run custody-ledger drift repair
+ *   ah repair apply    -- repair supported custody-ledger drift
  */
 
+#include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/CustodyDeferred.h"
+#include "AuctionHouseBot/CustodyLedger.h"
+#include "AuctionHouseBot/CustodyService.h"
 #include "Chat.h"
+#include "Database/DatabaseEnv.h"
+#include "Log.h"
+#include "Mail.h"
+#include "ObjectGuid.h"
+#include "ObjectMgr.h"
+#include "Player.h"
 #include "World.h"
 #include "WorkerSupervisor.h"
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
+
+#include <cctype>
+#include <ctime>
+#include <sstream>
+#include <string>
+#include <vector>
 
 // ---------------------------------------------------------------------------
 // Helper: check that the supervisor is live and connected.
@@ -50,6 +68,202 @@
 static bool IsAhServiceConnected(WorkerSupervisor* sv)
 {
     return sv != NULL && sv->Channel().Connected();
+}
+
+static std::string TrimRepairArgs(char const* args)
+{
+    std::string text = args ? args : "";
+    std::string::size_type first = 0;
+    while (first < text.size() &&
+           std::isspace(static_cast<unsigned char>(text[first])))
+    {
+        ++first;
+    }
+
+    std::string::size_type last = text.size();
+    while (last > first &&
+           std::isspace(static_cast<unsigned char>(text[last - 1])))
+    {
+        --last;
+    }
+
+    return text.substr(first, last - first);
+}
+
+static char const* CustodyKindName(uint8 kind)
+{
+    switch (kind)
+    {
+        case CUSTODY_GOLD:
+            return "gold";
+        case CUSTODY_ITEM:
+            return "item";
+        default:
+            return "unknown";
+    }
+}
+
+static char const* CustodyRoleName(uint8 role)
+{
+    switch (role)
+    {
+        case ROLE_DEPOSIT:
+            return "deposit";
+        case ROLE_BID:
+            return "bid";
+        case ROLE_PROCEEDS:
+            return "proceeds";
+        case ROLE_ITEM:
+            return "item";
+        default:
+            return "unknown";
+    }
+}
+
+static bool HasLiveAuction(uint32 auctionId)
+{
+    for (uint32 i = 0; i < MAX_AUCTION_HOUSE_TYPE; ++i)
+    {
+        AuctionHouseObject* auctions = sAuctionMgr.GetAuctionsMap(AuctionHouseType(i));
+        if (auctions->GetAuction(auctionId))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool TerminalizeCustodyRow(CustodyRow const& row, uint8 terminalState)
+{
+    CharacterDatabase.BeginTransaction();
+    CustodyLedger::SetState(row.idemKey, terminalState,
+                            static_cast<uint64>(time(NULL)));
+    return CharacterDatabase.CommitTransactionChecked();
+}
+
+static void PrintRepairRow(ChatHandler& handler, char const* prefix,
+                           CustodyRow const& row)
+{
+    handler.PSendSysMessage(
+        "%s key=%s auction=%u kind=%s role=%s state=%u owner=%u amount=%u item=%u",
+        prefix, row.idemKey.c_str(), row.auctionId,
+        CustodyKindName(row.kind), CustodyRoleName(row.role),
+        uint32(row.state), row.ownerGuid, row.amount, row.itemGuid);
+}
+
+static bool RepairGoldRow(ChatHandler& handler, CustodyRow const& row)
+{
+    if (row.amount == 0)
+    {
+        if (!TerminalizeCustodyRow(row, CST_TERMINAL_BACK))
+        {
+            handler.PSendSysMessage("ah repair: failed to terminalize zero-value gold row %s.",
+                                    row.idemKey.c_str());
+            return false;
+        }
+
+        handler.PSendSysMessage("ah repair: terminalized zero-value gold row %s.",
+                                row.idemKey.c_str());
+        return true;
+    }
+
+    ObjectGuid receiverGuid(HIGHGUID_PLAYER, row.ownerGuid);
+    Player* receiver = sObjectMgr.GetPlayer(receiverGuid);
+    uint32 const receiverAccount = receiver ? receiver->GetSession()->GetAccountId() :
+                                    sObjectMgr.GetPlayerAccountIdByGUID(receiverGuid);
+    if (!receiver && !receiverAccount)
+    {
+        sLog.outError("ah repair: cannot return gold for key=%s owner=%u; account is missing",
+                      row.idemKey.c_str(), row.ownerGuid);
+        handler.PSendSysMessage("ah repair: owner account missing for %s; leaving row reserved.",
+                                row.idemKey.c_str());
+        return false;
+    }
+
+    std::ostringstream body;
+    body << "Recovered Auction House custody gold for key " << row.idemKey
+         << ", auction " << row.auctionId << ".";
+
+    MailDraft mail("AH custody repair", body.str());
+    mail.SetMoney(row.amount);
+
+    CustodyDeferred deferred;
+    CharacterDatabase.BeginTransaction();
+    mail.SendMailToInTransaction(MailReceiver(receiver, receiverGuid),
+                                 MailSender(MAIL_NORMAL, uint32(0), MAIL_STATIONERY_GM),
+                                 deferred);
+    CustodyLedger::SetState(row.idemKey, CST_TERMINAL_BACK,
+                            static_cast<uint64>(time(NULL)));
+
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        sLog.outError("ah repair: checked commit failed for gold row key=%s",
+                      row.idemKey.c_str());
+        handler.PSendSysMessage("ah repair: checked commit failed for %s.",
+                                row.idemKey.c_str());
+        return false;
+    }
+
+    deferred.run();
+    handler.PSendSysMessage("ah repair: returned %u copper for %s.",
+                            row.amount, row.idemKey.c_str());
+    return true;
+}
+
+static bool RepairItemRow(ChatHandler& handler, CustodyRow const& row)
+{
+    sLog.outError("ah repair: terminalizing orphan item custody row without re-mailing key=%s auction=%u item=%u owner=%u",
+                  row.idemKey.c_str(), row.auctionId, row.itemGuid, row.ownerGuid);
+
+    if (!TerminalizeCustodyRow(row, CST_TERMINAL_OK))
+    {
+        handler.PSendSysMessage("ah repair: failed to terminalize item row %s.",
+                                row.idemKey.c_str());
+        return false;
+    }
+
+    handler.PSendSysMessage("ah repair: terminalized item row %s without re-mailing.",
+                            row.idemKey.c_str());
+    return true;
+}
+
+static bool RepairCustodyRow(ChatHandler& handler, CustodyRow const& row)
+{
+    if (row.id == 0)
+    {
+        handler.PSendSysMessage("ah repair: cannot auto-repair synthetic drift %s.",
+                                row.idemKey.c_str());
+        return false;
+    }
+
+    if (row.state != CST_RESERVED)
+    {
+        handler.PSendSysMessage("ah repair: skipping non-reserved row %s state=%u.",
+                                row.idemKey.c_str(), uint32(row.state));
+        return false;
+    }
+
+    if (HasLiveAuction(row.auctionId))
+    {
+        handler.PSendSysMessage("ah repair: skipping live-auction drift %s; manual inspection required.",
+                                row.idemKey.c_str());
+        return false;
+    }
+
+    if (row.kind == CUSTODY_ITEM)
+    {
+        return RepairItemRow(handler, row);
+    }
+
+    if (row.kind == CUSTODY_GOLD)
+    {
+        return RepairGoldRow(handler, row);
+    }
+
+    handler.PSendSysMessage("ah repair: skipping unknown custody kind for %s.",
+                            row.idemKey.c_str());
+    return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,4 +341,68 @@ bool ChatHandler::HandleAhServiceConsoleHideCommand(char* /*args*/)
     }
     SendSysMessage("AH service console hide requested.");
     return true;
+}
+
+/**
+ * @brief "ah repair" -- dry-run or repair custody-ledger drift.
+ */
+bool ChatHandler::HandleAhRepairCommand(char* args)
+{
+    if (m_session)
+    {
+        PSendSysMessage("This command is only available from the server"
+                        " console.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    std::string const mode = TrimRepairArgs(args);
+    bool const apply = mode == "apply" || mode == "--apply";
+    if (!mode.empty() && mode != "--dry-run" && !apply)
+    {
+        SendSysMessage("Syntax: ah repair [--dry-run|apply]");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    std::vector<CustodyRow> drift;
+    CustodyService::ReconcileScan(true, drift);
+
+    PSendSysMessage("ah repair: %u custody-ledger drift row(s) found.",
+                    uint32(drift.size()));
+    SendSysMessage("ah repair: scope is custody-ledger drift only; legacy tears are not repaired.");
+
+    if (drift.empty())
+    {
+        return true;
+    }
+
+    for (size_t i = 0; i < drift.size(); ++i)
+    {
+        PrintRepairRow(*this, apply ? "apply:" : "dry-run:", drift[i]);
+    }
+
+    if (!apply)
+    {
+        SendSysMessage("ah repair: dry-run only. Use 'ah repair apply' to mutate supported rows.");
+        return true;
+    }
+
+    uint32 repaired = 0;
+    uint32 skipped = 0;
+    for (size_t i = 0; i < drift.size(); ++i)
+    {
+        if (RepairCustodyRow(*this, drift[i]))
+        {
+            ++repaired;
+        }
+        else
+        {
+            ++skipped;
+        }
+    }
+
+    PSendSysMessage("ah repair: apply complete, repaired=%u skipped=%u.",
+                    repaired, skipped);
+    return skipped == 0;
 }
