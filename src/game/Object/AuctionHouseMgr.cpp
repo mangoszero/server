@@ -363,7 +363,8 @@ void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction,
     }
 
     // Snapshot the item guid-low before any deferral; the deferred RemoveAItem
-    // closure must use the original value (auction->itemGuidLow is zeroed below).
+    // closure must capture a stable value (the auction object itself is deleted
+    // by the trailing deferred closure on commit success).
     uint32 const savedItemGuidLow = auction->itemGuidLow;
 
     // owner exist
@@ -397,13 +398,18 @@ void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction,
         }
 
         // Defer RemoveAItem FIRST (legacy :310 ran before the mail;
-        // SendMailToInTransaction appends its own push AFTER this), then zero
-        // itemGuidLow. Mirror S5 cancel :979-982.
+        // SendMailToInTransaction appends its own push AFTER this). Mirror S5
+        // cancel :979-982. Do NOT zero auction->itemGuidLow synchronously here:
+        // that in-memory write would survive a checked-commit rollback (the
+        // auction stays in the map with itemGuidLow==0, the next tick re-resolves
+        // to GetAItem(0)==NULL -> item lost, "item:" row orphaned). The auction is
+        // deleted by the trailing deferred closure on success, so the field never
+        // needs zeroing; on rollback it must stay valid for re-resolution. S4's
+        // SendAuctionWonMailInTransaction likewise never zeroes it.
         def.effects.push_back([savedItemGuidLow]()
         {
             sAuctionMgr.RemoveAItem(savedItemGuidLow);
         });
-        auction->itemGuidLow = 0;
 
         // Return the item via DeliverItem: flips "item:<Id>" -> TERMINAL_OK AND
         // co-commits the return mail (queues the online owner's AddMItem
@@ -426,16 +432,17 @@ void AuctionHouseMgr::SendAuctionExpiredMailInTransaction(AuctionEntry* auction,
         // orphaned non-terminal row.
         CustodyService::CommitGoldLedgerOnly("item:" + std::to_string(auction->Id));
 
-        // Defer RemoveAItem + itemGuidLow=0 + the live `delete pItem` (X5: the
-        // destroy must run only after the checked commit succeeds, NOT inside
-        // the txn -- on rollback the row survives and so must the live Item*).
-        // Mirror SendAuctionWonMailInTransaction's destroy branch :534-548.
+        // Defer RemoveAItem + the live `delete pItem` (X5: the destroy must run
+        // only after the checked commit succeeds, NOT inside the txn -- on
+        // rollback the row survives and so must the live Item*). Mirror
+        // SendAuctionWonMailInTransaction's destroy branch :534-548. As in the
+        // owner-exists branch, do NOT zero auction->itemGuidLow synchronously --
+        // it must survive a rollback for the next tick's re-resolution.
         def.effects.push_back([savedItemGuidLow, pItem]()
         {
             sAuctionMgr.RemoveAItem(savedItemGuidLow);
             delete pItem;
         });
-        auction->itemGuidLow = 0;
     }
 }
 
@@ -589,7 +596,8 @@ void AuctionHouseMgr::SendAuctionWonMailInTransaction(AuctionEntry* auction, Cus
     }
 
     // Snapshot the item guid-low before any deferral; the deferred RemoveAItem
-    // closure must use the original value (auction->itemGuidLow is zeroed below).
+    // closure must capture a stable value (the auction object itself is deleted
+    // by the trailing deferred closure on commit success).
     uint32 const savedItemGuidLow = auction->itemGuidLow;
 
     // receiver exist
