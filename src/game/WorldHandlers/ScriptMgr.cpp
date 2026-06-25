@@ -2140,6 +2140,13 @@ bool ScriptAction::HandleScriptStep()
             if (m_script->terminateScript.npcEntry)
             {
                 WorldObject* pSearcher = pSource ? pSource : pTarget;
+                if (!pSearcher)
+                {
+                    sLog.outErrorDb(" DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u called without source or target for npc search %u in range %u, skipping.",
+                        m_type, m_script->id, m_script->command, m_script->terminateScript.npcEntry, m_script->terminateScript.searchDist);
+                    break;
+                }
+
                 if (pSearcher->GetTypeId() == TYPEID_PLAYER && pTarget && pTarget->GetTypeId() != TYPEID_PLAYER)
                 {
                     pSearcher = pTarget;

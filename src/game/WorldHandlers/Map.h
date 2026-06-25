@@ -395,6 +395,12 @@ class Map : public GridRefManager<NGridType>
             return grid && !grid->isGridObjectDataLoaded() && grid->loadedCellCount() > 0;
         }
 
+        static bool ShouldUseLivingWorldCellEnvelope(bool cellEnvelopeEnabled, bool isContinent, bool forceLoadMap)
+        {
+            return cellEnvelopeEnabled && isContinent && !forceLoadMap;
+        }
+
+        bool UseLivingWorldCellEnvelope() const;
         uint32 GetGridLoadedCellCount(uint32 gridX, uint32 gridY) const
         {
             NGridType* grid = getNGrid(gridX, gridY);

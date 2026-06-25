@@ -535,7 +535,7 @@ Map::EnsureGridLoadedAtEnter(const Cell& cell, Player* player)
 {
     NGridType* grid;
 
-    bool useEnvelope = (player == NULL) && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD) && IsContinent();
+    bool useEnvelope = (player == NULL) && UseLivingWorldCellEnvelope();
     bool loadedNow = false;
 
     if (useEnvelope)
@@ -597,7 +597,7 @@ bool Map::EnsureGridLoaded(const Cell& cell)
         // finalise FULL bitset (idempotent; ensures all 256 bits set even though LoadN already set them)
         setGridObjectDataLoaded(true, cell.GridX(), cell.GridY());
 
-        if (wasEnvelope && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+        if (wasEnvelope && UseLivingWorldCellEnvelope())
         {
             ++m_cellEnvStats.fills;
         }
@@ -665,6 +665,14 @@ bool Map::EnsureCellEnvelopeLoaded(const Cell& centerCell)
     }
 
     return didWork;
+}
+
+bool Map::UseLivingWorldCellEnvelope() const
+{
+    return ShouldUseLivingWorldCellEnvelope(
+        sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD),
+        IsContinent(),
+        sWorld.isForceLoadMap(GetId()));
 }
 
 /**
@@ -1247,7 +1255,7 @@ template<class T>
  */
 void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
 {
-    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    if (!UseLivingWorldCellEnvelope())
     {
         return;
     }
@@ -1287,7 +1295,7 @@ void Map::PromoteEnvelopeNeighboursToFull(uint32 gridX, uint32 gridY)
  */
 void Map::MaybePromoteEnvelopeGridForPlayer(uint32 gridX, uint32 gridY)
 {
-    if (!sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD))
+    if (!UseLivingWorldCellEnvelope())
     {
         return;
     }
@@ -1425,7 +1433,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         // B-Cell accretion: an active anchor moving inside a partially-loaded
         // (ENVELOPE) grid must have its new 3x3 envelope resident before it lands.
         if (c->IsActiveObject()
-            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && UseLivingWorldCellEnvelope()
             && !newGrid->isGridObjectDataLoaded())
         {
             // Count/log accretion only when the move actually loaded NEW envelope cells.
@@ -1443,7 +1451,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         AddToGrid(c, newGrid, new_cell);
         c->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(), new_cell.CellY()));
 
-        if (c->IsActiveObject() && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+        if (c->IsActiveObject() && UseLivingWorldCellEnvelope()
             && !newGrid->isCellObjectDataLoaded(new_cell.CellX(), new_cell.CellY()))
         {
             ++m_cellEnvStats.anomalyAnchorOutside;
@@ -1453,7 +1461,7 @@ bool Map::CreatureCellRelocation(Creature* c, const Cell &new_cell)
         // B-Cell trailing unload: cells in the anchor's OLD 3x3 envelope but not its
         // NEW one are candidates to reclaim, unless another anchor still covers them.
         if (c->IsActiveObject()
-            && sWorld.getConfig(CONFIG_BOOL_LIVINGWORLD_CELL_ENVELOPE_LOAD)
+            && UseLivingWorldCellEnvelope()
             && !newGrid->isGridObjectDataLoaded())          // ENVELOPE only (never on a FULL/player grid)
         {
             uint32 oldCX = LwGridLocalToGlobalCell(old_cell.GridX(), old_cell.CellX());
