@@ -77,7 +77,34 @@ static int RunCommitTest()
         }
     }
 
-    // Clean up.
+    // (c) Post-rollback TSS cleanliness: the false-returning rollback path above
+    // must still have detached the transaction from the TSS slot. If it left a
+    // residue, this third BeginTransaction() would trip MANGOS_ASSERT(!m_pTrans)
+    // in TransHelper::init(); a clean detach lets a fresh checked commit succeed
+    // and land its row.
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:commit:after',1,1,0,0,0,0,0,0,0,0)");
+    bool ok3 = CharacterDatabase.CommitTransactionChecked();
+    if (!ok3)
+    {
+        printf("commit FAIL: post-rollback CommitTransactionChecked returned false (TSS not clean?)\n");
+        pass = false;
+    }
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT 1 FROM `custody_ledger` WHERE `idem_key`='test:commit:after'"));
+        if (!res)
+        {
+            printf("commit FAIL: post-rollback committed row not visible (not durable)\n");
+            pass = false;
+        }
+    }
+
+    // Clean up (covers test:commit:ok and test:commit:after via the prefix).
     CharacterDatabase.DirectExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:commit%'");
 

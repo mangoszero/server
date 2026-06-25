@@ -542,6 +542,26 @@ bool Database::CommitTransactionChecked()
         return res;
     }
 
+    // If the delay thread has stopped (server shutdown), enqueuing a blocking
+    // transaction onto it would block this caller forever - the worker loop is
+    // gone and will never drain the queue or fulfil the promise. Gate BEFORE we
+    // build the promise/enqueue: run the transaction synchronously on the async
+    // connection the (stopped) delay thread is no longer using, and return the
+    // real result. We must NOT instead add a post-enqueue timeout: abandoning
+    // the stack-frame promise while a queued op still holds &prom is a
+    // use-after-free.
+    /// Residual TOCTOU (thread stops between this check and Delay() below) is
+    /// closed in practice by shutdown sequencing: the world thread is torn down
+    /// before the DB delay thread is stopped, so no world-thread caller reaches
+    /// this commit path concurrently with the delay thread stopping.
+    if (!m_threadBody->IsRunning())
+    {
+        SqlTransaction* t = (*m_TransStorage)->detach();
+        bool r = t->Execute(m_pAsyncConn);
+        delete t;
+        return r;
+    }
+
     // async enabled (runtime): FIFO-queue the transaction through the delay
     // thread and block until the worker has run it, then return the real
     // result. The promise/future live on THIS (blocked) stack frame, so they

@@ -109,7 +109,14 @@ bool SqlTransaction::Execute(SqlConnection* conn)
 
     LOCK_DB_CONN(conn);
 
-    conn->BeginTransaction();
+    /// if the START TRANSACTION itself fails we have no atomic boundary; bail
+    /// out rather than run the queued statements outside a transaction (a
+    /// later successful CommitTransaction() would otherwise falsely report a
+    /// "checked" success to CommitTransactionChecked()).
+    if (!conn->BeginTransaction())
+    {
+        return false;
+    }
 
     const int nItems = m_queue.size();
     for (int i = 0; i < nItems; ++i)
@@ -118,7 +125,12 @@ bool SqlTransaction::Execute(SqlConnection* conn)
 
         if (!pStmt->Execute(conn))
         {
-            conn->RollbackTransaction();
+            /// a failed rollback leaves the connection in an unknown
+            /// transaction state - never swallow it silently
+            if (!conn->RollbackTransaction())
+            {
+                sLog.outError("SqlTransaction::Execute: ROLLBACK failed after a failed statement; connection transaction state is unknown");
+            }
             return false;
         }
     }
@@ -141,11 +153,32 @@ bool SqlTransaction::Execute(SqlConnection* conn)
  */
 bool SqlTransactionResultSignal::Execute(SqlConnection* conn)
 {
-    bool ok = m_trans->Execute(conn);
+    /// the promise MUST be fulfilled on every path (a missed set_value() hangs
+    /// the blocked CommitTransactionChecked() forever) and the wrapped
+    /// transaction MUST always be freed. We therefore swallow any exception
+    /// from Execute() (reporting it loudly) rather than rethrow: the delay
+    /// thread worker must survive, and an unset promise would deadlock it.
+    bool ok = false;
+    try
+    {
+        ok = m_trans->Execute(conn);
+    }
+    catch (std::exception& e)
+    {
+        sLog.outError("CommitTransactionChecked: exception during transaction execute: %s", e.what());
+        ok = false;
+    }
+    catch (...)
+    {
+        sLog.outError("CommitTransactionChecked: unknown exception during transaction execute");
+        ok = false;
+    }
+
+    delete m_trans;
+    m_trans = NULL;
     /// set BEFORE the worker deletes this op; the caller's promise/future live
     /// on its still-blocked stack frame, so this hand-off is race-free
     m_result->set_value(ok);
-    delete m_trans;
     return ok;
 }
 
