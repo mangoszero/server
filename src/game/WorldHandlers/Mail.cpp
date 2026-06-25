@@ -557,39 +557,56 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         m_items.clear();
 
         // Replays SendMailTo's online push (Mail.cpp online branch) identically.
-        deferred.effects.push_back([pReceiver, push]()
+        // Re-resolves the receiver by GUID at run time (scalar-only closure, I2 invariant).
+        deferred.effects.push_back([push]()
         {
-            pReceiver->AddNewMailDeliverTime((time_t)push.deliverTime);
-
-            Mail* m = new Mail;
-            m->messageID = push.mailId;
-            m->mailTemplateId = push.mailTemplateId;
-            m->subject = push.subject;
-            m->body = push.body;
-            m->money = push.money;
-            m->COD = push.cod;
-
-            for (std::vector<std::pair<uint32, uint32>>::const_iterator it = push.items.begin();
-                 it != push.items.end(); ++it)
+            // Re-resolve the receiver by GUID — no raw Player* captured.
+            Player* p = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid));
+            if (p)
             {
-                m->AddItem(it->first, it->second);
+                p->AddNewMailDeliverTime((time_t)push.deliverTime);
+
+                Mail* m = new Mail;
+                m->messageID = push.mailId;
+                m->mailTemplateId = push.mailTemplateId;
+                m->subject = push.subject;
+                m->body = push.body;
+                m->money = push.money;
+                m->COD = push.cod;
+
+                for (std::vector<std::pair<uint32, uint32>>::const_iterator it = push.items.begin();
+                     it != push.items.end(); ++it)
+                {
+                    m->AddItem(it->first, it->second);
+                }
+
+                m->messageType = push.messageType;
+                m->stationery = push.stationery;
+                m->sender = push.senderId;
+                m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid);
+                m->expire_time = (time_t)push.expireTime;
+                m->deliver_time = (time_t)push.deliverTime;
+                m->checked = push.checked;
+                m->state = MAIL_STATE_UNCHANGED;
+
+                p->AddMail(m);                               // to insert new mail to beginning of maillist
+
+                for (std::vector<Item*>::const_iterator it = push.liveItems.begin();
+                     it != push.liveItems.end(); ++it)
+                {
+                    p->AddMItem(*it);
+                }
             }
-
-            m->messageType = push.messageType;
-            m->stationery = push.stationery;
-            m->sender = push.senderId;
-            m->receiverGuid = ObjectGuid(HIGHGUID_PLAYER, push.receiverGuid);
-            m->expire_time = (time_t)push.expireTime;
-            m->deliver_time = (time_t)push.deliverTime;
-            m->checked = push.checked;
-            m->state = MAIL_STATE_UNCHANGED;
-
-            pReceiver->AddMail(m);                           // to insert new mail to beginning of maillist
-
-            for (std::vector<Item*>::const_iterator it = push.liveItems.begin();
-                 it != push.liveItems.end(); ++it)
+            else
             {
-                pReceiver->AddMItem(*it);
+                // Defensive only — cannot happen with the no-yield same-call-stack run: the
+                // receiver was online at SendMailToInTransaction time and there is no yield
+                // before def.run(). If somehow offline, the durable mail row is authoritative;
+                // free the captured live items so they don't leak.
+                for (size_t i = 0; i < push.liveItems.size(); ++i)
+                {
+                    delete push.liveItems[i];
+                }
             }
         });
     }
