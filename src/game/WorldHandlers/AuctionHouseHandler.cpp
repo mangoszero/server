@@ -1003,27 +1003,23 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
         pl->SaveInventoryAndGoldToDB();
         auction->DeleteFromDB();
 
-        // Defer the Eluna OnRemove hook at its legacy sequence position (after
-        // the refund/item-return effects, before the trailing RemoveAuction/delete
-        // closure) so it fires ONLY on a successful checked commit and still sees
-        // a live entry. Captures auctionHouse + auction by value (both live until
-        // the final delete effect runs later in this same def.run() pass).
-#ifdef ENABLE_ELUNA
-        def.effects.push_back([auctionHouse, auction]()
-        {
-            if (Eluna* e = sWorld.GetEluna())
-            {
-                e->OnRemove(auctionHouse, auction);
-            }
-        });
-#endif /* ENABLE_ELUNA */
-
-        // Defer the AH-map erase + object delete LAST so `auction` stays valid
-        // for every earlier deferred closure throughout def.run().
+        // Defer the AH-map erase + Eluna OnRemove hook + object delete LAST, in
+        // the exact legacy order of the non-custody branch (RemoveAuction
+        // out-of-map -> OnRemove -> delete), so OnRemove fires ONLY on a
+        // successful checked commit AND sees the same map-state legacy does (the
+        // auction already removed from the map, the object not yet deleted).
+        // `self`/auctionHouse stay valid until the delete at the end of this
+        // closure.
         AuctionEntry* self = auction;
         def.effects.push_back([auctionHouse, capId, self]()
         {
             auctionHouse->RemoveAuction(capId);
+#ifdef ENABLE_ELUNA
+            if (Eluna* e = sWorld.GetEluna())
+            {
+                e->OnRemove(auctionHouse, self);
+            }
+#endif /* ENABLE_ELUNA */
             delete self;
         });
 
