@@ -895,15 +895,14 @@ void AuctionHouseObject::Update()
                     if (CharacterDatabase.CommitTransactionChecked())
                     {
                         def.run();
-                        def.discardItems();
                     }
                     else
                     {
                         // S4 mutates NO live state before the checked commit (every
-                        // in-memory effect is deferred), so discardItems() is the
-                        // complete restore; the auction/object survive intact and
-                        // the next tick re-resolves cleanly.
-                        def.discardItems();
+                        // in-memory effect is deferred and does not run on rollback),
+                        // so there is nothing to restore: the auction/object survive
+                        // intact, the custody item stays in mAitems, and the next
+                        // tick re-resolves cleanly with a valid GetAItem pointer.
                         sLog.outError("custody S4: win txn rolled back for auction %u", old->second->Id);
                     }
                 }

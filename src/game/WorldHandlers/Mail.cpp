@@ -460,16 +460,30 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
 
     if (!pReceiver && !pReceiverAccount)                    // receiver not exist
     {
-        // Delete the item rows in the caller's transaction, but DEFER the live
-        // Item* destruction until the commit result is known (do not delete
-        // inside the open transaction).
+        // Delete the item_instance rows in the caller's transaction, but DEFER
+        // the live Item* destruction into a SUCCESS-ONLY effect (do not delete
+        // inside the open transaction). On rollback the closure never runs, the
+        // item_instance DELETE is reverted, and the live Item* survives in the
+        // AH cache (mAitems) for the next-tick re-resolution.
+        std::vector<Item*> invalidItems;
         for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
         {
             Item* item = mailItemIter->second;
             CharacterDatabase.PExecute("DELETE FROM `item_instance` WHERE `guid`='%u'", item->GetGUIDLow());
-            deferred.itemsToDestroy.push_back(item);
+            invalidItems.push_back(item);
         }
         m_items.clear();
+
+        if (!invalidItems.empty())
+        {
+            deferred.effects.push_back([invalidItems]()
+            {
+                for (size_t i = 0; i < invalidItems.size(); ++i)
+                {
+                    delete invalidItems[i];
+                }
+            });
+        }
         return;
     }
 
@@ -544,16 +558,15 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
         {
             Item* item = mailItemIter->second;
             push.items.push_back(std::make_pair(item->GetGUIDLow(), item->GetEntry()));
+            // The live Item* is disposed by the success push closure (AddMItem,
+            // transferring ownership to the receiving Player). On rollback the
+            // closure never runs and the item survives in the AH cache (mAitems)
+            // for the next-tick re-resolution -- it is NOT freed on rollback.
             push.liveItems.push_back(item);
-            // Also record the live Item* for rollback. On success run() AddMItem's
-            // them (transferring ownership to the receiving Player) so
-            // discardItems() skips onlineItems; on a failed commit run() never
-            // runs, so discardItems() frees them. Freed exactly once, no leak.
-            deferred.onlineItems.push_back(item);
         }
 
-        // Ownership of the live Item* passes to the deferred push; this draft no
-        // longer destroys them on its destructor path.
+        // The live Item* are now handled by the deferred success push; clear the
+        // draft's item map so its destructor path no longer touches them.
         m_items.clear();
 
         // Replays SendMailTo's online push (Mail.cpp online branch) identically.
@@ -612,14 +625,27 @@ void MailDraft::SendMailToInTransaction(MailReceiver const& receiver, MailSender
     }
     else if (!m_items.empty())
     {
-        // Offline-with-items: the rows are already written to the caller's
-        // transaction; DEFER the live Item* destruction until the result is
-        // known instead of deleting inside the open transaction.
+        // Offline-with-account: the mail_items rows are already written to the
+        // caller's transaction; DEFER the live Item* destruction into a
+        // SUCCESS-ONLY effect instead of deleting inside the open transaction.
+        // On success the item lives on only as the DB item_instance + mail_items
+        // rows, so the live object is deleted. On rollback the closure never
+        // runs, the rows are reverted, and the live Item* survives in the AH
+        // cache (mAitems) for the next-tick re-resolution.
+        std::vector<Item*> offlineItems;
         for (MailItemMap::iterator mailItemIter = m_items.begin(); mailItemIter != m_items.end(); ++mailItemIter)
         {
-            deferred.itemsToDestroy.push_back(mailItemIter->second);
+            offlineItems.push_back(mailItemIter->second);
         }
         m_items.clear();
+
+        deferred.effects.push_back([offlineItems]()
+        {
+            for (size_t i = 0; i < offlineItems.size(); ++i)
+            {
+                delete offlineItems[i];
+            }
+        });
     }
 }
 

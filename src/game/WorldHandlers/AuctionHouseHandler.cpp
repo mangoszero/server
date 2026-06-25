@@ -759,7 +759,6 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
         if (CharacterDatabase.CommitTransactionChecked())
         {
             def.run();          // ordered live effects (command-result, notify/mail pushes, buyout win + delete)
-            def.discardItems(); // frees only offline items; online items now owned by their Players
         }
         else
         {
@@ -768,11 +767,12 @@ void WorldSession::HandleAuctionPlaceBid(WorldPacket& recv_data)
             // DB error. The auction was NOT deleted (def.run() did not execute), so
             // restoring its bid/bidder is safe for both the normal-bid and buyout
             // paths. Otherwise the DB reverts but live memory keeps the bid/gold
-            // and the next bid reads corrupted state.
+            // and the next bid reads corrupted state. No items are freed here: the
+            // deferred effects did not run, so every custody item survives in
+            // mAitems and the buyout auction re-resolves on the next tick.
             auction->bid = oldBid;
             auction->bidder = oldBidder;
             pl->ModifyMoney(int32(bidderDebit));    // refund the debit we applied in memory
-            def.discardItems();                     // free every live item the skipped mails would have delivered
             SendAuctionCommandResultData(capId, AUCTION_BID_PLACED, AUCTION_ERR_DATABASE, EQUIP_ERR_OK, 0);
             sLog.outError("custody S2: bid txn rolled back for auction %u; live state restored", capId);
         }

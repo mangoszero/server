@@ -153,12 +153,10 @@ static int RunMailTest()
     {
         printf("mail FAIL: CommitTransactionChecked returned false\n");
         pass = false;
-        def.discardItems();
     }
     else
     {
         def.run();
-        def.discardItems();
     }
 
     // The mail row must have co-committed in our transaction.
@@ -359,7 +357,6 @@ static int RunCustodyTest()
             pass = false;
         }
         def.run();
-        def.discardItems();
     }
 
     // ------------------------------------------------------------------ prim 2

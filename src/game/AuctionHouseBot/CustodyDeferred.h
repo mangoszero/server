@@ -28,11 +28,25 @@
  *
  * A custody co-commit (e.g. MailDraft::SendMailToInTransaction) appends its DB
  * writes to the CALLER'S open CharacterDatabase transaction and must NOT mutate
- * live world state (the online receiver's in-memory mail list) or destroy live
- * Item* objects until that transaction has DURABLY committed. Those side effects
- * are queued here as ordered closures and live Item* pointers, then either
- * replayed (run()) after a successful checked commit or discarded
- * (discardItems()) on rollback.
+ * live world state (the online receiver's in-memory mail list) or dispose of a
+ * live Item* until that transaction has DURABLY committed. Those side effects
+ * are queued here as ordered closures, then replayed (run()) AFTER a successful
+ * checked commit.
+ *
+ * Item ownership model: every custody mail item is owned by the AH cache
+ * (AuctionHouseMgr::mAitems), NOT by the mail. The item MUST survive a rollback
+ * -- the auction stays intact and re-resolves on the next tick, where GetAItem()
+ * must still return a valid pointer. An item is therefore disposed ONLY on
+ * success, inside an effects closure:
+ *   - online receiver        -> Player::AddMItem (ownership to the Player);
+ *   - offline-with-account   -> the live Item* is deleted (it now lives only as
+ *                               the DB item_instance + mail_items rows);
+ *   - invalid receiver       -> the live Item* is deleted (its item_instance
+ *                               DELETE is in the same transaction).
+ * In every case the seam's RemoveAItem (also a success-only effect, ordered
+ * BEFORE the mail's disposal) takes the item out of mAitems first. On ROLLBACK
+ * none of these effects run: the item is neither freed nor RemoveAItem'd and
+ * survives in mAitems for the next-tick re-resolution.
  */
 
 #ifndef MANGOS_CUSTODY_DEFERRED_H
@@ -71,43 +85,32 @@ struct DeferredMailPush
     uint64 expireTime;                                      ///< expiry time
     /// (item guidLow, item entry) pairs to register on the in-memory Mail.
     std::vector<std::pair<uint32, uint32>> items;
-    /// Live Item* objects owned by the draft, registered via Player::AddMItem
-    /// when the push runs (same call stack, so still valid). The SAME pointers
-    /// are ALSO recorded in CustodyDeferred::onlineItems: here for the success
-    /// path (AddMItem) and there for the rollback path (delete). They are freed
-    /// exactly once -- see CustodyDeferred's class doc.
+    /// Live Item* objects (owned by the AH cache, mAitems) registered via
+    /// Player::AddMItem when the success push closure runs (same call stack, so
+    /// still valid). On rollback the closure never runs and these items survive
+    /// in mAitems for the next-tick re-resolution -- they are NOT freed here.
     std::vector<Item*> liveItems;
 };
 
 /**
  * Ordered queue of deferred side effects for a custody co-commit. The owner
  * runs the queue exactly once, AFTER the caller's checked commit reports
- * success; on rollback it discards any live Item* objects that will never be
- * mailed instead.
+ * success; on rollback it does NOTHING (no effect runs).
  *
- * Caller contract: on a successful checked commit call run() then
- * discardItems(); on a failed commit call discardItems() only.
- *
- * Online live-item lifetime: an online receiver's live Item* are held in BOTH
- * the success closure (which AddMItem's them, transferring ownership to the
- * receiving Player when run() executes) AND in onlineItems (for rollback). They
- * are freed EXACTLY ONCE: on success run() sets ran=true and AddMItem takes
- * ownership, so discardItems() skips onlineItems; on failure run() never ran,
- * so discardItems() frees them. This is not a double-free.
+ * Caller contract: on a successful checked commit call run(); on a failed
+ * commit call nothing. Every item disposal (online AddMItem, offline/invalid
+ * delete) and every RemoveAItem is a success-only effect, so on rollback the
+ * custody items are neither freed nor removed from mAitems -- they survive for
+ * the next-tick re-resolution (the auction itself is not deleted until run()).
+ * This is why there is no item-discard hook: rollback frees nothing.
  */
 struct CustodyDeferred
 {
-    /// Ordered live effects, executed in push order on success (incl. the
-    /// online AddMItem push).
+    /// Ordered live effects, executed in push order on success: seam RemoveAItem
+    /// (out of mAitems) THEN the mail's item disposal (online AddMItem / offline
+    /// + invalid delete). On rollback none of these run and every custody item
+    /// survives in mAitems.
     std::vector<std::function<void()>> effects;
-    /// Offline/invalid-receiver live items: freed in discardItems() on BOTH
-    /// paths (matches the default SendMailTo unconditional destroy).
-    std::vector<Item*> itemsToDestroy;
-    /// Online live items: AddMItem'd by run() on success; freed by
-    /// discardItems() ONLY if run() did not execute (rollback).
-    std::vector<Item*> onlineItems;
-    /// True once run() has executed (online items now owned by their Players).
-    bool ran = false;
 
     /// Executes every queued effect in order. Call once, after a successful
     /// checked commit, on the same thread/call stack that built the queue.
@@ -117,27 +120,6 @@ struct CustodyDeferred
         {
             effects[i]();
         }
-        ran = true;   // online items are now owned by their receiving Players (AddMItem)
-    }
-
-    /// Frees the offline/invalid live items on BOTH paths, and -- only if run()
-    /// never executed (rollback) -- the online live items that will never be
-    /// mailed. Safe to call after run() (it skips the now-owned online items).
-    void discardItems()
-    {
-        for (size_t i = 0; i < itemsToDestroy.size(); ++i)
-        {
-            delete itemsToDestroy[i];
-        }
-        itemsToDestroy.clear();
-        if (!ran)                       // rollback: the online push never ran, free its items
-        {
-            for (size_t i = 0; i < onlineItems.size(); ++i)
-            {
-                delete onlineItems[i];
-            }
-        }
-        onlineItems.clear();
     }
 };
 
