@@ -79,10 +79,11 @@ Run each matrix row twice, once with each crash phase.
 4. Reset `AH.Service.CustodyCrashAt = ""`, keep `AH.Service.Custody = 1`, and
    reboot the test realm.
 5. Assert the recovery state:
-   - `pre-commit`: the transaction did not commit, the auction is intact, there
-     are zero new `mail` rows after the recorded `MAX(mail.id)`, and
-     `WorldLogFile` has no phantom auction notification/command-result packets
-     from the killed seam.
+   - `pre-commit`: the transaction did not commit and the pre-seam DB state is
+     unchanged -- for S1 (create) NO auction row exists (it was never inserted);
+     for S2-S6 the existing auction row is unchanged. There are zero new `mail`
+     rows after the recorded `MAX(mail.id)`, and `WorldLogFile` has no phantom
+     auction notification/command-result packets from the killed seam.
    - `pre-deferred`: the transaction committed, deferred live effects did not
      run before process death, and reboot/re-resolution reaches the same final
      player-visible projection as the no-crash custody run.

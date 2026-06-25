@@ -10,8 +10,10 @@
 --     directly, as required by the player-visible projection.
 --   * Allow no other logins or background auction/mail activity while replaying.
 --   * Prefer a pinned/normalized clock. If wall-clock timestamps differ between
---     clone runs, keep @compare_absolute_mail_times = 0 so mail deliver/expire
---     times are dumped for inspection but excluded from the diff.
+--     clone runs, keep @compare_absolute_mail_times = 0 and
+--     @compare_absolute_auction_times = 0 so the mail deliver/expire times and
+--     the auction.time (expiry) column are dumped for inspection but excluded
+--     from the diff. Custody never alters these columns; only clock drift does.
 --   * custody_ledger is intentionally excluded: only player-visible tables are
 --     compared here.
 --
@@ -30,6 +32,7 @@
 SET @clone_a := COALESCE(@clone_a, 'character0_custody_off');
 SET @clone_b := COALESCE(@clone_b, 'character0_custody_on');
 SET @compare_absolute_mail_times := COALESCE(@compare_absolute_mail_times, 0);
+SET @compare_absolute_auction_times := COALESCE(@compare_absolute_auction_times, 0);
 
 SET @a := CONCAT('`', REPLACE(@clone_a, '`', '``'), '`');
 SET @b := CONCAT('`', REPLACE(@clone_b, '`', '``'), '`');
@@ -127,9 +130,17 @@ SET @sql := CONCAT('CREATE TEMPORARY TABLE custody_diff_item_instance_b AS ',
                    'SELECT guid, owner_guid FROM ', @b, '.`item_instance`');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-SET @sql := CONCAT('CREATE TEMPORARY TABLE custody_diff_auction_a AS SELECT * FROM ', @a, '.`auction`');
+-- auction.time is expireTime = time(NULL) + etime, a wall-clock timestamp set at
+-- creation (identical between custody on/off; only clock drift between clone runs
+-- differs). Normalize it out by default exactly like the mail times, so an
+-- unpinned-clock run does not false-positive every created auction. AUCTION_DIFF
+-- joins this column with <=> so NULL matches NULL when normalized.
+SET @auction_time_col := IF(@compare_absolute_auction_times = 1, 'time', 'CAST(NULL AS UNSIGNED) AS time');
+SET @auction_cols := CONCAT('id, houseid, itemguid, item_template, item_count, item_randompropertyid, ',
+                            'itemowner, buyoutprice, ', @auction_time_col, ', buyguid, lastbid, startbid, deposit');
+SET @sql := CONCAT('CREATE TEMPORARY TABLE custody_diff_auction_a AS SELECT ', @auction_cols, ' FROM ', @a, '.`auction`');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql := CONCAT('CREATE TEMPORARY TABLE custody_diff_auction_b AS SELECT * FROM ', @b, '.`auction`');
+SET @sql := CONCAT('CREATE TEMPORARY TABLE custody_diff_auction_b AS SELECT ', @auction_cols, ' FROM ', @b, '.`auction`');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SELECT 'MAIL_TIME_WINDOW_A: inspect when absolute mail times are normalized out' AS section;
@@ -226,7 +237,10 @@ FROM (
 ) d
 ORDER BY receiver, money, subject, diff_side;
 
-SELECT 'MAIL_ITEMS_DIFF: zero rows means pass' AS section;
+-- Diagnostic: MAIL_ITEMS_DIFF joins mail_id directly (per the idle MAX(mail.id)
+-- snapshot precondition). If MAIL_DIFF is clean but this section is NOT, mail.id
+-- drifted between the clones -- re-verify the idle-snapshot precondition.
+SELECT 'MAIL_ITEMS_DIFF: zero rows means pass (clean MAIL_DIFF + dirty here => mail.id drift)' AS section;
 SELECT diff_side, mail_id, item_guid, item_template, receiver, delta_count
 FROM (
     SELECT 'A_MINUS_B' AS diff_side, a.*, a.row_count - COALESCE(b.row_count, 0) AS delta_count
@@ -306,7 +320,7 @@ FROM (
      AND b.item_randompropertyid = a.item_randompropertyid
      AND b.itemowner = a.itemowner
      AND b.buyoutprice = a.buyoutprice
-     AND b.time = a.time
+     AND b.time <=> a.time
      AND b.buyguid = a.buyguid
      AND b.lastbid = a.lastbid
      AND b.startbid = a.startbid
@@ -336,7 +350,7 @@ FROM (
      AND a.item_randompropertyid = b.item_randompropertyid
      AND a.itemowner = b.itemowner
      AND a.buyoutprice = b.buyoutprice
-     AND a.time = b.time
+     AND a.time <=> b.time
      AND a.buyguid = b.buyguid
      AND a.lastbid = b.lastbid
      AND a.startbid = b.startbid

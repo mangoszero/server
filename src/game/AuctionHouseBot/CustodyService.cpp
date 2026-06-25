@@ -351,7 +351,7 @@ void CustodyService::MaybeCrash(std::string const& phase)
     if (CrashPhase() == phase)
     {
         sLog.outError("custody crash-injection: _exit(3) at phase '%s' (TEST ONLY)", phase.c_str());
-        fflush(stdout);
+        fflush(NULL);                                       // flush ALL stdio streams (incl. the log FILE*) -- _exit skips cleanup
         _exit(3);
     }
 }
