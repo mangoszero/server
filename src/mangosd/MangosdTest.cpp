@@ -1,6 +1,7 @@
 #include "MangosdTest.h"
 #include "Log.h"
 #include "Database/DatabaseEnv.h"
+#include "Chat.h"
 #include "Mail.h"
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
@@ -11,6 +12,10 @@
 #include <cstdio>
 #include <ctime>
 #include <memory>
+
+static void TestCliPrint(void* /*arg*/, char const* /*text*/)
+{
+}
 
 /// Self-test for Database::CommitTransactionChecked(): proves the runtime
 /// (async-enabled) path is synchronous, durable and returns the REAL result.
@@ -343,6 +348,7 @@ static int RunCustodyTest()
     AuctionHouseObject* testAuctions = sAuctionMgr.GetAuctionsMap(AUCTION_HOUSE_NEUTRAL);
     uint32 const liveAuctionId = 970002;
     uint32 const missingItemAuctionId = 970003;
+    uint32 const duplicateBidAuctionId = 970006;
     uint64 const now = static_cast<uint64>(time(NULL));
     uint64 const oldTime = now > 7200 ? now - 7200 : 1;
 
@@ -350,9 +356,11 @@ static int RunCustodyTest()
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:recon:%'");
     CharacterDatabase.DirectExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
-        "('item:970002','dep:970002','item:970003','dep:970003')");
+        "('item:970002','dep:970002','item:970003','dep:970003',"
+        "'item:970006','dep:970006','bid:970006:1','bid:970006:2')");
     testAuctions->RemoveAuction(liveAuctionId);
     testAuctions->RemoveAuction(missingItemAuctionId);
+    testAuctions->RemoveAuction(duplicateBidAuctionId);
 
     AuctionEntry* liveAuction = new AuctionEntry;
     liveAuction->Id = liveAuctionId;
@@ -386,6 +394,22 @@ static int RunCustodyTest()
     missingItemAuction->auctionHouseEntry = &testHouse;
     testAuctions->AddAuction(missingItemAuction);
 
+    AuctionEntry* duplicateBidAuction = new AuctionEntry;
+    duplicateBidAuction->Id = duplicateBidAuctionId;
+    duplicateBidAuction->itemGuidLow = 880006;
+    duplicateBidAuction->itemTemplate = 25;
+    duplicateBidAuction->itemCount = 1;
+    duplicateBidAuction->itemRandomPropertyId = 0;
+    duplicateBidAuction->owner = 1006;
+    duplicateBidAuction->startbid = 10;
+    duplicateBidAuction->bid = 77;
+    duplicateBidAuction->buyout = 0;
+    duplicateBidAuction->expireTime = time(NULL) + HOUR;
+    duplicateBidAuction->bidder = 2006;
+    duplicateBidAuction->deposit = 5;
+    duplicateBidAuction->auctionHouseEntry = &testHouse;
+    testAuctions->AddAuction(duplicateBidAuction);
+
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute(
         "INSERT INTO `custody_ledger` "
@@ -415,6 +439,30 @@ static int RunCustodyTest()
         "INSERT INTO `custody_ledger` "
         "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
         "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('item:970006','%u','%u','%u','%u','0','0','880006','970006','" UI64FMTD "','0')",
+        uint32(CUSTODY_ITEM), uint32(ROLE_ITEM), uint32(CST_RESERVED), 1006, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('dep:970006','%u','%u','%u','%u','0','5','0','970006','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_RESERVED), 1006, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('bid:970006:1','%u','%u','%u','%u','0','77','0','970006','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED), 2006, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('bid:970006:2','%u','%u','%u','%u','0','77','0','970006','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED), 2006, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
         "VALUES ('test:recon:old-terminal','%u','%u','%u','%u','0','0','0','970004','" UI64FMTD "','" UI64FMTD "')",
         uint32(CUSTODY_GOLD), uint32(ROLE_DEPOSIT), uint32(CST_TERMINAL_OK), 1004, oldTime, oldTime);
     CharacterDatabase.PExecute(
@@ -435,6 +483,8 @@ static int RunCustodyTest()
         bool sawOrphan = false;
         bool sawCleanLive = false;
         bool sawMissingItem = false;
+        bool sawDuplicateBid1 = false;
+        bool sawDuplicateBid2 = false;
         for (size_t i = 0; i < drift.size(); ++i)
         {
             if (drift[i].idemKey == "test:recon:orphan")
@@ -448,6 +498,14 @@ static int RunCustodyTest()
             if (drift[i].idemKey == "item:970003")
             {
                 sawMissingItem = true;
+            }
+            if (drift[i].idemKey == "bid:970006:1" && drift[i].id != 0)
+            {
+                sawDuplicateBid1 = true;
+            }
+            if (drift[i].idemKey == "bid:970006:2" && drift[i].id != 0)
+            {
+                sawDuplicateBid2 = true;
             }
         }
         if (!sawOrphan)
@@ -463,6 +521,11 @@ static int RunCustodyTest()
         if (!sawMissingItem)
         {
             printf("custody FAIL: reconcile did not flag live auction missing item row\n");
+            pass = false;
+        }
+        if (!sawDuplicateBid1 || !sawDuplicateBid2)
+        {
+            printf("custody FAIL: reconcile did not surface duplicate live bid rows\n");
             pass = false;
         }
     }
@@ -491,15 +554,155 @@ static int RunCustodyTest()
 
     testAuctions->RemoveAuction(liveAuctionId);
     testAuctions->RemoveAuction(missingItemAuctionId);
+    testAuctions->RemoveAuction(duplicateBidAuctionId);
     delete liveAuction;
     delete missingItemAuction;
+    delete duplicateBidAuction;
     CharacterDatabase.BeginTransaction();
     CharacterDatabase.PExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:recon:%%'");
     CharacterDatabase.PExecute(
         "DELETE FROM `custody_ledger` WHERE `idem_key` IN "
-        "('item:970002','dep:970002','item:970003','dep:970003')");
+        "('item:970002','dep:970002','item:970003','dep:970003',"
+        "'item:970006','dep:970006','bid:970006:1','bid:970006:2')");
     CharacterDatabase.CommitTransactionChecked();
+
+    // ========================================================== repair command
+    // Task 14: ah repair terminalizes custody drift conservatively and never
+    // mints mail from orphan ledger rows.
+    uint32 const repairOwner = 1;
+    uint32 const repairAuctionId = 970010;
+    uint32 const repairItemGuid = 880010;
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject`='AH custody repair'");
+    uint64 beforeRepairMail = 0;
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`='%u'",
+            repairOwner));
+        if (res)
+        {
+            beforeRepairMail = res->Fetch()[0].GetUInt64();
+        }
+    }
+
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:repair:%'");
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:repair:gold','%u','%u','%u','%u','0','12345','0','%u','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED),
+        repairOwner, repairAuctionId, oldTime);
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:repair:item','%u','%u','%u','%u','0','0','%u','%u','" UI64FMTD "','0')",
+        uint32(CUSTODY_ITEM), uint32(ROLE_ITEM), uint32(CST_RESERVED),
+        repairOwner, repairItemGuid, repairAuctionId + 1, oldTime);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("custody FAIL: repair seed commit returned false\n");
+        pass = false;
+    }
+
+    CliHandler cli(0, SEC_ADMINISTRATOR, NULL, &TestCliPrint);
+    if (!cli.ParseCommands("ah repair apply"))
+    {
+        printf("custody FAIL: ah repair apply returned false\n");
+        pass = false;
+    }
+
+    {
+        CustodyRow row;
+        if (!CustodyLedger::Get("test:repair:gold", row) ||
+            row.state == CST_RESERVED)
+        {
+            printf("custody FAIL: ah repair did not terminalize gold row\n");
+            pass = false;
+        }
+        if (!CustodyLedger::Get("test:repair:item", row) ||
+            row.state == CST_RESERVED)
+        {
+            printf("custody FAIL: ah repair did not terminalize item row\n");
+            pass = false;
+        }
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`='%u'",
+            repairOwner));
+        uint64 const afterRepairMail = res ? res->Fetch()[0].GetUInt64() : 0;
+        if (afterRepairMail != beforeRepairMail)
+        {
+            printf("custody FAIL: ah repair minted mail from orphan ledger row\n");
+            pass = false;
+        }
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `item_instance` WHERE `guid`='%u'",
+            repairItemGuid));
+        if (res && res->Fetch()[0].GetUInt64() != 0)
+        {
+            printf("custody FAIL: ah repair mutated sentinel item_instance row\n");
+            pass = false;
+        }
+    }
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "INSERT INTO `custody_ledger` "
+        "(`idem_key`,`kind`,`role`,`state`,`owner_guid`,`beneficiary_guid`,"
+        "`amount`,`item_guid`,`auction_id`,`created_time`,`resolved_time`) "
+        "VALUES ('test:repair:force','%u','%u','%u','%u','0','54321','0','%u','" UI64FMTD "','0')",
+        uint32(CUSTODY_GOLD), uint32(ROLE_BID), uint32(CST_RESERVED),
+        repairOwner, repairAuctionId + 2, oldTime);
+    if (!CharacterDatabase.CommitTransactionChecked())
+    {
+        printf("custody FAIL: repair force seed commit returned false\n");
+        pass = false;
+    }
+
+    if (!cli.ParseCommands("ah repair force-forfeit test:repair:force"))
+    {
+        printf("custody FAIL: ah repair force-forfeit returned false\n");
+        pass = false;
+    }
+
+    {
+        CustodyRow row;
+        if (!CustodyLedger::Get("test:repair:force", row) ||
+            row.state == CST_RESERVED)
+        {
+            printf("custody FAIL: force-forfeit did not terminalize gold row\n");
+            pass = false;
+        }
+    }
+
+    {
+        std::unique_ptr<QueryResult> res(CharacterDatabase.PQuery(
+            "SELECT COUNT(*) FROM `mail` WHERE `receiver`='%u'",
+            repairOwner));
+        uint64 const afterForceMail = res ? res->Fetch()[0].GetUInt64() : 0;
+        if (afterForceMail != beforeRepairMail)
+        {
+            printf("custody FAIL: force-forfeit minted mail from orphan ledger row\n");
+            pass = false;
+        }
+    }
+
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute(
+        "DELETE FROM `custody_ledger` WHERE `idem_key` LIKE 'test:repair:%%'");
+    CharacterDatabase.CommitTransactionChecked();
+    CharacterDatabase.DirectExecute(
+        "DELETE FROM `mail` WHERE `receiver`=1 AND `subject`='AH custody repair'");
 
     // ================================================================ primitive
     // Primitive round-trip: offline owner (no ModifyMoney),

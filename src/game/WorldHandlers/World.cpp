@@ -1912,7 +1912,11 @@ void World::Update(uint32 diff)
         static uint64 s_nextCustodyReconcileTime = 0;
         uint64 const now = static_cast<uint64>(GetGameTime());
         uint64 const custodyTerminalRetention = 30 * DAY;
-        if (now >= s_nextCustodyReconcileTime)
+        if (!s_nextCustodyReconcileTime)
+        {
+            s_nextCustodyReconcileTime = now + HOUR;
+        }
+        else if (now >= s_nextCustodyReconcileTime)
         {
             std::vector<CustodyRow> drift;
             CustodyService::ReconcileScan(true, drift);
