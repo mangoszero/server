@@ -413,6 +413,7 @@ LogFilter_Combat             = 0
 LogFilter_SpellCast          = 1
 LogWhispers                  = 1
 WorldLogFile                 = "world-packets.log"
+PacketLoggingEnabled         = 0
 WorldLogTimestamp            = 0
 DBErrorLogFile               = "world-database.log"
 ElunaErrorLogFile            = "ElunaErrors.log"

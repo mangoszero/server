@@ -274,6 +274,87 @@ void Log::SetLogFileLevel(char* level)
     printf("LogFileLevel is %u\n", m_logFileLevel);
 }
 
+void Log::CloseLogFiles()
+{
+    if (logfile != NULL)
+    {
+        fclose(logfile);
+        logfile = NULL;
+    }
+    if (gmLogfile != NULL)
+    {
+        fclose(gmLogfile);
+        gmLogfile = NULL;
+    }
+    if (charLogfile != NULL)
+    {
+        fclose(charLogfile);
+        charLogfile = NULL;
+    }
+    if (dberLogfile != NULL)
+    {
+        fclose(dberLogfile);
+        dberLogfile = NULL;
+    }
+#ifdef ENABLE_ELUNA
+    if (elunaErrLogfile != NULL)
+    {
+        fclose(elunaErrLogfile);
+        elunaErrLogfile = NULL;
+    }
+#endif /* ENABLE_ELUNA */
+    if (eventAiErLogfile != NULL)
+    {
+        fclose(eventAiErLogfile);
+        eventAiErLogfile = NULL;
+    }
+    if (scriptErrLogFile != NULL)
+    {
+        fclose(scriptErrLogFile);
+        scriptErrLogFile = NULL;
+    }
+    if (raLogfile != NULL)
+    {
+        fclose(raLogfile);
+        raLogfile = NULL;
+    }
+    if (worldLogfile != NULL)
+    {
+        fclose(worldLogfile);
+        worldLogfile = NULL;
+    }
+    if (wardenLogfile != NULL)
+    {
+        fclose(wardenLogfile);
+        wardenLogfile = NULL;
+    }
+}
+
+void Log::Flush()
+{
+    // Push the buffered sinks to the OS. Best-effort, not a crash drain: error
+    // paths flush immediately at emit time, and shutdown flushes via fclose in
+    // CloseLogFiles(). Also flush stdout so a redirected/piped console (fully
+    // buffered when not a TTY) does not lag behind.
+    fflush(stdout);
+
+    {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
+        if (logfile != NULL)
+        {
+            fflush(logfile);
+        }
+    }
+
+    {
+        ACE_GUARD(ACE_Thread_Mutex, worldGuard, m_worldLogMtx);
+        if (worldLogfile != NULL)
+        {
+            fflush(worldLogfile);
+        }
+    }
+}
+
 void Log::Initialize()
 {
     /// Common log files data
@@ -287,6 +368,12 @@ void Log::Initialize()
     }
 
     m_logsTimestamp = "_" + GetTimestampStr();
+
+    // Idempotent re-init: realmd calls Initialize() a second time after its
+    // config is loaded (the ctor's first call ran before config and opened
+    // nothing). Close any handle already open so this reopens cleanly instead
+    // of leaking the previous FILE*.
+    CloseLogFiles();
 
     /// Open specific log files
     logfile = openLogFile("LogFile", "LogTimestamp", "w");
@@ -336,7 +423,15 @@ void Log::Initialize()
 
     eventAiErLogfile = openLogFile("EventAIErrorLogFile", NULL, "a");
     raLogfile = openLogFile("RaLogFile", NULL, "a");
-    worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
+    // Packet logging is opt-in via PacketLoggingEnabled (default off): open the
+    // packet log only when explicitly enabled, so it stays off even on legacy
+    // configs that still set WorldLogFile with LogLevel=3 (and a disabled server
+    // creates no stray empty world-packets.log). IsPacketLoggingEnabled() keys
+    // off worldLogfile != NULL, so this open is the single gate.
+    if (sConfig.GetBoolDefault("PacketLoggingEnabled", false))
+    {
+        worldLogfile = openLogFile("WorldLogFile", "WorldLogTimestamp", "a");
+    }
     wardenLogfile = openLogFile("WardenLogFile", "WardenLogTimestamp", "a");
 
     // Main log file settings
@@ -382,7 +477,17 @@ FILE* Log::openLogFile(char const* configFileName, char const* configTimeStampFl
         }
     }
 
-    return fopen((m_logsDir + logfn).c_str(), mode);
+    FILE* fp = fopen((m_logsDir + logfn).c_str(), mode);
+    if (fp != NULL)
+    {
+        // Fully buffer log files (64 KiB). Per-line fflush is removed from the
+        // hot loggers (outString/outBasic/outDetail/outDebug); Log::Flush()
+        // (world tick + shutdown) and the error paths push the buffer to the
+        // OS. This removes the per-line flush syscall that stalled the world
+        // and map-update threads at LogFileLevel=3.
+        setvbuf(fp, NULL, _IOFBF, 64 * 1024);
+    }
+    return fp;
 }
 
 FILE* Log::openGmlogPerAccount(uint32 account)
@@ -451,12 +556,10 @@ void Log::outString()
     printf("\n");
     if (logfile)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outString(const char* str, ...)
@@ -491,17 +594,14 @@ void Log::outString(const char* str, ...)
 
     if (logfile)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         fprintf(logfile, "\n");
         va_end(ap);
-
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outError(const char* err, ...)
@@ -848,16 +948,14 @@ void Log::outBasic(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_BASIC)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         va_list ap;
         outTimestamp(logfile);
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         fprintf(logfile, "\n");
         va_end(ap);
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outDetail(const char* str, ...)
@@ -894,6 +992,7 @@ void Log::outDetail(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_DETAIL)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -902,10 +1001,7 @@ void Log::outDetail(const char* str, ...)
         va_end(ap);
 
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outDebug(const char* str, ...)
@@ -942,6 +1038,7 @@ void Log::outDebug(const char* str, ...)
 
     if (logfile && m_logFileLevel >= LOG_LVL_DEBUG)
     {
+        ACE_GUARD(ACE_Thread_Mutex, fileGuard, m_fileMtx);
         outTimestamp(logfile);
 
         va_list ap;
@@ -950,10 +1047,7 @@ void Log::outDebug(const char* str, ...)
         va_end(ap);
 
         fprintf(logfile, "\n");
-        fflush(logfile);
     }
-
-    fflush(stdout);
 }
 
 void Log::outCommand(uint32 account, const char* str, ...)
@@ -1222,23 +1316,36 @@ void Log::outWorldPacketDump(uint32 socket, uint32 opcode, char const* opcodeNam
 
     outTimestamp(worldLogfile);
 
-    fprintf(worldLogfile, "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
+    // Build the whole hex dump into one buffer and emit it with a single
+    // fwrite, instead of one fprintf PER BYTE (16+ stdio calls per row). Output
+    // is byte-identical to the previous format. Durability via Flush()/shutdown.
+    std::string out;
+    out.reserve(packet->size() * 3 + packet->size() / 16 + 128);
+
+    // header[512] is ample for the fixed text plus a (short, compile-time)
+    // opcode-name constant; snprintf is bounded, so output stays byte-identical
+    // to the previous fprintf for every real opcode name.
+    char header[512];
+    snprintf(header, sizeof(header), "\n%s:\nSOCKET: %u\nLENGTH: %zu\nOPCODE: %s (0x%.4X)\nDATA:\n",
         incoming ? "CLIENT" : "SERVER",
         socket, packet->size(), opcodeName, opcode);
+    out += header;
 
+    char hexbuf[4];
     size_t p = 0;
     while (p < packet->size())
     {
         for (size_t j = 0; j < 16 && p < packet->size(); ++j)
         {
-            fprintf(worldLogfile, "%.2X ", (*packet)[p++]);
+            snprintf(hexbuf, sizeof(hexbuf), "%.2X ", (*packet)[p++]);
+            out += hexbuf;
         }
 
-        fprintf(worldLogfile, "\n");
+        out += "\n";
     }
 
-    fprintf(worldLogfile, "\n\n");
-    fflush(worldLogfile);
+    out += "\n\n";
+    fwrite(out.c_str(), 1, out.size(), worldLogfile);
 }
 
 void Log::outCharDump(const char* str, uint32 account_id, uint32 guid, const char* name)

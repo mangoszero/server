@@ -156,67 +156,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
      */
     ~Log()
     {
-        if (logfile != NULL)
-        {
-            fclose(logfile);
-        }
-        logfile = NULL;
-
-        if (gmLogfile != NULL)
-        {
-            fclose(gmLogfile);
-        }
-        gmLogfile = NULL;
-
-        if (charLogfile != NULL)
-        {
-            fclose(charLogfile);
-        }
-        charLogfile = NULL;
-
-        if (dberLogfile != NULL)
-        {
-            fclose(dberLogfile);
-        }
-        dberLogfile = NULL;
-
-#ifdef ENABLE_ELUNA
-        if (elunaErrLogfile != NULL)
-        {
-            fclose(elunaErrLogfile);
-        }
-        elunaErrLogfile = NULL;
-#endif /* ENABLE_ELUNA */
-
-        if (eventAiErLogfile != NULL)
-        {
-            fclose(eventAiErLogfile);
-        }
-        eventAiErLogfile = NULL;
-
-        if (scriptErrLogFile != NULL)
-        {
-            fclose(scriptErrLogFile);
-        }
-        scriptErrLogFile = NULL;
-
-        if (raLogfile != NULL)
-        {
-            fclose(raLogfile);
-        }
-        raLogfile = NULL;
-
-        if (worldLogfile != NULL)
-        {
-            fclose(worldLogfile);
-        }
-        worldLogfile = NULL;
-
-        if (wardenLogfile != NULL)
-        {
-            fclose(wardenLogfile);
-        }
-        wardenLogfile = NULL;
+        CloseLogFiles();
     }
     public:
         /**
@@ -463,6 +403,24 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         bool HasLogLevelOrHigher(LogLevel loglvl) const { return m_logLevel >= loglvl || (m_logFileLevel >= loglvl && logfile); }
 
         /**
+         * @brief Flush buffered file log output to the OS. Called periodically
+         *        from the world tick and once at shutdown. The file sinks are
+         *        fully buffered (setvbuf), so this bounds how long a buffered
+         *        line waits to reach disk. Best-effort: error paths still flush
+         *        immediately at emit time.
+         */
+        void Flush();
+
+        /**
+         * @brief Whether world packet logging is active. Gated by the
+         *        PacketLoggingEnabled config flag at startup: worldLogfile is
+         *        only opened when the flag is set, so this is the single source
+         *        of truth and is off by default even on legacy configs.
+         * @return bool
+         */
+        bool IsPacketLoggingEnabled() const { return worldLogfile != NULL; }
+
+        /**
          * @brief
          *
          * @return bool
@@ -509,6 +467,13 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          */
         FILE* openGmlogPerAccount(uint32 account);
 
+        /**
+         * @brief Closes all open log file handles. Used by the destructor and
+         *        by Initialize() to make re-initialization idempotent (realmd
+         *        calls Initialize() a second time after loading its config).
+         */
+        void CloseLogFiles();
+
         FILE* raLogfile; /**< TODO */
         FILE* logfile; /**< TODO */
         FILE* gmLogfile; /**< TODO */
@@ -522,7 +487,8 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
         FILE* wardenLogfile; /**< TODO */
-        ACE_Thread_Mutex m_worldLogMtx; /**< TODO */
+        ACE_Thread_Mutex m_worldLogMtx; /**< Serializes packet-dump writes to worldLogfile */
+        ACE_Thread_Mutex m_fileMtx; /**< Serializes writes to the main logfile so concurrent map-update worker threads cannot tear lines */
 
         LogLevel m_logLevel; /**< log/console control */
         LogLevel m_logFileLevel; /**< TODO */

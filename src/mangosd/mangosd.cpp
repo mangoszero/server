@@ -678,6 +678,12 @@ int main(int argc, char** argv)
 #endif
 
     sLog.outString("Bye!");
+
+    // Final flush of the buffered file logs before exit. ~Log/CloseLogFiles also
+    // flush via fclose, but this guarantees "Bye!" and any late shutdown lines
+    // reach disk first.
+    sLog.Flush();
+
     return code;
 }
 /// @}
