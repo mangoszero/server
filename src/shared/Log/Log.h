@@ -30,6 +30,8 @@
 
 class Config;
 class ByteBuffer;
+class ConsoleLogWriter;
+namespace ACE_Based { class Thread; }
 
 /**
  * @brief Logging severity levels for message filtering
@@ -124,6 +126,23 @@ enum Color
 const int Color_count = int(WHITE) + 1; /**< Total number of available colors **/
 
 /**
+ * @brief One formatted console line handed to the off-thread writer
+ *
+ * Producers format text (time prefix + body, WITHOUT the trailing newline) and
+ * pick the target stream/color; the writer thread renders this record and
+ * appends the newline after ResetColor (terminator outside the color span).
+ */
+struct ConsoleLogRecord
+{
+    std::string text; /**< Formatted line WITHOUT the trailing newline; the writer appends '\n' after ResetColor */
+    Color color; /**< Color to apply when applyColor is set */
+    bool applyColor; /**< Whether to wrap the write in SetColor/ResetColor */
+    bool toStdout; /**< true => stdout, false => stderr */
+
+    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true) {}
+};
+
+/**
  * @brief Singleton log manager for server-wide logging
  *
  * Log provides thread-safe, singleton-based logging functionality for the MaNGOS server.
@@ -156,67 +175,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
      */
     ~Log()
     {
-        if (logfile != NULL)
-        {
-            fclose(logfile);
-        }
-        logfile = NULL;
-
-        if (gmLogfile != NULL)
-        {
-            fclose(gmLogfile);
-        }
-        gmLogfile = NULL;
-
-        if (charLogfile != NULL)
-        {
-            fclose(charLogfile);
-        }
-        charLogfile = NULL;
-
-        if (dberLogfile != NULL)
-        {
-            fclose(dberLogfile);
-        }
-        dberLogfile = NULL;
-
-#ifdef ENABLE_ELUNA
-        if (elunaErrLogfile != NULL)
-        {
-            fclose(elunaErrLogfile);
-        }
-        elunaErrLogfile = NULL;
-#endif /* ENABLE_ELUNA */
-
-        if (eventAiErLogfile != NULL)
-        {
-            fclose(eventAiErLogfile);
-        }
-        eventAiErLogfile = NULL;
-
-        if (scriptErrLogFile != NULL)
-        {
-            fclose(scriptErrLogFile);
-        }
-        scriptErrLogFile = NULL;
-
-        if (raLogfile != NULL)
-        {
-            fclose(raLogfile);
-        }
-        raLogfile = NULL;
-
-        if (worldLogfile != NULL)
-        {
-            fclose(worldLogfile);
-        }
-        worldLogfile = NULL;
-
-        if (wardenLogfile != NULL)
-        {
-            fclose(wardenLogfile);
-        }
-        wardenLogfile = NULL;
+        CloseLogFiles();
     }
     public:
         /**
@@ -409,14 +368,14 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @param stdout_stream
          * @param color
          */
-        void SetColor(bool stdout_stream, Color color);
+        static void SetColor(bool stdout_stream, Color color);
 
         /**
          * @brief
          *
          * @param stdout_stream
          */
-        void ResetColor(bool stdout_stream);
+        static void ResetColor(bool stdout_stream);
 
         /**
          * @brief
@@ -461,6 +420,45 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * @return bool
          */
         bool HasLogLevelOrHigher(LogLevel loglvl) const { return m_logLevel >= loglvl || (m_logFileLevel >= loglvl && logfile); }
+
+        /**
+         * @brief Flush buffered file log output to the OS. Called periodically
+         *        from the world tick and once at shutdown. The file sinks are
+         *        fully buffered (setvbuf), so this bounds how long a buffered
+         *        line waits to reach disk. Best-effort: error paths still flush
+         *        immediately at emit time.
+         */
+        void Flush();
+
+        /**
+         * @brief Start the off-thread console writer
+         *
+         * Spawns the dedicated thread that performs the SetColor + write +
+         * ResetColor for console output, so the world/map-update threads no
+         * longer stall on the per-call console flush. Idempotent: a second
+         * call (realmd double-init) is a no-op. Must be called after
+         * Initialize() has applied config (InitColors), and before the world
+         * threads start producing console lines.
+         */
+        void StartConsoleThread();
+
+        /**
+         * @brief Stop and join the off-thread console writer
+         *
+         * Switches console emit back to the synchronous fallback, signals the
+         * writer to stop, and joins it (the writer performs a final drain
+         * before returning). Safe to call when the thread was never started.
+         */
+        void StopConsoleThread();
+
+        /**
+         * @brief Whether world packet logging is active. Gated by the
+         *        PacketLoggingEnabled config flag at startup: worldLogfile is
+         *        only opened when the flag is set, so this is the single source
+         *        of truth and is off by default even on legacy configs.
+         * @return bool
+         */
+        bool IsPacketLoggingEnabled() const { return worldLogfile != NULL; }
 
         /**
          * @brief
@@ -509,6 +507,38 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          */
         FILE* openGmlogPerAccount(uint32 account);
 
+        /**
+         * @brief Closes all open log file handles. Used by the destructor and
+         *        by Initialize() to make re-initialization idempotent (realmd
+         *        calls Initialize() a second time after loading its config).
+         */
+        void CloseLogFiles();
+
+        /**
+         * @brief Format one console line and route it to the writer thread
+         *        (async) or emit it inline (synchronous fallback). Builds the
+         *        time prefix + body + newline; the caller supplies stream,
+         *        color and whether color applies.
+         *
+         * @param toStdout true => stdout, false => stderr
+         * @param color
+         * @param applyColor
+         * @param fmt
+         * @param ap
+         */
+        void ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap);
+
+        /// Emit a blank console line (time prefix + newline) via the writer / fallback.
+        void ConsoleEmitBlank(bool toStdout);
+
+        /**
+         * @brief Build the "HH:MM:SS " console time prefix, or an empty string
+         *        when LogTime is disabled. Mirrors outTime().
+         *
+         * @return std::string
+         */
+        std::string ConsoleTimePrefix() const;
+
         FILE* raLogfile; /**< TODO */
         FILE* logfile; /**< TODO */
         FILE* gmLogfile; /**< TODO */
@@ -522,7 +552,12 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
         FILE* scriptErrLogFile; /**< TODO */
         FILE* worldLogfile; /**< TODO */
         FILE* wardenLogfile; /**< TODO */
-        ACE_Thread_Mutex m_worldLogMtx; /**< TODO */
+        ACE_Thread_Mutex m_worldLogMtx; /**< Serializes packet-dump writes to worldLogfile */
+        ACE_Thread_Mutex m_fileMtx; /**< Serializes writes to the main logfile so concurrent map-update worker threads cannot tear lines */
+
+        ConsoleLogWriter* m_consoleBody; /**< Off-thread console writer Runnable (owned via thread refcount) */
+        ACE_Based::Thread* m_consoleThread; /**< Thread driving m_consoleBody; deleting it drops the Runnable refcount */
+        bool m_consoleAsync; /**< When true, console emits route to the writer thread; otherwise synchronous fallback */
 
         LogLevel m_logLevel; /**< log/console control */
         LogLevel m_logFileLevel; /**< TODO */

@@ -717,6 +717,50 @@ void vutf8printf(FILE* out, const char* str, va_list* ap)
 
 }
 
+std::string vutf8format(const char* str, va_list* ap)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+    char temp_buf[32 * 1024];
+    wchar_t wtemp_buf[32 * 1024];
+
+    size_t temp_len = vsnprintf(temp_buf, 32 * 1024, str, *ap);
+    if (temp_len >= 32 * 1024)
+    {
+        temp_len = 32 * 1024 - 1;
+    }
+
+    size_t wtemp_len = 32 * 1024 - 1;
+    Utf8toWStr(temp_buf, temp_len, wtemp_buf, wtemp_len);
+
+    CharToOemBuffW(&wtemp_buf[0], &temp_buf[0], wtemp_len + 1);
+    return std::string(temp_buf);
+#else
+    char temp_buf[32 * 1024];
+    va_list ap_copy;
+    va_copy(ap_copy, *ap);
+    int n = vsnprintf(temp_buf, sizeof(temp_buf), str, ap_copy);
+    va_end(ap_copy);
+    if (n < 0)
+    {
+        return std::string();
+    }
+    if (size_t(n) < sizeof(temp_buf))
+    {
+        return std::string(temp_buf, size_t(n));
+    }
+    // Message is longer than the stack buffer: render it in full into an
+    // exactly-sized string rather than truncating, matching the legacy
+    // unbounded vfprintf path. vsnprintf returned the length it WOULD have
+    // written; allocate that and reformat from a fresh va_list copy.
+    std::string big(size_t(n), '\0');
+    va_copy(ap_copy, *ap);
+    vsnprintf(&big[0], big.size() + 1, str, ap_copy);
+    va_end(ap_copy);
+    return big;
+#endif
+
+}
+
 void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result)
 {
     std::ostringstream ss;

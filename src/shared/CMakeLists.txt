@@ -109,6 +109,8 @@ source_group("LockedQueue" FILES ${SRC_GRP_LOCKQ})
 set(SRC_GRP_LOG
   Log/Log.cpp
   Log/Log.h
+  Log/ConsoleLogWriter.cpp
+  Log/ConsoleLogWriter.h
 )
 source_group("Log" FILES ${SRC_GRP_LOG})
 
