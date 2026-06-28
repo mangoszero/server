@@ -80,6 +80,13 @@ like:
 Also, please place one space before opening parenthesis. Before, but not after
 (the `if ( blah )` style is a no-no!).
 
+Inline functions should also use symmetric bracket placement, even for short functions:
+
+    bool isArena() const
+    {
+        return m_IsArena;
+    }
+
 Class declaration and constructors
 ----------------------------------
 Here is an example:
