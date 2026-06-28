@@ -1374,7 +1374,7 @@ bool ScriptAction::HandleScriptStep()
         }
 
         // Give some debug log output for easier use
-        DEBUG_LOG("DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u for source %s (%sin world), target %s (%sin world)", m_type, m_script->id, m_script->command, m_sourceGuid.GetString().c_str(), source ? "" : "not ", m_targetGuid.GetString().c_str(), target ? "" : "not ");
+        DEBUG_FILTER_LOG(LOG_FILTER_DB_SCRIPTS, "DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, command %u for source %s (%sin world), target %s (%sin world)", m_type, m_script->id, m_script->command, m_sourceGuid.GetString().c_str(), source ? "" : "not ", m_targetGuid.GetString().c_str(), target ? "" : "not ");
 
         // Get expected source and target (if defined with buddy)
         pSource = source && source->isType(TYPEMASK_WORLDOBJECT) ? (WorldObject*)source : NULL;
@@ -2159,12 +2159,12 @@ bool ScriptAction::HandleScriptStep()
 
                 if (!(m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL) && !pCreatureBuddy)
                 {
-                    DEBUG_LOG("DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, terminate further steps of this script! (as searched other npc %u was not found alive)", m_type, m_script->id, m_script->terminateScript.npcEntry);
+                    DEBUG_FILTER_LOG(LOG_FILTER_DB_SCRIPTS, "DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, terminate further steps of this script! (as searched other npc %u was not found alive)", m_type, m_script->id, m_script->terminateScript.npcEntry);
                     result = true;
                 }
                 else if (m_script->data_flags & SCRIPT_FLAG_COMMAND_ADDITIONAL && pCreatureBuddy)
                 {
-                    DEBUG_LOG("DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, terminate further steps of this script! (as searched other npc %u was found alive)", m_type, m_script->id, m_script->terminateScript.npcEntry);
+                    DEBUG_FILTER_LOG(LOG_FILTER_DB_SCRIPTS, "DB-SCRIPTS: Process table `db_scripts [type = %d]` id %u, terminate further steps of this script! (as searched other npc %u was found alive)", m_type, m_script->id, m_script->terminateScript.npcEntry);
                     result = true;
                 }
             }

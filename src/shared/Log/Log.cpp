@@ -63,21 +63,23 @@ LogFilterData logFilterData[LOG_FILTER_COUNT] =
     { "visibility_changes",  "LogFilter_VisibilityChanges",  true  },
     { "",                    "",                             true  },
     { "weather",             "LogFilter_Weather",            true  },
-    { "player_stats",        "LogFilter_PlayerStats",        false },
+    { "player_stats",        "LogFilter_PlayerStats",        true  },
     { "sql_text",            "LogFilter_SQLText",            true  },
     { "player_moves",        "LogFilter_PlayerMoves",        true  },
-    { "periodic_effects",    "LogFilter_PeriodicAffects",    false },
-    { "ai_and_movegens",     "LogFilter_AIAndMovegens",      false },
-    { "damage",              "LogFilter_Damage",             false },
-    { "combat",              "LogFilter_Combat",             false },
-    { "spell_cast",          "LogFilter_SpellCast",          false },
+    { "periodic_effects",    "LogFilter_PeriodicAffects",    true  },
+    { "ai_and_movegens",     "LogFilter_AIAndMovegens",      true  },
+    { "damage",              "LogFilter_Damage",             true  },
+    { "combat",              "LogFilter_Combat",             true  },
+    { "spell_cast",          "LogFilter_SpellCast",          true  },
     { "db_stricted_check",   "LogFilter_DbStrictedCheck",    true  },
     { "ahbot_seller",        "LogFilter_AhbotSeller",        true  },
     { "ahbot_buyer",         "LogFilter_AhbotBuyer",         true  },
     { "pathfinding",         "LogFilter_Pathfinding",        true  },
-    { "map_loading",         "LogFilter_MapLoading",         true  },
+    { "map_loading",         "LogFilter_MapsLoading",        true  },
     { "event_ai_dev",        "LogFilter_EventAiDev",         true  },
     { "cell_envelope",       "LogFilter_CellEnvelope",       true  },
+    { "grid_add",            "LogFilter_GridAdd",            true  },
+    { "db_scripts",          "LogFilter_DbScripts",          true  },
 };
 
 enum LogType
@@ -256,7 +258,7 @@ void Log::SetLogLevel(char* level)
 
     m_logLevel = LogLevel(newLevel);
 
-    printf("LogLevel is %u\n", m_logLevel);
+    ConsoleEmitRaw("LogLevel is " + std::to_string((uint32)m_logLevel) + "\n");
 }
 
 void Log::SetLogFileLevel(char* level)
@@ -274,7 +276,7 @@ void Log::SetLogFileLevel(char* level)
 
     m_logFileLevel = LogLevel(newLevel);
 
-    printf("LogFileLevel is %u\n", m_logFileLevel);
+    ConsoleEmitRaw("LogFileLevel is " + std::to_string((uint32)m_logFileLevel) + "\n");
 }
 
 void Log::CloseLogFiles()

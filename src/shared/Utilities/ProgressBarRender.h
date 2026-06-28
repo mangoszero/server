@@ -42,6 +42,7 @@
  * Byte-fidelity is asserted by test_progressbar_render.cpp.
  */
 
+#include <cstddef>
 #include <string>
 
 namespace ProgressBarRender
@@ -56,14 +57,14 @@ namespace ProgressBarRender
     inline std::string buildInit(int indic_len)
     {
         std::string s;
-        s.reserve((size_t)indic_len + 8);
+        s.reserve((std::size_t)indic_len + 8);
 #ifdef _WIN32
         s += '=';
-        s.append((size_t)indic_len, ' ');
+        s.append((std::size_t)indic_len, ' ');
         s += "= 0%\r=";
 #else
         s += '[';
-        s.append((size_t)indic_len, ' ');
+        s.append((std::size_t)indic_len, ' ');
         s += "] 0%\r[";
 #endif
         return s;
@@ -86,12 +87,12 @@ namespace ProgressBarRender
         const int percent = (int)(((float)n / (float)indic_len) * 100.0f);
         // Guard the empty-cell count: legacy code tolerated n > indic_len (its
         // second printf loop simply did not run), so clamp to 0 here to avoid a
-        // size_t underflow in append(). For the normal range (0..indic_len) this
+        // std::size_t underflow in append(). For the normal range (0..indic_len) this
         // is identical to (indic_len - n).
-        const size_t fills  = (n > 0) ? (size_t)n : 0;
-        const size_t empties = (indic_len > n) ? (size_t)(indic_len - n) : 0;
+        const std::size_t fills  = (n > 0) ? (std::size_t)n : 0;
+        const std::size_t empties = (indic_len > n) ? (std::size_t)(indic_len - n) : 0;
         std::string s;
-        s.reserve((size_t)indic_len + 16);
+        s.reserve((std::size_t)indic_len + 16);
 #ifdef _WIN32
         s += "\r=";
         s.append(fills, '=');
