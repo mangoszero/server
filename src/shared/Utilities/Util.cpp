@@ -847,9 +847,12 @@ void utf8print(void* /*arg*/, const char* str)
 
     char temp_buf[6000];
     CharToOemBuffW(&wtemp_buf[0], &temp_buf[0], wtemp_len + 1);
-    printf("%s", temp_buf);
+    // Route CLI command output through the console writer (verbatim) so it
+    // shares the single serialized stdout with bar redraws / log lines and
+    // cannot tear against or overtake them.
+    sLog.ConsoleEmitRaw(temp_buf);
 #else
-    printf("%s", str);
+    sLog.ConsoleEmitRaw(str);
 #endif
 
 }

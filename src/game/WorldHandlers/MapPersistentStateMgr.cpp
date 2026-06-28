@@ -794,7 +794,7 @@ MapPersistentState* MapPersistentStateManager::AddPersistentState(MapEntry const
         }
     }
 
-    DEBUG_LOG("MapPersistentStateManager::AddPersistentState: mapid = %d, instanceid = %d, reset time = '" UI64FMTD "', canRset = %u", mapEntry->MapID, instanceId, uint64(resetTime), canReset ? 1 : 0);
+    DEBUG_FILTER_LOG(LOG_FILTER_MAP_LOADING, "MapPersistentStateManager::AddPersistentState: mapid = %d, instanceid = %d, reset time = '" UI64FMTD "', canRset = %u", mapEntry->MapID, instanceId, uint64(resetTime), canReset ? 1 : 0);
 
     MapPersistentState* state;
     if (mapEntry->IsDungeon())

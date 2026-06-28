@@ -78,9 +78,11 @@ enum LogFilters
     LOG_FILTER_MAP_LOADING        = 0x020000,               // 17 Map loading/unloading (MAP, VMAPS, MMAP)
     LOG_FILTER_EVENT_AI_DEV       = 0x040000,               // 18 Event AI actions
     LOG_FILTER_CELL_ENVELOPE      = 0x080000,               // 19 LivingWorld B-Cell envelope load/accrete trace
+    LOG_FILTER_GRID_ADD           = 0x100000,               // 20 object added to a grid cell ("X enters grid[x,y]") - high-volume, mostly creatures
+    LOG_FILTER_DB_SCRIPTS         = 0x200000,               // 21 db_scripts command processing trace (execution, not errors)
 };
 
-#define LOG_FILTER_COUNT            20
+#define LOG_FILTER_COUNT            22
 
 /**
  * @brief Configuration data for individual log filters
@@ -138,8 +140,9 @@ struct ConsoleLogRecord
     Color color; /**< Color to apply when applyColor is set */
     bool applyColor; /**< Whether to wrap the write in SetColor/ResetColor */
     bool toStdout; /**< true => stdout, false => stderr */
+    bool isRaw; /**< Raw passthrough: write text verbatim with NO color and NO appended newline (used for progress-bar redraws, which carry their own '\r'/'\n' and must not be reformatted) */
 
-    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true) {}
+    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true), isRaw(false) {}
 };
 
 /**
@@ -450,6 +453,25 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * before returning). Safe to call when the thread was never started.
          */
         void StopConsoleThread();
+
+        /**
+         * @brief Emit raw bytes to the console verbatim (no time prefix, no
+         *        color, no appended newline), routed through the off-thread
+         *        writer when it is running or written synchronously otherwise.
+         *
+         * This is the single funnel for every piece of console output that is
+         * NOT a normal log line: progress-bar redraws (which carry their own
+         * '\r'/'\n'), the interactive CLI prompt, CLI command output, and the
+         * loglevel-change notices. Routing them all through the one writer queue
+         * keeps stdout single-owner, so none of them can tear against -- or
+         * overtake -- each other or the writer's log lines; everything drains in
+         * FIFO (program) order. Without this, a synchronous direct-stdout write
+         * (e.g. the prompt reprinted after a .reload) would jump ahead of bar
+         * frames still sitting in the queue.
+         *
+         * @param bytes the exact bytes to write to stdout
+         */
+        void ConsoleEmitRaw(const std::string& bytes);
 
         /**
          * @brief Whether world packet logging is active. Gated by the
