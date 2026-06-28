@@ -717,6 +717,39 @@ void vutf8printf(FILE* out, const char* str, va_list* ap)
 
 }
 
+std::string vutf8format(const char* str, va_list* ap)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+    char temp_buf[32 * 1024];
+    wchar_t wtemp_buf[32 * 1024];
+
+    size_t temp_len = vsnprintf(temp_buf, 32 * 1024, str, *ap);
+    if (temp_len >= 32 * 1024)
+    {
+        temp_len = 32 * 1024 - 1;
+    }
+
+    size_t wtemp_len = 32 * 1024 - 1;
+    Utf8toWStr(temp_buf, temp_len, wtemp_buf, wtemp_len);
+
+    CharToOemBuffW(&wtemp_buf[0], &temp_buf[0], wtemp_len + 1);
+    return std::string(temp_buf);
+#else
+    char temp_buf[32 * 1024];
+    int n = vsnprintf(temp_buf, sizeof(temp_buf), str, *ap);
+    if (n < 0)
+    {
+        return std::string();
+    }
+    if (size_t(n) >= sizeof(temp_buf))
+    {
+        n = int(sizeof(temp_buf)) - 1;
+    }
+    return std::string(temp_buf, size_t(n));
+#endif
+
+}
+
 void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result)
 {
     std::ostringstream ss;

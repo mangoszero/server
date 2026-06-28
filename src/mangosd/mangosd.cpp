@@ -439,6 +439,11 @@ int main(int argc, char** argv)
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);
 
+    // Move the console emit off the world/map-update threads. Config (and thus
+    // InitColors) has already been applied via Log::Initialize, so colors are
+    // set; from here the per-call console flush runs on the writer thread.
+    sLog.StartConsoleThread();
+
     DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
@@ -676,6 +681,13 @@ int main(int argc, char** argv)
 #ifdef WIN32
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
+
+    // Stop and join the off-thread console writer before the final shutdown lines:
+    // later lines ("Bye!") then take the synchronous fallback. Placed after the
+    // world/map worker threads are gone (no concurrent console producers); the
+    // remaining main-thread shutdown lines are drained by the still-running writer
+    // before it joins. Precedes the final Flush.
+    sLog.StopConsoleThread();
 
     sLog.outString("Bye!");
 
