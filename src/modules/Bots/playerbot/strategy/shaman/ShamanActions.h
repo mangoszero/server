@@ -305,4 +305,25 @@ namespace ai
         public:
             CastTremorTotemAction(PlayerbotAI* ai) : CastTotemAction(ai, "tremor totem") {}
     };
+
+    class CastCurePoisonOnPartyAction : public CurePartyMemberAction
+    {
+        public:
+            CastCurePoisonOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cure poison", DISPEL_POISON) {}
+            virtual string getName()
+            {
+                return "cure poison on party";
+            }
+    };
+
+    class CastCureDiseaseOnPartyAction : public CurePartyMemberAction
+    {
+        public:
+            CastCureDiseaseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "cure disease", DISPEL_DISEASE) {}
+            virtual string getName()
+            {
+                return "cure disease on party";
+            }
+    };
+
 }
