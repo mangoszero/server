@@ -12,10 +12,10 @@ namespace ai
 
         protected:
             void QueryItemsUsage(ItemIds items);
-            bool QueryItemUsage(ItemPrototype const *item);
+            string QueryItemUsage(ItemPrototype const *item);
             void QueryItemPrice(ItemPrototype const *item);
-            void QueryQuestItem(uint32 itemId, const Quest *questTemplate, const QuestStatusData *questStatus);
-            void QueryQuestItem(uint32 itemId);
+            string QueryQuestItem(uint32 itemId, const Quest *questTemplate, const QuestStatusData *questStatus);
+            string QueryQuestItem(uint32 itemId);
 
         private:
             ostringstream out;
