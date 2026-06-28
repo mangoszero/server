@@ -158,6 +158,7 @@ set(SRC_GRP_UTILITIES
   Utilities/Errors.h
   Utilities/ProgressBar.cpp
   Utilities/ProgressBar.h
+  Utilities/ProgressBarRender.h
   Utilities/RNGen.h
   Utilities/ScheduledExit.cpp
   Utilities/ScheduledExit.h

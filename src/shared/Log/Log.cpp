@@ -438,6 +438,35 @@ void Log::ConsoleEmitBlank(bool toStdout)
     }
 }
 
+void Log::ConsoleEmitRaw(const std::string& bytes)
+{
+    // Verbatim console passthrough: NO time prefix, NO color, NO appended
+    // newline. The bytes (a full progress-bar redraw, carrying their own
+    // '\r'/'\n') are handed to the writer thread as ONE atomic record so they
+    // cannot tear against concurrently-drained log lines. Before the writer is
+    // started / after it is stopped (realmd, offline tools, startup + shutdown
+    // tail) this falls back to a synchronous verbatim write, byte-identical to
+    // the legacy BarGoLink printf()+fflush().
+    if (bytes.empty())
+    {
+        return;
+    }
+    if (m_consoleAsync && m_consoleBody)
+    {
+        ConsoleLogRecord rec;
+        rec.text = bytes;
+        rec.isRaw = true;
+        rec.applyColor = false;
+        rec.toStdout = true;
+        m_consoleBody->Enqueue(rec);
+    }
+    else
+    {
+        fwrite(bytes.data(), 1, bytes.size(), stdout);
+        fflush(stdout);
+    }
+}
+
 void Log::StartConsoleThread()
 {
     if (m_consoleThread)

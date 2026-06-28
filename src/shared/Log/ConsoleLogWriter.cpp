@@ -74,8 +74,11 @@ bool ConsoleLogWriter::DrainOnce()
     {
         m_dropped -= dropped;
         char note[96];
+        // Leading '\n' starts the notice on a fresh line: a progress-bar redraw
+        // may have left the cursor mid-line (its trailing '\r' + left edge), and
+        // without this the red notice would land on top of the bar.
         int n = snprintf(note, sizeof(note),
-            "[Log] %ld console line(s) dropped (queue full)\n", dropped);
+            "\n[Log] %ld console line(s) dropped (queue full)\n", dropped);
         if (n >= (int)sizeof(note))
         {
             n = (int)sizeof(note) - 1;                       // clamp: never fwrite past note[]
@@ -112,6 +115,17 @@ bool ConsoleLogWriter::DrainOnce()
 void ConsoleLogWriter::Emit(const ConsoleLogRecord& rec)
 {
     FILE* out = rec.toStdout ? stdout : stderr;
+    if (rec.isRaw)
+    {
+        // Progress-bar redraw (or similar): the producer already baked in the
+        // exact bytes including any '\r'/'\n'. Write verbatim with NO color and
+        // NO appended newline, or the bar's in-place repaint breaks.
+        if (!rec.text.empty())
+        {
+            fwrite(rec.text.data(), 1, rec.text.size(), out);
+        }
+        return;
+    }
     if (rec.applyColor)
     {
         Log::SetColor(rec.toStdout, rec.color);

@@ -309,6 +309,16 @@ static void usage(const char* prog)
     , prog);
 }
 
+/// Progress-bar console sink: forward a fully-built bar redraw to the off-thread
+/// console writer (verbatim, no prefix/color/newline) so the bar shares one
+/// serialized stdout with the log lines and cannot tear against them. Installed
+/// once the writer thread is running; before that BarGoLink uses its default
+/// synchronous sink.
+static void MangosBarConsoleSink(char const* bytes, size_t len)
+{
+    sLog.ConsoleEmitRaw(std::string(bytes, len));
+}
+
 /// Launch the mangos server
 int main(int argc, char** argv)
 {
@@ -492,6 +502,13 @@ int main(int argc, char** argv)
     // hot console path is covered. Config/InitColors already applied, so colors
     // are set; from here the per-call console flush runs on the writer thread.
     sLog.StartConsoleThread();
+
+    // Now the writer owns stdout: route progress-bar redraws through it too, so
+    // the bars (previously raw printf on the loading/world thread) no longer
+    // race the writer thread. Must follow StartConsoleThread so the async path
+    // is live; SetConsoleSink is a plain pointer swap (ConsoleEmitRaw itself
+    // falls back to a synchronous write whenever the writer is not running).
+    BarGoLink::SetConsoleSink(&MangosBarConsoleSink);
 
     ///- Set Realm to Offline, if crash happens. Only used once.
     LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);

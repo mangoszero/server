@@ -138,8 +138,9 @@ struct ConsoleLogRecord
     Color color; /**< Color to apply when applyColor is set */
     bool applyColor; /**< Whether to wrap the write in SetColor/ResetColor */
     bool toStdout; /**< true => stdout, false => stderr */
+    bool isRaw; /**< Raw passthrough: write text verbatim with NO color and NO appended newline (used for progress-bar redraws, which carry their own '\r'/'\n' and must not be reformatted) */
 
-    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true) {}
+    ConsoleLogRecord() : color(WHITE), applyColor(false), toStdout(true), isRaw(false) {}
 };
 
 /**
@@ -450,6 +451,22 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, ACE_Th
          * before returning). Safe to call when the thread was never started.
          */
         void StopConsoleThread();
+
+        /**
+         * @brief Emit raw bytes to the console verbatim (no time prefix, no
+         *        color, no appended newline), routed through the off-thread
+         *        writer when it is running or written synchronously otherwise.
+         *
+         * Used for progress-bar redraws: they carry their own '\r'/'\n' and
+         * must reach stdout as ONE atomic unit so they cannot tear against the
+         * writer thread's log lines. Because they go through the same FIFO
+         * queue as log lines (and are produced on the same thread), the bar and
+         * the surrounding log output stay in program order exactly as they did
+         * before the console writer existed.
+         *
+         * @param bytes the exact bytes to write to stdout
+         */
+        void ConsoleEmitRaw(const std::string& bytes);
 
         /**
          * @brief Whether world packet logging is active. Gated by the
