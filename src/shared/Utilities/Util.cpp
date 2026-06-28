@@ -736,16 +736,27 @@ std::string vutf8format(const char* str, va_list* ap)
     return std::string(temp_buf);
 #else
     char temp_buf[32 * 1024];
-    int n = vsnprintf(temp_buf, sizeof(temp_buf), str, *ap);
+    va_list ap_copy;
+    va_copy(ap_copy, *ap);
+    int n = vsnprintf(temp_buf, sizeof(temp_buf), str, ap_copy);
+    va_end(ap_copy);
     if (n < 0)
     {
         return std::string();
     }
-    if (size_t(n) >= sizeof(temp_buf))
+    if (size_t(n) < sizeof(temp_buf))
     {
-        n = int(sizeof(temp_buf)) - 1;
+        return std::string(temp_buf, size_t(n));
     }
-    return std::string(temp_buf, size_t(n));
+    // Message is longer than the stack buffer: render it in full into an
+    // exactly-sized string rather than truncating, matching the legacy
+    // unbounded vfprintf path. vsnprintf returned the length it WOULD have
+    // written; allocate that and reformat from a fresh va_list copy.
+    std::string big(size_t(n), '\0');
+    va_copy(ap_copy, *ap);
+    vsnprintf(&big[0], big.size() + 1, str, ap_copy);
+    va_end(ap_copy);
+    return big;
 #endif
 
 }

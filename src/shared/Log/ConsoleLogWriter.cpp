@@ -97,6 +97,15 @@ bool ConsoleLogWriter::DrainOnce()
         didWork = true;
     }
 
+    // The writer owns the console stream, so it owns the flush: a redirected /
+    // piped stdout is fully buffered, and flushing here (off the world/map
+    // threads) makes output prompt without any producer paying for it. A real
+    // console is effectively unbuffered, so this is a cheap no-op there.
+    if (didWork)
+    {
+        fflush(stdout);
+    }
+
     return didWork;
 }
 
@@ -115,4 +124,8 @@ void ConsoleLogWriter::Emit(const ConsoleLogRecord& rec)
     {
         Log::ResetColor(rec.toStdout);
     }
+    // Newline is written AFTER ResetColor so the line terminator stays outside
+    // the color span, byte-matching the legacy console ordering. The producer
+    // (Log::ConsoleEmit) deliberately leaves it off rec.text.
+    fputc('\n', out);
 }

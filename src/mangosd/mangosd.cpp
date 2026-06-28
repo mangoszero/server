@@ -439,11 +439,6 @@ int main(int argc, char** argv)
     print_banner();
     sLog.outString("Using configuration file %s.", cfg_file);
 
-    // Move the console emit off the world/map-update threads. Config (and thus
-    // InitColors) has already been applied via Log::Initialize, so colors are
-    // set; from here the per-call console flush runs on the writer thread.
-    sLog.StartConsoleThread();
-
     DETAIL_LOG("Using SSL version: %s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
@@ -489,6 +484,14 @@ int main(int argc, char** argv)
         Log::WaitBeforeContinueIfNeed();
         return 1;
     }
+
+    // Move the console emit off the world/map-update threads. Started only after
+    // the fallible init above (OpenSSL / PID file / DB) so the early-return error
+    // paths never leave a writer thread running into stdio teardown; still placed
+    // before SetInitialWorldSettings() -- the LivingWorld spawn burst -- so the
+    // hot console path is covered. Config/InitColors already applied, so colors
+    // are set; from here the per-call console flush runs on the writer thread.
+    sLog.StartConsoleThread();
 
     ///- Set Realm to Offline, if crash happens. Only used once.
     LoginDatabase.DirectPExecute("UPDATE `realmlist` SET `realmflags` = `realmflags` | %u WHERE `id` = '%u'", REALM_FLAG_OFFLINE, realmID);
@@ -682,11 +685,24 @@ int main(int argc, char** argv)
     _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
 #endif
 
+#ifdef ENABLE_SOAP
+    // Join the SOAP listener before stopping the console writer. SOAP runs on a
+    // std::thread (NOT an ACE task), so ACE_Thread_Manager::wait() above did NOT
+    // join it; its shared_ptr deleter would otherwise join only at main() scope
+    // exit -- AFTER StopConsoleThread() deletes the writer -- leaving a window
+    // where a late SOAP log could enqueue into a freed ConsoleLogWriter (UAF).
+    // Resetting here runs the deleter (join + delete) now, so the writer's
+    // quiescence invariant holds for SOAP too.
+    soapThread.reset();
+#endif
+
     // Stop and join the off-thread console writer before the final shutdown lines:
-    // later lines ("Bye!") then take the synchronous fallback. Placed after the
-    // world/map worker threads are gone (no concurrent console producers); the
-    // remaining main-thread shutdown lines are drained by the still-running writer
-    // before it joins. Precedes the final Flush.
+    // later lines ("Bye!") then take the synchronous fallback. Placed after EVERY
+    // console-producing thread is gone -- world/map ACE workers (joined by
+    // ACE_Thread_Manager::wait above), the CLI thread, and the SOAP std::thread
+    // (joined just above) -- so no concurrent producer can race the writer delete.
+    // The remaining main-thread shutdown lines are drained by the still-running
+    // writer before it joins. Precedes the final Flush.
     sLog.StopConsoleThread();
 
     sLog.outString("Bye!");

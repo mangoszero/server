@@ -128,12 +128,13 @@ const int Color_count = int(WHITE) + 1; /**< Total number of available colors **
 /**
  * @brief One formatted console line handed to the off-thread writer
  *
- * Producers fully format text (time prefix + body + newline) and pick the
- * target stream/color; the writer thread only renders this record.
+ * Producers format text (time prefix + body, WITHOUT the trailing newline) and
+ * pick the target stream/color; the writer thread renders this record and
+ * appends the newline after ResetColor (terminator outside the color span).
  */
 struct ConsoleLogRecord
 {
-    std::string text; /**< Fully formatted line, including the trailing newline */
+    std::string text; /**< Formatted line WITHOUT the trailing newline; the writer appends '\n' after ResetColor */
     Color color; /**< Color to apply when applyColor is set */
     bool applyColor; /**< Whether to wrap the write in SetColor/ResetColor */
     bool toStdout; /**< true => stdout, false => stderr */

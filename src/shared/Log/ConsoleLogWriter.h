@@ -25,6 +25,8 @@
 #ifndef MANGOS_H_CONSOLELOGWRITER
 #define MANGOS_H_CONSOLELOGWRITER
 
+#include <atomic>
+
 #include <ace/Thread_Mutex.h>
 #include <ace/Atomic_Op.h>
 #include "LockedQueue/LockedQueue.h"
@@ -92,7 +94,7 @@ class ConsoleLogWriter : public ACE_Based::Runnable
         Queue m_queue; /**< Unbounded backing queue (capacity enforced via m_depth) */
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_depth; /**< Approximate pending count */
         ACE_Atomic_Op<ACE_Thread_Mutex, long> m_dropped; /**< Records dropped on overflow */
-        volatile bool m_running; /**< Cooperative stop flag */
+        std::atomic<bool> m_running; /**< Cooperative stop flag (cross-thread: set by Stop(), read by run()) */
         static const long MAX_CONSOLE_QUEUE = 16384; /**< Overflow threshold */
 };
 

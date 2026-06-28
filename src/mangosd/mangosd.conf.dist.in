@@ -260,7 +260,10 @@ MaxWhoListReturns                 = 49
 #    LogLevel
 #        Server console level of logging
 #        0 = Minimum; 1 = Basic&Error; 2 = Detail; 3 = Full/Debug
-#        Default: 3
+#        Default: 1 - Basic&Error (keeps the live console light; level 3 in
+#                     particular is very chatty and can stall startup under
+#                     large spawn loads -- prefer raising LogFileLevel instead
+#                     to capture detail to disk without the console cost)
 #
 #    LogTime
 #        Include time in server console output [hh:mm:ss]
@@ -303,9 +306,13 @@ MaxWhoListReturns                 = 49
 #    LogFilter_Damage
 #    LogFilter_Combat
 #    LogFilter_SpellCast
-#        Log filters (disabled by default, mostly debug only output affected cases)
+#        Log filters (mostly debug-only output for the affected cases)
 #        Default: 0 - include in log if log level permit
 #                 1 - not include with any log level
+#        NOTE: LogFilter_AIAndMovegens and LogFilter_SpellCast now ship as 1
+#              (suppressed). Both are extremely high-volume on busy or debug
+#              servers (movement generators; every spell cast) and otherwise
+#              dominate the logs. Set either to 0 to restore its verbose output.
 #
 #    LogWhispers
 #        Log whispers between players to database, character.character_whispers
@@ -317,6 +324,15 @@ MaxWhoListReturns                 = 49
 #        Packet logging file for the worldserver
 #        Default: ""          - no log file created
 #                 "world.log" - recommended name to create a log file
+#
+#    PacketLoggingEnabled
+#        Master switch for world packet logging (the WorldLogFile dump). Packet
+#        logging is high-volume and was historically turned on implicitly
+#        whenever WorldLogFile was set; it is now OFF unless this is explicitly
+#        set to 1, so an existing config that sets WorldLogFile (even at
+#        LogLevel 3) no longer pays the packet-dump cost by accident.
+#        Default: 0 - do not write packet dumps (recommended)
+#                 1 - write packet dumps to WorldLogFile
 #
 #    WorldLogTimestamp
 #        Logfile with timestamp of server start in name

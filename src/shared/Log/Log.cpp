@@ -50,6 +50,7 @@
 #include <stdarg.h>
 #include <fstream>
 #include <iostream>
+#include <utility>
 
 #include <ace/OS_NS_unistd.h>
 
@@ -373,11 +374,14 @@ std::string Log::ConsoleTimePrefix() const
 
 void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* fmt, va_list* ap)
 {
+    // Record text carries NO trailing newline: the newline is emitted after
+    // ResetColor (here and in ConsoleLogWriter::Emit) so the line terminator
+    // stays OUTSIDE the color span, byte-matching the legacy ordering
+    // (SetColor -> body -> ResetColor -> "\n").
     std::string body;
     body.reserve(256);
     body += ConsoleTimePrefix();
     body += vutf8format(fmt, ap);
-    body += '\n';
 
     if (m_consoleAsync && m_consoleBody)
     {
@@ -391,16 +395,17 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
     else
     {
         // synchronous fallback (thread not started yet / already stopped)
+        FILE* out = toStdout ? stdout : stderr;
         if (applyColor)
         {
             Log::SetColor(toStdout, color);
         }
-        FILE* out = toStdout ? stdout : stderr;
         fwrite(body.data(), 1, body.size(), out);
         if (applyColor)
         {
             Log::ResetColor(toStdout);
         }
+        fputc('\n', out);
         if (!toStdout)
         {
             fflush(stderr);
@@ -410,8 +415,9 @@ void Log::ConsoleEmit(bool toStdout, Color color, bool applyColor, const char* f
 
 void Log::ConsoleEmitBlank(bool toStdout)
 {
+    // Uncolored variant: text is the (possibly empty) time prefix only; the
+    // newline is appended after it, matching the legacy bare fprintf("\n").
     std::string b = ConsoleTimePrefix();
-    b += '\n';
     if (m_consoleAsync && m_consoleBody)
     {
         ConsoleLogRecord rec;
@@ -424,6 +430,7 @@ void Log::ConsoleEmitBlank(bool toStdout)
     {
         FILE* out = toStdout ? stdout : stderr;
         fwrite(b.data(), 1, b.size(), out);
+        fputc('\n', out);
         if (!toStdout)
         {
             fflush(stderr);
