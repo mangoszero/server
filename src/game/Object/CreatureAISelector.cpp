@@ -31,6 +31,7 @@
 #include "ScriptMgr.h"
 #include "Pet.h"
 #include "Log.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 INSTANTIATE_SINGLETON_1(CreatureAIRegistry);
 INSTANTIATE_SINGLETON_1(MovementGeneratorRegistry);
@@ -46,6 +47,8 @@ namespace FactorySelector
      */
     CreatureAI* selectAI(Creature* creature)
     {
+        // GDB-server game breakpoint
+        GDB_BREAK(ScriptAI, creature->GetEntry());
         // Allow scripting AI for normal creatures and not controlled pets (guardians and mini-pets)
         if ((!creature->IsPet() || !((Pet*)creature)->isControlled()) && !creature->IsCharmed())
         {

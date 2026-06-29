@@ -70,6 +70,8 @@
 #include "CliThread.h"
 #include "AFThread.h"
 #include "RAThread.h"
+#include "GdbServerThread.h"
+#include "Debug/GdbServer/GdbServer.h"
 
 #ifdef ENABLE_SOAP
 #include "SOAP/SoapThread.h"
@@ -515,6 +517,10 @@ int main(int argc, char** argv)
     ///- Catch termination signals
     hook_signals();
 
+    ///- Prepare the GDB-server debug subsystem (reads config, wires the RSP
+    ///  sink, runs the monitor self-test) before any thread is started.
+    sGdbServer.Init();
+
     //************************************************************************************************************************
     // 1. Start the World thread
     //************************************************************************************************************************
@@ -536,6 +542,22 @@ int main(int argc, char** argv)
 
         raThread = new RAThread(port, host.c_str());
         raThread->open(0);
+    }
+
+    //************************************************************************************************************************
+    // 2b. Start the GDB-server debug listener thread, if enabled
+    //************************************************************************************************************************
+    GdbServerThread* gdbThread = NULL;
+    if (sConfig.GetBoolDefault("GdbServer.Enable", false))
+    {
+        // Default bind is localhost: this endpoint exposes process memory and
+        // the full server command surface, so never bind it publicly by default.
+        uint16 gdbPort = sConfig.GetIntDefault("GdbServer.Port", 2345);
+        uint16 gdbMonPort = sConfig.GetIntDefault("GdbServer.MonitorPort", 2346);
+        std::string gdbHost = sConfig.GetStringDefault("GdbServer.IP", "127.0.0.1");
+
+        gdbThread = new GdbServerThread(gdbPort, gdbMonPort, gdbHost.c_str());
+        gdbThread->open(0);
     }
 
     //************************************************************************************************************************
@@ -604,6 +626,11 @@ int main(int argc, char** argv)
     if (raThread)
     {
         delete raThread;
+    }
+
+    if (gdbThread)
+    {
+        delete gdbThread;
     }
 
     delete worldThread;

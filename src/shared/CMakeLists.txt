@@ -53,6 +53,13 @@ set(SRC_GRP_CONFIG
 )
 source_group("Config" FILES ${SRC_GRP_CONFIG})
 
+set(SRC_GRP_DEBUG
+  Debug/GdbEvents.h
+  Debug/DebugBreakHook.cpp
+  Debug/DebugBreakHook.h
+)
+source_group("Debug" FILES ${SRC_GRP_DEBUG})
+
 set(SRC_GRP_DATASTORE
   DataStores/DBCFileLoader.cpp
   DataStores/DBCFileLoader.h
@@ -203,6 +210,7 @@ add_library(shared STATIC
     ${SRC_GRP_AUTH}
     ${SRC_GRP_COMMON}
     ${SRC_GRP_CONFIG}
+    ${SRC_GRP_DEBUG}
     ${SRC_GRP_DATASTORE}
     ${SRC_GRP_DATABASE}
     ${SRC_GRP_DYNAMIC}

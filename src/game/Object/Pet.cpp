@@ -34,6 +34,7 @@
 #include "Transports.h"
 #include "movement/MoveSpline.h"
 #include "movement/MoveSplineInit.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 // numbers represent minutes * 100 while happy (you get 100 loyalty points per min while happy)
 uint32 const LevelUpLoyalty[6] =
@@ -1471,6 +1472,8 @@ void Pet::GivePetLevel(uint32 level)
  */
 bool Pet::CreateBaseAtCreature(Creature* creature)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(PetSummon, creature ? creature->GetEntry() : 0);
     if (!creature)
     {
         sLog.outError("CRITICAL: NULL pointer passed into CreateBaseAtCreature()");

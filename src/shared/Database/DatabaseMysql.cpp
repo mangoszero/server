@@ -48,6 +48,7 @@
 #include "Threading/Threading.h"
 #include "DatabaseEnv.h"
 #include "Utilities/Timer.h"
+#include "Debug/DebugBreakHook.h"
 
 /**
  * @var DatabaseMysql::db_count
@@ -309,6 +310,9 @@ bool MySQLConnection::Initialize(const char* infoString)
  */
 bool MySQLConnection::_Query(const char* sql, MYSQL_RES** pResult, MYSQL_FIELD** pFields, uint64* pRowCount, uint32* pFieldCount)
 {
+    // GDB-server game breakpoint: pause on SQL query execution.
+    GDB_BREAK_SHARED(DbQuery, 0);
+
     if (!mMysql)
     {
         return 0;
@@ -422,6 +426,9 @@ QueryNamedResult* MySQLConnection::QueryNamed(const char* sql)
  */
 bool MySQLConnection::Execute(const char* sql)
 {
+    // GDB-server game breakpoint: pause on SQL statement execution.
+    GDB_BREAK_SHARED(DbExecute, 0);
+
     if (!mMysql)
     {
         return false;

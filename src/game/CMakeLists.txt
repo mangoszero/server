@@ -81,6 +81,10 @@ source_group("Warden\\Modules" FILES ${SRC_GRP_WARDEN_MODULES})
 file(GLOB SRC_GRP_WORLD_HANDLERS WorldHandlers/*.cpp WorldHandlers/*.h)
 source_group("World\\Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
 
+#GDB debug server group
+file(GLOB SRC_GRP_DEBUG_GDB Debug/GdbServer/*.cpp Debug/GdbServer/*.h)
+source_group("Debug\\GdbServer" FILES ${SRC_GRP_DEBUG_GDB})
+
 # Build the Eluna library if enabled
 if(SCRIPT_LIB_ELUNA)
     file(GLOB SRC_GRP_ELUNA
@@ -238,6 +242,7 @@ add_library(game STATIC
     ${SRC_GRP_WARDEN}
     ${SRC_GRP_WARDEN_MODULES}
     ${SRC_GRP_WORLD_HANDLERS}
+    ${SRC_GRP_DEBUG_GDB}
     $<$<BOOL:${SCRIPT_LIB_ELUNA}>:${SRC_GRP_ELUNA}>
     $<$<BOOL:${PLAYERBOTS}>:${SRC_GRP_BOTS}>
 )
@@ -260,6 +265,7 @@ target_include_directories(game
         Warden
         Warden/Modules
         WorldHandlers
+        Debug/GdbServer
         $<$<BOOL:${SCRIPT_LIB_ELUNA}>:
             ${CMAKE_SOURCE_DIR}/src/modules/Eluna
             ${CMAKE_SOURCE_DIR}/src/modules/Eluna/hooks

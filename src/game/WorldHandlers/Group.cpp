@@ -59,6 +59,7 @@
 #include "LootMgr.h"
 #include "LFGMgr.h"
 #include "LFGHandler.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
@@ -419,6 +420,8 @@ Player* Group::GetInvited(const std::string& name) const
  */
 bool Group::AddMember(ObjectGuid guid, const char* name, uint8 joinMethod)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(GroupJoin, 0);
     if (!_addMember(guid, name))
     {
         return false;

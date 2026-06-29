@@ -29,6 +29,7 @@
 #include "Opcodes.h"
 #include "SpellMgr.h"
 #include "World.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "UpdateMask.h"
@@ -2461,6 +2462,9 @@ void Player::AddToWorld()
     ///- The player should only be added when logging in
     Unit::AddToWorld();
 
+    // GDB-server game breakpoint: pause here when this map is armed.
+    GDB_BREAK(MapEnter, GetMapId());
+
     for (int i = PLAYER_SLOT_START; i < PLAYER_SLOT_END; ++i)
     {
         if (m_items[i])
@@ -2483,6 +2487,9 @@ void Player::AddToWorld()
  */
 void Player::RemoveFromWorld()
 {
+    // GDB-server game breakpoint: pause when leaving a given map.
+    GDB_BREAK(MapLeave, GetMapId());
+
     // cleanup
     if (IsInWorld())
     {
@@ -3174,6 +3181,9 @@ void Player::GiveXP(uint32 xp, Unit* victim)
  */
 void Player::GiveLevel(uint32 level)
 {
+    // GDB-server game breakpoint: pause when reaching a given level.
+    GDB_BREAK(LevelUp, level);
+
     uint8 oldLevel = getLevel();
     if (level == getLevel())
     {
@@ -8241,6 +8251,8 @@ uint32 Player::CalculateTotalKills(Unit* Victim, uint32 fromDate, uint32 toDate)
 // How much honor Player gains/loses killing uVictim
 bool Player::RewardHonor(Unit* uVictim, uint32 groupsize)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(PvpKill, 0);
     float honor_points = 0;
     //int kill_type = 0;
 
@@ -9724,6 +9736,9 @@ void Player::SendLootRelease(ObjectGuid guid)
  */
 void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 {
+    // GDB-server game breakpoint: pause when loot of a given type is opened.
+    GDB_BREAK(Loot, loot_type);
+
     if (ObjectGuid lootGuid = GetLootGuid())
     {
         m_session->DoLootRelease(lootGuid);
@@ -13487,6 +13502,8 @@ Item* Player::EquipNewItem(uint16 pos, uint32 item, bool update)
  */
 Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemEquip, pItem ? pItem->GetEntry() : 0);
     AddEnchantmentDurations(pItem);
     AddItemDurations(pItem);
 
@@ -13822,6 +13839,8 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
  */
 void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemDestroy, GetItemByPos(bag, slot) ? GetItemByPos(bag, slot)->GetEntry() : 0);
     Item* pItem = GetItemByPos(bag, slot);
     if (pItem)
     {
@@ -15725,6 +15744,9 @@ void Player::SendPreparedGossip(WorldObject* pSource)
  */
 void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId)
 {
+    // GDB-server game breakpoint: pause when a gossip option is selected.
+    GDB_BREAK(GossipSelect, gossipListId);
+
     GossipMenu& gossipmenu = PlayerTalkClass->GetGossipMenu();
 
     if (gossipListId >= gossipmenu.MenuItemCount())
@@ -16568,6 +16590,9 @@ Quest const* Player::GetQuestTemplate(uint32 quest_id)
  */
 void Player::AddQuest(Quest const* pQuest, Object* questGiver)
 {
+    // GDB-server game breakpoint: pause when a given quest is accepted.
+    GDB_BREAK(QuestAccept, pQuest->GetQuestId());
+
     uint16 log_slot = FindQuestSlot(0);
     MANGOS_ASSERT(log_slot < MAX_QUEST_LOG_SIZE);
 
@@ -16733,6 +16758,9 @@ void Player::AddQuest(Quest const* pQuest, Object* questGiver)
  */
 void Player::CompleteQuest(uint32 quest_id, QuestStatus status)
 {
+    // GDB-server game breakpoint: pause when a given quest is completed.
+    GDB_BREAK(QuestComplete, quest_id);
+
     if (quest_id)
     {
         SetQuestStatus(quest_id, status);
@@ -16796,6 +16824,9 @@ void Player::IncompleteQuest(uint32 quest_id)
 void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver, bool announce)
 {
     uint32 quest_id = pQuest->GetQuestId();
+
+    // GDB-server game breakpoint: pause when a given quest is rewarded.
+    GDB_BREAK(QuestReward, quest_id);
 
     for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
     {
