@@ -30,8 +30,10 @@
 #define MANGOS_H_GDB_BREAKPOINTS
 
 #include "Common.h"
+#include "Debug/GdbEvents.h"
 
 #include <atomic>
+#include <cstdint>
 
 namespace GdbMon { class MonitorWriter; }
 
@@ -54,36 +56,17 @@ namespace GdbMon { class MonitorWriter; }
  */
 namespace GdbBp
 {
-    /// Event families a breakpoint can watch. Keep the count <= 64 so the
-    /// armed set fits in a single bitmask word.
-    enum class Event : uint32
-    {
-        Opcode,          ///< received client opcode          (filter: opcode)
-        Login,           ///< player login                    (filter: account id)
-        Logout,          ///< player logout                   (filter: account id)
-        MapEnter,        ///< object added to a map           (filter: map id)
-        MapLeave,        ///< object removed from a map       (filter: map id)
-        SpellCast,       ///< spell cast                      (filter: spell id)
-        SpellPrepare,    ///< spell prepared                  (filter: spell id)
-        Death,           ///< unit died                       (filter: entry)
-        Damage,          ///< damage dealt                    (filter: victim entry)
-        LevelUp,         ///< player gained a level           (filter: new level)
-        Loot,            ///< loot opened                     (filter: loot type)
-        QuestAccept,     ///< quest accepted                  (filter: quest id)
-        QuestComplete,   ///< quest completed                 (filter: quest id)
-        QuestReward,     ///< quest rewarded                  (filter: quest id)
-        Chat,            ///< chat message handled            (filter: 0)
-        ItemUse,         ///< item used                       (filter: 0)
-        GossipSelect,    ///< gossip option selected          (filter: gossip id)
-        CreatureCreate,  ///< creature created                (filter: entry)
-        GameObjectUse,   ///< game object used                (filter: entry)
-        GmCommand,       ///< chat/console command parsed     (filter: 0)
-        WorldTick,       ///< world heartbeat (single-step)   (filter: 0)
-        Count
-    };
+    /// The event catalogue lives in the shared layer (Debug/GdbEvents.h) so
+    /// shared subsystems and game code share one set of ids.
+    using Event = ::GdbEvent;
 
     /// Per-event armed bitmask; the hot-path gate. Defined in the .cpp.
     extern std::atomic<uint64> g_armedMask;
+
+    /// Register the shared-layer break bridge (DbgBreak) with this engine so
+    /// shared subsystems (e.g. the database) can raise breakpoints. Called
+    /// once at startup.
+    void Init();
 
     /// Cheap gate for call sites — true when @p e has any breakpoint armed.
     inline bool Armed(Event e)

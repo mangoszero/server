@@ -28,6 +28,7 @@
 
 #include "GdbBreakpoints.h"
 
+#include "Debug/DebugBreakHook.h"
 #include "GdbMonitor.h"
 #include "GdbServer.h"
 
@@ -53,13 +54,22 @@ namespace GdbBp
         uint64 g_hits = 0;
 
         // Canonical lower-case name per Event, indexed by enum value. Keep in
-        // lockstep with the Event enum in the header.
+        // lockstep with the GdbEvent enum in shared/Debug/GdbEvents.h.
         const char* const kEventNames[] = {
             "opcode", "login", "logout", "mapenter", "mapleave",
             "spellcast", "spellprepare", "death", "damage", "levelup",
             "loot", "questaccept", "questcomplete", "questreward",
             "chat", "itemuse", "gossip", "creaturecreate",
             "gobjectuse", "gmcmd", "worldtick",
+            "netaccept", "netclose", "authsession", "packetrecv", "packetsend",
+            "dbquery", "dbexecute", "dbasyncquery",
+            "wardencheck", "wardenviolation",
+            "scriptai", "eluna", "sd3",
+            "aicombat", "aicombatend", "aiupdate", "aispawn",
+            "mapcreate", "gridload", "instancecreate", "instancereset",
+            "mailsend", "mailrecv", "auctionadd", "auctionbuy", "trade",
+            "bgstart", "bgend", "petsummon", "itemequip", "itemdestroy",
+            "groupjoin", "pvpkill", "movementinform",
         };
         static_assert(sizeof(kEventNames) / sizeof(kEventNames[0]) ==
                           static_cast<size_t>(Event::Count),
@@ -191,6 +201,29 @@ namespace GdbBp
         // No-op unless a debugger is attached (EnterBreak guards that), so an
         // armed-but-unattended breakpoint never hangs the server.
         sGdbServer.EnterBreak(reason);
+    }
+
+    namespace
+    {
+        // Bridge entry points handed to the shared-layer shim (DbgBreak).
+        std::uint64_t CurrentMask()
+        {
+            return static_cast<std::uint64_t>(g_armedMask.load(std::memory_order_relaxed));
+        }
+
+        void SharedHit(std::uint32_t ev, std::uint64_t detail)
+        {
+            const Event e = static_cast<Event>(ev);
+            if (Matches(e, detail))
+            {
+                Hit(e, detail);
+            }
+        }
+    } // namespace
+
+    void Init()
+    {
+        DbgBreak::Register(&CurrentMask, &SharedHit);
     }
 } // namespace GdbBp
 /// @}

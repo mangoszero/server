@@ -29,6 +29,7 @@
 #include "GdbServer.h"
 
 #include "Config.h"
+#include "GdbBreakpoints.h"
 #include "GdbMonitor.h"
 #include "GdbRsp.h"
 #include "Log.h"
@@ -56,6 +57,10 @@ void GdbServer::Init()
 
     GdbRsp::SetSink(&GdbServer::RspSinkThunk);
     GdbRsp::SetAllowMemWrite(m_allowMemWrite);
+
+    // Wire the shared-layer break bridge so shared subsystems (database) can
+    // raise game-level breakpoints through this engine.
+    GdbBp::Init();
 
     // Always validate the monitor surface, even when the listener is off, so
     // a broken port is caught at boot rather than on first connect.
