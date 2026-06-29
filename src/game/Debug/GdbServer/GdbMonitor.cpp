@@ -28,6 +28,7 @@
 
 #include "GdbMonitor.h"
 
+#include "GdbBreakpoints.h"
 #include "Log.h"
 
 namespace GdbMon
@@ -284,7 +285,63 @@ namespace GdbMon
                     "  mangos tick               world loop counter + uptime\n"
                     "  mangos session <accId>    session detail for an account id\n"
                     "  mangos config <key>       read a mangosd.conf value\n"
-                    "  mangos cmd <command>      run a server/GM command (e.g. .server info)\n");
+                    "  mangos cmd <command>      run a server/GM command (e.g. .server info)\n"
+                    "  mangos break list|opcode <id>|map <id>|label <name>|del <spec>|clear\n"
+                    "                            game-level breakpoints (pause on event)\n"
+                    "  mangos dump               write a backtrace of the world thread\n");
+        }
+
+        // mangos break list | opcode <id> | map <id> | label <name>
+        //                  | del <spec> | clear
+        void CmdBreak(uint32 argc, const char** argv, MonitorWriter& out)
+        {
+            if (argc < 3 || Eq(argv[2], "list"))
+            {
+                GdbBp::List(out);
+                return;
+            }
+            if (Eq(argv[2], "clear"))
+            {
+                GdbBp::DisarmAll();
+                out.Str("all breakpoints disarmed\n");
+                return;
+            }
+            if (Eq(argv[2], "opcode") && argc >= 4)
+            {
+                uint64 v = 0;
+                if (!ParseU64(argv[3], &v))
+                {
+                    out.Str("break: bad opcode id\n");
+                    return;
+                }
+                out.Str(GdbBp::ArmOpcode(static_cast<uint32>(v)) ? "armed opcode breakpoint\n"
+                                                                 : "opcode breakpoint already armed\n");
+                return;
+            }
+            if (Eq(argv[2], "map") && argc >= 4)
+            {
+                uint64 v = 0;
+                if (!ParseU64(argv[3], &v))
+                {
+                    out.Str("break: bad map id\n");
+                    return;
+                }
+                out.Str(GdbBp::ArmMapEnter(static_cast<uint32>(v)) ? "armed map-enter breakpoint\n"
+                                                                   : "map-enter breakpoint already armed\n");
+                return;
+            }
+            if (Eq(argv[2], "label") && argc >= 4)
+            {
+                out.Str(GdbBp::ArmLabel(argv[3]) ? "armed label breakpoint\n"
+                                                 : "label breakpoint already armed\n");
+                return;
+            }
+            if (Eq(argv[2], "del") && argc >= 4)
+            {
+                out.Str(GdbBp::Disarm(argv[3]) ? "breakpoint removed\n" : "breakpoint not found\n");
+                return;
+            }
+            out.Str("usage: mangos break list|opcode <id>|map <id>|label <name>|del <spec>|clear\n");
         }
     } // namespace
 
@@ -361,6 +418,14 @@ namespace GdbMon
                 return true;
             }
             verbs::CmdCmd(rest, out);
+        }
+        else if (Eq(sub, "break"))
+        {
+            CmdBreak(argc, argv, out);
+        }
+        else if (Eq(sub, "dump"))
+        {
+            verbs::CmdDump(out);
         }
         else
         {

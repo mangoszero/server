@@ -92,30 +92,57 @@ Each line is a `mangos <verb>` command; the text reply comes straight back.
 | `mangos session <accId>` | Session detail for an account id |
 | `mangos config <key>` | Read a `mangosd.conf` value |
 | `mangos cmd <command>` | Run any server/GM command (e.g. `.server info`, `.account onlinelist`) |
+| `mangos break ...` | Arm/list/clear game-level breakpoints (see below) |
+| `mangos dump` | Backtrace of the world thread |
 
 The `cmd` verb bridges to the existing `ChatCommand` system at `SEC_CONSOLE`
 level, so the entire console/GM command surface is drivable over the debug
 channel.
 
-## What works today (Phase 1) and what is next (Phase 2)
+## Game-level breakpoints
 
-**Phase 1 (implemented):** RSP transport over TCP; `qSupported`, `?`, `g`/`G`
-(synthetic registers), `m`/`M` (guarded process-memory read/write), `H`,
-`c`/`s`/`D`/`k`, `vCont`, `qRcmd` monitor; the `mangos` semantic verbs incl. the
-`cmd` bridge; cooperative world-tick stop on Ctrl-C; the plain-text bridge.
+Beyond the native protocol, the server can pause itself at semantically
+meaningful points and hand control to the attached debugger. When a breakpoint
+fires (and a debugger is attached), the world thread stops **inline at the call
+site**, captures the live registers, and waits — so `bt` in gdb shows the real
+call stack and `monitor mangos ...` reads quiescent game state. `continue`
+resumes the tick.
 
-**Phase 1 limitations:**
-- Registers (`g`/`G`) are a synthetic zeroed x86_64 set — enough for the attach
-  handshake; the value is in `monitor` + memory, not register-level debugging.
-- Breakpoints (`Z`/`z`) and real single-step are not implemented (gdb falls
-  back to its own software breakpoints, which will not function without the
-  native breakpoint support below).
+```
+(gdb) monitor mangos break opcode 0x12E    # pause when this opcode arrives
+(gdb) monitor mangos break map 0           # pause when a player enters map 0
+(gdb) monitor mangos break list
+(gdb) monitor mangos break del opcode:0x12E
+(gdb) monitor mangos break clear
+```
+
+Breakpoints only fire while a debugger is attached, so an armed-but-unattended
+breakpoint never stalls the server. Current call sites: received-opcode dispatch
+and player map-entry; more sites are added with a single `GDB_BREAK_*` macro.
+
+## Capabilities and limits
+
+**Implemented:**
+- RSP transport over TCP; `qSupported`, `?`, `g`/`G`, `m`/`M` (guarded
+  process-memory read/write), `H`, `c`/`s`/`D`/`k`, `vCont`, `qRcmd` monitor.
+- The `mangos` semantic verbs including the `cmd` bridge; the plain-text bridge.
+- Cooperative world-tick stop on Ctrl-C.
+- **Live register capture** (`g`): at a stop the world thread's real registers
+  are captured (Linux `getcontext`, Windows `RtlCaptureContext` on x86_64), so
+  gdb can `bt` through the actual call stack via the `m` memory packets.
+- **Game-level breakpoints** on opcodes, map-entry, and named labels.
+- `mangos dump` backtrace.
+
+**Limits:**
+- `g`/`G` cover the x86_64 integer register file; FPU/SSE are reported as zero,
+  and non-x86_64 builds report zeroed registers (memory + monitor still work).
+- Native instruction breakpoints (`Z`/`z`) and hardware single-step are not
+  implemented — by design. Driving `int3` patching or self-set debug registers
+  in a live, multi-threaded server is unsafe; the game-level breakpoints above
+  are the supported, cooperative equivalent.
 - One debugger connection at a time.
 - State seen during a stop is *world-tick-consistent*, not globally race-free:
   the network, database and map-update threads keep running.
 
-**Phase 2 (planned):** real native registers and hardware/software breakpoints
-via OS facilities (Linux ptrace/DR registers, Windows `DebugActiveProcess`/
-`SetThreadContext`); game-level breakpoints ("break on opcode X", "break when a
-player enters map Y"); and crash-dump integration (tying into the Windows
-Wheaty report and a Linux backtrace).
+**Possible future work:** symbol-resolved backtraces on Windows (via the
+existing crash-report tooling) and additional `GDB_BREAK_*` call sites.

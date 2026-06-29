@@ -30,6 +30,7 @@
 #define MANGOS_H_GDB_SERVER
 
 #include "Common.h"
+#include "GdbRsp.h"
 
 #include <atomic>
 #include <deque>
@@ -91,6 +92,17 @@ class GdbServer
         /// Invoked once per tick from World::Update.
         void OnWorldUpdate();
 
+        /// Enter the cooperative stop from a game-level breakpoint site (on
+        /// the world thread). No-op unless enabled AND a debugger is attached
+        /// — otherwise there would be no one to resume the server. Captures
+        /// the live register context so the debugger can backtrace the real
+        /// call stack, then pumps packets until the debugger resumes.
+        void EnterBreak(const char* reason);
+
+        /// True when an RSP debugger is currently attached (used by the
+        /// breakpoint hot path to skip work when nobody can act on a stop).
+        bool DebuggerAttached() const { return m_rspWriter != nullptr && !m_peerClosed.load(); }
+
     private:
         GdbServer() = default;
         GdbServer(const GdbServer&) = delete;
@@ -101,7 +113,8 @@ class GdbServer
         void DrainMonitorRequests();
         void DrainAndServiceRsp();
         void FlushRspOut();
-        void EnterCooperativeStop();
+        void EnterStop(const char* reason);
+        bool CaptureContext(GdbRsp::RegSnapshot& out);
 
         struct MonitorReq
         {
@@ -134,6 +147,9 @@ class GdbServer
 
         // Outbound RSP scratch (world thread only).
         std::vector<uint8> m_outBuf;
+
+        // Register context captured at the current stop (world thread only).
+        GdbRsp::RegSnapshot m_capturedRegs{};
 };
 
 #define sGdbServer GdbServer::Instance()

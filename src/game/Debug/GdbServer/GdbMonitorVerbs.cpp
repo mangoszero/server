@@ -36,6 +36,13 @@
 #include "World.h"
 #include "WorldSession.h"
 
+#include <cstdlib>
+#if defined(_WIN32)
+#  include <windows.h>
+#elif defined(__linux__)
+#  include <execinfo.h>
+#endif
+
 namespace GdbMon
 {
     namespace
@@ -160,6 +167,50 @@ namespace GdbMon
             // full command surface, matching the local console.
             CliHandler handler(0, SEC_CONSOLE, &out, &MonitorPrint);
             handler.ParseCommands(serverCommand);
+        }
+
+        void CmdDump(MonitorWriter& out)
+        {
+            out.Str("world-thread backtrace:\n");
+#if defined(__linux__)
+            void* frames[64];
+            const int n = backtrace(frames, 64);
+            char** syms = backtrace_symbols(frames, n);
+            for (int i = 0; i < n; ++i)
+            {
+                out.Str("  #");
+                out.U64(static_cast<uint64>(i));
+                out.Str("  ");
+                if (syms != nullptr && syms[i] != nullptr)
+                {
+                    out.Str(syms[i]);
+                }
+                else
+                {
+                    out.Str("0x");
+                    out.Hex(reinterpret_cast<uint64>(frames[i]));
+                }
+                out.Line();
+            }
+            if (syms != nullptr)
+            {
+                free(syms);
+            }
+#elif defined(_WIN32)
+            void* frames[64];
+            const USHORT n = CaptureStackBackTrace(0, 64, frames, nullptr);
+            for (USHORT i = 0; i < n; ++i)
+            {
+                out.Str("  #");
+                out.U64(i);
+                out.Str("  0x");
+                out.Hex(reinterpret_cast<uint64>(frames[i]));
+                out.Line();
+            }
+            out.Str("  (symbol resolution: see the crash report written on fault)\n");
+#else
+            out.Str("  (backtrace not supported on this platform)\n");
+#endif
         }
     } // namespace verbs
 } // namespace GdbMon

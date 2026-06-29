@@ -37,6 +37,12 @@
 #include <chrono>
 #include <thread>
 
+#if defined(_WIN32)
+#  include <windows.h>
+#elif defined(__x86_64__)
+#  include <ucontext.h>
+#endif
+
 GdbServer& GdbServer::Instance()
 {
     static GdbServer s_instance;
@@ -208,12 +214,57 @@ void GdbServer::DrainAndServiceRsp()
     FlushRspOut();
 }
 
-void GdbServer::EnterCooperativeStop()
+bool GdbServer::CaptureContext(GdbRsp::RegSnapshot& out)
 {
-    // Pause the world tick: this function runs inside World::Update, so the
-    // 50 ms heartbeat is blocked for as long as we stay here. All game-state
-    // reads issued by the debugger therefore see a quiescent world.
-    sLog.outString("GdbServer: target stopped (debugger interrupt)");
+    out = GdbRsp::RegSnapshot{};
+#if defined(_WIN32) && (defined(_M_X64) || defined(__x86_64__))
+    CONTEXT ctx;
+    RtlCaptureContext(&ctx);
+    out.rax = ctx.Rax; out.rbx = ctx.Rbx; out.rcx = ctx.Rcx; out.rdx = ctx.Rdx;
+    out.rsi = ctx.Rsi; out.rdi = ctx.Rdi; out.rbp = ctx.Rbp; out.rsp = ctx.Rsp;
+    out.r8 = ctx.R8; out.r9 = ctx.R9; out.r10 = ctx.R10; out.r11 = ctx.R11;
+    out.r12 = ctx.R12; out.r13 = ctx.R13; out.r14 = ctx.R14; out.r15 = ctx.R15;
+    out.rip = ctx.Rip; out.rflags = ctx.EFlags;
+    out.cs = ctx.SegCs; out.ss = ctx.SegSs; out.ds = ctx.SegDs;
+    out.es = ctx.SegEs; out.fs = ctx.SegFs; out.gs = ctx.SegGs;
+    return true;
+#elif defined(__x86_64__)
+    ucontext_t uc;
+    if (getcontext(&uc) != 0)
+    {
+        return false;
+    }
+    const greg_t* g = uc.uc_mcontext.gregs;
+    out.rax = g[REG_RAX]; out.rbx = g[REG_RBX]; out.rcx = g[REG_RCX]; out.rdx = g[REG_RDX];
+    out.rsi = g[REG_RSI]; out.rdi = g[REG_RDI]; out.rbp = g[REG_RBP]; out.rsp = g[REG_RSP];
+    out.r8 = g[REG_R8]; out.r9 = g[REG_R9]; out.r10 = g[REG_R10]; out.r11 = g[REG_R11];
+    out.r12 = g[REG_R12]; out.r13 = g[REG_R13]; out.r14 = g[REG_R14]; out.r15 = g[REG_R15];
+    out.rip = g[REG_RIP]; out.rflags = static_cast<uint64>(g[REG_EFL]);
+    // CSGSFS packs cs (bits 0-15), gs (16-31), fs (32-47).
+    const uint64 csgsfs = static_cast<uint64>(g[REG_CSGSFS]);
+    out.cs = static_cast<uint32>(csgsfs & 0xFFFF);
+    out.gs = static_cast<uint32>((csgsfs >> 16) & 0xFFFF);
+    out.fs = static_cast<uint32>((csgsfs >> 32) & 0xFFFF);
+    return true;
+#else
+    return false; // non-x86_64: registers stay zeroed (memory + monitor still work)
+#endif
+}
+
+void GdbServer::EnterStop(const char* reason)
+{
+    // Pause the world tick: this function runs inside the world thread (either
+    // from OnWorldUpdate or inline at a breakpoint), so the 50 ms heartbeat is
+    // blocked for as long as we stay here. All game-state reads issued by the
+    // debugger therefore see a quiescent world.
+    sLog.outString("GdbServer: target stopped (%s)", reason);
+
+    // Capture the live register context so the debugger can backtrace the real
+    // call stack (it reads stack memory through the 'm' packets).
+    if (CaptureContext(m_capturedRegs))
+    {
+        GdbRsp::PublishRegisters(&m_capturedRegs);
+    }
 
     // Discard any stale resume left by a 'c'/'s' issued while the target was
     // running, so this stop actually waits for a fresh resume command.
@@ -248,7 +299,19 @@ void GdbServer::EnterCooperativeStop()
         }
     }
 
+    GdbRsp::PublishRegisters(nullptr);
     sLog.outString("GdbServer: target resumed");
+}
+
+void GdbServer::EnterBreak(const char* reason)
+{
+    // Only break when a debugger is attached — otherwise no one could resume
+    // the server and the world would hang.
+    if (!m_enabled || !DebuggerAttached())
+    {
+        return;
+    }
+    EnterStop(reason);
 }
 
 void GdbServer::OnWorldUpdate()
@@ -270,7 +333,7 @@ void GdbServer::OnWorldUpdate()
     // PollAsyncStop: a pending GDB interrupt enters the cooperative stop.
     if (m_interrupt.exchange(false))
     {
-        EnterCooperativeStop();
+        EnterStop("debugger interrupt");
     }
 }
 /// @}

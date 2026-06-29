@@ -60,6 +60,7 @@
 #include "GuildMgr.h"
 #include "World.h"
 #include "ObjectAccessor.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "BattleGround/BattleGroundMgr.h"
 #include "SocialMgr.h"
 #ifdef ENABLE_ELUNA
@@ -316,6 +317,10 @@ bool WorldSession::Update(PacketFilter& updater)
          * #endif*/
 
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
+
+        // GDB-server game breakpoint: pause here when this opcode is armed.
+        GDB_BREAK_OPCODE(packet->GetOpcode());
+
         try
         {
             switch (opHandle.status)

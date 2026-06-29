@@ -50,6 +50,25 @@
  */
 namespace GdbRsp
 {
+    /// Snapshot of the x86_64 integer register file in GDB's canonical
+    /// order, as returned by the `g` packet. When a real snapshot is
+    /// published (e.g. captured at a breakpoint or stop point), gdb can
+    /// unwind the live stack — it reads stack memory through the `m` packets.
+    struct RegSnapshot
+    {
+        uint64 rax, rbx, rcx, rdx;
+        uint64 rsi, rdi, rbp, rsp;
+        uint64 r8, r9, r10, r11;
+        uint64 r12, r13, r14, r15;
+        uint64 rip, rflags;
+        uint32 cs, ss, ds, es, fs, gs;
+    };
+
+    /// Publish the register snapshot the next `g` packet should report.
+    /// Pass nullptr to revert to a zeroed reply. The caller owns the storage
+    /// and must keep it alive until a different snapshot is published.
+    void PublishRegisters(const RegSnapshot* snap);
+
     /// Output sink — invoked once per byte the engine wants to send.
     using WriteByte = void (*)(uint8 byte);
 

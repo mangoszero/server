@@ -55,6 +55,7 @@ namespace GdbRsp
 
         WriteByte g_sink = nullptr;
         bool g_allow_mem_write = false;
+        const RegSnapshot* g_regs = nullptr;
 
         ResumeAction g_resume_pending = ResumeAction::None;
 
@@ -169,20 +170,49 @@ namespace GdbRsp
             return kTargetXml;
         }
 
-        // Reply to a `g` (read registers) packet. Phase 1: a zeroed 24-reg
-        // x86_64 block (16 GPR + rip + eflags + 6 segments) in the canonical
-        // little-endian hex order our target.xml declares.
+        // Reply to a `g` (read registers) packet: a 24-reg x86_64 block
+        // (16 GPR + rip + eflags + 6 segments) in the canonical little-endian
+        // hex order our target.xml declares. Uses the published snapshot when
+        // available (so gdb can unwind the live stack), zeros otherwise.
         void HandleReadRegisters()
         {
             // 16 GPR (16 hex) + rip (16) + eflags (8) + 6 segs (8) = 328.
             constexpr uint32 kReplyChars = 16 * 16 + 16 + 8 + 6 * 8;
             char buf[kReplyChars + 1];
-            for (uint32 i = 0; i < kReplyChars; ++i)
+            uint32 off = 0;
+
+            auto put_u64 = [&](uint64 v)
             {
-                buf[i] = '0';
-            }
-            buf[kReplyChars] = '\0';
-            SendReply(buf, kReplyChars);
+                for (uint32 i = 0; i < 8; ++i)
+                {
+                    const uint8 b = static_cast<uint8>(v >> (i * 8));
+                    buf[off++] = HexDigitChar((b >> 4) & 0xF);
+                    buf[off++] = HexDigitChar(b & 0xF);
+                }
+            };
+            auto put_u32 = [&](uint32 v)
+            {
+                for (uint32 i = 0; i < 4; ++i)
+                {
+                    const uint8 b = static_cast<uint8>(v >> (i * 8));
+                    buf[off++] = HexDigitChar((b >> 4) & 0xF);
+                    buf[off++] = HexDigitChar(b & 0xF);
+                }
+            };
+
+            const RegSnapshot z{};
+            const RegSnapshot& r = (g_regs != nullptr) ? *g_regs : z;
+            put_u64(r.rax); put_u64(r.rbx); put_u64(r.rcx); put_u64(r.rdx);
+            put_u64(r.rsi); put_u64(r.rdi); put_u64(r.rbp); put_u64(r.rsp);
+            put_u64(r.r8);  put_u64(r.r9);  put_u64(r.r10); put_u64(r.r11);
+            put_u64(r.r12); put_u64(r.r13); put_u64(r.r14); put_u64(r.r15);
+            put_u64(r.rip);
+            put_u32(static_cast<uint32>(r.rflags & 0xFFFFFFFFu));
+            put_u32(r.cs); put_u32(r.ss); put_u32(r.ds);
+            put_u32(r.es); put_u32(r.fs); put_u32(r.gs);
+
+            buf[off] = '\0';
+            SendReply(buf, off);
         }
 
         // Parse the `m<addr>,<len>` arguments out of the packet starting at
@@ -478,6 +508,11 @@ namespace GdbRsp
     void SetAllowMemWrite(bool allow)
     {
         g_allow_mem_write = allow;
+    }
+
+    void PublishRegisters(const RegSnapshot* snap)
+    {
+        g_regs = snap;
     }
 
     void ResetSession()

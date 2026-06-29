@@ -99,6 +99,7 @@ namespace GdbMon
         void CmdSession(uint64 accountId, MonitorWriter& out);
         void CmdConfig(const char* key, MonitorWriter& out);
         void CmdCmd(const char* serverCommand, MonitorWriter& out);
+        void CmdDump(MonitorWriter& out);
     }
 }
 

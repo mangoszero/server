@@ -29,6 +29,7 @@
 #include "Opcodes.h"
 #include "SpellMgr.h"
 #include "World.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "UpdateMask.h"
@@ -2460,6 +2461,9 @@ void Player::AddToWorld()
     ///- It will crash when updating the ObjectAccessor
     ///- The player should only be added when logging in
     Unit::AddToWorld();
+
+    // GDB-server game breakpoint: pause here when this map is armed.
+    GDB_BREAK_MAP_ENTER(GetMapId());
 
     for (int i = PLAYER_SLOT_START; i < PLAYER_SLOT_END; ++i)
     {
