@@ -286,6 +286,9 @@ namespace ai
             virtual Value<Unit*>* GetTargetValue();
     };
 
+    BEGIN_TRIGGER(HasThreatTrigger, Trigger)
+    END_TRIGGER()
+
     BEGIN_TRIGGER(NoAttackersTrigger, Trigger)
     END_TRIGGER()
 

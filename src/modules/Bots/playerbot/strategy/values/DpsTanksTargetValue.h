@@ -13,7 +13,7 @@ namespace ai
             Unit* Calculate() override
             {
                 Player* tank = ai->GetGroupTank(bot);
-                if (!tank)
+                if (!tank || !tank->IsAlive())
                 {
                     return NULL;
                 }

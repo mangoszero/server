@@ -50,6 +50,24 @@ bool EquipSpellstoneAction::Execute(Event event)
     WorldPacket* const packet = new WorldPacket(CMSG_AUTOEQUIP_ITEM, 2);
     *packet << bagIndex << slot;
     bot->GetSession()->QueuePacket(packet);
+    return true;
+}
 
+bool CastRainOfFireAction::isUseful()
+{
+    if (!CastSpellAction::isUseful())
+    {
+        return false;
+    }
+    if (!ai->HasStrategy("cautious"))
+    {
+        return true;
+    }
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || ai->HasNonCombatantInRange(8.0f,
+        target->GetPositionX(), target->GetPositionY(), target->GetPositionZ()))
+    {
+        return false;
+    }
     return true;
 }
