@@ -1623,7 +1623,7 @@ void ObjectMgr::LoadCreatures()
                           |  GetLivingWorldDefenderCategory(cInfo, mapEntry, lwIsWaypoint)) & lwAnchorMask;
             if ((cInfo->ExtraFlags & CREATURE_FLAG_EXTRA_ACTIVE) || lwCats != 0)
             {
-                sLog.outString("Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
+                BASIC_FILTER_LOG(LOG_FILTER_MAP_LOADING, "Adding `creature` with Active Flag: Map: %u, Guid %u", data.mapid, guid);
                 m_activeCreatures.insert(ActiveCreatureGuidsOnMap::value_type(data.mapid, guid));
 
                 if (lwCats != 0)
@@ -2603,7 +2603,7 @@ void ObjectMgr::LoadPetLevelInfo()
                 }
                 else
                 {
-                    DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `pet_levelstats` table, ignoring.", current_level);
+                    DETAIL_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, "Unused (> MaxPlayerLevel in mangosd.conf) level %u in `pet_levelstats` table, ignoring.", current_level);
                     ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
                 }
                 continue;
@@ -3047,7 +3047,7 @@ void ObjectMgr::LoadPlayerInfo()
                 }
                 else
                 {
-                    DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_classlevelstats` table, ignoring.", current_level);
+                    DETAIL_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, "Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_classlevelstats` table, ignoring.", current_level);
                     ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
                 }
                 continue;
@@ -3156,7 +3156,7 @@ void ObjectMgr::LoadPlayerInfo()
                 }
                 else
                 {
-                    DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_levelstats` table, ignoring.", current_level);
+                    DETAIL_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, "Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_levelstats` table, ignoring.", current_level);
                     ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
                 }
                 continue;
@@ -3273,7 +3273,7 @@ void ObjectMgr::LoadPlayerInfo()
                 }
                 else
                 {
-                    DETAIL_LOG("Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_xp_for_levels` table, ignoring.", current_level);
+                    DETAIL_FILTER_LOG(LOG_FILTER_DB_STRICTED_CHECK, "Unused (> MaxPlayerLevel in mangosd.conf) level %u in `player_xp_for_levels` table, ignoring.", current_level);
                     ++count;                                // make result loading percent "expected" correct in case disabled detail mode for example.
                 }
                 continue;

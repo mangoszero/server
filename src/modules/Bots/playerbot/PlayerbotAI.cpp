@@ -413,6 +413,7 @@ void PlayerbotAI::UpdateAIInternal(uint32 elapsed)
 void PlayerbotAI::HandleTeleportAck()
 {
     bot->GetMotionMaster()->Clear(true);
+    bot->StopMoving(true);
     if (bot->IsBeingTeleportedNear())
     {
         WorldPacket p = WorldPacket(MSG_MOVE_TELEPORT_ACK, 8 + 4 + 4);

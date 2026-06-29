@@ -1844,6 +1844,18 @@ void World::Update(uint32 diff)
     GameTime::UpdateGameTimers();
     sWorldUpdateTime.UpdateWithDiff(diff);
 
+    ///- Flush buffered log files about once per second. The file sinks are
+    ///  fully buffered (setvbuf), so this bounds how long a buffered line waits
+    ///  to reach disk; error paths still flush immediately at emit time. Safe as
+    ///  a function-local static: World::Update runs only on the world thread.
+    static uint32 logFlushTimer = 0;
+    logFlushTimer += diff;
+    if (logFlushTimer >= 1000)
+    {
+        logFlushTimer = 0;
+        sLog.Flush();
+    }
+
     ///-Update mass mailer tasks if any
     sMassMailMgr.Update();
 

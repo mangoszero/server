@@ -63,10 +63,14 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
 
     if (loot.skillId == SKILL_NONE)
     {
-        return false;
+        GameObject* go = ai->GetGameObject(guid);
+        if (!go || go->GetGoType() != GAMEOBJECT_TYPE_CHEST
+            || !go->ActivateToQuest(bot))
+        {
+            return false;
+        }
     }
-
-    if (bot->GetMap()->IsDungeon() && loot.skillId != SKILL_LOCKPICKING)
+    else if (bot->GetMap()->IsDungeon() && loot.skillId != SKILL_LOCKPICKING)
     {
         return false;
     }

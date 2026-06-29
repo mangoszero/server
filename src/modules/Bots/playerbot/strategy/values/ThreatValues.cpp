@@ -68,6 +68,24 @@ uint8 ThreatValue::Calculate(Unit* target)
         {
             maxThreat = threat;
         }
+
+        if (Pet* pet = player->GetPet())
+        {
+            threat = target->GetThreatManager().getThreat(pet);
+            if (maxThreat < threat)
+            {
+                maxThreat = threat;
+            }
+        }
+    }
+
+    if (Pet* pet = bot->GetPet())
+    {
+        float threat = target->GetThreatManager().getThreat(pet);
+        if (maxThreat < threat)
+        {
+            maxThreat = threat;
+        }
     }
 
     if (maxThreat <= 0)

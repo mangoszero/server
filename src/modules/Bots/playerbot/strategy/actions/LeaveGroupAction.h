@@ -17,6 +17,8 @@ namespace ai
                     ai->TellMaster("Goodbye!", PLAYERBOT_SECURITY_TALK);
                 }
 
+                ai->ResetStrategies();
+
                 WorldPacket p;
                 string member = bot->GetName();
                 p << uint32(PARTY_OP_LEAVE) << member << uint32(0);
@@ -29,7 +31,6 @@ namespace ai
                     sRandomPlayerbotMgr.SetLootAmount(bot, 0);
                 }
 
-                ai->ResetStrategies();
                 ai->ChangeStrategy("-follow master", BOT_STATE_NON_COMBAT);
                 ai->ChangeStrategy("-follow master", BOT_STATE_DEAD);
                 ai->ChangeStrategy("-follow master", BOT_STATE_COMBAT);

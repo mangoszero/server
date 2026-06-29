@@ -10,6 +10,7 @@ class ChatCommandActionNodeFactoryInternal : public NamedObjectFactory<ActionNod
         ChatCommandActionNodeFactoryInternal()
         {
             creators["tank attack chat shortcut"] = &tank_attack_chat_shortcut;
+            creators["goto"] = &goto_action;
         }
 
     private:
@@ -19,6 +20,13 @@ class ChatCommandActionNodeFactoryInternal : public NamedObjectFactory<ActionNod
                 /*P*/ NULL,
                 /*A*/ NULL,
                 /*C*/ NextAction::array(0, new NextAction("attack my target", 100.0f), NULL));
+        }
+        static ActionNode* goto_action(PlayerbotAI* ai)
+        {
+            return (new ActionNode ("goto",
+                /*P*/ NULL,
+                /*A*/ NULL,
+                /*C*/ NULL))->persist(3600000);
         }
 };
 
@@ -143,6 +151,10 @@ void ChatCommandHandlerStrategy::InitTriggers(std::list<TriggerNode*> &triggers)
     triggers.push_back(new TriggerNode(
             "jump",
         NextAction::array(0, new NextAction("jump", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+            "goto",
+        NextAction::array(0, new NextAction("goto", 1000.0f), NULL)));
 }
 
 ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* ai) : PassTroughStrategy(ai)
@@ -180,6 +192,7 @@ ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("spell");
     supported.push_back("rti");
     supported.push_back("position");
+    supported.push_back("goto");
     supported.push_back("summon");
     supported.push_back("who");
     supported.push_back("save mana");

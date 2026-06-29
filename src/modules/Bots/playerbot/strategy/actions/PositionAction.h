@@ -33,4 +33,17 @@ namespace ai
             GuardAction(PlayerbotAI* ai) : MoveToPositionAction(ai, "guard")
             {}
     };
+
+    class GotoAction : public MovementAction
+    {
+        public:
+            GotoAction(PlayerbotAI* ai) : MovementAction(ai, "goto") {}
+            virtual bool Execute(Event event);
+
+        private:
+            string m_positionName;
+            uint32 m_deadline = 0;
+            float m_targetX = 0, m_targetY = 0, m_targetZ = 0;
+            uint32 m_targetMapId = 0;
+    };
 }

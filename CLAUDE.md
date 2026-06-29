@@ -17,7 +17,8 @@ this repo. Humans: also read [`doc/CodingStandard.md`](doc/CodingStandard.md).
 
 ## Build & test
 
-CMake ≥ 3.12; GCC/Clang (Linux/macOS/BSD) or MSVC ≥ 2015 (Windows). The exact flags CI builds with:
+**C++17** — strict (`-std=c++17`, GNU extensions off); C code is C11. CMake ≥ 3.18; GCC/Clang
+(Linux/macOS/BSD) or MSVC ≥ 2015 (Windows). The exact flags CI builds with:
 
 ```sh
 git clone --recursive https://github.com/mangoszero/server.git && cd server
