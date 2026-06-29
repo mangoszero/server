@@ -44,6 +44,7 @@
  */
 
 #include "Spell.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -3169,6 +3170,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
  */
 SpellCastResult Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura, uint32 chance)
 {
+    // GDB-server game breakpoint: pause when this spell is prepared.
+    GDB_BREAK(SpellPrepare, m_spellInfo->Id);
+
     m_targets = *targets;
 
     m_castPositionX = m_caster->GetPositionX();
@@ -3345,6 +3349,9 @@ void Spell::cancel()
  */
 void Spell::cast(bool skipCheck)
 {
+    // GDB-server game breakpoint: pause when this spell is cast.
+    GDB_BREAK(SpellCast, m_spellInfo->Id);
+
     SetExecutedCurrently(true);
 
     if (!m_caster->CheckAndIncreaseCastCounter())

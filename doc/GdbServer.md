@@ -108,17 +108,45 @@ site**, captures the live registers, and waits — so `bt` in gdb shows the real
 call stack and `monitor mangos ...` reads quiescent game state. `continue`
 resumes the tick.
 
+A breakpoint is an **event** plus an optional numeric **filter** (`0`/omitted =
+"any"). Arm, list, and clear them over the monitor surface:
+
 ```
-(gdb) monitor mangos break opcode 0x12E    # pause when this opcode arrives
-(gdb) monitor mangos break map 0           # pause when a player enters map 0
+(gdb) monitor mangos break events                # list all event names
+(gdb) monitor mangos break spellcast 133         # pause on cast of spell 133
+(gdb) monitor mangos break opcode 0x12E          # pause on a given opcode
+(gdb) monitor mangos break death 0               # pause on any unit death
+(gdb) monitor mangos break worldtick             # stop every tick (single-step the world)
 (gdb) monitor mangos break list
-(gdb) monitor mangos break del opcode:0x12E
+(gdb) monitor mangos break del spellcast 133
 (gdb) monitor mangos break clear
 ```
 
+Events and their filter (all wired to real call sites):
+
+| Event | Fires when | Filter |
+|-------|-----------|--------|
+| `opcode` | a client opcode is dispatched | opcode |
+| `login` / `logout` | a player logs in / out | account id |
+| `mapenter` / `mapleave` | a player enters / leaves a map | map id |
+| `spellcast` / `spellprepare` | a spell is cast / prepared | spell id |
+| `death` | a unit dies | creature entry |
+| `damage` | damage is dealt | victim entry |
+| `levelup` | a player gains a level | new level |
+| `loot` | loot is opened | loot type |
+| `questaccept` / `questcomplete` / `questreward` | quest progress | quest id |
+| `chat` | a chat message is handled | — |
+| `itemuse` | an item is used | — |
+| `gossip` | a gossip option is selected | gossip id |
+| `creaturecreate` | a creature is created | entry |
+| `gobjectuse` | a game object is used | entry |
+| `gmcmd` | a chat/console command is parsed | — |
+| `worldtick` | every world heartbeat | — |
+
 Breakpoints only fire while a debugger is attached, so an armed-but-unattended
-breakpoint never stalls the server. Current call sites: received-opcode dispatch
-and player map-entry; more sites are added with a single `GDB_BREAK_*` macro.
+breakpoint never stalls the server; stops never nest. The hot-path guard is a
+single relaxed atomic load, so unarmed call sites are effectively free. New
+sites are added anywhere with a one-line `GDB_BREAK(<event>, <detail>)` macro.
 
 ## Capabilities and limits
 
@@ -130,7 +158,10 @@ and player map-entry; more sites are added with a single `GDB_BREAK_*` macro.
 - **Live register capture** (`g`): at a stop the world thread's real registers
   are captured (Linux `getcontext`, Windows `RtlCaptureContext` on x86_64), so
   gdb can `bt` through the actual call stack via the `m` memory packets.
-- **Game-level breakpoints** on opcodes, map-entry, and named labels.
+- **Game-level breakpoints** across 20+ event families (opcode, login/logout,
+  map enter/leave, spell cast/prepare, death, damage, level-up, loot, quest
+  accept/complete/reward, chat, item use, gossip, creature create, game-object
+  use, command parse, world tick), each with an optional numeric filter.
 - `mangos dump` backtrace.
 
 **Limits:**

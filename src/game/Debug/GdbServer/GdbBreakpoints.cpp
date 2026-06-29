@@ -32,111 +32,120 @@
 #include "GdbServer.h"
 
 #include <cstdio>
-#include <cstdlib>
-#include <set>
-#include <string>
+#include <cstring>
+#include <utility>
+#include <vector>
 
 namespace GdbBp
 {
-    std::atomic<int> g_armedCount{0};
+    std::atomic<uint64> g_armedMask{0};
 
     namespace
     {
-        std::set<uint32> g_opcodes;
-        std::set<uint32> g_maps;
-        std::set<std::string> g_labels;
+        // One armed breakpoint: an event and an optional filter (0 = any).
+        struct Entry
+        {
+            Event ev;
+            uint64 filter;
+        };
+
+        std::vector<Entry> g_entries;
         uint64 g_hits = 0;
+
+        // Canonical lower-case name per Event, indexed by enum value. Keep in
+        // lockstep with the Event enum in the header.
+        const char* const kEventNames[] = {
+            "opcode", "login", "logout", "mapenter", "mapleave",
+            "spellcast", "spellprepare", "death", "damage", "levelup",
+            "loot", "questaccept", "questcomplete", "questreward",
+            "chat", "itemuse", "gossip", "creaturecreate",
+            "gobjectuse", "gmcmd", "worldtick",
+        };
+        static_assert(sizeof(kEventNames) / sizeof(kEventNames[0]) ==
+                          static_cast<size_t>(Event::Count),
+                      "kEventNames must match the Event enum");
 
         void Recount()
         {
-            g_armedCount.store(static_cast<int>(g_opcodes.size() + g_maps.size() + g_labels.size()),
-                std::memory_order_relaxed);
+            uint64 mask = 0;
+            for (const Entry& e : g_entries)
+            {
+                mask |= (1ULL << static_cast<uint32>(e.ev));
+            }
+            g_armedMask.store(mask, std::memory_order_relaxed);
+        }
+
+        bool StrEq(const char* a, const char* b)
+        {
+            return a != nullptr && b != nullptr && std::strcmp(a, b) == 0;
         }
     } // namespace
 
-    bool OpcodeArmed(uint32 opcode) { return g_opcodes.find(opcode) != g_opcodes.end(); }
-    bool MapEnterArmed(uint32 mapId) { return g_maps.find(mapId) != g_maps.end(); }
-    bool LabelArmed(const char* name) { return name != nullptr && g_labels.find(name) != g_labels.end(); }
-
-    bool ArmOpcode(uint32 opcode)
+    bool Matches(Event e, uint64 detail)
     {
-        const bool inserted = g_opcodes.insert(opcode).second;
-        Recount();
-        return inserted;
+        for (const Entry& entry : g_entries)
+        {
+            if (entry.ev == e && (entry.filter == 0 || entry.filter == detail))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
-    bool ArmMapEnter(uint32 mapId)
+    bool Arm(Event e, uint64 filter)
     {
-        const bool inserted = g_maps.insert(mapId).second;
+        for (const Entry& entry : g_entries)
+        {
+            if (entry.ev == e && entry.filter == filter)
+            {
+                return false; // already armed
+            }
+        }
+        g_entries.push_back(Entry{e, filter});
         Recount();
-        return inserted;
+        return true;
     }
 
-    bool ArmLabel(const char* name)
+    bool Disarm(Event e, uint64 filter)
     {
-        if (name == nullptr || name[0] == '\0')
+        for (size_t i = 0; i < g_entries.size(); ++i)
         {
-            return false;
+            if (g_entries[i].ev == e && g_entries[i].filter == filter)
+            {
+                g_entries.erase(g_entries.begin() + i);
+                Recount();
+                return true;
+            }
         }
-        const bool inserted = g_labels.insert(name).second;
-        Recount();
-        return inserted;
-    }
-
-    bool Disarm(const char* spec)
-    {
-        if (spec == nullptr)
-        {
-            return false;
-        }
-        bool removed = false;
-        const std::string s(spec);
-        if (s.rfind("opcode:", 0) == 0)
-        {
-            removed = g_opcodes.erase(static_cast<uint32>(strtoul(s.c_str() + 7, nullptr, 0))) != 0;
-        }
-        else if (s.rfind("map:", 0) == 0)
-        {
-            removed = g_maps.erase(static_cast<uint32>(strtoul(s.c_str() + 4, nullptr, 0))) != 0;
-        }
-        else
-        {
-            removed = g_labels.erase(s) != 0;
-        }
-        Recount();
-        return removed;
+        return false;
     }
 
     void DisarmAll()
     {
-        g_opcodes.clear();
-        g_maps.clear();
-        g_labels.clear();
+        g_entries.clear();
         Recount();
     }
 
     void List(GdbMon::MonitorWriter& out)
     {
-        if (g_armedCount.load(std::memory_order_relaxed) == 0)
+        if (g_entries.empty())
         {
             out.Str("  (no breakpoints armed)\n");
         }
-        for (uint32 op : g_opcodes)
+        for (const Entry& e : g_entries)
         {
-            out.Str("  opcode:");
-            out.U64(op);
-            out.Line();
-        }
-        for (uint32 m : g_maps)
-        {
-            out.Str("  map:");
-            out.U64(m);
-            out.Line();
-        }
-        for (const std::string& l : g_labels)
-        {
-            out.Str("  label:");
-            out.Str(l.c_str());
+            out.Str("  ");
+            out.Str(EventName(e.ev));
+            if (e.filter != 0)
+            {
+                out.Str(" filter=");
+                out.U64(e.filter);
+            }
+            else
+            {
+                out.Str(" (any)");
+            }
             out.Line();
         }
         out.Str("  hits=");
@@ -144,11 +153,41 @@ namespace GdbBp
         out.Line();
     }
 
-    void Hit(const char* kind, uint64 detail)
+    bool ParseEvent(const char* name, Event& out)
+    {
+        for (uint32 i = 0; i < static_cast<uint32>(Event::Count); ++i)
+        {
+            if (StrEq(name, kEventNames[i]))
+            {
+                out = static_cast<Event>(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    const char* EventName(Event e)
+    {
+        const uint32 i = static_cast<uint32>(e);
+        return (i < static_cast<uint32>(Event::Count)) ? kEventNames[i] : "?";
+    }
+
+    void ListEventNames(GdbMon::MonitorWriter& out)
+    {
+        for (uint32 i = 0; i < static_cast<uint32>(Event::Count); ++i)
+        {
+            out.Str(i == 0 ? "  " : " ");
+            out.Str(kEventNames[i]);
+        }
+        out.Line();
+    }
+
+    void Hit(Event e, uint64 detail)
     {
         ++g_hits;
-        char reason[80];
-        snprintf(reason, sizeof(reason), "breakpoint %s %llu", kind, static_cast<unsigned long long>(detail));
+        char reason[96];
+        snprintf(reason, sizeof(reason), "breakpoint %s %llu", EventName(e),
+            static_cast<unsigned long long>(detail));
         // No-op unless a debugger is attached (EnterBreak guards that), so an
         // armed-but-unattended breakpoint never hangs the server.
         sGdbServer.EnterBreak(reason);

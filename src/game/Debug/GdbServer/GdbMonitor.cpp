@@ -286,18 +286,25 @@ namespace GdbMon
                     "  mangos session <accId>    session detail for an account id\n"
                     "  mangos config <key>       read a mangosd.conf value\n"
                     "  mangos cmd <command>      run a server/GM command (e.g. .server info)\n"
-                    "  mangos break list|opcode <id>|map <id>|label <name>|del <spec>|clear\n"
-                    "                            game-level breakpoints (pause on event)\n"
+                    "  mangos break list|events|clear|<event> [filter]|del <event> [filter]\n"
+                    "                            game breakpoints; 'events' lists event names\n"
                     "  mangos dump               write a backtrace of the world thread\n");
         }
 
-        // mangos break list | opcode <id> | map <id> | label <name>
-        //                  | del <spec> | clear
+        // mangos break list | events | clear
+        //                  | <event> [filter]       (arm)
+        //                  | del <event> [filter]   (disarm)
         void CmdBreak(uint32 argc, const char** argv, MonitorWriter& out)
         {
             if (argc < 3 || Eq(argv[2], "list"))
             {
                 GdbBp::List(out);
+                return;
+            }
+            if (Eq(argv[2], "events"))
+            {
+                out.Str("events:\n");
+                GdbBp::ListEventNames(out);
                 return;
             }
             if (Eq(argv[2], "clear"))
@@ -306,42 +313,39 @@ namespace GdbMon
                 out.Str("all breakpoints disarmed\n");
                 return;
             }
-            if (Eq(argv[2], "opcode") && argc >= 4)
+
+            const bool del = Eq(argv[2], "del");
+            const uint32 evIdx = del ? 3 : 2;
+            if (argc <= evIdx)
             {
-                uint64 v = 0;
-                if (!ParseU64(argv[3], &v))
-                {
-                    out.Str("break: bad opcode id\n");
-                    return;
-                }
-                out.Str(GdbBp::ArmOpcode(static_cast<uint32>(v)) ? "armed opcode breakpoint\n"
-                                                                 : "opcode breakpoint already armed\n");
+                out.Str("usage: mangos break <event> [filter] | del <event> [filter]\n");
                 return;
             }
-            if (Eq(argv[2], "map") && argc >= 4)
+
+            GdbBp::Event ev;
+            if (!GdbBp::ParseEvent(argv[evIdx], ev))
             {
-                uint64 v = 0;
-                if (!ParseU64(argv[3], &v))
-                {
-                    out.Str("break: bad map id\n");
-                    return;
-                }
-                out.Str(GdbBp::ArmMapEnter(static_cast<uint32>(v)) ? "armed map-enter breakpoint\n"
-                                                                   : "map-enter breakpoint already armed\n");
+                out.Str("break: unknown event '");
+                out.Str(argv[evIdx]);
+                out.Str("' - try 'mangos break events'\n");
                 return;
             }
-            if (Eq(argv[2], "label") && argc >= 4)
+
+            uint64 filter = 0;
+            if (argc > evIdx + 1 && !ParseU64(argv[evIdx + 1], &filter))
             {
-                out.Str(GdbBp::ArmLabel(argv[3]) ? "armed label breakpoint\n"
-                                                 : "label breakpoint already armed\n");
+                out.Str("break: bad filter value\n");
                 return;
             }
-            if (Eq(argv[2], "del") && argc >= 4)
+
+            if (del)
             {
-                out.Str(GdbBp::Disarm(argv[3]) ? "breakpoint removed\n" : "breakpoint not found\n");
-                return;
+                out.Str(GdbBp::Disarm(ev, filter) ? "breakpoint removed\n" : "breakpoint not found\n");
             }
-            out.Str("usage: mangos break list|opcode <id>|map <id>|label <name>|del <spec>|clear\n");
+            else
+            {
+                out.Str(GdbBp::Arm(ev, filter) ? "breakpoint armed\n" : "breakpoint already armed\n");
+            }
         }
     } // namespace
 

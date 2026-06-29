@@ -23,6 +23,7 @@
  */
 
 #include "Creature.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "Database/DatabaseEnv.h"
 #include "WorldPacket.h"
@@ -1123,6 +1124,9 @@ bool Creature::Create(uint32 guidlow, CreatureCreatePos& cPos, CreatureInfo cons
     {
         return false;
     }
+
+    // GDB-server game breakpoint: pause when a creature of a given entry is created.
+    GDB_BREAK(CreatureCreate, GetEntry());
 
     cPos.SelectFinalPoint(this);
 

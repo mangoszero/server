@@ -133,6 +133,9 @@ class GdbServer
         RspWriter m_rspWriter = nullptr;
         std::atomic<bool> m_peerClosed{false};
         std::atomic<bool> m_interrupt{false};
+        // True while inside the stop loop; blocks a breakpoint that fires from
+        // a command run during the stop from nesting another stop.
+        bool m_inStop = false;
         // Set by AttachRsp (network thread); consumed by OnWorldUpdate so all
         // RSP engine state mutation happens on the world thread.
         std::atomic<bool> m_resetPending{false};

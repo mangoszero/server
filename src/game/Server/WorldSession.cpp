@@ -319,7 +319,7 @@ bool WorldSession::Update(PacketFilter& updater)
         OpcodeHandler const& opHandle = opcodeTable[packet->GetOpcode()];
 
         // GDB-server game breakpoint: pause here when this opcode is armed.
-        GDB_BREAK_OPCODE(packet->GetOpcode());
+        GDB_BREAK(Opcode, packet->GetOpcode());
 
         try
         {
@@ -492,6 +492,9 @@ void WorldSession::HandleBotPackets()
 /// %Log the player out
 void WorldSession::LogoutPlayer(bool Save)
 {
+    // GDB-server game breakpoint: pause on player logout.
+    GDB_BREAK(Logout, GetAccountId());
+
     // finish pending transfers before starting the logout
     while (_player && _player->IsBeingTeleportedFar())
     {

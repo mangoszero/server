@@ -259,6 +259,8 @@ void GdbServer::EnterStop(const char* reason)
     // debugger therefore see a quiescent world.
     sLog.outString("GdbServer: target stopped (%s)", reason);
 
+    m_inStop = true;
+
     // Capture the live register context so the debugger can backtrace the real
     // call stack (it reads stack memory through the 'm' packets).
     if (CaptureContext(m_capturedRegs))
@@ -300,14 +302,16 @@ void GdbServer::EnterStop(const char* reason)
     }
 
     GdbRsp::PublishRegisters(nullptr);
+    m_inStop = false;
     sLog.outString("GdbServer: target resumed");
 }
 
 void GdbServer::EnterBreak(const char* reason)
 {
     // Only break when a debugger is attached — otherwise no one could resume
-    // the server and the world would hang.
-    if (!m_enabled || !DebuggerAttached())
+    // the server and the world would hang. Never nest stops (a breakpoint may
+    // fire from a command executed while already stopped).
+    if (!m_enabled || m_inStop || !DebuggerAttached())
     {
         return;
     }

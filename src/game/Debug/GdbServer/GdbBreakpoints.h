@@ -39,61 +39,84 @@ namespace GdbMon { class MonitorWriter; }
  * Game-level breakpoints for the GDB-server debug endpoint.
  *
  * Unlike native instruction breakpoints, these fire at semantically
- * meaningful points in the server (a received opcode, a player entering a
- * map, a named code label). When one fires AND a debugger is attached, the
- * world thread enters the cooperative stop inline at the call site — so the
- * attached debugger sees the real, live call stack and can inspect game
- * state via the `monitor` surface, then resume.
+ * meaningful points across the server (a received opcode, a spell cast, a
+ * death, a quest step, a player entering a map, ...). Each breakpoint is an
+ * (event, filter) pair: the filter is an optional numeric (spell id, map id,
+ * quest id, ...); filter 0 means "any". When an armed breakpoint matches AND
+ * a debugger is attached, the world thread enters the cooperative stop inline
+ * at the call site, so the attached debugger sees the real call stack and can
+ * inspect game state via the `monitor` surface, then resume.
  *
- * The hot-path guard AnyArmed() is a single relaxed atomic load, so call
- * sites cost effectively nothing when no breakpoint is armed. All arming and
- * checking happens on the world thread (monitor dispatch + game code), so the
- * registry needs no locking.
+ * The hot-path guard is a single relaxed atomic load of a per-event bitmask,
+ * so call sites cost effectively nothing when their event is not armed. All
+ * arming and matching happens on the world thread (monitor dispatch + game
+ * code), so the registry needs no locking.
  */
 namespace GdbBp
 {
-    /// Number of armed breakpoints; the hot-path gate. Defined in the .cpp.
-    extern std::atomic<int> g_armedCount;
+    /// Event families a breakpoint can watch. Keep the count <= 64 so the
+    /// armed set fits in a single bitmask word.
+    enum class Event : uint32
+    {
+        Opcode,          ///< received client opcode          (filter: opcode)
+        Login,           ///< player login                    (filter: account id)
+        Logout,          ///< player logout                   (filter: account id)
+        MapEnter,        ///< object added to a map           (filter: map id)
+        MapLeave,        ///< object removed from a map       (filter: map id)
+        SpellCast,       ///< spell cast                      (filter: spell id)
+        SpellPrepare,    ///< spell prepared                  (filter: spell id)
+        Death,           ///< unit died                       (filter: entry)
+        Damage,          ///< damage dealt                    (filter: victim entry)
+        LevelUp,         ///< player gained a level           (filter: new level)
+        Loot,            ///< loot opened                     (filter: loot type)
+        QuestAccept,     ///< quest accepted                  (filter: quest id)
+        QuestComplete,   ///< quest completed                 (filter: quest id)
+        QuestReward,     ///< quest rewarded                  (filter: quest id)
+        Chat,            ///< chat message handled            (filter: 0)
+        ItemUse,         ///< item used                       (filter: 0)
+        GossipSelect,    ///< gossip option selected          (filter: gossip id)
+        CreatureCreate,  ///< creature created                (filter: entry)
+        GameObjectUse,   ///< game object used                (filter: entry)
+        GmCommand,       ///< chat/console command parsed     (filter: 0)
+        WorldTick,       ///< world heartbeat (single-step)   (filter: 0)
+        Count
+    };
 
-    /// Cheap gate for call sites — true when any breakpoint is armed.
-    inline bool AnyArmed() { return g_armedCount.load(std::memory_order_relaxed) != 0; }
+    /// Per-event armed bitmask; the hot-path gate. Defined in the .cpp.
+    extern std::atomic<uint64> g_armedMask;
 
-    // Match tests (world thread).
-    bool OpcodeArmed(uint32 opcode);
-    bool MapEnterArmed(uint32 mapId);
-    bool LabelArmed(const char* name);
+    /// Cheap gate for call sites — true when @p e has any breakpoint armed.
+    inline bool Armed(Event e)
+    {
+        return (g_armedMask.load(std::memory_order_relaxed) >> static_cast<uint32>(e)) & 1ULL;
+    }
 
-    // Arming / management (world thread, from the monitor surface).
-    bool ArmOpcode(uint32 opcode);
-    bool ArmMapEnter(uint32 mapId);
-    bool ArmLabel(const char* name);
-    bool Disarm(const char* spec); ///< "opcode:<id>" | "map:<id>" | "<label>"
+    /// True when an armed breakpoint for @p e matches @p detail (filter 0 or
+    /// filter == detail). Only called after Armed(e) passes.
+    bool Matches(Event e, uint64 detail);
+
+    // Management (world thread, from the monitor surface).
+    bool Arm(Event e, uint64 filter);    ///< filter 0 = any
+    bool Disarm(Event e, uint64 filter);
     void DisarmAll();
     void List(GdbMon::MonitorWriter& out);
 
+    // Name <-> event mapping for the monitor command surface.
+    bool ParseEvent(const char* name, Event& out);
+    const char* EventName(Event e);
+    void ListEventNames(GdbMon::MonitorWriter& out);
+
     /// A breakpoint matched: record the hit and, if a debugger is attached,
-    /// enter the cooperative stop. @p kind is a short category, @p detail an
-    /// optional numeric (opcode / map id).
-    void Hit(const char* kind, uint64 detail);
+    /// enter the cooperative stop.
+    void Hit(Event e, uint64 detail);
 }
 
-/// Call-site macros — negligible cost when nothing is armed.
-#define GDB_BREAK_OPCODE(op)                                                    \
-    do {                                                                       \
-        if (GdbBp::AnyArmed() && GdbBp::OpcodeArmed(static_cast<uint32>(op)))  \
-            GdbBp::Hit("opcode", static_cast<uint64>(op));                     \
-    } while (0)
-
-#define GDB_BREAK_MAP_ENTER(mapId)                                             \
-    do {                                                                       \
-        if (GdbBp::AnyArmed() && GdbBp::MapEnterArmed(static_cast<uint32>(mapId))) \
-            GdbBp::Hit("map-enter", static_cast<uint64>(mapId));              \
-    } while (0)
-
-#define GDB_BREAK_LABEL(name)                                                  \
-    do {                                                                       \
-        if (GdbBp::AnyArmed() && GdbBp::LabelArmed(name))                      \
-            GdbBp::Hit("label", 0);                                            \
+/// Call-site macro — negligible cost when the event is not armed.
+#define GDB_BREAK(ev, detail)                                                   \
+    do {                                                                        \
+        if (GdbBp::Armed(GdbBp::Event::ev) &&                                   \
+            GdbBp::Matches(GdbBp::Event::ev, static_cast<uint64>(detail)))      \
+            GdbBp::Hit(GdbBp::Event::ev, static_cast<uint64>(detail));          \
     } while (0)
 
 #endif

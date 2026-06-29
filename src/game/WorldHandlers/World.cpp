@@ -92,6 +92,7 @@
 #include "GitRevision.h"
 #include "UpdateTime.h"
 #include "Debug/GdbServer/GdbServer.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "GameTime.h"
 #include "ScheduledExit.h"
 
@@ -1940,6 +1941,10 @@ void World::Update(uint32 diff)
     // Service the GDB-server debug endpoint: drain protocol traffic and, on a
     // debugger interrupt, enter the cooperative stop loop (pauses this tick).
     sGdbServer.OnWorldUpdate();
+
+    // GDB-server game breakpoint: when armed, pause every world tick — a
+    // single-step of the world loop driven from the debugger.
+    GDB_BREAK(WorldTick, m_worldLoopCounter.value());
 
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);

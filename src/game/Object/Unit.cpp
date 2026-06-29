@@ -23,6 +23,7 @@
  */
 
 #include "Unit.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -697,6 +698,9 @@ void Unit::DealDamageMods(Unit* pVictim, uint32& damage, uint32* absorb)
  */
 uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDamage, DamageEffectType damagetype, SpellSchoolMask damageSchoolMask, SpellEntry const* spellProto, bool durabilityLoss)
 {
+    // GDB-server game breakpoint: pause on damage to a given victim entry.
+    GDB_BREAK(Damage, pVictim ? pVictim->GetEntry() : 0);
+
     // remove affects from attacker at any non-DoT damage (including 0 damage)
     if (damagetype != DOT)
     {
@@ -9678,6 +9682,12 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
  */
 void Unit::SetDeathState(DeathState s)
 {
+    // GDB-server game breakpoint: pause when a unit of a given entry dies.
+    if (s == JUST_DIED)
+    {
+        GDB_BREAK(Death, GetEntry());
+    }
+
     if (s != ALIVE && s != JUST_ALIVED)
     {
         CombatStop();
