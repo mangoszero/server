@@ -8909,6 +8909,9 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
         return;
     }
 
+    // GDB-server game breakpoint
+    GDB_BREAK(AiCombat, (GetTypeId() == TYPEID_UNIT) ? ((Creature*)this)->GetEntry() : 0);
+
     if (PvP)
     {
         m_CombatTimer = 5000;
@@ -8988,6 +8991,8 @@ void Unit::SetInCombatState(bool PvP, Unit* enemy)
 void Unit::ClearInCombat()
 {
     m_CombatTimer = 0;
+    // GDB-server game breakpoint
+    GDB_BREAK(AiCombatEnd, (GetTypeId() == TYPEID_UNIT) ? ((Creature*)this)->GetEntry() : 0);
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT);
 
     if (IsCharmed() || (GetTypeId() != TYPEID_PLAYER && ((Creature*)this)->IsPet()))

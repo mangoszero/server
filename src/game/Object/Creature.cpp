@@ -849,7 +849,9 @@ void Creature::Update(uint32 update_diff, uint32 diff)
                 {
                     // do not allow the AI to be changed during update
                     m_AI_locked = true;
-                    AI()->UpdateAI(diff);   // AI not react good at real update delays (while freeze in non-active part of map)
+                    AI()->UpdateAI(diff);
+                    // GDB-server game breakpoint
+                    GDB_BREAK(AiUpdate, GetEntry());   // AI not react good at real update delays (while freeze in non-active part of map)
                     m_AI_locked = false;
                 }
             }
@@ -2261,6 +2263,8 @@ void Creature::SetDeathState(DeathState s)
 void Creature::Respawn()
 {
     RemoveCorpse();
+    // GDB-server game breakpoint
+    GDB_BREAK(AiSpawn, GetEntry());
     if (!IsInWorld())                                       // Could be removed as part of a pool (in which case respawn-time is handled with pool-system)
     {
         return;

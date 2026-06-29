@@ -122,31 +122,32 @@ A breakpoint is an **event** plus an optional numeric **filter** (`0`/omitted =
 (gdb) monitor mangos break clear
 ```
 
-Events and their filter (all wired to real call sites):
+`mangos break events` prints the authoritative, up-to-date list. Events span
+every major subsystem (all wired to real call sites):
 
-| Event | Fires when | Filter |
-|-------|-----------|--------|
-| `opcode` | a client opcode is dispatched | opcode |
-| `login` / `logout` | a player logs in / out | account id |
-| `mapenter` / `mapleave` | a player enters / leaves a map | map id |
-| `spellcast` / `spellprepare` | a spell is cast / prepared | spell id |
-| `death` | a unit dies | creature entry |
-| `damage` | damage is dealt | victim entry |
-| `levelup` | a player gains a level | new level |
-| `loot` | loot is opened | loot type |
-| `questaccept` / `questcomplete` / `questreward` | quest progress | quest id |
-| `chat` | a chat message is handled | — |
-| `itemuse` | an item is used | — |
-| `gossip` | a gossip option is selected | gossip id |
-| `creaturecreate` | a creature is created | entry |
-| `gobjectuse` | a game object is used | entry |
-| `gmcmd` | a chat/console command is parsed | — |
-| `worldtick` | every world heartbeat | — |
+| Group | Events (filter) |
+|-------|-----------------|
+| Core gameplay | `opcode` (opcode), `login`/`logout` (account), `mapenter`/`mapleave` (map), `spellcast`/`spellprepare` (spell), `death` (entry), `damage` (victim entry), `levelup` (level), `loot` (type), `questaccept`/`questcomplete`/`questreward` (quest), `chat`, `itemuse`, `gossip` (id), `creaturecreate` (entry), `gobjectuse` (entry), `gmcmd`, `worldtick` |
+| Netcode / auth | `netaccept`, `netclose`, `authsession`, `packetsend` (opcode), `packetrecv` (opcode) |
+| Database (shared layer) | `dbquery`, `dbexecute`, `dbasyncquery` |
+| Warden anti-cheat | `wardencheck`, `wardenviolation` |
+| Scripting | `scriptai` (entry), `eluna`, `sd3` |
+| Creature AI | `aicombat`/`aicombatend` (entry), `aiupdate` (entry), `aispawn` (entry) |
+| Maps / instances | `mapcreate` (map), `gridload` (map), `instancecreate` (map), `instancereset` (map) |
+| Economy / social | `mailsend`, `mailrecv`, `auctionadd`, `auctionbuy`, `trade`, `groupjoin` |
+| BG / pet / item / pvp / move | `bgstart`/`bgend` (type), `petsummon` (entry), `itemequip`/`itemdestroy` (entry), `pvpkill`, `movementinform` |
+
+Note: `opcode` with a filter already covers *every* client packet, and
+`dbquery`/`dbexecute` cover *every* SQL statement, so those single events span
+their whole subsystem without one breakpoint per id.
 
 Breakpoints only fire while a debugger is attached, so an armed-but-unattended
 breakpoint never stalls the server; stops never nest. The hot-path guard is a
-single relaxed atomic load, so unarmed call sites are effectively free. New
-sites are added anywhere with a one-line `GDB_BREAK(<event>, <detail>)` macro.
+single relaxed atomic load, so unarmed call sites are effectively free. The
+database hooks live in the shared library and reach the engine through a thin
+registered bridge (`shared/Debug/DebugBreakHook`). New game sites are added
+with a one-line `GDB_BREAK(<event>, <detail>)`; new shared-layer sites with
+`GDB_BREAK_SHARED(<event>, <detail>)`.
 
 ## Capabilities and limits
 
@@ -158,10 +159,10 @@ sites are added anywhere with a one-line `GDB_BREAK(<event>, <detail>)` macro.
 - **Live register capture** (`g`): at a stop the world thread's real registers
   are captured (Linux `getcontext`, Windows `RtlCaptureContext` on x86_64), so
   gdb can `bt` through the actual call stack via the `m` memory packets.
-- **Game-level breakpoints** across 20+ event families (opcode, login/logout,
-  map enter/leave, spell cast/prepare, death, damage, level-up, loot, quest
-  accept/complete/reward, chat, item use, gossip, creature create, game-object
-  use, command parse, world tick), each with an optional numeric filter.
+- **Game-level breakpoints** across ~55 event families spanning every major
+  subsystem — core gameplay, netcode/auth, database, warden, scripting,
+  creature AI, maps/instances, economy/social, and battleground/pet/item/pvp —
+  each with an optional numeric filter. `mangos break events` lists them.
 - `mangos dump` backtrace.
 
 **Limits:**

@@ -57,6 +57,7 @@
 #include "WardenModuleWin.h"
 #include "WardenCheckMgr.h"
 #include "GameTime.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 
 /**
  * @brief WardenWin constructor
@@ -218,6 +219,8 @@ void WardenWin::HandleHashResult(ByteBuffer &buff)
 void WardenWin::RequestData()
 {
     sLog.outWarden("Request data");
+    // GDB-server game breakpoint
+    GDB_BREAK(WardenCheck, 0);
 
     uint16 build = _session->GetClientBuild();
     uint16 id = 0;
@@ -560,6 +563,8 @@ void WardenWin::HandleData(ByteBuffer &buff)
     if (checkFailed > 0)
     {
         WardenCheck* check = sWardenCheckMgr->GetWardenDataById(_session->GetClientBuild(), checkFailed);   //note it IS NOT NULL here
+        // GDB-server game breakpoint
+        GDB_BREAK(WardenViolation, checkFailed);
         sLog.outWarden("%s failed Warden check %u. Action: %s", _session->GetPlayerName(), checkFailed, Penalty(check).c_str());
         LogPositiveToDB(check);
     }

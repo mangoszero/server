@@ -53,6 +53,7 @@
 #include "Formulas.h"
 #include "GridNotifiersImpl.h"
 #include "Chat.h"
+#include "Debug/GdbServer/GdbBreakpoints.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif /* ENABLE_ELUNA */
@@ -489,6 +490,8 @@ void BattleGround::Update(uint32 diff)
             StartingEventOpenDoors();
 
             SendMessageToAll(m_StartMessageIds[BG_STARTING_EVENT_FOURTH], CHAT_MSG_BG_SYSTEM_NEUTRAL);
+            // GDB-server game breakpoint
+            GDB_BREAK(BgStart, GetTypeID());
             SetStatus(STATUS_IN_PROGRESS);
             SetStartDelayTime(m_StartDelayTimes[BG_STARTING_EVENT_FOURTH]);
 
@@ -816,6 +819,8 @@ void BattleGround::UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player*
  */
 void BattleGround::EndBattleGround(Team winner)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(BgEnd, GetTypeID());
 #ifdef ENABLE_ELUNA
     if (Eluna* e = GetBgMap()->GetEluna())
     {

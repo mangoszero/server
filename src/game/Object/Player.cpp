@@ -8251,6 +8251,8 @@ uint32 Player::CalculateTotalKills(Unit* Victim, uint32 fromDate, uint32 toDate)
 // How much honor Player gains/loses killing uVictim
 bool Player::RewardHonor(Unit* uVictim, uint32 groupsize)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(PvpKill, 0);
     float honor_points = 0;
     //int kill_type = 0;
 
@@ -13500,6 +13502,8 @@ Item* Player::EquipNewItem(uint16 pos, uint32 item, bool update)
  */
 Item* Player::EquipItem(uint16 pos, Item* pItem, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemEquip, pItem ? pItem->GetEntry() : 0);
     AddEnchantmentDurations(pItem);
     AddItemDurations(pItem);
 
@@ -13835,6 +13839,8 @@ void Player::MoveItemToInventory(ItemPosCountVec const& dest, Item* pItem, bool 
  */
 void Player::DestroyItem(uint8 bag, uint8 slot, bool update)
 {
+    // GDB-server game breakpoint
+    GDB_BREAK(ItemDestroy, GetItemByPos(bag, slot) ? GetItemByPos(bag, slot)->GetEntry() : 0);
     Item* pItem = GetItemByPos(bag, slot);
     if (pItem)
     {
