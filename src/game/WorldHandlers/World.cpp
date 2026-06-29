@@ -91,6 +91,7 @@
 #include "CommandMgr.h"
 #include "GitRevision.h"
 #include "UpdateTime.h"
+#include "Debug/GdbServer/GdbServer.h"
 #include "GameTime.h"
 #include "ScheduledExit.h"
 
@@ -1935,6 +1936,10 @@ void World::Update(uint32 diff)
 
     // And last, but not least handle the issued cli commands
     ProcessCliCommands();
+
+    // Service the GDB-server debug endpoint: drain protocol traffic and, on a
+    // debugger interrupt, enter the cooperative stop loop (pauses this tick).
+    sGdbServer.OnWorldUpdate();
 
     // cleanup unused GridMap objects as well as VMaps
     sTerrainMgr.Update(diff);
