@@ -193,6 +193,8 @@ namespace ai
                     creators["cleanse spirit poison on party"] = &AiObjectContextInternal::cleanse_spirit_poison_on_party;
                     creators["cleanse spirit curse on party"] = &AiObjectContextInternal::cleanse_spirit_curse_on_party;
                     creators["cleanse spirit disease on party"] = &AiObjectContextInternal::cleanse_spirit_disease_on_party;
+                    creators["cure poison on party"] = &AiObjectContextInternal::cure_poison_on_party;
+                    creators["cure disease on party"] = &AiObjectContextInternal::cure_disease_on_party;
                     creators["cleansing totem"] = &AiObjectContextInternal::cleansing_totem;
                     creators["fire nova"] = &AiObjectContextInternal::fire_nova;
                     creators["thunderstorm"] = &AiObjectContextInternal::thunderstorm;
@@ -208,6 +210,8 @@ namespace ai
                 static Action* cleanse_spirit_poison_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritPoisonOnPartyAction(ai); }
                 static Action* cleanse_spirit_curse_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritCurseOnPartyAction(ai); }
                 static Action* cleanse_spirit_disease_on_party(PlayerbotAI* ai) { return new CastCleanseSpiritDiseaseOnPartyAction(ai); }
+                static Action* cure_poison_on_party(PlayerbotAI* ai) { return new CastCurePoisonOnPartyAction(ai); }
+                static Action* cure_disease_on_party(PlayerbotAI* ai) { return new CastCureDiseaseOnPartyAction(ai); }
                 static Action* cleansing_totem(PlayerbotAI* ai) { return new CastCleansingTotemAction(ai); }
                 static Action* fire_nova(PlayerbotAI* ai) { return new CastFireNovaAction(ai); }
                 static Action* thunderstorm(PlayerbotAI* ai) { return new CastThunderstormAction(ai); }
