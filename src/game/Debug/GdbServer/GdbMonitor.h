@@ -32,10 +32,10 @@
 #include "Common.h"
 
 /*
- * GDB `monitor` (qRcmd) command surface for mangosd, ported from the
- * DuetOS `duet` monitor. The generic GDB remote-serial server (GdbRsp)
- * speaks raw registers / memory; stock GDB cannot express mangos-specific
- * state (online players, the world tick, config values, server commands).
+ * GDB `monitor` (qRcmd) command surface for mangosd. The RSP engine
+ * (GdbRsp) speaks raw registers / memory; stock GDB cannot express
+ * mangos-specific state (online players, the world tick, config values,
+ * server commands).
  * This TU implements a `mangos <verb> [args]` command surface delivered
  * over the standard GDB `qRcmd,<hex>` ("monitor") packet, so a specialised
  * client OR stock `gdb` (`monitor mangos ...`) — OR any AI over the plain

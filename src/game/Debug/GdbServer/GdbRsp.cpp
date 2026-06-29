@@ -130,9 +130,8 @@ namespace GdbRsp
         }
 
         // 24-register x86_64 target description matching the `g` reply
-        // exactly, so gdb's amd64-tdep validator accepts our register count
-        // instead of falling back to its 154-register default. Ported
-        // verbatim from the DuetOS stub.
+        // exactly, so gdb accepts our register count instead of falling back
+        // to its larger built-in default and rejecting the short `g` reply.
         const char* TargetXml()
         {
             static const char kTargetXml[] =

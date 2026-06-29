@@ -2,9 +2,9 @@
 
 The GDB-server lets a debugger — or an AI agent — attach to a **running**
 `mangosd` process and drive it directly: read process memory, inspect live game
-state, and run server/GM commands, all over a single network endpoint. It is a
-port of the GDB-server system from the DuetOS project, adapted from a kernel
-stub to this userland, ACE-threaded server.
+state, and run server/GM commands, all over a single network endpoint. It is
+built on the GDB Remote Serial Protocol and integrated into the mangosd world
+loop and ACE networking.
 
 It has two layers:
 

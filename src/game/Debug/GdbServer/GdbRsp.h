@@ -32,17 +32,17 @@
 #include "Common.h"
 
 /*
- * GDB Remote Serial Protocol (RSP) engine for mangosd, ported from the
- * DuetOS kernel stub (kernel/diag/gdb_server.*). Transport-agnostic: bytes
- * arrive via ReceiveByte() and replies leave through a byte-sink callback,
- * so the same engine drives a TCP socket here that drove COM2 in DuetOS.
+ * GDB Remote Serial Protocol (RSP) engine for mangosd. Transport-agnostic:
+ * bytes arrive via ReceiveByte() and replies leave through a byte-sink
+ * callback, so the engine is fully decoupled from the TCP transport that
+ * carries it.
  *
- * The native-debug realities of a userland process differ from a kernel:
+ * mangosd is debugged in-process, which shapes a few packets:
  *   - Registers (g/G): Phase 1 reports a synthetic (zeroed) x86_64 set —
- *     enough for stock gdb's attach handshake; the value for AI/users is
- *     the `monitor` surface + memory reads, not register-level debugging.
- *   - Memory (m/M): the debugger is in-process, so reads/writes are guarded
- *     accesses to our own address space (see GdbDbg). Writes are gated.
+ *     enough for stock gdb's attach handshake; the value for users and AI
+ *     is the `monitor` surface + memory reads, not register-level debugging.
+ *   - Memory (m/M): reads/writes are guarded accesses to the server's own
+ *     address space (see GdbDbg). Writes are gated behind config.
  *   - Breakpoints (Z/z) and real single-step are Phase 2.
  *
  * SINGLE SESSION: one attached debugger at a time. A new connection calls
