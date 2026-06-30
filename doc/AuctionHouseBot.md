@@ -254,8 +254,23 @@ worker reproduces the full CanUseItem usable filter and full entry data
 (enchant/suffix/charges decoded from item_instance). On ENABLE_ELUNA builds the
 OnCanUseItem Lua hook is deferred to mangosd's world thread (the worker returns
 the un-paginated usable set; mangosd runs the hook + paginates). Player
-mutations (sell/bid/buyout/cancel) remain fully in-process. If the worker is
-down, times out, errors, or the deferred set is too large, mangosd serves the
-browse in-process (no player-visible change). Set
-`CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
+mutations (sell/bid/buyout/cancel) remain fully in-process.
+
+**Coordinator model (worker-mandatory reads).** Once an ah-service worker is the
+configured AH authority, mangosd holds no AH read state of its own. If the worker
+is down, times out, errors, or is overloaded (queue-full / oversize), mangosd
+returns **"AH temporarily unavailable"** — an empty list (so the client does not
+hang) plus a red system chat line — and serves **nothing** in-process. A worker
+fault therefore degrades only the AH, never the realm. (If **no** worker is
+configured at all, the legacy single-process in-process AH is used as before.)
+Set `CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
 SELECTs do not serialize behind the bot snapshot.
+
+**Known cosmetic edge (smoke note).** On an `ENABLE_ELUNA` realm with an active
+`OnCanUseItem` veto, a single "usable"-filtered search that yields more than ~1000
+matches falls into a worker-paginated path: mangosd runs the Lua veto on just the
+visible page. The browse stays correct (every item is reachable on exactly one
+page, no duplicates), but the client may show slightly **more page buttons than
+items justify** and the occasional **sparse or empty deep page**. This is the
+accepted approximation for that rare edge — **expected, not a regression** — so do
+not flag it during smoke testing.
