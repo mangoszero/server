@@ -231,6 +231,7 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
             empty.kind        = q.kind;
             empty.elunaPending = 0u;
             empty.tooMany     = 0u;
+            empty.prePaginated = 0u;
             empty.totalcount  = 0u;
             return empty;
         }
@@ -248,6 +249,7 @@ BrowseResult Fetch(ServiceDatabase& db, const BrowseQuery& q, FetchStatus& statu
             empty.kind        = q.kind;
             empty.elunaPending = 0u;
             empty.tooMany     = 0u;
+            empty.prePaginated = 0u;
             empty.totalcount  = 0u;
             return empty;
         }
@@ -372,14 +374,16 @@ bool BrowseThread::Submit(const BrowseQuery& q)
         return true;
     }
     m_rejected.fetch_add(1, std::memory_order_relaxed);
-    // D4: queue saturated. Reply tooMany=1 NOW so mangosd's in-process
-    // fallback fires immediately instead of waiting the ~10s TTL.
+    // D4: queue saturated. Reply tooMany=1 NOW so mangosd tells the player the
+    // AH is unavailable immediately instead of waiting the ~10s TTL (coordinator
+    // model: no in-process fallback).
     // IpcClient::SendFrame is CONFIRMED thread-safe (see header comment).
     BrowseResult full;
     full.queryId      = q.queryId;
     full.kind         = q.kind;
     full.elunaPending = 0u;
     full.tooMany      = 1u;
+    full.prePaginated = 0u;
     full.totalcount   = 0u;
     IpcMessage rm;
     rm.op = IPC_BROWSE_RESULT;
@@ -402,7 +406,8 @@ void BrowseThread::run()
             BrowseResult res = BrowseHandler::Fetch(m_db, q, st);
             if (st == FETCH_DB_ERROR)
             {
-                // I3: no reply -- mangosd's TTL fallback serves in-process.
+                // I3: no reply -- mangosd's TTL sweep tells the player the AH is
+                // unavailable (coordinator model: no in-process fallback).
                 m_dbErrors.fetch_add(1, std::memory_order_relaxed);
                 continue;
             }
@@ -413,12 +418,14 @@ void BrowseThread::run()
             if (rm.body.size() > BrowseResult::MAX_WIRE)
             {
                 // Should be impossible at cap 1000 entries; fail safe by
-                // replying tooMany so mangosd does the in-process fallback.
+                // replying tooMany so mangosd tells the player the AH is
+                // unavailable (coordinator model: no in-process fallback).
                 BrowseResult capped;
                 capped.queryId      = res.queryId;
                 capped.kind         = res.kind;
                 capped.elunaPending = res.elunaPending;
                 capped.tooMany      = 1u;
+                capped.prePaginated = 0u;
                 capped.totalcount   = res.totalcount;
                 rm.body.clear();
                 capped.Encode(rm.body);
@@ -447,6 +454,7 @@ namespace BrowseHandler
         res.kind         = q.kind;
         res.elunaPending = 0u;
         res.tooMany      = 0u;
+        res.prePaginated = 0u;
         res.totalcount   = 0u;
 
         const bool isList = (q.kind == static_cast<uint8>(BROWSE_LIST));
@@ -463,6 +471,12 @@ namespace BrowseHandler
         {
             needleBad = !Utf8toWStr(q.searchedName, wneedle);
         }
+
+        // Over-cap deferred-Eluna pre-pagination (decision #2): while collecting
+        // the un-paginated defer set, ALSO collect the listfrom..+50 survivor
+        // window. Used only if the survivor count exceeds the cap, in which case
+        // we ship just this page and mangosd runs the Lua veto on it.
+        std::vector<BrowseEntry> pageWindow;
 
         for (size_t i = 0; i < rows.size(); ++i)
         {
@@ -494,13 +508,21 @@ namespace BrowseHandler
 
             if (defer)
             {
-                // Un-paginated: collect every survivor (capped). totalcount
+                // Page window (listfrom..+50 slice of survivors): used only if we
+                // exceed the cap and must pre-paginate server-side (decision #2).
+                // res.totalcount is the 0-based survivor index before the bump.
+                if (res.totalcount >= q.listfrom && pageWindow.size() < 50u)
+                {
+                    pageWindow.push_back(r.entry);
+                }
+                // Un-paginated full set (capped): the common exact-parity path --
+                // mangosd runs Eluna over all of these, then paginates. totalcount
                 // counts all survivors even past the cap so mangosd can log it.
-                ++res.totalcount;
                 if (res.entries.size() < BROWSE_ELUNA_CAP)
                 {
                     res.entries.push_back(r.entry);
                 }
+                ++res.totalcount;
             }
             else
             {
@@ -519,8 +541,13 @@ namespace BrowseHandler
             res.elunaPending = 1u;
             if (res.totalcount > BROWSE_ELUNA_CAP)
             {
-                res.tooMany = 1u;
-                res.entries.clear();   // mangosd does a full in-process browse instead
+                // >cap: too many survivors to ship un-paginated. Send just the
+                // pre-collected page; mangosd runs the Lua veto on it (decision
+                // #2). NOT tooMany -- the browse still serves; it is only
+                // Eluna-approximate for this rare edge (totalcount stays the full
+                // pre-Eluna survivor count, off-page items aren't veto-checked).
+                res.prePaginated = 1u;
+                res.entries.swap(pageWindow);
             }
         }
 

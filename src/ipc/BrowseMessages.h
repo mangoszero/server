@@ -356,7 +356,8 @@ struct BrowseResult
     uint64 queryId;
     uint8  kind;
     uint8  elunaPending; ///< 1 = un-paginated set; mangosd runs OnCanUseItem + paginate
-    uint8  tooMany;      ///< 1 = set exceeded the cap; no entries; mangosd in-process fallback
+    uint8  tooMany;      ///< 1 = worker could not serve (queue full / oversize failsafe); no entries; mangosd sends "AH unavailable"
+    uint8  prePaginated; ///< 1 = over-cap deferred-Eluna: `entries` ARE the listfrom page; mangosd runs OnCanUseItem on the page only, no re-paginate
     uint32 totalcount;   ///< total matches (post-filter; pre-pagination)
     std::vector<BrowseEntry> entries;
 
@@ -364,7 +365,7 @@ struct BrowseResult
 
     void Encode(ByteBuffer& buf) const
     {
-        buf << queryId << kind << elunaPending << tooMany << totalcount;
+        buf << queryId << kind << elunaPending << tooMany << prePaginated << totalcount;
         buf << uint32(entries.size());
         for (size_t i = 0; i < entries.size(); ++i)
         {
@@ -374,11 +375,11 @@ struct BrowseResult
 
     bool Decode(ByteBuffer& buf)
     {
-        if (buf.rpos() + 8 + 1 + 1 + 1 + 4 + 4 > buf.size())
+        if (buf.rpos() + 8 + 1 + 1 + 1 + 1 + 4 + 4 > buf.size())
         {
             return false;
         }
-        buf >> queryId >> kind >> elunaPending >> tooMany >> totalcount;
+        buf >> queryId >> kind >> elunaPending >> tooMany >> prePaginated >> totalcount;
         if (kind >= static_cast<uint8>(BROWSE_KIND_MAX))
         {
             return false;

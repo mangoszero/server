@@ -391,6 +391,7 @@ static int RunIntentCodecSelfTest()
         a.kind         = static_cast<uint8>(BROWSE_LIST);
         a.elunaPending = 1u;
         a.tooMany      = 0u;
+        a.prePaginated = 1u;
         a.totalcount   = 7u;
         BrowseEntry e;
         e.id=5u; e.itemEntry=19019u; e.enchantId=2u; e.randomPropId=0u;
@@ -413,7 +414,7 @@ static int RunIntentCodecSelfTest()
             return 1;
         }
         if (b.queryId != a.queryId || b.kind != a.kind ||
-            b.elunaPending != 1u || b.tooMany != 0u ||
+            b.elunaPending != 1u || b.tooMany != 0u || b.prePaginated != 1u ||
             b.totalcount != 7u || b.entries.size() != 1u || b.Count() != 1u)
         {
             fprintf(stderr, "intent codec selftest FAILED: BrowseResult header mismatch\n");
@@ -433,7 +434,7 @@ static int RunIntentCodecSelfTest()
     //     be rejected, not silently truncated (I7). ---
     {
         ByteBuffer bad;
-        bad << UINT64_C(1) << uint8(BROWSE_LIST) << uint8(0) << uint8(0)
+        bad << UINT64_C(1) << uint8(BROWSE_LIST) << uint8(0) << uint8(0) << uint8(0)
             << uint32(0) /*totalcount*/ << uint32(3) /*claims 3, supplies 0*/;
         BrowseResult b;
         if (b.Decode(bad))
@@ -446,7 +447,7 @@ static int RunIntentCodecSelfTest()
     // --- Strict decode: invalid kind rejected. ---
     {
         ByteBuffer bad;
-        bad << UINT64_C(1) << uint8(BROWSE_KIND_MAX) << uint8(0) << uint8(0)
+        bad << UINT64_C(1) << uint8(BROWSE_KIND_MAX) << uint8(0) << uint8(0) << uint8(0)
             << uint32(0) << uint32(0);
         BrowseResult b;
         if (b.Decode(bad))
@@ -610,6 +611,48 @@ static int RunIntentCodecSelfTest()
         {
             fprintf(stderr, "browse selftest FAILED: owner count=%u (exp 120)\n",
                     unsigned(ro.Count()));
+            return 1;
+        }
+
+        // Over-cap deferred-Eluna pre-pagination (decision #2): >cap survivors ->
+        // worker ships just the listfrom page with prePaginated=1, NOT tooMany.
+        std::vector<BrowseRow> many;
+        for (uint32 i = 0; i < 1200u; ++i)
+        {
+            BrowseRow r;
+            r.entry = BrowseEntry();
+            r.entry.id        = i + 1;
+            r.entry.itemEntry = 1000u + i;
+            r.itemClass = 4u; r.itemSubClass = 0u; r.inventoryType = 0u;
+            r.quality = 2u; r.requiredLevel = 1u;
+            r.allowableClass = 0xFFFFFFFFu; r.allowableRace = 0xFFFFFFFFu;
+            r.name = "Iron Sword";
+            r.reqSkill = 0u; r.reqSkillRank = 0u; r.reqSpell = 0u;
+            r.reqHonorRank = 0u; r.reqRepFaction = 0u; r.reqRepRank = 0u;
+            r.itemProficiencySkill = 0u; r.castSpellId = 0u;
+            many.push_back(r);
+        }
+        BrowseQuery qbig = q;          // LIST, searchedName "sword" (matches all)
+        qbig.deferEluna = 1u; qbig.usable = 0u; qbig.listfrom = 100u;
+        BrowseResult rbig = BrowseHandler::FilterAndPaginate(many, qbig);
+        if (rbig.prePaginated != 1u || rbig.tooMany != 0u || rbig.elunaPending != 1u)
+        {
+            fprintf(stderr, "browse selftest FAILED: prePaginated flags"
+                    " (pp=%u tm=%u ep=%u)\n", unsigned(rbig.prePaginated),
+                    unsigned(rbig.tooMany), unsigned(rbig.elunaPending));
+            return 1;
+        }
+        if (rbig.totalcount != 1200u || rbig.entries.size() != 50u)
+        {
+            fprintf(stderr, "browse selftest FAILED: prePaginated page size=%u"
+                    " total=%u (exp 50/1200)\n", unsigned(rbig.entries.size()),
+                    unsigned(rbig.totalcount));
+            return 1;
+        }
+        if (rbig.entries[0].id != 101u)   // survivor index 100 -> id 101
+        {
+            fprintf(stderr, "browse selftest FAILED: prePaginated first id=%u"
+                    " (exp 101)\n", unsigned(rbig.entries[0].id));
             return 1;
         }
     }
