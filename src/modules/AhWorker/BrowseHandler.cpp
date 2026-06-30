@@ -371,7 +371,7 @@ bool BrowseThread::Submit(const BrowseQuery& q)
     {
         return true;
     }
-    ++m_rejected;
+    m_rejected.fetch_add(1, std::memory_order_relaxed);
     // D4: queue saturated. Reply tooMany=1 NOW so mangosd's in-process
     // fallback fires immediately instead of waiting the ~10s TTL.
     // IpcClient::SendFrame is CONFIRMED thread-safe (see header comment).
@@ -403,7 +403,7 @@ void BrowseThread::run()
             if (st == FETCH_DB_ERROR)
             {
                 // I3: no reply -- mangosd's TTL fallback serves in-process.
-                ++m_dbErrors;
+                m_dbErrors.fetch_add(1, std::memory_order_relaxed);
                 continue;
             }
             IpcMessage rm;
@@ -424,7 +424,7 @@ void BrowseThread::run()
                 capped.Encode(rm.body);
             }
             m_cli.SendFrame(rm);
-            ++m_processed;
+            m_processed.fetch_add(1, std::memory_order_relaxed);
         }
         else
         {

@@ -109,18 +109,18 @@ class BrowseThread : public ACE_Based::Runnable
 
         void run() override;
 
-        uint64 Processed() const { return m_processed; }
-        uint64 Rejected()  const { return m_rejected; }
-        uint64 DbErrors()  const { return m_dbErrors; }
+        uint64 Processed() const { return m_processed.load(std::memory_order_relaxed); }
+        uint64 Rejected()  const { return m_rejected.load(std::memory_order_relaxed); }
+        uint64 DbErrors()  const { return m_dbErrors.load(std::memory_order_relaxed); }
 
     private:
         ServiceDatabase&          m_db;
         IpcClient&                m_cli;
         BoundedQueue<BrowseQuery> m_queue;
         std::atomic<bool>         m_stop;
-        uint64                    m_processed;
-        uint64                    m_rejected;
-        uint64                    m_dbErrors;
+        std::atomic<uint64>       m_processed;
+        std::atomic<uint64>       m_rejected;
+        std::atomic<uint64>       m_dbErrors;
 
         // Non-copyable.
         BrowseThread(const BrowseThread&);
