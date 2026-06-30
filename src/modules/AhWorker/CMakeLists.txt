@@ -31,6 +31,14 @@ install(TARGETS ah-service DESTINATION ${BIN_DIR}/service-workers/ah-service)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ah-service.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/ah-service.conf.dist)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ah-service.conf.dist DESTINATION ${CONF_INSTALL_DIR})
 
+# The CanUseItem differential drift test needs BOTH ah_usability (this worker)
+# and the game-side AhUsabilityRef source, so it builds only when mangosd is in
+# the configure too. It is EXCLUDE_FROM_ALL (built on demand / in CI), never
+# part of the default build or the shipped binaries.
+if(BUILD_MANGOSD)
+    add_subdirectory(difftest)
+endif()
+
 # ah-service runs as a STANDALONE process: spawned by mangosd in deployment, but
 # also run directly by the CI self-test (and by hand). It links `shared`, which
 # pulls in the MySQL/MariaDB client, so on Windows the binary needs that client
