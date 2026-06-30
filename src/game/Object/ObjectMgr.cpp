@@ -23,6 +23,7 @@
  */
 
 #include "ObjectMgr.h"
+#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "LivingWorldAnchorPolicy.h"
 #include "MotionGenerators/MotionMaster.h"  // WAYPOINT_MOTION_TYPE
 #include "Database/DatabaseEnv.h"
@@ -1864,6 +1865,23 @@ void ObjectMgr::RemoveGameobjectFromGrid(uint32 guid, GameObjectData const* data
 // name must be checked to correctness (if received) before call this function
 ObjectGuid ObjectMgr::GetPlayerGuidByName(std::string name) const
 {
+    // AH bot forged system owner: resolve the reserved name to the sentinel
+    // GUID WITHOUT a characters row or a DB round-trip (case-insensitive, to
+    // match the DB collation used below).
+    {
+        std::wstring wname;
+        std::wstring wsys;
+        if (Utf8toWStr(name, wname) && Utf8toWStr(AHBOT_SYSTEM_OWNER_NAME, wsys))
+        {
+            wstrToLower(wname);
+            wstrToLower(wsys);
+            if (wname == wsys)
+            {
+                return ObjectGuid(HIGHGUID_PLAYER, AHBOT_SYSTEM_OWNER_GUID);
+            }
+        }
+    }
+
     ObjectGuid guid;
 
     CharacterDatabase.escape_string(name);

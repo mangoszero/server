@@ -6,6 +6,7 @@
 #include "ObjectMgr.h"
 #include "ObjectGuid.h"
 #include "AuctionHouseMgr.h"
+#include "AuctionHouseBot/AhBotSystemOwner.h"
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
@@ -813,6 +814,40 @@ static int RunCustodyTest()
     return 2;
 }
 
+/// Self-test for the AH bot forged system owner: proves GetPlayerGuidByName
+/// returns the sentinel GUID for the reserved name without a DB row, that the
+/// match is case-insensitive, and that ordinary non-existent names still fall
+/// through to an empty guid. Returns 0 on pass, non-zero on fail.
+static int RunAhOwnerTest()
+{
+    // Task 1: GetPlayerGuidByName intercepts the forged system name -> sentinel,
+    // case-insensitively, with NO dependency on a characters row.
+    {
+        ObjectGuid g = sObjectMgr.GetPlayerGuidByName(AHBOT_SYSTEM_OWNER_NAME);
+        if (!g.IsPlayer() || g.GetCounter() != AHBOT_SYSTEM_OWNER_GUID)
+        {
+            printf("ahowner FAIL: GetPlayerGuidByName(\"AuctionHouse\") did not return the sentinel\n");
+            return 1;
+        }
+        ObjectGuid gl = sObjectMgr.GetPlayerGuidByName("auctionhouse");
+        if (gl.GetCounter() != AHBOT_SYSTEM_OWNER_GUID)
+        {
+            printf("ahowner FAIL: name match is not case-insensitive\n");
+            return 1;
+        }
+        // a clearly-nonexistent ordinary name must still fall through to 0.
+        ObjectGuid none = sObjectMgr.GetPlayerGuidByName("Zzqxnonexistentname");
+        if (none)
+        {
+            printf("ahowner FAIL: non-system name unexpectedly resolved\n");
+            return 1;
+        }
+    }
+
+    printf("ahowner OK\n");
+    return 0;
+}
+
 int RunMangosdTest(std::string const& name)
 {
     if (name == "noop")
@@ -834,6 +869,11 @@ int RunMangosdTest(std::string const& name)
     if (name == "custody")
     {
         return RunCustodyTest();
+    }
+
+    if (name == "ahowner")
+    {
+        return RunAhOwnerTest();
     }
 
     printf("%s FAIL: unknown test\n", name.c_str());

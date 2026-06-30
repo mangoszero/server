@@ -23,6 +23,7 @@
  */
 
 #include "AuctionHouseBot.h"
+#include "AhBotSystemOwner.h"
 #include "ProgressBar.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -754,7 +755,7 @@ void AuctionBotConfig::GetConfigFromFile()
 
     SetAHBotIncludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceIncludeItems", ""));
     SetAHBotExcludes(m_AhBotCfg.GetStringDefault("AuctionHouseBot.forceExcludeItems", ""));
-    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", ""));
+    SetAHBotId(m_AhBotCfg.GetStringDefault("AuctionHouseBot.CharacterName", AHBOT_SYSTEM_OWNER_NAME));
 
     setConfig(CONFIG_BOOL_AHBOT_BUYER_ALLIANCE_ENABLED       , "AuctionHouseBot.Buyer.Alliance.Enabled"      , false);
     setConfig(CONFIG_BOOL_AHBOT_BUYER_HORDE_ENABLED          , "AuctionHouseBot.Buyer.Horde.Enabled"         , false);
