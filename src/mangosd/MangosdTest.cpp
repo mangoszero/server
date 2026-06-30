@@ -1112,6 +1112,15 @@ static int RunAhBrowsePendingTest()
     if (pend.Size() != 0u || timedOut.size() != 1u || timedOut[0].accountId != 1002u)
     { printf("ahbrowsepending FAIL: sweep\n"); return 1; }
 
+    // Stale-seq guard on the sweep path: after a newer search is issued, the
+    // swept entry's seq (b.seq) is NOT current -- the fallback must be ignored.
+    // Bump the seq (simulates a newer search that arrived before the sweep ran).
+    uint32 postSweepSeq = pend.NextSeqFor(5002u, uint8(BROWSE_OWNER));
+    if (pend.IsCurrent(5002u, uint8(BROWSE_OWNER), b.seq))
+    { printf("ahbrowsepending FAIL: swept stale seq still current\n"); return 1; }
+    if (!pend.IsCurrent(5002u, uint8(BROWSE_OWNER), postSweepSeq))
+    { printf("ahbrowsepending FAIL: postSweepSeq not current\n"); return 1; }
+
     // SMSG assembly: count, first entry id, totalcount appear in order.
     {
         std::vector<BrowseEntry> entries;
@@ -1125,6 +1134,28 @@ static int RunAhBrowsePendingTest()
         if (c != 1u) { printf("ahbrowsepending FAIL: assembled count %u\n", unsigned(c)); return 1; }
         uint32 firstId=0; body >> firstId;
         if (firstId != 42u) { printf("ahbrowsepending FAIL: first id %u\n", unsigned(firstId)); return 1; }
+        // Verify all remaining BrowseEntry fields + trailing totalcount.
+        // AhAssembleBrowseListBody writes fields in BuildAuctionInfo wire order:
+        // itemEntry, enchantId, randomPropId, suffixFactor, count, charges (6 x uint32),
+        // ownerGuid (uint64), startbid, outbid, buyout, timeLeftMs (4 x uint32),
+        // bidderGuid (uint64), curBid (uint32), then trailing uint32 totalcount.
+        uint32 dummy32 = 0; uint64 dummy64 = 0;
+        body >> dummy32;   // itemEntry
+        body >> dummy32;   // enchantId
+        body >> dummy32;   // randomPropId
+        body >> dummy32;   // suffixFactor
+        body >> dummy32;   // count
+        body >> dummy32;   // charges
+        body >> dummy64;   // ownerGuid (uint64)
+        body >> dummy32;   // startbid
+        body >> dummy32;   // outbid
+        body >> dummy32;   // buyout
+        body >> dummy32;   // timeLeftMs
+        body >> dummy64;   // bidderGuid (uint64)
+        body >> dummy32;   // curBid
+        uint32 totalcount = 0; body >> totalcount;
+        if (totalcount != 3u) { printf("ahbrowsepending FAIL: totalcount %u\n", unsigned(totalcount)); return 1; }
+        (void)dummy32; (void)dummy64;
     }
 
     printf("ahbrowsepending OK\n");

@@ -2285,7 +2285,7 @@ void World::HandleAhInbound(const IpcMessage& msg)
             std::vector<BrowseEntry> finalEntries;
             uint32 totalcount = res.totalcount;
 
-            if (res.elunaPending)
+            if (res.elunaPending && pb.kind != uint8(BROWSE_BIDDER))
             {
                 // Deferred-Eluna pass (D5/V2): run ONLY the OnCanUseItem veto per
                 // entry via the thin Player::CanUseItemEluna accessor. The worker

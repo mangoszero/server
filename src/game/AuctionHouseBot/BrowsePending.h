@@ -38,7 +38,7 @@ struct PendingBrowse
     uint32 accountId;
     uint32 playerGuidLow;     ///< re-resolve target (I4)
     uint8  kind;              ///< BrowseKind
-    uint32 sentSec;          ///< time(NULL) at send (TTL; M5: same clock as sweep)
+    uint32 sentSec;          ///< time(NULL) at send; sweep uses GetGameTime(), within-tick ordering guarantees no underflow
     uint32 seq;              ///< per-(char,kind) sequence (I4 stale-guard)
     // Full fallback request:
     uint8  house;

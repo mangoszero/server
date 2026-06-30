@@ -1116,9 +1116,15 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
 static uint8 AhHouseToType(AuctionHouseEntry const* e)
 {
     uint32 id = e->houseId;
-    if (id >= 1u && id <= 3u) { return 0u; }   // ALLIANCE
-    if (id >= 4u && id <= 6u) { return 1u; }   // HORDE
-    return 2u;                                  // NEUTRAL
+    if (id >= 1u && id <= 3u)
+    {
+        return 0u;   // ALLIANCE
+    }
+    if (id >= 4u && id <= 6u)
+    {
+        return 1u;   // HORDE
+    }
+    return 2u;       // NEUTRAL
 }
 
 // Snapshot the browsing player's usability inputs into the wire profile.
