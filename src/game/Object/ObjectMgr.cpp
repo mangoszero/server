@@ -6341,7 +6341,10 @@ void ObjectMgr::SetHighestGuids()
     QueryResult* result = CharacterDatabase.Query("SELECT MAX(`guid`) FROM `characters`");
     if (result)
     {
-        m_CharGuids.Set((*result)[0].GetUInt32() + 1);
+        // Defensive: never let the allocator's next value land on the reserved
+        // AH-bot system GUID. (The overflow guard already makes 0xFFFFFFFE
+        // unreachable; this is belt-and-suspenders.)
+        m_CharGuids.Set(SkipAhBotSystemOwnerGuid((*result)[0].GetUInt32() + 1));
         delete result;
     }
 

@@ -844,6 +844,18 @@ static int RunAhOwnerTest()
         }
     }
 
+    // Task 2: the player-GUID allocator never hands out the reserved sentinel.
+    if (SkipAhBotSystemOwnerGuid(AHBOT_SYSTEM_OWNER_GUID) != AHBOT_SYSTEM_OWNER_GUID + 1)
+    {
+        printf("ahowner FAIL: SkipAhBotSystemOwnerGuid did not step past the sentinel\n");
+        return 1;
+    }
+    if (SkipAhBotSystemOwnerGuid(42u) != 42u)
+    {
+        printf("ahowner FAIL: SkipAhBotSystemOwnerGuid altered a normal GUID\n");
+        return 1;
+    }
+
     printf("ahowner OK\n");
     return 0;
 }
