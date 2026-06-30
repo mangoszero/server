@@ -61,6 +61,7 @@
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
 #include "BrowseMessages.h"
+#include "BrowseHandler.h"
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
@@ -536,6 +537,78 @@ static int RunIntentCodecSelfTest()
         if (g.valid)
         {
             fprintf(stderr, "item blob selftest FAILED: short blob marked valid\n");
+            return 1;
+        }
+    }
+
+    // --- FilterAndPaginate: name filter + page slice + totalcount + defer ---
+    {
+        std::vector<BrowseRow> rows;
+        for (uint32 i = 0; i < 120; ++i)
+        {
+            BrowseRow r;
+            r.entry = BrowseEntry();
+            r.entry.id        = i + 1;
+            r.entry.itemEntry = 1000u + i;
+            r.itemClass = 4u; r.itemSubClass = 0u; r.inventoryType = 0u;
+            r.quality = 2u; r.requiredLevel = 1u;
+            r.allowableClass = 0xFFFFFFFFu; r.allowableRace = 0xFFFFFFFFu;
+            r.name = (i % 2 == 0) ? "Iron Sword" : "Copper Axe";
+            r.reqSkill = 0u; r.reqSkillRank = 0u; r.reqSpell = 0u;
+            r.reqHonorRank = 0u; r.reqRepFaction = 0u; r.reqRepRank = 0u;
+            r.itemProficiencySkill = 0u; r.castSpellId = 0u;
+            rows.push_back(r);
+        }
+
+        BrowseQuery q;
+        q.queryId = 1u; q.kind = static_cast<uint8>(BROWSE_LIST);
+        q.house = 0u; q.allHouses = 0u;
+        q.itemClass = 0xFFFFFFFFu; q.itemSubClass = 0xFFFFFFFFu;
+        q.inventoryType = 0xFFFFFFFFu; q.quality = 0xFFFFFFFFu;
+        q.levelmin = 0u; q.levelmax = 0u; q.usable = 0u; q.deferEluna = 0u;
+        q.listfrom = 50u; q.localeIndex = 0; q.requesterGuidLow = 0u;   // 0 = enUS / no overlay (V3)
+        q.searchedName = "sword";
+
+        BrowseResult res = BrowseHandler::FilterAndPaginate(rows, q);
+        if (res.totalcount != 60u || res.elunaPending != 0u || res.tooMany != 0u)
+        {
+            fprintf(stderr, "browse selftest FAILED: totalcount=%u (exp 60)\n",
+                    unsigned(res.totalcount));
+            return 1;
+        }
+        if (res.Count() != 10u || res.entries.size() != 10u)
+        {
+            fprintf(stderr, "browse selftest FAILED: page count=%u (exp 10)\n",
+                    unsigned(res.Count()));
+            return 1;
+        }
+        if (res.entries[0].id != 101u)   // 51st "sword" row = even index 100, id 101
+        {
+            fprintf(stderr, "browse selftest FAILED: first paged id=%u (exp 101)\n",
+                    unsigned(res.entries[0].id));
+            return 1;
+        }
+
+        // deferEluna: all 60 survivors returned un-paginated, elunaPending=1.
+        BrowseQuery qd = q; qd.deferEluna = 1u; qd.usable = 1u; qd.listfrom = 0u;
+        BrowseResult rd = BrowseHandler::FilterAndPaginate(rows, qd);
+        if (rd.elunaPending != 1u || rd.tooMany != 0u ||
+            rd.totalcount != 60u || rd.entries.size() != 60u)
+        {
+            fprintf(stderr, "browse selftest FAILED: defer set size=%u (exp 60)\n",
+                    unsigned(rd.entries.size()));
+            return 1;
+        }
+
+        // OWNER: no filters/pagination -> all 120 rows.
+        BrowseQuery qo = q;
+        qo.kind = static_cast<uint8>(BROWSE_OWNER);
+        qo.searchedName.clear(); qo.listfrom = 0u;
+        BrowseResult ro = BrowseHandler::FilterAndPaginate(rows, qo);
+        if (ro.Count() != 120u || ro.totalcount != 120u || ro.entries.size() != 120u)
+        {
+            fprintf(stderr, "browse selftest FAILED: owner count=%u (exp 120)\n",
+                    unsigned(ro.Count()));
             return 1;
         }
     }
