@@ -21,6 +21,13 @@ The following rules apply when using the auction house bot:
 * the bot will not buy its own items, and will not receive mail from the AH or
   receive returned mails.
 
+The AH bot runs as a reserved *system* character named "AuctionHouse" (low-GUID
+0xFFFFFFFE) -- there is NO real character to create or maintain, and it
+regenerates automatically after a database wipe. The name is reserved from
+players and cannot be mailed. Do not create a real character named
+"AuctionHouse". To use a real character instead, set
+AuctionHouseBot.CharacterName to that character's name in ahbot.conf.
+
 Out-of-Process Run Mode (ah-service)
 -------------------------------------
 The auction house bot can be run in one of two modes:

@@ -10,6 +10,7 @@
 #include "AuctionHouseBot/CustodyDeferred.h"
 #include "AuctionHouseBot/CustodyLedger.h"
 #include "AuctionHouseBot/CustodyService.h"
+#include "WorkerSupervisor.h"
 #include <cstdio>
 #include <ctime>
 #include <memory>
@@ -875,6 +876,17 @@ static int RunAhOwnerTest()
     {
         printf("ahowner FAIL: IsAhBotSystemOwnerGuid true for a normal guid\n");
         return 1;
+    }
+
+    // Task 5: the supervisor refuses to spawn (no restart loop) when the bot
+    // GUID is unresolved (0).
+    {
+        WorkerSupervisor sup("ahowner-test", "nonexistent-exe", 0, "secret", 0 /*botGuid*/, "nonexistent.conf");
+        if (sup.Start())
+        {
+            printf("ahowner FAIL: WorkerSupervisor::Start succeeded with botGuid 0\n");
+            return 1;
+        }
     }
 
     printf("ahowner OK\n");

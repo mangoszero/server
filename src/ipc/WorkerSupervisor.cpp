@@ -90,6 +90,17 @@ WorkerSupervisor::~WorkerSupervisor()
 
 bool WorkerSupervisor::Start()
 {
+    // No valid bot owner GUID -> do not spawn, do not enter the restart loop.
+    // (Forged system owner resolves to a non-zero sentinel; 0 means a
+    // misconfigured AuctionHouseBot.CharacterName.) Caller falls back to the
+    // in-process bot.
+    if (m_botGuid == 0)
+    {
+        sLog.outError("[WorkerSupervisor:%s] bot GUID is 0 (unresolved AuctionHouseBot.CharacterName);"
+                      " not starting the service worker.", m_name.c_str());
+        return false;
+    }
+
     // Loud warning (but do NOT refuse to start) when the shared secret is
     // empty or the well-known default: the loopback IPC channel would accept
     // any local process that knows the trivial secret.
