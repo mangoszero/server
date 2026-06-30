@@ -59,6 +59,7 @@
 #include "IpcMessage.h"
 #include "IpcOpcodes.h"
 #include "AuctionIntents.h"
+#include "BrowseMessages.h"
 #include "Threading/Threading.h"
 #include "Console.h"
 #include "Config/Config.h"
@@ -300,6 +301,153 @@ static int RunIntentCodecSelfTest()
             fprintf(stderr,
                     "intent codec selftest FAILED: IntentResult reason"
                     " mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- BrowseQuery (variable-length: profile + name + lists + recipe set) ---
+    {
+        BrowseQuery a;
+        a.queryId          = UINT64_C(0x00000001DEADBEEF);
+        a.kind             = static_cast<uint8>(BROWSE_LIST);
+        a.house            = 2u;
+        a.allHouses        = 0u;
+        a.itemClass        = 4u;
+        a.itemSubClass     = 0xFFFFFFFFu;
+        a.inventoryType    = 0xFFFFFFFFu;
+        a.quality          = 3u;
+        a.levelmin         = 10u;
+        a.levelmax         = 60u;
+        a.usable           = 1u;
+        a.deferEluna       = 1u;
+        a.listfrom         = 50u;
+        a.localeIndex      = 2;             // V3: a real LocaleConstant (frFR) wire value (v4-verify R1)
+        a.requesterGuidLow = 777u;
+        a.minMountLevel    = 40u;
+        a.minEpicMountLevel= 60u;
+        a.searchedName     = "Thunderfury";
+        a.outbidIds.push_back(101u);
+        a.outbidIds.push_back(202u);
+        a.knownRecipeCastSpells.push_back(7411u);
+        a.profile.classId   = 1u;
+        a.profile.raceId    = 1u;
+        a.profile.level     = 60u;
+        a.profile.honorRank = 6u;
+        SkillRank sr; sr.skillId = 43u; sr.rank = 300u;
+        a.profile.skills.push_back(sr);
+        a.profile.knownSpells.push_back(12345u);
+        RepStanding rs; rs.factionId = 21u; rs.rank = 5u;
+        a.profile.reps.push_back(rs);
+
+        ByteBuffer buf;
+        a.Encode(buf);
+        BrowseQuery b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery::Decode false\n");
+            return 1;
+        }
+        if (buf.rpos() != buf.size())
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery trailing bytes\n");
+            return 1;
+        }
+        if (b.queryId != a.queryId || b.kind != a.kind || b.house != a.house ||
+            b.allHouses != a.allHouses || b.itemClass != a.itemClass ||
+            b.itemSubClass != a.itemSubClass || b.inventoryType != a.inventoryType ||
+            b.quality != a.quality || b.levelmin != a.levelmin ||
+            b.levelmax != a.levelmax || b.usable != a.usable ||
+            b.deferEluna != a.deferEluna || b.listfrom != a.listfrom ||
+            b.localeIndex != a.localeIndex || b.requesterGuidLow != a.requesterGuidLow ||
+            b.minMountLevel != a.minMountLevel || b.minEpicMountLevel != a.minEpicMountLevel ||
+            b.searchedName != a.searchedName ||
+            b.outbidIds.size() != 2u || b.knownRecipeCastSpells.size() != 1u ||
+            b.profile.honorRank != a.profile.honorRank ||
+            b.profile.skills.size() != 1u || b.profile.knownSpells.size() != 1u ||
+            b.profile.reps.size() != 1u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery field mismatch\n");
+            return 1;
+        }
+        if (b.outbidIds[0] != 101u || b.outbidIds[1] != 202u ||
+            b.knownRecipeCastSpells[0] != 7411u ||
+            b.profile.skills[0].skillId != 43u || b.profile.skills[0].rank != 300u ||
+            b.profile.knownSpells[0] != 12345u ||
+            b.profile.reps[0].factionId != 21u || b.profile.reps[0].rank != 5u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseQuery list-element mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- BrowseResult (variable-length: N entries; elunaPending/tooMany) ---
+    {
+        BrowseResult a;
+        a.queryId      = UINT64_C(0x00000001DEADBEEF);
+        a.kind         = static_cast<uint8>(BROWSE_LIST);
+        a.elunaPending = 1u;
+        a.tooMany      = 0u;
+        a.totalcount   = 7u;
+        BrowseEntry e;
+        e.id=5u; e.itemEntry=19019u; e.enchantId=2u; e.randomPropId=0u;
+        e.suffixFactor=0u; e.count=1u; e.charges=-1; e.ownerGuidLow=4u;
+        e.startbid=100u; e.outbid=5u; e.buyout=5000u; e.timeLeftMs=720000u;
+        e.bidderGuidLow=9u; e.curBid=120u;
+        a.entries.push_back(e);
+
+        ByteBuffer buf;
+        a.Encode(buf);
+        BrowseResult b;
+        if (!b.Decode(buf))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult::Decode false\n");
+            return 1;
+        }
+        if (buf.rpos() != buf.size())
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult trailing bytes\n");
+            return 1;
+        }
+        if (b.queryId != a.queryId || b.kind != a.kind ||
+            b.elunaPending != 1u || b.tooMany != 0u ||
+            b.totalcount != 7u || b.entries.size() != 1u || b.Count() != 1u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseResult header mismatch\n");
+            return 1;
+        }
+        const BrowseEntry& g = b.entries[0];
+        if (g.id!=5u || g.itemEntry!=19019u || g.enchantId!=2u || g.count!=1u ||
+            g.charges!=-1 || g.ownerGuidLow!=4u || g.startbid!=100u || g.outbid!=5u ||
+            g.buyout!=5000u || g.timeLeftMs!=720000u || g.bidderGuidLow!=9u || g.curBid!=120u)
+        {
+            fprintf(stderr, "intent codec selftest FAILED: BrowseEntry field mismatch\n");
+            return 1;
+        }
+    }
+
+    // --- Strict decode: declared entry-count exceeding the bytes present must
+    //     be rejected, not silently truncated (I7). ---
+    {
+        ByteBuffer bad;
+        bad << UINT64_C(1) << uint8(BROWSE_LIST) << uint8(0) << uint8(0)
+            << uint32(0) /*totalcount*/ << uint32(3) /*claims 3, supplies 0*/;
+        BrowseResult b;
+        if (b.Decode(bad))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: oversized entry-count accepted\n");
+            return 1;
+        }
+    }
+
+    // --- Strict decode: invalid kind rejected. ---
+    {
+        ByteBuffer bad;
+        bad << UINT64_C(1) << uint8(BROWSE_KIND_MAX) << uint8(0) << uint8(0)
+            << uint32(0) << uint32(0);
+        BrowseResult b;
+        if (b.Decode(bad))
+        {
+            fprintf(stderr, "intent codec selftest FAILED: invalid kind accepted\n");
             return 1;
         }
     }
