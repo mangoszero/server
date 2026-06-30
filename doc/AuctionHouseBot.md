@@ -259,10 +259,15 @@ mutations (sell/bid/buyout/cancel) remain fully in-process.
 **Coordinator model (worker-mandatory reads).** Once an ah-service worker is the
 configured AH authority, mangosd holds no AH read state of its own. If the worker
 is down, times out, errors, or is overloaded (queue-full / oversize), mangosd
-returns **"AH temporarily unavailable"** — an empty list (so the client does not
-hang) plus a red system chat line — and serves **nothing** in-process. A worker
-fault therefore degrades only the AH, never the realm. (If **no** worker is
-configured at all, the legacy single-process in-process AH is used as before.)
+returns **"AH temporarily unavailable"** — a center-screen notification flash plus
+a red system chat line, and an empty list on any in-flight browse so the client
+does not hang — and serves **nothing** in-process. While the worker is down the
+auction **window will not open** at all: the open path (auctioneer click, gossip
+option, `.auction` GM commands) is gated, so the player just gets the message. (A
+window already open when the worker dies stays open — 1.12 has no close-window
+opcode — and its next browse returns the unavailable reply.) A worker fault
+therefore degrades only the AH, never the realm. (If **no** worker is configured
+at all, the legacy single-process in-process AH is used as before.)
 Set `CharacterDatabaseConnections >= 2` in ah-service.conf so the browse thread's
 SELECTs do not serialize behind the bot snapshot.
 
