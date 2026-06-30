@@ -76,6 +76,17 @@
 // please DO NOT use iterator++, because it is slower than ++iterator!!!
 // post-incrementation is always slower than pre-incrementation !
 
+// SP-1 coordinator: the player-facing "AH temporarily unavailable" signal -- a
+// transient center-screen flash (SMSG_NOTIFICATION) PLUS a persistent red system
+// chat line. Used wherever a worker is the AH authority but cannot serve: the
+// window-open gate (SendAuctionHello) and the three browse read paths
+// (AhSendBrowseUnavailable, also from the World.cpp reply branch + TTL sweep).
+static void AhSendUnavailableMessage(WorldSession* session)
+{
+    session->SendNotification("The Auction House is temporarily unavailable.");
+    ChatHandler(session).SendSysMessage("|cffff0000The Auction House is temporarily unavailable.|r");
+}
+
 // void called when player click on auctioneer npc
 void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
 {
@@ -101,6 +112,18 @@ void WorldSession::HandleAuctionHelloOpcode(WorldPacket& recv_data)
 // this void causes that auction window is opened
 void WorldSession::SendAuctionHello(Unit* unit)
 {
+    // SP-1 coordinator: if a worker is the AH authority and it is down, do NOT
+    // open the auction window at all -- the AH is unavailable; tell the player
+    // (center flash + chat) and return. (sv == NULL = no worker configured =
+    // legacy single-process -> open normally.) This is the single chokepoint for
+    // every open path (auctioneer click, gossip option, .auction GM commands).
+    WorkerSupervisor* sv = sWorld.GetAhSupervisor();
+    if (sv && !sv->ServiceActive())
+    {
+        AhSendUnavailableMessage(this);
+        return;
+    }
+
     // always return pointer
     AuctionHouseEntry const* ahEntry = AuctionHouseMgr::GetAuctionHouseEntry(unit);
 
@@ -1253,8 +1276,8 @@ AuctionHouseObject* AhResolveHouse(const PendingBrowse& pb)
 // Coordinator model: the worker is the AH read authority. When it cannot serve
 // (down, a transient register/encode/send failure, queue-full, oversize, or a
 // reply timeout) mangosd serves NOTHING in-process. It sends an empty list so
-// the client does not hang, plus a red system line telling the player the AH is
-// temporarily unavailable. Non-static: the world thread (World.cpp) calls it
+// the client does not hang, plus the unavailable message (center flash + red
+// chat line via AhSendUnavailableMessage). Non-static: the world thread calls it
 // from the IPC_BROWSE_RESULT reply branch and the TTL sweep. (kind is a
 // BrowseKind; only the opcode depends on it.)
 void AhSendBrowseUnavailable(WorldSession* session, uint8 kind)
@@ -1266,7 +1289,7 @@ void AhSendBrowseUnavailable(WorldSession* session, uint8 kind)
     data << uint32(0);   // count
     data << uint32(0);   // totalcount
     session->SendPacket(&data);
-    ChatHandler(session).SendSysMessage("|cffff0000The Auction House is temporarily unavailable.|r");
+    AhSendUnavailableMessage(session);
 }
 
 // called when player lists his bids
